@@ -41,7 +41,7 @@ V1 deliberately prioritizes individual ownership, reliable provenance, public sh
 ### Application architecture
 
 - Backend: Django with Django REST Framework or Django-native endpoints for authenticated project APIs.
-- Database: PostgreSQL.
+- Database: Replit-managed PostgreSQL for deployed development and production environments, configured through Replit's `DATABASE_URL`. SQLite may remain the lightweight backend for isolated offline tests and initial local bootstrap only.
 - Frontend: React and TypeScript embedded alongside Django or served as a separate frontend, with a stable API boundary.
 - Node editor UI: React Flow with custom typed nodes and handles.
 - Default preview/export renderer: p5.js.
@@ -50,6 +50,15 @@ V1 deliberately prioritizes individual ownership, reliable provenance, public sh
 - AI provider: Mistral API behind Django server endpoints.
 - Auth: Google OAuth via `django-allauth`; add GitHub later only if valuable.
 - Background work: use an async worker only where needed for thumbnails, cleanup, and analytics; do not require it for live animation or camera processing.
+
+### Database deployment boundary
+
+- Do not run a PostgreSQL server inside the application Repl. Provision Replit's managed SQL database and connect Django with the `DATABASE_URL` supplied to the applicable development or production environment.
+- Keep Replit development and production data separate; do not copy development data into production by default.
+- Do not persist application data in a deployed SQLite file because a published Replit application's filesystem is not the durable data boundary.
+- SQLite is allowed for fast, offline unit tests whose behavior does not depend on database-specific locking, constraints, JSON behavior, or concurrency.
+- Run tests for version sequencing, current-version updates, draft races, atomic project/template/fork creation, and other transaction-sensitive behavior against PostgreSQL.
+- Keep Django models and migrations portable where practical, but treat PostgreSQL behavior as authoritative for deployed V1 correctness.
 
 ### Canonical scene model
 
@@ -761,7 +770,7 @@ Validate all AI JSON patches, scene imports/templates, and save/export requests 
 
 ### Phase 0: Product foundation
 
-- Django project, PostgreSQL, authentication, user gallery shell.
+- Django project, Replit-managed PostgreSQL integration, authentication, user gallery shell.
 - Canonical scene schema and validation implementation.
 - Project/version/draft data model.
 - Basic private project CRUD and metadata editing.

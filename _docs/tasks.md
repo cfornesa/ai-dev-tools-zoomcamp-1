@@ -8,9 +8,9 @@ Description: Initialize the backend and frontend applications, add their test ru
 Goal: Make the empty application reproducible in a local development environment.
 Description: Add example environment configuration for Django, PostgreSQL, the frontend, and required secrets without committing real credentials. Document the commands for installing dependencies, starting services, applying migrations, and running both applications.
 
-## 3. Configure PostgreSQL and health checks
-Goal: Connect Django to PostgreSQL and expose a basic application health check.
-Description: Configure database settings through environment variables and add a lightweight endpoint that reports application and database availability. Add tests for successful health responses and database connection failures.
+## 3. Configure Replit-managed PostgreSQL and health checks
+Goal: Connect deployed Django environments to Replit-managed PostgreSQL through `DATABASE_URL` while retaining SQLite only for isolated offline tests.
+Description: Configure Django to consume the development or production `DATABASE_URL` supplied by Replit, document the separation between those databases, and add a lightweight endpoint that reports application and database availability without leaking connection details. Add PostgreSQL-backed tests for successful health responses and database connection failures, plus an explicit test-only SQLite path for tests that do not rely on PostgreSQL semantics.
 
 ## 4. Establish backend and frontend quality checks
 Goal: Provide consistent automated formatting, linting, type-checking, and test commands.
@@ -30,7 +30,7 @@ Description: Add validation for shape, group, node, connection, binding, conditi
 
 ## 8. Create project and immutable scene-version models
 Goal: Persist individually owned projects and immutable creative snapshots.
-Description: Add Django models for project metadata and scene versions, including current version, sequence, creator, parent, origin, change label, and soft-delete state. Add database constraints and model tests that prevent mutation or invalid version sequences.
+Description: Add Django models for project metadata and scene versions, including current version, sequence, creator, parent, origin, change label, and soft-delete state. Add PostgreSQL constraints and PostgreSQL-backed model tests that prevent mutation, cross-project current-version pointers, or invalid and concurrently duplicated version sequences.
 
 ## 9. Create edit-session draft and activity models
 Goal: Persist temporary recovery drafts and auditable project activity separately from version history.
@@ -54,11 +54,11 @@ Description: Implement endpoints for private project creation, listing, detail r
 
 ## 14. Build immutable version save APIs
 Goal: Save validated creative changes as new immutable scene versions.
-Description: Implement endpoints to list versions and create the next version from a full validated scene snapshot with origin and optional change label. Make current-version updates transactional and test invalid scenes, concurrent sequence creation, and attempts to alter existing snapshots.
+Description: Implement endpoints to list versions and create the next version from a full validated scene snapshot with origin and optional change label. Make version creation and current-version updates one PostgreSQL transaction, and verify concurrent sequence creation, invalid scenes, and attempts to alter existing snapshots against PostgreSQL rather than SQLite locking behavior.
 
 ## 15. Add version restore and soft-delete APIs
 Goal: Let owners restore history without rewriting it and remove eligible old versions safely.
-Description: Implement restore as creation of a new version copied from a selected historical snapshot, and soft-delete only non-current versions. Test parent links, restore origin, current-version protection, ownership checks, and hidden deleted versions.
+Description: Implement restore as creation of a new version copied from a selected historical snapshot, advancing the current version in one PostgreSQL transaction, and soft-delete only non-current versions. Verify parent links, restore origin, locking and rollback behavior, current-version protection, ownership checks, and hidden deleted versions against PostgreSQL.
 
 ## 16. Build the signed-in project gallery shell
 Goal: Give users a responsive home for their private and public projects.
@@ -70,7 +70,7 @@ Description: Add an accessible metadata form whose changes do not create scene v
 
 ## 18. Implement project creation from a blank scene
 Goal: Create a private project with a valid initial blank-canvas version.
-Description: Add an atomic creation flow that stores project metadata, a schema-valid blank scene, and its first immutable version. Test rollback on validation or database failure and route successful creation into the editor.
+Description: Add a PostgreSQL-atomic creation flow that stores project metadata, a schema-valid blank scene, and its first immutable version. Test rollback on validation or database failure against PostgreSQL and route successful creation into the editor.
 
 ## 19. Seed the built-in template catalog
 Goal: Provide the eight planned read-only starter templates as valid editable scenes.
@@ -78,7 +78,7 @@ Description: Create fixtures for Blank canvas, Hand follower, Pinch particle bur
 
 ## 20. Build template browsing and cloning
 Goal: Let users browse built-in and private templates and clone one into a new private project.
-Description: Add a categorized template gallery with previews, accessibility labels, and an explicit create action. Implement atomic cloning that copies the chosen scene into a new project's first version without modifying or linking mutable state to the source template.
+Description: Add a categorized template gallery with previews, accessibility labels, and an explicit create action. Implement and PostgreSQL-test atomic cloning that copies the chosen scene into a new project's first version without modifying or linking mutable state to the source template.
 
 ## 21. Add save-as-private-template
 Goal: Let an owner turn a selected project version into a reusable private template.
@@ -170,7 +170,7 @@ Description: Save the current edit-session state to IndexedDB after a one-to-two
 
 ## 43. Synchronize server-side recovery drafts
 Goal: Keep a temporary private recovery copy of the active editing session on the server.
-Description: Add authorized draft read, upsert, and delete endpoints and synchronize approximately every 20–30 seconds plus after meaningful actions. Attempt a small keepalive update on page hide, expire abandoned drafts after roughly 24 hours, and ensure draft writes never create scene versions.
+Description: Add authorized draft read, upsert, and delete endpoints and synchronize approximately every 20–30 seconds plus after meaningful actions. Attempt a small keepalive update on page hide, expire abandoned drafts after roughly 24 hours, and use PostgreSQL-backed concurrency tests to ensure stale draft writes never win or create scene versions.
 
 ## 44. Build unsaved-work and recovery prompts
 Goal: Let users safely recover, discard, or leave unfinished work.
@@ -190,7 +190,7 @@ Description: Implement an edit endpoint that requests an allowlisted JSON Patch,
 
 ## 48. Build AI proposal preview and acceptance
 Goal: Keep AI changes reversible until the user explicitly accepts them.
-Description: Add create/edit prompt UI, pending and error states, a visual preview, human-readable change summary, and Accept and Reject actions. Accept must create an immutable version with the correct AI origin; Reject must discard the proposal without changing saved or working state.
+Description: Add create/edit prompt UI, pending and error states, a visual preview, human-readable change summary, and Accept and Reject actions. Accept must create exactly one immutable version with the correct AI origin in a PostgreSQL transaction, including under duplicate or concurrent submission, while Reject must discard the proposal without changing saved or working state.
 
 ## 49. Add public publishing controls
 Goal: Let owners switch projects between private and public visibility safely.
@@ -206,7 +206,7 @@ Description: Create a stable public URL that renders the current saved scene, st
 
 ## 52. Implement remix settings and atomic forking
 Goal: Let authenticated users fork remix-enabled public versions with permanent provenance.
-Description: Add the owner remix toggle and a public Fork action that atomically creates a new private project, first version, and source-project/source-version attribution. Block private or remix-disabled sources and ensure later source visibility or deletion cannot rewrite the fork's recorded provenance.
+Description: Add the owner remix toggle and a public Fork action that creates a new private project, first version, and source-project/source-version attribution in one PostgreSQL transaction. PostgreSQL-backed tests must cover rollback, concurrent duplicate submissions, private or remix-disabled sources, and durable provenance after later source changes.
 
 ## 53. Display remix provenance
 Goal: Give public remixes clear, durable credit to their source.
@@ -258,7 +258,7 @@ Description: Test signed-in and public galleries, metadata forms, history, AI pr
 
 ## 65. Add project lifecycle end-to-end tests
 Goal: Prove users can create, edit, save, restore, and reopen a project.
-Description: Add browser tests for blank and template creation, shape edits, explicit save, version history, restore, and eligible soft deletion. Use deterministic database and scene fixtures and verify both visible results and persisted version relationships.
+Description: Add browser tests for blank and template creation, shape edits, explicit save, version history, restore, and eligible soft deletion. Run these transaction-sensitive journeys against PostgreSQL with deterministic database and scene fixtures, and verify both visible results and persisted version relationships.
 
 ## 66. Add interaction runtime end-to-end tests
 Goal: Prove demo signals and behavior graphs produce the expected visual-state changes.
@@ -266,11 +266,11 @@ Description: Add browser tests for one-hand demo inputs, two-hand distance, bind
 
 ## 67. Add AI and recovery end-to-end tests
 Goal: Prove AI proposals and interrupted edit sessions remain reversible.
-Description: Add browser tests for AI scene creation, patch editing, validation failure, Accept, Reject, local autosave, server synchronization, recovery, and discard. Mock the model provider and time boundaries and verify that only accepted proposals or explicit saves create versions.
+Description: Add browser tests for AI scene creation, patch editing, validation failure, Accept, Reject, local autosave, server synchronization, recovery, and discard. Mock the model provider and time boundaries, run persistence-sensitive cases against PostgreSQL, and verify that concurrent or repeated actions still allow only accepted proposals or explicit saves to create versions.
 
 ## 68. Add publishing and remix end-to-end tests
 Goal: Prove public visibility and provenance rules across owner and visitor sessions.
-Description: Add browser tests for publish confirmation, public gallery inclusion, anonymous viewing, opt-in camera fallback, unpublishing, remix opt-out, and atomic forks. Verify that private content stays inaccessible and fork attribution remains correct.
+Description: Add browser tests for publish confirmation, public gallery inclusion, anonymous viewing, opt-in camera fallback, unpublishing, remix opt-out, and atomic forks. Run persistence and concurrent-fork cases against PostgreSQL, verifying rollback, private-content isolation, and durable fork attribution.
 
 ## 69. Add export end-to-end tests
 Goal: Prove selected saved versions generate working, privacy-safe download artifacts.
@@ -282,7 +282,7 @@ Description: Measure representative maximum-size graphs, shapes, bindings, trail
 
 ## 71. Test authorization and rate-limit boundaries
 Goal: Prevent cross-user access and abusive calls to protected or costly endpoints.
-Description: Add adversarial tests for project, version, draft, template, publish, fork, export, and AI authorization using anonymous, owner, and non-owner identities. Verify prompt quotas, request limits, cooldown responses, and transactional rollback without relying only on UI restrictions.
+Description: Add adversarial tests for project, version, draft, template, publish, fork, export, and AI authorization using anonymous, owner, and non-owner identities. Verify prompt quotas, request limits, cooldown responses, concurrent mutations, and transactional rollback against PostgreSQL without relying only on UI restrictions.
 
 ## 72. Test malicious scene and AI patch payloads
 Goal: Reject unsafe structured input before it can be saved, previewed, or exported.

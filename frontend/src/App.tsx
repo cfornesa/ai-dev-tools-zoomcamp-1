@@ -1,15 +1,24 @@
-/**
- * Bootstrap-only entry component.
- *
- * No product features live here yet — this exists so a fresh checkout has
- * something the test suite can render and assert against.
- */
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+
+import { AuthProvider } from './auth/AuthContext';
+import Layout from './components/Layout';
+import EditorPlaceholder from './pages/EditorPlaceholder';
+import Home from './pages/Home';
+import ProjectMetadataForm from './pages/ProjectMetadataForm';
+
 function App() {
   return (
-    <main>
-      <h1>Gesture-Reactive Web Animation Studio</h1>
-      <p>Frontend bootstrap placeholder.</p>
-    </main>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="projects/:id" element={<EditorPlaceholder />} />
+            <Route path="projects/:id/settings" element={<ProjectMetadataForm />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

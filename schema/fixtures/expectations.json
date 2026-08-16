@@ -1,0 +1,10 @@
+{
+  "$comment": "Single source of truth for what each fixture should do. Both the TS (frontend/src/validation) and Python (config/scenes/validation.py) test suites assert their validator's outcome against this file for every fixture — see schema/README.md.",
+  "valid/blank.json": { "valid": true },
+  "valid/feature_rich.json": { "valid": true },
+  "invalid/unknown_field.json": { "valid": false, "rule": "unknownField" },
+  "invalid/missing_required.json": { "valid": false, "rule": "missingRequired" },
+  "invalid/wrong_type.json": { "valid": false, "rule": "wrongType" },
+  "invalid/unsupported_version.json": { "valid": false, "rule": "unsupportedSchemaVersion" },
+  "invalid/dangling_reference.json": { "valid": false, "rule": "danglingReference" }
+}

@@ -1,0 +1,16 @@
+{
+  "$comment": "Centralized V1 scene complexity/payload limits (Task 7). Both validators (frontend/src/validation, config/scenes/validation.py) load this file and enforce it identically after schema/scene.schema.json structural validation passes. Per-field numeric ranges (opacity, rotation, canvas size, etc.) live in scene.schema.json itself; this file governs scene-wide counts and total payload size.",
+  "maxShapes": 200,
+  "maxGroups": 50,
+  "maxGroupNestingDepth": 6,
+  "maxGroupChildIds": 100,
+  "maxLayers": 20,
+  "maxPathPoints": 500,
+  "maxGraphNodes": 100,
+  "maxGraphConnections": 150,
+  "maxConditionalNodes": 3,
+  "maxBindings": 100,
+  "maxParticleEmitters": 4,
+  "maxTotalParticleRate": 800,
+  "maxScenePayloadBytes": 307200
+}

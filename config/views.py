@@ -39,3 +39,16 @@ def health(request):
         },
         status=200 if db_ok else 503,
     )
+
+
+def whoami(request):
+    """Minimal protected JSON route (Task 12/16): who, if anyone, is signed in.
+
+    Returns 401 JSON rather than redirecting: a redirect can't be
+    distinguished from a real 200 by `fetch()` without `redirect: 'manual'`
+    gymnastics, and the frontend (Task 16) needs a plain status check to
+    decide whether to show the gallery or a signed-out state.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Authentication required."}, status=401)
+    return JsonResponse({"username": request.user.username, "email": request.user.email})

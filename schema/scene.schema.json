@@ -1,0 +1,404 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gesture-reactive-studio/schema/scene.schema.json",
+  "title": "Scene",
+  "description": "Canonical, renderer-neutral V1 scene document. See schema/README.md for the versioning policy and validation model. This schema enforces document *shape* (structure, types, enums, per-field value ranges); scene-wide complexity and payload-size limits (max shape count, max conditional nodes, etc.) are enforced separately by the validators in schema/limits.json, not by this file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "canvas",
+    "renderer",
+    "layers",
+    "shapes",
+    "groups",
+    "bindings",
+    "graph",
+    "accessibility",
+    "randomness"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "description": "Document format version. V1 validators only accept the value 1; any other value is an unsupported schema version and is rejected before any other validation runs.",
+      "const": 1
+    },
+    "id": { "$ref": "#/$defs/id" },
+    "canvas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "backgroundColor"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 16, "maximum": 4096 },
+        "height": { "type": "integer", "minimum": 16, "maximum": 4096 },
+        "backgroundColor": { "$ref": "#/$defs/color" }
+      }
+    },
+    "renderer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preferred"],
+      "properties": {
+        "preferred": {
+          "description": "V1 ships only the p5.js adapter; the enum is intentionally narrow rather than aspirational.",
+          "const": "p5"
+        }
+      }
+    },
+    "layers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/layer" }
+    },
+    "shapes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/shape" }
+    },
+    "groups": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/group" }
+    },
+    "bindings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/binding" }
+    },
+    "graph": { "$ref": "#/$defs/graph" },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reducedMotion"],
+      "properties": {
+        "reducedMotion": {
+          "description": "'auto' follows the system prefers-reduced-motion preference; 'on'/'off' are an explicit manual override.",
+          "enum": ["auto", "on", "off"]
+        }
+      }
+    },
+    "demoSignals": { "$ref": "#/$defs/demoSignals" },
+    "randomness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "enabled"],
+      "properties": {
+        "seed": {
+          "description": "Editor- or AI-generated seed. Users do not manually re-roll seeds in V1; duplication, forking, restoring, and exporting preserve this value.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "enabled": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Stable identifier for any object with identity in the scene (shape, group, layer, binding, graph node, graph connection).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+    },
+    "unitInterval": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "transform2D": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "scaleX", "scaleY", "rotation", "opacity"],
+      "properties": {
+        "x": { "type": "number", "minimum": -100000, "maximum": 100000 },
+        "y": { "type": "number", "minimum": -100000, "maximum": 100000 },
+        "scaleX": { "type": "number", "minimum": 0, "maximum": 100 },
+        "scaleY": { "type": "number", "minimum": 0, "maximum": 100 },
+        "rotation": { "type": "number", "minimum": -360, "maximum": 360 },
+        "opacity": { "$ref": "#/$defs/unitInterval" }
+      }
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fill", "stroke", "strokeWidth"],
+      "properties": {
+        "fill": { "anyOf": [{ "$ref": "#/$defs/color" }, { "type": "null" }] },
+        "stroke": { "anyOf": [{ "$ref": "#/$defs/color" }, { "type": "null" }] },
+        "strokeWidth": { "type": "number", "minimum": 0, "maximum": 64 }
+      }
+    },
+    "trail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["length"],
+      "properties": {
+        "length": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "physicsForce": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gravity": { "type": "number", "minimum": -10, "maximum": 10 },
+        "drag": { "$ref": "#/$defs/unitInterval" },
+        "forceX": { "type": "number", "minimum": -10, "maximum": 10 },
+        "forceY": { "type": "number", "minimum": -10, "maximum": 10 }
+      }
+    },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "minimum": -100000, "maximum": 100000 },
+        "y": { "type": "number", "minimum": -100000, "maximum": 100000 }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "order", "visible", "locked"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "order": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "visible": { "type": "boolean" },
+        "locked": { "type": "boolean" }
+      }
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "layerId", "childIds", "transform", "visible", "locked"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "layerId": { "$ref": "#/$defs/id" },
+        "childIds": {
+          "description": "IDs of shapes and/or groups that belong to this group; must reference existing objects and never include the group's own id (validators, not this schema, check referential integrity and cycles).",
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" },
+          "uniqueItems": true
+        },
+        "transform": { "$ref": "#/$defs/transform2D" },
+        "visible": { "type": "boolean" },
+        "locked": { "type": "boolean" }
+      }
+    },
+    "shape": {
+      "type": "object",
+      "required": ["id", "type", "layerId", "groupId", "transform", "style"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["circle", "rect", "line", "path", "particleEmitter"] },
+        "layerId": { "$ref": "#/$defs/id" },
+        "groupId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+        "transform": { "$ref": "#/$defs/transform2D" },
+        "style": { "$ref": "#/$defs/style" },
+        "trail": { "$ref": "#/$defs/trail" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "circle" } } },
+          "then": {
+            "required": ["radius"],
+            "properties": {
+              "id": true, "type": true, "layerId": true, "groupId": true,
+              "transform": true, "style": true, "trail": true,
+              "radius": { "type": "number", "minimum": 0.1, "maximum": 5000 }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "rect" } } },
+          "then": {
+            "required": ["width", "height", "cornerRadius"],
+            "properties": {
+              "id": true, "type": true, "layerId": true, "groupId": true,
+              "transform": true, "style": true, "trail": true,
+              "width": { "type": "number", "minimum": 0.1, "maximum": 5000 },
+              "height": { "type": "number", "minimum": 0.1, "maximum": 5000 },
+              "cornerRadius": { "type": "number", "minimum": 0, "maximum": 1000 }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "line" } } },
+          "then": {
+            "required": ["x2", "y2"],
+            "properties": {
+              "id": true, "type": true, "layerId": true, "groupId": true,
+              "transform": true, "style": true, "trail": true,
+              "x2": { "type": "number", "minimum": -100000, "maximum": 100000 },
+              "y2": { "type": "number", "minimum": -100000, "maximum": 100000 }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "path" } } },
+          "then": {
+            "required": ["points", "closed"],
+            "properties": {
+              "id": true, "type": true, "layerId": true, "groupId": true,
+              "transform": true, "style": true, "trail": true,
+              "points": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/point" },
+                "minItems": 2
+              },
+              "closed": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "particleEmitter" } } },
+          "then": {
+            "required": ["rate", "size", "lifespan", "speed", "palette"],
+            "properties": {
+              "id": true, "type": true, "layerId": true, "groupId": true,
+              "transform": true, "style": true, "trail": true,
+              "rate": { "type": "number", "minimum": 0, "maximum": 500 },
+              "size": { "type": "number", "minimum": 0.1, "maximum": 500 },
+              "lifespan": { "type": "number", "minimum": 0.1, "maximum": 30 },
+              "speed": { "type": "number", "minimum": 0, "maximum": 2000 },
+              "palette": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/color" },
+                "minItems": 1,
+                "maxItems": 8
+              },
+              "physics": { "$ref": "#/$defs/physicsForce" }
+            },
+            "additionalProperties": false
+          }
+        }
+      ]
+    },
+    "signal": {
+      "enum": [
+        "indexTipX", "indexTipY", "palmX", "palmY", "handDepth", "handSpeed",
+        "pinchStrength", "pinchDistance", "gestureConfidence", "handPresence",
+        "gestureState:openPalm", "gestureState:closedFist", "gestureState:pointingUp",
+        "gestureState:thumbsUp", "gestureState:victory", "gestureState:none",
+        "event:pinchStart", "event:pinchEnd", "event:gestureEnter", "event:gestureExit",
+        "event:handAppear", "event:handDisappear",
+        "handDistance", "handsClose", "handsFar", "event:handsBecameClose", "event:handsBecameFar"
+      ]
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "signal", "handTarget", "targetScope", "targetId", "targetProperty", "composition"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "signal": { "$ref": "#/$defs/signal" },
+        "handTarget": { "enum": ["primary", "left", "right", "either"] },
+        "targetScope": { "enum": ["shape", "group", "scene", "interaction"] },
+        "targetId": {
+          "description": "Required (a shape/group id) when targetScope is 'shape' or 'group'; must be null for 'scene' and 'interaction' (validators, not this schema, check referential integrity).",
+          "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
+        },
+        "targetProperty": {
+          "enum": [
+            "positionX", "positionY", "scaleX", "scaleY", "rotation", "opacity",
+            "fill", "stroke", "backgroundColor", "palette", "globalForce",
+            "triggerPreset", "toggleLayer", "emitParticles", "resetScene"
+          ]
+        },
+        "composition": {
+          "description": "V1 supports only 'replace': one active continuous binding per target channel.",
+          "const": "replace"
+        },
+        "mapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "inMin": { "type": "number" },
+            "inMax": { "type": "number" },
+            "outMin": { "type": "number" },
+            "outMax": { "type": "number" }
+          }
+        },
+        "smoothing": { "$ref": "#/$defs/unitInterval" },
+        "closeThreshold": { "$ref": "#/$defs/unitInterval" },
+        "farThreshold": { "$ref": "#/$defs/unitInterval" },
+        "releaseThreshold": { "$ref": "#/$defs/unitInterval" },
+        "holdTimeMs": { "type": "integer", "minimum": 0, "maximum": 10000 }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "connections"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/graphNode" }
+        },
+        "connections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/graphConnection" }
+        }
+      }
+    },
+    "graphNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "type", "params", "position"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "family": { "enum": ["input", "transform", "condition", "visual", "flow", "output"] },
+        "type": {
+          "description": "Specific node type within its family (validators check the type belongs to an allowlisted set per family, e.g. transform/mapRange, condition/ifElse).",
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9]{0,63}$"
+        },
+        "params": {
+          "description": "Node configuration. Leaf values only (numbers, strings, booleans, null) — never nested executable structures.",
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              { "type": "number" },
+              { "type": "string", "maxLength": 200 },
+              { "type": "boolean" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "position": {
+          "description": "Editor-only graph layout position; has no effect on runtime behavior.",
+          "$ref": "#/$defs/point"
+        }
+      }
+    },
+    "graphConnection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fromNodeId", "fromPort", "toNodeId", "toPort"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "fromNodeId": { "$ref": "#/$defs/id" },
+        "fromPort": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "toNodeId": { "$ref": "#/$defs/id" },
+        "toPort": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "demoSignals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "palmX": { "$ref": "#/$defs/unitInterval" },
+        "palmY": { "$ref": "#/$defs/unitInterval" },
+        "pinchStrength": { "$ref": "#/$defs/unitInterval" },
+        "handDistance": { "$ref": "#/$defs/unitInterval" },
+        "gestureState": {
+          "enum": ["openPalm", "closedFist", "pointingUp", "thumbsUp", "victory", "none"]
+        }
+      }
+    }
+  }
+}

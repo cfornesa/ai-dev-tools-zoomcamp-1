@@ -73,6 +73,15 @@ ALLOWED_HOSTS = [
 # deployment boundary" section and AGENTS.md for the full picture.
 DATABASE_URL = get_required_env('DATABASE_URL')
 
+# Google OAuth (Task 12). Required and validated at settings-load time,
+# like every other secret here. Real values are provisioned per Task 75;
+# until then this fails fast with a clear message just like a missing
+# DJANGO_SECRET_KEY would, and config/test_settings.py supplies safe
+# placeholder values so the offline test suite doesn't need real
+# credentials. See AGENTS.md and .env.example.
+GOOGLE_OAUTH_CLIENT_ID = get_required_env('GOOGLE_OAUTH_CLIENT_ID')
+GOOGLE_OAUTH_CLIENT_SECRET = get_required_env('GOOGLE_OAUTH_CLIENT_SECRET')
+
 
 # Application definition
 
@@ -83,7 +92,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'rest_framework',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'scenes',
 ]
 
 MIDDLEWARE = [
@@ -92,9 +107,42 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+SITE_ID = 1
+
+# Google sign-in only in V1 (see _docs/plan.md), minimal identity scopes
+# only (no Drive/Calendar/etc access), authorization-code flow with PKCE
+# (access_type "online": no offline refresh token, since we don't need
+# ongoing Google API access after sign-in).
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': GOOGLE_OAUTH_CLIENT_ID,
+            'secret': GOOGLE_OAUTH_CLIENT_SECRET,
+            'key': '',
+        },
+        'SCOPE': ['openid', 'email', 'profile'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'OAUTH_PKCE_ENABLED': True,
+    },
+}
+
+# Google already verifies the account's email before we ever see it.
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 
 ROOT_URLCONF = 'config.urls'
 

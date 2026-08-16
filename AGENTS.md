@@ -2,6 +2,25 @@ Layout
 
 - Backend: Django project at the repo root (`manage.py`, `config/`, `tests/`)
 - Frontend: React/TypeScript/Vite app in `frontend/`
+- `scenes/`: Django app for the canonical scene domain — `validation.py`
+  (Tasks 5-7), `models.py` (Tasks 8-10), `permissions.py` (Task 11), the
+  single authorization service every project/version/draft/template
+  endpoint must go through.
+- `schema/`: the canonical scene JSON Schema, complexity/payload limits,
+  and shared fixtures — the single contract both `scenes/validation.py`
+  and `frontend/src/validation/scene.ts` validate against. See
+  `schema/README.md`.
+- `frontend/src/api/`: typed fetch wrappers for the Django API
+  (`client.ts` handles the session cookie + CSRF header; `auth.ts`,
+  `projects.ts` are the per-resource calls). Requests use relative paths
+  (`/api/...`) — `vite.config.ts` proxies them to Django in dev so the
+  browser sees everything as same-origin (no CORS/SameSite cookie
+  configuration needed).
+- `frontend/src/auth/`: `AuthProvider`/`useAuth` — who, if anyone, is
+  signed in, checked once via `GET /api/whoami/`.
+- `frontend/src/pages/`, `frontend/src/components/`: routed pages
+  (`Gallery`, `ProjectMetadataForm`, `EditorPlaceholder`, `Home`) and
+  shared UI (`ProjectCard`, `Layout`) — see `App.tsx` for the route table.
 
 Environment setup (clean checkout)
 
@@ -26,6 +45,11 @@ Replit, point it at your own PostgreSQL server (see `.env.example`).
    - Set `DJANGO_SECRET_KEY` to a real generated value:
      `uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`
    - Set `DATABASE_URL` to a real PostgreSQL connection URL.
+   - Set `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` to a real
+     Google OAuth client (see `.env.example`); Google sign-in doesn't work
+     against real accounts with the placeholder values, but everything
+     else — including the whole test suite — works fine without them
+     until [issue #75](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/75) provisions real ones.
 3. Install frontend dependencies: `cd frontend && npm install`
 4. Create your local frontend env file: `cp frontend/.env.example frontend/.env`
 5. Apply database migrations: `uv run --env-file .env python manage.py migrate`
@@ -33,6 +57,8 @@ Replit, point it at your own PostgreSQL server (see `.env.example`).
 7. In a second terminal, start the frontend dev server: `cd frontend && npm run dev`
 8. Check application and database availability at any time:
    `GET /health/` (no connection details are exposed in the response).
+9. Sign in with Google at `/accounts/login/`; `GET /api/whoami/` is a
+   minimal example of a login-required route.
 
 `--env-file .env` (a built-in `uv run` flag, not an extra dependency)
 loads `.env` into the process environment for that command. Vite loads

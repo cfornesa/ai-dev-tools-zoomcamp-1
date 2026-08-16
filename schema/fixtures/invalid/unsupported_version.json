@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 2,
+  "id": "scene-unsupported-version",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#ffffff" },
+  "renderer": { "preferred": "p5" },
+  "layers": [],
+  "shapes": [],
+  "groups": [],
+  "bindings": [],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "randomness": { "seed": 0, "enabled": false }
+}

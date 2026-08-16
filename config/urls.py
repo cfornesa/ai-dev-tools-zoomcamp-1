@@ -16,11 +16,18 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
-from config.views import health
+from config.views import health, whoami
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('health/', health, name='health'),
+    path('api/whoami/', whoami, name='whoami'),
+    path('api/', include('scenes.urls')),
+    # Google sign-in (Task 12): exposes /accounts/login/, /accounts/logout/,
+    # /accounts/google/login/, and /accounts/google/login/callback/ — the
+    # only redirect URI that must be registered with Google (see
+    # .env.example). No other accounts/* path is a valid OAuth target.
+    path('accounts/', include('allauth.urls')),
 ]

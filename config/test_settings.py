@@ -35,6 +35,12 @@ os.environ.setdefault("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 os.environ.setdefault(
     "DATABASE_URL", "postgres://placeholder:placeholder@localhost:5432/placeholder"
 )
+os.environ.setdefault(
+    "GOOGLE_OAUTH_CLIENT_ID", "test-google-oauth-client-id.apps.googleusercontent.com"
+)
+os.environ.setdefault(
+    "GOOGLE_OAUTH_CLIENT_SECRET", "test-google-oauth-client-secret-not-for-production"
+)
 
 from config.settings import *  # noqa: E402,F401,F403
 

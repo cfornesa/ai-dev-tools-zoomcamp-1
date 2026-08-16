@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-feature-rich",
+  "canvas": { "width": 1024, "height": 768, "backgroundColor": "#101014" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-bg", "name": "Background", "order": 0, "visible": true, "locked": false },
+    { "id": "layer-fg", "name": "Foreground", "order": 1, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-circle",
+      "type": "circle",
+      "layerId": "layer-fg",
+      "groupId": "group-cluster",
+      "transform": { "x": 100, "y": 150, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#ff5533", "stroke": "#000000", "strokeWidth": 2 },
+      "trail": { "length": 12 },
+      "radius": 40
+    },
+    {
+      "id": "shape-rect",
+      "type": "rect",
+      "layerId": "layer-fg",
+      "groupId": "group-cluster",
+      "transform": { "x": 250, "y": 150, "scaleX": 1, "scaleY": 1, "rotation": 15, "opacity": 0.9 },
+      "style": { "fill": "#33aaff", "stroke": null, "strokeWidth": 0 },
+      "width": 80,
+      "height": 50,
+      "cornerRadius": 6
+    },
+    {
+      "id": "shape-line",
+      "type": "line",
+      "layerId": "layer-bg",
+      "groupId": null,
+      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": null, "stroke": "#ffffff", "strokeWidth": 3 },
+      "x2": 400,
+      "y2": 300
+    },
+    {
+      "id": "shape-path",
+      "type": "path",
+      "layerId": "layer-bg",
+      "groupId": null,
+      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#22cc88", "stroke": "#004422", "strokeWidth": 1 },
+      "points": [
+        { "x": 0, "y": 0 },
+        { "x": 50, "y": 20 },
+        { "x": 30, "y": 80 }
+      ],
+      "closed": true
+    },
+    {
+      "id": "shape-particles",
+      "type": "particleEmitter",
+      "layerId": "layer-fg",
+      "groupId": null,
+      "transform": { "x": 500, "y": 400, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#ffcc00", "stroke": null, "strokeWidth": 0 },
+      "rate": 20,
+      "size": 4,
+      "lifespan": 2.5,
+      "speed": 60,
+      "palette": ["#ffcc00", "#ff6600"],
+      "physics": { "gravity": 0.5, "drag": 0.1, "forceX": 0, "forceY": 0 }
+    }
+  ],
+  "groups": [
+    {
+      "id": "group-cluster",
+      "name": "Cluster",
+      "layerId": "layer-fg",
+      "childIds": ["shape-circle", "shape-rect"],
+      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "bindings": [
+    {
+      "id": "binding-follow-x",
+      "signal": "indexTipX",
+      "handTarget": "primary",
+      "targetScope": "shape",
+      "targetId": "shape-circle",
+      "targetProperty": "positionX",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 1024 },
+      "smoothing": 0.3
+    },
+    {
+      "id": "binding-distance-scale",
+      "signal": "handDistance",
+      "handTarget": "either",
+      "targetScope": "group",
+      "targetId": "group-cluster",
+      "targetProperty": "scaleX",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0.5, "outMax": 2 },
+      "closeThreshold": 0.2,
+      "farThreshold": 0.8,
+      "releaseThreshold": 0.1,
+      "holdTimeMs": 150
+    },
+    {
+      "id": "binding-pinch-emit",
+      "signal": "event:pinchStart",
+      "handTarget": "primary",
+      "targetScope": "interaction",
+      "targetId": null,
+      "targetProperty": "emitParticles",
+      "composition": "replace"
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node-input-pinch",
+        "family": "input",
+        "type": "handSignal",
+        "params": { "signal": "pinchStrength" },
+        "position": { "x": 0, "y": 0 }
+      },
+      {
+        "id": "node-transform-map",
+        "family": "transform",
+        "type": "mapRange",
+        "params": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 100 },
+        "position": { "x": 200, "y": 0 }
+      },
+      {
+        "id": "node-condition-if",
+        "family": "condition",
+        "type": "ifElse",
+        "params": { "comparison": "greaterThan", "threshold": 50 },
+        "position": { "x": 400, "y": 0 }
+      },
+      {
+        "id": "node-visual-shape",
+        "family": "visual",
+        "type": "shapeProperty",
+        "params": { "targetId": "shape-circle", "property": "opacity" },
+        "position": { "x": 600, "y": -50 }
+      },
+      {
+        "id": "node-flow-cooldown",
+        "family": "flow",
+        "type": "cooldown",
+        "params": { "milliseconds": 500 },
+        "position": { "x": 600, "y": 50 }
+      },
+      {
+        "id": "node-output-preview",
+        "family": "output",
+        "type": "previewTarget",
+        "params": {},
+        "position": { "x": 800, "y": 0 }
+      }
+    ],
+    "connections": [
+      {
+        "id": "conn-1",
+        "fromNodeId": "node-input-pinch",
+        "fromPort": "value",
+        "toNodeId": "node-transform-map",
+        "toPort": "in"
+      },
+      {
+        "id": "conn-2",
+        "fromNodeId": "node-transform-map",
+        "fromPort": "out",
+        "toNodeId": "node-condition-if",
+        "toPort": "value"
+      },
+      {
+        "id": "conn-3",
+        "fromNodeId": "node-condition-if",
+        "fromPort": "true",
+        "toNodeId": "node-visual-shape",
+        "toPort": "trigger"
+      },
+      {
+        "id": "conn-4",
+        "fromNodeId": "node-condition-if",
+        "fromPort": "false",
+        "toNodeId": "node-flow-cooldown",
+        "toPort": "trigger"
+      },
+      {
+        "id": "conn-5",
+        "fromNodeId": "node-visual-shape",
+        "fromPort": "out",
+        "toNodeId": "node-output-preview",
+        "toPort": "in"
+      }
+    ]
+  },
+  "accessibility": { "reducedMotion": "auto" },
+  "demoSignals": {
+    "palmX": 0.5,
+    "palmY": 0.4,
+    "pinchStrength": 0.2,
+    "handDistance": 0.6,
+    "gestureState": "openPalm"
+  },
+  "randomness": { "seed": 483920, "enabled": true }
+}

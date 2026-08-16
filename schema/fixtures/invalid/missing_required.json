@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-missing-required",
+  "renderer": { "preferred": "p5" },
+  "layers": [],
+  "shapes": [],
+  "groups": [],
+  "bindings": [],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "randomness": { "seed": 0, "enabled": false }
+}

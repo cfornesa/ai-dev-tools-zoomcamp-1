@@ -5,8 +5,11 @@ description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
     "django>=6.1",
+    "django-allauth>=65.19.1",
     "djangorestframework>=3.18.0",
+    "jsonschema>=4.26.0",
     "psycopg[binary]>=3.3.4",
+    "requests>=2.34.2",
 ]
 
 [dependency-groups]
@@ -16,6 +19,7 @@ dev = [
     "pytest>=9.1.1",
     "pytest-django>=4.14.0",
     "ruff>=0.16.3",
+    "types-jsonschema>=4.26.0.20260518",
 ]
 
 [tool.pytest.ini_options]
@@ -50,6 +54,16 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+# django-allauth ships no type stubs / py.typed marker.
+module = "allauth.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# djangorestframework ships no type stubs / py.typed marker.
+module = "rest_framework.*"
+ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.test_settings"

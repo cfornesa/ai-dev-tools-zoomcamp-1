@@ -15,6 +15,8 @@ from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 
+from config.database import parse_database_url
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -62,18 +64,14 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
-# PostgreSQL connection settings.
-#
-# These are required (and validated at settings-load time, so a missing
-# variable fails fast with a clear message) even though the `DATABASES`
-# setting below still points at SQLite. Wiring these into an actual
-# PostgreSQL connection is Task 3's job; this task only guarantees the
-# configuration is present and documented ahead of that work.
-POSTGRES_DB = get_required_env('POSTGRES_DB')
-POSTGRES_USER = get_required_env('POSTGRES_USER')
-POSTGRES_PASSWORD = get_required_env('POSTGRES_PASSWORD')
-POSTGRES_HOST = get_required_env('POSTGRES_HOST')
-POSTGRES_PORT = get_required_env('POSTGRES_PORT')
+# PostgreSQL connection, supplied as a single `DATABASE_URL` (Replit's
+# convention for its managed PostgreSQL databases: a development Repl and
+# a deployed production environment each get their own URL, injected as
+# an environment variable — Django only ever reads the one it's given).
+# Required and validated at settings-load time, so a missing or malformed
+# value fails fast with a clear message. See `_docs/plan.md`'s "Database
+# deployment boundary" section and AGENTS.md for the full picture.
+DATABASE_URL = get_required_env('DATABASE_URL')
 
 
 # Application definition
@@ -122,10 +120,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': parse_database_url(DATABASE_URL),
 }
 
 

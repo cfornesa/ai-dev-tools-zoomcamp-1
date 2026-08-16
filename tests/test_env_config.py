@@ -1,4 +1,4 @@
-"""Tests for environment-variable-driven Django settings (issue #2).
+"""Tests for environment-variable-driven Django settings (issue #2, Task 3).
 
 These exercise `config/settings.py` directly by re-importing it under a
 controlled environment, rather than through the already-configured
@@ -15,11 +15,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 REQUIRED_ENV_VARS = [
     "DJANGO_SECRET_KEY",
-    "POSTGRES_DB",
-    "POSTGRES_USER",
-    "POSTGRES_PASSWORD",
-    "POSTGRES_HOST",
-    "POSTGRES_PORT",
+    "DATABASE_URL",
 ]
 
 # All variables config/settings.py and config/test_settings.py look at,
@@ -35,11 +31,7 @@ VALID_ENV = {
     "DJANGO_SECRET_KEY": "example-derived-secret-key",
     "DJANGO_DEBUG": "True",
     "DJANGO_ALLOWED_HOSTS": "localhost,127.0.0.1",
-    "POSTGRES_DB": "gesture_studio",
-    "POSTGRES_USER": "gesture_studio",
-    "POSTGRES_PASSWORD": "changeme",
-    "POSTGRES_HOST": "localhost",
-    "POSTGRES_PORT": "5432",
+    "DATABASE_URL": "postgres://gesture_studio:changeme@localhost:5432/gesture_studio",
 }
 
 
@@ -87,11 +79,14 @@ def test_valid_example_derived_env_loads_settings(monkeypatch):
     assert settings_module.SECRET_KEY == VALID_ENV["DJANGO_SECRET_KEY"]
     assert settings_module.DEBUG is True
     assert settings_module.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
-    assert settings_module.POSTGRES_DB == VALID_ENV["POSTGRES_DB"]
-    assert settings_module.POSTGRES_USER == VALID_ENV["POSTGRES_USER"]
-    assert settings_module.POSTGRES_PASSWORD == VALID_ENV["POSTGRES_PASSWORD"]
-    assert settings_module.POSTGRES_HOST == VALID_ENV["POSTGRES_HOST"]
-    assert settings_module.POSTGRES_PORT == VALID_ENV["POSTGRES_PORT"]
+    assert settings_module.DATABASES["default"] == {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "gesture_studio",
+        "USER": "gesture_studio",
+        "PASSWORD": "changeme",
+        "HOST": "localhost",
+        "PORT": "5432",
+    }
 
 
 def test_optional_debug_defaults_to_false_when_unset(monkeypatch):
@@ -112,3 +107,23 @@ def test_optional_allowed_hosts_defaults_when_unset(monkeypatch):
     settings_module = _reload_settings(monkeypatch, env)
 
     assert settings_module.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
+
+
+@pytest.mark.parametrize(
+    "bad_url,expected_message",
+    [
+        ("mysql://user:pass@localhost:3306/db", "postgres://' or 'postgresql://'"),
+        ("not-a-url-at-all", "postgres://' or 'postgresql://'"),
+        ("postgres:///missing-host", "missing a hostname"),
+        ("postgres://user:pass@localhost:5432/", "missing a database name"),
+    ],
+)
+def test_malformed_database_url_raises_clear_error(monkeypatch, bad_url, expected_message):
+    """A malformed DATABASE_URL fails fast with a message naming the problem."""
+    env = dict(VALID_ENV)
+    env["DATABASE_URL"] = bad_url
+
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        _reload_settings(monkeypatch, env)
+
+    assert expected_message in str(exc_info.value)

@@ -1,13 +1,13 @@
-import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/react';
 
-import App from './App'
+import App from './App';
 
 describe('App', () => {
   it('renders the placeholder heading', () => {
-    render(<App />)
+    render(<App />);
     expect(
       screen.getByRole('heading', { name: /gesture-reactive web animation studio/i }),
-    ).toBeInTheDocument()
-  })
-})
+    ).toBeInTheDocument();
+  });
+});

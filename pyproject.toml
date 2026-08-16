@@ -6,12 +6,16 @@ requires-python = ">=3.13"
 dependencies = [
     "django>=6.1",
     "djangorestframework>=3.18.0",
+    "psycopg[binary]>=3.3.4",
 ]
 
 [dependency-groups]
 dev = [
+    "django-stubs>=6.1.0",
+    "mypy>=2.3.1",
     "pytest>=9.1.1",
     "pytest-django>=4.14.0",
+    "ruff>=0.16.3",
 ]
 
 [tool.pytest.ini_options]
@@ -22,3 +26,30 @@ dev = [
 DJANGO_SETTINGS_MODULE = "config.test_settings"
 python_files = ["test_*.py", "*_test.py"]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main"]
+mypy_path = "."
+exclude = ["frontend/", "\\.venv/"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.django-stubs]
+django_settings_module = "config.test_settings"

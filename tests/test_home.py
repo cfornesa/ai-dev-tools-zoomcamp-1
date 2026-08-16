@@ -25,7 +25,7 @@ def test_django_is_set_up():
 
 @pytest.mark.django_db
 def test_health_endpoint_returns_200(client):
-    """A trivial placeholder view responds successfully."""
+    """The health endpoint reports the app and database as available."""
     response = client.get(reverse("health"))
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "database": "ok"}

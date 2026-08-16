@@ -10,7 +10,7 @@ function App() {
       <h1>Gesture-Reactive Web Animation Studio</h1>
       <p>Frontend bootstrap placeholder.</p>
     </main>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,0 +1,9 @@
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+.pytest_cache/
+
+# Editors / OS
+.DS_Store

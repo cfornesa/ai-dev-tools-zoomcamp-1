@@ -5,5 +5,8 @@ __pycache__/
 db.sqlite3
 .pytest_cache/
 
+# Environment variables (never commit secrets; .env.example stays tracked)
+.env
+
 # Editors / OS
 .DS_Store

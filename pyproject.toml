@@ -15,6 +15,10 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings"
+# config.test_settings supplies safe, non-secret default values for the
+# required environment variables config.settings needs (see
+# config/test_settings.py for why this can't just be a conftest.py), then
+# defers to config.settings for everything else.
+DJANGO_SETTINGS_MODULE = "config.test_settings"
 python_files = ["test_*.py", "*_test.py"]
 testpaths = ["tests"]

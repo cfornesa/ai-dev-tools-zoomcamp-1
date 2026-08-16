@@ -10,22 +10,70 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def get_required_env(name: str) -> str:
+    """Return a required environment variable, or fail loudly and clearly.
+
+    Required settings (secrets and PostgreSQL connection details) must be
+    supplied via the environment rather than defaulted in code. See
+    `.env.example` for the full list of variables this project uses and
+    `AGENTS.md` for the copyable setup commands, including how to load a
+    local `.env` file with `uv run --env-file .env ...`.
+    """
+    try:
+        return os.environ[name]
+    except KeyError:
+        raise ImproperlyConfigured(
+            f"Required environment variable '{name}' is not set. "
+            "Copy .env.example to .env, fill in a real value, and load it "
+            "into the environment (e.g. `uv run --env-file .env python "
+            "manage.py runserver`). See AGENTS.md for details."
+        ) from None
+
+
+def get_bool_env(name: str, default: bool) -> bool:
+    """Return an optional boolean environment variable."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-i+n&oium3fmsw^x!)r2!)ed1s%9941g+=zq7a(13naz9iel%r&'
+SECRET_KEY = get_required_env('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = get_bool_env('DJANGO_DEBUG', default=False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    if host.strip()
+]
+
+# PostgreSQL connection settings.
+#
+# These are required (and validated at settings-load time, so a missing
+# variable fails fast with a clear message) even though the `DATABASES`
+# setting below still points at SQLite. Wiring these into an actual
+# PostgreSQL connection is Task 3's job; this task only guarantees the
+# configuration is present and documented ahead of that work.
+POSTGRES_DB = get_required_env('POSTGRES_DB')
+POSTGRES_USER = get_required_env('POSTGRES_USER')
+POSTGRES_PASSWORD = get_required_env('POSTGRES_PASSWORD')
+POSTGRES_HOST = get_required_env('POSTGRES_HOST')
+POSTGRES_PORT = get_required_env('POSTGRES_PORT')
 
 
 # Application definition

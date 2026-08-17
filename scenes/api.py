@@ -177,7 +177,20 @@ class CannotModifyCurrentVersion(Exception):
 
 
 class SceneVersionDetailView(APIView):
-    """Task 15: soft-delete a single eligible (non-current) historical version."""
+    """Task 15: soft-delete a single eligible (non-current) historical version.
+
+    Also (Task 21): fetch a single version's full scene_json, so the editor
+    workspace can load the project's current version into a working copy.
+    The list endpoint (SceneVersionListCreateView.get) deliberately omits
+    scene_json for every row; this is the only read path that returns it
+    outside of a save/restore response.
+    """
+
+    def get(self, request, public_id, version_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.VERSION_READ, project)
+        version = _get_version_or_404(project, version_id)
+        return Response(SceneVersionDetailSerializer(version).data)
 
     def delete(self, request, public_id, version_id):
         project = _get_project_or_404(public_id)

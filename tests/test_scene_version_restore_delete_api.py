@@ -248,6 +248,49 @@ def test_anonymous_cannot_delete_and_gets_404(project_with_two_versions):
     assert v1.is_deleted is False
 
 
+# --- Version detail GET (Task 21: editor workspace loads the current
+# version's full scene_json to build its working copy) ---
+
+
+@pytest.mark.django_db
+def test_owner_can_get_version_detail_including_scene_json(owner_client, project_with_two_versions):
+    project, v1, v2 = project_with_two_versions
+
+    response = owner_client.get(_delete_url(project, v2))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == v2.id
+    assert body["scene_json"] == v2.scene_json
+
+
+@pytest.mark.django_db
+def test_non_owner_cannot_get_version_detail_and_gets_404(other_client, project_with_two_versions):
+    project, v1, v2 = project_with_two_versions
+
+    response = other_client.get(_delete_url(project, v2))
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_anonymous_cannot_get_version_detail_and_gets_404(project_with_two_versions):
+    project, v1, v2 = project_with_two_versions
+
+    response = APIClient().get(_delete_url(project, v2))
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_getting_a_nonexistent_version_returns_404(owner_client, project_with_two_versions):
+    project, v1, v2 = project_with_two_versions
+
+    response = owner_client.get(f"/api/projects/{project.public_id}/versions/999999/")
+
+    assert response.status_code == 404
+
+
 # --- PostgreSQL-only: locking, concurrency, rollback (Task 15) ---
 
 pytestmark_postgres = pytest.mark.skipif(

@@ -169,6 +169,64 @@ code {
   font-size: 18px;
 }
 
+.editor-workspace-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  padding: 0 24px;
+}
+
+.editor-panel-switcher {
+  display: flex;
+  gap: 8px;
+  margin: 16px 24px;
+}
+
+.editor-panel-tab {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 6px 16px;
+  cursor: pointer;
+}
+
+.editor-panel-tab[aria-selected='true'] {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.editor-workspace {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  margin: 0 24px 24px;
+  text-align: left;
+}
+
+.editor-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .editor-workspace {
+    flex-direction: column;
+  }
+
+  .editor-panel {
+    width: 100%;
+  }
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,

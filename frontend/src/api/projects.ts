@@ -17,6 +17,23 @@ export type Project = {
   updated_at: string;
 };
 
+/** A scene document is validated against ../../../schema/scene.schema.json
+ * (see validation/scene.ts); its exact shape isn't relevant to the API
+ * layer, which only ever passes it through untouched. */
+export type SceneDocument = Record<string, unknown>;
+
+export type SceneVersion = {
+  id: number;
+  sequence: number;
+  origin: string;
+  change_label: string | null;
+  created_by: string | null;
+  parent: number | null;
+  fork_source_version: number | null;
+  created_at: string;
+  scene_json: SceneDocument;
+};
+
 export type ProjectMetadataInput = Partial<
   Pick<
     Project,
@@ -43,6 +60,13 @@ export function updateProjectMetadata(id: string, data: ProjectMetadataInput): P
     method: 'PATCH',
     body: JSON.stringify(data),
   });
+}
+
+/** Task 21: fetch a single scene version, including its full scene_json,
+ * so the editor workspace can load the project's current version into a
+ * working copy. */
+export function getSceneVersion(projectId: string, versionId: number): Promise<SceneVersion> {
+  return apiFetch<SceneVersion>(`/api/projects/${projectId}/versions/${versionId}/`);
 }
 
 /** Task 18: atomically create a private project with one blank-canvas version.

@@ -6,6 +6,7 @@ import { hitTestTopmostShapeAt, shapeLabel, type Shape, type ShapeType } from '.
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useSceneEditor } from './useSceneEditor';
+import SceneOutlinePanel from './SceneOutlinePanel';
 
 const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
   { type: 'circle', label: 'Add circle' },
@@ -224,6 +225,8 @@ function EditorWorkspace() {
               ))}
             </ul>
           )}
+
+          <SceneOutlinePanel sceneEditor={sceneEditor} />
         </section>
 
         <section

@@ -217,7 +217,10 @@ code {
   box-sizing: border-box;
 }
 
-@media (max-width: 1024px) {
+/* Matches useIsNarrowViewport's `window.innerWidth < 1024` breakpoint
+   (frontend/src/pages/useIsNarrowViewport.ts): exactly 1024px must stay
+   side-by-side, so this query only applies strictly below it. */
+@media (max-width: 1023px) {
   .editor-workspace {
     flex-direction: column;
   }

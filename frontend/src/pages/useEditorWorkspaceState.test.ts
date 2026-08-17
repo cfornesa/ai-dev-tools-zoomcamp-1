@@ -11,6 +11,13 @@ vi.mock('../api/projects');
 const mockedGetProject = vi.mocked(projectsApi.getProject);
 const mockedGetSceneVersion = vi.mocked(projectsApi.getSceneVersion);
 const mockedUpdateProjectMetadata = vi.mocked(projectsApi.updateProjectMetadata);
+const mockedCreateBlankProject = vi.mocked(projectsApi.createBlankProject);
+
+// Every mutating (POST/PATCH/PUT/DELETE-issuing) call the projects API module
+// exposes today. Asserted against as a group below so that editing the
+// working copy is proven not to fire *any* mutation, not just the one this
+// module happens to call elsewhere in the app.
+const mockedMutatingCalls = [mockedUpdateProjectMetadata, mockedCreateBlankProject];
 
 function baseProject(overrides: Partial<Project> = {}): Project {
   return {
@@ -154,6 +161,10 @@ describe('useEditorWorkspaceState working-copy isolation', () => {
       typeof BLANK_SCENE | undefined;
     expect(persistedScene?.canvas.backgroundColor).toBe('#ffffff');
 
-    expect(mockedUpdateProjectMetadata).not.toHaveBeenCalled();
+    // Not just the one wrapper this hook happens to reach for elsewhere —
+    // no mutating call of any kind fires from editing the working copy.
+    for (const mutatingCall of mockedMutatingCalls) {
+      expect(mutatingCall).not.toHaveBeenCalled();
+    }
   });
 });

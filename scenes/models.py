@@ -341,6 +341,7 @@ class Template(models.Model):
         BUILT_IN = "built_in", "Built-in"
         PRIVATE = "private", "Private"
 
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     source_type = models.CharField(max_length=10, choices=SourceType.choices)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,

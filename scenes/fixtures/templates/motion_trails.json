@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "template-motion-trails",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#0c0a09" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-trail-dot",
+      "type": "circle",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 400, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#f472b6", "stroke": null, "strokeWidth": 0 },
+      "trail": { "length": 60 },
+      "radius": 18
+    }
+  ],
+  "groups": [],
+  "bindings": [
+    {
+      "id": "binding-trail-x",
+      "signal": "indexTipX",
+      "handTarget": "primary",
+      "targetScope": "shape",
+      "targetId": "shape-trail-dot",
+      "targetProperty": "positionX",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 800 },
+      "smoothing": 0.1
+    },
+    {
+      "id": "binding-trail-y",
+      "signal": "indexTipY",
+      "handTarget": "primary",
+      "targetScope": "shape",
+      "targetId": "shape-trail-dot",
+      "targetProperty": "positionY",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 600 },
+      "smoothing": 0.1
+    }
+  ],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "none" },
+  "randomness": { "seed": 0, "enabled": false }
+}

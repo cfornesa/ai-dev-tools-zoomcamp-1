@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "template-open-palm-bloom",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#052e16" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-petal-1",
+      "type": "circle",
+      "layerId": "layer-1",
+      "groupId": "group-bloom",
+      "transform": { "x": 400, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 0.9 },
+      "style": { "fill": "#4ade80", "stroke": null, "strokeWidth": 0 },
+      "trail": { "length": 0 },
+      "radius": 40
+    },
+    {
+      "id": "shape-petal-2",
+      "type": "circle",
+      "layerId": "layer-1",
+      "groupId": "group-bloom",
+      "transform": { "x": 460, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 0.9 },
+      "style": { "fill": "#86efac", "stroke": null, "strokeWidth": 0 },
+      "trail": { "length": 0 },
+      "radius": 40
+    }
+  ],
+  "groups": [
+    {
+      "id": "group-bloom",
+      "name": "Bloom",
+      "layerId": "layer-1",
+      "childIds": ["shape-petal-1", "shape-petal-2"],
+      "transform": { "x": 0, "y": 0, "scaleX": 0.4, "scaleY": 0.4, "rotation": 0, "opacity": 1 },
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "bindings": [
+    {
+      "id": "binding-bloom-scale-x",
+      "signal": "gestureState:openPalm",
+      "handTarget": "primary",
+      "targetScope": "group",
+      "targetId": "group-bloom",
+      "targetProperty": "scaleX",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0.4, "outMax": 2 },
+      "smoothing": 0.4
+    },
+    {
+      "id": "binding-bloom-scale-y",
+      "signal": "gestureState:openPalm",
+      "handTarget": "primary",
+      "targetScope": "group",
+      "targetId": "group-bloom",
+      "targetProperty": "scaleY",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0.4, "outMax": 2 },
+      "smoothing": 0.4
+    }
+  ],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "openPalm" },
+  "randomness": { "seed": 0, "enabled": false }
+}

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "template-pinch-particle-burst",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#111827" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-emitter",
+      "type": "particleEmitter",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 400, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#f97316", "stroke": null, "strokeWidth": 0 },
+      "trail": { "length": 0 },
+      "rate": 0,
+      "size": 6,
+      "lifespan": 1.5,
+      "speed": 220,
+      "palette": ["#f97316", "#facc15", "#ef4444"],
+      "physics": { "gravity": 0.2, "drag": 0.05, "forceX": 0, "forceY": 0 }
+    }
+  ],
+  "groups": [],
+  "bindings": [
+    {
+      "id": "binding-pinch-emit",
+      "signal": "event:pinchStart",
+      "handTarget": "primary",
+      "targetScope": "interaction",
+      "targetId": null,
+      "targetProperty": "emitParticles",
+      "composition": "replace"
+    }
+  ],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0.8, "handDistance": 0.5, "gestureState": "none" },
+  "randomness": { "seed": 91177, "enabled": true }
+}

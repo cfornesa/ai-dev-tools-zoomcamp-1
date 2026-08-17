@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "template-svg-kinetic-poster",
+  "canvas": { "width": 900, "height": 1200, "backgroundColor": "#fafaf9" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-stroke-a",
+      "type": "path",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": null, "stroke": "#111827", "strokeWidth": 6 },
+      "trail": { "length": 0 },
+      "points": [
+        { "x": 120, "y": 200 },
+        { "x": 420, "y": 260 },
+        { "x": 240, "y": 520 },
+        { "x": 700, "y": 640 }
+      ],
+      "closed": false
+    },
+    {
+      "id": "shape-stroke-b",
+      "type": "path",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": null, "stroke": "#dc2626", "strokeWidth": 4 },
+      "trail": { "length": 0 },
+      "points": [
+        { "x": 150, "y": 800 },
+        { "x": 500, "y": 760 },
+        { "x": 780, "y": 980 }
+      ],
+      "closed": false
+    }
+  ],
+  "groups": [],
+  "bindings": [
+    {
+      "id": "binding-stroke-a-rotation",
+      "signal": "palmX",
+      "handTarget": "primary",
+      "targetScope": "shape",
+      "targetId": "shape-stroke-a",
+      "targetProperty": "rotation",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": -20, "outMax": 20 },
+      "smoothing": 0.5
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node-input-speed",
+        "family": "input",
+        "type": "handSignal",
+        "params": { "signal": "handSpeed" },
+        "position": { "x": 0, "y": 0 }
+      },
+      {
+        "id": "node-transform-map",
+        "family": "transform",
+        "type": "mapRange",
+        "params": { "inMin": 0, "inMax": 1, "outMin": 0.4, "outMax": 1 },
+        "position": { "x": 200, "y": 0 }
+      },
+      {
+        "id": "node-visual-opacity",
+        "family": "visual",
+        "type": "shapeProperty",
+        "params": { "targetId": "shape-stroke-b", "property": "opacity" },
+        "position": { "x": 400, "y": 0 }
+      },
+      {
+        "id": "node-output-preview",
+        "family": "output",
+        "type": "previewTarget",
+        "params": {},
+        "position": { "x": 600, "y": 0 }
+      }
+    ],
+    "connections": [
+      {
+        "id": "conn-1",
+        "fromNodeId": "node-input-speed",
+        "fromPort": "value",
+        "toNodeId": "node-transform-map",
+        "toPort": "in"
+      },
+      {
+        "id": "conn-2",
+        "fromNodeId": "node-transform-map",
+        "fromPort": "out",
+        "toNodeId": "node-visual-opacity",
+        "toPort": "trigger"
+      },
+      {
+        "id": "conn-3",
+        "fromNodeId": "node-visual-opacity",
+        "fromPort": "out",
+        "toNodeId": "node-output-preview",
+        "toPort": "in"
+      }
+    ]
+  },
+  "accessibility": { "reducedMotion": "auto" },
+  "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "none" },
+  "randomness": { "seed": 4181, "enabled": true }
+}

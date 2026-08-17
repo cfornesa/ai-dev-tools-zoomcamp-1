@@ -53,7 +53,7 @@ def test_built_in_template_without_owner_is_valid():
     )
 
     assert template.owner is None
-    assert Template.objects.built_in().get() == template
+    assert Template.objects.built_in().get(pk=template.pk) == template
 
 
 @pytest.mark.django_db

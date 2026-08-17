@@ -20,7 +20,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.models import Project, SceneVersion
+from scenes.models import Project, SceneVersion, Template
 from scenes.permissions import Action, can
 from scenes.serializers import (
     ProjectMetadataSerializer,
@@ -28,6 +28,7 @@ from scenes.serializers import (
     SceneVersionCreateSerializer,
     SceneVersionDetailSerializer,
     SceneVersionListSerializer,
+    TemplateSerializer,
 )
 from scenes.validation import SCHEMA_DIR, validate_scene
 
@@ -320,5 +321,71 @@ class BlankProjectCreateView(APIView):
             # return the winner's project, same as the pre-check path.
             existing = Project.objects.get(owner=request.user, creation_request_id=request_id)
             return Response(ProjectSerializer(existing).data, status=status.HTTP_200_OK)
+
+        return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
+
+
+def _get_template_or_404(public_id) -> Template:
+    try:
+        return Template.objects.select_related("owner").get(public_id=public_id)
+    except (Template.DoesNotExist, ValueError, TypeError) as exc:
+        raise Http404 from exc
+
+
+class TemplateListView(APIView):
+    """Task 20: browse built-in templates plus (if signed in) the caller's own private ones.
+
+    Built-in templates are visible to everyone, signed in or not — see
+    `Action.TEMPLATE_READ` in `scenes.permissions`. A private template is
+    never included for anyone but its owner.
+    """
+
+    def get(self, request):
+        templates = Template.objects.built_in()
+        if request.user.is_authenticated:
+            templates = templates | Template.objects.private_for(request.user)
+        return Response(TemplateSerializer(templates.select_related("owner"), many=True).data)
+
+
+class TemplateCloneView(APIView):
+    """Task 20: atomically clone a template's scene into a new private project.
+
+    The new project's first version is an independent copy of the
+    template's `scene_json` (deep-copied, given a fresh scene id) — no FK
+    or other mutable link back to the source `Template` is created, so a
+    later edit to a private template (or, in principle, a re-seed of the
+    built-in catalog) can never retroactively change a project that was
+    already cloned from it.
+    """
+
+    def post(self, request, public_id):
+        template = _get_template_or_404(public_id)
+        _require_or_404(request.user, Action.TEMPLATE_READ, template)
+
+        if not can(request.user, Action.PROJECT_CREATE):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        cloned_scene = copy.deepcopy(template.scene_json)
+        cloned_scene["id"] = f"scene-{uuid.uuid4()}"
+
+        result = validate_scene(cloned_scene)
+        if not result.valid:  # pragma: no cover — would mean a stored template is broken
+            return Response(
+                {"detail": "Internal error cloning this template."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        with transaction.atomic():
+            project = Project.objects.create(owner=request.user, title=template.name)
+            version = SceneVersion.objects.create(
+                project=project,
+                sequence=1,
+                scene_json=cloned_scene,
+                created_by=request.user,
+                origin=SceneVersion.Origin.MANUAL,
+                change_label=f"Cloned from template: {template.name}",
+            )
+            project.current_version = version
+            project.save(update_fields=["current_version", "updated_at"])
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)

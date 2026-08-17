@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from scenes.models import Project, SceneVersion
+from scenes.models import Project, SceneVersion, Template
 
 MAX_TAGS = 10
 MAX_TAG_LENGTH = 30
@@ -105,6 +105,28 @@ ALLOWED_MANUAL_SAVE_ORIGINS = (
     SceneVersion.Origin.AI_CREATE,
     SceneVersion.Origin.AI_EDIT,
 )
+
+
+class TemplateSerializer(serializers.ModelSerializer):
+    """List/detail representation (Task 20) — no scene_json, matching the project list
+    endpoint's own metadata-only shape; the full scene is only needed at clone time,
+    server-side, and is never sent to the browser just to render a gallery card."""
+
+    id = serializers.UUIDField(source="public_id", read_only=True)
+    owner = serializers.CharField(source="owner.username", default=None, read_only=True)
+
+    class Meta:
+        model = Template
+        fields = [
+            "id",
+            "source_type",
+            "owner",
+            "name",
+            "category",
+            "description",
+            "created_at",
+        ]
+        read_only_fields = fields
 
 
 class SceneVersionCreateSerializer(serializers.Serializer):

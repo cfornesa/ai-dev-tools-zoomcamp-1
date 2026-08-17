@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "template-physics-orbit",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#000814" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-core",
+      "type": "circle",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 400, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#facc15", "stroke": null, "strokeWidth": 0 },
+      "trail": { "length": 0 },
+      "radius": 24
+    },
+    {
+      "id": "shape-orbiter",
+      "type": "particleEmitter",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 400, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#60a5fa", "stroke": null, "strokeWidth": 0 },
+      "trail": { "length": 20 },
+      "rate": 12,
+      "size": 5,
+      "lifespan": 4,
+      "speed": 90,
+      "palette": ["#60a5fa", "#38bdf8"],
+      "physics": { "gravity": 0, "drag": 0.02, "forceX": 0, "forceY": 0 }
+    }
+  ],
+  "groups": [],
+  "bindings": [
+    {
+      "id": "binding-orbit-force-x",
+      "signal": "handDistance",
+      "handTarget": "either",
+      "targetScope": "shape",
+      "targetId": "shape-orbiter",
+      "targetProperty": "globalForce",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": -6, "outMax": 6 },
+      "smoothing": 0.2
+    }
+  ],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.6, "gestureState": "none" },
+  "randomness": { "seed": 20260817, "enabled": true }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { createBlankProject, listProjects, type Project } from '../api/projects';
 import { useAuth } from '../auth/useAuth';
@@ -75,6 +75,7 @@ function Gallery() {
         <button type="button" onClick={handleCreate} disabled={creating}>
           {creating ? 'Creating…' : 'Create new animation'}
         </button>
+        <Link to="/templates">Browse templates</Link>
       </div>
 
       {createError && (

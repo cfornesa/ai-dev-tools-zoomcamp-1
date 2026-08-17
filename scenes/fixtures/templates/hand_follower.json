@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "template-hand-follower",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#0f172a" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-follower",
+      "type": "circle",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 400, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#38bdf8", "stroke": "#e0f2fe", "strokeWidth": 2 },
+      "trail": { "length": 8 },
+      "radius": 30
+    }
+  ],
+  "groups": [],
+  "bindings": [
+    {
+      "id": "binding-follow-x",
+      "signal": "indexTipX",
+      "handTarget": "primary",
+      "targetScope": "shape",
+      "targetId": "shape-follower",
+      "targetProperty": "positionX",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 800 },
+      "smoothing": 0.3
+    },
+    {
+      "id": "binding-follow-y",
+      "signal": "indexTipY",
+      "handTarget": "primary",
+      "targetScope": "shape",
+      "targetId": "shape-follower",
+      "targetProperty": "positionY",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 600 },
+      "smoothing": 0.3
+    }
+  ],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "none" },
+  "randomness": { "seed": 0, "enabled": false }
+}

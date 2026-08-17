@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "template-gesture-color-field",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#1e1b4b" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-field",
+      "type": "rect",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 400, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#4338ca", "stroke": null, "strokeWidth": 0 },
+      "trail": { "length": 0 },
+      "width": 700,
+      "height": 500,
+      "cornerRadius": 24
+    }
+  ],
+  "groups": [],
+  "bindings": [
+    {
+      "id": "binding-field-color",
+      "signal": "handDistance",
+      "handTarget": "either",
+      "targetScope": "shape",
+      "targetId": "shape-field",
+      "targetProperty": "fill",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 1 }
+    },
+    {
+      "id": "binding-background-color",
+      "signal": "palmX",
+      "handTarget": "primary",
+      "targetScope": "scene",
+      "targetId": null,
+      "targetProperty": "backgroundColor",
+      "composition": "replace",
+      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 1 }
+    }
+  ],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "none" },
+  "randomness": { "seed": 0, "enabled": false }
+}

@@ -125,6 +125,9 @@ describe('Gallery keyboard accessibility', () => {
     expect(screen.getByRole('button', { name: /create new animation/i })).toHaveFocus();
 
     await user.tab();
+    expect(screen.getByRole('link', { name: /browse templates/i })).toHaveFocus();
+
+    await user.tab();
     expect(screen.getAllByRole('link', { name: /open in editor/i })[0]).toHaveFocus();
 
     await user.tab();

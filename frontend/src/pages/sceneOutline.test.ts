@@ -241,12 +241,19 @@ describe('sceneOutline grouping', () => {
   });
 
   it('rejects grouping beyond maxGroups', () => {
-    const many = Array.from({ length: 50 }, (_, i) =>
-      group({ id: `g${i}`, layerId: 'layer-1', childIds: [] }),
+    // Each filler group owns a real shape so none of them are empty — the
+    // fix that prunes empty groups after grouping must not sweep these
+    // away and mask the maxGroups rejection.
+    const fillerShapes = Array.from({ length: 50 }, (_, i) => ({
+      ...shapeIn('layer-1', `g${i}`),
+      id: `filler-${i}`,
+    }));
+    const many = fillerShapes.map((s, i) =>
+      group({ id: `g${i}`, layerId: 'layer-1', childIds: [s.id] }),
     );
     const s1 = shapeIn('layer-1');
     const s2 = shapeIn('layer-1');
-    const scene = baseScene({ shapes: [s1, s2], groups: many });
+    const scene = baseScene({ shapes: [...fillerShapes, s1, s2], groups: many });
     const outcome = groupItems(scene, [s1.id, s2.id]);
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
@@ -309,13 +316,33 @@ describe('sceneOutline grouping', () => {
       opacity: 1,
     });
 
-    // s2's previous parent group no longer references it directly.
-    const parentAfter = groups.find((g) => g.id === 'parent')!;
-    expect(parentAfter.childIds).not.toContain(s2.id);
+    // s2's previous parent group had no other children, so detaching s2
+    // left it empty — it must be auto-removed entirely, not merely have
+    // its childIds emptied (the QA regression on the prior fix).
+    expect(groups.find((g) => g.id === 'parent')).toBeUndefined();
+    expect(groups).toHaveLength(1);
 
     const shapes = outcome.scene.shapes as Array<{ id: string; groupId: string | null }>;
     expect(shapes.find((s) => s.id === s1.id)?.groupId).toBe(newGroup.id);
     expect(shapes.find((s) => s.id === s2.id)?.groupId).toBe(newGroup.id);
+  });
+
+  it('does not prune a source group that still has other children after grouping one of them', () => {
+    const s1 = shapeIn('layer-1');
+    const s2 = shapeIn('layer-1', 'parent');
+    const s3 = shapeIn('layer-1', 'parent');
+    const parent = group({ id: 'parent', layerId: 'layer-1', childIds: [s2.id, s3.id] });
+    const scene = baseScene({ shapes: [s1, s2, s3], groups: [parent] });
+
+    const outcome = groupItems(scene, [s1.id, s2.id]);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+
+    const groups = getGroups(outcome.scene);
+    // s3 still lives in 'parent', so it must survive with just s3 left.
+    const parentAfter = groups.find((g) => g.id === 'parent');
+    expect(parentAfter).toBeDefined();
+    expect(parentAfter!.childIds).toEqual([s3.id]);
   });
 
   it('combines siblings already nested in the same parent group', () => {

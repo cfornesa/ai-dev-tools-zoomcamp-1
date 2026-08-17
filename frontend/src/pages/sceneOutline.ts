@@ -421,7 +421,13 @@ export function groupItems(scene: SceneDocument, ids: string[]): Outcome {
   }
   nextGroupsRaw = [...nextGroupsRaw, newGroup];
 
-  const candidate = withGroups(withShapes(scene, nextShapesRaw), nextGroupsRaw);
+  // Detaching selected items above can leave a source parent group with no
+  // children left (e.g. grouping a top-level shape with the sole child of
+  // an existing group) — prune it the same way removeShapeFromScene and
+  // deleteGroupRecursive do, so a dangling empty group never lingers in
+  // the outline. The brand-new group can never be empty (it always has at
+  // least two children), so it's never a candidate for pruning here.
+  const candidate = pruneEmptyGroups(withGroups(withShapes(scene, nextShapesRaw), nextGroupsRaw));
   const error = checkCandidate(candidate);
   if (error) return { ok: false, error };
   return { ok: true, scene: candidate, selectId: newGroup.id };

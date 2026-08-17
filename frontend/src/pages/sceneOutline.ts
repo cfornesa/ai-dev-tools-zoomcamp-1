@@ -307,14 +307,20 @@ function sameContainer(a: Container, b: Container): boolean {
   return false;
 }
 
-/** Combines two or more shapes/groups that currently share the same
- * container — either all top-level on the same layer, or all children of
- * the same parent group — into one brand-new group with an identity
- * transform (Task 24 acceptance criterion: grouping never moves anything
- * visually). Selections spanning more than one layer, or mixing a group
- * with one of its own descendants (which necessarily has a different
- * container), are rejected with an explanation rather than silently
- * producing an invalid or duplicated-membership scene document. */
+/** Combines two or more shapes/groups that belong to the same layer — not
+ * necessarily the same immediate container — into one brand-new group with
+ * an identity transform (Task 24 acceptance criterion: grouping never
+ * moves anything visually). Each selected item is detached from wherever
+ * it currently sits (the layer top level, or a parent group's `childIds`)
+ * and attached to the new group instead, preserving the selected items'
+ * relative draw order. When every selected item already shares one
+ * immediate container, the new group is spliced into that exact
+ * container at the position the selection occupied (matching prior
+ * behavior); otherwise — since the items come from different containers —
+ * the new group is placed at the layer's top level. Selections spanning
+ * more than one layer, or mixing a group with one of its own descendants,
+ * are rejected with an explanation rather than silently producing an
+ * invalid or duplicated-membership scene document. */
 export function groupItems(scene: SceneDocument, ids: string[]): Outcome {
   const uniqueIds = Array.from(new Set(ids));
   if (uniqueIds.length < 2) {
@@ -324,49 +330,54 @@ export function groupItems(scene: SceneDocument, ids: string[]): Outcome {
   const shapes = getEditableShapes(rawShapes(scene));
   const groups = getGroups(scene);
 
-  const containers: Container[] = [];
+  let layerId: string | null = null;
   for (const id of uniqueIds) {
-    const container = containerOf(id, shapes, groups);
-    if (!container) return { ok: false, error: 'One of the selected items no longer exists.' };
-    containers.push(container);
+    const shape = shapes.find((s) => s.id === id);
+    const group = shape ? undefined : groups.find((g) => g.id === id);
+    if (!shape && !group)
+      return { ok: false, error: 'One of the selected items no longer exists.' };
+    const itemLayerId = shape ? shape.layerId : group!.layerId;
+    if (layerId === null) {
+      layerId = itemLayerId;
+    } else if (layerId !== itemLayerId) {
+      return {
+        ok: false,
+        error: 'You can only group items that belong to the same layer.',
+      };
+    }
+    if (group) {
+      const { shapeIds, groupIds } = collectDescendantIds(group.id, groups);
+      const groupsDescendant = uniqueIds.some(
+        (otherId) => otherId !== id && (shapeIds.has(otherId) || groupIds.has(otherId)),
+      );
+      if (groupsDescendant) {
+        return {
+          ok: false,
+          error: 'Grouping a group with one of its own descendants is not allowed.',
+        };
+      }
+    }
   }
-  const [first, ...rest] = containers;
-  if (!rest.every((c) => sameContainer(c, first))) {
-    return {
-      ok: false,
-      error:
-        'You can only group items on the same layer that are currently siblings — either all top-level on that layer, or all children of the same group. Grouping a group with one of its own descendants is not allowed.',
-    };
-  }
-
-  const layerId =
-    first.kind === 'layer'
-      ? first.layerId
-      : (groups.find((g) => g.id === first.groupId)?.layerId ?? null);
   if (!layerId) return { ok: false, error: 'One of the selected items no longer exists.' };
 
-  let orderedSourceIds: string[];
-  if (first.kind === 'group') {
-    const parent = groups.find((g) => g.id === first.groupId)!;
-    orderedSourceIds = parent.childIds.filter((cid) => uniqueIds.includes(cid));
-  } else {
-    const topGroupIds = groups
-      .filter((g) => g.layerId === layerId && isGroupTopLevel(g.id, groups))
-      .map((g) => g.id);
-    const topShapeIds = shapes
-      .filter((s) => s.layerId === layerId && s.groupId === null)
-      .map((s) => s.id);
-    orderedSourceIds = [...topGroupIds, ...topShapeIds].filter((cid) => uniqueIds.includes(cid));
-  }
-  if (orderedSourceIds.length !== uniqueIds.length) {
+  const orderedIds = buildOutline(scene)
+    .filter((row) => row.kind !== 'layer' && uniqueIds.includes(row.id))
+    .map((row) => row.id);
+  if (orderedIds.length !== uniqueIds.length) {
     return { ok: false, error: 'One of the selected items no longer exists.' };
   }
+
+  const containers = uniqueIds.map((id) => containerOf(id, shapes, groups)!);
+  const [firstContainer, ...restContainers] = containers;
+  const sharedContainer = restContainers.every((c) => sameContainer(c, firstContainer))
+    ? firstContainer
+    : null;
 
   const newGroup: Group = {
     id: crypto.randomUUID(),
     name: `Group ${groups.length + 1}`,
     layerId,
-    childIds: orderedSourceIds,
+    childIds: orderedIds,
     transform: identityTransform(),
     visible: true,
     locked: false,
@@ -379,21 +390,34 @@ export function groupItems(scene: SceneDocument, ids: string[]): Outcome {
       : raw;
   });
 
-  let nextGroupsRaw = rawGroups(scene);
-  if (first.kind === 'group') {
-    const parent = groups.find((g) => g.id === first.groupId)!;
+  // Detach every selected item from whichever parent group's `childIds`
+  // currently references it (top-level items aren't referenced by any
+  // `childIds`, so this is a no-op for them).
+  let nextGroupsRaw = rawGroups(scene).map((raw) => {
+    const g = raw as { id?: unknown; childIds?: unknown };
+    if (!Array.isArray(g.childIds)) return raw;
+    const childIds = g.childIds as string[];
+    if (!childIds.some((cid) => uniqueIds.includes(cid))) return raw;
+    return {
+      ...(raw as Record<string, unknown>),
+      childIds: childIds.filter((cid) => !uniqueIds.includes(cid)),
+    };
+  });
+
+  if (sharedContainer && sharedContainer.kind === 'group') {
+    // Every selected item came from the same parent group: splice the new
+    // group into that exact position rather than dropping to the layer
+    // top level.
+    const parent = groups.find((g) => g.id === sharedContainer.groupId)!;
     const insertAt = parent.childIds.findIndex((cid) => uniqueIds.includes(cid));
-    const remainingChildIds = parent.childIds.filter((cid) => !uniqueIds.includes(cid));
-    const nextParentChildIds = [
-      ...remainingChildIds.slice(0, insertAt),
-      newGroup.id,
-      ...remainingChildIds.slice(insertAt),
-    ];
-    nextGroupsRaw = nextGroupsRaw.map((raw) =>
-      (raw as { id?: unknown }).id === parent.id
-        ? { ...(raw as Record<string, unknown>), childIds: nextParentChildIds }
-        : raw,
-    );
+    nextGroupsRaw = nextGroupsRaw.map((raw) => {
+      if ((raw as { id?: unknown }).id !== parent.id) return raw;
+      const remaining = (raw as { childIds: string[] }).childIds;
+      return {
+        ...(raw as Record<string, unknown>),
+        childIds: [...remaining.slice(0, insertAt), newGroup.id, ...remaining.slice(insertAt)],
+      };
+    });
   }
   nextGroupsRaw = [...nextGroupsRaw, newGroup];
 

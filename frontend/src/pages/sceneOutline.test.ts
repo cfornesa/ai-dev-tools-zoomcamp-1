@@ -253,6 +253,71 @@ describe('sceneOutline grouping', () => {
     expect(outcome.error).toMatch(/maxGroups/);
   });
 
+  it('rejects grouping beyond maxGroupChildIds', () => {
+    const many = Array.from({ length: 101 }, () => shapeIn('layer-1'));
+    const scene = baseScene({ shapes: many });
+    const outcome = groupItems(
+      scene,
+      many.map((s) => s.id),
+    );
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/maxGroupChildIds/);
+  });
+
+  it('rejects grouping beyond maxGroupNestingDepth', () => {
+    // A 6-deep chain of groups (g6 top-level down to leaf g1, which holds
+    // two shapes) is exactly at the limit. Grouping the two shapes in g1
+    // adds one more level of nesting, pushing every ancestor one level
+    // deeper and exceeding the limit.
+    const s1 = shapeIn('layer-1', 'g1');
+    const s2 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id, s2.id] });
+    const g2 = group({ id: 'g2', layerId: 'layer-1', childIds: ['g1'] });
+    const g3 = group({ id: 'g3', layerId: 'layer-1', childIds: ['g2'] });
+    const g4 = group({ id: 'g4', layerId: 'layer-1', childIds: ['g3'] });
+    const g5 = group({ id: 'g5', layerId: 'layer-1', childIds: ['g4'] });
+    const g6 = group({ id: 'g6', layerId: 'layer-1', childIds: ['g5'] });
+    const scene = baseScene({ shapes: [s1, s2], groups: [g1, g2, g3, g4, g5, g6] });
+
+    const outcome = groupItems(scene, [s1.id, s2.id]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/maxGroupNestingDepth/);
+  });
+
+  it('combines a top-level shape with a shape nested in an existing group, sharing a layer (AC5)', () => {
+    const s1 = shapeIn('layer-1');
+    const s2 = shapeIn('layer-1', 'parent');
+    const parent = group({ id: 'parent', layerId: 'layer-1', childIds: [s2.id] });
+    const scene = baseScene({ shapes: [s1, s2], groups: [parent] });
+
+    const outcome = groupItems(scene, [s1.id, s2.id]);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+
+    const groups = getGroups(outcome.scene);
+    const newGroup = groups.find((g) => g.id !== 'parent')!;
+    expect(newGroup).toBeDefined();
+    expect(newGroup.childIds.slice().sort()).toEqual([s1.id, s2.id].slice().sort());
+    expect(newGroup.transform).toEqual({
+      x: 0,
+      y: 0,
+      scaleX: 1,
+      scaleY: 1,
+      rotation: 0,
+      opacity: 1,
+    });
+
+    // s2's previous parent group no longer references it directly.
+    const parentAfter = groups.find((g) => g.id === 'parent')!;
+    expect(parentAfter.childIds).not.toContain(s2.id);
+
+    const shapes = outcome.scene.shapes as Array<{ id: string; groupId: string | null }>;
+    expect(shapes.find((s) => s.id === s1.id)?.groupId).toBe(newGroup.id);
+    expect(shapes.find((s) => s.id === s2.id)?.groupId).toBe(newGroup.id);
+  });
+
   it('combines siblings already nested in the same parent group', () => {
     const s1 = shapeIn('layer-1', 'parent');
     const s2 = shapeIn('layer-1', 'parent');

@@ -1,6 +1,23 @@
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 
 import type { SceneDocument } from '../api/projects';
+import {
+  addLayer as addLayerOp,
+  buildOutline,
+  deleteGroupRecursive,
+  deleteLayer as deleteLayerOp,
+  getGroups,
+  getLayers,
+  groupItems,
+  moveItem as moveItemOp,
+  moveLayer as moveLayerOp,
+  removeShapeFromScene,
+  renameLayer as renameLayerOp,
+  toggleGroupFlag,
+  toggleLayerFlag,
+  ungroupItem,
+  type Outcome,
+} from './sceneOutline';
 import { createShape, duplicateShape, getEditableShapes, type ShapeType } from './sceneShapes';
 
 /**
@@ -62,12 +79,25 @@ export function useSceneEditor(
   workingCopy: SceneDocument | null,
   setWorkingCopy: Dispatch<SetStateAction<SceneDocument | null>>,
 ) {
+  // Task 24: the active selection concept above already broadened to cover
+  // outline rows too — `selectedShapeId` can now hold a shape id *or* a
+  // group id (never a layer id: layers aren't a valid `binding.targetScope`
+  // and aren't a selectable target), so canvas click-selection and outline
+  // selection always agree on the same single selected item. `multiSelectedIds`
+  // is a separate, additive outline-only pick used only to gather items to
+  // combine into a group — it never overwrites the single active selection.
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
+  const [outlineError, setOutlineError] = useState<string | null>(null);
   const [past, setPast] = useState<SceneDocument[]>([]);
   const [future, setFuture] = useState<SceneDocument[]>([]);
 
   const shapes = getEditableShapes(workingCopy ? rawShapes(workingCopy) : []);
   const selectedShape = shapes.find((s) => s.id === selectedShapeId) ?? null;
+  const groups = useMemo(() => (workingCopy ? getGroups(workingCopy) : []), [workingCopy]);
+  const layers = useMemo(() => (workingCopy ? getLayers(workingCopy) : []), [workingCopy]);
+  const selectedGroup = groups.find((g) => g.id === selectedShapeId) ?? null;
+  const outline = useMemo(() => (workingCopy ? buildOutline(workingCopy) : []), [workingCopy]);
 
   // Any action that changes shapes/scene content routes through here so
   // undo/redo (see policy above) stays consistent across every mutation.
@@ -87,14 +117,41 @@ export function useSceneEditor(
         setSelectedShapeId(null);
         return;
       }
-      // Ignore selecting an id that doesn't resolve to a current shape
-      // (e.g. stale references) rather than putting the editor into an
-      // inconsistent selected-but-nonexistent state.
+      // Ignore selecting an id that doesn't resolve to a current shape or
+      // group (e.g. stale references, or a layer id — layers aren't a
+      // valid `binding.targetScope` and aren't selectable) rather than
+      // putting the editor into an inconsistent selected-but-nonexistent
+      // state.
       if (!workingCopy) return;
-      const exists = getEditableShapes(rawShapes(workingCopy)).some((s) => s.id === id);
-      if (exists) setSelectedShapeId(id);
+      const isShape = getEditableShapes(rawShapes(workingCopy)).some((s) => s.id === id);
+      const isGroup = getGroups(workingCopy).some((g) => g.id === id);
+      if (isShape || isGroup) setSelectedShapeId(id);
     },
     [workingCopy],
+  );
+
+  // Applies the outcome of a sceneOutline.ts mutation: on success, commits
+  // the new scene (skipping the commit — and any undo step — when the
+  // outcome is a legitimate no-op that returned the same scene reference
+  // back, e.g. "already at the top"), and optionally moves the active
+  // selection to a newly-created item (e.g. the new group after grouping).
+  // On failure, surfaces the textual explanation via `outlineError` instead
+  // of touching scene state.
+  const applyOutcome = useCallback(
+    (outcome: Outcome) => {
+      if (!outcome.ok) {
+        setOutlineError(outcome.error);
+        return;
+      }
+      setOutlineError(null);
+      if (workingCopy && outcome.scene !== workingCopy) {
+        commit(outcome.scene);
+      }
+      if (outcome.selectId) {
+        setSelectedShapeId(outcome.selectId);
+      }
+    },
+    [workingCopy, commit],
   );
 
   const addShape = useCallback(
@@ -132,17 +189,21 @@ export function useSceneEditor(
       setSelectedShapeId(null);
       return;
     }
-    const next = all.filter((s) => (s as { id?: unknown })?.id !== selectedShapeId);
-    commit(withShapes(workingCopy, next));
+    // Task 24: a shape can now belong to a group, so deleting it must also
+    // drop its id from that group's childIds (and prune the group if that
+    // was its last child) rather than just filtering `shapes`.
+    commit(removeShapeFromScene(workingCopy, selectedShapeId));
     setSelectedShapeId(null);
   }, [workingCopy, selectedShapeId, commit]);
 
   const reconcileSelectionAgainst = useCallback((scene: SceneDocument) => {
+    const shapeIds = new Set(getEditableShapes(rawShapes(scene)).map((s) => s.id));
+    const groupIds = new Set(getGroups(scene).map((g) => g.id));
     setSelectedShapeId((current) => {
       if (current === null) return null;
-      const exists = getEditableShapes(rawShapes(scene)).some((s) => s.id === current);
-      return exists ? current : null;
+      return shapeIds.has(current) || groupIds.has(current) ? current : null;
     });
+    setMultiSelectedIds((current) => current.filter((id) => shapeIds.has(id) || groupIds.has(id)));
   }, []);
 
   const undo = useCallback(() => {
@@ -163,6 +224,111 @@ export function useSceneEditor(
     reconcileSelectionAgainst(next);
   }, [workingCopy, future, setWorkingCopy, reconcileSelectionAgainst]);
 
+  // --- Task 24: scene outline (layers, groups, and outline reordering) ---
+  // Every action below routes through `applyOutcome`, so it commits exactly
+  // one undo step on success and never touches scene state on failure —
+  // it just surfaces `outlineError`.
+
+  const addLayer = useCallback(() => {
+    if (!workingCopy) return;
+    applyOutcome(addLayerOp(workingCopy));
+  }, [workingCopy, applyOutcome]);
+
+  const renameLayer = useCallback(
+    (layerId: string, name: string) => {
+      if (!workingCopy) return;
+      applyOutcome(renameLayerOp(workingCopy, layerId, name));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const deleteLayer = useCallback(
+    (layerId: string) => {
+      if (!workingCopy) return;
+      applyOutcome(deleteLayerOp(workingCopy, layerId));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const moveLayer = useCallback(
+    (layerId: string, direction: 'up' | 'down') => {
+      if (!workingCopy) return;
+      applyOutcome(moveLayerOp(workingCopy, layerId, direction));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const toggleLayerVisible = useCallback(
+    (layerId: string) => {
+      if (!workingCopy) return;
+      applyOutcome(toggleLayerFlag(workingCopy, layerId, 'visible'));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const toggleLayerLocked = useCallback(
+    (layerId: string) => {
+      if (!workingCopy) return;
+      applyOutcome(toggleLayerFlag(workingCopy, layerId, 'locked'));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const toggleGroupVisible = useCallback(
+    (groupId: string) => {
+      if (!workingCopy) return;
+      applyOutcome(toggleGroupFlag(workingCopy, groupId, 'visible'));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const toggleGroupLocked = useCallback(
+    (groupId: string) => {
+      if (!workingCopy) return;
+      applyOutcome(toggleGroupFlag(workingCopy, groupId, 'locked'));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const moveItem = useCallback(
+    (itemId: string, direction: 'up' | 'down') => {
+      if (!workingCopy) return;
+      applyOutcome(moveItemOp(workingCopy, itemId, direction));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const toggleMultiSelect = useCallback((id: string) => {
+    setMultiSelectedIds((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+    );
+  }, []);
+
+  const clearMultiSelect = useCallback(() => setMultiSelectedIds([]), []);
+
+  const groupSelected = useCallback(() => {
+    if (!workingCopy) return;
+    const outcome = groupItems(workingCopy, multiSelectedIds);
+    applyOutcome(outcome);
+    if (outcome.ok) setMultiSelectedIds([]);
+  }, [workingCopy, multiSelectedIds, applyOutcome]);
+
+  const ungroupSelected = useCallback(() => {
+    if (!workingCopy || !selectedShapeId) return;
+    if (!getGroups(workingCopy).some((g) => g.id === selectedShapeId)) return;
+    const outcome = ungroupItem(workingCopy, selectedShapeId);
+    applyOutcome(outcome);
+    if (outcome.ok) setSelectedShapeId(null);
+  }, [workingCopy, selectedShapeId, applyOutcome]);
+
+  const deleteGroupSelected = useCallback(() => {
+    if (!workingCopy || !selectedShapeId) return;
+    if (!getGroups(workingCopy).some((g) => g.id === selectedShapeId)) return;
+    const outcome = deleteGroupRecursive(workingCopy, selectedShapeId);
+    applyOutcome(outcome);
+    if (outcome.ok) setSelectedShapeId(null);
+  }, [workingCopy, selectedShapeId, applyOutcome]);
+
   return {
     shapes,
     selectedShapeId,
@@ -175,6 +341,27 @@ export function useSceneEditor(
     redo,
     canUndo: past.length > 0,
     canRedo: future.length > 0,
+    // Task 24
+    layers,
+    groups,
+    selectedGroup,
+    outline,
+    multiSelectedIds,
+    toggleMultiSelect,
+    clearMultiSelect,
+    outlineError,
+    addLayer,
+    renameLayer,
+    deleteLayer,
+    moveLayer,
+    toggleLayerVisible,
+    toggleLayerLocked,
+    toggleGroupVisible,
+    toggleGroupLocked,
+    moveItem,
+    groupSelected,
+    ungroupSelected,
+    deleteGroupSelected,
   };
 }
 

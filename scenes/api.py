@@ -28,6 +28,7 @@ from scenes.serializers import (
     SceneVersionCreateSerializer,
     SceneVersionDetailSerializer,
     SceneVersionListSerializer,
+    TemplateCreateSerializer,
     TemplateSerializer,
 )
 from scenes.validation import SCHEMA_DIR, validate_scene
@@ -389,3 +390,34 @@ class TemplateCloneView(APIView):
             project.save(update_fields=["current_version", "updated_at"])
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
+
+
+class SaveVersionAsTemplateView(APIView):
+    """Task 21: snapshot a validated, owned version into a new private template.
+
+    Gated by `Action.VERSION_READ` (owner-only, 404 for anyone else — same as
+    every other version-scoped endpoint) rather than a bespoke ownership
+    check, so a non-owner can't tell whether the project/version exists at
+    all. The resulting `Template.scene_json` is an independent deep copy of
+    the version's snapshot: later edits to the source project (new versions,
+    soft-deletes) never touch it, mirroring `TemplateCloneView`'s own
+    no-mutable-link guarantee in the opposite direction.
+    """
+
+    def post(self, request, public_id, version_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.VERSION_READ, project)
+        version = _get_version_or_404(project, version_id)
+
+        input_serializer = TemplateCreateSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+
+        template = Template.objects.create(
+            source_type=Template.SourceType.PRIVATE,
+            owner=request.user,
+            source_version=version,
+            scene_json=copy.deepcopy(version.scene_json),
+            **input_serializer.validated_data,
+        )
+
+        return Response(TemplateSerializer(template).data, status=status.HTTP_201_CREATED)

@@ -4,6 +4,7 @@ from scenes.api import (
     BlankProjectCreateView,
     ProjectDetailView,
     ProjectListCreateView,
+    SaveVersionAsTemplateView,
     SceneVersionDetailView,
     SceneVersionListCreateView,
     SceneVersionRestoreView,
@@ -35,5 +36,10 @@ urlpatterns = [
         "projects/<uuid:public_id>/versions/<int:version_id>/restore/",
         SceneVersionRestoreView.as_view(),
         name="scene-version-restore",
+    ),
+    path(
+        "projects/<uuid:public_id>/versions/<int:version_id>/save-as-template/",
+        SaveVersionAsTemplateView.as_view(),
+        name="scene-version-save-as-template",
     ),
 ]

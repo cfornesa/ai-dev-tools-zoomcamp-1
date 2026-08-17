@@ -129,6 +129,14 @@ class TemplateSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class TemplateCreateSerializer(serializers.Serializer):
+    """Task 21: name/category/description for a save-as-private-template request."""
+
+    name = serializers.CharField(max_length=200, allow_blank=False)
+    category = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    description = serializers.CharField(required=False, allow_blank=True, default="")
+
+
 class SceneVersionCreateSerializer(serializers.Serializer):
     scene_json = serializers.JSONField()
     origin = serializers.ChoiceField(

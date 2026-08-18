@@ -23,7 +23,7 @@ function renderSceneEditor(initial: SceneDocument | null = structuredClone(BLANK
   return renderHook(() => {
     const [workingCopy, setWorkingCopy] = useState<SceneDocument | null>(initial);
     const editor = useSceneEditor(workingCopy, setWorkingCopy);
-    return { workingCopy, ...editor };
+    return { ...editor, workingCopy };
   });
 }
 

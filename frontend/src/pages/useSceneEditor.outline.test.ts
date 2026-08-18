@@ -35,7 +35,7 @@ function renderSceneEditor(initial: SceneDocument = structuredClone(TWO_LAYER_SC
   return renderHook(() => {
     const [workingCopy, setWorkingCopy] = useState<SceneDocument | null>(initial);
     const editor = useSceneEditor(workingCopy, setWorkingCopy);
-    return { workingCopy, ...editor };
+    return { ...editor, workingCopy };
   });
 }
 

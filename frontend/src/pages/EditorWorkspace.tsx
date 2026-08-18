@@ -29,6 +29,7 @@ import BehaviorCardsPanel from './BehaviorCardsPanel';
 import DemoControlsPanel from './DemoControlsPanel';
 import GraphListView from './GraphListView';
 import GraphView from './GraphView';
+import RandomnessIndicator from './RandomnessIndicator';
 import SceneOutlinePanel from './SceneOutlinePanel';
 
 const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
@@ -554,6 +555,11 @@ function EditorWorkspace() {
         >
           <h3>Inspector</h3>
           <p>Property editing is added in a later task.</p>
+
+          {/* Task 40: read-only "Randomness enabled" indicator — renders
+              nothing when the scene doesn't use seeded randomness. */}
+          <RandomnessIndicator scene={sceneEditor.workingCopy} />
+
           {/* Task 34: behavior cards ("Follow hand," "React to pinch,"
               "Pulse," "Emit particles") — reads/writes `workingCopy`
               through `sceneEditor`, so it participates in the same

@@ -601,6 +601,11 @@ export function useSceneEditor(
   const clearGraphError = useCallback(() => setGraphError(null), []);
 
   return {
+    // Task 40: exposed so read-only presentational components (e.g.
+    // `RandomnessIndicator.tsx`) can read scene-level fields
+    // (`randomness`, `graph`) without this hook growing a bespoke derived
+    // field for every such component.
+    workingCopy,
     shapes,
     selectedShapeId,
     selectedShape,

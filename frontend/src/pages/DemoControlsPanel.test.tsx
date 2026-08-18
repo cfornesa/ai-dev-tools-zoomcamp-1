@@ -1,8 +1,14 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import DemoControlsPanel from './DemoControlsPanel';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('DemoControlsPanel', () => {
   it('starts in manual mode with the hand absent and gesture/pinch controls disabled', () => {
@@ -14,6 +20,50 @@ describe('DemoControlsPanel', () => {
     expect(screen.getByRole('button', { name: 'Hand absent' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Open palm' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Pinch start' })).toBeDisabled();
+  });
+
+  it('gives the selected demo-input-mode radio a visible selected-state class hook, not just aria-checked', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<DemoControlsPanel />);
+    const manualButton = screen.getByRole('radio', { name: 'Manual controls' });
+    const playbackButton = screen.getByRole('radio', { name: 'Synthetic playback' });
+
+    // Both buttons carry the same class hook; only aria-checked differs —
+    // it's the [aria-checked='true'] CSS rule (asserted below) that gives
+    // that a visible, sighted-user-visible style, following the same
+    // pattern as .editor-panel-tab[aria-selected='true'].
+    expect(manualButton).toHaveClass('demo-radio-option');
+    expect(playbackButton).toHaveClass('demo-radio-option');
+    expect(manualButton).toHaveAttribute('aria-checked', 'true');
+    expect(playbackButton).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(playbackButton);
+    expect(playbackButton).toHaveAttribute('aria-checked', 'true');
+    expect(manualButton).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('gives the selected gesture-state radio the same visible selected-state class hook', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<DemoControlsPanel />);
+    await user.click(screen.getByRole('button', { name: 'Hand absent' })); // hand present
+
+    const openPalm = screen.getByRole('radio', { name: 'Open palm' });
+    const none = screen.getByRole('radio', { name: 'None' });
+    expect(openPalm).toHaveClass('demo-radio-option');
+    expect(none).toHaveAttribute('aria-checked', 'true'); // default gesture is null
+
+    await user.click(openPalm);
+    expect(openPalm).toHaveAttribute('aria-checked', 'true');
+    expect(none).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('defines a CSS rule that visually distinguishes a checked .demo-radio-option', () => {
+    // Guards against the class hook above going unstyled again — the
+    // gesture-state and demo-input-mode radios only look selected to a
+    // sighted user because index.css keys off aria-checked, the same
+    // pattern .editor-panel-tab[aria-selected='true'] already uses.
+    const css = readFileSync(path.resolve(__dirname, '../index.css'), 'utf-8');
+    expect(css).toMatch(/\.demo-radio-option\[aria-checked=['"]true['"]\]/);
   });
 
   it('exposes each slider with a programmatic label, visible value, and documented range', () => {

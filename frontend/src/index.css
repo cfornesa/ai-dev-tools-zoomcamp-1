@@ -200,6 +200,25 @@ code {
   color: var(--text-h);
 }
 
+/* Task 28: visible selected-state style for the demo-controls panel's
+   radio-group buttons (demo input mode, gesture state) — same pattern as
+   .editor-panel-tab[aria-selected='true'] above, keyed on aria-checked
+   instead since these use role="radio" rather than role="tab". */
+.demo-radio-option {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 6px 16px;
+  cursor: pointer;
+}
+
+.demo-radio-option[aria-checked='true'] {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
 .editor-workspace {
   display: flex;
   align-items: stretch;

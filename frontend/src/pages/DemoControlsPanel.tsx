@@ -143,6 +143,7 @@ function DemoControlsPanel() {
         <button
           type="button"
           role="radio"
+          className="demo-radio-option"
           aria-checked={mode === 'manual'}
           onClick={() => handleSetMode('manual')}
         >
@@ -151,6 +152,7 @@ function DemoControlsPanel() {
         <button
           type="button"
           role="radio"
+          className="demo-radio-option"
           aria-checked={mode === 'playback'}
           onClick={() => handleSetMode('playback')}
         >
@@ -197,6 +199,7 @@ function DemoControlsPanel() {
                 key={option.label}
                 type="button"
                 role="radio"
+                className="demo-radio-option"
                 aria-checked={manualState.gesture === option.value}
                 disabled={!manualState.present}
                 onClick={() => handleSelectGesture(option.value)}

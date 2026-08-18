@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SceneDocument } from '../api/projects';
+import { MEDIAPIPE_TASKS_VISION_VERSION as PROVIDER_MEDIAPIPE_VERSION } from '../tracking/mediapipeProvider';
 import {
   checkExportBlockingReasons,
   generateHtmlExport,
@@ -8,6 +9,10 @@ import {
   P5_VERSION,
   type GenerateHtmlExportInput,
 } from './generateHtmlExport';
+import {
+  MEDIAPIPE_TASKS_VISION_VERSION,
+  MEDIAPIPE_VISION_BUNDLE_CDN_URL,
+} from './standaloneCameraSource';
 
 const HOSTILE_SCRIPT_BREAKOUT = '</script><script>window.__pwned = (window.__pwned||0)+1;</script>';
 const HOSTILE_CASE_VARIANT = '</ScRiPt><script>window.__pwned2=true;</script>';
@@ -342,16 +347,6 @@ describe('generateHtmlExport: blocking on unsupported/invalid scenes', () => {
     expect('html' in result).toBe(false);
   });
 
-  it('blocks camera/demo-camera interaction modes with a clear, distinct reason (not yet built)', () => {
-    const cameraResult = generateHtmlExport(baseInput({ interactionMode: 'camera' }));
-    expect(cameraResult.ok).toBe(false);
-    if (cameraResult.ok) return;
-    expect(cameraResult.reasons.some((r) => /camera/i.test(r))).toBe(true);
-
-    const demoCameraResult = generateHtmlExport(baseInput({ interactionMode: 'demo-camera' }));
-    expect(demoCameraResult.ok).toBe(false);
-  });
-
   it('checkExportBlockingReasons and generateHtmlExport agree on blocking', () => {
     const scene = baseScene({ shapes: [{ id: 's', type: 'bogus', layerId: 'layer-1' }] });
     const input = baseInput({ scene });
@@ -359,5 +354,96 @@ describe('generateHtmlExport: blocking on unsupported/invalid scenes', () => {
     expect(reasons.length).toBeGreaterThan(0);
     const result = generateHtmlExport(input);
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('generateHtmlExport: camera-mode generation (Task 57, issue #56)', () => {
+  it('generates a real, downloadable export for "camera" mode (no longer hard-blocked)', () => {
+    const result = generateHtmlExport(baseInput({ interactionMode: 'camera' }));
+    expect(result.ok).toBe(true);
+  });
+
+  it('generates a real, downloadable export for "demo-camera" mode', () => {
+    const result = generateHtmlExport(baseInput({ interactionMode: 'demo-camera' }));
+    expect(result.ok).toBe(true);
+  });
+
+  it('records the selected camera-inclusive interaction mode in the embedded config', () => {
+    const result = generateHtmlExport(baseInput({ interactionMode: 'demo-camera' }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const doc = new DOMParser().parseFromString(result.html, 'text/html');
+    const parsedConfig = JSON.parse(doc.getElementById('export-config')?.textContent ?? 'null');
+    expect(parsedConfig).toEqual({ interactionMode: 'demo-camera' });
+  });
+
+  it("embeds the pinned MediaPipe CDN URL, matching mediapipeProvider.ts's exact pinned version", () => {
+    expect(MEDIAPIPE_TASKS_VISION_VERSION).toBe(PROVIDER_MEDIAPIPE_VERSION);
+
+    const cameraResult = generateHtmlExport(baseInput({ interactionMode: 'camera' }));
+    expect(cameraResult.ok).toBe(true);
+    if (!cameraResult.ok) return;
+    expect(cameraResult.html).toContain(MEDIAPIPE_VISION_BUNDLE_CDN_URL);
+    expect(cameraResult.html.toLowerCase()).toContain('mediapipe');
+
+    const demoCameraResult = generateHtmlExport(baseInput({ interactionMode: 'demo-camera' }));
+    expect(demoCameraResult.ok).toBe(true);
+    if (!demoCameraResult.ok) return;
+    expect(demoCameraResult.html).toContain(MEDIAPIPE_VISION_BUNDLE_CDN_URL);
+  });
+
+  it('still contains no MediaPipe reference at all for demo-only exports (regression check)', () => {
+    const result = generateHtmlExport(baseInput({ interactionMode: 'demo' }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.html.toLowerCase()).not.toContain('mediapipe');
+    expect(result.html).not.toContain('getUserMedia');
+  });
+
+  it('renders a dedicated camera-controls host for camera-inclusive modes only', () => {
+    const cameraResult = generateHtmlExport(baseInput({ interactionMode: 'camera' }));
+    expect(cameraResult.ok).toBe(true);
+    if (!cameraResult.ok) return;
+    const cameraDoc = new DOMParser().parseFromString(cameraResult.html, 'text/html');
+    expect(cameraDoc.getElementById('camera-controls-host')).not.toBeNull();
+
+    const demoResult = generateHtmlExport(baseInput({ interactionMode: 'demo' }));
+    expect(demoResult.ok).toBe(true);
+    if (!demoResult.ok) return;
+    const demoDoc = new DOMParser().parseFromString(demoResult.html, 'text/html');
+    expect(demoDoc.getElementById('camera-controls-host')).toBeNull();
+  });
+
+  it('keeps the demo controls host present and populated for every interaction mode, including camera-only', () => {
+    (['demo', 'camera', 'demo-camera'] as const).forEach((interactionMode) => {
+      const result = generateHtmlExport(baseInput({ interactionMode }));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const doc = new DOMParser().parseFromString(result.html, 'text/html');
+      const demoHost = doc.getElementById('demo-controls-host');
+      expect(demoHost).not.toBeNull();
+      // Statically-rendered demo heading/status paragraph always present --
+      // never removed or hidden by interaction mode (issue #56's "demo
+      // controls remain usable in every camera failure state").
+      expect(demoHost?.querySelector('#demo-status')).not.toBeNull();
+    });
+  });
+
+  it('embeds a syntactically valid camera runtime script', () => {
+    const result = generateHtmlExport(baseInput({ interactionMode: 'demo-camera' }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const doc = new DOMParser().parseFromString(result.html, 'text/html');
+    const scripts = Array.from(doc.querySelectorAll('script'));
+    const inlineScripts = scripts.filter(
+      (s) => !s.id && !s.hasAttribute('src') && s.getAttribute('type') !== 'application/json',
+    );
+    // The demo runtime script plus the camera script.
+    expect(inlineScripts).toHaveLength(2);
+    inlineScripts.forEach((s) => {
+      const source = s.textContent ?? '';
+      expect(source.length).toBeGreaterThan(0);
+      expect(() => new Function(source)).not.toThrow();
+    });
   });
 });

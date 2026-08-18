@@ -34,6 +34,7 @@ import type { SceneDocument } from '../api/projects';
 import { checkRendererCompatibility, type InteractionMode } from './exportCompatibility';
 import { embedJsonScript, escapeHtml } from './safeEmbed';
 import { stripSceneForExport } from './sceneExportStripping';
+import { buildStandaloneCameraScript } from './standaloneCameraSource';
 import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
 
 /** Exact p5.js version pinned for the export's CDN `<script>` tag --
@@ -91,29 +92,24 @@ function slugifyFilename(title: string): string {
  *
  * This deliberately re-runs `checkRendererCompatibility` (already the
  * gate `ExportConfigDialog` uses to disable its Export button) as a
- * defense-in-depth safety net at the point of actual generation, plus two
- * checks that dialog doesn't already make:
+ * defense-in-depth safety net at the point of actual generation, plus a
+ * check that dialog doesn't already make:
  *
- * 1. `interactionMode` must be `'demo'` -- camera-mode export is Task 57
- *    (issue #56), not yet built (see `standaloneRuntimeSource.ts`'s
- *    module doc comment). The dialog itself may offer `camera`/
- *    `demo-camera` for a scene with camera-driven bindings (Task 55's
- *    `getAvailableInteractionModes`), so this module must independently
- *    refuse to generate anything for those modes rather than silently
- *    producing a demo-only file the user didn't ask for.
- * 2. A final `buildScenePlan` pass -- the exact same structural/
+ * 1. A final `buildScenePlan` pass -- the exact same structural/
  *    referential/schema validation `p5Adapter.ts`'s own preview renderer
  *    runs before it will draw a single shape. This is a backstop for
  *    anything `checkRendererCompatibility`'s allowlist doesn't catch
  *    (e.g. a structurally invalid scene that happens to use only
  *    allowlisted shape/node types).
+ *
+ * `interactionMode` itself (`'demo'`/`'camera'`/`'demo-camera'`) is never a
+ * blocking reason -- Task 57 (issue #56) built camera-mode generation (see
+ * `standaloneCameraSource.ts`), so every mode `ExportConfigDialog` can
+ * offer (Task 55's `getAvailableInteractionModes`) now produces a real
+ * file.
  */
 export function checkExportBlockingReasons(input: GenerateHtmlExportInput): string[] {
   const reasons: string[] = [];
-
-  if (input.interactionMode !== 'demo') {
-    reasons.push('Camera-mode export is not available yet -- choose "Demo only" for this export.');
-  }
 
   reasons.push(...checkRendererCompatibility(input.scene, 'p5js'));
 
@@ -136,6 +132,22 @@ function renderDemoControlsSection(): string {
     </section>`;
 }
 
+/** Container the camera module (`standaloneCameraSource.ts`) populates on
+ * `DOMContentLoaded` -- only included when `interactionMode` is `'camera'`
+ * or `'demo-camera'`. Rendered empty here (unlike
+ * `renderDemoControlsSection`'s static heading/status paragraph) since the
+ * camera module builds its own privacy notice, status, error, and
+ * Enable/Stop controls entirely from script, matching `CameraControl.tsx`'s
+ * structure -- see that module's doc comment. Demo controls
+ * (`renderDemoControlsSection`) are always rendered regardless of
+ * interaction mode, so every camera failure category still leaves a
+ * usable non-camera fallback in the same document, per issue #56's
+ * acceptance criterion. */
+function renderCameraControlsSection(): string {
+  return `
+    <section id="camera-controls-host" role="group" aria-label="Live camera"></section>`;
+}
+
 function renderMotionControl(): string {
   return `
     <div id="motion-control">
@@ -156,6 +168,8 @@ const EXPORT_STYLE = `
     #demo-controls-host [role="radiogroup"] { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
     #demo-controls-host div { margin-bottom: 0.5rem; }
     #demo-controls-host label { display: inline-block; min-width: 12rem; }
+    #camera-controls-host { margin-top: 1.5rem; }
+    #camera-controls-host .camera-privacy-notice { color: #333; max-width: 40rem; }
     #project-description { color: #333; }
   `;
 
@@ -177,6 +191,8 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   const safeTitle = escapeHtml(input.title);
   const safeDescription = escapeHtml(input.description);
   const hasDescription = input.description.trim().length > 0;
+  const includesCamera =
+    input.interactionMode === 'camera' || input.interactionMode === 'demo-camera';
 
   const html = `<!doctype html>
 <html lang="en">
@@ -195,11 +211,13 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   <div id="scene-canvas-host"></div>
   ${renderMotionControl()}
   ${renderDemoControlsSection()}
+  ${includesCamera ? renderCameraControlsSection() : ''}
 
   <script src="${P5_CDN_URL}"></script>
   ${embedJsonScript('scene-data', strippedScene)}
-  ${embedJsonScript('export-config', { interactionMode: 'demo' })}
+  ${embedJsonScript('export-config', { interactionMode: input.interactionMode })}
   <script>${buildStandaloneRuntimeScript()}</script>
+  ${includesCamera ? `<script>${buildStandaloneCameraScript()}</script>` : ''}
 </body>
 </html>
 `;

@@ -67,9 +67,15 @@
  * no continuous pinch-geometry signal exists anywhere in this app's demo
  * input today either (only the discrete start/end events above).
  *
- * **No MediaPipe, no camera**: this script never references MediaPipe or
- * `getUserMedia` — camera-mode export is explicitly out of scope for this
- * task (issue #56/Task 57).
+ * **No MediaPipe, no camera in this module**: this script never itself
+ * references MediaPipe or `getUserMedia` — that lives entirely in the
+ * separate, optional `standaloneCameraSource.ts` module (Task 57, issue
+ * #56), embedded as an additional `<script>` only for camera-inclusive
+ * exports. This module's only awareness of that module's existence is the
+ * small extension point below (`window.__exportSetActiveInput`) — a
+ * demo-only export (no camera script present) never has anything call it,
+ * so its rendering/behavior is completely unchanged from a build of this
+ * module before Task 57.
  */
 
 /** The exact deterministic playback script `demoPlaybackScript.ts`
@@ -592,6 +598,26 @@ export function buildStandaloneRuntimeScript(): string {
       pendingEvents = pendingEvents.concat(events);
     });
 
+    // --- Extension point for standaloneCameraSource.ts (Task 57) --------
+    // When present and the camera is active, that module calls this with
+    // an { getSignals, drainEvents } handle so the draw loop below reads
+    // live camera-derived signals instead of the demo controller's; it
+    // calls this with null on stop/error to revert to demo signals. A
+    // demo-only export never has anything call this function.
+    var activeInput = null;
+    window.__exportSetActiveInput = function (input) {
+      activeInput = input || null;
+    };
+    function currentInputSignals() {
+      return activeInput ? activeInput.getSignals() : demo.currentSignals();
+    }
+    function drainInputEvents() {
+      if (activeInput) return activeInput.drainEvents();
+      var events = pendingEvents;
+      pendingEvents = [];
+      return events;
+    }
+
     function describeSignals(signals) {
       if (!signals.handPresence) return "No hand present.";
       return (
@@ -802,9 +828,8 @@ export function buildStandaloneRuntimeScript(): string {
         p.draw = function () {
           if (startTime === null) startTime = p.millis();
           var timestamp = p.millis() - startTime;
-          var signals = demo.currentSignals();
-          var events = pendingEvents;
-          pendingEvents = [];
+          var signals = currentInputSignals();
+          var events = drainInputEvents();
 
           var tickResult = bindingsRuntime.tick({
             timestamp: timestamp,

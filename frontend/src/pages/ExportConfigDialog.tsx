@@ -25,10 +25,13 @@ import { useVersionHistory } from './useVersionHistory';
  * (Task 56, issue #57) hands it to `onExport`, which generates the
  * standalone HTML (`../export/generateHtmlExport.ts`) and triggers a
  * browser download — see `defaultOnExport` below. ZIP/thumbnail bundling
- * (Task 59, issue #59) and camera-mode export (Task 57, issue #56) are
- * still not built; `includeSocialThumbnailZip` is recorded but has no
- * effect yet, and `generateHtmlExport` itself blocks (no download, with
- * an explicit reason) if `interactionMode` isn't `'demo'`.
+ * (Task 59, issue #59) is still not built; `includeSocialThumbnailZip` is
+ * recorded but has no effect yet. Camera-mode export (Task 57, issue #56)
+ * is now fully built — `interactionMode: 'camera'`/`'demo-camera'` both
+ * generate a real file embedding a camera/tracking module
+ * (`../export/standaloneCameraSource.ts`) alongside the always-present demo
+ * controls, with no interaction-mode-specific blocking left in
+ * `generateHtmlExport`.
  *
  * ## What's actually configurable today
  *

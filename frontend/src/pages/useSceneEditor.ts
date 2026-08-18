@@ -19,6 +19,16 @@ import {
   type BehaviorCardDraft,
 } from './behaviorCards';
 import {
+  addGraphConnection as addGraphConnectionOp,
+  addGraphNode as addGraphNodeOp,
+  moveGraphNode as moveGraphNodeOp,
+  removeGraphConnection as removeGraphConnectionOp,
+  removeGraphNode as removeGraphNodeOp,
+  updateGraphNodeParams as updateGraphNodeParamsOp,
+  type GraphConnectionData,
+  type GraphNodeData,
+} from './graphEditing';
+import {
   addLayer as addLayerOp,
   buildOutline,
   deleteGroupRecursive,
@@ -124,6 +134,11 @@ export function useSceneEditor(
     existingCard: BehaviorCard;
   } | null>(null);
   const [cardError, setCardError] = useState<string | null>(null);
+  // Task 36: the advanced graph editor's rejection channel — same pattern
+  // as `outlineError`/`cardError`: set on a failed mutation, never on a
+  // successful one, and scene state is never touched when it's set (see
+  // `graphEditing.ts`'s `Outcome` type).
+  const [graphError, setGraphError] = useState<string | null>(null);
 
   // Task 26: "latest value" refs kept in sync every render (see the two
   // effects just below) so the transform-gesture callbacks further down —
@@ -163,6 +178,18 @@ export function useSceneEditor(
     () => (workingCopy ? sceneHasTwoHandBinding(workingCopy) : false),
     [workingCopy],
   );
+  // Task 36: the advanced graph, re-derived fresh from `workingCopy.graph`
+  // every render — same rationale as `behaviorCards` above: no separate
+  // state to keep in sync, so save/reload and undo/redo round-trip for
+  // free.
+  const graphNodes = useMemo<GraphNodeData[]>(() => {
+    const graph = workingCopy?.graph as { nodes?: unknown } | undefined;
+    return Array.isArray(graph?.nodes) ? (graph!.nodes as GraphNodeData[]) : [];
+  }, [workingCopy]);
+  const graphConnections = useMemo<GraphConnectionData[]>(() => {
+    const graph = workingCopy?.graph as { connections?: unknown } | undefined;
+    return Array.isArray(graph?.connections) ? (graph!.connections as GraphConnectionData[]) : [];
+  }, [workingCopy]);
 
   // Any action that changes shapes/scene content routes through here so
   // undo/redo (see policy above) stays consistent across every mutation.
@@ -500,6 +527,79 @@ export function useSceneEditor(
     [workingCopy, commit],
   );
 
+  // --- Task 36: the advanced graph editor ---
+  // Every action here goes through `graphEditing.ts`'s pure functions,
+  // which validate the *entire* candidate scene with `validateBehaviorGraph`
+  // before ever returning `ok: true` — so exactly like `applyOutcome`
+  // above, a rejected mutation only ever sets `graphError` and never
+  // touches `workingCopy`/`commit`. `GraphView.tsx` (drag-and-drop) and
+  // `GraphListView.tsx` (keyboard-operable list) both call these same six
+  // functions, so they can only ever produce the same graphs.
+
+  const applyGraphOutcome = useCallback(
+    (outcome: { ok: true; scene: SceneDocument } | { ok: false; error: string }) => {
+      if (!outcome.ok) {
+        setGraphError(outcome.error);
+        return;
+      }
+      setGraphError(null);
+      if (workingCopy && outcome.scene !== workingCopy) commit(outcome.scene);
+    },
+    [workingCopy, commit],
+  );
+
+  const addGraphNode = useCallback(
+    (type: string, position: { x: number; y: number }) => {
+      if (!workingCopy) return;
+      const outcome = addGraphNodeOp(workingCopy, type, position);
+      applyGraphOutcome(outcome);
+      return outcome.ok ? outcome.nodeId : undefined;
+    },
+    [workingCopy, applyGraphOutcome],
+  );
+
+  const removeGraphNode = useCallback(
+    (nodeId: string) => {
+      if (!workingCopy) return;
+      applyGraphOutcome(removeGraphNodeOp(workingCopy, nodeId));
+    },
+    [workingCopy, applyGraphOutcome],
+  );
+
+  const addGraphConnection = useCallback(
+    (candidate: { fromNodeId: string; fromPort: string; toNodeId: string; toPort: string }) => {
+      if (!workingCopy) return;
+      applyGraphOutcome(addGraphConnectionOp(workingCopy, candidate));
+    },
+    [workingCopy, applyGraphOutcome],
+  );
+
+  const removeGraphConnection = useCallback(
+    (connectionId: string) => {
+      if (!workingCopy) return;
+      applyGraphOutcome(removeGraphConnectionOp(workingCopy, connectionId));
+    },
+    [workingCopy, applyGraphOutcome],
+  );
+
+  const moveGraphNode = useCallback(
+    (nodeId: string, position: { x: number; y: number }) => {
+      if (!workingCopy) return;
+      applyGraphOutcome(moveGraphNodeOp(workingCopy, nodeId, position));
+    },
+    [workingCopy, applyGraphOutcome],
+  );
+
+  const updateGraphNodeParams = useCallback(
+    (nodeId: string, params: Record<string, unknown>) => {
+      if (!workingCopy) return;
+      applyGraphOutcome(updateGraphNodeParamsOp(workingCopy, nodeId, params));
+    },
+    [workingCopy, applyGraphOutcome],
+  );
+
+  const clearGraphError = useCallback(() => setGraphError(null), []);
+
   return {
     shapes,
     selectedShapeId,
@@ -547,6 +647,17 @@ export function useSceneEditor(
     confirmReplaceCard,
     cancelCardConflict,
     removeBehaviorCard,
+    // Task 36
+    graphNodes,
+    graphConnections,
+    graphError,
+    addGraphNode,
+    removeGraphNode,
+    addGraphConnection,
+    removeGraphConnection,
+    moveGraphNode,
+    updateGraphNodeParams,
+    clearGraphError,
   };
 }
 

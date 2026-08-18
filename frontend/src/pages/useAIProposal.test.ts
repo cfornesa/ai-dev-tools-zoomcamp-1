@@ -161,6 +161,98 @@ describe('useAIProposal generation phases', () => {
     expect(result.current.proposal?.summary).toBe('1 change: 1 canvas property updated.');
   });
 
+  it('goes pending while editAIScene is in flight, before resolving', async () => {
+    let resolvePromise: (value: aiApi.AIEditSceneResponse) => void = () => {};
+    mockedEditAIScene.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePromise = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    act(() => result.current.setMode('edit'));
+    act(() => result.current.setPrompt('make it black'));
+
+    let generatePromise: Promise<void>;
+    act(() => {
+      generatePromise = result.current.generate(VALID_SCENE, 3);
+    });
+
+    await waitFor(() => expect(result.current.phase).toBe('pending'));
+    expect(result.current.proposal).toBeNull();
+
+    await act(async () => {
+      resolvePromise({
+        draft: true,
+        operation: 'edit_scene',
+        patch: [{ op: 'replace', path: '/canvas/backgroundColor', value: '#000000' }],
+        scene: {
+          ...VALID_SCENE,
+          canvas: {
+            ...(VALID_SCENE.canvas as Record<string, unknown>),
+            backgroundColor: '#000000',
+          },
+        },
+        change_summary: '1 change: 1 canvas property updated.',
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+      });
+      await generatePromise;
+    });
+
+    expect(result.current.phase).toBe('success');
+  });
+
+  it('classifies a quota error distinctly from a validation error for edit mode', async () => {
+    mockedEditAIScene.mockRejectedValue(
+      new ApiError(429, { error: 'provider_quota_exceeded', detail: 'Provider quota reached.' }),
+    );
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    act(() => result.current.setMode('edit'));
+    act(() => result.current.setPrompt('make it black'));
+
+    await act(async () => {
+      await result.current.generate(VALID_SCENE, 3);
+    });
+
+    expect(result.current.phase).toBe('quota-error');
+    expect(result.current.genError?.message).toMatch(/provider quota reached/i);
+  });
+
+  it('classifies a provider failure distinctly for edit mode', async () => {
+    mockedEditAIScene.mockRejectedValue(
+      new ApiError(502, { error: 'provider_failure', detail: 'Mistral is down.' }),
+    );
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    act(() => result.current.setMode('edit'));
+    act(() => result.current.setPrompt('make it black'));
+
+    await act(async () => {
+      await result.current.generate(VALID_SCENE, 3);
+    });
+
+    expect(result.current.phase).toBe('provider-error');
+    expect(result.current.genError?.message).toMatch(/mistral is down/i);
+  });
+
+  it('classifies an edit-specific patch rejection (e.g. protected_field) as a provider error', async () => {
+    mockedEditAIScene.mockRejectedValue(
+      new ApiError(422, { error: 'protected_field', detail: 'Patch touched a protected field.' }),
+    );
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    act(() => result.current.setMode('edit'));
+    act(() => result.current.setPrompt('rename the scene id'));
+
+    await act(async () => {
+      await result.current.generate(VALID_SCENE, 3);
+    });
+
+    expect(result.current.phase).toBe('provider-error');
+    expect(result.current.genError?.message).toMatch(/protected field/i);
+  });
+
   it('rejects edit mode with no working scene without calling the API', async () => {
     const { result } = renderHook(() => useAIProposal('p1'));
     act(() => result.current.setMode('edit'));

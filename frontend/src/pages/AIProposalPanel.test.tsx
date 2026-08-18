@@ -250,6 +250,63 @@ describe('AIProposalPanel edit mode', () => {
       '1 change: canvas updated.',
     );
   });
+
+  it('shows the pending state while an editAIScene request is in flight', async () => {
+    let resolvePromise: (value: aiApi.AIEditSceneResponse) => void = () => {};
+    mockedEditAIScene.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePromise = resolve;
+      }),
+    );
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('radio', { name: /edit/i }));
+    await userEvent.type(screen.getByLabelText(/describe the change/i), 'make it black');
+    await userEvent.click(screen.getByRole('button', { name: /propose edit/i }));
+
+    expect(await screen.findByTestId('ai-pending-status')).toHaveTextContent(/contacting/i);
+    expect(screen.queryByTestId('ai-proposal-success')).not.toBeInTheDocument();
+
+    resolvePromise({
+      draft: true,
+      operation: 'edit_scene',
+      patch: [],
+      scene: VALID_SCENE,
+      change_summary: '1 change: canvas updated.',
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    await screen.findByTestId('ai-proposal-success');
+  });
+
+  it('shows a distinct, accessible quota-error state for an edit-scene request', async () => {
+    mockedEditAIScene.mockRejectedValue(
+      new ApiError(429, { error: 'provider_quota_exceeded', detail: 'Provider quota reached.' }),
+    );
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('radio', { name: /edit/i }));
+    await userEvent.type(screen.getByLabelText(/describe the change/i), 'make it black');
+    await userEvent.click(screen.getByRole('button', { name: /propose edit/i }));
+
+    const alert = await screen.findByTestId('ai-error-quota-error');
+    expect(alert).toHaveAttribute('aria-live', 'assertive');
+    expect(alert).toHaveTextContent(/provider quota reached/i);
+  });
+
+  it('shows a distinct, accessible provider-error state for an edit-scene request', async () => {
+    mockedEditAIScene.mockRejectedValue(
+      new ApiError(502, { error: 'provider_failure', detail: 'Mistral is down.' }),
+    );
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('radio', { name: /edit/i }));
+    await userEvent.type(screen.getByLabelText(/describe the change/i), 'make it black');
+    await userEvent.click(screen.getByRole('button', { name: /propose edit/i }));
+
+    const alert = await screen.findByTestId('ai-error-provider-error');
+    expect(alert).toHaveAttribute('aria-live', 'assertive');
+    expect(alert).toHaveTextContent(/mistral is down/i);
+  });
 });
 
 describe('AIProposalPanel keyboard operability', () => {

@@ -15,25 +15,42 @@ import type { PublicGalleryProject } from '../api/projects';
  *   `onError`, which flips local `thumbnailFailed` state rather than
  *   leaving a broken-image icon on screen.
  *
- * `remix_provenance` is a documented no-op for now (Task 53, issue #52 —
- * forking doesn't exist yet): the slot renders nothing at all when it's
- * `null`, per this task's own scope note, but the markup and the
- * null-check live here so Task 53 only has to fill in the body once real
- * provenance data exists.
- *
  * Task 51 (issue #53): the whole card is now a link to the public project
  * viewer at `/p/<id>` — the route Task 50 deliberately left this card not
  * pointing anywhere for (see this file's previous docstring/PublicGallery's
- * own). No Fork/Remix affordance is added here; that's Task 52 (issue #51),
- * still out of scope.
+ * own).
+ *
+ * ## Remix provenance (Task 53, issue #52)
+ *
+ * `remix_provenance` is `null` for an original (non-remixed) project —
+ * nothing renders for that case at all: no badge, no attribution line, no
+ * empty element. When it's present, this card is programmatically and
+ * visually distinguishable from an original:
+ *
+ * - `data-project-kind="remix"` (vs. `"original"`) on the `<article>`
+ *   itself, so tests/tooling can assert the distinction without parsing
+ *   visible text.
+ * - A visible "Remix" badge (`role="status"`, its own text, not just
+ *   color) next to the title.
+ * - A "Remixed from [creator]" line: a `<Link>` to `/p/<source id>` when
+ *   `source_public_id` is present (the source is still public), or the
+ *   same wording as plain unlinked text when it's `null` (source went
+ *   private/unpublished/deleted — attribution stays, without a broken or
+ *   privacy-leaking link). `source_creator` is always present per
+ *   `RemixProvenance`'s own docstring (`api/projects.ts`).
  */
 function PublicProjectCard({ project }: { project: PublicGalleryProject }) {
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const titleId = `public-project-${project.id}-title`;
   const showFallback = !project.thumbnail_url || thumbnailFailed;
+  const provenance = project.remix_provenance;
 
   return (
-    <article aria-labelledby={titleId} className="public-project-card">
+    <article
+      aria-labelledby={titleId}
+      className="public-project-card"
+      data-project-kind={provenance ? 'remix' : 'original'}
+    >
       <Link to={`/p/${project.id}`} className="public-project-card-link">
         {showFallback ? (
           <div
@@ -53,14 +70,25 @@ function PublicProjectCard({ project }: { project: PublicGalleryProject }) {
         )}
 
         <h3 id={titleId}>{project.title}</h3>
+        {provenance && (
+          <span className="remix-badge" role="status" aria-label="Remix">
+            Remix
+          </span>
+        )}
       </Link>
       <p className="public-project-attribution">By {project.owner}</p>
 
-      {project.remix_provenance && (
-        <p className="public-project-provenance" data-testid={`provenance-${project.id}`}>
-          Remixed from another project
-        </p>
-      )}
+      {provenance &&
+        (provenance.source_public_id ? (
+          <p className="public-project-provenance" data-testid={`provenance-${project.id}`}>
+            Remixed from{' '}
+            <Link to={`/p/${provenance.source_public_id}`}>{provenance.source_creator}</Link>
+          </p>
+        ) : (
+          <p className="public-project-provenance" data-testid={`provenance-${project.id}`}>
+            Remixed from {provenance.source_creator}
+          </p>
+        ))}
     </article>
   );
 }

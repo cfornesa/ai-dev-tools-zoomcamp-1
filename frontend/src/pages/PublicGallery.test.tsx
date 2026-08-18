@@ -105,11 +105,18 @@ describe('PublicGallery card rendering', () => {
     await screen.findByRole('heading', { name: 'Hand Follower' });
 
     expect(screen.queryByTestId('provenance-p1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Remix')).not.toBeInTheDocument();
+    expect(screen.getByRole('article')).toHaveAttribute('data-project-kind', 'original');
   });
 
-  it('renders the provenance slot when remix_provenance is present', async () => {
+  it('renders "Remixed from [creator]" linked to the source when the source is available', async () => {
     mockedListPublicGallery.mockResolvedValue({
-      results: [baseProject({ id: 'p1', remix_provenance: {} })],
+      results: [
+        baseProject({
+          id: 'p1',
+          remix_provenance: { source_creator: 'alice', source_public_id: 'source-1' },
+        }),
+      ],
       next_cursor: null,
       has_more: false,
     });
@@ -117,7 +124,30 @@ describe('PublicGallery card rendering', () => {
     renderPublicGallery();
     await screen.findByRole('heading', { name: 'Hand Follower' });
 
-    expect(screen.getByTestId('provenance-p1')).toBeInTheDocument();
+    expect(screen.getByTestId('provenance-p1')).toHaveTextContent(/remixed from alice/i);
+    const link = screen.getByRole('link', { name: 'alice' });
+    expect(link).toHaveAttribute('href', '/p/source-1');
+    expect(screen.getByRole('article')).toHaveAttribute('data-project-kind', 'remix');
+    expect(screen.getByRole('status', { name: /remix/i })).toBeInTheDocument();
+  });
+
+  it('renders unlinked "Remixed from [creator]" text when the source is unavailable', async () => {
+    mockedListPublicGallery.mockResolvedValue({
+      results: [
+        baseProject({
+          id: 'p1',
+          remix_provenance: { source_creator: 'alice', source_public_id: null },
+        }),
+      ],
+      next_cursor: null,
+      has_more: false,
+    });
+
+    renderPublicGallery();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    expect(screen.getByTestId('provenance-p1')).toHaveTextContent(/remixed from alice/i);
+    expect(screen.queryByRole('link', { name: 'alice' })).not.toBeInTheDocument();
   });
 
   it('shows an accessible fallback when a project has no thumbnail_url', async () => {

@@ -157,13 +157,27 @@ export function deleteSceneVersion(projectId: string, versionId: number): Promis
   });
 }
 
-/** Task 53 (issue #52) will define this once forking (Task 52, issue #51)
- * exists — no project can have remix provenance yet, so the public gallery
- * API always returns `null` for this field (see `scenes/serializers.py`'s
- * `PublicProjectListItemSerializer` docstring). The empty shape is a
- * deliberate placeholder: the field is structurally present now so a
- * future card redesign isn't needed when Task 53 starts populating it. */
-export type RemixProvenance = Record<string, never>;
+/** Task 53 (issue #52): "Remixed from [creator]" data for a public gallery
+ * card or public project detail page — `null` when the project has no
+ * fork provenance at all (not a remix; render nothing for that case, not
+ * an empty element). See `scenes/serializers.py`'s `remix_provenance_data`
+ * for the full policy this shape follows:
+ *
+ * - `source_creator` is always present and durable (a live read of the
+ *   source project's current owner username — the "snapshot-or-live"
+ *   policy is LIVE, so this can change if the creator's username changes,
+ *   but is never unavailable, even after the source goes private).
+ * - `source_public_id` is the source's id *only when it is currently
+ *   public, published, and not deleted* — build a link to `/p/<id>` when
+ *   it is non-null, and render plain unlinked text when it is `null`
+ *   (private/unpublished/deleted source: durable attribution, no link,
+ *   no other private source data exposed).
+ * - Nested remixes report the *immediate* fork source, not the root of a
+ *   longer chain — see that function's docstring for why. */
+export type RemixProvenance = {
+  source_creator: string;
+  source_public_id: string | null;
+};
 
 /** Task 50: one public-gallery card (`PublicProjectListItemSerializer`).
  * Deliberately narrower than `Project` — no `description`, `tags`,
@@ -229,6 +243,7 @@ export type PublicProject = {
   allow_public_remix: boolean;
   thumbnail_choice: string;
   thumbnail_url: string | null;
+  remix_provenance: RemixProvenance | null;
   current_version: PublicSceneVersion | null;
   created_at: string;
   updated_at: string;

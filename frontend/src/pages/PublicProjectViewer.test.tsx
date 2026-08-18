@@ -40,6 +40,7 @@ function basePublicProject(overrides: Partial<PublicProject> = {}): PublicProjec
     allow_public_remix: false,
     thumbnail_choice: 'auto',
     thumbnail_url: '/api/public/projects/p1/thumbnail.png',
+    remix_provenance: null,
     current_version: {
       sequence: 1,
       scene_json: BLANK_SCENE,
@@ -225,6 +226,68 @@ describe('PublicProjectViewer keyboard operability and focus visibility', () => 
     const enableCameraButton = screen.getByRole('button', { name: /enable camera/i });
     enableCameraButton.focus();
     expect(enableCameraButton).toHaveFocus();
+  });
+});
+
+describe('PublicProjectViewer remix provenance (Task 53, issue #52)', () => {
+  it('renders nothing provenance-related for an original (non-remixed) project', async () => {
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ remix_provenance: null }));
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    expect(screen.queryByText(/remixed from/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Remix')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-project-kind]')).toHaveAttribute(
+      'data-project-kind',
+      'original',
+    );
+  });
+
+  it('shows "Remixed from [creator]" linked to the source when the source is available', async () => {
+    mockedGetPublicProject.mockResolvedValue(
+      basePublicProject({
+        remix_provenance: { source_creator: 'alice', source_public_id: 'source-1' },
+      }),
+    );
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    const link = screen.getByRole('link', { name: 'alice' });
+    expect(link).toHaveAttribute('href', '/p/source-1');
+    expect(screen.getByText(/remixed from/i)).toBeInTheDocument();
+    expect(document.querySelector('[data-project-kind]')).toHaveAttribute(
+      'data-project-kind',
+      'remix',
+    );
+  });
+
+  it('shows unlinked "Remixed from [creator]" text when the source is unavailable', async () => {
+    mockedGetPublicProject.mockResolvedValue(
+      basePublicProject({
+        remix_provenance: { source_creator: 'alice', source_public_id: null },
+      }),
+    );
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    expect(screen.queryByRole('link', { name: 'alice' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('provenance')).toHaveTextContent(/remixed from alice/i);
+  });
+
+  it('shows a visible Remix badge distinguishing a remix from an original', async () => {
+    mockedGetPublicProject.mockResolvedValue(
+      basePublicProject({
+        remix_provenance: { source_creator: 'alice', source_public_id: 'source-1' },
+      }),
+    );
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    expect(screen.getByRole('status', { name: /remix/i })).toBeInTheDocument();
   });
 });
 

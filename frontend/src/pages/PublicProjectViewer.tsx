@@ -43,11 +43,24 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * — the rendered message never confirms or denies that a private project
  * with this id exists.
  *
+ * ## Remix provenance (Task 53, issue #52)
+ *
+ * `project.remix_provenance` is `null` for an original project — nothing
+ * renders for that case. When present, the header carries
+ * `data-project-kind="remix"` (an original carries `"original"`) plus a
+ * visible "Remix" badge for programmatic/visual distinguishability, and a
+ * "Remixed from [creator]" line linking to `/p/<source id>` when the
+ * source is still public (`source_public_id` non-null), or the same
+ * wording as plain unlinked text when the source has gone private,
+ * unpublished, or deleted (`source_public_id` is `null`, but
+ * `source_creator` is always durable — see `RemixProvenance`'s docstring
+ * in `api/projects.ts` and `scenes/serializers.py`'s
+ * `remix_provenance_data` for the full policy).
+ *
  * ## Fork action (Task 51)
  *
- * The minimal Fork action lives here — just the button/request, not the
- * "Remixed from X" provenance display (that's Task 53, issue #52's job).
- * The button is hidden entirely for a signed-out visitor and for a project
+ * The minimal Fork action lives here — just the button/request. The
+ * button is hidden entirely for a signed-out visitor and for a project
  * with remixing turned off (`project.allow_public_remix`), matching the
  * acceptance criteria's "unavailable when ... private or remix disabled"
  * (a private project never reaches this page at all — `getPublicProject`
@@ -177,12 +190,31 @@ function PublicProjectViewer() {
 
   if (!project) return null;
 
+  const provenance = project.remix_provenance;
+
   return (
-    <div className="public-project-viewer">
+    <div className="public-project-viewer" data-project-kind={provenance ? 'remix' : 'original'}>
       <header>
         <h2>{project.title}</h2>
+        {provenance && (
+          <span className="remix-badge" role="status" aria-label="Remix">
+            Remix
+          </span>
+        )}
         {project.description && <p>{project.description}</p>}
         <p className="public-project-attribution">By {project.owner}</p>
+
+        {provenance &&
+          (provenance.source_public_id ? (
+            <p className="public-project-provenance" data-testid="provenance">
+              Remixed from{' '}
+              <Link to={`/p/${provenance.source_public_id}`}>{provenance.source_creator}</Link>
+            </p>
+          ) : (
+            <p className="public-project-provenance" data-testid="provenance">
+              Remixed from {provenance.source_creator}
+            </p>
+          ))}
 
         {auth.status === 'signed-in' && project.allow_public_remix && (
           <p>

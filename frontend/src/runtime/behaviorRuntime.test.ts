@@ -14,9 +14,17 @@ import {
   BehaviorGraphValidationError,
   createBehaviorRuntime,
   DEFAULT_EVENT_COOLDOWN_MS,
+  evaluateAdd,
+  evaluateClamp,
+  evaluateInvert,
+  evaluateLerp,
+  evaluateMapRange,
+  evaluateMultiply,
   validateBehaviorGraph,
+  validateTransformNodeParams,
   type RuntimeInput,
 } from './behaviorRuntime';
+import type { SceneDocument } from '../api/projects';
 
 // A scene carrying exactly one "Follow hand" card (Task 34): indexTipX ->
 // positionX, mapped [0,1] -> [0, canvas width], smoothing 0.3.
@@ -111,6 +119,71 @@ function input(
   return { timestamp, signals, events };
 }
 
+// --- Task 37 test fixtures: hand-authored transform-chain graphs -------
+//
+// Builds a scene with N `handSignal` input nodes feeding a single transform
+// node, whose `out` port feeds a `shapeProperty` node targeting
+// `shape-circle`'s `positionX` — the minimal end-to-end wiring needed to
+// exercise `evaluateGraphNodeValue`/`evaluateGraphVisualOutputs` (not just
+// the pure per-node math functions) through `createBehaviorRuntime`/`tick`.
+function sceneWithTransformChain(
+  transformType: string,
+  transformParams: Record<string, unknown>,
+  inputs: Array<{ signal: string; toPort: string }>,
+): SceneDocument {
+  const inputNodes = inputs.map((inp, index) => ({
+    id: `in-${index}`,
+    family: 'input',
+    type: 'handSignal',
+    params: { signal: inp.signal, handTarget: 'primary' },
+    position: { x: 0, y: index * 80 },
+  }));
+  const transformNode = {
+    id: 'xform',
+    family: 'transform',
+    type: transformType,
+    params: transformParams,
+    position: { x: 200, y: 0 },
+  };
+  const outputNode = {
+    id: 'out-node',
+    family: 'visual',
+    type: 'shapeProperty',
+    params: { targetId: 'shape-circle', property: 'positionX' },
+    position: { x: 400, y: 0 },
+  };
+  const inputConnections = inputs.map((inp, index) => ({
+    id: `conn-in-${index}`,
+    fromNodeId: `in-${index}`,
+    fromPort: 'value',
+    toNodeId: 'xform',
+    toPort: inp.toPort,
+  }));
+  const outputConnection = {
+    id: 'conn-out',
+    fromNodeId: 'xform',
+    fromPort: 'out',
+    toNodeId: 'out-node',
+    toPort: 'in',
+  };
+  return baseScene({
+    canvas: { width: 100, height: 100, backgroundColor: '#000000' },
+    shapes: [circleShape({ id: 'shape-circle' })],
+    bindings: [],
+    graph: {
+      nodes: [...inputNodes, transformNode, outputNode],
+      connections: [...inputConnections, outputConnection],
+    },
+  });
+}
+
+function tickPositionX(scene: SceneDocument, tickInput: RuntimeInput): number | undefined {
+  const runtime = createBehaviorRuntime(scene);
+  const result = runtime.tick(tickInput);
+  return result.continuous.find((c) => c.targetProperty === 'positionX')?.value as
+    number | undefined;
+}
+
 describe('validateBehaviorGraph', () => {
   it('accepts a scene built from a behavior card', () => {
     const result = validateBehaviorGraph(sceneWithFollowHand());
@@ -143,10 +216,13 @@ describe('validateBehaviorGraph', () => {
     const graph = (scene as Record<string, unknown>).graph as {
       nodes: Array<Record<string, unknown>>;
     };
+    // 'oscillator' is in `_docs/plan.md`'s V1 math/time node list but out
+    // of scope for Task 37 (see the module doc comment), so it remains
+    // unsupported even though the other 7 transform types now are.
     graph.nodes.push({
       id: 'bad-node',
       family: 'transform',
-      type: 'mapRange',
+      type: 'oscillator',
       params: {},
       position: { x: 0, y: 0 },
     });
@@ -487,5 +563,374 @@ describe('applyRuntimeOutputsToScene: renderer wiring', () => {
     const scene = sceneWithFollowHand();
     const patched = applyRuntimeOutputsToScene(scene, []);
     expect(patched).toBe(scene);
+  });
+});
+
+// --- Task 37: transform node tests --------------------------------------
+//
+// Two layers, per the issue's acceptance criteria: (1) table-driven tests
+// of the pure per-node math functions directly (minimum, maximum, an
+// equality/degenerate case, a negative case, a non-finite case — for every
+// one of the 7 node types), and (2) end-to-end `createBehaviorRuntime`/
+// `tick` tests proving each node type is actually wired into graph
+// execution, not just structurally allowlisted.
+
+describe('Task 37 transform node math: table-driven', () => {
+  describe('evaluateMapRange', () => {
+    const cases: Array<[string, number | null, Record<string, unknown>, number | null]> = [
+      [
+        'minimum of input range -> output min',
+        0,
+        { inMin: 0, inMax: 10, outMin: 0, outMax: 100 },
+        0,
+      ],
+      [
+        'maximum of input range -> output max',
+        10,
+        { inMin: 0, inMax: 10, outMin: 0, outMax: 100 },
+        100,
+      ],
+      [
+        'equal input bounds -> documented output-range midpoint, no NaN',
+        999,
+        { inMin: 5, inMax: 5, outMin: 0, outMax: 100 },
+        50,
+      ],
+      [
+        'negative input value maps correctly',
+        -5,
+        { inMin: -10, inMax: 0, outMin: 0, outMax: 100 },
+        50,
+      ],
+      ['NaN input -> null', NaN, { inMin: 0, inMax: 1, outMin: 0, outMax: 1 }, null],
+      ['Infinity input -> null', Infinity, { inMin: 0, inMax: 1, outMin: 0, outMax: 1 }, null],
+      ['null (missing) input -> null', null, { inMin: 0, inMax: 1, outMin: 0, outMax: 1 }, null],
+    ];
+    it.each(cases)('%s', (_label, value, params, expected) => {
+      expect(evaluateMapRange(value, params)).toBe(expected);
+    });
+
+    it('clampOutput: true (the default) clamps extrapolated results into the output range', () => {
+      expect(evaluateMapRange(2, { inMin: 0, inMax: 1, outMin: 0, outMax: 10 })).toBe(10);
+    });
+
+    it('clampOutput: false allows extrapolation past the output range', () => {
+      expect(
+        evaluateMapRange(2, { inMin: 0, inMax: 1, outMin: 0, outMax: 10, clampOutput: false }),
+      ).toBe(20);
+    });
+  });
+
+  describe('evaluateClamp', () => {
+    const cases: Array<[string, number | null, Record<string, unknown>, number | null]> = [
+      ['value at minimum passes through', 0, { min: 0, max: 10 }, 0],
+      ['value above maximum is clamped to maximum', 15, { min: 0, max: 10 }, 10],
+      ['min === max collapses to that single point', 5, { min: 3, max: 3 }, 3],
+      ['negative value within a negative range', -5, { min: -10, max: -1 }, -5],
+      ['NaN input -> null', NaN, { min: 0, max: 1 }, null],
+      ['Infinity input -> null', Infinity, { min: 0, max: 1 }, null],
+      ['null (missing) input -> null', null, { min: 0, max: 1 }, null],
+    ];
+    it.each(cases)('%s', (_label, value, params, expected) => {
+      expect(evaluateClamp(value, params)).toBe(expected);
+    });
+  });
+
+  describe('evaluateInvert', () => {
+    const cases: Array<[string, number | null, Record<string, unknown>, number | null]> = [
+      ['minimum inverts to maximum', 0, { min: 0, max: 10 }, 10],
+      ['maximum inverts to minimum', 10, { min: 0, max: 10 }, 0],
+      ['min === max inverts to that single point', 5, { min: 3, max: 3 }, 3],
+      ['negative-range value inverts symmetrically', -8, { min: -10, max: -1 }, -3],
+      ['NaN input -> null', NaN, { min: 0, max: 1 }, null],
+      ['Infinity input -> null', Infinity, { min: 0, max: 1 }, null],
+      ['null (missing) input -> null', null, { min: 0, max: 1 }, null],
+    ];
+    it.each(cases)('%s', (_label, value, params, expected) => {
+      expect(evaluateInvert(value, params)).toBe(expected);
+    });
+  });
+
+  describe('evaluateAdd', () => {
+    const cases: Array<[string, number | null, number | null, number | null]> = [
+      ['two minimum-ish values', 0, 0, 0],
+      ['large values summing within range', 1e6, 1e6, 2e6],
+      ['equal operands', 4, 4, 8],
+      ['negative operand', -5, 3, -2],
+      ['NaN operand -> null (rejected, not propagated)', NaN, 1, null],
+      [
+        'finite operands whose sum overflows to Infinity -> null',
+        Number.MAX_VALUE,
+        Number.MAX_VALUE,
+        null,
+      ],
+      ['null operand -> null', null, 1, null],
+    ];
+    it.each(cases)('%s', (_label, a, b, expected) => {
+      expect(evaluateAdd(a, b)).toBe(expected);
+    });
+  });
+
+  describe('evaluateMultiply', () => {
+    const cases: Array<[string, number | null, number | null, number | null]> = [
+      ['multiply by zero (minimum-ish)', 0, 5, 0],
+      ['two large values', 1e3, 1e3, 1e6],
+      ['equal operands', 4, 4, 16],
+      ['negative operand', -3, 4, -12],
+      ['NaN operand -> null (rejected, not propagated)', NaN, 1, null],
+      ['finite operands whose product overflows to Infinity -> null', Number.MAX_VALUE, 2, null],
+      ['null operand -> null', null, 1, null],
+    ];
+    it.each(cases)('%s', (_label, a, b, expected) => {
+      expect(evaluateMultiply(a, b)).toBe(expected);
+    });
+  });
+
+  describe('evaluateLerp', () => {
+    const cases: Array<
+      [string, number | null, number | null, Record<string, unknown>, number | null]
+    > = [
+      ['t=0 (minimum) returns a', 0, 10, { t: 0 }, 0],
+      ['t=1 (maximum) returns b', 0, 10, { t: 1 }, 10],
+      ['a === b returns that value regardless of t', 7, 7, { t: 0.5 }, 7],
+      ['negative endpoints', -10, -20, { t: 0.5 }, -15],
+      ['NaN endpoint -> null', NaN, 10, { t: 0.5 }, null],
+      ['Infinity endpoint -> null', Infinity, 10, { t: 0.5 }, null],
+      ['null endpoint -> null', null, 10, { t: 0.5 }, null],
+    ];
+    it.each(cases)('%s', (_label, a, b, params, expected) => {
+      expect(evaluateLerp(a, b, params)).toBe(expected);
+    });
+
+    it('t outside [0,1] is clamped rather than extrapolating', () => {
+      expect(evaluateLerp(0, 10, { t: 2 })).toBe(10);
+      expect(evaluateLerp(0, 10, { t: -1 })).toBe(0);
+    });
+  });
+});
+
+describe('Task 37 transform node param validation (surfaced before execution)', () => {
+  it('accepts default (empty) params for every transform node type', () => {
+    for (const type of ['mapRange', 'clamp', 'smooth', 'invert', 'add', 'multiply', 'lerp']) {
+      expect(validateTransformNodeParams(type, {})).toBeNull();
+    }
+  });
+
+  it('rejects clamp with min > max', () => {
+    expect(validateTransformNodeParams('clamp', { min: 10, max: 0 })).toMatch(/min.*max/);
+  });
+
+  it('rejects invert with min > max', () => {
+    expect(validateTransformNodeParams('invert', { min: 10, max: 0 })).toMatch(/min.*max/);
+  });
+
+  it('rejects a negative smoothing value', () => {
+    expect(validateTransformNodeParams('smooth', { smoothing: -0.1 })).toMatch(/smoothing/);
+  });
+
+  it('rejects a smoothing value above 1', () => {
+    expect(validateTransformNodeParams('smooth', { smoothing: 1.5 })).toMatch(/smoothing/);
+  });
+
+  it('rejects a non-finite mapRange bound', () => {
+    expect(validateTransformNodeParams('mapRange', { inMin: NaN })).toMatch(/inMin/);
+  });
+
+  it('rejects a non-boolean mapRange clampOutput', () => {
+    expect(validateTransformNodeParams('mapRange', { clampOutput: 'yes' })).toMatch(/clampOutput/);
+  });
+
+  it('rejects a lerp t outside [0,1]', () => {
+    expect(validateTransformNodeParams('lerp', { t: 1.2 })).toMatch(/t/);
+  });
+
+  it('surfaces an invalid transform node parameter as a validateBehaviorGraph error before any tick runs', () => {
+    const scene = sceneWithTransformChain('clamp', { min: 10, max: 0 }, [
+      { signal: 'testSignal', toPort: 'in' },
+    ]);
+    const result = validateBehaviorGraph(scene);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.rule === 'invalidNodeParams')).toBe(true);
+    expect(() => createBehaviorRuntime(scene)).toThrow(BehaviorGraphValidationError);
+  });
+});
+
+describe('Task 37 transform nodes: end-to-end graph execution', () => {
+  it('mapRange: executes a handSignal -> mapRange -> shapeProperty chain', () => {
+    const scene = sceneWithTransformChain(
+      'mapRange',
+      { inMin: 0, inMax: 1, outMin: 0, outMax: 50 },
+      [{ signal: 'testSignal', toPort: 'in' }],
+    );
+    expect(tickPositionX(scene, input(0, { testSignal: 0.5 }))).toBe(25);
+  });
+
+  it('clamp: executes end to end and bounds an out-of-range signal', () => {
+    const scene = sceneWithTransformChain('clamp', { min: 0, max: 10 }, [
+      { signal: 'testSignal', toPort: 'in' },
+    ]);
+    expect(tickPositionX(scene, input(0, { testSignal: 999 }))).toBe(10);
+  });
+
+  it('invert: executes end to end', () => {
+    const scene = sceneWithTransformChain('invert', { min: 0, max: 10 }, [
+      { signal: 'testSignal', toPort: 'in' },
+    ]);
+    expect(tickPositionX(scene, input(0, { testSignal: 3 }))).toBe(7);
+  });
+
+  it('add: executes end to end with two connected inputs', () => {
+    const scene = sceneWithTransformChain('add', {}, [
+      { signal: 'signalA', toPort: 'inA' },
+      { signal: 'signalB', toPort: 'inB' },
+    ]);
+    expect(tickPositionX(scene, input(0, { signalA: 3, signalB: 4 }))).toBe(7);
+  });
+
+  it('add: an unconnected port defaults to 0 (additive identity), documented missing-input policy', () => {
+    const scene = sceneWithTransformChain('add', {}, [{ signal: 'signalA', toPort: 'inA' }]);
+    expect(tickPositionX(scene, input(0, { signalA: 3 }))).toBe(3);
+  });
+
+  it('multiply: executes end to end with two connected inputs', () => {
+    const scene = sceneWithTransformChain('multiply', {}, [
+      { signal: 'signalA', toPort: 'inA' },
+      { signal: 'signalB', toPort: 'inB' },
+    ]);
+    expect(tickPositionX(scene, input(0, { signalA: 3, signalB: 4 }))).toBe(12);
+  });
+
+  it('multiply: an unconnected port defaults to 1 (multiplicative identity), documented missing-input policy', () => {
+    const scene = sceneWithTransformChain('multiply', {}, [{ signal: 'signalA', toPort: 'inA' }]);
+    expect(tickPositionX(scene, input(0, { signalA: 3 }))).toBe(3);
+  });
+
+  it('smooth: initializes by snapping to the first valid input (cold start), no prior value to blend', () => {
+    const scene = sceneWithTransformChain('smooth', { smoothing: 0.3 }, [
+      { signal: 'testSignal', toPort: 'in' },
+    ]);
+    const runtime = createBehaviorRuntime(scene);
+    const first = runtime.tick(input(0, { testSignal: 100 }));
+    expect(first.continuous.find((c) => c.targetProperty === 'positionX')?.value).toBe(100);
+  });
+
+  it('smooth: moves gradually toward a new target on a later tick rather than snapping', () => {
+    const scene = sceneWithTransformChain('smooth', { smoothing: 0.3 }, [
+      { signal: 'testSignal', toPort: 'in' },
+    ]);
+    const runtime = createBehaviorRuntime(scene);
+    runtime.tick(input(0, { testSignal: 0 }));
+    const second = runtime.tick(input(16.667, { testSignal: 100 }));
+    const value = second.continuous.find((c) => c.targetProperty === 'positionX')?.value as number;
+    expect(value).toBeGreaterThan(0);
+    expect(value).toBeLessThan(100);
+  });
+
+  it('smooth: holds the last computed value when the input signal goes missing', () => {
+    const scene = sceneWithTransformChain('smooth', { smoothing: 0.3 }, [
+      { signal: 'testSignal', toPort: 'in' },
+    ]);
+    const runtime = createBehaviorRuntime(scene);
+    runtime.tick(input(0, { testSignal: 42 }));
+    const missing = runtime.tick(input(16.667, {})); // testSignal absent this tick
+    expect(missing.continuous.find((c) => c.targetProperty === 'positionX')?.value).toBe(42);
+  });
+
+  it('smooth: produces no output before it has ever received a valid input', () => {
+    const scene = sceneWithTransformChain('smooth', { smoothing: 0.3 }, [
+      { signal: 'testSignal', toPort: 'in' },
+    ]);
+    const runtime = createBehaviorRuntime(scene);
+    const result = runtime.tick(input(0, {})); // never had a valid input
+    expect(result.continuous.find((c) => c.targetProperty === 'positionX')).toBeUndefined();
+  });
+
+  it('lerp: initializes once both inputs are present', () => {
+    const scene = sceneWithTransformChain('lerp', { t: 0.5 }, [
+      { signal: 'signalA', toPort: 'inA' },
+      { signal: 'signalB', toPort: 'inB' },
+    ]);
+    expect(tickPositionX(scene, input(0, { signalA: 0, signalB: 10 }))).toBe(5);
+  });
+
+  it('lerp: holds the last computed value when an input goes missing on a later tick', () => {
+    const scene = sceneWithTransformChain('lerp', { t: 0.5 }, [
+      { signal: 'signalA', toPort: 'inA' },
+      { signal: 'signalB', toPort: 'inB' },
+    ]);
+    const runtime = createBehaviorRuntime(scene);
+    runtime.tick(input(0, { signalA: 0, signalB: 10 })); // computes 5, stores it
+    const missing = runtime.tick(input(16.667, { signalA: 0 })); // signalB absent
+    expect(missing.continuous.find((c) => c.targetProperty === 'positionX')?.value).toBe(5);
+  });
+
+  it('lerp: produces no output before it has ever computed a value', () => {
+    const scene = sceneWithTransformChain('lerp', { t: 0.5 }, [
+      { signal: 'signalA', toPort: 'inA' },
+    ]); // inB never connected
+    const runtime = createBehaviorRuntime(scene);
+    const result = runtime.tick(input(0, { signalA: 0 }));
+    expect(result.continuous.find((c) => c.targetProperty === 'positionX')).toBeUndefined();
+  });
+
+  it('chains multiple transform nodes: mapRange -> clamp', () => {
+    // signal in [0,1] -> mapRange to [-50, 150] -> clamp to [0, 100].
+    const inputNode = {
+      id: 'in-0',
+      family: 'input',
+      type: 'handSignal',
+      params: { signal: 'testSignal', handTarget: 'primary' },
+      position: { x: 0, y: 0 },
+    };
+    const mapNode = {
+      id: 'map',
+      family: 'transform',
+      type: 'mapRange',
+      params: { inMin: 0, inMax: 1, outMin: -50, outMax: 150, clampOutput: false },
+      position: { x: 150, y: 0 },
+    };
+    const clampNode = {
+      id: 'clampNode',
+      family: 'transform',
+      type: 'clamp',
+      params: { min: 0, max: 100 },
+      position: { x: 300, y: 0 },
+    };
+    const outputNode = {
+      id: 'out-node',
+      family: 'visual',
+      type: 'shapeProperty',
+      params: { targetId: 'shape-circle', property: 'positionX' },
+      position: { x: 450, y: 0 },
+    };
+    const scene = baseScene({
+      canvas: { width: 100, height: 100, backgroundColor: '#000000' },
+      shapes: [circleShape({ id: 'shape-circle' })],
+      bindings: [],
+      graph: {
+        nodes: [inputNode, mapNode, clampNode, outputNode],
+        connections: [
+          { id: 'c1', fromNodeId: 'in-0', fromPort: 'value', toNodeId: 'map', toPort: 'in' },
+          { id: 'c2', fromNodeId: 'map', fromPort: 'out', toNodeId: 'clampNode', toPort: 'in' },
+          {
+            id: 'c3',
+            fromNodeId: 'clampNode',
+            fromPort: 'out',
+            toNodeId: 'out-node',
+            toPort: 'in',
+          },
+        ],
+      },
+    });
+    // testSignal=1 -> mapRange yields 150 (unclamped) -> clamp bounds to 100.
+    expect(tickPositionX(scene, input(0, { testSignal: 1 }))).toBe(100);
+  });
+
+  it('does not double-emit for a Task 34 card graph fragment (card binding already produces the output)', () => {
+    const scene = sceneWithFollowHand();
+    const runtime = createBehaviorRuntime(scene);
+    const result = runtime.tick(input(0, { indexTipX: 0.5 }));
+    const positionXOutputs = result.continuous.filter((c) => c.targetProperty === 'positionX');
+    expect(positionXOutputs).toHaveLength(1);
   });
 });

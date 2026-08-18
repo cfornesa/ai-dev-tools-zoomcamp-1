@@ -202,6 +202,49 @@ export function listPublicGallery(
   return apiFetch<PublicGalleryPage>(`/api/public/projects/${query ? `?${query}` : ''}`);
 }
 
+/** Task 51 (issue #53): the *current* saved version of a public project, as
+ * returned nested inside `PublicProject` (`PublicSceneVersionSerializer`).
+ * Deliberately narrower than `SceneVersion` — no `id`/`origin`/
+ * `change_label`/`created_by`/`parent`/`fork_source_version`, none of
+ * which is meaningful (or safe) to expose to an anonymous visitor; see
+ * that serializer's own docstring in `scenes/serializers.py`. */
+export type PublicSceneVersion = {
+  sequence: number;
+  scene_json: SceneDocument;
+  created_at: string;
+};
+
+/** Task 51 (issue #53): the single-public-project detail shape
+ * (`PublicProjectSerializer`) the public viewer page fetches. Deliberately
+ * narrower than `Project` — no `id`-as-pk, `visibility`, or
+ * `export_attribution`, and `current_version` is the nested scene
+ * snapshot itself (not just an id), so this one response has everything
+ * the public viewer needs to render without a second request. */
+export type PublicProject = {
+  id: string;
+  owner: string;
+  title: string;
+  description: string;
+  tags: string[];
+  allow_public_remix: boolean;
+  thumbnail_choice: string;
+  thumbnail_url: string | null;
+  current_version: PublicSceneVersion | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Task 51 (issue #53): fetch a single public project by its `public_id`,
+ * for the public viewer page. 404s (via `ApiError`) identically whether
+ * the id never existed or belongs to a project that is not currently
+ * `public` — `PublicProjectDetailView` (`scenes/api.py`) never
+ * distinguishes the two, so this call site can't either (see that view's
+ * own docstring for why that's deliberate: no confirming a private
+ * project's existence to an anonymous caller). */
+export function getPublicProject(id: string): Promise<PublicProject> {
+  return apiFetch<PublicProject>(`/api/public/projects/${id}/`);
+}
+
 /** Task 18: atomically create a private project with one blank-canvas version.
  * Pass the same `clientRequestId` again to safely retry a failed/uncertain
  * submission without risking a duplicate project. */

@@ -24,6 +24,7 @@ import {
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useSceneEditor } from './useSceneEditor';
+import DemoControlsPanel from './DemoControlsPanel';
 import SceneOutlinePanel from './SceneOutlinePanel';
 
 const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
@@ -426,6 +427,15 @@ function EditorWorkspace() {
           )}
 
           <SceneOutlinePanel sceneEditor={sceneEditor} />
+
+          {/* Task 28: local demo signal controls — sliders/toggles/event
+              buttons plus deterministic synthetic playback, so every
+              normalized gesture signal can be exercised without a camera.
+              Self-contained (owns its own tracking-provider controller;
+              see DemoControlsPanel.tsx), so it lives here as an
+              independent section rather than threading through
+              useSceneEditor/workingCopy. */}
+          <DemoControlsPanel />
         </section>
 
         <section

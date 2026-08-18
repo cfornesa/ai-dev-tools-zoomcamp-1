@@ -14,7 +14,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
-import pytest
 
 from ai_provider.interface import AICreateSceneRequest, AIEditSceneRequest, AIErrorCategory
 from ai_provider.mistral_provider import (
@@ -250,13 +249,20 @@ def test_create_scene_maps_504_to_timeout():
     assert result.error.category == AIErrorCategory.TIMEOUT
 
 
-# --- edit_scene is explicitly out of scope for this task -----------------
+# --- edit_scene (Task 50) -- see tests/test_mistral_provider_edit_scene.py
+# for the full patch-generation/allowlist/apply/empty-patch/error-mapping
+# coverage. This file keeps only the ABC-compliance smoke test.
 
 
-def test_edit_scene_is_not_implemented():
-    provider = _provider_with(lambda **kw: _fake_response(json.dumps(BLANK_SCENE)))
-    with pytest.raises(NotImplementedError):
-        provider.edit_scene(AIEditSceneRequest(prompt="edit it", current_scene=BLANK_SCENE))
+def test_edit_scene_returns_ai_operation_result_via_the_abc_method():
+    patch = [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#000000"}]
+    provider = _provider_with(lambda **kw: _fake_response(json.dumps(patch)))
+
+    request = AIEditSceneRequest(prompt="make it black", current_scene=BLANK_SCENE)
+    result = provider.edit_scene(request)
+
+    assert result.success
+    assert result.scene["canvas"]["backgroundColor"] == "#000000"
 
 
 # --- API key handling: never required unless a real client is built ------

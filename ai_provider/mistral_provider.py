@@ -1,13 +1,63 @@
-"""A real `AISceneProvider` backed by the Mistral API (Task 46/47).
+"""A real `AISceneProvider` backed by the Mistral API (Task 46/47/50).
 
 `_docs/plan.md`'s "AI provider and cost control" section: "Use Mistral API
 through Django server-side endpoints as the initial hosted provider ...
 AI returns strict schema-constrained JSON, never arbitrary JavaScript."
 
-`MistralSceneProvider.create_scene` is the only implemented operation —
-`edit_scene` (prompt + current scene -> patch) is Task 47 (issue #50) and
-deliberately raises `NotImplementedError` here, per that task's "out of
-scope" note.
+`MistralSceneProvider` implements both `create_scene` (Task 46/47, prompt
+-> complete scene) and `edit_scene` (Task 50, prompt + current scene ->
+allowlisted JSON Patch -> patched draft scene).
+
+## edit_scene: patch generation, not full-scene regeneration
+
+Unlike `create_scene`, `edit_scene` constrains Mistral's `response_format`
+to a small JSON Patch document schema (`_EDIT_RESPONSE_JSON_SCHEMA`) —
+an array of `{op, path, value?}` operations — rather than a complete
+scene. This is deliberately narrower than `AIEditSceneRequest`'s
+docstring in `ai_provider/interface.py` (which describes a provider
+returning "the complete edited scene"): Task 50's acceptance criteria
+requires the response to literally *contain the patch* ("A successful
+response contains the patch, resulting draft scene, and concise change
+summary"), and requires that "only documented JSON Patch operations and
+paths are accepted" -- both only make sense if Mistral is asked to
+produce a patch, not a full document, in the first place. `edit_scene`
+(the `AISceneProvider` ABC method) still returns a plain
+`AIOperationResult` carrying the *resulting* scene, for interface
+compatibility with `create_scene`/`FakeAISceneProvider`/every other
+caller of the shared interface; `edit_scene_with_patch` is the richer
+entry point (used by `scenes/ai_api.py`'s edit endpoint) that also
+returns the patch document itself and a change summary.
+
+Patch handling, in order:
+
+1. Mistral is asked (schema-constrained) for a JSON Patch array.
+2. An **empty patch is treated as a rejection, not a trivial success**:
+   `_docs/plan.md` never says the model is guaranteed to find a
+   meaningful edit, and a "successful" draft that is byte-for-byte
+   identical to the input would be indistinguishable from a bug to the
+   end user. See `EMPTY_PATCH_PREFIX`.
+3. `scenes.patch.validate_patch_operations` checks the raw patch against
+   the allowlisted ops/paths and protected-field list *before* it is
+   ever applied — a patch that touches `/id`, `/schemaVersion`,
+   `/randomness/seed`, any other item's `id` field in place, or any path
+   outside the documented allowlist is rejected outright, with a
+   `INVALID_PATCH_PREFIX`-tagged message identifying the specific reason
+   (`scenes.patch.PatchErrorReason`) so `scenes/ai_api.py` can map it to
+   its own explicit HTTP response.
+4. Only a patch that passes step 3 is applied, via `scenes.patch.apply_patch`,
+   to a **deep copy** of `request.current_scene` — the original the
+   caller passed in is never mutated.
+5. The resulting scene still goes through the same
+   `ai_provider.interface.execute()` / `scenes.validation.validate_scene`
+   path `create_scene` uses (full schema + `schema/limits.json` resource
+   limits) before being considered a success — an allowlisted patch can
+   still produce a scene that is, say, over a shape-count limit, and
+   that must be caught exactly like a bad `create_scene` output.
+
+Nothing here writes a `SceneVersion` or touches saved project state —
+this module has no database access at all; persistence is exclusively
+`scenes/api.py`'s concern, triggered later by an explicit user Accept
+action (Task 48).
 
 ## How the schema constraint is enforced
 
@@ -69,12 +119,14 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
 from ai_provider.config import MISTRAL_API_KEY_ENV_VAR, get_provider_api_key
 from ai_provider.errors import (
+    AIProviderCancelledError,
     AIProviderQuotaError,
     AIProviderRejectionError,
     AIProviderTimeoutError,
@@ -82,11 +134,20 @@ from ai_provider.errors import (
 from ai_provider.interface import (
     AICreateSceneRequest,
     AIEditSceneRequest,
+    AIError,
+    AIErrorCategory,
     AIOperation,
     AIOperationResult,
     AISceneProvider,
     AIUsageMetadata,
     execute,
+)
+from scenes.patch import (
+    PatchError,
+    apply_patch,
+    summarize_patch,
+    validate_patch_operations,
+    worst_reason,
 )
 from scenes.validation import SCENE_SCHEMA
 
@@ -121,6 +182,18 @@ _ESTIMATED_COMPLETION_COST_PER_1K = 0.006
 # AIErrorCategory itself has no dedicated "response too large" member.
 RESPONSE_TOO_LARGE_PREFIX = "response_too_large:"
 
+# Public: scenes/ai_api.py inspects a PROVIDER_REJECTION error's message
+# for these prefixes to give edit_scene's patch-specific rejection modes
+# their own explicit HTTP responses, distinct from a generic provider
+# failure and from each other (Task 50's acceptance criteria calls out
+# "patch failure, invalid path, stale base, oversized patch" as separate
+# documented outcomes -- stale base is detected entirely in
+# scenes/ai_api.py before a provider is ever called, so it has no prefix
+# here).
+EMPTY_PATCH_PREFIX = "empty_patch:"
+INVALID_PATCH_PREFIX = "invalid_patch:"
+PATCH_APPLY_FAILED_PREFIX = "patch_apply_failed:"
+
 _SYSTEM_PROMPT = """You generate a single canonical scene document for a gesture-reactive \
 animation editor. Follow these rules exactly:
 
@@ -139,6 +212,50 @@ values.
 - Every id referenced by a binding, group, or connection must exist \
 elsewhere in the document."""
 
+_EDIT_SYSTEM_PROMPT = """You propose a minimal JSON Patch editing an existing gesture-reactive \
+animation scene document. Follow these rules exactly:
+
+- Respond with ONLY a single JSON array of patch operations -- no prose, \
+no markdown code fences, no explanation before or after it.
+- Each operation is an object with "op" (one of "add", "replace", or \
+"remove" -- no other op is ever accepted), "path" (a JSON Pointer string \
+into the scene document), and "value" (required for "add"/"replace", \
+omitted for "remove").
+- Propose the SMALLEST set of operations that fulfills the requested \
+edit. Do not rewrite or re-emit unrelated parts of the scene.
+- NEVER target these paths -- any operation touching them is rejected \
+outright: "/schemaVersion", "/id" (the scene's own identity), \
+"/randomness/seed", or any existing item's own "id" field (e.g. \
+"/shapes/2/id"). You may add or remove a whole shape/group/binding/node/ \
+connection/layer (its own "id" lives inside the added/removed value), \
+but you may never rename an existing item's id in place.
+- Only these paths may be targeted, each at element or property \
+granularity (never a bare whole-array replace like "/shapes" on its \
+own): "/shapes/...", "/groups/...", "/bindings/...", "/layers/...", \
+"/graph/nodes/...", "/graph/connections/...", "/accessibility/...", \
+"/demoSignals" (or under it), "/canvas/backgroundColor" exactly, and \
+"/randomness/enabled" exactly.
+- If the requested edit cannot be expressed within these constraints, \
+respond with an empty JSON array: []."""
+
+
+# A response_format-compatible JSON Schema constraining Mistral's output to
+# a small, documented JSON Patch dialect (see scenes/patch.py for the full
+# allowlist/protected-field enforcement this schema only partially
+# expresses -- response_format is a hint, scenes.patch is the backstop).
+_EDIT_RESPONSE_JSON_SCHEMA: dict[str, Any] = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "op": {"type": "string", "enum": ["add", "replace", "remove"]},
+            "path": {"type": "string"},
+            "value": {},
+        },
+        "required": ["op", "path"],
+    },
+}
+
 
 def _estimate_cost_usd(prompt_tokens: int, completion_tokens: int) -> float:
     return round(
@@ -148,8 +265,8 @@ def _estimate_cost_usd(prompt_tokens: int, completion_tokens: int) -> float:
     )
 
 
-def _raiser(exc: BaseException) -> Callable[[], dict[str, Any]]:
-    def _raise() -> dict[str, Any]:
+def _raiser(exc: BaseException) -> Callable[[], Any]:
+    def _raise() -> Any:
         raise exc
 
     return _raise
@@ -185,9 +302,37 @@ _RESPONSE_JSON_SCHEMA: dict[str, Any] = {
 }
 
 
+@dataclass(frozen=True)
+class AIEditScenePatchResult:
+    """The richer result `edit_scene_with_patch` returns (Task 50).
+
+    `result` is the same `AIOperationResult` `AISceneProvider.edit_scene`
+    (the ABC method) returns -- carrying the *resulting* patched scene on
+    success, or a normalized error. `patch` and `change_summary` are only
+    populated on success (`result.success`); a rejected/errored edit never
+    exposes patch content the caller shouldn't build a draft preview from.
+    """
+
+    result: AIOperationResult
+    patch: list[dict[str, Any]] | None = None
+    change_summary: str | None = None
+
+
+def _edit_error(
+    usage: AIUsageMetadata, category: AIErrorCategory, message: str
+) -> AIEditScenePatchResult:
+    return AIEditScenePatchResult(
+        result=AIOperationResult(
+            operation=AIOperation.EDIT_SCENE,
+            usage=usage,
+            error=AIError(category=category, message=message),
+        )
+    )
+
+
 class MistralSceneProvider(AISceneProvider):
-    """`AISceneProvider` backed by the real Mistral API. `create_scene` only
-    (Task 46/47) -- `edit_scene` is Task 47 (issue #50)."""
+    """`AISceneProvider` backed by the real Mistral API. Implements both
+    `create_scene` (Task 46/47) and `edit_scene` (Task 50)."""
 
     def __init__(
         self,
@@ -221,10 +366,63 @@ class MistralSceneProvider(AISceneProvider):
         return execute(AIOperation.CREATE_SCENE, usage, produce)
 
     def edit_scene(self, request: AIEditSceneRequest) -> AIOperationResult:
-        raise NotImplementedError(
-            "MistralSceneProvider.edit_scene is Task 47 (issue #50) -- "
-            "patch-based editing is out of scope for Task 46/47's "
-            "create-scene endpoint."
+        """`AISceneProvider` ABC compliance: delegates to
+        `edit_scene_with_patch` and returns just its `AIOperationResult`,
+        matching `create_scene`'s (and every other provider's) return
+        shape. Callers that need the patch document/change summary too
+        (`scenes/ai_api.py`'s edit endpoint) should call
+        `edit_scene_with_patch` directly instead.
+        """
+        return self.edit_scene_with_patch(request).result
+
+    def edit_scene_with_patch(self, request: AIEditSceneRequest) -> AIEditScenePatchResult:
+        usage, produce_patch = self._invoke_edit(request.prompt, request.current_scene)
+
+        try:
+            raw_patch = produce_patch()
+        except AIProviderTimeoutError as exc:
+            return _edit_error(usage, AIErrorCategory.TIMEOUT, str(exc))
+        except AIProviderCancelledError as exc:
+            return _edit_error(usage, AIErrorCategory.CANCELLED, str(exc))
+        except AIProviderQuotaError as exc:
+            return _edit_error(usage, AIErrorCategory.QUOTA_EXCEEDED, str(exc))
+        except AIProviderRejectionError as exc:
+            return _edit_error(usage, AIErrorCategory.PROVIDER_REJECTION, str(exc))
+
+        # Empty-patch policy (documented in this module's docstring): an
+        # empty patch is rejected, not treated as a trivial no-op success.
+        if not raw_patch:
+            return _edit_error(
+                usage,
+                AIErrorCategory.PROVIDER_REJECTION,
+                f"{EMPTY_PATCH_PREFIX} Mistral proposed no changes for this edit request.",
+            )
+
+        patch_errors = validate_patch_operations(raw_patch)
+        if patch_errors:
+            reason = worst_reason(patch_errors)
+            detail = "; ".join(f"[{e.index}] {e.message}" for e in patch_errors[:5])
+            return _edit_error(
+                usage,
+                AIErrorCategory.PROVIDER_REJECTION,
+                f"{INVALID_PATCH_PREFIX}{reason} {detail}",
+            )
+
+        try:
+            draft_scene = apply_patch(request.current_scene, raw_patch)
+        except PatchError as exc:
+            return _edit_error(
+                usage, AIErrorCategory.PROVIDER_REJECTION, f"{PATCH_APPLY_FAILED_PREFIX} {exc}"
+            )
+
+        result = execute(AIOperation.EDIT_SCENE, usage, lambda: draft_scene)
+        if not result.success:
+            return AIEditScenePatchResult(result=result)
+
+        return AIEditScenePatchResult(
+            result=result,
+            patch=raw_patch,
+            change_summary=summarize_patch(raw_patch),
         )
 
     def _invoke(
@@ -329,11 +527,115 @@ class MistralSceneProvider(AISceneProvider):
 
         return usage, (lambda: scene)
 
+    def _invoke_edit(
+        self, prompt: str, current_scene: dict[str, Any]
+    ) -> tuple[AIUsageMetadata, Callable[[], list[Any]]]:
+        """Same shape/purpose as `_invoke`, but for `edit_scene`: the
+        callable returns the raw parsed JSON Patch array (not yet
+        allowlist-validated or applied -- that happens in
+        `edit_scene_with_patch`), or raises one of the four documented
+        provider exceptions.
+        """
+        zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
+        user_content = (
+            "Current scene (JSON):\n" + json.dumps(current_scene) + "\n\nRequested edit:\n" + prompt
+        )
+
+        try:
+            response = self.client.chat.complete(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": _EDIT_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_content},
+                ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "scene_json_patch",
+                        "schema_definition": _EDIT_RESPONSE_JSON_SCHEMA,
+                        "strict": False,
+                    },
+                },
+                temperature=0.2,
+                timeout_ms=self.timeout_ms,
+            )
+        except httpx.TimeoutException:
+            return zero_usage, _raiser(
+                AIProviderTimeoutError(f"Mistral did not respond within {self.timeout_ms}ms.")
+            )
+        except httpx.HTTPError:
+            return zero_usage, _raiser(
+                AIProviderRejectionError("Mistral request failed (network/connection error).")
+            )
+        except Exception as exc:  # Mistral SDK error types (lazy-imported below)
+            from mistralai.client.errors import MistralError
+
+            if not isinstance(exc, MistralError):
+                raise  # a genuine bug, not a documented provider condition
+
+            status = getattr(exc, "status_code", None)
+            if status == 429:
+                return zero_usage, _raiser(
+                    AIProviderQuotaError(
+                        "Mistral reported its account/API rate limit or quota was exceeded."
+                    )
+                )
+            if status in (408, 504):
+                return zero_usage, _raiser(
+                    AIProviderTimeoutError(f"Mistral reported a request timeout (status {status}).")
+                )
+            return zero_usage, _raiser(
+                AIProviderRejectionError(f"Mistral provider request failed (status {status}).")
+            )
+
+        usage_info = getattr(response, "usage", None)
+        prompt_tokens = int(getattr(usage_info, "prompt_tokens", 0) or 0)
+        completion_tokens = int(getattr(usage_info, "completion_tokens", 0) or 0)
+        usage = AIUsageMetadata(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            estimated_cost_usd=_estimate_cost_usd(prompt_tokens, completion_tokens),
+        )
+
+        try:
+            choice = response.choices[0]
+            content = choice.message.content
+        except (AttributeError, IndexError, TypeError):
+            return usage, _raiser(
+                AIProviderRejectionError("Mistral response contained no message content.")
+            )
+
+        text = _coerce_message_content_to_text(content)
+        raw_bytes = len(text.encode("utf-8"))
+        if raw_bytes > MAX_RAW_RESPONSE_BYTES:
+            return usage, _raiser(
+                AIProviderRejectionError(
+                    f"{RESPONSE_TOO_LARGE_PREFIX} Mistral's response was {raw_bytes} bytes, "
+                    f"exceeding the {MAX_RAW_RESPONSE_BYTES}-byte limit."
+                )
+            )
+
+        try:
+            patch = json.loads(text)
+        except (json.JSONDecodeError, TypeError):
+            return usage, _raiser(AIProviderRejectionError("Mistral response was not valid JSON."))
+
+        if not isinstance(patch, list):
+            return usage, _raiser(
+                AIProviderRejectionError("Mistral response JSON was not a patch array.")
+            )
+
+        return usage, (lambda: patch)
+
 
 __all__ = [
     "DEFAULT_MODEL",
+    "EMPTY_PATCH_PREFIX",
+    "INVALID_PATCH_PREFIX",
     "MAX_RAW_RESPONSE_BYTES",
+    "PATCH_APPLY_FAILED_PREFIX",
     "REQUEST_TIMEOUT_MS",
     "RESPONSE_TOO_LARGE_PREFIX",
+    "AIEditScenePatchResult",
     "MistralSceneProvider",
 ]

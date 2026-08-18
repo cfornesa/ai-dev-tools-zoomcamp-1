@@ -9,6 +9,7 @@ from scenes.api import (
     ProjectPublishView,
     ProjectUnpublishView,
     PublicProjectDetailView,
+    PublicProjectListView,
     PublicProjectThumbnailView,
     SaveVersionAsTemplateView,
     SceneVersionDetailView,
@@ -37,6 +38,11 @@ urlpatterns = [
         "projects/<uuid:public_id>/unpublish/",
         ProjectUnpublishView.as_view(),
         name="project-unpublish",
+    ),
+    path(
+        "public/projects/",
+        PublicProjectListView.as_view(),
+        name="public-project-list",
     ),
     path(
         "public/projects/<uuid:public_id>/",

@@ -68,6 +68,18 @@ class Project(models.Model):
     # request. The unique constraint is what makes a genuinely concurrent
     # duplicate submission safe — see scenes/api.py's BlankProjectCreateView.
     creation_request_id = models.UUIDField(null=True, blank=True)
+    # Task 50: when this project most recently became public, set by
+    # `ProjectPublishView` and cleared back to `None` by `ProjectUnpublishView`
+    # (see both views' docstrings in scenes/api.py). Deliberately a separate
+    # field from `updated_at` — `updated_at` also changes on unrelated
+    # metadata edits (title, tags, ...), which would silently reshuffle the
+    # public gallery's ordering every time a public project's owner tweaked
+    # its description. `published_at` only ever moves on an actual
+    # publish/unpublish transition, which is what "deterministic ordering"
+    # (Task 50's acceptance criterion) and stable keyset pagination
+    # (`scenes/gallery.py`) both need: a sort key that doesn't move under a
+    # project already sitting on some page of gallery results.
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -90,6 +102,14 @@ class Project(models.Model):
             # must never collide with each other's requests.
             models.UniqueConstraint(
                 fields=["owner", "creation_request_id"], name="unique_creation_request_per_owner"
+            ),
+        ]
+        indexes = [
+            # Task 50: the public gallery's keyset-pagination query filters
+            # on visibility and orders by (published_at, id) — a compound
+            # index matching that access pattern exactly.
+            models.Index(
+                fields=["visibility", "-published_at", "-id"], name="project_public_gallery_idx"
             ),
         ]
 

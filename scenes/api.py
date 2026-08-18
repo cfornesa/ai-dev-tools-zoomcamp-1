@@ -20,6 +20,15 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from scenes.gallery import (
+    DEFAULT_PAGE_SIZE,
+    InvalidCursor,
+    clamp_page_size,
+    decode_cursor,
+    eligible_projects,
+    encode_cursor,
+    filter_after_cursor,
+)
 from scenes.models import (
     EditSessionDraft,
     Project,
@@ -36,6 +45,7 @@ from scenes.serializers import (
     DraftUpsertSerializer,
     ProjectMetadataSerializer,
     ProjectSerializer,
+    PublicProjectListItemSerializer,
     PublicProjectSerializer,
     SceneVersionCreateSerializer,
     SceneVersionDetailSerializer,
@@ -177,7 +187,11 @@ class ProjectPublishView(APIView):
                     raise ProjectPublishValidationError(errors)
 
                 locked_project.visibility = Project.Visibility.PUBLIC
-                locked_project.save(update_fields=["visibility", "updated_at"])
+                # Task 50: (re)stamp published_at on every successful publish
+                # -- see scenes/gallery.py's module docstring for why this,
+                # not updated_at, is the public gallery's sort/cursor key.
+                locked_project.published_at = timezone.now()
+                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
                 ProjectActivity.objects.create(
                     project=locked_project,
                     actor=request.user,
@@ -223,7 +237,11 @@ class ProjectUnpublishView(APIView):
             with transaction.atomic():
                 locked_project = Project.objects.select_for_update().get(pk=project.pk)
                 locked_project.visibility = Project.Visibility.PRIVATE
-                locked_project.save(update_fields=["visibility", "updated_at"])
+                # Task 50: clear published_at so the very next public-gallery
+                # request excludes this project -- no stale card lingers
+                # because of a cached/prior publish timestamp.
+                locked_project.published_at = None
+                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
                 ProjectActivity.objects.create(
                     project=locked_project,
                     actor=request.user,
@@ -264,6 +282,80 @@ class PublicProjectDetailView(APIView):
         if project.visibility != Project.Visibility.PUBLIC:
             raise Http404
         return Response(PublicProjectSerializer(project).data)
+
+
+class PublicProjectListView(APIView):
+    """Task 50: paginated public gallery listing (`GET /api/public/projects/`).
+
+    Anonymous-reachable, and identical for anonymous and signed-in
+    callers -- this view never branches on `request.user` at all, so
+    there is no owner-only field or filter that could sneak in (Task 50's
+    "anonymous and signed-in users receive the same public fields"
+    acceptance criterion holds structurally, not just by convention).
+
+    Eligibility (`visibility == public`, non-deleted, has a current
+    version) and ordering are entirely `scenes.gallery.eligible_projects`'s
+    responsibility; this view only adds cursor-based pagination on top --
+    see `scenes/gallery.py`'s module docstring for why keyset (cursor)
+    pagination, not `OFFSET`, is what makes pagination duplicate/gap-safe
+    across concurrent publishes.
+
+    Query params:
+    - `cursor` (optional): an opaque token from a previous response's
+      `next_cursor`. Malformed input is a 400, not a silently-wrong page.
+    - `page_size` (optional): defaults to `DEFAULT_PAGE_SIZE`, clamped to
+      `[1, MAX_PAGE_SIZE]` so a caller can't request an unbounded page.
+
+    Response body: `{"results": [...], "next_cursor": str | null,
+    "has_more": bool}`. `next_cursor` is `null` exactly when `has_more` is
+    `false` -- the end-of-results state the frontend renders is "no
+    `next_cursor`," not a magic empty-string sentinel.
+    """
+
+    def get(self, request):
+        page_size_raw = request.query_params.get("page_size")
+        if page_size_raw is not None:
+            try:
+                page_size = clamp_page_size(int(page_size_raw))
+            except ValueError:
+                return Response(
+                    {"errors": {"page_size": ["Must be a positive integer."]}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            page_size = DEFAULT_PAGE_SIZE
+
+        queryset = eligible_projects()
+
+        cursor = request.query_params.get("cursor")
+        if cursor:
+            try:
+                cursor_published_at, cursor_id = decode_cursor(cursor)
+            except InvalidCursor:
+                return Response(
+                    {"errors": {"cursor": ["Invalid or expired cursor."]}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            queryset = filter_after_cursor(queryset, cursor_published_at, cursor_id)
+
+        # Fetch one extra row to learn whether another page exists without
+        # a separate COUNT query.
+        page = list(queryset[: page_size + 1])
+        has_more = len(page) > page_size
+        page = page[:page_size]
+
+        next_cursor = None
+        if has_more and page:
+            last = page[-1]
+            next_cursor = encode_cursor(last.published_at, last.id)
+
+        return Response(
+            {
+                "results": PublicProjectListItemSerializer(page, many=True).data,
+                "next_cursor": next_cursor,
+                "has_more": has_more,
+            }
+        )
 
 
 class PublicProjectThumbnailView(APIView):

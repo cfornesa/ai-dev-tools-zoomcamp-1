@@ -143,6 +143,53 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         return reverse("public-project-thumbnail", kwargs={"public_id": project.public_id})
 
 
+class PublicProjectListItemSerializer(serializers.ModelSerializer):
+    """Task 50: one public-gallery card, returned by `PublicProjectListView`
+    (`scenes/api.py`)/`scenes.gallery`.
+
+    Deliberately narrower than `PublicProjectSerializer` above (Task 49's
+    single-project public detail): no `description`, `tags`,
+    `allow_public_remix`, `thumbnail_choice`, or `current_version` (the
+    nested scene snapshot) -- a gallery card only ever needs enough
+    to render a tile and link out, never full scene content or an editing
+    preference. Same identifier convention as `PublicProjectSerializer`:
+    `id` is `public_id` (a project's internal database pk never appears in
+    any response body this serializer produces), and `owner` is the
+    owner's `username` (never raw email — see `config/views.py`'s
+    `whoami` for the one place `email` is ever exposed, and only to the
+    signed-in user themselves).
+
+    `remix_provenance` is a documented no-op placeholder for Task 53
+    (issue #52, "Display remix provenance"): forking (Task 52, issue #51)
+    doesn't exist yet, so no project can currently *have* remix
+    provenance to show. Rather than omit the field and force Task 53 to
+    add it later (a response-shape change every existing gallery client
+    would need to handle), it's present now and always resolves to
+    `None` — Task 53's job is only to give this field real data once
+    `SceneVersion.fork_source_version`-style provenance exists on public
+    projects, not to add the field itself.
+    """
+
+    id = serializers.UUIDField(source="public_id", read_only=True)
+    owner = serializers.CharField(source="owner.username", read_only=True)
+    thumbnail_url = serializers.SerializerMethodField()
+    remix_provenance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project
+        fields = ["id", "title", "owner", "thumbnail_url", "remix_provenance", "published_at"]
+        read_only_fields = fields
+
+    def get_thumbnail_url(self, project: Project) -> str | None:
+        if project.current_version_id is None:
+            return None
+        return reverse("public-project-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_remix_provenance(self, project: Project) -> None:
+        # Always None until Task 53 exists -- see this class's docstring.
+        return None
+
+
 class SceneVersionListSerializer(serializers.ModelSerializer):
     """History metadata only — not the full scene_json (Task 14's list response)."""
 

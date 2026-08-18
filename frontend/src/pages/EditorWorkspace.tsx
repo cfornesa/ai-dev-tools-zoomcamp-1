@@ -25,6 +25,7 @@ import {
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useSceneEditor } from './useSceneEditor';
+import BehaviorCardsPanel from './BehaviorCardsPanel';
 import DemoControlsPanel from './DemoControlsPanel';
 import SceneOutlinePanel from './SceneOutlinePanel';
 
@@ -546,6 +547,11 @@ function EditorWorkspace() {
         >
           <h3>Inspector</h3>
           <p>Property editing is added in a later task.</p>
+          {/* Task 34: behavior cards ("Follow hand," "React to pinch,"
+              "Pulse," "Emit particles") — reads/writes `workingCopy`
+              through `sceneEditor`, so it participates in the same
+              undo/redo history as every other scene edit. */}
+          <BehaviorCardsPanel sceneEditor={sceneEditor} />
         </section>
       </div>
     </div>

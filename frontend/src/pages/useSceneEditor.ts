@@ -10,6 +10,15 @@ import {
 
 import type { SceneDocument } from '../api/projects';
 import {
+  addCardToScene,
+  buildCardsFromScene,
+  removeCardFromScene,
+  replaceCardInScene,
+  sceneHasTwoHandBinding,
+  type BehaviorCard,
+  type BehaviorCardDraft,
+} from './behaviorCards';
+import {
   addLayer as addLayerOp,
   buildOutline,
   deleteGroupRecursive,
@@ -105,6 +114,16 @@ export function useSceneEditor(
   const [outlineError, setOutlineError] = useState<string | null>(null);
   const [past, setPast] = useState<SceneDocument[]>([]);
   const [future, setFuture] = useState<SceneDocument[]>([]);
+  // Task 34: behavior cards. `cardConflict` holds the pending draft plus
+  // the existing card it collides with while the user is asked to
+  // explicitly confirm a replace — never set as a side effect of adding a
+  // card automatically. `cardError` surfaces any other rejection (e.g. a
+  // complexity/payload limit) the same way `outlineError` does.
+  const [cardConflict, setCardConflict] = useState<{
+    draft: BehaviorCardDraft;
+    existingCard: BehaviorCard;
+  } | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
 
   // Task 26: "latest value" refs kept in sync every render (see the two
   // effects just below) so the transform-gesture callbacks further down —
@@ -132,6 +151,18 @@ export function useSceneEditor(
   const layers = useMemo(() => (workingCopy ? getLayers(workingCopy) : []), [workingCopy]);
   const selectedGroup = groups.find((g) => g.id === selectedShapeId) ?? null;
   const outline = useMemo(() => (workingCopy ? buildOutline(workingCopy) : []), [workingCopy]);
+  // Task 34: cards are reconstructed fresh from `workingCopy.bindings` on
+  // every render rather than kept as separate state — that's what makes
+  // save/reload (and undo/redo) round trip losslessly for free, with no
+  // extra bookkeeping to keep in sync.
+  const behaviorCards = useMemo(
+    () => (workingCopy ? buildCardsFromScene(workingCopy) : []),
+    [workingCopy],
+  );
+  const hasTwoHandBinding = useMemo(
+    () => (workingCopy ? sceneHasTwoHandBinding(workingCopy) : false),
+    [workingCopy],
+  );
 
   // Any action that changes shapes/scene content routes through here so
   // undo/redo (see policy above) stays consistent across every mutation.
@@ -411,6 +442,64 @@ export function useSceneEditor(
     if (outcome.ok) setSelectedShapeId(null);
   }, [workingCopy, selectedShapeId, applyOutcome]);
 
+  // --- Task 34: behavior cards ---
+  // `addBehaviorCard` never silently overwrites an occupied continuous
+  // target channel: on a collision it sets `cardConflict` instead of
+  // committing anything, and the panel must call `confirmReplaceCard`
+  // (or `cancelCardConflict`) to proceed. Every successful path commits
+  // exactly one undo/redo step, same as every other mutation here.
+
+  const addBehaviorCard = useCallback(
+    (draft: BehaviorCardDraft) => {
+      if (!workingCopy) return;
+      const outcome = addCardToScene(workingCopy, draft);
+      if (outcome.status === 'added') {
+        setCardError(null);
+        setCardConflict(null);
+        commit(outcome.scene);
+      } else if (outcome.status === 'conflict') {
+        setCardError(null);
+        setCardConflict({ draft, existingCard: outcome.existingCard });
+      } else {
+        setCardConflict(null);
+        setCardError(outcome.error);
+      }
+    },
+    [workingCopy, commit],
+  );
+
+  const confirmReplaceCard = useCallback(() => {
+    if (!workingCopy || !cardConflict) return;
+    const outcome = replaceCardInScene(
+      workingCopy,
+      cardConflict.existingCard.id,
+      cardConflict.draft,
+    );
+    setCardConflict(null);
+    if (outcome.ok) {
+      setCardError(null);
+      commit(outcome.scene);
+    } else {
+      setCardError(outcome.error);
+    }
+  }, [workingCopy, cardConflict, commit]);
+
+  const cancelCardConflict = useCallback(() => setCardConflict(null), []);
+
+  const removeBehaviorCard = useCallback(
+    (cardId: string) => {
+      if (!workingCopy) return;
+      const outcome = removeCardFromScene(workingCopy, cardId);
+      if (outcome.ok) {
+        setCardError(null);
+        commit(outcome.scene);
+      } else {
+        setCardError(outcome.error);
+      }
+    },
+    [workingCopy, commit],
+  );
+
   return {
     shapes,
     selectedShapeId,
@@ -449,6 +538,15 @@ export function useSceneEditor(
     groupSelected,
     ungroupSelected,
     deleteGroupSelected,
+    // Task 34
+    behaviorCards,
+    hasTwoHandBinding,
+    cardConflict,
+    cardError,
+    addBehaviorCard,
+    confirmReplaceCard,
+    cancelCardConflict,
+    removeBehaviorCard,
   };
 }
 

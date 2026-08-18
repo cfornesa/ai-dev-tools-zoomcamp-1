@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 
 import { Link, useParams } from 'react-router-dom';
 
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
+import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import { hitTestTopmostShapeAt, shapeLabel, type Shape, type ShapeType } from './sceneShapes';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
@@ -41,6 +42,37 @@ function EditorWorkspace() {
   const [activePanel, setActivePanel] = useState<EditorPanelName>('preview');
   const sceneEditor = useSceneEditor(workingCopy, setWorkingCopy);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const previewMountRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<P5ScenePreview | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  // Task 25: mounts a p5.js instance (instance mode, never global) into a
+  // dedicated child div that React never re-renders into — see the div's
+  // own comment below for why. Created once per workspace mount, torn
+  // down on unmount.
+  useEffect(() => {
+    if (!previewMountRef.current) return;
+    const preview = createP5ScenePreview(previewMountRef.current);
+    previewRef.current = preview;
+    return () => {
+      preview.destroy();
+      previewRef.current = null;
+    };
+  }, []);
+
+  // Re-renders the p5 preview whenever the working copy changes. A scene
+  // that fails the adapter's validation (see p5Adapter.ts/sceneDrawPlan.ts)
+  // throws before any draw call rather than drawing something wrong or
+  // stale; that's surfaced here instead of crashing the workspace.
+  useEffect(() => {
+    if (!previewRef.current || !workingCopy) return;
+    try {
+      previewRef.current.render(workingCopy);
+      setPreviewError(null);
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
+    }
+  }, [workingCopy]);
 
   // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes — the standard
   // shortcuts for this editor's in-session undo/redo policy (see
@@ -238,8 +270,12 @@ function EditorWorkspace() {
           hidden={panelHidden('preview')}
         >
           <h3>Preview</h3>
-          <p>Scene rendering is added in a later task.</p>
           <p>{shapeCount} shape(s) in the working copy.</p>
+          {previewError && (
+            <p role="alert" aria-live="assertive">
+              Couldn't render the preview: {previewError}
+            </p>
+          )}
           <div
             ref={canvasRef}
             data-testid="scene-canvas"
@@ -253,6 +289,15 @@ function EditorWorkspace() {
             }}
             onClick={handleCanvasClick}
           >
+            {/* Task 25: the p5.js preview mounts its <canvas> into this div.
+                React is never given any children to reconcile here (no JSX
+                children below), so it never touches — or fights over —
+                nodes p5 appends directly to the real DOM. */}
+            <div
+              ref={previewMountRef}
+              aria-hidden="true"
+              style={{ position: 'absolute', inset: 0, zIndex: -1 }}
+            />
             {sceneEditor.shapes.map((shape, index) => (
               <div
                 key={shape.id}

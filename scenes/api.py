@@ -20,9 +20,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.models import Project, SceneVersion, Template
-from scenes.permissions import Action, can
+from scenes.models import EditSessionDraft, Project, SceneVersion, Template, default_draft_expiry
+from scenes.permissions import Action, can, require
 from scenes.serializers import (
+    DraftSerializer,
+    DraftUpsertSerializer,
     ProjectMetadataSerializer,
     ProjectSerializer,
     SceneVersionCreateSerializer,
@@ -434,3 +436,158 @@ class SaveVersionAsTemplateView(APIView):
         )
 
         return Response(TemplateSerializer(template).data, status=status.HTTP_201_CREATED)
+
+
+def _scene_validation_errors_response(result) -> Response:
+    return Response(
+        {"errors": [{"path": e.path, "rule": e.rule, "message": e.message} for e in result.errors]},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+def _upsert_draft(
+    project: Project, user, session_id: str, draft_json: dict, client_seq: int
+) -> tuple[EditSessionDraft, bool]:
+    """Task 43: race-safe create-or-update of one (project, user, session)
+    draft row.
+
+    Every write — first-ever create included — happens with the target row
+    (if any) locked via `select_for_update()`, inside one transaction, so
+    two genuinely overlapping upserts serialize instead of racing (same
+    `select_for_update()` pattern `SceneVersionListCreateView.post` already
+    uses for version saves). Whichever request's transaction commits
+    second sees the first one's already-written `client_seq` and compares
+    against it before applying its own write:
+
+    - `client_seq <= stored.client_seq`: the incoming write is not newer
+      than what's already stored (an out-of-order/stale sync request, or a
+      genuine tie) — it is silently ignored (`applied=False`); the stored
+      draft is returned unchanged. This is the guarantee an older/stale
+      write can never clobber the newest accepted draft.
+    - Otherwise: the write is newer — apply it and refresh `expires_at` to
+      `default_draft_expiry()` (now + 24h), documenting this task's clock
+      policy: the 24-hour lifetime is a rolling window measured from the
+      *most recently accepted* write, not from creation.
+
+    The very first write for a (project, user, session) triple has no
+    existing row to lock, so it's attempted as a plain `create()` inside a
+    savepoint; if a concurrent request wins that race, the resulting
+    `IntegrityError` (on `unique_draft_scope`) is caught and retried as a
+    locked update against the row the winner just created — mirroring
+    `BlankProjectCreateView.post`'s own create-then-fall-back-to-existing
+    pattern for its idempotency key.
+    """
+    with transaction.atomic():
+        try:
+            draft = EditSessionDraft.objects.select_for_update().get(
+                project=project, user=user, session_id=session_id
+            )
+        except EditSessionDraft.DoesNotExist:
+            draft = None
+
+        if draft is None:
+            try:
+                with transaction.atomic():
+                    draft = EditSessionDraft.objects.create(
+                        project=project,
+                        user=user,
+                        session_id=session_id,
+                        draft_json=draft_json,
+                        client_seq=client_seq,
+                    )
+                return draft, True
+            except IntegrityError:
+                draft = EditSessionDraft.objects.select_for_update().get(
+                    project=project, user=user, session_id=session_id
+                )
+                # fall through to the compare-and-set below
+
+        if client_seq <= draft.client_seq:
+            return draft, False
+
+        draft.draft_json = draft_json
+        draft.client_seq = client_seq
+        draft.expires_at = default_draft_expiry()
+        draft.save(update_fields=["draft_json", "client_seq", "expires_at", "last_autosaved_at"])
+        return draft, True
+
+
+class DraftDetailView(APIView):
+    """Task 43: read/upsert/delete the caller's own active recovery draft
+    for one project + browser-tab session.
+
+    A draft is a temporary, non-history record — see `EditSessionDraft`'s
+    own docstring in `scenes/models.py` — so nothing in this view ever
+    creates, mutates, or advances a `SceneVersion`.
+
+    Authorization is two-layered, both routed through
+    `scenes.permissions` (Task 11), never a hand-rolled check:
+    1. `Action.PROJECT_WRITE` on the project — V1 has no shared editing, so
+       only the project's owner may have a draft for it at all; a non-owner
+       (or anonymous caller) gets 404, matching every other project-scoped
+       endpoint's "don't confirm hidden data" policy.
+    2. `Action.DRAFT_READ`/`Action.DRAFT_WRITE` on the specific draft
+       resource — always trivially satisfied once (1) holds, because every
+       draft this view ever reads or writes is constructed with
+       `user=request.user`, but kept as an explicit second call so draft
+       access is never decided by project ownership alone if that ever
+       changes.
+
+    A draft past its `expires_at` is treated as already gone (404 on GET,
+    a fresh row on PUT) rather than resurfaced — see `default_draft_expiry`
+    and this task's cleanup management command
+    (`scenes/management/commands/cleanup_expired_drafts.py`) for the full
+    ~24-hour clock policy.
+    """
+
+    def get(self, request, public_id, session_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.PROJECT_WRITE, project)
+
+        draft = (
+            EditSessionDraft.objects.active()
+            .filter(project=project, user=request.user, session_id=session_id)
+            .first()
+        )
+        if draft is None:
+            raise Http404
+        if not can(request.user, Action.DRAFT_READ, draft):  # pragma: no cover — defense in depth
+            raise Http404
+
+        return Response(DraftSerializer(draft).data)
+
+    def put(self, request, public_id, session_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.PROJECT_WRITE, project)
+
+        input_serializer = DraftUpsertSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        draft_json = input_serializer.validated_data["draft_json"]
+        client_seq = input_serializer.validated_data["client_seq"]
+
+        # Authoritative server-side validation, independent of whatever the
+        # browser already checked — same policy as version saves (Task 6).
+        result = validate_scene(draft_json)
+        if not result.valid:
+            return _scene_validation_errors_response(result)
+
+        transient = EditSessionDraft(project=project, user=request.user, session_id=session_id)
+        require(request.user, Action.DRAFT_WRITE, transient)  # pragma: no branch — always true here
+
+        draft, applied = _upsert_draft(project, request.user, session_id, draft_json, client_seq)
+
+        body = DraftSerializer(draft).data
+        body["applied"] = applied
+        return Response(body, status=status.HTTP_200_OK)
+
+    def delete(self, request, public_id, session_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.PROJECT_WRITE, project)
+
+        transient = EditSessionDraft(project=project, user=request.user, session_id=session_id)
+        require(request.user, Action.DRAFT_WRITE, transient)
+
+        EditSessionDraft.objects.filter(
+            project=project, user=request.user, session_id=session_id
+        ).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

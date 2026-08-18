@@ -194,7 +194,22 @@ class EditSessionDraftManager(models.Manager):
 
 
 class EditSessionDraft(models.Model):
-    """A private, per-session recovery copy of unsaved editor state."""
+    """A private, per-session recovery copy of unsaved editor state.
+
+    Task 43 adds `client_seq`: a client-supplied, per-(project, user,
+    session) monotonic counter the frontend bumps on every local write it
+    schedules for sync (mirrors `writeSeq` in
+    `frontend/src/storage/draftAutosave.ts`, Task 42's local mechanism).
+    The server upsert path (`scenes/api.py`'s `DraftDetailView.put`)
+    compares an incoming `client_seq` against the stored value *inside* a
+    `select_for_update()`-locked transaction and silently ignores (does
+    not apply) any write whose `client_seq` is not strictly greater than
+    what's already stored — this is what makes "an older or stale write
+    cannot replace the newest accepted draft" a real, race-proof guarantee
+    rather than a last-write-wins coin flip. See
+    tests/test_edit_session_draft_sync_api.py's PostgreSQL-gated
+    concurrency tests.
+    """
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="drafts")
     user = models.ForeignKey(
@@ -202,6 +217,7 @@ class EditSessionDraft(models.Model):
     )
     session_id = models.CharField(max_length=64)
     draft_json = models.JSONField()
+    client_seq = models.BigIntegerField(default=0)
     last_autosaved_at = models.DateTimeField(auto_now=True)
     expires_at = models.DateTimeField(default=default_draft_expiry)
 

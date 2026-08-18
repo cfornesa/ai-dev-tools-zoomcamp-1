@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from scenes.models import Project, SceneVersion, Template
+from scenes.models import EditSessionDraft, Project, SceneVersion, Template
 
 MAX_TAGS = 10
 MAX_TAG_LENGTH = 30
@@ -143,3 +143,28 @@ class SceneVersionCreateSerializer(serializers.Serializer):
         choices=[(o.value, o.label) for o in ALLOWED_MANUAL_SAVE_ORIGINS]
     )
     change_label = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class DraftSerializer(serializers.ModelSerializer):
+    """Task 43: the server-side recovery draft's read shape — never includes
+    `project`/`user`/`session_id` (already fixed by the URL the caller
+    authenticated against), and never touches `SceneVersion` in any way."""
+
+    class Meta:
+        model = EditSessionDraft
+        fields = ["draft_json", "client_seq", "last_autosaved_at", "expires_at"]
+        read_only_fields = fields
+
+
+class DraftUpsertSerializer(serializers.Serializer):
+    """Task 43: request body for `DraftDetailView.put`.
+
+    `client_seq` is the frontend's monotonic per-(project, user, session)
+    write counter (mirrors Task 42's local `writeSeq`) — it's what lets the
+    server tell an out-of-order/stale sync request apart from a genuinely
+    newer one when two requests race (see `scenes/api.py`'s
+    `_upsert_draft`).
+    """
+
+    draft_json = serializers.JSONField()
+    client_seq = serializers.IntegerField(min_value=0)

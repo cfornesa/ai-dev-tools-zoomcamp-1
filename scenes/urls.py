@@ -2,6 +2,7 @@ from django.urls import path
 
 from scenes.api import (
     BlankProjectCreateView,
+    DraftDetailView,
     ProjectDetailView,
     ProjectListCreateView,
     SaveVersionAsTemplateView,
@@ -41,5 +42,10 @@ urlpatterns = [
         "projects/<uuid:public_id>/versions/<int:version_id>/save-as-template/",
         SaveVersionAsTemplateView.as_view(),
         name="scene-version-save-as-template",
+    ),
+    path(
+        "projects/<uuid:public_id>/draft/<str:session_id>/",
+        DraftDetailView.as_view(),
+        name="draft-detail",
     ),
 ]

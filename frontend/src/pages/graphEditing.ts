@@ -124,6 +124,13 @@ const PORT_DATA_TYPES: Record<string, PortDataType> = {
   out: 'value',
   inA: 'value',
   inB: 'value',
+  // Task 38 condition/timing node ports. `true`/`false` (If/Else) are
+  // numeric "value" ports (a level, not an edge event — see
+  // `behaviorRuntime.ts`'s "Condition and timing node registry" doc
+  // comment). `cooldown`'s `trigger` in/out reuses the existing `trigger`
+  // event-port name/type (already mapped above).
+  true: 'value',
+  false: 'value',
 };
 
 function portDataType(port: string): PortDataType {
@@ -139,23 +146,25 @@ const SHAPE_GROUP_PROPERTIES = Array.from(ALLOWED_TARGET_PROPERTIES_BY_SCOPE.sha
 
 /** One catalog entry per (family, type) this graph editor can create —
  * exactly the pairs `ALLOWED_NODE_TYPES_BY_FAMILY` (behaviorRuntime.ts)
- * allows today. `condition`/`output` are recognized families (the schema's
+ * allows today. `output` is a recognized family (the schema's
  * `$defs.graphNode.family` enum, and `_docs/plan.md`'s node vocabulary) but
- * have no allowlisted node *types* yet — Task 38 (If/Else) hasn't landed,
- * and neither has an "output"/"Preview target" node type; `transform`'s
- * `Oscillator`/`Timer`/`Delay`/`Cooldown` are also out of scope (see
- * `behaviorRuntime.ts`'s module doc comment). Those families/types appear
- * in `FAMILY_LABELS` and the family picker for context, but the catalog
- * below has no entries for them, so the graph editor's "add node"
- * affordance naturally offers nothing to create for those families until a
- * later task adds entries here alongside `ALLOWED_NODE_TYPES_BY_FAMILY`.
+ * has no allowlisted node *type* yet — no "output"/"Preview target" node
+ * type exists (see `behaviorRuntime.ts`'s module doc comment). That family
+ * appears in `FAMILY_LABELS` and the family picker for context, but the
+ * catalog below has no entries for it, so the graph editor's "add node"
+ * affordance naturally offers nothing to create for `output` until a later
+ * task adds entries here alongside `ALLOWED_NODE_TYPES_BY_FAMILY`.
  *
  * The 7 Task 37 transform node types' `paramFields`/`defaultParams` mirror
  * `behaviorRuntime.ts`'s `MAP_RANGE_DEFAULTS`/`CLAMP_DEFAULTS`/
  * `SMOOTH_DEFAULTS`/`INVERT_DEFAULTS`/`LERP_DEFAULTS` exactly (Add/Multiply
  * have no configurable params) — see that module's "Transform node
  * registry" doc comment for the exact documented semantics/ranges each
- * field maps to. */
+ * field maps to. The 5 Task 38 condition/timing node types
+ * (`ifElse`/`oscillator`/`timer`/`delay`/`cooldown`) mirror
+ * `behaviorRuntime.ts`'s `IF_ELSE_DEFAULTS`/`OSCILLATOR_DEFAULTS`/
+ * `TIMER_DEFAULTS`/`DELAY_DEFAULTS`/`COOLDOWN_DEFAULTS` the same way — see
+ * that module's "Condition and timing node registry" doc comment. */
 export const NODE_TYPE_CATALOG: Record<
   string,
   {
@@ -324,6 +333,102 @@ export const NODE_TYPE_CATALOG: Record<
     outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
     paramFields: [{ key: 't', label: 'T (0-1)', kind: 'number', min: 0, max: 1 }],
     defaultParams: { t: 0.5 },
+  },
+  // --- Task 38 condition/timing nodes ------------------------------
+  ifElse: {
+    family: 'condition',
+    label: 'If / Else',
+    inputs: [{ port: 'in', label: 'Value', dataType: 'value' }],
+    outputs: [
+      { port: 'true', label: 'True', dataType: 'value' },
+      { port: 'false', label: 'False', dataType: 'value' },
+    ],
+    paramFields: [
+      {
+        key: 'comparison',
+        label: 'Comparison',
+        kind: 'select',
+        options: [
+          { value: 'greaterThan', label: 'Is greater than' },
+          { value: 'lessThan', label: 'Is less than' },
+          { value: 'between', label: 'Is between' },
+          { value: 'approximately', label: 'Is approximately' },
+        ],
+      },
+      { key: 'threshold', label: 'Threshold', kind: 'number' },
+      { key: 'min', label: 'Min (between)', kind: 'number' },
+      { key: 'max', label: 'Max (between)', kind: 'number' },
+      { key: 'tolerance', label: 'Tolerance (approximately)', kind: 'number', min: 0 },
+      { key: 'holdTimeMs', label: 'Hold time (ms)', kind: 'number', min: 0 },
+    ],
+    defaultParams: {
+      comparison: 'greaterThan',
+      threshold: 0,
+      min: 0,
+      max: 1,
+      tolerance: 0.05,
+      holdTimeMs: 150,
+    },
+  },
+  oscillator: {
+    family: 'input',
+    label: 'Oscillator',
+    inputs: [],
+    outputs: [{ port: 'value', label: 'Value', dataType: 'value' }],
+    paramFields: [
+      {
+        key: 'shape',
+        label: 'Shape',
+        kind: 'select',
+        options: [
+          { value: 'sine', label: 'Sine' },
+          { value: 'triangle', label: 'Triangle' },
+          { value: 'square', label: 'Square' },
+        ],
+      },
+      { key: 'periodMs', label: 'Period (ms)', kind: 'number', min: 0 },
+      { key: 'amplitude', label: 'Amplitude', kind: 'number' },
+      { key: 'offset', label: 'Offset', kind: 'number' },
+      { key: 'phaseOffsetMs', label: 'Phase offset (ms)', kind: 'number' },
+    ],
+    defaultParams: { shape: 'sine', periodMs: 1000, amplitude: 1, offset: 0, phaseOffsetMs: 0 },
+  },
+  timer: {
+    family: 'input',
+    label: 'Timer',
+    inputs: [],
+    outputs: [{ port: 'value', label: 'Value', dataType: 'value' }],
+    paramFields: [
+      {
+        key: 'mode',
+        label: 'Mode',
+        kind: 'select',
+        options: [
+          { value: 'elapsed', label: 'Elapsed time' },
+          { value: 'loop', label: 'Looped phase' },
+          { value: 'countdown', label: 'Countdown' },
+        ],
+      },
+      { key: 'periodMs', label: 'Period (ms, loop)', kind: 'number', min: 0 },
+      { key: 'durationMs', label: 'Duration (ms, countdown)', kind: 'number', min: 0 },
+    ],
+    defaultParams: { mode: 'elapsed', periodMs: 1000, durationMs: 5000 },
+  },
+  delay: {
+    family: 'flow',
+    label: 'Delay',
+    inputs: [{ port: 'in', label: 'Value', dataType: 'value' }],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [{ key: 'delayMs', label: 'Delay (ms)', kind: 'number', min: 0 }],
+    defaultParams: { delayMs: 300 },
+  },
+  cooldown: {
+    family: 'flow',
+    label: 'Cooldown',
+    inputs: [{ port: 'trigger', label: 'Trigger', dataType: 'event' }],
+    outputs: [{ port: 'trigger', label: 'Trigger', dataType: 'event' }],
+    paramFields: [{ key: 'milliseconds', label: 'Cooldown (ms)', kind: 'number', min: 0 }],
+    defaultParams: { milliseconds: 500 },
   },
 };
 

@@ -341,6 +341,76 @@ describe('Task 37: transform node catalog (smoke)', () => {
   });
 });
 
+describe('Task 38: condition/timing node catalog (smoke)', () => {
+  const conditionTimingTypes = ['ifElse', 'oscillator', 'timer', 'delay', 'cooldown'];
+  const familyByType: Record<string, string> = {
+    ifElse: 'condition',
+    oscillator: 'input',
+    timer: 'input',
+    delay: 'flow',
+    cooldown: 'flow',
+  };
+
+  it('lists all 5 condition/timing node types in the catalog under their documented family', () => {
+    for (const type of conditionTimingTypes) {
+      expect(NODE_TYPE_CATALOG[type]).toBeDefined();
+      expect(NODE_TYPE_CATALOG[type].family).toBe(familyByType[type]);
+    }
+    const creatable = creatableNodeTypes().filter((n) => conditionTimingTypes.includes(n.type));
+    expect(creatable.map((n) => n.type).sort()).toEqual([...conditionTimingTypes].sort());
+  });
+
+  it('adds each condition/timing node type to a scene via addGraphNode', () => {
+    for (const type of conditionTimingTypes) {
+      const outcome = addGraphNode(sceneWithShape(), type, { x: 0, y: 0 });
+      expect(outcome.ok).toBe(true);
+    }
+  });
+
+  it('connects a handSignal into ifElse\'s "in" port, and ifElse\'s "true" output into a second node', () => {
+    const scene = sceneWithShape();
+    const withSignal = addGraphNode(scene, 'handSignal', { x: 0, y: 0 });
+    if (!withSignal.ok || !withSignal.nodeId) throw new Error('setup failed');
+    const withIfElse = addGraphNode(withSignal.scene, 'ifElse', { x: 200, y: 0 });
+    if (!withIfElse.ok || !withIfElse.nodeId) throw new Error('setup failed');
+    const withClamp = addGraphNode(withIfElse.scene, 'clamp', { x: 400, y: 0 });
+    if (!withClamp.ok || !withClamp.nodeId) throw new Error('setup failed');
+
+    const nodes = (withClamp.scene.graph as { nodes: GraphNodeData[] }).nodes;
+    const check1 = checkGraphConnection(nodes, [], {
+      fromNodeId: withSignal.nodeId,
+      fromPort: 'value',
+      toNodeId: withIfElse.nodeId,
+      toPort: 'in',
+    });
+    expect(check1.valid).toBe(true);
+
+    const check2 = checkGraphConnection(nodes, [], {
+      fromNodeId: withIfElse.nodeId,
+      fromPort: 'true',
+      toNodeId: withClamp.nodeId,
+      toPort: 'in',
+    });
+    expect(check2.valid).toBe(true);
+  });
+
+  it('rejects chaining one ifElse node into another (nested condition trees are not supported)', () => {
+    const scene = sceneWithShape();
+    const first = addGraphNode(scene, 'ifElse', { x: 0, y: 0 });
+    if (!first.ok || !first.nodeId) throw new Error('setup failed');
+    const second = addGraphNode(first.scene, 'ifElse', { x: 200, y: 0 });
+    if (!second.ok || !second.nodeId) throw new Error('setup failed');
+
+    const outcome = addGraphConnection(second.scene, {
+      fromNodeId: first.nodeId,
+      fromPort: 'true',
+      toNodeId: second.nodeId,
+      toPort: 'in',
+    });
+    expect(outcome.ok).toBe(false);
+  });
+});
+
 describe('id stability across a save/reload round trip', () => {
   it('preserves node and connection ids through a JSON round trip', () => {
     const scene = sceneWithFollowHandCard();

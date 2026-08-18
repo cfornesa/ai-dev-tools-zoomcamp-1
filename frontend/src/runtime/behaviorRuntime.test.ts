@@ -16,13 +16,25 @@ import {
   DEFAULT_EVENT_COOLDOWN_MS,
   evaluateAdd,
   evaluateClamp,
+  evaluateComparison,
+  evaluateCooldown,
+  evaluateDelay,
+  evaluateIfElseState,
   evaluateInvert,
   evaluateLerp,
   evaluateMapRange,
   evaluateMultiply,
+  evaluateOscillator,
   evaluateSmooth,
+  evaluateTimer,
   validateBehaviorGraph,
+  validateConditionNodeParams,
+  validateFlowNodeParams,
+  validateInputNodeParams,
   validateTransformNodeParams,
+  type CooldownState,
+  type DelayState,
+  type IfElseState,
   type RuntimeInput,
   type SmoothStepState,
 } from './behaviorRuntime';
@@ -184,6 +196,48 @@ function tickPositionX(scene: SceneDocument, tickInput: RuntimeInput): number | 
   const result = runtime.tick(tickInput);
   return result.continuous.find((c) => c.targetProperty === 'positionX')?.value as
     number | undefined;
+}
+
+// --- Task 38 test fixture: an arbitrary hand-authored graph ------------
+//
+// Unlike `sceneWithTransformChain` (fixed shape: N handSignal inputs into
+// one transform node into one shapeProperty node), Task 38's tests need
+// varied topologies (an ifElse's two output ports feeding two different
+// target properties, a bare source node with no upstream at all, etc.), so
+// this helper just wraps arbitrary caller-supplied nodes/connections into
+// a valid scene shell around `shape-circle`.
+function sceneWithGraph(
+  nodes: Array<{
+    id: string;
+    family: string;
+    type: string;
+    params: Record<string, unknown>;
+    position: { x: number; y: number };
+  }>,
+  connections: Array<{
+    id: string;
+    fromNodeId: string;
+    fromPort: string;
+    toNodeId: string;
+    toPort: string;
+  }>,
+): SceneDocument {
+  return baseScene({
+    canvas: { width: 100, height: 100, backgroundColor: '#000000' },
+    shapes: [circleShape({ id: 'shape-circle' })],
+    bindings: [],
+    graph: { nodes, connections },
+  });
+}
+
+function shapePropertyNode(id: string, property: string, position = { x: 0, y: 0 }) {
+  return {
+    id,
+    family: 'visual',
+    type: 'shapeProperty',
+    params: { targetId: 'shape-circle', property },
+    position,
+  };
 }
 
 describe('validateBehaviorGraph', () => {
@@ -1053,5 +1107,679 @@ describe('Task 37 transform nodes: end-to-end graph execution', () => {
     const result = runtime.tick(input(0, { indexTipX: 0.5 }));
     const positionXOutputs = result.continuous.filter((c) => c.targetProperty === 'positionX');
     expect(positionXOutputs).toHaveLength(1);
+  });
+});
+
+// =========================================================================
+// Task 38: If/Else, Oscillator, Timer, Delay, Cooldown
+// =========================================================================
+
+describe('Task 38: evaluateComparison (If/Else pure comparison)', () => {
+  const cases: Array<[string, number, Record<string, unknown>, boolean | null]> = [
+    [
+      'greaterThan: strictly above threshold is true',
+      51,
+      { comparison: 'greaterThan', threshold: 50 },
+      true,
+    ],
+    [
+      'greaterThan: exact threshold equality is false (exclusive)',
+      50,
+      { comparison: 'greaterThan', threshold: 50 },
+      false,
+    ],
+    [
+      'greaterThan: below threshold is false',
+      49,
+      { comparison: 'greaterThan', threshold: 50 },
+      false,
+    ],
+    [
+      'lessThan: strictly below threshold is true',
+      49,
+      { comparison: 'lessThan', threshold: 50 },
+      true,
+    ],
+    [
+      'lessThan: exact threshold equality is false (exclusive)',
+      50,
+      { comparison: 'lessThan', threshold: 50 },
+      false,
+    ],
+    [
+      'between: exact min boundary is true (inclusive)',
+      0,
+      { comparison: 'between', min: 0, max: 10 },
+      true,
+    ],
+    [
+      'between: exact max boundary is true (inclusive)',
+      10,
+      { comparison: 'between', min: 0, max: 10 },
+      true,
+    ],
+    [
+      'between: just outside max is false',
+      10.01,
+      { comparison: 'between', min: 0, max: 10 },
+      false,
+    ],
+    [
+      'approximately: exactly at threshold is true',
+      50,
+      { comparison: 'approximately', threshold: 50, tolerance: 0.05 },
+      true,
+    ],
+    [
+      'approximately: exactly at the tolerance boundary is true (inclusive)',
+      50.05,
+      { comparison: 'approximately', threshold: 50, tolerance: 0.05 },
+      true,
+    ],
+    [
+      'approximately: just past the tolerance boundary is false',
+      50.06,
+      { comparison: 'approximately', threshold: 50, tolerance: 0.05 },
+      false,
+    ],
+    ['unrecognized comparison returns null', 1, { comparison: 'bogus' }, null],
+  ];
+  it.each(cases)('%s', (_label, value, params, expected) => {
+    expect(evaluateComparison(value, params)).toBe(expected);
+  });
+});
+
+describe('Task 38: evaluateIfElseState (debounce/hold-time state machine)', () => {
+  it('holdTimeMs: 0 commits on the very first tick with a new target', () => {
+    const step = evaluateIfElseState(
+      null,
+      100,
+      { comparison: 'greaterThan', threshold: 50, holdTimeMs: 0 },
+      0,
+    );
+    expect(step.state).toBe(true);
+  });
+
+  it('a target below holdTimeMs does not commit yet', () => {
+    let state: IfElseState | null = null;
+    const params = { comparison: 'greaterThan', threshold: 50, holdTimeMs: 100 };
+    const first = evaluateIfElseState(state, 100, params, 0);
+    expect(first.state).toBeNull(); // not yet committed
+    state = first.persist;
+    const second = evaluateIfElseState(state, 100, params, 50); // 50ms elapsed, < 100ms
+    expect(second.state).toBeNull();
+  });
+
+  it('commits exactly at the holdTimeMs boundary (inclusive)', () => {
+    const params = { comparison: 'greaterThan', threshold: 50, holdTimeMs: 100 };
+    const first = evaluateIfElseState(null, 100, params, 0);
+    const second = evaluateIfElseState(first.persist, 100, params, 100); // elapsed === holdTimeMs
+    expect(second.state).toBe(true);
+  });
+
+  it('a target that flickers back to the committed state resets the candidate timer', () => {
+    const params = { comparison: 'greaterThan', threshold: 50, holdTimeMs: 100 };
+    let step = evaluateIfElseState(null, 20, params, 0); // committed stays null (never above)
+    expect(step.state).toBeNull();
+    step = evaluateIfElseState(step.persist, 100, params, 10); // candidate: true, since t=10
+    step = evaluateIfElseState(step.persist, 20, params, 60); // flickers back to false/null target
+    expect(step.state).toBeNull();
+    step = evaluateIfElseState(step.persist, 100, params, 70); // new candidate window starts at t=70
+    expect(step.state).toBeNull();
+    step = evaluateIfElseState(step.persist, 100, params, 169); // only 99ms since the restart
+    expect(step.state).toBeNull();
+    step = evaluateIfElseState(step.persist, 100, params, 170); // 100ms since the restart at t=70
+    expect(step.state).toBe(true);
+  });
+
+  it('missing/non-finite input holds the committed state and does not touch the debounce timer', () => {
+    const params = { comparison: 'greaterThan', threshold: 50, holdTimeMs: 0 };
+    const committed = evaluateIfElseState(null, 100, params, 0); // commits true immediately
+    expect(committed.state).toBe(true);
+    const missing = evaluateIfElseState(committed.persist, null, params, 50);
+    expect(missing.state).toBe(true);
+    expect(missing.persist).toEqual(committed.persist);
+  });
+});
+
+describe('Task 38: evaluateOscillator (pure function of elapsed time)', () => {
+  it('sine: starts at the offset (phase 0)', () => {
+    expect(
+      evaluateOscillator(0, { shape: 'sine', periodMs: 1000, amplitude: 1, offset: 0 }),
+    ).toBeCloseTo(0);
+  });
+
+  it('sine: peaks at amplitude a quarter-period in', () => {
+    expect(
+      evaluateOscillator(250, { shape: 'sine', periodMs: 1000, amplitude: 2, offset: 0 }),
+    ).toBeCloseTo(2);
+  });
+
+  it('triangle: -1 at phase 0, +1 at the half-period, back to -1 at a full period', () => {
+    expect(evaluateOscillator(0, { shape: 'triangle', periodMs: 1000 })).toBeCloseTo(-1);
+    expect(evaluateOscillator(500, { shape: 'triangle', periodMs: 1000 })).toBeCloseTo(1);
+    expect(evaluateOscillator(1000, { shape: 'triangle', periodMs: 1000 })).toBeCloseTo(-1);
+  });
+
+  it('square: high for the first half of the period, low for the second', () => {
+    expect(evaluateOscillator(0, { shape: 'square', periodMs: 1000 })).toBe(1);
+    expect(evaluateOscillator(499, { shape: 'square', periodMs: 1000 })).toBe(1);
+    expect(evaluateOscillator(500, { shape: 'square', periodMs: 1000 })).toBe(-1);
+  });
+
+  it('applies offset and amplitude scaling', () => {
+    expect(
+      evaluateOscillator(250, { shape: 'sine', periodMs: 1000, amplitude: 5, offset: 10 }),
+    ).toBeCloseTo(15);
+  });
+
+  it('produces the identical value at the same elapsed timestamp regardless of tick history', () => {
+    const params = { shape: 'sine', periodMs: 1000, amplitude: 1, offset: 0 };
+    // Simulate arriving at timestamp 990 via a 30fps-equivalent cadence
+    // versus a 60fps-equivalent cadence: since evaluateOscillator is a
+    // pure function of `timestamp` alone (no persisted state), the tick
+    // history leading up to 990 cannot affect the value observed at 990.
+    // Walk up to (but not through) elapsed 990ms at two different simulated
+    // cadences — 30fps-equivalent (~33.33ms/tick) and 60fps-equivalent
+    // (~16.67ms/tick) — then both sequences take one final tick landing
+    // exactly on elapsed 990ms. Since evaluateOscillator depends only on
+    // `timestamp`, not on how many ticks (or how widely spaced) preceded
+    // it, the two sequences must agree at that shared elapsed timestamp.
+    for (let t = 0; t < 990; t += 1000 / 30) evaluateOscillator(t, params);
+    const at30fps = evaluateOscillator(990, params);
+    for (let t = 0; t < 990; t += 1000 / 60) evaluateOscillator(t, params);
+    const at60fps = evaluateOscillator(990, params);
+    expect(at30fps).toBe(at60fps);
+  });
+});
+
+describe('Task 38: evaluateTimer (pure function of elapsed time)', () => {
+  it('elapsed mode: value equals the raw timestamp', () => {
+    expect(evaluateTimer(1234, { mode: 'elapsed' })).toBe(1234);
+  });
+
+  it('loop mode: wraps back to 0 exactly at the period boundary', () => {
+    expect(evaluateTimer(999, { mode: 'loop', periodMs: 1000 })).toBe(999);
+    expect(evaluateTimer(1000, { mode: 'loop', periodMs: 1000 })).toBe(0);
+    expect(evaluateTimer(2500, { mode: 'loop', periodMs: 1000 })).toBe(500);
+  });
+
+  it('countdown mode: counts down to exactly 0 and holds there past completion', () => {
+    expect(evaluateTimer(0, { mode: 'countdown', durationMs: 1000 })).toBe(1000);
+    expect(evaluateTimer(500, { mode: 'countdown', durationMs: 1000 })).toBe(500);
+    expect(evaluateTimer(1000, { mode: 'countdown', durationMs: 1000 })).toBe(0);
+    expect(evaluateTimer(1500, { mode: 'countdown', durationMs: 1000 })).toBe(0);
+  });
+});
+
+describe('Task 38: evaluateDelay (elapsed-timestamp-gated pass-through)', () => {
+  it('does not emit before the delay completes', () => {
+    const step = evaluateDelay(null, 10, 0, { delayMs: 100 });
+    expect(step.value).toBeNull();
+  });
+
+  it('a value just short of the delay boundary is still withheld', () => {
+    let state: DelayState | null = null;
+    let step = evaluateDelay(state, 10, 0, { delayMs: 100 });
+    state = step.state;
+    step = evaluateDelay(state, 10, 99, { delayMs: 100 });
+    expect(step.value).toBeNull();
+  });
+
+  it('emits exactly at the delay boundary (inclusive)', () => {
+    let state: DelayState | null = null;
+    let step = evaluateDelay(state, 10, 0, { delayMs: 100 });
+    state = step.state;
+    step = evaluateDelay(state, 10, 100, { delayMs: 100 });
+    expect(step.value).toBe(10);
+  });
+
+  it('a value changing again before the delay completes restarts the delay', () => {
+    let state: DelayState | null = null;
+    let step = evaluateDelay(state, 10, 0, { delayMs: 100 });
+    state = step.state;
+    step = evaluateDelay(state, 20, 50, { delayMs: 100 }); // changed before 10 committed
+    state = step.state;
+    expect(step.value).toBeNull(); // nothing has ever committed yet
+    step = evaluateDelay(state, 20, 100, { delayMs: 100 }); // only 50ms since the restart
+    expect(step.value).toBeNull();
+    state = step.state;
+    step = evaluateDelay(state, 20, 150, { delayMs: 100 }); // 100ms since the restart at t=50
+    expect(step.value).toBe(20);
+  });
+
+  it('missing input holds the last committed value without disturbing the pending timer', () => {
+    let state: DelayState | null = null;
+    let step = evaluateDelay(state, 10, 0, { delayMs: 100 });
+    state = step.state;
+    step = evaluateDelay(state, 10, 100, { delayMs: 100 }); // commits 10
+    state = step.state;
+    step = evaluateDelay(state, null, 150, { delayMs: 100 }); // signal goes missing
+    expect(step.value).toBe(10);
+  });
+});
+
+describe('Task 38: evaluateCooldown (elapsed-timestamp-gated event gate)', () => {
+  it('the first trigger attempt always fires', () => {
+    const step = evaluateCooldown(null, true, 0, { milliseconds: 500 });
+    expect(step.fired).toBe(true);
+  });
+
+  it('repeated attempts during the cooldown window are suppressed and do not reset the clock', () => {
+    let state: CooldownState | null = null;
+    let step = evaluateCooldown(state, true, 0, { milliseconds: 500 });
+    expect(step.fired).toBe(true);
+    state = step.state;
+
+    step = evaluateCooldown(state, true, 100, { milliseconds: 500 }); // 100ms since the last firing
+    expect(step.fired).toBe(false);
+    state = step.state; // must NOT have moved lastFiredAt to 100
+
+    step = evaluateCooldown(state, true, 400, { milliseconds: 500 }); // measured from t=0, not t=100
+    expect(step.fired).toBe(false);
+    state = step.state;
+
+    step = evaluateCooldown(state, true, 500, { milliseconds: 500 }); // exactly 500ms since t=0
+    expect(step.fired).toBe(true);
+  });
+
+  it('a tick with no trigger attempt never fires and leaves state untouched', () => {
+    const primed: CooldownState = { lastFiredAt: 0 };
+    const step = evaluateCooldown(primed, false, 1000, { milliseconds: 500 });
+    expect(step.fired).toBe(false);
+    expect(step.state).toEqual(primed);
+  });
+});
+
+describe('Task 38: param validation (surfaced before execution)', () => {
+  it('rejects an ifElse comparison outside the documented set', () => {
+    expect(validateConditionNodeParams('ifElse', { comparison: 'notAThing' })).toMatch(
+      /comparison/,
+    );
+  });
+  it('rejects ifElse min > max', () => {
+    expect(validateConditionNodeParams('ifElse', { min: 10, max: 0 })).toMatch(/min/);
+  });
+  it('rejects a negative ifElse tolerance', () => {
+    expect(validateConditionNodeParams('ifElse', { tolerance: -1 })).toMatch(/tolerance/);
+  });
+  it('rejects a negative ifElse holdTimeMs', () => {
+    expect(validateConditionNodeParams('ifElse', { holdTimeMs: -1 })).toMatch(/holdTimeMs/);
+  });
+  it('accepts default (empty) ifElse params', () => {
+    expect(validateConditionNodeParams('ifElse', {})).toBeNull();
+  });
+
+  it('rejects an oscillator shape outside the documented set', () => {
+    expect(validateInputNodeParams('oscillator', { shape: 'sawtooth' })).toMatch(/shape/);
+  });
+  it('rejects a non-positive oscillator periodMs', () => {
+    expect(validateInputNodeParams('oscillator', { periodMs: 0 })).toMatch(/periodMs/);
+    expect(validateInputNodeParams('oscillator', { periodMs: -10 })).toMatch(/periodMs/);
+  });
+  it('rejects a timer mode outside the documented set', () => {
+    expect(validateInputNodeParams('timer', { mode: 'bogus' })).toMatch(/mode/);
+  });
+  it('rejects a non-positive timer durationMs', () => {
+    expect(validateInputNodeParams('timer', { durationMs: -1 })).toMatch(/durationMs/);
+  });
+  it('accepts default (empty) input params for oscillator/timer/handSignal/gestureEvent', () => {
+    expect(validateInputNodeParams('oscillator', {})).toBeNull();
+    expect(validateInputNodeParams('timer', {})).toBeNull();
+    expect(validateInputNodeParams('handSignal', {})).toBeNull();
+    expect(validateInputNodeParams('gestureEvent', {})).toBeNull();
+  });
+
+  it('rejects a negative delay delayMs (invalid timing value)', () => {
+    expect(validateFlowNodeParams('delay', { delayMs: -1 })).toMatch(/delayMs/);
+  });
+  it('rejects a negative cooldown milliseconds (invalid timing value)', () => {
+    expect(validateFlowNodeParams('cooldown', { milliseconds: -1 })).toMatch(/milliseconds/);
+  });
+  it('accepts default (empty) flow params', () => {
+    expect(validateFlowNodeParams('delay', {})).toBeNull();
+    expect(validateFlowNodeParams('cooldown', {})).toBeNull();
+  });
+
+  it('surfaces an invalid condition/timing node parameter as a validateBehaviorGraph error before any tick runs', () => {
+    const scene = sceneWithGraph(
+      [
+        {
+          id: 'osc',
+          family: 'input',
+          type: 'oscillator',
+          params: { periodMs: -1 },
+          position: { x: 0, y: 0 },
+        },
+      ],
+      [],
+    );
+    const result = validateBehaviorGraph(scene);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.rule === 'invalidNodeParams')).toBe(true);
+    expect(() => createBehaviorRuntime(scene)).toThrow(BehaviorGraphValidationError);
+  });
+});
+
+describe('Task 38: graph-level validation rules', () => {
+  it('accepts exactly 3 conditional (ifElse) nodes', () => {
+    const nodes = [0, 1, 2].map((i) => ({
+      id: `cond-${i}`,
+      family: 'condition',
+      type: 'ifElse',
+      params: {},
+      position: { x: i * 100, y: 0 },
+    }));
+    const scene = sceneWithGraph(nodes, []);
+    expect(validateBehaviorGraph(scene).valid).toBe(true);
+  });
+
+  it('rejects a 4th conditional (ifElse) node in the same scene', () => {
+    const nodes = [0, 1, 2, 3].map((i) => ({
+      id: `cond-${i}`,
+      family: 'condition',
+      type: 'ifElse',
+      params: {},
+      position: { x: i * 100, y: 0 },
+    }));
+    const scene = sceneWithGraph(nodes, []);
+    const result = validateBehaviorGraph(scene);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.message.includes('maxConditionalNodes'))).toBe(true);
+  });
+
+  it('rejects an ifElse feeding directly into a second ifElse (chained/nested condition trees)', () => {
+    const nodes = [
+      { id: 'cond-a', family: 'condition', type: 'ifElse', params: {}, position: { x: 0, y: 0 } },
+      { id: 'cond-b', family: 'condition', type: 'ifElse', params: {}, position: { x: 200, y: 0 } },
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'cond-a', fromPort: 'true', toNodeId: 'cond-b', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    const result = validateBehaviorGraph(scene);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.rule === 'chainedConditionNode')).toBe(true);
+  });
+
+  it('rejects an ifElse feeding indirectly into a second ifElse through an intermediate transform node', () => {
+    const nodes = [
+      { id: 'cond-a', family: 'condition', type: 'ifElse', params: {}, position: { x: 0, y: 0 } },
+      {
+        id: 'clampNode',
+        family: 'transform',
+        type: 'clamp',
+        params: {},
+        position: { x: 200, y: 0 },
+      },
+      { id: 'cond-b', family: 'condition', type: 'ifElse', params: {}, position: { x: 400, y: 0 } },
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'cond-a', fromPort: 'true', toNodeId: 'clampNode', toPort: 'in' },
+      { id: 'c2', fromNodeId: 'clampNode', fromPort: 'out', toNodeId: 'cond-b', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    const result = validateBehaviorGraph(scene);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.rule === 'chainedConditionNode')).toBe(true);
+  });
+
+  it('still rejects a plain cycle involving Task 38 node types (reuses findCycle, not reimplemented)', () => {
+    const nodes = [
+      { id: 'delayNode', family: 'flow', type: 'delay', params: {}, position: { x: 0, y: 0 } },
+      {
+        id: 'clampNode',
+        family: 'transform',
+        type: 'clamp',
+        params: {},
+        position: { x: 200, y: 0 },
+      },
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'delayNode', fromPort: 'out', toNodeId: 'clampNode', toPort: 'in' },
+      { id: 'c2', fromNodeId: 'clampNode', fromPort: 'out', toNodeId: 'delayNode', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    const result = validateBehaviorGraph(scene);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.rule === 'graphCycle')).toBe(true);
+  });
+});
+
+describe('Task 38: end-to-end graph execution', () => {
+  it('ifElse: the true branch emits a level output only once the condition holds', () => {
+    const nodes = [
+      {
+        id: 'in-0',
+        family: 'input',
+        type: 'handSignal',
+        params: { signal: 'testSignal' },
+        position: { x: 0, y: 0 },
+      },
+      {
+        id: 'cond',
+        family: 'condition',
+        type: 'ifElse',
+        params: { comparison: 'greaterThan', threshold: 50, holdTimeMs: 0 },
+        position: { x: 200, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 400, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'in-0', fromPort: 'value', toNodeId: 'cond', toPort: 'in' },
+      { id: 'c2', fromNodeId: 'cond', fromPort: 'true', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    expect(tickPositionX(scene, input(0, { testSignal: 60 }))).toBe(1);
+    // Exact-threshold equality does not satisfy "greaterThan" (exclusive boundary).
+    expect(tickPositionX(scene, input(0, { testSignal: 50 }))).toBeUndefined();
+  });
+
+  it('ifElse: true and false branches feed different target properties and are mutually exclusive', () => {
+    const nodes = [
+      {
+        id: 'in-0',
+        family: 'input',
+        type: 'handSignal',
+        params: { signal: 'testSignal' },
+        position: { x: 0, y: 0 },
+      },
+      {
+        id: 'cond',
+        family: 'condition',
+        type: 'ifElse',
+        params: { comparison: 'greaterThan', threshold: 50, holdTimeMs: 0 },
+        position: { x: 200, y: 0 },
+      },
+      shapePropertyNode('true-node', 'positionX', { x: 400, y: -50 }),
+      shapePropertyNode('false-node', 'positionY', { x: 400, y: 50 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'in-0', fromPort: 'value', toNodeId: 'cond', toPort: 'in' },
+      { id: 'c2', fromNodeId: 'cond', fromPort: 'true', toNodeId: 'true-node', toPort: 'in' },
+      { id: 'c3', fromNodeId: 'cond', fromPort: 'false', toNodeId: 'false-node', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    const runtime = createBehaviorRuntime(scene);
+    const below = runtime.tick(input(0, { testSignal: 10 }));
+    expect(below.continuous.find((c) => c.targetProperty === 'positionX')).toBeUndefined();
+    expect(below.continuous.find((c) => c.targetProperty === 'positionY')?.value).toBe(1);
+
+    const above = runtime.tick(input(16.667, { testSignal: 90 }));
+    expect(above.continuous.find((c) => c.targetProperty === 'positionX')?.value).toBe(1);
+    expect(above.continuous.find((c) => c.targetProperty === 'positionY')).toBeUndefined();
+  });
+
+  it('ifElse: debounced by holdTimeMs end to end (a boundary-flickering signal does not flip the output)', () => {
+    const nodes = [
+      {
+        id: 'in-0',
+        family: 'input',
+        type: 'handSignal',
+        params: { signal: 'testSignal' },
+        position: { x: 0, y: 0 },
+      },
+      {
+        id: 'cond',
+        family: 'condition',
+        type: 'ifElse',
+        params: { comparison: 'greaterThan', threshold: 50, holdTimeMs: 100 },
+        position: { x: 200, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 400, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'in-0', fromPort: 'value', toNodeId: 'cond', toPort: 'in' },
+      { id: 'c2', fromNodeId: 'cond', fromPort: 'true', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    const runtime = createBehaviorRuntime(scene);
+    expect(
+      runtime
+        .tick(input(0, { testSignal: 60 }))
+        .continuous.find((c) => c.targetProperty === 'positionX'),
+    ).toBeUndefined();
+    expect(
+      runtime
+        .tick(input(50, { testSignal: 60 }))
+        .continuous.find((c) => c.targetProperty === 'positionX'),
+    ).toBeUndefined();
+    expect(
+      runtime
+        .tick(input(100, { testSignal: 60 }))
+        .continuous.find((c) => c.targetProperty === 'positionX')?.value,
+    ).toBe(1);
+  });
+
+  it('oscillator: produces the same value at the same elapsed timestamp regardless of simulated frame rate', () => {
+    const nodes = [
+      {
+        id: 'osc',
+        family: 'input',
+        type: 'oscillator',
+        params: { shape: 'sine', periodMs: 1000, amplitude: 10 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'osc', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+
+    // As in the pure-function test above: walk each runtime up to (but not
+    // through) elapsed 990ms at a different simulated cadence, then take
+    // one final tick landing exactly on elapsed 990ms from each, and
+    // compare those.
+    const scene30 = sceneWithGraph(nodes, connections);
+    const runtime30 = createBehaviorRuntime(scene30);
+    for (let t = 0; t < 990; t += 1000 / 30) runtime30.tick(input(t, {}));
+    const at30fps = runtime30
+      .tick(input(990, {}))
+      .continuous.find((c) => c.targetProperty === 'positionX')?.value;
+
+    const scene60 = sceneWithGraph(nodes, connections);
+    const runtime60 = createBehaviorRuntime(scene60);
+    for (let t = 0; t < 990; t += 1000 / 60) runtime60.tick(input(t, {}));
+    const at60fps = runtime60
+      .tick(input(990, {}))
+      .continuous.find((c) => c.targetProperty === 'positionX')?.value;
+
+    expect(at30fps).toBe(at60fps);
+  });
+
+  it('timer: loop mode wraps end to end', () => {
+    const nodes = [
+      {
+        id: 'timerNode',
+        family: 'input',
+        type: 'timer',
+        params: { mode: 'loop', periodMs: 1000 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'timerNode', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    expect(tickPositionX(scene, input(999, {}))).toBe(999);
+    expect(tickPositionX(scene, input(1000, {}))).toBe(0);
+    expect(tickPositionX(scene, input(2500, {}))).toBe(500);
+  });
+
+  it('timer: countdown mode completes and holds at 0 end to end', () => {
+    const nodes = [
+      {
+        id: 'timerNode',
+        family: 'input',
+        type: 'timer',
+        params: { mode: 'countdown', durationMs: 1000 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'timerNode', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    expect(tickPositionX(scene, input(1000, {}))).toBe(0);
+    expect(tickPositionX(scene, input(1500, {}))).toBe(0);
+  });
+
+  it('delay: withholds output until exactly delayMs, then emits; a mid-flight value change restarts the wait', () => {
+    const nodes = [
+      {
+        id: 'in-0',
+        family: 'input',
+        type: 'handSignal',
+        params: { signal: 'testSignal' },
+        position: { x: 0, y: 0 },
+      },
+      {
+        id: 'delayNode',
+        family: 'flow',
+        type: 'delay',
+        params: { delayMs: 100 },
+        position: { x: 200, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 400, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'in-0', fromPort: 'value', toNodeId: 'delayNode', toPort: 'in' },
+      { id: 'c2', fromNodeId: 'delayNode', fromPort: 'out', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithGraph(nodes, connections);
+    const runtime = createBehaviorRuntime(scene);
+    expect(
+      runtime
+        .tick(input(0, { testSignal: 10 }))
+        .continuous.find((c) => c.targetProperty === 'positionX'),
+    ).toBeUndefined();
+    expect(
+      runtime
+        .tick(input(99, { testSignal: 10 }))
+        .continuous.find((c) => c.targetProperty === 'positionX'),
+    ).toBeUndefined();
+    expect(
+      runtime
+        .tick(input(100, { testSignal: 10 }))
+        .continuous.find((c) => c.targetProperty === 'positionX')?.value,
+    ).toBe(10);
+    // Value changes again: restarts the wait, does not immediately re-emit.
+    expect(
+      runtime
+        .tick(input(150, { testSignal: 20 }))
+        .continuous.find((c) => c.targetProperty === 'positionX')?.value,
+    ).toBe(10);
+    expect(
+      runtime
+        .tick(input(249, { testSignal: 20 }))
+        .continuous.find((c) => c.targetProperty === 'positionX')?.value,
+    ).toBe(10);
+    expect(
+      runtime
+        .tick(input(250, { testSignal: 20 }))
+        .continuous.find((c) => c.targetProperty === 'positionX')?.value,
+    ).toBe(20);
   });
 });

@@ -10,10 +10,10 @@
  * ## Scope (issue #35's "Out of scope")
  *
  * Task 37 (numeric transform nodes: Map range, Clamp, Smooth, Invert, Add,
- * Multiply, Lerp — see the "Transform node registry" section below) has
- * landed. `Oscillator` (also listed in `_docs/plan.md`'s V1 node list) and
- * Task 38 (condition/timing nodes: If/Else, Delay, Cooldown, Timer) have
- * not. This runtime evaluates three paths:
+ * Multiply, Lerp — see the "Transform node registry" section below) and
+ * Task 38 (condition/timing nodes: If/Else, Oscillator, Timer, Delay,
+ * Cooldown — see the "Condition and timing node registry" section below)
+ * have both landed. This runtime evaluates three paths:
  *
  * 1. `scene.bindings` directly (signal -> mapping -> smoothing -> clamp ->
  *    target channel), which is what every behavior card actually produces
@@ -37,7 +37,7 @@
  * a switch statement buried in logic, specifically so a new node type is
  * additive (new map entries plus one evaluator branch) rather than a
  * rewrite — the pattern Task 37 followed to add its 7 node types, and Task
- * 38 can follow for condition/timing nodes.
+ * 38 follows again below for its 5 condition/timing node types.
  *
  * ## Clock model
  *
@@ -176,11 +176,17 @@ export const INTERACTION_TARGET_PROPERTIES = ALLOWED_TARGET_PROPERTIES_BY_SCOPE.
  * `NODE_PORTS` entry, and one more evaluator branch — never a rewrite of
  * `validateBehaviorGraph` or `tick`. */
 export const ALLOWED_NODE_TYPES_BY_FAMILY: Record<string, ReadonlySet<string>> = {
-  input: new Set(['handSignal', 'gestureEvent']),
+  // `timer`/`oscillator` (Task 38) join `handSignal`/`gestureEvent` here —
+  // see the "Condition and timing node registry" doc comment below for why
+  // they're `input`-family rather than `transform`: `_docs/plan.md`'s node
+  // family list explicitly names "Timer" under Input, and both are
+  // self-contained value *sources* (no `in` port) exactly like
+  // `handSignal`/`gestureEvent`, not transforms of an upstream value.
+  input: new Set(['handSignal', 'gestureEvent', 'timer', 'oscillator']),
   transform: new Set(['mapRange', 'clamp', 'smooth', 'invert', 'add', 'multiply', 'lerp']), // Task 37.
-  condition: new Set(), // Task 38 — not yet built.
+  condition: new Set(['ifElse']), // Task 38.
   visual: new Set(['shapeProperty', 'groupProperty', 'particleEmitter']),
-  flow: new Set(['trigger']),
+  flow: new Set(['trigger', 'delay', 'cooldown']), // Task 38 adds delay/cooldown.
   output: new Set(),
 };
 
@@ -209,6 +215,18 @@ export const NODE_PORTS: Record<string, { out?: ReadonlySet<string>; in?: Readon
   add: { in: new Set(['inA', 'inB']), out: new Set(['out']) },
   multiply: { in: new Set(['inA', 'inB']), out: new Set(['out']) },
   lerp: { in: new Set(['inA', 'inB']), out: new Set(['out']) },
+  // Task 38 condition/timing nodes. `timer`/`oscillator` are sources (no
+  // `in` port), matching `handSignal`. `ifElse` carries one numeric `in`
+  // port and *two* numeric output ports, `true`/`false` — both "value"
+  // data type (a level, not an edge event; see the "Condition and timing
+  // node registry" doc comment). `delay` is a single-port numeric
+  // pass-through like the Task 37 transforms. `cooldown` gates an *event*,
+  // matching `trigger`'s existing `in: {trigger}` event-port convention.
+  timer: { out: new Set(['value']) },
+  oscillator: { out: new Set(['value']) },
+  ifElse: { in: new Set(['in']), out: new Set(['true', 'false']) },
+  delay: { in: new Set(['in']), out: new Set(['out']) },
+  cooldown: { in: new Set(['trigger']), out: new Set(['trigger']) },
 };
 
 // --- Transform node registry (Task 37) ----------------------------------
@@ -525,6 +543,507 @@ export function evaluateSmooth(
   return { value, state: { value, lastTimestamp: timestamp } };
 }
 
+// --- Condition and timing node registry (Task 38) -----------------------
+
+/**
+ * Documented typed inputs/outputs/defaults/edge cases for the 5 V1
+ * condition/timing node types (`_docs/plan.md`'s "Conditional logic" and
+ * "Math and time nodes" sections): If/Else, Oscillator, Timer, Delay,
+ * Cooldown. As with the Transform node registry above, `_docs/plan.md`
+ * names these nodes and their qualitative behavior but gives no exact
+ * numeric defaults, so every default below is this module's own documented
+ * choice, consistent with numbers this codebase already picked for
+ * adjacent concerns.
+ *
+ * ## Family assignment
+ *
+ * `_docs/plan.md`'s "Node families" list is the source of truth used here:
+ * `Input: Hand signal, Gesture event, Timer, Demo control` and
+ * `Flow: Trigger, Delay, Cooldown` are explicit. If/Else's family is
+ * `condition` — `schema/scene.schema.json`'s own `graphNode.type` doc
+ * comment gives `condition/ifElse` as its example, and
+ * `schema/fixtures/valid/feature_rich.json` (Task 7's forward-looking
+ * fixture) already uses `{ family: 'condition', type: 'ifElse' }`.
+ * `Oscillator` is not named in any of plan.md's five family bullets; it is
+ * placed in `input` here as this module's own documented choice, by the
+ * same reasoning plan.md gives for Timer: like `handSignal`/`gestureEvent`/
+ * `timer`, an oscillator has no upstream `in` port — it is a self-contained
+ * value *source* driven only by elapsed time, structurally identical to
+ * Timer, not a transform of an existing signal.
+ *
+ * ## Elapsed-timestamp policy (frame-rate independence)
+ *
+ * Every one of these 5 node types (like the module's "Clock model" section
+ * already requires for bindings) derives its output *only* from
+ * `RuntimeInput.timestamp` and its own persisted state's timestamps — never
+ * from a tick counter, `Date.now()`, or an assumed frame interval. Oscillator
+ * and Timer are the strongest case: both are pure functions of
+ * `(timestamp, params)` with *no* per-node state at all, so "the same
+ * elapsed timestamp produces the same value regardless of how many ticks
+ * ran before it, or how far apart they were spaced" is true by
+ * construction, not by careful bookkeeping — see `behaviorRuntime.test.ts`'s
+ * "frame-rate independence" tests for the explicit 30fps-equivalent vs
+ * 60fps-equivalent check the issue calls for.
+ *
+ * ## If/Else (`ifElse`, family `condition`)
+ *
+ * One input port `in` (numeric), two output ports `true`/`false` (both
+ * numeric "value" ports, a *level* not an edge event: the active branch
+ * emits `1` every tick the condition holds post-debounce; the inactive
+ * branch emits `null`, i.e. no output that tick — this lets a downstream
+ * node display/act on "condition currently true" without maintaining its
+ * own extra state). Exactly one condition per node, never chained/nested
+ * (enforced by `validateBehaviorGraph`'s "no condition feeds another
+ * condition" rule below) — the V1 boundary from issue #38's constraints.
+ *
+ * Params: `comparison` (one of the four plan.md-documented comparisons:
+ * `'greaterThan' | 'lessThan' | 'between' | 'approximately'`, default
+ * `'greaterThan'`), `threshold` (finite number, default `0`, used by
+ * `greaterThan`/`lessThan`/`approximately`), `min`/`max` (finite numbers,
+ * default `0`/`1`, used by `between`; `min <= max` required, same
+ * invariant as Task 37's Clamp/Invert), `tolerance` (finite number `>= 0`,
+ * default `0.05`, used by `approximately`), `holdTimeMs` (finite number
+ * `>= 0`, default `150` — reusing `twoHandSignals.ts`'s exact documented
+ * `holdTimeMs` default and rationale: "long enough to absorb a few frames
+ * of tracking jitter ... without feeling laggy", the acceptance criterion's
+ * "documented debounce or hold-time configuration").
+ *
+ * **Comparison semantics** (boundary is always exact, no implicit
+ * epsilon): `greaterThan`: `value > threshold` (equality is `false`);
+ * `lessThan`: `value < threshold` (equality is `false`); `between`:
+ * `min <= value <= max` (both boundaries included); `approximately`:
+ * `abs(value - threshold) <= tolerance` (boundary included).
+ *
+ * **Debounce/hold-time model** — identical in spirit to
+ * `twoHandSignals.ts`'s hysteresis hold time, adapted to If/Else's single
+ * boolean target instead of a three-state close/far/neutral target: each
+ * tick computes an instantaneous target state from the comparison above.
+ * If the target matches the already-*committed* state, nothing changes. If
+ * it differs, it becomes (or remains) a *candidate*; the candidate must be
+ * the target on every consecutive valid-input tick for at least
+ * `holdTimeMs` before it is promoted to committed (a target that reverts to
+ * the current committed state, or changes to a different candidate, resets
+ * the hold timer — exactly `twoHandSignals.ts`'s rule). `holdTimeMs: 0`
+ * commits immediately. This is what "avoid boundary flicker" means here: a
+ * value oscillating around the threshold faster than `holdTimeMs` never
+ * flips the committed output.
+ *
+ * **Missing input** (`in` absent/non-finite this tick): holds the last
+ * committed state (or `null`/no-output-on-either-branch if nothing has ever
+ * committed) and does not touch the debounce timer — the same
+ * "hold rather than glitch" policy `evaluateSmooth` uses.
+ *
+ * ## Oscillator (`oscillator`, family `input`)
+ *
+ * No input port; one output port `value`. Params: `shape`
+ * (`'sine' | 'triangle' | 'square'`, default `'sine'`), `periodMs` (finite
+ * number `> 0`, default `1000`), `amplitude` (finite number, default `1`),
+ * `offset` (finite number, default `0`), `phaseOffsetMs` (finite number,
+ * default `0`). `phase = ((timestamp + phaseOffsetMs) mod periodMs) /
+ * periodMs` (always `[0, 1)`); `value = offset + amplitude * waveform(phase)`
+ * where `waveform` is `sin(2*PI*phase)` for `sine`, a piecewise linear ramp
+ * from `-1` (phase 0) to `1` (phase 0.5) back to `-1` (phase 1) for
+ * `triangle`, and `phase < 0.5 ? 1 : -1` for `square`. Being a pure function
+ * of `timestamp` with no persisted state, it is trivially frame-rate
+ * independent (see above).
+ *
+ * ## Timer (`timer`, family `input`)
+ *
+ * No input port; one output port `value`. Params: `mode`
+ * (`'elapsed' | 'loop' | 'countdown'`, default `'elapsed'`), `periodMs`
+ * (finite number `> 0`, default `1000`, used by `loop`), `durationMs`
+ * (finite number `> 0`, default `5000`, used by `countdown`). A Timer's
+ * elapsed time is `RuntimeInput.timestamp` itself — i.e. a Timer node
+ * measures time since the runtime's own clock reference (timestamp `0`),
+ * matching every other elapsed-timestamp calculation in this module (which
+ * never reads a wall clock); this module's own documented choice for "when
+ * does a timer start" in the absence of a dedicated start/reset input,
+ * which is out of V1's scope.
+ * - `'elapsed'`: `value = timestamp` (raw elapsed milliseconds, unbounded).
+ * - `'loop'` ("looped phase" from `_docs/plan.md`): `value = timestamp mod
+ *   periodMs`, wrapping back toward `0` every `periodMs` — the documented
+ *   "timer wrap" behavior the acceptance criteria calls for.
+ * - `'countdown'`: `value = max(0, durationMs - timestamp)`, counting down
+ *   and then holding exactly at `0` once `timestamp >= durationMs` — the
+ *   documented "countdown completion" behavior.
+ *
+ * ## Delay (`delay`, family `flow`)
+ *
+ * One input port `in`, one output port `out` (both numeric). Params:
+ * `delayMs` (finite number `>= 0`, default `300` — this module's own
+ * documented choice, roughly double `DEFAULT_EVENT_COOLDOWN_MS`/
+ * `holdTimeMs`'s `150`, since Delay is meant for a deliberate pause rather
+ * than jitter absorption). Stateful "gated pass-through": the node tracks a
+ * *pending* value and the timestamp it first appeared. Once the pending
+ * value has been continuously pending for `delayMs`, it becomes the
+ * *committed* output value (emitted from that tick onward until superseded).
+ * **A value changing again before the delay completes restarts the delay**
+ * from the new value (the documented policy the acceptance criteria calls
+ * for) — the node never emits a value that didn't survive the full
+ * `delayMs` unchanged. Exact-boundary elapsed time (`elapsed === delayMs`)
+ * commits (`>=`), matching If/Else's inclusive-boundary convention. Missing
+ * input holds the last committed value (or `null` before any commit),
+ * without disturbing the pending timer, matching Smooth/Lerp's
+ * missing-input policy.
+ *
+ * ## Cooldown (`cooldown`, family `flow`)
+ *
+ * One input port `trigger`, one output port `trigger` (both "event" data
+ * type, matching the existing `trigger` node's convention — see
+ * `graphEditing.ts`'s `PORT_DATA_TYPES`). Params: `milliseconds` (finite
+ * number `>= 0`, default `500`, matching the param name
+ * `schema/fixtures/valid/feature_rich.json`'s forward-looking `cooldown`
+ * node example already used). An **event gate**: a trigger attempt passes
+ * through only if at least `milliseconds` have elapsed since the last
+ * attempt that passed through; a suppressed attempt during the cooldown
+ * window **does not reset the cooldown clock** — the next attempt is still
+ * measured from the last successful firing, not from the suppressed one
+ * (the acceptance criteria's "should not double-fire or reset
+ * unexpectedly"). Like `trigger`/`particleEmitter`, event-typed graph nodes
+ * are validated structurally but not yet executed end to end by `tick()`
+ * (see the module doc comment's "Scope" section — triggered particle
+ * bursts etc. are Task 39 territory); `evaluateCooldown` below is instead
+ * a directly unit-tested pure-plus-state function, exercised the same way
+ * `evaluateSmooth`'s table-driven tests exercise it without requiring a
+ * full render pipeline.
+ */
+export const IF_ELSE_DEFAULTS = {
+  comparison: 'greaterThan' as const,
+  threshold: 0,
+  min: 0,
+  max: 1,
+  tolerance: 0.05,
+  holdTimeMs: 150,
+};
+export const OSCILLATOR_DEFAULTS = {
+  shape: 'sine' as const,
+  periodMs: 1000,
+  amplitude: 1,
+  offset: 0,
+  phaseOffsetMs: 0,
+};
+export const TIMER_DEFAULTS = { mode: 'elapsed' as const, periodMs: 1000, durationMs: 5000 };
+export const DELAY_DEFAULTS = { delayMs: 300 };
+export const COOLDOWN_DEFAULTS = { milliseconds: 500 };
+
+const IF_ELSE_COMPARISONS = new Set(['greaterThan', 'lessThan', 'between', 'approximately']);
+const OSCILLATOR_SHAPES = new Set(['sine', 'triangle', 'square']);
+const TIMER_MODES = new Set(['elapsed', 'loop', 'countdown']);
+
+/** Validates one `input`-family node's params beyond schema shape:
+ * `oscillator`/`timer`'s enum/finite/positive invariants documented above
+ * (`handSignal`/`gestureEvent` have no extra invariants to check today).
+ * Wired into `validateBehaviorGraph` the same way
+ * `validateTransformNodeParams` is for `transform`. */
+export function validateInputNodeParams(
+  type: string,
+  params: Record<string, unknown>,
+): string | null {
+  switch (type) {
+    case 'oscillator': {
+      if (
+        params.shape !== undefined &&
+        (typeof params.shape !== 'string' || !OSCILLATOR_SHAPES.has(params.shape))
+      ) {
+        return `'shape' must be one of 'sine', 'triangle', 'square'.`;
+      }
+      for (const key of ['periodMs', 'amplitude', 'offset', 'phaseOffsetMs']) {
+        if (params[key] !== undefined && !isFiniteNumberParam(params[key])) {
+          return `'${key}' must be a finite number.`;
+        }
+      }
+      const periodMs = numberParam(params, 'periodMs', OSCILLATOR_DEFAULTS.periodMs);
+      if (periodMs <= 0) return `'periodMs' (${periodMs}) must be greater than 0.`;
+      return null;
+    }
+    case 'timer': {
+      if (
+        params.mode !== undefined &&
+        (typeof params.mode !== 'string' || !TIMER_MODES.has(params.mode))
+      ) {
+        return `'mode' must be one of 'elapsed', 'loop', 'countdown'.`;
+      }
+      for (const key of ['periodMs', 'durationMs']) {
+        if (params[key] !== undefined && !isFiniteNumberParam(params[key])) {
+          return `'${key}' must be a finite number.`;
+        }
+      }
+      const periodMs = numberParam(params, 'periodMs', TIMER_DEFAULTS.periodMs);
+      if (periodMs <= 0) return `'periodMs' (${periodMs}) must be greater than 0.`;
+      const durationMs = numberParam(params, 'durationMs', TIMER_DEFAULTS.durationMs);
+      if (durationMs <= 0) return `'durationMs' (${durationMs}) must be greater than 0.`;
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
+/** Validates one `condition`-family node's params: If/Else's
+ * comparison/threshold/min/max/tolerance/holdTimeMs invariants documented
+ * above. Wired into `validateBehaviorGraph` for `family === 'condition'`. */
+export function validateConditionNodeParams(
+  type: string,
+  params: Record<string, unknown>,
+): string | null {
+  switch (type) {
+    case 'ifElse': {
+      if (
+        params.comparison !== undefined &&
+        (typeof params.comparison !== 'string' || !IF_ELSE_COMPARISONS.has(params.comparison))
+      ) {
+        return `'comparison' must be one of 'greaterThan', 'lessThan', 'between', 'approximately'.`;
+      }
+      for (const key of ['threshold', 'min', 'max', 'tolerance', 'holdTimeMs']) {
+        if (params[key] !== undefined && !isFiniteNumberParam(params[key])) {
+          return `'${key}' must be a finite number.`;
+        }
+      }
+      const min = numberParam(params, 'min', IF_ELSE_DEFAULTS.min);
+      const max = numberParam(params, 'max', IF_ELSE_DEFAULTS.max);
+      if (min > max) return `'min' (${min}) must not be greater than 'max' (${max}).`;
+      const tolerance = numberParam(params, 'tolerance', IF_ELSE_DEFAULTS.tolerance);
+      if (tolerance < 0) return `'tolerance' (${tolerance}) must not be negative.`;
+      const holdTimeMs = numberParam(params, 'holdTimeMs', IF_ELSE_DEFAULTS.holdTimeMs);
+      if (holdTimeMs < 0) return `'holdTimeMs' (${holdTimeMs}) must not be negative.`;
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
+/** Validates one `flow`-family node's params: Delay's `delayMs` and
+ * Cooldown's `milliseconds`, both required non-negative (invalid timing
+ * values, e.g. a negative delay/cooldown, are rejected here before any
+ * tick runs). `trigger` (Task 34/35) has no configurable params today.
+ * Wired into `validateBehaviorGraph` for `family === 'flow'`. */
+export function validateFlowNodeParams(
+  type: string,
+  params: Record<string, unknown>,
+): string | null {
+  switch (type) {
+    case 'delay': {
+      if (params.delayMs !== undefined && !isFiniteNumberParam(params.delayMs)) {
+        return `'delayMs' must be a finite number.`;
+      }
+      const delayMs = numberParam(params, 'delayMs', DELAY_DEFAULTS.delayMs);
+      if (delayMs < 0) return `'delayMs' (${delayMs}) must not be negative.`;
+      return null;
+    }
+    case 'cooldown': {
+      if (params.milliseconds !== undefined && !isFiniteNumberParam(params.milliseconds)) {
+        return `'milliseconds' must be a finite number.`;
+      }
+      const milliseconds = numberParam(params, 'milliseconds', COOLDOWN_DEFAULTS.milliseconds);
+      if (milliseconds < 0) return `'milliseconds' (${milliseconds}) must not be negative.`;
+      return null;
+    }
+    default:
+      return null; // 'trigger': no configurable params.
+  }
+}
+
+/** Pure comparison for one If/Else node: see the "If/Else" doc section
+ * above for exact per-comparison boundary semantics. Returns `null` only
+ * for an unrecognized `comparison` value (never reachable once
+ * `validateConditionNodeParams` has passed). */
+export function evaluateComparison(value: number, params: Record<string, unknown>): boolean | null {
+  const comparison =
+    typeof params.comparison === 'string' ? params.comparison : IF_ELSE_DEFAULTS.comparison;
+  switch (comparison) {
+    case 'greaterThan':
+      return value > numberParam(params, 'threshold', IF_ELSE_DEFAULTS.threshold);
+    case 'lessThan':
+      return value < numberParam(params, 'threshold', IF_ELSE_DEFAULTS.threshold);
+    case 'between': {
+      const min = numberParam(params, 'min', IF_ELSE_DEFAULTS.min);
+      const max = numberParam(params, 'max', IF_ELSE_DEFAULTS.max);
+      return value >= min && value <= max;
+    }
+    case 'approximately': {
+      const threshold = numberParam(params, 'threshold', IF_ELSE_DEFAULTS.threshold);
+      const tolerance = numberParam(params, 'tolerance', IF_ELSE_DEFAULTS.tolerance);
+      return Math.abs(value - threshold) <= tolerance;
+    }
+    default:
+      return null;
+  }
+}
+
+/** One If/Else node's persisted debounce state — see the "If/Else" doc
+ * section's "Debounce/hold-time model" above. */
+export type IfElseState = {
+  committed: boolean | null;
+  candidate: boolean | null;
+  candidateSince: number | null;
+};
+
+/** If/Else: one hold-time-debounced comparison step. `raw === null` or
+ * non-finite (missing input) holds `prior.committed` without touching the
+ * debounce timer. Otherwise computes the instantaneous target via
+ * `evaluateComparison` and applies the hold-time state machine documented
+ * above. Returns the value to emit this tick (`state`, `null` before
+ * anything has ever committed) and the state to persist for the next tick
+ * (`persist`) — the caller (`evaluateGraphNodeValue`) owns storing it
+ * across ticks, matching `evaluateSmooth`'s pattern exactly. */
+export function evaluateIfElseState(
+  prior: IfElseState | null,
+  raw: number | null,
+  params: Record<string, unknown>,
+  timestamp: number,
+): { state: boolean | null; persist: IfElseState } {
+  const base: IfElseState = prior ?? { committed: null, candidate: null, candidateSince: null };
+  if (raw === null || !Number.isFinite(raw)) {
+    return { state: base.committed, persist: base };
+  }
+  const holdTimeMs = Math.max(0, numberParam(params, 'holdTimeMs', IF_ELSE_DEFAULTS.holdTimeMs));
+  const target = evaluateComparison(raw, params);
+  if (target === base.committed) {
+    return {
+      state: base.committed,
+      persist: { committed: base.committed, candidate: null, candidateSince: null },
+    };
+  }
+  // A candidate already timing toward this same target keeps its original
+  // `candidateSince`; a brand-new (or different) candidate starts timing
+  // from *this* tick — checked against `holdTimeMs` in the same tick it's
+  // set, so `holdTimeMs: 0` commits immediately (elapsed `0 >= 0`) rather
+  // than requiring one extra tick to notice it already qualifies.
+  const candidateSince =
+    base.candidate === target && base.candidateSince !== null ? base.candidateSince : timestamp;
+  const elapsed = timestamp - candidateSince;
+  if (elapsed >= holdTimeMs) {
+    return { state: target, persist: { committed: target, candidate: null, candidateSince: null } };
+  }
+  return {
+    state: base.committed,
+    persist: { committed: base.committed, candidate: target, candidateSince },
+  };
+}
+
+/** Oscillator: pure function of elapsed time — see the "Oscillator" doc
+ * section above for the exact waveform formulas. No persisted state, so
+ * frame-rate independence is automatic. */
+export function evaluateOscillator(timestamp: number, params: Record<string, unknown>): number {
+  const periodMs = numberParam(params, 'periodMs', OSCILLATOR_DEFAULTS.periodMs);
+  const amplitude = numberParam(params, 'amplitude', OSCILLATOR_DEFAULTS.amplitude);
+  const offset = numberParam(params, 'offset', OSCILLATOR_DEFAULTS.offset);
+  const phaseOffsetMs = numberParam(params, 'phaseOffsetMs', OSCILLATOR_DEFAULTS.phaseOffsetMs);
+  const shape = typeof params.shape === 'string' ? params.shape : OSCILLATOR_DEFAULTS.shape;
+
+  const shiftedMs = timestamp + phaseOffsetMs;
+  const wrappedMs = ((shiftedMs % periodMs) + periodMs) % periodMs;
+  const phase = wrappedMs / periodMs;
+
+  let wave: number;
+  switch (shape) {
+    case 'triangle':
+      wave = phase < 0.5 ? -1 + 4 * phase : 3 - 4 * phase;
+      break;
+    case 'square':
+      wave = phase < 0.5 ? 1 : -1;
+      break;
+    case 'sine':
+    default:
+      wave = Math.sin(2 * Math.PI * phase);
+      break;
+  }
+  return offset + amplitude * wave;
+}
+
+/** Timer: pure function of elapsed time — see the "Timer" doc section
+ * above for the exact per-mode formula (`elapsed`/`loop`/`countdown`). No
+ * persisted state, so frame-rate independence is automatic. */
+export function evaluateTimer(timestamp: number, params: Record<string, unknown>): number {
+  const mode = typeof params.mode === 'string' ? params.mode : TIMER_DEFAULTS.mode;
+  switch (mode) {
+    case 'loop': {
+      const periodMs = numberParam(params, 'periodMs', TIMER_DEFAULTS.periodMs);
+      return ((timestamp % periodMs) + periodMs) % periodMs;
+    }
+    case 'countdown': {
+      const durationMs = numberParam(params, 'durationMs', TIMER_DEFAULTS.durationMs);
+      return Math.max(0, durationMs - timestamp);
+    }
+    case 'elapsed':
+    default:
+      return timestamp;
+  }
+}
+
+/** One Delay node's persisted state — see the "Delay" doc section above. */
+export type DelayState = {
+  pendingValue: number | null;
+  pendingSince: number | null;
+  committedValue: number | null;
+};
+
+/** Delay: one elapsed-timestamp-gated pass-through step. `raw === null` or
+ * non-finite (missing input) holds `prior.committedValue` and leaves the
+ * pending timer untouched. A `raw` that differs from the currently pending
+ * value (re)starts the pending timer at `timestamp` (documented
+ * "value changing again before the delay completes" policy). Once the
+ * pending value has been pending for `>= delayMs`, it is committed and
+ * emitted. */
+export function evaluateDelay(
+  prior: DelayState | null,
+  raw: number | null,
+  timestamp: number,
+  params: Record<string, unknown>,
+): { value: number | null; state: DelayState } {
+  const base: DelayState = prior ?? {
+    pendingValue: null,
+    pendingSince: null,
+    committedValue: null,
+  };
+  if (raw === null || !Number.isFinite(raw)) {
+    return { value: base.committedValue, state: base };
+  }
+  const delayMs = Math.max(0, numberParam(params, 'delayMs', DELAY_DEFAULTS.delayMs));
+  const pendingSince =
+    base.pendingValue === raw && base.pendingSince !== null ? base.pendingSince : timestamp;
+  const elapsed = timestamp - pendingSince;
+  if (elapsed >= delayMs) {
+    return {
+      value: raw,
+      state: { pendingValue: raw, pendingSince, committedValue: raw },
+    };
+  }
+  return {
+    value: base.committedValue,
+    state: { pendingValue: raw, pendingSince, committedValue: base.committedValue },
+  };
+}
+
+/** One Cooldown node's persisted state — see the "Cooldown" doc section
+ * above. */
+export type CooldownState = { lastFiredAt: number | null };
+
+/** Cooldown: one elapsed-timestamp-gated event-gate step. `triggered`
+ * (whether a trigger attempt occurred this tick) fires (`fired: true`)
+ * only if no prior firing exists, or at least `milliseconds` have elapsed
+ * since the last successful firing. A suppressed attempt during the
+ * cooldown window does not update `lastFiredAt` — the cooldown clock is
+ * never reset by a suppressed attempt, only by a successful firing. */
+export function evaluateCooldown(
+  prior: CooldownState | null,
+  triggered: boolean,
+  timestamp: number,
+  params: Record<string, unknown>,
+): { fired: boolean; state: CooldownState } {
+  const base: CooldownState = prior ?? { lastFiredAt: null };
+  if (!triggered) return { fired: false, state: base };
+  const milliseconds = Math.max(
+    0,
+    numberParam(params, 'milliseconds', COOLDOWN_DEFAULTS.milliseconds),
+  );
+  if (base.lastFiredAt === null || timestamp - base.lastFiredAt >= milliseconds) {
+    return { fired: true, state: { lastFiredAt: timestamp } };
+  }
+  return { fired: false, state: base };
+}
+
 // --- Public types --------------------------------------------------------
 
 export type RuntimeSignalValue = number | boolean | null;
@@ -738,15 +1257,27 @@ export function validateBehaviorGraph(scene: SceneDocument): {
       });
       return;
     }
+    // Per-family param validation (Task 37 for `transform`, Task 38 for
+    // `input`/`condition`/`flow`) — one dispatcher per family rather than a
+    // single giant switch, so each family's validator stays independently
+    // readable and each is wired into this one pathway, never a second
+    // validation path a caller could bypass.
+    let paramError: string | null = null;
     if (family === 'transform') {
-      const paramError = validateTransformNodeParams(type, asRecord(node.params));
-      if (paramError) {
-        errors.push({
-          path: `$.graph.nodes[${index}].params`,
-          rule: 'invalidNodeParams',
-          message: `Graph node '${id}' (${type}): ${paramError}`,
-        });
-      }
+      paramError = validateTransformNodeParams(type, asRecord(node.params));
+    } else if (family === 'input') {
+      paramError = validateInputNodeParams(type, asRecord(node.params));
+    } else if (family === 'condition') {
+      paramError = validateConditionNodeParams(type, asRecord(node.params));
+    } else if (family === 'flow') {
+      paramError = validateFlowNodeParams(type, asRecord(node.params));
+    }
+    if (paramError) {
+      errors.push({
+        path: `$.graph.nodes[${index}].params`,
+        rule: 'invalidNodeParams',
+        message: `Graph node '${id}' (${type}): ${paramError}`,
+      });
     }
   });
 
@@ -798,6 +1329,50 @@ export function validateBehaviorGraph(scene: SceneDocument): {
       rule: 'graphCycle',
       message: `Graph contains a cycle through node '${cycleNode}'.`,
     });
+  }
+
+  // Task 38: "no nested/chained condition trees" — one If/Else's `in` may
+  // never (directly or indirectly, through any number of intermediate
+  // nodes) be fed by another If/Else's output. This is a directed
+  // *reachability* check distinct from `findCycle` above (the graph is
+  // already known acyclic at this point, so a plain forward walk from each
+  // condition node always terminates); it reuses the same `nodeIds`/`edges`
+  // this function already built for the cycle check rather than
+  // reimplementing adjacency a second time.
+  if (cycleNode === null) {
+    const conditionNodeIds = new Set(
+      nodeIds.filter((nodeId) => nodeById.get(nodeId)?.family === 'condition'),
+    );
+    if (conditionNodeIds.size > 0) {
+      const adjacency = new Map<string, string[]>();
+      for (const id of nodeIds) adjacency.set(id, []);
+      for (const edge of edges) {
+        if (adjacency.has(edge.from)) adjacency.get(edge.from)!.push(edge.to);
+      }
+      for (const conditionId of conditionNodeIds) {
+        const seen = new Set<string>();
+        const stack = [...(adjacency.get(conditionId) ?? [])];
+        let chainsToAnotherCondition = false;
+        while (stack.length > 0) {
+          const next = stack.pop()!;
+          if (seen.has(next)) continue;
+          seen.add(next);
+          if (conditionNodeIds.has(next)) {
+            chainsToAnotherCondition = true;
+            break;
+          }
+          stack.push(...(adjacency.get(next) ?? []));
+        }
+        if (chainsToAnotherCondition) {
+          errors.push({
+            path: '$.graph.connections',
+            rule: 'chainedConditionNode',
+            message: `Graph node '${conditionId}' (condition) feeds into another condition node — chained/nested condition trees are not supported in V1; If/Else supports exactly one condition per node.`,
+          });
+          break;
+        }
+      }
+    }
   }
 
   bindings.forEach((binding, index) => {
@@ -930,6 +1505,11 @@ export function createBehaviorRuntime(
   // independent features that happen to share an EMA formula.
   const smoothingStateByGraphNode = new Map<string, SmoothingState>();
   const lerpStateByGraphNode = new Map<string, number>();
+  // Task 38: per-node persistent state for If/Else's debounce and Delay's
+  // pending/committed value — same "keyed by graph node id, owned only by
+  // this runtime instance" pattern as the two maps above.
+  const ifElseStateByGraphNode = new Map<string, IfElseState>();
+  const delayStateByGraphNode = new Map<string, DelayState>();
 
   /** True for `input-<cardId>`/`action-<cardId>` node ids — the Task 34
    * card-owned graph fragment `graphFragmentForCard` writes alongside its
@@ -940,34 +1520,55 @@ export function createBehaviorRuntime(
     return nodeId.startsWith('input-') || nodeId.startsWith('action-');
   }
 
-  /** Recursively evaluates one graph node's numeric output for this tick,
-   * memoized so a node feeding two downstream consumers (e.g. one `add`
-   * input reused by two branches) is computed once. `scene.graph` is
-   * guaranteed acyclic by `validateBehaviorGraph`'s `findCycle` check
-   * (enforced before this runtime could ever be constructed), so this
-   * recursion always terminates. See the "Transform node registry" doc
-   * comment above `ALLOWED_NODE_TYPES_BY_FAMILY`/`NODE_PORTS` for each node
-   * type's exact evaluation semantics. */
+  /** Recursively evaluates one graph node output *port*'s numeric value for
+   * this tick, memoized (keyed by `nodeId::port`) so a node feeding two
+   * downstream consumers (e.g. one `add` input reused by two branches) is
+   * computed once. `scene.graph` is guaranteed acyclic by
+   * `validateBehaviorGraph`'s `findCycle` check (enforced before this
+   * runtime could ever be constructed), so this recursion always
+   * terminates. Every node type before Task 38 has exactly one output
+   * port, so `port` is irrelevant to them and only distinguishes memo
+   * entries; If/Else (Task 38) is the first node with *two* named output
+   * ports (`true`/`false`) whose values genuinely differ, which is why
+   * `port` is threaded through `upstream`/the recursive call at all. See
+   * the "Transform node registry" and "Condition and timing node
+   * registry" doc comments above `ALLOWED_NODE_TYPES_BY_FAMILY`/
+   * `NODE_PORTS` for each node type's exact evaluation semantics.
+   * `ifElseDecisions` caches each If/Else node's *single* per-tick
+   * comparison/debounce decision (computed at most once per tick
+   * regardless of whether `true`, `false`, or both output ports are
+   * queried), keeping its stateful debounce update from double-firing. */
   function evaluateGraphNodeValue(
     nodeId: string,
+    port: string,
     input: RuntimeInput,
     memo: Map<string, number | null>,
     skipSmoothing: boolean,
+    ifElseDecisions: Map<string, boolean | null>,
   ): number | null {
-    const memoized = memo.get(nodeId);
+    const memoKey = `${nodeId}::${port}`;
+    const memoized = memo.get(memoKey);
     if (memoized !== undefined) return memoized;
 
     const node = graphNodeById.get(nodeId);
     if (!node) {
-      memo.set(nodeId, null);
+      memo.set(memoKey, null);
       return null;
     }
 
     const params = asRecord(node.params);
-    const upstream = (port: string): number | null => {
-      const connection = incomingConnection(nodeId, port);
+    const upstream = (inPort: string): number | null => {
+      const connection = incomingConnection(nodeId, inPort);
       if (!connection || typeof connection.fromNodeId !== 'string') return null;
-      return evaluateGraphNodeValue(connection.fromNodeId, input, memo, skipSmoothing);
+      const fromPort = typeof connection.fromPort === 'string' ? connection.fromPort : '';
+      return evaluateGraphNodeValue(
+        connection.fromNodeId,
+        fromPort,
+        input,
+        memo,
+        skipSmoothing,
+        ifElseDecisions,
+      );
     };
 
     let result: number | null;
@@ -1023,11 +1624,43 @@ export function createBehaviorRuntime(
         }
         break;
       }
+      // --- Task 38 condition/timing nodes ---------------------------
+      case 'oscillator':
+        result = evaluateOscillator(input.timestamp, params);
+        break;
+      case 'timer':
+        result = evaluateTimer(input.timestamp, params);
+        break;
+      case 'delay': {
+        const prior = delayStateByGraphNode.get(nodeId) ?? null;
+        const step = evaluateDelay(prior, upstream('in'), input.timestamp, params);
+        result = step.value;
+        delayStateByGraphNode.set(nodeId, step.state);
+        break;
+      }
+      case 'ifElse': {
+        let decision = ifElseDecisions.get(nodeId);
+        if (decision === undefined) {
+          const raw = upstream('in');
+          const prior = ifElseStateByGraphNode.get(nodeId) ?? null;
+          const step = evaluateIfElseState(prior, raw, params, input.timestamp);
+          decision = step.state;
+          ifElseDecisions.set(nodeId, decision);
+          ifElseStateByGraphNode.set(nodeId, step.persist);
+        }
+        // Level output: the active branch emits `1`, the inactive branch
+        // (and any tick with no committed decision yet) emits `null`.
+        result =
+          (port === 'true' && decision === true) || (port === 'false' && decision === false)
+            ? 1
+            : null;
+        break;
+      }
       default:
         result = null;
     }
 
-    memo.set(nodeId, result);
+    memo.set(memoKey, result);
     return result;
   }
 
@@ -1041,13 +1674,25 @@ export function createBehaviorRuntime(
     skipSmoothing: boolean,
   ): ContinuousOutput[] {
     const memo = new Map<string, number | null>();
+    // Task 38: fresh per tick, so an If/Else node's debounce state updates
+    // at most once per tick regardless of how many downstream nodes query
+    // its `true`/`false` ports — see `evaluateGraphNodeValue`'s doc comment.
+    const ifElseDecisions = new Map<string, boolean | null>();
     const outputs: ContinuousOutput[] = [];
     for (const node of graphNodesRaw) {
       if (typeof node.id !== 'string' || isCardOwnedGraphNodeId(node.id)) continue;
       if (node.type !== 'shapeProperty' && node.type !== 'groupProperty') continue;
       const connection = incomingConnection(node.id, 'in');
       if (!connection || typeof connection.fromNodeId !== 'string') continue;
-      const value = evaluateGraphNodeValue(connection.fromNodeId, input, memo, skipSmoothing);
+      const fromPort = typeof connection.fromPort === 'string' ? connection.fromPort : '';
+      const value = evaluateGraphNodeValue(
+        connection.fromNodeId,
+        fromPort,
+        input,
+        memo,
+        skipSmoothing,
+        ifElseDecisions,
+      );
       if (value === null) continue;
       const params = asRecord(node.params);
       const targetProperty = typeof params.property === 'string' ? params.property : '';

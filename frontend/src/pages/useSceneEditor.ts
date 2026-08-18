@@ -1,4 +1,12 @@
-import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 
 import type { SceneDocument } from '../api/projects';
 import {
@@ -18,7 +26,13 @@ import {
   ungroupItem,
   type Outcome,
 } from './sceneOutline';
-import { createShape, duplicateShape, getEditableShapes, type ShapeType } from './sceneShapes';
+import {
+  createShape,
+  duplicateShape,
+  getEditableShapes,
+  type Shape,
+  type ShapeType,
+} from './sceneShapes';
 
 /**
  * Task 23: shape add/select/duplicate/delete, plus this editor's in-session
@@ -92,6 +106,26 @@ export function useSceneEditor(
   const [past, setPast] = useState<SceneDocument[]>([]);
   const [future, setFuture] = useState<SceneDocument[]>([]);
 
+  // Task 26: "latest value" refs kept in sync every render (see the two
+  // effects just below) so the transform-gesture callbacks further down —
+  // which must stay referentially stable across renders, since they're
+  // registered once as `window` pointermove/keydown listeners for the
+  // duration of a drag (see EditorWorkspace.tsx) — always read the current
+  // working copy/selection rather than whatever was current when the drag
+  // began.
+  const workingCopyRef = useRef(workingCopy);
+  useEffect(() => {
+    workingCopyRef.current = workingCopy;
+  }, [workingCopy]);
+  const selectedShapeIdRef = useRef(selectedShapeId);
+  useEffect(() => {
+    selectedShapeIdRef.current = selectedShapeId;
+  }, [selectedShapeId]);
+  // Snapshot of the scene as it was immediately before the in-progress
+  // transform gesture started — the "before" half of the single commit()-
+  // equivalent history entry the gesture produces on completion.
+  const transformSnapshotRef = useRef<SceneDocument | null>(null);
+
   const shapes = getEditableShapes(workingCopy ? rawShapes(workingCopy) : []);
   const selectedShape = shapes.find((s) => s.id === selectedShapeId) ?? null;
   const groups = useMemo(() => (workingCopy ? getGroups(workingCopy) : []), [workingCopy]);
@@ -110,6 +144,54 @@ export function useSceneEditor(
     },
     [workingCopy, setWorkingCopy],
   );
+
+  // Task 26: pointer-driven move/resize/rotate handles in the preview
+  // update the selected shape's transform/size live as the pointer moves,
+  // but per the undo/redo policy above must still land as exactly one
+  // history entry for the whole gesture, not one per pointer-move frame.
+  // These four are the primitives EditorWorkspace.tsx's drag handling
+  // composes: beginTransform() snapshots the pre-gesture scene,
+  // updateSelectedTransform() writes each live intermediate value straight
+  // to `workingCopy` (bypassing `commit()`, so no history entry yet),
+  // and the gesture ends with exactly one of commitTransform() (push the
+  // snapshot onto `past`) or cancelTransform() (restore it, discarding
+  // every intermediate write).
+
+  const beginTransform = useCallback(() => {
+    transformSnapshotRef.current = workingCopyRef.current;
+  }, []);
+
+  const updateSelectedTransform = useCallback(
+    (updated: Shape) => {
+      const shapeId = selectedShapeIdRef.current;
+      if (!shapeId) return;
+      setWorkingCopy((current) => {
+        if (!current) return current;
+        const shapes = rawShapes(current);
+        const idx = shapes.findIndex((s) => (s as { id?: unknown })?.id === shapeId);
+        if (idx === -1) return current;
+        const next = shapes.slice();
+        next[idx] = updated;
+        return withShapes(current, next);
+      });
+    },
+    [setWorkingCopy],
+  );
+
+  const commitTransform = useCallback(() => {
+    const before = transformSnapshotRef.current;
+    transformSnapshotRef.current = null;
+    const current = workingCopyRef.current;
+    if (!before || !current || before === current) return;
+    setPast((p) => [...p.slice(-(MAX_HISTORY - 1)), before]);
+    setFuture([]);
+  }, []);
+
+  const cancelTransform = useCallback(() => {
+    const before = transformSnapshotRef.current;
+    transformSnapshotRef.current = null;
+    if (before) setWorkingCopy(before);
+  }, [setWorkingCopy]);
 
   const selectShape = useCallback(
     (id: string | null) => {
@@ -341,6 +423,11 @@ export function useSceneEditor(
     redo,
     canUndo: past.length > 0,
     canRedo: future.length > 0,
+    // Task 26
+    beginTransform,
+    updateSelectedTransform,
+    commitTransform,
+    cancelTransform,
     // Task 24
     layers,
     groups,

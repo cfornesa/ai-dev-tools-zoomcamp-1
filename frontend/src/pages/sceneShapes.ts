@@ -20,7 +20,7 @@
 
 export type ShapeType = 'circle' | 'rect' | 'line' | 'path';
 
-type Point = { x: number; y: number };
+export type Point = { x: number; y: number };
 
 type Transform = {
   x: number;
@@ -181,4 +181,235 @@ export function hitTestTopmostShapeAt(shapes: Shape[], x: number, y: number): Sh
 
 export function shapeLabel(shape: Shape): string {
   return `${shape.type} (${shape.id.slice(0, 8)})`;
+}
+
+/**
+ * Task 26: direct-manipulation geometry and mutation helpers for the
+ * preview's pointer-driven move/resize/rotate handles.
+ *
+ * These mirror the position convention above and, for rotation, the exact
+ * local-space math `p5Adapter.ts`'s `applyTransform`/`drawShapeGeometry`
+ * use to render a shape: `translate(x, y)` then `rotate(rotation)`, so a
+ * shape's local-space geometry (its `radius`, `width`/`height`, `x2 - x`/
+ * `y2 - y`, or `points`) ends up on screen at `origin + R(rotation) *
+ * local`. Every helper below is built on that same relationship so handle
+ * positions and the pointer math that drags them agree with what the
+ * preview actually draws.
+ */
+
+// Ranges from schema/scene.schema.json's `transform2D`/`point`/circle/rect
+// `$defs` (see that file's own comments) — duplicated here as plain
+// numbers per this task's constraint not to modify the schema itself.
+export const POSITION_LIMIT = { min: -100000, max: 100000 };
+export const ROTATION_LIMIT = { min: -360, max: 360 };
+export const SIZE_LIMIT = { min: 0.1, max: 5000 };
+
+// No schema minimum exists for a path's bounding-box scale (points only
+// have a coordinate range, not a shape-size minimum) — this is a small
+// floor purely to stop a resize gesture from collapsing every point onto
+// the origin (scale 0), which would be a degenerate, invisible shape.
+const PATH_MIN_SCALE = 0.01;
+
+/** Clamps `value` into [min, max]; a non-finite `value` (NaN or +/-
+ * Infinity — e.g. from a degenerate pointer delta) is treated as `min`
+ * rather than being allowed to reach scene state. */
+export function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
+/** Rotates point (px, py) by `degrees` around (ox, oy). */
+function rotateAround(px: number, py: number, ox: number, oy: number, degrees: number): Point {
+  const rad = (degrees * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const dx = px - ox;
+  const dy = py - oy;
+  return { x: ox + dx * cos - dy * sin, y: oy + dx * sin + dy * cos };
+}
+
+function pathLocalBounds(shape: PathShape): Bounds {
+  const xs = shape.points.map((p) => p.x);
+  const ys = shape.points.map((p) => p.y);
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys),
+  };
+}
+
+// The absolute (pre-rotation) point each type's resize handle sits at,
+// following the same "local point, rotated around the transform origin"
+// convention `drawShapeGeometry` uses (see the module comment above).
+function localResizeHandle(shape: Shape): Point {
+  const { x, y } = shape.transform;
+  switch (shape.type) {
+    case 'circle':
+      return { x: x + shape.radius, y };
+    case 'rect':
+      return { x: x + shape.width, y: y + shape.height };
+    case 'line':
+      return { x: shape.x2, y: shape.y2 };
+    case 'path': {
+      const b = pathLocalBounds(shape);
+      return { x: x + b.maxX, y: y + b.maxY };
+    }
+  }
+}
+
+const ROTATE_HANDLE_OFFSET = 24;
+
+function localRotateHandle(shape: Shape): Point {
+  const { x, y } = shape.transform;
+  switch (shape.type) {
+    case 'circle':
+      return { x, y: y - shape.radius - ROTATE_HANDLE_OFFSET };
+    case 'rect':
+      return { x: x + shape.width / 2, y: y - ROTATE_HANDLE_OFFSET };
+    case 'line': {
+      const dx = shape.x2 - x;
+      const dy = shape.y2 - y;
+      const len = Math.hypot(dx, dy) || 1;
+      const midX = (x + shape.x2) / 2;
+      const midY = (y + shape.y2) / 2;
+      // Offset perpendicular to the line, to one side.
+      return {
+        x: midX - (dy / len) * ROTATE_HANDLE_OFFSET,
+        y: midY + (dx / len) * ROTATE_HANDLE_OFFSET,
+      };
+    }
+    case 'path': {
+      const b = pathLocalBounds(shape);
+      return { x: x + (b.minX + b.maxX) / 2, y: y + b.minY - ROTATE_HANDLE_OFFSET };
+    }
+  }
+}
+
+export type HandleKind = 'move' | 'resize' | 'rotate';
+export type ShapeHandles = Record<HandleKind, Point>;
+
+/** The three manipulation handle positions for `shape`, in canvas-local
+ * coordinates, already rotated to match its current `transform.rotation`
+ * about its own transform origin — the same origin the move handle sits
+ * at. */
+export function getShapeHandles(shape: Shape): ShapeHandles {
+  const { x, y, rotation } = shape.transform;
+  const resizeLocal = localResizeHandle(shape);
+  const rotateLocal = localRotateHandle(shape);
+  return {
+    move: { x, y },
+    resize: rotateAround(resizeLocal.x, resizeLocal.y, x, y, rotation),
+    rotate: rotateAround(rotateLocal.x, rotateLocal.y, x, y, rotation),
+  };
+}
+
+function applyMove(shape: Shape, startPointer: Point, pointer: Point): Shape {
+  const dx = pointer.x - startPointer.x;
+  const dy = pointer.y - startPointer.y;
+  return {
+    ...shape,
+    transform: {
+      ...shape.transform,
+      x: clamp(shape.transform.x + dx, POSITION_LIMIT.min, POSITION_LIMIT.max),
+      y: clamp(shape.transform.y + dy, POSITION_LIMIT.min, POSITION_LIMIT.max),
+    },
+  };
+}
+
+function applyResize(shape: Shape, pointer: Point): Shape {
+  const { x, y, rotation } = shape.transform;
+  switch (shape.type) {
+    case 'circle': {
+      // Distance from the origin is rotation-invariant, so no need to
+      // unrotate the pointer first.
+      const radius = clamp(
+        Math.hypot(pointer.x - x, pointer.y - y),
+        SIZE_LIMIT.min,
+        SIZE_LIMIT.max,
+      );
+      return { ...shape, radius };
+    }
+    case 'rect': {
+      const local = rotateAround(pointer.x, pointer.y, x, y, -rotation);
+      const width = clamp(local.x - x, SIZE_LIMIT.min, SIZE_LIMIT.max);
+      const height = clamp(local.y - y, SIZE_LIMIT.min, SIZE_LIMIT.max);
+      return { ...shape, width, height };
+    }
+    case 'line': {
+      const local = rotateAround(pointer.x, pointer.y, x, y, -rotation);
+      const x2 = clamp(local.x, POSITION_LIMIT.min, POSITION_LIMIT.max);
+      const y2 = clamp(local.y, POSITION_LIMIT.min, POSITION_LIMIT.max);
+      return { ...shape, x2, y2 };
+    }
+    case 'path': {
+      const local = rotateAround(pointer.x, pointer.y, x, y, -rotation);
+      const bounds = pathLocalBounds(shape);
+      const handleDist = Math.hypot(bounds.maxX, bounds.maxY) || 1;
+      const pointerDist = Math.hypot(local.x - x, local.y - y);
+      let scale = pointerDist / handleDist;
+      if (!Number.isFinite(scale) || scale < PATH_MIN_SCALE) scale = PATH_MIN_SCALE;
+      const points = shape.points.map((p) => ({
+        x: clamp(p.x * scale, POSITION_LIMIT.min, POSITION_LIMIT.max),
+        y: clamp(p.y * scale, POSITION_LIMIT.min, POSITION_LIMIT.max),
+      }));
+      return { ...shape, points };
+    }
+  }
+}
+
+function applyRotate(shape: Shape, startPointer: Point, pointer: Point): Shape {
+  const { x, y, rotation } = shape.transform;
+  const startAngle = (Math.atan2(startPointer.y - y, startPointer.x - x) * 180) / Math.PI;
+  const currentAngle = (Math.atan2(pointer.y - y, pointer.x - x) * 180) / Math.PI;
+  const delta = currentAngle - startAngle;
+  return {
+    ...shape,
+    transform: {
+      ...shape.transform,
+      rotation: clamp(rotation + delta, ROTATION_LIMIT.min, ROTATION_LIMIT.max),
+    },
+  };
+}
+
+/** Applies one manipulation gesture's current pointer position to
+ * `startShape` — an immutable snapshot taken once at gesture start — and
+ * returns a brand-new shape; `startShape` itself is never mutated.
+ * Recomputing from that fixed start snapshot on every call (rather than
+ * accumulating a delta frame over frame) keeps a long drag numerically
+ * stable and makes Escape-to-cancel trivial: there is no accumulated
+ * state to unwind, just the pre-gesture snapshot to restore. */
+export function applyShapeDrag(
+  kind: HandleKind,
+  startShape: Shape,
+  startPointer: Point,
+  pointer: Point,
+): Shape {
+  switch (kind) {
+    case 'move':
+      return applyMove(startShape, startPointer, pointer);
+    case 'resize':
+      return applyResize(startShape, pointer);
+    case 'rotate':
+      return applyRotate(startShape, startPointer, pointer);
+  }
+}
+
+/** Converts a pointer event's client-space coordinates into canvas-local
+ * coordinates — the same space shape `transform.x`/`y` live in — correcting
+ * for the canvas element being CSS-scaled smaller (or larger) than its
+ * logical pixel size, e.g. the `maxWidth: '100%'` rule on
+ * `.editor-scene-canvas` at narrow viewports. `rect` is whatever the
+ * canvas container's current `getBoundingClientRect()` reports; `canvasWidth`/
+ * `canvasHeight` are the scene's logical canvas size. */
+export function clientToCanvasPoint(
+  rect: { left: number; top: number; width: number; height: number },
+  clientX: number,
+  clientY: number,
+  canvasWidth: number,
+  canvasHeight: number,
+): Point {
+  const scaleX = rect.width > 0 ? canvasWidth / rect.width : 1;
+  const scaleY = rect.height > 0 ? canvasHeight / rect.height : 1;
+  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
 }

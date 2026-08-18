@@ -1,0 +1,266 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  applyShapeDrag,
+  clamp,
+  clientToCanvasPoint,
+  createShape,
+  getShapeHandles,
+  POSITION_LIMIT,
+  ROTATION_LIMIT,
+  SIZE_LIMIT,
+  type Shape,
+} from './sceneShapes';
+
+/**
+ * Task 26: unit tests for the pointer-manipulation geometry and mutation
+ * helpers, independent of the DOM/React wiring in EditorWorkspace.tsx
+ * (covered separately in EditorWorkspace.transform.test.tsx).
+ */
+
+const CANVAS = { width: 800, height: 600 };
+
+describe('clamp', () => {
+  it('passes values already inside the range through unchanged', () => {
+    expect(clamp(5, 0, 10)).toBe(5);
+  });
+
+  it('clamps to the minimum and maximum', () => {
+    expect(clamp(-5, 0, 10)).toBe(0);
+    expect(clamp(15, 0, 10)).toBe(10);
+  });
+
+  it('treats NaN and +/-Infinity as the minimum rather than letting them through', () => {
+    expect(clamp(NaN, 0, 10)).toBe(0);
+    expect(clamp(Infinity, 0, 10)).toBe(0);
+    expect(clamp(-Infinity, 0, 10)).toBe(0);
+  });
+});
+
+describe('clientToCanvasPoint', () => {
+  it('is the identity conversion when the canvas is rendered at its logical size', () => {
+    const rect = { left: 10, top: 20, width: 800, height: 600 };
+    expect(clientToCanvasPoint(rect, 410, 320, 800, 600)).toEqual({ x: 400, y: 300 });
+  });
+
+  it('scales pointer coordinates up when the canvas is CSS-scaled smaller than its logical size', () => {
+    // The canvas is rendered at half its logical 800x600 size (e.g. a
+    // narrow viewport triggering `.editor-scene-canvas`'s maxWidth:100%).
+    const rect = { left: 0, top: 0, width: 400, height: 300 };
+    // A pointer at the rendered box's exact center should map to the
+    // logical canvas's center, not a quarter of the way in.
+    expect(clientToCanvasPoint(rect, 200, 150, 800, 600)).toEqual({ x: 400, y: 300 });
+  });
+});
+
+describe('getShapeHandles', () => {
+  it('places circle handles relative to its center and radius when unrotated', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS); // center (400,300), r=50
+    const handles = getShapeHandles(circle);
+    expect(handles.move).toEqual({ x: 400, y: 300 });
+    expect(handles.resize).toEqual({ x: 450, y: 300 });
+    expect(handles.rotate.x).toBeCloseTo(400);
+    expect(handles.rotate.y).toBeLessThan(300 - 50); // above the circle
+  });
+
+  it('rotates handle positions around the transform origin with the shape', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const rotated: Shape = {
+      ...circle,
+      transform: { ...circle.transform, rotation: 90 },
+    };
+    const handles = getShapeHandles(rotated);
+    // A +90 degree rotation should move the resize handle from directly
+    // right of center to directly below it.
+    expect(handles.resize.x).toBeCloseTo(400);
+    expect(handles.resize.y).toBeCloseTo(350);
+  });
+
+  it('places rect handles at its top-left origin and bottom-right corner when unrotated', () => {
+    const rect = createShape('rect', 'layer-1', CANVAS); // top-left (350,260), 100x80
+    const handles = getShapeHandles(rect);
+    expect(handles.move).toEqual({ x: 350, y: 260 });
+    expect(handles.resize).toEqual({ x: 450, y: 340 });
+  });
+
+  it('places the line resize handle at its endpoint', () => {
+    const line = createShape('line', 'layer-1', CANVAS); // (350,300) -> (450,300)
+    const handles = getShapeHandles(line);
+    expect(handles.move).toEqual({ x: 350, y: 300 });
+    expect(handles.resize).toEqual({ x: 450, y: 300 });
+  });
+
+  it('places the path resize handle at the local bounding-box corner', () => {
+    const path = createShape('path', 'layer-1', CANVAS);
+    if (path.type !== 'path') throw new Error('expected a path');
+    const handles = getShapeHandles(path);
+    expect(handles.move).toEqual({ x: path.transform.x, y: path.transform.y });
+    // The fixture path's points span -50..50 on both axes.
+    expect(handles.resize).toEqual({ x: path.transform.x + 50, y: path.transform.y + 50 });
+  });
+});
+
+describe('applyShapeDrag: move', () => {
+  it('translates transform.x/y by the pointer delta', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const updated = applyShapeDrag('move', circle, { x: 400, y: 300 }, { x: 420, y: 260 });
+    expect(updated.transform.x).toBe(420);
+    expect(updated.transform.y).toBe(260);
+  });
+
+  it('clamps position to the schema range even mid-drag', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const updated = applyShapeDrag(
+      'move',
+      circle,
+      { x: 400, y: 300 },
+      { x: 1_000_000, y: -1_000_000 },
+    );
+    expect(updated.transform.x).toBe(POSITION_LIMIT.max);
+    expect(updated.transform.y).toBe(POSITION_LIMIT.min);
+  });
+
+  it('does not mutate the start shape snapshot', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const originalX = circle.transform.x;
+    applyShapeDrag('move', circle, { x: 400, y: 300 }, { x: 420, y: 260 });
+    expect(circle.transform.x).toBe(originalX);
+  });
+});
+
+describe('applyShapeDrag: resize', () => {
+  it('sets a circle radius from the pointer distance to its center', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS); // center (400,300)
+    const updated = applyShapeDrag('resize', circle, { x: 450, y: 300 }, { x: 500, y: 300 });
+    if (updated.type !== 'circle') throw new Error('expected a circle');
+    expect(updated.radius).toBe(100);
+  });
+
+  it('clamps a circle radius at the schema minimum instead of collapsing to zero or negative', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const updated = applyShapeDrag('resize', circle, { x: 450, y: 300 }, { x: 400, y: 300 });
+    if (updated.type !== 'circle') throw new Error('expected a circle');
+    expect(updated.radius).toBe(SIZE_LIMIT.min);
+    expect(updated.radius).toBeGreaterThan(0);
+  });
+
+  it('clamps a circle radius at the schema maximum', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const updated = applyShapeDrag('resize', circle, { x: 450, y: 300 }, { x: 100_000, y: 300 });
+    if (updated.type !== 'circle') throw new Error('expected a circle');
+    expect(updated.radius).toBe(SIZE_LIMIT.max);
+  });
+
+  it('sets rect width/height from the pointer position relative to its top-left origin', () => {
+    const rect = createShape('rect', 'layer-1', CANVAS); // top-left (350,260)
+    const updated = applyShapeDrag('resize', rect, { x: 450, y: 340 }, { x: 500, y: 400 });
+    if (updated.type !== 'rect') throw new Error('expected a rect');
+    expect(updated.width).toBe(150);
+    expect(updated.height).toBe(140);
+  });
+
+  it('clamps rect width/height at the schema minimum when shrunk past it', () => {
+    const rect = createShape('rect', 'layer-1', CANVAS);
+    const updated = applyShapeDrag('resize', rect, { x: 450, y: 340 }, { x: -1000, y: -1000 });
+    if (updated.type !== 'rect') throw new Error('expected a rect');
+    expect(updated.width).toBe(SIZE_LIMIT.min);
+    expect(updated.height).toBe(SIZE_LIMIT.min);
+  });
+
+  it('unrotates the pointer before computing rect width/height when the shape is rotated', () => {
+    const rect = createShape('rect', 'layer-1', CANVAS);
+    if (rect.type !== 'rect') throw new Error('expected a rect');
+    const rotated: Shape = { ...rect, transform: { ...rect.transform, rotation: 90 } };
+    const handles = getShapeHandles(rotated);
+    const updated = applyShapeDrag('resize', rotated, handles.resize, handles.resize);
+    if (updated.type !== 'rect') throw new Error('expected a rect');
+    // Dragging exactly onto the (already-rotated) resize handle's own
+    // current position should reproduce the shape's existing size.
+    expect(updated.width).toBeCloseTo(rect.width);
+    expect(updated.height).toBeCloseTo(rect.height);
+  });
+
+  it('sets the line endpoint from the pointer position', () => {
+    const line = createShape('line', 'layer-1', CANVAS); // start (350,300)
+    const updated = applyShapeDrag('resize', line, { x: 450, y: 300 }, { x: 500, y: 260 });
+    if (updated.type !== 'line') throw new Error('expected a line');
+    expect(updated.x2).toBe(500);
+    expect(updated.y2).toBe(260);
+  });
+
+  it('scales a path uniformly around its origin without distorting proportions', () => {
+    const path = createShape('path', 'layer-1', CANVAS);
+    if (path.type !== 'path') throw new Error('expected a path');
+    const handles = getShapeHandles(path);
+    // Drag the resize handle to twice its original distance from the
+    // shape's origin.
+    const dx = handles.resize.x - path.transform.x;
+    const dy = handles.resize.y - path.transform.y;
+    const pointer = { x: path.transform.x + dx * 2, y: path.transform.y + dy * 2 };
+    const updated = applyShapeDrag('resize', path, handles.resize, pointer);
+    if (updated.type !== 'path') throw new Error('expected a path');
+    updated.points.forEach((p, i) => {
+      expect(p.x).toBeCloseTo(path.points[i].x * 2);
+      expect(p.y).toBeCloseTo(path.points[i].y * 2);
+    });
+  });
+
+  it('clamps a path resize at a small positive scale instead of collapsing every point to the origin', () => {
+    const path = createShape('path', 'layer-1', CANVAS);
+    if (path.type !== 'path') throw new Error('expected a path');
+    // Drag the resize handle exactly onto the shape's own origin.
+    const updated = applyShapeDrag('resize', path, getShapeHandles(path).resize, {
+      x: path.transform.x,
+      y: path.transform.y,
+    });
+    if (updated.type !== 'path') throw new Error('expected a path');
+    const allZero = updated.points.every((p) => p.x === 0 && p.y === 0);
+    expect(allZero).toBe(false);
+  });
+});
+
+describe('applyShapeDrag: rotate', () => {
+  it('rotates relative to the shape transform origin, in degrees', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS); // center (400,300)
+    // Start pointer directly above center, drag to directly right of
+    // center: a -90 degree change (screen y grows downward).
+    const updated = applyShapeDrag('rotate', circle, { x: 400, y: 200 }, { x: 500, y: 300 });
+    expect(updated.transform.rotation).toBeCloseTo(90);
+  });
+
+  it('clamps rotation at the schema maximum instead of accumulating past it', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const start: Shape = { ...circle, transform: { ...circle.transform, rotation: 350 } };
+    const updated = applyShapeDrag(
+      'rotate',
+      start,
+      { x: 400, y: 200 }, // above center: angle 0 relative offset
+      { x: 500, y: 300 }, // right of center: +90 degrees of drag
+    );
+    expect(updated.transform.rotation).toBe(ROTATION_LIMIT.max);
+  });
+
+  it('clamps rotation at the schema minimum in the negative direction', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const start: Shape = { ...circle, transform: { ...circle.transform, rotation: -350 } };
+    const updated = applyShapeDrag(
+      'rotate',
+      start,
+      { x: 500, y: 300 }, // right of center
+      { x: 400, y: 200 }, // above center: -90 degrees of drag
+    );
+    expect(updated.transform.rotation).toBe(ROTATION_LIMIT.min);
+  });
+
+  it('still produces a usable rotation at a boundary starting value (360)', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const start: Shape = { ...circle, transform: { ...circle.transform, rotation: 360 } };
+    const updated = applyShapeDrag(
+      'rotate',
+      start,
+      { x: 500, y: 300 },
+      { x: 400, y: 200 }, // -90 degrees of drag, back within range
+    );
+    expect(updated.transform.rotation).toBeCloseTo(270);
+  });
+});

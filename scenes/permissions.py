@@ -34,6 +34,7 @@ class Action(StrEnum):
     TEMPLATE_READ = "template.read"
     TEMPLATE_CREATE = "template.create"
     AI_CREATE_SCENE = "ai.create_scene"
+    AI_EDIT_SCENE = "ai.edit_scene"
 
 
 class PermissionDenied(Exception):
@@ -68,6 +69,10 @@ _OWNER_ONLY_PROJECT_ACTIONS = frozenset(
         # scenes/ai_api.py. Owner-only, same as every other working
         # operation on a project.
         Action.AI_CREATE_SCENE,
+        # Task 50: same reasoning -- an AI edit proposal is scoped to one
+        # project and never creates a SceneVersion or touches
+        # current_version, but it's still owner-only working state.
+        Action.AI_EDIT_SCENE,
     }
 )
 

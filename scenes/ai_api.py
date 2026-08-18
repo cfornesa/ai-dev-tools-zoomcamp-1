@@ -1,4 +1,8 @@
-"""Task 46/47: the AI create-scene endpoint.
+"""Task 46/47: the AI create-scene endpoint. Task 50 adds `AIEditSceneView`,
+the sibling AI edit-scene endpoint, at the bottom of this module -- see
+its own docstring for the patch-specific failure taxonomy, stale-base
+detection, and quota/rate-limit choices; everything below through
+`AICreateSceneView` is unchanged from Task 46/47.
 
 `_docs/plan.md`'s "AI actions" section: "Create scene: prompt -> complete
 editable scene JSON -> preview -> save/refine ... AI changes are always
@@ -71,11 +75,24 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ai_provider.interface import AICreateSceneRequest, AIErrorCategory, AIOperationResult
+from ai_provider.interface import (
+    AICreateSceneRequest,
+    AIEditSceneRequest,
+    AIErrorCategory,
+    AIOperationResult,
+)
 from ai_provider.logging import log_operation_result
-from ai_provider.mistral_provider import RESPONSE_TOO_LARGE_PREFIX, MistralSceneProvider
+from ai_provider.mistral_provider import (
+    EMPTY_PATCH_PREFIX,
+    INVALID_PATCH_PREFIX,
+    PATCH_APPLY_FAILED_PREFIX,
+    RESPONSE_TOO_LARGE_PREFIX,
+    MistralSceneProvider,
+)
 from scenes.api import _get_project_or_404, _require_or_404
+from scenes.patch import PatchErrorReason
 from scenes.permissions import Action
+from scenes.validation import SceneValidationResult, validate_scene
 
 # --- Bounds (this task's own documented choices; _docs/plan.md requires
 # "authenticated-user quotas, rate limits, prompt/request size limits ...
@@ -103,13 +120,31 @@ DAILY_QUOTA_MAX_SUCCESSES = 50
 # (a request made at 00:00:00 UTC) plus margin.
 DAILY_QUOTA_RESET_TIMEOUT_SECONDS = 25 * 60 * 60
 
+# --- Task 50's own bounds for the edit-scene endpoint ---
+#
+# A separate quota/rate-limit bucket from create-scene (`operation="edit"`
+# vs the default `"create"` in `_rate_limit_cache_key`/`_quota_cache_key`
+# below), not a shared one. Reasoning: an edit request's Mistral output is
+# a small patch document, not a full scene, so it is typically cheaper and
+# faster than a create-scene call and is expected to be used more
+# iteratively (propose -> reject -> refine -> propose again) within one
+# editing session. Sharing one counter would let heavy edit iteration
+# crowd out a user's ability to create new scenes (and vice versa) for no
+# reason tied to actual cost. The edit rate limit is accordingly a little
+# more generous than create-scene's; the daily quota is kept identical
+# since both still ultimately bound the same account's total provider
+# spend per day.
+EDIT_RATE_LIMIT_MAX_ATTEMPTS = 10
+EDIT_RATE_LIMIT_WINDOW_SECONDS = 60
+EDIT_DAILY_QUOTA_MAX_SUCCESSES = 50
 
-def _rate_limit_cache_key(user_id: int) -> str:
-    return f"ai_provider:rate:{user_id}"
+
+def _rate_limit_cache_key(user_id: int, *, operation: str = "create") -> str:
+    return f"ai_provider:rate:{operation}:{user_id}"
 
 
-def _quota_cache_key(user_id: int) -> str:
-    return f"ai_provider:quota:{user_id}:{date.today().isoformat()}"
+def _quota_cache_key(user_id: int, *, operation: str = "create") -> str:
+    return f"ai_provider:quota:{operation}:{user_id}:{date.today().isoformat()}"
 
 
 def _increment_and_check(cache_key: str, *, limit: int, window_seconds: int) -> bool:
@@ -139,6 +174,26 @@ class AICreateSceneRequestSerializer(serializers.Serializer):
     prompt = serializers.CharField(
         max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
     )
+
+
+class AIEditSceneRequestSerializer(serializers.Serializer):
+    """Task 50's edit-scene request body.
+
+    `current_scene` is the caller's own in-progress scene JSON (the
+    editor's working state, which may be ahead of the last saved
+    `SceneVersion` -- this endpoint never reads scene content from the
+    database). `base_version_id` is the id of the `SceneVersion` the
+    caller believes is still `project.current_version` -- required
+    (nullable, for a project with no saved version yet) so the view can
+    detect a stale base (see `AIEditSceneView`'s docstring) before ever
+    calling the provider.
+    """
+
+    prompt = serializers.CharField(
+        max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
+    )
+    current_scene = serializers.JSONField()
+    base_version_id = serializers.IntegerField(allow_null=True)
 
 
 # category -> (http status, error code). PROVIDER_REJECTION is handled
@@ -193,6 +248,97 @@ def _quota_exceeded_response() -> Response:
             ),
         },
         status=status.HTTP_429_TOO_MANY_REQUESTS,
+    )
+
+
+# The reason token `INVALID_PATCH_PREFIX`-prefixed messages carry maps to
+# its own HTTP status: PatchErrorReason.OVERSIZED is 413 (matching the
+# response-too-large convention above); every other reason (protected
+# field, invalid path, malformed operation) is a 422 -- the patch parsed
+# but its *content* is unacceptable, distinct from a 400 (caller/request
+# shape error) and from a 502 (the provider itself failed).
+_PATCH_REASON_TO_RESPONSE: dict[str, tuple[int, str]] = {
+    PatchErrorReason.PROTECTED_FIELD: (status.HTTP_422_UNPROCESSABLE_ENTITY, "protected_field"),
+    PatchErrorReason.INVALID_PATH: (status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_patch_path"),
+    PatchErrorReason.OVERSIZED: (status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "oversized_patch"),
+    PatchErrorReason.MALFORMED: (status.HTTP_422_UNPROCESSABLE_ENTITY, "malformed_patch"),
+}
+
+
+def _edit_error_response(result: AIOperationResult) -> Response:
+    """Like `_error_response`, but also unpacks `edit_scene_with_patch`'s
+    patch-specific `PROVIDER_REJECTION` sub-cases (empty patch, invalid/
+    protected patch content, patch-apply failure) into their own explicit
+    HTTP responses, per this task's acceptance criteria distinguishing
+    them from a generic provider failure and from each other.
+    """
+    # narrows for mypy; execute()/edit_scene_with_patch guarantee this
+    assert result.error is not None
+    message = result.error.message
+    if result.error.category == AIErrorCategory.PROVIDER_REJECTION:
+        if message.startswith(RESPONSE_TOO_LARGE_PREFIX):
+            http_status, code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "response_too_large"
+        elif message.startswith(EMPTY_PATCH_PREFIX):
+            http_status, code = status.HTTP_422_UNPROCESSABLE_ENTITY, "empty_patch"
+        elif message.startswith(INVALID_PATCH_PREFIX):
+            reason = message[len(INVALID_PATCH_PREFIX) :].split(" ", 1)[0]
+            http_status, code = _PATCH_REASON_TO_RESPONSE.get(
+                reason, (status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_patch")
+            )
+        elif message.startswith(PATCH_APPLY_FAILED_PREFIX):
+            http_status, code = status.HTTP_422_UNPROCESSABLE_ENTITY, "patch_apply_failed"
+        else:
+            http_status, code = status.HTTP_502_BAD_GATEWAY, "provider_failure"
+    else:
+        http_status, code = _CATEGORY_TO_RESPONSE[result.error.category]
+    return Response({"error": code, "detail": message}, status=http_status)
+
+
+def _edit_rate_limited_response() -> Response:
+    return Response(
+        {
+            "error": "rate_limited",
+            "detail": (
+                f"At most {EDIT_RATE_LIMIT_MAX_ATTEMPTS} AI edit-scene requests are allowed "
+                f"per {EDIT_RATE_LIMIT_WINDOW_SECONDS} seconds. Wait and try again."
+            ),
+        },
+        status=status.HTTP_429_TOO_MANY_REQUESTS,
+    )
+
+
+def _edit_quota_exceeded_response() -> Response:
+    return Response(
+        {
+            "error": "quota_exceeded",
+            "detail": (
+                f"The daily limit of {EDIT_DAILY_QUOTA_MAX_SUCCESSES} AI-edited scenes "
+                "has been reached for this account. Try again tomorrow (UTC)."
+            ),
+        },
+        status=status.HTTP_429_TOO_MANY_REQUESTS,
+    )
+
+
+def _stale_base_response(current_version_id: int | None) -> Response:
+    return Response(
+        {
+            "error": "stale_base",
+            "detail": (
+                "base_version_id does not match this project's current saved version "
+                f"(currently {current_version_id!r}). Reload the latest scene state and "
+                "retry the edit."
+            ),
+        },
+        status=status.HTTP_409_CONFLICT,
+    )
+
+
+def _invalid_current_scene_response(validation: SceneValidationResult) -> Response:
+    detail = "; ".join(f"{e.path}: {e.message}" for e in validation.errors[:5])
+    return Response(
+        {"error": "current_scene_invalid", "detail": detail or "current_scene failed validation."},
+        status=status.HTTP_400_BAD_REQUEST,
     )
 
 
@@ -271,12 +417,147 @@ class AICreateSceneView(APIView):
         )
 
 
+class AIEditSceneView(APIView):
+    """POST /api/projects/<public_id>/ai/edit-scene/ (Task 50)
+
+    Authenticated project owner only (`Action.AI_EDIT_SCENE`, 404 for
+    anyone else, same policy as `AICreateSceneView`). Sends the bounded
+    prompt and the caller's current validated scene through
+    `MistralSceneProvider.edit_scene_with_patch` (`ai_provider.mistral_provider`),
+    which asks Mistral for an allowlisted JSON Patch, applies it to a
+    *copy* of the current scene, and validates both the patch operations
+    and the resulting scene. Like `AICreateSceneView`, this endpoint
+    **never creates a `SceneVersion` and never touches
+    `Project.current_version`** in any branch -- the response is always
+    an unsaved draft (patch + resulting scene + change summary) for the
+    frontend to preview and explicitly Accept/Reject (Task 48).
+
+    ## Stale-base detection
+
+    The request body's `base_version_id` must equal
+    `project.current_version_id` (both `None` for a project with no saved
+    version yet). If another save landed since the caller fetched its
+    working scene -- a concurrent tab, or an accepted AI proposal --
+    `current_version_id` will have moved and this comparison fails,
+    rejecting the request with `409 stale_base` *before* any provider
+    call. This is intentionally a simple, cheap, purely
+    server-authoritative check: it does not (and cannot, at this layer)
+    know whether `current_scene`'s *content* actually reflects that
+    version -- it only proves the version the edit was proposed against
+    is still the project's current one.
+
+    ## Failure taxonomy -> HTTP response (in addition to
+    `AICreateSceneView`'s create-scene table, which this endpoint's
+    shared categories reuse identically)
+
+    | Condition                                       | HTTP | `error` body value      |
+    |---------------------------------------------------|------|-----------------------|
+    | `current_scene` fails schema/limits validation  | 400  | `"current_scene_invalid"` |
+    | `base_version_id` != `project.current_version_id` | 409 | `"stale_base"`          |
+    | Empty patch (documented policy: rejected, not a no-op success) | 422 | `"empty_patch"` |
+    | Patch touches a protected field (identity/version/seed/id)    | 422  | `"protected_field"`  |
+    | Patch targets a path outside the documented allowlist | 422 | `"invalid_patch_path"` |
+    | Patch is malformed (bad op/shape/missing value) | 422  | `"malformed_patch"`      |
+    | Patch exceeds the operation-count/byte-size bound | 413 | `"oversized_patch"`     |
+    | Patch failed to mechanically apply (bad index/path) | 422 | `"patch_apply_failed"` |
+    | Resulting patched scene fails schema/limits validation | 422 | `"invalid_structured_output"` |
+    | Success                                         | 200  | (no `error` key; `draft: true`) |
+
+    Every rejected/errored branch above leaves `current_scene` and every
+    other piece of caller/server state completely unchanged -- this view
+    has no database write path at all (see module-level docstring).
+    """
+
+    def post(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.AI_EDIT_SCENE, project)
+
+        input_serializer = AIEditSceneRequestSerializer(data=request.data)
+        if not input_serializer.is_valid():
+            return Response(
+                {"error": "prompt_invalid", "detail": input_serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        prompt = input_serializer.validated_data["prompt"]
+        current_scene = input_serializer.validated_data["current_scene"]
+        base_version_id = input_serializer.validated_data["base_version_id"]
+
+        if not isinstance(current_scene, dict):
+            return Response(
+                {
+                    "error": "current_scene_invalid",
+                    "detail": "current_scene must be a JSON object.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        current_scene_validation = validate_scene(current_scene)
+        if not current_scene_validation.valid:
+            return _invalid_current_scene_response(current_scene_validation)
+
+        if base_version_id != project.current_version_id:
+            return _stale_base_response(project.current_version_id)
+
+        user_id = request.user.id
+        if not _increment_and_check(
+            _rate_limit_cache_key(user_id, operation="edit"),
+            limit=EDIT_RATE_LIMIT_MAX_ATTEMPTS,
+            window_seconds=EDIT_RATE_LIMIT_WINDOW_SECONDS,
+        ):
+            return _edit_rate_limited_response()
+
+        edit_quota_key = _quota_cache_key(user_id, operation="edit")
+        if _current_count(edit_quota_key) >= EDIT_DAILY_QUOTA_MAX_SUCCESSES:
+            return _edit_quota_exceeded_response()
+
+        provider = get_ai_provider()
+        outcome = provider.edit_scene_with_patch(
+            AIEditSceneRequest(prompt=prompt, current_scene=current_scene)
+        )
+        result = outcome.result
+
+        # Minimal metadata only -- no prompt text, no scene/patch content,
+        # no provider key -- per ai_provider.logging's documented default.
+        log_operation_result(result)
+
+        if not result.success:
+            return _edit_error_response(result)
+
+        cache.set(
+            _quota_cache_key(user_id, operation="edit"),
+            _current_count(_quota_cache_key(user_id, operation="edit")) + 1,
+            timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS,
+        )
+
+        return Response(
+            {
+                "draft": True,
+                "operation": result.operation.value,
+                "patch": outcome.patch,
+                "scene": result.scene,
+                "change_summary": outcome.change_summary,
+                "usage": {
+                    "prompt_tokens": result.usage.prompt_tokens,
+                    "completion_tokens": result.usage.completion_tokens,
+                    "total_tokens": result.usage.total_tokens,
+                    "estimated_cost_usd": result.usage.estimated_cost_usd,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 __all__ = [
     "DAILY_QUOTA_MAX_SUCCESSES",
+    "EDIT_DAILY_QUOTA_MAX_SUCCESSES",
+    "EDIT_RATE_LIMIT_MAX_ATTEMPTS",
+    "EDIT_RATE_LIMIT_WINDOW_SECONDS",
     "MAX_PROMPT_CHARS",
     "RATE_LIMIT_MAX_ATTEMPTS",
     "RATE_LIMIT_WINDOW_SECONDS",
     "AICreateSceneRequestSerializer",
     "AICreateSceneView",
+    "AIEditSceneRequestSerializer",
+    "AIEditSceneView",
     "get_ai_provider",
 ]

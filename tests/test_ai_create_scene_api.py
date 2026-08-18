@@ -278,7 +278,7 @@ def test_own_daily_quota_returns_429_and_only_counts_successes(owner_client, pro
     from datetime import date
 
     cache.set(
-        f"ai_provider:quota:{project.owner_id}:{date.today().isoformat()}",
+        f"ai_provider:quota:create:{project.owner_id}:{date.today().isoformat()}",
         ai_api.DAILY_QUOTA_MAX_SUCCESSES,
     )
 
@@ -303,7 +303,7 @@ def test_failed_attempts_do_not_consume_the_daily_quota(owner_client, project, m
 
     from datetime import date
 
-    key = f"ai_provider:quota:{project.owner_id}:{date.today().isoformat()}"
+    key = f"ai_provider:quota:create:{project.owner_id}:{date.today().isoformat()}"
     assert cache.get(key, 0) == 0
 
 

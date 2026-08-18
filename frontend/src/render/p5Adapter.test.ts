@@ -536,4 +536,52 @@ describe('p5 scene preview', () => {
     expect(adapterText).not.toMatch(/\beval\s*\(/);
     expect(adapterText).not.toMatch(/new\s+Function\s*\(/);
   });
+
+  // Task 39: particle rendering wired into the same pipeline.
+  describe('particle rendering (Task 39)', () => {
+    it('draws each live particle as a filled circle at its own position/size/color', () => {
+      const { preview } = tracked();
+      preview.render(baseScene({ canvas: { width: 40, height: 40, backgroundColor: '#000000' } }), [
+        { x: 10, y: 10, size: 6, color: '#00ff00' },
+      ]);
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 10, 10)).toEqual([0, 255, 0, 255]); // inside particle radius
+      expect(pixel(canvas, 30, 30)).toEqual([0, 0, 0, 255]); // untouched background
+    });
+
+    it('draws particles on top of static scene shapes', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 40, height: 40, backgroundColor: '#000000' },
+          shapes: [
+            circleShape({
+              transform: transform({ x: 20, y: 20 }),
+              radius: 15,
+              style: style({ fill: '#ff0000' }),
+            }),
+          ],
+        }),
+        [{ x: 20, y: 20, size: 6, color: '#0000ff' }],
+      );
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 20, 20)).toEqual([0, 0, 255, 255]); // particle wins over the shape beneath it
+    });
+
+    it('defaults to no particles when the second argument is omitted', () => {
+      const { preview } = tracked();
+      preview.render(baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#123456' } }));
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 10, 10)).toEqual([0x12, 0x34, 0x56, 255]);
+    });
+
+    it('re-rendering with an empty particle array clears previously drawn particles', () => {
+      const { preview } = tracked();
+      const scene = baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#000000' } });
+      preview.render(scene, [{ x: 10, y: 10, size: 8, color: '#ffffff' }]);
+      expect(pixel(preview.getCanvasElement()!, 10, 10)).toEqual([255, 255, 255, 255]);
+      preview.render(scene, []);
+      expect(pixel(preview.getCanvasElement()!, 10, 10)).toEqual([0, 0, 0, 255]);
+    });
+  });
 });

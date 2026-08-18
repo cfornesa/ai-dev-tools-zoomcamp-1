@@ -14,13 +14,26 @@
  * or a template that could be interpreted as code.
  *
  * Explicitly out of scope here (see the Task 25 issue's "Out of scope"):
- * evaluating `bindings`/the behavior `graph` (Task 35), simulating
- * particle emission (Task 39 — a `particleEmitter` shape renders only its
- * static configured appearance, per acceptance criterion 2), trails and
+ * evaluating `bindings`/the behavior `graph` (Task 35), trails and
  * physics forces (Task 61), and pointer-based manipulation (Task 26,
  * already handled separately by `EditorWorkspace.tsx`'s existing
  * click-to-select hit testing over `sceneShapes.ts`, which this adapter
  * does not touch).
+ *
+ * A `particleEmitter` shape (part of the static scene tree above) still
+ * renders only its configured marker appearance — position, `size`, first
+ * `palette` color — never a live simulation; that marker is drawn by
+ * `drawShapeGeometry`'s `particleEmitter` case exactly as it was before
+ * Task 39. The actual emitted, moving, expiring particles a
+ * `particleEmitter` shape produces at runtime (Task 39,
+ * `runtime/particleSystem.ts`) are a *separate*, ephemeral render input —
+ * `render`'s optional second argument, `particles` — because they are not
+ * part of the scene document at all (nothing about a particle's position,
+ * velocity, or remaining lifespan is ever written back to scene JSON).
+ * `render(scene, particles)` draws the static tree first, then each live
+ * particle on top as a plain filled circle (reusing `parseColor`, exactly
+ * `drawShapeGeometry`'s `particleEmitter` marker's own fill approach) —
+ * the same p5 instance and canvas, never a second rendering pipeline.
  */
 import p5 from 'p5';
 
@@ -35,12 +48,24 @@ import {
 
 export { SceneRenderError } from './sceneDrawPlan';
 
+/** The minimal shape this adapter needs from a Task 39 particle — see
+ * `runtime/particleSystem.ts`'s `Particle` type, which structurally
+ * satisfies this (a full `Particle` carries extra runtime-only fields
+ * like `vx`/`vy`/`spawnedAt` this adapter never reads). */
+export type RenderableParticle = { x: number; y: number; size: number; color: string };
+
 export type P5ScenePreview = {
-  /** Validates and draws `scene`. Throws `SceneRenderError` — before any
-   * p5 draw call, and with zero canvas mutation — if `scene` isn't
-   * something `validateScene` accepts, or fails the adapter's own
-   * structural/referential pre-pass (see `sceneDrawPlan.ts`). */
-  render(scene: SceneDocument): void;
+  /** Validates and draws `scene`, then draws `particles` (Task 39,
+   * `runtime/particleSystem.ts`'s live particle snapshot) on top of it —
+   * see the module doc comment. `particles` defaults to empty, so every
+   * existing call site (no live particle system yet wired up) is
+   * unaffected. Throws `SceneRenderError` — before any p5 draw call, and
+   * with zero canvas mutation — if `scene` isn't something `validateScene`
+   * accepts, or fails the adapter's own structural/referential pre-pass
+   * (see `sceneDrawPlan.ts`); a render error is always about `scene`,
+   * never about `particles` (which needs no schema validation — it isn't
+   * scene JSON). */
+  render(scene: SceneDocument, particles?: readonly RenderableParticle[]): void;
   /** Tears down the underlying p5 instance and removes its `<canvas>`. */
   destroy(): void;
   /** The p5-created `<canvas>` element, once one exists (after the first
@@ -163,9 +188,19 @@ function drawNode(sk: p5, node: DrawNode, inheritedOpacity: number): void {
  * resizes the existing canvas (rather than recreating it) when the
  * scene's `canvas` dimensions change.
  */
+function drawParticle(sk: p5, particle: RenderableParticle): void {
+  sk.push();
+  sk.noStroke();
+  const c = parseColor(particle.color);
+  sk.fill(c.r, c.g, c.b, c.a * 255);
+  sk.circle(particle.x, particle.y, Math.max(0, particle.size));
+  sk.pop();
+}
+
 export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
   let instance: p5 | null = null;
   let currentPlan: ScenePlan | null = null;
+  let currentParticles: readonly RenderableParticle[] = [];
 
   function ensureInstance(width: number, height: number): void {
     if (instance) return;
@@ -193,18 +228,22 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
         }
         sk.background(currentPlan.canvas.backgroundColor);
         for (const node of currentPlan.nodes) drawNode(sk, node, 1);
+        // Task 39: live particles draw last, on top of the static scene
+        // tree — see the module doc comment.
+        for (const particle of currentParticles) drawParticle(sk, particle);
         sk.pop();
       };
     }, container);
   }
 
-  function render(scene: SceneDocument): void {
+  function render(scene: SceneDocument, particles: readonly RenderableParticle[] = []): void {
     // Acceptance criteria 10/11: buildScenePlan throws before this
     // function touches the p5 instance or canvas at all, so an invalid
     // scene (or one with a structurally-broken object) causes zero
     // canvas mutation.
     const plan = buildScenePlan(scene);
     currentPlan = plan;
+    currentParticles = particles;
 
     if (!instance) {
       ensureInstance(plan.canvas.width, plan.canvas.height);
@@ -222,6 +261,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
     instance?.remove();
     instance = null;
     currentPlan = null;
+    currentParticles = [];
   }
 
   function getCanvasElement(): HTMLCanvasElement | null {

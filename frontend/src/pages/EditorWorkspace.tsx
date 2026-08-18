@@ -31,6 +31,7 @@ import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useSceneEditor } from './useSceneEditor';
+import AIProposalPanel from './AIProposalPanel';
 import BehaviorCardsPanel from './BehaviorCardsPanel';
 import DemoControlsPanel from './DemoControlsPanel';
 import DraftRecoveryPrompt from './DraftRecoveryPrompt';
@@ -766,6 +767,32 @@ function EditorWorkspace() {
                 // `useDraftServerSync.ts`'s comment on `snapshotOverride`)
                 // rather than relying on `workingCopy`, which hasn't
                 // re-rendered into this hook's ref yet.
+                draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
+              }}
+            />
+          )}
+
+          {/* Task 48: AI create/edit proposal preview and acceptance. The
+              proposal itself is a third state entirely inside
+              AIProposalPanel/useAIProposal — nothing here is touched until
+              `onAccepted` fires, which only ever happens after the accept
+              endpoint has actually persisted a new version. Handled
+              exactly like VersionHistoryPanel's onRestored above (a new
+              scene replaces the working copy wholesale), plus the same
+              draft-clearing/meaningful-action-sync Task 42/43 already do
+              for save/restore. */}
+          {id && (
+            <AIProposalPanel
+              projectId={id}
+              workingCopy={workingCopy}
+              currentVersionId={project?.current_version ?? null}
+              onAccepted={(version) => {
+                setPersistedVersion(version);
+                setWorkingCopy(structuredClone(version.scene_json));
+                setProject((current) =>
+                  current ? { ...current, current_version: version.id } : current,
+                );
+                void draftAutosave.clearDraft();
                 draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
               }}
             />

@@ -8,6 +8,11 @@ import {
   RENDERER_LABELS,
   type InteractionMode,
 } from '../export/exportCompatibility';
+import {
+  ExportGenerationBlockedError,
+  generateHtmlExport,
+  triggerHtmlDownload,
+} from '../export/generateHtmlExport';
 import { validateProjectMetadataForPublish } from '../validation/projectMetadata';
 import { useVersionHistory } from './useVersionHistory';
 
@@ -16,13 +21,14 @@ import { useVersionHistory } from './useVersionHistory';
  *
  * ## Scope (see the issue's "Out of scope" note)
  *
- * This dialog only assembles and validates an export *configuration* — it
- * never generates a file. Artifact generation (the actual HTML/ZIP) is
- * Task 56 (issue #57) through Task 59 (issue #59), none of which exist
- * yet. `handleExport` below is therefore an intentional stub: it builds
- * the config object and hands it to `onExport` (default: `console.log`),
- * and does nothing else. This is not a bug or an oversight — there is
- * nothing downstream to call yet.
+ * This dialog assembles and validates an export *configuration*, then
+ * (Task 56, issue #57) hands it to `onExport`, which generates the
+ * standalone HTML (`../export/generateHtmlExport.ts`) and triggers a
+ * browser download — see `defaultOnExport` below. ZIP/thumbnail bundling
+ * (Task 59, issue #59) and camera-mode export (Task 57, issue #56) are
+ * still not built; `includeSocialThumbnailZip` is recorded but has no
+ * effect yet, and `generateHtmlExport` itself blocks (no download, with
+ * an explicit reason) if `interactionMode` isn't `'demo'`.
  *
  * ## What's actually configurable today
  *
@@ -68,20 +74,41 @@ export type ExportConfig = {
   interactionMode: InteractionMode;
   title: string;
   description: string;
+  /** The selected version's full scene document — needed by
+   * `generateHtmlExport` to actually build the export. Not part of
+   * Task 55's original config shape; added here rather than re-fetched
+   * downstream since the dialog already holds it in `sceneDetail`. */
+  scene: SceneDocument;
 };
 
 export type ExportConfigDialogProps = {
   projectId: string;
   project: Project | null;
-  /** Task 56+ isn't built yet, so the terminal Export action has nothing
-   * real to call. Defaults to logging the assembled config so it's
-   * observable in the console; tests pass their own spy instead. */
+  /** Task 56: generates the standalone HTML export and triggers a browser
+   * download by default (`defaultOnExport` below). Tests pass their own
+   * spy instead to observe the assembled config without touching the
+   * DOM/Blob APIs. */
   onExport?: (config: ExportConfig) => void;
 };
 
+/** Default `onExport`: generates the standalone HTML export
+ * (`../export/generateHtmlExport.ts`) and, if generation succeeds,
+ * triggers a browser download. If generation is blocked (an unsupported
+ * or invalid scene, or a not-yet-supported interaction mode slipping
+ * through), this throws `ExportGenerationBlockedError` rather than
+ * silently doing nothing — `handleExport` below catches it and surfaces
+ * the exact blocking reasons in the dialog, and no download ever fires. */
 function defaultOnExport(config: ExportConfig) {
-  // eslint-disable-next-line no-console
-  console.log('[export] configuration assembled (no export endpoint until Task 56+):', config);
+  const result = generateHtmlExport({
+    scene: config.scene,
+    title: config.title,
+    description: config.description,
+    interactionMode: config.interactionMode,
+  });
+  if (!result.ok) {
+    throw new ExportGenerationBlockedError(result.reasons);
+  }
+  triggerHtmlDownload(result.html, result.filename);
 }
 
 function ExportConfigDialog({
@@ -103,6 +130,7 @@ function ExportConfigDialog({
   const [includeAttribution, setIncludeAttribution] = useState(false);
   const [includeSocialThumbnailZip, setIncludeSocialThumbnailZip] = useState(false);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('demo');
+  const [generationErrors, setGenerationErrors] = useState<string[]>([]);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const versionSelectRef = useRef<HTMLSelectElement>(null);
@@ -193,6 +221,7 @@ function ExportConfigDialog({
     setIncludeAttribution(false);
     setIncludeSocialThumbnailZip(false);
     setInteractionMode('demo');
+    setGenerationErrors([]);
     setIsOpen(true);
   }
 
@@ -202,7 +231,7 @@ function ExportConfigDialog({
   }
 
   function handleExport() {
-    if (!canExport || !project || selectedVersionId === null) return;
+    if (!canExport || !project || selectedVersionId === null || !sceneDetail) return;
     const version = sortedVersions.find((candidate) => candidate.id === selectedVersionId);
     if (!version) return;
 
@@ -217,8 +246,18 @@ function ExportConfigDialog({
       interactionMode,
       title: project.title,
       description: project.description,
+      scene: sceneDetail,
     };
-    onExport(config);
+    setGenerationErrors([]);
+    try {
+      onExport(config);
+    } catch (error) {
+      if (error instanceof ExportGenerationBlockedError) {
+        setGenerationErrors(error.reasons);
+        return;
+      }
+      throw error;
+    }
   }
 
   return (
@@ -384,6 +423,17 @@ function ExportConfigDialog({
               <p>This version can't be exported with the {RENDERER_LABELS.p5js} renderer:</p>
               <ul>
                 {compatibilityErrors.map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {generationErrors.length > 0 && (
+            <div role="alert" aria-live="assertive" data-testid="export-generation-errors">
+              <p>Export could not be generated:</p>
+              <ul>
+                {generationErrors.map((message) => (
                   <li key={message}>{message}</li>
                 ))}
               </ul>

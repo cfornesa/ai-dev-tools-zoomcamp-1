@@ -236,8 +236,57 @@ describe('ExportConfigDialog terminal export action', () => {
         includeAttribution: false,
         includeSocialThumbnailZip: false,
         interactionMode: 'demo',
+        scene: BASE_SCENE,
       }),
     );
+  });
+
+  it('the default onExport (Task 56) generates and downloads a standalone HTML file for a valid scene', async () => {
+    mockedGetSceneVersion.mockResolvedValue(versionDetail({}, BASE_SCENE));
+    const createObjectURL = vi.fn((_obj: Blob | MediaSource) => 'blob:mock-url');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    const { user, dialog } = await openDialog(baseProject());
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: /^export$/i })).not.toBeDisabled(),
+    );
+
+    await user.click(within(dialog).getByRole('button', { name: /^export$/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blobArg = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blobArg.type).toBe('text/html');
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+    expect(screen.queryByTestId('export-generation-errors')).not.toBeInTheDocument();
+
+    clickSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('the default onExport surfaces blocking reasons and never downloads for an unsupported scene', async () => {
+    mockedGetSceneVersion.mockResolvedValue(
+      versionDetail(
+        {},
+        { ...BASE_SCENE, shapes: [{ id: 's1', type: 'sprite3d', layerId: 'layer-1' } as never] },
+      ),
+    );
+    const createObjectURL = vi.fn(() => 'blob:mock-url');
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL: vi.fn() });
+
+    const { dialog } = await openDialog(baseProject());
+
+    // The compatibility check already disables the button before any
+    // click is possible -- this is the same gate `defaultOnExport` itself
+    // also re-checks as a safety net (see `generateHtmlExport.ts`).
+    const errorRegion = await within(dialog).findByTestId('export-compatibility-errors');
+    expect(errorRegion).toHaveTextContent('sprite3d');
+    expect(within(dialog).getByRole('button', { name: /^export$/i })).toBeDisabled();
+    expect(createObjectURL).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
   });
 });
 

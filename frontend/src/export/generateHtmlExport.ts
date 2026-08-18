@@ -45,11 +45,87 @@ import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
 export const P5_VERSION = '1.11.10';
 export const P5_CDN_URL = `https://cdn.jsdelivr.net/npm/p5@${P5_VERSION}/lib/p5.min.js`;
 
+/**
+ * Task 60 (issue #60): optional product attribution content.
+ *
+ * `_docs/plan.md`'s "Optional attribution" section (line ~659) specifies
+ * the visible footer wording exactly: `Created with [product name]`
+ * linked to the app, plus "a matching HTML comment and export version
+ * marker" -- but leaves the literal product name as a placeholder rather
+ * than a fixed string, and doesn't specify a URL or the marker's exact
+ * text. This module's own documented choices, filling in what the plan
+ * left open (see the issue #60 comment for the full rationale):
+ *
+ * - Product name: "Gesture-Reactive Web Animation Studio" -- the exact
+ *   name already used as this app's own visible product name in
+ *   `frontend/src/components/Layout.tsx`'s `<h1>` and in
+ *   `_docs/plan.md`'s own title, so the export doesn't introduce a
+ *   second, inconsistent name for the same product.
+ * - Link target: this project's public GitHub repository -- the only
+ *   stable, public URL this codebase defines for "the app" (V1 has no
+ *   fixed production domain; per `AGENTS.md`, deployment is
+ *   Replit-hosted with a separate URL per environment).
+ * - Export version marker: names this attribution/export module's own
+ *   version, independent of the scene schema version already embedded
+ *   in `export-config`/`scene-data` -- see `EXPORT_TOOL_VERSION` below.
+ *
+ * None of this is user-controlled input, so none of it needs
+ * `escapeHtml`/`safeEmbed.ts` treatment for XSS purposes -- it's
+ * hardcoded here, not embedded from `input.title`/`input.description`/
+ * the scene document. It's written as plain template literals (not run
+ * through `escapeHtml`) exactly like every other static string this
+ * module writes (`<h1>`, `<style>`, section headings).
+ */
+export const ATTRIBUTION_PRODUCT_NAME = 'Gesture-Reactive Web Animation Studio';
+export const ATTRIBUTION_PRODUCT_URL = 'https://github.com/cfornesa/ai-dev-tools-zoomcamp-1';
+/** Bumped only when this attribution/export-generation module's own
+ * output shape changes in a way worth distinguishing later -- not tied to
+ * the canonical scene schema version (`schema/scene.schema.json`'s
+ * `schemaVersion`, already embedded separately in `scene-data`). */
+export const EXPORT_TOOL_VERSION = '1';
+
+function renderAttributionFooter(): string {
+  return `
+  <footer id="export-attribution">
+    <p>
+      Created with
+      <a href="${ATTRIBUTION_PRODUCT_URL}" target="_blank" rel="noopener noreferrer"
+        >${ATTRIBUTION_PRODUCT_NAME}</a
+      >
+    </p>
+  </footer>`;
+}
+
+function renderAttributionComment(): string {
+  return `<!-- Created with ${ATTRIBUTION_PRODUCT_NAME} (${ATTRIBUTION_PRODUCT_URL}) -->`;
+}
+
+function renderExportVersionMarker(): string {
+  return `<!-- export-tool-version: ${EXPORT_TOOL_VERSION} -->`;
+}
+
+/** CSS for the optional attribution footer -- placed in normal document
+ * flow *after* every other section (canvas, demo controls, camera
+ * controls), never absolutely/fixed-positioned, so it can never overlap
+ * the artwork canvas or any control. Only included in
+ * `EXPORT_STYLE`/the document when attribution is enabled, so it can
+ * never leak style hooks into the disabled output either. */
+const ATTRIBUTION_STYLE = `
+    #export-attribution { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.875rem; color: #555; }
+  `;
+
 export type GenerateHtmlExportInput = {
   scene: SceneDocument;
   title: string;
   description: string;
   interactionMode: InteractionMode;
+  /** Task 60 (issue #60): mirrors `ExportConfig.includeAttribution` from
+   * `ExportConfigDialog.tsx` (Task 55) -- gates every piece of product
+   * attribution content (visible footer, HTML comment, export version
+   * marker) documented in `_docs/plan.md`'s "Optional attribution"
+   * section. Defaults to `false` (attribution off) when omitted, matching
+   * the dialog's own documented default. */
+  includeAttribution?: boolean;
 };
 
 export type GenerateHtmlExportResult =
@@ -193,6 +269,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   const hasDescription = input.description.trim().length > 0;
   const includesCamera =
     input.interactionMode === 'camera' || input.interactionMode === 'demo-camera';
+  const includeAttribution = input.includeAttribution === true;
 
   const html = `<!doctype html>
 <html lang="en">
@@ -203,9 +280,10 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   <meta name="description" content="${safeDescription}" />
   <meta property="og:title" content="${safeTitle}" />
   <meta property="og:description" content="${safeDescription}" />
-  <style>${EXPORT_STYLE}</style>
+  <style>${EXPORT_STYLE}${includeAttribution ? ATTRIBUTION_STYLE : ''}</style>
 </head>
 <body>
+  ${includeAttribution ? renderAttributionComment() : ''}
   <h1>${safeTitle}</h1>
   ${hasDescription ? `<p id="project-description">${safeDescription}</p>` : ''}
   <div id="scene-canvas-host"></div>
@@ -218,6 +296,8 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   ${embedJsonScript('export-config', { interactionMode: input.interactionMode })}
   <script>${buildStandaloneRuntimeScript()}</script>
   ${includesCamera ? `<script>${buildStandaloneCameraScript()}</script>` : ''}
+  ${includeAttribution ? renderAttributionFooter() : ''}
+  ${includeAttribution ? renderExportVersionMarker() : ''}
 </body>
 </html>
 `;

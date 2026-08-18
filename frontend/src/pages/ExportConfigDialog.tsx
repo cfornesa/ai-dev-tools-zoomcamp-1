@@ -31,7 +31,10 @@ import { useVersionHistory } from './useVersionHistory';
  * generate a real file embedding a camera/tracking module
  * (`../export/standaloneCameraSource.ts`) alongside the always-present demo
  * controls, with no interaction-mode-specific blocking left in
- * `generateHtmlExport`.
+ * `generateHtmlExport`. Attribution (Task 60, issue #60) is now also fully
+ * wired — `includeAttribution` is forwarded to `generateHtmlExport`, which
+ * adds/omits the documented visible footer, HTML comment, and export
+ * version marker (see that module's doc comment).
  *
  * ## What's actually configurable today
  *
@@ -43,8 +46,8 @@ import { useVersionHistory } from './useVersionHistory';
  * options (Task 56+) can be added as more `<option>`s with no structural
  * change here — but each currently has exactly one value, and is rendered
  * `disabled` with a note explaining why. The actually-configurable surface
- * in V1 is: which saved version, attribution, the (currently inert)
- * social-thumbnail-ZIP preference, and interaction mode.
+ * in V1 is: which saved version, attribution (now wired end-to-end), the
+ * (currently inert) social-thumbnail-ZIP preference, and interaction mode.
  *
  * ## Version selection never touches the project
  *
@@ -107,6 +110,7 @@ function defaultOnExport(config: ExportConfig) {
     title: config.title,
     description: config.description,
     interactionMode: config.interactionMode,
+    includeAttribution: config.includeAttribution,
   });
   if (!result.ok) {
     throw new ExportGenerationBlockedError(result.reasons);

@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import type { SceneDocument } from '../api/projects';
 import { MEDIAPIPE_TASKS_VISION_VERSION as PROVIDER_MEDIAPIPE_VERSION } from '../tracking/mediapipeProvider';
 import {
+  ATTRIBUTION_PRODUCT_NAME,
+  ATTRIBUTION_PRODUCT_URL,
+  EXPORT_TOOL_VERSION,
   checkExportBlockingReasons,
   generateHtmlExport,
   P5_CDN_URL,
@@ -445,5 +448,172 @@ describe('generateHtmlExport: camera-mode generation (Task 57, issue #56)', () =
       expect(source.length).toBeGreaterThan(0);
       expect(() => new Function(source)).not.toThrow();
     });
+  });
+});
+
+/**
+ * Task 60 (issue #60): optional product attribution.
+ *
+ * Covers every acceptance criterion: the off state is genuinely clean (no
+ * visible branding, link, comment, or marker anywhere in the source, not
+ * just "the product name string doesn't appear" -- the actual footer
+ * element, comment text, and marker are all checked for absence), the on
+ * state contains the exact documented footer/comment/marker, the footer
+ * link is a real focusable `<a href>` with accessible text (checked via
+ * DOM parsing, not string matching), the footer is positioned so it can't
+ * overlap the canvas/controls, and toggling the flag changes *only*
+ * attribution-related content in the rest of the document.
+ */
+describe('generateHtmlExport: optional product attribution (Task 60, issue #60)', () => {
+  it('includes zero attribution content -- visible text, comment, and marker -- when disabled or omitted', () => {
+    const explicitlyOff = generateHtmlExport(baseInput({ includeAttribution: false }));
+    const omitted = generateHtmlExport(baseInput());
+
+    [explicitlyOff, omitted].forEach((result) => {
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const html = result.html;
+
+      // No product name, link, or marker substrings anywhere in the source.
+      expect(html).not.toContain(ATTRIBUTION_PRODUCT_NAME);
+      expect(html).not.toContain(ATTRIBUTION_PRODUCT_URL);
+      expect(html).not.toContain('export-tool-version');
+      expect(html).not.toContain('export-attribution');
+      expect(html.toLowerCase()).not.toContain('created with');
+
+      // No footer element, no attribution id, anywhere in the parsed DOM
+      // (rules out the element existing but hidden, styled off-screen,
+      // etc. -- it must not be emitted at all).
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      expect(doc.querySelector('footer')).toBeNull();
+      expect(doc.getElementById('export-attribution')).toBeNull();
+      expect(doc.querySelectorAll('a').length).toBe(0);
+
+      // No leftover HTML comments (the attribution comment and export
+      // version marker are both HTML comments; jsdom's HTML parser does
+      // create Comment nodes, so walk for them explicitly rather than
+      // relying on innerHTML, which wouldn't include them either way).
+      const walker = doc.createTreeWalker(doc, NodeFilter.SHOW_COMMENT);
+      const comments: string[] = [];
+      let node = walker.nextNode();
+      while (node) {
+        comments.push(node.textContent ?? '');
+        node = walker.nextNode();
+      }
+      expect(comments).toHaveLength(0);
+    });
+  });
+
+  it('includes the exact documented visible footer, matching HTML comment, and export version marker when enabled', () => {
+    const result = generateHtmlExport(baseInput({ includeAttribution: true }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // Exact HTML comment and export version marker text.
+    expect(result.html).toContain(
+      `<!-- Created with ${ATTRIBUTION_PRODUCT_NAME} (${ATTRIBUTION_PRODUCT_URL}) -->`,
+    );
+    expect(result.html).toContain(`<!-- export-tool-version: ${EXPORT_TOOL_VERSION} -->`);
+
+    // Exact visible footer content, verified by DOM parsing rather than
+    // string matching alone.
+    const doc = new DOMParser().parseFromString(result.html, 'text/html');
+    const footer = doc.getElementById('export-attribution');
+    expect(footer).not.toBeNull();
+    expect(footer?.tagName).toBe('FOOTER');
+    expect(footer?.textContent).toContain('Created with');
+
+    const link = footer?.querySelector('a');
+    expect(link).not.toBeNull();
+    expect(link?.tagName).toBe('A');
+    expect(link?.getAttribute('href')).toBe(ATTRIBUTION_PRODUCT_URL);
+    expect(link?.textContent?.trim()).toBe(ATTRIBUTION_PRODUCT_NAME);
+  });
+
+  it('renders the footer link as a real, keyboard-focusable <a href> with accessible text', () => {
+    const result = generateHtmlExport(baseInput({ includeAttribution: true }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const doc = new DOMParser().parseFromString(result.html, 'text/html');
+    const link = doc.querySelector('#export-attribution a');
+
+    expect(link).not.toBeNull();
+    // A real anchor with an href -- naturally tabbable, not a div/span
+    // with a click handler and no href.
+    expect(link?.tagName).toBe('A');
+    expect(link?.hasAttribute('href')).toBe(true);
+    expect((link?.getAttribute('href') ?? '').length).toBeGreaterThan(0);
+    // Never pulled out of the tab order or hidden from assistive tech.
+    expect(link?.getAttribute('tabindex')).not.toBe('-1');
+    expect(link?.hasAttribute('aria-hidden')).toBe(false);
+    // Meaningful accessible text -- not a bare icon/logo with no label.
+    expect((link?.textContent ?? '').trim()).toBe(ATTRIBUTION_PRODUCT_NAME);
+    expect((link?.textContent ?? '').trim().length).toBeGreaterThan(0);
+    // Opens safely in a new context without leaking a window.opener
+    // reference back to this document.
+    expect(link?.getAttribute('rel')).toContain('noopener');
+  });
+
+  it('positions the footer after the canvas and every control section, never as an overlay', () => {
+    const result = generateHtmlExport(
+      baseInput({ includeAttribution: true, interactionMode: 'demo-camera' }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // The footer's own CSS rule never uses fixed/absolute positioning,
+    // which is what would be needed to overlay it on top of other content.
+    const styleMatch = result.html.match(/<style>([\s\S]*?)<\/style>/);
+    expect(styleMatch).not.toBeNull();
+    const footerRuleMatch = styleMatch?.[1].match(/#export-attribution\s*\{[^}]*\}/);
+    expect(footerRuleMatch).not.toBeNull();
+    expect(footerRuleMatch?.[0]).not.toMatch(/position:\s*(fixed|absolute)/);
+
+    // Document order: the footer is the last element in <body>, after the
+    // canvas host and every control section -- normal flow, so it can
+    // never visually cover them.
+    const doc = new DOMParser().parseFromString(result.html, 'text/html');
+    const body = doc.body;
+    const footer = doc.getElementById('export-attribution');
+    const canvasHost = doc.getElementById('scene-canvas-host');
+    const demoHost = doc.getElementById('demo-controls-host');
+    const cameraHost = doc.getElementById('camera-controls-host');
+    expect(footer).not.toBeNull();
+    expect(canvasHost).not.toBeNull();
+    expect(demoHost).not.toBeNull();
+    expect(cameraHost).not.toBeNull();
+
+    const children = Array.from(body.children);
+    const footerIndex = children.indexOf(footer as Element);
+    expect(footerIndex).toBeGreaterThan(children.indexOf(canvasHost as Element));
+    expect(footerIndex).toBeGreaterThan(children.indexOf(demoHost as Element));
+    expect(footerIndex).toBeGreaterThan(children.indexOf(cameraHost as Element));
+  });
+
+  it('changes only attribution-related content when toggled -- everything else is byte-for-byte identical modulo whitespace', () => {
+    const sharedInput = {
+      title: 'Bouncing Circles',
+      description: 'Circles that bounce with your hand.',
+      interactionMode: 'demo-camera' as const,
+    };
+    const onResult = generateHtmlExport(baseInput({ ...sharedInput, includeAttribution: true }));
+    const offResult = generateHtmlExport(baseInput({ ...sharedInput, includeAttribution: false }));
+    expect(onResult.ok).toBe(true);
+    expect(offResult.ok).toBe(true);
+    if (!onResult.ok || !offResult.ok) return;
+
+    // Filename derivation never depends on attribution.
+    expect(onResult.filename).toBe(offResult.filename);
+
+    const normalizeWhitespace = (value: string) => value.replace(/\s+/g, ' ').trim();
+    const stripAttributionArtifacts = (html: string) =>
+      normalizeWhitespace(
+        html
+          .replace(/<!--[\s\S]*?-->/g, '')
+          .replace(/<footer id="export-attribution">[\s\S]*?<\/footer>/g, '')
+          .replace(/#export-attribution\s*\{[^}]*\}/g, ''),
+      );
+
+    expect(stripAttributionArtifacts(onResult.html)).toBe(normalizeWhitespace(offResult.html));
   });
 });

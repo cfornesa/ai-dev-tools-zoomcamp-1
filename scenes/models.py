@@ -469,3 +469,41 @@ class ForkProvenance(models.Model):
                 "source_version does not belong to source_project."
             )
         super().save(*args, **kwargs)
+
+
+# --- Task 54: gallery-card thumbnails ---
+#
+# One row per `SceneVersion` (immutable, so a generated thumbnail never
+# needs to change once it exists), not per `Project`. See
+# `scenes/thumbnails.py`'s module docstring for the rendering approach and
+# `scenes/thumbnail_generation.py` for the generation/storage/policy code
+# that creates and updates rows of this model. Storing PNG bytes directly
+# in the database column (rather than a `FileField`/local filesystem path)
+# matches this project's existing durability rule for deployed
+# environments (`AGENTS.md`: "a published Replit application's filesystem
+# is not the durable data boundary") — no MEDIA_ROOT/file storage is
+# configured anywhere else in this project either.
+
+
+class Thumbnail(models.Model):
+    scene_version = models.OneToOneField(
+        SceneVersion, on_delete=models.CASCADE, related_name="thumbnail"
+    )
+    image_data = models.BinaryField()
+    content_type = models.CharField(max_length=50, default="image/png")
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    # True when `image_data` is `scenes.thumbnails.FALLBACK_PNG_BYTES` (or an
+    # equivalent placeholder) because rendering the real scene failed --
+    # never derived from scene content. A later successful retry replaces
+    # this same row in place (see `ensure_thumbnail_for_version`) rather
+    # than creating a second row, so `is_fallback` also marks "generation
+    # should be retried later" for whatever admin/maintenance tooling wants
+    # to sweep failed artifacts.
+    is_fallback = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    generated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        kind = "fallback" if self.is_fallback else "generated"
+        return f"thumbnail({self.scene_version_id}, {kind})"

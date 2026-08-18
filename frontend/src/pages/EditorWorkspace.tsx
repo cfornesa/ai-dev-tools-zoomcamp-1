@@ -24,6 +24,7 @@ import {
   type ShapeType,
 } from './sceneShapes';
 import { useDraftAutosave } from './useDraftAutosave';
+import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useSceneEditor } from './useSceneEditor';
@@ -113,10 +114,18 @@ function EditorWorkspace() {
   // and after a confirmed Exit-without-saving (the confirm dialog further
   // down) — never automatically, and never on cancel.
   const draftAutosave = useDraftAutosave(id, workingCopy, persistedVersion);
+
+  // Task 43: syncs the same working copy to the authorized server draft
+  // endpoint every 20-30s while editing, after defined meaningful actions,
+  // and once (bounded, fire-and-forget) on page hide — see
+  // `useDraftServerSync.ts` for the full policy. Never reads a server
+  // draft back into the editor (Task 44's recovery-prompt scope).
+  const draftServerSync = useDraftServerSync(id, workingCopy);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   async function handleConfirmExit() {
     await draftAutosave.clearDraft();
+    void draftServerSync.deleteServerDraft();
     setShowExitConfirm(false);
     navigate('/');
   }
@@ -650,12 +659,14 @@ function EditorWorkspace() {
                 setProject((current) =>
                   current ? { ...current, current_version: version.id } : current,
                 );
-                // Task 42: the version-save API call succeeded, so the
-                // local recovery draft for this project is now redundant —
-                // clear it. Never called on a failed save (see
-                // `useVersionHistory.save`'s error handling: this callback
-                // only ever fires with the saved version on success).
+                // Task 42/43: the version-save API call succeeded, so
+                // neither the local nor the server recovery draft for this
+                // project is needed anymore — clear both. Never called on
+                // a failed save (see `useVersionHistory.save`'s error
+                // handling: this callback only ever fires with the saved
+                // version on success).
                 void draftAutosave.clearDraft();
+                void draftServerSync.deleteServerDraft();
               }}
               onRestored={(version) => {
                 setPersistedVersion(version);
@@ -663,6 +674,15 @@ function EditorWorkspace() {
                 setProject((current) =>
                   current ? { ...current, current_version: version.id } : current,
                 );
+                // Task 43: restoring a historical version is this
+                // codebase's defined "meaningful action" — sync the
+                // restored working copy to the server draft immediately
+                // rather than waiting for the next periodic tick. Passes
+                // `version.scene_json` explicitly (see
+                // `useDraftServerSync.ts`'s comment on `snapshotOverride`)
+                // rather than relying on `workingCopy`, which hasn't
+                // re-rendered into this hook's ref yet.
+                draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
               }}
             />
           )}

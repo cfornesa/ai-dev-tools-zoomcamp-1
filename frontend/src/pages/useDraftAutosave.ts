@@ -13,8 +13,12 @@ const SESSION_STORAGE_PREFIX = 'motion-editor-draft-session:';
  * editing the same project gets its own. Falls back to a fresh id on any
  * storage failure (e.g. private browsing) rather than throwing — the
  * autosave scheduler tolerates a less-stable session id fine, it's only
- * used for draft identity, never for security. */
-function sessionIdFor(projectId: string): string {
+ * used for draft identity, never for security.
+ *
+ * Exported (not module-private) because Task 43's `useDraftServerSync.ts`
+ * reuses it too, so the local IndexedDB draft and the server-synced draft
+ * for a given tab always share the same session id. */
+export function sessionIdFor(projectId: string): string {
   const key = `${SESSION_STORAGE_PREFIX}${projectId}`;
   try {
     const existing = window.sessionStorage.getItem(key);

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,6 +11,8 @@ vi.mock('../api/projects');
 
 const mockedGetProject = vi.mocked(projectsApi.getProject);
 const mockedUpdateProjectMetadata = vi.mocked(projectsApi.updateProjectMetadata);
+const mockedPublishProject = vi.mocked(projectsApi.publishProject);
+const mockedUnpublishProject = vi.mocked(projectsApi.unpublishProject);
 
 function baseProject(overrides: Partial<projectsApi.Project> = {}): projectsApi.Project {
   return {
@@ -136,5 +138,131 @@ describe('ProjectMetadataForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/not found/i);
     expect(screen.queryByLabelText(/title/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('ProjectMetadataForm publishing (Task 49)', () => {
+  it('shows a confirmation naming title, creator attribution, animation, and preview before the first private-to-public switch', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.', owner: 'alice' }),
+    );
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByLabelText(/title/i);
+    await user.click(screen.getByRole('button', { name: /^publish$/i }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('My scene');
+    expect(dialog).toHaveTextContent('alice');
+    expect(dialog).toHaveTextContent(/animation/i);
+    expect(dialog).toHaveTextContent(/preview/i);
+    expect(mockedPublishProject).not.toHaveBeenCalled();
+  });
+
+  it('blocks publishing with field-level errors when title/description are not meaningful', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'Untitled animation', description: '' }),
+    );
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByLabelText(/title/i);
+    await user.click(screen.getByRole('button', { name: /^publish$/i }));
+
+    expect(await screen.findByTestId('publish-title-error')).toHaveTextContent(/meaningful title/i);
+    expect(screen.getByTestId('publish-description-error')).toHaveTextContent(/description/i);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(mockedPublishProject).not.toHaveBeenCalled();
+  });
+
+  it('publishes after confirmation and updates the visibility status', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.' }),
+    );
+    mockedPublishProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.', visibility: 'public' }),
+    );
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByLabelText(/title/i);
+    await user.click(screen.getByRole('button', { name: /^publish$/i }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: /^publish$/i }));
+
+    expect(mockedPublishProject).toHaveBeenCalledWith('p1');
+    expect(await screen.findByTestId('visibility-status')).toHaveTextContent(/public/i);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('cancelling the confirmation dialog does not publish', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.' }),
+    );
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByLabelText(/title/i);
+    await user.click(screen.getByRole('button', { name: /^publish$/i }));
+    await screen.findByRole('alertdialog');
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(mockedPublishProject).not.toHaveBeenCalled();
+  });
+
+  it('surfaces server-side publish validation errors without corrupting visibility state', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.' }),
+    );
+    mockedPublishProject.mockRejectedValue(
+      new ApiError(400, { errors: { title: ['Choose a meaningful title before publishing.'] } }),
+    );
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByLabelText(/title/i);
+    await user.click(screen.getByRole('button', { name: /^publish$/i }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: /^publish$/i }));
+
+    expect(await screen.findByTestId('publish-title-error')).toHaveTextContent(/meaningful title/i);
+    expect(screen.getByTestId('visibility-status')).toHaveTextContent(/private/i);
+  });
+
+  it('offers a separate, immediate unpublish action for a public project, without a confirmation dialog', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.', visibility: 'public' }),
+    );
+    mockedUnpublishProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.', visibility: 'private' }),
+    );
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByTestId('visibility-status');
+    await user.click(screen.getByRole('button', { name: /unpublish/i }));
+
+    expect(mockedUnpublishProject).toHaveBeenCalledWith('p1');
+    expect(await screen.findByTestId('visibility-status')).toHaveTextContent(/private/i);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('non-owner/error responses on unpublish leave visibility state unchanged in the UI', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.', visibility: 'public' }),
+    );
+    mockedUnpublishProject.mockRejectedValue(new ApiError(404, null));
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByTestId('visibility-status');
+    await user.click(screen.getByRole('button', { name: /unpublish/i }));
+
+    expect(await screen.findByTestId('publish-form-error')).toHaveTextContent(
+      /could not unpublish/i,
+    );
+    expect(screen.getByTestId('visibility-status')).toHaveTextContent(/public/i);
   });
 });

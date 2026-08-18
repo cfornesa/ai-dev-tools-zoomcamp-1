@@ -58,13 +58,17 @@ export type SceneValidationErrorBody = {
   errors: Array<{ path: string; rule: string; message: string }>;
 };
 
+/** Task 49: `visibility` is deliberately excluded — it's no longer a plain
+ * metadata field; use `publishProject`/`unpublishProject` instead (see
+ * `scenes/serializers.py`'s `ProjectMetadataSerializer` docstring for why
+ * the PATCH endpoint itself ignores a `visibility` key rather than
+ * applying it). */
 export type ProjectMetadataInput = Partial<
   Pick<
     Project,
     | 'title'
     | 'description'
     | 'tags'
-    | 'visibility'
     | 'allow_public_remix'
     | 'thumbnail_choice'
     | 'export_attribution'
@@ -84,6 +88,31 @@ export function updateProjectMetadata(id: string, data: ProjectMetadataInput): P
     method: 'PATCH',
     body: JSON.stringify(data),
   });
+}
+
+/** Body shape for a 400 "meaningful content" validation failure on publish
+ * (`scenes/api.py`'s `ProjectPublishView`) — field-level, per Task 49's
+ * acceptance criteria, never a generic failure. `current_version` is not a
+ * form field; it means "save at least one version before publishing." */
+export type PublishValidationErrorBody = {
+  errors: Record<string, string[]>;
+};
+
+/** Task 49: switch a project from private to public. Owner-only (404 for
+ * anyone else, matching every other project-scoped endpoint); rejected
+ * with field-level `errors` (400) if title/description don't meet the
+ * meaningful-content rules, or if the project has no saved version yet.
+ * Never reads a request body — there is nothing for a client to submit
+ * that could substitute for `project.current_version`. */
+export function publishProject(id: string): Promise<Project> {
+  return apiFetch<Project>(`/api/projects/${id}/publish/`, { method: 'POST' });
+}
+
+/** Task 49: switch a project back to private, immediately. Owner-only;
+ * never fails on content — only publishing enforces the meaningful-content
+ * rules. Version history is untouched. */
+export function unpublishProject(id: string): Promise<Project> {
+  return apiFetch<Project>(`/api/projects/${id}/unpublish/`, { method: 'POST' });
 }
 
 /** Task 21: fetch a single scene version, including its full scene_json,

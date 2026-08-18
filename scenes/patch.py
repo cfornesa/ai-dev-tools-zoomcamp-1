@@ -46,6 +46,20 @@ reason about and to keep safe.
   Removing or adding a *whole* item (whose own body may contain an
   `id`) is unaffected by this rule; only altering an existing item's id
   field in isolation is blocked.
+- A `replace` targeting an *existing* item by index (e.g. `/shapes/0`,
+  `/graph/nodes/2`) whose replacement value's own `id` differs from the
+  current item's `id` at that path. The per-field rule above only
+  catches `.../id` as the literal *path*; a whole-object `replace` at
+  the item's own index changes the id through the operation's *value*
+  instead, without the path ever ending in `id` -- an identity rename
+  smuggled through unless checked separately. `validate_patch_operations`
+  therefore takes the current scene (when the caller has one, which
+  `ai_provider.mistral_provider.edit_scene_with_patch` always does) and
+  compares each such `replace`'s value id against the item currently at
+  that path, rejecting a mismatch as a protected-field violation --
+  independent of whether anything else in the document still references
+  the old id (referential-integrity validation only happens to catch
+  the *referenced* case, and only as a side effect, not by design).
 
 ## Allowed paths
 
@@ -140,6 +154,49 @@ def _unescape(segment: str) -> str:
     return segment.replace("~1", "/").replace("~0", "~")
 
 
+# Roots whose array elements carry their own identity (`id`), for the
+# whole-item-replace identity-preservation check below. `graph` is handled
+# separately since its identity-bearing arrays are one level deeper
+# (`/graph/nodes/<n>`, `/graph/connections/<n>`), not `/graph/<n>`.
+_IDENTITY_BEARING_ELEMENT_ROOTS = frozenset({"shapes", "groups", "bindings", "layers"})
+
+
+def _is_identity_bearing_element_path(segments: list[str]) -> bool:
+    """True for a path that addresses one *whole* existing array element in
+    an identity-bearing container -- e.g. `/shapes/0`, `/graph/nodes/2` --
+    as opposed to a property beneath one (`/shapes/0/style/fill`) or the
+    array itself (`/shapes`)."""
+    if len(segments) == 2 and segments[0] in _IDENTITY_BEARING_ELEMENT_ROOTS:
+        return segments[1].isdigit()
+    if len(segments) == 3 and segments[0] == "graph" and segments[1] in ("nodes", "connections"):
+        return segments[2].isdigit()
+    return False
+
+
+def _get_at_path(document: Any, segments: list[str]) -> tuple[bool, Any]:
+    """Resolve `segments` against `document`. Returns `(True, value)` if the
+    full path resolves to something, else `(False, None)` -- never raises,
+    since this is used for a best-effort lookup during validation (a path
+    that doesn't resolve here is either already invalid for other reasons
+    or will separately fail `apply_patch`)."""
+    node = document
+    for segment in segments:
+        if isinstance(node, dict):
+            if segment not in node:
+                return False, None
+            node = node[segment]
+        elif isinstance(node, list):
+            if not segment.isdigit():
+                return False, None
+            idx = int(segment)
+            if idx < 0 or idx >= len(node):
+                return False, None
+            node = node[idx]
+        else:
+            return False, None
+    return True, node
+
+
 def _path_rejection_reason(pointer: str, segments: list[str]) -> str | None:
     """Return None if `pointer` is an allowed patch path, else the
     `PatchErrorReason` explaining why not."""
@@ -167,12 +224,26 @@ def _path_rejection_reason(pointer: str, segments: list[str]) -> str | None:
     return None if allowed else PatchErrorReason.INVALID_PATH
 
 
-def validate_patch_operations(patch: Any) -> list[PatchOperationError]:
+def validate_patch_operations(
+    patch: Any, *, scene: dict[str, Any] | None = None
+) -> list[PatchOperationError]:
     """Validate a proposed patch document against the allowlist, structure,
     and size bounds. Returns an empty list iff the patch is acceptable --
     never raises for malformed *content* (only for a non-list `patch`, via
     an explicit error entry at index -1, so callers get one uniform
     reporting shape).
+
+    `scene` is the current scene the patch would be applied to. When
+    provided, an additional check runs: a `replace` targeting one whole
+    existing array element by index (e.g. `/shapes/0`) whose replacement
+    value's own `id` differs from that element's current `id` is rejected
+    as a protected-field violation (see this module's docstring's
+    "Protected paths" section for why -- the per-field `.../id` path rule
+    alone doesn't catch an identity change smuggled through a whole-object
+    replace's *value*). Callers that already have the scene on hand (every
+    real caller does -- `ai_provider.mistral_provider.edit_scene_with_patch`
+    is about to apply the patch to it) should always pass it; omitting it
+    only skips this one check, not the rest of allowlist validation.
     """
     errors: list[PatchOperationError] = []
 
@@ -267,6 +338,33 @@ def validate_patch_operations(patch: Any) -> list[PatchOperationError]:
                     message=f"op {op_name!r} at {path!r} requires a 'value'.",
                 )
             )
+            continue
+
+        if (
+            scene is not None
+            and op_name == "replace"
+            and _is_identity_bearing_element_path(segments)
+        ):
+            value = op.get("value")
+            if isinstance(value, dict) and "id" in value:
+                found, current_item = _get_at_path(scene, segments)
+                if (
+                    found
+                    and isinstance(current_item, dict)
+                    and "id" in current_item
+                    and current_item["id"] != value["id"]
+                ):
+                    errors.append(
+                        PatchOperationError(
+                            index=index,
+                            reason=PatchErrorReason.PROTECTED_FIELD,
+                            message=(
+                                f"replace at {path!r} would change this item's id from "
+                                f"{current_item['id']!r} to {value['id']!r}; whole-item "
+                                "replace must preserve the existing id."
+                            ),
+                        )
+                    )
 
     return errors
 

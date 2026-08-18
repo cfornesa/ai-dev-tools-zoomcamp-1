@@ -151,6 +151,35 @@ def test_patch_touching_a_protected_field_is_rejected():
     assert PatchErrorReason.PROTECTED_FIELD in message
 
 
+def test_whole_item_replace_renaming_an_existing_shape_id_is_rejected():
+    # QA-reported bypass: a "replace" at an existing item's own index
+    # (not a bare array replace, not a path literally ending in "id")
+    # can still rename the item's id through the operation's value.
+    def circle(shape_id, fill="#14b8a6"):
+        return {
+            "id": shape_id,
+            "type": "circle",
+            "layerId": "layer-1",
+            "groupId": None,
+            "transform": {"x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1},
+            "style": {"fill": fill, "stroke": None, "strokeWidth": 0},
+            "radius": 10,
+        }
+
+    scene = copy.deepcopy(BLANK_SCENE)
+    scene["shapes"] = [circle("shape-1")]
+
+    patch = [{"op": "replace", "path": "/shapes/0", "value": circle("renamed-id")}]
+    provider = _provider_with(lambda **kw: _fake_response(json.dumps(patch)))
+
+    outcome = provider.edit_scene_with_patch(_request(scene=scene))
+
+    assert not outcome.result.success
+    message = outcome.result.error.message
+    assert message.startswith(INVALID_PATCH_PREFIX)
+    assert PatchErrorReason.PROTECTED_FIELD in message
+
+
 def test_patch_targeting_a_disallowed_path_is_rejected():
     patch = [{"op": "replace", "path": "/renderer/preferred", "value": "svg"}]
     provider = _provider_with(lambda **kw: _fake_response(json.dumps(patch)))

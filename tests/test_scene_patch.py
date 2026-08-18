@@ -130,6 +130,76 @@ def test_whole_array_replace_cannot_smuggle_an_id_change():
     assert errs[0].reason == PatchErrorReason.INVALID_PATH
 
 
+def test_whole_item_replace_at_an_existing_index_cannot_smuggle_an_id_change_when_unreferenced():
+    # QA-reported bypass: a "replace" at the item's own index (not a bare
+    # "/shapes" array replace, and not a path literally ending in "id")
+    # can still rename an existing item's id through the operation's
+    # *value*. Nothing else in the scene references shape-1's id, so
+    # validate_scene's referential-integrity check would never catch this
+    # on its own -- the allowlist itself must reject it.
+    scene = _scene_with_shape()
+    renamed = {**_circle("shape-1"), "id": "renamed-id"}
+    patch = [{"op": "replace", "path": "/shapes/0", "value": renamed}]
+
+    errs = validate_patch_operations(patch, scene=scene)
+
+    assert len(errs) == 1
+    assert errs[0].reason == PatchErrorReason.PROTECTED_FIELD
+
+
+def test_whole_item_replace_id_change_is_rejected_even_when_the_old_id_is_referenced():
+    # The referenced case: validate_scene's referential-integrity check
+    # would incidentally catch this as a dangling reference if the patch
+    # were allowed through, but that's not a designed protection -- the
+    # allowlist must reject it directly, before anything downstream runs.
+    scene = _scene_with_shape()
+    scene["groups"] = [
+        {"id": "group-1", "name": "Group 1", "childIds": ["shape-1"], "parentId": None}
+    ]
+    renamed = {**_circle("shape-1"), "id": "renamed-id"}
+    patch = [{"op": "replace", "path": "/shapes/0", "value": renamed}]
+
+    errs = validate_patch_operations(patch, scene=scene)
+
+    assert len(errs) == 1
+    assert errs[0].reason == PatchErrorReason.PROTECTED_FIELD
+
+
+def test_whole_item_replace_preserving_the_same_id_is_still_allowed():
+    scene = _scene_with_shape()
+    same_id = {**_circle("shape-1"), "style": {"fill": "#000000", "stroke": None, "strokeWidth": 0}}
+    patch = [{"op": "replace", "path": "/shapes/0", "value": same_id}]
+
+    assert validate_patch_operations(patch, scene=scene) == []
+
+
+def test_identity_preservation_check_is_skipped_without_a_scene_argument():
+    # Documented: omitting `scene` only skips this one check, not the rest
+    # of allowlist validation -- callers that always have the scene on
+    # hand (every real caller) should always pass it.
+    renamed = {**_circle("shape-1"), "id": "renamed-id"}
+    patch = [{"op": "replace", "path": "/shapes/0", "value": renamed}]
+
+    assert validate_patch_operations(patch) == []
+
+
+def test_graph_node_whole_item_replace_id_change_is_rejected():
+    scene = copy.deepcopy(BLANK_SCENE)
+    scene["graph"]["nodes"] = [{"id": "node-1", "type": "timer", "params": {}}]
+    patch = [
+        {
+            "op": "replace",
+            "path": "/graph/nodes/0",
+            "value": {"id": "node-renamed", "type": "timer", "params": {}},
+        }
+    ]
+
+    errs = validate_patch_operations(patch, scene=scene)
+
+    assert len(errs) == 1
+    assert errs[0].reason == PatchErrorReason.PROTECTED_FIELD
+
+
 # --- Invalid / disallowed paths ----------------------------------------
 
 

@@ -398,7 +398,7 @@ class MistralSceneProvider(AISceneProvider):
                 f"{EMPTY_PATCH_PREFIX} Mistral proposed no changes for this edit request.",
             )
 
-        patch_errors = validate_patch_operations(raw_patch)
+        patch_errors = validate_patch_operations(raw_patch, scene=request.current_scene)
         if patch_errors:
             reason = worst_reason(patch_errors)
             detail = "; ".join(f"[{e.index}] {e.message}" for e in patch_errors[:5])

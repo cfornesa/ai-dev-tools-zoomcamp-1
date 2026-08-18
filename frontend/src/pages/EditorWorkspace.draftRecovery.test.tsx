@@ -33,6 +33,7 @@ vi.mock('./useDraftRecovery');
 const mockedGetProject = vi.mocked(projectsApi.getProject);
 const mockedGetSceneVersion = vi.mocked(projectsApi.getSceneVersion);
 const mockedListSceneVersions = vi.mocked(projectsApi.listSceneVersions);
+const mockedSaveSceneVersion = vi.mocked(projectsApi.saveSceneVersion);
 const mockedUseDraftAutosave = vi.mocked(useDraftAutosave);
 const mockedUseDraftRecovery = vi.mocked(useDraftRecovery);
 
@@ -206,6 +207,46 @@ describe('a valid draft exists', () => {
 
     expect(recover).toHaveBeenCalledTimes(1);
     expect(discard).not.toHaveBeenCalled();
+  });
+
+  it("Recover end-to-end: the editor actually renders with the draft's scene data, marked dirty, and never calls a save/version API", async () => {
+    // Unlike the mock above (a static `status: 'prompt'` that never
+    // changes), this drives `useDraftRecovery` as a small stateful fake:
+    // clicking "Recover draft" flips its status from 'prompt' to
+    // 'resolved' — exactly what the real hook's `recover()` does — so the
+    // editor actually re-renders past the prompt and into its normal
+    // panel layout with the recovered scene as the (dirty) working copy.
+    let status: 'prompt' | 'resolved' = 'prompt';
+    const statefulRecover = vi.fn(() => {
+      status = 'resolved';
+      return RECOVERED_SCENE;
+    });
+    mockedUseDraftRecovery.mockImplementation(() => ({
+      status,
+      candidate: status === 'prompt' ? candidate() : null,
+      recover: statefulRecover,
+      discard,
+    }));
+
+    const user = userEvent.setup();
+    renderWorkspace();
+    const dialog = await screen.findByRole('alertdialog', { name: /recover unsaved work/i });
+
+    await user.click(within(dialog).getByRole('button', { name: 'Recover draft' }));
+
+    // The editor is now rendered (past the prompt) ...
+    await screen.findByRole('region', { name: 'Tools' });
+    expect(
+      screen.queryByRole('alertdialog', { name: /recover unsaved work/i }),
+    ).not.toBeInTheDocument();
+    // ... showing the recovered draft's actual scene data (the shape it
+    // carried, not the persisted BLANK_SCENE's empty shape list) ...
+    expect(screen.getByTestId('scene-shape-s1')).toBeInTheDocument();
+    // ... as unsaved working state, not a re-fetch of the saved version ...
+    expect(screen.getByTestId('editor-save-status')).toHaveTextContent('Unsaved changes');
+    // ... and the saved current version was never touched: no version-save
+    // API call happened anywhere in this flow.
+    expect(mockedSaveSceneVersion).not.toHaveBeenCalled();
   });
 
   it('Discard: awaits both draft deletions before the caller proceeds', async () => {

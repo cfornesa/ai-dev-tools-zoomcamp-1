@@ -5,6 +5,7 @@ from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
     ProjectDetailView,
+    ProjectForkView,
     ProjectListCreateView,
     ProjectPublishView,
     ProjectUnpublishView,
@@ -53,6 +54,11 @@ urlpatterns = [
         "public/projects/<uuid:public_id>/thumbnail.png",
         PublicProjectThumbnailView.as_view(),
         name="public-project-thumbnail",
+    ),
+    path(
+        "public/projects/<uuid:public_id>/fork/",
+        ProjectForkView.as_view(),
+        name="project-fork",
     ),
     path(
         "projects/<uuid:public_id>/versions/",

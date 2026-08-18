@@ -31,6 +31,7 @@ from scenes.gallery import (
 )
 from scenes.models import (
     EditSessionDraft,
+    ForkProvenance,
     Project,
     ProjectActivity,
     SceneVersion,
@@ -391,6 +392,179 @@ class PublicProjectThumbnailView(APIView):
             raise Http404
 
         return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)
+
+
+class ProjectForkNotAvailable(Exception):
+    """Raised inside the locked fork transaction when the source project turns
+    out not to be forkable after all (checked fresh under the lock)."""
+
+
+class ProjectForkView(APIView):
+    """Task 51: atomically fork a public, remix-enabled project's current
+    version into a new private project owned by the requesting user
+    (`POST /api/public/projects/<public_id>/fork/`).
+
+    ## Authorization
+
+    Unlike every owner-only endpoint in this file (which folds "not
+    authenticated" and "not permitted" into the same 404, per Task 13's
+    "don't confirm hidden data" policy), forking gives an anonymous caller
+    a distinct `401` — the acceptance criteria explicitly call out "The
+    Fork action requires authentication," and there is no hidden-data
+    concern here: the source project is already public. An authenticated
+    caller who still isn't allowed to fork (source is private, or its
+    owner has `allow_public_remix` off) gets `404`, matching
+    `PublicProjectDetailView`'s "this route 404s for anyone once the
+    project isn't public/forkable" convention. Both checks go through
+    `Action.PROJECT_FORK` (`scenes/permissions.py`) — never a hand-rolled
+    condition — and the check runs twice: once as a fast pre-check outside
+    any lock, and again, fresh, on the row locked inside the transaction
+    below (an owner could flip `allow_public_remix` off between the two).
+
+    ## Idempotency / duplicate-fork policy (explicit, per the acceptance
+    criteria)
+
+    Forking creates a `Project`, so it reuses that model's *existing*
+    per-owner idempotency key (`Project.creation_request_id`, and its
+    existing `unique_creation_request_per_owner` constraint) rather than
+    inventing a second one — exactly `BlankProjectCreateView`'s (Task 18)
+    and `AIAcceptProposalView`'s (Task 48) established pattern. Policy
+    choice: **same idempotency key returns the existing fork**, not "every
+    submission always forks." A client generates one UUID when the Fork
+    button is first clicked and sends it as `client_request_id`; a
+    repeated submission with that same id for the same user — a
+    double-click, a retried request after a dropped response, or two
+    genuinely concurrent requests racing each other — never creates a
+    second fork. It returns the fork already created by the original
+    request (`200`, not `201`). This holds under real concurrency because
+    the uniqueness is a database constraint, not just an application-level
+    pre-check: whichever request's transaction commits first wins the
+    unique index; the other's `IntegrityError` is caught and resolved to
+    the winner's project. See
+    `tests/test_project_fork_api.py`'s PostgreSQL-gated concurrency test.
+    Omitting `client_request_id` skips deduplication entirely (each such
+    request always creates a new fork) — the frontend Fork button always
+    generates one, per this task's UI requirements.
+
+    ## Atomicity and rollback
+
+    One `transaction.atomic()` block: lock the source project row, create
+    the new private `Project`, create its first `SceneVersion` (an
+    independent deep copy of the source's *current* scene, `origin=fork`,
+    `fork_source_version` pointing at the source version), advance the new
+    project's `current_version` to it, and create the `ForkProvenance` row
+    — all in one transaction. A failure at any step (including the
+    just-in-case scene re-validation below) raises and rolls back the
+    entire block; no partial project/version/provenance row is ever left
+    behind. See `tests/test_project_fork_api.py`'s PostgreSQL-gated
+    rollback test (failure injected after the project row is created).
+
+    ## Independent copy
+
+    `scene_json` is `copy.deepcopy`-ed from the source version and given a
+    fresh scene id — exactly `TemplateCloneView`'s (Task 20) own
+    no-shared-reference guarantee. Editing the fork afterward only ever
+    creates a new `SceneVersion` on the *fork's own* project; there is no
+    code path from there back to the source project's data.
+
+    ## Provenance durability
+
+    `ForkProvenance.source_project`/`source_version` (Task 10) are set
+    once, here, and never rewritten by this or any other view in this
+    codebase. Both FKs are `on_delete=models.PROTECT`
+    (`scenes/models.py`), so the source project/version can't even be
+    hard-deleted out from under an existing fork's provenance record.
+    Soft-deleting the source project (Task 13, `is_deleted=True`),
+    unpublishing it, or saving new versions on it are all plain field
+    updates on the source `Project`/new `SceneVersion` rows — none of them
+    touch this `ForkProvenance` row, so the recorded source identity never
+    changes after fork time.
+    """
+
+    def post(self, request, public_id):
+        source = _get_project_or_404(public_id)
+
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not can(request.user, Action.PROJECT_FORK, source):
+            raise Http404
+
+        raw_request_id = request.data.get("client_request_id")
+        request_id = None
+        if raw_request_id is not None:
+            try:
+                request_id = uuid.UUID(str(raw_request_id))
+            except (ValueError, TypeError):
+                return Response(
+                    {"client_request_id": ["Must be a valid UUID."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            existing = Project.objects.filter(
+                owner=request.user, creation_request_id=request_id
+            ).first()
+            if existing is not None:
+                return Response(ProjectSerializer(existing).data, status=status.HTTP_200_OK)
+
+        try:
+            with transaction.atomic():
+                locked_source = Project.objects.select_for_update().get(pk=source.pk)
+                if not can(request.user, Action.PROJECT_FORK, locked_source):
+                    raise ProjectForkNotAvailable
+                if locked_source.current_version_id is None:
+                    raise ProjectForkNotAvailable
+                source_version = locked_source.current_version
+
+                cloned_scene = copy.deepcopy(source_version.scene_json)
+                cloned_scene["id"] = f"scene-{uuid.uuid4()}"
+                result = validate_scene(cloned_scene)
+                if not result.valid:  # pragma: no cover — the source version was already valid
+                    raise ProjectForkNotAvailable
+
+                forked_project = Project.objects.create(
+                    owner=request.user,
+                    title=locked_source.title,
+                    creation_request_id=request_id,
+                )
+                version = SceneVersion.objects.create(
+                    project=forked_project,
+                    sequence=1,
+                    scene_json=cloned_scene,
+                    created_by=request.user,
+                    origin=SceneVersion.Origin.FORK,
+                    fork_source_version=source_version,
+                    change_label=f"Forked from {locked_source.title}",
+                )
+                forked_project.current_version = version
+                forked_project.save(update_fields=["current_version", "updated_at"])
+                ForkProvenance.objects.create(
+                    project=forked_project,
+                    source_project=locked_source,
+                    source_version=source_version,
+                )
+                ProjectActivity.objects.create(
+                    project=forked_project,
+                    actor=request.user,
+                    action_type=ProjectActivity.ActionType.FORKED,
+                    metadata={
+                        "source_project": str(locked_source.public_id),
+                        "source_version_sequence": source_version.sequence,
+                    },
+                )
+        except IntegrityError:
+            # A concurrent duplicate submission won the race on
+            # creation_request_id's unique constraint between our pre-check
+            # above and this transaction's insert — same fallback shape as
+            # BlankProjectCreateView.post. No partial project/version/
+            # provenance from this request was left behind.
+            existing = Project.objects.get(owner=request.user, creation_request_id=request_id)
+            return Response(ProjectSerializer(existing).data, status=status.HTTP_200_OK)
+        except ProjectForkNotAvailable as exc:
+            raise Http404 from exc
+        except Project.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(ProjectSerializer(forked_project).data, status=status.HTTP_201_CREATED)
 
 
 class SceneVersionListCreateView(APIView):

@@ -38,7 +38,11 @@ def test_create_project_with_defaults(user):
     assert project.title == "Untitled animation"
     assert project.description == ""
     assert project.visibility == Project.Visibility.PRIVATE
-    assert project.allow_public_remix is False
+    # Task 51: `_docs/plan.md`'s "Remix setting" — "Public projects have
+    # allow_public_remix = true by default" — this project is still
+    # private, but the field's default value is what a later publish
+    # inherits unless the owner has already changed it.
+    assert project.allow_public_remix is True
     assert project.current_version is None
     assert project.public_id is not None
 

@@ -50,7 +50,15 @@ class Project(models.Model):
     visibility = models.CharField(
         max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
     )
-    allow_public_remix = models.BooleanField(default=False)
+    # Task 51: `_docs/plan.md`'s "Remix setting" section is explicit —
+    # "Public projects have `allow_public_remix = true` by default." Every
+    # project starts `private` regardless (see `visibility` above), so this
+    # default is only ever observable once a project becomes public: an
+    # owner who never touches the checkbox in `ProjectMetadataForm.tsx`
+    # gets remixable-by-default the moment they publish, and can turn it
+    # off (via the plain metadata PATCH, `ProjectMetadataSerializer` —
+    # never a version-creating action) before or after publishing.
+    allow_public_remix = models.BooleanField(default=True)
     tags = models.JSONField(default=list, blank=True)
     thumbnail_choice = models.CharField(max_length=50, default="auto", blank=True)
     # Off by default per _docs/plan.md's "Optional attribution" section.

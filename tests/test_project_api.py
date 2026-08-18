@@ -50,7 +50,8 @@ def test_create_project_defaults(owner_client):
     assert body["title"] == "Untitled animation"
     assert body["description"] == ""
     assert body["visibility"] == "private"
-    assert body["allow_public_remix"] is False
+    # Task 51: remix defaults to enabled (`_docs/plan.md`'s "Remix setting").
+    assert body["allow_public_remix"] is True
     assert Project.objects.count() == 1
     assert Project.objects.get().owner_id
 

@@ -309,14 +309,18 @@ describe('moveGraphNode', () => {
 
 describe('Task 37: transform node catalog (smoke)', () => {
   const transformTypes = ['mapRange', 'clamp', 'smooth', 'invert', 'add', 'multiply', 'lerp'];
+  // Task 40 adds one more transform-family node type (`noise`) on top of
+  // Task 37's original 7 — see behaviorRuntime.ts's "Random node registry"
+  // doc comment for why `noise` belongs in `transform`.
+  const allTransformTypes = [...transformTypes, 'noise'];
 
-  it('lists all 7 transform node types in the catalog, family "transform"', () => {
+  it('lists all 7 Task 37 transform node types in the catalog, family "transform"', () => {
     for (const type of transformTypes) {
       expect(NODE_TYPE_CATALOG[type]).toBeDefined();
       expect(NODE_TYPE_CATALOG[type].family).toBe('transform');
     }
     const creatable = creatableNodeTypes().filter((n) => n.family === 'transform');
-    expect(creatable.map((n) => n.type).sort()).toEqual([...transformTypes].sort());
+    expect(creatable.map((n) => n.type).sort()).toEqual([...allTransformTypes].sort());
   });
 
   it('adds each transform node type to a scene via addGraphNode', () => {

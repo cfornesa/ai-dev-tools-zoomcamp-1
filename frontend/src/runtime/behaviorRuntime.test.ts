@@ -24,9 +24,17 @@ import {
   evaluateLerp,
   evaluateMapRange,
   evaluateMultiply,
+  evaluateNoise,
   evaluateOscillator,
+  evaluateRandomChoice,
+  evaluateRandomEvent,
+  evaluateRandomRange,
   evaluateSmooth,
   evaluateTimer,
+  createNoiseFingerprint,
+  parseChoiceList,
+  sceneUsesRandomness,
+  seedForGraphNode,
   validateBehaviorGraph,
   validateConditionNodeParams,
   validateFlowNodeParams,
@@ -38,6 +46,7 @@ import {
   type RuntimeInput,
   type SmoothStepState,
 } from './behaviorRuntime';
+import { createSeededRandom } from './particleSystem';
 import type { SceneDocument } from '../api/projects';
 
 // A scene carrying exactly one "Follow hand" card (Task 34): indexTipX ->
@@ -1843,5 +1852,355 @@ describe('Task 38: end-to-end graph execution', () => {
         .tick(input(250, { testSignal: 20 }))
         .continuous.find((c) => c.targetProperty === 'positionX')?.value,
     ).toBe(20);
+  });
+});
+
+// --- Task 40: visual randomness ------------------------------------------
+
+function sceneWithRandomness(
+  nodes: Array<{
+    id: string;
+    family: string;
+    type: string;
+    params: Record<string, unknown>;
+    position: { x: number; y: number };
+  }>,
+  connections: Array<{
+    id: string;
+    fromNodeId: string;
+    fromPort: string;
+    toNodeId: string;
+    toPort: string;
+  }>,
+  randomness: { seed: number; enabled: boolean } = { seed: 483920, enabled: true },
+): SceneDocument {
+  return { ...sceneWithGraph(nodes, connections), randomness };
+}
+
+describe('Task 40: seedForGraphNode/parseChoiceList (pure helpers)', () => {
+  it('is deterministic for the same (sceneSeed, nodeId) pair', () => {
+    expect(seedForGraphNode(483920, 'node-a')).toBe(seedForGraphNode(483920, 'node-a'));
+  });
+
+  it('differs for a different node id given the same scene seed', () => {
+    expect(seedForGraphNode(483920, 'node-a')).not.toBe(seedForGraphNode(483920, 'node-b'));
+  });
+
+  it('differs for a different scene seed given the same node id', () => {
+    expect(seedForGraphNode(1, 'node-a')).not.toBe(seedForGraphNode(2, 'node-a'));
+  });
+
+  it('parseChoiceList parses a comma-separated finite-number list', () => {
+    expect(parseChoiceList('0, 90, 180, 270')).toEqual([0, 90, 180, 270]);
+    expect(parseChoiceList('5')).toEqual([5]);
+  });
+
+  it('parseChoiceList rejects an empty list, a blank item, and a non-finite item', () => {
+    expect(parseChoiceList('')).toBeNull();
+    expect(parseChoiceList('1,,3')).toBeNull();
+    expect(parseChoiceList('1,abc,3')).toBeNull();
+    expect(parseChoiceList('1,NaN,3')).toBeNull();
+  });
+});
+
+describe('Task 40: evaluateRandomRange/evaluateRandomChoice/evaluateRandomEvent (pure, injected RNG)', () => {
+  it('evaluateRandomRange stays within [min, max] and is deterministic for a given RNG stream', () => {
+    const params = { min: 10, max: 20 };
+    const a = evaluateRandomRange(createSeededRandom(42), params);
+    const b = evaluateRandomRange(createSeededRandom(42), params);
+    expect(a).toBe(b);
+    expect(a).toBeGreaterThanOrEqual(10);
+    expect(a).toBeLessThanOrEqual(20);
+  });
+
+  it('evaluateRandomChoice always returns an item from the list, deterministically for a given RNG stream', () => {
+    const choices = [1, 2, 3, 4, 5];
+    const a = evaluateRandomChoice(createSeededRandom(7), choices);
+    const b = evaluateRandomChoice(createSeededRandom(7), choices);
+    expect(a).toBe(b);
+    expect(choices).toContain(a);
+  });
+
+  it('evaluateRandomEvent is a deterministic probability gate for a given RNG stream', () => {
+    const rngA = createSeededRandom(99);
+    const rngB = createSeededRandom(99);
+    const sequenceA = [0, 1, 2].map(() => evaluateRandomEvent(rngA, { probability: 0.5 }));
+    const sequenceB = [0, 1, 2].map(() => evaluateRandomEvent(rngB, { probability: 0.5 }));
+    expect(sequenceA).toEqual(sequenceB);
+  });
+
+  it('evaluateRandomEvent always fires at probability 1 and never fires at probability 0', () => {
+    const rng = createSeededRandom(1);
+    expect(evaluateRandomEvent(rng, { probability: 1 })).toBe(true);
+    expect(evaluateRandomEvent(rng, { probability: 0 })).toBe(false);
+  });
+});
+
+describe('Task 40: evaluateNoise (bounded, frame-rate-independent wobble)', () => {
+  it('never departs from base by more than amplitude', () => {
+    const fingerprint = createNoiseFingerprint(createSeededRandom(5));
+    const params = { amplitude: 2, periodMs: 500 };
+    for (let t = 0; t < 5000; t += 37) {
+      const value = evaluateNoise(10, t, fingerprint, params);
+      expect(value).toBeGreaterThanOrEqual(8);
+      expect(value).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it('is a pure function of (base, timestamp, fingerprint, params): same inputs, same output', () => {
+    const fingerprint = createNoiseFingerprint(createSeededRandom(5));
+    const params = { amplitude: 1, periodMs: 1000 };
+    expect(evaluateNoise(0, 250, fingerprint, params)).toBe(
+      evaluateNoise(0, 250, fingerprint, params),
+    );
+  });
+});
+
+describe('Task 40: param validation (surfaced before execution)', () => {
+  it('randomRange rejects min > max and non-finite bounds', () => {
+    expect(validateInputNodeParams('randomRange', { min: 10, max: 5 })).toMatch(
+      /must not be greater/,
+    );
+    expect(validateInputNodeParams('randomRange', { min: Number.NaN, max: 5 })).toMatch(
+      /finite number/,
+    );
+    expect(
+      validateInputNodeParams('randomRange', { min: 0, max: Number.POSITIVE_INFINITY }),
+    ).toMatch(/finite number/);
+    expect(validateInputNodeParams('randomRange', { min: 0, max: 10 })).toBeNull();
+  });
+
+  it('randomChoice rejects an empty list, a non-numeric item, and an oversized list', () => {
+    expect(validateInputNodeParams('randomChoice', { choices: '' })).toMatch(/comma-separated/);
+    expect(validateInputNodeParams('randomChoice', { choices: '1,,3' })).toMatch(/comma-separated/);
+    expect(validateInputNodeParams('randomChoice', { choices: '1,abc' })).toMatch(
+      /comma-separated/,
+    );
+    expect(validateInputNodeParams('randomChoice', { choices: '1,2,3,4,5,6,7,8,9' })).toMatch(
+      /exceeding the limit/,
+    );
+    expect(validateInputNodeParams('randomChoice', { choices: '1,2,3,4,5,6,7,8' })).toBeNull();
+    expect(validateInputNodeParams('randomChoice', { choices: '1,2,3' })).toBeNull();
+  });
+
+  it('noise rejects a negative amplitude and a non-positive periodMs', () => {
+    expect(validateTransformNodeParams('noise', { amplitude: -1 })).toMatch(/must not be negative/);
+    expect(validateTransformNodeParams('noise', { amplitude: Number.NaN })).toMatch(
+      /finite number/,
+    );
+    expect(validateTransformNodeParams('noise', { periodMs: 0 })).toMatch(/greater than 0/);
+    expect(validateTransformNodeParams('noise', { amplitude: 0.5, periodMs: 500 })).toBeNull();
+  });
+
+  it('randomEvent rejects a probability outside [0, 1]', () => {
+    expect(validateFlowNodeParams('randomEvent', { probability: 1.5 })).toMatch(/between 0 and 1/);
+    expect(validateFlowNodeParams('randomEvent', { probability: -0.1 })).toMatch(/between 0 and 1/);
+    expect(validateFlowNodeParams('randomEvent', { probability: Number.NaN })).toMatch(
+      /finite number/,
+    );
+    expect(validateFlowNodeParams('randomEvent', { probability: 0.5 })).toBeNull();
+  });
+
+  it('an invalid random node param is rejected by validateBehaviorGraph before execution', () => {
+    const nodes = [
+      {
+        id: 'r1',
+        family: 'input',
+        type: 'randomRange',
+        params: { min: 10, max: 5 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'r1', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithRandomness(nodes, connections);
+    const result = validateBehaviorGraph(scene);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0].message).toMatch(/must not be greater/);
+    expect(() => createBehaviorRuntime(scene)).toThrow(BehaviorGraphValidationError);
+  });
+});
+
+describe('Task 40: end-to-end graph execution — reproducibility and no reroll', () => {
+  it('randomRange: two separate runtimes for the same scene/seed produce the identical value', () => {
+    const nodes = [
+      {
+        id: 'r1',
+        family: 'input',
+        type: 'randomRange',
+        params: { min: 0, max: 100 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'r1', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithRandomness(nodes, connections, { seed: 483920, enabled: true });
+    const valueA = tickPositionX(scene, input(0, {}));
+    const valueB = tickPositionX(scene, input(0, {}));
+    expect(valueA).toBe(valueB);
+    expect(valueA).toBeGreaterThanOrEqual(0);
+    expect(valueA).toBeLessThanOrEqual(100);
+  });
+
+  it('randomRange: a different seed produces a different value for the same node', () => {
+    const nodes = [
+      {
+        id: 'r1',
+        family: 'input',
+        type: 'randomRange',
+        params: { min: 0, max: 1000 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'r1', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const sceneA = sceneWithRandomness(nodes, connections, { seed: 1, enabled: true });
+    const sceneB = sceneWithRandomness(nodes, connections, { seed: 2, enabled: true });
+    expect(tickPositionX(sceneA, input(0, {}))).not.toBe(tickPositionX(sceneB, input(0, {})));
+  });
+
+  it('randomRange: never rerolls across ticks within one runtime (no V1 control rerolls a seed)', () => {
+    const nodes = [
+      {
+        id: 'r1',
+        family: 'input',
+        type: 'randomRange',
+        params: { min: 0, max: 1000000 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'r1', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithRandomness(nodes, connections);
+    const runtime = createBehaviorRuntime(scene);
+    const values = [0, 16.667, 33.334, 5000].map(
+      (t) =>
+        runtime.tick(input(t, {})).continuous.find((c) => c.targetProperty === 'positionX')?.value,
+    );
+    expect(new Set(values).size).toBe(1); // every tick sees the exact same cached value
+  });
+
+  it('randomChoice: always emits one of the declared choices, identically across two runtimes with the same seed', () => {
+    const nodes = [
+      {
+        id: 'c1node',
+        family: 'input',
+        type: 'randomChoice',
+        params: { choices: '10,20,30,40' },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'conn', fromNodeId: 'c1node', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithRandomness(nodes, connections, { seed: 12345, enabled: true });
+    const valueA = tickPositionX(scene, input(0, {}));
+    const valueB = tickPositionX(scene, input(0, {}));
+    expect(valueA).toBe(valueB);
+    expect([10, 20, 30, 40]).toContain(valueA);
+  });
+
+  it('noise: reproduces the identical sequence for the same scene/seed/timestamps, run twice', () => {
+    const nodes = [
+      {
+        id: 'noiseNode',
+        family: 'transform',
+        type: 'noise',
+        params: { amplitude: 5, periodMs: 800 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'conn', fromNodeId: 'noiseNode', fromPort: 'out', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithRandomness(nodes, connections, { seed: 42, enabled: true });
+    const timestamps = [0, 33.334, 66.667, 500, 1234.5];
+
+    const runtimeA = createBehaviorRuntime(scene);
+    const sequenceA = timestamps.map(
+      (t) =>
+        runtimeA.tick(input(t, {})).continuous.find((c) => c.targetProperty === 'positionX')?.value,
+    );
+    const runtimeB = createBehaviorRuntime(scene);
+    const sequenceB = timestamps.map(
+      (t) =>
+        runtimeB.tick(input(t, {})).continuous.find((c) => c.targetProperty === 'positionX')?.value,
+    );
+    expect(sequenceA).toEqual(sequenceB);
+  });
+
+  it('noise: stays bounded by amplitude around an unconnected (default-0) input', () => {
+    const nodes = [
+      {
+        id: 'noiseNode',
+        family: 'transform',
+        type: 'noise',
+        params: { amplitude: 3, periodMs: 400 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'conn', fromNodeId: 'noiseNode', fromPort: 'out', toNodeId: 'out-node', toPort: 'in' },
+    ];
+    const scene = sceneWithRandomness(nodes, connections);
+    const runtime = createBehaviorRuntime(scene);
+    for (let t = 0; t < 3000; t += 97) {
+      const value = runtime
+        .tick(input(t, {}))
+        .continuous.find((c) => c.targetProperty === 'positionX')?.value as number;
+      expect(value).toBeGreaterThanOrEqual(-3);
+      expect(value).toBeLessThanOrEqual(3);
+    }
+  });
+});
+
+describe('Task 40: sceneUsesRandomness (drives the "Randomness enabled" indicator)', () => {
+  it('is false for a scene with randomness.enabled false and no random graph nodes', () => {
+    const scene = sceneWithGraph([], []);
+    expect(sceneUsesRandomness(scene)).toBe(false);
+  });
+
+  it('is true when randomness.enabled is true, even with no random graph nodes', () => {
+    const scene = { ...sceneWithGraph([], []), randomness: { seed: 1, enabled: true } };
+    expect(sceneUsesRandomness(scene)).toBe(true);
+  });
+
+  it('is true when the graph contains a random node type, even if randomness.enabled is false', () => {
+    const nodes = [
+      {
+        id: 'r1',
+        family: 'input',
+        type: 'randomRange',
+        params: { min: 0, max: 1 },
+        position: { x: 0, y: 0 },
+      },
+    ];
+    const scene = { ...sceneWithGraph(nodes, []), randomness: { seed: 1, enabled: false } };
+    expect(sceneUsesRandomness(scene)).toBe(true);
+  });
+
+  it('is false for a graph containing only non-random node types', () => {
+    const nodes = [
+      {
+        id: 'osc',
+        family: 'input',
+        type: 'oscillator',
+        params: {},
+        position: { x: 0, y: 0 },
+      },
+    ];
+    const scene = { ...sceneWithGraph(nodes, []), randomness: { seed: 0, enabled: false } };
+    expect(sceneUsesRandomness(scene)).toBe(false);
   });
 });

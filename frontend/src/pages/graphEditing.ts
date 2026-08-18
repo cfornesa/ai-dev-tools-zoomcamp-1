@@ -430,6 +430,57 @@ export const NODE_TYPE_CATALOG: Record<
     paramFields: [{ key: 'milliseconds', label: 'Cooldown (ms)', kind: 'number', min: 0 }],
     defaultParams: { milliseconds: 500 },
   },
+  // --- Task 40 random nodes -----------------------------------------
+  // `paramFields`/`defaultParams` mirror `behaviorRuntime.ts`'s
+  // `RANDOM_RANGE_DEFAULTS`/`RANDOM_CHOICE_DEFAULTS`/`NOISE_DEFAULTS`/
+  // `RANDOM_EVENT_DEFAULTS` exactly — see that module's "Random node
+  // registry" doc comment for the exact documented semantics/ranges.
+  randomRange: {
+    family: 'input',
+    label: 'Random range',
+    inputs: [],
+    outputs: [{ port: 'value', label: 'Value', dataType: 'value' }],
+    paramFields: [
+      { key: 'min', label: 'Min', kind: 'number' },
+      { key: 'max', label: 'Max', kind: 'number' },
+    ],
+    defaultParams: { min: 0, max: 1 },
+  },
+  randomChoice: {
+    family: 'input',
+    label: 'Random choice',
+    inputs: [],
+    outputs: [{ port: 'value', label: 'Value', dataType: 'value' }],
+    paramFields: [
+      {
+        key: 'choices',
+        label: 'Choices (comma-separated numbers, up to 8)',
+        kind: 'text',
+      },
+    ],
+    defaultParams: { choices: '0,1' },
+  },
+  noise: {
+    family: 'transform',
+    label: 'Noise / wobble',
+    inputs: [{ port: 'in', label: 'Value', dataType: 'value' }],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [
+      { key: 'amplitude', label: 'Amplitude', kind: 'number', min: 0 },
+      { key: 'periodMs', label: 'Period (ms)', kind: 'number', min: 0 },
+    ],
+    defaultParams: { amplitude: 0.1, periodMs: 1000 },
+  },
+  randomEvent: {
+    family: 'flow',
+    label: 'Random on event',
+    inputs: [{ port: 'trigger', label: 'Trigger', dataType: 'event' }],
+    outputs: [{ port: 'trigger', label: 'Trigger', dataType: 'event' }],
+    paramFields: [
+      { key: 'probability', label: 'Probability (0-1)', kind: 'number', min: 0, max: 1 },
+    ],
+    defaultParams: { probability: 0.5 },
+  },
 };
 
 export function creatableNodeTypes(): Array<{ family: NodeFamily; type: string; label: string }> {

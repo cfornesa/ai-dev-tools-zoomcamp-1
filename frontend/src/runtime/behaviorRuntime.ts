@@ -100,6 +100,7 @@
  */
 import type { SceneDocument } from '../api/projects';
 import { validateScene, type SceneValidationError } from '../validation/scene';
+import { createSeededRandom } from './particleSystem';
 
 // --- Numeric policy (see module doc comment) --------------------------
 
@@ -182,11 +183,25 @@ export const ALLOWED_NODE_TYPES_BY_FAMILY: Record<string, ReadonlySet<string>> =
   // family list explicitly names "Timer" under Input, and both are
   // self-contained value *sources* (no `in` port) exactly like
   // `handSignal`/`gestureEvent`, not transforms of an upstream value.
-  input: new Set(['handSignal', 'gestureEvent', 'timer', 'oscillator']),
-  transform: new Set(['mapRange', 'clamp', 'smooth', 'invert', 'add', 'multiply', 'lerp']), // Task 37.
+  // `randomRange`/`randomChoice` (Task 40) join `timer`/`oscillator` here for
+  // the same reason: self-contained value *sources* with no `in` port — see
+  // the "Random node registry" doc comment below.
+  input: new Set([
+    'handSignal',
+    'gestureEvent',
+    'timer',
+    'oscillator',
+    'randomRange',
+    'randomChoice',
+  ]),
+  // `noise` (Task 40) joins the Task 37 numeric transforms — it modifies an
+  // existing upstream value (bounded wobble), exactly like Smooth.
+  transform: new Set(['mapRange', 'clamp', 'smooth', 'invert', 'add', 'multiply', 'lerp', 'noise']), // Task 37 + Task 40's `noise`.
   condition: new Set(['ifElse']), // Task 38.
   visual: new Set(['shapeProperty', 'groupProperty', 'particleEmitter']),
-  flow: new Set(['trigger', 'delay', 'cooldown']), // Task 38 adds delay/cooldown.
+  // `randomEvent` (Task 40) joins `delay`/`cooldown` here — it gates an
+  // event's pass-through, exactly like Cooldown gates one on elapsed time.
+  flow: new Set(['trigger', 'delay', 'cooldown', 'randomEvent']),
   output: new Set(),
 };
 
@@ -227,6 +242,16 @@ export const NODE_PORTS: Record<string, { out?: ReadonlySet<string>; in?: Readon
   ifElse: { in: new Set(['in']), out: new Set(['true', 'false']) },
   delay: { in: new Set(['in']), out: new Set(['out']) },
   cooldown: { in: new Set(['trigger']), out: new Set(['trigger']) },
+  // Task 40 random nodes — see the "Random node registry" doc comment
+  // below. `randomRange`/`randomChoice` are sources (no `in` port),
+  // matching `timer`/`oscillator`. `noise` is a single numeric
+  // pass-through-plus-wobble, matching the Task 37 transforms. `randomEvent`
+  // gates an *event*, matching `cooldown`'s existing `trigger`-in/`trigger`-out
+  // convention.
+  randomRange: { out: new Set(['value']) },
+  randomChoice: { out: new Set(['value']) },
+  noise: { in: new Set(['in']), out: new Set(['out']) },
+  randomEvent: { in: new Set(['trigger']), out: new Set(['trigger']) },
 };
 
 // --- Transform node registry (Task 37) ----------------------------------
@@ -399,6 +424,22 @@ export function validateTransformNodeParams(
       if (!isFiniteNumberParam(params.t) || params.t < 0 || params.t > 1) {
         return `'t' must be a number between 0 and 1.`;
       }
+      return null;
+    }
+    case 'noise': {
+      if (params.amplitude !== undefined) {
+        if (!isFiniteNumberParam(params.amplitude)) {
+          return `'amplitude' must be a finite number.`;
+        }
+        if (params.amplitude < 0) {
+          return `'amplitude' (${params.amplitude}) must not be negative.`;
+        }
+      }
+      if (params.periodMs !== undefined && !isFiniteNumberParam(params.periodMs)) {
+        return `'periodMs' must be a finite number.`;
+      }
+      const periodMs = numberParam(params, 'periodMs', NOISE_DEFAULTS.periodMs);
+      if (periodMs <= 0) return `'periodMs' (${periodMs}) must be greater than 0.`;
       return null;
     }
     default:
@@ -774,6 +815,30 @@ export function validateInputNodeParams(
       if (durationMs <= 0) return `'durationMs' (${durationMs}) must be greater than 0.`;
       return null;
     }
+    case 'randomRange': {
+      if (params.min !== undefined && !isFiniteNumberParam(params.min)) {
+        return `'min' must be a finite number.`;
+      }
+      if (params.max !== undefined && !isFiniteNumberParam(params.max)) {
+        return `'max' must be a finite number.`;
+      }
+      const min = numberParam(params, 'min', RANDOM_RANGE_DEFAULTS.min);
+      const max = numberParam(params, 'max', RANDOM_RANGE_DEFAULTS.max);
+      if (min > max) return `'min' (${min}) must not be greater than 'max' (${max}).`;
+      return null;
+    }
+    case 'randomChoice': {
+      const raw =
+        typeof params.choices === 'string' ? params.choices : RANDOM_CHOICE_DEFAULTS.choices;
+      const choices = parseChoiceList(raw);
+      if (choices === null) {
+        return `'choices' must be a comma-separated list of at least 1 finite number (e.g. '0,90,180').`;
+      }
+      if (choices.length > MAX_RANDOM_CHOICE_ITEMS) {
+        return `'choices' has ${choices.length} items, exceeding the limit of ${MAX_RANDOM_CHOICE_ITEMS}.`;
+      }
+      return null;
+    }
     default:
       return null;
   }
@@ -839,9 +904,274 @@ export function validateFlowNodeParams(
       if (milliseconds < 0) return `'milliseconds' (${milliseconds}) must not be negative.`;
       return null;
     }
+    case 'randomEvent': {
+      if (params.probability !== undefined && !isFiniteNumberParam(params.probability)) {
+        return `'probability' must be a finite number.`;
+      }
+      const probability = numberParam(params, 'probability', RANDOM_EVENT_DEFAULTS.probability);
+      if (probability < 0 || probability > 1) {
+        return `'probability' (${probability}) must be between 0 and 1.`;
+      }
+      return null;
+    }
     default:
       return null; // 'trigger': no configurable params.
   }
+}
+
+// --- Random node registry (Task 40) -------------------------------------
+
+/**
+ * Documented typed inputs/outputs/defaults/edge cases for the 4 V1 visual
+ * randomness primitives (`_docs/plan.md`'s "Visual randomness" section):
+ * random value within a declared range, random choice from a small
+ * declared list, random on event, and bounded noise/wobble. `_docs/plan.md`
+ * names these primitives and their rules (seeded, editor/AI-generated seed
+ * only, never manually re-rolled, preserved across
+ * duplicate/fork/restore/export) but not a family assignment or exact
+ * defaults, so — following the same "this module's own documented choice"
+ * convention as the Task 37/38 registries above — every default and every
+ * family placement below is this module's own documented choice, chosen
+ * consistently with the existing registries' reasoning.
+ *
+ * ## Family assignment
+ *
+ * `randomRange`/`randomChoice` (`input` family): both are self-contained
+ * value *sources* with no upstream `in` port, structurally identical to
+ * `timer`/`oscillator` (see that registry's "Family assignment" doc note
+ * for the same reasoning). `noise` (`transform` family): it wobbles an
+ * *existing* upstream value, exactly like `smooth` transforms one, so it
+ * belongs with the other Task 37 transforms rather than the sources.
+ * `randomEvent` (`flow` family): it gates an event's pass-through,
+ * structurally identical to `cooldown` (`in`/`out` both named `trigger`,
+ * event data type) — see `graphEditing.ts`'s `PORT_DATA_TYPES`.
+ *
+ * ## Seeding model (the acceptance-criteria core of this task)
+ *
+ * Every one of these 4 node types derives its randomness from
+ * `scene.randomness.seed` (`BehaviorRuntime.seed`) combined with the node's
+ * own `id` via `seedForGraphNode` below — never from `Math.random()`,
+ * `Date.now()`, or any other non-reproducible source. Combining the scene
+ * seed with the node id (rather than sharing one PRNG stream across every
+ * random node) means adding, removing, or reordering *other* nodes in the
+ * graph never perturbs an unrelated random node's value — each node's
+ * randomness is independently reproducible from `(seed, nodeId)` alone,
+ * which is what "the same scene, seed, timestamps, and inputs produce the
+ * same random sequence" requires: nothing about *when* a node happens to
+ * be evaluated (tick order, which other nodes exist) can change its value.
+ * `createSeededRandom` (`particleSystem.ts`, Task 39) is reused verbatim as
+ * the underlying PRNG — no second RNG implementation, per this task's
+ * explicit instruction.
+ *
+ * **No V1 control rerolls a seed**: `randomRange`/`randomChoice` compute
+ * their value *once*, the first time the node is evaluated for a given
+ * `BehaviorRuntime` instance, and cache it for the runtime's lifetime (see
+ * `randomSourceValueByGraphNode` in `createBehaviorRuntime`) — a scene
+ * reload (new `BehaviorRuntime`, same `scene.randomness.seed`) reproduces
+ * the identical value, but nothing re-rolls it mid-session. `noise` is a
+ * pure function of `(timestamp, seed, nodeId, params)` with no persisted
+ * state at all (like `oscillator`), so it's trivially reproducible and
+ * frame-rate independent. `randomEvent` advances a per-node seeded RNG
+ * stream once per *event occurrence* (not per tick) — see its own doc
+ * section below — so "same seed, same sequence of event occurrences"
+ * reproduces the same sequence of pass/fail decisions; nothing about this
+ * ever replaces `scene.randomness.seed` itself.
+ *
+ * ## Random range (`randomRange`, family `input`)
+ *
+ * No input port; one output port `value`. Params: `min`/`max` (finite
+ * numbers, default `0`/`1`; `min <= max` required, the same invariant as
+ * Task 37's Clamp/Invert — `min > max` is an invalid range, rejected by
+ * `validateInputNodeParams` before any tick runs). Value = one draw from
+ * `[min, max]` via the node's seeded RNG (see "Seeding model" above),
+ * computed once and held for the runtime's lifetime.
+ *
+ * ## Random choice (`randomChoice`, family `input`)
+ *
+ * No input port; one output port `value`. Param: `choices` — a
+ * comma-separated string of finite numbers (e.g. `"0,90,180,270"`), the
+ * only representation possible given `scene.schema.json`'s `graphNode.params`
+ * leaf-value-only constraint (no arrays or nested structures — see
+ * `schema/README.md`'s "No executable code" section). Must contain at
+ * least 1 and at most `MAX_RANDOM_CHOICE_ITEMS` (8) comma-separated
+ * finite-number items — an empty list or a list beyond the "small declared
+ * list" plan.md calls for is rejected by `validateInputNodeParams`, never
+ * silently truncated. Value = one item drawn uniformly from the parsed
+ * list via the node's seeded RNG, computed once and held for the runtime's
+ * lifetime (same "no reroll" policy as Random range).
+ *
+ * ## Noise / wobble (`noise`, family `transform`)
+ *
+ * One input port `in` (numeric, optional — an unconnected `in` defaults to
+ * `0`, matching Add/Multiply's unconnected-port policy, since "wobble
+ * around zero" is a sensible default absent an upstream value to wobble).
+ * One output port `out`. Params: `amplitude` (finite number `>= 0`,
+ * default `0.1` — the bound: output never departs from `in` by more than
+ * `amplitude` in either direction, satisfying "bounded noise/wobble")
+ * and `periodMs` (finite number `> 0`, default `1000`, the approximate
+ * time scale of one wobble cycle, the same "> 0" invariant
+ * `oscillator`/`timer` already enforce for their own `periodMs`). Output =
+ * `in + amplitude * blend(t)`, where `blend(t) ∈ [-1, 1]` is a
+ * seed-derived two-octave sum of sines (`seedForGraphNode`-derived phase
+ * offsets and octave weights, computed once per node and cached — see
+ * `noiseFingerprintByGraphNode`), keeping the result smooth and organic
+ * rather than a single bare sine (which would look identical to
+ * `oscillator`) while remaining a pure function of elapsed timestamp, so
+ * it is frame-rate independent by construction exactly like `oscillator`.
+ *
+ * ## Random on event (`randomEvent`, family `flow`)
+ *
+ * One input port `trigger`, one output port `trigger` (both "event" data
+ * type, matching `cooldown`'s convention). Param: `probability` (unit
+ * interval `[0, 1]`, default `0.5`). An event gate: each trigger attempt
+ * passes through with probability `probability`, decided by one draw from
+ * the node's seeded RNG stream *advanced once per attempt* (not per tick),
+ * so the sequence of pass/fail decisions is fully determined by
+ * `(seed, nodeId, the ordered sequence of trigger attempts)` — reproducible
+ * given the same seed and the same sequence of inputs, per this task's
+ * core reproducibility criterion. Like `cooldown`/`trigger` before it
+ * (Task 38's own documented scope boundary), event-typed graph nodes are
+ * validated structurally but not yet executed end to end by `tick()` — see
+ * the module doc comment's "Scope" section; `evaluateRandomEvent` below is
+ * instead a directly unit-tested pure-plus-injected-RNG function, exercised
+ * the same table-driven way `evaluateCooldown`'s tests exercise it without
+ * requiring a full render pipeline.
+ */
+export const RANDOM_RANGE_DEFAULTS = { min: 0, max: 1 };
+export const RANDOM_CHOICE_DEFAULTS = { choices: '0,1' };
+export const NOISE_DEFAULTS = { amplitude: 0.1, periodMs: 1000 };
+export const RANDOM_EVENT_DEFAULTS = { probability: 0.5 };
+
+/** Maximum number of comma-separated items a `randomChoice` node's
+ * `choices` param may declare — `_docs/plan.md`'s "random choice from a
+ * *small* declared list" (emphasis on "small"). This is a per-node-param
+ * invariant, not a scene-wide structural/collection-count cap, so — unlike
+ * `maxShapes`/`maxGraphNodes`/etc. — it deliberately does *not* live in
+ * `schema/limits.json` (which `schema/README.md` scopes to limits both
+ * `scenes/validation.py` and `frontend/src/validation/scene.ts` enforce
+ * identically); Python never validates individual node params (see
+ * `scenes/validation.py`'s module doc comment — only schema shape,
+ * references, and scene-wide limits), matching how every other Task 37/38
+ * node-param invariant (`min <= max`, `periodMs > 0`, `holdTimeMs >= 0`,
+ * ...) is already a local constant in this module rather than a
+ * `limits.json` entry. `8` is this module's own documented choice: room
+ * for e.g. one choice per compass direction or per die face, while staying
+ * obviously "small" as plan.md calls for. */
+export const MAX_RANDOM_CHOICE_ITEMS = 8;
+
+/** Parses a `randomChoice` node's `choices` param (a comma-separated
+ * string of finite numbers) into a number array. Returns `null` if any
+ * item fails to parse as a finite number, or the list is empty — callers
+ * distinguish "invalid" (`null`) from "valid but not yet range-checked
+ * against `MAX_RANDOM_CHOICE_ITEMS`" this way. Whitespace around each item is
+ * trimmed; empty items (e.g. a trailing comma) are rejected rather than
+ * silently dropped, so `validateInputNodeParams` can report a clear error
+ * instead of quietly changing the list length the author wrote. */
+export function parseChoiceList(raw: string): number[] | null {
+  const items = raw.split(',');
+  const values: number[] = [];
+  for (const item of items) {
+    const trimmed = item.trim();
+    if (trimmed === '') return null;
+    const value = Number(trimmed);
+    if (!Number.isFinite(value)) return null;
+    values.push(value);
+  }
+  return values.length > 0 ? values : null;
+}
+
+/** Combines `scene.randomness.seed` with a graph node's own `id` into one
+ * deterministic 32-bit seed for that node's independent `createSeededRandom`
+ * stream — see the "Seeding model" doc note above for why per-node seeds
+ * (rather than one shared stream) are the reproducibility-preserving
+ * choice. Uses the standard FNV-1a 32-bit hash over `nodeId`, XORed with
+ * the scene seed; deterministic and stable across runs/platforms (no
+ * `Math.random`, no object hashing). */
+export function seedForGraphNode(sceneSeed: number, nodeId: string): number {
+  let hash = 0x811c9dc5; // FNV-1a 32-bit offset basis
+  for (let i = 0; i < nodeId.length; i++) {
+    hash ^= nodeId.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193); // FNV-1a 32-bit prime
+  }
+  const base = Number.isFinite(sceneSeed) ? Math.floor(sceneSeed) : 0;
+  return (hash ^ base) >>> 0;
+}
+
+/** Random range: one draw from `[min, max]` via `rng` (a
+ * `createSeededRandom` stream — see the "Seeding model" doc note above for
+ * why the caller owns creating and caching it once per node). Trusts
+ * `min <= max` (already enforced by `validateInputNodeParams`). */
+export function evaluateRandomRange(rng: () => number, params: Record<string, unknown>): number {
+  const min = numberParam(params, 'min', RANDOM_RANGE_DEFAULTS.min);
+  const max = numberParam(params, 'max', RANDOM_RANGE_DEFAULTS.max);
+  return min + rng() * (max - min);
+}
+
+/** Random choice: one item drawn uniformly from `choices` (already parsed
+ * by `parseChoiceList` and validated non-empty) via `rng`. */
+export function evaluateRandomChoice(rng: () => number, choices: readonly number[]): number {
+  const index = Math.min(choices.length - 1, Math.floor(rng() * choices.length));
+  return choices[index];
+}
+
+/** One `noise` node's seed-derived, fixed-for-the-runtime waveform shape —
+ * two octaves' phase offsets and relative weights, computed once from the
+ * node's seeded RNG (see `noiseFingerprintByGraphNode` in
+ * `createBehaviorRuntime`, and the "Noise / wobble" doc section above for
+ * why two octaves rather than a bare sine). */
+export type NoiseFingerprint = {
+  phaseA: number;
+  phaseB: number;
+  weightA: number;
+  weightB: number;
+};
+
+export function createNoiseFingerprint(rng: () => number): NoiseFingerprint {
+  const phaseA = rng() * 2 * Math.PI;
+  const phaseB = rng() * 2 * Math.PI;
+  // Second octave weighted less (0.2-0.5x the first) and at roughly double
+  // the frequency (fixed 2.3x multiplier below), a standard "organic
+  // wobble" shape: dominated by one slow cycle with a faster ripple on top.
+  const weightA = 1;
+  const weightB = 0.2 + rng() * 0.3;
+  return { phaseA, phaseB, weightA, weightB };
+}
+
+/** Noise/wobble: a pure function of elapsed time (see the "Noise / wobble"
+ * doc section above) — no persisted state, so frame-rate independence is
+ * automatic, exactly like `evaluateOscillator`. `base` is the upstream `in`
+ * value (already defaulted to `0` by the caller when unconnected). Output
+ * never departs from `base` by more than `amplitude` in either direction
+ * (the "bounded" in "bounded noise/wobble"). */
+export function evaluateNoise(
+  base: number,
+  timestamp: number,
+  fingerprint: NoiseFingerprint,
+  params: Record<string, unknown>,
+): number {
+  const amplitude = Math.max(0, numberParam(params, 'amplitude', NOISE_DEFAULTS.amplitude));
+  const periodMs = numberParam(params, 'periodMs', NOISE_DEFAULTS.periodMs);
+  const safePeriodMs = periodMs > 0 ? periodMs : NOISE_DEFAULTS.periodMs;
+  const angle = (2 * Math.PI * timestamp) / safePeriodMs;
+  const { phaseA, phaseB, weightA, weightB } = fingerprint;
+  const blend =
+    (weightA * Math.sin(angle + phaseA) + weightB * Math.sin(2.3 * angle + phaseB)) /
+    (weightA + weightB);
+  return base + amplitude * blend;
+}
+
+/** Random on event: one probability-gated draw via `rng`, advanced exactly
+ * once per call (i.e. once per trigger *attempt*, not per tick — see the
+ * "Random on event" doc section above). Not wired into `tick()` yet, same
+ * documented scope boundary as `evaluateCooldown` — see that function's own
+ * doc comment. */
+export function evaluateRandomEvent(rng: () => number, params: Record<string, unknown>): boolean {
+  const probability = clamp(
+    numberParam(params, 'probability', RANDOM_EVENT_DEFAULTS.probability),
+    0,
+    1,
+  );
+  return rng() < probability;
 }
 
 /** Pure comparison for one If/Else node: see the "If/Else" doc section
@@ -1166,6 +1496,33 @@ function sceneGraph(scene: SceneDocument): {
       ? (graph.connections as Array<Record<string, unknown>>)
       : [],
   };
+}
+
+/** The 4 Task 40 random node types, across every family they're allowlisted
+ * in — used only by `sceneUsesRandomness` below (never by
+ * `validateBehaviorGraph`, which already checks per-family membership via
+ * `ALLOWED_NODE_TYPES_BY_FAMILY`). */
+const RANDOM_NODE_TYPES = new Set(['randomRange', 'randomChoice', 'noise', 'randomEvent']);
+
+/**
+ * True when `scene` uses V1 visual randomness — either the scene's own
+ * `randomness.enabled` flag is set (the schema's existing, already-present
+ * source of truth for "does this scene's renderer/particle system consume
+ * seeded randomness" — see `render/p5Adapter.ts`'s `randomSeed`/`noiseSeed`
+ * call and `particleSystem.ts`'s `createParticleSystem`), or the scene's
+ * graph contains at least one Task 40 random node (`randomRange`/
+ * `randomChoice`/`noise`/`randomEvent`) — a scene author can add one of
+ * these nodes without separately, manually flipping `randomness.enabled`,
+ * and the indicator should still reflect reality. Drives the read-only
+ * "Randomness enabled" indicator (`_docs/plan.md`'s "Visual randomness"
+ * section: "Show a 'Randomness enabled' badge in the inspector") — see
+ * `frontend/src/pages/RandomnessIndicator.tsx`. Pure and read-only: calling
+ * this never mutates `scene.randomness` or generates/rerolls a seed. */
+export function sceneUsesRandomness(scene: SceneDocument): boolean {
+  const randomness = asRecord((scene as Record<string, unknown>).randomness);
+  if (randomness.enabled === true) return true;
+  const { nodes } = sceneGraph(scene);
+  return nodes.some((node) => typeof node.type === 'string' && RANDOM_NODE_TYPES.has(node.type));
 }
 
 /** Detects a cycle anywhere in the graph's connection edges using
@@ -1510,6 +1867,24 @@ export function createBehaviorRuntime(
   // this runtime instance" pattern as the two maps above.
   const ifElseStateByGraphNode = new Map<string, IfElseState>();
   const delayStateByGraphNode = new Map<string, DelayState>();
+  // Task 40: per-node cached RNG stream (one `createSeededRandom` instance
+  // per `randomRange`/`randomChoice`/`randomEvent` node, seeded from
+  // `seedForGraphNode(seed, node.id)` — see the "Random node registry" doc
+  // comment's "Seeding model" section), the cached *value* for
+  // `randomRange`/`randomChoice` (computed once on first access and never
+  // rerolled — "no V1 control silently rerolls or replaces a seed"), and
+  // each `noise` node's fixed-for-the-runtime waveform fingerprint.
+  const randomRngByGraphNode = new Map<string, () => number>();
+  const randomSourceValueByGraphNode = new Map<string, number>();
+  const noiseFingerprintByGraphNode = new Map<string, NoiseFingerprint>();
+  function rngForGraphNode(nodeId: string): () => number {
+    let rng = randomRngByGraphNode.get(nodeId);
+    if (!rng) {
+      rng = createSeededRandom(seedForGraphNode(seed, nodeId));
+      randomRngByGraphNode.set(nodeId, rng);
+    }
+    return rng;
+  }
 
   /** True for `input-<cardId>`/`action-<cardId>` node ids — the Task 34
    * card-owned graph fragment `graphFragmentForCard` writes alongside its
@@ -1654,6 +2029,38 @@ export function createBehaviorRuntime(
           (port === 'true' && decision === true) || (port === 'false' && decision === false)
             ? 1
             : null;
+        break;
+      }
+      // --- Task 40 random nodes --------------------------------------
+      case 'randomRange': {
+        let cached = randomSourceValueByGraphNode.get(nodeId);
+        if (cached === undefined) {
+          cached = evaluateRandomRange(rngForGraphNode(nodeId), params);
+          randomSourceValueByGraphNode.set(nodeId, cached);
+        }
+        result = cached;
+        break;
+      }
+      case 'randomChoice': {
+        let cached = randomSourceValueByGraphNode.get(nodeId);
+        if (cached === undefined) {
+          const raw =
+            typeof params.choices === 'string' ? params.choices : RANDOM_CHOICE_DEFAULTS.choices;
+          const choices = parseChoiceList(raw) ?? [0];
+          cached = evaluateRandomChoice(rngForGraphNode(nodeId), choices);
+          randomSourceValueByGraphNode.set(nodeId, cached);
+        }
+        result = cached;
+        break;
+      }
+      case 'noise': {
+        let fingerprint = noiseFingerprintByGraphNode.get(nodeId);
+        if (!fingerprint) {
+          fingerprint = createNoiseFingerprint(rngForGraphNode(nodeId));
+          noiseFingerprintByGraphNode.set(nodeId, fingerprint);
+        }
+        const base = upstream('in') ?? 0;
+        result = evaluateNoise(base, input.timestamp, fingerprint, params);
         break;
       }
       default:

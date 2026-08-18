@@ -219,6 +219,29 @@ code {
   color: var(--text-h);
 }
 
+/* Task 29: the global Reduce motion control (ReducedMotionControl.tsx) —
+   reuses .demo-radio-option's pill styling (and its
+   [aria-checked='true'] rule above) for the System/Reduced/Full radios. */
+.reduced-motion-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.reduced-motion-status {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Task 29: shown in DemoControlsPanel in place of the Play button while
+   motion is reduced, explaining why auto-advance is unavailable. */
+.reduced-motion-note {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
 .editor-workspace {
   display: flex;
   align-items: stretch;

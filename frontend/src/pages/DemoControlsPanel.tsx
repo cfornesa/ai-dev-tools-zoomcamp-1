@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { useReducedMotion } from '../a11y/reducedMotion';
 import { createDemoTrackingController, type DemoMode } from '../tracking/demoController';
 import { MANUAL_SIGNAL_RANGES, type ManualSignalName } from '../tracking/manualProvider';
 import type { GestureName, TrackingFrame } from '../tracking/types';
@@ -57,6 +58,15 @@ function DemoControlsPanel() {
   const [remaining, setRemaining] = useState(controllerRef.current.remainingPlayback());
   const [isPlaying, setIsPlaying] = useState(false);
   const total = controllerRef.current.totalPlaybackEntries();
+  // Task 29 (issue #28): the scripted-playback auto-advance timer below is
+  // the one continuous, non-essential effect that exists in this codebase
+  // today (particle emission/trails/physics — the other candidates
+  // `_docs/plan.md` names — aren't implemented yet). In reduced motion, it
+  // is replaced by its documented "stepped" equivalent: auto-advance turns
+  // off and only the manual Step button remains, which still exposes every
+  // scripted frame/event (the interaction's meaning is fully preserved,
+  // just requires a press per step instead of a fixed cadence).
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     const controller = controllerRef.current;
@@ -73,15 +83,27 @@ function DemoControlsPanel() {
 
   // Auto-advances scripted playback at a fixed cadence while `isPlaying`
   // and in playback mode; stops itself once the script is exhausted.
+  // Reduced motion (system or manual override — see `reducedMotion.ts`)
+  // takes effect immediately, including mid-playback: this effect re-runs
+  // the instant `reducedMotion.effective` flips, tearing down any pending
+  // interval and stopping the gesture (`setIsPlaying(false)`) rather than
+  // silently continuing to auto-advance or leaving the Play/Pause button
+  // showing "Pause" for a timer that no longer exists. Scene/playback
+  // state itself (`remaining`, `lastFrame`) is untouched either way, so no
+  // progress is lost — Step and Reset keep working exactly as before.
   useEffect(() => {
     if (!isPlaying || mode !== 'playback') return;
+    if (reducedMotion.effective) {
+      setIsPlaying(false);
+      return;
+    }
     const controller = controllerRef.current;
     const interval = window.setInterval(() => {
       const emitted = controller.advancePlayback();
       if (!emitted) setIsPlaying(false);
     }, PLAYBACK_STEP_MS);
     return () => window.clearInterval(interval);
-  }, [isPlaying, mode]);
+  }, [isPlaying, mode, reducedMotion.effective]);
 
   function syncManualState() {
     setManualState(controllerRef.current.getManualState());
@@ -230,9 +252,15 @@ function DemoControlsPanel() {
 
       {mode === 'playback' && (
         <div data-testid="demo-playback-controls" role="group" aria-label="Synthetic playback">
-          <button type="button" onClick={handlePlayPause}>
-            {isPlaying ? 'Pause' : 'Play'}
-          </button>
+          {reducedMotion.effective ? (
+            <p className="reduced-motion-note">
+              Auto-advance is off while motion is reduced. Use Step to advance manually.
+            </p>
+          ) : (
+            <button type="button" onClick={handlePlayPause}>
+              {isPlaying ? 'Pause' : 'Play'}
+            </button>
+          )}
           <button type="button" onClick={handleStep} disabled={remaining === 0}>
             Step
           </button>

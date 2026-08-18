@@ -4,8 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { MOTION_OVERRIDE_STORAGE_KEY, setMotionOverride } from '../a11y/reducedMotion';
 import DemoControlsPanel from './DemoControlsPanel';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -189,5 +190,85 @@ describe('DemoControlsPanel', () => {
     expect((window as unknown as { navigator: Navigator }).navigator.mediaDevices).toBeUndefined();
     render(<DemoControlsPanel />);
     expect(screen.getByText('Demo signal controls')).toBeInTheDocument();
+  });
+
+  // Task 29 (issue #28): reduced motion replaces the scripted-playback
+  // auto-advance timer — the one continuous, non-essential effect this
+  // panel has — with a "use Step" note, while every scripted event stays
+  // fully reachable via Step (the interaction's meaning is preserved).
+  describe('reduced motion', () => {
+    afterEach(() => {
+      // The reduced-motion store is a module-level singleton shared by the
+      // whole process — release the override so later tests (in this file
+      // or others that import it) see the default 'system' state again.
+      setMotionOverride('system');
+      window.localStorage.removeItem(MOTION_OVERRIDE_STORAGE_KEY);
+    });
+
+    it('replaces Play with a stepped-equivalent note, and Step still advances the script', async () => {
+      const user = userEvent.setup({ delay: null });
+      setMotionOverride('reduced');
+      render(<DemoControlsPanel />);
+      await user.click(screen.getByRole('radio', { name: 'Synthetic playback' }));
+      const playback = screen.getByTestId('demo-playback-controls');
+
+      expect(within(playback).queryByRole('button', { name: 'Play' })).not.toBeInTheDocument();
+      expect(within(playback).getByText(/Use Step to advance manually/)).toBeInTheDocument();
+
+      await user.click(within(playback).getByRole('button', { name: 'Step' }));
+      expect(within(playback).getByText(/1 of \d+ events played/)).toBeInTheDocument();
+    });
+
+    it('does not auto-advance on a timer while motion is reduced', async () => {
+      setMotionOverride('reduced');
+      render(<DemoControlsPanel />);
+      fireEvent.click(screen.getByRole('radio', { name: 'Synthetic playback' }));
+      const playback = screen.getByTestId('demo-playback-controls');
+
+      vi.useFakeTimers();
+      try {
+        await vi.advanceTimersByTimeAsync(400 * 5);
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(within(playback).getByText(/0 of \d+ events played/)).toBeInTheDocument();
+    });
+
+    it('switching to reduced motion mid-playback stops the auto-advance timer without corrupting progress', async () => {
+      render(<DemoControlsPanel />);
+      fireEvent.click(screen.getByRole('radio', { name: 'Synthetic playback' }));
+      const playback = screen.getByTestId('demo-playback-controls');
+
+      vi.useFakeTimers();
+      try {
+        fireEvent.click(within(playback).getByRole('button', { name: 'Play' }));
+        await vi.advanceTimersByTimeAsync(400 * 2); // a couple of steps in
+
+        setMotionOverride('reduced');
+        await vi.advanceTimersByTimeAsync(0); // flush the effect re-run
+
+        const progressAfterSwitch =
+          within(playback).getByText(/of \d+ events played/).textContent ?? '';
+
+        await vi.advanceTimersByTimeAsync(400 * 5); // would advance further if still running
+
+        expect(within(playback).getByText(/of \d+ events played/).textContent).toBe(
+          progressAfterSwitch,
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+
+      // The Play control is gone (replaced by the reduced-motion note),
+      // and Step still works against the same, uncorrupted progress.
+      expect(within(playback).queryByRole('button', { name: 'Play' })).not.toBeInTheDocument();
+      const before = within(playback).getByText(/(\d+) of \d+ events played/).textContent ?? '';
+      const beforeCount = Number(before.match(/(\d+) of/)?.[1] ?? '0');
+      fireEvent.click(within(playback).getByRole('button', { name: 'Step' }));
+      expect(
+        within(playback).getByText(new RegExp(`${beforeCount + 1} of \\d+ events played`)),
+      ).toBeInTheDocument();
+    });
   });
 });

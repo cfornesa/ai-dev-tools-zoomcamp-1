@@ -270,6 +270,9 @@ describe('EditorWorkspace keyboard accessibility', () => {
     expect(screen.getByRole('link', { name: /edit project details/i })).toHaveFocus();
 
     await user.tab();
+    expect(screen.getByRole('button', { name: 'Exit without saving' })).toHaveFocus();
+
+    await user.tab();
     expect(screen.getByRole('tab', { name: 'Tools' })).toHaveFocus();
 
     await user.tab();

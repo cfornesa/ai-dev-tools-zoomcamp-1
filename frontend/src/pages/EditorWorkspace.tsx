@@ -7,7 +7,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import CameraControl from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
@@ -23,6 +23,7 @@ import {
   type Shape,
   type ShapeType,
 } from './sceneShapes';
+import { useDraftAutosave } from './useDraftAutosave';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useSceneEditor } from './useSceneEditor';
@@ -72,6 +73,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
  */
 function EditorWorkspace() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const {
     loadState,
     project,
@@ -103,6 +105,21 @@ function EditorWorkspace() {
       JSON.stringify(workingCopy) !== JSON.stringify(persistedVersion.scene_json),
     [workingCopy, persistedVersion],
   );
+
+  // Task 42: debounced browser-local crash-recovery draft, autosaved into
+  // IndexedDB from the same `workingCopy` change stream `isDirty` above
+  // already watches. `clearDraft()` is called from exactly the two places
+  // `_docs/plan.md` specifies: after a successful explicit Save (below),
+  // and after a confirmed Exit-without-saving (the confirm dialog further
+  // down) — never automatically, and never on cancel.
+  const draftAutosave = useDraftAutosave(id, workingCopy, persistedVersion);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  async function handleConfirmExit() {
+    await draftAutosave.clearDraft();
+    setShowExitConfirm(false);
+    navigate('/');
+  }
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const previewMountRef = useRef<HTMLDivElement>(null);
@@ -396,6 +413,28 @@ function EditorWorkspace() {
             : `Saved${persistedVersion ? ` as version ${persistedVersion.sequence}` : ''}`}
         </p>
         <Link to={`/projects/${id}/settings`}>Edit project details</Link>
+        <button type="button" onClick={() => setShowExitConfirm(true)}>
+          Exit without saving
+        </button>
+        {showExitConfirm && (
+          <div
+            role="alertdialog"
+            aria-labelledby="exit-without-saving-confirm-title"
+            className="exit-without-saving-confirm"
+          >
+            <h4 id="exit-without-saving-confirm-title">Exit without saving?</h4>
+            <p>
+              Any unsaved changes will stay out of version history. Your local recovery draft for
+              this project will also be cleared.
+            </p>
+            <button type="button" onClick={() => void handleConfirmExit()}>
+              Exit without saving
+            </button>
+            <button type="button" onClick={() => setShowExitConfirm(false)}>
+              Cancel
+            </button>
+          </div>
+        )}
       </header>
 
       {isNarrow && <EditorPanelSwitcher activePanel={activePanel} onSelect={setActivePanel} />}
@@ -611,6 +650,12 @@ function EditorWorkspace() {
                 setProject((current) =>
                   current ? { ...current, current_version: version.id } : current,
                 );
+                // Task 42: the version-save API call succeeded, so the
+                // local recovery draft for this project is now redundant —
+                // clear it. Never called on a failed save (see
+                // `useVersionHistory.save`'s error handling: this callback
+                // only ever fires with the saved version on success).
+                void draftAutosave.clearDraft();
               }}
               onRestored={(version) => {
                 setPersistedVersion(version);

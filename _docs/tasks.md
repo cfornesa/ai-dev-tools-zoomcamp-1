@@ -104,17 +104,17 @@ Description: Create a renderer adapter that draws the supported canvas, shape, g
 Goal: Keep pointer-based canvas manipulation synchronized with canonical scene state.
 Description: Add selection bounds and drag, resize, and rotation controls for supported scene objects. Clamp edits to allowed ranges and test coordinate conversion, zoom behavior, overlapping selections, and synchronization with the inspector and outline.
 
-## 27. Build local demo signal controls
+## 27. Define the normalized tracking provider interface
+Goal: Decouple scenes and bindings from MediaPipe-specific output.
+Description: Implement the shared tracking frame, hand, landmark, confidence, and gesture-event contracts plus provider lifecycle methods. Include a mock provider and tests for timestamps, handedness, missing hands, and normalized signal extraction.
+
+## 28. Build local demo signal controls
 Goal: Test gesture-reactive scenes without a camera.
 Description: Add sliders, toggles, buttons, keyboard controls, and synthetic playback for normalized hand signals, states, and events. Feed them through the same tracking interface used by live input and make every control keyboard and screen-reader accessible.
 
-## 28. Implement reduced-motion behavior
+## 29. Implement reduced-motion behavior
 Goal: Ensure previews and editor UI respect system and manual reduced-motion preferences.
 Description: Add a global control that defaults to `prefers-reduced-motion` and passes a normalized preference into scene execution. Define and test static, faded, or stepped alternatives for non-essential continuous motion while preserving interaction meaning.
-
-## 29. Define the normalized tracking provider interface
-Goal: Decouple scenes and bindings from MediaPipe-specific output.
-Description: Implement the shared tracking frame, hand, landmark, confidence, and gesture-event contracts plus provider lifecycle methods. Include a mock provider and tests for timestamps, handedness, missing hands, and normalized signal extraction.
 
 ## 30. Integrate browser-local MediaPipe tracking
 Goal: Produce normalized one-hand tracking data without uploading camera frames.

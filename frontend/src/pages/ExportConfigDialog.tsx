@@ -13,6 +13,10 @@ import {
   generateHtmlExport,
   triggerHtmlDownload,
 } from '../export/generateHtmlExport';
+import {
+  generateSocialThumbnailZip,
+  triggerZipDownload,
+} from '../export/generateSocialThumbnailZip';
 import { validateProjectMetadataForPublish } from '../validation/projectMetadata';
 import { useVersionHistory } from './useVersionHistory';
 
@@ -25,8 +29,13 @@ import { useVersionHistory } from './useVersionHistory';
  * (Task 56, issue #57) hands it to `onExport`, which generates the
  * standalone HTML (`../export/generateHtmlExport.ts`) and triggers a
  * browser download — see `defaultOnExport` below. ZIP/thumbnail bundling
- * (Task 59, issue #59) is still not built; `includeSocialThumbnailZip` is
- * recorded but has no effect yet. Camera-mode export (Task 57, issue #56)
+ * (Task 59, issue #59) is now also fully wired: when
+ * `includeSocialThumbnailZip` is checked, `defaultOnExport` calls
+ * `../export/generateSocialThumbnailZip.ts` instead of
+ * `generateHtmlExport`/`triggerHtmlDownload` directly, and downloads the
+ * resulting ZIP (`index.html` + `thumbnail.png`) instead of a bare HTML
+ * file. When unchecked (the default), the HTML-only flow below is
+ * completely unchanged. Camera-mode export (Task 57, issue #56)
  * is now fully built — `interactionMode: 'camera'`/`'demo-camera'` both
  * generate a real file embedding a camera/tracking module
  * (`../export/standaloneCameraSource.ts`) alongside the always-present demo
@@ -47,7 +56,8 @@ import { useVersionHistory } from './useVersionHistory';
  * change here — but each currently has exactly one value, and is rendered
  * `disabled` with a note explaining why. The actually-configurable surface
  * in V1 is: which saved version, attribution (now wired end-to-end), the
- * (currently inert) social-thumbnail-ZIP preference, and interaction mode.
+ * social-thumbnail-ZIP preference (now wired end-to-end, Task 59), and
+ * interaction mode.
  *
  * ## Version selection never touches the project
  *
@@ -91,20 +101,52 @@ export type ExportConfigDialogProps = {
   projectId: string;
   project: Project | null;
   /** Task 56: generates the standalone HTML export and triggers a browser
-   * download by default (`defaultOnExport` below). Tests pass their own
-   * spy instead to observe the assembled config without touching the
+   * download by default (`defaultOnExport` below). Task 59 extended this
+   * to optionally produce a ZIP instead — see that function's doc
+   * comment. May return a `Promise` (the ZIP path is async); `void` (the
+   * plain-HTML path is synchronous) remains valid too. Tests pass their
+   * own spy instead to observe the assembled config without touching the
    * DOM/Blob APIs. */
-  onExport?: (config: ExportConfig) => void;
+  onExport?: (config: ExportConfig) => void | Promise<void>;
 };
 
-/** Default `onExport`: generates the standalone HTML export
+/** Default `onExport`: when `config.includeSocialThumbnailZip` is off (the
+ * default), generates the standalone HTML export
  * (`../export/generateHtmlExport.ts`) and, if generation succeeds,
- * triggers a browser download. If generation is blocked (an unsupported
- * or invalid scene, or a not-yet-supported interaction mode slipping
- * through), this throws `ExportGenerationBlockedError` rather than
- * silently doing nothing — `handleExport` below catches it and surfaces
- * the exact blocking reasons in the dialog, and no download ever fires. */
-function defaultOnExport(config: ExportConfig) {
+ * triggers a browser download — byte-for-byte the same as before Task 59.
+ * When the ZIP option is on, calls
+ * `../export/generateSocialThumbnailZip.ts` instead (which itself calls
+ * `generateHtmlExport` for the HTML content — see that module's doc
+ * comment for why this is "the same generation call, not a divergent
+ * second implementation") and downloads the resulting ZIP.
+ *
+ * Either path throws `ExportGenerationBlockedError` — never partially
+ * downloads anything — if generation/capture/encoding is blocked or
+ * fails; `handleExport` below catches it and surfaces the exact reasons
+ * in the dialog. */
+async function defaultOnExport(config: ExportConfig): Promise<void> {
+  if (config.includeSocialThumbnailZip) {
+    let result;
+    try {
+      result = await generateSocialThumbnailZip({
+        scene: config.scene,
+        title: config.title,
+        description: config.description,
+        interactionMode: config.interactionMode,
+        includeAttribution: config.includeAttribution,
+      });
+    } catch (error) {
+      throw new ExportGenerationBlockedError([
+        error instanceof Error ? error.message : String(error),
+      ]);
+    }
+    if (!result.ok) {
+      throw new ExportGenerationBlockedError(result.reasons);
+    }
+    triggerZipDownload(result.zipBlob, result.filename);
+    return;
+  }
+
   const result = generateHtmlExport({
     scene: config.scene,
     title: config.title,
@@ -237,7 +279,7 @@ function ExportConfigDialog({
     triggerRef.current?.focus();
   }
 
-  function handleExport() {
+  async function handleExport() {
     if (!canExport || !project || selectedVersionId === null || !sceneDetail) return;
     const version = sortedVersions.find((candidate) => candidate.id === selectedVersionId);
     if (!version) return;
@@ -257,7 +299,7 @@ function ExportConfigDialog({
     };
     setGenerationErrors([]);
     try {
-      onExport(config);
+      await onExport(config);
     } catch (error) {
       if (error instanceof ExportGenerationBlockedError) {
         setGenerationErrors(error.reasons);
@@ -395,8 +437,8 @@ function ExportConfigDialog({
               Include social-thumbnail ZIP
             </label>
             <p id="export-thumbnail-zip-note">
-              Thumbnail generation is not implemented yet — this only records your preference for
-              when it is.
+              Downloads a ZIP containing the exported HTML plus a deterministic, artwork-only
+              1200×630 thumbnail (<code>index.html</code> and <code>thumbnail.png</code>).
             </p>
           </div>
 

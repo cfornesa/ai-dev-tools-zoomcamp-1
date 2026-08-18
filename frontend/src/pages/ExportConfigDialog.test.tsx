@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
 import type { Project, SceneDocument, SceneVersion, SceneVersionSummary } from '../api/projects';
+import * as captureModule from '../export/captureSocialThumbnail';
 import ExportConfigDialog from './ExportConfigDialog';
 
 vi.mock('../api/projects');
@@ -284,6 +285,77 @@ describe('ExportConfigDialog terminal export action', () => {
     const errorRegion = await within(dialog).findByTestId('export-compatibility-errors');
     expect(errorRegion).toHaveTextContent('sprite3d');
     expect(within(dialog).getByRole('button', { name: /^export$/i })).toBeDisabled();
+    expect(createObjectURL).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
+
+  it('Task 59: leaves the HTML-only download completely unchanged when the thumbnail ZIP checkbox stays off (regression check)', async () => {
+    mockedGetSceneVersion.mockResolvedValue(versionDetail({}, BASE_SCENE));
+    const createObjectURL = vi.fn((_obj: Blob | MediaSource) => 'blob:mock-url');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    const { user, dialog } = await openDialog(baseProject());
+    expect(within(dialog).getByLabelText(/social-thumbnail zip/i)).not.toBeChecked();
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: /^export$/i })).not.toBeDisabled(),
+    );
+
+    await user.click(within(dialog).getByRole('button', { name: /^export$/i }));
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+
+    const blobArg = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blobArg.type).toBe('text/html');
+
+    clickSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('Task 59: downloads a ZIP containing index.html and thumbnail.png when the thumbnail ZIP checkbox is enabled', async () => {
+    mockedGetSceneVersion.mockResolvedValue(versionDetail({}, BASE_SCENE));
+    const createObjectURL = vi.fn((_obj: Blob | MediaSource) => 'blob:mock-zip-url');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    const { user, dialog } = await openDialog(baseProject());
+    await user.click(within(dialog).getByLabelText(/social-thumbnail zip/i));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: /^export$/i })).not.toBeDisabled(),
+    );
+
+    await user.click(within(dialog).getByRole('button', { name: /^export$/i }));
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+
+    const blobArg = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blobArg.type).toBe('application/zip');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-zip-url');
+    expect(screen.queryByTestId('export-generation-errors')).not.toBeInTheDocument();
+
+    clickSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('Task 59: surfaces a clear error and never downloads anything when thumbnail capture fails', async () => {
+    mockedGetSceneVersion.mockResolvedValue(versionDetail({}, BASE_SCENE));
+    const createObjectURL = vi.fn((_obj: Blob | MediaSource) => 'blob:mock-zip-url');
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL: vi.fn() });
+    vi.spyOn(captureModule, 'captureSocialThumbnail').mockRejectedValue(
+      new captureModule.ThumbnailCaptureError('Thumbnail capture failed: simulated failure.'),
+    );
+
+    const { user, dialog } = await openDialog(baseProject());
+    await user.click(within(dialog).getByLabelText(/social-thumbnail zip/i));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: /^export$/i })).not.toBeDisabled(),
+    );
+
+    await user.click(within(dialog).getByRole('button', { name: /^export$/i }));
+
+    const errorRegion = await within(dialog).findByTestId('export-generation-errors');
+    expect(errorRegion).toHaveTextContent(/simulated failure/i);
     expect(createObjectURL).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();

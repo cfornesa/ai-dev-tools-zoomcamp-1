@@ -157,6 +157,51 @@ export function deleteSceneVersion(projectId: string, versionId: number): Promis
   });
 }
 
+/** Task 53 (issue #52) will define this once forking (Task 52, issue #51)
+ * exists — no project can have remix provenance yet, so the public gallery
+ * API always returns `null` for this field (see `scenes/serializers.py`'s
+ * `PublicProjectListItemSerializer` docstring). The empty shape is a
+ * deliberate placeholder: the field is structurally present now so a
+ * future card redesign isn't needed when Task 53 starts populating it. */
+export type RemixProvenance = Record<string, never>;
+
+/** Task 50: one public-gallery card (`PublicProjectListItemSerializer`).
+ * Deliberately narrower than `Project` — no `description`, `tags`,
+ * `visibility`, `current_version`, or any owner-only field; identical for
+ * anonymous and signed-in callers. */
+export type PublicGalleryProject = {
+  id: string;
+  title: string;
+  owner: string;
+  thumbnail_url: string | null;
+  remix_provenance: RemixProvenance | null;
+  published_at: string;
+};
+
+/** Task 50: one page of the public gallery. `next_cursor` is `null` exactly
+ * when `has_more` is `false` — there is no separate "end of results"
+ * sentinel to check. */
+export type PublicGalleryPage = {
+  results: PublicGalleryProject[];
+  next_cursor: string | null;
+  has_more: boolean;
+};
+
+/** Task 50: fetch one page of the public gallery, newest-published-first.
+ * Pass the previous page's `next_cursor` to continue a walk — see
+ * `scenes/gallery.py`'s module docstring for why this keyset cursor,
+ * rather than a page number, is what keeps pagination duplicate/gap-safe
+ * if a new project publishes between requests. */
+export function listPublicGallery(
+  options: { cursor?: string; pageSize?: number } = {},
+): Promise<PublicGalleryPage> {
+  const params = new URLSearchParams();
+  if (options.cursor) params.set('cursor', options.cursor);
+  if (options.pageSize) params.set('page_size', String(options.pageSize));
+  const query = params.toString();
+  return apiFetch<PublicGalleryPage>(`/api/public/projects/${query ? `?${query}` : ''}`);
+}
+
 /** Task 18: atomically create a private project with one blank-canvas version.
  * Pass the same `clientRequestId` again to safely retry a failed/uncertain
  * submission without risking a duplicate project. */

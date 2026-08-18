@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -31,6 +32,7 @@ import GraphListView from './GraphListView';
 import GraphView from './GraphView';
 import RandomnessIndicator from './RandomnessIndicator';
 import SceneOutlinePanel from './SceneOutlinePanel';
+import VersionHistoryPanel from './VersionHistoryPanel';
 
 const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
   { type: 'circle', label: 'Add circle' },
@@ -70,7 +72,16 @@ function isTypingTarget(target: EventTarget | null): boolean {
  */
 function EditorWorkspace() {
   const { id } = useParams<{ id: string }>();
-  const { loadState, project, workingCopy, setWorkingCopy, retry } = useEditorWorkspaceState(id);
+  const {
+    loadState,
+    project,
+    persistedVersion,
+    workingCopy,
+    setWorkingCopy,
+    setProject,
+    setPersistedVersion,
+    retry,
+  } = useEditorWorkspaceState(id);
   const isNarrow = useIsNarrowViewport();
   const [activePanel, setActivePanel] = useState<EditorPanelName>('preview');
   // Task 36: "Show logic" reveals behavior cards as typed connected nodes
@@ -79,6 +90,20 @@ function EditorWorkspace() {
   // experience stays "composing an animation recipe."
   const [showLogic, setShowLogic] = useState(false);
   const sceneEditor = useSceneEditor(workingCopy, setWorkingCopy);
+
+  // Task 41: the working/saved distinction, both visual (the status text
+  // rendered below) and programmatic (this boolean, which also gates the
+  // Save button in VersionHistoryPanel). A scene with no persisted
+  // version at all (shouldn't happen once loadState is 'ready' — Task 18
+  // always creates a first version) is treated as dirty rather than
+  // silently "saved."
+  const isDirty = useMemo(
+    () =>
+      persistedVersion == null ||
+      JSON.stringify(workingCopy) !== JSON.stringify(persistedVersion.scene_json),
+    [workingCopy, persistedVersion],
+  );
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const previewMountRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<P5ScenePreview | null>(null);
@@ -360,6 +385,16 @@ function EditorWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <h2>{project?.title}</h2>
+        <p
+          role="status"
+          aria-live="polite"
+          data-testid="editor-save-status"
+          className="editor-save-status"
+        >
+          {isDirty
+            ? 'Unsaved changes'
+            : `Saved${persistedVersion ? ` as version ${persistedVersion.sequence}` : ''}`}
+        </p>
         <Link to={`/projects/${id}/settings`}>Edit project details</Link>
       </header>
 
@@ -555,6 +590,37 @@ function EditorWorkspace() {
         >
           <h3>Inspector</h3>
           <p>Property editing is added in a later task.</p>
+
+          {/* Task 41: explicit save plus the immutable version-history
+              view (list/restore/soft-delete). `onSaved`/`onRestored`
+              update `project`/`persistedVersion` from the exact version
+              the server just returned — no refetch needed — so
+              `isDirty` above immediately reflects the new saved state;
+              `onRestored` also replaces `workingCopy` with the restored
+              snapshot, since restoring is meant to load that historical
+              scene back into the editor. */}
+          {id && (
+            <VersionHistoryPanel
+              projectId={id}
+              project={project}
+              persistedVersion={persistedVersion}
+              workingCopy={workingCopy}
+              isDirty={isDirty}
+              onSaved={(version) => {
+                setPersistedVersion(version);
+                setProject((current) =>
+                  current ? { ...current, current_version: version.id } : current,
+                );
+              }}
+              onRestored={(version) => {
+                setPersistedVersion(version);
+                setWorkingCopy(structuredClone(version.scene_json));
+                setProject((current) =>
+                  current ? { ...current, current_version: version.id } : current,
+                );
+              }}
+            />
+          )}
 
           {/* Task 40: read-only "Randomness enabled" indicator — renders
               nothing when the scene doesn't use seeded randomness. */}

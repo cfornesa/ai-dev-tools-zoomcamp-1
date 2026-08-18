@@ -81,5 +81,18 @@ export function useEditorWorkspaceState(id: string | undefined) {
 
   useEffect(() => load(), [load]);
 
-  return { loadState, project, persistedVersion, workingCopy, setWorkingCopy, retry: load };
+  return {
+    loadState,
+    project,
+    persistedVersion,
+    workingCopy,
+    setWorkingCopy,
+    // Task 41: exposed so a successful save/restore can update the
+    // "current version" the editor is tracking without a full reload —
+    // save/restore already return the exact new `SceneVersion`/`Project`
+    // shape from the server, so there's no need to re-fetch either.
+    setProject,
+    setPersistedVersion,
+    retry: load,
+  };
 }

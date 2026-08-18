@@ -324,3 +324,56 @@ textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Task 41: save/version-history status + panel. */
+.editor-save-status {
+  font-weight: 600;
+}
+
+.version-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.version-history-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.version-history-thumb {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  background: var(--bg);
+}
+
+.version-history-details {
+  flex: 1 1 auto;
+}
+
+.version-history-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.version-delete-confirm {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 8px;
+}

@@ -174,8 +174,12 @@ export const ALLOWED_NODE_TYPES_BY_FAMILY: Record<string, ReadonlySet<string>> =
 /** Port vocabulary per node type — `graphFragmentForCard`'s exact
  * `fromPort`/`toPort` strings. A connection whose port name isn't valid
  * for the node it names is rejected as an invalid connection, distinct
- * from (and in addition to) `validateScene`'s dangling-node-id check. */
-const NODE_PORTS: Record<string, { out?: ReadonlySet<string>; in?: ReadonlySet<string> }> = {
+ * from (and in addition to) `validateScene`'s dangling-node-id check.
+ * Exported so `frontend/src/pages/graphEditing.ts` (Task 36's graph
+ * editor) can reuse this exact port vocabulary as its single source of
+ * truth for typed handles, rather than maintaining a second copy that
+ * could drift from what this runtime actually accepts. */
+export const NODE_PORTS: Record<string, { out?: ReadonlySet<string>; in?: ReadonlySet<string> }> = {
   handSignal: { out: new Set(['value']) },
   gestureEvent: { out: new Set(['event']) },
   shapeProperty: { in: new Set(['in']) },
@@ -310,8 +314,15 @@ function sceneGraph(scene: SceneDocument): {
 
 /** Detects a cycle anywhere in the graph's connection edges using
  * standard three-color DFS. Returns the id of one node participating in a
- * cycle, or `null` if the graph is acyclic. */
-function findCycle(nodeIds: string[], edges: Array<{ from: string; to: string }>): string | null {
+ * cycle, or `null` if the graph is acyclic. Exported so the Task 36 graph
+ * editor can reject a candidate connection that would introduce a cycle
+ * *before* ever writing it to scene state (see `graphEditing.ts`'s
+ * `checkGraphConnection`), using this exact algorithm rather than a
+ * second implementation that could disagree with `validateBehaviorGraph`. */
+export function findCycle(
+  nodeIds: string[],
+  edges: Array<{ from: string; to: string }>,
+): string | null {
   const adjacency = new Map<string, string[]>();
   for (const id of nodeIds) adjacency.set(id, []);
   for (const edge of edges) {

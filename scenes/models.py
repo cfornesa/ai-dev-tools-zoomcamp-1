@@ -111,6 +111,7 @@ SNAPSHOT_FIELDS = frozenset(
         "fork_source_version_id",
         "origin",
         "change_label",
+        "ai_request_id",
     }
 )
 
@@ -140,6 +141,15 @@ class SceneVersion(models.Model):
     )
     origin = models.CharField(max_length=20, choices=Origin.choices)
     change_label = models.CharField(max_length=200, default="", blank=True)
+    # Task 48's idempotency key for the AI-accept endpoint
+    # (`scenes.ai_api.AIAcceptProposalView`): a client-generated UUID, one
+    # per proposal, sent with the Accept request. The unique constraint
+    # below (scoped per-project, like `Project.creation_request_id`'s own
+    # per-owner scoping in Task 18) is what makes a genuinely concurrent or
+    # retried duplicate Accept safe -- see that view's docstring. `null`
+    # for every non-AI-accept version (manual save, restore, fork, and any
+    # AI version created before this field existed).
+    ai_request_id = models.UUIDField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -150,6 +160,11 @@ class SceneVersion(models.Model):
                 fields=["project", "sequence"], name="unique_sequence_per_project"
             ),
             models.CheckConstraint(condition=models.Q(sequence__gte=1), name="sequence_gte_1"),
+            models.UniqueConstraint(
+                fields=["project", "ai_request_id"],
+                condition=models.Q(ai_request_id__isnull=False),
+                name="unique_ai_request_id_per_project",
+            ),
         ]
         ordering = ["project", "sequence"]
 

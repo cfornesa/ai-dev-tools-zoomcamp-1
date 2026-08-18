@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import CameraControl from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import {
@@ -427,6 +428,15 @@ function EditorWorkspace() {
           )}
 
           <SceneOutlinePanel sceneEditor={sceneEditor} />
+
+          {/* Task 31: the camera permission/privacy control. Self-contained
+              (owns its own lazily-created MediaPipe tracking-provider
+              instance; see CameraControl.tsx) and rendered unconditionally
+              alongside — never in place of — DemoControlsPanel below, so
+              the non-camera fallback stays available before camera
+              activation, during any camera failure, and after Stop camera
+              is pressed (acceptance criterion). */}
+          <CameraControl />
 
           {/* Task 28: local demo signal controls — sliders/toggles/event
               buttons plus deterministic synthetic playback, so every

@@ -242,6 +242,19 @@ code {
   margin: 0 0 8px;
 }
 
+/* Task 31: the camera permission/privacy control (CameraControl.tsx). */
+.camera-control {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0 0 16px;
+}
+
+.camera-privacy-notice {
+  font-size: 13px;
+  color: var(--text);
+}
+
 .editor-workspace {
   display: flex;
   align-items: stretch;

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createMockTrackingProvider, type MockScriptEntry } from './mockProvider';
 import type { TrackingFrame, TrackingProviderError } from './types';
-import { hand } from './testFixtures';
+import { hand, landmarks } from './testFixtures';
 
 function frameEntry(frame: TrackingFrame): MockScriptEntry {
   return { kind: 'frame', frame };
@@ -226,5 +226,60 @@ describe('hand presence across frames', () => {
     const ids = onFrame.mock.calls.map((call) => call[0].hands.map((h: { id: string }) => h.id));
     expect(ids).toEqual([['hand-1'], [], ['hand-2']]);
     expect(ids[2][0]).not.toBe('hand-1');
+  });
+});
+
+describe('malformed input is sanitized end-to-end through the mock provider', () => {
+  it('drops a hand with an out-of-range/malformed field before it reaches onFrame', () => {
+    // Covers the malformed-data rule (out-of-range confidence, non-finite
+    // landmark coordinate, unrecognized handedness) via the mock
+    // provider's advance()/onFrame path, not sanitizeFrame() directly —
+    // proving mockProvider.ts's internal sanitizeFrame call actually runs
+    // before delivery.
+    const badLandmarks = landmarks();
+    badLandmarks[3] = { ...badLandmarks[3], x: Infinity };
+
+    const script: MockScriptEntry[] = [
+      frameEntry({
+        timestamp: 1,
+        hands: [
+          hand({ id: 'nan-confidence', confidence: NaN }),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          hand({ id: 'bad-handedness', handedness: 'both' as any }),
+          hand({ id: 'bad-landmark', landmarks: badLandmarks }),
+          hand({ id: 'clamped', confidence: 1.7 }),
+          hand({ id: 'good' }),
+        ],
+        events: [],
+      }),
+    ];
+    const provider = createMockTrackingProvider(script);
+    const onFrame = vi.fn();
+    provider.onFrame(onFrame);
+    provider.start();
+    provider.advance();
+
+    const delivered: TrackingFrame = onFrame.mock.calls[0][0];
+    // Only the recoverable (clamped) and well-formed hands survive; the
+    // three unrecoverable ones never reach the frame subscription.
+    expect(delivered.hands.map((h) => h.id)).toEqual(['clamped', 'good']);
+    expect(delivered.hands.find((h) => h.id === 'clamped')?.confidence).toBe(1);
+  });
+
+  it('trims hands beyond MAX_HANDS_PER_FRAME (lowest-confidence first) before delivery to onFrame', () => {
+    const low = hand({ id: 'low', confidence: 0.2 });
+    const mid = hand({ id: 'mid', confidence: 0.5 });
+    const high = hand({ id: 'high', confidence: 0.9 });
+    const script: MockScriptEntry[] = [
+      frameEntry({ timestamp: 1, hands: [low, high, mid], events: [] }),
+    ];
+    const provider = createMockTrackingProvider(script);
+    const onFrame = vi.fn();
+    provider.onFrame(onFrame);
+    provider.start();
+    provider.advance();
+
+    const delivered: TrackingFrame = onFrame.mock.calls[0][0];
+    expect(delivered.hands.map((h) => h.id)).toEqual(['high', 'mid']);
   });
 });

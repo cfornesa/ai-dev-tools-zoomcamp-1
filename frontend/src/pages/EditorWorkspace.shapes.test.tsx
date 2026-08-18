@@ -17,6 +17,7 @@ vi.mock('../api/projects');
 
 const mockedGetProject = vi.mocked(projectsApi.getProject);
 const mockedGetSceneVersion = vi.mocked(projectsApi.getSceneVersion);
+const mockedListSceneVersions = vi.mocked(projectsApi.listSceneVersions);
 
 function baseProject(overrides: Partial<Project> = {}): Project {
   return {
@@ -86,6 +87,24 @@ async function loadReadyWorkspace() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Task 41: VersionHistoryPanel always loads history on mount; default
+  // to an empty (but successfully loaded) list so tests unrelated to
+  // version history don't need to know about it.
+  // A single-entry history (matching the default current_version: 1)
+  // so unrelated tests don't trip the empty-history 'impossible state'
+  // alert VersionHistoryPanel renders for a genuinely empty list.
+  mockedListSceneVersions.mockResolvedValue([
+    {
+      id: 1,
+      sequence: 1,
+      origin: 'manual',
+      change_label: null,
+      created_by: 'alice',
+      parent: null,
+      fork_source_version: null,
+      created_at: '2026-01-01T00:00:00Z',
+    },
+  ]);
 });
 
 describe('EditorWorkspace shape creation', () => {

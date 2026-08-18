@@ -66,7 +66,9 @@ with (SCHEMA_DIR / "fixtures" / "valid" / "blank.json").open() as _f:
 
 def _get_project_or_404(public_id) -> Project:
     try:
-        return Project.objects.select_related("owner").get(public_id=public_id)
+        return Project.objects.select_related(
+            "owner", "fork_provenance", "fork_provenance__source_project__owner"
+        ).get(public_id=public_id)
     except (Project.DoesNotExist, ValueError, TypeError) as exc:
         raise Http404 from exc
 

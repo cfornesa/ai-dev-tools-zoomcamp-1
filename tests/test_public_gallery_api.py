@@ -384,11 +384,12 @@ def test_response_excludes_private_and_internal_fields(owner_client, anon_client
 
 
 @pytest.mark.django_db
-def test_remix_provenance_is_always_null_for_now(owner_client, anon_client, owner):
-    """Task 53 (issue #52) will give this field real data once forking
-    (Task 52, issue #51) exists. Until then it is a documented no-op --
-    always present, always null -- see PublicProjectListItemSerializer's
-    docstring in scenes/serializers.py."""
+def test_remix_provenance_is_null_for_a_project_with_no_fork(owner_client, anon_client, owner):
+    """A project with no `ForkProvenance` row (not a remix) always has
+    `remix_provenance: null` -- the field is structurally present (never
+    omitted) but never an empty object or partial data. See
+    `tests/test_remix_provenance_api.py` for real-fork provenance
+    coverage (Task 53, issue #52)."""
     project = _make_project(owner, title="No provenance yet", description="d")
     _publish_via_api(owner_client, project)
 

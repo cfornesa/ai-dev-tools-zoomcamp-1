@@ -8,6 +8,83 @@ from scenes.models import EditSessionDraft, Project, SceneVersion, Template
 MAX_TAGS = 10
 MAX_TAG_LENGTH = 30
 
+
+def remix_provenance_data(project: Project) -> dict | None:
+    """Task 53 (issue #52): the shared "Remixed from [creator]" payload for
+    both public serializers below (`PublicProjectListItemSerializer`'s
+    gallery card and `PublicProjectSerializer`'s single-project detail
+    view) — one policy, computed once, not duplicated per call site.
+
+    Returns `None` when `project` has no `ForkProvenance` row at all (not
+    a remix) -- callers must render nothing for that case, never an empty
+    object (this task's own "no empty or misleading remix attribution"
+    acceptance criterion).
+
+    ## Snapshot-or-live policy: LIVE, not snapshot
+
+    `ForkProvenance` (`scenes/models.py`, Task 10) deliberately stores only
+    a stable FK to `source_project` — see that section's own comment,
+    "referencing the source project ... by stable FK rather than by a
+    copied/editable snapshot of attribution fields." This task follows
+    that existing design choice rather than overriding it with a new
+    snapshot column: the original creator's public display name (their
+    `username` -- the same value every other public serializer in this
+    file already exposes as `owner`) is read fresh, live, from
+    `source_project.owner.username` on every request. If a creator's
+    username changes after a fork exists, every remix pointing at them
+    picks up the new name on its very next request; there is no frozen
+    copy anywhere to fall out of sync.
+
+    This still satisfies "attribution remains [durable]": `source_project`
+    is `on_delete=models.PROTECT` on `ForkProvenance`, so the source
+    project row (and therefore its owner) can never be hard-deleted while
+    a fork's provenance still references it -- reading
+    `source_project.owner.username` never 404s or raises.
+
+    ## Privacy: durable text, no live/private link
+
+    `source_public_id` is the only field that can ever point back at the
+    source (the frontend builds a `/p/<source_public_id>` link from it) --
+    and it is only ever populated when the source is *currently* public,
+    non-soft-deleted, and published, checked fresh on every call. The
+    moment a source project goes private, is unpublished, or is
+    soft-deleted, this flips to `None` on the very next request: the
+    "Remixed from [creator]" text keeps rendering (from the still-durable
+    `source_creator` username) but with no link and no other private
+    source data (title, description, scene content) ever included here.
+
+    ## Nested remixes: immediate source, not root
+
+    If project C was forked from project B which was itself forked from
+    project A, `C.fork_provenance.source_project` is B -- not A. This
+    function reports B's creator/url, never walking further up the chain
+    to find A. This is the immediate-source policy (documented choice,
+    not the root-source alternative): it matches what `ForkProvenance`
+    actually records (one row per fork, pointing at what was *directly*
+    forked), needs no recursive chain walk or cycle handling, and is
+    always consistent -- forking a remix credits the remix's own creator
+    exactly like `_docs/plan.md`'s "Public forks/remixes display 'Remixed
+    from [creator]'" describes for any single fork edge, applied
+    uniformly at every link in a chain.
+    """
+
+    try:
+        fork_provenance = project.fork_provenance
+    except Project.fork_provenance.RelatedObjectDoesNotExist:
+        return None
+
+    source = fork_provenance.source_project
+    source_available = (
+        not source.is_deleted
+        and source.visibility == Project.Visibility.PUBLIC
+        and source.published_at is not None
+    )
+    return {
+        "source_creator": source.owner.username,
+        "source_public_id": str(source.public_id) if source_available else None,
+    }
+
+
 # `thumbnail_choice` predates the Task 54 thumbnail generator and is not
 # consumed by it (Task 54 always generates one deterministic rendering of
 # the current version; it does not offer a first-shape/solid-color
@@ -115,6 +192,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source="owner.username", read_only=True)
     current_version = PublicSceneVersionSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
+    remix_provenance = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -127,6 +205,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "allow_public_remix",
             "thumbnail_choice",
             "thumbnail_url",
+            "remix_provenance",
             "current_version",
             "created_at",
             "updated_at",
@@ -141,6 +220,12 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("public-project-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_remix_provenance(self, project: Project) -> dict | None:
+        # Task 53 (issue #52): see `remix_provenance_data`'s own docstring
+        # for the snapshot-or-live, availability, and nested-remix policy
+        # shared with `PublicProjectListItemSerializer` below.
+        return remix_provenance_data(project)
 
 
 class PublicProjectListItemSerializer(serializers.ModelSerializer):
@@ -159,15 +244,11 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
     `whoami` for the one place `email` is ever exposed, and only to the
     signed-in user themselves).
 
-    `remix_provenance` is a documented no-op placeholder for Task 53
-    (issue #52, "Display remix provenance"): forking (Task 52, issue #51)
-    doesn't exist yet, so no project can currently *have* remix
-    provenance to show. Rather than omit the field and force Task 53 to
-    add it later (a response-shape change every existing gallery client
-    would need to handle), it's present now and always resolves to
-    `None` — Task 53's job is only to give this field real data once
-    `SceneVersion.fork_source_version`-style provenance exists on public
-    projects, not to add the field itself.
+    `remix_provenance` (Task 53, issue #52) is `None` for a card whose
+    project has no `ForkProvenance` row (not a remix), and otherwise the
+    shared `remix_provenance_data` payload — see that function's own
+    docstring in this module for the snapshot-or-live, source-availability,
+    and nested-remix (immediate, not root) policy this field follows.
     """
 
     id = serializers.UUIDField(source="public_id", read_only=True)
@@ -185,9 +266,8 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
             return None
         return reverse("public-project-thumbnail", kwargs={"public_id": project.public_id})
 
-    def get_remix_provenance(self, project: Project) -> None:
-        # Always None until Task 53 exists -- see this class's docstring.
-        return None
+    def get_remix_provenance(self, project: Project) -> dict | None:
+        return remix_provenance_data(project)
 
 
 class SceneVersionListSerializer(serializers.ModelSerializer):

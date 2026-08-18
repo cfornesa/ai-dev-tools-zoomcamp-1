@@ -375,6 +375,7 @@ def test_public_detail_excludes_owner_private_fields(
         "allow_public_remix",
         "thumbnail_choice",
         "thumbnail_url",
+        "remix_provenance",
         "current_version",
         "created_at",
         "updated_at",

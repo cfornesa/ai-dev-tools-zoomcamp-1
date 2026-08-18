@@ -5,6 +5,7 @@ import {
   graphFragmentForCard,
   type FollowHandCard,
   type PulseCard,
+  type ReactToPinchCard,
 } from '../pages/behaviorCards';
 import { createP5ScenePreview } from '../render/p5Adapter';
 import { baseScene, circleShape } from '../render/testSceneFixtures';
@@ -57,6 +58,49 @@ function scenePulse(): { scene: ReturnType<typeof baseScene>; binding: Record<st
     scene: baseScene({ bindings: [binding], graph: fragment }),
     binding,
   };
+}
+
+// A scene carrying two continuous bindings on the same shape: a
+// "Follow hand" binding (indexTipX -> positionX, smoothing 0.3) and a
+// "React to pinch" binding (pinchStrength -> opacity, smoothing 0.2) —
+// used to observe the work-budget degradation path actually dropping the
+// lower-priority (later-array-order) binding and skipping smoothing,
+// rather than merely flipping a boolean flag.
+function sceneWithTwoBindings() {
+  const followCard: FollowHandCard = {
+    type: 'followHand',
+    id: 'card-1',
+    source: 'indexTip',
+    axis: 'x',
+    handTarget: 'primary',
+    targetScope: 'shape',
+    targetId: 'shape-circle',
+  };
+  const pinchCard: ReactToPinchCard = {
+    type: 'reactToPinch',
+    id: 'card-2',
+    source: 'pinchStrength',
+    handTarget: 'primary',
+    targetScope: 'shape',
+    targetId: 'shape-circle',
+    targetProperty: 'opacity',
+  };
+  const base = baseScene({
+    canvas: { width: 100, height: 100, backgroundColor: '#000000' },
+    shapes: [circleShape({ id: 'shape-circle' })],
+  });
+  const followBinding = bindingForCard(followCard, base);
+  const pinchBinding = bindingForCard(pinchCard, base);
+  const followFragment = graphFragmentForCard(followCard, 0);
+  const pinchFragment = graphFragmentForCard(pinchCard, 1);
+  return baseScene({
+    ...base,
+    bindings: [followBinding, pinchBinding],
+    graph: {
+      nodes: [...followFragment.nodes, ...pinchFragment.nodes],
+      connections: [...followFragment.connections, ...pinchFragment.connections],
+    },
+  });
 }
 
 function input(
@@ -186,6 +230,42 @@ describe('createBehaviorRuntime: continuous evaluation', () => {
     expect(value).toBe(100);
   });
 
+  it('clamps a mapped output that actually exceeds the target property range to the range boundary', () => {
+    // Unlike the mapping-ratio-clamp test above, this drives a *mapped*
+    // output (500000) past positionX's actual documented range
+    // ([-100000, 100000], NUMERIC_TARGET_RANGES) so clampToTargetRange
+    // itself must engage. A hand-authored binding (not bindingForCard,
+    // whose canvas-derived mapping.outMax can never exceed the schema's
+    // 4096px max canvas width) is used to set an out-of-range mapping
+    // directly — schema/scene.schema.json places no bound on mapping
+    // values themselves, only on the transform2D fields they eventually
+    // clamp into.
+    const binding = {
+      id: 'card-range',
+      signal: 'indexTipX',
+      handTarget: 'primary',
+      targetScope: 'shape',
+      targetId: 'shape-circle',
+      targetProperty: 'positionX',
+      composition: 'replace',
+      mapping: { inMin: 0, inMax: 1, outMin: 0, outMax: 500000 },
+      smoothing: 0,
+    };
+    const scene = baseScene({
+      canvas: { width: 100, height: 100, backgroundColor: '#000000' },
+      shapes: [circleShape({ id: 'shape-circle' })],
+      bindings: [binding],
+      graph: { nodes: [], connections: [] },
+    });
+    const runtime = createBehaviorRuntime(scene);
+    const result = runtime.tick(input(0, { indexTipX: 1 }));
+    const output = result.continuous.find((c) => c.targetProperty === 'positionX')!;
+    // Mapping alone would produce 500000 (0 + 1 * 500000); the target
+    // range's documented maximum is 100000, so the clamped output must
+    // land exactly at that boundary, not at the raw mapped value.
+    expect(output.value).toBe(100000);
+  });
+
   it('applies configured smoothing so the output moves gradually toward the mapped target rather than snapping', () => {
     const runtime = createBehaviorRuntime(sceneWithFollowHand());
     const first = runtime.tick(input(0, { indexTipX: 1 })); // cold start: seeds at mapped value
@@ -279,6 +359,53 @@ describe('createBehaviorRuntime: work budget and graceful degradation', () => {
     const next = runtime.tick(input(16.667, { indexTipX: 0 }));
     expect(next.degraded).toBe(false);
     expect(next.diagnostics).toEqual([]);
+  });
+
+  it('a degraded tick actually drops the lowest-priority binding and actually skips smoothing, not just flips the degraded flag', () => {
+    const scene = sceneWithTwoBindings(); // 2 bindings: positionX (index 0), opacity (index 1)
+
+    // perfNow returns 0 for every tick's start call, and 0 for every end
+    // call except tick index 1's (the second tick), which returns 50ms —
+    // pushing only that one tick over the default 4ms budget so tick
+    // index 2 (the third tick) runs degraded.
+    let call = 0;
+    const perfNow = () => {
+      const tickIndex = Math.floor(call / 2);
+      const isEndOfTick = call % 2 === 1;
+      call += 1;
+      return tickIndex === 1 && isEndOfTick ? 50 : 0;
+    };
+    const runtime = createBehaviorRuntime(scene, { perfNow });
+
+    // Tick 0 (normal): cold-starts both bindings' smoothing state at 0.
+    runtime.tick(input(0, { indexTipX: 0, pinchStrength: 0 }));
+    // Tick 1 (normal, but this is the one perfNow reports as over budget):
+    // smoothing is active here, so positionX only moves partway toward
+    // its mapped target (100) rather than snapping straight to it.
+    const midTick = runtime.tick(input(16.667, { indexTipX: 1, pinchStrength: 1 }));
+    const midPositionX = midTick.continuous.find((c) => c.targetProperty === 'positionX')!
+      .value as number;
+    expect(midPositionX).toBeGreaterThan(0);
+    expect(midPositionX).toBeLessThan(100); // partial smoothing, confirms smoothing was active pre-degradation
+
+    // Tick 2: degraded because tick 1 exceeded the work budget.
+    const degradedTick = runtime.tick(input(33.334, { indexTipX: 1, pinchStrength: 1 }));
+    expect(degradedTick.degraded).toBe(true);
+
+    // Actually dropped a binding: only the higher-priority (first,
+    // positionX) binding is evaluated; the opacity binding is silently
+    // skipped this tick, not merely uncounted.
+    expect(degradedTick.droppedBindingCount).toBe(1);
+    expect(degradedTick.continuous).toHaveLength(1);
+    expect(degradedTick.continuous[0].targetProperty).toBe('positionX');
+    expect(degradedTick.continuous.some((c) => c.targetProperty === 'opacity')).toBe(false);
+
+    // Actually skipped smoothing: with the mapped target unchanged at 100
+    // and smoothing active, the value would only creep further toward 100
+    // from `midPositionX` (partial blend); skipped smoothing snaps
+    // straight to the full mapped value instead.
+    const degradedPositionX = degradedTick.continuous[0].value as number;
+    expect(degradedPositionX).toBe(100);
   });
 });
 

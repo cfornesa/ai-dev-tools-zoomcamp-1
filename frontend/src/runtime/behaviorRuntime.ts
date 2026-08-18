@@ -292,14 +292,18 @@ export const NODE_PORTS: Record<string, { out?: ReadonlySet<string>; in?: Readon
  *
  * Every one of the 7 pure math functions below (`evaluateMapRange`,
  * `evaluateClamp`, `evaluateInvert`, `evaluateAdd`, `evaluateMultiply`,
- * `evaluateLerp`) treats a `null` or non-finite (`NaN`/`Infinity`) input
- * uniformly: return `null` rather than propagating garbage — the "reject
- * non-finite intermediate results" behavior applies to all 7 node types,
- * not only Add/Multiply, since any of them could receive a non-finite
- * upstream value in principle. `evaluateSmooth`/`evaluateLerp`'s
- * *state-holding* behavior (as opposed to outright rejection) is layered on
- * top inside `evaluateGraphNodeValue`, which is the only place that owns
- * per-node state across ticks.
+ * `evaluateLerp`, `evaluateSmooth`) treats a `null` or non-finite
+ * (`NaN`/`Infinity`) input uniformly: never propagate it downstream as
+ * garbage — the "reject non-finite intermediate results" behavior applies
+ * to all 7 node types, not only Add/Multiply, since any of them could
+ * receive a non-finite upstream value in principle. `evaluateMapRange`
+ * through `evaluateLerp` return `null` outright; `evaluateSmooth`, being
+ * inherently stateful (see its own doc comment below), instead *holds*
+ * its last computed value on a non-finite input rather than returning
+ * `null` unconditionally — its own state-holding *and* Lerp's identical
+ * policy (layered on top inside `evaluateGraphNodeValue`, the only place
+ * that owns per-node state across ticks) are both documented above under
+ * "Smooth"/"Lerp".
  */
 export const MAP_RANGE_DEFAULTS = { inMin: 0, inMax: 1, outMin: 0, outMax: 1, clampOutput: true };
 export const CLAMP_DEFAULTS = { min: 0, max: 1 };
@@ -470,6 +474,55 @@ export function evaluateLerp(
   const t = clamp(numberParam(params, 't', LERP_DEFAULTS.t), 0, 1);
   const result = a + t * (b - a);
   return Number.isFinite(result) ? result : null;
+}
+
+/** One time-normalized EMA step for a Smooth node's persisted state
+ * (`value`/`lastTimestamp` across ticks). */
+export type SmoothStepState = { value: number; lastTimestamp: number };
+
+/** Smooth: a single time-normalized-EMA step, matching
+ * `evaluateContinuous`'s binding-smoothing formula exactly (see the
+ * "Numeric policy" section of the module doc comment). Unlike the other 6
+ * transform node functions, Smooth is inherently stateful — it needs the
+ * prior tick's `{value, lastTimestamp}` (or `null` on a cold start) to
+ * compute a new value — so it returns both the value to emit this tick and
+ * the state to persist for the next one; the caller (`evaluateGraphNodeValue`)
+ * owns storing that state across ticks, this function has no side effects.
+ *
+ * - `raw === null` or non-finite (missing/non-finite input): holds the
+ *   last computed value (`prior.value`), or `null` if nothing has ever been
+ *   computed yet — the documented "missing input" policy from the
+ *   "Transform node registry" doc comment.
+ * - `prior === null` (cold start) or `skipSmoothing` (a degraded tick):
+ *   snaps directly to `raw` with no blending — the documented
+ *   "initialization" policy.
+ * - Otherwise: blends `prior.value` toward `raw` using
+ *   `effectiveAlpha = 1 - (1 - smoothing) ** (dt / REFERENCE_TICK_MS)`,
+ *   where `smoothing` (unit interval, default `SMOOTH_DEFAULTS.smoothing`)
+ *   follows the same "higher = less smoothing / faster response"
+ *   convention as everywhere else in this module: `smoothing = 0` never
+ *   moves off the prior value; `smoothing = 1` snaps fully to `raw` every
+ *   tick (once `dt > 0`). */
+export function evaluateSmooth(
+  prior: SmoothStepState | null,
+  raw: number | null,
+  params: Record<string, unknown>,
+  timestamp: number,
+  skipSmoothing: boolean,
+): { value: number | null; state: SmoothStepState | null } {
+  const rawFinite = raw !== null && Number.isFinite(raw) ? raw : null;
+  if (rawFinite === null) {
+    return { value: prior ? prior.value : null, state: prior };
+  }
+  if (skipSmoothing || !prior) {
+    const state: SmoothStepState = { value: rawFinite, lastTimestamp: timestamp };
+    return { value: rawFinite, state };
+  }
+  const smoothing = clamp(numberParam(params, 'smoothing', SMOOTH_DEFAULTS.smoothing), 0, 1);
+  const dt = Math.max(0, timestamp - prior.lastTimestamp);
+  const effectiveAlpha = 1 - Math.pow(1 - smoothing, dt / REFERENCE_TICK_MS);
+  const value = prior.value + effectiveAlpha * (rawFinite - prior.value);
+  return { value, state: { value, lastTimestamp: timestamp } };
 }
 
 // --- Public types --------------------------------------------------------
@@ -934,24 +987,11 @@ export function createBehaviorRuntime(
         result = evaluateInvert(upstream('in'), params);
         break;
       case 'smooth': {
-        const raw0 = upstream('in');
-        const raw = raw0 !== null && Number.isFinite(raw0) ? raw0 : null;
-        const smoothing = clamp(numberParam(params, 'smoothing', SMOOTH_DEFAULTS.smoothing), 0, 1);
-        const prior = smoothingStateByGraphNode.get(nodeId);
-        if (raw === null) {
-          // Missing/non-finite input: hold the last computed value rather
-          // than glitching downstream consumers to zero.
-          result = prior ? prior.value : null;
-        } else if (skipSmoothing || !prior) {
-          // Cold start (no prior state) or a degraded tick: snap directly.
-          result = raw;
-          smoothingStateByGraphNode.set(nodeId, { value: result, lastTimestamp: input.timestamp });
-        } else {
-          const dt = Math.max(0, input.timestamp - prior.lastTimestamp);
-          const effectiveAlpha = 1 - Math.pow(1 - smoothing, dt / REFERENCE_TICK_MS);
-          result = prior.value + effectiveAlpha * (raw - prior.value);
-          smoothingStateByGraphNode.set(nodeId, { value: result, lastTimestamp: input.timestamp });
-        }
+        const prior = smoothingStateByGraphNode.get(nodeId) ?? null;
+        const step = evaluateSmooth(prior, upstream('in'), params, input.timestamp, skipSmoothing);
+        result = step.value;
+        if (step.state) smoothingStateByGraphNode.set(nodeId, step.state);
+        else smoothingStateByGraphNode.delete(nodeId);
         break;
       }
       case 'add': {

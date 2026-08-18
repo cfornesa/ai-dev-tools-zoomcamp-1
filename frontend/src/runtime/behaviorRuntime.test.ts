@@ -20,9 +20,11 @@ import {
   evaluateLerp,
   evaluateMapRange,
   evaluateMultiply,
+  evaluateSmooth,
   validateBehaviorGraph,
   validateTransformNodeParams,
   type RuntimeInput,
+  type SmoothStepState,
 } from './behaviorRuntime';
 import type { SceneDocument } from '../api/projects';
 
@@ -633,6 +635,125 @@ describe('Task 37 transform node math: table-driven', () => {
     ];
     it.each(cases)('%s', (_label, value, params, expected) => {
       expect(evaluateClamp(value, params)).toBe(expected);
+    });
+  });
+
+  describe('evaluateSmooth', () => {
+    const primed: SmoothStepState = { value: 0, lastTimestamp: 0 };
+
+    // (label, prior, raw, params, timestamp, skipSmoothing, expectedValue)
+    const cases: Array<
+      [
+        string,
+        SmoothStepState | null,
+        number | null,
+        Record<string, unknown>,
+        number,
+        boolean,
+        number | null,
+      ]
+    > = [
+      [
+        'minimum smoothing (0) holds the prior value with no movement toward raw',
+        primed,
+        100,
+        { smoothing: 0 },
+        16.667,
+        false,
+        0,
+      ],
+      [
+        'maximum smoothing (1) snaps fully to the new raw value once dt > 0',
+        primed,
+        100,
+        { smoothing: 1 },
+        16.667,
+        false,
+        100,
+      ],
+      [
+        'equality: raw equal to the prior value produces no change',
+        { value: 50, lastTimestamp: 0 },
+        50,
+        { smoothing: 0.5 },
+        16.667,
+        false,
+        50,
+      ],
+      [
+        'negative raw value blends fully toward a negative target at smoothing=1',
+        primed,
+        -100,
+        { smoothing: 1 },
+        16.667,
+        false,
+        -100,
+      ],
+      [
+        'NaN raw (non-finite) holds the prior value rather than propagating garbage',
+        { value: 7, lastTimestamp: 0 },
+        NaN,
+        {},
+        16.667,
+        false,
+        7,
+      ],
+      [
+        'Infinity raw (non-finite) holds the prior value',
+        { value: 7, lastTimestamp: 0 },
+        Infinity,
+        {},
+        16.667,
+        false,
+        7,
+      ],
+      [
+        'null (missing) raw with no prior value yet -> null (nothing to hold)',
+        null,
+        null,
+        {},
+        0,
+        false,
+        null,
+      ],
+      [
+        'cold start (no prior state): snaps directly to the first valid raw value',
+        null,
+        42,
+        { smoothing: 0.3 },
+        0,
+        false,
+        42,
+      ],
+      [
+        'a degraded tick (skipSmoothing) snaps directly even with a prior value',
+        primed,
+        100,
+        { smoothing: 0.3 },
+        16.667,
+        true,
+        100,
+      ],
+    ];
+    it.each(cases)('%s', (_label, prior, raw, params, timestamp, skipSmoothing, expectedValue) => {
+      expect(evaluateSmooth(prior, raw, params, timestamp, skipSmoothing).value).toBe(
+        expectedValue,
+      );
+    });
+
+    it('persists the returned state for the next step to blend against', () => {
+      const first = evaluateSmooth(null, 10, { smoothing: 0.5 }, 0, false);
+      expect(first.state).toEqual({ value: 10, lastTimestamp: 0 });
+      const second = evaluateSmooth(first.state, 20, { smoothing: 0.5 }, 16.667, false);
+      expect(second.value).toBeGreaterThan(10);
+      expect(second.value).toBeLessThan(20);
+    });
+
+    it('holding on a missing input returns the same state unchanged (nothing to persist differently)', () => {
+      const prior: SmoothStepState = { value: 7, lastTimestamp: 0 };
+      const held = evaluateSmooth(prior, null, {}, 16.667, false);
+      expect(held.value).toBe(7);
+      expect(held.state).toBe(prior);
     });
   });
 

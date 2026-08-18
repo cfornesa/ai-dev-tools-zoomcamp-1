@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import type { SceneDocument } from '../api/projects';
 import CameraControl from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
@@ -23,13 +24,16 @@ import {
   type Shape,
   type ShapeType,
 } from './sceneShapes';
+import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useDraftAutosave } from './useDraftAutosave';
+import { useDraftRecovery } from './useDraftRecovery';
 import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useSceneEditor } from './useSceneEditor';
 import BehaviorCardsPanel from './BehaviorCardsPanel';
 import DemoControlsPanel from './DemoControlsPanel';
+import DraftRecoveryPrompt from './DraftRecoveryPrompt';
 import GraphListView from './GraphListView';
 import GraphView from './GraphView';
 import RandomnessIndicator from './RandomnessIndicator';
@@ -107,26 +111,82 @@ function EditorWorkspace() {
     [workingCopy, persistedVersion],
   );
 
+  // Task 44: native beforeunload safeguard — registered only while
+  // `isDirty` is true, removed the instant it goes false (successful
+  // save, discard, or nothing unsaved to begin with). See
+  // `useBeforeUnloadGuard.ts` for why it never sets custom wording.
+  useBeforeUnloadGuard(isDirty);
+
+  // Task 44: checks for a valid active draft (local IndexedDB + server,
+  // reconciled) for this project BEFORE the interactive editor panels
+  // render — see `useDraftRecovery.ts`. `persistedVersion?.scene_json` is
+  // the baseline the recovery prompt's change summary is computed against
+  // when a server draft (which carries no summary of its own) wins the
+  // reconciliation.
+  const persistedSceneJson = (persistedVersion?.scene_json as SceneDocument | undefined) ?? null;
+  const draftRecovery = useDraftRecovery(id, loadState === 'ready', persistedSceneJson);
+
+  // Task 42/43 must not be allowed to autosave (locally or to the server)
+  // while a draft is still only a *candidate* awaiting the user's
+  // Recover/Discard/Cancel choice above — an unrelated "no changes since
+  // last save" write landing mid-prompt would silently replace the exact
+  // draft being offered for recovery. So neither hook below ever sees a
+  // real `workingCopy` until `draftRecovery.status` has left
+  // `'checking'`/`'prompt'` (see `useDraftRecovery.ts`'s own comment on
+  // this same point) — `useDraftAutosave`/`useDraftServerSync` both
+  // already no-op on a null working copy, so this is enough to fully gate
+  // them.
+  const draftGateOpen = draftRecovery.status === 'none' || draftRecovery.status === 'resolved';
+  const gatedWorkingCopy = draftGateOpen ? workingCopy : null;
+
   // Task 42: debounced browser-local crash-recovery draft, autosaved into
   // IndexedDB from the same `workingCopy` change stream `isDirty` above
   // already watches. `clearDraft()` is called from exactly the two places
   // `_docs/plan.md` specifies: after a successful explicit Save (below),
   // and after a confirmed Exit-without-saving (the confirm dialog further
   // down) — never automatically, and never on cancel.
-  const draftAutosave = useDraftAutosave(id, workingCopy, persistedVersion);
+  const draftAutosave = useDraftAutosave(id, gatedWorkingCopy, persistedVersion);
 
   // Task 43: syncs the same working copy to the authorized server draft
   // endpoint every 20-30s while editing, after defined meaningful actions,
   // and once (bounded, fire-and-forget) on page hide — see
   // `useDraftServerSync.ts` for the full policy. Never reads a server
-  // draft back into the editor (Task 44's recovery-prompt scope).
-  const draftServerSync = useDraftServerSync(id, workingCopy);
+  // draft back into the editor on its own (that's Task 44's
+  // `useDraftRecovery.ts`, above).
+  const draftServerSync = useDraftServerSync(id, gatedWorkingCopy);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   async function handleConfirmExit() {
     await draftAutosave.clearDraft();
     void draftServerSync.deleteServerDraft();
     setShowExitConfirm(false);
+    navigate('/');
+  }
+
+  // Task 44: "Recover draft" loads the reconciled draft's scene as the new
+  // *unsaved* working copy — `setWorkingCopy` never touches `project` or
+  // `persistedVersion`, so the saved current version stays completely
+  // untouched; `isDirty` above immediately reflects the recovered content
+  // differing from `persistedVersion.scene_json`.
+  function handleRecoverDraft() {
+    const scene = draftRecovery.recover();
+    if (scene) setWorkingCopy(scene);
+  }
+
+  // Task 44: "Discard draft" clears BOTH the local and server draft
+  // (`useDraftRecovery.discard`'s `Promise.all`) and only then resolves —
+  // the editor only ever opens at the last saved version once both
+  // deletions have actually settled, so there's no window where a user
+  // could discard and still see the stale draft recovered later.
+  async function handleDiscardDraft() {
+    await draftRecovery.discard();
+  }
+
+  // Task 44: "Cancel" returns to the project gallery without touching
+  // either draft or the saved version — nothing here calls `recover()`,
+  // `discard()`, or any save/restore endpoint, so the draft stays exactly
+  // as recoverable as it was before this prompt was shown.
+  function handleCancelDraftPrompt() {
     navigate('/');
   }
 
@@ -299,6 +359,30 @@ function EditorWorkspace() {
           Retry
         </button>
       </div>
+    );
+  }
+
+  // Task 44: the project and its persisted version have loaded, but the
+  // recovery check (local + server draft, reconciled) hasn't resolved
+  // yet — the interactive editor must not render until it has, so a
+  // reopened project with a valid draft never flashes the persisted
+  // version before the recovery prompt appears.
+  if (draftRecovery.status === 'checking') {
+    return (
+      <p role="status" aria-live="polite">
+        Checking for recovered work…
+      </p>
+    );
+  }
+
+  if (draftRecovery.status === 'prompt' && draftRecovery.candidate) {
+    return (
+      <DraftRecoveryPrompt
+        candidate={draftRecovery.candidate}
+        onRecover={handleRecoverDraft}
+        onDiscard={handleDiscardDraft}
+        onCancel={handleCancelDraftPrompt}
+      />
     );
   }
 

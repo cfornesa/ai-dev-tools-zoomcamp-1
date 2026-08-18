@@ -20,9 +20,9 @@ type LoadMoreState = {
  * docstring in `scenes/api.py` for why the two are structurally identical
  * rather than "anonymous plus extras for owners").
  *
- * Out of scope (Task 51/issue #53, not yet built): cards are not
- * click-through to an interactive public project page — that page doesn't
- * exist yet. This page only lists.
+ * Task 51 (issue #53): each card (`PublicProjectCard.tsx`) links to the
+ * interactive public project viewer at `/p/<id>` (`PublicProjectViewer.tsx`).
+ * This page itself still only lists — the viewer page is a separate route.
  *
  * States: initial loading, initial-load error (with retry), empty (no
  * public projects at all), a populated list with a keyboard-operable

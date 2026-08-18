@@ -169,6 +169,11 @@ describe('PublicGallery pagination', () => {
 
     const loadMoreButton = screen.getByRole('button', { name: /load more/i });
     expect(loadMoreButton.tagName).toBe('BUTTON');
+    // Task 51 (issue #53): each card is now a link to the public viewer
+    // (`/p/<id>`), so "Load more" is the *second* stop in tab order, after
+    // the one card's link.
+    await user.tab();
+    expect(screen.getByRole('link', { name: /first/i })).toHaveFocus();
     await user.tab();
     expect(loadMoreButton).toHaveFocus();
     await user.keyboard('{Enter}');

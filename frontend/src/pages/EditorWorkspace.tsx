@@ -35,6 +35,7 @@ import AIProposalPanel from './AIProposalPanel';
 import BehaviorCardsPanel from './BehaviorCardsPanel';
 import DemoControlsPanel from './DemoControlsPanel';
 import DraftRecoveryPrompt from './DraftRecoveryPrompt';
+import ExportConfigDialog from './ExportConfigDialog';
 import GraphListView from './GraphListView';
 import GraphView from './GraphView';
 import RandomnessIndicator from './RandomnessIndicator';
@@ -771,6 +772,15 @@ function EditorWorkspace() {
               }}
             />
           )}
+
+          {/* Task 55: export configuration dialog. Read-only against
+              version history/project metadata — it never restores a
+              version or changes `project.current_version`, and its
+              terminal "Export" action is an intentional stub (logs the
+              assembled config) until Task 56+ builds real artifact
+              generation. See `ExportConfigDialog.tsx`'s module doc
+              comment. */}
+          {id && <ExportConfigDialog projectId={id} project={project} />}
 
           {/* Task 48: AI create/edit proposal preview and acceptance. The
               proposal itself is a third state entirely inside

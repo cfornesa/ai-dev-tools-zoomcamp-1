@@ -2,13 +2,18 @@
 project read (Task 49).
 
 SQLite-portable tests below cover single-writer correctness (validation,
-authorization, immediate visibility effects). The one genuine concurrency
-guarantee this task makes — that a concurrent version save can't race the
-publish/unpublish flip into an inconsistent state — is PostgreSQL-gated,
-matching every other `select_for_update()`-backed suite in this project
+authorization, immediate visibility effects), including a sequential,
+real-endpoints proof that the public read always resolves
+`current_version` fresh rather than a value fixed at publish time
+(`test_public_read_reflects_a_new_version_saved_after_publish`). The one
+guarantee that specifically requires genuine *concurrency* to observe —
+that a concurrent version save can't race the publish/unpublish flip
+itself into an inconsistent state — is PostgreSQL-gated, matching every
+other `select_for_update()`-backed suite in this project
 (tests/test_scene_version_save_api.py, tests/test_project_scene_version_models.py).
 """
 
+import copy
 import json
 import threading
 from pathlib import Path
@@ -25,6 +30,16 @@ from scenes.publishing import PLACEHOLDER_TITLE
 BLANK_SCENE = json.loads(
     (
         Path(__file__).resolve().parent.parent / "schema" / "fixtures" / "valid" / "blank.json"
+    ).read_text()
+)
+
+FEATURE_RICH_SCENE = json.loads(
+    (
+        Path(__file__).resolve().parent.parent
+        / "schema"
+        / "fixtures"
+        / "valid"
+        / "feature_rich.json"
     ).read_text()
 )
 
@@ -123,6 +138,53 @@ def test_publish_records_activity(owner_client, publishable_project):
         project=publishable_project, action_type=ProjectActivity.ActionType.PUBLISHED
     )
     assert activity.metadata["version_sequence"] == 1
+
+
+@pytest.mark.django_db
+def test_public_read_reflects_a_new_version_saved_after_publish(
+    owner_client, anon_client, publishable_project
+):
+    """QA follow-up (issue #49): a SQLite-runnable, sequential proof that
+    `PublicProjectDetailView` resolves `current_version` fresh at request
+    time rather than any value cached/snapshotted at publish time.
+
+    Sequence, entirely through the real endpoints (no raw ORM
+    shortcuts): publish -> confirm the public endpoint serves version 1's
+    content -> save a brand-new version 2 through the real version-save
+    endpoint (Task 14's `SceneVersionListCreateView`) *without*
+    unpublishing or re-publishing -> confirm the public endpoint now
+    serves version 2's content. If the public endpoint were reading a
+    value fixed at publish time instead of `project.current_version`
+    live, the second assertion would still see version 1.
+    """
+    publish_response = owner_client.post(_publish_url(publishable_project))
+    assert publish_response.status_code == 200
+
+    before = anon_client.get(_public_url(publishable_project))
+    assert before.status_code == 200
+    assert before.json()["current_version"]["sequence"] == 1
+    assert before.json()["current_version"]["scene_json"] == BLANK_SCENE
+
+    new_scene = copy.deepcopy(FEATURE_RICH_SCENE)
+    save_response = owner_client.post(
+        f"/api/projects/{publishable_project.public_id}/versions/",
+        {"scene_json": new_scene, "origin": "manual", "change_label": "Second version"},
+        format="json",
+    )
+    assert save_response.status_code == 201
+    assert save_response.json()["sequence"] == 2
+
+    # visibility was never touched by the save above -- still public, no
+    # re-publish call was made.
+    publishable_project.refresh_from_db()
+    assert publishable_project.visibility == Project.Visibility.PUBLIC
+
+    after = anon_client.get(_public_url(publishable_project))
+    assert after.status_code == 200
+    after_version = after.json()["current_version"]
+    assert after_version["sequence"] == 2
+    assert after_version["scene_json"] == new_scene
+    assert after_version["scene_json"] != BLANK_SCENE
 
 
 @pytest.mark.django_db

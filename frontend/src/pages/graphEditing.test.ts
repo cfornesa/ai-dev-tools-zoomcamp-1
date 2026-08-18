@@ -7,10 +7,13 @@ import {
   addGraphConnection,
   addGraphNode,
   checkGraphConnection,
+  creatableNodeTypes,
   moveGraphNode,
+  NODE_TYPE_CATALOG,
   removeGraphConnection,
   removeGraphNode,
   updateGraphNodeParams,
+  type GraphNodeData,
 } from './graphEditing';
 
 /**
@@ -301,6 +304,40 @@ describe('moveGraphNode', () => {
     };
     expect(graph.nodes[0].id).toBe(a.nodeId);
     expect(graph.nodes[0].position).toEqual({ x: 42, y: 99 });
+  });
+});
+
+describe('Task 37: transform node catalog (smoke)', () => {
+  const transformTypes = ['mapRange', 'clamp', 'smooth', 'invert', 'add', 'multiply', 'lerp'];
+
+  it('lists all 7 transform node types in the catalog, family "transform"', () => {
+    for (const type of transformTypes) {
+      expect(NODE_TYPE_CATALOG[type]).toBeDefined();
+      expect(NODE_TYPE_CATALOG[type].family).toBe('transform');
+    }
+    const creatable = creatableNodeTypes().filter((n) => n.family === 'transform');
+    expect(creatable.map((n) => n.type).sort()).toEqual([...transformTypes].sort());
+  });
+
+  it('adds each transform node type to a scene via addGraphNode', () => {
+    for (const type of transformTypes) {
+      const outcome = addGraphNode(sceneWithShape(), type, { x: 0, y: 0 });
+      expect(outcome.ok).toBe(true);
+    }
+  });
+
+  it('connects mapRange -> clamp as a type-compatible value-to-value chain', () => {
+    const scene = sceneWithShape();
+    const withMap = addGraphNode(scene, 'mapRange', { x: 0, y: 0 });
+    if (!withMap.ok || !withMap.nodeId) throw new Error('setup failed');
+    const withClamp = addGraphNode(withMap.scene, 'clamp', { x: 200, y: 0 });
+    if (!withClamp.ok || !withClamp.nodeId) throw new Error('setup failed');
+    const check = checkGraphConnection(
+      (withClamp.scene.graph as { nodes: GraphNodeData[] }).nodes,
+      [],
+      { fromNodeId: withMap.nodeId, fromPort: 'out', toNodeId: withClamp.nodeId, toPort: 'in' },
+    );
+    expect(check.valid).toBe(true);
   });
 });
 

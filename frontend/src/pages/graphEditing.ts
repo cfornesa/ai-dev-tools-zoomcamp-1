@@ -75,6 +75,8 @@ export type PortInfo = { port: string; label: string; dataType: PortDataType };
 
 export type ParamFieldSpec =
   | { key: string; label: string; kind: 'text' }
+  | { key: string; label: string; kind: 'number'; min?: number; max?: number; step?: number }
+  | { key: string; label: string; kind: 'boolean' }
   | {
       key: string;
       label: string;
@@ -116,6 +118,12 @@ const PORT_DATA_TYPES: Record<string, PortDataType> = {
   in: 'value',
   event: 'event',
   trigger: 'event',
+  // Task 37 transform node ports — all carry numeric "value" data, never
+  // "event" (listed explicitly rather than relying on the 'value' fallback
+  // below, so the port vocabulary stays self-documenting here too).
+  out: 'value',
+  inA: 'value',
+  inB: 'value',
 };
 
 function portDataType(port: string): PortDataType {
@@ -131,16 +139,23 @@ const SHAPE_GROUP_PROPERTIES = Array.from(ALLOWED_TARGET_PROPERTIES_BY_SCOPE.sha
 
 /** One catalog entry per (family, type) this graph editor can create —
  * exactly the pairs `ALLOWED_NODE_TYPES_BY_FAMILY` (behaviorRuntime.ts)
- * allows today. `transform`/`condition`/`output` are recognized families
- * (the schema's `$defs.graphNode.family` enum, and `_docs/plan.md`'s node
- * vocabulary) but have no allowlisted node *types* yet — Task 37 (Map
- * range, Clamp, Smooth, Invert, Add, Multiply, Lerp, Oscillator, Timer,
- * Delay, Cooldown) and Task 38 (If/Else) haven't landed, and neither has
- * an "output"/"Preview target" node type. Those families appear in
- * `FAMILY_LABELS` and the family picker for context, but the catalog below
- * has no entries for them, so the graph editor's "add node" affordance
- * naturally offers nothing to create for those families until a later
- * task adds entries here alongside `ALLOWED_NODE_TYPES_BY_FAMILY`. */
+ * allows today. `condition`/`output` are recognized families (the schema's
+ * `$defs.graphNode.family` enum, and `_docs/plan.md`'s node vocabulary) but
+ * have no allowlisted node *types* yet — Task 38 (If/Else) hasn't landed,
+ * and neither has an "output"/"Preview target" node type; `transform`'s
+ * `Oscillator`/`Timer`/`Delay`/`Cooldown` are also out of scope (see
+ * `behaviorRuntime.ts`'s module doc comment). Those families/types appear
+ * in `FAMILY_LABELS` and the family picker for context, but the catalog
+ * below has no entries for them, so the graph editor's "add node"
+ * affordance naturally offers nothing to create for those families until a
+ * later task adds entries here alongside `ALLOWED_NODE_TYPES_BY_FAMILY`.
+ *
+ * The 7 Task 37 transform node types' `paramFields`/`defaultParams` mirror
+ * `behaviorRuntime.ts`'s `MAP_RANGE_DEFAULTS`/`CLAMP_DEFAULTS`/
+ * `SMOOTH_DEFAULTS`/`INVERT_DEFAULTS`/`LERP_DEFAULTS` exactly (Add/Multiply
+ * have no configurable params) — see that module's "Transform node
+ * registry" doc comment for the exact documented semantics/ranges each
+ * field maps to. */
 export const NODE_TYPE_CATALOG: Record<
   string,
   {
@@ -231,6 +246,84 @@ export const NODE_TYPE_CATALOG: Record<
     outputs: [],
     paramFields: [{ key: 'preset', label: 'Preset', kind: 'text' }],
     defaultParams: { preset: 'pulse' },
+  },
+  // --- Task 37 transform nodes -------------------------------------
+  mapRange: {
+    family: 'transform',
+    label: 'Map range',
+    inputs: [{ port: 'in', label: 'Value', dataType: 'value' }],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [
+      { key: 'inMin', label: 'Input min', kind: 'number' },
+      { key: 'inMax', label: 'Input max', kind: 'number' },
+      { key: 'outMin', label: 'Output min', kind: 'number' },
+      { key: 'outMax', label: 'Output max', kind: 'number' },
+      { key: 'clampOutput', label: 'Clamp output to range', kind: 'boolean' },
+    ],
+    defaultParams: { inMin: 0, inMax: 1, outMin: 0, outMax: 1, clampOutput: true },
+  },
+  clamp: {
+    family: 'transform',
+    label: 'Clamp',
+    inputs: [{ port: 'in', label: 'Value', dataType: 'value' }],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [
+      { key: 'min', label: 'Min', kind: 'number' },
+      { key: 'max', label: 'Max', kind: 'number' },
+    ],
+    defaultParams: { min: 0, max: 1 },
+  },
+  smooth: {
+    family: 'transform',
+    label: 'Smooth',
+    inputs: [{ port: 'in', label: 'Value', dataType: 'value' }],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [{ key: 'smoothing', label: 'Smoothing (0-1)', kind: 'number', min: 0, max: 1 }],
+    defaultParams: { smoothing: 0.3 },
+  },
+  invert: {
+    family: 'transform',
+    label: 'Invert',
+    inputs: [{ port: 'in', label: 'Value', dataType: 'value' }],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [
+      { key: 'min', label: 'Min', kind: 'number' },
+      { key: 'max', label: 'Max', kind: 'number' },
+    ],
+    defaultParams: { min: 0, max: 1 },
+  },
+  add: {
+    family: 'transform',
+    label: 'Add',
+    inputs: [
+      { port: 'inA', label: 'A', dataType: 'value' },
+      { port: 'inB', label: 'B', dataType: 'value' },
+    ],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [],
+    defaultParams: {},
+  },
+  multiply: {
+    family: 'transform',
+    label: 'Multiply',
+    inputs: [
+      { port: 'inA', label: 'A', dataType: 'value' },
+      { port: 'inB', label: 'B', dataType: 'value' },
+    ],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [],
+    defaultParams: {},
+  },
+  lerp: {
+    family: 'transform',
+    label: 'Lerp',
+    inputs: [
+      { port: 'inA', label: 'A', dataType: 'value' },
+      { port: 'inB', label: 'B', dataType: 'value' },
+    ],
+    outputs: [{ port: 'out', label: 'Value', dataType: 'value' }],
+    paramFields: [{ key: 't', label: 'T (0-1)', kind: 'number', min: 0, max: 1 }],
+    defaultParams: { t: 0.5 },
   },
 };
 

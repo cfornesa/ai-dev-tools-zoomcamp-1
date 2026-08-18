@@ -149,6 +149,53 @@ describe('GraphListView', () => {
     expect(node.params.signal).toBe('palmY');
   });
 
+  it('Task 37: adds a transform node (Map range) via the keyboard-operable node-type select', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={sceneWithShape()} />);
+
+    await user.selectOptions(
+      screen.getByLabelText('Node type'),
+      screen.getByRole('option', { name: 'Transform: Map range' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Add node' }));
+
+    const nodeList = screen.getByRole('list', { name: 'Graph node list' });
+    expect(within(nodeList).getByText('Map range')).toBeInTheDocument();
+    expect(within(nodeList).getByText('Transform')).toBeInTheDocument();
+
+    const scene = currentScene();
+    const graph = scene.graph as {
+      nodes: Array<{ type: string; params: Record<string, unknown> }>;
+    };
+    const node = graph.nodes.find((n) => n.type === 'mapRange')!;
+    expect(node).toBeDefined();
+    // Default params are numbers/booleans, not strings — the schema only
+    // accepts number/string/boolean/null leaves, and the runtime's math
+    // reads them with `typeof === 'number'`.
+    expect(node.params).toEqual({ inMin: 0, inMax: 1, outMin: 0, outMax: 1, clampOutput: true });
+  });
+
+  it('Task 37: editing a numeric transform param field updates canonical scene state as a number', async () => {
+    const user = userEvent.setup();
+    const scene = sceneWithShape();
+    const withMapRange = addGraphNode(scene, 'mapRange', { x: 0, y: 0 });
+    if (!withMapRange.ok) throw new Error('setup failed');
+
+    render(<Harness initial={withMapRange.scene} />);
+
+    const outMaxField = screen.getByLabelText('Output max');
+    await user.clear(outMaxField);
+    await user.type(outMaxField, '250');
+
+    const result = currentScene();
+    const graph = result.graph as {
+      nodes: Array<{ type: string; params: Record<string, unknown> }>;
+    };
+    const node = graph.nodes.find((n) => n.type === 'mapRange')!;
+    expect(node.params.outMax).toBe(250);
+    expect(typeof node.params.outMax).toBe('number');
+  });
+
   it('rejects an invalid connection in text and leaves the graph completely unchanged', async () => {
     const user = userEvent.setup();
     const scene = sceneWithShape();

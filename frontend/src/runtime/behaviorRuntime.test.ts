@@ -1310,6 +1310,32 @@ describe('Task 38: evaluateTimer (pure function of elapsed time)', () => {
     expect(evaluateTimer(1000, { mode: 'countdown', durationMs: 1000 })).toBe(0);
     expect(evaluateTimer(1500, { mode: 'countdown', durationMs: 1000 })).toBe(0);
   });
+
+  it('produces the identical value at the same elapsed timestamp regardless of tick history (loop mode)', () => {
+    const params = { mode: 'loop', periodMs: 1000 };
+    // Same pattern as evaluateOscillator's frame-rate-independence test
+    // above: walk up to (but not through) elapsed 990ms at two different
+    // simulated cadences — 30fps-equivalent (~33.33ms/tick) and
+    // 60fps-equivalent (~16.67ms/tick) — then both sequences take one
+    // final tick landing exactly on elapsed 990ms. Since evaluateTimer
+    // depends only on `timestamp` (no persisted state), the two sequences
+    // must agree at that shared elapsed timestamp regardless of how many
+    // ticks (or how widely spaced) preceded it.
+    for (let t = 0; t < 990; t += 1000 / 30) evaluateTimer(t, params);
+    const at30fps = evaluateTimer(990, params);
+    for (let t = 0; t < 990; t += 1000 / 60) evaluateTimer(t, params);
+    const at60fps = evaluateTimer(990, params);
+    expect(at30fps).toBe(at60fps);
+  });
+
+  it('produces the identical value at the same elapsed timestamp regardless of tick history (countdown mode)', () => {
+    const params = { mode: 'countdown', durationMs: 2000 };
+    for (let t = 0; t < 990; t += 1000 / 30) evaluateTimer(t, params);
+    const at30fps = evaluateTimer(990, params);
+    for (let t = 0; t < 990; t += 1000 / 60) evaluateTimer(t, params);
+    const at60fps = evaluateTimer(990, params);
+    expect(at30fps).toBe(at60fps);
+  });
 });
 
 describe('Task 38: evaluateDelay (elapsed-timestamp-gated pass-through)', () => {
@@ -1724,6 +1750,42 @@ describe('Task 38: end-to-end graph execution', () => {
     const scene = sceneWithGraph(nodes, connections);
     expect(tickPositionX(scene, input(1000, {}))).toBe(0);
     expect(tickPositionX(scene, input(1500, {}))).toBe(0);
+  });
+
+  it('timer: produces the same value at the same elapsed timestamp regardless of simulated frame rate (loop mode)', () => {
+    const nodes = [
+      {
+        id: 'timerNode',
+        family: 'input',
+        type: 'timer',
+        params: { mode: 'loop', periodMs: 1000 },
+        position: { x: 0, y: 0 },
+      },
+      shapePropertyNode('out-node', 'positionX', { x: 200, y: 0 }),
+    ];
+    const connections = [
+      { id: 'c1', fromNodeId: 'timerNode', fromPort: 'value', toNodeId: 'out-node', toPort: 'in' },
+    ];
+
+    // Same pattern as the oscillator end-to-end frame-rate test above: walk
+    // each runtime up to (but not through) elapsed 990ms at a different
+    // simulated cadence, then take one final tick landing exactly on
+    // elapsed 990ms from each, and compare those.
+    const scene30 = sceneWithGraph(nodes, connections);
+    const runtime30 = createBehaviorRuntime(scene30);
+    for (let t = 0; t < 990; t += 1000 / 30) runtime30.tick(input(t, {}));
+    const at30fps = runtime30
+      .tick(input(990, {}))
+      .continuous.find((c) => c.targetProperty === 'positionX')?.value;
+
+    const scene60 = sceneWithGraph(nodes, connections);
+    const runtime60 = createBehaviorRuntime(scene60);
+    for (let t = 0; t < 990; t += 1000 / 60) runtime60.tick(input(t, {}));
+    const at60fps = runtime60
+      .tick(input(990, {}))
+      .continuous.find((c) => c.targetProperty === 'positionX')?.value;
+
+    expect(at30fps).toBe(at60fps);
   });
 
   it('delay: withholds output until exactly delayMs, then emits; a mid-flight value change restarts the wait', () => {

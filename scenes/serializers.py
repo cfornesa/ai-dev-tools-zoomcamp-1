@@ -22,7 +22,18 @@ class TagListField(serializers.ListField):
 
 
 class ProjectMetadataSerializer(serializers.ModelSerializer):
-    """Mutable project metadata only — never touches SceneVersion (Task 13/17)."""
+    """Mutable project metadata only — never touches SceneVersion (Task 13/17).
+
+    `visibility` is deliberately excluded (Task 49): switching a project
+    public or private is no longer a plain metadata edit — it must go
+    through `ProjectPublishView`/`ProjectUnpublishView` in `scenes/api.py`,
+    which enforce the meaningful-content rules (`scenes/publishing.py`)
+    and the owner-only `Action.PROJECT_PUBLISH` check before flipping it.
+    Letting this generic PATCH set `visibility` directly would silently
+    bypass that validation, so a `visibility` key in a PATCH body here is
+    simply ignored (not an error — every other field in the request still
+    applies) rather than accepted.
+    """
 
     tags = TagListField(required=False)
     thumbnail_choice = serializers.ChoiceField(choices=THUMBNAIL_CHOICES, required=False)
@@ -33,7 +44,6 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "tags",
-            "visibility",
             "allow_public_remix",
             "thumbnail_choice",
             "export_attribution",
@@ -41,7 +51,6 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "title": {"required": False, "allow_blank": False},
             "description": {"required": False, "allow_blank": True},
-            "visibility": {"required": False},
             "allow_public_remix": {"required": False},
             "export_attribution": {"required": False},
         }
@@ -63,6 +72,57 @@ class ProjectSerializer(serializers.ModelSerializer):
             "allow_public_remix",
             "thumbnail_choice",
             "export_attribution",
+            "current_version",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class PublicSceneVersionSerializer(serializers.ModelSerializer):
+    """Task 49: the *current* saved version of a public project, for the
+    future public-viewer/gallery (Tasks 50/51) to consume.
+
+    Intentionally excludes `created_by`/`parent`/`fork_source_version`/
+    `ai_request_id` — none of that is "creator attribution" (that's the
+    project's `owner`, exposed separately by `PublicProjectSerializer`);
+    it's internal history bookkeeping that would leak another user's
+    username or ai-proposal wiring to an anonymous visitor for no reason.
+    """
+
+    class Meta:
+        model = SceneVersion
+        fields = ["sequence", "scene_json", "created_at"]
+        read_only_fields = fields
+
+
+class PublicProjectSerializer(serializers.ModelSerializer):
+    """Task 49: the public-reachable shape of a published project.
+
+    Deliberately a much smaller field set than `ProjectSerializer`: no
+    `export_attribution` (an owner-only export preference), and
+    `current_version` is the nested scene snapshot itself (not just an
+    id) so a future public viewer/export has everything it needs from one
+    response. `PublicProjectDetailView` (`scenes/api.py`) is the only
+    place this serializer is used, and that view refuses to serve
+    anything whose `visibility` isn't `public`, regardless of who's
+    asking — see that view's own docstring.
+    """
+
+    id = serializers.UUIDField(source="public_id", read_only=True)
+    owner = serializers.CharField(source="owner.username", read_only=True)
+    current_version = PublicSceneVersionSerializer(read_only=True)
+
+    class Meta:
+        model = Project
+        fields = [
+            "id",
+            "owner",
+            "title",
+            "description",
+            "tags",
+            "allow_public_remix",
+            "thumbnail_choice",
             "current_version",
             "created_at",
             "updated_at",

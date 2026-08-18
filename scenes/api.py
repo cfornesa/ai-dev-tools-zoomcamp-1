@@ -20,13 +20,22 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.models import EditSessionDraft, Project, SceneVersion, Template, default_draft_expiry
+from scenes.models import (
+    EditSessionDraft,
+    Project,
+    ProjectActivity,
+    SceneVersion,
+    Template,
+    default_draft_expiry,
+)
 from scenes.permissions import Action, can, require
+from scenes.publishing import validate_meaningful_metadata
 from scenes.serializers import (
     DraftSerializer,
     DraftUpsertSerializer,
     ProjectMetadataSerializer,
     ProjectSerializer,
+    PublicProjectSerializer,
     SceneVersionCreateSerializer,
     SceneVersionDetailSerializer,
     SceneVersionListSerializer,
@@ -90,6 +99,161 @@ class ProjectDetailView(APIView):
         project.save(update_fields=["is_deleted", "deleted_at"])
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectPublishValidationError(Exception):
+    """Raised inside an atomic block to abort a publish that fails validation."""
+
+    def __init__(self, errors: dict[str, list[str]]):
+        self.errors = errors
+
+
+class ProjectPublishView(APIView):
+    """Task 49: switch a project from private to public.
+
+    Owner-only (`Action.PROJECT_PUBLISH`, same 404-not-403 convention as
+    every other project-scoped endpoint — a non-owner can't tell a private
+    project apart from one that doesn't exist). Two things must both hold
+    before `visibility` flips, checked *inside* the same
+    `select_for_update()`-locked transaction that performs the flip so a
+    concurrent metadata edit or version save can't slip past a
+    check-then-act gap:
+
+    1. Meaningful content: `scenes.publishing.validate_meaningful_metadata`
+       against the project's *current* title/description, read fresh under
+       the lock. A failure returns 400 with field-level `errors`, never a
+       generic failure, and leaves `visibility` untouched.
+    2. At least one saved version exists (`current_version` is not null).
+       A bare `Project.objects.create()` — `ProjectListCreateView.post` —
+       has no version yet; publishing that would make "the current saved
+       version" a meaningless concept, so it's rejected the same way as a
+       content-validation failure.
+
+    What "the current saved version reachable at a stable public URL"
+    means concretely: `PublicProjectDetailView` (below) always resolves
+    `project.current_version` *fresh, at request time* — this endpoint
+    never copies/snapshots a version into some separate "published
+    version" pointer. So there is no race to protect against between "the
+    version that was current when Publish was clicked" and "the version a
+    visitor's request sees a moment later": by construction, a public
+    visitor always sees whatever is current right now, and a save made
+    after publishing simply becomes the newly current public version, per
+    `_docs/plan.md`'s "Switching from private to public immediately makes
+    the project's current saved version available." The lock here exists
+    only to make the validate-then-flip sequence atomic against a
+    concurrent metadata edit, not to pin a version.
+
+    No "stale request" concept applies to publish itself: the client
+    sends no version id, ETag, or other stale-base token for this action —
+    every check reads the row fresh under the lock, so there is nothing
+    for a stale request to be stale *about*. (Contrast with
+    `SceneVersionDetailView.delete`/`SceneVersionRestoreView.post`, which
+    reject acting on a version that turned out to be the current one by
+    the time the lock was acquired — publish has no equivalent resource
+    identity to go stale.)
+    """
+
+    def post(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.PROJECT_PUBLISH, project)
+
+        try:
+            with transaction.atomic():
+                locked_project = Project.objects.select_for_update().get(pk=project.pk)
+
+                errors = validate_meaningful_metadata(
+                    locked_project.title, locked_project.description
+                )
+                if locked_project.current_version_id is None:
+                    errors.setdefault("current_version", []).append(
+                        "Save at least one version before publishing."
+                    )
+                if errors:
+                    raise ProjectPublishValidationError(errors)
+
+                locked_project.visibility = Project.Visibility.PUBLIC
+                locked_project.save(update_fields=["visibility", "updated_at"])
+                ProjectActivity.objects.create(
+                    project=locked_project,
+                    actor=request.user,
+                    action_type=ProjectActivity.ActionType.PUBLISHED,
+                    metadata={"version_sequence": locked_project.current_version.sequence},
+                )
+        except ProjectPublishValidationError as exc:
+            return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
+        except Project.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(ProjectSerializer(locked_project).data)
+
+
+class ProjectUnpublishView(APIView):
+    """Task 49: switch a project back to private, immediately.
+
+    Owner-only, same as `ProjectPublishView`. No content validation is
+    needed to go *private* (only publishing requires meaningful content);
+    there is also no confirmation step server-side — `_docs/plan.md` says
+    switching back to private "immediately removes it from the gallery
+    and disables public access," and the frontend confirmation dialog
+    (Task 49's own UI) is scoped to the private-to-public direction only,
+    matching the acceptance criteria's "first private-to-public action"
+    wording.
+
+    `SceneVersion` history is never touched by this view — there is no
+    code path here that could reach it — so "retaining project and
+    version history" on unpublish is true by construction, not by a
+    separate check.
+    """
+
+    def post(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.PROJECT_PUBLISH, project)
+
+        try:
+            with transaction.atomic():
+                locked_project = Project.objects.select_for_update().get(pk=project.pk)
+                locked_project.visibility = Project.Visibility.PRIVATE
+                locked_project.save(update_fields=["visibility", "updated_at"])
+                ProjectActivity.objects.create(
+                    project=locked_project,
+                    actor=request.user,
+                    action_type=ProjectActivity.ActionType.UNPUBLISHED,
+                    metadata={},
+                )
+        except Project.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(ProjectSerializer(locked_project).data)
+
+
+class PublicProjectDetailView(APIView):
+    """Task 49: minimal, anonymous-reachable read of a *published* project.
+
+    This is server-side data plumbing only — Tasks 50/51 (public gallery
+    listing, public project viewer page) are explicitly out of scope here
+    and are NOT built by this view. It exists so `public_id` resolves to
+    something at a stable URL (`/api/public/projects/<public_id>/`) for
+    those future tasks to consume.
+
+    Gated strictly on `visibility == PUBLIC`, checked directly rather than
+    through `Action.PROJECT_READ` — `PROJECT_READ` also happily returns a
+    *private* project to its own owner, which is correct for the private
+    editor APIs but wrong here: this route must 404 for literally everyone,
+    owner included, the instant a project isn't public, matching the
+    acceptance criteria's "unpublishing immediately removes anonymous
+    access" (there is no reason the owner would use this URL instead of
+    the normal owner-scoped `ProjectDetailView`, so refusing them too
+    costs nothing and keeps the gating rule simple and absolute).
+    `PublicProjectSerializer` is the only field set this view ever
+    returns — see its own docstring for why owner-private fields
+    (drafts, AI prompts, `export_attribution`) can never leak through it.
+    """
+
+    def get(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        if project.visibility != Project.Visibility.PUBLIC:
+            raise Http404
+        return Response(PublicProjectSerializer(project).data)
 
 
 class SceneVersionListCreateView(APIView):

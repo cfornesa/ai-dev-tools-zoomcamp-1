@@ -6,6 +6,9 @@ from scenes.api import (
     DraftDetailView,
     ProjectDetailView,
     ProjectListCreateView,
+    ProjectPublishView,
+    ProjectUnpublishView,
+    PublicProjectDetailView,
     SaveVersionAsTemplateView,
     SceneVersionDetailView,
     SceneVersionListCreateView,
@@ -24,6 +27,21 @@ urlpatterns = [
         name="template-clone",
     ),
     path("projects/<uuid:public_id>/", ProjectDetailView.as_view(), name="project-detail"),
+    path(
+        "projects/<uuid:public_id>/publish/",
+        ProjectPublishView.as_view(),
+        name="project-publish",
+    ),
+    path(
+        "projects/<uuid:public_id>/unpublish/",
+        ProjectUnpublishView.as_view(),
+        name="project-unpublish",
+    ),
+    path(
+        "public/projects/<uuid:public_id>/",
+        PublicProjectDetailView.as_view(),
+        name="public-project-detail",
+    ),
     path(
         "projects/<uuid:public_id>/versions/",
         SceneVersionListCreateView.as_view(),

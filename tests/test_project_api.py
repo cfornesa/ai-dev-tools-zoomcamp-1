@@ -139,29 +139,36 @@ def test_owner_can_update_metadata_without_creating_a_version(owner_client, priv
 
 
 @pytest.mark.django_db
-def test_owner_can_toggle_visibility_and_remix_via_metadata(owner_client, private_project):
+def test_owner_can_toggle_remix_via_metadata(owner_client, private_project):
     response = owner_client.patch(
         f"/api/projects/{private_project.public_id}/",
-        {"visibility": "public", "allow_public_remix": True},
+        {"allow_public_remix": True},
         format="json",
     )
 
     assert response.status_code == 200
     private_project.refresh_from_db()
-    assert private_project.visibility == "public"
     assert private_project.allow_public_remix is True
 
 
 @pytest.mark.django_db
-def test_update_rejects_invalid_visibility_value(owner_client, private_project):
+def test_metadata_patch_ignores_visibility_key(owner_client, private_project):
+    """Task 49: `visibility` is no longer a plain metadata field — changing
+    it requires `/publish/`/`/unpublish/` (see tests/test_project_publish_api.py),
+    which enforce the meaningful-content rules this generic PATCH does not.
+    A `visibility` key in the PATCH body is silently ignored: it's neither
+    applied nor treated as an error, and the rest of the request still
+    succeeds."""
     response = owner_client.patch(
         f"/api/projects/{private_project.public_id}/",
-        {"visibility": "not-a-real-choice"},
+        {"visibility": "public", "title": "Still just metadata"},
         format="json",
     )
 
-    assert response.status_code == 400
-    assert "visibility" in response.json()
+    assert response.status_code == 200
+    private_project.refresh_from_db()
+    assert private_project.visibility == "private"
+    assert private_project.title == "Still just metadata"
 
 
 @pytest.mark.django_db

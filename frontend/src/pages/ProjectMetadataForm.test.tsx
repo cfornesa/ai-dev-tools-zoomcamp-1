@@ -90,6 +90,30 @@ describe('ProjectMetadataForm', () => {
     // scene-version endpoint call anywhere in this component.
   });
 
+  it('toggles the remix setting and saves it via the plain metadata PATCH, never a version save', async () => {
+    // Task 51: `allow_public_remix` is metadata, exactly like title/tags —
+    // the owner can flip it any time without going through the version-
+    // save or publish endpoints.
+    mockedGetProject.mockResolvedValue(baseProject({ allow_public_remix: true }));
+    mockedUpdateProjectMetadata.mockResolvedValue(baseProject({ allow_public_remix: false }));
+    const user = userEvent.setup();
+
+    renderForm();
+    const remixCheckbox = await screen.findByLabelText(/allow other users to remix/i);
+    expect(remixCheckbox).toBeChecked();
+
+    await user.click(remixCheckbox);
+    expect(remixCheckbox).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
+    expect(mockedUpdateProjectMetadata).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({ allow_public_remix: false }),
+    );
+  });
+
   it('associates a blank-title field error with the input accessibly', async () => {
     mockedGetProject.mockResolvedValue(baseProject({ title: 'Something' }));
     const user = userEvent.setup();

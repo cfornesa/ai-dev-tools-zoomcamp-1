@@ -245,6 +245,23 @@ export function getPublicProject(id: string): Promise<PublicProject> {
   return apiFetch<PublicProject>(`/api/public/projects/${id}/`);
 }
 
+/** Task 51: atomically fork a public, remix-enabled project's current
+ * version into a new private project owned by the caller
+ * (`ProjectForkView`, `scenes/api.py`). Requires authentication (a `401`
+ * `ApiError` if the caller is signed out); `404`s exactly like every other
+ * public/private-boundary check in this app if the source project is
+ * private or has remixing turned off, never distinguishing the two.
+ *
+ * Pass the same `clientRequestId` again to safely retry a failed/uncertain
+ * submission (e.g. a double-click) without risking a second fork — same
+ * idempotency-key pattern as `createBlankProject`. */
+export function forkProject(id: string, clientRequestId?: string): Promise<Project> {
+  return apiFetch<Project>(`/api/public/projects/${id}/fork/`, {
+    method: 'POST',
+    body: JSON.stringify(clientRequestId ? { client_request_id: clientRequestId } : {}),
+  });
+}
+
 /** Task 18: atomically create a private project with one blank-canvas version.
  * Pass the same `clientRequestId` again to safely retry a failed/uncertain
  * submission without risking a duplicate project. */

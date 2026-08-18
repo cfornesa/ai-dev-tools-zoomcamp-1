@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
-import { getPublicProject, type PublicProject } from '../api/projects';
+import { forkProject, getPublicProject, type PublicProject } from '../api/projects';
+import { useAuth } from '../auth/useAuth';
 import CameraControl from '../components/CameraControl';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import DemoControlsPanel from './DemoControlsPanel';
@@ -41,12 +42,32 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * own docstring), so this page can't and doesn't distinguish them either
  * — the rendered message never confirms or denies that a private project
  * with this id exists.
+ *
+ * ## Fork action (Task 51)
+ *
+ * The minimal Fork action lives here — just the button/request, not the
+ * "Remixed from X" provenance display (that's Task 53, issue #52's job).
+ * The button is hidden entirely for a signed-out visitor and for a project
+ * with remixing turned off (`project.allow_public_remix`), matching the
+ * acceptance criteria's "unavailable when ... private or remix disabled"
+ * (a private project never reaches this page at all — `getPublicProject`
+ * 404s first). A signed-in visitor gets one client-generated
+ * `client_request_id` per click, reused on any accidental double-submit
+ * from React re-render, so a double-click never risks a second fork (see
+ * `ProjectForkView`'s idempotency-key docstring in `scenes/api.py`) — on
+ * success, the visitor is sent straight to their new private project's
+ * editor.
  */
 function PublicProjectViewer() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const auth = useAuth();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<PublicProject | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [forkState, setForkState] = useState<'idle' | 'forking'>('idle');
+  const [forkError, setForkError] = useState<string | null>(null);
+  const forkRequestIdRef = useRef<string | null>(null);
 
   const previewMountRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<P5ScenePreview | null>(null);
@@ -100,6 +121,26 @@ function PublicProjectViewer() {
     }
   }, [project]);
 
+  async function handleFork() {
+    if (!id) return;
+    // One client_request_id per fork attempt, reused across retries of the
+    // *same* click (e.g. React firing the handler twice) — a fresh id is
+    // only ever generated the first time this handler runs after mount.
+    if (!forkRequestIdRef.current) {
+      forkRequestIdRef.current = crypto.randomUUID();
+    }
+    setForkState('forking');
+    setForkError(null);
+    try {
+      const forked = await forkProject(id, forkRequestIdRef.current);
+      navigate(`/projects/${forked.id}`);
+    } catch {
+      setForkState('idle');
+      forkRequestIdRef.current = null;
+      setForkError('Could not fork this project. Please try again.');
+    }
+  }
+
   if (loadState === 'loading') {
     return (
       <p role="status" aria-live="polite">
@@ -142,6 +183,19 @@ function PublicProjectViewer() {
         <h2>{project.title}</h2>
         {project.description && <p>{project.description}</p>}
         <p className="public-project-attribution">By {project.owner}</p>
+
+        {auth.status === 'signed-in' && project.allow_public_remix && (
+          <p>
+            <button type="button" onClick={handleFork} disabled={forkState === 'forking'}>
+              {forkState === 'forking' ? 'Forking…' : 'Fork this project'}
+            </button>
+          </p>
+        )}
+        {forkError && (
+          <p role="alert" aria-live="assertive">
+            {forkError}
+          </p>
+        )}
       </header>
 
       <div className="editor-workspace">

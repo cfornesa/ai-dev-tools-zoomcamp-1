@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,11 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/client';
 import * as projectsApi from '../api/projects';
 import type { PublicProject } from '../api/projects';
+import * as authModule from '../auth/useAuth';
 import PublicProjectViewer from './PublicProjectViewer';
 
 vi.mock('../api/projects');
+vi.mock('../auth/useAuth');
 
 const mockedGetPublicProject = vi.mocked(projectsApi.getPublicProject);
+const mockedForkProject = vi.mocked(projectsApi.forkProject);
+const mockedUseAuth = vi.mocked(authModule.useAuth);
 
 const BLANK_SCENE = {
   schemaVersion: 1,
@@ -53,6 +57,7 @@ function renderViewer(id = 'p1') {
       <Routes>
         <Route path="/gallery" element={<p>Gallery placeholder</p>} />
         <Route path="/p/:id" element={<PublicProjectViewer />} />
+        <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -60,6 +65,7 @@ function renderViewer(id = 'p1') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedUseAuth.mockReturnValue({ status: 'signed-out', user: null });
 });
 
 describe('PublicProjectViewer load states', () => {
@@ -219,5 +225,94 @@ describe('PublicProjectViewer keyboard operability and focus visibility', () => 
     const enableCameraButton = screen.getByRole('button', { name: /enable camera/i });
     enableCameraButton.focus();
     expect(enableCameraButton).toHaveFocus();
+  });
+});
+
+describe('PublicProjectViewer Fork action (Task 51)', () => {
+  it('hides the Fork button for a signed-out visitor, even when remixing is allowed', async () => {
+    mockedUseAuth.mockReturnValue({ status: 'signed-out', user: null });
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: true }));
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    expect(screen.queryByRole('button', { name: /fork this project/i })).not.toBeInTheDocument();
+  });
+
+  it('hides the Fork button when the project has remixing turned off, even when signed in', async () => {
+    mockedUseAuth.mockReturnValue({
+      status: 'signed-in',
+      user: { username: 'carol', email: 'carol@example.com' },
+    });
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: false }));
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    expect(screen.queryByRole('button', { name: /fork this project/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the Fork button for a signed-in visitor when remixing is allowed', async () => {
+    mockedUseAuth.mockReturnValue({
+      status: 'signed-in',
+      user: { username: 'carol', email: 'carol@example.com' },
+    });
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: true }));
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    expect(screen.getByRole('button', { name: /fork this project/i })).toBeInTheDocument();
+  });
+
+  it('forks and navigates to the new private project on success', async () => {
+    mockedUseAuth.mockReturnValue({
+      status: 'signed-in',
+      user: { username: 'carol', email: 'carol@example.com' },
+    });
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: true }));
+    mockedForkProject.mockResolvedValue({
+      id: 'forked-1',
+      owner: 'carol',
+      title: 'Hand Follower',
+      description: '',
+      tags: [],
+      visibility: 'private',
+      allow_public_remix: true,
+      thumbnail_choice: 'auto',
+      export_attribution: false,
+      current_version: 1,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    });
+    const user = userEvent.setup();
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    await user.click(screen.getByRole('button', { name: /fork this project/i }));
+
+    expect(mockedForkProject).toHaveBeenCalledWith('p1', expect.any(String));
+    await screen.findByText('Editor placeholder');
+  });
+
+  it('shows an error and re-enables the button if forking fails', async () => {
+    mockedUseAuth.mockReturnValue({
+      status: 'signed-in',
+      user: { username: 'carol', email: 'carol@example.com' },
+    });
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: true }));
+    mockedForkProject.mockRejectedValue(new ApiError(404, null));
+    const user = userEvent.setup();
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    await user.click(screen.getByRole('button', { name: /fork this project/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not fork/i);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /fork this project/i })).not.toBeDisabled(),
+    );
   });
 });

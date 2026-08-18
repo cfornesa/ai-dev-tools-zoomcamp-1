@@ -1,5 +1,6 @@
 from django.urls import path
 
+from scenes.ai_api import AICreateSceneView
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
@@ -47,5 +48,10 @@ urlpatterns = [
         "projects/<uuid:public_id>/draft/<str:session_id>/",
         DraftDetailView.as_view(),
         name="draft-detail",
+    ),
+    path(
+        "projects/<uuid:public_id>/ai/create-scene/",
+        AICreateSceneView.as_view(),
+        name="ai-create-scene",
     ),
 ]

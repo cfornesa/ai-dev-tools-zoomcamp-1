@@ -33,6 +33,7 @@ class Action(StrEnum):
     DRAFT_WRITE = "draft.write"
     TEMPLATE_READ = "template.read"
     TEMPLATE_CREATE = "template.create"
+    AI_CREATE_SCENE = "ai.create_scene"
 
 
 class PermissionDenied(Exception):
@@ -61,6 +62,12 @@ _OWNER_ONLY_PROJECT_ACTIONS = frozenset(
         Action.VERSION_CREATE,
         Action.VERSION_RESTORE,
         Action.VERSION_DELETE,
+        # Task 46/47: an AI-generated create-scene proposal is scoped to one
+        # project (for quota/rate-limiting and future prompt-context reuse)
+        # but never creates a SceneVersion or touches current_version -- see
+        # scenes/ai_api.py. Owner-only, same as every other working
+        # operation on a project.
+        Action.AI_CREATE_SCENE,
     }
 )
 

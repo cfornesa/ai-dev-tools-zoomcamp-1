@@ -350,7 +350,16 @@ export function buildStandaloneCameraScript(): string {
     }
 
     function loadModel(myGeneration) {
-      import(/* @vite-ignore */ VISION_BUNDLE_URL).then(
+      // Test-only seam, mirroring mediapipeProvider.ts's own injectable
+      // loadVisionTasksModule dependency: a real exported page never
+      // defines window.__exportCameraLoadVisionTasksModule, so this is
+      // always the real dynamic import below. A jsdom test defines it to
+      // resolve/reject with a fake module instead of making a real
+      // network request for the CDN bundle.
+      var loadVisionTasksModule =
+        (typeof window !== "undefined" && window.__exportCameraLoadVisionTasksModule) ||
+        function () { return import(/* @vite-ignore */ VISION_BUNDLE_URL); };
+      loadVisionTasksModule().then(
         function (visionModule) {
           if (myGeneration !== generation) return;
           visionModule.FilesetResolver.forVisionTasks(WASM_BASE_URL).then(

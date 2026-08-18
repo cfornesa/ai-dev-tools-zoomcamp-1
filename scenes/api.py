@@ -14,7 +14,7 @@ import uuid
 
 from django.db import IntegrityError, transaction
 from django.db.models import Max
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -26,6 +26,7 @@ from scenes.models import (
     ProjectActivity,
     SceneVersion,
     Template,
+    Thumbnail,
     default_draft_expiry,
 )
 from scenes.permissions import Action, can, require
@@ -41,6 +42,10 @@ from scenes.serializers import (
     SceneVersionListSerializer,
     TemplateCreateSerializer,
     TemplateSerializer,
+)
+from scenes.thumbnail_generation import (
+    ensure_thumbnail_for_version,
+    maybe_schedule_thumbnail_generation,
 )
 from scenes.validation import SCHEMA_DIR, validate_scene
 
@@ -179,6 +184,11 @@ class ProjectPublishView(APIView):
                     action_type=ProjectActivity.ActionType.PUBLISHED,
                     metadata={"version_sequence": locked_project.current_version.sequence},
                 )
+                # Task 54: schedule (as a post-commit follow-up, not inside
+                # this lock -- see scenes/thumbnail_generation.py's module
+                # docstring) generating a thumbnail for the version that
+                # just became publicly visible.
+                maybe_schedule_thumbnail_generation(locked_project)
         except ProjectPublishValidationError as exc:
             return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Project.DoesNotExist as exc:
@@ -256,6 +266,41 @@ class PublicProjectDetailView(APIView):
         return Response(PublicProjectSerializer(project).data)
 
 
+class PublicProjectThumbnailView(APIView):
+    """Task 54: serve the gallery-card thumbnail (PNG) for a project's
+    *current* saved version.
+
+    Gated identically to `PublicProjectDetailView` above (`visibility ==
+    PUBLIC`, checked directly, 404 for literally everyone including the
+    owner the instant a project isn't public) -- this is what makes the
+    content-source boundary hold: nothing reachable through this route
+    can ever render or serve a private project's scene, regardless of
+    whether a `Thumbnail` row happens to already exist for it.
+
+    Lazily generates on first request if the current version has no
+    stored `Thumbnail` yet (see `scenes/thumbnail_generation.py`'s module
+    docstring, "Lazy fallback at serve time") -- a public project is never
+    left with a broken/missing thumbnail image just because the
+    post-commit generation from the save/publish request that created its
+    current version hasn't run yet, or predates this feature.
+    """
+
+    def get(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        if project.visibility != Project.Visibility.PUBLIC:
+            raise Http404
+        if project.current_version_id is None:
+            raise Http404
+
+        thumbnail = Thumbnail.objects.filter(scene_version_id=project.current_version_id).first()
+        if thumbnail is None:
+            thumbnail = ensure_thumbnail_for_version(project.current_version_id)
+        if thumbnail is None:
+            raise Http404
+
+        return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)
+
+
 class SceneVersionListCreateView(APIView):
     """Task 14: list a project's history, and save the next immutable version.
 
@@ -316,6 +361,10 @@ class SceneVersionListCreateView(APIView):
                 )
                 locked_project.current_version = version
                 locked_project.save(update_fields=["current_version", "updated_at"])
+                # Task 54: a no-op unless the project is already public --
+                # see maybe_schedule_thumbnail_generation's docstring for
+                # the "thumbnail follows current version" policy.
+                maybe_schedule_thumbnail_generation(locked_project)
         except Project.DoesNotExist as exc:
             # Soft-deleted concurrently, between the initial fetch above and
             # the locked re-fetch: no version is created, current_version is
@@ -419,6 +468,7 @@ class SceneVersionRestoreView(APIView):
                 )
                 locked_project.current_version = new_version
                 locked_project.save(update_fields=["current_version", "updated_at"])
+                maybe_schedule_thumbnail_generation(locked_project)
         except CannotModifyCurrentVersion:
             return Response(
                 {"detail": "The current version cannot be restored."},

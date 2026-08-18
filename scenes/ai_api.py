@@ -97,6 +97,7 @@ from scenes.models import Project, SceneVersion
 from scenes.patch import PatchErrorReason
 from scenes.permissions import Action
 from scenes.serializers import SceneVersionDetailSerializer
+from scenes.thumbnail_generation import maybe_schedule_thumbnail_generation
 from scenes.validation import SceneValidationResult, validate_scene
 
 # --- Bounds (this task's own documented choices; _docs/plan.md requires
@@ -745,6 +746,8 @@ class AIAcceptProposalView(APIView):
                 )
                 locked_project.current_version = version
                 locked_project.save(update_fields=["current_version", "updated_at"])
+                # Task 54: no-op unless the project is already public.
+                maybe_schedule_thumbnail_generation(locked_project)
         except _StaleBase:
             return _stale_base_response(project.current_version_id)
         except IntegrityError:

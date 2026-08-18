@@ -1,5 +1,6 @@
 """DRF serializers for the scenes API (Task 13+)."""
 
+from django.urls import reverse
 from rest_framework import serializers
 
 from scenes.models import EditSessionDraft, Project, SceneVersion, Template
@@ -7,10 +8,11 @@ from scenes.models import EditSessionDraft, Project, SceneVersion, Template
 MAX_TAGS = 10
 MAX_TAG_LENGTH = 30
 
-# No thumbnail-generation system exists yet (Task 54); this is the small,
-# explicit set of strategies the future thumbnail generator will support,
-# so the field is validated against something concrete rather than
-# accepting arbitrary strings.
+# `thumbnail_choice` predates the Task 54 thumbnail generator and is not
+# consumed by it (Task 54 always generates one deterministic rendering of
+# the current version; it does not offer a first-shape/solid-color
+# strategy choice) -- kept here unchanged as an existing project-metadata
+# field/contract this task does not touch.
 THUMBNAIL_CHOICES = ["auto", "first-shape", "solid-color"]
 
 
@@ -112,6 +114,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.CharField(source="owner.username", read_only=True)
     current_version = PublicSceneVersionSerializer(read_only=True)
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -123,11 +126,21 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "tags",
             "allow_public_remix",
             "thumbnail_choice",
+            "thumbnail_url",
             "current_version",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_thumbnail_url(self, project: Project) -> str | None:
+        # A stable URL, not a presence check: `PublicProjectThumbnailView`
+        # (Task 54) lazily generates on first request if nothing is
+        # cached yet, so this is always resolvable for any project that
+        # has a current version -- see that view's docstring.
+        if project.current_version_id is None:
+            return None
+        return reverse("public-project-thumbnail", kwargs={"public_id": project.public_id})
 
 
 class SceneVersionListSerializer(serializers.ModelSerializer):

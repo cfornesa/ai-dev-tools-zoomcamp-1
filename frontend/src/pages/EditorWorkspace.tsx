@@ -27,6 +27,8 @@ import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useSceneEditor } from './useSceneEditor';
 import BehaviorCardsPanel from './BehaviorCardsPanel';
 import DemoControlsPanel from './DemoControlsPanel';
+import GraphListView from './GraphListView';
+import GraphView from './GraphView';
 import SceneOutlinePanel from './SceneOutlinePanel';
 
 const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
@@ -70,6 +72,11 @@ function EditorWorkspace() {
   const { loadState, project, workingCopy, setWorkingCopy, retry } = useEditorWorkspaceState(id);
   const isNarrow = useIsNarrowViewport();
   const [activePanel, setActivePanel] = useState<EditorPanelName>('preview');
+  // Task 36: "Show logic" reveals behavior cards as typed connected nodes
+  // (`_docs/plan.md`'s "Progressive disclosure" section) — the advanced
+  // graph view/list-view pair, hidden by default so the default editing
+  // experience stays "composing an animation recipe."
+  const [showLogic, setShowLogic] = useState(false);
   const sceneEditor = useSceneEditor(workingCopy, setWorkingCopy);
   const canvasRef = useRef<HTMLDivElement>(null);
   const previewMountRef = useRef<HTMLDivElement>(null);
@@ -552,6 +559,30 @@ function EditorWorkspace() {
               through `sceneEditor`, so it participates in the same
               undo/redo history as every other scene edit. */}
           <BehaviorCardsPanel sceneEditor={sceneEditor} />
+
+          {/* Task 36: the advanced typed behavior graph — React Flow
+              canvas plus its accessible keyboard-operable list-view
+              alternative, both driven by the exact same `sceneEditor`
+              graph actions (see GraphView.tsx/GraphListView.tsx). */}
+          <button
+            type="button"
+            aria-expanded={showLogic}
+            aria-controls="editor-graph-section"
+            onClick={() => setShowLogic((current) => !current)}
+          >
+            {showLogic ? 'Hide logic' : 'Show logic'}
+          </button>
+          {showLogic && (
+            <div id="editor-graph-section">
+              <h4>Advanced graph</h4>
+              <p>
+                Inspect and edit the constrained typed behavior graph directly. Only
+                type-compatible, directionally valid connections can be created.
+              </p>
+              <GraphView sceneEditor={sceneEditor} />
+              <GraphListView sceneEditor={sceneEditor} />
+            </div>
+          )}
         </section>
       </div>
     </div>

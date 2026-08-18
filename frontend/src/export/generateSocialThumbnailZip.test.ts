@@ -79,6 +79,35 @@ describe('generateSocialThumbnailZip', () => {
     expect(dims).toEqual({ width: 1200, height: 630 });
   });
 
+  it('captures the thumbnail in demo-only mode even when the export interactionMode is camera/demo-camera', async () => {
+    const captureSpy = vi.spyOn(captureModule, 'captureSocialThumbnail');
+
+    for (const interactionMode of ['camera', 'demo-camera'] as const) {
+      captureSpy.mockClear();
+      const input = { ...baseInput(), interactionMode };
+
+      const result = await generateSocialThumbnailZip(input);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('unreachable');
+
+      // The capture function is called with exactly one argument -- the
+      // scene document -- never `interactionMode`, a tracking frame, or
+      // any camera-related state, regardless of what interaction mode the
+      // surrounding HTML export itself uses.
+      expect(captureSpy).toHaveBeenCalledTimes(1);
+      expect(captureSpy).toHaveBeenCalledWith(input.scene);
+      expect(captureSpy.mock.calls[0]).toHaveLength(1);
+
+      // The produced thumbnail is still a real, correctly-sized artwork-only
+      // PNG -- camera mode changes the bundled HTML's runtime script, never
+      // the thumbnail capture path.
+      const zip = await JSZip.loadAsync(result.zipBlob);
+      const pngBuffer = await zip.file('thumbnail.png')!.async('arraybuffer');
+      const dims = await pngDimensions(new Blob([pngBuffer]));
+      expect(dims).toEqual({ width: 1200, height: 630 });
+    }
+  });
+
   it('returns { ok: false, reasons } for an incompatible scene without attempting capture', async () => {
     const captureSpy = vi.spyOn(captureModule, 'captureSocialThumbnail');
     const input = {

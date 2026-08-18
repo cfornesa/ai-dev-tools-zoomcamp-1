@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneDocument, SceneVersion, SceneVersionSummary } from '../api/projects';
 import * as captureModule from '../export/captureSocialThumbnail';
+import { generateHtmlExport } from '../export/generateHtmlExport';
 import ExportConfigDialog from './ExportConfigDialog';
 
 vi.mock('../api/projects');
@@ -308,6 +309,23 @@ describe('ExportConfigDialog terminal export action', () => {
 
     const blobArg = createObjectURL.mock.calls[0][0] as Blob;
     expect(blobArg.type).toBe('text/html');
+
+    // Byte-for-byte identical to a standalone generateHtmlExport() call for
+    // the exact same config -- not just "some HTML blob was downloaded" --
+    // proving the unchecked-ZIP-checkbox path is genuinely unchanged from
+    // the Task 56 HTML-only flow, not merely similar to it.
+    const project = baseProject();
+    const expected = generateHtmlExport({
+      scene: BASE_SCENE,
+      title: project.title,
+      description: project.description,
+      interactionMode: 'demo',
+      includeAttribution: false,
+    });
+    expect(expected.ok).toBe(true);
+    if (!expected.ok) throw new Error('unreachable');
+    const actualHtml = await blobArg.text();
+    expect(actualHtml).toBe(expected.html);
 
     clickSpy.mockRestore();
     vi.unstubAllGlobals();

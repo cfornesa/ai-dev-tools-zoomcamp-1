@@ -584,4 +584,86 @@ describe('p5 scene preview', () => {
       expect(pixel(preview.getCanvasElement()!, 10, 10)).toEqual([0, 0, 0, 255]);
     });
   });
+
+  // Task 61: trail rendering wired into the same pipeline.
+  describe('trail rendering (Task 61)', () => {
+    it('draws a multi-point trail as a polyline', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({ canvas: { width: 40, height: 40, backgroundColor: '#000000' } }),
+        [],
+        [
+          {
+            color: '#00ff00',
+            points: [
+              { x: 5, y: 20 },
+              { x: 35, y: 20 },
+            ],
+          },
+        ],
+      );
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 20, 20)).toEqual([0, 255, 0, 255]); // on the line
+      expect(pixel(canvas, 20, 5)).toEqual([0, 0, 0, 255]); // off the line
+    });
+
+    it('draws a single-sample trail as a small static marker (reduced-motion substitution)', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({ canvas: { width: 40, height: 40, backgroundColor: '#000000' } }),
+        [],
+        [{ color: '#ff00ff', points: [{ x: 20, y: 20 }] }],
+      );
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 20, 20)).toEqual([255, 0, 255, 255]);
+    });
+
+    it('draws nothing for a zero-sample trail', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#123456' } }),
+        [],
+        [{ color: '#ffffff', points: [] }],
+      );
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 10, 10)).toEqual([0x12, 0x34, 0x56, 255]);
+    });
+
+    it('draws trails beneath static scene shapes and particles', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 40, height: 40, backgroundColor: '#000000' },
+          shapes: [
+            circleShape({
+              transform: transform({ x: 20, y: 20 }),
+              radius: 15,
+              style: style({ fill: '#ff0000' }),
+            }),
+          ],
+        }),
+        [],
+        [
+          {
+            color: '#00ff00',
+            points: [
+              { x: 20, y: 20 },
+              { x: 21, y: 20 },
+            ],
+          },
+        ],
+      );
+      const canvas = preview.getCanvasElement()!;
+      // The shape on top wins at its own center, even though a trail
+      // sample sits at the same point.
+      expect(pixel(canvas, 20, 20)).toEqual([255, 0, 0, 255]);
+    });
+
+    it('defaults to no trails when the third argument is omitted', () => {
+      const { preview } = tracked();
+      preview.render(baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#123456' } }));
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 10, 10)).toEqual([0x12, 0x34, 0x56, 255]);
+    });
+  });
 });

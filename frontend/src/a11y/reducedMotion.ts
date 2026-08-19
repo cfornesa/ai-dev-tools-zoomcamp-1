@@ -20,10 +20,12 @@
  *   movement can become static state, slow fade, or stepped updates
  *   while preserving the interaction's meaning" — consumers read
  *   `effective` and degrade their own continuous effects accordingly
- *   (see `DemoControlsPanel.tsx`'s auto-advancing playback timer, the
- *   only continuous non-essential effect that exists in this codebase
- *   today — particle emission, trails, and physics are unimplemented
- *   future work, Tasks 39/61).
+ *   (see `DemoControlsPanel.tsx`'s auto-advancing playback timer, plus
+ *   `runtime/trailSystem.ts` and `runtime/physicsForces.ts` (Task 61),
+ *   which take this module's `effective`/`reducedMotion` value as a plain
+ *   boolean parameter — rather than importing this module directly — so
+ *   those runtime modules stay framework-agnostic and independently
+ *   testable without a DOM/React environment).
  */
 import { useSyncExternalStore } from 'react';
 

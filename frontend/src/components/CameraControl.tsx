@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { createMediaPipeTrackingProvider } from '../tracking/mediapipeProvider';
-import type { TrackingProvider, TrackingProviderError } from '../tracking/types';
+import type { TrackingFrame, TrackingProvider, TrackingProviderError } from '../tracking/types';
 import {
   categorizeProviderError,
   recoveryMessageFor,
@@ -30,6 +30,14 @@ export type CameraControlProps = {
    * caller passes it, so this is a non-breaking change to the component's
    * lifecycle. */
   onStatusChange?: (status: CameraStatus) => void;
+  /** Task 83 (issue #83): forwards every frame this control's own live
+   * tracking provider emits, so the editor's live preview runtime loop can
+   * read the same camera-derived signals — see
+   * `pages/previewTrackingSource.ts`'s own doc comment for why this is a
+   * forwarding callback rather than a second provider instance/camera
+   * stream. Optional and purely additive, matching `onStatusChange`'s
+   * existing pattern. */
+  onFrame?: (frame: TrackingFrame) => void;
 };
 
 export type CameraStatus = 'idle' | 'starting' | 'active' | 'error' | 'stopped';
@@ -92,7 +100,10 @@ function CameraControl({
   createProvider = createMediaPipeTrackingProvider,
   isSecureContext = () => window.isSecureContext,
   onStatusChange,
+  onFrame,
 }: CameraControlProps) {
+  const onFrameRef = useRef(onFrame);
+  onFrameRef.current = onFrame;
   const providerRef = useRef<TrackingProvider | null>(null);
   const [status, setStatus] = useState<CameraStatus>('idle');
   const [failure, setFailure] = useState<CameraFailureCategory | null>(null);
@@ -109,13 +120,16 @@ function CameraControl({
   function getProvider(): TrackingProvider {
     if (!providerRef.current) {
       const provider = createProvider();
-      provider.onFrame(() => {
+      provider.onFrame((frame) => {
         // The first frame after a start is the signal that tracking is
         // genuinely live, not just that `start()` was called — a
         // permission prompt, model download, etc. can all still be
         // pending at that point. Once active, later frames are a no-op
         // here (status is already 'active').
         setStatus((current) => (current === 'starting' ? 'active' : current));
+        // Task 83: forward every frame to the live preview runtime loop,
+        // if anyone's listening — see this prop's own doc comment.
+        onFrameRef.current?.(frame);
       });
       provider.onError((error: TrackingProviderError) => {
         setFailure(categorizeProviderError(error));

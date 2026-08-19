@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -10,6 +11,7 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import type { SceneDocument } from '../api/projects';
+import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
@@ -46,6 +48,8 @@ import { useDraftRecovery } from './useDraftRecovery';
 import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
+import { createPreviewTrackingSource } from './previewTrackingSource';
+import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime';
 import { useSceneEditor } from './useSceneEditor';
 import AIProposalPanel from './AIProposalPanel';
 import BehaviorCardsPanel from './BehaviorCardsPanel';
@@ -177,6 +181,15 @@ function EditorWorkspace() {
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
   const [pinchEventCount, setPinchEventCount] = useState(0);
 
+  // Task 83 (issue #83): the shared "current tracking frame" mailbox the
+  // live preview runtime loop reads from — see `previewTrackingSource.ts`'s
+  // own doc comment for why this taps into the SAME `CameraControl`/
+  // `DemoControlsPanel` frame streams already rendered below, rather than
+  // creating a second, competing `TrackingProvider` instance. Created once
+  // (`useRef`) and never replaced for the life of this component.
+  const trackingSourceRef = useRef(createPreviewTrackingSource());
+  const reducedMotion = useReducedMotion();
+
   // Task 41: the working/saved distinction, both visual (the status text
   // rendered below) and programmatic (this boolean, which also gates the
   // Save button in VersionHistoryPanel). A scene with no persisted
@@ -270,7 +283,6 @@ function EditorWorkspace() {
   }
 
   const canvasRef = useRef<HTMLDivElement>(null);
-  const previewMountRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<P5ScenePreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
@@ -424,31 +436,80 @@ function EditorWorkspace() {
 
   // Task 25: mounts a p5.js instance (instance mode, never global) into a
   // dedicated child div that React never re-renders into — see the div's
-  // own comment below for why. Created once per workspace mount, torn
-  // down on unmount.
-  useEffect(() => {
-    if (!previewMountRef.current) return;
-    const preview = createP5ScenePreview(previewMountRef.current);
-    previewRef.current = preview;
-    return () => {
-      preview.destroy();
+  // own comment below for why.
+  //
+  // Task 83 (issue #83): this is a *callback* ref, not a plain `useRef` +
+  // `useEffect(fn, [])` pair (what this used to be), plus the
+  // `previewMounted` state flag it sets below — that old pairing had a
+  // real timing bug this task's own "does the live preview actually mount
+  // a canvas" testing surfaced: the mount div only exists in the DOM once
+  // `loadState` reaches `'ready'` *and* `useDraftRecovery`'s own async
+  // check has resolved (a SEPARATE, later commit — its own
+  // IndexedDB/server round trip means it practically never lands in the
+  // same commit as `loadState` first turning `'ready'`), so an effect with
+  // `[]` deps (the old code) or even `[workingCopy, hasActiveBehaviors]`
+  // deps (this task's own first attempt) can both end up running on a
+  // commit *before* the div — and therefore `previewRef.current` — has
+  // ever existed, with nothing in either dependency array changing again
+  // once it finally does. The old `[]`-deps code silently no-opped forever
+  // in that case (`if (!previewMountRef.current) return;`), so the p5
+  // preview was never created for any project loaded the normal (async)
+  // way — nothing exercised this before, since no earlier test asserted an
+  // actual `<canvas>` element or a `p5Adapter.render()` call appeared, only
+  // DOM text/structure. A callback ref sidesteps "which commit was the div
+  // actually attached during": React invokes it with the real node the
+  // *instant* it's attached (whichever commit that turns out to be), and
+  // with `null` the instant it's detached (on unmount) — exactly once
+  // each. `previewMounted` then gives every *effect* that needs to know
+  // "does a preview exist yet" (the plain render-on-change effect just
+  // below) a real, effect-dependency-array-visible signal for that moment,
+  // rather than an untracked ref read.
+  const [previewMounted, setPreviewMounted] = useState(false);
+  const previewMountCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      previewRef.current = createP5ScenePreview(node);
+      setPreviewMounted(true);
+    } else {
+      previewRef.current?.destroy();
       previewRef.current = null;
-    };
+      setPreviewMounted(false);
+    }
   }, []);
+
+  // Task 83 (issue #83): whenever the working copy has any behavior-card
+  // bindings or graph nodes, the live preview runs the real behavior
+  // runtime continuously (see `usePreviewRuntime.ts`'s own doc comment for
+  // the "when does the runtime run" decision) instead of the plain
+  // render-on-change effect below. `hasActiveBehaviors` is recomputed every
+  // render from the current `workingCopy` (cheap — two array-length reads),
+  // so a binding/graph edit flips it (and therefore which code path is
+  // driving the preview) on the very next render, no save/reload needed.
+  const hasActiveBehaviors = sceneHasActiveBehaviors(workingCopy);
+  usePreviewRuntime({
+    previewRef,
+    scene: hasActiveBehaviors ? workingCopy : null,
+    getTrackingFrame: () => trackingSourceRef.current.consumeFrame(),
+    reducedMotion: reducedMotion.effective,
+    onRenderError: setPreviewError,
+  });
 
   // Re-renders the p5 preview whenever the working copy changes. A scene
   // that fails the adapter's validation (see p5Adapter.ts/sceneDrawPlan.ts)
   // throws before any draw call rather than drawing something wrong or
-  // stale; that's surfaced here instead of crashing the workspace.
+  // stale; that's surfaced here instead of crashing the workspace. Only
+  // runs while `usePreviewRuntime` above is inactive (no bindings/graph) —
+  // once a scene gains a binding or graph node, that hook's own rAF loop
+  // takes over rendering entirely, so the two never fight over the same
+  // canvas in the same frame.
   useEffect(() => {
-    if (!previewRef.current || !workingCopy) return;
+    if (!previewRef.current || !workingCopy || hasActiveBehaviors) return;
     try {
       previewRef.current.render(workingCopy);
       setPreviewError(null);
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
     }
-  }, [workingCopy]);
+  }, [workingCopy, hasActiveBehaviors, previewMounted]);
 
   // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes — the standard
   // shortcuts for this editor's in-session undo/redo policy (see
@@ -989,7 +1050,17 @@ function EditorWorkspace() {
               the non-camera fallback stays available before camera
               activation, during any camera failure, and after Stop camera
               is pressed (acceptance criterion). */}
-          <CameraControl onStatusChange={setCameraStatus} />
+          <CameraControl
+            onStatusChange={(status) => {
+              setCameraStatus(status);
+              // Task 83: the live preview runtime loop prefers camera
+              // frames over demo frames exactly while the camera is
+              // actually producing them — see
+              // `previewTrackingSource.ts`'s own doc comment.
+              trackingSourceRef.current.setCameraActive(status === 'active');
+            }}
+            onFrame={(frame) => trackingSourceRef.current.reportCameraFrame(frame)}
+          />
 
           {/* Task 28: local demo signal controls — sliders/toggles/event
               buttons plus deterministic synthetic playback, so every
@@ -998,7 +1069,10 @@ function EditorWorkspace() {
               see DemoControlsPanel.tsx), so it lives here as an
               independent section rather than threading through
               useSceneEditor/workingCopy. */}
-          <DemoControlsPanel onPinchStart={() => setPinchEventCount((count) => count + 1)} />
+          <DemoControlsPanel
+            onPinchStart={() => setPinchEventCount((count) => count + 1)}
+            onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
+          />
         </section>
 
         <section
@@ -1037,7 +1111,7 @@ function EditorWorkspace() {
                 children below), so it never touches — or fights over —
                 nodes p5 appends directly to the real DOM. */}
             <div
-              ref={previewMountRef}
+              ref={previewMountCallbackRef}
               aria-hidden="true"
               style={{ position: 'absolute', inset: 0, zIndex: -1 }}
             />

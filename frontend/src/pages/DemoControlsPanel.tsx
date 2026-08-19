@@ -51,7 +51,20 @@ function describeFrame(frame: TrackingFrame | null): string {
  * the tracking modules it uses, so it renders and works identically
  * whether or not either is available in the browser.
  */
-function DemoControlsPanel({ onPinchStart }: { onPinchStart?: () => void } = {}) {
+function DemoControlsPanel({
+  onPinchStart,
+  onFrame,
+}: {
+  onPinchStart?: () => void;
+  /** Task 83 (issue #83): forwards every frame this panel's own tracking
+   * controller emits, so the editor's live preview runtime loop can read
+   * the exact same demo input this panel already displays — see
+   * `previewTrackingSource.ts`'s own doc comment for why this is a
+   * forwarding callback rather than a second competing provider instance.
+   * Optional and purely additive, matching `onPinchStart`'s existing
+   * pattern — no existing caller needs to pass it. */
+  onFrame?: (frame: TrackingFrame) => void;
+} = {}) {
   const controllerRef = useRef(createDemoTrackingController());
   const [mode, setMode] = useState<DemoMode>(controllerRef.current.getMode());
   const [manualState, setManualState] = useState(controllerRef.current.getManualState());
@@ -83,6 +96,9 @@ function DemoControlsPanel({ onPinchStart }: { onPinchStart?: () => void } = {})
       if (onPinchStart && frame.events.some((event) => event.type === 'pinchStart')) {
         onPinchStart();
       }
+      // Task 83: forward every frame to the live preview runtime loop, if
+      // anyone's listening — see this prop's own doc comment.
+      onFrame?.(frame);
     });
     return () => {
       unsubscribe();

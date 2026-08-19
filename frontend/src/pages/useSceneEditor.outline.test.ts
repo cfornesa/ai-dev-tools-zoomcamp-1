@@ -232,3 +232,99 @@ describe('useSceneEditor reorder', () => {
     expect(result.current.shapes.map((s) => s.id)).toEqual([b.id, a.id]);
   });
 });
+
+describe('useSceneEditor reparenting (Task 76)', () => {
+  it('moves a shape to a different layer as a single undo step', () => {
+    const { result } = renderSceneEditor();
+    act(() => result.current.addShape('circle'));
+    const [a] = result.current.shapes;
+    expect(a.layerId).toBe('layer-1');
+
+    act(() => result.current.moveItemToLayer(a.id, 'layer-2'));
+
+    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-2');
+    expect(result.current.canUndo).toBe(true);
+
+    act(() => result.current.undo());
+    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-1');
+
+    act(() => result.current.redo());
+    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-2');
+  });
+
+  it('surfaces a textual error and does not mutate scene state for an invalid layer move', () => {
+    const { result } = renderSceneEditor();
+    act(() => result.current.addShape('circle'));
+    const [a] = result.current.shapes;
+    const undoDepthBefore = result.current.canUndo;
+
+    act(() => result.current.moveItemToLayer(a.id, 'does-not-exist'));
+
+    expect(result.current.outlineError).toMatch(/layer no longer exists/);
+    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-1');
+    expect(result.current.canUndo).toBe(undoDepthBefore); // the rejected move committed no new step
+  });
+
+  it('moves a shape into a different group on the same layer, and back out to top level', () => {
+    const { result } = renderSceneEditor();
+    act(() => result.current.addShape('circle'));
+    act(() => result.current.addShape('rect'));
+    const [a, b] = result.current.shapes;
+    act(() => result.current.toggleMultiSelect(a.id));
+    act(() => result.current.toggleMultiSelect(b.id));
+    act(() => result.current.groupSelected());
+    const groupId = result.current.groups[0].id;
+
+    act(() => result.current.addShape('circle'));
+    const c = result.current.shapes.find((s) => s.id !== a.id && s.id !== b.id)!;
+
+    act(() => result.current.moveItemToGroup(c.id, groupId));
+    expect(result.current.groups.find((g) => g.id === groupId)?.childIds).toContain(c.id);
+    expect(result.current.canUndo).toBe(true);
+
+    act(() => result.current.moveItemToGroup(c.id, null));
+    expect(result.current.groups.find((g) => g.id === groupId)?.childIds).not.toContain(c.id);
+
+    act(() => result.current.undo());
+    expect(result.current.groups.find((g) => g.id === groupId)?.childIds).toContain(c.id);
+  });
+
+  it('surfaces a textual error without mutating scene state for a group-into-itself move', () => {
+    const { result } = renderSceneEditor();
+    act(() => result.current.addShape('circle'));
+    act(() => result.current.addShape('rect'));
+    const [a, b] = result.current.shapes;
+    act(() => result.current.toggleMultiSelect(a.id));
+    act(() => result.current.toggleMultiSelect(b.id));
+    act(() => result.current.groupSelected());
+    const groupId = result.current.groups[0].id;
+
+    act(() => result.current.moveItemToGroup(groupId, groupId));
+
+    expect(result.current.outlineError).toMatch(/into itself/);
+    expect(result.current.groups).toHaveLength(1);
+  });
+
+  it('rejects moving a group into one of its own descendant groups, with an explanation', () => {
+    const { result } = renderSceneEditor();
+    act(() => result.current.addShape('circle'));
+    act(() => result.current.addShape('rect'));
+    const [a, b] = result.current.shapes;
+    act(() => result.current.toggleMultiSelect(a.id));
+    act(() => result.current.toggleMultiSelect(b.id));
+    act(() => result.current.groupSelected());
+    const innerGroupId = result.current.groups[0].id;
+
+    act(() => result.current.addShape('circle'));
+    const c = result.current.shapes.find((s) => s.id !== a.id && s.id !== b.id)!;
+    act(() => result.current.toggleMultiSelect(c.id));
+    act(() => result.current.toggleMultiSelect(innerGroupId));
+    act(() => result.current.groupSelected());
+    const outerGroupId = result.current.groups.find((g) => g.id !== innerGroupId)!.id;
+
+    act(() => result.current.moveItemToGroup(outerGroupId, innerGroupId));
+
+    expect(result.current.outlineError).toMatch(/descendant/);
+    expect(result.current.groups.find((g) => g.id === outerGroupId)).toBeDefined();
+  });
+});

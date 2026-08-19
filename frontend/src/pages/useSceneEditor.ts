@@ -37,6 +37,8 @@ import {
   getLayers,
   groupItems,
   moveItem as moveItemOp,
+  moveItemToGroup as moveItemToGroupOp,
+  moveItemToLayer as moveItemToLayerOp,
   moveLayer as moveLayerOp,
   removeShapeFromScene,
   renameLayer as renameLayerOp,
@@ -502,6 +504,28 @@ export function useSceneEditor(
     [workingCopy, applyOutcome],
   );
 
+  // Task 76: reparenting — move a shape/group to a different layer's top
+  // level, or into a different group on the same layer (or promote it out
+  // to that layer's top level with `targetGroupId: null`). Both route
+  // through `applyOutcome` the same way every other outline mutation does,
+  // so a rejected move only ever surfaces `outlineError` and a successful
+  // one commits exactly one undo step.
+  const moveItemToLayer = useCallback(
+    (itemId: string, targetLayerId: string) => {
+      if (!workingCopy) return;
+      applyOutcome(moveItemToLayerOp(workingCopy, itemId, targetLayerId));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const moveItemToGroup = useCallback(
+    (itemId: string, targetGroupId: string | null) => {
+      if (!workingCopy) return;
+      applyOutcome(moveItemToGroupOp(workingCopy, itemId, targetGroupId));
+    },
+    [workingCopy, applyOutcome],
+  );
+
   const toggleMultiSelect = useCallback((id: string) => {
     setMultiSelectedIds((current) =>
       current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
@@ -707,6 +731,8 @@ export function useSceneEditor(
     toggleGroupVisible,
     toggleGroupLocked,
     moveItem,
+    moveItemToLayer,
+    moveItemToGroup,
     groupSelected,
     ungroupSelected,
     deleteGroupSelected,

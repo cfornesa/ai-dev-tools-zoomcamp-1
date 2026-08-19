@@ -10,6 +10,8 @@ import {
   getLayers,
   groupItems,
   moveItem,
+  moveItemToGroup,
+  moveItemToLayer,
   moveLayer,
   pruneEmptyGroups,
   removeShapeFromScene,
@@ -566,5 +568,308 @@ describe('buildOutline', () => {
     expect(shapeRows[0].isLast).toBe(false);
     expect(shapeRows[1].isFirst).toBe(false);
     expect(shapeRows[1].isLast).toBe(true);
+  });
+});
+
+describe('sceneOutline reparenting: moveItemToLayer', () => {
+  function twoLayerScene(overrides: Partial<SceneDocument> = {}) {
+    return baseScene({ layers: [layer('layer-1', 0), layer('layer-2', 1)], ...overrides });
+  }
+
+  it('moves a top-level shape to a different layer, updating layerId only', () => {
+    const s1 = shapeIn('layer-1');
+    const scene = twoLayerScene({ shapes: [s1] });
+
+    const outcome = moveItemToLayer(scene, s1.id, 'layer-2');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const shapes = outcome.scene.shapes as Array<{
+      id: string;
+      layerId: string;
+      groupId: string | null;
+      transform: unknown;
+      style: unknown;
+    }>;
+    const moved = shapes.find((s) => s.id === s1.id)!;
+    expect(moved.layerId).toBe('layer-2');
+    expect(moved.groupId).toBeNull();
+    expect(moved.transform).toEqual(s1.transform);
+    expect(moved.style).toEqual(s1.style);
+  });
+
+  it('moves a grouped shape to a different layer, detaching it from its former group', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const s2 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id, s2.id] });
+    const scene = twoLayerScene({ shapes: [s1, s2], groups: [g1] });
+
+    const outcome = moveItemToLayer(scene, s1.id, 'layer-2');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const shapes = outcome.scene.shapes as Array<{
+      id: string;
+      layerId: string;
+      groupId: string | null;
+    }>;
+    expect(shapes.find((s) => s.id === s1.id)).toMatchObject({ layerId: 'layer-2', groupId: null });
+    const groups = getGroups(outcome.scene);
+    expect(groups.find((g) => g.id === 'g1')?.childIds).toEqual([s2.id]);
+  });
+
+  it('cleans up a group left empty after moving its last child to another layer', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id] });
+    const scene = twoLayerScene({ shapes: [s1], groups: [g1] });
+
+    const outcome = moveItemToLayer(scene, s1.id, 'layer-2');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(getGroups(outcome.scene)).toHaveLength(0);
+  });
+
+  it('moves a group and every descendant shape/group to a different layer', () => {
+    const s1 = shapeIn('layer-1', 'inner');
+    const inner = group({ id: 'inner', layerId: 'layer-1', childIds: [s1.id] });
+    const s2 = shapeIn('layer-1', 'outer');
+    const outer = group({ id: 'outer', layerId: 'layer-1', childIds: ['inner', s2.id] });
+    const scene = twoLayerScene({ shapes: [s1, s2], groups: [inner, outer] });
+
+    const outcome = moveItemToLayer(scene, 'outer', 'layer-2');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const groups = getGroups(outcome.scene);
+    expect(groups.find((g) => g.id === 'outer')?.layerId).toBe('layer-2');
+    expect(groups.find((g) => g.id === 'inner')?.layerId).toBe('layer-2');
+    const shapes = outcome.scene.shapes as Array<{ id: string; layerId: string }>;
+    expect(shapes.find((s) => s.id === s1.id)?.layerId).toBe('layer-2');
+    expect(shapes.find((s) => s.id === s2.id)?.layerId).toBe('layer-2');
+    // The moved group's own id and childIds are preserved untouched.
+    expect(groups.find((g) => g.id === 'outer')?.childIds).toEqual(['inner', s2.id]);
+  });
+
+  it('detaches a nested group from its parent when moved to a different layer', () => {
+    const s1 = shapeIn('layer-1', 'inner');
+    const inner = group({ id: 'inner', layerId: 'layer-1', childIds: [s1.id] });
+    const s2 = shapeIn('layer-1', 'outer');
+    const outer = group({ id: 'outer', layerId: 'layer-1', childIds: ['inner', s2.id] });
+    const scene = twoLayerScene({ shapes: [s1, s2], groups: [inner, outer] });
+
+    const outcome = moveItemToLayer(scene, 'inner', 'layer-2');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const groups = getGroups(outcome.scene);
+    expect(groups.find((g) => g.id === 'outer')?.childIds).toEqual([s2.id]);
+    expect(groups.find((g) => g.id === 'inner')?.layerId).toBe('layer-2');
+  });
+
+  it('rejects moving to a layer that no longer exists', () => {
+    const s1 = shapeIn('layer-1');
+    const scene = twoLayerScene({ shapes: [s1] });
+    const outcome = moveItemToLayer(scene, s1.id, 'does-not-exist');
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/layer no longer exists/);
+  });
+
+  it('rejects moving an item that no longer exists', () => {
+    const scene = twoLayerScene();
+    const outcome = moveItemToLayer(scene, 'missing', 'layer-2');
+    expect(outcome.ok).toBe(false);
+  });
+
+  it('is a no-op that returns the same scene reference when already at the target layer top level', () => {
+    const s1 = shapeIn('layer-1');
+    const scene = twoLayerScene({ shapes: [s1] });
+    const outcome = moveItemToLayer(scene, s1.id, 'layer-1');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.scene).toBe(scene);
+  });
+});
+
+describe('sceneOutline reparenting: moveItemToGroup', () => {
+  it('moves a top-level shape into an existing group on the same layer', () => {
+    const s1 = shapeIn('layer-1');
+    const s2 = shapeIn('layer-1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s2.id] });
+    const scene = baseScene({ shapes: [s1, s2], groups: [g1] });
+
+    const outcome = moveItemToGroup(scene, s1.id, 'g1');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const shapes = outcome.scene.shapes as Array<{
+      id: string;
+      groupId: string | null;
+      transform: unknown;
+    }>;
+    const moved = shapes.find((s) => s.id === s1.id)!;
+    expect(moved.groupId).toBe('g1');
+    expect(moved.transform).toEqual(s1.transform);
+    expect(getGroups(outcome.scene).find((g) => g.id === 'g1')?.childIds).toEqual([s2.id, s1.id]);
+  });
+
+  it('moves a shape from one group into a different group on the same layer', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id] });
+    const g2 = group({ id: 'g2', layerId: 'layer-1', childIds: [] });
+    const scene = baseScene({ shapes: [s1], groups: [g1, g2] });
+
+    const outcome = moveItemToGroup(scene, s1.id, 'g2');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const groups = getGroups(outcome.scene);
+    // g1 is left with no children, so it's pruned automatically.
+    expect(groups.find((g) => g.id === 'g1')).toBeUndefined();
+    expect(groups.find((g) => g.id === 'g2')?.childIds).toEqual([s1.id]);
+  });
+
+  it('promotes a grouped shape out to its layer top level with targetGroupId: null', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const s2 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id, s2.id] });
+    const scene = baseScene({ shapes: [s1, s2], groups: [g1] });
+
+    const outcome = moveItemToGroup(scene, s1.id, null);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const shapes = outcome.scene.shapes as Array<{ id: string; groupId: string | null }>;
+    expect(shapes.find((s) => s.id === s1.id)?.groupId).toBeNull();
+    expect(getGroups(outcome.scene).find((g) => g.id === 'g1')?.childIds).toEqual([s2.id]);
+  });
+
+  it('cleans up a group left empty after promoting its last child to top level', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id] });
+    const scene = baseScene({ shapes: [s1], groups: [g1] });
+
+    const outcome = moveItemToGroup(scene, s1.id, null);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(getGroups(outcome.scene)).toHaveLength(0);
+  });
+
+  it('moves one group into another group on the same layer', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id] });
+    const g2 = group({ id: 'g2', layerId: 'layer-1', childIds: [] });
+    const scene = baseScene({ shapes: [s1], groups: [g1, g2] });
+
+    const outcome = moveItemToGroup(scene, 'g1', 'g2');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const groups = getGroups(outcome.scene);
+    expect(groups.find((g) => g.id === 'g2')?.childIds).toEqual(['g1']);
+    expect(groups.find((g) => g.id === 'g1')?.childIds).toEqual([s1.id]);
+  });
+
+  it('is a no-op that returns the same scene reference when already in the target group', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id] });
+    const scene = baseScene({ shapes: [s1], groups: [g1] });
+    const outcome = moveItemToGroup(scene, s1.id, 'g1');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.scene).toBe(scene);
+  });
+
+  it('is a no-op when a top-level item is promoted to top level again', () => {
+    const s1 = shapeIn('layer-1');
+    const scene = baseScene({ shapes: [s1] });
+    const outcome = moveItemToGroup(scene, s1.id, null);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.scene).toBe(scene);
+  });
+
+  it('rejects moving an item that no longer exists', () => {
+    const scene = baseScene();
+    const outcome = moveItemToGroup(scene, 'missing', null);
+    expect(outcome.ok).toBe(false);
+  });
+
+  it('rejects moving into a group that no longer exists', () => {
+    const s1 = shapeIn('layer-1');
+    const scene = baseScene({ shapes: [s1] });
+    const outcome = moveItemToGroup(scene, s1.id, 'missing');
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/group no longer exists/);
+  });
+
+  it('rejects moving a group into itself', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: [s1.id] });
+    const scene = baseScene({ shapes: [s1], groups: [g1] });
+    const outcome = moveItemToGroup(scene, 'g1', 'g1');
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/into itself/);
+  });
+
+  it('rejects moving a group into one of its own descendants (cycle prevention)', () => {
+    const s1 = shapeIn('layer-1', 'inner');
+    const inner = group({ id: 'inner', layerId: 'layer-1', childIds: [s1.id] });
+    const outer = group({ id: 'outer', layerId: 'layer-1', childIds: ['inner'] });
+    const scene = baseScene({ shapes: [s1], groups: [inner, outer] });
+
+    const outcome = moveItemToGroup(scene, 'outer', 'inner');
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/descendant/);
+  });
+
+  it('rejects moving into a group on a different layer', () => {
+    const s1 = shapeIn('layer-1');
+    const g2 = group({ id: 'g2', layerId: 'layer-2', childIds: [] });
+    const scene = baseScene({
+      layers: [layer('layer-1', 0), layer('layer-2', 1)],
+      shapes: [s1],
+      groups: [g2],
+    });
+    const outcome = moveItemToGroup(scene, s1.id, 'g2');
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/same layer/);
+  });
+
+  it('rejects a move that would exceed maxGroupChildIds, naming the exact limit', () => {
+    const existingShapes = Array.from({ length: 100 }, () => shapeIn('layer-1', 'g1'));
+    const g1 = group({ id: 'g1', layerId: 'layer-1', childIds: existingShapes.map((s) => s.id) });
+    const extra = shapeIn('layer-1');
+    const scene = baseScene({ shapes: [...existingShapes, extra], groups: [g1] });
+
+    const outcome = moveItemToGroup(scene, extra.id, 'g1');
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/maxGroupChildIds/);
+    expect(outcome.error).toMatch(/101/);
+  });
+
+  it('rejects a move that would exceed maxGroupNestingDepth, naming the exact limit', () => {
+    // Build a chain of 6 nested groups (g1 -> g2 -> ... -> g6), each
+    // wrapping the next, which is already exactly at the limit.
+    const chainIds = Array.from({ length: 6 }, (_, i) => `chain-${i}`);
+    const leafShape = shapeIn('layer-1', chainIds[chainIds.length - 1]);
+    const chainGroups: Group[] = chainIds.map((id, i) =>
+      group({
+        id,
+        layerId: 'layer-1',
+        childIds: i === chainIds.length - 1 ? [leafShape.id] : [chainIds[i + 1]],
+      }),
+    );
+    const extraShape = shapeIn('layer-1', 'extra');
+    const extraGroup = group({ id: 'extra', layerId: 'layer-1', childIds: [extraShape.id] });
+    const scene = baseScene({
+      shapes: [leafShape, extraShape],
+      groups: [...chainGroups, extraGroup],
+    });
+
+    // Moving `extra` into the depth-6 leaf group would push the whole
+    // chain to depth 7, exceeding maxGroupNestingDepth (6).
+    const outcome = moveItemToGroup(scene, 'extra', chainIds[chainIds.length - 1]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/maxGroupNestingDepth/);
+    expect(outcome.error).toMatch(/7/);
   });
 });

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import type { OutlineRow } from './sceneOutline';
 import type { SceneEditor } from './useSceneEditor';
 
@@ -48,6 +50,81 @@ function LayerNameField({ layerId, name, onRename }: LayerNameFieldProps) {
         }
       }}
     />
+  );
+}
+
+type MoveControlsProps = {
+  itemId: string;
+  itemLabel: string;
+  itemLayerId: string;
+  currentGroupId: string | null;
+  sceneEditor: SceneEditor;
+};
+
+/** Task 76: keyboard-operable ("select a destination, then press a button"
+ * — the same pattern `GraphListView.tsx` uses for its reconnect controls)
+ * reparenting controls attached to every group/shape outline row: move the
+ * item to a different layer's top level, or into a different group on the
+ * same layer (or back out to that layer's top level via the "Top level"
+ * option). Both native `<select>`+`<button>` pairs are fully reachable by
+ * Tab/arrow keys/Enter, so no separate drag-based interaction is needed to
+ * satisfy the "pointer and keyboard" acceptance criterion — the same
+ * controls serve both a mouse click and an all-keyboard sequence. */
+function MoveControls({
+  itemId,
+  itemLabel,
+  itemLayerId,
+  currentGroupId,
+  sceneEditor,
+}: MoveControlsProps) {
+  const [layerTarget, setLayerTarget] = useState(itemLayerId);
+  const [groupTarget, setGroupTarget] = useState(currentGroupId ?? '');
+
+  const groupOptions = sceneEditor.groups.filter(
+    (g) => g.layerId === itemLayerId && g.id !== itemId,
+  );
+
+  return (
+    <span className="editor-outline-move-controls">
+      <select
+        aria-label={`Target layer for ${itemLabel}`}
+        value={layerTarget}
+        onChange={(event) => setLayerTarget(event.target.value)}
+      >
+        {sceneEditor.layers.map((l) => (
+          <option key={l.id} value={l.id}>
+            {l.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        aria-label={`Move ${itemLabel} to layer`}
+        onClick={() => sceneEditor.moveItemToLayer(itemId, layerTarget)}
+      >
+        Move to layer
+      </button>
+
+      <select
+        aria-label={`Target group for ${itemLabel}`}
+        value={groupTarget}
+        onChange={(event) => setGroupTarget(event.target.value)}
+      >
+        <option value="">Top level</option>
+        {groupOptions.map((g) => (
+          <option key={g.id} value={g.id}>
+            {g.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        aria-label={`Move ${itemLabel} to group`}
+        onClick={() => sceneEditor.moveItemToGroup(itemId, groupTarget || null)}
+      >
+        Move to group
+      </button>
+    </span>
   );
 }
 
@@ -152,6 +229,13 @@ function OutlineRowItem({ row, sceneEditor }: { row: OutlineRow; sceneEditor: Sc
         >
           Move down
         </button>
+        <MoveControls
+          itemId={row.id}
+          itemLabel={row.name}
+          itemLayerId={row.layerId}
+          currentGroupId={sceneEditor.groups.find((g) => g.childIds.includes(row.id))?.id ?? null}
+          sceneEditor={sceneEditor}
+        />
       </li>
     );
   }
@@ -198,6 +282,13 @@ function OutlineRowItem({ row, sceneEditor }: { row: OutlineRow; sceneEditor: Sc
       >
         Move down
       </button>
+      <MoveControls
+        itemId={row.id}
+        itemLabel={moveLabel}
+        itemLayerId={row.layerId}
+        currentGroupId={sceneEditor.groups.find((g) => g.childIds.includes(row.id))?.id ?? null}
+        sceneEditor={sceneEditor}
+      />
     </li>
   );
 }

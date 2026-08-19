@@ -632,6 +632,182 @@ export function moveItem(scene: SceneDocument, itemId: string, direction: 'up' |
 }
 
 // ---------------------------------------------------------------------------
+// Reparenting (Task 76): moving an existing shape/group to a different
+// layer, or into/out of a different group on the same layer — as opposed to
+// `moveItem` above, which only reorders within the current container.
+//
+// Both functions below build a candidate scene document with the id/all
+// other properties of the moved item left completely untouched (only
+// `layerId`/`groupId`, or a group's membership in some other group's
+// `childIds`, change), then reuse `checkCandidate` — the exact same
+// `validateScene`-backed gate every other outline mutation in this file
+// goes through — to reject the move with a textual explanation naming the
+// exact limit (`maxGroupNestingDepth`, `maxGroupChildIds`) or cycle
+// violated, rather than duplicating that detection here. `pruneEmptyGroups`
+// (the same helper `removeShapeFromScene`/`deleteGroupRecursive` already
+// use) runs on every candidate so a move that empties out a group's last
+// child cannot leave a dangling empty group behind.
+// ---------------------------------------------------------------------------
+
+/** Moves a shape or group to a different layer's top level, detaching it
+ * from its current parent group (if any). Preserves the item's id and
+ * every other property; for a group, every descendant shape/group's
+ * `layerId` moves with it so the whole subtree stays on one layer. */
+export function moveItemToLayer(
+  scene: SceneDocument,
+  itemId: string,
+  targetLayerId: string,
+): Outcome {
+  const layers = getLayers(scene);
+  if (!layers.some((l) => l.id === targetLayerId)) {
+    return { ok: false, error: 'That layer no longer exists.' };
+  }
+
+  const shapes = getEditableShapes(rawShapes(scene));
+  const groups = getGroups(scene);
+  const shape = shapes.find((s) => s.id === itemId);
+  const group = shape ? undefined : groups.find((g) => g.id === itemId);
+  if (!shape && !group) return { ok: false, error: 'That item no longer exists.' };
+
+  if (shape) {
+    if (shape.layerId === targetLayerId && shape.groupId === null) {
+      return { ok: true, scene };
+    }
+    const nextShapesRaw = rawShapes(scene).map((raw) => {
+      const s = raw as { id?: unknown };
+      return s.id === itemId
+        ? { ...(raw as Record<string, unknown>), layerId: targetLayerId, groupId: null }
+        : raw;
+    });
+    const nextGroupsRaw = rawGroups(scene).map((raw) => {
+      const g = raw as { id?: unknown; childIds?: unknown };
+      if (!Array.isArray(g.childIds)) return raw;
+      const childIds = g.childIds as string[];
+      if (!childIds.includes(itemId)) return raw;
+      return {
+        ...(raw as Record<string, unknown>),
+        childIds: childIds.filter((c) => c !== itemId),
+      };
+    });
+    const candidate = pruneEmptyGroups(withGroups(withShapes(scene, nextShapesRaw), nextGroupsRaw));
+    const error = checkCandidate(candidate);
+    if (error) return { ok: false, error };
+    return { ok: true, scene: candidate };
+  }
+
+  const movedGroup = group!;
+  if (movedGroup.layerId === targetLayerId && isGroupTopLevel(movedGroup.id, groups)) {
+    return { ok: true, scene };
+  }
+  const { shapeIds, groupIds } = collectDescendantIds(movedGroup.id, groups);
+  const nextShapesRaw = rawShapes(scene).map((raw) => {
+    const s = raw as { id?: unknown };
+    return shapeIds.has(String(s.id))
+      ? { ...(raw as Record<string, unknown>), layerId: targetLayerId }
+      : raw;
+  });
+  const nextGroupsRaw = rawGroups(scene).map((raw) => {
+    const g = raw as { id?: unknown; childIds?: unknown };
+    if (groupIds.has(String(g.id))) {
+      return { ...(raw as Record<string, unknown>), layerId: targetLayerId };
+    }
+    if (Array.isArray(g.childIds) && (g.childIds as string[]).includes(itemId)) {
+      return {
+        ...(raw as Record<string, unknown>),
+        childIds: (g.childIds as string[]).filter((c) => c !== itemId),
+      };
+    }
+    return raw;
+  });
+  const candidate = pruneEmptyGroups(withGroups(withShapes(scene, nextShapesRaw), nextGroupsRaw));
+  const error = checkCandidate(candidate);
+  if (error) return { ok: false, error };
+  return { ok: true, scene: candidate };
+}
+
+/** Moves a shape or group into a different group on the same layer, or (when
+ * `targetGroupId` is `null`) promotes it out to its layer's top level.
+ * Preserves the item's id and every other property. Rejects a move into
+ * the item's own descendant, into a group on a different layer, or one
+ * that would exceed `maxGroupChildIds`/`maxGroupNestingDepth` — the same
+ * `checkCandidate` gate every other mutation here uses. */
+export function moveItemToGroup(
+  scene: SceneDocument,
+  itemId: string,
+  targetGroupId: string | null,
+): Outcome {
+  const shapes = getEditableShapes(rawShapes(scene));
+  const groups = getGroups(scene);
+  const shape = shapes.find((s) => s.id === itemId);
+  const group = shape ? undefined : groups.find((g) => g.id === itemId);
+  if (!shape && !group) return { ok: false, error: 'That item no longer exists.' };
+  const itemLayerId = shape ? shape.layerId : group!.layerId;
+
+  const detachFromCurrentParent = (rawGroupsList: unknown[]): unknown[] =>
+    rawGroupsList.map((raw) => {
+      const g = raw as { id?: unknown; childIds?: unknown };
+      if (!Array.isArray(g.childIds)) return raw;
+      const childIds = g.childIds as string[];
+      return childIds.includes(itemId)
+        ? { ...(raw as Record<string, unknown>), childIds: childIds.filter((c) => c !== itemId) }
+        : raw;
+    });
+
+  if (targetGroupId === null) {
+    const parent = findParentGroup(itemId, groups);
+    if (!parent) return { ok: true, scene }; // already top-level
+    const nextGroupsRaw = detachFromCurrentParent(rawGroups(scene));
+    const nextShapesRaw = shape
+      ? rawShapes(scene).map((raw) => {
+          const s = raw as { id?: unknown };
+          return s.id === itemId ? { ...(raw as Record<string, unknown>), groupId: null } : raw;
+        })
+      : rawShapes(scene);
+    const candidate = pruneEmptyGroups(withGroups(withShapes(scene, nextShapesRaw), nextGroupsRaw));
+    const error = checkCandidate(candidate);
+    if (error) return { ok: false, error };
+    return { ok: true, scene: candidate };
+  }
+
+  if (targetGroupId === itemId) {
+    return { ok: false, error: 'A group cannot be moved into itself.' };
+  }
+  const targetGroup = groups.find((g) => g.id === targetGroupId);
+  if (!targetGroup) return { ok: false, error: 'That group no longer exists.' };
+  if (targetGroup.layerId !== itemLayerId) {
+    return { ok: false, error: 'You can only move an item into a group on the same layer.' };
+  }
+  if (group) {
+    const { groupIds } = collectDescendantIds(group.id, groups);
+    if (groupIds.has(targetGroupId)) {
+      return { ok: false, error: 'Moving a group into one of its own descendants is not allowed.' };
+    }
+  }
+  const currentParent = findParentGroup(itemId, groups);
+  if (currentParent?.id === targetGroupId) return { ok: true, scene }; // already there
+
+  const nextGroupsRaw = detachFromCurrentParent(rawGroups(scene)).map((raw) => {
+    const g = raw as { id?: unknown; childIds?: unknown };
+    return g.id === targetGroupId
+      ? { ...(raw as Record<string, unknown>), childIds: [...(g.childIds as string[]), itemId] }
+      : raw;
+  });
+  const nextShapesRaw = shape
+    ? rawShapes(scene).map((raw) => {
+        const s = raw as { id?: unknown };
+        return s.id === itemId
+          ? { ...(raw as Record<string, unknown>), groupId: targetGroupId }
+          : raw;
+      })
+    : rawShapes(scene);
+
+  const candidate = pruneEmptyGroups(withGroups(withShapes(scene, nextShapesRaw), nextGroupsRaw));
+  const error = checkCandidate(candidate);
+  if (error) return { ok: false, error };
+  return { ok: true, scene: candidate };
+}
+
+// ---------------------------------------------------------------------------
 // Outline rendering
 // ---------------------------------------------------------------------------
 

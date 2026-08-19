@@ -305,6 +305,182 @@ describe('EditorWorkspace scene outline: reorder', () => {
   });
 });
 
+describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
+  it('moves a shape to a different layer via pointer click', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add layer' })); // Layer 2
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const shapeRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find((r) => r.dataset.outlineKind === 'shape')!;
+    const layerSelect = within(shapeRow).getByRole('combobox', { name: /Target layer for/ });
+    await user.selectOptions(layerSelect, 'Layer 2');
+    await user.click(within(shapeRow).getByRole('button', { name: /Move .* to layer/ }));
+
+    const rowsAfter = within(outlineList()).getAllByRole('listitem');
+    // The shape row should now be nested under Layer 2, i.e. appear after
+    // the "Layer 2" row rather than immediately after "Layer 1".
+    const layer2Index = rowsAfter.findIndex(
+      (r) => r.dataset.outlineKind === 'layer' && within(r).queryByDisplayValue('Layer 2'),
+    );
+    const shapeIndex = rowsAfter.findIndex((r) => r.dataset.outlineKind === 'shape');
+    expect(shapeIndex).toBeGreaterThan(layer2Index);
+  });
+
+  it('moves a shape to a different layer via keyboard-only interaction', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add layer' })); // Layer 2
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const shapeRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find((r) => r.dataset.outlineKind === 'shape')!;
+    const layerSelect = within(shapeRow).getByRole('combobox', {
+      name: /Target layer for/,
+    }) as HTMLSelectElement;
+    layerSelect.focus();
+    expect(layerSelect).toHaveFocus();
+    await user.selectOptions(layerSelect, 'Layer 2');
+
+    const moveButton = within(shapeRow).getByRole('button', { name: /Move .* to layer/ });
+    moveButton.focus();
+    expect(moveButton).toHaveFocus();
+    await user.keyboard('{Enter}');
+
+    const rowsAfter = within(outlineList()).getAllByRole('listitem');
+    const layer2Index = rowsAfter.findIndex(
+      (r) => r.dataset.outlineKind === 'layer' && within(r).queryByDisplayValue('Layer 2'),
+    );
+    const shapeIndex = rowsAfter.findIndex((r) => r.dataset.outlineKind === 'shape');
+    expect(shapeIndex).toBeGreaterThan(layer2Index);
+  });
+
+  it('moves a shape into a different group via pointer click', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: 'Combine into group' }));
+
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    const shapeRows = within(outlineList())
+      .getAllByRole('listitem')
+      .filter((r) => r.dataset.outlineKind === 'shape');
+    const looseShapeRow = shapeRows[shapeRows.length - 1];
+
+    const groupSelect = within(looseShapeRow).getByRole('combobox', { name: /Target group for/ });
+    await user.selectOptions(groupSelect, 'Group 1');
+    await user.click(within(looseShapeRow).getByRole('button', { name: /Move .* to group/ }));
+
+    const groupRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find((r) => r.dataset.outlineKind === 'group')!;
+    expect(within(groupRow).getByText(/Group: Group 1 \(3 item\(s\)\)/)).toBeInTheDocument();
+  });
+
+  it('promotes a grouped shape back to top level via keyboard-only interaction', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: 'Combine into group' }));
+
+    const groupedShapeRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find((r) => r.dataset.outlineKind === 'shape')!;
+    const groupSelect = within(groupedShapeRow).getByRole('combobox', {
+      name: /Target group for/,
+    }) as HTMLSelectElement;
+    groupSelect.focus();
+    expect(groupSelect).toHaveFocus();
+    await user.selectOptions(groupSelect, 'Top level');
+
+    const moveButton = within(groupedShapeRow).getByRole('button', { name: /Move .* to group/ });
+    moveButton.focus();
+    await user.keyboard('{Enter}');
+
+    // The group keeps its one remaining child rather than being pruned.
+    const rows = within(outlineList()).getAllByRole('listitem');
+    expect(rows.filter((r) => r.dataset.outlineKind === 'group')).toHaveLength(1);
+    expect(
+      within(rows.find((r) => r.dataset.outlineKind === 'group')!).getByText(/\(1 item\(s\)\)/),
+    ).toBeInTheDocument();
+    expect(rows.filter((r) => r.dataset.outlineKind === 'shape')).toHaveLength(2);
+  });
+
+  it('shows a textual explanation instead of moving a group into its own descendant', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: 'Combine into group' })); // -> Group 1
+
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    const rowsBefore = within(outlineList()).getAllByRole('listitem');
+    const looseShapeCheckbox = within(
+      rowsBefore.filter((r) => r.dataset.outlineKind === 'shape').slice(-1)[0],
+    ).getByRole('checkbox');
+    const innerGroupCheckbox = within(
+      rowsBefore.find((r) => r.dataset.outlineKind === 'group')!,
+    ).getByRole('checkbox');
+    await user.click(looseShapeCheckbox);
+    await user.click(innerGroupCheckbox);
+    await user.click(screen.getByRole('button', { name: 'Combine into group' })); // -> Group 2 (outer)
+
+    const groupRows = within(outlineList())
+      .getAllByRole('listitem')
+      .filter((r) => r.dataset.outlineKind === 'group');
+    const outerGroupRow = groupRows.find((r) => within(r).queryByText(/Group: Group 2/))!;
+    const groupSelect = within(outerGroupRow).getByRole('combobox', { name: /Target group for/ });
+    await user.selectOptions(groupSelect, 'Group 1');
+    await user.click(within(outerGroupRow).getByRole('button', { name: /Move .* to group/ }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/descendant/i);
+  });
+
+  it('undoes a shape-to-layer move in a single step', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add layer' }));
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const shapeRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find((r) => r.dataset.outlineKind === 'shape')!;
+    const layerSelect = within(shapeRow).getByRole('combobox', { name: /Target layer for/ });
+    await user.selectOptions(layerSelect, 'Layer 2');
+    await user.click(within(shapeRow).getByRole('button', { name: /Move .* to layer/ }));
+
+    const rowsAfterMove = within(outlineList()).getAllByRole('listitem');
+    const layer2IndexAfterMove = rowsAfterMove.findIndex(
+      (r) => r.dataset.outlineKind === 'layer' && within(r).queryByDisplayValue('Layer 2'),
+    );
+    const shapeIndexAfterMove = rowsAfterMove.findIndex((r) => r.dataset.outlineKind === 'shape');
+    expect(shapeIndexAfterMove).toBeGreaterThan(layer2IndexAfterMove);
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+    const rowsAfterUndo = within(outlineList()).getAllByRole('listitem');
+    const layer1IndexAfterUndo = rowsAfterUndo.findIndex(
+      (r) => r.dataset.outlineKind === 'layer' && within(r).queryByDisplayValue('Layer 1'),
+    );
+    const shapeIndexAfterUndo = rowsAfterUndo.findIndex((r) => r.dataset.outlineKind === 'shape');
+    expect(shapeIndexAfterUndo).toBeGreaterThan(layer1IndexAfterUndo);
+  });
+});
+
 describe('EditorWorkspace scene outline: undo integration', () => {
   it('undoes a grouping action in a single step', async () => {
     await loadReadyWorkspace();

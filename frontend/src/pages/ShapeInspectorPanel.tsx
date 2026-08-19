@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { POSITION_LIMIT } from './sceneShapes';
 import {
   COLOR_FIELD_LABELS,
   getColorFieldValue,
@@ -11,6 +12,28 @@ import {
 import type { SceneEditor } from './useSceneEditor';
 
 type FieldOutcome = { ok: true } | { ok: false; error: string };
+
+// Issue #79: the keyboard point-coordinate list's X/Y fields reuse
+// `NumericStyleField` below exactly (same component, same input/keyboard
+// behavior Task 60 established) rather than inventing a second field
+// component. `NumericFieldSpec.field` is typed as `NumericShapeField` (the
+// whole-shape position/scale/rotation/style fields `shapeStyleFields.ts`
+// already knows about) since that's the only field this spec's shape is
+// ever read from `NUMERIC_FIELD_SPECS`; the value is never actually read
+// back off a point spec (see `NumericStyleField`'s body — it only reads
+// `spec.label`/`spec.step`/`spec.rangeText`), so reusing `'positionX'`/
+// `'positionY'` here purely for structural typing is safe.
+const POINT_FIELD_RANGE_TEXT = `${POSITION_LIMIT.min} to ${POSITION_LIMIT.max}`;
+function pointAxisSpec(axis: 'x' | 'y'): NumericFieldSpec {
+  return {
+    field: axis === 'x' ? 'positionX' : 'positionY',
+    label: axis === 'x' ? 'X' : 'Y',
+    min: POSITION_LIMIT.min,
+    max: POSITION_LIMIT.max,
+    step: 1,
+    rangeText: POINT_FIELD_RANGE_TEXT,
+  };
+}
 
 /**
  * Task 60 (issue #58): one keyboard-operable numeric field — position X/Y,
@@ -273,6 +296,85 @@ function ShapeInspectorPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
           onCommit={(raw) => sceneEditor.updateSelectedShapeColorField(field, raw)}
         />
       ))}
+
+      {/* Issue #79: per-vertex path editing — the "Edit points" toggle plus
+          the keyboard-accessible point-coordinate list. Both are gated to
+          `selectedShape.type === 'path'` only (never rendered for any
+          other shape type, a group, or a multi-selection — both earlier
+          returns above already rule out group/multi-selection, so this
+          check alone is sufficient here). The toggle enters/exits canvas
+          vertex edit mode (`EditorWorkspace.tsx`'s point handles); the
+          point list itself doesn't require that mode to be active — it's
+          the keyboard-only parity path issue #79 requires independent of
+          the pointer gesture. */}
+      {selectedShape.type === 'path' && (
+        <PathPointsSection sceneEditor={sceneEditor} shape={selectedShape} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Issue #79: the "Edit points" toggle button and keyboard point-coordinate
+ * list for a selected `path` shape — see `ShapeInspectorPanel`'s own render
+ * call above for the gating rationale. Kept as its own component (rather
+ * than inlined) purely for readability; it shares `sceneEditor`'s vertex
+ * state/actions with `EditorWorkspace.tsx`'s canvas handles, so the two
+ * stay perfectly in sync (e.g. clicking a canvas handle to select a vertex
+ * is reflected here, and editing a point's X/Y here is reflected on the
+ * canvas) with no separate state to keep in sync.
+ */
+function PathPointsSection({
+  sceneEditor,
+  shape,
+}: {
+  sceneEditor: SceneEditor;
+  shape: { id: string; points: { x: number; y: number }[] };
+}) {
+  return (
+    <div className="shape-vertex-editor">
+      <button
+        type="button"
+        aria-pressed={sceneEditor.vertexEditActive}
+        onClick={() => sceneEditor.toggleVertexEditMode()}
+      >
+        {sceneEditor.vertexEditActive ? 'Exit edit points' : 'Edit points'}
+      </button>
+
+      {sceneEditor.vertexError && (
+        <p role="status" aria-live="polite">
+          {sceneEditor.vertexError}
+        </p>
+      )}
+
+      <div role="group" aria-label="Path points" className="shape-vertex-list">
+        <h5>Points</h5>
+        <ul>
+          {shape.points.map((point, index) => (
+            <li key={`${shape.id}-point-${index}`}>
+              <span>Point {index + 1}</span>
+              <NumericStyleField
+                spec={pointAxisSpec('x')}
+                fieldId={`shape-vertex-${shape.id}-${index}-x`}
+                value={point.x}
+                onCommit={(raw) => sceneEditor.updateVertexPointField(index, 'x', raw)}
+              />
+              <NumericStyleField
+                spec={pointAxisSpec('y')}
+                fieldId={`shape-vertex-${shape.id}-${index}-y`}
+                value={point.y}
+                onCommit={(raw) => sceneEditor.updateVertexPointField(index, 'y', raw)}
+              />
+              <button type="button" onClick={() => sceneEditor.deleteVertexAt(index)}>
+                Delete point {index + 1}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button type="button" onClick={() => sceneEditor.addVertexNearLast()}>
+          Add point
+        </button>
+      </div>
     </div>
   );
 }

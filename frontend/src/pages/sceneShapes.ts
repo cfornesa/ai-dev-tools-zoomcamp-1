@@ -18,6 +18,8 @@
  * nothing in this task produces a non-default scale or rotation.
  */
 
+import rawLimits from '../../../schema/limits.json';
+
 export type ShapeType = 'circle' | 'rect' | 'line' | 'path';
 
 export type Point = { x: number; y: number };
@@ -785,4 +787,182 @@ export function applyGroupDrag(
     case 'rotate':
       return applyGroupRotate(startShapes, bounds, startPointer, pointer);
   }
+}
+
+/**
+ * Issue #79: per-vertex editing of a single `path` shape's individual
+ * points — a mode that coexists with (never replaces) Task 26's whole-shape
+ * path "resize" (`applyResize`'s/`applyGroupResize`'s `'path'` branches
+ * above, both untouched by this section). Deliberately single-shape only
+ * (`selectedShapeId`, never `multiSelectedIds`/the group-gesture machinery
+ * above) and unsnapped (no interaction with issue #78's
+ * `applyMoveSnap`/`applyResizeSnap`) — see this task's own "Out of scope".
+ */
+
+// schema/limits.json's `maxPathPoints` — read directly (not duplicated as a
+// plain number) since it's already a plain JSON value with no schema
+// validation logic to avoid re-implementing, unlike the schema-derived
+// ranges above.
+export const MAX_PATH_POINTS: number = (rawLimits as { maxPathPoints: number }).maxPathPoints;
+
+// schema/scene.schema.json's `$defs` path branch: `points` has
+// `minItems: 2` — duplicated here as a plain number per this task's
+// constraint not to modify the schema itself, the same convention
+// `PATH_MIN_SCALE`/`POSITION_LIMIT`/etc. above already use.
+export const MIN_PATH_POINTS = 2;
+
+// Fixed tolerance (scene units, not screen pixels) for double-click-to-
+// insert hit testing against a path segment — same rationale as
+// `SNAP_TOLERANCE` above: expressed in scene units so it stays zoom/CSS-
+// scale invariant regardless of how large or small the canvas is rendered
+// on screen.
+export const VERTEX_SEGMENT_INSERT_TOLERANCE = 10;
+
+/** The absolute, rotated on-screen position of every point in a path
+ * shape — one draggable vertex handle per entry, in the same "local point,
+ * rotated around the transform origin" convention `getShapeHandles` uses
+ * for the whole-shape handles it replaces while vertex edit mode is
+ * active. */
+export function getPathPointHandles(shape: PathShape): Point[] {
+  const { x, y, rotation } = shape.transform;
+  return shape.points.map((p) => rotateAround(x + p.x, y + p.y, x, y, rotation));
+}
+
+/** Moves exactly one point (`pointIndex`) of `startShape` — an immutable
+ * snapshot taken once at gesture start, exactly like `applyShapeDrag`'s own
+ * `startShape` parameter — to `pointer` (canvas-local, client-space-
+ * converted). `pointer` is unrotated back through the shape's transform
+ * (mirroring `applyResize`'s `'path'` branch unrotate step) before being
+ * stored, since `points[]` entries are local, unrotated offsets from
+ * `transform.x/y`. Every other point is left byte-for-byte unchanged. The
+ * written coordinates are clamped to the schema's `point` range
+ * (`POSITION_LIMIT`, reused from the whole-shape path above) and are never
+ * `NaN`/`Infinity` (see `clamp`'s own doc comment). */
+export function applyVertexDrag(
+  startShape: PathShape,
+  pointIndex: number,
+  pointer: Point,
+): PathShape {
+  const { x, y, rotation } = startShape.transform;
+  const local = rotateAround(pointer.x, pointer.y, x, y, -rotation);
+  const px = clamp(local.x - x, POSITION_LIMIT.min, POSITION_LIMIT.max);
+  const py = clamp(local.y - y, POSITION_LIMIT.min, POSITION_LIMIT.max);
+  const points = startShape.points.map((p, i) => (i === pointIndex ? { x: px, y: py } : p));
+  return { ...startShape, points };
+}
+
+/** Point-to-segment distance in the same flat coordinate space `a`/`b`/`p`
+ * already share (no unit conversion here) — the plain closed-form
+ * projection-onto-segment-then-clamp-to-endpoints calculation. */
+function distanceToSegment(p: Point, a: Point, b: Point): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared;
+  t = Math.max(0, Math.min(1, t));
+  const projX = a.x + t * dx;
+  const projY = a.y + t * dy;
+  return Math.hypot(p.x - projX, p.y - projY);
+}
+
+export type SegmentHit = { index: number; point: Point };
+
+/** Finds the closest path segment to `pointer` (canvas-local, client-
+ * space-converted) within `tolerance` scene units — the double-click-to-
+ * insert hit test. `pointer` is converted into the shape's local,
+ * unrotated point space first (the same unrotate step `applyVertexDrag`
+ * above uses), so the returned `point` is the raw double-click location
+ * already expressed in the same convention `points[]` entries use, ready
+ * to insert as-is (not projected onto the segment — the acceptance
+ * criterion is "the new point's coordinates are the double-click
+ * location"). `index` is the array index the new point should be spliced
+ * in at: between segment `i` and `i + 1`, or — for a `closed` path's
+ * final segment connecting the last point back to the first — at
+ * `points.length` (append). Returns `null` when no segment is within
+ * `tolerance` (a path with fewer than 2 segments, e.g. an open 2-point
+ * path with only one segment, still works: `segmentCount` is simply 1). */
+export function findClosestPathSegment(
+  shape: PathShape,
+  pointer: Point,
+  tolerance: number = VERTEX_SEGMENT_INSERT_TOLERANCE,
+): SegmentHit | null {
+  const { x, y, rotation } = shape.transform;
+  const local = rotateAround(pointer.x, pointer.y, x, y, -rotation);
+  const localPoint: Point = { x: local.x - x, y: local.y - y };
+  const points = shape.points;
+  if (points.length < 2) return null;
+  const segmentCount = shape.closed ? points.length : points.length - 1;
+  let bestIndex = -1;
+  let bestDist = Infinity;
+  for (let i = 0; i < segmentCount; i += 1) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    const dist = distanceToSegment(localPoint, a, b);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestIndex = i + 1;
+    }
+  }
+  if (bestIndex === -1 || bestDist > tolerance) return null;
+  return {
+    index: bestIndex,
+    point: {
+      x: clamp(localPoint.x, POSITION_LIMIT.min, POSITION_LIMIT.max),
+      y: clamp(localPoint.y, POSITION_LIMIT.min, POSITION_LIMIT.max),
+    },
+  };
+}
+
+export type PathPointMutationResult = { ok: true; shape: PathShape } | { ok: false; error: string };
+
+/** Inserts `point` (already local/unrotated — see `findClosestPathSegment`)
+ * into `shape.points` at `index`, or rejects with no mutation when the
+ * shape is already at `MAX_PATH_POINTS` (the "insert rejected at the cap"
+ * acceptance criterion). */
+export function insertPathPoint(
+  shape: PathShape,
+  index: number,
+  point: Point,
+): PathPointMutationResult {
+  if (shape.points.length >= MAX_PATH_POINTS) {
+    return {
+      ok: false,
+      error: `This shape already has the maximum of ${MAX_PATH_POINTS} points — no more can be added.`,
+    };
+  }
+  const points = shape.points.slice();
+  const clampedIndex = Math.max(0, Math.min(points.length, index));
+  points.splice(clampedIndex, 0, {
+    x: clamp(point.x, POSITION_LIMIT.min, POSITION_LIMIT.max),
+    y: clamp(point.y, POSITION_LIMIT.min, POSITION_LIMIT.max),
+  });
+  return { ok: true, shape: { ...shape, points } };
+}
+
+/** Appends a new point near the shape's current last point — the "Add
+ * point" keyboard button's action, subject to the same `MAX_PATH_POINTS`
+ * cap `insertPathPoint` already enforces. */
+export function appendPathPointNearLast(shape: PathShape): PathPointMutationResult {
+  const last = shape.points[shape.points.length - 1] ?? { x: 0, y: 0 };
+  const point = { x: last.x + 20, y: last.y + 20 };
+  return insertPathPoint(shape, shape.points.length, point);
+}
+
+/** Removes the point at `index` from `shape.points`, or rejects with no
+ * mutation when the shape is already at the schema's `MIN_PATH_POINTS`
+ * floor (the "delete rejected at the floor" acceptance criterion) or
+ * `index` no longer resolves to a point. */
+export function deletePathPoint(shape: PathShape, index: number): PathPointMutationResult {
+  if (shape.points.length <= MIN_PATH_POINTS) {
+    return {
+      ok: false,
+      error: `This shape must keep at least ${MIN_PATH_POINTS} points — this point can't be deleted.`,
+    };
+  }
+  if (index < 0 || index >= shape.points.length) {
+    return { ok: false, error: 'That point no longer exists.' };
+  }
+  const points = shape.points.filter((_, i) => i !== index);
+  return { ok: true, shape: { ...shape, points } };
 }

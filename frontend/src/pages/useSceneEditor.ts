@@ -49,9 +49,17 @@ import {
   type Outcome,
 } from './sceneOutline';
 import {
+  appendPathPointNearLast,
+  clamp,
   createShape,
+  deletePathPoint,
   duplicateShape,
+  findClosestPathSegment,
   getEditableShapes,
+  insertPathPoint,
+  POSITION_LIMIT,
+  type PathShape,
+  type Point,
   type Shape,
   type ShapeType,
 } from './sceneShapes';
@@ -208,6 +216,19 @@ export function useSceneEditor(
   // `graphEditing.ts`'s `Outcome` type).
   const [graphError, setGraphError] = useState<string | null>(null);
 
+  // Issue #79: per-vertex path editing mode. `vertexEditShapeId` is the id
+  // of the single `path` shape currently in "Edit points" mode (never a
+  // group, never a multi-selection — see this task's own "Out of scope"),
+  // or null when no shape is in that mode. `selectedVertexIndex` is a
+  // separate, narrower selection concept — which one of that shape's
+  // points is the target for keyboard Delete/Backspace — distinct from
+  // `selectedShapeId` itself. `vertexError` is the same "surfaced,
+  // non-blocking rejection" channel `outlineError`/`cardError`/`graphError`
+  // above already use for insert-at-cap/delete-at-floor rejections.
+  const [vertexEditShapeId, setVertexEditShapeId] = useState<string | null>(null);
+  const [selectedVertexIndex, setSelectedVertexIndex] = useState<number | null>(null);
+  const [vertexError, setVertexError] = useState<string | null>(null);
+
   // Task 26: "latest value" refs kept in sync every render (see the two
   // effects just below) so the transform-gesture callbacks further down —
   // which must stay referentially stable across renders, since they're
@@ -223,6 +244,18 @@ export function useSceneEditor(
   useEffect(() => {
     selectedShapeIdRef.current = selectedShapeId;
   }, [selectedShapeId]);
+  // Issue #79: the selection changing (to a different shape, a group, or
+  // nothing — including via undo/redo's `reconcileSelectionAgainst`
+  // below) always exits vertex edit mode and clears the selected-vertex
+  // concept, synchronously before the next render — the "no stale vertex
+  // handles are ever left rendered" acceptance criterion. Toggling edit
+  // mode on/off itself never changes `selectedShapeId`, so this effect
+  // doesn't re-fire (and doesn't fight) that toggle.
+  useEffect(() => {
+    setVertexEditShapeId(null);
+    setSelectedVertexIndex(null);
+    setVertexError(null);
+  }, [selectedShapeId]);
   // Snapshot of the scene as it was immediately before the in-progress
   // transform gesture started — the "before" half of the single commit()-
   // equivalent history entry the gesture produces on completion.
@@ -233,6 +266,15 @@ export function useSceneEditor(
   const groups = useMemo(() => (workingCopy ? getGroups(workingCopy) : []), [workingCopy]);
   const layers = useMemo(() => (workingCopy ? getLayers(workingCopy) : []), [workingCopy]);
   const selectedGroup = groups.find((g) => g.id === selectedShapeId) ?? null;
+  // Issue #79: true only while the shape currently in vertex edit mode is
+  // still the single active selection *and* still a `path` — the extra
+  // `selectedShape?.type === 'path'` check is a belt-and-suspenders
+  // guard alongside the selection-change effect above, since both must
+  // hold for canvas vertex handles / the point list to render.
+  const vertexEditActive =
+    vertexEditShapeId !== null &&
+    vertexEditShapeId === selectedShapeId &&
+    selectedShape?.type === 'path';
   // Issue #77: the resolved multi-shape selection a group manipulation
   // gesture acts on — only ever non-empty once `multiSelectedIds` holds
   // 2+ entries (below that threshold, canvas manipulation stays on the
@@ -501,6 +543,134 @@ export function useSceneEditor(
       return { ok: true };
     },
     [workingCopy, selectedShape, commit],
+  );
+
+  // --- Issue #79: per-vertex path editing ---
+  // `toggleVertexEditMode` only ever turns edit mode *on* for a single
+  // selected `path` shape (never a group/multi-selection — the toggle
+  // button itself isn't even rendered otherwise, but this guards the
+  // invariant here too); turning it off is always allowed. Every mutation
+  // below (`insertVertexAtPoint`/`deleteVertexAt`/`addVertexNearLast`/
+  // `updateVertexPointField`) reads `selectedShape` fresh, requires it to
+  // still be a `path`, and commits exactly one undo/redo step on success —
+  // the same "one user-visible change, one history entry" granularity
+  // `updateSelectedShapeNumericField` above already uses — while a
+  // rejection (at the `MAX_PATH_POINTS`/`MIN_PATH_POINTS` boundary, or a
+  // stale shape/point reference) only ever sets `vertexError` and never
+  // touches `workingCopy`/`commit`.
+
+  const toggleVertexEditMode = useCallback(() => {
+    setVertexError(null);
+    setSelectedVertexIndex(null);
+    setVertexEditShapeId((current) => {
+      if (current !== null) return null;
+      return selectedShape && selectedShape.type === 'path' ? selectedShape.id : null;
+    });
+  }, [selectedShape]);
+
+  const exitVertexEditMode = useCallback(() => {
+    setVertexEditShapeId(null);
+    setSelectedVertexIndex(null);
+  }, []);
+
+  const selectVertex = useCallback((index: number | null) => {
+    setSelectedVertexIndex(index);
+  }, []);
+
+  // Shared by every discrete (non-drag) vertex mutation below: looks up
+  // the currently selected path shape's live array index and, on success,
+  // writes the replacement shape through the normal `commit()` path so it
+  // participates in undo/redo exactly like every other mutation in this
+  // hook.
+  const commitPathShapeReplacement = useCallback(
+    (updated: PathShape) => {
+      if (!workingCopy) return;
+      const shapesArr = rawShapes(workingCopy);
+      const idx = shapesArr.findIndex((s) => (s as { id?: unknown })?.id === updated.id);
+      if (idx === -1) return;
+      const next = shapesArr.slice();
+      next[idx] = updated;
+      commit(withShapes(workingCopy, next));
+    },
+    [workingCopy, commit],
+  );
+
+  const insertVertexAtPoint = useCallback(
+    (pointer: Point) => {
+      if (!selectedShape || selectedShape.type !== 'path') return;
+      const hit = findClosestPathSegment(selectedShape, pointer);
+      if (!hit) return; // not close enough to any segment: a silent no-op, not a rejection
+      const result = insertPathPoint(selectedShape, hit.index, hit.point);
+      if (!result.ok) {
+        setVertexError(result.error);
+        return;
+      }
+      setVertexError(null);
+      setSelectedVertexIndex(null);
+      commitPathShapeReplacement(result.shape);
+    },
+    [selectedShape, commitPathShapeReplacement],
+  );
+
+  const addVertexNearLast = useCallback(() => {
+    if (!selectedShape || selectedShape.type !== 'path') return;
+    const result = appendPathPointNearLast(selectedShape);
+    if (!result.ok) {
+      setVertexError(result.error);
+      return;
+    }
+    setVertexError(null);
+    setSelectedVertexIndex(null);
+    commitPathShapeReplacement(result.shape);
+  }, [selectedShape, commitPathShapeReplacement]);
+
+  const deleteVertexAt = useCallback(
+    (index: number) => {
+      if (!selectedShape || selectedShape.type !== 'path') return;
+      const result = deletePathPoint(selectedShape, index);
+      if (!result.ok) {
+        setVertexError(result.error);
+        return;
+      }
+      setVertexError(null);
+      setSelectedVertexIndex(null);
+      commitPathShapeReplacement(result.shape);
+    },
+    [selectedShape, commitPathShapeReplacement],
+  );
+
+  // The keyboard point-coordinate list's per-axis numeric field — same
+  // "parse, then clamp a finite value into the schema's point range,
+  // reject anything else" policy `shapeStyleFields.ts`'s
+  // `parseNumericFieldEdit` documents for the position/scale/rotation
+  // fields it already covers, applied here to an individual point instead
+  // of the whole shape's transform.
+  const updateVertexPointField = useCallback(
+    (index: number, axis: 'x' | 'y', raw: string): { ok: true } | { ok: false; error: string } => {
+      if (!selectedShape || selectedShape.type !== 'path') {
+        return { ok: false, error: 'No path shape selected.' };
+      }
+      const label = axis === 'x' ? 'Point X' : 'Point Y';
+      const rangeText = `${POSITION_LIMIT.min} to ${POSITION_LIMIT.max}`;
+      const trimmed = raw.trim();
+      if (trimmed === '') {
+        return { ok: false, error: `${label} must be a number (${rangeText}).` };
+      }
+      const parsed = Number(trimmed);
+      if (!Number.isFinite(parsed)) {
+        return { ok: false, error: `${label} must be a finite number (${rangeText}).` };
+      }
+      if (index < 0 || index >= selectedShape.points.length) {
+        return { ok: false, error: 'That point no longer exists.' };
+      }
+      const value = clamp(parsed, POSITION_LIMIT.min, POSITION_LIMIT.max);
+      const points = selectedShape.points.map((p, i) =>
+        i === index ? { ...p, [axis]: value } : p,
+      );
+      commitPathShapeReplacement({ ...selectedShape, points });
+      return { ok: true };
+    },
+    [selectedShape, commitPathShapeReplacement],
   );
 
   const reconcileSelectionAgainst = useCallback((scene: SceneDocument) => {
@@ -817,6 +987,17 @@ export function useSceneEditor(
     // Task 60 (issue #58)
     updateSelectedShapeNumericField,
     updateSelectedShapeColorField,
+    // Issue #79
+    vertexEditActive,
+    toggleVertexEditMode,
+    exitVertexEditMode,
+    selectedVertexIndex,
+    selectVertex,
+    vertexError,
+    insertVertexAtPoint,
+    addVertexNearLast,
+    deleteVertexAt,
+    updateVertexPointField,
     // Task 24
     layers,
     groups,

@@ -18,9 +18,11 @@ import {
   applyMoveSnap,
   applyResizeSnap,
   applyShapeDrag,
+  applyVertexDrag,
   clientToCanvasPoint,
   getCombinedBounds,
   getGroupHandles,
+  getPathPointHandles,
   getShapeHandles,
   GRID_SIZE,
   hitTestTopmostShapeAt,
@@ -29,6 +31,7 @@ import {
   type AlignmentGuide,
   type Bounds,
   type HandleKind,
+  type PathShape,
   type Point,
   type Shape,
   type ShapeType,
@@ -291,6 +294,13 @@ function EditorWorkspace() {
   // bounding box, both fixed at gesture start (see `sceneShapes.ts`'s
   // `applyGroupDrag` doc comment on why fixed-snapshot recomputation is
   // used instead of accumulating a delta frame over frame).
+  // Issue #79: a third gesture kind, `mode: 'vertex'` — dragging one point
+  // of a single selected `path` shape while vertex edit mode is active.
+  // Deliberately carries no `kind: HandleKind` (there's no move/resize/
+  // rotate distinction for a single point) and, like the single/group
+  // modes above, snapshots its `startShape` once at gesture start so a
+  // long drag stays numerically stable and Escape-to-cancel is trivial
+  // (see `applyShapeDrag`'s own doc comment in sceneShapes.ts).
   type DragState =
     | { mode: 'single'; kind: HandleKind; startShape: Shape; startPointer: Point }
     | {
@@ -299,7 +309,8 @@ function EditorWorkspace() {
         startShapes: Shape[];
         bounds: Bounds;
         startPointer: Point;
-      };
+      }
+    | { mode: 'vertex'; startShape: PathShape; pointIndex: number; startPointer: Point };
   const dragRef = useRef<DragState | null>(null);
   // Lazily built once (see the `if` below) and reused for every gesture,
   // so `window.addEventListener`/`removeEventListener` always agree on the
@@ -328,6 +339,15 @@ function EditorWorkspace() {
           pointer,
         );
         sceneEditorRef.current.updateMultiSelectedTransform(updated);
+        return;
+      }
+      if (drag.mode === 'vertex') {
+        // Issue #79: single-vertex drag is deliberately unsnapped — no
+        // `applyMoveSnap`/`applyResizeSnap` call here, matching this
+        // task's own "Out of scope" (snapping stays whole-shape-only,
+        // issue #78).
+        const updated = applyVertexDrag(drag.startShape, drag.pointIndex, pointer);
+        sceneEditorRef.current.updateSelectedTransform(updated);
         return;
       }
       const updated = applyShapeDrag(drag.kind, drag.startShape, drag.startPointer, pointer);
@@ -443,6 +463,54 @@ function EditorWorkspace() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [sceneEditor]);
+
+  // Issue #79: vertex edit mode's two keyboard affordances that aren't
+  // already covered by the generic drag-cancel/undo-redo listeners above:
+  // Escape exits the mode outright when no point drag is in progress
+  // (`dragRef.current` is null — a drag in progress is instead cancelled
+  // by `dragHandlers.current.onKey` above, which restores the pre-drag
+  // point and creates no undo step, matching Task 26's own drag-cancel
+  // exactly), and Delete/Backspace removes the currently selected vertex.
+  // Both are no-ops while vertex edit mode isn't active, and both ignore
+  // a typing target so they never fight a text field (matching
+  // `isTypingTarget`'s use in the undo/redo listener above).
+  //
+  // This listener is only added/removed when `vertexEditActive` itself
+  // flips (not on every render — reading `sceneEditorRef.current` inside
+  // the handler, the same "latest value" ref pattern `dragHandlers.current`
+  // uses above, keeps it current without that). This matters for
+  // correctness, not just performance: if this listener were torn down and
+  // re-added on every render (e.g. depending on the whole `sceneEditor`
+  // object, which is a new reference every render), it would always end up
+  // registered *after* `dragHandlers.current.onKey` by the time a drag is
+  // mid-gesture (each pointermove re-renders and would re-register it) —
+  // so on Escape, the drag-cancel listener would run first, null out
+  // `dragRef.current`, and this listener would then wrongly see "no drag in
+  // progress" and exit vertex edit mode entirely instead of just cancelling
+  // the drag. Registering this listener once per mode-activation, ahead of
+  // `dragHandlers.current.onKey` (which is only ever added later, at
+  // pointerdown), keeps the ordering — and the `dragRef.current` check —
+  // reliable.
+  useEffect(() => {
+    if (!sceneEditor.vertexEditActive) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (isTypingTarget(event.target)) return;
+      const editor = sceneEditorRef.current;
+      if (event.key === 'Escape') {
+        if (dragRef.current) return; // handled by the drag-cancel listener instead
+        event.preventDefault();
+        editor.exitVertexEditMode();
+        return;
+      }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (editor.selectedVertexIndex === null) return;
+        event.preventDefault();
+        editor.deleteVertexAt(editor.selectedVertexIndex);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sceneEditor.vertexEditActive]);
 
   if (loadState === 'loading') {
     return (
@@ -648,6 +716,44 @@ function EditorWorkspace() {
     };
   }
 
+  // Issue #79: a vertex handle's pointer-down both selects that point
+  // (distinct from starting a drag — `selectVertex` fires unconditionally
+  // here, so a plain click-no-move still selects it for a subsequent
+  // Delete/Backspace) and starts the vertex drag gesture. `stopPropagation`
+  // matches `handleHandlePointerDown`'s own rationale: without it, this
+  // would also bubble into `handleCanvasPointerDown` and hit-test the same
+  // point against shape bodies underneath the handle.
+  function handleVertexPointerDown(pointIndex: number) {
+    return (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+      event.stopPropagation();
+      const shape = sceneEditor.selectedShape;
+      if (!shape || shape.type !== 'path') return;
+      sceneEditor.selectVertex(pointIndex);
+      const pointer = canvasPointFromClient(event.clientX, event.clientY);
+      if (!pointer) return;
+      beginTransformGesture({
+        mode: 'vertex',
+        startShape: shape,
+        pointIndex,
+        startPointer: pointer,
+      });
+    };
+  }
+
+  // Issue #79: double-clicking a path segment while vertex edit mode is
+  // active inserts a new point there — a no-op (not a rejection) outside
+  // vertex edit mode or when the double-click lands too far from any
+  // segment (`findClosestPathSegment`'s own `null` case, handled inside
+  // `insertVertexAtPoint`), and a visible `vertexError` (not a mutation)
+  // at the `MAX_PATH_POINTS` cap.
+  function handleCanvasDoubleClick(event: ReactMouseEvent<HTMLDivElement>) {
+    if (!sceneEditor.vertexEditActive) return;
+    const pointer = canvasPointFromClient(event.clientX, event.clientY);
+    if (!pointer) return;
+    sceneEditor.insertVertexAtPoint(pointer);
+  }
+
   function handleStyle(point: Point): CSSProperties {
     return {
       position: 'absolute',
@@ -828,6 +934,7 @@ function EditorWorkspace() {
             }}
             onClick={handleCanvasClick}
             onPointerDown={handleCanvasPointerDown}
+            onDoubleClick={handleCanvasDoubleClick}
           >
             {/* Task 25: the p5.js preview mounts its <canvas> into this div.
                 React is never given any children to reconcile here (no JSX
@@ -938,64 +1045,92 @@ function EditorWorkspace() {
                 selection change, a delete, or an undo/redo that changes
                 the selection automatically leaves no stale handle
                 behind. */}
-            {groupSelection && groupBounds
-              ? (() => {
-                  const handles = getGroupHandles(groupBounds);
-                  return (
-                    <>
-                      <div
-                        data-testid="group-handle-move"
-                        aria-hidden="true"
-                        className="editor-shape-handle editor-group-handle-move"
-                        style={handleStyle(handles.move)}
-                        onPointerDown={handleGroupHandlePointerDown('move')}
-                      />
-                      <div
-                        data-testid="group-handle-resize"
-                        aria-hidden="true"
-                        className="editor-shape-handle editor-group-handle-resize"
-                        style={handleStyle(handles.resize)}
-                        onPointerDown={handleGroupHandlePointerDown('resize')}
-                      />
-                      <div
-                        data-testid="group-handle-rotate"
-                        aria-hidden="true"
-                        className="editor-shape-handle editor-group-handle-rotate"
-                        style={handleStyle(handles.rotate)}
-                        onPointerDown={handleGroupHandlePointerDown('rotate')}
-                      />
-                    </>
-                  );
-                })()
-              : sceneEditor.selectedShape &&
-                (() => {
-                  const handles = getShapeHandles(sceneEditor.selectedShape);
-                  return (
-                    <>
-                      <div
-                        data-testid="shape-handle-move"
-                        aria-hidden="true"
-                        className="editor-shape-handle editor-shape-handle-move"
-                        style={handleStyle(handles.move)}
-                        onPointerDown={handleHandlePointerDown('move')}
-                      />
-                      <div
-                        data-testid="shape-handle-resize"
-                        aria-hidden="true"
-                        className="editor-shape-handle editor-shape-handle-resize"
-                        style={handleStyle(handles.resize)}
-                        onPointerDown={handleHandlePointerDown('resize')}
-                      />
-                      <div
-                        data-testid="shape-handle-rotate"
-                        aria-hidden="true"
-                        className="editor-shape-handle editor-shape-handle-rotate"
-                        style={handleStyle(handles.rotate)}
-                        onPointerDown={handleHandlePointerDown('rotate')}
-                      />
-                    </>
-                  );
-                })()}
+            {/* Issue #79: while vertex edit mode is active for the single
+                selected `path` shape, one draggable handle per point
+                entirely replaces Task 26's move/resize/rotate handles for
+                that shape (never issue #77's group handles above it in
+                this chain — group selection requires 2+ items, and vertex
+                edit mode is single-shape-only, so the two can never be
+                simultaneously true). Re-derived fresh from
+                `sceneEditor.selectedShape.points` on every render, so an
+                insert/delete/undo/redo immediately shows the right set of
+                handles with nothing stale left behind. */}
+            {sceneEditor.vertexEditActive && sceneEditor.selectedShape?.type === 'path'
+              ? getPathPointHandles(sceneEditor.selectedShape).map((point, index) => (
+                  <div
+                    key={`vertex-handle-${sceneEditor.selectedShape!.id}-${index}`}
+                    data-testid={`path-vertex-handle-${index}`}
+                    role="button"
+                    tabIndex={-1}
+                    aria-pressed={sceneEditor.selectedVertexIndex === index}
+                    aria-label={`Point ${index + 1}`}
+                    className={
+                      sceneEditor.selectedVertexIndex === index
+                        ? 'editor-shape-handle editor-vertex-handle editor-vertex-handle-selected'
+                        : 'editor-shape-handle editor-vertex-handle'
+                    }
+                    style={handleStyle(point)}
+                    onPointerDown={handleVertexPointerDown(index)}
+                  />
+                ))
+              : groupSelection && groupBounds
+                ? (() => {
+                    const handles = getGroupHandles(groupBounds);
+                    return (
+                      <>
+                        <div
+                          data-testid="group-handle-move"
+                          aria-hidden="true"
+                          className="editor-shape-handle editor-group-handle-move"
+                          style={handleStyle(handles.move)}
+                          onPointerDown={handleGroupHandlePointerDown('move')}
+                        />
+                        <div
+                          data-testid="group-handle-resize"
+                          aria-hidden="true"
+                          className="editor-shape-handle editor-group-handle-resize"
+                          style={handleStyle(handles.resize)}
+                          onPointerDown={handleGroupHandlePointerDown('resize')}
+                        />
+                        <div
+                          data-testid="group-handle-rotate"
+                          aria-hidden="true"
+                          className="editor-shape-handle editor-group-handle-rotate"
+                          style={handleStyle(handles.rotate)}
+                          onPointerDown={handleGroupHandlePointerDown('rotate')}
+                        />
+                      </>
+                    );
+                  })()
+                : sceneEditor.selectedShape &&
+                  (() => {
+                    const handles = getShapeHandles(sceneEditor.selectedShape);
+                    return (
+                      <>
+                        <div
+                          data-testid="shape-handle-move"
+                          aria-hidden="true"
+                          className="editor-shape-handle editor-shape-handle-move"
+                          style={handleStyle(handles.move)}
+                          onPointerDown={handleHandlePointerDown('move')}
+                        />
+                        <div
+                          data-testid="shape-handle-resize"
+                          aria-hidden="true"
+                          className="editor-shape-handle editor-shape-handle-resize"
+                          style={handleStyle(handles.resize)}
+                          onPointerDown={handleHandlePointerDown('resize')}
+                        />
+                        <div
+                          data-testid="shape-handle-rotate"
+                          aria-hidden="true"
+                          className="editor-shape-handle editor-shape-handle-rotate"
+                          style={handleStyle(handles.rotate)}
+                          onPointerDown={handleHandlePointerDown('rotate')}
+                        />
+                      </>
+                    );
+                  })()}
           </div>
         </section>
 

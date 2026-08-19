@@ -350,6 +350,15 @@ export function leakProbeExtras(): Record<string, string> {
     provenanceParentId: 'SECRET-PROVENANCE-forked-from-project-55219',
     cameraFrameDataUrl:
       'data:image/png;base64,SECRET-CAMERA-FRAME-BASE64-PAYLOAD-should-never-embed',
+    // Task 73 (issue #73), privacy audit acceptance criterion 2 ("...
+    // client bundles, source maps ... contain no provider credentials"):
+    // a provider API key, shaped like a real Mistral key, added the same
+    // superset-injection way as every other marker above. `ai_provider`
+    // is entirely server-side and `GenerateHtmlExportInput` has no
+    // key-shaped field at all, so this proves the same "structurally
+    // cannot leak" property this file's other markers already prove for
+    // prompts/drafts/provenance, extended to cover credentials too.
+    providerApiKey: 'SECRET-MISTRAL-API-KEY-sk-do-not-leak-9182734abcdef',
   };
 }
 

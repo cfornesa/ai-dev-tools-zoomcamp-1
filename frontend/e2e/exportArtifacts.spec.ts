@@ -566,6 +566,97 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
 
     await context.close();
   });
+
+  // Task 73 (issue #73), privacy audit acceptance criterion 1: "Browser
+  // network capture during editor, public viewer, thumbnail, and export
+  // camera flows contains no video frames or frame-derived biometric
+  // payloads." Every prior camera-lifecycle test above already reaches
+  // "active" and runs `installCameraTestSeams('succeed')`'s fake
+  // `recognizeForVideo` (called once per `requestAnimationFrame` tick,
+  // exactly like the real `standaloneCameraSource.ts` pipeline), but none
+  // of them capture and assert on `observed` afterward -- a passing test
+  // only proves no *illegal* request was attempted strongly enough to
+  // trip `route.abort('failed')` on this run, not that this suite ever
+  // produced positive, recorded evidence of the full request list for the
+  // network-capture criterion. This test closes that gap: it drives the
+  // camera through several real animation-frame ticks while active (so
+  // `recognizeForVideo`/landmark processing genuinely runs repeatedly,
+  // not just once), then asserts the complete captured request list is
+  // still nothing but the two pinned CDN URLs (p5, MediaPipe) and the
+  // local `file://` document -- structurally proving that a real,
+  // multi-frame hand-tracking session never emitted a single network
+  // request carrying a video frame, image blob, or landmark/gesture JSON
+  // payload, because every such request would have been captured in
+  // `observed` and none was.
+  test('network capture during active multi-frame tracking contains no video frame or landmark payload', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const observed = interceptCdnAndTrackRequests(page, { allowCamera: true });
+    await installCameraTestSeams(page, 'succeed');
+    await openExportInIsolatedContext(
+      page,
+      await cameraModeExportHtml(),
+      'lifecycle-network-capture.html',
+    );
+
+    await page.getByTestId('camera-enable').click();
+    await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
+
+    // Let several requestAnimationFrame ticks elapse while active so the
+    // fake recognizer's recognizeForVideo (and the EMA/pinch/gesture
+    // signal derivation that consumes its output) actually runs
+    // repeatedly, the same way a real multi-second camera session would.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          let ticks = 0;
+          function tick() {
+            ticks += 1;
+            if (ticks >= 10) {
+              resolve();
+            } else {
+              window.requestAnimationFrame(tick);
+            }
+          }
+          window.requestAnimationFrame(tick);
+        }),
+    );
+
+    await page.getByTestId('camera-stop').click();
+    await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);
+
+    // Evidence: the complete request list captured across the whole
+    // active-tracking session is exactly the two pinned CDN URLs (fetched
+    // once each, at startup) plus the local file:// document -- nothing
+    // else was ever requested while landmarks were being derived every
+    // frame.
+    expect(observed.length).toBeGreaterThan(0);
+    for (const url of observed) {
+      const isAllowed =
+        url === generator.constants.P5_CDN_URL ||
+        url === generator.constants.MEDIAPIPE_VISION_BUNDLE_CDN_URL ||
+        url.startsWith('file://');
+      expect(isAllowed).toBe(true);
+    }
+    // No request MIME/URL shape ever resembles an image/video upload or a
+    // landmark/gesture JSON payload (a data: URL, a blob: URL, or any
+    // path containing common upload/telemetry markers).
+    expect(
+      observed.some(
+        (u) =>
+          u.startsWith('data:') ||
+          u.startsWith('blob:') ||
+          u.includes('/api/') ||
+          u.includes('upload') ||
+          u.includes('landmark') ||
+          u.includes('frame'),
+      ),
+    ).toBe(false);
+
+    await context.close();
+  });
 });
 
 test.describe('Attribution on/off: asserted in both rendered DOM and raw source text', () => {

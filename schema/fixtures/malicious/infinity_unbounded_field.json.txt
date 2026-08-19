@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-blank",
+  "canvas": {
+    "width": 800,
+    "height": 600,
+    "backgroundColor": "#ffffff"
+  },
+  "renderer": {
+    "preferred": "p5"
+  },
+  "layers": [
+    {
+      "id": "layer-1",
+      "name": "Layer 1",
+      "order": 0,
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "shapes": [
+    {
+      "id": "shape-1",
+      "type": "circle",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": {
+        "fill": "#112233",
+        "stroke": null,
+        "strokeWidth": 0
+      },
+      "radius": 5
+    }
+  ],
+  "groups": [],
+  "bindings": [
+    {
+      "id": "binding-1",
+      "signal": "indexTipX",
+      "handTarget": "primary",
+      "targetScope": "shape",
+      "targetId": "shape-1",
+      "targetProperty": "positionX",
+      "composition": "replace",
+      "mapping": {
+        "inMin": 0,
+        "inMax": Infinity,
+        "outMin": 0,
+        "outMax": 1
+      }
+    }
+  ],
+  "graph": {
+    "nodes": [],
+    "connections": []
+  },
+  "accessibility": {
+    "reducedMotion": "auto"
+  },
+  "randomness": {
+    "seed": 0,
+    "enabled": false
+  }
+}

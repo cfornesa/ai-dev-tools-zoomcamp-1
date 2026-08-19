@@ -6,5 +6,19 @@
   "invalid/missing_required.json": { "valid": false, "rule": "missingRequired" },
   "invalid/wrong_type.json": { "valid": false, "rule": "wrongType" },
   "invalid/unsupported_version.json": { "valid": false, "rule": "unsupportedSchemaVersion" },
-  "invalid/dangling_reference.json": { "valid": false, "rule": "danglingReference" }
+  "invalid/dangling_reference.json": { "valid": false, "rule": "danglingReference" },
+  "$maliciousComment": "Task 72's adversarial fixture set (schema/README.md's 'Fixtures' section). Excludes malicious/nan_opacity.json.txt, malicious/infinity_unbounded_field.json.txt, and malicious/negative_infinity_rotation.json.txt: those three are written with literal NaN/Infinity/-Infinity tokens, a non-standard JSON extension Python's json module accepts but JS's strict JSON.parse rejects outright, so they cannot go through this file's generic 'JSON.parse both sides' loop. tests/test_scene_validation.py and frontend/src/validation/scene.test.ts each test those three directly instead — see the dedicated tests near the bottom of each file.",
+  "malicious/oversized_document.json": { "valid": false, "rule": "limitExceeded" },
+  "malicious/combined_resource_limit_abuse.json": { "valid": false, "rule": "limitExceeded" },
+  "malicious/deep_nesting.json": { "valid": false, "rule": "limitExceeded" },
+  "malicious/duplicate_ids.json": { "valid": false, "rule": "duplicateId" },
+  "malicious/dangling_graph_connection_ids.json": { "valid": false, "rule": "danglingReference" },
+  "malicious/invalid_graph_cycle.json": { "valid": false, "rule": "graphCycle" },
+  "malicious/forbidden_node_type.json": { "valid": false, "rule": "forbiddenNodeType" },
+  "malicious/numeric_overflow_seed.json": { "valid": false, "rule": "invalid" },
+  "malicious/negative_forbidden_dimensions.json": { "valid": false, "rule": "invalid" },
+  "malicious/boundary_bypass_opacity.json": { "valid": false, "rule": "invalid" },
+  "malicious/prototype_like_keys.json": { "valid": true },
+  "malicious/unknown_field_nested.json": { "valid": false, "rule": "unknownField" },
+  "malicious/unknown_field_shape_dunder_proto.json": { "valid": false, "rule": "unknownField" }
 }

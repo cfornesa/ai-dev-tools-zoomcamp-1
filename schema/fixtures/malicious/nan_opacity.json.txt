@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-blank",
+  "canvas": {
+    "width": 800,
+    "height": 600,
+    "backgroundColor": "#ffffff"
+  },
+  "renderer": {
+    "preferred": "p5"
+  },
+  "layers": [
+    {
+      "id": "layer-1",
+      "name": "Layer 1",
+      "order": 0,
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "shapes": [
+    {
+      "id": "shape-1",
+      "type": "circle",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": NaN
+      },
+      "style": {
+        "fill": "#112233",
+        "stroke": null,
+        "strokeWidth": 0
+      },
+      "radius": 5
+    }
+  ],
+  "groups": [],
+  "bindings": [],
+  "graph": {
+    "nodes": [],
+    "connections": []
+  },
+  "accessibility": {
+    "reducedMotion": "auto"
+  },
+  "randomness": {
+    "seed": 0,
+    "enabled": false
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-blank",
+  "canvas": {
+    "width": 800,
+    "height": 600,
+    "backgroundColor": "#ffffff"
+  },
+  "renderer": {
+    "preferred": "p5"
+  },
+  "layers": [
+    {
+      "id": "layer-1",
+      "name": "Layer 1",
+      "order": 0,
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "shapes": [],
+  "groups": [],
+  "bindings": [],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node-a",
+        "family": "transform",
+        "type": "clamp",
+        "params": {},
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": "node-b",
+        "family": "transform",
+        "type": "invert",
+        "params": {},
+        "position": {
+          "x": 100,
+          "y": 0
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "conn-1",
+        "fromNodeId": "node-a",
+        "fromPort": "out",
+        "toNodeId": "node-b",
+        "toPort": "in"
+      },
+      {
+        "id": "conn-2",
+        "fromNodeId": "node-b",
+        "fromPort": "out",
+        "toNodeId": "node-a",
+        "toPort": "in"
+      }
+    ]
+  },
+  "accessibility": {
+    "reducedMotion": "auto"
+  },
+  "randomness": {
+    "seed": 0,
+    "enabled": false
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-blank",
+  "canvas": {
+    "width": 800,
+    "height": 600,
+    "backgroundColor": "#ffffff"
+  },
+  "renderer": {
+    "preferred": "p5"
+  },
+  "layers": [
+    {
+      "id": "layer-1",
+      "name": "Layer 1",
+      "order": 0,
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "shapes": [],
+  "groups": [
+    {
+      "id": "group-0",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "group-1",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [
+        "group-0"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "group-2",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [
+        "group-1"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "group-3",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [
+        "group-2"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "group-4",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [
+        "group-3"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "group-5",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [
+        "group-4"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "group-6",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [
+        "group-5"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "group-7",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [
+        "group-6"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "group-8",
+      "name": "G",
+      "layerId": "layer-1",
+      "childIds": [
+        "group-7"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "bindings": [],
+  "graph": {
+    "nodes": [],
+    "connections": []
+  },
+  "accessibility": {
+    "reducedMotion": "auto"
+  },
+  "randomness": {
+    "seed": 0,
+    "enabled": false
+  }
+}

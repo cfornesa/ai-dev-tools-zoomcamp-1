@@ -275,10 +275,8 @@ def test_own_daily_quota_returns_429_and_only_counts_successes(owner_client, pro
     # worth of cache resets isn't needed here -- we directly seed the
     # quota counter to simulate "already at the daily limit" and confirm
     # a fresh request is rejected without calling the provider at all.
-    from datetime import date
-
     cache.set(
-        f"ai_provider:quota:create:{project.owner_id}:{date.today().isoformat()}",
+        ai_api._quota_cache_key(project.owner_id, operation="create"),
         ai_api.DAILY_QUOTA_MAX_SUCCESSES,
     )
 
@@ -301,9 +299,7 @@ def test_failed_attempts_do_not_consume_the_daily_quota(owner_client, project, m
         response = owner_client.post(_url(project), {"prompt": "anything"}, format="json")
         assert response.status_code == 502
 
-    from datetime import date
-
-    key = f"ai_provider:quota:create:{project.owner_id}:{date.today().isoformat()}"
+    key = ai_api._quota_cache_key(project.owner_id, operation="create")
     assert cache.get(key, 0) == 0
 
 

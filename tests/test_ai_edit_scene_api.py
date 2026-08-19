@@ -414,10 +414,8 @@ def test_own_request_rate_limit_returns_429(owner_client, project, monkeypatch):
 
 @pytest.mark.django_db
 def test_own_daily_quota_returns_429_and_only_counts_successes(owner_client, project, monkeypatch):
-    from datetime import date
-
     cache.set(
-        f"ai_provider:quota:edit:{project.owner_id}:{date.today().isoformat()}",
+        ai_api._quota_cache_key(project.owner_id, operation="edit"),
         ai_api.EDIT_DAILY_QUOTA_MAX_SUCCESSES,
     )
 
@@ -440,18 +438,14 @@ def test_failed_attempts_do_not_consume_the_daily_quota(owner_client, project, m
         response = owner_client.post(_url(project), _payload(), format="json")
         assert response.status_code == 422
 
-    from datetime import date
-
-    key = f"ai_provider:quota:edit:{project.owner_id}:{date.today().isoformat()}"
+    key = ai_api._quota_cache_key(project.owner_id, operation="edit")
     assert cache.get(key, 0) == 0
 
 
 @pytest.mark.django_db
 def test_create_and_edit_quotas_are_independent(owner_client, project, monkeypatch):
-    from datetime import date
-
     cache.set(
-        f"ai_provider:quota:create:{project.owner_id}:{date.today().isoformat()}",
+        ai_api._quota_cache_key(project.owner_id, operation="create"),
         ai_api.DAILY_QUOTA_MAX_SUCCESSES,
     )
     _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(_BG_BLACK_PATCH)))

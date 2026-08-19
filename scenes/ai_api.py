@@ -68,12 +68,11 @@ exist" from "not yours", matching every other project-scoped endpoint in
 
 from __future__ import annotations
 
-from datetime import date
-
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.http import Http404
+from django.utils import timezone as django_timezone
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -152,7 +151,16 @@ def _rate_limit_cache_key(user_id: int, *, operation: str = "create") -> str:
 
 
 def _quota_cache_key(user_id: int, *, operation: str = "create") -> str:
-    return f"ai_provider:quota:{operation}:{user_id}:{date.today().isoformat()}"
+    # Task 71 audit: `datetime.date.today()` reads the OS/process local
+    # date, which is *not* guaranteed to be UTC even though this project's
+    # own `TIME_ZONE` setting is (`config/settings.py`) and every
+    # quota-exceeded response tells the caller "tomorrow (UTC)". Use
+    # `django.utils.timezone.localdate()` instead: with `USE_TZ = True` and
+    # `TIME_ZONE = "UTC"`, it converts the current instant into Django's
+    # configured timezone before taking the date, so the quota resets at
+    # UTC midnight regardless of the underlying host/container's local
+    # timezone -- matching the documented reset policy exactly.
+    return f"ai_provider:quota:{operation}:{user_id}:{django_timezone.localdate().isoformat()}"
 
 
 def _increment_and_check(cache_key: str, *, limit: int, window_seconds: int) -> bool:

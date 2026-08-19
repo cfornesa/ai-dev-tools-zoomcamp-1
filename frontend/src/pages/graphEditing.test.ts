@@ -8,6 +8,7 @@ import {
   addGraphNode,
   checkGraphConnection,
   creatableNodeTypes,
+  describeRejectedDragConnection,
   moveGraphNode,
   NODE_TYPE_CATALOG,
   removeGraphConnection,
@@ -180,6 +181,75 @@ describe('checkGraphConnection / addGraphConnection', () => {
     // n1 -> n2 -> n1 would be a cycle.
     expect(result.valid).toBe(false);
     expect(result.error).toMatch(/cycle/i);
+  });
+});
+
+describe('describeRejectedDragConnection (Task 63/issue #62 audit fix)', () => {
+  // `GraphView.tsx`'s canvas drag has no equivalent of `GraphListView.tsx`'s
+  // `connectionPreviewError` because React Flow just silently blocks an
+  // invalid `onConnect` — this derives the same `checkGraphConnection`
+  // message from React Flow's handle info so the canvas can announce it
+  // too, instead of leaving mouse-only users with color-only feedback.
+  it('describes a value/event data-type mismatch regardless of drag direction', () => {
+    let scene = sceneWithShape();
+    const a = addGraphNode(scene, 'handSignal', { x: 0, y: 0 }); // out: value
+    if (!a.ok || !a.nodeId) throw new Error('setup failed');
+    scene = a.scene;
+    const b = addGraphNode(scene, 'trigger', { x: 200, y: 0 }); // in: trigger (event)
+    if (!b.ok || !b.nodeId) throw new Error('setup failed');
+    const graph = b.scene.graph as { nodes: never[]; connections: never[] };
+
+    // Dragged from the source handle...
+    const forward = describeRejectedDragConnection(
+      graph.nodes,
+      graph.connections,
+      { nodeId: a.nodeId, id: 'value', type: 'source' },
+      { nodeId: b.nodeId, id: 'trigger', type: 'target' },
+    );
+    expect(forward).toMatch(/value.*event|event.*value/i);
+
+    // ...or dragged backwards from the target handle: React Flow reports
+    // `fromHandle`/`toHandle` in drag order, not source/target order, so
+    // the helper must normalize by `.type` either way and produce the same
+    // message.
+    const backward = describeRejectedDragConnection(
+      graph.nodes,
+      graph.connections,
+      { nodeId: b.nodeId, id: 'trigger', type: 'target' },
+      { nodeId: a.nodeId, id: 'value', type: 'source' },
+    );
+    expect(backward).toBe(forward);
+  });
+
+  it('describes a self-connection attempt', () => {
+    const scene = sceneWithShape();
+    const a = addGraphNode(scene, 'handSignal', { x: 0, y: 0 });
+    if (!a.ok || !a.nodeId) throw new Error('setup failed');
+    const graph = a.scene.graph as { nodes: never[]; connections: never[] };
+    const message = describeRejectedDragConnection(
+      graph.nodes,
+      graph.connections,
+      { nodeId: a.nodeId, id: 'value', type: 'source' },
+      { nodeId: a.nodeId, id: 'value', type: 'target' },
+    );
+    expect(message).toMatch(/itself/i);
+  });
+
+  it('falls back to a generic message when a handle has no id', () => {
+    const scene = sceneWithShape();
+    const a = addGraphNode(scene, 'handSignal', { x: 0, y: 0 });
+    if (!a.ok || !a.nodeId) throw new Error('setup failed');
+    const b = addGraphNode(a.scene, 'shapeProperty', { x: 200, y: 0 });
+    if (!b.ok || !b.nodeId) throw new Error('setup failed');
+    const graph = b.scene.graph as { nodes: never[]; connections: never[] };
+    const message = describeRejectedDragConnection(
+      graph.nodes,
+      graph.connections,
+      { nodeId: a.nodeId, id: null, type: 'source' },
+      { nodeId: b.nodeId, id: undefined, type: 'target' },
+    );
+    expect(typeof message).toBe('string');
+    expect(message.length).toBeGreaterThan(0);
   });
 });
 

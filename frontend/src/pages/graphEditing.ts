@@ -581,6 +581,40 @@ export function checkGraphConnection(
   return { valid: true };
 }
 
+/**
+ * Task 63 (issue #62) audit fix: `GraphView.tsx`'s canvas drag-to-connect
+ * relies on React Flow's `isValidConnection` to block a disallowed
+ * connection, but a blocked drag otherwise leaves no trace — no message is
+ * announced to a screen reader, and the only feedback is the connection
+ * line's color while dragging. This derives the same `checkGraphConnection`
+ * error message a rejected drag would have produced, from React Flow's
+ * `FinalConnectionState` handle info once a drag ends over a handle, so
+ * `GraphView.tsx` can surface it as an `aria-live` announcement — the same
+ * text `GraphListView.tsx`'s keyboard alternative already shows via its own
+ * `checkGraphConnection` call.
+ *
+ * Pure and framework-agnostic (only needs each handle's `nodeId`/`id`/
+ * `type`), so it's unit-testable without simulating a real React Flow
+ * pointer drag (not meaningfully drivable through jsdom — see
+ * `GraphView.test.tsx`'s own doc comment).
+ */
+export function describeRejectedDragConnection(
+  nodes: GraphNodeData[],
+  connections: GraphConnectionData[],
+  fromHandle: { nodeId: string; id?: string | null; type: 'source' | 'target' },
+  toHandle: { nodeId: string; id?: string | null; type: 'source' | 'target' },
+): string {
+  const [sourceHandle, targetHandle] =
+    fromHandle.type === 'source' ? [fromHandle, toHandle] : [toHandle, fromHandle];
+  const check = checkGraphConnection(nodes, connections, {
+    fromNodeId: sourceHandle.nodeId,
+    fromPort: sourceHandle.id ?? '',
+    toNodeId: targetHandle.nodeId,
+    toPort: targetHandle.id ?? '',
+  });
+  return check.error ?? 'This connection is not allowed.';
+}
+
 /** Adds a new node of an allowed (family, type) pair at `position`. Reuses
  * `crypto.randomUUID()` for the new node's id, matching every other id in
  * this codebase. */

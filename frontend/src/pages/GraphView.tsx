@@ -8,13 +8,19 @@ import {
   applyNodeChanges,
   type Connection,
   type Edge,
+  type FinalConnectionState,
   type Node,
   type NodeChange,
   type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { FAMILY_LABELS, NODE_TYPE_CATALOG, checkGraphConnection } from './graphEditing';
+import {
+  FAMILY_LABELS,
+  NODE_TYPE_CATALOG,
+  checkGraphConnection,
+  describeRejectedDragConnection,
+} from './graphEditing';
 import NodeParamFields from './NodeParamFields';
 import type { SceneEditor } from './useSceneEditor';
 
@@ -109,6 +115,16 @@ function GraphViewInner({ sceneEditor }: { sceneEditor: SceneEditor }) {
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [newNodeType, setNewNodeType] = useState<string>(Object.keys(NODE_TYPE_CATALOG)[0] ?? '');
+  // Task 63 (issue #62) audit fix: `isValidConnection` silently blocks an
+  // invalid drag-to-connect on the canvas — React Flow gives it only
+  // color/cursor styling during the drag, with no text announced to a
+  // screen reader and nothing left behind once the drag ends. This mirrors
+  // `checkGraphConnection`'s error text (the same message the keyboard
+  // list-view alternative already shows via `connectionPreviewError`) into
+  // an `aria-live` region whenever a drag ends over a handle but the
+  // resulting connection was rejected, so the failure is announced, not
+  // just implied by the connection line vanishing.
+  const [dragConnectionError, setDragConnectionError] = useState<string | null>(null);
 
   // Re-sync the local drag-mirror whenever the canonical graph node set or
   // any node's saved position changes from outside a live drag (add,
@@ -162,6 +178,7 @@ function GraphViewInner({ sceneEditor }: { sceneEditor: SceneEditor }) {
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!connection.sourceHandle || !connection.targetHandle) return;
+      setDragConnectionError(null);
       sceneEditor.addGraphConnection({
         fromNodeId: connection.source,
         fromPort: connection.sourceHandle,
@@ -170,6 +187,27 @@ function GraphViewInner({ sceneEditor }: { sceneEditor: SceneEditor }) {
       });
     },
     [sceneEditor],
+  );
+
+  const onConnectEnd = useCallback(
+    (_event: unknown, connectionState: FinalConnectionState) => {
+      // A drag that never reached a handle (dropped on empty canvas) is a
+      // cancelled gesture, not a rejected connection — nothing to announce.
+      if (!connectionState.toHandle || !connectionState.fromHandle) return;
+      // A successful connection already went through `onConnect` above and
+      // cleared this state; only a drag that ended over a handle but was
+      // never accepted needs a message.
+      if (connectionState.isValid) return;
+      setDragConnectionError(
+        describeRejectedDragConnection(
+          sceneEditor.graphNodes,
+          sceneEditor.graphConnections,
+          connectionState.fromHandle,
+          connectionState.toHandle,
+        ),
+      );
+    },
+    [sceneEditor.graphNodes, sceneEditor.graphConnections],
   );
 
   const selectedNode = sceneEditor.graphNodes.find((n) => n.id === selectedNodeId) ?? null;
@@ -210,6 +248,12 @@ function GraphViewInner({ sceneEditor }: { sceneEditor: SceneEditor }) {
         </p>
       )}
 
+      {dragConnectionError && (
+        <p role="alert" aria-live="assertive" data-testid="graph-drag-connection-error">
+          {dragConnectionError}
+        </p>
+      )}
+
       <div className="graph-editor-canvas" data-testid="graph-editor-canvas">
         <ReactFlow
           nodes={nodes}
@@ -220,6 +264,7 @@ function GraphViewInner({ sceneEditor }: { sceneEditor: SceneEditor }) {
           onNodeClick={(_event, node) => setSelectedNodeId(node.id)}
           onPaneClick={() => setSelectedNodeId(null)}
           onConnect={onConnect}
+          onConnectEnd={onConnectEnd}
           isValidConnection={isValidConnection}
           onEdgeClick={(_event, edge) => {
             if (window.confirm('Remove this connection?'))

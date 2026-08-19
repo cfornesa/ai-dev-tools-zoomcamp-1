@@ -40,6 +40,7 @@ import GraphListView from './GraphListView';
 import GraphView from './GraphView';
 import RandomnessIndicator from './RandomnessIndicator';
 import SceneOutlinePanel from './SceneOutlinePanel';
+import ShapeInspectorPanel from './ShapeInspectorPanel';
 import VersionHistoryPanel from './VersionHistoryPanel';
 
 const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
@@ -723,7 +724,14 @@ function EditorWorkspace() {
           hidden={panelHidden('inspector')}
         >
           <h3>Inspector</h3>
-          <p>Property editing is added in a later task.</p>
+
+          {/* Task 60 (issue #58): position/scale/rotation/opacity/fill/
+              stroke/stroke-width fields for the actively selected shape —
+              see ShapeInspectorPanel.tsx's own doc comment for the
+              out-of-range (clamp) policy and how it handles no
+              selection/multi-selection/a hidden selection/selection
+              deletion without ever showing a stale value. */}
+          <ShapeInspectorPanel sceneEditor={sceneEditor} />
 
           {/* Task 41: explicit save plus the immutable version-history
               view (list/restore/soft-delete). `onSaved`/`onRestored`

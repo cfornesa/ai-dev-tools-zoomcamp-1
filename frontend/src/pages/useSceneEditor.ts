@@ -52,6 +52,15 @@ import {
   type Shape,
   type ShapeType,
 } from './sceneShapes';
+import {
+  applyColorFieldToShape,
+  applyNumericFieldToShape,
+  NUMERIC_FIELD_SPECS,
+  parseColorFieldEdit,
+  parseNumericFieldEdit,
+  type ColorShapeField,
+  type NumericShapeField,
+} from './shapeStyleFields';
 
 /**
  * Task 23: shape add/select/duplicate/delete, plus this editor's in-session
@@ -335,6 +344,61 @@ export function useSceneEditor(
     commit(removeShapeFromScene(workingCopy, selectedShapeId));
     setSelectedShapeId(null);
   }, [workingCopy, selectedShapeId, commit]);
+
+  // Task 60 (issue #58): Inspector panel field edits for the single
+  // actively selected shape's transform/style properties (position X/Y,
+  // scale X/Y, rotation, opacity, fill, stroke, stroke width). Unlike
+  // `updateSelectedTransform` above (which writes every live intermediate
+  // frame of a pointer drag straight to `workingCopy`, bypassing
+  // `commit()` until the gesture ends), a field edit here is a single
+  // discrete value change, so each valid edit commits its own undo/redo
+  // step immediately — the same "one user-visible change, one history
+  // entry" granularity `applyOutcome`/`addShape`/etc. already use
+  // elsewhere in this hook.
+  //
+  // Validation happens in `shapeStyleFields.ts` (see that file's module
+  // doc comment for the documented clamp-vs-reject policy) *before*
+  // anything here touches `workingCopy`: an invalid/non-finite numeric
+  // value or a malformed color never reaches `commit()` — the caller gets
+  // back `{ ok: false, error }` and scene state is left untouched.
+  const updateSelectedShapeNumericField = useCallback(
+    (field: NumericShapeField, raw: string): { ok: true } | { ok: false; error: string } => {
+      if (!workingCopy || !selectedShape) {
+        return { ok: false, error: 'No shape selected.' };
+      }
+      const spec = NUMERIC_FIELD_SPECS.find((s) => s.field === field)!;
+      const outcome = parseNumericFieldEdit(spec, raw);
+      if (!outcome.ok) return outcome;
+      const shapesArr = rawShapes(workingCopy);
+      const idx = shapesArr.findIndex((s) => (s as { id?: unknown })?.id === selectedShape.id);
+      if (idx === -1) return { ok: false, error: 'That shape no longer exists.' };
+      const updated = applyNumericFieldToShape(selectedShape, field, outcome.value);
+      const next = shapesArr.slice();
+      next[idx] = updated;
+      commit(withShapes(workingCopy, next));
+      return { ok: true };
+    },
+    [workingCopy, selectedShape, commit],
+  );
+
+  const updateSelectedShapeColorField = useCallback(
+    (field: ColorShapeField, raw: string): { ok: true } | { ok: false; error: string } => {
+      if (!workingCopy || !selectedShape) {
+        return { ok: false, error: 'No shape selected.' };
+      }
+      const outcome = parseColorFieldEdit(field, raw);
+      if (!outcome.ok) return outcome;
+      const shapesArr = rawShapes(workingCopy);
+      const idx = shapesArr.findIndex((s) => (s as { id?: unknown })?.id === selectedShape.id);
+      if (idx === -1) return { ok: false, error: 'That shape no longer exists.' };
+      const updated = applyColorFieldToShape(selectedShape, field, outcome.value);
+      const next = shapesArr.slice();
+      next[idx] = updated;
+      commit(withShapes(workingCopy, next));
+      return { ok: true };
+    },
+    [workingCopy, selectedShape, commit],
+  );
 
   const reconcileSelectionAgainst = useCallback((scene: SceneDocument) => {
     const shapeIds = new Set(getEditableShapes(rawShapes(scene)).map((s) => s.id));
@@ -622,6 +686,9 @@ export function useSceneEditor(
     updateSelectedTransform,
     commitTransform,
     cancelTransform,
+    // Task 60 (issue #58)
+    updateSelectedShapeNumericField,
+    updateSelectedShapeColorField,
     // Task 24
     layers,
     groups,

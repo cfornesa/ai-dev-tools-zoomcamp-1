@@ -51,7 +51,7 @@ function describeFrame(frame: TrackingFrame | null): string {
  * the tracking modules it uses, so it renders and works identically
  * whether or not either is available in the browser.
  */
-function DemoControlsPanel() {
+function DemoControlsPanel({ onPinchStart }: { onPinchStart?: () => void } = {}) {
   const controllerRef = useRef(createDemoTrackingController());
   const [mode, setMode] = useState<DemoMode>(controllerRef.current.getMode());
   const [manualState, setManualState] = useState(controllerRef.current.getManualState());
@@ -75,11 +75,20 @@ function DemoControlsPanel() {
     const unsubscribe = controller.onFrame((frame) => {
       setLastFrame(frame);
       setRemaining(controller.remainingPlayback());
+      // Task 82: the onboarding-hints surface auto-clears its pinch hint on
+      // an actually-observed `pinchStart` event (not a timer/guess) — this
+      // is the one place in the live app a pinch event is genuinely
+      // produced today (manual "Pinch start" button or synthetic
+      // playback), so it's forwarded up rather than duplicated.
+      if (onPinchStart && frame.events.some((event) => event.type === 'pinchStart')) {
+        onPinchStart();
+      }
     });
     return () => {
       unsubscribe();
       controller.stop();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-advances scripted playback at a fixed cadence while `isPlaying`

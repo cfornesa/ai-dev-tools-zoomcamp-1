@@ -10,7 +10,7 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import type { SceneDocument } from '../api/projects';
-import CameraControl from '../components/CameraControl';
+import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import {
@@ -54,6 +54,7 @@ import DraftRecoveryPrompt from './DraftRecoveryPrompt';
 import ExportConfigDialog from './ExportConfigDialog';
 import GraphListView from './GraphListView';
 import GraphView from './GraphView';
+import OnboardingHints from './OnboardingHints';
 import RandomnessIndicator from './RandomnessIndicator';
 import SceneOutlinePanel from './SceneOutlinePanel';
 import ShapeInspectorPanel from './ShapeInspectorPanel';
@@ -168,6 +169,13 @@ function EditorWorkspace() {
     x: AlignmentGuide | null;
     y: AlignmentGuide | null;
   }>({ x: null, y: null });
+
+  // Task 82: observed success signals `OnboardingHints.tsx` uses to
+  // auto-clear its camera-enable/pinch hints — sourced from the same
+  // `CameraControl`/`DemoControlsPanel` instances already rendered below,
+  // not a separate tracking subscription.
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
+  const [pinchEventCount, setPinchEventCount] = useState(0);
 
   // Task 41: the working/saved distinction, both visual (the status text
   // rendered below) and programmatic (this boolean, which also gates the
@@ -870,6 +878,17 @@ function EditorWorkspace() {
         )}
       </header>
 
+      {/* Task 82: non-modal onboarding hints for the current (typically
+          template-derived) scene. Rendered outside the panel switcher so
+          it stays visible regardless of which of Tools/Preview/Inspector
+          is active on a narrow viewport, and never blocks interaction
+          with anything below it. */}
+      <OnboardingHints
+        hints={(workingCopy as { onboardingHints?: string[] } | null)?.onboardingHints}
+        cameraActive={cameraStatus === 'active'}
+        pinchEventCount={pinchEventCount}
+      />
+
       {isNarrow && <EditorPanelSwitcher activePanel={activePanel} onSelect={setActivePanel} />}
 
       <div className="editor-workspace">
@@ -970,7 +989,7 @@ function EditorWorkspace() {
               the non-camera fallback stays available before camera
               activation, during any camera failure, and after Stop camera
               is pressed (acceptance criterion). */}
-          <CameraControl />
+          <CameraControl onStatusChange={setCameraStatus} />
 
           {/* Task 28: local demo signal controls — sliders/toggles/event
               buttons plus deterministic synthetic playback, so every
@@ -979,7 +998,7 @@ function EditorWorkspace() {
               see DemoControlsPanel.tsx), so it lives here as an
               independent section rather than threading through
               useSceneEditor/workingCopy. */}
-          <DemoControlsPanel />
+          <DemoControlsPanel onPinchStart={() => setPinchEventCount((count) => count + 1)} />
         </section>
 
         <section

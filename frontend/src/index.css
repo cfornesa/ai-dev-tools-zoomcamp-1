@@ -292,6 +292,39 @@ code {
   color: var(--text);
 }
 
+/* Task 82: non-modal onboarding hints (OnboardingHints.tsx) shown above
+   the editor panels for a template-derived scene. Each hint is its own
+   dismissible row; nothing here traps focus or blocks the panels below. */
+.onboarding-hints {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 24px 16px;
+}
+
+.onboarding-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.onboarding-hint-dismiss {
+  flex: 0 0 auto;
+}
+
+.onboarding-hints-replay-legend {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text);
+}
+
 .editor-workspace {
   display: flex;
   align-items: stretch;

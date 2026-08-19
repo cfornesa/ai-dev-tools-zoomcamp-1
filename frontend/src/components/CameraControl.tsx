@@ -23,9 +23,16 @@ export type CameraControlProps = {
    * for that read-only global, so a test that wants to exercise the
    * "insecure context" failure category overrides this instead. */
   isSecureContext?: () => boolean;
+  /** Task 82: fires whenever `status` changes, so a caller (the
+   * onboarding-hints surface, `OnboardingHints.tsx`) can observe the real
+   * `'active'` transition to auto-clear a camera-enable hint, rather than
+   * guessing with a timer. Optional and purely additive — no existing
+   * caller passes it, so this is a non-breaking change to the component's
+   * lifecycle. */
+  onStatusChange?: (status: CameraStatus) => void;
 };
 
-type CameraStatus = 'idle' | 'starting' | 'active' | 'error' | 'stopped';
+export type CameraStatus = 'idle' | 'starting' | 'active' | 'error' | 'stopped';
 
 const PRIVACY_NOTICE =
   'Video from your camera is processed locally in your browser for hand tracking. It is never recorded, stored, or uploaded.';
@@ -84,10 +91,20 @@ function statusMessage(status: CameraStatus): string | null {
 function CameraControl({
   createProvider = createMediaPipeTrackingProvider,
   isSecureContext = () => window.isSecureContext,
+  onStatusChange,
 }: CameraControlProps) {
   const providerRef = useRef<TrackingProvider | null>(null);
   const [status, setStatus] = useState<CameraStatus>('idle');
   const [failure, setFailure] = useState<CameraFailureCategory | null>(null);
+
+  // Task 82: notify the caller on every status change (including the
+  // initial 'idle' render) so it can derive its own state from the same
+  // status this component already tracks, rather than duplicating the
+  // provider lifecycle.
+  useEffect(() => {
+    onStatusChange?.(status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   function getProvider(): TrackingProvider {
     if (!providerRef.current) {

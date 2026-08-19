@@ -147,7 +147,32 @@ def _split_pointer(pointer: str) -> list[str]:
         return []
     if not pointer.startswith("/"):
         raise PatchError(f"path must start with '/': {pointer!r}")
-    return [_unescape(seg) for seg in pointer.split("/")[1:]]
+    segments = [_unescape(seg) for seg in pointer.split("/")[1:]]
+    for segment in segments:
+        if "/" in segment:
+            # A `~1`-escaped literal `/` inside one segment. No real scene
+            # field name or array index (id pattern `^[A-Za-z0-9_-]{1,64}$`,
+            # every other key a fixed identifier) ever contains one, so a
+            # segment carrying one here can only be an attempt to make two
+            # path segments (e.g. the array index `0` and the protected
+            # field `id`) collapse into what `_path_rejection_reason`'s
+            # protected-suffix check (`segments[-1] == "id"`) and
+            # `_ELEMENT_LEVEL_ROOTS` granularity check see as *one*
+            # segment -- smuggling e.g. `/shapes/0/id` past both checks as
+            # `/shapes/0~1id`, which splits+unescapes to `["shapes",
+            # "0/id"]` instead of `["shapes", "0", "id"]`. Previously this
+            # was only ever caught later, and only by accident, when
+            # `apply_patch` tried to use `"0/id"` as a literal array index
+            # or dict key and failed mechanically (`PatchError`, still no
+            # scene produced -- so this was never an actual data-corruption
+            # bypass) -- rejecting it explicitly here instead gives it the
+            # same clear, safe, field-level error every other malformed
+            # patch gets, rather than relying on that accident.
+            raise PatchError(
+                f"path segment {segment!r} contains an escaped '/' "
+                f"(~1); no real scene path segment ever does: {pointer!r}"
+            )
+    return segments
 
 
 def _unescape(segment: str) -> str:

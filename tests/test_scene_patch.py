@@ -293,6 +293,89 @@ def test_summarize_empty_patch():
     assert summarize_patch([]) == "No changes."
 
 
+# --- Task 72: adversarial patch cases -----------------------------------
+# Forbidden operations, protected paths, and oversized patches already
+# have dedicated coverage above (Task 47/50). This section adds the
+# remaining categories: path traversal/escaping, stale bases (documented
+# as an ai_api.py-level concern, not scenes/patch.py's), and confirming a
+# patched scene that would violate schema/limits.json is caught before
+# any persistence, via `AIAcceptProposalView`'s re-validation.
+
+
+def test_escaped_slash_smuggling_shapes_index_and_id_into_one_segment_is_rejected():
+    # `/shapes/0~1id` is `~1`-escaped: split+unescape naively would yield
+    # ["shapes", "0/id"] as ONE trailing segment, rather than the three
+    # segments (`shapes`, `0`, `id`) `/shapes/0/id` would produce -- an
+    # attempt to smuggle a protected `.../id` path past both the
+    # `segments[-1] == "id"` check and the plain `/shapes/0/id` string
+    # comparison. No real scene id or field name ever contains a literal
+    # `/`, so this is rejected outright as malformed rather than allowed
+    # through only to fail later, differently, inside apply_patch.
+    errs = validate_patch_operations([{"op": "replace", "path": "/shapes/0~1id", "value": "x"}])
+    assert len(errs) == 1
+    assert errs[0].reason == PatchErrorReason.MALFORMED
+
+
+def test_escaped_slash_in_add_dash_index_is_rejected():
+    # `/shapes/-~1id` similarly tries to collapse the `-` append marker
+    # and `id` into one segment.
+    errs = validate_patch_operations([{"op": "add", "path": "/shapes/-~1id", "value": {"id": "x"}}])
+    assert len(errs) == 1
+    assert errs[0].reason == PatchErrorReason.MALFORMED
+
+
+def test_tilde_escaping_round_trips_correctly_for_an_ordinary_allowed_path():
+    # `~0`/`~1` unescaping itself must still work for the (nonexistent in
+    # this schema, but RFC 6901-legal) case of a segment that needs no
+    # escaping at all -- confirms the new "reject any segment containing a
+    # literal /" check in _split_pointer doesn't misfire on ordinary
+    # escaped tildes (`~0` -> `~`, no `/` produced).
+    errs = validate_patch_operations(
+        [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#000000"}]
+    )
+    assert errs == []
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/shapes/0~1style",
+        "/graph/nodes/0~1id",
+        "/bindings/0~1targetId",
+    ],
+)
+def test_escaped_slash_paths_are_rejected_across_every_identity_bearing_root(path):
+    errs = validate_patch_operations([{"op": "replace", "path": path, "value": "x"}])
+    assert len(errs) == 1
+    assert errs[0].reason == PatchErrorReason.MALFORMED
+
+
+def test_result_limit_violation_patch_is_caught_by_scene_revalidation_after_apply():
+    # scenes/patch.py's own allowlist has no scene-wide complexity/limits
+    # awareness by design (schema/limits.json's job) -- a patch that would
+    # push the *resulting* scene over a limit (e.g. maxShapes) is allowed
+    # by validate_patch_operations, applies mechanically without error,
+    # and is only caught by re-validating the patched scene with
+    # validate_scene -- exactly what ai_provider.mistral_provider.edit_scene_with_patch
+    # and AIAcceptProposalView both do before ever returning/persisting
+    # anything. This test documents and pins that contract at the
+    # scenes.patch/scenes.validation boundary.
+    from scenes.validation import validate_scene
+
+    scene = copy.deepcopy(BLANK_SCENE)
+    scene["shapes"] = [_circle(f"shape-{i}") for i in range(200)]  # at maxShapes
+    assert validate_scene(scene).valid is True
+
+    patch = [{"op": "add", "path": "/shapes/-", "value": _circle("shape-over-limit")}]
+    assert validate_patch_operations(patch, scene=scene) == []  # allowlist has no opinion
+
+    patched = apply_patch(scene, patch)  # applies mechanically, no error
+    result = validate_scene(patched)
+
+    assert result.valid is False
+    assert any(e.rule == "limitExceeded" for e in result.errors)
+
+
 def test_summarize_patch_is_deterministic_and_content_free():
     patch = [
         {"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"},

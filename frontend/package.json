@@ -12,7 +12,8 @@
     "typecheck": "tsc -b",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bench:runtime": "playwright test --config=playwright.bench.config.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.0.1",

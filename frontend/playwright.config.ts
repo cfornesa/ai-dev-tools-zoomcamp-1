@@ -26,6 +26,12 @@ const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
 
 export default defineConfig({
   testDir: './e2e',
+  // Task 70 (issue #70): the runtime-limits benchmark lives under
+  // e2e/benchmark/ and runs via its own playwright.bench.config.ts (no
+  // Django/PostgreSQL/globalSetup needed) — excluded here so `make e2e`/
+  // plain `npx playwright test` never tries to run it against this
+  // config's Django-backed globalSetup.
+  testIgnore: ['**/benchmark/**'],
   // Deterministic, isolated fixtures per acceptance criterion: every
   // scenario creates its own project(s) under the fixed e2e_owner/
   // e2e_other users and nothing here shares mutable state across test

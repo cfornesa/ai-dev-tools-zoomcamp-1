@@ -45,6 +45,7 @@ import {
   toggleGroupFlag,
   toggleLayerFlag,
   ungroupItem,
+  type Group,
   type Outcome,
 } from './sceneOutline';
 import {
@@ -119,6 +120,62 @@ function withShapes(scene: SceneDocument, shapes: unknown[]): SceneDocument {
   return { ...scene, shapes };
 }
 
+// Issue #77: expands one `multiSelectedIds` entry that refers to a group
+// (rather than a shape) into every one of that group's recursive
+// descendant shape ids — a group's `childIds` can itself contain nested
+// group ids (see sceneOutline.ts's "Group membership model"), so this
+// walks the whole subtree. `visited` guards against a malformed/cyclic
+// `childIds` graph looping forever; it should never actually trigger
+// against a scene `groupItems`/`ungroupItem` produced, but costs nothing
+// to keep here defensively.
+function expandGroupToDescendantIds(
+  groups: Group[],
+  groupId: string,
+  visited: Set<string> = new Set(),
+): string[] {
+  if (visited.has(groupId)) return [];
+  visited.add(groupId);
+  const group = groups.find((g) => g.id === groupId);
+  if (!group) return [];
+  const ids: string[] = [];
+  for (const childId of group.childIds) {
+    if (groups.some((g) => g.id === childId)) {
+      ids.push(...expandGroupToDescendantIds(groups, childId, visited));
+    } else {
+      ids.push(childId);
+    }
+  }
+  return ids;
+}
+
+// Issue #77: resolves the outline's `multiSelectedIds` (a flat, additive
+// pick of shape ids and/or group ids — see `toggleMultiSelect` below) into
+// the concrete list of shapes a group manipulation gesture should act on:
+// group ids expand to their recursive descendant shapes, ids that no
+// longer resolve to a shape or group in `scene` (stale selections) are
+// silently skipped rather than rejecting the whole gesture, and duplicate
+// resolutions (e.g. a shape id and its containing group both present in
+// `multiSelectedIds`) collapse to one entry each. Draw order is preserved
+// by returning shapes in `shapes` array order rather than selection order.
+function resolveMultiSelection(scene: SceneDocument, ids: string[]): Shape[] {
+  const shapes = getEditableShapes(rawShapes(scene));
+  const groups = getGroups(scene);
+  const shapeIds = new Set(shapes.map((s) => s.id));
+  const resolvedIds = new Set<string>();
+  for (const id of ids) {
+    if (shapeIds.has(id)) {
+      resolvedIds.add(id);
+      continue;
+    }
+    const group = groups.find((g) => g.id === id);
+    if (!group) continue; // stale id: silently skipped
+    for (const descendantId of expandGroupToDescendantIds(groups, id)) {
+      if (shapeIds.has(descendantId)) resolvedIds.add(descendantId);
+    }
+  }
+  return shapes.filter((s) => resolvedIds.has(s.id));
+}
+
 export function useSceneEditor(
   workingCopy: SceneDocument | null,
   setWorkingCopy: Dispatch<SetStateAction<SceneDocument | null>>,
@@ -176,6 +233,19 @@ export function useSceneEditor(
   const groups = useMemo(() => (workingCopy ? getGroups(workingCopy) : []), [workingCopy]);
   const layers = useMemo(() => (workingCopy ? getLayers(workingCopy) : []), [workingCopy]);
   const selectedGroup = groups.find((g) => g.id === selectedShapeId) ?? null;
+  // Issue #77: the resolved multi-shape selection a group manipulation
+  // gesture acts on — only ever non-empty once `multiSelectedIds` holds
+  // 2+ entries (below that threshold, canvas manipulation stays on the
+  // single-shape `selectedShapeId` path Task 26 already built; see
+  // EditorWorkspace.tsx). Group ids expand to descendants and stale ids
+  // are dropped by `resolveMultiSelection` above.
+  const multiSelectedShapes = useMemo(
+    () =>
+      workingCopy && multiSelectedIds.length >= 2
+        ? resolveMultiSelection(workingCopy, multiSelectedIds)
+        : [],
+    [workingCopy, multiSelectedIds],
+  );
   const outline = useMemo(() => (workingCopy ? buildOutline(workingCopy) : []), [workingCopy]);
   // Task 34: cards are reconstructed fresh from `workingCopy.bindings` on
   // every render rather than kept as separate state — that's what makes
@@ -242,6 +312,37 @@ export function useSceneEditor(
         const next = shapes.slice();
         next[idx] = updated;
         return withShapes(current, next);
+      });
+    },
+    [setWorkingCopy],
+  );
+
+  // Issue #77: the multi-shape analogue of `updateSelectedTransform` —
+  // writes every shape in `updatedShapes` (one live intermediate frame of
+  // a group move/resize/rotate gesture, produced by `sceneShapes.ts`'s
+  // `applyGroupDrag`) straight into `workingCopy` by id, bypassing
+  // `commit()` exactly like the single-shape path so the whole gesture
+  // still lands as one history entry via `commitTransform`/`cancelTransform`
+  // below. Iterating the *current* `shapes` array (rather than
+  // `updatedShapes`) means a shape deleted by some other means mid-gesture
+  // (e.g. a concurrent keyboard delete) is simply no longer present to
+  // write into — no throw, no special-casing needed here.
+  const updateMultiSelectedTransform = useCallback(
+    (updatedShapes: Shape[]) => {
+      if (updatedShapes.length === 0) return;
+      const byId = new Map(updatedShapes.map((s) => [s.id, s]));
+      setWorkingCopy((current) => {
+        if (!current) return current;
+        const shapes = rawShapes(current);
+        let changed = false;
+        const next = shapes.map((s) => {
+          const id = (s as { id?: unknown })?.id;
+          const replacement = typeof id === 'string' ? byId.get(id) : undefined;
+          if (!replacement) return s;
+          changed = true;
+          return replacement;
+        });
+        return changed ? withShapes(current, next) : current;
       });
     },
     [setWorkingCopy],
@@ -710,6 +811,9 @@ export function useSceneEditor(
     updateSelectedTransform,
     commitTransform,
     cancelTransform,
+    // Issue #77
+    multiSelectedShapes,
+    updateMultiSelectedTransform,
     // Task 60 (issue #58)
     updateSelectedShapeNumericField,
     updateSelectedShapeColorField,

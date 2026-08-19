@@ -129,9 +129,9 @@ export function getEditableShapes(shapes: unknown): Shape[] {
   return shapes.filter((s): s is Shape => isShapeType((s as { type?: unknown })?.type));
 }
 
-type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
+export type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
 
-function shapeBounds(shape: Shape): Bounds {
+export function shapeBounds(shape: Shape): Bounds {
   const { x, y } = shape.transform;
   switch (shape.type) {
     case 'circle':
@@ -412,4 +412,183 @@ export function clientToCanvasPoint(
   const scaleX = rect.width > 0 ? canvasWidth / rect.width : 1;
   const scaleY = rect.height > 0 ? canvasHeight / rect.height : 1;
   return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+}
+
+/**
+ * Issue #77: combined bounding-box geometry and multi-shape gesture math
+ * for a group of two or more simultaneously-selected shapes.
+ *
+ * These deliberately mirror the single-shape helpers above rather than
+ * introducing new conventions: a group "move" writes the same
+ * `transform.x/y` fields `applyMove` does (for every selected shape), a
+ * group "resize" writes the same type-specific size field(s)
+ * `applyResize` does (scaled uniformly from one group scale factor
+ * instead of computed per-shape from the raw pointer position), and a
+ * group "rotate" writes the same `transform.rotation` field `applyRotate`
+ * does, plus rotates each shape's `transform.x/y` around the group's
+ * shared pivot. Every numeric write goes through the same `clamp()` /
+ * `POSITION_LIMIT` / `SIZE_LIMIT` / `ROTATION_LIMIT` helpers as the
+ * single-shape path, independently per shape and per field, so one
+ * member hitting its own limit never blocks or rolls back the rest of
+ * the group (see the module-level doc comment on why recomputing from a
+ * fixed start snapshot on every call already gives this "for free").
+ *
+ * `shapeBounds` ignores rotation (see its own module comment above); the
+ * combined bounding box below inherits that same approximation — it is
+ * only ever used to derive a group anchor/pivot and handle positions, not
+ * to render anything.
+ */
+
+// No schema minimum exists for a *group* scale factor (each member's own
+// size field still gets clamped to SIZE_LIMIT individually) — this is a
+// small floor purely to stop a group-resize gesture from collapsing the
+// whole selection onto its anchor point (scale 0) or flipping through a
+// negative scale, mirroring `PATH_MIN_SCALE`'s rationale above.
+const MIN_GROUP_SCALE = 0.01;
+
+/** The union of every shape's own `shapeBounds()`, or `null` for an empty
+ * list — the "combined bounding box computed at gesture start" the
+ * acceptance criteria describe as the anchor for group resize/rotate. */
+export function getCombinedBounds(shapes: Shape[]): Bounds | null {
+  if (shapes.length === 0) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const shape of shapes) {
+    const b = shapeBounds(shape);
+    minX = Math.min(minX, b.minX);
+    minY = Math.min(minY, b.minY);
+    maxX = Math.max(maxX, b.maxX);
+    maxY = Math.max(maxY, b.maxY);
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+/** The one combined move/resize/rotate handle set for a multi-shape
+ * selection's combined bounding box — the group analogue of
+ * `getShapeHandles`. Unlike the single-shape handles (which rotate with
+ * that shape's own `transform.rotation`), the combined box has no single
+ * rotation of its own until a rotate gesture is in progress, so these sit
+ * at fixed axis-aligned positions on the box: move at its center, resize
+ * at its bottom-right corner, rotate above its top edge. */
+export function getGroupHandles(bounds: Bounds): ShapeHandles {
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  return {
+    move: { x: centerX, y: (bounds.minY + bounds.maxY) / 2 },
+    resize: { x: bounds.maxX, y: bounds.maxY },
+    rotate: { x: centerX, y: bounds.minY - ROTATE_HANDLE_OFFSET },
+  };
+}
+
+function applyGroupMove(startShapes: Shape[], startPointer: Point, pointer: Point): Shape[] {
+  const dx = pointer.x - startPointer.x;
+  const dy = pointer.y - startPointer.y;
+  return startShapes.map((shape) => ({
+    ...shape,
+    transform: {
+      ...shape.transform,
+      x: clamp(shape.transform.x + dx, POSITION_LIMIT.min, POSITION_LIMIT.max),
+      y: clamp(shape.transform.y + dy, POSITION_LIMIT.min, POSITION_LIMIT.max),
+    },
+  }));
+}
+
+function applyGroupResize(startShapes: Shape[], bounds: Bounds, pointer: Point): Shape[] {
+  // Anchored at the opposite corner from the resize handle (bounds.maxX,
+  // bounds.maxY) — the same anchor convention Task 26 uses for a single
+  // shape's box-style resize.
+  const anchor: Point = { x: bounds.minX, y: bounds.minY };
+  const handleStart: Point = { x: bounds.maxX, y: bounds.maxY };
+  const startDist = Math.hypot(handleStart.x - anchor.x, handleStart.y - anchor.y) || 1;
+  const pointerDist = Math.hypot(pointer.x - anchor.x, pointer.y - anchor.y);
+  let scale = pointerDist / startDist;
+  if (!Number.isFinite(scale) || scale < MIN_GROUP_SCALE) scale = MIN_GROUP_SCALE;
+
+  const scalePoint = (px: number, py: number): Point => ({
+    x: clamp(anchor.x + (px - anchor.x) * scale, POSITION_LIMIT.min, POSITION_LIMIT.max),
+    y: clamp(anchor.y + (py - anchor.y) * scale, POSITION_LIMIT.min, POSITION_LIMIT.max),
+  });
+
+  return startShapes.map((shape) => {
+    const pos = scalePoint(shape.transform.x, shape.transform.y);
+    const transform = { ...shape.transform, x: pos.x, y: pos.y };
+    switch (shape.type) {
+      case 'circle':
+        return {
+          ...shape,
+          transform,
+          radius: clamp(shape.radius * scale, SIZE_LIMIT.min, SIZE_LIMIT.max),
+        };
+      case 'rect':
+        return {
+          ...shape,
+          transform,
+          width: clamp(shape.width * scale, SIZE_LIMIT.min, SIZE_LIMIT.max),
+          height: clamp(shape.height * scale, SIZE_LIMIT.min, SIZE_LIMIT.max),
+        };
+      case 'line': {
+        const end = scalePoint(shape.x2, shape.y2);
+        return { ...shape, transform, x2: end.x, y2: end.y };
+      }
+      case 'path': {
+        const points = shape.points.map((p) => ({
+          x: clamp(p.x * scale, POSITION_LIMIT.min, POSITION_LIMIT.max),
+          y: clamp(p.y * scale, POSITION_LIMIT.min, POSITION_LIMIT.max),
+        }));
+        return { ...shape, transform, points };
+      }
+    }
+  });
+}
+
+function applyGroupRotate(
+  startShapes: Shape[],
+  bounds: Bounds,
+  startPointer: Point,
+  pointer: Point,
+): Shape[] {
+  const pivot: Point = { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+  const startAngle =
+    (Math.atan2(startPointer.y - pivot.y, startPointer.x - pivot.x) * 180) / Math.PI;
+  const currentAngle = (Math.atan2(pointer.y - pivot.y, pointer.x - pivot.x) * 180) / Math.PI;
+  const delta = currentAngle - startAngle;
+  return startShapes.map((shape) => {
+    const rotated = rotateAround(shape.transform.x, shape.transform.y, pivot.x, pivot.y, delta);
+    return {
+      ...shape,
+      transform: {
+        ...shape.transform,
+        x: clamp(rotated.x, POSITION_LIMIT.min, POSITION_LIMIT.max),
+        y: clamp(rotated.y, POSITION_LIMIT.min, POSITION_LIMIT.max),
+        rotation: clamp(shape.transform.rotation + delta, ROTATION_LIMIT.min, ROTATION_LIMIT.max),
+      },
+    };
+  });
+}
+
+/** Applies one multi-shape manipulation gesture's current pointer
+ * position to `startShapes` — an immutable snapshot of every selected
+ * shape taken once at gesture start, alongside `bounds` (their combined
+ * bounding box, also computed once at gesture start) — and returns a
+ * brand-new array of updated shapes; `startShapes` is never mutated. This
+ * is the multi-shape analogue of `applyShapeDrag`: recomputing from the
+ * fixed start snapshot on every call, rather than accumulating a delta
+ * frame over frame, keeps a long drag numerically stable and makes
+ * Escape-to-cancel trivial (see that function's own comment). */
+export function applyGroupDrag(
+  kind: HandleKind,
+  startShapes: Shape[],
+  bounds: Bounds,
+  startPointer: Point,
+  pointer: Point,
+): Shape[] {
+  switch (kind) {
+    case 'move':
+      return applyGroupMove(startShapes, startPointer, pointer);
+    case 'resize':
+      return applyGroupResize(startShapes, bounds, pointer);
+    case 'rotate':
+      return applyGroupRotate(startShapes, bounds, startPointer, pointer);
+  }
 }

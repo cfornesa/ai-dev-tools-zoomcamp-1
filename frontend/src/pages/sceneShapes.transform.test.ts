@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  applyGroupDrag,
   applyShapeDrag,
   clamp,
   clientToCanvasPoint,
   createShape,
+  getCombinedBounds,
+  getGroupHandles,
   getShapeHandles,
   POSITION_LIMIT,
   ROTATION_LIMIT,
@@ -262,5 +265,186 @@ describe('applyShapeDrag: rotate', () => {
       { x: 400, y: 200 }, // -90 degrees of drag, back within range
     );
     expect(updated.transform.rotation).toBeCloseTo(270);
+  });
+});
+
+/**
+ * Issue #77: unit tests for the combined bounding-box geometry and
+ * multi-shape gesture math, the group analogue of the single-shape tests
+ * above. `EditorWorkspace.multiTransform.test.tsx` covers the DOM/gesture
+ * wiring (handle visibility, selection-membership fallback, undo
+ * grouping); these are pure-function tests independent of that wiring.
+ */
+
+function makeCircle(id: string, x: number, y: number, radius = 20, rotation = 0): Shape {
+  return {
+    id,
+    layerId: 'layer-1',
+    groupId: null,
+    transform: { x, y, scaleX: 1, scaleY: 1, rotation, opacity: 1 },
+    style: { fill: '#4f46e5', stroke: null, strokeWidth: 2 },
+    type: 'circle',
+    radius,
+  };
+}
+
+function makeRect(id: string, x: number, y: number, width: number, height: number): Shape {
+  return {
+    id,
+    layerId: 'layer-1',
+    groupId: null,
+    transform: { x, y, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+    style: { fill: '#4f46e5', stroke: null, strokeWidth: 2 },
+    type: 'rect',
+    width,
+    height,
+    cornerRadius: 0,
+  };
+}
+
+describe('getCombinedBounds', () => {
+  it('returns null for an empty list', () => {
+    expect(getCombinedBounds([])).toBeNull();
+  });
+
+  it('unions the bounds of every shape', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS); // center (400,300), r=50
+    const rect = createShape('rect', 'layer-1', CANVAS); // top-left (350,260), 100x80
+    const bounds = getCombinedBounds([circle, rect]);
+    expect(bounds).toEqual({ minX: 350, minY: 250, maxX: 450, maxY: 350 });
+  });
+});
+
+describe('getGroupHandles', () => {
+  it('places move/resize/rotate at the center, bottom-right corner, and above the top edge', () => {
+    const bounds = { minX: 350, minY: 250, maxX: 450, maxY: 350 };
+    const handles = getGroupHandles(bounds);
+    expect(handles.move).toEqual({ x: 400, y: 300 });
+    expect(handles.resize).toEqual({ x: 450, y: 350 });
+    expect(handles.rotate.x).toBeCloseTo(400);
+    expect(handles.rotate.y).toBeLessThan(bounds.minY);
+  });
+});
+
+describe('applyGroupDrag: move', () => {
+  it('applies the same pointer delta to every shape, preserving relative offsets', () => {
+    const shapes = [makeCircle('a', 100, 100), makeCircle('b', 300, 300)];
+    const bounds = getCombinedBounds(shapes)!;
+    const updated = applyGroupDrag('move', shapes, bounds, { x: 0, y: 0 }, { x: 50, y: 20 });
+    expect(updated[0].transform.x).toBe(150);
+    expect(updated[0].transform.y).toBe(120);
+    expect(updated[1].transform.x).toBe(350);
+    expect(updated[1].transform.y).toBe(320);
+    // Relative offset between the two shapes is unchanged.
+    expect(updated[1].transform.x - updated[0].transform.x).toBe(200);
+    expect(updated[1].transform.y - updated[0].transform.y).toBe(200);
+  });
+
+  it('does not mutate the start shapes snapshot', () => {
+    const shapes = [makeCircle('a', 100, 100)];
+    const bounds = getCombinedBounds(shapes)!;
+    applyGroupDrag('move', shapes, bounds, { x: 0, y: 0 }, { x: 50, y: 20 });
+    expect(shapes[0].transform.x).toBe(100);
+  });
+
+  it('clamps one shape at its position limit while the rest of the group keeps moving', () => {
+    const shapes = [makeCircle('a', POSITION_LIMIT.max - 10, 0), makeCircle('b', 0, 0)];
+    const bounds = getCombinedBounds(shapes)!;
+    const updated = applyGroupDrag('move', shapes, bounds, { x: 0, y: 0 }, { x: 1000, y: 0 });
+    expect(updated[0].transform.x).toBe(POSITION_LIMIT.max); // clamped, stops here
+    expect(updated[1].transform.x).toBe(1000); // unaffected, keeps moving normally
+  });
+});
+
+describe('applyGroupDrag: resize', () => {
+  it('scales the whole group uniformly from the combined box anchored at the opposite corner', () => {
+    const rect1 = makeRect('a', 0, 0, 100, 100);
+    const rect2 = makeRect('b', 100, 100, 50, 50);
+    const shapes = [rect1, rect2];
+    const bounds = getCombinedBounds(shapes)!; // {minX:0,minY:0,maxX:150,maxY:150}
+    const handles = getGroupHandles(bounds); // resize handle at (150,150)
+    // Drag the resize handle to twice its original distance from the
+    // opposite (top-left) anchor corner.
+    const pointer = { x: handles.resize.x * 2, y: handles.resize.y * 2 };
+    const updated = applyGroupDrag('resize', shapes, bounds, handles.resize, pointer);
+    const a = updated.find((s) => s.id === 'a');
+    const b = updated.find((s) => s.id === 'b');
+    if (a?.type !== 'rect' || b?.type !== 'rect') throw new Error('expected rects');
+    expect(a.transform.x).toBeCloseTo(0);
+    expect(a.transform.y).toBeCloseTo(0);
+    expect(a.width).toBeCloseTo(200);
+    expect(a.height).toBeCloseTo(200);
+    expect(b.transform.x).toBeCloseTo(200);
+    expect(b.transform.y).toBeCloseTo(200);
+    expect(b.width).toBeCloseTo(100);
+    expect(b.height).toBeCloseTo(100);
+  });
+
+  it('clamps one shape at its size limit while the rest of the group keeps scaling', () => {
+    const big = makeRect('a', 0, 0, 4990, 10);
+    const small = makeRect('b', 0, 0, 10, 10);
+    const shapes = [big, small];
+    const bounds = { minX: 0, minY: 0, maxX: 10, maxY: 10 };
+    const updated = applyGroupDrag(
+      'resize',
+      shapes,
+      bounds,
+      { x: 10, y: 10 },
+      { x: 100, y: 100 }, // scale factor 10
+    );
+    const a = updated.find((s) => s.id === 'a');
+    const b = updated.find((s) => s.id === 'b');
+    if (a?.type !== 'rect' || b?.type !== 'rect') throw new Error('expected rects');
+    expect(a.width).toBe(SIZE_LIMIT.max); // clamped, stops here
+    expect(b.width).toBeCloseTo(100); // unaffected, keeps scaling normally
+  });
+});
+
+describe('applyGroupDrag: rotate', () => {
+  it('rotates every shape rigidly around the shared pivot, preserving their arrangement', () => {
+    const shapeA = makeCircle('a', 100, 0);
+    const shapeB = makeCircle('b', 300, 0);
+    const shapes = [shapeA, shapeB];
+    const bounds = { minX: 0, minY: -50, maxX: 400, maxY: 50 }; // pivot at (200, 0)
+    const updated = applyGroupDrag(
+      'rotate',
+      shapes,
+      bounds,
+      { x: 200, y: -100 }, // above the pivot
+      { x: 300, y: 0 }, // right of the pivot: +90 degrees
+    );
+    const a = updated.find((s) => s.id === 'a')!;
+    const b = updated.find((s) => s.id === 'b')!;
+    expect(a.transform.x).toBeCloseTo(200);
+    expect(a.transform.y).toBeCloseTo(-100);
+    expect(b.transform.x).toBeCloseTo(200);
+    expect(b.transform.y).toBeCloseTo(100);
+    expect(a.transform.rotation).toBeCloseTo(90);
+    expect(b.transform.rotation).toBeCloseTo(90);
+    // The distance between the two shapes (their arrangement) is preserved.
+    const distance = Math.hypot(b.transform.x - a.transform.x, b.transform.y - a.transform.y);
+    expect(distance).toBeCloseTo(200);
+  });
+
+  it('clamps one shape rotation at its limit while the rest of the group keeps rotating', () => {
+    const shapeA = makeCircle('a', 100, 0, 20, 350);
+    const shapeB = makeCircle('b', 300, 0, 20, 0);
+    const shapes = [shapeA, shapeB];
+    const bounds = { minX: 0, minY: -50, maxX: 400, maxY: 50 };
+    const updated = applyGroupDrag(
+      'rotate',
+      shapes,
+      bounds,
+      { x: 200, y: -100 },
+      { x: 300, y: 0 }, // +90 degrees
+    );
+    const a = updated.find((s) => s.id === 'a')!;
+    const b = updated.find((s) => s.id === 'b')!;
+    expect(a.transform.rotation).toBe(ROTATION_LIMIT.max); // clamped, stops here
+    expect(b.transform.rotation).toBeCloseTo(90); // unaffected, keeps rotating normally
+    // Position still rotates for both shapes regardless of the rotation
+    // field's own clamp — never an all-or-nothing abort.
+    expect(a.transform.y).toBeCloseTo(-100);
+    expect(b.transform.y).toBeCloseTo(100);
   });
 });

@@ -14,11 +14,15 @@ import CameraControl from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import {
+  applyGroupDrag,
   applyShapeDrag,
   clientToCanvasPoint,
+  getCombinedBounds,
+  getGroupHandles,
   getShapeHandles,
   hitTestTopmostShapeAt,
   shapeLabel,
+  type Bounds,
   type HandleKind,
   type Point,
   type Shape,
@@ -250,7 +254,23 @@ function EditorWorkspace() {
   // the live shape mutation each pointermove performs (via
   // `sceneEditor.updateSelectedTransform`) already re-renders the
   // component through `workingCopy` changing.
-  const dragRef = useRef<{ kind: HandleKind; startShape: Shape; startPointer: Point } | null>(null);
+  // Issue #77: a drag gesture is either the Task 26 single-shape kind
+  // (`mode: 'single'`) or, when it started on a member of a 2+-item
+  // `multiSelectedIds` selection, a group gesture (`mode: 'group'`) that
+  // carries a snapshot of every selected shape plus their combined
+  // bounding box, both fixed at gesture start (see `sceneShapes.ts`'s
+  // `applyGroupDrag` doc comment on why fixed-snapshot recomputation is
+  // used instead of accumulating a delta frame over frame).
+  type DragState =
+    | { mode: 'single'; kind: HandleKind; startShape: Shape; startPointer: Point }
+    | {
+        mode: 'group';
+        kind: HandleKind;
+        startShapes: Shape[];
+        bounds: Bounds;
+        startPointer: Point;
+      };
+  const dragRef = useRef<DragState | null>(null);
   // Lazily built once (see the `if` below) and reused for every gesture,
   // so `window.addEventListener`/`removeEventListener` always agree on the
   // exact same function identity — including the unmount cleanup effect
@@ -269,6 +289,17 @@ function EditorWorkspace() {
       if (!rect) return;
       const { width, height } = canvasSizeRef.current;
       const pointer = clientToCanvasPoint(rect, event.clientX, event.clientY, width, height);
+      if (drag.mode === 'group') {
+        const updated = applyGroupDrag(
+          drag.kind,
+          drag.startShapes,
+          drag.bounds,
+          drag.startPointer,
+          pointer,
+        );
+        sceneEditorRef.current.updateMultiSelectedTransform(updated);
+        return;
+      }
       const updated = applyShapeDrag(drag.kind, drag.startShape, drag.startPointer, pointer);
       sceneEditorRef.current.updateSelectedTransform(updated);
     };
@@ -459,42 +490,65 @@ function EditorWorkspace() {
     sceneEditor.selectShape(hit ? hit.id : null);
   }
 
-  // Starts a Task 26 move/resize/rotate gesture: snapshots the pre-gesture
-  // scene and registers the window-level listeners `dragHandlers` built
-  // once above.
-  function beginDrag(kind: HandleKind, shape: Shape, pointer: Point) {
+  // Starts a Task 26 (single-shape) or issue #77 (group) move/resize/
+  // rotate gesture: snapshots the pre-gesture scene and registers the
+  // window-level listeners `dragHandlers` built once above.
+  function beginTransformGesture(next: DragState) {
     const handlers = dragHandlers.current;
     if (!handlers) return;
-    dragRef.current = { kind, startShape: shape, startPointer: pointer };
+    dragRef.current = next;
     sceneEditor.beginTransform();
     window.addEventListener('pointermove', handlers.onMove);
     window.addEventListener('pointerup', handlers.onUp);
     window.addEventListener('keydown', handlers.onKey);
   }
 
-  // Dragging the shape body itself is the "move" gesture (per the
-  // acceptance criteria: "dragging the shape body or its move handle").
-  // Starting on a shape other than the current selection selects it first,
-  // matching `handleCanvasClick`'s own click-to-select, then manipulates
-  // it in the same gesture.
+  // Issue #77: the shapes/bounds a group gesture would act on right now,
+  // derived fresh every render from `multiSelectedIds` — `null` below the
+  // 2-item threshold, which is exactly when the canvas must fall back to
+  // Task 26's single-shape handles/gesture untouched (see the render
+  // below and the acceptance criteria's "0 or 1 ... behaves exactly as it
+  // does today").
+  const groupSelection =
+    sceneEditor.multiSelectedShapes.length >= 2 ? sceneEditor.multiSelectedShapes : null;
+  const groupBounds = groupSelection ? getCombinedBounds(groupSelection) : null;
+
+  // Dragging a shape's body is the "move" gesture (per the acceptance
+  // criteria: "dragging the shape body or its move handle"). If the hit
+  // shape is a member of the current 2+-item multi-selection, this starts
+  // a *group* gesture over the whole resolved selection instead of a
+  // single-shape one. Otherwise it behaves exactly as it always has:
+  // starting on a shape other than the current selection selects it
+  // first (matching `handleCanvasClick`'s own click-to-select) and
+  // manipulates just that one shape, never touching `multiSelectedIds`.
   function handleCanvasPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
     const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y);
     if (!hit) return; // no shape body under the pointer: nothing to drag
+    if (groupSelection && groupBounds && groupSelection.some((s) => s.id === hit.id)) {
+      beginTransformGesture({
+        mode: 'group',
+        kind: 'move',
+        startShapes: groupSelection,
+        bounds: groupBounds,
+        startPointer: pointer,
+      });
+      return;
+    }
     if (hit.id !== sceneEditor.selectedShapeId) {
       sceneEditor.selectShape(hit.id);
     }
-    beginDrag('move', hit, pointer);
+    beginTransformGesture({ mode: 'single', kind: 'move', startShape: hit, startPointer: pointer });
   }
 
-  // A resize/rotate handle is only ever rendered for the current single
-  // selection (see the render below), so there's no separate hit-test or
-  // selection step here — just start manipulating the already-selected
-  // shape. `stopPropagation` keeps this from also bubbling into
-  // `handleCanvasPointerDown`, which would otherwise hit-test the same
-  // point against shape bodies underneath the handle.
+  // A single-shape resize/rotate handle is only ever rendered for the
+  // current single selection (see the render below), so there's no
+  // separate hit-test or selection step here — just start manipulating
+  // the already-selected shape. `stopPropagation` keeps this from also
+  // bubbling into `handleCanvasPointerDown`, which would otherwise
+  // hit-test the same point against shape bodies underneath the handle.
   function handleHandlePointerDown(kind: HandleKind) {
     return (event: ReactPointerEvent<HTMLDivElement>) => {
       if (event.button !== 0) return;
@@ -503,7 +557,28 @@ function EditorWorkspace() {
       if (!shape) return;
       const pointer = canvasPointFromClient(event.clientX, event.clientY);
       if (!pointer) return;
-      beginDrag(kind, shape, pointer);
+      beginTransformGesture({ mode: 'single', kind, startShape: shape, startPointer: pointer });
+    };
+  }
+
+  // Issue #77: the combined bounding-box handle's pointer-down — same
+  // `stopPropagation` rationale as `handleHandlePointerDown` above, just
+  // starting a group gesture over the whole resolved multi-selection
+  // instead of the single selected shape.
+  function handleGroupHandlePointerDown(kind: HandleKind) {
+    return (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+      event.stopPropagation();
+      if (!groupSelection || !groupBounds) return;
+      const pointer = canvasPointFromClient(event.clientX, event.clientY);
+      if (!pointer) return;
+      beginTransformGesture({
+        mode: 'group',
+        kind,
+        startShapes: groupSelection,
+        bounds: groupBounds,
+        startPointer: pointer,
+      });
     };
   }
 
@@ -704,41 +779,76 @@ function EditorWorkspace() {
                 {shape.id === sceneEditor.selectedShapeId ? shapeSummary(shape) : null}
               </div>
             ))}
-            {/* Task 26: move/resize/rotate handles for the single selected
-                shape only — a group selection (selectedShape is null then)
-                or no selection at all shows none. Re-derived fresh from
-                the current selection/scene on every render, so a selection
-                change, a delete, or an undo/redo that changes the
-                selection automatically leaves no stale handle behind. */}
-            {sceneEditor.selectedShape &&
-              (() => {
-                const handles = getShapeHandles(sceneEditor.selectedShape);
-                return (
-                  <>
-                    <div
-                      data-testid="shape-handle-move"
-                      aria-hidden="true"
-                      className="editor-shape-handle editor-shape-handle-move"
-                      style={handleStyle(handles.move)}
-                      onPointerDown={handleHandlePointerDown('move')}
-                    />
-                    <div
-                      data-testid="shape-handle-resize"
-                      aria-hidden="true"
-                      className="editor-shape-handle editor-shape-handle-resize"
-                      style={handleStyle(handles.resize)}
-                      onPointerDown={handleHandlePointerDown('resize')}
-                    />
-                    <div
-                      data-testid="shape-handle-rotate"
-                      aria-hidden="true"
-                      className="editor-shape-handle editor-shape-handle-rotate"
-                      style={handleStyle(handles.rotate)}
-                      onPointerDown={handleHandlePointerDown('rotate')}
-                    />
-                  </>
-                );
-              })()}
+            {/* Issue #77: when 2+ shapes are multi-selected, one combined
+                bounding-box handle set drives a rigid group move/resize/
+                rotate gesture over the whole resolved selection, entirely
+                replacing the single-shape handle set below for that
+                state. Task 26: move/resize/rotate handles for the single
+                selected shape only, unchanged — a group selection, a
+                group-row selection (selectedShape is null then), or no
+                selection at all shows none. Both are re-derived fresh
+                from the current selection/scene on every render, so a
+                selection change, a delete, or an undo/redo that changes
+                the selection automatically leaves no stale handle
+                behind. */}
+            {groupSelection && groupBounds
+              ? (() => {
+                  const handles = getGroupHandles(groupBounds);
+                  return (
+                    <>
+                      <div
+                        data-testid="group-handle-move"
+                        aria-hidden="true"
+                        className="editor-shape-handle editor-group-handle-move"
+                        style={handleStyle(handles.move)}
+                        onPointerDown={handleGroupHandlePointerDown('move')}
+                      />
+                      <div
+                        data-testid="group-handle-resize"
+                        aria-hidden="true"
+                        className="editor-shape-handle editor-group-handle-resize"
+                        style={handleStyle(handles.resize)}
+                        onPointerDown={handleGroupHandlePointerDown('resize')}
+                      />
+                      <div
+                        data-testid="group-handle-rotate"
+                        aria-hidden="true"
+                        className="editor-shape-handle editor-group-handle-rotate"
+                        style={handleStyle(handles.rotate)}
+                        onPointerDown={handleGroupHandlePointerDown('rotate')}
+                      />
+                    </>
+                  );
+                })()
+              : sceneEditor.selectedShape &&
+                (() => {
+                  const handles = getShapeHandles(sceneEditor.selectedShape);
+                  return (
+                    <>
+                      <div
+                        data-testid="shape-handle-move"
+                        aria-hidden="true"
+                        className="editor-shape-handle editor-shape-handle-move"
+                        style={handleStyle(handles.move)}
+                        onPointerDown={handleHandlePointerDown('move')}
+                      />
+                      <div
+                        data-testid="shape-handle-resize"
+                        aria-hidden="true"
+                        className="editor-shape-handle editor-shape-handle-resize"
+                        style={handleStyle(handles.resize)}
+                        onPointerDown={handleHandlePointerDown('resize')}
+                      />
+                      <div
+                        data-testid="shape-handle-rotate"
+                        aria-hidden="true"
+                        className="editor-shape-handle editor-shape-handle-rotate"
+                        style={handleStyle(handles.rotate)}
+                        onPointerDown={handleHandlePointerDown('rotate')}
+                      />
+                    </>
+                  );
+                })()}
           </div>
         </section>
 

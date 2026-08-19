@@ -325,6 +325,29 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+/* Task 64 (issue #64): the app-shell skip link (Layout.tsx). Off-screen
+   until focused (not `display: none`/`visibility: hidden`, which would
+   remove it from the Tab order entirely), then pinned to the top of the
+   viewport with the same focus-visible treatment as every other control. */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  z-index: 1000;
+  padding: 8px 16px;
+  background: var(--bg);
+  color: var(--text-h);
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+}
+
+.skip-link:focus {
+  top: 8px;
+  left: 8px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Task 41: save/version-history status + panel. */
 .editor-save-status {
   font-weight: 600;

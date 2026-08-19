@@ -415,6 +415,200 @@ export function clientToCanvasPoint(
 }
 
 /**
+ * Issue #78: snap-to-grid and alignment-guide math for a single-shape
+ * drag/resize gesture (`sceneEditor.selectedShapeId` path only — never the
+ * multi-shape group path below, per that issue's own "out of scope").
+ *
+ * Both mechanisms share one fixed tolerance, expressed in scene/canvas
+ * units (not screen pixels) so it's zoom/CSS-scale invariant, matching
+ * `clientToCanvasPoint`'s own unit convention. The snap preference itself
+ * (on/off for each) is a purely client-side `localStorage` setting — see
+ * `../editor/snapSettings.ts` — and is never read or written here; this
+ * module only exposes pure geometry helpers, leaving the on/off decision
+ * to the caller (`EditorWorkspace.tsx`), consistent with how the rest of
+ * this file's gesture math has no opinion on UI state either.
+ */
+
+/** Default grid spacing, and the shared snap tolerance, in scene units —
+ * fixed per issue #78 (no size/tolerance picker in this task's scope). */
+export const GRID_SIZE = 20;
+export const SNAP_TOLERANCE = 8;
+
+/** Rounds `value` to the nearest multiple of `gridSize`, but only if that
+ * nearest grid line is within `tolerance` — otherwise `value` passes
+ * through unchanged (the "far enough away moves freely" acceptance
+ * criterion). */
+export function snapValueToGrid(
+  value: number,
+  gridSize: number = GRID_SIZE,
+  tolerance: number = SNAP_TOLERANCE,
+): number {
+  if (!Number.isFinite(value)) return value;
+  const nearest = Math.round(value / gridSize) * gridSize;
+  return Math.abs(nearest - value) <= tolerance ? nearest : value;
+}
+
+export type AlignmentGuide = { axis: 'x' | 'y'; value: number };
+type AlignmentCandidate = { value: number; delta: number };
+
+/** For a dragged shape's live bounding box, finds the closest-in-tolerance
+ * alignment against every sibling's corresponding edge/center, per axis
+ * independently (a shape can align horizontally and vertically to two
+ * different siblings at once, exactly like Figma-style smart guides).
+ * `siblings` should already exclude the shape being dragged itself (see
+ * the "no self-alignment" acceptance criterion) — this function doesn't
+ * know shape identity, only bounds. Returns `null` for an axis with no
+ * candidate inside `tolerance` (in particular: `siblings` is empty, e.g. a
+ * lone shape in the scene). */
+export function findAlignmentGuides(
+  bounds: Bounds,
+  siblings: Bounds[],
+  tolerance: number = SNAP_TOLERANCE,
+): { x: AlignmentGuide | null; y: AlignmentGuide | null } {
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+  const xCandidates = [bounds.minX, bounds.maxX, centerX];
+  const yCandidates = [bounds.minY, bounds.maxY, centerY];
+
+  let bestX: AlignmentCandidate | null = null;
+  let bestY: AlignmentCandidate | null = null;
+
+  for (const sibling of siblings) {
+    const sCenterX = (sibling.minX + sibling.maxX) / 2;
+    const sCenterY = (sibling.minY + sibling.maxY) / 2;
+    for (const cx of xCandidates) {
+      for (const sx of [sibling.minX, sibling.maxX, sCenterX]) {
+        const delta = sx - cx;
+        if (Math.abs(delta) <= tolerance && (!bestX || Math.abs(delta) < Math.abs(bestX.delta))) {
+          bestX = { value: sx, delta };
+        }
+      }
+    }
+    for (const cy of yCandidates) {
+      for (const sy of [sibling.minY, sibling.maxY, sCenterY]) {
+        const delta = sy - cy;
+        if (Math.abs(delta) <= tolerance && (!bestY || Math.abs(delta) < Math.abs(bestY.delta))) {
+          bestY = { value: sy, delta };
+        }
+      }
+    }
+  }
+
+  return {
+    x: bestX ? { axis: 'x', value: bestX.value } : null,
+    y: bestY ? { axis: 'y', value: bestY.value } : null,
+  };
+}
+
+export type SnapOptions = { gridEnabled: boolean; guidesEnabled: boolean; tolerance?: number };
+
+export type MoveSnapResult = {
+  shape: Shape;
+  guides: { x: AlignmentGuide | null; y: AlignmentGuide | null };
+};
+
+/** Applies grid/alignment-guide snapping to the result of a single-shape
+ * "move" gesture (`applyShapeDrag('move', ...)`'s output), adjusting
+ * `updated`'s position and, when a guide is in range, returning the guide
+ * line(s) to render. Alignment guides take precedence over the grid per
+ * axis (the "both in range simultaneously" acceptance criterion) — grid is
+ * only consulted for an axis with no guide in range. Every adjusted
+ * coordinate is re-clamped through `clamp()`/`POSITION_LIMIT`, exactly
+ * like the unsnapped path. A no-op (both disabled, or nothing in range)
+ * returns `updated` unchanged by reference. */
+export function applyMoveSnap(
+  updated: Shape,
+  siblingBounds: Bounds[],
+  options: SnapOptions,
+): MoveSnapResult {
+  const tolerance = options.tolerance ?? SNAP_TOLERANCE;
+  let dx = 0;
+  let dy = 0;
+  let guideX: AlignmentGuide | null = null;
+  let guideY: AlignmentGuide | null = null;
+
+  if (options.guidesEnabled && siblingBounds.length > 0) {
+    const bounds = shapeBounds(updated);
+    const guides = findAlignmentGuides(bounds, siblingBounds, tolerance);
+    guideX = guides.x;
+    guideY = guides.y;
+  }
+
+  // The guide value is a target for one of the shape's edges/center,
+  // expressed in bounds space; translating the whole shape by (target -
+  // currentCandidateValue) moves that edge/center onto the guide (the same
+  // offset applies to transform.x/y since bounds are a fixed local offset
+  // from the transform origin for every shape type here — see
+  // shapeBounds()).
+  if (guideX || guideY) {
+    const bounds = shapeBounds(updated);
+    if (guideX) {
+      const candidates = [bounds.minX, bounds.maxX, (bounds.minX + bounds.maxX) / 2];
+      const closest = candidates.reduce((best, c) =>
+        Math.abs(guideX!.value - c) < Math.abs(guideX!.value - best) ? c : best,
+      );
+      dx = guideX.value - closest;
+    }
+    if (guideY) {
+      const candidates = [bounds.minY, bounds.maxY, (bounds.minY + bounds.maxY) / 2];
+      const closest = candidates.reduce((best, c) =>
+        Math.abs(guideY!.value - c) < Math.abs(guideY!.value - best) ? c : best,
+      );
+      dy = guideY.value - closest;
+    }
+  }
+
+  if (options.gridEnabled) {
+    if (!guideX) {
+      const snappedX = snapValueToGrid(updated.transform.x, GRID_SIZE, tolerance);
+      dx = snappedX - updated.transform.x;
+    }
+    if (!guideY) {
+      const snappedY = snapValueToGrid(updated.transform.y, GRID_SIZE, tolerance);
+      dy = snappedY - updated.transform.y;
+    }
+  }
+
+  if (dx === 0 && dy === 0) return { shape: updated, guides: { x: guideX, y: guideY } };
+
+  const shape: Shape = {
+    ...updated,
+    transform: {
+      ...updated.transform,
+      x: clamp(updated.transform.x + dx, POSITION_LIMIT.min, POSITION_LIMIT.max),
+      y: clamp(updated.transform.y + dy, POSITION_LIMIT.min, POSITION_LIMIT.max),
+    },
+  };
+  return { shape, guides: { x: guideX, y: guideY } };
+}
+
+/** Applies grid snapping to the result of a single-shape "box" resize
+ * gesture (`applyShapeDrag('resize', ...)`'s output): snaps the resized
+ * edge/corner (the same absolute point `getShapeHandles` places the
+ * resize handle at) to the nearest grid line per axis, within tolerance,
+ * then re-derives the shape's size fields by re-running the exact same
+ * `applyShapeDrag('resize', ...)` math against that snapped point — so
+ * every existing per-type resize convention (and its `clamp()`/
+ * `SIZE_LIMIT` handling) is reused rather than duplicated. Alignment
+ * guides don't apply to resize (issue #78's own scope: guides only cover
+ * drag). A no-op (grid disabled, or nothing in range) returns `updated`
+ * unchanged by reference. */
+export function applyResizeSnap(
+  startShape: Shape,
+  startPointer: Point,
+  updated: Shape,
+  options: { gridEnabled: boolean; tolerance?: number },
+): Shape {
+  if (!options.gridEnabled) return updated;
+  const tolerance = options.tolerance ?? SNAP_TOLERANCE;
+  const point = getShapeHandles(updated).resize;
+  const snappedX = snapValueToGrid(point.x, GRID_SIZE, tolerance);
+  const snappedY = snapValueToGrid(point.y, GRID_SIZE, tolerance);
+  if (snappedX === point.x && snappedY === point.y) return updated;
+  return applyShapeDrag('resize', startShape, startPointer, { x: snappedX, y: snappedY });
+}
+
+/**
  * Issue #77: combined bounding-box geometry and multi-shape gesture math
  * for a group of two or more simultaneously-selected shapes.
  *

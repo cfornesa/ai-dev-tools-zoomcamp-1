@@ -242,6 +242,43 @@ code {
   margin: 0 0 8px;
 }
 
+/* Issue #78: the editor-scoped snap-to-grid / alignment-guide toggle
+   (SnapPreferenceControl.tsx) — reuses .demo-radio-option's pill styling
+   for its two independent On/Off radio groups. */
+.snap-preference-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.snap-toggle-label {
+  font-size: 13px;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.snap-preference-status {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Issue #78: the canvas grid overlay (rendered whenever grid snapping is
+   enabled) and the live alignment-guide lines (rendered only while a drag
+   is actively snapped to a sibling shape's edge/center). Both are
+   `pointer-events: none` SVG overlays sitting above the p5 canvas but
+   below the drag handles, so they never intercept pointer input. */
+.editor-snap-grid-line {
+  stroke: var(--border);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.editor-snap-guide-line {
+  stroke: #ec4899;
+  stroke-width: 1;
+}
+
 /* Task 31: the camera permission/privacy control (CameraControl.tsx). */
 .camera-control {
   border: 1px solid var(--border);

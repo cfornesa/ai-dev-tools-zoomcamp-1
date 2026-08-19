@@ -15,13 +15,18 @@ import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorP
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import {
   applyGroupDrag,
+  applyMoveSnap,
+  applyResizeSnap,
   applyShapeDrag,
   clientToCanvasPoint,
   getCombinedBounds,
   getGroupHandles,
   getShapeHandles,
+  GRID_SIZE,
   hitTestTopmostShapeAt,
+  shapeBounds,
   shapeLabel,
+  type AlignmentGuide,
   type Bounds,
   type HandleKind,
   type Point,
@@ -29,6 +34,8 @@ import {
   type ShapeType,
 } from './sceneShapes';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
+import { useSnapSettings } from '../editor/snapSettings';
+import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useDraftRecovery } from './useDraftRecovery';
@@ -143,6 +150,20 @@ function EditorWorkspace() {
   // experience stays "composing an animation recipe."
   const [showLogic, setShowLogic] = useState(false);
   const sceneEditor = useSceneEditor(workingCopy, setWorkingCopy);
+  // Issue #78: the client-only snap-to-grid / alignment-guide preference —
+  // see `../editor/snapSettings.ts`'s own doc comment for why this is a
+  // plain external store rather than scene state.
+  const snapSettings = useSnapSettings();
+  // The alignment guide(s) currently in effect for an in-progress single-
+  // shape move gesture, or nulls when nothing is being dragged/snapped —
+  // drives the guide-line overlay below. Cleared on every gesture end
+  // (commit or cancel) and whenever a non-move gesture starts, so no stale
+  // guide line is ever left rendered after pointerup (acceptance
+  // criterion).
+  const [activeGuides, setActiveGuides] = useState<{
+    x: AlignmentGuide | null;
+    y: AlignmentGuide | null;
+  }>({ x: null, y: null });
 
   // Task 41: the working/saved distinction, both visual (the status text
   // rendered below) and programmatic (this boolean, which also gates the
@@ -249,6 +270,15 @@ function EditorWorkspace() {
   const sceneEditorRef = useRef(sceneEditor);
   sceneEditorRef.current = sceneEditor;
   const canvasSizeRef = useRef({ width: 800, height: 600 });
+  // Issue #78: same "latest value" pattern as `sceneEditorRef` above, so
+  // the window-level drag listeners always read whichever snap preference
+  // is current *right now* rather than whatever it was when the gesture
+  // began. This is also exactly how "toggling mid-gesture" is decided: a
+  // gesture already in progress simply picks up the new setting on its
+  // very next pointermove frame — the acceptance criterion explicitly
+  // allows either behavior here, and this is the simplest one to build.
+  const snapSettingsRef = useRef(snapSettings);
+  snapSettingsRef.current = snapSettings;
   // In-progress drag gesture, or null when nothing is being dragged. Not
   // React state: updating it never needs to trigger a re-render itself —
   // the live shape mutation each pointermove performs (via
@@ -301,6 +331,30 @@ function EditorWorkspace() {
         return;
       }
       const updated = applyShapeDrag(drag.kind, drag.startShape, drag.startPointer, pointer);
+      const snap = snapSettingsRef.current;
+      // Issue #78: snapping only applies to the single-shape gesture path
+      // (already guaranteed here — `drag.mode === 'group'` returned above)
+      // and only to move/box-resize, never rotate (no grid/alignment
+      // analogue for rotation exists in this task's scope).
+      if (drag.kind === 'move' && (snap.gridEnabled || snap.guidesEnabled)) {
+        const siblingBounds = sceneEditorRef.current.shapes
+          .filter((s) => s.id !== drag.startShape.id)
+          .map((s) => shapeBounds(s));
+        const result = applyMoveSnap(updated, siblingBounds, {
+          gridEnabled: snap.gridEnabled,
+          guidesEnabled: snap.guidesEnabled,
+        });
+        setActiveGuides(result.guides);
+        sceneEditorRef.current.updateSelectedTransform(result.shape);
+        return;
+      }
+      if (drag.kind === 'resize' && snap.gridEnabled) {
+        const snapped = applyResizeSnap(drag.startShape, drag.startPointer, updated, {
+          gridEnabled: true,
+        });
+        sceneEditorRef.current.updateSelectedTransform(snapped);
+        return;
+      }
       sceneEditorRef.current.updateSelectedTransform(updated);
     };
     const onUp = (event: PointerEvent) => {
@@ -308,6 +362,7 @@ function EditorWorkspace() {
       event.preventDefault();
       stopDragListening();
       dragRef.current = null;
+      setActiveGuides({ x: null, y: null });
       sceneEditorRef.current.commitTransform();
     };
     const onKey = (event: KeyboardEvent) => {
@@ -315,6 +370,7 @@ function EditorWorkspace() {
       event.preventDefault();
       stopDragListening();
       dragRef.current = null;
+      setActiveGuides({ x: null, y: null });
       sceneEditorRef.current.cancelTransform();
     };
     function stopDragListening() {
@@ -467,6 +523,16 @@ function EditorWorkspace() {
   const canvasWidth = canvas.width ?? 800;
   const canvasHeight = canvas.height ?? 600;
   canvasSizeRef.current = { width: canvasWidth, height: canvasHeight };
+
+  // Issue #78: the visible grid-line overlay's coordinates, at the fixed
+  // 20-scene-unit spacing — only computed when grid snapping is on (the
+  // "when disabled, no grid overlay renders" acceptance criterion).
+  const gridLinesX: number[] = [];
+  const gridLinesY: number[] = [];
+  if (snapSettings.gridEnabled) {
+    for (let x = 0; x <= canvasWidth; x += GRID_SIZE) gridLinesX.push(x);
+    for (let y = 0; y <= canvasHeight; y += GRID_SIZE) gridLinesY.push(y);
+  }
 
   function panelHidden(panel: EditorPanelName): boolean {
     return isNarrow && activePanel !== panel;
@@ -654,6 +720,11 @@ function EditorWorkspace() {
             ))}
           </div>
 
+          {/* Issue #78: the client-only snap-to-grid / alignment-guide
+              toggle — editor-specific, so it lives here in the Tools
+              panel (not the global header, unlike Reduce motion). */}
+          <SnapPreferenceControl />
+
           <div role="group" aria-label="Edit shape" className="editor-tool-group">
             <button
               type="button"
@@ -767,6 +838,82 @@ function EditorWorkspace() {
               aria-hidden="true"
               style={{ position: 'absolute', inset: 0, zIndex: -1 }}
             />
+            {/* Issue #78: the grid overlay — a visible line at every
+                20-scene-unit grid coordinate, so snapping is never
+                invisible/implicit (acceptance criterion). Rendered as an
+                SVG (not a `p5Adapter.ts` draw call — that file stays
+                untouched per the issue's own constraint) sized/viewBox'd
+                to exactly the logical canvas, so its coordinates line up
+                with shape `transform.x/y` with no separate unit
+                conversion. */}
+            {snapSettings.gridEnabled && (
+              <svg
+                aria-hidden="true"
+                data-testid="editor-snap-grid-overlay"
+                className="editor-snap-grid-overlay"
+                style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+                width={canvasWidth}
+                height={canvasHeight}
+                viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+              >
+                {gridLinesX.map((x) => (
+                  <line
+                    key={`grid-x-${x}`}
+                    className="editor-snap-grid-line"
+                    x1={x}
+                    y1={0}
+                    x2={x}
+                    y2={canvasHeight}
+                  />
+                ))}
+                {gridLinesY.map((y) => (
+                  <line
+                    key={`grid-y-${y}`}
+                    className="editor-snap-grid-line"
+                    x1={0}
+                    y1={y}
+                    x2={canvasWidth}
+                    y2={y}
+                  />
+                ))}
+              </svg>
+            )}
+            {/* Issue #78: alignment-guide lines — only rendered for the
+                duration an active single-shape move gesture is actually
+                snapped onto a sibling's edge/center (`activeGuides` is
+                cleared on every gesture end, so nothing stale is ever left
+                behind after pointerup). */}
+            {(activeGuides.x || activeGuides.y) && (
+              <svg
+                aria-hidden="true"
+                className="editor-snap-guide-overlay"
+                style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+                width={canvasWidth}
+                height={canvasHeight}
+                viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+              >
+                {activeGuides.x && (
+                  <line
+                    data-testid="snap-guide-x"
+                    className="editor-snap-guide-line"
+                    x1={activeGuides.x.value}
+                    y1={0}
+                    x2={activeGuides.x.value}
+                    y2={canvasHeight}
+                  />
+                )}
+                {activeGuides.y && (
+                  <line
+                    data-testid="snap-guide-y"
+                    className="editor-snap-guide-line"
+                    x1={0}
+                    y1={activeGuides.y.value}
+                    x2={canvasWidth}
+                    y2={activeGuides.y.value}
+                  />
+                )}
+              </svg>
+            )}
             {sceneEditor.shapes.map((shape, index) => (
               <div
                 key={shape.id}

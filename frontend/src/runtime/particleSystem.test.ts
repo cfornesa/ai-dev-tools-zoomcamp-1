@@ -11,6 +11,7 @@ import {
   type EmitterConfig,
   type ParticleTickInput,
 } from './particleSystem';
+import { NEUTRAL_PHYSICS_FORCE } from './physicsForces';
 import type { TickResult } from './behaviorRuntime';
 import { baseScene, particleEmitterShape, transform } from '../render/testSceneFixtures';
 
@@ -24,6 +25,7 @@ function emitter(overrides: Partial<EmitterConfig> = {}): EmitterConfig {
     palette: ['#ff0000', '#00ff00'],
     x: 0,
     y: 0,
+    physics: NEUTRAL_PHYSICS_FORCE,
     ...overrides,
   };
 }
@@ -58,6 +60,7 @@ describe('emittersFromScene', () => {
         palette: ['#111111', '#222222'],
         x: 5,
         y: 7,
+        physics: NEUTRAL_PHYSICS_FORCE,
       },
     ]);
   });
@@ -70,7 +73,17 @@ describe('emittersFromScene', () => {
     const scene = baseScene({ shapes: [{ id: 'e1', type: 'particleEmitter' }] });
     expect(() => emittersFromScene(scene)).not.toThrow();
     expect(emittersFromScene(scene)).toEqual([
-      { id: 'e1', rate: 0, size: 0, lifespan: 0, speed: 0, palette: [], x: 0, y: 0 },
+      {
+        id: 'e1',
+        rate: 0,
+        size: 0,
+        lifespan: 0,
+        speed: 0,
+        palette: [],
+        x: 0,
+        y: 0,
+        physics: NEUTRAL_PHYSICS_FORCE,
+      },
     ]);
   });
 });
@@ -431,5 +444,138 @@ describe('deriveParticleTickInput', () => {
 
   it('passes the degraded flag through unchanged', () => {
     expect(deriveParticleTickInput(tickResult({ degraded: true })).degraded).toBe(true);
+  });
+});
+
+describe('physics forces (Task 61)', () => {
+  it('a neutral (zero) physics config behaves identically to no physics at all', () => {
+    const withZeroPhysics = createParticleSystem([
+      emitter({
+        speed: 0,
+        rate: 1000,
+        lifespan: 5,
+        physics: { gravity: 0, drag: 0, forceX: 0, forceY: 0 },
+      }),
+    ]);
+    const withoutPhysics = createParticleSystem([emitter({ speed: 0, rate: 1000, lifespan: 5 })]);
+    withZeroPhysics.tick(tick(0));
+    withoutPhysics.tick(tick(0));
+    const a = withZeroPhysics.tick(tick(1000));
+    const b = withoutPhysics.tick(tick(1000));
+    expect(a.map((p) => ({ x: p.x, y: p.y }))).toEqual(b.map((p) => ({ x: p.x, y: p.y })));
+  });
+
+  it('gravity accelerates particles downward (+y) over time', () => {
+    // rate: 0 + a single burst so exactly one batch of particles spawns
+    // (all with speed: 0, y: 0) and no further spawning muddies later
+    // ticks' "has this particle moved" check with freshly-spawned,
+    // still-at-origin particles.
+    const system = createParticleSystem([
+      emitter({
+        speed: 0,
+        rate: 0,
+        lifespan: 5,
+        physics: { gravity: 5, drag: 0, forceX: 0, forceY: 0 },
+      }),
+    ]);
+    system.tick(tick(0, { burstTriggered: true }));
+    expect(system.getParticles().length).toBeGreaterThan(0);
+    // Particles spawned during a tick start unmoved (no elapsed interval
+    // yet, matching the "speed: 0" precedent test) — a subsequent tick is
+    // needed for force integration + movement to actually apply.
+    const afterOneSecond = system.tick(tick(1000));
+    expect(afterOneSecond.length).toBeGreaterThan(0);
+    for (const p of afterOneSecond) expect(p.y).toBeGreaterThan(0);
+  });
+
+  it('a maximum-magnitude force never produces a velocity above MAX_VELOCITY_MAGNITUDE', () => {
+    const system = createParticleSystem(
+      [
+        emitter({
+          speed: 0,
+          rate: 1,
+          lifespan: 100,
+          physics: { gravity: 10, drag: 0, forceX: 10, forceY: 10 },
+        }),
+      ],
+      { maxSpawnPerTickPerEmitter: 1 },
+    );
+    system.tick(tick(0));
+    const particles = system.tick(tick(500000)); // huge dt to try to force an over-cap velocity
+    for (const p of particles) {
+      const mag = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      expect(mag).toBeLessThanOrEqual(2000 + 1e-6); // MAX_VELOCITY_MAGNITUDE
+    }
+  });
+
+  it('a non-finite physics field falls back to a neutral (safe, no-op) force rather than corrupting particles', () => {
+    const scene = baseScene({
+      shapes: [
+        particleEmitterShape({
+          id: 'e1',
+          speed: 0,
+          rate: 1000,
+          lifespan: 5,
+          physics: { gravity: NaN, drag: Infinity, forceX: -Infinity, forceY: NaN },
+        }),
+      ],
+    });
+    const system = createParticleSystem(scene);
+    system.tick(tick(0));
+    const particles = system.tick(tick(1000));
+    expect(particles.length).toBeGreaterThan(0);
+    for (const p of particles) {
+      expect(Number.isFinite(p.x)).toBe(true);
+      expect(Number.isFinite(p.y)).toBe(true);
+      expect(Number.isFinite(p.vx)).toBe(true);
+      expect(Number.isFinite(p.vy)).toBe(true);
+    }
+  });
+
+  it('overload degradation: a degraded tick skips force integration (velocity does not change that tick)', () => {
+    const system = createParticleSystem([
+      emitter({
+        speed: 10,
+        rate: 0,
+        lifespan: 100,
+        physics: { gravity: 50, drag: 0, forceX: 0, forceY: 0 },
+      }),
+    ]);
+    system.tick(tick(0, { burstTriggered: true }));
+    const before = system.getParticles().map((p) => ({ vx: p.vx, vy: p.vy }));
+
+    const degraded = system.tick(tick(1000, { degraded: true }));
+    const afterDegraded = degraded.map((p) => ({ vx: p.vx, vy: p.vy }));
+    expect(afterDegraded).toEqual(before);
+
+    // Once no longer degraded, force integration resumes normally.
+    const recovered = system.tick(tick(2000, { degraded: false }));
+    expect(recovered.some((p, i) => p.vy !== before[i].vy)).toBe(true);
+  });
+
+  it('determinism: the same seed/timestamps/inputs produce equivalent physics-integrated state', () => {
+    function run() {
+      const system = createParticleSystem(
+        [
+          emitter({
+            id: 'e1',
+            speed: 20,
+            rate: 20,
+            lifespan: 2,
+            physics: { gravity: 3, drag: 0.1, forceX: 1, forceY: -1 },
+          }),
+        ],
+        {},
+        { seed: 7, enabled: true },
+      );
+      let t = 0;
+      let last: unknown = null;
+      for (let i = 0; i < 10; i += 1) {
+        t += 100;
+        last = system.tick(tick(t));
+      }
+      return last;
+    }
+    expect(run()).toEqual(run());
   });
 });

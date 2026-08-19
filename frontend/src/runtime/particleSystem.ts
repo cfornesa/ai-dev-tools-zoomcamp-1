@@ -183,19 +183,34 @@
  * from being read as a giant elapsed interval and causing a catch-up
  * emission spike the instant the scene resumes.
  *
- * ## Out of scope (issue #39's "Out of scope")
+ * ## Physics forces (Task 61)
  *
- * No trails (Task 61) and no physics forces (Task 61) — this module never
- * reads a `particleEmitter` shape's `physics` field
- * (`schema/scene.schema.json`'s `$defs.physicsForce`: `gravity`/`drag`/
- * `forceX`/`forceY`) at all. A spawned particle moves in a perfectly
- * straight line at its initial velocity for its entire lifespan — plain
- * constant-velocity integration (`x += vx * dtSeconds`), not a physics
- * simulation.
+ * As of Task 61, this module *does* read a `particleEmitter` shape's
+ * `physics` field (`schema/scene.schema.json`'s `$defs.physicsForce`:
+ * `gravity`/`drag`/`forceX`/`forceY`) — see `emittersFromScene`, which now
+ * extracts a sanitized, always-finite `PhysicsForceConfig` (see
+ * `physicsForces.ts`, `sanitizePhysicsForce`) per emitter, defaulting to
+ * `NEUTRAL_PHYSICS_FORCE` (all-zero, a no-op) when the field is absent —
+ * so a scene with no `physics` configured behaves exactly as it did
+ * before this task: a spawned particle moves in a perfectly straight line
+ * at its initial velocity. When `physics` *is* configured,
+ * `expireAndMove` calls `physicsForces.ts`'s pure `integrateVelocity`
+ * once per live particle, per tick, before applying that tick's positional
+ * move — see that module's doc comment for the exact allowlisted force
+ * types, clamped limits, and non-finite-input handling. On a degraded
+ * tick (see below), force integration is skipped entirely (particles keep
+ * their last-known velocity) — the same "skip new work under overload"
+ * policy this module already applies to emission.
  */
 import type { SceneDocument } from '../api/projects';
 import { LIMITS } from '../validation/scene';
 import type { TickResult } from './behaviorRuntime';
+import {
+  integrateVelocity,
+  sanitizePhysicsForce,
+  NEUTRAL_PHYSICS_FORCE,
+  type PhysicsForceConfig,
+} from './physicsForces';
 
 // --- Numeric policy (see module doc comment) ----------------------------
 
@@ -230,9 +245,10 @@ export function createSeededRandom(seed: number): () => number {
 /** One `particleEmitter` shape's configuration, reduced to exactly the
  * fields this module needs — `rate`/`size`/`lifespan`/`speed`/`palette`
  * (`schema/scene.schema.json`'s `particleEmitter` shape case, Task 7) plus
- * its spawn origin (`transform.x`/`transform.y`). Deliberately excludes
- * `physics` (Task 61, out of scope) and every other shape field
- * (`style`, `layerId`, `groupId`, ...) — this module never reads them. */
+ * its spawn origin (`transform.x`/`transform.y`) and its sanitized
+ * `physics` field (Task 61 — see `physicsForces.ts`). Deliberately
+ * excludes every other shape field (`style`, `layerId`, `groupId`,
+ * `trail`, ...) — this module never reads them. */
 export type EmitterConfig = {
   id: string;
   rate: number;
@@ -242,6 +258,7 @@ export type EmitterConfig = {
   palette: string[];
   x: number;
   y: number;
+  physics: PhysicsForceConfig;
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -277,6 +294,7 @@ export function emittersFromScene(scene: SceneDocument): EmitterConfig[] {
         palette: Array.isArray(s.palette) ? s.palette.filter((c) => typeof c === 'string') : [],
         x: numberOr(transform.x, 0),
         y: numberOr(transform.y, 0),
+        physics: 'physics' in s ? sanitizePhysicsForce(s.physics) : NEUTRAL_PHYSICS_FORCE,
       };
     });
 }
@@ -368,6 +386,7 @@ export function createParticleSystem(
   const emitters: EmitterConfig[] = Array.isArray(emittersOrScene)
     ? emittersOrScene
     : emittersFromScene(emittersOrScene);
+  const emittersById = new Map(emitters.map((e) => [e.id, e]));
 
   const maxTotalLiveParticles = options.maxTotalLiveParticles ?? MAX_TOTAL_LIVE_PARTICLES;
   const maxLiveParticlesPerEmitter =
@@ -436,19 +455,37 @@ export function createParticleSystem(
     liveCountByEmitter.set(emitter.id, liveFor(emitter.id) + 1);
   }
 
-  function expireAndMove(timestamp: number, dtSecondsByEmitter: Map<string, number>): void {
+  function expireAndMove(
+    timestamp: number,
+    dtSecondsByEmitter: Map<string, number>,
+    applyPhysics: boolean,
+  ): void {
     const kept: Particle[] = [];
     const nextCounts = new Map<string, number>();
     for (const particle of particles) {
       const age = timestamp - particle.spawnedAt;
       if (age >= particle.lifespanMs) continue; // expired: drop, no cleanup leak.
       const dtSeconds = dtSecondsByEmitter.get(particle.emitterId) ?? 0;
+      let vx = particle.vx;
+      let vy = particle.vy;
+      // Task 61: integrate this emitter's allowlisted physics forces onto
+      // velocity before applying this tick's positional move. Skipped
+      // entirely on a degraded tick (applyPhysics: false) — see the module
+      // doc comment's "Physics forces" section.
+      if (applyPhysics && dtSeconds > 0) {
+        const force = emittersById.get(particle.emitterId)?.physics ?? NEUTRAL_PHYSICS_FORCE;
+        const integrated = integrateVelocity(vx, vy, force, dtSeconds);
+        vx = integrated.vx;
+        vy = integrated.vy;
+      }
       const moved: Particle =
         dtSeconds > 0
           ? {
               ...particle,
-              x: particle.x + particle.vx * dtSeconds,
-              y: particle.y + particle.vy * dtSeconds,
+              vx,
+              vy,
+              x: particle.x + vx * dtSeconds,
+              y: particle.y + vy * dtSeconds,
             }
           : particle;
       kept.push(moved);
@@ -470,7 +507,7 @@ export function createParticleSystem(
       dtSecondsByEmitter.set(emitter.id, dtMs / 1000);
     }
 
-    expireAndMove(input.timestamp, dtSecondsByEmitter);
+    expireAndMove(input.timestamp, dtSecondsByEmitter, !input.degraded);
 
     if (input.degraded) {
       // Reduced-quality degradation: skip all new emission this tick, but

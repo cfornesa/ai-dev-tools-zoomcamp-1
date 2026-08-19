@@ -687,6 +687,13 @@ export function buildStandaloneRuntimeScript(): string {
       });
 
       var gestureGroup = el("div", { role: "radiogroup", "aria-label": "Gesture state" });
+      var gestureButtons = [];
+      function refreshGestureChecked() {
+        var current = demo.getManualState().gesture;
+        gestureButtons.forEach(function (entry) {
+          entry.btn.setAttribute("aria-checked", entry.value === current ? "true" : "false");
+        });
+      }
       [
         { value: null, label: "None" },
         { value: "openPalm", label: "Open palm" },
@@ -695,15 +702,18 @@ export function buildStandaloneRuntimeScript(): string {
         { value: "thumbsUp", label: "Thumbs up" },
         { value: "victory", label: "Victory" },
       ].forEach(function (option) {
-        var btn = el("button", { type: "button" });
+        var btn = el("button", { type: "button", role: "radio", "aria-checked": "false" });
         btn.textContent = option.label;
         btn.addEventListener("click", function () {
           demo.setGesture(option.value);
+          refreshGestureChecked();
           refreshStatus();
         });
+        gestureButtons.push({ value: option.value, btn: btn });
         gestureGroup.appendChild(btn);
       });
       manualPanel.appendChild(gestureGroup);
+      refreshGestureChecked();
 
       var pinchStartBtn = el("button", { type: "button", text: "Pinch start" });
       var pinchEndBtn = el("button", { type: "button", text: "Pinch end" });

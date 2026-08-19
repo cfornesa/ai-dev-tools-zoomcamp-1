@@ -221,4 +221,85 @@ describe('exported runtime script: functional smoke test in a jsdom sandbox', ()
     const last = recordedCircles[recordedCircles.length - 1];
     expect(last.x).toBeGreaterThan(0);
   });
+
+  /**
+   * Task 63 (issue #63): the "Gesture state" `role="radiogroup"` in the
+   * exported runtime's demo controls (`standaloneRuntimeSource.ts`) never
+   * put `role="radio"`/`aria-checked` on its own option buttons, unlike
+   * the sibling "Demo input mode" radiogroup right next to it and unlike
+   * the in-app `DemoControlsPanel.tsx` this runtime mirrors — a screen
+   * reader user had no way to tell which gesture (if any) was currently
+   * selected. Runs the real exported runtime script, exactly like the
+   * test above, rather than asserting on the source string.
+   */
+  it('marks the currently selected gesture option with role="radio"/aria-checked', () => {
+    const result = generateHtmlExport({
+      scene: sceneWithFollowHandBinding(),
+      title: 'Gesture Radio Smoke Test',
+      description: 'Exercises the gesture radiogroup ARIA state end to end.',
+      interactionMode: 'demo',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const doc = new DOMParser().parseFromString(result.html, 'text/html');
+    document.body.innerHTML = '';
+    Array.from(doc.body.children).forEach((node) => {
+      if (node.tagName.toLowerCase() !== 'script') {
+        document.body.appendChild(node.cloneNode(true));
+      }
+    });
+    const sceneDataScript = doc.getElementById('scene-data');
+    const configScript = doc.getElementById('export-config');
+    const sceneScriptEl = document.createElement('script');
+    sceneScriptEl.type = 'application/json';
+    sceneScriptEl.id = 'scene-data';
+    sceneScriptEl.textContent = sceneDataScript?.textContent ?? '';
+    document.body.appendChild(sceneScriptEl);
+    const configScriptEl = document.createElement('script');
+    configScriptEl.type = 'application/json';
+    configScriptEl.id = 'export-config';
+    configScriptEl.textContent = configScript?.textContent ?? '';
+    document.body.appendChild(configScriptEl);
+
+    installFakeP5([]);
+    const runtimeScripts = Array.from(doc.querySelectorAll('script')).filter(
+      (s) => !s.id && !s.hasAttribute('src'),
+    );
+    const runtimeSource = runtimeScripts[0].textContent ?? '';
+    // eslint-disable-next-line no-eval
+    (0, eval)(runtimeSource);
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    const gestureGroup = document.querySelector('[aria-label="Gesture state"]');
+    expect(gestureGroup).not.toBeNull();
+    const gestureButtons = Array.from(gestureGroup?.querySelectorAll('button') ?? []);
+    expect(gestureButtons.length).toBeGreaterThan(0);
+    // Every option is a properly-marked radio, and exactly one ("None",
+    // the default) starts checked.
+    gestureButtons.forEach((btn) => expect(btn.getAttribute('role')).toBe('radio'));
+    const checkedBefore = gestureButtons.filter(
+      (btn) => btn.getAttribute('aria-checked') === 'true',
+    );
+    expect(checkedBefore).toHaveLength(1);
+    expect(checkedBefore[0].textContent).toBe('None');
+
+    // setGesture is a no-op while no hand is "present" (matching
+    // `DemoControlsPanel.tsx`'s own manual-provider rule) — press "Hand
+    // present" first, exactly like the sibling test above.
+    const presentButton = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Hand present',
+    );
+    presentButton?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    const openPalmButton = gestureButtons.find((btn) => btn.textContent === 'Open palm');
+    expect(openPalmButton).toBeDefined();
+    openPalmButton?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    const checkedAfter = gestureButtons.filter(
+      (btn) => btn.getAttribute('aria-checked') === 'true',
+    );
+    expect(checkedAfter).toHaveLength(1);
+    expect(checkedAfter[0]).toBe(openPalmButton);
+  });
 });

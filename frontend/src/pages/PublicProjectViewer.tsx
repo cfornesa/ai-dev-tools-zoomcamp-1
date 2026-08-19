@@ -240,6 +240,7 @@ function PublicProjectViewer() {
           )}
           <div
             data-testid="public-scene-canvas"
+            role="group"
             aria-label="Scene canvas"
             className="editor-scene-canvas"
             style={{ position: 'relative', width: 800, height: 600, maxWidth: '100%' }}

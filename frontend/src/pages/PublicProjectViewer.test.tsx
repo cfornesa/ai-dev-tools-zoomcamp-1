@@ -89,6 +89,21 @@ describe('PublicProjectViewer load states', () => {
     expect(mockedGetPublicProject).toHaveBeenCalledWith('p1');
   });
 
+  // Task 63 (issue #63): the scene-canvas div had `aria-label` with no
+  // valid role -- the same `aria-prohibited-attr` axe violation already
+  // fixed in `EditorWorkspace.tsx`'s identical canvas container (issue
+  // #64). `role="group"` makes the `aria-label` valid without changing
+  // the element's rendered behavior.
+  it('gives the scene-canvas container a valid role for its aria-label', async () => {
+    mockedGetPublicProject.mockResolvedValue(basePublicProject());
+
+    renderViewer();
+
+    const canvas = await screen.findByTestId('public-scene-canvas');
+    expect(canvas).toHaveAttribute('role', 'group');
+    expect(canvas).toHaveAccessibleName('Scene canvas');
+  });
+
   it('shows a safe, private-metadata-free message for a 404 (never-existed or not public)', async () => {
     mockedGetPublicProject.mockRejectedValue(new ApiError(404, null));
 

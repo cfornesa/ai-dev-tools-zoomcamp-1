@@ -317,6 +317,39 @@ describe('soft-delete', () => {
     await waitFor(() => expect(mockedDeleteSceneVersion).toHaveBeenCalledWith('p1', 1));
   });
 
+  it('moves focus into the delete-confirm dialog on open, and restores it to the trigger on cancel or Escape', async () => {
+    mockedListSceneVersions.mockResolvedValue([
+      baseSummary({ id: 1, sequence: 1 }),
+      baseSummary({ id: 2, sequence: 2 }),
+    ]);
+    mockedGetProject.mockResolvedValue(baseProject({ current_version: 2 }));
+    mockedGetSceneVersion.mockResolvedValue(baseVersion({ id: 2, sequence: 2 }));
+    renderWorkspace();
+    await screen.findByRole('region', { name: 'Tools' });
+
+    const user = userEvent.setup();
+    const list = await screen.findByRole('list', { name: 'Version history' });
+    const eligibleItem = within(list).getAllByRole('listitem')[0];
+    const deleteTrigger = within(eligibleItem).getByRole('button', { name: 'Delete' });
+
+    await user.click(deleteTrigger);
+    let dialog = await screen.findByRole('alertdialog', { name: /Delete version 1/ });
+    expect(dialog).toHaveFocus();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(deleteTrigger).toHaveFocus();
+
+    // Escape behaves the same as Cancel: dismisses without deleting, and
+    // restores focus to the button that opened it.
+    await user.click(deleteTrigger);
+    dialog = await screen.findByRole('alertdialog', { name: /Delete version 1/ });
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(deleteTrigger).toHaveFocus();
+    expect(mockedDeleteSceneVersion).not.toHaveBeenCalled();
+  });
+
   it('reports a conflict error, defensively, if the backend rejects deleting a version the UI thought was eligible', async () => {
     mockedListSceneVersions.mockResolvedValue([
       baseSummary({ id: 1, sequence: 1 }),

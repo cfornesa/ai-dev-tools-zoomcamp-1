@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import type { RecoveryCandidate } from './useDraftRecovery';
 
 /**
@@ -34,6 +35,15 @@ function DraftRecoveryPrompt({
   onCancel,
 }: DraftRecoveryPromptProps) {
   const [isDiscarding, setIsDiscarding] = useState(false);
+  // Task 64 (issue #64): this dialog fully replaces `EditorWorkspace`'s
+  // rendered content while it's shown (see that file's own render-branch
+  // comment) rather than layering over it, so there's no "trigger" element
+  // to return focus to on close the way the panel-level confirmation
+  // dialogs have. Focus-into-dialog on mount still matters here — without
+  // it, a screen reader user lands on the generic document body instead of
+  // immediately hearing "Recover unsaved work?" — and Escape is still
+  // mapped to the same non-destructive action as the Cancel button.
+  const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
 
   async function handleDiscard() {
     if (isDiscarding) return;
@@ -43,6 +53,9 @@ function DraftRecoveryPrompt({
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
       role="alertdialog"
       aria-labelledby="draft-recovery-title"
       aria-describedby="draft-recovery-summary"

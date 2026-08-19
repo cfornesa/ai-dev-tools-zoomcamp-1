@@ -236,4 +236,44 @@ describe('behavior cards panel', () => {
 
     expect(screen.getByText('No behavior cards yet.')).toBeInTheDocument();
   });
+
+  it('moves focus into the conflict dialog on open and restores it to the trigger on cancel', async () => {
+    const user = userEvent.setup();
+    await loadReadyWorkspace();
+
+    const addButton = screen.getByRole('button', { name: 'Add card' });
+    await user.click(addButton);
+    await user.selectOptions(screen.getByLabelText('Hand signal'), 'Palm center');
+    await user.click(addButton);
+
+    const dialog = await screen.findByRole('alertdialog', { name: /already has a binding/i });
+    expect(dialog).toHaveFocus();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(addButton).toHaveFocus();
+    // Cancel didn't replace the binding — still only the original card.
+    expect(
+      within(screen.getByRole('list', { name: 'Behavior card list' })).getAllByRole('listitem'),
+    ).toHaveLength(1);
+  });
+
+  it('dismisses the conflict dialog on Escape without replacing the binding, and restores focus', async () => {
+    const user = userEvent.setup();
+    await loadReadyWorkspace();
+
+    const addButton = screen.getByRole('button', { name: 'Add card' });
+    await user.click(addButton);
+    await user.selectOptions(screen.getByLabelText('Hand signal'), 'Palm center');
+    await user.click(addButton);
+    await screen.findByRole('alertdialog', { name: /already has a binding/i });
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(addButton).toHaveFocus();
+    expect(
+      within(screen.getByRole('list', { name: 'Behavior card list' })).getAllByRole('listitem'),
+    ).toHaveLength(1);
+  });
 });

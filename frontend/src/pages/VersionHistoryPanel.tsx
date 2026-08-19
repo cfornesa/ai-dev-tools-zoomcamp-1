@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 
+import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import type { Project, SceneDocument, SceneVersion, SceneVersionSummary } from '../api/projects';
 import { useVersionHistory, type VersionActionError } from './useVersionHistory';
 
@@ -38,6 +39,48 @@ function ActionErrorMessage({ error, testId }: { error: VersionActionError; test
           <a href="/accounts/login/">Sign in again</a>
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Task 64 (issue #64): the "delete this version?" confirmation, as its own
+ * component so `useAlertDialogFocus` (focus-into-dialog on open, Escape
+ * cancels rather than deleting, focus returns to the trigger on close)
+ * runs for exactly this dialog's own mount/unmount lifecycle — see that
+ * hook's doc comment. One of these mounts per row while its own version's
+ * delete is pending, so each gets its own independent hook instance.
+ */
+function VersionDeleteConfirm({
+  versionId,
+  sequence,
+  onDelete,
+  onCancel,
+}: {
+  versionId: number;
+  sequence: number;
+  onDelete: () => void;
+  onCancel: () => void;
+}) {
+  const titleId = `version-delete-confirm-title-${versionId}`;
+  const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
+  return (
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      role="alertdialog"
+      aria-labelledby={titleId}
+      className="version-delete-confirm"
+    >
+      <h5 id={titleId}>Delete version {sequence}?</h5>
+      <p>This removes it from history. This cannot be undone from here.</p>
+      <button type="button" onClick={onDelete}>
+        Delete version
+      </button>
+      <button type="button" onClick={onCancel}>
+        Cancel
+      </button>
     </div>
   );
 }
@@ -219,22 +262,12 @@ function VersionHistoryPanel({
                 </div>
 
                 {pendingDeleteId === version.id && (
-                  <div
-                    role="alertdialog"
-                    aria-labelledby={`version-delete-confirm-title-${version.id}`}
-                    className="version-delete-confirm"
-                  >
-                    <h5 id={`version-delete-confirm-title-${version.id}`}>
-                      Delete version {version.sequence}?
-                    </h5>
-                    <p>This removes it from history. This cannot be undone from here.</p>
-                    <button type="button" onClick={() => handleConfirmDelete(version.id)}>
-                      Delete version
-                    </button>
-                    <button type="button" onClick={() => setPendingDeleteId(null)}>
-                      Cancel
-                    </button>
-                  </div>
+                  <VersionDeleteConfirm
+                    versionId={version.id}
+                    sequence={version.sequence}
+                    onDelete={() => handleConfirmDelete(version.id)}
+                    onCancel={() => setPendingDeleteId(null)}
+                  />
                 )}
 
                 {restoreState.error && restoreState.versionId === version.id && (

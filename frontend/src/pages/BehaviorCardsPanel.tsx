@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import {
   AXIS_OPTIONS,
   CARD_TYPE_LABELS,
@@ -28,6 +29,44 @@ type CardTypeName = BehaviorCard['type'];
 const CARD_TYPE_OPTIONS: CardTypeName[] = ['followHand', 'reactToPinch', 'pulse', 'emitParticles'];
 
 type TargetOption = { id: string; scope: TargetScope; label: string };
+
+/**
+ * Task 64 (issue #64): the "target already has a binding" conflict prompt,
+ * as its own component so `useAlertDialogFocus` (focus-into-dialog on
+ * open, Escape cancels rather than confirming the replacement, focus
+ * returns to the trigger on close) runs for exactly this dialog's own
+ * mount/unmount lifecycle — see that hook's doc comment.
+ */
+function CardConflictDialog({
+  description,
+  onReplace,
+  onCancel,
+}: {
+  description: string;
+  onReplace: () => void;
+  onCancel: () => void;
+}) {
+  const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
+  return (
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      role="alertdialog"
+      aria-labelledby="behavior-card-conflict-title"
+      className="behavior-card-conflict"
+    >
+      <h5 id="behavior-card-conflict-title">Target already has a binding</h5>
+      <p>{description} already controls this channel. Adding this card will replace it.</p>
+      <button type="button" onClick={onReplace}>
+        Replace existing binding
+      </button>
+      <button type="button" onClick={onCancel}>
+        Cancel
+      </button>
+    </div>
+  );
+}
 
 function targetOptionsFor(sceneEditor: SceneEditor): TargetOption[] {
   return [
@@ -310,23 +349,11 @@ function BehaviorCardsPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
       </form>
 
       {sceneEditor.cardConflict && (
-        <div
-          role="alertdialog"
-          aria-labelledby="behavior-card-conflict-title"
-          className="behavior-card-conflict"
-        >
-          <h5 id="behavior-card-conflict-title">Target already has a binding</h5>
-          <p>
-            {describeCard(sceneEditor.cardConflict.existingCard)} already controls this channel.
-            Adding this card will replace it.
-          </p>
-          <button type="button" onClick={() => sceneEditor.confirmReplaceCard()}>
-            Replace existing binding
-          </button>
-          <button type="button" onClick={() => sceneEditor.cancelCardConflict()}>
-            Cancel
-          </button>
-        </div>
+        <CardConflictDialog
+          description={describeCard(sceneEditor.cardConflict.existingCard)}
+          onReplace={() => sceneEditor.confirmReplaceCard()}
+          onCancel={() => sceneEditor.cancelCardConflict()}
+        />
       )}
 
       {sceneEditor.cardError && (

@@ -285,4 +285,46 @@ describe('EditorWorkspace keyboard accessibility', () => {
     await user.tab({ shift: true });
     expect(screen.getByRole('tab', { name: 'Preview' })).toHaveFocus();
   });
+
+  it('moves focus into the exit-without-saving dialog on open and restores it to the trigger on cancel', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    setViewportWidth(1024);
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('region', { name: 'Tools' });
+
+    const trigger = screen.getByRole('button', { name: 'Exit without saving' });
+    trigger.focus();
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole('alertdialog', { name: 'Exit without saving?' });
+    expect(dialog).toHaveFocus();
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('dismisses the exit-without-saving dialog on Escape without exiting, and restores focus', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    setViewportWidth(1024);
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('region', { name: 'Tools' });
+
+    const trigger = screen.getByRole('button', { name: 'Exit without saving' });
+    await user.click(trigger);
+    await screen.findByRole('alertdialog', { name: 'Exit without saving?' });
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    // Escape cancelled rather than confirmed the exit — still on this page.
+    expect(screen.getByRole('region', { name: 'Tools' })).toBeInTheDocument();
+  });
 });

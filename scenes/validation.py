@@ -13,6 +13,7 @@ client-side validation alone.
 """
 
 import json
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,12 @@ with (SCHEMA_DIR / "scene.schema.json").open() as _f:
 with (SCHEMA_DIR / "limits.json").open() as _f:
     _raw_limits: dict = json.load(_f)
 LIMITS: dict[str, int] = {k: v for k, v in _raw_limits.items() if not k.startswith("$")}
+
+with (SCHEMA_DIR / "node_types.json").open() as _f:
+    _raw_node_types: dict = json.load(_f)
+ALLOWED_NODE_TYPES_BY_FAMILY: dict[str, list[str]] = {
+    k: v for k, v in _raw_node_types.items() if not k.startswith("$")
+}
 
 _STRUCTURAL_VALIDATOR = Draft202012Validator(SCENE_SCHEMA)
 
@@ -85,6 +92,85 @@ def _check_structure(data: Any) -> list[SceneValidationError]:
     return errors
 
 
+def _check_non_finite_numbers(data: Any, path: str = "$") -> list[SceneValidationError]:
+    """Reject `NaN`/`Infinity`/`-Infinity` anywhere in the document.
+
+    Python's `json` module accepts these three tokens as a non-standard
+    extension (unlike strict JSON -- `JSON.parse` on the frontend rejects
+    them outright, and so does the browser-side ajv validator once a value
+    reaches it). Plain JSON Schema `minimum`/`maximum` checks do not catch
+    this on their own: comparisons against `NaN` are always `False` in
+    Python (`nan < minimum` and `nan > maximum` both evaluate to `False`),
+    so a `NaN` silently passes range validation entirely, and an unbounded
+    numeric field (e.g. `graphNode.params`, `binding.mapping.inMin`) has no
+    `minimum`/`maximum` to even attempt catching `Infinity` with. This scan
+    is a dedicated, explicit backstop run right after structural
+    validation passes and before any downstream check (referential
+    integrity, complexity/payload limits) that could itself be fooled by a
+    non-finite value silently propagating through, e.g. `sum()` of a
+    `NaN` particle emitter rate short-circuiting the `maxTotalParticleRate`
+    comparison the same way.
+    """
+    errors: list[SceneValidationError] = []
+    if isinstance(data, float) and not math.isfinite(data):
+        errors.append(
+            SceneValidationError(
+                path=path,
+                rule="nonFiniteNumber",
+                message=f"{data!r} is not a finite number; NaN and Infinity are not allowed.",
+            )
+        )
+    elif isinstance(data, dict):
+        for key, value in data.items():
+            errors.extend(_check_non_finite_numbers(value, f"{path}.{key}"))
+    elif isinstance(data, list):
+        for index, value in enumerate(data):
+            errors.extend(_check_non_finite_numbers(value, f"{path}[{index}]"))
+    return errors
+
+
+def _check_forbidden_node_types(data: dict) -> list[SceneValidationError]:
+    """Reject a graph node whose `type` isn't allowlisted for its `family`
+    (`schema/node_types.json`, Task 37/38/40's node registries).
+
+    `scene.schema.json` intentionally only pattern-checks `type` (any
+    short alnum string), not an enum, so new node types can be added
+    without a schema migration -- the allowlist itself previously lived
+    only in `frontend/src/runtime/behaviorRuntime.ts`, enforced at graph
+    *execution* time. That left a gap: a scene carrying a forbidden or
+    outright garbage node `type` (e.g. `"type": "evalCode"` under the
+    `transform` family) still passed schema validation, referential
+    integrity, and complexity limits, so it could be saved as a
+    `SceneVersion`, published to the public gallery, and included in an
+    HTML export -- only the interactive runtime, which is not on any of
+    those paths, would ever refuse to run it. This check closes that gap
+    at the same authoritative choke point every other structural rule
+    goes through. The `output` family is deliberately exempt: it is a
+    reserved, forward-looking family with no allowlisted type yet (see
+    `schema/node_types.json`'s `$emptyFamilyMeansUnenforced`), and
+    `schema/fixtures/valid/feature_rich.json` deliberately carries an
+    `output`/`previewTarget` node to prove the schema doesn't hardcode
+    today's node registry.
+    """
+    errors: list[SceneValidationError] = []
+    nodes = data.get("graph", {}).get("nodes", [])
+    for index, node in enumerate(nodes):
+        family = node.get("family")
+        node_type = node.get("type")
+        allowed = ALLOWED_NODE_TYPES_BY_FAMILY.get(family)
+        if not allowed:
+            continue  # unknown/reserved family: schema enum or the family check above applies
+        if node_type not in allowed:
+            errors.append(
+                SceneValidationError(
+                    path=f"$.graph.nodes[{index}].type",
+                    rule="forbiddenNodeType",
+                    message=f"type {node_type!r} is not allowlisted for family {family!r}.",
+                )
+            )
+    return errors
+
+
 def _duplicate_ids(items: list[dict], collection: str) -> list[SceneValidationError]:
     seen: set[str] = set()
     errors = []
@@ -110,6 +196,51 @@ def _group_cycle(group_id: str, groups_by_id: dict[str, dict], visiting: set[str
         if child_id in groups_by_id and _group_cycle(child_id, groups_by_id, visiting):
             return True
     return False
+
+
+def _find_graph_cycle(node_ids: list[str], edges: list[tuple[str, str]]) -> str | None:
+    """Detect a cycle anywhere in `graph.connections`' directed edges using
+    standard three-color DFS. Mirrors `frontend/src/validation/scene.ts`'s
+    `findCycle` (which `frontend/src/runtime/behaviorRuntime.ts` also
+    uses, via re-export, for its own execution-time check). Previously
+    this check existed ONLY in `behaviorRuntime.ts` -- a scene with a
+    cyclic graph (e.g. node A's output feeding back into node A) passed
+    `validate_scene` cleanly and could be saved, published, and exported;
+    only the interactive runtime, which is not on any of those paths,
+    would ever refuse to run it (Task 72). Returns the id of one node
+    participating in a cycle, or `None` if the graph is acyclic.
+    """
+    adjacency: dict[str, list[str]] = {node_id: [] for node_id in node_ids}
+    for from_id, to_id in edges:
+        if from_id in adjacency:
+            adjacency[from_id].append(to_id)
+
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color: dict[str, int] = {node_id: WHITE for node_id in node_ids}
+    cycle_node: str | None = None
+
+    def visit(node_id: str) -> None:
+        nonlocal cycle_node
+        if cycle_node is not None:
+            return
+        color[node_id] = GRAY
+        for next_id in adjacency.get(node_id, []):
+            if cycle_node is not None:
+                return
+            next_color = color.get(next_id)
+            if next_color == GRAY:
+                cycle_node = next_id
+                return
+            if next_color == WHITE:
+                visit(next_id)
+        color[node_id] = BLACK
+
+    for node_id in node_ids:
+        if cycle_node is not None:
+            break
+        if color.get(node_id) == WHITE:
+            visit(node_id)
+    return cycle_node
 
 
 def _check_references(data: dict) -> list[SceneValidationError]:
@@ -217,6 +348,25 @@ def _check_references(data: dict) -> list[SceneValidationError]:
                     message=f"targetId must be null when targetScope is '{scope}'.",
                 )
             )
+
+    errors += _check_forbidden_node_types(data)
+
+    graph_cycle_node = _find_graph_cycle(
+        list(node_ids),
+        [
+            (c.get("fromNodeId"), c.get("toNodeId"))
+            for c in connections
+            if isinstance(c.get("fromNodeId"), str) and isinstance(c.get("toNodeId"), str)
+        ],
+    )
+    if graph_cycle_node is not None:
+        errors.append(
+            SceneValidationError(
+                path="$.graph.connections",
+                rule="graphCycle",
+                message=f"Graph contains a cycle through node '{graph_cycle_node}'.",
+            )
+        )
 
     for index, connection in enumerate(connections):
         from_node_id = connection.get("fromNodeId")
@@ -352,6 +502,10 @@ def validate_scene(data: Any) -> SceneValidationResult:
     structural_errors = _check_structure(data)
     if structural_errors:
         return SceneValidationResult(errors=structural_errors)
+
+    non_finite_errors = _check_non_finite_numbers(data)
+    if non_finite_errors:
+        return SceneValidationResult(errors=non_finite_errors)
 
     reference_errors = _check_references(data)
     if reference_errors:

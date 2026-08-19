@@ -99,8 +99,23 @@
  * per-user data.
  */
 import type { SceneDocument } from '../api/projects';
-import { validateScene, type SceneValidationError } from '../validation/scene';
+import {
+  ALLOWED_NODE_TYPES_BY_FAMILY as SHARED_ALLOWED_NODE_TYPES_BY_FAMILY,
+  findCycle,
+  validateScene,
+  type SceneValidationError,
+} from '../validation/scene';
 import { createSeededRandom } from './particleSystem';
+
+// Re-exported so existing consumers (e.g. frontend/src/pages/graphEditing.ts)
+// that import `findCycle` from this module keep working unchanged now that
+// its one implementation lives in `../validation/scene` (Task 72), which
+// `validateScene` itself also needs for its own graph-cycle check and which
+// this module cannot import from without exporting to (`scene.ts` must not
+// import from `behaviorRuntime.ts`, or the two modules would form an import
+// cycle -- `behaviorRuntime.ts` already depends on `scene.ts`, never the
+// other way around).
+export { findCycle } from '../validation/scene';
 
 // --- Numeric policy (see module doc comment) --------------------------
 
@@ -176,34 +191,37 @@ export const INTERACTION_TARGET_PROPERTIES = ALLOWED_TARGET_PROPERTIES_BY_SCOPE.
  * types. Adding a Task 37/38 node type is additive: a new entry here, a
  * `NODE_PORTS` entry, and one more evaluator branch — never a rewrite of
  * `validateBehaviorGraph` or `tick`. */
-export const ALLOWED_NODE_TYPES_BY_FAMILY: Record<string, ReadonlySet<string>> = {
-  // `timer`/`oscillator` (Task 38) join `handSignal`/`gestureEvent` here —
-  // see the "Condition and timing node registry" doc comment below for why
-  // they're `input`-family rather than `transform`: `_docs/plan.md`'s node
-  // family list explicitly names "Timer" under Input, and both are
-  // self-contained value *sources* (no `in` port) exactly like
-  // `handSignal`/`gestureEvent`, not transforms of an upstream value.
-  // `randomRange`/`randomChoice` (Task 40) join `timer`/`oscillator` here for
-  // the same reason: self-contained value *sources* with no `in` port — see
-  // the "Random node registry" doc comment below.
-  input: new Set([
-    'handSignal',
-    'gestureEvent',
-    'timer',
-    'oscillator',
-    'randomRange',
-    'randomChoice',
+/**
+ * Derived from `schema/node_types.json` (via `frontend/src/validation/scene.ts`'s
+ * `ALLOWED_NODE_TYPES_BY_FAMILY`) rather than hand-written here a second
+ * time (Task 72): that file is now the single source of truth both this
+ * runtime's execution-time check and `validateScene`'s authoritative,
+ * persistence-time check read, so they can never drift apart the way a
+ * second hand-maintained copy could. `output` stays an empty `Set` here
+ * exactly as before — see the family notes below and
+ * `schema/node_types.json`'s `$emptyFamilyMeansUnenforced` for why that's
+ * an intentional, stricter, execution-time-only policy (nothing in the
+ * `output` family is executable yet) rather than a contradiction of
+ * `validateScene` treating that same empty family as unenforced.
+ *
+ * Family notes (unchanged from the original registry):
+ * - `timer`/`oscillator` (Task 38) join `handSignal`/`gestureEvent` under
+ *   `input`: `_docs/plan.md`'s node family list names "Timer" under Input,
+ *   and both are self-contained value *sources* (no `in` port), not
+ *   transforms of an upstream value.
+ * - `randomRange`/`randomChoice` (Task 40) join them for the same reason.
+ * - `noise` (Task 40) joins the Task 37 numeric transforms — it modifies
+ *   an existing upstream value (bounded wobble), exactly like Smooth.
+ * - `randomEvent` (Task 40) joins `delay`/`cooldown` under `flow` — it
+ *   gates an event's pass-through, exactly like Cooldown gates one on
+ *   elapsed time.
+ */
+export const ALLOWED_NODE_TYPES_BY_FAMILY: Record<string, ReadonlySet<string>> = Object.fromEntries(
+  Object.entries(SHARED_ALLOWED_NODE_TYPES_BY_FAMILY).map(([family, types]) => [
+    family,
+    new Set(types),
   ]),
-  // `noise` (Task 40) joins the Task 37 numeric transforms — it modifies an
-  // existing upstream value (bounded wobble), exactly like Smooth.
-  transform: new Set(['mapRange', 'clamp', 'smooth', 'invert', 'add', 'multiply', 'lerp', 'noise']), // Task 37 + Task 40's `noise`.
-  condition: new Set(['ifElse']), // Task 38.
-  visual: new Set(['shapeProperty', 'groupProperty', 'particleEmitter']),
-  // `randomEvent` (Task 40) joins `delay`/`cooldown` here — it gates an
-  // event's pass-through, exactly like Cooldown gates one on elapsed time.
-  flow: new Set(['trigger', 'delay', 'cooldown', 'randomEvent']),
-  output: new Set(),
-};
+);
 
 /** Port vocabulary per node type — `graphFragmentForCard`'s exact
  * `fromPort`/`toPort` strings. A connection whose port name isn't valid
@@ -1523,51 +1541,6 @@ export function sceneUsesRandomness(scene: SceneDocument): boolean {
   if (randomness.enabled === true) return true;
   const { nodes } = sceneGraph(scene);
   return nodes.some((node) => typeof node.type === 'string' && RANDOM_NODE_TYPES.has(node.type));
-}
-
-/** Detects a cycle anywhere in the graph's connection edges using
- * standard three-color DFS. Returns the id of one node participating in a
- * cycle, or `null` if the graph is acyclic. Exported so the Task 36 graph
- * editor can reject a candidate connection that would introduce a cycle
- * *before* ever writing it to scene state (see `graphEditing.ts`'s
- * `checkGraphConnection`), using this exact algorithm rather than a
- * second implementation that could disagree with `validateBehaviorGraph`. */
-export function findCycle(
-  nodeIds: string[],
-  edges: Array<{ from: string; to: string }>,
-): string | null {
-  const adjacency = new Map<string, string[]>();
-  for (const id of nodeIds) adjacency.set(id, []);
-  for (const edge of edges) {
-    if (adjacency.has(edge.from)) adjacency.get(edge.from)!.push(edge.to);
-  }
-
-  const WHITE = 0;
-  const GRAY = 1;
-  const BLACK = 2;
-  const color = new Map<string, number>(nodeIds.map((id) => [id, WHITE]));
-  let cycleNode: string | null = null;
-
-  function visit(id: string): void {
-    if (cycleNode !== null) return;
-    color.set(id, GRAY);
-    for (const next of adjacency.get(id) ?? []) {
-      if (cycleNode !== null) return;
-      const nextColor = color.get(next);
-      if (nextColor === GRAY) {
-        cycleNode = next;
-        return;
-      }
-      if (nextColor === WHITE) visit(next);
-    }
-    color.set(id, BLACK);
-  }
-
-  for (const id of nodeIds) {
-    if (cycleNode !== null) break;
-    if (color.get(id) === WHITE) visit(id);
-  }
-  return cycleNode;
 }
 
 /**

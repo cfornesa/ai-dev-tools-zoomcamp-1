@@ -16,10 +16,20 @@ import Ajv2020, { type ErrorObject } from 'ajv/dist/2020';
 
 import sceneSchema from '../../../schema/scene.schema.json';
 import rawLimits from '../../../schema/limits.json';
+import rawNodeTypes from '../../../schema/node_types.json';
 
 export const LIMITS: Record<string, number> = Object.fromEntries(
   Object.entries(rawLimits).filter(([key]) => !key.startsWith('$')),
 ) as Record<string, number>;
+
+// Single source of truth (schema/node_types.json) for which graph node
+// `type` strings are allowlisted per `family` -- see checkForbiddenNodeTypes
+// below, and frontend/src/runtime/behaviorRuntime.ts's ALLOWED_NODE_TYPES_BY_FAMILY,
+// which derives its own registry from this same file rather than keeping a
+// second hand-written copy that could drift.
+export const ALLOWED_NODE_TYPES_BY_FAMILY: Record<string, readonly string[]> = Object.fromEntries(
+  Object.entries(rawNodeTypes).filter(([key]) => !key.startsWith('$')),
+) as Record<string, readonly string[]>;
 
 export const SUPPORTED_SCHEMA_VERSION = 1;
 
@@ -77,6 +87,120 @@ function checkStructure(data: unknown): SceneValidationError[] {
     rule: structuralRuleFor(error),
     message: error.message ?? 'Invalid value.',
   }));
+}
+
+/**
+ * Reject `NaN`/`Infinity`/`-Infinity` anywhere in the document.
+ *
+ * `JSON.parse` already rejects these three tokens outright (unlike
+ * Python's `json` module, which accepts them as a non-standard
+ * extension -- see `scenes/validation.py`'s matching check for why the
+ * Python side needs this explicitly and this one is defense-in-depth),
+ * so this only matters when `validateScene` is called on a JS object
+ * that didn't come from parsing JSON text (e.g. constructed
+ * programmatically, or round-tripped through some other path). Kept
+ * explicit and symmetric with the Python validator rather than relying
+ * on ajv's `minimum`/`maximum` keywords, which do correctly reject `NaN`
+ * for *bounded* fields but -- like the schema itself -- have no bound to
+ * check against for an unbounded numeric field (e.g.
+ * `binding.mapping.inMin`, `graphNode.params` numeric values).
+ */
+function checkNonFiniteNumbers(data: unknown, path = '$'): SceneValidationError[] {
+  const errors: SceneValidationError[] = [];
+  if (typeof data === 'number' && !Number.isFinite(data)) {
+    errors.push({
+      path,
+      rule: 'nonFiniteNumber',
+      message: `${String(data)} is not a finite number; NaN and Infinity are not allowed.`,
+    });
+  } else if (Array.isArray(data)) {
+    data.forEach((value, index) => {
+      errors.push(...checkNonFiniteNumbers(value, `${path}[${index}]`));
+    });
+  } else if (data !== null && typeof data === 'object') {
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      errors.push(...checkNonFiniteNumbers(value, `${path}.${key}`));
+    }
+  }
+  return errors;
+}
+
+/**
+ * Reject a graph node whose `type` isn't allowlisted for its `family`.
+ * Mirrors `scenes/validation.py`'s `_check_forbidden_node_types` -- see
+ * its docstring for why this check exists at the shared validateScene
+ * layer (not only in `behaviorRuntime.ts`'s execution-time check) and why
+ * the `output` family is exempt.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function checkForbiddenNodeTypes(data: any): SceneValidationError[] {
+  const errors: SceneValidationError[] = [];
+  const nodes: Array<{ family?: unknown; type?: unknown }> = data.graph?.nodes ?? [];
+  nodes.forEach((node, index) => {
+    const family = typeof node.family === 'string' ? node.family : undefined;
+    const allowed = family ? ALLOWED_NODE_TYPES_BY_FAMILY[family] : undefined;
+    if (!allowed || allowed.length === 0) return; // unknown/reserved family
+    if (!allowed.includes(node.type as string)) {
+      errors.push({
+        path: `$.graph.nodes[${index}].type`,
+        rule: 'forbiddenNodeType',
+        message: `type ${JSON.stringify(node.type)} is not allowlisted for family ${JSON.stringify(family)}.`,
+      });
+    }
+  });
+  return errors;
+}
+
+/** Detects a cycle anywhere in a set of directed edges using standard
+ * three-color DFS. Returns the id of one node participating in a cycle,
+ * or `null` if the graph is acyclic. Lives here (not
+ * `frontend/src/runtime/behaviorRuntime.ts`, which re-exports it) so
+ * `checkGraphCycles` below can use it too -- previously graph *connection*
+ * cycles (as opposed to group `childIds` cycles, checked by
+ * `hasGroupCycle` above) were detected only by
+ * `behaviorRuntime.ts`'s `validateBehaviorGraph`, an execution-time-only
+ * check, meaning a cyclic graph could still be saved, published, and
+ * exported; it just could never run (Task 72). `frontend/src/pages/graphEditing.ts`'s
+ * `checkGraphConnection` also reuses this exact algorithm (via
+ * `behaviorRuntime.ts`'s re-export) to reject a candidate connection that
+ * would introduce a cycle before ever writing it to scene state, rather
+ * than a third implementation that could disagree with either check. */
+export function findCycle(
+  nodeIds: string[],
+  edges: Array<{ from: string; to: string }>,
+): string | null {
+  const adjacency = new Map<string, string[]>();
+  for (const id of nodeIds) adjacency.set(id, []);
+  for (const edge of edges) {
+    if (adjacency.has(edge.from)) adjacency.get(edge.from)!.push(edge.to);
+  }
+
+  const WHITE = 0;
+  const GRAY = 1;
+  const BLACK = 2;
+  const color = new Map<string, number>(nodeIds.map((id) => [id, WHITE]));
+  let cycleNode: string | null = null;
+
+  function visit(id: string): void {
+    if (cycleNode !== null) return;
+    color.set(id, GRAY);
+    for (const next of adjacency.get(id) ?? []) {
+      if (cycleNode !== null) return;
+      const nextColor = color.get(next);
+      if (nextColor === GRAY) {
+        cycleNode = next;
+        return;
+      }
+      if (nextColor === WHITE) visit(next);
+    }
+    color.set(id, BLACK);
+  }
+
+  for (const id of nodeIds) {
+    if (cycleNode !== null) break;
+    if (color.get(id) === WHITE) visit(id);
+  }
+  return cycleNode;
 }
 
 function duplicateIds(items: Array<{ id?: unknown }>, collection: string): SceneValidationError[] {
@@ -213,6 +337,23 @@ function checkReferences(data: any): SceneValidationError[] {
     }
   });
 
+  errors.push(...checkForbiddenNodeTypes(data));
+
+  const graphCycleNodeIds = nodes
+    .map((n) => n.id)
+    .filter((id): id is string => typeof id === 'string');
+  const graphCycleEdges = connections
+    .filter((c) => typeof c.fromNodeId === 'string' && typeof c.toNodeId === 'string')
+    .map((c) => ({ from: c.fromNodeId, to: c.toNodeId }));
+  const graphCycleNode = findCycle(graphCycleNodeIds, graphCycleEdges);
+  if (graphCycleNode !== null) {
+    errors.push({
+      path: '$.graph.connections',
+      rule: 'graphCycle',
+      message: `Graph contains a cycle through node '${graphCycleNode}'.`,
+    });
+  }
+
   connections.forEach((connection, index) => {
     if (!nodeIds.has(connection.fromNodeId)) {
       errors.push({
@@ -340,6 +481,11 @@ export function validateScene(data: unknown): SceneValidationResult {
   const structuralErrors = checkStructure(data);
   if (structuralErrors.length > 0) {
     return { valid: false, errors: structuralErrors };
+  }
+
+  const nonFiniteErrors = checkNonFiniteNumbers(data);
+  if (nonFiniteErrors.length > 0) {
+    return { valid: false, errors: nonFiniteErrors };
   }
 
   const referenceErrors = checkReferences(data);

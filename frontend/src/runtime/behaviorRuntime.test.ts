@@ -282,12 +282,43 @@ describe('validateBehaviorGraph', () => {
       nodes: Array<Record<string, unknown>>;
     };
     // 'oscillator' is in `_docs/plan.md`'s V1 math/time node list but out
-    // of scope for Task 37 (see the module doc comment), so it remains
-    // unsupported even though the other 7 transform types now are.
+    // of scope for the `transform` family (it lives under `input` — see
+    // the module doc comment), so it remains unsupported there even
+    // though the other 7 transform types now are. `validateScene` (Task
+    // 72's shared forbidden-node-type check, backed by
+    // schema/node_types.json) now catches this before
+    // `validateBehaviorGraph`'s own family/type check ever runs, since
+    // `validateBehaviorGraph` returns `validateScene`'s result verbatim
+    // whenever it's already invalid — see the dedicated
+    // 'forbiddenNodeType' test below for confirmation this is enforced at
+    // the shared validator layer, not just here at execution time.
     graph.nodes.push({
       id: 'bad-node',
       family: 'transform',
       type: 'oscillator',
+      params: {},
+      position: { x: 0, y: 0 },
+    });
+    const result = validateBehaviorGraph(scene);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.rule === 'forbiddenNodeType')).toBe(true);
+  });
+
+  it("still rejects a node type unsupported for its family via behaviorRuntime's own check when validateScene doesn't enforce that family (the reserved, forward-looking 'output' family)", () => {
+    const scene = sceneWithFollowHand();
+    const graph = (scene as Record<string, unknown>).graph as {
+      nodes: Array<Record<string, unknown>>;
+    };
+    // `output` is deliberately exempt from validateScene's forbidden-node
+    // check (schema/node_types.json's `$emptyFamilyMeansUnenforced`) since
+    // it has no allowlisted type yet at all -- but it must still be
+    // impossible to *execute* an output-family node, which is what this
+    // runtime's own ALLOWED_NODE_TYPES_BY_FAMILY.output (an empty Set)
+    // guarantees at this layer.
+    graph.nodes.push({
+      id: 'bad-output-node',
+      family: 'output',
+      type: 'previewTarget',
       params: {},
       position: { x: 0, y: 0 },
     });

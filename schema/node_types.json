@@ -1,0 +1,10 @@
+{
+  "$comment": "Single source of truth for which graph node `type` strings are allowed under each `family` (Task 37/38/40's node registries). Both scenes/validation.py and frontend/src/validation/scene.ts load this file and reject a node whose `type` isn't listed for its `family`, as part of the authoritative validate_scene/validateScene pipeline (Task 72) -- previously this allowlist was enforced only by frontend/src/runtime/behaviorRuntime.ts's ALLOWED_NODE_TYPES_BY_FAMILY at graph-*execution* time, which meant a scene carrying a forbidden/garbage node type could still be persisted, published, and exported; it just could never actually run. behaviorRuntime.ts now derives its own ALLOWED_NODE_TYPES_BY_FAMILY from this same file instead of maintaining a second hand-written copy, so there is exactly one registry, not two that could drift.",
+  "$emptyFamilyMeansUnenforced": "A family listed here with an empty array (currently only 'output') is intentionally not yet enforced by validate_scene/validateScene -- see frontend/src/pages/graphEditing.ts's NodeFamily doc comment: 'output' is a reserved, forward-looking family with no allowlisted node type yet, and schema/fixtures/valid/feature_rich.json deliberately exercises a forward-looking `output`/`previewTarget` node to prove the schema itself doesn't hardcode the current node registry. behaviorRuntime.ts's own ALLOWED_NODE_TYPES_BY_FAMILY.output stays an empty Set, which correctly rejects *every* output-family node at execution time (nothing is executable yet) -- that is a stricter, execution-time-only policy, not a contradiction of this file.",
+  "input": ["handSignal", "gestureEvent", "timer", "oscillator", "randomRange", "randomChoice"],
+  "transform": ["mapRange", "clamp", "smooth", "invert", "add", "multiply", "lerp", "noise"],
+  "condition": ["ifElse"],
+  "visual": ["shapeProperty", "groupProperty", "particleEmitter"],
+  "flow": ["trigger", "delay", "cooldown", "randomEvent"],
+  "output": []
+}

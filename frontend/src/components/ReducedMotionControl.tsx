@@ -1,4 +1,5 @@
 import { useReducedMotion, type MotionOverride } from '../a11y/reducedMotion';
+import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 
 const OPTIONS: Array<{ value: MotionOverride; label: string }> = [
   { value: 'system', label: 'Match system' },
@@ -32,6 +33,11 @@ const OPTIONS: Array<{ value: MotionOverride; label: string }> = [
  */
 function ReducedMotionControl() {
   const { override, effective, setOverride } = useReducedMotion();
+  const roving = useRovingRadioGroup(
+    OPTIONS.map((option) => ({ value: option.value })),
+    override,
+    setOverride,
+  );
 
   return (
     <div className="reduced-motion-control">
@@ -44,6 +50,7 @@ function ReducedMotionControl() {
             className="demo-radio-option"
             aria-checked={override === option.value}
             onClick={() => setOverride(option.value)}
+            {...roving.getRadioProps(option.value)}
           >
             {option.label}
           </button>

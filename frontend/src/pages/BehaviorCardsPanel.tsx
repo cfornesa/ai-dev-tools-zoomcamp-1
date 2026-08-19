@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
+import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import {
   AXIS_OPTIONS,
   CARD_TYPE_LABELS,
@@ -119,6 +120,17 @@ function BehaviorCardsPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
   const handMode: 'primary' | 'two' =
     manualTwoHand || sceneEditor.hasTwoHandBinding ? 'two' : 'primary';
 
+  const handModeRoving = useRovingRadioGroup(
+    [{ value: 'primary' as const }, { value: 'two' as const }],
+    handMode,
+    (value) => setManualTwoHand(value === 'two'),
+  );
+  const cardTypeRoving = useRovingRadioGroup(
+    CARD_TYPE_OPTIONS.map((type) => ({ value: type })),
+    cardType,
+    setCardType,
+  );
+
   const selectedTarget = targetOptions.find((option) => option.id === targetKey) ?? null;
   const needsTarget = cardType === 'followHand' || cardType === 'reactToPinch';
 
@@ -177,6 +189,7 @@ function BehaviorCardsPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
           role="radio"
           aria-checked={handMode === 'primary'}
           onClick={() => setManualTwoHand(false)}
+          {...handModeRoving.getRadioProps('primary')}
         >
           Hands: One
         </button>
@@ -185,6 +198,7 @@ function BehaviorCardsPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
           role="radio"
           aria-checked={handMode === 'two'}
           onClick={() => setManualTwoHand(true)}
+          {...handModeRoving.getRadioProps('two')}
         >
           Hands: Two
         </button>
@@ -211,6 +225,7 @@ function BehaviorCardsPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
               role="radio"
               aria-checked={cardType === type}
               onClick={() => setCardType(type)}
+              {...cardTypeRoving.getRadioProps(type)}
             >
               {CARD_TYPE_LABELS[type]}
             </button>

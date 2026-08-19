@@ -276,4 +276,60 @@ describe('behavior cards panel', () => {
       within(screen.getByRole('list', { name: 'Behavior card list' })).getAllByRole('listitem'),
     ).toHaveLength(1);
   });
+
+  it('"Hand mode" is a roving-tabindex radiogroup: arrow keys move focus and selection, wrapping at both ends', async () => {
+    const user = userEvent.setup();
+    await loadReadyWorkspace();
+
+    const handModeGroup = screen.getByRole('radiogroup', { name: 'Hand mode' });
+    const oneHand = within(handModeGroup).getByRole('radio', { name: 'Hands: One' });
+    const twoHand = within(handModeGroup).getByRole('radio', { name: 'Hands: Two' });
+
+    // Only the checked radio is in the Tab sequence.
+    expect(oneHand).toHaveAttribute('tabindex', '0');
+    expect(twoHand).toHaveAttribute('tabindex', '-1');
+
+    oneHand.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(twoHand).toHaveFocus();
+    expect(twoHand).toHaveAttribute('aria-checked', 'true');
+    expect(twoHand).toHaveAttribute('tabindex', '0');
+    expect(oneHand).toHaveAttribute('aria-checked', 'false');
+    expect(oneHand).toHaveAttribute('tabindex', '-1');
+
+    // Wraps from the last option back to the first.
+    await user.keyboard('{ArrowRight}');
+    expect(oneHand).toHaveFocus();
+    expect(oneHand).toHaveAttribute('aria-checked', 'true');
+
+    // Wraps backward from the first option to the last.
+    await user.keyboard('{ArrowLeft}');
+    expect(twoHand).toHaveFocus();
+    expect(twoHand).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('"Card type" is a roving-tabindex radiogroup: arrow keys move focus and selection among its options', async () => {
+    const user = userEvent.setup();
+    await loadReadyWorkspace();
+
+    const cardTypeGroup = screen.getByRole('radiogroup', { name: 'Card type' });
+    const radios = within(cardTypeGroup).getAllByRole('radio');
+    // Default selection is "Follow hand" (first option), which is the
+    // only one initially in the Tab sequence.
+    expect(radios[0]).toHaveAttribute('tabindex', '0');
+    radios.slice(1).forEach((radio) => expect(radio).toHaveAttribute('tabindex', '-1'));
+
+    radios[0].focus();
+    await user.keyboard('{ArrowDown}');
+    expect(radios[1]).toHaveFocus();
+    expect(radios[1]).toHaveAttribute('aria-checked', 'true');
+
+    await user.keyboard('{End}');
+    expect(radios[radios.length - 1]).toHaveFocus();
+    expect(radios[radios.length - 1]).toHaveAttribute('aria-checked', 'true');
+
+    await user.keyboard('{Home}');
+    expect(radios[0]).toHaveFocus();
+    expect(radios[0]).toHaveAttribute('aria-checked', 'true');
+  });
 });

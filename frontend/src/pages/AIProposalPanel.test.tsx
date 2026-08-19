@@ -324,10 +324,25 @@ describe('AIProposalPanel keyboard operability', () => {
     const editRadio = screen.getByRole('radio', { name: /edit/i });
     const promptField = screen.getByLabelText(/describe the scene/i);
 
+    // Roving tabindex: only the checked radio is in the Tab sequence, and
+    // arrow keys move focus AND selection within the "AI action" group —
+    // Tab itself moves out of the group entirely (see
+    // useRovingRadioGroup.ts).
     createRadio.focus();
     expect(createRadio).toHaveFocus();
-    await userEvent.tab();
+    expect(createRadio).toHaveAttribute('tabindex', '0');
+    expect(editRadio).toHaveAttribute('tabindex', '-1');
+
+    await userEvent.keyboard('{ArrowRight}');
     expect(editRadio).toHaveFocus();
+    expect(editRadio).toHaveAttribute('aria-checked', 'true');
+    expect(editRadio).toHaveAttribute('tabindex', '0');
+    expect(createRadio).toHaveAttribute('aria-checked', 'false');
+    expect(createRadio).toHaveAttribute('tabindex', '-1');
+
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(createRadio).toHaveFocus();
+    expect(createRadio).toHaveAttribute('aria-checked', 'true');
 
     promptField.focus();
     await userEvent.keyboard('a circle');

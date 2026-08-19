@@ -192,6 +192,55 @@ describe('DemoControlsPanel', () => {
     expect(screen.getByText('Demo signal controls')).toBeInTheDocument();
   });
 
+  it('"Demo input mode" is a roving-tabindex radiogroup: arrow keys move focus and selection, wrapping at both ends', async () => {
+    const user = userEvent.setup();
+    render(<DemoControlsPanel />);
+
+    const manual = screen.getByRole('radio', { name: 'Manual controls' });
+    const playback = screen.getByRole('radio', { name: 'Synthetic playback' });
+
+    expect(manual).toHaveAttribute('tabindex', '0');
+    expect(playback).toHaveAttribute('tabindex', '-1');
+
+    manual.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(playback).toHaveFocus();
+    expect(playback).toHaveAttribute('aria-checked', 'true');
+    expect(playback).toHaveAttribute('tabindex', '0');
+    expect(manual).toHaveAttribute('aria-checked', 'false');
+    expect(manual).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByTestId('demo-playback-controls')).toBeInTheDocument();
+
+    // Wraps forward from the last option back to the first.
+    await user.keyboard('{ArrowRight}');
+    expect(manual).toHaveFocus();
+    expect(manual).toHaveAttribute('aria-checked', 'true');
+
+    // Wraps backward from the first option to the last.
+    await user.keyboard('{ArrowLeft}');
+    expect(playback).toHaveFocus();
+    expect(playback).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('"Gesture state" is a roving-tabindex radiogroup that skips disabled options via arrow keys', async () => {
+    const user = userEvent.setup();
+    render(<DemoControlsPanel />);
+
+    // Gesture radios start disabled (no hand present) — nothing in the
+    // group is a valid roving-tabindex target until a hand is present.
+    await user.click(screen.getByRole('button', { name: 'Hand absent' }));
+
+    const none = screen.getByRole('radio', { name: 'None' });
+    const openPalm = screen.getByRole('radio', { name: 'Open palm' });
+
+    expect(none).toHaveAttribute('tabindex', '0');
+    none.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(openPalm).toHaveFocus();
+    expect(openPalm).toHaveAttribute('aria-checked', 'true');
+    expect(none).toHaveAttribute('aria-checked', 'false');
+  });
+
   // Task 29 (issue #28): reduced motion replaces the scripted-playback
   // auto-advance timer — the one continuous, non-essential effect this
   // panel has — with a "use Step" note, while every scripted event stays

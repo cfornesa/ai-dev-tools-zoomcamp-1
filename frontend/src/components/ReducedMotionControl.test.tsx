@@ -109,4 +109,41 @@ describe('ReducedMotionControl', () => {
     expect(screen.getByRole('radio', { name: 'Reduced' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('status')).toHaveTextContent('Motion is currently reduced.');
   });
+
+  it('is a roving-tabindex radiogroup: arrow keys move focus and selection, wrapping at both ends', async () => {
+    const { ReducedMotionControl } = await freshControl();
+    const user = userEvent.setup({ delay: null });
+    render(<ReducedMotionControl />);
+
+    const system = screen.getByRole('radio', { name: 'Match system' });
+    const reduced = screen.getByRole('radio', { name: 'Reduced' });
+    const full = screen.getByRole('radio', { name: 'Full' });
+
+    // Only the checked ("Match system") radio is in the Tab sequence.
+    expect(system).toHaveAttribute('tabindex', '0');
+    expect(reduced).toHaveAttribute('tabindex', '-1');
+    expect(full).toHaveAttribute('tabindex', '-1');
+
+    system.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(reduced).toHaveFocus();
+    expect(reduced).toHaveAttribute('aria-checked', 'true');
+    expect(reduced).toHaveAttribute('tabindex', '0');
+    expect(system).toHaveAttribute('aria-checked', 'false');
+    expect(system).toHaveAttribute('tabindex', '-1');
+
+    await user.keyboard('{ArrowRight}');
+    expect(full).toHaveFocus();
+    expect(full).toHaveAttribute('aria-checked', 'true');
+
+    // Wraps forward from the last option back to the first.
+    await user.keyboard('{ArrowRight}');
+    expect(system).toHaveFocus();
+    expect(system).toHaveAttribute('aria-checked', 'true');
+
+    // Wraps backward from the first option to the last.
+    await user.keyboard('{ArrowLeft}');
+    expect(full).toHaveFocus();
+    expect(full).toHaveAttribute('aria-checked', 'true');
+  });
 });

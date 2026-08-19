@@ -1,3 +1,4 @@
+import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import { useSnapSettings } from '../editor/snapSettings';
 
 /**
@@ -28,6 +29,8 @@ function SnapToggle({
   enabled: boolean;
   onChange: (next: boolean) => void;
 }) {
+  const roving = useRovingRadioGroup([{ value: true }, { value: false }], enabled, onChange);
+
   return (
     <div role="radiogroup" aria-label={label} className="editor-tool-group">
       <span className="snap-toggle-label">{label}</span>
@@ -37,6 +40,7 @@ function SnapToggle({
         className="demo-radio-option"
         aria-checked={enabled}
         onClick={() => onChange(true)}
+        {...roving.getRadioProps(true)}
       >
         On
       </button>
@@ -46,6 +50,7 @@ function SnapToggle({
         className="demo-radio-option"
         aria-checked={!enabled}
         onClick={() => onChange(false)}
+        {...roving.getRadioProps(false)}
       >
         Off
       </button>

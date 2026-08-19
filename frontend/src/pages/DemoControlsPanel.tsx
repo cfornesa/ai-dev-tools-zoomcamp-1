@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useReducedMotion } from '../a11y/reducedMotion';
+import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import { createDemoTrackingController, type DemoMode } from '../tracking/demoController';
 import { MANUAL_SIGNAL_RANGES, type ManualSignalName } from '../tracking/manualProvider';
 import type { GestureName, TrackingFrame } from '../tracking/types';
@@ -153,6 +154,17 @@ function DemoControlsPanel() {
     setRemaining(controllerRef.current.remainingPlayback());
   }
 
+  const modeRoving = useRovingRadioGroup(
+    [{ value: 'manual' as const }, { value: 'playback' as const }],
+    mode,
+    handleSetMode,
+  );
+  const gestureRoving = useRovingRadioGroup(
+    GESTURE_OPTIONS.map((option) => ({ value: option.value, disabled: !manualState.present })),
+    manualState.gesture,
+    handleSelectGesture,
+  );
+
   return (
     <div className="demo-controls-panel">
       <h4>Demo signal controls</h4>
@@ -168,6 +180,7 @@ function DemoControlsPanel() {
           className="demo-radio-option"
           aria-checked={mode === 'manual'}
           onClick={() => handleSetMode('manual')}
+          {...modeRoving.getRadioProps('manual')}
         >
           Manual controls
         </button>
@@ -177,6 +190,7 @@ function DemoControlsPanel() {
           className="demo-radio-option"
           aria-checked={mode === 'playback'}
           onClick={() => handleSetMode('playback')}
+          {...modeRoving.getRadioProps('playback')}
         >
           Synthetic playback
         </button>
@@ -225,6 +239,7 @@ function DemoControlsPanel() {
                 aria-checked={manualState.gesture === option.value}
                 disabled={!manualState.present}
                 onClick={() => handleSelectGesture(option.value)}
+                {...gestureRoving.getRadioProps(option.value)}
               >
                 {option.label}
               </button>

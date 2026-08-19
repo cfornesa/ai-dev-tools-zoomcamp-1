@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
+import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import type { SceneDocument, SceneVersion } from '../api/projects';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import { useAIProposal, type ProposalMode } from './useAIProposal';
@@ -99,6 +100,15 @@ function AIProposalPanel({
 
   const pending = phase === 'pending';
 
+  const modeRoving = useRovingRadioGroup(
+    [
+      { value: 'create' as const, disabled: pending || acceptState.pending },
+      { value: 'edit' as const, disabled: pending || acceptState.pending },
+    ],
+    mode,
+    setMode,
+  );
+
   return (
     <div className="ai-proposal-panel">
       <h4>AI assistant</h4>
@@ -110,6 +120,7 @@ function AIProposalPanel({
           aria-checked={mode === 'create'}
           disabled={pending || acceptState.pending}
           onClick={() => setMode('create')}
+          {...modeRoving.getRadioProps('create')}
         >
           Create
         </button>
@@ -119,6 +130,7 @@ function AIProposalPanel({
           aria-checked={mode === 'edit'}
           disabled={pending || acceptState.pending}
           onClick={() => setMode('edit')}
+          {...modeRoving.getRadioProps('edit')}
         >
           Edit
         </button>

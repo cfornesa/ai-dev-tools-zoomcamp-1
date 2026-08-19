@@ -136,4 +136,30 @@ describe('SnapPreferenceControl', () => {
     );
     expect(screen.getByRole('status')).toHaveTextContent('Snapping is on: grid only.');
   });
+
+  it('each toggle is a roving-tabindex radiogroup: arrow keys move focus and selection', async () => {
+    const { SnapPreferenceControl } = await freshControl();
+    const user = userEvent.setup({ delay: null });
+    render(<SnapPreferenceControl />);
+
+    const gridGroup = screen.getByRole('radiogroup', { name: 'Snap to grid' });
+    const on = within(gridGroup).getByRole('radio', { name: 'On' });
+    const off = within(gridGroup).getByRole('radio', { name: 'Off' });
+
+    // Off is checked by default, so it's the only one in the Tab sequence.
+    expect(off).toHaveAttribute('tabindex', '0');
+    expect(on).toHaveAttribute('tabindex', '-1');
+
+    off.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(on).toHaveFocus();
+    expect(on).toHaveAttribute('aria-checked', 'true');
+    expect(on).toHaveAttribute('tabindex', '0');
+    expect(off).toHaveAttribute('aria-checked', 'false');
+    expect(off).toHaveAttribute('tabindex', '-1');
+
+    await user.keyboard('{ArrowLeft}');
+    expect(off).toHaveFocus();
+    expect(off).toHaveAttribute('aria-checked', 'true');
+  });
 });

@@ -38,6 +38,7 @@ import {
 } from './sceneShapes';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useSnapSettings } from '../editor/snapSettings';
+import { isEffectivelyLocked } from './sceneOutline';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useDraftAutosave } from './useDraftAutosave';
@@ -646,6 +647,22 @@ function EditorWorkspace() {
   const groupSelection =
     sceneEditor.multiSelectedShapes.length >= 2 ? sceneEditor.multiSelectedShapes : null;
   const groupBounds = groupSelection ? getCombinedBounds(groupSelection) : null;
+  // Task 80 (issue #80): "no handles at all" for an effectively-locked
+  // shape/selection (see this issue's "Handle visibility" acceptance
+  // criterion) — precomputed here so both the render below and the
+  // pointer-down guards (which fire before `beginTransformGesture`, so the
+  // whole gesture never starts rather than being rejected mid-drag) agree
+  // on the same lock state. A multi-shape group selection is locked as a
+  // whole if *any* member is effectively locked, matching issue #77's
+  // "whole gesture" semantics.
+  const isSelectedShapeLocked =
+    !!sceneEditor.selectedShape &&
+    !!sceneEditor.workingCopy &&
+    isEffectivelyLocked(sceneEditor.workingCopy, sceneEditor.selectedShape.id);
+  const isGroupSelectionLocked =
+    !!groupSelection &&
+    !!sceneEditor.workingCopy &&
+    groupSelection.some((s) => isEffectivelyLocked(sceneEditor.workingCopy!, s.id));
 
   // Dragging a shape's body is the "move" gesture (per the acceptance
   // criteria: "dragging the shape body or its move handle"). If the hit
@@ -662,6 +679,17 @@ function EditorWorkspace() {
     const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y);
     if (!hit) return; // no shape body under the pointer: nothing to drag
     if (groupSelection && groupBounds && groupSelection.some((s) => s.id === hit.id)) {
+      // Task 80 (issue #80): the guard runs before the gesture starts — a
+      // locked member blocks the whole group gesture, not just its own
+      // movement (issue #77's "whole gesture" semantics extended to locks).
+      if (
+        !sceneEditor.checkUnlocked(
+          groupSelection.map((s) => s.id),
+          "One or more selected shapes are on a locked layer or group and can't be moved. Unlock them first.",
+        )
+      ) {
+        return;
+      }
       beginTransformGesture({
         mode: 'group',
         kind: 'move',
@@ -673,6 +701,18 @@ function EditorWorkspace() {
     }
     if (hit.id !== sceneEditor.selectedShapeId) {
       sceneEditor.selectShape(hit.id);
+    }
+    // Task 80 (issue #80): clicking/dragging a locked shape's body still
+    // selects it (the `selectShape` call above already ran) but doesn't
+    // begin a move gesture — the guard runs after selection, before the
+    // drag starts.
+    if (
+      !sceneEditor.checkUnlocked(
+        [hit.id],
+        "This shape is on a locked layer or group and can't be moved. Unlock it first.",
+      )
+    ) {
+      return;
     }
     beginTransformGesture({ mode: 'single', kind: 'move', startShape: hit, startPointer: pointer });
   }
@@ -689,6 +729,14 @@ function EditorWorkspace() {
       event.stopPropagation();
       const shape = sceneEditor.selectedShape;
       if (!shape) return;
+      if (
+        !sceneEditor.checkUnlocked(
+          [shape.id],
+          "This shape is on a locked layer or group and can't be transformed. Unlock it first.",
+        )
+      ) {
+        return;
+      }
       const pointer = canvasPointFromClient(event.clientX, event.clientY);
       if (!pointer) return;
       beginTransformGesture({ mode: 'single', kind, startShape: shape, startPointer: pointer });
@@ -704,6 +752,14 @@ function EditorWorkspace() {
       if (event.button !== 0) return;
       event.stopPropagation();
       if (!groupSelection || !groupBounds) return;
+      if (
+        !sceneEditor.checkUnlocked(
+          groupSelection.map((s) => s.id),
+          "One or more selected shapes are on a locked layer or group and can't be transformed. Unlock them first.",
+        )
+      ) {
+        return;
+      }
       const pointer = canvasPointFromClient(event.clientX, event.clientY);
       if (!pointer) return;
       beginTransformGesture({
@@ -729,6 +785,14 @@ function EditorWorkspace() {
       event.stopPropagation();
       const shape = sceneEditor.selectedShape;
       if (!shape || shape.type !== 'path') return;
+      if (
+        !sceneEditor.checkUnlocked(
+          [shape.id],
+          "This shape is on a locked layer or group and can't be reshaped. Unlock it first.",
+        )
+      ) {
+        return;
+      }
       sceneEditor.selectVertex(pointIndex);
       const pointer = canvasPointFromClient(event.clientX, event.clientY);
       if (!pointer) return;
@@ -830,6 +894,19 @@ function EditorWorkspace() {
               toggle — editor-specific, so it lives here in the Tools
               panel (not the global header, unlike Reduce motion). */}
           <SnapPreferenceControl />
+
+          {/* Task 80 (issue #80): the net-new `lockError` channel — surfaces
+              a rejected duplicate/delete/move/resize/rotate/reshape against
+              an effectively-locked shape or group, for exactly the call
+              sites that had no existing rejection channel of their own
+              before this issue (every other guarded call site reuses
+              `outlineError`/`vertexError`/its own field-edit error, shown
+              where those already render). */}
+          {sceneEditor.lockError && (
+            <p role="alert" aria-live="assertive">
+              {sceneEditor.lockError}
+            </p>
+          )}
 
           <div role="group" aria-label="Edit shape" className="editor-tool-group">
             <button
@@ -1055,7 +1132,9 @@ function EditorWorkspace() {
                 `sceneEditor.selectedShape.points` on every render, so an
                 insert/delete/undo/redo immediately shows the right set of
                 handles with nothing stale left behind. */}
-            {sceneEditor.vertexEditActive && sceneEditor.selectedShape?.type === 'path'
+            {sceneEditor.vertexEditActive &&
+            sceneEditor.selectedShape?.type === 'path' &&
+            !isSelectedShapeLocked
               ? getPathPointHandles(sceneEditor.selectedShape).map((point, index) => (
                   <div
                     key={`vertex-handle-${sceneEditor.selectedShape!.id}-${index}`}
@@ -1073,7 +1152,7 @@ function EditorWorkspace() {
                     onPointerDown={handleVertexPointerDown(index)}
                   />
                 ))
-              : groupSelection && groupBounds
+              : groupSelection && groupBounds && !isGroupSelectionLocked
                 ? (() => {
                     const handles = getGroupHandles(groupBounds);
                     return (
@@ -1103,6 +1182,7 @@ function EditorWorkspace() {
                     );
                   })()
                 : sceneEditor.selectedShape &&
+                  !isSelectedShapeLocked &&
                   (() => {
                     const handles = getShapeHandles(sceneEditor.selectedShape);
                     return (

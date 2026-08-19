@@ -808,6 +808,45 @@ export function moveItemToGroup(
 }
 
 // ---------------------------------------------------------------------------
+// Effective lock state (Task 80)
+// ---------------------------------------------------------------------------
+
+/** Returns whether a shape or group's id is *effectively* locked: its own
+ * `locked` flag (groups only — shapes have no `locked` field of their own),
+ * OR any ancestor group's `locked` flag (walking up through arbitrary
+ * nesting depth), OR its layer's `locked` flag. This is the single place
+ * the OR-cascade `buildOutline()` displays is expressed — every mutation
+ * guard in `useSceneEditor.ts` calls this same function rather than
+ * re-deriving the cascade. Returns `false` for an id that no longer exists
+ * in the scene. */
+export function isEffectivelyLocked(scene: SceneDocument, id: string): boolean {
+  const shapes = getEditableShapes(rawShapes(scene));
+  const groups = getGroups(scene);
+  const layers = getLayers(scene);
+  const layersById = new Map(layers.map((l) => [l.id, l]));
+  const groupsById = new Map(groups.map((g) => [g.id, g]));
+
+  const shape = shapes.find((s) => s.id === id);
+  const group = shape ? undefined : groupsById.get(id);
+  if (!shape && !group) return false;
+
+  const layerId = shape ? shape.layerId : group!.layerId;
+  const ownLocked = shape ? false : group!.locked;
+
+  let ancestorGroupId = shape ? shape.groupId : (findParentGroup(group!.id, groups)?.id ?? null);
+  let ancestorLocked = false;
+  while (ancestorGroupId) {
+    const g = groupsById.get(ancestorGroupId);
+    if (!g) break;
+    ancestorLocked = ancestorLocked || g.locked;
+    ancestorGroupId = findParentGroup(g.id, groups)?.id ?? null;
+  }
+
+  const layer = layersById.get(layerId);
+  return ownLocked || ancestorLocked || (layer?.locked ?? false);
+}
+
+// ---------------------------------------------------------------------------
 // Outline rendering
 // ---------------------------------------------------------------------------
 
@@ -865,7 +904,6 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
     isFirst: boolean,
     isLast: boolean,
     inheritedVisible: boolean,
-    inheritedLocked: boolean,
   ) {
     rows.push({
       kind: 'shape',
@@ -874,7 +912,7 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
       typeLabel: shape.type,
       shapeType: shape.type,
       inheritedVisible,
-      inheritedLocked,
+      inheritedLocked: isEffectivelyLocked(scene, shape.id),
       layerId: shape.layerId,
       isFirst,
       isLast,
@@ -887,7 +925,6 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
     isFirst: boolean,
     isLast: boolean,
     ancestorVisible: boolean,
-    ancestorLocked: boolean,
   ) {
     rows.push({
       kind: 'group',
@@ -902,7 +939,6 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
       isLast,
     });
     const combinedVisible = ancestorVisible && group.visible;
-    const combinedLocked = ancestorLocked || group.locked;
     const children = group.childIds
       .map((cid) => shapesById.get(cid) ?? groupsById.get(cid))
       .filter((c): c is Shape | Group => c !== undefined);
@@ -910,9 +946,9 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
       const isFirstChild = i === 0;
       const isLastChild = i === children.length - 1;
       if ('childIds' in child) {
-        emitGroup(child, depth + 1, isFirstChild, isLastChild, combinedVisible, combinedLocked);
+        emitGroup(child, depth + 1, isFirstChild, isLastChild, combinedVisible);
       } else {
-        emitShape(child, depth + 1, isFirstChild, isLastChild, combinedVisible, combinedLocked);
+        emitShape(child, depth + 1, isFirstChild, isLastChild, combinedVisible);
       }
     });
   }
@@ -933,10 +969,10 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
     const topShapes = shapes.filter((s) => s.layerId === layer.id && s.groupId === null);
 
     topGroups.forEach((group, i) => {
-      emitGroup(group, 1, i === 0, i === topGroups.length - 1, layer.visible, layer.locked);
+      emitGroup(group, 1, i === 0, i === topGroups.length - 1, layer.visible);
     });
     topShapes.forEach((shape, i) => {
-      emitShape(shape, 1, i === 0, i === topShapes.length - 1, layer.visible, layer.locked);
+      emitShape(shape, 1, i === 0, i === topShapes.length - 1, layer.visible);
     });
   });
 

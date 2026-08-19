@@ -424,6 +424,7 @@ describe('deriveParticleTickInput', () => {
       timestamp: 100,
       burstTriggered: true,
       degraded: false,
+      reducedMotion: false,
     });
   });
 
@@ -444,6 +445,12 @@ describe('deriveParticleTickInput', () => {
 
   it('passes the degraded flag through unchanged', () => {
     expect(deriveParticleTickInput(tickResult({ degraded: true })).degraded).toBe(true);
+  });
+
+  it('defaults reducedMotion to false, and passes an explicit value through unchanged', () => {
+    expect(deriveParticleTickInput(tickResult()).reducedMotion).toBe(false);
+    expect(deriveParticleTickInput(tickResult(), true).reducedMotion).toBe(true);
+    expect(deriveParticleTickInput(tickResult(), false).reducedMotion).toBe(false);
   });
 });
 
@@ -577,5 +584,120 @@ describe('physics forces (Task 61)', () => {
       return last;
     }
     expect(run()).toEqual(run());
+  });
+
+  describe('reduced motion (QA follow-up on #61)', () => {
+    it('reducedMotion: true skips force integration (velocity does not change that tick)', () => {
+      const system = createParticleSystem([
+        emitter({
+          speed: 10,
+          rate: 0,
+          lifespan: 100,
+          physics: { gravity: 50, drag: 0, forceX: 0, forceY: 0 },
+        }),
+      ]);
+      system.tick(tick(0, { burstTriggered: true }));
+      const before = system.getParticles().map((p) => ({ vx: p.vx, vy: p.vy }));
+
+      const reduced = system.tick(tick(1000, { reducedMotion: true }));
+      expect(reduced.map((p) => ({ vx: p.vx, vy: p.vy }))).toEqual(before);
+    });
+
+    it('particles still move (at their last-known velocity), emit, and expire normally under reduced motion — only continuous force accumulation is removed', () => {
+      const system = createParticleSystem([
+        emitter({
+          speed: 10,
+          rate: 0,
+          lifespan: 100,
+          physics: { gravity: 50, drag: 0, forceX: 0, forceY: 0 },
+        }),
+      ]);
+      system.tick(tick(0, { burstTriggered: true }));
+      const spawnedCount = system.getParticles().length;
+      expect(spawnedCount).toBeGreaterThan(0);
+      const beforePosition = system.getParticles().map((p) => ({ x: p.x, y: p.y }));
+
+      const reduced = system.tick(tick(1000, { reducedMotion: true }));
+      // Emission/lifecycle unaffected: the same particles are still alive.
+      expect(reduced.length).toBe(spawnedCount);
+      // Position still advances (constant-velocity motion continues) —
+      // reduced motion removes force accumulation, not movement itself.
+      expect(
+        reduced.some((p, i) => p.x !== beforePosition[i].x || p.y !== beforePosition[i].y),
+      ).toBe(true);
+
+      // A second burst still fires normally under reduced motion — the
+      // discrete emitParticles interaction is untouched.
+      const afterBurst = system.tick(tick(1100, { reducedMotion: true, burstTriggered: true }));
+      expect(afterBurst.length).toBeGreaterThan(reduced.length);
+    });
+
+    it('reducedMotion: true and degraded: true are both sufficient on their own to skip force integration', () => {
+      const system = createParticleSystem([
+        emitter({
+          speed: 10,
+          rate: 0,
+          lifespan: 100,
+          physics: { gravity: 50, drag: 0, forceX: 0, forceY: 0 },
+        }),
+      ]);
+      system.tick(tick(0, { burstTriggered: true }));
+      const before = system.getParticles().map((p) => ({ vx: p.vx, vy: p.vy }));
+
+      // Once physics-forces resume (neither flag set), velocity does change.
+      const recovered = system.tick(tick(1000, { reducedMotion: false, degraded: false }));
+      expect(recovered.some((p, i) => p.vy !== before[i].vy)).toBe(true);
+    });
+  });
+
+  describe('pause / resume (dedicated physics coverage, QA follow-up on #61)', () => {
+    it('a paused system with an active physics config does not catch up on force integration when resumed', () => {
+      const system = createParticleSystem([
+        emitter({
+          speed: 0,
+          rate: 0,
+          lifespan: 1000,
+          physics: { gravity: 5, drag: 0, forceX: 0, forceY: 0 },
+        }),
+      ]);
+      system.tick(tick(0, { burstTriggered: true }));
+      const spawnedCount = system.getParticles().length;
+      expect(spawnedCount).toBeGreaterThan(0);
+      const beforePause = system
+        .getParticles()
+        .map((p) => ({ x: p.x, y: p.y, vx: p.vx, vy: p.vy }));
+
+      system.pause();
+      // Calling tick while paused must not change anything, however far
+      // the timestamp jumps — including no force integration at all.
+      expect(system.tick(tick(1000))).toEqual(system.getParticles());
+      expect(system.tick(tick(999999))).toEqual(system.getParticles());
+      const afterPausedTicks = system.getParticles().map((p) => ({
+        x: p.x,
+        y: p.y,
+        vx: p.vx,
+        vy: p.vy,
+      }));
+      expect(afterPausedTicks).toEqual(beforePause);
+
+      system.resume();
+      // The tick right after resume must not treat the large (simulated
+      // real-world) paused interval as elapsed force-integration time — no
+      // catch-up burst of accumulated gravity. `resume()` resets the
+      // emitter's own `lastTimestamp` bookkeeping to the *next* tick's
+      // timestamp, so that tick's own dt is 0 (no force applied yet).
+      const rightAfterResume = system.tick(tick(500000));
+      expect(rightAfterResume.map((p) => ({ vx: p.vx, vy: p.vy }))).toEqual(
+        beforePause.map((p) => ({ vx: p.vx, vy: p.vy })),
+      );
+
+      // Force integration resumes correctly on the *next* real tick, using
+      // only that tick's own (small) elapsed interval — never the huge
+      // paused gap.
+      const nextTick = system.tick(tick(500100));
+      const smallGravityDelta = nextTick[0].vy - rightAfterResume[0].vy;
+      expect(smallGravityDelta).toBeCloseTo(5 * 0.1, 5); // gravity(5) * dt(0.1s)
+      expect(smallGravityDelta).toBeLessThan(5 * 1000); // nowhere near a 500s catch-up
+    });
   });
 });

@@ -201,6 +201,27 @@
  * tick (see below), force integration is skipped entirely (particles keep
  * their last-known velocity) — the same "skip new work under overload"
  * policy this module already applies to emission.
+ *
+ * ## Reduced motion and physics forces (Task 61, `_docs/plan.md`'s
+ * "Reduced mode replaces or reduces non-essential motion ... while
+ * preserving the interaction's meaning")
+ *
+ * When `ParticleTickInput.reducedMotion` is `true`, force integration is
+ * skipped for that tick — exactly the same code path degradation already
+ * uses (`applyPhysics = !input.degraded && !input.reducedMotion` in
+ * `tick()`), not a second mechanism. Particles keep moving at their
+ * last-known velocity (never frozen mid-air) and emission/bursts/expiry
+ * all continue completely normally: a burst still spawns, a burst still
+ * reads as a distinct event, particles still appear and disappear on
+ * schedule. What's removed is specifically the *continuous* accumulation
+ * of gravity/drag/wind pulling particles into curved, ever-changing
+ * paths — the "non-essential motion" plan.md calls out — while every
+ * other part of the interaction (does emitting particles still work? does
+ * a burst still happen? do particles still expire?) is unchanged. This
+ * mirrors `trailSystem.ts`'s reduced-motion philosophy exactly: reduce/
+ * remove the continuous effect, keep the discrete interaction meaning
+ * intact, rather than freezing the whole particle system (which would
+ * also silently break the unrelated `emitParticles` burst interaction).
  */
 import type { SceneDocument } from '../api/projects';
 import { LIMITS } from '../validation/scene';
@@ -329,6 +350,16 @@ export type ParticleTickInput = {
    * 35's work-budget mechanism). See "Reduced-quality degradation"
    * above. */
   degraded: boolean;
+  /** True when the editor's reduced-motion preference is currently
+   * effective (`a11y/reducedMotion.ts`'s `effective` — a caller-supplied
+   * plain boolean, not read by this module directly, so it stays
+   * framework-agnostic and testable without a DOM/React environment; see
+   * `deriveParticleTickInput`'s second parameter). Skips physics-force
+   * integration for the tick — see the module doc comment's "Reduced
+   * motion and physics forces" section. Defaults to `false` so every
+   * existing caller/test that doesn't pass it behaves exactly as before
+   * this field existed. */
+  reducedMotion?: boolean;
 };
 
 /** Converts one `BehaviorRuntime.tick()` result into this module's
@@ -336,12 +367,23 @@ export type ParticleTickInput = {
  * this tick targets the `interaction`-scope `emitParticles` channel
  * (`_docs/plan.md`'s "Binding targets and safety" table), regardless of
  * which specific binding fired it (V1 has no per-emitter event routing —
- * see the module doc comment's burst-targeting note below). */
-export function deriveParticleTickInput(result: TickResult): ParticleTickInput {
+ * see the module doc comment's burst-targeting note below). `reducedMotion`
+ * (default `false`) is a separate, caller-supplied parameter — not part of
+ * `TickResult` — because reduced motion is an `a11y/reducedMotion.ts`
+ * preference, not a `BehaviorRuntime` concept; a caller's per-frame loop
+ * reads `useReducedMotion().effective` (or `getSnapshot().effective`
+ * outside React) and passes it straight through, exactly as
+ * `DemoControlsPanel.tsx` already reads that same value for its own
+ * continuous effect. */
+export function deriveParticleTickInput(
+  result: TickResult,
+  reducedMotion = false,
+): ParticleTickInput {
   return {
     timestamp: result.timestamp,
     burstTriggered: result.events.some((e) => e.targetProperty === 'emitParticles'),
     degraded: result.degraded,
+    reducedMotion,
   };
 }
 
@@ -507,7 +549,13 @@ export function createParticleSystem(
       dtSecondsByEmitter.set(emitter.id, dtMs / 1000);
     }
 
-    expireAndMove(input.timestamp, dtSecondsByEmitter, !input.degraded);
+    // Physics-force integration is skipped both on a degraded tick (Task
+    // 35's work-budget mechanism) and under reduced motion (Task 61's
+    // "Reduced motion and physics forces" — see the module doc comment) —
+    // either condition alone is enough to fall back to plain
+    // constant-velocity movement for this tick.
+    const applyPhysics = !input.degraded && !input.reducedMotion;
+    expireAndMove(input.timestamp, dtSecondsByEmitter, applyPhysics);
 
     if (input.degraded) {
       // Reduced-quality degradation: skip all new emission this tick, but

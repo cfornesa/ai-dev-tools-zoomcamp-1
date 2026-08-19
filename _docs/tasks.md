@@ -299,3 +299,15 @@ Description: Generate exports using hostile titles, descriptions, colors, labels
 ## 75. Add real environment variables and private credentials
 Goal: Replace the placeholder values used during development (Google OAuth client id/secret, Mistral API key, and any other provider credentials introduced by Tasks 12+) with real, securely-stored values in every deployed environment.
 Description: Enumerate every environment variable/secret placeholder introduced so far (starting with `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` from Task 12) and any added by later AI-integration tasks. Document where each real credential comes from (Google Cloud Console OAuth client, Mistral API console, Replit-managed PostgreSQL, etc.), provision them in Replit's development and production secret stores separately, and verify the application behaves correctly with real values instead of placeholders. Confirm no placeholder or real secret is ever committed to the repository.
+Ordering: reassigned to be the LAST task in the entire backlog (see GitHub issue #75's comments for rationale) — it needs real external credentials only the project owner can provision, and doing it early would let its own verification step mask later regressions. Do not start it while issues #71-74 or #76-83 (see below) remain open.
+
+## Follow-up issues filed during V1 hardening (not originally numbered tasks)
+These were filed as separately groomed follow-ups during audits/reviews of Tasks 60-71 and must be resolved (or explicitly deferred with the user's sign-off) before Task 75:
+- #76 Support reparenting shapes/groups across layers and groups in the scene outline
+- #77 Support multi-shape simultaneous drag, resize, and rotate in the preview
+- #78 Add snapping and alignment guides for canvas manipulation
+- #79 Support per-vertex editing of path/polygon shapes
+- #80 Enforce locked layer and group flags against shape mutations
+- #81 Make role=radio button groups keyboard-navigable via arrow keys app-wide
+- #82 Build onboarding hints for templates (dismissible, replayable, stop-after-success)
+- #83 Wire the behavior runtime into the live editor preview

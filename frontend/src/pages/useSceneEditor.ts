@@ -36,6 +36,7 @@ import {
   getGroups,
   getLayers,
   groupItems,
+  isEffectivelyLocked,
   moveItem as moveItemOp,
   moveItemToGroup as moveItemToGroupOp,
   moveItemToLayer as moveItemToLayerOp,
@@ -184,6 +185,28 @@ function resolveMultiSelection(scene: SceneDocument, ids: string[]): Shape[] {
   return shapes.filter((s) => resolvedIds.has(s.id));
 }
 
+// Task 80 (issue #80): the single shared lock guard every mutation entry
+// point in this hook (and, via `checkUnlocked` below, every pointer-gesture
+// entry point in EditorWorkspace.tsx) routes through, rather than each call
+// site re-deriving `isEffectivelyLocked` inline. Pure and stateless — it
+// reads no hook state itself, so it works identically whether the caller
+// reports the rejection through `lockError` (via `checkUnlocked`), an
+// existing channel like `outlineError`/`vertexError`, or a field-edit
+// function's own `{ ok, error }` return value (this result type is
+// deliberately identical in shape to that convention, so a caller can
+// `return guardUnlocked(...)` directly when it fails).
+export type LockGuardResult = { ok: true } | { ok: false; error: string };
+
+export function guardUnlocked(
+  scene: SceneDocument,
+  ids: string[],
+  message: string,
+): LockGuardResult {
+  return ids.some((id) => isEffectivelyLocked(scene, id))
+    ? { ok: false, error: message }
+    : { ok: true };
+}
+
 export function useSceneEditor(
   workingCopy: SceneDocument | null,
   setWorkingCopy: Dispatch<SetStateAction<SceneDocument | null>>,
@@ -228,6 +251,15 @@ export function useSceneEditor(
   const [vertexEditShapeId, setVertexEditShapeId] = useState<string | null>(null);
   const [selectedVertexIndex, setSelectedVertexIndex] = useState<number | null>(null);
   const [vertexError, setVertexError] = useState<string | null>(null);
+
+  // Task 80 (issue #80): the net-new error channel for guarded call sites
+  // that had no existing rejection channel of their own before this issue
+  // (duplicateSelected, deleteSelected, and pointer-gesture initiation in
+  // EditorWorkspace.tsx) — every other guarded call site reuses whichever
+  // channel it already had (`outlineError`, `vertexError`, or a field
+  // edit's own `{ ok, error }` return), per this issue's own UI-feedback
+  // convention.
+  const [lockError, setLockError] = useState<string | null>(null);
 
   // Task 26: "latest value" refs kept in sync every render (see the two
   // effects just below) so the transform-gesture callbacks further down —
@@ -448,6 +480,30 @@ export function useSceneEditor(
     [workingCopy, commit],
   );
 
+  // Task 80 (issue #80): the `lockError`-channel wrapper around the shared
+  // `guardUnlocked` above, exposed so EditorWorkspace.tsx's pointer-gesture
+  // initiation (single-shape move/resize/rotate, the multi-shape group
+  // gesture, and vertex-handle drag) can guard *before* a drag starts —
+  // "the gesture does not start" per this issue's acceptance criteria,
+  // rather than being rejected mid-gesture. Every internal call site in
+  // this hook that reports through `lockError` (duplicateSelected,
+  // deleteSelected) calls `guardUnlocked` directly instead, for the same
+  // reason `applyOutcome` isn't used for those: no `Outcome`/scene-replacing
+  // result is involved, just a boolean gate.
+  const checkUnlocked = useCallback(
+    (ids: string[], message: string): boolean => {
+      if (!workingCopy) return true;
+      const result = guardUnlocked(workingCopy, ids, message);
+      if (!result.ok) {
+        setLockError(result.error);
+        return false;
+      }
+      setLockError(null);
+      return true;
+    },
+    [workingCopy],
+  );
+
   const addShape = useCallback(
     (type: ShapeType) => {
       if (!workingCopy) return;
@@ -469,10 +525,18 @@ export function useSceneEditor(
       setSelectedShapeId(null);
       return;
     }
+    if (
+      !checkUnlocked(
+        [selectedShapeId],
+        "This shape is on a locked layer or group and can't be duplicated. Unlock it first.",
+      )
+    ) {
+      return;
+    }
     const copy = duplicateShape(source);
     commit(withShapes(workingCopy, [...rawShapes(workingCopy), copy]));
     setSelectedShapeId(copy.id);
-  }, [workingCopy, selectedShapeId, commit]);
+  }, [workingCopy, selectedShapeId, commit, checkUnlocked]);
 
   const deleteSelected = useCallback(() => {
     if (!workingCopy || !selectedShapeId) return;
@@ -483,12 +547,20 @@ export function useSceneEditor(
       setSelectedShapeId(null);
       return;
     }
+    if (
+      !checkUnlocked(
+        [selectedShapeId],
+        "This shape is on a locked layer or group and can't be deleted. Unlock it first.",
+      )
+    ) {
+      return;
+    }
     // Task 24: a shape can now belong to a group, so deleting it must also
     // drop its id from that group's childIds (and prune the group if that
     // was its last child) rather than just filtering `shapes`.
     commit(removeShapeFromScene(workingCopy, selectedShapeId));
     setSelectedShapeId(null);
-  }, [workingCopy, selectedShapeId, commit]);
+  }, [workingCopy, selectedShapeId, commit, checkUnlocked]);
 
   // Task 60 (issue #58): Inspector panel field edits for the single
   // actively selected shape's transform/style properties (position X/Y,
@@ -511,6 +583,12 @@ export function useSceneEditor(
       if (!workingCopy || !selectedShape) {
         return { ok: false, error: 'No shape selected.' };
       }
+      const guard = guardUnlocked(
+        workingCopy,
+        [selectedShape.id],
+        "This shape is on a locked layer or group and can't be edited. Unlock it first.",
+      );
+      if (!guard.ok) return guard;
       const spec = NUMERIC_FIELD_SPECS.find((s) => s.field === field)!;
       const outcome = parseNumericFieldEdit(spec, raw);
       if (!outcome.ok) return outcome;
@@ -531,6 +609,12 @@ export function useSceneEditor(
       if (!workingCopy || !selectedShape) {
         return { ok: false, error: 'No shape selected.' };
       }
+      const guard = guardUnlocked(
+        workingCopy,
+        [selectedShape.id],
+        "This shape is on a locked layer or group and can't be edited. Unlock it first.",
+      );
+      if (!guard.ok) return guard;
       const outcome = parseColorFieldEdit(field, raw);
       if (!outcome.ok) return outcome;
       const shapesArr = rawShapes(workingCopy);
@@ -560,13 +644,29 @@ export function useSceneEditor(
   // touches `workingCopy`/`commit`.
 
   const toggleVertexEditMode = useCallback(() => {
-    setVertexError(null);
     setSelectedVertexIndex(null);
     setVertexEditShapeId((current) => {
-      if (current !== null) return null;
-      return selectedShape && selectedShape.type === 'path' ? selectedShape.id : null;
+      if (current !== null) {
+        setVertexError(null);
+        return null;
+      }
+      if (!selectedShape || selectedShape.type !== 'path' || !workingCopy) {
+        setVertexError(null);
+        return null;
+      }
+      const guard = guardUnlocked(
+        workingCopy,
+        [selectedShape.id],
+        "This shape is on a locked layer or group and can't be reshaped. Unlock it first.",
+      );
+      if (!guard.ok) {
+        setVertexError(guard.error);
+        return null;
+      }
+      setVertexError(null);
+      return selectedShape.id;
     });
-  }, [selectedShape]);
+  }, [selectedShape, workingCopy]);
 
   const exitVertexEditMode = useCallback(() => {
     setVertexEditShapeId(null);
@@ -595,9 +695,29 @@ export function useSceneEditor(
     [workingCopy, commit],
   );
 
+  // Task 80 (issue #80): every vertex mutation below guards against the
+  // selected `path` shape being effectively locked before doing anything
+  // else — reusing `vertexError`, the channel this task's insert/delete-cap
+  // rejections already surface through, rather than introducing a second
+  // channel for the same shape.
+  const guardVertexEdit = useCallback((): boolean => {
+    if (!selectedShape || selectedShape.type !== 'path' || !workingCopy) return false;
+    const guard = guardUnlocked(
+      workingCopy,
+      [selectedShape.id],
+      "This shape is on a locked layer or group and can't be reshaped. Unlock it first.",
+    );
+    if (!guard.ok) {
+      setVertexError(guard.error);
+      return false;
+    }
+    return true;
+  }, [selectedShape, workingCopy]);
+
   const insertVertexAtPoint = useCallback(
     (pointer: Point) => {
       if (!selectedShape || selectedShape.type !== 'path') return;
+      if (!guardVertexEdit()) return;
       const hit = findClosestPathSegment(selectedShape, pointer);
       if (!hit) return; // not close enough to any segment: a silent no-op, not a rejection
       const result = insertPathPoint(selectedShape, hit.index, hit.point);
@@ -609,11 +729,12 @@ export function useSceneEditor(
       setSelectedVertexIndex(null);
       commitPathShapeReplacement(result.shape);
     },
-    [selectedShape, commitPathShapeReplacement],
+    [selectedShape, commitPathShapeReplacement, guardVertexEdit],
   );
 
   const addVertexNearLast = useCallback(() => {
     if (!selectedShape || selectedShape.type !== 'path') return;
+    if (!guardVertexEdit()) return;
     const result = appendPathPointNearLast(selectedShape);
     if (!result.ok) {
       setVertexError(result.error);
@@ -622,11 +743,12 @@ export function useSceneEditor(
     setVertexError(null);
     setSelectedVertexIndex(null);
     commitPathShapeReplacement(result.shape);
-  }, [selectedShape, commitPathShapeReplacement]);
+  }, [selectedShape, commitPathShapeReplacement, guardVertexEdit]);
 
   const deleteVertexAt = useCallback(
     (index: number) => {
       if (!selectedShape || selectedShape.type !== 'path') return;
+      if (!guardVertexEdit()) return;
       const result = deletePathPoint(selectedShape, index);
       if (!result.ok) {
         setVertexError(result.error);
@@ -636,7 +758,7 @@ export function useSceneEditor(
       setSelectedVertexIndex(null);
       commitPathShapeReplacement(result.shape);
     },
-    [selectedShape, commitPathShapeReplacement],
+    [selectedShape, commitPathShapeReplacement, guardVertexEdit],
   );
 
   // The keyboard point-coordinate list's per-axis numeric field — same
@@ -647,8 +769,17 @@ export function useSceneEditor(
   // of the whole shape's transform.
   const updateVertexPointField = useCallback(
     (index: number, axis: 'x' | 'y', raw: string): { ok: true } | { ok: false; error: string } => {
-      if (!selectedShape || selectedShape.type !== 'path') {
+      if (!selectedShape || selectedShape.type !== 'path' || !workingCopy) {
         return { ok: false, error: 'No path shape selected.' };
+      }
+      const guard = guardUnlocked(
+        workingCopy,
+        [selectedShape.id],
+        "This shape is on a locked layer or group and can't be reshaped. Unlock it first.",
+      );
+      if (!guard.ok) {
+        setVertexError(guard.error);
+        return guard;
       }
       const label = axis === 'x' ? 'Point X' : 'Point Y';
       const rangeText = `${POSITION_LIMIT.min} to ${POSITION_LIMIT.max}`;
@@ -670,7 +801,7 @@ export function useSceneEditor(
       commitPathShapeReplacement({ ...selectedShape, points });
       return { ok: true };
     },
-    [selectedShape, commitPathShapeReplacement],
+    [selectedShape, workingCopy, commitPathShapeReplacement],
   );
 
   const reconcileSelectionAgainst = useCallback((scene: SceneDocument) => {
@@ -781,9 +912,30 @@ export function useSceneEditor(
   // through `applyOutcome` the same way every other outline mutation does,
   // so a rejected move only ever surfaces `outlineError` and a successful
   // one commits exactly one undo step.
+  // Task 80 (issue #80): reparenting is guarded in both directions — the
+  // item being moved can't be effectively locked at its current location
+  // (blocks moving a locked item out), and the destination can't be locked
+  // either (blocks moving an unlocked item into a locked layer/group).
+  // Both guards route through the shared `guardUnlocked`/`isEffectivelyLocked`
+  // pair and report through `outlineError`, the channel every other outline
+  // mutation here already uses via `applyOutcome`.
   const moveItemToLayer = useCallback(
     (itemId: string, targetLayerId: string) => {
       if (!workingCopy) return;
+      const itemGuard = guardUnlocked(
+        workingCopy,
+        [itemId],
+        "This item is on a locked layer or group and can't be moved. Unlock it first.",
+      );
+      if (!itemGuard.ok) {
+        setOutlineError(itemGuard.error);
+        return;
+      }
+      const targetLayer = getLayers(workingCopy).find((l) => l.id === targetLayerId);
+      if (targetLayer?.locked) {
+        setOutlineError("That layer is locked and can't receive this item. Unlock it first.");
+        return;
+      }
       applyOutcome(moveItemToLayerOp(workingCopy, itemId, targetLayerId));
     },
     [workingCopy, applyOutcome],
@@ -792,6 +944,26 @@ export function useSceneEditor(
   const moveItemToGroup = useCallback(
     (itemId: string, targetGroupId: string | null) => {
       if (!workingCopy) return;
+      const itemGuard = guardUnlocked(
+        workingCopy,
+        [itemId],
+        "This item is on a locked layer or group and can't be moved. Unlock it first.",
+      );
+      if (!itemGuard.ok) {
+        setOutlineError(itemGuard.error);
+        return;
+      }
+      if (targetGroupId !== null) {
+        const destGuard = guardUnlocked(
+          workingCopy,
+          [targetGroupId],
+          "That group is locked and can't receive this item. Unlock it first.",
+        );
+        if (!destGuard.ok) {
+          setOutlineError(destGuard.error);
+          return;
+        }
+      }
       applyOutcome(moveItemToGroupOp(workingCopy, itemId, targetGroupId));
     },
     [workingCopy, applyOutcome],
@@ -807,6 +979,15 @@ export function useSceneEditor(
 
   const groupSelected = useCallback(() => {
     if (!workingCopy) return;
+    const guard = guardUnlocked(
+      workingCopy,
+      multiSelectedIds,
+      "One of the selected items is on a locked layer or group and can't be grouped. Unlock it first.",
+    );
+    if (!guard.ok) {
+      setOutlineError(guard.error);
+      return;
+    }
     const outcome = groupItems(workingCopy, multiSelectedIds);
     applyOutcome(outcome);
     if (outcome.ok) setMultiSelectedIds([]);
@@ -815,6 +996,15 @@ export function useSceneEditor(
   const ungroupSelected = useCallback(() => {
     if (!workingCopy || !selectedShapeId) return;
     if (!getGroups(workingCopy).some((g) => g.id === selectedShapeId)) return;
+    const guard = guardUnlocked(
+      workingCopy,
+      [selectedShapeId],
+      "This group is on a locked layer or is itself locked, and can't be ungrouped. Unlock it first.",
+    );
+    if (!guard.ok) {
+      setOutlineError(guard.error);
+      return;
+    }
     const outcome = ungroupItem(workingCopy, selectedShapeId);
     applyOutcome(outcome);
     if (outcome.ok) setSelectedShapeId(null);
@@ -823,6 +1013,15 @@ export function useSceneEditor(
   const deleteGroupSelected = useCallback(() => {
     if (!workingCopy || !selectedShapeId) return;
     if (!getGroups(workingCopy).some((g) => g.id === selectedShapeId)) return;
+    const guard = guardUnlocked(
+      workingCopy,
+      [selectedShapeId],
+      "This group is on a locked layer or is itself locked, and can't be deleted. Unlock it first.",
+    );
+    if (!guard.ok) {
+      setOutlineError(guard.error);
+      return;
+    }
     const outcome = deleteGroupRecursive(workingCopy, selectedShapeId);
     applyOutcome(outcome);
     if (outcome.ok) setSelectedShapeId(null);
@@ -984,6 +1183,12 @@ export function useSceneEditor(
     // Issue #77
     multiSelectedShapes,
     updateMultiSelectedTransform,
+    // Task 80 (issue #80): the shared lock guard's own error channel, plus
+    // the wrapper EditorWorkspace.tsx calls to gate pointer-gesture
+    // initiation (single-shape and group move/resize/rotate, and
+    // vertex-handle drag) before a drag starts.
+    lockError,
+    checkUnlocked,
     // Task 60 (issue #58)
     updateSelectedShapeNumericField,
     updateSelectedShapeColorField,

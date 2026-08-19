@@ -915,10 +915,15 @@ export function useSceneEditor(
   // Task 80 (issue #80): reparenting is guarded in both directions — the
   // item being moved can't be effectively locked at its current location
   // (blocks moving a locked item out), and the destination can't be locked
-  // either (blocks moving an unlocked item into a locked layer/group).
-  // Both guards route through the shared `guardUnlocked`/`isEffectivelyLocked`
-  // pair and report through `outlineError`, the channel every other outline
-  // mutation here already uses via `applyOutcome`.
+  // either (blocks moving an unlocked item into a locked layer/group). Both
+  // guards route through the shared `guardUnlocked`/`isEffectivelyLocked`
+  // pair and report through `outlineError`, the channel every other
+  // outline mutation here already uses via `applyOutcome`.
+  // `isEffectivelyLocked` also accepts a bare layer id (its own `locked`
+  // flag, since a layer has no ancestor to cascade through — see that
+  // function's own doc comment), so the destination check below routes
+  // through the exact same guard `moveItemToGroup`'s destination check
+  // uses just below, rather than a second, separate `layer.locked` read.
   const moveItemToLayer = useCallback(
     (itemId: string, targetLayerId: string) => {
       if (!workingCopy) return;
@@ -931,9 +936,13 @@ export function useSceneEditor(
         setOutlineError(itemGuard.error);
         return;
       }
-      const targetLayer = getLayers(workingCopy).find((l) => l.id === targetLayerId);
-      if (targetLayer?.locked) {
-        setOutlineError("That layer is locked and can't receive this item. Unlock it first.");
+      const destGuard = guardUnlocked(
+        workingCopy,
+        [targetLayerId],
+        "That layer is locked and can't receive this item. Unlock it first.",
+      );
+      if (!destGuard.ok) {
+        setOutlineError(destGuard.error);
         return;
       }
       applyOutcome(moveItemToLayerOp(workingCopy, itemId, targetLayerId));

@@ -140,6 +140,12 @@ describe('isEffectivelyLocked', () => {
     expect(isEffectivelyLocked(scene2, shape.id)).toBe(true);
   });
 
+  it("resolves a bare layer id to that layer's own locked flag (no ancestor to cascade through)", () => {
+    const scene = baseScene({ layers: [layer('layer-1', 0, true), layer('layer-2', 1, false)] });
+    expect(isEffectivelyLocked(scene, 'layer-1')).toBe(true);
+    expect(isEffectivelyLocked(scene, 'layer-2')).toBe(false);
+  });
+
   it('a sibling shape on the same layer/group as a locked one stays unaffected', () => {
     const shapeA = shapeIn('layer-1');
     const shapeB = shapeIn('layer-1');

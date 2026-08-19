@@ -811,14 +811,25 @@ export function moveItemToGroup(
 // Effective lock state (Task 80)
 // ---------------------------------------------------------------------------
 
-/** Returns whether a shape or group's id is *effectively* locked: its own
- * `locked` flag (groups only — shapes have no `locked` field of their own),
- * OR any ancestor group's `locked` flag (walking up through arbitrary
- * nesting depth), OR its layer's `locked` flag. This is the single place
- * the OR-cascade `buildOutline()` displays is expressed — every mutation
- * guard in `useSceneEditor.ts` calls this same function rather than
- * re-deriving the cascade. Returns `false` for an id that no longer exists
- * in the scene. */
+/** Returns whether a shape, group, or bare layer id is *effectively*
+ * locked: for a shape/group, its own `locked` flag (groups only — shapes
+ * have no `locked` field of their own), OR any ancestor group's `locked`
+ * flag (walking up through arbitrary nesting depth), OR its layer's
+ * `locked` flag. This is the single place the OR-cascade `buildOutline()`
+ * displays is expressed — every mutation guard in `useSceneEditor.ts`
+ * calls this same function rather than re-deriving the cascade.
+ *
+ * A bare layer id (one that doesn't resolve to any shape or group) is also
+ * accepted: a layer has no ancestor of its own to cascade through, so its
+ * effective lock state is exactly its own `locked` flag. This lets a
+ * single reparenting destination check — "is the id I'm about to move an
+ * item into locked?" — route through this same function whether the
+ * destination is a layer (`moveItemToLayer`) or a group
+ * (`moveItemToGroup`), rather than one of the two call sites needing a
+ * separate raw `layer.locked` read.
+ *
+ * Returns `false` for an id that doesn't resolve to a shape, group, or
+ * layer in the scene at all. */
 export function isEffectivelyLocked(scene: SceneDocument, id: string): boolean {
   const shapes = getEditableShapes(rawShapes(scene));
   const groups = getGroups(scene);
@@ -828,7 +839,9 @@ export function isEffectivelyLocked(scene: SceneDocument, id: string): boolean {
 
   const shape = shapes.find((s) => s.id === id);
   const group = shape ? undefined : groupsById.get(id);
-  if (!shape && !group) return false;
+  if (!shape && !group) {
+    return layersById.get(id)?.locked ?? false;
+  }
 
   const layerId = shape ? shape.layerId : group!.layerId;
   const ownLocked = shape ? false : group!.locked;

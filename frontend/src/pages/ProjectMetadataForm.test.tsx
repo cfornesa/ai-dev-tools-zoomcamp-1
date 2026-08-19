@@ -236,6 +236,50 @@ describe('ProjectMetadataForm publishing (Task 49)', () => {
     expect(mockedPublishProject).not.toHaveBeenCalled();
   });
 
+  // Task 63 (issue #63): the publish-confirmation `alertdialog` never moved
+  // focus into itself, never closed on Escape, and never restored focus to
+  // its trigger — the one `alertdialog` in the app missing
+  // `useAlertDialogFocus`'s behavior, unlike every other one (see that
+  // hook's own doc comment and issue #64's precedent).
+  it('moves focus into the confirmation dialog on open and restores it to the Publish trigger on Cancel', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.' }),
+    );
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByLabelText(/title/i);
+    const trigger = screen.getByRole('button', { name: /^publish$/i });
+    trigger.focus();
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveFocus();
+
+    await user.click(within(dialog).getByRole('button', { name: /cancel/i }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('dismisses the confirmation dialog on Escape without publishing, and restores focus', async () => {
+    mockedGetProject.mockResolvedValue(
+      baseProject({ title: 'My scene', description: 'A real description.' }),
+    );
+    const user = userEvent.setup();
+
+    renderForm();
+    await screen.findByLabelText(/title/i);
+    const trigger = screen.getByRole('button', { name: /^publish$/i });
+    await user.click(trigger);
+    await screen.findByRole('alertdialog');
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(mockedPublishProject).not.toHaveBeenCalled();
+  });
+
   it('surfaces server-side publish validation errors without corrupting visibility state', async () => {
     mockedGetProject.mockResolvedValue(
       baseProject({ title: 'My scene', description: 'A real description.' }),

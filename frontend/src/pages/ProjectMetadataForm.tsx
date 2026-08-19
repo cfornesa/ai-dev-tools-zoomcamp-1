@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { ApiError } from '../api/client';
 import {
   getProject,
@@ -24,6 +25,56 @@ function parseTags(raw: string): string[] {
     .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean);
+}
+
+/**
+ * Task 63 (issue #63): the "publish this project?" confirmation, split into
+ * its own component for the same reason `VersionHistoryPanel.tsx`'s
+ * `VersionDeleteConfirm` is — `useAlertDialogFocus` (focus-into-dialog on
+ * open, Escape maps to Cancel rather than Publish, focus returns to the
+ * trigger on close) needs to run exactly once per mount/unmount of the
+ * dialog itself, matching every other `alertdialog` in this app
+ * (`EditorWorkspace.tsx`, `BehaviorCardsPanel.tsx`, `VersionHistoryPanel.tsx`,
+ * `DraftRecoveryPrompt.tsx`). Before this fix, this was the one
+ * `alertdialog` in the codebase that never moved focus, never closed on
+ * Escape, and never restored focus to the Publish button that opened it.
+ */
+function PublishConfirmDialog({
+  title,
+  ownerName,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  ownerName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
+  return (
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      role="alertdialog"
+      aria-labelledby="publish-confirm-title"
+      aria-describedby="publish-confirm-description"
+      className="publish-confirm-dialog"
+    >
+      <h4 id="publish-confirm-title">Publish "{title}"?</h4>
+      <p id="publish-confirm-description">
+        Anyone with the link will be able to view this project's title, your creator attribution (
+        {ownerName || 'you'}), its animation, and a public preview. It will also become eligible to
+        appear in the public gallery.
+      </p>
+      <button type="button" onClick={onConfirm}>
+        Publish
+      </button>
+      <button type="button" onClick={onCancel}>
+        Cancel
+      </button>
+    </div>
+  );
 }
 
 function ProjectMetadataForm() {
@@ -356,25 +407,12 @@ function ProjectMetadataForm() {
         )}
 
         {showPublishConfirm && (
-          <div
-            role="alertdialog"
-            aria-labelledby="publish-confirm-title"
-            aria-describedby="publish-confirm-description"
-            className="publish-confirm-dialog"
-          >
-            <h4 id="publish-confirm-title">Publish "{title}"?</h4>
-            <p id="publish-confirm-description">
-              Anyone with the link will be able to view this project's title, your creator
-              attribution ({ownerName || 'you'}), its animation, and a public preview. It will also
-              become eligible to appear in the public gallery.
-            </p>
-            <button type="button" onClick={handleConfirmPublish}>
-              Publish
-            </button>
-            <button type="button" onClick={() => setShowPublishConfirm(false)}>
-              Cancel
-            </button>
-          </div>
+          <PublishConfirmDialog
+            title={title}
+            ownerName={ownerName}
+            onConfirm={handleConfirmPublish}
+            onCancel={() => setShowPublishConfirm(false)}
+          />
         )}
       </section>
     </>

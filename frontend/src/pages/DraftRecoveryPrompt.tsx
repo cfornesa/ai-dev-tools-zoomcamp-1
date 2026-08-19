@@ -61,7 +61,14 @@ function DraftRecoveryPrompt({
       aria-describedby="draft-recovery-summary"
       className="draft-recovery-prompt"
     >
-      <h4 id="draft-recovery-title">Recover unsaved work?</h4>
+      {/* Task 63 (issue #63): `<h2>`, not `<h4>` — unlike the other
+          `alertdialog`s in this app (which layer over an already-rendered
+          panel with its own `<h2>`/`<h3>` hierarchy), this one fully
+          *replaces* `EditorWorkspace`'s rendered content while shown (see
+          this file's own docstring), so it's the first heading after
+          `Layout.tsx`'s page-level `<h1>` — an `<h4>` here skipped two
+          levels, a real `heading-order` defect this audit found. */}
+      <h2 id="draft-recovery-title">Recover unsaved work?</h2>
       <p id="draft-recovery-summary">
         Autosaved {formatAutosaveTime(candidate.savedAt)} &middot; {candidate.changeSummary}
       </p>

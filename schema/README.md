@@ -84,6 +84,30 @@ design constraint, not a V1-only limitation.
   deliberately left with an empty allowed-types array and unenforced at
   the `validateScene` layer — see the file's own `$emptyFamilyMeansUnenforced`.
 
+## Onboarding hints (Task 82)
+
+`onboardingHints` is an optional top-level array of short, plain-language
+strings (e.g. `"Enable your camera, then raise one hand."`), rendered by
+`frontend/src/pages/OnboardingHints.tsx` as dismissible, non-modal text
+when a scene is opened in the editor. It is scene-document metadata, not
+executable content — nothing in `validate_scene`/`validateScene`,
+`behaviorRuntime.ts`, or the exported-HTML runtime ever reads it.
+
+This field lives in the canonical scene schema itself, not on the
+`Template` catalog row (`scenes/models.py`'s `name`/`category`/
+`description` fields, seeded from `scenes/builtin_templates.py`), even
+though the latter looks like the closer precedent for "template
+authoring metadata." The two aren't interchangeable in practice:
+`Template.description` never travels past the clone step — Task 20's
+`templates/<id>/clone/` endpoint deep-copies only `scene_json` into the
+new project (`scenes/api.py`'s `clone_template`), so a hint stored on the
+`Template` row would be unreachable by the time the cloned scene is
+actually open in `EditorWorkspace.tsx`. Putting `onboardingHints` inside
+`scene_json` instead means it survives cloning, duplication, forking,
+save, and export like any other scene field, and (unlike `Template`
+metadata) it's available even for onboarding hints on non-template
+scenes in the future if ever needed.
+
 ## Referential integrity
 
 JSON Schema validates document *shape*, not cross-references within a

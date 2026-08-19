@@ -206,5 +206,10 @@
     "handDistance": 0.6,
     "gestureState": "openPalm"
   },
+  "onboardingHints": [
+    "Enable your camera, then raise one hand.",
+    "Pinch your thumb and index finger to create particles.",
+    "Press H to replay these hints."
+  ],
   "randomness": { "seed": 483920, "enabled": true }
 }

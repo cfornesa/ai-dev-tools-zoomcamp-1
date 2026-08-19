@@ -38,5 +38,10 @@
   "graph": { "nodes": [], "connections": [] },
   "accessibility": { "reducedMotion": "auto" },
   "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0.8, "handDistance": 0.5, "gestureState": "none" },
+  "onboardingHints": [
+    "Enable your camera, then raise one hand.",
+    "Pinch your thumb and index finger to create particles.",
+    "Press H to replay these hints."
+  ],
   "randomness": { "seed": 91177, "enabled": true }
 }

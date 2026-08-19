@@ -11,5 +11,6 @@
   "bindings": [],
   "graph": { "nodes": [], "connections": [] },
   "accessibility": { "reducedMotion": "auto" },
+  "onboardingHints": ["Add a shape from the Tools panel, then try a behavior card."],
   "randomness": { "seed": 0, "enabled": false }
 }

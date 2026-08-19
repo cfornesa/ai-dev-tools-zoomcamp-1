@@ -46,5 +46,9 @@
   "graph": { "nodes": [], "connections": [] },
   "accessibility": { "reducedMotion": "auto" },
   "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "none" },
+  "onboardingHints": [
+    "Enable your camera, then move your hands closer or further apart to shift the color field.",
+    "Press H to replay these hints."
+  ],
   "randomness": { "seed": 0, "enabled": false }
 }

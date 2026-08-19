@@ -74,6 +74,12 @@
       }
     },
     "demoSignals": { "$ref": "#/$defs/demoSignals" },
+    "onboardingHints": {
+      "description": "Task 82: optional, short, plain-language onboarding hints (e.g. 'Enable your camera, then raise one hand.') shown non-modally when this scene is opened in the editor. Purely descriptive UI copy about how to interact with this scene — never referenced by bindings, the graph, or the renderer. Travels with the scene document (rather than living only on the Template catalog row) specifically so it survives Task 20's template-clone-into-project flow, which copies scene_json but not the source Template's name/category/description.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 240 },
+      "maxItems": 8
+    },
     "randomness": {
       "type": "object",
       "additionalProperties": false,

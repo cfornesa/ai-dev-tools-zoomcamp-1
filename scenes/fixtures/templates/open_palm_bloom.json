@@ -66,5 +66,9 @@
   "graph": { "nodes": [], "connections": [] },
   "accessibility": { "reducedMotion": "auto" },
   "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "openPalm" },
+  "onboardingHints": [
+    "Enable your camera, then open your palm to bloom the shapes outward.",
+    "Press H to replay these hints."
+  ],
   "randomness": { "seed": 0, "enabled": false }
 }

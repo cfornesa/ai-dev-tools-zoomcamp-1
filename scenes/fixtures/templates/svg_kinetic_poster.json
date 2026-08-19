@@ -110,5 +110,9 @@
   },
   "accessibility": { "reducedMotion": "auto" },
   "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "none" },
+  "onboardingHints": [
+    "Enable your camera, then move your hand to tilt and fade the poster strokes.",
+    "Press H to replay these hints."
+  ],
   "randomness": { "seed": 4181, "enabled": true }
 }

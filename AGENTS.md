@@ -105,6 +105,51 @@ Frontend (run from `frontend/`):
 - `npm run build` - type-check and production build
 - `npm run dev` - start the frontend dev server
 
+End-to-end tests (Playwright)
+
+Task 65 (issue #65) added a real-browser project-lifecycle end-to-end
+suite (`frontend/e2e/`), covering blank/template project creation, shape
+editing, save, version history, restore, and soft-delete against a real
+Django + PostgreSQL stack. It is deliberately **not** part of `make
+check`/`npm test`/CI: unlike every other test in this repo it needs a
+real, already-*running* PostgreSQL-backed Django dev server and the Vite
+dev server, and Playwright's own downloaded browser binaries. SQLite
+cannot satisfy this suite — several scenarios exist specifically to prove
+transaction/concurrency guarantees SQLite doesn't provide.
+
+- `make e2e` (from the repo root) - run the whole suite; equivalent to
+  `cd frontend && npm run test:e2e` (`playwright test`)
+- `cd frontend && npx playwright test --list` - list every scenario
+  without running a browser; useful to confirm the suite is syntactically
+  valid and every test is discoverable with no server running at all
+- `cd frontend && npx playwright install --with-deps chromium` - one-time
+  download of the Chromium build Playwright drives (only needed once per
+  machine, not before every run)
+
+Before running `make e2e`, in order:
+
+1. A real, reachable PostgreSQL server (see "Environment setup" above —
+   this suite does not work against SQLite).
+2. `uv run --env-file .env python manage.py migrate`
+3. `uv run --env-file .env python manage.py runserver` (leave running)
+4. `cd frontend && npm run dev` (leave running, in another terminal)
+
+The suite signs in through the real `/accounts/login/` allauth
+email/password form (not Google OAuth, which needs real third-party
+credentials — see issue #75 above) as two deterministic fixture users a
+Playwright `globalSetup` hook creates via `uv run --env-file .env python
+manage.py e2e_fixtures create --json`
+(`scenes/management/commands/e2e_fixtures.py`) before the suite runs, and
+removes via `e2e_fixtures cleanup` after it finishes, along with every
+project/version they created — no fixture data or browser storage
+(cookies/localStorage/IndexedDB) survives past one run. If the dev
+server's `/health/` check isn't reachable when the suite starts, every
+scenario self-skips with an actionable message instead of failing, the
+same convention `config/test_settings.py`'s `POSTGRES_TEST_DATABASE_URL`
+gate already uses for backend-only PostgreSQL tests. Set `E2E_BASE_URL`
+to point the suite at a different origin than the default
+`http://localhost:5173`.
+
 Rules
 
 - Dependencies are added in `pyproject.toml`. Do not add one without asking

@@ -148,6 +148,42 @@ def test_invalid_scene_is_rejected_and_creates_no_version(owner_client, project)
     assert project.current_version is None
 
 
+MALICIOUS_DIR = Path(__file__).resolve().parent.parent / "schema" / "fixtures" / "malicious"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["forbidden_node_type.json", "invalid_graph_cycle.json", "duplicate_ids.json"],
+)
+def test_malicious_scene_json_fixtures_are_rejected_and_create_no_version(
+    owner_client, project, fixture_name
+):
+    """Task 72: a malicious `scene_json` reaching the Accept endpoint --
+    exactly what a compromised/malicious client could submit regardless of
+    what AICreateSceneView/AIEditSceneView actually returned -- must never
+    become a `SceneVersion`, confirming `AIAcceptProposalView`'s
+    documented "never trusts the client's scene" re-validation actually
+    holds for these adversarial shapes specifically, not only for the
+    single hand-written invalid fixture the test above already covers.
+    """
+    malicious_scene = json.loads((MALICIOUS_DIR / fixture_name).read_text())
+
+    response = owner_client.post(
+        _url(project),
+        _payload(operation="ai_create", scene=malicious_scene),
+        format="json",
+    )
+
+    assert response.status_code == 422, response.content
+    body = response.json()
+    assert body["error"] == "invalid_structured_output"
+    assert "Traceback" not in body.get("detail", "")
+    assert SceneVersion.objects.count() == 0
+    project.refresh_from_db()
+    assert project.current_version is None
+
+
 # --- Stale base -------------------------------------------------------------
 
 

@@ -196,6 +196,39 @@ def test_invalid_current_scene_is_rejected_with_400(owner_client, project, monke
     assert response.json()["error"] == "current_scene_invalid"
 
 
+MALICIOUS_DIR = Path(__file__).resolve().parent.parent / "schema" / "fixtures" / "malicious"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["forbidden_node_type.json", "invalid_graph_cycle.json", "duplicate_ids.json"],
+)
+def test_malicious_current_scene_fixtures_are_rejected_before_calling_the_provider(
+    owner_client, project, monkeypatch, fixture_name
+):
+    """Task 72: a malicious `current_scene` (the caller's own working
+    scene, sent with every edit request) must never even reach Mistral --
+    `validate_scene` runs first and rejects it, same as the single
+    hand-written case above, confirmed here for the shared adversarial
+    fixtures used across the whole suite (forbidden node type, graph
+    cycle, duplicate ids)."""
+
+    def handler(**kwargs):  # pragma: no cover -- must never be called
+        raise AssertionError("the provider must not be called for a malicious current_scene")
+
+    _use_provider(monkeypatch, MistralSceneProvider(client=_FakeClient(handler)))
+
+    malicious_scene = json.loads((MALICIOUS_DIR / fixture_name).read_text())
+
+    response = owner_client.post(_url(project), _payload(scene=malicious_scene), format="json")
+
+    assert response.status_code == 400, response.content
+    body = response.json()
+    assert body["error"] == "current_scene_invalid"
+    assert "Traceback" not in json.dumps(body)
+
+
 # --- Stale base --------------------------------------------------------------
 
 

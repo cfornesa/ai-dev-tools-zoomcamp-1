@@ -129,6 +129,74 @@ def test_invalid_scene_creates_no_version_and_leaves_current_version_unchanged(
     assert project.current_version is None
 
 
+MALICIOUS_DIR = Path(__file__).resolve().parent.parent / "schema" / "fixtures" / "malicious"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "forbidden_node_type.json",
+        "invalid_graph_cycle.json",
+        "duplicate_ids.json",
+        "nan_opacity.json.txt",
+        "combined_resource_limit_abuse.json",
+    ],
+)
+def test_malicious_fixtures_create_no_version_and_never_reach_persistence(
+    owner_client, project, fixture_name
+):
+    """Task 72: a sample of the most dangerous shared fixtures (forbidden
+    node type, graph cycle, duplicate ids, a NaN-injection attempt, and
+    combined resource-limit abuse) end to end -- through the real save
+    endpoint, not just `validate_scene` in isolation -- confirming the
+    same rejection `tests/test_scene_validation.py` proves at the
+    validator layer also holds at the persistence boundary: no
+    `SceneVersion` row, and `project.current_version` untouched.
+    """
+    # DRF's JSONRenderer refuses to re-serialize a NaN/Infinity float at
+    # all (allow_nan=False), so a request body containing one can't be
+    # built through `format="json"` -- send the fixture's own raw bytes
+    # (which already carry the literal NaN/Infinity token verbatim, the
+    # same as an attacker's raw request body would) instead, for every
+    # fixture, rather than special-casing just the non-finite ones.
+    raw_body = (MALICIOUS_DIR / fixture_name).read_text()
+    wrapped_body = json.dumps({"scene_json": json.loads(raw_body), "origin": "manual"})
+    # json.dumps here re-emits NaN/Infinity tokens verbatim (its default
+    # allow_nan=True), unlike DRF's renderer above -- this is exactly what
+    # this test needs: a wire-format request body an attacker could
+    # actually send, literal non-standard tokens included.
+
+    response = owner_client.post(
+        _versions_url(project),
+        data=wrapped_body,
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400, response.content
+    body = response.json()
+    if fixture_name == "nan_opacity.json.txt":
+        # DRF's own request-body JSON parser rejects NaN/Infinity before
+        # this view -- and therefore validate_scene -- ever runs at all
+        # (`REST_FRAMEWORK["STRICT_JSON"]` defaults to True and this
+        # project doesn't override it): `{"detail": "JSON parse error ..."}`,
+        # not this endpoint's usual `{"errors": [...]}` shape. Both are
+        # safe, field/rule-free-of-internals responses; scenes/validation.py's
+        # own nonFiniteNumber check (tests/test_scene_validation.py) is
+        # what protects a caller that reaches validate_scene some other
+        # way (e.g. not through a DRF view at all).
+        assert "detail" in body
+        assert "Traceback" not in body["detail"]
+    else:
+        assert body["errors"], "must report at least one field/rule error"
+        for error in body["errors"]:
+            assert "Traceback" not in error.get("message", "")
+            assert "jsonschema" not in error.get("message", "").lower()
+    assert SceneVersion.objects.count() == 0
+    project.refresh_from_db()
+    assert project.current_version is None
+
+
 @pytest.mark.django_db
 def test_invalid_origin_is_rejected(owner_client, project):
     response = owner_client.post(

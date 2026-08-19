@@ -24,6 +24,7 @@ import {
   type Shape,
   type ShapeType,
 } from './sceneShapes';
+import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useDraftRecovery } from './useDraftRecovery';
@@ -49,6 +50,44 @@ const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
   { type: 'line', label: 'Add line' },
   { type: 'path', label: 'Add polygon' },
 ];
+
+/**
+ * Task 64 (issue #64): the "Exit without saving" confirmation, as its own
+ * component so `useAlertDialogFocus` (focus-into-dialog on open, Escape
+ * dismisses, focus returns to the trigger on close) runs for exactly this
+ * dialog's own mount/unmount lifecycle — see that hook's doc comment.
+ */
+function ExitWithoutSavingConfirm({
+  onConfirm,
+  onCancel,
+}: {
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
+  return (
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      role="alertdialog"
+      aria-labelledby="exit-without-saving-confirm-title"
+      className="exit-without-saving-confirm"
+    >
+      <h3 id="exit-without-saving-confirm-title">Exit without saving?</h3>
+      <p>
+        Any unsaved changes will stay out of version history. Your local recovery draft for this
+        project will also be cleared.
+      </p>
+      <button type="button" onClick={onConfirm}>
+        Exit without saving
+      </button>
+      <button type="button" onClick={onCancel}>
+        Cancel
+      </button>
+    </div>
+  );
+}
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -513,23 +552,10 @@ function EditorWorkspace() {
           Exit without saving
         </button>
         {showExitConfirm && (
-          <div
-            role="alertdialog"
-            aria-labelledby="exit-without-saving-confirm-title"
-            className="exit-without-saving-confirm"
-          >
-            <h4 id="exit-without-saving-confirm-title">Exit without saving?</h4>
-            <p>
-              Any unsaved changes will stay out of version history. Your local recovery draft for
-              this project will also be cleared.
-            </p>
-            <button type="button" onClick={() => void handleConfirmExit()}>
-              Exit without saving
-            </button>
-            <button type="button" onClick={() => setShowExitConfirm(false)}>
-              Cancel
-            </button>
-          </div>
+          <ExitWithoutSavingConfirm
+            onConfirm={() => void handleConfirmExit()}
+            onCancel={() => setShowExitConfirm(false)}
+          />
         )}
       </header>
 
@@ -645,6 +671,7 @@ function EditorWorkspace() {
           <div
             ref={canvasRef}
             data-testid="scene-canvas"
+            role="group"
             aria-label="Scene canvas"
             className="editor-scene-canvas"
             style={{

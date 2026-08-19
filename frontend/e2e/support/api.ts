@@ -37,8 +37,9 @@ export async function apiPost(
   context: BrowserContext,
   path: string,
   data: unknown = {},
+  extraHeaders: Record<string, string> = {},
 ): Promise<APIResponse> {
-  const headers = await csrfHeaders(context);
+  const headers = { ...(await csrfHeaders(context)), ...extraHeaders };
   return context.request.post(path, { data, headers });
 }
 
@@ -49,4 +50,20 @@ export async function apiDelete(context: BrowserContext, path: string): Promise<
 
 export async function apiGet(context: BrowserContext, path: string): Promise<APIResponse> {
   return context.request.get(path);
+}
+
+// Task 66 (issue #66): `apiPut` -- needed by `aiAndRecovery.spec.ts` to
+// seed a server-side recovery draft directly (`DraftDetailView.put`,
+// `scenes/api.py`) ahead of loading a project, for the recovery-prompt
+// edge-case scenarios (local/server conflict, "already has a server
+// draft") that need a specific draft state to exist *before* the editor
+// mounts, not producible by waiting on the app's own ~25s sync cadence.
+export async function apiPut(
+  context: BrowserContext,
+  path: string,
+  data: unknown = {},
+  extraHeaders: Record<string, string> = {},
+): Promise<APIResponse> {
+  const headers = { ...(await csrfHeaders(context)), ...extraHeaders };
+  return context.request.put(path, { data, headers });
 }

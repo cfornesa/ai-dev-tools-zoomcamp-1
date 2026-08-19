@@ -110,6 +110,14 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Task 66/issue #66: registered unconditionally, but a complete no-op
+    # unless AI_PROVIDER=fake is set in this process's environment (see
+    # ai_provider/config.py's use_fake_ai_provider and
+    # ai_provider/e2e_scenario.py) -- lets the Playwright AI/recovery
+    # end-to-end suite select a deterministic AI outcome per request via
+    # the X-E2E-AI-Scenario header, with zero effect on any real
+    # deployment (no documented .env sets AI_PROVIDER).
+    'ai_provider.e2e_scenario.E2EScenarioMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = [

@@ -78,11 +78,13 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ai_provider.config import use_fake_ai_provider
 from ai_provider.interface import (
     AICreateSceneRequest,
     AIEditSceneRequest,
     AIErrorCategory,
     AIOperationResult,
+    AISceneProvider,
 )
 from ai_provider.logging import log_operation_result
 from ai_provider.mistral_provider import (
@@ -348,14 +350,38 @@ def _invalid_current_scene_response(validation: SceneValidationResult) -> Respon
     )
 
 
-def get_ai_provider() -> MistralSceneProvider:
+def get_ai_provider() -> AISceneProvider:
     """The single place this view constructs its provider. A real
     `MistralSceneProvider()` reads `MISTRAL_API_KEY` lazily, on first
     actual use (see that class's `client` property) -- never here, and
     never at import time -- so importing/routing this module never
     requires a real key. Tests monkeypatch this function to inject a
     provider backed by a mock Mistral client instead.
+
+    Task 66/issue #66: when (and only when) `AI_PROVIDER=fake` is set in
+    the server process's environment --
+    `ai_provider.config.use_fake_ai_provider()` -- this returns a
+    deterministic, network-free `ai_provider.e2e_provider.E2ETestProvider`
+    instead, selecting a scenario from the current request's
+    `X-E2E-AI-Scenario` header via `ai_provider.e2e_scenario` (populated by
+    `E2EScenarioMiddleware`, registered unconditionally but a no-op
+    without `AI_PROVIDER=fake`). This is what lets
+    `frontend/e2e/aiAndRecovery.spec.ts` drive every documented AI
+    success/error path through the real browser UI, over a real HTTP
+    server, without a real Mistral account or any network access -- see
+    `ai_provider/e2e_provider.py`'s own docstring for the full mapping.
+    This function's signature deliberately stays zero-argument (no
+    `request` parameter) so every existing `monkeypatch.setattr(ai_api,
+    "get_ai_provider", lambda: provider)` in
+    `tests/test_ai_create_scene_api.py`/`tests/test_ai_edit_scene_api.py`
+    keeps working unchanged -- the request-scoped scenario is threaded in
+    via a contextvar instead (see `ai_provider/e2e_scenario.py`).
     """
+    if use_fake_ai_provider():
+        from ai_provider.e2e_provider import build_e2e_provider
+        from ai_provider.e2e_scenario import get_current_scenario
+
+        return build_e2e_provider(get_current_scenario())
     return MistralSceneProvider()
 
 

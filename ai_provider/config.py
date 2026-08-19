@@ -39,6 +39,31 @@ from django.core.exceptions import ImproperlyConfigured
 # (see AGENTS.md and config/settings.py).
 MISTRAL_API_KEY_ENV_VAR = "MISTRAL_API_KEY"
 
+# Task 66/issue #66's deterministic-provider swap for the Playwright
+# AI/recovery end-to-end suite (`frontend/e2e/aiAndRecovery.spec.ts`).
+# When, and only when, this environment variable is set to exactly
+# "fake" (case-insensitive), `scenes.ai_api.get_ai_provider()` returns a
+# network-free `ai_provider.e2e_provider` provider instead of a real
+# `MistralSceneProvider()` — see that module's own docstring for the
+# full wiring. No documented deployment `.env`/`.env.example` anywhere in
+# this repo sets `AI_PROVIDER`, so a real deployment's behavior is
+# completely unchanged; this only ever takes effect when a developer or
+# CI explicitly starts `manage.py runserver` with `AI_PROVIDER=fake` in
+# its environment, exactly as AGENTS.md documents for this suite.
+AI_PROVIDER_ENV_VAR = "AI_PROVIDER"
+AI_PROVIDER_FAKE_VALUE = "fake"
+
+
+def use_fake_ai_provider() -> bool:
+    """Whether `AI_PROVIDER_ENV_VAR` selects the deterministic E2E provider.
+
+    Reads directly from `os.environ` (never cached) so a test process that
+    sets/unsets the variable via `monkeypatch.setenv`/`os.environ` sees the
+    change take effect immediately, matching every other env-driven check
+    in this codebase.
+    """
+    return os.environ.get(AI_PROVIDER_ENV_VAR, "").strip().lower() == AI_PROVIDER_FAKE_VALUE
+
 
 def get_provider_api_key(env_var: str) -> str:
     """Read a provider API key from a server-side environment variable.

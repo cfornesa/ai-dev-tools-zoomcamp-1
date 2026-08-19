@@ -110,11 +110,15 @@ End-to-end tests (Playwright)
 Task 65 (issue #65) added a real-browser project-lifecycle end-to-end
 suite (`frontend/e2e/`), covering blank/template project creation, shape
 editing, save, version history, restore, and soft-delete against a real
-Django + PostgreSQL stack. It is deliberately **not** part of `make
-check`/`npm test`/CI: unlike every other test in this repo it needs a
-real, already-*running* PostgreSQL-backed Django dev server and the Vite
-dev server, and Playwright's own downloaded browser binaries. SQLite
-cannot satisfy this suite — several scenarios exist specifically to prove
+Django + PostgreSQL stack. Task 66/issue #68 added a companion
+interaction-runtime suite (`interactionRuntime.spec.ts`), and Task
+66/issue #66 added a companion AI-proposal/draft-recovery suite
+(`aiAndRecovery.spec.ts`) — same infrastructure, same conventions. All
+three are deliberately **not** part of `make check`/`npm test`/CI: unlike
+every other test in this repo they need a real, already-*running*
+PostgreSQL-backed Django dev server and the Vite dev server, and
+Playwright's own downloaded browser binaries. SQLite cannot satisfy this
+suite — several scenarios exist specifically to prove
 transaction/concurrency guarantees SQLite doesn't provide.
 
 - `make e2e` (from the repo root) - run the whole suite; equivalent to
@@ -131,7 +135,16 @@ Before running `make e2e`, in order:
 1. A real, reachable PostgreSQL server (see "Environment setup" above —
    this suite does not work against SQLite).
 2. `uv run --env-file .env python manage.py migrate`
-3. `uv run --env-file .env python manage.py runserver` (leave running)
+3. `AI_PROVIDER=fake uv run --env-file .env python manage.py runserver`
+   (leave running) — `AI_PROVIDER=fake` swaps every AI endpoint
+   (`scenes/ai_api.py`'s `get_ai_provider`) to a deterministic, network-free
+   fake provider (`ai_provider/e2e_provider.py`) instead of the real
+   Mistral client, so `frontend/e2e/aiAndRecovery.spec.ts` (Task 66,
+   issue #66) never needs a real `MISTRAL_API_KEY`. Every other suite
+   (`projectLifecycle.spec.ts`, `interactionRuntime.spec.ts`) runs the
+   same either way — this only affects the three AI endpoints. Omitting
+   it just makes `aiAndRecovery.spec.ts` self-skip its AI scenarios with
+   an actionable message; nothing else is affected.
 4. `cd frontend && npm run dev` (leave running, in another terminal)
 
 The suite signs in through the real `/accounts/login/` allauth

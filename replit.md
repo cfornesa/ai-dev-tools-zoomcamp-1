@@ -39,6 +39,12 @@ the current Replit development domain and its
   `scripts/start.sh` and keeps the existing 8000/5000 development ports.
 - Replit Publish: use `scripts/start.sh` as the run command. Replit's `PORT`
   value is forwarded to Vite so the externally exposed web port is reachable.
+- Published routing smoke check: run
+  `PUBLISHED_APP_URL=https://your-published-domain.example scripts/smoke-published.sh`.
+  It checks `/`, `/health/`, anonymous `/api/whoami/`, and
+  `/accounts/login/` without sending credentials. To enable the same check in
+  GitHub Actions, set the repository variable `PUBLISHED_APP_URL` to the
+  published app URL.
 
 ## By Default
 For all other items, defer to @AGENTS.md

@@ -63,6 +63,21 @@ jobs:
       - name: Test (vitest)
         run: npm test
 
+  published-smoke:
+    name: Published routing smoke check
+    # Configure the public URL as a repository variable. The check is skipped
+    # when this project has no published instance, rather than probing a
+    # placeholder or requiring credentials in CI.
+    if: ${{ vars.PUBLISHED_APP_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check published routing
+        env:
+          PUBLISHED_APP_URL: ${{ vars.PUBLISHED_APP_URL }}
+        run: scripts/smoke-published.sh
+
   e2e-responsive:
     name: Responsive shell E2E
     runs-on: ubuntu-latest

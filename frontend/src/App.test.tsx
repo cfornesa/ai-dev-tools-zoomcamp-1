@@ -29,6 +29,8 @@ describe('App', () => {
       'href',
       '/accounts/login/',
     );
-    expect(screen.getByText(/sign in to see your projects/i).closest('.content-panel')).not.toBeNull();
+    expect(
+      screen.getByText(/sign in to see your projects/i).closest('.content-panel'),
+    ).not.toBeNull();
   });
 });

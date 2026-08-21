@@ -75,7 +75,9 @@ describe('Gallery loading/error/empty/populated states', () => {
     renderGallery();
 
     expect(await screen.findByText('You have not created any projects.')).toBeInTheDocument();
-    expect(screen.getByText('You have not created any projects.').closest('.content-panel')).not.toBeNull();
+    expect(
+      screen.getByText('You have not created any projects.').closest('.content-panel'),
+    ).not.toBeNull();
     const createButton = screen.getByRole('button', { name: /create new animation/i });
     expect(createButton).toBeInTheDocument();
     expect(createButton.tagName).toBe('BUTTON'); // native focusable element, no tabindex hacks

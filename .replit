@@ -2,6 +2,7 @@ modules = ["web", "postgresql-16", "python-base-3.13", "nodejs-22"]
 
 [nix]
 channel = "stable-25_05"
+packages = ["util-linux"]
 
 [agent]
 expertMode = true

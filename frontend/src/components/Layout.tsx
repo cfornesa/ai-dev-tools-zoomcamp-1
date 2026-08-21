@@ -29,7 +29,7 @@ function Layout() {
         Skip to main content
       </a>
       <header>
-        <h1>Gesture-Reactive Web Animation Studio</h1>
+        <h1>Creatrweb Animation Studio</h1>
         <nav>
           <Link to="/gallery">Public gallery</Link>
         </nav>

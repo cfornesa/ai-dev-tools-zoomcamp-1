@@ -56,7 +56,7 @@ export const P5_CDN_URL = `https://cdn.jsdelivr.net/npm/p5@${P5_VERSION}/lib/p5.
  * text. This module's own documented choices, filling in what the plan
  * left open (see the issue #60 comment for the full rationale):
  *
- * - Product name: "Gesture-Reactive Web Animation Studio" -- the exact
+ * - Product name: "Creatrweb Animation Studio" -- the exact
  *   name already used as this app's own visible product name in
  *   `frontend/src/components/Layout.tsx`'s `<h1>` and in
  *   `_docs/plan.md`'s own title, so the export doesn't introduce a
@@ -76,7 +76,7 @@ export const P5_CDN_URL = `https://cdn.jsdelivr.net/npm/p5@${P5_VERSION}/lib/p5.
  * through `escapeHtml`) exactly like every other static string this
  * module writes (`<h1>`, `<style>`, section headings).
  */
-export const ATTRIBUTION_PRODUCT_NAME = 'Gesture-Reactive Web Animation Studio';
+export const ATTRIBUTION_PRODUCT_NAME = 'Creatrweb Animation Studio';
 export const ATTRIBUTION_PRODUCT_URL = 'https://github.com/cfornesa/ai-dev-tools-zoomcamp-1';
 /** Bumped only when this attribution/export-generation module's own
  * output shape changes in a way worth distinguishing later -- not tied to

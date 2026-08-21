@@ -1,4 +1,4 @@
-# Gesture-Reactive Web Animation Studio — V1 Plan
+# Creatrweb Animation Studio — V1 Plan
 
 ## Product definition
 

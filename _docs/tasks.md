@@ -1,4 +1,4 @@
-# Gesture-Reactive Web Animation Studio Backlog
+# Creatrweb Animation Studio Backlog
 
 ## 1. Set up an empty project with a passing test
 Goal: Create the minimal Django and React/TypeScript project structure and prove the test toolchain works.

@@ -1,4 +1,4 @@
-# Running Gesture-Reactive Web Animation Studio on Replit
+# Running Creatrweb Animation Studio on Replit
 
 The `Start application` workflow runs the full development stack:
 

@@ -12,7 +12,7 @@ describe('App', () => {
     render(<App />);
 
     expect(
-      screen.getByRole('heading', { name: /gesture-reactive web animation studio/i, level: 1 }),
+      screen.getByRole('heading', { name: 'Creatrweb Animation Studio', level: 1 }),
     ).toBeInTheDocument();
     expect(await screen.findByText(/sign in to see your projects/i)).toBeInTheDocument();
   });

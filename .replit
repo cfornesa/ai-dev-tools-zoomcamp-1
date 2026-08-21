@@ -5,3 +5,12 @@ channel = "stable-25_05"
 
 [agent]
 expertMode = true
+
+[userenv]
+
+[userenv.shared]
+AI_PROVIDER = "fake"
+DJANGO_ALLOWED_HOSTS = "*"
+DJANGO_DEBUG = "true"
+GOOGLE_OAUTH_CLIENT_ID = "changeme.apps.googleusercontent.com"
+GOOGLE_OAUTH_CLIENT_SECRET = "changeme-generate-a-real-oauth-client-secret"

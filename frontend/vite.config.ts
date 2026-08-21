@@ -6,6 +6,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
+    port: 5000,
     fs: {
       // Allows importing the canonical scene schema/limits/fixtures from
       // ../schema (outside frontend/), the single source of truth shared

@@ -68,6 +68,8 @@ exist" from "not yours", matching every other project-scoped endpoint in
 
 from __future__ import annotations
 
+from contextvars import ContextVar
+
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Max
@@ -94,7 +96,12 @@ from ai_provider.mistral_provider import (
     MistralSceneProvider,
 )
 from scenes.api import _get_project_or_404, _require_or_404
-from scenes.models import Project, SceneVersion
+from scenes.models import (
+    MistralCredential,
+    MistralCredentialDecryptionError,
+    Project,
+    SceneVersion,
+)
 from scenes.patch import PatchErrorReason
 from scenes.permissions import Action
 from scenes.serializers import SceneVersionDetailSerializer
@@ -358,13 +365,17 @@ def _invalid_current_scene_response(validation: SceneValidationResult) -> Respon
     )
 
 
+_current_ai_user: ContextVar[object | None] = ContextVar("current_ai_user", default=None)
+
+
+class MissingPersonalMistralCredential(Exception):
+    """Raised before any provider call when the owner has no usable key."""
+
+
 def get_ai_provider() -> AISceneProvider:
     """The single place this view constructs its provider. A real
-    `MistralSceneProvider()` reads `MISTRAL_API_KEY` lazily, on first
-    actual use (see that class's `client` property) -- never here, and
-    never at import time -- so importing/routing this module never
-    requires a real key. Tests monkeypatch this function to inject a
-    provider backed by a mock Mistral client instead.
+    The request user is carried through a context variable so existing tests
+    that monkeypatch this zero-argument factory remain compatible.
 
     Task 66/issue #66: when (and only when) `AI_PROVIDER=fake` is set in
     the server process's environment --
@@ -390,7 +401,38 @@ def get_ai_provider() -> AISceneProvider:
         from ai_provider.e2e_scenario import get_current_scenario
 
         return build_e2e_provider(get_current_scenario())
-    return MistralSceneProvider()
+    user = _current_ai_user.get()
+    if user is None or not getattr(user, "is_authenticated", False):
+        raise MissingPersonalMistralCredential
+    credential = MistralCredential.objects.filter(user=user).first()
+    if credential is None:
+        raise MissingPersonalMistralCredential
+    try:
+        key = credential.get_key()
+    except MistralCredentialDecryptionError as exc:
+        raise MissingPersonalMistralCredential from exc
+    return MistralSceneProvider(api_key=key)
+
+
+def _provider_for_user(user):
+    token = _current_ai_user.set(user)
+    try:
+        return get_ai_provider()
+    finally:
+        _current_ai_user.reset(token)
+
+
+def _missing_key_response() -> Response:
+    return Response(
+        {
+            "error": "personal_key_required",
+            "detail": (
+                "Configure your personal Mistral API key in Account settings "
+                "before generating AI scenes."
+            ),
+        },
+        status=status.HTTP_424_FAILED_DEPENDENCY,
+    )
 
 
 class AICreateSceneView(APIView):
@@ -425,7 +467,10 @@ class AICreateSceneView(APIView):
         if _current_count(_quota_cache_key(user_id)) >= DAILY_QUOTA_MAX_SUCCESSES:
             return _quota_exceeded_response()
 
-        provider = get_ai_provider()
+        try:
+            provider = _provider_for_user(request.user)
+        except MissingPersonalMistralCredential:
+            return _missing_key_response()
         result = provider.create_scene(AICreateSceneRequest(prompt=prompt))
 
         # Minimal metadata only -- no prompt text, no scene content, no
@@ -550,7 +595,10 @@ class AIEditSceneView(APIView):
         if _current_count(edit_quota_key) >= EDIT_DAILY_QUOTA_MAX_SUCCESSES:
             return _edit_quota_exceeded_response()
 
-        provider = get_ai_provider()
+        try:
+            provider = _provider_for_user(request.user)
+        except MissingPersonalMistralCredential:
+            return _missing_key_response()
         outcome = provider.edit_scene_with_patch(
             AIEditSceneRequest(prompt=prompt, current_scene=current_scene)
         )

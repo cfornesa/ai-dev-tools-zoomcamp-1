@@ -20,7 +20,7 @@ Configure these through Replit Secrets:
 - `DJANGO_SECRET_KEY`
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
-- `MISTRAL_API_KEY` (enables AI scene generation)
+- `MISTRAL_CREDENTIAL_ENCRYPTION_KEY` (Fernet root for encrypted personal Mistral keys)
 - `RECAPTCHA_SECRET_KEY` (only when signup protection is enabled)
 
 Signup reCAPTCHA v3 is disabled by default for development. To enable it,
@@ -33,6 +33,15 @@ secret to frontend code; only the public site key is rendered on signup.
 For Google sign-in to work in the Replit preview, the OAuth client must allow
 the current Replit development domain and its
 `/accounts/google/login/callback/` redirect URL.
+
+Each signed-in user configures their own Mistral API key at `/account/settings`.
+Only the encrypted value is stored. Keep the encryption root stable; changing
+it requires a controlled rotation: set the new
+`MISTRAL_CREDENTIAL_ENCRYPTION_KEY`, place the old value in
+`MISTRAL_CREDENTIAL_PREVIOUS_ENCRYPTION_KEYS`, re-save credentials to
+re-encrypt them by running `uv run python manage.py reencrypt_mistral_credentials`,
+then remove the old value. Losing every applicable key makes existing
+credentials unusable, but never reveals their plaintext.
 
 ## Local checks
 

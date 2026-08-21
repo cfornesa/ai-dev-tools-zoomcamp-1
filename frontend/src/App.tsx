@@ -8,6 +8,7 @@ import ProjectMetadataForm from './pages/ProjectMetadataForm';
 import PublicGallery from './pages/PublicGallery';
 import PublicProjectViewer from './pages/PublicProjectViewer';
 import Templates from './pages/Templates';
+import AccountSettings from './pages/AccountSettings';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
                 (`/api/public/projects/<public_id>/`). */}
             <Route path="p/:id" element={<PublicProjectViewer />} />
             <Route path="templates" element={<Templates />} />
+            <Route path="account/settings" element={<AccountSettings />} />
             <Route path="projects/:id" element={<EditorWorkspace />} />
             <Route path="projects/:id/settings" element={<ProjectMetadataForm />} />
           </Route>

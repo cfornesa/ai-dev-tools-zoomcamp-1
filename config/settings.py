@@ -82,6 +82,17 @@ DATABASE_URL = get_required_env('DATABASE_URL')
 GOOGLE_OAUTH_CLIENT_ID = get_required_env('GOOGLE_OAUTH_CLIENT_ID')
 GOOGLE_OAUTH_CLIENT_SECRET = get_required_env('GOOGLE_OAUTH_CLIENT_SECRET')
 
+# Root key used only to encrypt user-owned Mistral credentials. Keep this in
+# deployment configuration and rotate it deliberately (rotation invalidates
+# existing encrypted credentials unless they are re-encrypted during a
+# controlled migration).
+MISTRAL_CREDENTIAL_ENCRYPTION_KEY = get_required_env('MISTRAL_CREDENTIAL_ENCRYPTION_KEY')
+MISTRAL_CREDENTIAL_PREVIOUS_ENCRYPTION_KEYS = [
+    key.strip()
+    for key in os.environ.get('MISTRAL_CREDENTIAL_PREVIOUS_ENCRYPTION_KEYS', '').split(',')
+    if key.strip()
+]
+
 # Signup protection is opt-in for development. If enabled, production must
 # provide every verification setting; it must never silently accept signups.
 RECAPTCHA_ENABLED = get_bool_env("RECAPTCHA_ENABLED", default=False)

@@ -1,4 +1,4 @@
-"""Where a real provider implementation reads its API key. Server-side only.
+"""Provider selection configuration. User credentials are resolved elsewhere.
 
 `_docs/plan.md`'s "API-key security" section: "Keep provider API keys
 only in Django deployment secrets/environment variables. Never expose
@@ -37,7 +37,6 @@ from django.core.exceptions import ImproperlyConfigured
 # Documented here so every future provider implementation follows the
 # same one-env-var-per-provider convention as the rest of this codebase
 # (see AGENTS.md and config/settings.py).
-MISTRAL_API_KEY_ENV_VAR = "MISTRAL_API_KEY"
 
 # Task 66/issue #66's deterministic-provider swap for the Playwright
 # AI/recovery end-to-end suite (`frontend/e2e/aiAndRecovery.spec.ts`).
@@ -66,21 +65,12 @@ def use_fake_ai_provider() -> bool:
 
 
 def get_provider_api_key(env_var: str) -> str:
-    """Read a provider API key from a server-side environment variable.
-
-    Raises `ImproperlyConfigured`, naming the missing variable, if it is
-    unset — the same fail-fast convention `config.settings.get_required_env`
-    uses for every other secret in this project. Callers must pass the
-    variable name explicitly (e.g. `MISTRAL_API_KEY_ENV_VAR`); there is
-    no default, and this function accepts no other way to supply a key.
-    """
+    """Compatibility helper for older integrations; production AI never calls it."""
     try:
         return os.environ[env_var]
     except KeyError:
         raise ImproperlyConfigured(
-            f"Required environment variable '{env_var}' is not set. "
-            "Provider API keys are read from server-side environment "
-            "variables only — never from request payloads, scene "
-            "content, or browser code. See ai_provider/config.py and "
-            "AGENTS.md."
+            f"Required environment variable '{env_var}' is not set."
         ) from None
+
+

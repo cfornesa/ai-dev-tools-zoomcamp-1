@@ -38,9 +38,10 @@ function Layout() {
         </nav>
         <div className="app-shell-auth">
           {auth.status === 'signed-in' ? (
-            <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>
-              Logout
-            </button>
+            <>
+              <Link className="shell-action" to="/account/settings">Account settings</Link>
+              <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>Logout</button>
+            </>
           ) : auth.status === 'loading' ? (
             <span role="status" aria-label="Checking account">Checking account…</span>
           ) : (

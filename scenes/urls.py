@@ -19,8 +19,10 @@ from scenes.api import (
     TemplateCloneView,
     TemplateListView,
 )
+from scenes.credentials_api import MistralCredentialView
 
 urlpatterns = [
+    path("account/mistral-credential/", MistralCredentialView.as_view(), name="mistral-credential"),
     path("projects/", ProjectListCreateView.as_view(), name="project-list-create"),
     path("projects/blank/", BlankProjectCreateView.as_view(), name="project-create-blank"),
     path("templates/", TemplateListView.as_view(), name="template-list"),

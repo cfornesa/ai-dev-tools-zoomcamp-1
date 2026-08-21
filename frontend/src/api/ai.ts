@@ -64,7 +64,8 @@ export type AIErrorCode =
   | 'malformed_patch'
   | 'oversized_patch'
   | 'patch_apply_failed'
-  | 'request_invalid';
+  | 'request_invalid'
+  | 'personal_key_required';
 
 export type AIErrorBody = {
   error: AIErrorCode;

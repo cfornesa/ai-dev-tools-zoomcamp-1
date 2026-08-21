@@ -29,11 +29,45 @@ from django.utils import timezone
 from scenes.validation import validate_scene
 
 
+class MistralCredentialDecryptionError(Exception):
+    """Raised when a stored Mistral credential cannot be safely decrypted."""
+
+
 class ProjectManager(models.Manager):
     """Default manager excludes soft-deleted projects (Task 13's recoverable delete)."""
 
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
+
+
+class MistralCredential(models.Model):
+    """One encrypted, owner-scoped Mistral key; plaintext never reaches a model field."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mistral_credential"
+    )
+    encrypted_key = models.BinaryField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Mistral credential for user {self.user_id}"
+
+    def set_key(self, plaintext: str) -> None:
+        from ai_provider.credentials import encrypt_mistral_key
+
+        self.encrypted_key = encrypt_mistral_key(plaintext)
+
+    def get_key(self) -> str:
+        from ai_provider.credentials import decrypt_mistral_key
+
+        try:
+            return decrypt_mistral_key(bytes(self.encrypted_key))
+        except Exception as exc:
+            raise MistralCredentialDecryptionError(
+                "The saved Mistral credential is unavailable. Please replace it."
+            ) from exc
+
 
 
 class Project(models.Model):

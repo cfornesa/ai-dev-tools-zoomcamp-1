@@ -41,6 +41,10 @@ os.environ.setdefault(
 os.environ.setdefault(
     "GOOGLE_OAUTH_CLIENT_SECRET", "test-google-oauth-client-secret-not-for-production"
 )
+os.environ.setdefault(
+    "MISTRAL_CREDENTIAL_ENCRYPTION_KEY",
+    "hDmcNCp7WCvpOjI3tmEd0-foRjnnjh_-OgVogBK30V4=",
+)
 
 from config.settings import *  # noqa: E402,F401,F403
 

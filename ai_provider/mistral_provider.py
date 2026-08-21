@@ -124,7 +124,6 @@ from typing import Any
 
 import httpx
 
-from ai_provider.config import MISTRAL_API_KEY_ENV_VAR, get_provider_api_key
 from ai_provider.errors import (
     AIProviderCancelledError,
     AIProviderQuotaError,
@@ -338,6 +337,7 @@ class MistralSceneProvider(AISceneProvider):
         self,
         client: Any | None = None,
         *,
+        api_key: str | None = None,
         model: str | None = None,
         timeout_ms: int = REQUEST_TIMEOUT_MS,
     ):
@@ -346,6 +346,7 @@ class MistralSceneProvider(AISceneProvider):
         # test. A real caller (the create-scene view) constructs this with
         # no arguments, and the real client is built lazily on first use.
         self._client = client
+        self._api_key = api_key
         self.model = model or DEFAULT_MODEL
         self.timeout_ms = timeout_ms
 
@@ -357,8 +358,14 @@ class MistralSceneProvider(AISceneProvider):
             # environments that only need the fake/interface for tests.
             from mistralai.client import Mistral
 
-            api_key = get_provider_api_key(MISTRAL_API_KEY_ENV_VAR)
-            self._client = Mistral(api_key=api_key)
+            if not self._api_key:
+                # Backward-compatible direct construction for the legacy unit
+                # test/injection surface. Production request code always
+                # supplies a decrypted, owner-scoped api_key.
+                from ai_provider.config import get_provider_api_key
+
+                self._api_key = get_provider_api_key("MISTRAL_API_KEY")
+            self._client = Mistral(api_key=self._api_key)
         return self._client
 
     def create_scene(self, request: AICreateSceneRequest) -> AIOperationResult:

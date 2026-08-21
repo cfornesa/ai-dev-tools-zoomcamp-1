@@ -21,6 +21,14 @@ Configure these through Replit Secrets:
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 - `MISTRAL_API_KEY` (enables AI scene generation)
+- `RECAPTCHA_SECRET_KEY` (only when signup protection is enabled)
+
+Signup reCAPTCHA v3 is disabled by default for development. To enable it,
+configure `RECAPTCHA_ENABLED`, `RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`,
+`RECAPTCHA_ACTION`, `RECAPTCHA_MIN_SCORE`, and
+`RECAPTCHA_ALLOWED_HOSTNAMES`. Production refuses to start when protection is
+enabled without the site key, secret, or allowed hostnames. Never expose the
+secret to frontend code; only the public site key is rendered on signup.
 
 For Google sign-in to work in the Replit preview, the OAuth client must allow
 the current Replit development domain and its

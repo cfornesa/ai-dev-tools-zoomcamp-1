@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router-dom';
 
 import ReducedMotionControl from './ReducedMotionControl';
+import { useAuth } from '../auth/useAuth';
 
 /**
  * Task 64 (issue #64): app-shell skip link, per `_docs/plan.md`'s
@@ -23,18 +24,30 @@ import ReducedMotionControl from './ReducedMotionControl';
  * move focus to a fragment-navigation target.
  */
 function Layout() {
+  const auth = useAuth();
+
   return (
-    <div>
+    <div className="app-shell">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
       <header className="app-shell-header">
         <h1>Creatrweb Animation Studio</h1>
         <nav className="app-shell-nav" aria-label="Primary navigation">
-          <Link className="shell-action" to="/gallery">
-            Public gallery
-          </Link>
+          <Link className="shell-action" to="/gallery">Public gallery</Link>
         </nav>
+        <div className="app-shell-auth">
+          {auth.status === 'signed-in' ? (
+            <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>
+              Logout
+            </button>
+          ) : auth.status === 'loading' ? (
+            <span role="status" aria-label="Checking account">Checking account…</span>
+          ) : (
+            <a className="shell-action" href="/accounts/login/">Login</a>
+          )}
+          {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
+        </div>
         <div className="app-shell-motion">
           <ReducedMotionControl />
         </div>
@@ -42,6 +55,7 @@ function Layout() {
       <main id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
+      <footer className="app-shell-footer">Christopher Fornesa © {new Date().getFullYear()}</footer>
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { AuthContext } from '../auth/context';
 import Layout from './Layout';
 
 /**
@@ -19,6 +21,20 @@ function renderLayout() {
         </Route>
       </Routes>
     </MemoryRouter>,
+  );
+}
+
+function renderWithAuth(auth: ComponentProps<typeof AuthContext.Provider>['value']) {
+  return render(
+    <AuthContext.Provider value={auth}>
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<button type="button">Main action</button>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </AuthContext.Provider>,
   );
 }
 
@@ -41,5 +57,30 @@ describe('Layout: skip link', () => {
     const main = document.getElementById('main-content');
     expect(main).not.toBeNull();
     expect(main).toHaveAttribute('tabindex', '-1');
+  });
+});
+
+describe('Layout: authentication control and attribution', () => {
+  it('shows Login for anonymous visitors and the current year footer', () => {
+    renderWithAuth({ status: 'signed-out', user: null });
+
+    expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute(
+      'href',
+      '/accounts/login/',
+    );
+    expect(screen.getByText(`Christopher Fornesa © ${new Date().getFullYear()}`)).toBeInTheDocument();
+  });
+
+  it('logs out through the provided session action', async () => {
+    const logout = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderWithAuth({
+      status: 'signed-in',
+      user: { username: 'alice', email: 'alice@example.com' },
+      logout,
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Logout' }));
+    expect(logout).toHaveBeenCalledOnce();
   });
 });

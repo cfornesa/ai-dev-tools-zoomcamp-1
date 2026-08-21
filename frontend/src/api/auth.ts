@@ -16,3 +16,8 @@ export async function fetchCurrentUser(): Promise<CurrentUser | null> {
     throw err;
   }
 }
+
+/** Invalidates the Django session through allauth's CSRF-protected logout view. */
+export async function logout(): Promise<void> {
+  await apiFetch('/accounts/logout/', { method: 'POST' });
+}

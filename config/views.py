@@ -10,6 +10,7 @@ import logging
 from django.db import connections
 from django.db.utils import OperationalError
 from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ def health(request):
     )
 
 
+@ensure_csrf_cookie
 def whoami(request):
     """Minimal protected JSON route (Task 12/16): who, if anyone, is signed in.
 

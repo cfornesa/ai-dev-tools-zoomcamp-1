@@ -82,6 +82,28 @@ DATABASE_URL = get_required_env('DATABASE_URL')
 GOOGLE_OAUTH_CLIENT_ID = get_required_env('GOOGLE_OAUTH_CLIENT_ID')
 GOOGLE_OAUTH_CLIENT_SECRET = get_required_env('GOOGLE_OAUTH_CLIENT_SECRET')
 
+# Signup protection is opt-in for development. If enabled, production must
+# provide every verification setting; it must never silently accept signups.
+RECAPTCHA_ENABLED = get_bool_env("RECAPTCHA_ENABLED", default=False)
+RECAPTCHA_SITE_KEY = os.environ.get("RECAPTCHA_SITE_KEY", "")
+RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "")
+RECAPTCHA_ACTION = os.environ.get("RECAPTCHA_ACTION", "signup")
+RECAPTCHA_MIN_SCORE = float(os.environ.get("RECAPTCHA_MIN_SCORE", "0.5"))
+RECAPTCHA_ALLOWED_HOSTNAMES = {
+    host.strip()
+    for host in os.environ.get("RECAPTCHA_ALLOWED_HOSTNAMES", "").split(",")
+    if host.strip()
+}
+RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
+RECAPTCHA_TIMEOUT_SECONDS = 5
+if RECAPTCHA_ENABLED and not DEBUG and (
+    not RECAPTCHA_SITE_KEY or not RECAPTCHA_SECRET_KEY or not RECAPTCHA_ALLOWED_HOSTNAMES
+):
+    raise ImproperlyConfigured(
+        "RECAPTCHA_ENABLED requires RECAPTCHA_SITE_KEY, RECAPTCHA_SECRET_KEY, "
+        "and RECAPTCHA_ALLOWED_HOSTNAMES in production."
+    )
+
 
 # Application definition
 
@@ -148,6 +170,7 @@ SOCIALACCOUNT_PROVIDERS = {
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_FORMS = {"signup": "config.forms.RecaptchaSignupForm"}
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
@@ -157,13 +180,14 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'config.context_processors.recaptcha',
             ],
         },
     },

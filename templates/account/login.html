@@ -1,0 +1,15 @@
+{% extends "account/base.html" %}
+{% load account socialaccount %}
+{% block title %}Log in · Creatrweb Animation Studio{% endblock %}
+{% block content %}
+<h1>Welcome back</h1><p class="intro">Log in to continue to your animation studio.</p>
+{% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+<form method="post" action="{% url 'account_login' %}">
+  {% csrf_token %}{{ redirect_field }}
+  <label for="id_login">Email</label>{{ form.login }}{{ form.login.errors }}
+  <label for="id_password">Password</label>{{ form.password }}{{ form.password.errors }}
+  <button type="submit">Login</button>
+</form>
+<form method="post" action="{% provider_login_url 'google' %}">{% csrf_token %}<button class="google" type="submit">Continue with Google</button></form>
+<p class="links">New here? <a href="{% url 'account_signup' %}">Create an account</a></p>
+{% endblock %}

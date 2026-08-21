@@ -1,7 +1,15 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import App from './App';
+
+const shellDocument = new DOMParser().parseFromString(
+  readFileSync(resolve(process.cwd(), 'index.html'), 'utf8'),
+  'text/html',
+);
 
 vi.mock('./api/auth', () => ({
   fetchCurrentUser: vi.fn().mockResolvedValue(null),
@@ -14,6 +22,7 @@ describe('App', () => {
     expect(
       screen.getByRole('heading', { name: 'Creatrweb Animation Studio', level: 1 }),
     ).toBeInTheDocument();
+    expect(shellDocument.title).toBe('Creatrweb Animation Studio');
     expect(await screen.findByText(/sign in to see your projects/i)).toBeInTheDocument();
   });
 });

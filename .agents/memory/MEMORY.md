@@ -1,1 +1,2 @@
 - [PostgreSQL migration SQL](postgresql-migration-sql.md) — Raw PL/pgSQL in Django migrations must escape literal percent signs for Psycopg 3.
+- [Vitest shell file paths](vitest-shell-file-paths.md) — Read static shell files from the frontend process root because transformed import.meta URLs are not file URLs.

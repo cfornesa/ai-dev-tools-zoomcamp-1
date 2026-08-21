@@ -20,7 +20,7 @@ def launcher_doubles(tmp_path):
             """\
             #!/usr/bin/env bash
             if [[ "${DJANGO_EXITS_EARLY:-}" == "1" ]]; then
-              exit 1
+              exit "${DJANGO_EXIT_STATUS:-1}"
             fi
             exec sleep 30
             """
@@ -150,10 +150,11 @@ def test_launcher_reports_django_exit_before_starting_vite(launcher_doubles):
         bin_dir,
         state_file,
         DJANGO_EXITS_EARLY="1",
+        DJANGO_EXIT_STATUS="7",
         HEALTH_AFTER="always",
         STARTUP_TIMEOUT_SECONDS="5",
     )
 
     assert result.returncode != 0
-    assert "Django exited before becoming healthy" in result.stderr
+    assert "Django exited before becoming healthy (status 7)" in result.stderr
     assert not (state_file.parent / "startup-state.vite-started").exists()

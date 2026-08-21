@@ -1,20 +1,26 @@
 # Creatrweb Animation Studio Backlog
 
+Status convention: Each completed item is marked `Status: COMPLETE`. Work that is underway is marked `Status: ACTIVE`, and not-yet-started work is marked `Status: PROPOSED`.
+
 ## 1. Set up an empty project with a passing test
 Goal: Create the minimal Django and React/TypeScript project structure and prove the test toolchain works.
 Description: Initialize the backend and frontend applications, add their test runners, and document the local test commands. Include one trivial backend test and one trivial frontend test that both pass without implementing product behavior.
+Status: COMPLETE
 
 ## 2. Add local development configuration
 Goal: Make the empty application reproducible in a local development environment.
 Description: Add example environment configuration for Django, PostgreSQL, the frontend, and required secrets without committing real credentials. Document the commands for installing dependencies, starting services, applying migrations, and running both applications.
+Status: COMPLETE
 
 ## 3. Configure Replit-managed PostgreSQL and health checks
 Goal: Connect deployed Django environments to Replit-managed PostgreSQL through `DATABASE_URL` while retaining SQLite only for isolated offline tests.
 Description: Configure Django to consume the development or production `DATABASE_URL` supplied by Replit, document the separation between those databases, and add a lightweight endpoint that reports application and database availability without leaking connection details. Add PostgreSQL-backed tests for successful health responses and database connection failures, plus an explicit test-only SQLite path for tests that do not rely on PostgreSQL semantics.
+Status: COMPLETE
 
 ## 4. Establish backend and frontend quality checks
 Goal: Provide consistent automated formatting, linting, type-checking, and test commands.
 Description: Configure appropriate Python and TypeScript quality tools and expose a single documented command for running all checks locally. Add continuous integration that executes the same checks on each proposed change.
+Status: COMPLETE
 
 ## 5. Define the canonical scene JSON schema
 Goal: Specify the versioned, renderer-neutral document format used as creative source of truth.
@@ -299,10 +305,19 @@ Description: Generate exports using hostile titles, descriptions, colors, labels
 ## 75. Add real environment variables and private credentials
 Goal: Replace the placeholder values used during development (Google OAuth client id/secret, Mistral API key, and any other provider credentials introduced by Tasks 12+) with real, securely-stored values in every deployed environment.
 Description: Enumerate every environment variable/secret placeholder introduced so far (starting with `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` from Task 12) and any added by later AI-integration tasks. Document where each real credential comes from (Google Cloud Console OAuth client, Mistral API console, Replit-managed PostgreSQL, etc.), provision them in Replit's development and production secret stores separately, and verify the application behaves correctly with real values instead of placeholders. Confirm no placeholder or real secret is ever committed to the repository.
-Ordering: reassigned to be the LAST task in the entire backlog (see GitHub issue #75's comments for rationale) — it needs real external credentials only the project owner can provision, and doing it early would let its own verification step mask later regressions. Do not start it while issues #71-74 or #76-83 (see below) remain open.
+Status: COMPLETE
+Ordering: Remains the LAST task in the entire backlog. The project owner has provisioned the required credentials through Replit's secure secret mechanism, and verification confirmed their presence without exposing values. Do not reorder or reopen this task unless the credential configuration changes.
+
+## Session follow-ups
+These scoped work items were identified during the current session and remain separate from the numbered product backlog.
+
+- **Task #5 — Prevent draft changes from leaking when switching projects**
+  Status: PROPOSED. Relates to Tasks 42–44 and covers isolating browser-local and recovery draft state when changing the active project. See `.local/tasks` and the current project task record for the implementation plan.
+- **Task #6 — Improve shell spacing and centered home/project empty states**
+  Status: ACTIVE. Covers the shared shell spacing, consistent action buttons, bordered centered signed-out and empty-gallery states, and padded populated project cards without changing application behavior. See `.local/tasks/improve-home-layout.md`.
 
 ## Follow-up issues filed during V1 hardening (not originally numbered tasks)
-These were filed as separately groomed follow-ups during audits/reviews of Tasks 60-71 and must be resolved (or explicitly deferred with the user's sign-off) before Task 75:
+These were filed as separately groomed follow-ups during audits/reviews of Tasks 60-71. They remain independent backlog items and are not prerequisites for the completed credentials task:
 - #76 Support reparenting shapes/groups across layers and groups in the scene outline
 - #77 Support multi-shape simultaneous drag, resize, and rotate in the preview
 - #78 Add snapping and alignment guides for canvas manipulation

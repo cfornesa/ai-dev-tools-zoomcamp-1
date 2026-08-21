@@ -1,0 +1,54 @@
+#6 - Improve shell spacing and empty project layout
+What & Why
+Improve the application shell and home screen so the navigation, motion controls, authentication prompt, empty-project message, and future project cards have clear visual separation and a consistent button treatment. The signed-out home state and signed-in empty gallery should each appear inside a reasonably sized bordered content rectangle, with status content centered and project content padded for comfortable scanning.
+
+Done looks like
+The Public gallery and Sign in with Google actions are buttons styled consistently with the existing application buttons while preserving their current navigation/authentication behavior.
+The header title, gallery navigation, motion controls, and main content have visibly increased spacing so adjacent rows do not feel crowded.
+The signed-out home state displays inside a reasonably sized bordered rectangle, with the sign-in message and Google action centered both horizontally and vertically.
+The signed-in empty gallery displays You have not created any projects. inside the same bordered content treatment, centered both ways, with the existing create action remaining available.
+When projects exist, project cards render inside the bordered content area with comfortable padding from its border and retain their current navigation and ownership behavior.
+Responsive behavior remains usable on narrow screens, and the relevant shell, signed-out, empty-gallery, populated-gallery, and accessibility tests cover the new states and controls.
+Out of scope
+Changing authentication, project creation APIs, routing, or ownership rules.
+Redesigning the editor workspace or public gallery content.
+Changing the existing visual theme, logo, favicon, or product branding.
+Changing persisted project data or storage behavior.
+Steps
+Refine the shared shell -- Add layout spacing and button treatment for navigation and authentication actions without changing their destinations or auth flow.
+Create the centered home-state container -- Render signed-out and signed-in empty states in the bordered, centered content treatment with the requested copy and accessible controls.
+Preserve populated gallery layout -- Place project cards within the same content boundary using consistent inner padding while keeping the current create, template, editor, loading, error, and ownership behavior.
+Update focused coverage -- Add assertions for exact empty-state copy, button semantics, centered-state structure, populated-card padding hooks, responsive shell behavior, and accessibility.
+Verify visually and technically -- Run focused frontend tests, the frontend build, and preview screenshots at desktop and narrow widths.
+Relevant files
+frontend/src/components/Layout.tsx
+frontend/src/pages/Home.tsx
+frontend/src/pages/Gallery.tsx
+frontend/src/index.css
+frontend/src/App.test.tsx
+frontend/src/components/Layout.test.tsx
+frontend/src/pages/Gallery.test.tsx
+frontend/src/pages/Gallery.a11y.test.tsx
+GitHub issue draft
+Title: Improve shell spacing and centered home/project empty states
+
+Body:
+
+The application shell currently feels crowded: the sign-in block sits too close to the motion/navigation controls, and the Public gallery and Google sign-in links do not match the existing button treatment.
+
+Please:
+
+Increase vertical spacing between the header title, navigation, motion controls, and main content.
+Style Public gallery and Sign in with Google as accessible buttons without changing their behavior.
+Add a reasonably sized bordered content rectangle for signed-out and signed-in home states.
+Center the signed-out sign-in block and the signed-in empty message horizontally and vertically within that rectangle.
+Use the exact empty message You have not created any projects.
+Keep populated projects inside the rectangle with comfortable inner padding.
+Preserve responsive behavior, accessibility, existing routes, and project ownership behavior.
+Acceptance criteria:
+
+Desktop and narrow layouts have clear spacing and no crowded adjacent rows.
+Both requested links look like the existing buttons and remain keyboard accessible.
+Signed-out and empty-gallery states are centered within a bordered region.
+Populated project cards have visible padding from the region border.
+Focused tests, frontend build, accessibility checks, and visual preview verification pass.

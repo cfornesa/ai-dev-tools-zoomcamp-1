@@ -308,13 +308,99 @@ Description: Enumerate every environment variable/secret placeholder introduced 
 Status: COMPLETE
 Ordering: Remains the LAST task in the entire backlog. The project owner has provisioned the required credentials through Replit's secure secret mechanism, and verification confirmed their presence without exposing values. Do not reorder or reopen this task unless the credential configuration changes.
 
-## Session follow-ups
-These scoped work items were identified during the current session and remain separate from the numbered product backlog.
+## Completed execution task archive
 
-- **Task #5 — Prevent draft changes from leaking when switching projects**
-  Status: PROPOSED. Relates to Tasks 42–44 and covers isolating browser-local and recovery draft state when changing the active project. See `.local/tasks` and the current project task record for the implementation plan.
-- **Task #8 — Improve shell spacing and centered home/project empty states**
-  Status: ACTIVE. Covers the shared shell spacing, consistent action buttons, bordered centered signed-out and empty-gallery states, and padded populated project cards without changing application behavior. See `.local/tasks/task-8.md`.
+This is the canonical repository record for completed execution work. The
+entries are ordered by completion. GitHub issues may add discussion or
+acceptance evidence, but task specifications live here.
+
+### 1. Task #1 — Set up the imported project
+Status: COMPLETE
+
+Specification: Assess the imported application before changing it, confirm the
+intended outcome with the project owner, then configure the existing stack to
+run on Replit without restructuring it. Document the resulting workflow and
+any required setup.
+
+### 2. Task #3 — Rename product branding to Creatrweb Animation Studio
+Status: COMPLETE
+
+Specification: Replace user-facing product branding in the application shell,
+browser title, and standalone export attribution with “Creatrweb Animation
+Studio.” Keep gesture-recognition terminology, URLs, persisted keys, schemas,
+database models, and internal package identifiers unchanged.
+
+### 3. Task #2 — Keep animation previews from failing in automated checks
+Status: COMPLETE
+
+Specification: Make the frontend unit suite reliable when p5 creates and
+cleans up canvases in JSDOM. Preserve the existing renderer and runtime
+coverage while ensuring the configured Node 22 test command passes.
+
+### 4. Task #4 — Keep the browser tab title aligned with the product brand
+Status: COMPLETE
+
+Specification: Add a focused static-shell assertion that the browser document
+title is “Creatrweb Animation Studio,” preventing divergence between the
+visible header and browser tab branding.
+
+### 5. Task #6 — Improve shell spacing and empty project layout
+Status: COMPLETE — delivered by Task #8 after this draft was superseded.
+
+Specification: Give the shell, signed-out home state, signed-in empty state,
+and populated project gallery clearer spacing, consistent action styling, a
+bordered content region, centered status content, and responsive accessible
+coverage. The delivered implementation is recorded in Task #8 and GitHub issue
+#84.
+
+### 6. Task #7 — Sync backlog and close credentials issue
+Status: COMPLETE
+
+Specification: Reconcile the repository backlog with completed session work
+and securely provisioned credentials without exposing, rotating, copying, or
+committing any secret. Close the credentials issue only with a non-sensitive
+completion note.
+
+### 7. Task #5 — Prevent draft changes from leaking when switching projects
+Status: COMPLETE
+
+Specification: Keep project-scoped browser drafts isolated during project
+switches by cancelling or safely scoping pending autosave writes. The full
+frontend suite must pass so one project’s draft cannot overwrite or obscure
+another’s.
+
+### 8. Task #8 — Improve shell spacing and empty states
+Status: COMPLETE
+
+Specification: Style `Public gallery` and `Sign in with Google` as accessible
+button-like actions without changing their destinations. Increase shell
+spacing; render signed-out and signed-in empty states in a reasonably sized,
+bordered, horizontally and vertically centered region; show the exact empty
+message `You have not created any projects.`; and keep populated project cards
+within the same padded region. Preserve authentication, routing, project
+creation, ownership, loading, and error behavior. GitHub issue: #84.
+
+### 9. Task #9 — Catch narrow-screen shell regressions before they reach users
+Status: COMPLETE
+
+Specification: Add a browser-level narrow-width check that verifies the title,
+navigation, motion controls, bordered panel, sign-in action, and signed-in
+empty gallery remain visible, usable, centered where applicable, and free of
+horizontal overflow.
+
+### 10. Task #10 — Run narrow-screen browser checks in a fully provisioned CI environment
+Status: COMPLETE
+
+Specification: Run the responsive-shell Playwright coverage at a 375px
+viewport in CI using the required browser runtime and PostgreSQL-backed
+fixtures, so signed-out and empty-gallery scenarios execute instead of being
+skipped.
+
+### 11. Task #11 — Keep the frontend format check green before merges
+Status: COMPLETE
+
+Specification: Format the affected frontend tests and verify the frontend
+format check passes, keeping CI failures focused on meaningful regressions.
 
 ## Follow-up issues filed during V1 hardening (not originally numbered tasks)
 These were filed as separately groomed follow-ups during audits/reviews of Tasks 60-71. They remain independent backlog items and are not prerequisites for the completed credentials task:

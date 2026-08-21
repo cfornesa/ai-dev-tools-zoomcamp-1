@@ -65,11 +65,13 @@ credentials unusable, but never reveals their plaintext.
   `scripts/start.sh` and keeps the existing 8000/5000 development ports.
 - Replit Publish: use `scripts/start.sh` as the run command. Replit's `PORT`
   value is forwarded to Vite so the externally exposed web port is reachable.
+  The launcher waits for Django's `/health/` endpoint before starting Vite,
+  preventing the proxy from attempting backend requests during startup.
 - Published routing smoke check: run
   `PUBLISHED_APP_URL=https://your-published-domain.example scripts/smoke-published.sh`.
-  It checks `/`, `/health/`, anonymous `/api/whoami/`, and
-  `/accounts/login/` without sending credentials. To enable the same check in
-  GitHub Actions for an existing deployment, set the repository variable
+  It waits for a healthy `/health/` response, then checks `/`, anonymous
+  `/api/whoami/`, and `/accounts/login/` without sending credentials. To
+  enable the same check in GitHub Actions for an existing deployment, set the repository variable
   `PUBLISHED_APP_URL` to the published app URL. A successful GitHub deployment
   status automatically runs the same check against that event's environment or
   target URL; the event URL takes precedence over the repository variable.

@@ -12,6 +12,12 @@ if [[ ! "$frontend_port" =~ ^[0-9]+$ ]] || (( frontend_port < 1 || frontend_port
   exit 2
 fi
 
+startup_timeout_seconds="${STARTUP_TIMEOUT_SECONDS:-60}"
+if [[ ! "$startup_timeout_seconds" =~ ^[0-9]+$ ]] || (( startup_timeout_seconds < 1 )); then
+  printf 'Invalid STARTUP_TIMEOUT_SECONDS: %s\n' "$startup_timeout_seconds" >&2
+  exit 2
+fi
+
 django_pid=''
 frontend_pid=''
 
@@ -29,6 +35,28 @@ trap cleanup EXIT INT TERM
 
 uv run python manage.py runserver 0.0.0.0:8000 &
 django_pid=$!
+
+# Do not start Vite until Django can serve the same health endpoint that the
+# published smoke check uses. Suppress curl's connection errors while Django
+# is still binding its port; those are expected during normal startup.
+startup_deadline=$((SECONDS + startup_timeout_seconds))
+while true; do
+  if ! kill -0 "$django_pid" 2>/dev/null; then
+    printf 'Django exited before becoming healthy\n' >&2
+    exit 1
+  fi
+  if curl --silent --show-error --fail --max-time 2 \
+    http://127.0.0.1:8000/health/ >/dev/null 2>&1; then
+    printf 'Django health check passed; starting Vite\n'
+    break
+  fi
+  if (( SECONDS >= startup_deadline )); then
+    printf 'Django did not become healthy within %s seconds\n' \
+      "$startup_timeout_seconds" >&2
+    exit 1
+  fi
+  sleep 1
+done
 
 npm --prefix frontend run dev -- --host 0.0.0.0 --port "$frontend_port" &
 frontend_pid=$!

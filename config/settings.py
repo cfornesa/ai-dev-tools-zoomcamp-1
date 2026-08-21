@@ -110,6 +110,12 @@ ALLOWED_HOSTS = [
 ]
 CSRF_TRUSTED_ORIGINS = get_csrf_trusted_origins()
 
+# Replit's HTTPS edge forwards requests through Vite to Django on localhost.
+# Trust the edge's forwarding headers so Django/allauth builds callback URLs
+# using the browser-visible HTTPS host instead of the internal :8000 address.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 # PostgreSQL connection, supplied as a single `DATABASE_URL` (Replit's
 # convention for its managed PostgreSQL databases: a development Repl and
 # a deployed production environment each get their own URL, injected as

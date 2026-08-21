@@ -87,6 +87,8 @@ def test_valid_example_derived_env_loads_settings(monkeypatch):
         "https://animate.creatrweb.com",
         "https://creatrweb.replit.app",
     ]
+    assert settings_module.SECURE_PROXY_SSL_HEADER == ("HTTP_X_FORWARDED_PROTO", "https")
+    assert settings_module.USE_X_FORWARDED_HOST is True
     assert settings_module.DATABASES["default"] == {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "gesture_studio",

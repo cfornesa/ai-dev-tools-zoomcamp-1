@@ -26,7 +26,7 @@ Configure these through Replit Secrets:
 Set `CSRF_TRUSTED_ORIGINS` to a comma-separated list of the exact fully
 qualified origins that serve the app, including scheme and any development
 port. For example:
-`https://animate.creatweb.com,https://YOUR-REPLIT-DEV-DOMAIN.replit.dev`.
+`https://animate.creatrweb.com,https://YOUR-REPLIT-DEV-DOMAIN.replit.dev`.
 Never use `*` or a path. This controls Django's unsafe-request protection and
 is separate from Google's Authorized JavaScript origins and OAuth callback
 redirect URI settings.
@@ -38,10 +38,13 @@ configure `RECAPTCHA_ENABLED`, `RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`,
 enabled without the site key, secret, or allowed hostnames. Never expose the
 secret to frontend code; only the public site key is rendered on signup.
 
-For Google sign-in to work in the Replit preview, configure its exact preview
-origin in `CSRF_TRUSTED_ORIGINS`, and the OAuth client must allow
-the current Replit development domain and its
-`/accounts/google/login/callback/` redirect URL.
+For Google sign-in, configure the exact browser-visible origin in
+`CSRF_TRUSTED_ORIGINS`. In Google Cloud Console, add the exact HTTPS callback
+URI for each domain a user can sign in through. For the published custom
+domain, this is
+`https://animate.creatrweb.com/accounts/google/login/callback/` — not HTTP and
+not the internal Django `localhost:8000` address. If users also sign in through
+the Replit domain, add its matching HTTPS callback URI separately.
 
 Each signed-in user configures their own Mistral API key at `/account/settings`.
 Only the encrypted value is stored. Keep the encryption root stable; changing

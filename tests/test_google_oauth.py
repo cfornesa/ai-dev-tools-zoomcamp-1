@@ -80,6 +80,35 @@ def test_google_login_form_post_accepts_configured_origin():
 
 
 @pytest.mark.django_db
+def test_google_login_uses_forwarded_https_public_origin_for_callback():
+    """The Vite-to-Django proxy must not leak localhost into Google's callback URL."""
+    public_host = "animate.creatrweb.com"
+    public_origin = f"https://{public_host}"
+    csrf_client = Client(enforce_csrf_checks=True)
+
+    with override_settings(CSRF_TRUSTED_ORIGINS=[public_origin]):
+        login_page = csrf_client.get(
+            reverse("account_login"),
+            HTTP_HOST="localhost:8000",
+            HTTP_X_FORWARDED_HOST=public_host,
+            HTTP_X_FORWARDED_PROTO="https",
+        )
+        token = login_page.cookies["csrftoken"].value
+        response = csrf_client.post(
+            reverse("google_login"),
+            {"csrfmiddlewaretoken": token},
+            HTTP_ORIGIN=public_origin,
+            HTTP_HOST="localhost:8000",
+            HTTP_X_FORWARDED_HOST=public_host,
+            HTTP_X_FORWARDED_PROTO="https",
+        )
+
+    assert response.status_code == 302
+    params = parse_qs(urlparse(response["Location"]).query)
+    assert params["redirect_uri"] == [f"{public_origin}/accounts/google/login/callback/"]
+
+
+@pytest.mark.django_db
 def test_google_login_form_post_rejects_unconfigured_origin():
     csrf_client = Client(enforce_csrf_checks=True)
     trusted_origin = "https://animate.creatweb.com"

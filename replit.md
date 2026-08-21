@@ -29,3 +29,6 @@ the current Replit development domain and its
 - Backend tests: `uv run pytest`
 - Frontend build: `cd frontend && npm run build`
 - Frontend tests: `cd frontend && npm test`
+
+## By Default
+For all other items, defer to @AGENTS.md

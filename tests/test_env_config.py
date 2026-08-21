@@ -84,6 +84,8 @@ def test_valid_example_derived_env_loads_settings(monkeypatch):
     assert settings_module.CSRF_TRUSTED_ORIGINS == [
         "https://animate.creatweb.com",
         "http://localhost:8000",
+        "https://animate.creatrweb.com",
+        "https://creatrweb.replit.app",
     ]
     assert settings_module.DATABASES["default"] == {
         "ENGINE": "django.db.backends.postgresql",

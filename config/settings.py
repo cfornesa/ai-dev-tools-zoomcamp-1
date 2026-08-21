@@ -58,10 +58,14 @@ def get_csrf_trusted_origins() -> list[str]:
     wildcard into a broader trust rule.
     """
     origins = []
-    for raw_origin in os.environ.get(
+    configured_origins = os.environ.get(
         "CSRF_TRUSTED_ORIGINS",
         "http://localhost:8000,http://127.0.0.1:8000",
-    ).split(","):
+    ).split(",")
+    configured_origins.extend(
+        ["https://animate.creatrweb.com", "https://creatrweb.replit.app"]
+    )
+    for raw_origin in configured_origins:
         origin = raw_origin.strip()
         if not origin:
             continue

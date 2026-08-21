@@ -2,7 +2,7 @@ modules = ["web", "postgresql-16", "python-base-3.13", "nodejs-22"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["util-linux"]
+packages = ["util-linux", "glib", "nss", "nspr", "atk", "cups", "dbus", "gtk3", "pango", "cairo", "at-spi2-atk", "alsa-lib", "mesa", "libdrm", "xorg.libX11", "xorg.libxcb", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext", "xorg.libXfixes", "xorg.libXrandr", "libgbm", "libglvnd", "xorg.libXi", "xorg.libXrender", "xorg.libXtst", "libxkbcommon", "xorg.libxkbfile"]
 
 [agent]
 expertMode = true
@@ -12,6 +12,9 @@ expertMode = true
 [userenv.shared]
 DJANGO_ALLOWED_HOSTS = "*"
 DJANGO_DEBUG = "true"
+CSRF_TRUSTED_ORIGINS = "https://animate.creatrweb.com,https://creatrweb.replit.app"
+
+[userenv.production]
 
 [workflows]
 runButton = "Project"

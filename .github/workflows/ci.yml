@@ -62,3 +62,93 @@ jobs:
 
       - name: Test (vitest)
         run: npm test
+
+  e2e-responsive:
+    name: Responsive shell E2E
+    runs-on: ubuntu-latest
+    # The Playwright global setup creates disposable fixture users in this
+    # service and removes them in global teardown. Never point this job at a
+    # shared or production database.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: creatrweb_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d creatrweb_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DJANGO_SECRET_KEY: ci-only-e2e-secret-key
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/creatrweb_e2e
+      GOOGLE_OAUTH_CLIENT_ID: ci-e2e-client.apps.googleusercontent.com
+      GOOGLE_OAUTH_CLIENT_SECRET: ci-only-e2e-oauth-secret
+      AI_PROVIDER: fake
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install backend dependencies
+        run: uv sync --locked
+
+      - name: Install Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium and Linux browser dependencies
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Write CI environment file
+        # globalSetup deliberately uses uv's --env-file behavior, matching
+        # the documented local workflow; keep CI's disposable values in sync
+        # with the job environment.
+        run: |
+          cat > .env <<'EOF'
+          DJANGO_SECRET_KEY=ci-only-e2e-secret-key
+          DATABASE_URL=postgres://postgres:postgres@localhost:5432/creatrweb_e2e
+          GOOGLE_OAUTH_CLIENT_ID=ci-e2e-client.apps.googleusercontent.com
+          GOOGLE_OAUTH_CLIENT_SECRET=ci-only-e2e-oauth-secret
+          AI_PROVIDER=fake
+          DJANGO_DEBUG=True
+          DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+          EOF
+
+      - name: Apply migrations
+        run: uv run --env-file .env python manage.py migrate --noinput
+
+      - name: Start Django and Vite
+        run: |
+          uv run --env-file .env python manage.py runserver 0.0.0.0:8000 > /tmp/django-e2e.log 2>&1 &
+          (cd frontend && npm run dev -- --host 0.0.0.0 --port 5000) > /tmp/vite-e2e.log 2>&1 &
+
+      - name: Wait for both servers
+        run: |
+          timeout 60 bash -c '
+            until curl --fail --silent http://localhost:8000/health/ &&
+              curl --fail --silent http://localhost:5000/ >/dev/null; do
+              sleep 1
+            done
+          '
+
+      - name: Run responsive shell checks at 375px
+        working-directory: frontend
+        run: npx playwright test e2e/responsiveShell.spec.ts

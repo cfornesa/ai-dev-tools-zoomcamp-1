@@ -114,7 +114,7 @@ Django + PostgreSQL stack. Task 66/issue #68 added a companion
 interaction-runtime suite (`interactionRuntime.spec.ts`), and Task
 66/issue #66 added a companion AI-proposal/draft-recovery suite
 (`aiAndRecovery.spec.ts`) — same infrastructure, same conventions. All
-three are deliberately **not** part of `make check`/`npm test`/CI: unlike
+three are deliberately **not** part of `make check`/`npm test`: unlike
 every other test in this repo they need a real, already-*running*
 PostgreSQL-backed Django dev server and the Vite dev server, and
 Playwright's own downloaded browser binaries. SQLite cannot satisfy this
@@ -123,6 +123,11 @@ transaction/concurrency guarantees SQLite doesn't provide.
 
 - `make e2e` (from the repo root) - run the whole suite; equivalent to
   `cd frontend && npm run test:e2e` (`playwright test`)
+- CI's `Responsive shell E2E` job provisions PostgreSQL, installs Chromium
+  with Linux browser dependencies, applies migrations, starts Django and
+  Vite, and runs `responsiveShell.spec.ts` at its 375px viewport. Its
+  disposable `DATABASE_URL` and test-only OAuth values are written to `.env`
+  because Playwright global setup loads that file before creating fixtures.
 - `cd frontend && npx playwright test --list` - list every scenario
   without running a browser; useful to confirm the suite is syntactically
   valid and every test is discoverable with no server running at all

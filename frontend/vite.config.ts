@@ -8,6 +8,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5000,
+    allowedHosts: true,
     fs: {
       // Allows importing the canonical scene schema/limits/fixtures from
       // ../schema (outside frontend/), the single source of truth shared

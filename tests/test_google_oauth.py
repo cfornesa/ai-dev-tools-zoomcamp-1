@@ -14,7 +14,7 @@ import pytest
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from django.contrib.auth import get_user_model
-from django.test import Client
+from django.test import Client, override_settings
 from django.urls import reverse
 
 
@@ -55,6 +55,47 @@ def test_google_login_redirects_with_minimal_scope(client):
     # Minimal identity scopes only — no Drive/Calendar/etc access.
     assert set(params["scope"][0].split(" ")) == {"openid", "email", "profile"}
     assert "code_challenge" in params  # PKCE
+
+
+@pytest.mark.django_db
+def test_google_login_form_post_accepts_configured_origin():
+    """The browser's real CSRF-checked POST may start the OAuth redirect."""
+    trusted_origin = "https://animate.creatweb.com"
+    csrf_client = Client(enforce_csrf_checks=True)
+
+    with override_settings(CSRF_TRUSTED_ORIGINS=[trusted_origin]):
+        login_page = csrf_client.get(reverse("account_login"))
+        assert b'name="csrfmiddlewaretoken"' in login_page.content
+        token = login_page.cookies["csrftoken"].value
+
+        response = csrf_client.post(
+            reverse("google_login"),
+            {"csrfmiddlewaretoken": token},
+            HTTP_ORIGIN=trusted_origin,
+            HTTP_HOST="animate.creatweb.com",
+        )
+
+    assert response.status_code == 302
+    assert response["Location"].startswith("https://accounts.google.com/o/oauth2/v2/auth")
+
+
+@pytest.mark.django_db
+def test_google_login_form_post_rejects_unconfigured_origin():
+    csrf_client = Client(enforce_csrf_checks=True)
+    trusted_origin = "https://animate.creatweb.com"
+    untrusted_origin = "https://evil.example"
+
+    with override_settings(CSRF_TRUSTED_ORIGINS=[trusted_origin]):
+        login_page = csrf_client.get(reverse("account_login"))
+        token = login_page.cookies["csrftoken"].value
+        response = csrf_client.post(
+            reverse("google_login"),
+            {"csrfmiddlewaretoken": token},
+            HTTP_ORIGIN=untrusted_origin,
+            HTTP_HOST="animate.creatweb.com",
+        )
+
+    assert response.status_code == 403
 
 
 def _start_flow_and_get_state(client):

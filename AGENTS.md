@@ -45,6 +45,9 @@ Replit, point it at your own PostgreSQL server (see `.env.example`).
    - Set `DJANGO_SECRET_KEY` to a real generated value:
      `uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`
    - Set `DATABASE_URL` to a real PostgreSQL connection URL.
+   - Set `CSRF_TRUSTED_ORIGINS` to the exact comma-separated scheme-and-host
+     origins used locally or by the Replit preview/deployment (for example
+     `https://animate.creatweb.com`); do not use a wildcard or path.
    - Set `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` to a real
      Google OAuth client (see `.env.example`); Google sign-in doesn't work
      against real accounts with the placeholder values, but everything

@@ -25,12 +25,14 @@ REQUIRED_ENV_VARS = [
 ALL_SETTINGS_ENV_VARS = REQUIRED_ENV_VARS + [
     "DJANGO_DEBUG",
     "DJANGO_ALLOWED_HOSTS",
+    "CSRF_TRUSTED_ORIGINS",
 ]
 
 VALID_ENV = {
     "DJANGO_SECRET_KEY": "example-derived-secret-key",
     "DJANGO_DEBUG": "True",
     "DJANGO_ALLOWED_HOSTS": "localhost,127.0.0.1",
+    "CSRF_TRUSTED_ORIGINS": "https://animate.creatweb.com, http://localhost:8000/",
     "DATABASE_URL": "postgres://gesture_studio:changeme@localhost:5432/gesture_studio",
 }
 
@@ -79,6 +81,10 @@ def test_valid_example_derived_env_loads_settings(monkeypatch):
     assert settings_module.SECRET_KEY == VALID_ENV["DJANGO_SECRET_KEY"]
     assert settings_module.DEBUG is True
     assert settings_module.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
+    assert settings_module.CSRF_TRUSTED_ORIGINS == [
+        "https://animate.creatweb.com",
+        "http://localhost:8000",
+    ]
     assert settings_module.DATABASES["default"] == {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "gesture_studio",
@@ -107,6 +113,18 @@ def test_optional_allowed_hosts_defaults_when_unset(monkeypatch):
     settings_module = _reload_settings(monkeypatch, env)
 
     assert settings_module.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
+
+
+@pytest.mark.parametrize(
+    "invalid_origin",
+    ["animate.creatweb.com", "*", "https://animate.creatweb.com/path", "ftp://example.com"],
+)
+def test_csrf_trusted_origins_rejects_non_origins(monkeypatch, invalid_origin):
+    env = dict(VALID_ENV)
+    env["CSRF_TRUSTED_ORIGINS"] = invalid_origin
+
+    with pytest.raises(ImproperlyConfigured, match="CSRF_TRUSTED_ORIGINS"):
+        _reload_settings(monkeypatch, env)
 
 
 @pytest.mark.parametrize(

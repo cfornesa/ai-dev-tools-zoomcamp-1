@@ -23,6 +23,14 @@ Configure these through Replit Secrets:
 - `MISTRAL_CREDENTIAL_ENCRYPTION_KEY` (Fernet root for encrypted personal Mistral keys)
 - `RECAPTCHA_SECRET_KEY` (only when signup protection is enabled)
 
+Set `CSRF_TRUSTED_ORIGINS` to a comma-separated list of the exact fully
+qualified origins that serve the app, including scheme and any development
+port. For example:
+`https://animate.creatweb.com,https://YOUR-REPLIT-DEV-DOMAIN.replit.dev`.
+Never use `*` or a path. This controls Django's unsafe-request protection and
+is separate from Google's Authorized JavaScript origins and OAuth callback
+redirect URI settings.
+
 Signup reCAPTCHA v3 is disabled by default for development. To enable it,
 configure `RECAPTCHA_ENABLED`, `RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`,
 `RECAPTCHA_ACTION`, `RECAPTCHA_MIN_SCORE`, and
@@ -30,7 +38,8 @@ configure `RECAPTCHA_ENABLED`, `RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`,
 enabled without the site key, secret, or allowed hostnames. Never expose the
 secret to frontend code; only the public site key is rendered on signup.
 
-For Google sign-in to work in the Replit preview, the OAuth client must allow
+For Google sign-in to work in the Replit preview, configure its exact preview
+origin in `CSRF_TRUSTED_ORIGINS`, and the OAuth client must allow
 the current Replit development domain and its
 `/accounts/google/login/callback/` redirect URL.
 

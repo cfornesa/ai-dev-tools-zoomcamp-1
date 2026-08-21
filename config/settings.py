@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -49,6 +50,46 @@ def get_bool_env(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def get_csrf_trusted_origins() -> list[str]:
+    """Read explicit browser origins allowed to make unsafe same-site requests.
+
+    Django requires CSRF trusted origins to include a scheme.  Rejecting
+    malformed values here avoids accidentally turning a hostname list or a
+    wildcard into a broader trust rule.
+    """
+    origins = []
+    for raw_origin in os.environ.get(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:8000,http://127.0.0.1:8000",
+    ).split(","):
+        origin = raw_origin.strip()
+        if not origin:
+            continue
+        parsed = urlsplit(origin)
+        try:
+            port = parsed.port
+        except ValueError:
+            port = None
+        if (
+            parsed.scheme.lower() not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+            or "*" in parsed.netloc
+            or port is None
+            and ":" in parsed.netloc.rsplit("]", 1)[-1]
+        ):
+            raise ImproperlyConfigured(
+                "CSRF_TRUSTED_ORIGINS must contain only fully qualified "
+                "http(s) origins such as https://animate.creatweb.com."
+            )
+        origins.append(f"{parsed.scheme.lower()}://{parsed.netloc.lower()}")
+    return origins
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
@@ -63,6 +104,7 @@ ALLOWED_HOSTS = [
     for host in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
     if host.strip()
 ]
+CSRF_TRUSTED_ORIGINS = get_csrf_trusted_origins()
 
 # PostgreSQL connection, supplied as a single `DATABASE_URL` (Replit's
 # convention for its managed PostgreSQL databases: a development Repl and
@@ -107,8 +149,10 @@ RECAPTCHA_ALLOWED_HOSTNAMES = {
 }
 RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
 RECAPTCHA_TIMEOUT_SECONDS = 5
-if RECAPTCHA_ENABLED and not DEBUG and (
-    not RECAPTCHA_SITE_KEY or not RECAPTCHA_SECRET_KEY or not RECAPTCHA_ALLOWED_HOSTNAMES
+if (
+    RECAPTCHA_ENABLED
+    and not DEBUG
+    and (not RECAPTCHA_SITE_KEY or not RECAPTCHA_SECRET_KEY or not RECAPTCHA_ALLOWED_HOSTNAMES)
 ):
     raise ImproperlyConfigured(
         "RECAPTCHA_ENABLED requires RECAPTCHA_SITE_KEY, RECAPTCHA_SECRET_KEY, "

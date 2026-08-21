@@ -32,6 +32,7 @@ import os
 os.environ.setdefault("DJANGO_SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("DJANGO_DEBUG", "True")
 os.environ.setdefault("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+os.environ.setdefault("CSRF_TRUSTED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
 os.environ.setdefault(
     "DATABASE_URL", "postgres://placeholder:placeholder@localhost:5432/placeholder"
 )

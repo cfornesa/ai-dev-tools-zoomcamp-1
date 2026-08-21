@@ -24,5 +24,11 @@ describe('App', () => {
     ).toBeInTheDocument();
     expect(shellDocument.title).toBe('Creatrweb Animation Studio');
     expect(await screen.findByText(/sign in to see your projects/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Sign in with Google' })).toHaveClass('shell-action');
+    expect(screen.getByRole('link', { name: 'Sign in with Google' })).toHaveAttribute(
+      'href',
+      '/accounts/login/',
+    );
+    expect(screen.getByText(/sign in to see your projects/i).closest('.content-panel')).not.toBeNull();
   });
 });

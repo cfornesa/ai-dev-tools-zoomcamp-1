@@ -313,8 +313,8 @@ These scoped work items were identified during the current session and remain se
 
 - **Task #5 — Prevent draft changes from leaking when switching projects**
   Status: PROPOSED. Relates to Tasks 42–44 and covers isolating browser-local and recovery draft state when changing the active project. See `.local/tasks` and the current project task record for the implementation plan.
-- **Task #6 — Improve shell spacing and centered home/project empty states**
-  Status: ACTIVE. Covers the shared shell spacing, consistent action buttons, bordered centered signed-out and empty-gallery states, and padded populated project cards without changing application behavior. See `.local/tasks/improve-home-layout.md`.
+- **Task #8 — Improve shell spacing and centered home/project empty states**
+  Status: ACTIVE. Covers the shared shell spacing, consistent action buttons, bordered centered signed-out and empty-gallery states, and padded populated project cards without changing application behavior. See `.local/tasks/task-8.md`.
 
 ## Follow-up issues filed during V1 hardening (not originally numbered tasks)
 These were filed as separately groomed follow-ups during audits/reviews of Tasks 60-71. They remain independent backlog items and are not prerequisites for the completed credentials task:

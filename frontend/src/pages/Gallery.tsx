@@ -69,24 +69,26 @@ function Gallery() {
   }
 
   return (
-    <section aria-labelledby="gallery-heading">
+    <section className="content-panel gallery-panel" aria-labelledby="gallery-heading">
       <div className="gallery-header">
         <h2 id="gallery-heading">Your projects</h2>
         <button type="button" onClick={handleCreate} disabled={creating}>
           {creating ? 'Creating…' : 'Create new animation'}
         </button>
-        <Link to="/templates">Browse templates</Link>
+        <Link className="shell-action" to="/templates">
+          Browse templates
+        </Link>
       </div>
 
       {createError && (
-        <p role="alert" aria-live="assertive">
+        <p className="gallery-error" role="alert" aria-live="assertive">
           {createError}
         </p>
       )}
 
       {ownProjects.length === 0 ? (
-        <div>
-          <p>You don't have any projects yet.</p>
+        <div className="centered-state gallery-empty-state">
+          <p>You have not created any projects.</p>
           <p>Create your first animation to get started.</p>
         </div>
       ) : (

@@ -28,12 +28,16 @@ function Layout() {
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <header>
+      <header className="app-shell-header">
         <h1>Creatrweb Animation Studio</h1>
-        <nav>
-          <Link to="/gallery">Public gallery</Link>
+        <nav className="app-shell-nav" aria-label="Primary navigation">
+          <Link className="shell-action" to="/gallery">
+            Public gallery
+          </Link>
         </nav>
-        <ReducedMotionControl />
+        <div className="app-shell-motion">
+          <ReducedMotionControl />
+        </div>
       </header>
       <main id="main-content" tabIndex={-1}>
         <Outlet />

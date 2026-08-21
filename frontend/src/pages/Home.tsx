@@ -14,9 +14,13 @@ function Home() {
 
   if (auth.status === 'signed-out') {
     return (
-      <div>
-        <p>Sign in to see your projects.</p>
-        <a href="/accounts/login/">Sign in with Google</a>
+      <div className="content-panel home-panel">
+        <div className="centered-state">
+          <p>Sign in to see your projects.</p>
+          <a className="shell-action" href="/accounts/login/">
+            Sign in with Google
+          </a>
+        </div>
       </div>
     );
   }

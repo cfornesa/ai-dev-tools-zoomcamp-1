@@ -29,6 +29,7 @@ describe('Layout: skip link', () => {
 
     await user.tab();
     expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveFocus();
+    expect(screen.getByRole('link', { name: 'Public gallery' })).toHaveClass('shell-action');
   });
 
   it('activating it moves focus to <main>, past the repeated header controls', async () => {

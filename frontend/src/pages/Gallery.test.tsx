@@ -74,7 +74,8 @@ describe('Gallery loading/error/empty/populated states', () => {
 
     renderGallery();
 
-    expect(await screen.findByText(/don't have any projects yet/i)).toBeInTheDocument();
+    expect(await screen.findByText('You have not created any projects.')).toBeInTheDocument();
+    expect(screen.getByText('You have not created any projects.').closest('.content-panel')).not.toBeNull();
     const createButton = screen.getByRole('button', { name: /create new animation/i });
     expect(createButton).toBeInTheDocument();
     expect(createButton.tagName).toBe('BUTTON'); // native focusable element, no tabindex hacks
@@ -93,6 +94,8 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(screen.getAllByText('Public')).toHaveLength(1);
     expect(screen.getAllByText('Private')).toHaveLength(1);
     expect(screen.getAllByRole('link', { name: /open in editor/i })).toHaveLength(2);
+    expect(screen.getByRole('list')).toHaveClass('project-grid');
+    expect(screen.getByRole('list').closest('.content-panel')).not.toBeNull();
   });
 });
 

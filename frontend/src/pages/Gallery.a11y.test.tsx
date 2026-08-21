@@ -77,7 +77,7 @@ describe('Gallery accessibility', () => {
   it('has no axe violations in the empty state', async () => {
     mockedListProjects.mockResolvedValue([]);
     const { container } = renderGallery();
-    await screen.findByText(/don't have any projects yet/i);
+    await screen.findByText('You have not created any projects.');
     expect(await axe(container)).toHaveNoViolations();
   });
 

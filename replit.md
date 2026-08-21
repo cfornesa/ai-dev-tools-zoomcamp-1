@@ -43,8 +43,10 @@ the current Replit development domain and its
   `PUBLISHED_APP_URL=https://your-published-domain.example scripts/smoke-published.sh`.
   It checks `/`, `/health/`, anonymous `/api/whoami/`, and
   `/accounts/login/` without sending credentials. To enable the same check in
-  GitHub Actions, set the repository variable `PUBLISHED_APP_URL` to the
-  published app URL.
+  GitHub Actions for an existing deployment, set the repository variable
+  `PUBLISHED_APP_URL` to the published app URL. A successful GitHub deployment
+  status automatically runs the same check against that event's environment or
+  target URL; the event URL takes precedence over the repository variable.
 
 ## By Default
 For all other items, defer to @AGENTS.md

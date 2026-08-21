@@ -4,10 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  deployment_status:
 
 jobs:
   backend:
     name: Backend checks
+    if: ${{ github.event_name != 'deployment_status' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -34,6 +36,7 @@ jobs:
 
   frontend:
     name: Frontend checks
+    if: ${{ github.event_name != 'deployment_status' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -65,21 +68,34 @@ jobs:
 
   published-smoke:
     name: Published routing smoke check
-    # Configure the public URL as a repository variable. The check is skipped
-    # when this project has no published instance, rather than probing a
-    # placeholder or requiring credentials in CI.
-    if: ${{ vars.PUBLISHED_APP_URL != '' }}
+    # A successful deployment status is emitted after publishing. For normal
+    # CI runs, retain the repository-variable check for an already-published
+    # instance. The probe is anonymous by design.
+    if: >-
+      ${{
+        (github.event_name == 'deployment_status' &&
+          github.event.deployment_status.state == 'success' &&
+          (github.event.deployment_status.environment_url != '' ||
+            github.event.deployment_status.target_url != '')) ||
+        (github.event_name != 'deployment_status' && vars.PUBLISHED_APP_URL != '')
+      }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
       - name: Check published routing
         env:
-          PUBLISHED_APP_URL: ${{ vars.PUBLISHED_APP_URL }}
+          PUBLISHED_APP_URL: >-
+            ${{
+              github.event.deployment_status.environment_url ||
+              github.event.deployment_status.target_url ||
+              vars.PUBLISHED_APP_URL
+            }}
         run: scripts/smoke-published.sh
 
   e2e-responsive:
     name: Responsive shell E2E
+    if: ${{ github.event_name != 'deployment_status' }}
     runs-on: ubuntu-latest
     # The Playwright global setup creates disposable fixture users in this
     # service and removes them in global teardown. Never point this job at a

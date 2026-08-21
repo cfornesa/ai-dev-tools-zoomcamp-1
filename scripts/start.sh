@@ -41,7 +41,8 @@ django_pid=$!
 # is still binding its port; those are expected during normal startup.
 startup_deadline=$((SECONDS + startup_timeout_seconds))
 while true; do
-  if ! kill -0 "$django_pid" 2>/dev/null; then
+  django_state="$(ps -o stat= -p "$django_pid" 2>/dev/null || true)"
+  if [[ -z "$django_state" || "$django_state" == Z* ]]; then
     printf 'Django exited before becoming healthy\n' >&2
     exit 1
   fi

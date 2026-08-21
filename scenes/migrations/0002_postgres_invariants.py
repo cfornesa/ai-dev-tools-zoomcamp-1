@@ -36,7 +36,7 @@ BEGIN
         OR (NEW.origin IS DISTINCT FROM OLD.origin)
         OR (NEW.change_label IS DISTINCT FROM OLD.change_label)
     THEN
-        RAISE EXCEPTION 'SceneVersion snapshot fields are immutable (id=%)', OLD.id;
+        RAISE EXCEPTION 'SceneVersion snapshot fields are immutable (id=%%)', OLD.id;
     END IF;
     RETURN NEW;
 END;
@@ -52,7 +52,7 @@ BEGIN
     IF NEW.is_deleted AND NOT OLD.is_deleted THEN
         IF EXISTS (SELECT 1 FROM scenes_project WHERE current_version_id = NEW.id) THEN
             RAISE EXCEPTION
-                'SceneVersion % is a project current_version and cannot be soft-deleted', NEW.id;
+                'SceneVersion %% is a project current_version and cannot be soft-deleted', NEW.id;
         END IF;
     END IF;
     RETURN NEW;
@@ -75,17 +75,17 @@ BEGIN
 
         IF v_project_id IS NULL THEN
             RAISE EXCEPTION
-                'current_version_id % does not reference an existing SceneVersion',
+                'current_version_id %% does not reference an existing SceneVersion',
                 NEW.current_version_id;
         END IF;
         IF v_project_id != NEW.id THEN
             RAISE EXCEPTION
-                'current_version_id % does not belong to project %',
+                'current_version_id %% does not belong to project %%',
                 NEW.current_version_id, NEW.id;
         END IF;
         IF v_is_deleted THEN
             RAISE EXCEPTION
-                'current_version_id % is soft-deleted and cannot be the current version',
+                'current_version_id %% is soft-deleted and cannot be the current version',
                 NEW.current_version_id;
         END IF;
     END IF;

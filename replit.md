@@ -1,0 +1,31 @@
+# Running Gesture-Reactive Web Animation Studio on Replit
+
+The `Start application` workflow runs the full development stack:
+
+- Django serves the API on port 8000.
+- Vite serves the React application and Replit preview on port 5000.
+- Vite proxies `/api`, `/accounts`, and `/health` requests to Django, so
+  browser requests stay same-origin.
+
+The managed Replit PostgreSQL database is used through its automatically
+supplied `DATABASE_URL`. Database migrations have been applied.
+
+## Required secrets
+
+Configure these through Replit Secrets:
+
+- `DJANGO_SECRET_KEY`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `MISTRAL_API_KEY` (enables AI scene generation)
+
+For Google sign-in to work in the Replit preview, the OAuth client must allow
+the current Replit development domain and its
+`/accounts/google/login/callback/` redirect URL.
+
+## Local checks
+
+- Backend: `uv run python manage.py check`
+- Backend tests: `uv run pytest`
+- Frontend build: `cd frontend && npm run build`
+- Frontend tests: `cd frontend && npm test`

@@ -1,0 +1,1 @@
+- [PostgreSQL migration SQL](postgresql-migration-sql.md) — Raw PL/pgSQL in Django migrations must escape literal percent signs for Psycopg 3.

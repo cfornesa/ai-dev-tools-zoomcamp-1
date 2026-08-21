@@ -20,12 +20,12 @@ BEGIN
 
     IF v_source_version_project_id IS NULL THEN
         RAISE EXCEPTION
-            'source_version_id % does not reference an existing SceneVersion',
+            'source_version_id %% does not reference an existing SceneVersion',
             NEW.source_version_id;
     END IF;
     IF v_source_version_project_id != NEW.source_project_id THEN
         RAISE EXCEPTION
-            'source_version_id % does not belong to source_project_id %',
+            'source_version_id %% does not belong to source_project_id %%',
             NEW.source_version_id, NEW.source_project_id;
     END IF;
     RETURN NEW;

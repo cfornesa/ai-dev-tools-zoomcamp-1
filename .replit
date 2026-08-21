@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "python-3.12", "web", "postgresql-16"]
+modules = ["web", "postgresql-16", "python-base-3.13", "nodejs-22"]
 
 [nix]
 channel = "stable-25_05"
@@ -9,8 +9,37 @@ expertMode = true
 [userenv]
 
 [userenv.shared]
-AI_PROVIDER = "fake"
 DJANGO_ALLOWED_HOSTS = "*"
 DJANGO_DEBUG = "true"
-GOOGLE_OAUTH_CLIENT_ID = "changeme.apps.googleusercontent.com"
-GOOGLE_OAUTH_CLIENT_SECRET = "changeme-generate-a-real-oauth-client-secret"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c 'uv run python manage.py runserver 0.0.0.0:8000 & exec npm --prefix frontend run dev -- --host 0.0.0.0 --port 5000'"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 8000
+externalPort = 8000

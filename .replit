@@ -48,3 +48,8 @@ externalPort = 8000
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 180000
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["bash", "scripts/start.sh"]
+build = ["bash", "-c", "uv sync --locked && npm --prefix frontend ci && npm --prefix frontend run build"]

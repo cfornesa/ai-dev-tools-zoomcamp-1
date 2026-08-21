@@ -82,15 +82,24 @@ export function useDraftAutosave(
   // previous project's already-persisted draft; it's still a valid
   // recovery candidate for whenever that project is reopened, see Task 44).
   const previousProjectIdRef = useRef(projectId);
+  const skipScheduleAfterProjectSwitchRef = useRef(false);
   useEffect(() => {
     if (previousProjectIdRef.current !== projectId) {
       controllerRef.current?.cancelPending();
       previousProjectIdRef.current = projectId;
+      // The working copy can still contain the previous project's scene for
+      // this render. Do not attribute that stale snapshot to the new project;
+      // wait for the new project's first actual working-copy update instead.
+      skipScheduleAfterProjectSwitchRef.current = true;
     }
   }, [projectId]);
 
   useEffect(() => {
     if (!projectId || !workingCopy) return;
+    if (skipScheduleAfterProjectSwitchRef.current) {
+      skipScheduleAfterProjectSwitchRef.current = false;
+      return;
+    }
     const baseline = (persistedVersion?.scene_json as SceneDocument | undefined) ?? null;
     controllerRef.current?.schedule(
       { projectId, userKey, sessionId: sessionIdFor(projectId) },

@@ -129,6 +129,35 @@ describe('useDraftAutosave', () => {
     db.close();
   });
 
+  it('does not autosave the previous project scene during the switch render', async () => {
+    const persisted = version(scene());
+    const { rerender } = renderHook(
+      ({ projectId, workingCopy }: { projectId: string; workingCopy: SceneDocument }) =>
+        useDraftAutosave(projectId, workingCopy, persisted, { debounceMs: DEBOUNCE_MS }),
+      {
+        initialProps: {
+          projectId: 'proj-a',
+          workingCopy: scene({ shapes: [{ id: 'a1', type: 'circle' }] }),
+        },
+      },
+    );
+
+    // Simulate the route changing before the editor has replaced its
+    // previous working copy with project B's scene.
+    rerender({
+      projectId: 'proj-b',
+      workingCopy: scene({ shapes: [{ id: 'a1', type: 'circle' }] }),
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS + 60));
+
+    const { openDraftDatabase, getDraftRecord } = await import('../storage/draftAutosave');
+    const db = await openDraftDatabase();
+    expect(await getDraftRecord(db, 'proj-a')).toBeNull();
+    expect(await getDraftRecord(db, 'proj-b')).toBeNull();
+    db.close();
+  });
+
   it('is safe (does not throw) when indexedDB is unavailable', async () => {
     const original = (globalThis as { indexedDB?: unknown }).indexedDB;
     // @ts-expect-error simulating an environment without IndexedDB

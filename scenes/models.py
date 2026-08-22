@@ -69,7 +69,6 @@ class MistralCredential(models.Model):
             ) from exc
 
 
-
 class Project(models.Model):
     class Visibility(models.TextChoices):
         PRIVATE = "private", "Private"

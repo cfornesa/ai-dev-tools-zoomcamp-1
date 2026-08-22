@@ -16,13 +16,16 @@ def test_recaptcha_verification_checks_action_score_and_hostname():
         "score": 0.9,
         "hostname": "studio.example",
     }
-    with override_settings(
-        RECAPTCHA_VERIFY_URL="https://captcha.test/verify",
-        RECAPTCHA_SECRET_KEY="server-only",
-        RECAPTCHA_ACTION="signup",
-        RECAPTCHA_MIN_SCORE=0.5,
-        RECAPTCHA_ALLOWED_HOSTNAMES={"studio.example"},
-    ), patch("config.recaptcha.requests.post", return_value=response) as post:
+    with (
+        override_settings(
+            RECAPTCHA_VERIFY_URL="https://captcha.test/verify",
+            RECAPTCHA_SECRET_KEY="server-only",
+            RECAPTCHA_ACTION="signup",
+            RECAPTCHA_MIN_SCORE=0.5,
+            RECAPTCHA_ALLOWED_HOSTNAMES={"studio.example"},
+        ),
+        patch("config.recaptcha.requests.post", return_value=response) as post,
+    ):
         assert verify_signup_token("token", "127.0.0.1") == (True, "")
 
     post.assert_called_once()
@@ -42,12 +45,15 @@ def test_recaptcha_verification_checks_action_score_and_hostname():
 def test_recaptcha_rejects_invalid_verification_result(result):
     response = Mock()
     response.json.return_value = result
-    with override_settings(
-        RECAPTCHA_SECRET_KEY="server-only",
-        RECAPTCHA_ACTION="signup",
-        RECAPTCHA_MIN_SCORE=0.5,
-        RECAPTCHA_ALLOWED_HOSTNAMES={"studio.example"},
-    ), patch("config.recaptcha.requests.post", return_value=response):
+    with (
+        override_settings(
+            RECAPTCHA_SECRET_KEY="server-only",
+            RECAPTCHA_ACTION="signup",
+            RECAPTCHA_MIN_SCORE=0.5,
+            RECAPTCHA_ALLOWED_HOSTNAMES={"studio.example"},
+        ),
+        patch("config.recaptcha.requests.post", return_value=response),
+    ):
         valid, message = verify_signup_token("token")
 
     assert not valid

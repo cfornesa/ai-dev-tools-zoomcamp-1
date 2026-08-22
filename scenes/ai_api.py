@@ -69,6 +69,7 @@ exist" from "not yours", matching every other project-scoped endpoint in
 from __future__ import annotations
 
 from contextvars import ContextVar
+from typing import TYPE_CHECKING, cast
 
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
@@ -107,6 +108,9 @@ from scenes.permissions import Action
 from scenes.serializers import SceneVersionDetailSerializer
 from scenes.thumbnail_generation import maybe_schedule_thumbnail_generation
 from scenes.validation import SceneValidationResult, validate_scene
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
 
 # --- Bounds (this task's own documented choices; _docs/plan.md requires
 # "authenticated-user quotas, rate limits, prompt/request size limits ...
@@ -404,7 +408,7 @@ def get_ai_provider() -> AISceneProvider:
     user = _current_ai_user.get()
     if user is None or not getattr(user, "is_authenticated", False):
         raise MissingPersonalMistralCredential
-    credential = MistralCredential.objects.filter(user=user).first()
+    credential = MistralCredential.objects.filter(user=cast("User", user)).first()
     if credential is None:
         raise MissingPersonalMistralCredential
     try:

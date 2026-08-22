@@ -2,7 +2,7 @@
 	lint format format-check typecheck test \
 	backend-lint backend-format backend-format-check backend-typecheck backend-test \
 	frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
-	e2e
+	e2e dev
 
 # Run every backend and frontend check (same checks CI runs).
 check: backend-check frontend-check
@@ -56,3 +56,8 @@ frontend-test:
 # running this.
 e2e:
 	cd frontend && npm run test:e2e
+
+# Task 89 (issue #91): start Postgres (if needed), the backend, and the
+# frontend together from one terminal. Ctrl+C stops all of them cleanly.
+dev:
+	@bash scripts/dev.sh

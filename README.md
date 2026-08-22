@@ -13,29 +13,51 @@ AGENTS.md does.
 
 ## Run locally
 
-The two blocks below are exact, complete, copy-pasteable command
-sequences — every command needed to go from a clean checkout to both
-dev servers running, nothing left to fill in by hand. They assume you
-don't already have PostgreSQL running locally: Terminal 1 starts a
-disposable Docker Postgres container on the default port (5432) and
-sets `.env`'s `DATABASE_URL`/`DJANGO_SECRET_KEY` to match it
-automatically. If you already run PostgreSQL some other way (a
-different port, Homebrew, Postgres.app, an existing container), delete
-the `docker run` line and edit `DATABASE_URL` in `.env` to match your
-setup instead before running the rest of the block.
+```bash
+make dev
+```
+
+One command, one terminal. It creates `.env`/`frontend/.env` from their
+`.env.example` files the first time only (never overwrites one that
+already exists), starts a managed local Postgres container if nothing
+is already reachable at `.env`'s `DATABASE_URL`, installs frontend
+dependencies if `frontend/node_modules` is missing, applies migrations,
+then runs the Django backend (port 8000) and the Vite frontend (port
+5000) together, with each server's output prefixed `[backend]`/
+`[frontend]`. **Ctrl+C stops everything it started** — both dev
+servers and their child processes — and frees both ports before
+returning control to your shell, so it's always safe to run again
+right after, including after an interrupted or failed attempt. If a
+managed step ever falls back to a non-default port, it prints that
+port explicitly before serving from it. See `scripts/dev.sh` for what
+it does step by step.
 
 Google sign-in will not work against real Google accounts with the
 placeholder `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`
 values from `.env.example` — everything else, including the full test
 suite, works fine without real values. Replit-deployed environments
 already have real OAuth credentials provisioned, so this only affects
-a fresh local checkout. The frontend dev server always runs on port
-5000 — see AGENTS.md's "Environment setup" section for how this port,
-`CSRF_TRUSTED_ORIGINS`, and the Google OAuth redirect URI must stay in
-sync. **On macOS, port 5000 is very likely already taken by AirPlay
-Receiver** — if `npm run dev` below fails with "Port 5000 is already in
-use", turn it off at System Settings → General → AirDrop & Handoff →
-AirPlay Receiver and retry.
+a fresh local checkout. **On macOS, port 5000 is very likely already
+taken by AirPlay Receiver** — if the frontend fails to start with
+"Port 5000 is already in use", turn it off at System Settings →
+General → AirDrop & Handoff → AirPlay Receiver and retry. See
+AGENTS.md's "Environment setup" section for the full port ↔
+`CSRF_TRUSTED_ORIGINS` ↔ Google OAuth redirect URI relationship.
+
+### Run the servers manually
+
+Prefer independent control over the backend and frontend (e.g. to
+restart just one, or use your own already-running PostgreSQL setup)?
+The two blocks below are exact, complete, copy-pasteable command
+sequences for two separate terminals — everything `make dev` above
+does automatically, spelled out by hand. They assume you don't already
+have PostgreSQL running locally: Terminal 1 starts a disposable Docker
+Postgres container on the default port (5432) and sets `.env`'s
+`DATABASE_URL`/`DJANGO_SECRET_KEY` to match it automatically. If you
+already run PostgreSQL some other way (a different port, Homebrew,
+Postgres.app, an existing container), delete the `docker run` line and
+edit `DATABASE_URL` in `.env` to match your setup instead before
+running the rest of the block.
 
 **Terminal 1 (backend):**
 

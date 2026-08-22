@@ -7,6 +7,7 @@ import type { E2EState } from './support/state.js';
 type Fixtures = Extract<E2EState, { available: true }>;
 
 const NARROW_VIEWPORT = { width: 375, height: 800 };
+const TABLET_VIEWPORT = { width: 768, height: 900 };
 
 async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   const dimensions = await page.evaluate(() => ({
@@ -133,6 +134,31 @@ test.describe('Responsive app shell', () => {
       await expectNoOverlap(title, navigation);
       await expectNoOverlap(title, authActions);
       await expectNoOverlap(title, motion);
+      await expectNoHorizontalOverflow(page);
+    });
+
+    test('keeps every signed-in header action readable at tablet width', async ({ page }) => {
+      await page.setViewportSize(TABLET_VIEWPORT);
+      await loginViaUI(page, fixtures.other.email, fixtures.password);
+
+      const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
+      const galleryLink = page.getByRole('link', { name: 'Public gallery' });
+      const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
+      const accountLink = page.getByRole('link', { name: 'Account settings' });
+      const logoutButton = page.getByRole('button', { name: 'Logout' });
+
+      await expectVisibleAndInViewport(title);
+      await expectVisibleAndInViewport(galleryLink);
+      await expectVisibleAndInViewport(motion);
+      await expectVisibleAndInViewport(accountLink);
+      await expectVisibleAndInViewport(logoutButton);
+
+      const headerItems = [title, galleryLink, motion, accountLink, logoutButton];
+      for (let firstIndex = 0; firstIndex < headerItems.length; firstIndex += 1) {
+        for (let secondIndex = firstIndex + 1; secondIndex < headerItems.length; secondIndex += 1) {
+          await expectNoOverlap(headerItems[firstIndex], headerItems[secondIndex]);
+        }
+      }
       await expectNoHorizontalOverflow(page);
     });
   });

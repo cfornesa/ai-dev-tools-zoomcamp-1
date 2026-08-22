@@ -89,9 +89,7 @@ function renderPanel() {
                   projectId="p1"
                   project={baseProject()}
                   persistedVersion={{ ...summary({ id: 2, sequence: 2 }), scene_json: BASE_SCENE }}
-                  workingCopy={BASE_SCENE}
                   isDirty={false}
-                  onSaved={vi.fn()}
                   onRestored={vi.fn()}
                 />
               </>

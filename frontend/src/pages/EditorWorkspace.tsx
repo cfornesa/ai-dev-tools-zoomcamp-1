@@ -13,7 +13,12 @@ import {
 } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import { updateProjectMetadata, type Project, type SceneDocument } from '../api/projects';
+import {
+  updateProjectMetadata,
+  type Project,
+  type SceneDocument,
+  type SceneVersion,
+} from '../api/projects';
 import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
@@ -67,6 +72,7 @@ import GraphView from './GraphView';
 import OnboardingHints from './OnboardingHints';
 import PublishControl from './PublishControl';
 import RandomnessIndicator from './RandomnessIndicator';
+import SaveControl from './SaveControl';
 import SceneOutlinePanel from './SceneOutlinePanel';
 import ShapeInspectorPanel from './ShapeInspectorPanel';
 import VersionHistoryPanel from './VersionHistoryPanel';
@@ -353,6 +359,22 @@ function EditorWorkspace() {
   // `useDraftRecovery.ts`, above).
   const draftServerSync = useDraftServerSync(id, gatedWorkingCopy);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  // Issue #95 follow-up: shared by the header's `SaveControl` (the
+  // prominent, always-reachable Save action) — the only caller now that
+  // `VersionHistoryPanel.tsx`'s own inline Save form was removed in favor
+  // of it. Updates `project`/`persistedVersion` from the exact version the
+  // server just returned (no refetch needed), so `isDirty` immediately
+  // reflects the new saved state, and clears both recovery drafts since
+  // Task 42/43's "no changes since last save" write is no longer needed —
+  // this callback only ever fires with the saved version on success (see
+  // `useVersionHistory.save`'s error handling).
+  function handleVersionSaved(version: SceneVersion) {
+    setPersistedVersion(version);
+    setProject((current) => (current ? { ...current, current_version: version.id } : current));
+    void draftAutosave.clearDraft();
+    void draftServerSync.deleteServerDraft();
+  }
 
   async function handleConfirmExit() {
     await draftAutosave.clearDraft();
@@ -1119,6 +1141,14 @@ function EditorWorkspace() {
         </p>
         <span className="editor-header-break" aria-hidden="true" />
         {id && <PublishControl id={id} project={project} setProject={setProject} />}
+        {id && (
+          <SaveControl
+            projectId={id}
+            workingCopy={workingCopy}
+            isDirty={isDirty}
+            onSaved={handleVersionSaved}
+          />
+        )}
         <span className="editor-header-break editor-header-break-desktop" aria-hidden="true" />
         <button
           type="button"
@@ -1614,35 +1644,22 @@ function EditorWorkspace() {
           </CollapsibleSection>
 
           <CollapsibleSection heading="Version history">
-            {/* Task 41: explicit save plus the immutable version-history
-                view (list/restore/soft-delete). `onSaved`/`onRestored`
-                update `project`/`persistedVersion` from the exact version
+            {/* Task 41: the immutable version-history view
+                (list/restore/soft-delete) — explicit Save itself now lives
+                in the header (`SaveControl`, above); see
+                `VersionHistoryPanel.tsx`'s own doc comment. `onRestored`
+                updates `project`/`persistedVersion` from the exact version
                 the server just returned — no refetch needed — so
-                `isDirty` above immediately reflects the new saved state;
-                `onRestored` also replaces `workingCopy` with the restored
-                snapshot, since restoring is meant to load that historical
-                scene back into the editor. */}
+                `isDirty` above immediately reflects the new saved state,
+                and also replaces `workingCopy` with the restored snapshot,
+                since restoring is meant to load that historical scene back
+                into the editor. */}
             {id && (
               <VersionHistoryPanel
                 projectId={id}
                 project={project}
                 persistedVersion={persistedVersion}
-                workingCopy={workingCopy}
                 isDirty={isDirty}
-                onSaved={(version) => {
-                  setPersistedVersion(version);
-                  setProject((current) =>
-                    current ? { ...current, current_version: version.id } : current,
-                  );
-                  // Task 42/43: the version-save API call succeeded, so
-                  // neither the local nor the server recovery draft for
-                  // this project is needed anymore — clear both. Never
-                  // called on a failed save (see `useVersionHistory.save`'s
-                  // error handling: this callback only ever fires with the
-                  // saved version on success).
-                  void draftAutosave.clearDraft();
-                  void draftServerSync.deleteServerDraft();
-                }}
                 onRestored={(version) => {
                   setPersistedVersion(version);
                   setWorkingCopy(structuredClone(version.scene_json));

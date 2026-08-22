@@ -459,7 +459,7 @@ code {
     flex-basis: 100%;
     width: 0;
     height: 0;
-    order: 3;
+    order: 4;
   }
 
   .editor-title-display,
@@ -471,16 +471,20 @@ code {
     order: 1;
   }
 
-  .editor-exit-button {
+  .editor-save-control {
     order: 2;
   }
 
+  .editor-exit-button {
+    order: 3;
+  }
+
   .editor-save-status {
-    order: 4;
+    order: 5;
   }
 
   .editor-publish-visibility {
-    order: 5;
+    order: 6;
   }
 }
 
@@ -523,6 +527,25 @@ code {
 
 .editor-publish-visibility,
 .editor-publish-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Save button follow-up to issue #95: a header-level explicit-Save action
+   next to Publish, so creating a new version never requires opening the
+   Inspector's "Version history" section first (see SaveControl.tsx). Its
+   own `<form>` is a nested flex row so the change-label field/button stay
+   inline with each other without disturbing the header's own row layout. */
+.editor-save-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-save-control form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

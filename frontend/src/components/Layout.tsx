@@ -62,9 +62,7 @@ function Layout() {
         Skip to main content
       </a>
       <header className="app-shell-header" onKeyDown={closeMenuOnEscape}>
-        <div className="app-shell-motion">
-          <ReducedMotionControl />
-        </div>
+        <h1>Creatrweb Animation Studio</h1>
         {isMobileHeader ? (
           <>
             <button
@@ -79,7 +77,7 @@ function Layout() {
             </button>
             <nav
               id="app-shell-mobile-menu"
-              className="app-shell-mobile-menu"
+              className="app-shell-nav app-shell-mobile-menu"
               aria-label="Primary navigation"
               hidden={!menuOpen}
             >
@@ -89,17 +87,15 @@ function Layout() {
             </nav>
           </>
         ) : (
-          <>
-            <nav className="app-shell-nav" aria-label="Primary navigation">
-              <Link className="shell-action" to="/gallery">Public gallery</Link>
-            </nav>
-            <div className="app-shell-auth">
-              {signInOrOutAction}
-              {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
-            </div>
-          </>
+          <nav className="app-shell-nav" aria-label="Primary navigation">
+            <Link className="shell-action" to="/gallery">Public gallery</Link>
+            {signInOrOutAction}
+            {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
+          </nav>
         )}
-        <h1>Creatrweb Animation Studio</h1>
+        <div className="app-shell-motion">
+          <ReducedMotionControl />
+        </div>
       </header>
       <main id="main-content" tabIndex={-1}>
         <Outlet />

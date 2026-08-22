@@ -70,33 +70,24 @@ body {
   margin: 0;
 }
 
+/* Issue #90: the header is a simple centered vertical stack — heading,
+ * then the primary nav/auth actions (or the hamburger toggle below the
+ * mobile breakpoint), then the reduced-motion control — rather than a
+ * multi-column row, so nothing has to compete for horizontal space at
+ * any width. */
 .app-shell-header {
-  display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
-  grid-template-areas: "motion nav title auth";
-  align-items: center;
-  column-gap: 24px;
-  padding: 0 24px 40px;
-}
-
-.app-shell-auth {
-  grid-area: auth;
-  justify-self: end;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
+  padding: 40px 24px;
+  text-align: center;
 }
 
 .auth-error {
-  position: absolute;
-  top: 48px;
-  right: 0;
-  width: max-content;
-  max-width: 280px;
+  width: 100%;
   color: #b42318;
   font-size: 13px;
-  text-align: right;
 }
 
 #main-content {
@@ -112,26 +103,15 @@ body {
   font-size: 14px;
 }
 
-.app-shell-header h1 {
-  grid-area: title;
-  /* Issue #90: the header packs the heading into one row alongside the
-     motion control, nav, and auth actions (previously it had a whole row
-     to itself at the page-heading 56px size) — shrunk down to a nav-bar
-     scale so it doesn't wrap and collide with the row above it. */
-  font-size: 28px;
-  letter-spacing: normal;
-  margin: 0;
-  white-space: nowrap;
-}
-
 .app-shell-nav {
-  grid-area: nav;
   display: flex;
-  justify-content: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .app-shell-motion {
-  grid-area: motion;
   display: flex;
   justify-content: center;
 }
@@ -147,17 +127,8 @@ body {
 }
 
 .app-shell-hamburger {
-  grid-area: hamburger;
   font-size: 20px;
   line-height: 1;
-}
-
-.app-shell-mobile-menu {
-  grid-area: menu;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
 }
 
 .app-shell-mobile-menu[hidden] {
@@ -303,23 +274,14 @@ code {
  * breakpoint than the 600px one used below for unrelated panel spacing. */
 @media (max-width: 767px) {
   .app-shell-header {
-    grid-template-columns: minmax(0, auto) minmax(0, auto);
-    grid-template-areas:
-      "motion hamburger"
-      "title title"
-      "menu menu";
-    row-gap: 16px;
-    padding: 0 16px 32px;
+    gap: 16px;
+    padding: 32px 16px;
   }
 
-  .app-shell-header h1 {
-    margin-top: 16px;
-    white-space: normal;
-    text-align: center;
-  }
-
-  .app-shell-hamburger {
-    justify-self: end;
+  .app-shell-mobile-menu {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
   }
 }
 

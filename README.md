@@ -40,6 +40,7 @@ AirPlay Receiver and retry.
 **Terminal 1 (backend):**
 
 ```bash
+docker rm -f scenes-postgres 2>/dev/null
 docker run --name scenes-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
 uv sync
 cp .env.example .env
@@ -52,9 +53,19 @@ text = text.replace('DJANGO_SECRET_KEY=changeme-generate-a-real-secret-key', 'DJ
 text = text.replace('DATABASE_URL=postgres://gesture_studio:changeme@localhost:5432/gesture_studio', 'DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres')
 p.write_text(text)
 "
-uv run --env-file .env python manage.py migrate
+until uv run --env-file .env python manage.py migrate; do sleep 1; done
+for pid in $(lsof -ti:8000 2>/dev/null); do kill -9 "$pid"; done
 uv run --env-file .env python manage.py runserver
 ```
+
+This block is safe to run more than once: it removes and recreates the
+`scenes-postgres` container each time, retries `migrate` until Postgres
+is actually ready to accept connections (the official Postgres image
+restarts itself once internally right after a fresh container starts,
+so the first connection attempt or two failing is normal, not an
+error), and clears anything already bound to port 8000 before starting
+the server — so re-pasting the whole block after an interrupted or
+failed attempt just works.
 
 **Terminal 2 (frontend):**
 

@@ -36,10 +36,14 @@ async function expectVisibleAndInViewport(locator: Locator): Promise<void> {
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
   const viewportWidth = locator.page().viewportSize()?.width;
+  const viewportHeight = locator.page().viewportSize()?.height;
   expect(box).not.toBeNull();
   expect(viewportWidth).toBeDefined();
+  expect(viewportHeight).toBeDefined();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth!);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewportHeight!);
 }
 
 async function expectTabOrder(page: Page, controls: Locator[]): Promise<void> {
@@ -78,6 +82,40 @@ test.describe('Responsive app shell', () => {
       page.getByRole('link', { name: 'Login', exact: true }),
       page.getByRole('radio', { name: 'Match system' }),
     ]);
+  });
+
+  test('keeps reduced-motion keyboard choices focused and visible at tablet width', async ({
+    page,
+  }) => {
+    await page.setViewportSize(TABLET_VIEWPORT);
+    await page.goto('/');
+
+    const system = page.getByRole('radio', { name: 'Match system' });
+    const reduced = page.getByRole('radio', { name: 'Reduced' });
+    const full = page.getByRole('radio', { name: 'Full' });
+
+    await expect(system).toHaveAttribute('aria-checked', 'true');
+    await expect(system).toHaveAttribute('tabindex', '0');
+
+    // The group is one tab stop, and focus enters on its checked choice.
+    await expectTabOrder(page, [
+      page.getByRole('link', { name: 'Skip to main content' }),
+      page.getByRole('link', { name: 'Public gallery' }),
+      page.getByRole('link', { name: 'Login', exact: true }),
+      system,
+    ]);
+
+    await page.keyboard.press('ArrowRight');
+    await expect(reduced).toBeFocused();
+    await expect(reduced).toHaveAttribute('aria-checked', 'true');
+    await expect(system).toHaveAttribute('aria-checked', 'false');
+    await expectVisibleAndInViewport(reduced);
+
+    await page.keyboard.press('ArrowRight');
+    await expect(full).toBeFocused();
+    await expect(full).toHaveAttribute('aria-checked', 'true');
+    await expect(reduced).toHaveAttribute('aria-checked', 'false');
+    await expectVisibleAndInViewport(full);
   });
 
   test.describe('signed-in empty gallery', () => {

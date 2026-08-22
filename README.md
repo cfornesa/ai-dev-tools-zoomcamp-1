@@ -34,23 +34,21 @@ a fresh local checkout. The frontend dev server always runs on port
 `CSRF_TRUSTED_ORIGINS`, and the Google OAuth redirect URI must stay in
 sync, including the macOS AirPlay Receiver port-5000 conflict gotcha.
 
+Every command below is real — none are comments, so the whole block for
+each terminal pastes and runs verbatim in both bash and zsh. The
+`${EDITOR:-nano} .env` line opens your terminal editor and blocks until
+you save and quit (`Ctrl+O`, `Enter`, `Ctrl+X` in nano); that's your cue
+to set `DATABASE_URL` and paste in the printed `DJANGO_SECRET_KEY`
+before the rest of the block continues. Set `EDITOR` first (e.g.
+`export EDITOR=vim`) if you'd rather use a different editor.
+
 **Terminal 1 (backend):**
 
 ```bash
 uv sync
 cp .env.example .env
-```
-
-Edit `.env` now: set `DATABASE_URL` and `CSRF_TRUSTED_ORIGINS`. Then
-generate a secret key:
-
-```bash
 uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
-
-Copy that output into `.env` as `DJANGO_SECRET_KEY`. Then:
-
-```bash
+${EDITOR:-nano} .env
 uv run --env-file .env python manage.py migrate
 uv run --env-file .env python manage.py runserver
 ```

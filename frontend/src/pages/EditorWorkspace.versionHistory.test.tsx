@@ -7,6 +7,7 @@ import * as projectsApi from '../api/projects';
 import { ApiError } from '../api/client';
 import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
+import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
 /**
  * Task 41: rendered UI tests for explicit save + version history — the
@@ -94,6 +95,7 @@ async function loadReadyWorkspace() {
   mockedGetSceneVersion.mockResolvedValue(baseVersion());
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
+  expandAllCollapsibleSections();
 }
 
 beforeEach(() => {
@@ -159,6 +161,7 @@ describe('history display', () => {
     ]);
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const list = await screen.findByRole('list', { name: 'Version history' });
     const items = within(list).getAllByRole('listitem');
@@ -240,6 +243,7 @@ describe('restore', () => {
     mockedGetSceneVersion.mockResolvedValue(baseVersion({ id: 2, sequence: 2 }));
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const sourceSummary = { id: 1, sequence: 1 } as const;
     const beforeRestoreSnapshot = JSON.stringify(sourceSummary);
@@ -293,6 +297,7 @@ describe('soft-delete', () => {
     mockedGetSceneVersion.mockResolvedValue(baseVersion({ id: 2, sequence: 2 }));
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const user = userEvent.setup();
     const list = await screen.findByRole('list', { name: 'Version history' });
@@ -325,6 +330,7 @@ describe('soft-delete', () => {
     mockedGetSceneVersion.mockResolvedValue(baseVersion({ id: 2, sequence: 2 }));
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const user = userEvent.setup();
     const list = await screen.findByRole('list', { name: 'Version history' });
@@ -361,6 +367,7 @@ describe('soft-delete', () => {
     );
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const user = userEvent.setup();
     const list = await screen.findByRole('list', { name: 'Version history' });

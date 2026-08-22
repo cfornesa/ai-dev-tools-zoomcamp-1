@@ -7,6 +7,7 @@ import { setMotionOverride } from '../a11y/reducedMotion';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
+import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
 /**
  * Task 83 (issue #83): wires `behaviorRuntime.ts`/`particleSystem.ts`/
@@ -135,6 +136,7 @@ async function loadWorkspace(scene: unknown) {
   mockedGetSceneVersion.mockResolvedValue(baseVersion(scene));
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
+  expandAllCollapsibleSections();
 }
 
 function lastRenderCall(): [unknown, unknown, unknown] | undefined {

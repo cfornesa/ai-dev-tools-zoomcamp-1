@@ -11,11 +11,15 @@ import EditorWorkspace from './EditorWorkspace';
  * Task 94 (issue #94), point 3: the Tools/Inspector panels' sub-sections
  * are independently collapsible `CollapsibleSection`s, not a
  * single-open-at-a-time accordion — expanding (or collapsing) one section
- * must never affect any other section's own open/closed state. Every
- * section defaults open (matching the pre-#94 "everything always visible"
- * behavior every other `EditorWorkspace*.test.tsx` file already depends
- * on), so this exercises independence by collapsing one and confirming a
- * different, untouched section is still expanded.
+ * must never affect any other section's own open/closed state.
+ *
+ * Issue #95, point 6: every section now defaults **closed** (flipped from
+ * Task 94's "everything open" default, which only existed to preserve
+ * other tests' assumptions at the time — see
+ * `../testUtils/expandCollapsibleSections.ts` for how those now cope).
+ * This file exercises independence in the opposite direction from before:
+ * expanding one section must never expand (or otherwise disturb) a
+ * different, still-closed section.
  */
 
 vi.mock('../api/projects');
@@ -98,7 +102,7 @@ beforeEach(() => {
 });
 
 describe('EditorWorkspace Tools/Inspector accordion sections', () => {
-  it('every section starts expanded', async () => {
+  it('every section starts collapsed', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
 
@@ -106,10 +110,10 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
 
     await screen.findByRole('region', { name: 'Tools' });
     const toggles = screen.getAllByRole('button', { name: /Add & edit shapes|Scene outline/ });
-    toggles.forEach((toggle) => expect(toggle).toHaveAttribute('aria-expanded', 'true'));
+    toggles.forEach((toggle) => expect(toggle).toHaveAttribute('aria-expanded', 'false'));
   });
 
-  it('collapsing one Tools section leaves a different, already-open section still open', async () => {
+  it('expanding one Tools section leaves a different, still-closed section closed', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     const user = userEvent.setup();
@@ -119,24 +123,23 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
 
     const sceneOutlineToggle = screen.getByRole('button', { name: /Scene outline/ });
     const addEditToggle = screen.getByRole('button', { name: /Add & edit shapes/ });
-    expect(sceneOutlineToggle).toHaveAttribute('aria-expanded', 'true');
-    expect(addEditToggle).toHaveAttribute('aria-expanded', 'true');
-
-    await user.click(sceneOutlineToggle);
-
     expect(sceneOutlineToggle).toHaveAttribute('aria-expanded', 'false');
-    // The Add & edit shapes section was never touched -- it must still be
-    // open, and its content (the Add shape group) still rendered.
+    expect(addEditToggle).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(addEditToggle);
+
     expect(addEditToggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('group', { name: 'Add shape' })).toBeInTheDocument();
+    // Scene outline was never touched -- it must still be closed.
+    expect(sceneOutlineToggle).toHaveAttribute('aria-expanded', 'false');
 
-    // Re-expanding the collapsed section doesn't disturb the other either.
-    await user.click(sceneOutlineToggle);
-    expect(sceneOutlineToggle).toHaveAttribute('aria-expanded', 'true');
-    expect(addEditToggle).toHaveAttribute('aria-expanded', 'true');
+    // Collapsing the expanded section again doesn't disturb the other.
+    await user.click(addEditToggle);
+    expect(addEditToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(sceneOutlineToggle).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('collapsing one Inspector section leaves a different, already-open section still open', async () => {
+  it('expanding one Inspector section leaves a different, still-closed section closed', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     const user = userEvent.setup();
@@ -146,13 +149,13 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
 
     const shapeInspectorToggle = screen.getByRole('button', { name: /Shape inspector/ });
     const versionHistoryToggle = screen.getByRole('button', { name: /Version history/ });
-    expect(shapeInspectorToggle).toHaveAttribute('aria-expanded', 'true');
-    expect(versionHistoryToggle).toHaveAttribute('aria-expanded', 'true');
-
-    await user.click(shapeInspectorToggle);
-
     expect(shapeInspectorToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(versionHistoryToggle).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(versionHistoryToggle);
+
     expect(versionHistoryToggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText(/Version 1/)).toBeInTheDocument();
+    expect(await screen.findByText(/Version 1/)).toBeInTheDocument();
+    expect(shapeInspectorToggle).toHaveAttribute('aria-expanded', 'false');
   });
 });

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
+import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 import { useDraftAutosave } from './useDraftAutosave';
 
 /**
@@ -96,6 +97,7 @@ async function loadReadyWorkspace() {
   mockedGetSceneVersion.mockResolvedValue(baseVersion());
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
+  expandAllCollapsibleSections();
 }
 
 let clearDraft: ReturnType<typeof vi.fn<() => Promise<void>>>;

@@ -7,6 +7,7 @@ import * as aiApi from '../api/ai';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
+import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
 /**
  * Task 48: rendered integration tests for the AI proposal panel embedded
@@ -94,6 +95,7 @@ async function loadReadyWorkspace() {
   mockedGetSceneVersion.mockResolvedValue(baseVersion());
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
+  expandAllCollapsibleSections();
 }
 
 async function generateProposal(user: ReturnType<typeof userEvent.setup>) {

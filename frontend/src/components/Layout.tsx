@@ -62,9 +62,14 @@ function Layout() {
         Skip to main content
       </a>
       <header className="app-shell-header" onKeyDown={closeMenuOnEscape}>
-        <h1>Creatrweb Animation Studio</h1>
-        {isMobileHeader ? (
-          <>
+        {/* Issue #95, point 1: at mobile widths the heading stays
+            left-aligned while the hamburger toggle sits right-aligned on
+            the same row, rather than both centered above one another —
+            see `.app-shell-header-row`'s `justify-content: space-between`
+            below that breakpoint. */}
+        <div className="app-shell-header-row">
+          <h1>Creatrweb Animation Studio</h1>
+          {isMobileHeader && (
             <button
               type="button"
               className="shell-action app-shell-hamburger"
@@ -75,6 +80,10 @@ function Layout() {
             >
               <span aria-hidden="true">☰</span>
             </button>
+          )}
+        </div>
+        {isMobileHeader ? (
+          <>
             <nav
               id="app-shell-mobile-menu"
               className="app-shell-nav app-shell-mobile-menu"

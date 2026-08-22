@@ -174,8 +174,13 @@ function EditableProjectTitle({
     return (
       <div className="editor-title-display">
         <h2>{project?.title}</h2>
-        <button type="button" onClick={startEditing}>
-          Edit title
+        <button
+          type="button"
+          className="editor-icon-button"
+          aria-label="Edit title"
+          onClick={startEditing}
+        >
+          <span aria-hidden="true">✎</span>
         </button>
       </div>
     );
@@ -1101,6 +1106,7 @@ function EditorWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <EditableProjectTitle id={id} project={project} setProject={setProject} />
+        <span className="editor-header-break" aria-hidden="true" />
         <p
           role="status"
           aria-live="polite"
@@ -1111,9 +1117,16 @@ function EditorWorkspace() {
             ? 'Unsaved changes'
             : `Saved${persistedVersion ? ` as version ${persistedVersion.sequence}` : ''}`}
         </p>
+        <span className="editor-header-break" aria-hidden="true" />
         {id && <PublishControl id={id} project={project} setProject={setProject} />}
-        <button type="button" onClick={() => setShowExitConfirm(true)}>
-          Exit without saving
+        <span className="editor-header-break editor-header-break-desktop" aria-hidden="true" />
+        <button
+          type="button"
+          className="editor-icon-button editor-exit-button"
+          aria-label="Exit without saving"
+          onClick={() => setShowExitConfirm(true)}
+        >
+          <span aria-hidden="true">✕</span>
         </button>
         {showExitConfirm && (
           <ExitWithoutSavingConfirm
@@ -1534,7 +1547,13 @@ function EditorWorkspace() {
             <SceneOutlinePanel sceneEditor={sceneEditor} />
           </CollapsibleSection>
 
-          <CollapsibleSection heading="Camera & demo controls">
+          {/* Issue #95, point 7: what was one "Camera & demo controls"
+              section (too large once its content is visible, bundling
+              CameraControl and the much larger DemoControlsPanel under one
+              disclosure) is now two independent CollapsibleSections, each
+              with its own open/closed state — consistent with this file's
+              existing "opening one must not close another" rule. */}
+          <CollapsibleSection heading="Camera">
             {/* Task 31: the camera permission/privacy control.
                 Self-contained (owns its own lazily-created MediaPipe
                 tracking-provider instance; see CameraControl.tsx) and
@@ -1554,7 +1573,9 @@ function EditorWorkspace() {
               }}
               onFrame={(frame) => trackingSourceRef.current.reportCameraFrame(frame)}
             />
+          </CollapsibleSection>
 
+          <CollapsibleSection heading="Demo signal controls">
             {/* Task 28: local demo signal controls — sliders/toggles/event
                 buttons plus deterministic synthetic playback, so every
                 normalized gesture signal can be exercised without a

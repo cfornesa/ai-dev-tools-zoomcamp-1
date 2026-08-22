@@ -84,6 +84,17 @@ body {
   text-align: center;
 }
 
+/* Issue #95, point 1: the heading + (mobile-only) hamburger toggle share
+   one row; centered as a single item at desktop (no hamburger renders
+   there), left/right split at mobile widths (see the max-width: 767px
+   override below). */
+.app-shell-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
 .auth-error {
   width: 100%;
   color: #b42318;
@@ -333,6 +344,14 @@ code {
     padding: 32px 16px;
   }
 
+  .app-shell-header-row {
+    justify-content: space-between;
+  }
+
+  .app-shell-header-row h1 {
+    text-align: left;
+  }
+
   .app-shell-mobile-menu {
     flex-direction: column;
     align-items: stretch;
@@ -401,14 +420,68 @@ code {
   font-size: 18px;
 }
 
+/* Issue #95, point 3: the header reflows into four stacked rows below the
+   1024px panel-switcher breakpoint (title; save status; visibility; Publish
+   + Exit together) — the `.editor-header-break` spans force a wrap point
+   between each, regardless of how much horizontal room the row's own
+   content would otherwise take. At >=1024px, the breaks are hidden and
+   `order` regroups the same items into "title, Publish, Exit" on one row
+   with "save status, visibility" on a second (`editor-header-break-desktop`
+   forces that one wrap point) — see the min-width: 1024px override below. */
 .editor-workspace-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 8px 12px;
   text-align: left;
   padding: 0 24px;
+}
+
+.editor-header-break {
+  flex-basis: 100%;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.editor-header-break-desktop {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .editor-header-break {
+    display: none;
+  }
+
+  .editor-header-break-desktop {
+    display: block;
+    flex-basis: 100%;
+    width: 0;
+    height: 0;
+    order: 3;
+  }
+
+  .editor-title-display,
+  .editor-title-edit {
+    order: 0;
+  }
+
+  .editor-publish-action {
+    order: 1;
+  }
+
+  .editor-exit-button {
+    order: 2;
+  }
+
+  .editor-save-status {
+    order: 4;
+  }
+
+  .editor-publish-visibility {
+    order: 5;
+  }
 }
 
 /* Task 94 (issue #94): inline project-title editing, next to the title
@@ -425,12 +498,31 @@ code {
   margin: 0;
 }
 
-/* Task 94 (issue #94): the header's Publish/Unpublish control — the
-   Publish button itself reuses `.shell-action` (set directly on the
-   button in PublishControl.tsx) for the same emphasized/primary treatment
+/* Issue #95, point 2: icon-only affordances for "Edit title" and "Exit
+   without saving", matching the universal pencil/X conventions — both
+   keep an `aria-label` (set in EditorWorkspace.tsx) since the visible text
+   label goes away. */
+.editor-icon-button {
+  padding: 6px 10px;
+  line-height: 1;
+  font-size: 16px;
+}
+
+/* Task 94 (issue #94): the header's Publish/Unpublish control. This whole
+   wrapper renders as `display: contents` (issue #95, point 3) so its two
+   children — `.editor-publish-visibility` and `.editor-publish-action` —
+   become direct flex items of `.editor-workspace-header` instead of being
+   locked next to each other as a single unit; the Publish button itself
+   reuses `.shell-action` (set directly on the button in
+   PublishControl.tsx) for the same emphasized/primary treatment
    `.shell-action` already gives "Create new animation"/"Browse
    templates". */
 .editor-publish-control {
+  display: contents;
+}
+
+.editor-publish-visibility,
+.editor-publish-action {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -495,6 +587,29 @@ code {
   border-color: var(--accent-border);
   background: var(--accent-bg);
   color: var(--text-h);
+}
+
+/* Issue #95, point 5: each "Continuous signals" row's label and slider
+   land in fixed-width columns (rather than each row's slider starting
+   wherever its own label happens to end), so every slider starts at the
+   same x-position regardless of label length. The `minmax` label column
+   caps out at 200px so a long label wraps instead of squeezing the slider
+   column on narrow viewports. */
+.demo-signal-slider {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.demo-signal-slider label {
+  font-size: 14px;
+}
+
+.demo-signal-slider output {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* Task 29: the global Reduce motion control (ReducedMotionControl.tsx) —
@@ -735,6 +850,29 @@ textarea:disabled {
    overlay and style the selection outline + drag handles. */
 .editor-scene-shapes-layer {
   overflow: visible;
+}
+
+/* Issue #95, point 4: the canvas wrapper itself already caps its own
+   width at 100% of its panel (EditorWorkspace.tsx's inline `maxWidth:
+   '100%'` on `.editor-scene-canvas`), but its children — the p5-created
+   `<canvas>` (p5Adapter.ts sets a fixed pixel width/height as an inline
+   style, which this file deliberately never touches) and the absolutely-
+   positioned SVG overlays (grid/guide/shape layers, each given an explicit
+   `width`/`height` presentation attribute equal to the scene's canvas
+   size) — otherwise keep their own fixed pixel width regardless of how
+   narrow the wrapper itself has shrunk, visibly overflowing past the
+   panel's right edge. `max-width` always wins over a conflicting `width`
+   in the used-value calculation regardless of specificity/origin, so this
+   needs no `!important` for width; `height` does, to override p5's own
+   inline pixel height and keep the canvas's aspect ratio proportional as
+   it scales down. */
+.editor-scene-canvas canvas,
+.editor-scene-canvas svg {
+  max-width: 100%;
+}
+
+.editor-scene-canvas canvas {
+  height: auto !important;
 }
 
 .editor-scene-shape-selection-outline {

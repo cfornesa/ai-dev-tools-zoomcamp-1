@@ -9,10 +9,14 @@ import { useId, useState, type ReactNode } from 'react';
  * anywhere shared), so multiple sections rendered side by side are never
  * coupled into a single-open-at-a-time accordion — expanding one never
  * closes another.
+ *
+ * Issue #95, point 6: every section defaults to **closed** — Task 94 left
+ * every section defaulting open to preserve existing tests' assumptions at
+ * the time; this review flips that so the user opens only what they need.
  */
 function CollapsibleSection({
   heading,
-  defaultOpen = true,
+  defaultOpen = false,
   children,
 }: {
   heading: string;

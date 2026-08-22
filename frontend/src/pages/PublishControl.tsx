@@ -141,56 +141,66 @@ function PublishControl({
   }
 
   return (
+    // Issue #95, point 3: `.editor-publish-control` renders as `display:
+    // contents` (see index.css) so its two children below — the visibility
+    // line and the Publish/Unpublish action — become direct flex items of
+    // `.editor-workspace-header`, landing in separate rows at mobile/tablet
+    // widths and side by side with the save-status text at desktop widths,
+    // per that issue's header breakpoint rules.
     <div className="editor-publish-control">
-      <p aria-live="polite" data-testid="visibility-status">
+      <p aria-live="polite" data-testid="visibility-status" className="editor-publish-visibility">
         {visibility === 'public'
           ? 'Public — visible to anyone and eligible for the public gallery.'
           : 'Private — only visible to you.'}
       </p>
 
-      {visibility === 'private' ? (
-        <button
-          type="button"
-          className="shell-action"
-          onClick={handlePublishClick}
-          disabled={publishState === 'publishing'}
-        >
-          {publishState === 'publishing' ? 'Publishing…' : 'Publish'}
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => void handleUnpublish()}
-          disabled={publishState === 'unpublishing'}
-        >
-          {publishState === 'unpublishing' ? 'Unpublishing…' : 'Unpublish'}
-        </button>
-      )}
+      <span className="editor-header-break" aria-hidden="true" />
 
-      {publishErrors.title && (
-        <p role="alert" data-testid="publish-title-error">
-          {publishErrors.title.join(' ')}
-        </p>
-      )}
-      {publishErrors.description && (
-        <p role="alert" data-testid="publish-description-error">
-          {publishErrors.description.join(' ')}
-        </p>
-      )}
-      {publishErrors.form && (
-        <p role="alert" data-testid="publish-form-error">
-          {publishErrors.form.join(' ')}
-        </p>
-      )}
+      <div className="editor-publish-action">
+        {visibility === 'private' ? (
+          <button
+            type="button"
+            className="shell-action"
+            onClick={handlePublishClick}
+            disabled={publishState === 'publishing'}
+          >
+            {publishState === 'publishing' ? 'Publishing…' : 'Publish'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void handleUnpublish()}
+            disabled={publishState === 'unpublishing'}
+          >
+            {publishState === 'unpublishing' ? 'Unpublishing…' : 'Unpublish'}
+          </button>
+        )}
 
-      {showPublishConfirm && (
-        <PublishConfirmDialog
-          title={title}
-          ownerName={ownerName}
-          onConfirm={() => void handleConfirmPublish()}
-          onCancel={() => setShowPublishConfirm(false)}
-        />
-      )}
+        {publishErrors.title && (
+          <p role="alert" data-testid="publish-title-error">
+            {publishErrors.title.join(' ')}
+          </p>
+        )}
+        {publishErrors.description && (
+          <p role="alert" data-testid="publish-description-error">
+            {publishErrors.description.join(' ')}
+          </p>
+        )}
+        {publishErrors.form && (
+          <p role="alert" data-testid="publish-form-error">
+            {publishErrors.form.join(' ')}
+          </p>
+        )}
+
+        {showPublishConfirm && (
+          <PublishConfirmDialog
+            title={title}
+            ownerName={ownerName}
+            onConfirm={() => void handleConfirmPublish()}
+            onCancel={() => setShowPublishConfirm(false)}
+          />
+        )}
+      </div>
     </div>
   );
 }

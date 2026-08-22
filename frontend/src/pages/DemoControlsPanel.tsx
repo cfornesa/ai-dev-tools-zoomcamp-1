@@ -198,6 +198,14 @@ function DemoControlsPanel({
         interactions.
       </p>
 
+      {/* Issue #95, point 8: "Controls" groups the demo-input-mode radios
+          and (in manual mode) the hand-presence toggle — plain <h5>
+          subheadings for scannability rather than another nested
+          disclosure level (this panel already sits inside its own
+          "Demo signal controls" CollapsibleSection in EditorWorkspace.tsx,
+          and the issue explicitly warns against nesting accordions three
+          deep). */}
+      <h5>Controls</h5>
       <div role="radiogroup" aria-label="Demo input mode" className="editor-tool-group">
         <button
           type="button"
@@ -229,6 +237,7 @@ function DemoControlsPanel({
             </button>
           </div>
 
+          <h5>Sensitivity</h5>
           <div role="group" aria-label="Continuous signals" className="editor-tool-group">
             {SIGNAL_ORDER.map((name) => {
               const range = MANUAL_SIGNAL_RANGES[name];
@@ -254,6 +263,7 @@ function DemoControlsPanel({
             })}
           </div>
 
+          <h5>Gesture details</h5>
           <div role="radiogroup" aria-label="Gesture state" className="editor-tool-group">
             {GESTURE_OPTIONS.map((option) => (
               <button

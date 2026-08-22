@@ -21,25 +21,38 @@ function AccountSettings() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setBusy(true); setMessage(null); setError(null);
+    setBusy(true);
+    setMessage(null);
+    setError(null);
     try {
       const status = await saveMistralCredential(key);
       setKey('');
       setConfigured(status.configured);
       setMessage('Your Mistral key is securely configured.');
     } catch (err) {
-      setError(err instanceof ApiError ? 'That key could not be saved. Check it and try again.' : 'Could not save your key.');
-    } finally { setBusy(false); }
+      setError(
+        err instanceof ApiError
+          ? 'That key could not be saved. Check it and try again.'
+          : 'Could not save your key.',
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function remove() {
-    setBusy(true); setMessage(null); setError(null);
+    setBusy(true);
+    setMessage(null);
+    setError(null);
     try {
       await removeMistralCredential();
       setConfigured(false);
       setMessage('Your Mistral key was removed.');
-    } catch { setError('Could not remove your Mistral key.'); }
-    finally { setBusy(false); }
+    } catch {
+      setError('Could not remove your Mistral key.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -48,7 +61,11 @@ function AccountSettings() {
         <h2>Account settings</h2>
         <p>AI generation uses your own Mistral API key. We never show or recover a saved key.</p>
         <p role="status" aria-live="polite">
-          {configured === null ? 'Checking key status…' : configured ? 'Mistral key: configured' : 'Mistral key: not configured'}
+          {configured === null
+            ? 'Checking key status…'
+            : configured
+              ? 'Mistral key: configured'
+              : 'Mistral key: not configured'}
         </p>
         <form onSubmit={submit} aria-label="Mistral API key" className="account-settings-form">
           <label htmlFor="mistral-key">Mistral API key</label>
@@ -66,7 +83,12 @@ function AccountSettings() {
           </button>
         </form>
         {configured && (
-          <button className="shell-action" type="button" onClick={() => void remove()} disabled={busy}>
+          <button
+            className="shell-action"
+            type="button"
+            onClick={() => void remove()}
+            disabled={busy}
+          >
             Remove key
           </button>
         )}

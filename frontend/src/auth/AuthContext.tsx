@@ -17,11 +17,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchCurrentUser()
       .then((user) => {
         if (cancelled) return;
-         setAuthResult(user ? { status: 'signed-in', user } : { status: 'signed-out', user: null });
+        setAuthResult(user ? { status: 'signed-in', user } : { status: 'signed-out', user: null });
       })
       .catch(() => {
         if (cancelled) return;
-         setAuthResult({ status: 'signed-out', user: null });
+        setAuthResult({ status: 'signed-out', user: null });
       });
     return () => {
       cancelled = true;

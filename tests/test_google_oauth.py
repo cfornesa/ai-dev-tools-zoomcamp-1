@@ -60,10 +60,12 @@ def test_google_login_redirects_with_minimal_scope(client):
 @pytest.mark.django_db
 def test_google_login_form_post_accepts_configured_origin():
     """The browser's real CSRF-checked POST may start the OAuth redirect."""
-    trusted_origin = "https://animate.creatweb.com"
+    trusted_origin = "https://animate.creatrweb.com"
     csrf_client = Client(enforce_csrf_checks=True)
 
-    with override_settings(CSRF_TRUSTED_ORIGINS=[trusted_origin]):
+    with override_settings(
+        CSRF_TRUSTED_ORIGINS=[trusted_origin], ALLOWED_HOSTS=["testserver", "animate.creatrweb.com"]
+    ):
         login_page = csrf_client.get(reverse("account_login"))
         assert b'name="csrfmiddlewaretoken"' in login_page.content
         token = login_page.cookies["csrftoken"].value
@@ -72,7 +74,7 @@ def test_google_login_form_post_accepts_configured_origin():
             reverse("google_login"),
             {"csrfmiddlewaretoken": token},
             HTTP_ORIGIN=trusted_origin,
-            HTTP_HOST="animate.creatweb.com",
+            HTTP_HOST="animate.creatrweb.com",
         )
 
     assert response.status_code == 302
@@ -86,7 +88,9 @@ def test_google_login_uses_forwarded_https_public_origin_for_callback():
     public_origin = f"https://{public_host}"
     csrf_client = Client(enforce_csrf_checks=True)
 
-    with override_settings(CSRF_TRUSTED_ORIGINS=[public_origin]):
+    with override_settings(
+        CSRF_TRUSTED_ORIGINS=[public_origin], ALLOWED_HOSTS=["localhost", public_host]
+    ):
         login_page = csrf_client.get(
             reverse("account_login"),
             HTTP_HOST="localhost:8000",
@@ -111,17 +115,19 @@ def test_google_login_uses_forwarded_https_public_origin_for_callback():
 @pytest.mark.django_db
 def test_google_login_form_post_rejects_unconfigured_origin():
     csrf_client = Client(enforce_csrf_checks=True)
-    trusted_origin = "https://animate.creatweb.com"
+    trusted_origin = "https://animate.creatrweb.com"
     untrusted_origin = "https://evil.example"
 
-    with override_settings(CSRF_TRUSTED_ORIGINS=[trusted_origin]):
+    with override_settings(
+        CSRF_TRUSTED_ORIGINS=[trusted_origin], ALLOWED_HOSTS=["testserver", "animate.creatrweb.com"]
+    ):
         login_page = csrf_client.get(reverse("account_login"))
         token = login_page.cookies["csrftoken"].value
         response = csrf_client.post(
             reverse("google_login"),
             {"csrfmiddlewaretoken": token},
             HTTP_ORIGIN=untrusted_origin,
-            HTTP_HOST="animate.creatweb.com",
+            HTTP_HOST="animate.creatrweb.com",
         )
 
     assert response.status_code == 403

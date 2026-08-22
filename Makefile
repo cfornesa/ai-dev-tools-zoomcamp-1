@@ -65,10 +65,10 @@ dev:
 # Production-like checks are intentionally separate from local development.
 # Supply a non-production .env with explicit production settings.
 deploy-check:
-uv run --env-file .env python manage.py check --deploy
+	uv run --env-file .env python manage.py check --deploy
 
 migrate:
-uv run --env-file .env python manage.py migrate --noinput
+	uv run --env-file .env python manage.py migrate --noinput
 
 smoke-local:
-BASE_URL=$${BASE_URL:-http://localhost:5000}; export BASE_URL; uv run --env-file .env python manage.py check --deploy && scripts/smoke-local.sh
+	BASE_URL=$${BASE_URL:-http://localhost:5000}; export BASE_URL; uv run --env-file .env python manage.py check --deploy && scripts/smoke-local.sh

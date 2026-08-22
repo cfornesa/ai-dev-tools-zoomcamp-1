@@ -65,11 +65,10 @@ describe('Layout: authentication control and attribution', () => {
   it('shows Login for anonymous visitors and the current year footer', () => {
     renderWithAuth({ status: 'signed-out', user: null });
 
-    expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute(
-      'href',
-      '/accounts/login/',
-    );
-    expect(screen.getByText(`Christopher Fornesa © ${new Date().getFullYear()}`)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/accounts/login/');
+    expect(
+      screen.getByText(`Christopher Fornesa © ${new Date().getFullYear()}`),
+    ).toBeInTheDocument();
   });
 
   it('logs out through the provided session action', async () => {

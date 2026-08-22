@@ -40,7 +40,7 @@ VALID_ENV = {
     "DJANGO_SECRET_KEY": "example-derived-secret-key",
     "DJANGO_DEBUG": "True",
     "DJANGO_ALLOWED_HOSTS": "localhost,127.0.0.1",
-    "CSRF_TRUSTED_ORIGINS": "https://animate.creatweb.com, http://localhost:8000/",
+    "CSRF_TRUSTED_ORIGINS": "https://animate.creatrweb.com, http://localhost:8000/",
     "DATABASE_URL": "postgres://gesture_studio:changeme@localhost:5432/gesture_studio",
 }
 
@@ -90,7 +90,7 @@ def test_valid_example_derived_env_loads_settings(monkeypatch):
     assert settings_module.DEBUG is True
     assert settings_module.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
     assert settings_module.CSRF_TRUSTED_ORIGINS == [
-        "https://animate.creatweb.com",
+        "https://animate.creatrweb.com",
         "http://localhost:8000",
         "https://animate.creatrweb.com",
         "https://creatrweb.replit.app",
@@ -172,7 +172,7 @@ def test_default_csrf_origins_allow_vite_browser_requests(monkeypatch):
 
 @pytest.mark.parametrize(
     "invalid_origin",
-    ["animate.creatweb.com", "*", "https://animate.creatweb.com/path", "ftp://example.com"],
+    ["animate.creatrweb.com", "*", "https://animate.creatrweb.com/path", "ftp://example.com"],
 )
 def test_csrf_trusted_origins_rejects_non_origins(monkeypatch, invalid_origin):
     env = dict(VALID_ENV)

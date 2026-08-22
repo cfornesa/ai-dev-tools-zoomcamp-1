@@ -166,13 +166,17 @@ function AIProposalPanel({
         </p>
       )}
 
-       {(phase === 'validation-error' || phase === 'quota-error' || phase === 'provider-error') &&
+      {(phase === 'validation-error' || phase === 'quota-error' || phase === 'provider-error') &&
         genError && (
           <div role="alert" aria-live="assertive" data-testid={`ai-error-${phase}`}>
-             <p>{genError.message}</p>
-             {genError.code === 'personal_key_required' && (
-               <p><a href="/account/settings">Configure your personal Mistral key in Account settings</a></p>
-             )}
+            <p>{genError.message}</p>
+            {genError.code === 'personal_key_required' && (
+              <p>
+                <a href="/account/settings">
+                  Configure your personal Mistral key in Account settings
+                </a>
+              </p>
+            )}
           </div>
         )}
 

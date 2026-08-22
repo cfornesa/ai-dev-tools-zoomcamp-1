@@ -90,7 +90,7 @@ def get_csrf_trusted_origins() -> list[str]:
         ):
             raise ImproperlyConfigured(
                 "CSRF_TRUSTED_ORIGINS must contain only fully qualified "
-                "http(s) origins such as https://animate.creatweb.com."
+                "http(s) origins such as https://animate.creatrweb.com."
             )
         origins.append(f"{parsed.scheme.lower()}://{parsed.netloc.lower()}")
     return origins

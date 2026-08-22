@@ -73,15 +73,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   try {
     const output = execFileSync(
       'uv',
-      [
-        'run',
-        ...ENV_FILE_ARGS,
-        'python',
-        'manage.py',
-        'e2e_fixtures',
-        'create',
-        '--json',
-      ],
+      ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'create', '--json'],
       { cwd: REPO_ROOT, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
     const lastLine = output.trim().split('\n').at(-1);

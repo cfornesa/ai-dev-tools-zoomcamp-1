@@ -47,13 +47,21 @@ function Layout() {
   const signInOrOutAction =
     auth.status === 'signed-in' ? (
       <>
-        <Link className="shell-action" to="/account/settings">Account settings</Link>
-        <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>Logout</button>
+        <Link className="shell-action" to="/account/settings">
+          Account settings
+        </Link>
+        <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>
+          Logout
+        </button>
       </>
     ) : auth.status === 'loading' ? (
-      <span role="status" aria-label="Checking account">Checking account…</span>
+      <span role="status" aria-label="Checking account">
+        Checking account…
+      </span>
     ) : (
-      <a className="shell-action" href="/accounts/login/">Login</a>
+      <a className="shell-action" href="/accounts/login/">
+        Login
+      </a>
     );
 
   return (
@@ -90,18 +98,34 @@ function Layout() {
               aria-label="Primary navigation"
               hidden={!menuOpen}
             >
-              <Link className="shell-action" to="/">Home</Link>
-              <Link className="shell-action" to="/gallery">Public gallery</Link>
+              <Link className="shell-action" to="/">
+                Home
+              </Link>
+              <Link className="shell-action" to="/gallery">
+                Public gallery
+              </Link>
               {signInOrOutAction}
-              {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
+              {auth.logoutError && (
+                <p className="auth-error" role="alert">
+                  {auth.logoutError}
+                </p>
+              )}
             </nav>
           </>
         ) : (
           <nav className="app-shell-nav" aria-label="Primary navigation">
-            <Link className="shell-action" to="/">Home</Link>
-            <Link className="shell-action" to="/gallery">Public gallery</Link>
+            <Link className="shell-action" to="/">
+              Home
+            </Link>
+            <Link className="shell-action" to="/gallery">
+              Public gallery
+            </Link>
             {signInOrOutAction}
-            {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
+            {auth.logoutError && (
+              <p className="auth-error" role="alert">
+                {auth.logoutError}
+              </p>
+            )}
           </nav>
         )}
         <div className="app-shell-motion">

@@ -29,15 +29,7 @@ export default async function globalTeardown(): Promise<void> {
     try {
       execFileSync(
         'uv',
-        [
-          'run',
-          ...ENV_FILE_ARGS,
-          'python',
-          'manage.py',
-          'e2e_fixtures',
-          'cleanup',
-          '--json',
-        ],
+        ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'cleanup', '--json'],
         { cwd: REPO_ROOT, stdio: 'ignore' },
       );
     } catch (err) {

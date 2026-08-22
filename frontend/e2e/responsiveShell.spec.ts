@@ -42,6 +42,14 @@ async function expectVisibleAndInViewport(locator: Locator): Promise<void> {
   expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth!);
 }
 
+async function expectTabOrder(page: Page, controls: Locator[]): Promise<void> {
+  for (const control of controls) {
+    await page.keyboard.press('Tab');
+    await expect(control).toBeFocused();
+    await expectVisibleAndInViewport(control);
+  }
+}
+
 test.describe('Responsive app shell', () => {
   test('keeps the signed-out home visible without horizontal overflow at 600px breakpoint', async ({
     page,
@@ -57,6 +65,19 @@ test.describe('Responsive app shell', () => {
     await expectVisibleAndInViewport(page.locator('.content-panel'));
     await expectVisibleAndInViewport(page.getByRole('link', { name: 'Sign in with Google' }));
     await expectNoHorizontalOverflow(page);
+  });
+
+  test('keeps signed-out header controls in a visible tablet tab order', async ({ page }) => {
+    await page.setViewportSize(TABLET_VIEWPORT);
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: 'Login', exact: true })).toBeVisible();
+
+    await expectTabOrder(page, [
+      page.getByRole('link', { name: 'Skip to main content' }),
+      page.getByRole('link', { name: 'Public gallery' }),
+      page.getByRole('link', { name: 'Login', exact: true }),
+      page.getByRole('radio', { name: 'Match system' }),
+    ]);
   });
 
   test.describe('signed-in empty gallery', () => {
@@ -160,6 +181,19 @@ test.describe('Responsive app shell', () => {
         }
       }
       await expectNoHorizontalOverflow(page);
+    });
+
+    test('keeps signed-in header controls in a visible tablet tab order', async ({ page }) => {
+      await page.setViewportSize(TABLET_VIEWPORT);
+      await loginViaUI(page, fixtures.other.email, fixtures.password);
+
+      await expectTabOrder(page, [
+        page.getByRole('link', { name: 'Skip to main content' }),
+        page.getByRole('link', { name: 'Public gallery' }),
+        page.getByRole('link', { name: 'Account settings' }),
+        page.getByRole('button', { name: 'Logout' }),
+        page.getByRole('radio', { name: 'Match system' }),
+      ]);
     });
   });
 });

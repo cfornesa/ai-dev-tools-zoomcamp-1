@@ -27,6 +27,7 @@
  * output folded into the actionable message, never thrown.
  */
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 
 import type { FullConfig } from '@playwright/test';
@@ -34,6 +35,7 @@ import type { FullConfig } from '@playwright/test';
 import { writeE2EState } from './state.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
+const ENV_FILE_ARGS = fs.existsSync(path.join(REPO_ROOT, '.env')) ? ['--env-file', '.env'] : [];
 
 const PREREQUISITES_HINT =
   'This suite requires, in order: (1) a real reachable PostgreSQL server ' +
@@ -71,7 +73,15 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   try {
     const output = execFileSync(
       'uv',
-      ['run', '--env-file', '.env', 'python', 'manage.py', 'e2e_fixtures', 'create', '--json'],
+      [
+        'run',
+        ...ENV_FILE_ARGS,
+        'python',
+        'manage.py',
+        'e2e_fixtures',
+        'create',
+        '--json',
+      ],
       { cwd: REPO_ROOT, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
     const lastLine = output.trim().split('\n').at(-1);

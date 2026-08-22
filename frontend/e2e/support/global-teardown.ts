@@ -14,11 +14,13 @@
  * just replace one actionable failure with a confusing second one).
  */
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { clearE2EState, readE2EState } from './state.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
+const ENV_FILE_ARGS = fs.existsSync(path.join(REPO_ROOT, '.env')) ? ['--env-file', '.env'] : [];
 
 export default async function globalTeardown(): Promise<void> {
   const state = readE2EState();
@@ -27,7 +29,15 @@ export default async function globalTeardown(): Promise<void> {
     try {
       execFileSync(
         'uv',
-        ['run', '--env-file', '.env', 'python', 'manage.py', 'e2e_fixtures', 'cleanup', '--json'],
+        [
+          'run',
+          ...ENV_FILE_ARGS,
+          'python',
+          'manage.py',
+          'e2e_fixtures',
+          'cleanup',
+          '--json',
+        ],
         { cwd: REPO_ROOT, stdio: 'ignore' },
       );
     } catch (err) {

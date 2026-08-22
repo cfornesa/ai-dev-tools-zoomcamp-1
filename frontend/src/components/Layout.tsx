@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 
 import ReducedMotionControl from './ReducedMotionControl';
+import { useIsMobileHeader } from './useIsMobileHeader';
 import { useAuth } from '../auth/useAuth';
 
 /**
@@ -25,33 +27,79 @@ import { useAuth } from '../auth/useAuth';
  */
 function Layout() {
   const auth = useAuth();
+  const isMobileHeader = useIsMobileHeader();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Issue #90: collapsing back to desktop width while the mobile menu is
+  // open would otherwise leave menuOpen stuck true, showing the (now
+  // hidden-by-layout) menu markup with stale aria-expanded state next time
+  // the viewport narrows again.
+  useEffect(() => {
+    if (!isMobileHeader) setMenuOpen(false);
+  }, [isMobileHeader]);
+
+  function closeMenuOnEscape(event: React.KeyboardEvent) {
+    if (event.key === 'Escape') {
+      setMenuOpen(false);
+    }
+  }
+
+  const signInOrOutAction =
+    auth.status === 'signed-in' ? (
+      <>
+        <Link className="shell-action" to="/account/settings">Account settings</Link>
+        <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>Logout</button>
+      </>
+    ) : auth.status === 'loading' ? (
+      <span role="status" aria-label="Checking account">Checking account…</span>
+    ) : (
+      <a className="shell-action" href="/accounts/login/">Login</a>
+    );
 
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <header className="app-shell-header">
-        <h1>Creatrweb Animation Studio</h1>
-        <nav className="app-shell-nav" aria-label="Primary navigation">
-          <Link className="shell-action" to="/gallery">Public gallery</Link>
-        </nav>
-        <div className="app-shell-auth">
-          {auth.status === 'signed-in' ? (
-            <>
-              <Link className="shell-action" to="/account/settings">Account settings</Link>
-              <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>Logout</button>
-            </>
-          ) : auth.status === 'loading' ? (
-            <span role="status" aria-label="Checking account">Checking account…</span>
-          ) : (
-            <a className="shell-action" href="/accounts/login/">Login</a>
-          )}
-          {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
-        </div>
+      <header className="app-shell-header" onKeyDown={closeMenuOnEscape}>
         <div className="app-shell-motion">
           <ReducedMotionControl />
         </div>
+        {isMobileHeader ? (
+          <>
+            <button
+              type="button"
+              className="shell-action app-shell-hamburger"
+              aria-expanded={menuOpen}
+              aria-controls="app-shell-mobile-menu"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
+            <nav
+              id="app-shell-mobile-menu"
+              className="app-shell-mobile-menu"
+              aria-label="Primary navigation"
+              hidden={!menuOpen}
+            >
+              <Link className="shell-action" to="/gallery">Public gallery</Link>
+              {signInOrOutAction}
+              {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
+            </nav>
+          </>
+        ) : (
+          <>
+            <nav className="app-shell-nav" aria-label="Primary navigation">
+              <Link className="shell-action" to="/gallery">Public gallery</Link>
+            </nav>
+            <div className="app-shell-auth">
+              {signInOrOutAction}
+              {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
+            </div>
+          </>
+        )}
+        <h1>Creatrweb Animation Studio</h1>
       </header>
       <main id="main-content" tabIndex={-1}>
         <Outlet />

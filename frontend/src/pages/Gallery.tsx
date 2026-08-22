@@ -72,7 +72,7 @@ function Gallery() {
     <section className="content-panel gallery-panel" aria-labelledby="gallery-heading">
       <div className="gallery-header">
         <h2 id="gallery-heading">Your projects</h2>
-        <button type="button" onClick={handleCreate} disabled={creating}>
+        <button className="shell-action" type="button" onClick={handleCreate} disabled={creating}>
           {creating ? 'Creating…' : 'Create new animation'}
         </button>
         <Link className="shell-action" to="/templates">

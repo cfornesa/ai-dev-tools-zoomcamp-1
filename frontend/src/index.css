@@ -72,13 +72,10 @@ body {
 
 .app-shell-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
-  grid-template-areas:
-    "nav title auth"
-    ". motion .";
+  grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
+  grid-template-areas: "motion nav title auth";
   align-items: center;
   column-gap: 24px;
-  row-gap: 16px;
   padding: 0 24px 40px;
 }
 
@@ -117,7 +114,14 @@ body {
 
 .app-shell-header h1 {
   grid-area: title;
-  margin: 40px 0 0;
+  /* Issue #90: the header packs the heading into one row alongside the
+     motion control, nav, and auth actions (previously it had a whole row
+     to itself at the page-heading 56px size) — shrunk down to a nav-bar
+     scale so it doesn't wrap and collide with the row above it. */
+  font-size: 28px;
+  letter-spacing: normal;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .app-shell-nav {
@@ -132,8 +136,32 @@ body {
   justify-content: center;
 }
 
-.app-shell-motion {
-  margin-top: 4px;
+/* Issue #90: harmonizes ReducedMotionControl's radio-pill buttons with the
+   rest of the header's controls (border radius, border treatment) without
+   changing `.demo-radio-option`'s shared pill style used elsewhere (the
+   editor's demo controls and snap-preference toggles), since
+   ReducedMotionControl is also rendered outside the header
+   (PublicProjectViewer.tsx). */
+.app-shell-motion .demo-radio-option {
+  border-radius: 6px;
+}
+
+.app-shell-hamburger {
+  grid-area: hamburger;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.app-shell-mobile-menu {
+  grid-area: menu;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.app-shell-mobile-menu[hidden] {
+  display: none;
 }
 
 .shell-action {
@@ -259,30 +287,43 @@ code {
   text-align: left;
 }
 
-.gallery-empty-state {
-  min-height: 280px;
+.gallery-panel {
+  display: flex;
+  flex-direction: column;
 }
 
-@media (max-width: 600px) {
+.gallery-empty-state {
+  flex: 1;
+}
+
+/* Issue #90: below this width the header shows a hamburger toggle
+ * (`.app-shell-hamburger`) and collapsible menu (`.app-shell-mobile-menu`)
+ * instead of the inline nav/auth actions — see
+ * `components/useIsMobileHeader.ts` for why this is a distinct, wider
+ * breakpoint than the 600px one used below for unrelated panel spacing. */
+@media (max-width: 767px) {
   .app-shell-header {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, auto) minmax(0, auto);
     grid-template-areas:
-      "title"
-      "nav"
-      "motion"
-      "auth";
-    gap: 20px;
+      "motion hamburger"
+      "title title"
+      "menu menu";
+    row-gap: 16px;
     padding: 0 16px 32px;
   }
 
   .app-shell-header h1 {
-    margin-top: 32px;
+    margin-top: 16px;
+    white-space: normal;
+    text-align: center;
   }
 
-  .app-shell-auth {
-    justify-self: center;
+  .app-shell-hamburger {
+    justify-self: end;
   }
+}
 
+@media (max-width: 600px) {
   .content-panel {
     margin-inline: 16px;
   }

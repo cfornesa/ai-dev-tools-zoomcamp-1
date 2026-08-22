@@ -27,9 +27,17 @@ export default defineConfig({
       // works with no CORS/SameSite configuration needed. api/client.ts
       // calls relative paths ('/api/...') for exactly this reason; only
       // override VITE_API_BASE_URL for a genuinely cross-origin deployment.
-      '/api': 'http://localhost:8000',
-      '/accounts': 'http://localhost:8000',
-      '/health': 'http://localhost:8000',
+      //
+      // changeOrigin: false preserves the browser's original Host header
+      // (localhost:5000) instead of rewriting it to the proxy target
+      // (localhost:8000). Without this, Django's allauth builds Google's
+      // OAuth redirect_uri from the Host header it actually receives --
+      // localhost:8000, which Google was never told about -- producing
+      // redirect_uri_mismatch even though the browser is correctly on
+      // port 5000 the whole time.
+      '/api': { target: 'http://localhost:8000', changeOrigin: false },
+      '/accounts': { target: 'http://localhost:8000', changeOrigin: false },
+      '/health': { target: 'http://localhost:8000', changeOrigin: false },
     },
   },
   test: {

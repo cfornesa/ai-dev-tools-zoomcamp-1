@@ -5,3 +5,4 @@
 - [Mistral credential rotation](mistral-credential-rotation.md) — Retain prior Fernet roots during controlled credential re-encryption before retiring them.
 - [Allauth JWT runtime dependency](allauth-jwt-runtime-dependency.md) — Pin PyJWT explicitly because the installed allauth release imports jwt during OAuth callback validation without declaring it.
 - [Browser-facing CSRF origin](browser-facing-csrf-origin.md) — Same-origin browser POSTs must trust the Vite origin, not only Django's internal backend port.
+- [GitHub HTTPS credential helper](github-https-credential-helper.md) — A valid GIT_URL secret may need an explicit one-command Git credential helper to bypass stale HTTPS credentials.

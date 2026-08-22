@@ -265,4 +265,6 @@ jobs:
 
       - name: Run responsive shell checks at 375px
         working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:5000
         run: npx playwright test e2e/responsiveShell.spec.ts

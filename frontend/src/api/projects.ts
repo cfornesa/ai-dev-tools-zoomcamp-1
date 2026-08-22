@@ -10,7 +10,6 @@ export type Project = {
   tags: string[];
   visibility: Visibility;
   allow_public_remix: boolean;
-  thumbnail_choice: string;
   export_attribution: boolean;
   current_version: number | null;
   created_at: string;
@@ -64,15 +63,7 @@ export type SceneValidationErrorBody = {
  * the PATCH endpoint itself ignores a `visibility` key rather than
  * applying it). */
 export type ProjectMetadataInput = Partial<
-  Pick<
-    Project,
-    | 'title'
-    | 'description'
-    | 'tags'
-    | 'allow_public_remix'
-    | 'thumbnail_choice'
-    | 'export_attribution'
-  >
+  Pick<Project, 'title' | 'description' | 'tags' | 'allow_public_remix' | 'export_attribution'>
 >;
 
 export function listProjects(): Promise<Project[]> {
@@ -241,7 +232,6 @@ export type PublicProject = {
   description: string;
   tags: string[];
   allow_public_remix: boolean;
-  thumbnail_choice: string;
   thumbnail_url: string | null;
   remix_provenance: RemixProvenance | null;
   current_version: PublicSceneVersion | null;

@@ -5,12 +5,15 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type Dispatch,
+  type FormEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type SetStateAction,
 } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import type { SceneDocument } from '../api/projects';
+import { updateProjectMetadata, type Project, type SceneDocument } from '../api/projects';
 import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
@@ -40,6 +43,7 @@ import {
 } from './sceneShapes';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useSnapSettings } from '../editor/snapSettings';
+import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
 import { isEffectivelyLocked } from './sceneOutline';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
@@ -53,12 +57,15 @@ import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime'
 import { useSceneEditor } from './useSceneEditor';
 import AIProposalPanel from './AIProposalPanel';
 import BehaviorCardsPanel from './BehaviorCardsPanel';
+import CollapsibleSection from './CollapsibleSection';
 import DemoControlsPanel from './DemoControlsPanel';
 import DraftRecoveryPrompt from './DraftRecoveryPrompt';
+import EditorDetailsPanel from './EditorDetailsPanel';
 import ExportConfigDialog from './ExportConfigDialog';
 import GraphListView from './GraphListView';
 import GraphView from './GraphView';
 import OnboardingHints from './OnboardingHints';
+import PublishControl from './PublishControl';
 import RandomnessIndicator from './RandomnessIndicator';
 import SceneOutlinePanel from './SceneOutlinePanel';
 import ShapeInspectorPanel from './ShapeInspectorPanel';
@@ -109,6 +116,97 @@ function ExitWithoutSavingConfirm({
   );
 }
 
+/**
+ * Task 94 (issue #94): inline title editing — a pencil/edit affordance next
+ * to the project title (above Preview) that swaps the plain `<h2>` for a
+ * text input + Save/Cancel, writing through the same `updateProjectMetadata`
+ * PATCH `EditorDetailsPanel`/`PublishControl` also use, with no navigation
+ * or reload. `setProject` is updated from the server's response on success,
+ * exactly like every other metadata write in this file.
+ */
+function EditableProjectTitle({
+  id,
+  project,
+  setProject,
+}: {
+  id: string | undefined;
+  project: Project | null;
+  setProject: Dispatch<SetStateAction<Project | null>>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function startEditing() {
+    setDraft(project?.title ?? '');
+    setError(null);
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setIsEditing(false);
+    setError(null);
+  }
+
+  async function saveTitle(event: FormEvent) {
+    event.preventDefault();
+    if (!id) return;
+    const errors = validateProjectMetadataForPrivateSave({ title: draft });
+    if (errors.title) {
+      setError(errors.title.join(' '));
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updateProjectMetadata(id, { title: draft });
+      setProject(updated);
+      setIsEditing(false);
+    } catch {
+      setError('Could not save the title. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!isEditing) {
+    return (
+      <div className="editor-title-display">
+        <h2>{project?.title}</h2>
+        <button type="button" onClick={startEditing}>
+          Edit title
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form className="editor-title-edit" onSubmit={(event) => void saveTitle(event)}>
+      <label htmlFor="editor-title-input">Title</label>
+      <input
+        id="editor-title-input"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? 'editor-title-error' : undefined}
+        autoFocus
+      />
+      <button type="submit" disabled={saving}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+      <button type="button" onClick={cancelEditing}>
+        Cancel
+      </button>
+      {error && (
+        <p id="editor-title-error" role="alert">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
@@ -152,7 +250,10 @@ function EditorWorkspace() {
     retry,
   } = useEditorWorkspaceState(id);
   const isNarrow = useIsNarrowViewport();
-  const [activePanel, setActivePanel] = useState<EditorPanelName>('preview');
+  // Issue #93: Preview is no longer one of the switchable tabs (it's always
+  // rendered — see `panelHidden` below), so the switcher only ever toggles
+  // between Tools and Inspector; 'tools' is as good a default as either.
+  const [activePanel, setActivePanel] = useState<EditorPanelName>('tools');
   // Task 36: "Show logic" reveals behavior cards as typed connected nodes
   // (`_docs/plan.md`'s "Progressive disclosure" section) — the advanced
   // graph view/list-view pair, hidden by default so the default editing
@@ -672,7 +773,15 @@ function EditorWorkspace() {
     for (let y = 0; y <= canvasHeight; y += GRID_SIZE) gridLinesY.push(y);
   }
 
+  // Issue #93 hard requirement: at every viewport width, it must be
+  // possible to see Preview's live state while using Details/Tools/
+  // Inspector — narrower than 1024px may no longer make Preview one of a
+  // set of mutually-exclusive tabs. Preview is therefore never hidden;
+  // only Details/Tools/Inspector alternate via the switcher below the
+  // breakpoint (issue #94 adds Details alongside the two this already
+  // covered).
   function panelHidden(panel: EditorPanelName): boolean {
+    if (panel === 'preview') return false;
     return isNarrow && activePanel !== panel;
   }
 
@@ -900,6 +1009,81 @@ function EditorWorkspace() {
     };
   }
 
+  // Issue #93: the Preview canvas previously had zero visual rendering for
+  // shapes — `.editor-scene-shape` divs carried no geometry, so nothing a
+  // user added was ever visible. This renders each shape's actual fill/
+  // stroke/geometry as SVG, following the same "translate(x, y) then
+  // rotate(rotation)" convention `sceneShapes.ts`'s handle-position helpers
+  // (and `p5Adapter.ts`) already use, so what's drawn here always agrees
+  // with where the move/resize/rotate handles sit.
+  function shapeGeometry(shape: Shape) {
+    const { x, y, rotation } = shape.transform;
+    const fill = shape.style.fill ?? 'none';
+    // A line has no fill, so its "fill" is really its visible color; a null
+    // stroke elsewhere would otherwise render completely invisibly, which
+    // defeats the point of this rendering fix.
+    const stroke =
+      shape.style.stroke ?? (shape.type === 'line' ? shape.style.fill : null) ?? '#1e1b4b';
+    const strokeWidth = shape.style.strokeWidth;
+    const transform = rotation ? `rotate(${rotation} ${x} ${y})` : undefined;
+
+    switch (shape.type) {
+      case 'circle':
+        return (
+          <circle
+            cx={x}
+            cy={y}
+            r={shape.radius}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            transform={transform}
+          />
+        );
+      case 'rect':
+        return (
+          <rect
+            x={x}
+            y={y}
+            width={shape.width}
+            height={shape.height}
+            rx={shape.cornerRadius}
+            ry={shape.cornerRadius}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            transform={transform}
+          />
+        );
+      case 'line':
+        return (
+          <line
+            x1={x}
+            y1={y}
+            x2={shape.x2}
+            y2={shape.y2}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            transform={transform}
+          />
+        );
+      case 'path': {
+        const d = shape.points
+          .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x + p.x} ${y + p.y}`)
+          .join(' ');
+        return (
+          <path
+            d={shape.closed ? `${d} Z` : d}
+            fill={shape.closed ? fill : 'none'}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            transform={transform}
+          />
+        );
+      }
+    }
+  }
+
   function shapeSummary(shape: Shape): string {
     switch (shape.type) {
       case 'circle':
@@ -916,7 +1100,7 @@ function EditorWorkspace() {
   return (
     <div>
       <header className="editor-workspace-header">
-        <h2>{project?.title}</h2>
+        <EditableProjectTitle id={id} project={project} setProject={setProject} />
         <p
           role="status"
           aria-live="polite"
@@ -927,7 +1111,7 @@ function EditorWorkspace() {
             ? 'Unsaved changes'
             : `Saved${persistedVersion ? ` as version ${persistedVersion.sequence}` : ''}`}
         </p>
-        <Link to={`/projects/${id}/settings`}>Edit project details</Link>
+        {id && <PublishControl id={id} project={project} setProject={setProject} />}
         <button type="button" onClick={() => setShowExitConfirm(true)}>
           Exit without saving
         </button>
@@ -953,128 +1137,12 @@ function EditorWorkspace() {
       {isNarrow && <EditorPanelSwitcher activePanel={activePanel} onSelect={setActivePanel} />}
 
       <div className="editor-workspace">
-        <section
-          role="region"
-          aria-label="Tools"
-          data-panel="tools"
-          id="editor-panel-tools"
-          className="editor-panel"
-          hidden={panelHidden('tools')}
-        >
-          <h3>Tools</h3>
-          <div role="group" aria-label="Add shape" className="editor-tool-group">
-            {SHAPE_TYPES.map(({ type, label }) => (
-              <button key={type} type="button" onClick={() => sceneEditor.addShape(type)}>
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Issue #78: the client-only snap-to-grid / alignment-guide
-              toggle — editor-specific, so it lives here in the Tools
-              panel (not the global header, unlike Reduce motion). */}
-          <SnapPreferenceControl />
-
-          {/* Task 80 (issue #80): the net-new `lockError` channel — surfaces
-              a rejected duplicate/delete/move/resize/rotate/reshape against
-              an effectively-locked shape or group, for exactly the call
-              sites that had no existing rejection channel of their own
-              before this issue (every other guarded call site reuses
-              `outlineError`/`vertexError`/its own field-edit error, shown
-              where those already render). */}
-          {sceneEditor.lockError && (
-            <p role="alert" aria-live="assertive">
-              {sceneEditor.lockError}
-            </p>
-          )}
-
-          <div role="group" aria-label="Edit shape" className="editor-tool-group">
-            <button
-              type="button"
-              onClick={() => sceneEditor.duplicateSelected()}
-              disabled={!sceneEditor.selectedShape}
-            >
-              Duplicate selected shape
-            </button>
-            <button
-              type="button"
-              onClick={() => sceneEditor.deleteSelected()}
-              disabled={!sceneEditor.selectedShape}
-            >
-              Delete selected shape
-            </button>
-          </div>
-
-          <div role="group" aria-label="History" className="editor-tool-group">
-            <button
-              type="button"
-              onClick={() => sceneEditor.undo()}
-              disabled={!sceneEditor.canUndo}
-            >
-              Undo
-            </button>
-            <button
-              type="button"
-              onClick={() => sceneEditor.redo()}
-              disabled={!sceneEditor.canRedo}
-            >
-              Redo
-            </button>
-          </div>
-
-          <h4>Shapes</h4>
-          {sceneEditor.shapes.length === 0 ? (
-            <p>No shapes yet.</p>
-          ) : (
-            <ul aria-label="Shape list" className="editor-shape-list">
-              {sceneEditor.shapes.map((shape) => (
-                <li key={shape.id}>
-                  <button
-                    type="button"
-                    aria-pressed={shape.id === sceneEditor.selectedShapeId}
-                    onClick={() => sceneEditor.selectShape(shape.id)}
-                  >
-                    {shapeLabel(shape)}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <SceneOutlinePanel sceneEditor={sceneEditor} />
-
-          {/* Task 31: the camera permission/privacy control. Self-contained
-              (owns its own lazily-created MediaPipe tracking-provider
-              instance; see CameraControl.tsx) and rendered unconditionally
-              alongside — never in place of — DemoControlsPanel below, so
-              the non-camera fallback stays available before camera
-              activation, during any camera failure, and after Stop camera
-              is pressed (acceptance criterion). */}
-          <CameraControl
-            onStatusChange={(status) => {
-              setCameraStatus(status);
-              // Task 83: the live preview runtime loop prefers camera
-              // frames over demo frames exactly while the camera is
-              // actually producing them — see
-              // `previewTrackingSource.ts`'s own doc comment.
-              trackingSourceRef.current.setCameraActive(status === 'active');
-            }}
-            onFrame={(frame) => trackingSourceRef.current.reportCameraFrame(frame)}
-          />
-
-          {/* Task 28: local demo signal controls — sliders/toggles/event
-              buttons plus deterministic synthetic playback, so every
-              normalized gesture signal can be exercised without a camera.
-              Self-contained (owns its own tracking-provider controller;
-              see DemoControlsPanel.tsx), so it lives here as an
-              independent section rather than threading through
-              useSceneEditor/workingCopy. */}
-          <DemoControlsPanel
-            onPinchStart={() => setPinchEventCount((count) => count + 1)}
-            onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
-          />
-        </section>
-
+        {/* Task 94 (issue #94), point 2: Preview leads the layout — the
+            first panel in DOM order (and therefore first in both the
+            >=1024px side-by-side row and the narrow stacked column, since
+            neither changes source order) rather than sandwiched between
+            Tools and Inspector, since the live scene is the actual product
+            being made. */}
         <section
           role="region"
           aria-label="Preview"
@@ -1191,18 +1259,56 @@ function EditorWorkspace() {
                 )}
               </svg>
             )}
-            {sceneEditor.shapes.map((shape, index) => (
-              <div
-                key={shape.id}
-                data-testid={`scene-shape-${shape.id}`}
-                data-shape-type={shape.type}
-                aria-hidden="true"
-                className="editor-scene-shape"
-                style={{ position: 'absolute', zIndex: index }}
-              >
-                {shape.id === sceneEditor.selectedShapeId ? shapeSummary(shape) : null}
-              </div>
-            ))}
+            <svg
+              aria-hidden="true"
+              className="editor-scene-shapes-layer"
+              style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+              width={canvasWidth}
+              height={canvasHeight}
+              viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+            >
+              {sceneEditor.shapes.map((shape) => {
+                const isSelected = shape.id === sceneEditor.selectedShapeId;
+                const bounds = isSelected ? shapeBounds(shape) : null;
+                return (
+                  <g
+                    key={shape.id}
+                    data-testid={`scene-shape-${shape.id}`}
+                    data-shape-type={shape.type}
+                    className={
+                      isSelected
+                        ? 'editor-scene-shape editor-scene-shape-selected'
+                        : 'editor-scene-shape'
+                    }
+                  >
+                    {shapeGeometry(shape)}
+                    {/* A visible selection highlight independent of the
+                        shape's own fill/stroke — a dashed bounding-box
+                        outline, the same rotation-ignoring approximation
+                        `shapeBounds` already uses for hit-testing (see that
+                        function's own comment), since there's no rotated-
+                        box primitive to reuse here. */}
+                    {bounds && (
+                      <rect
+                        className="editor-scene-shape-selection-outline"
+                        x={bounds.minX - 4}
+                        y={bounds.minY - 4}
+                        width={bounds.maxX - bounds.minX + 8}
+                        height={bounds.maxY - bounds.minY + 8}
+                        fill="none"
+                      />
+                    )}
+                    {/* Kept as an SVG <title> (not rendered as page text)
+                        rather than the plain visible text this used to be:
+                        a raw numeric readout isn't the "visible indication
+                        of selection" the issue asks for (the outline above
+                        is), but existing tests still assert on this text
+                        via `.textContent`. */}
+                    {isSelected && <title>{shapeSummary(shape)}</title>}
+                  </g>
+                );
+              })}
+            </svg>
             {/* Issue #77: when 2+ shapes are multi-selected, one combined
                 bounding-box handle set drives a rigid group move/resize/
                 rotate gesture over the whole resolved selection, entirely
@@ -1307,6 +1413,162 @@ function EditorWorkspace() {
           </div>
         </section>
 
+        {/* Task 94 (issue #94), point 1: project-metadata editing folded
+            into the editor as a fourth panel, replacing the old standalone
+            `/projects/:id/settings` route (`ProjectMetadataForm.tsx`,
+            deleted) — same `updateProjectMetadata` API call and
+            `validateProjectMetadataForPrivateSave` validation that page
+            used, wired to the same `project`/`setProject` state every
+            other panel here already shares. Title editing (the header's
+            `EditableProjectTitle`) and publish/unpublish (the header's
+            `PublishControl`) are deliberately not duplicated here. */}
+        <section
+          role="region"
+          aria-label="Details"
+          data-panel="details"
+          id="editor-panel-details"
+          className="editor-panel"
+          hidden={panelHidden('details')}
+        >
+          <h3>Details</h3>
+          {id && <EditorDetailsPanel projectId={id} project={project} setProject={setProject} />}
+        </section>
+
+        <section
+          role="region"
+          aria-label="Tools"
+          data-panel="tools"
+          id="editor-panel-tools"
+          className="editor-panel"
+          hidden={panelHidden('tools')}
+        >
+          <h3>Tools</h3>
+
+          {/* Task 94 (issue #94), point 3: independently collapsible
+              sections — each `CollapsibleSection` owns its own open/closed
+              state, so expanding/collapsing one never affects another (not
+              a single-open-at-a-time accordion). See
+              `EditorWorkspace.accordion.test.tsx`. */}
+          <CollapsibleSection heading="Add & edit shapes">
+            <div role="group" aria-label="Add shape" className="editor-tool-group">
+              {SHAPE_TYPES.map(({ type, label }) => (
+                <button key={type} type="button" onClick={() => sceneEditor.addShape(type)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Issue #78: the client-only snap-to-grid / alignment-guide
+                toggle — editor-specific, so it lives here in the Tools
+                panel (not the global header, unlike Reduce motion). */}
+            <SnapPreferenceControl />
+
+            {/* Task 80 (issue #80): the net-new `lockError` channel —
+                surfaces a rejected duplicate/delete/move/resize/rotate/
+                reshape against an effectively-locked shape or group, for
+                exactly the call sites that had no existing rejection
+                channel of their own before this issue (every other
+                guarded call site reuses `outlineError`/`vertexError`/its
+                own field-edit error, shown where those already render). */}
+            {sceneEditor.lockError && (
+              <p role="alert" aria-live="assertive">
+                {sceneEditor.lockError}
+              </p>
+            )}
+
+            <div role="group" aria-label="Edit shape" className="editor-tool-group">
+              <button
+                type="button"
+                onClick={() => sceneEditor.duplicateSelected()}
+                disabled={!sceneEditor.selectedShape}
+              >
+                Duplicate selected shape
+              </button>
+              <button
+                type="button"
+                onClick={() => sceneEditor.deleteSelected()}
+                disabled={!sceneEditor.selectedShape}
+              >
+                Delete selected shape
+              </button>
+            </div>
+
+            <div role="group" aria-label="History" className="editor-tool-group">
+              <button
+                type="button"
+                onClick={() => sceneEditor.undo()}
+                disabled={!sceneEditor.canUndo}
+              >
+                Undo
+              </button>
+              <button
+                type="button"
+                onClick={() => sceneEditor.redo()}
+                disabled={!sceneEditor.canRedo}
+              >
+                Redo
+              </button>
+            </div>
+
+            <h4>Shapes</h4>
+            {sceneEditor.shapes.length === 0 ? (
+              <p>No shapes yet.</p>
+            ) : (
+              <ul aria-label="Shape list" className="editor-shape-list">
+                {sceneEditor.shapes.map((shape) => (
+                  <li key={shape.id}>
+                    <button
+                      type="button"
+                      aria-pressed={shape.id === sceneEditor.selectedShapeId}
+                      onClick={() => sceneEditor.selectShape(shape.id)}
+                    >
+                      {shapeLabel(shape)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection heading="Scene outline">
+            <SceneOutlinePanel sceneEditor={sceneEditor} />
+          </CollapsibleSection>
+
+          <CollapsibleSection heading="Camera & demo controls">
+            {/* Task 31: the camera permission/privacy control.
+                Self-contained (owns its own lazily-created MediaPipe
+                tracking-provider instance; see CameraControl.tsx) and
+                rendered unconditionally alongside — never in place of —
+                DemoControlsPanel below, so the non-camera fallback stays
+                available before camera activation, during any camera
+                failure, and after Stop camera is pressed (acceptance
+                criterion). */}
+            <CameraControl
+              onStatusChange={(status) => {
+                setCameraStatus(status);
+                // Task 83: the live preview runtime loop prefers camera
+                // frames over demo frames exactly while the camera is
+                // actually producing them — see
+                // `previewTrackingSource.ts`'s own doc comment.
+                trackingSourceRef.current.setCameraActive(status === 'active');
+              }}
+              onFrame={(frame) => trackingSourceRef.current.reportCameraFrame(frame)}
+            />
+
+            {/* Task 28: local demo signal controls — sliders/toggles/event
+                buttons plus deterministic synthetic playback, so every
+                normalized gesture signal can be exercised without a
+                camera. Self-contained (owns its own tracking-provider
+                controller; see DemoControlsPanel.tsx), so it lives here as
+                an independent section rather than threading through
+                useSceneEditor/workingCopy. */}
+            <DemoControlsPanel
+              onPinchStart={() => setPinchEventCount((count) => count + 1)}
+              onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
+            />
+          </CollapsibleSection>
+        </section>
+
         <section
           role="region"
           aria-label="Inspector"
@@ -1317,130 +1579,144 @@ function EditorWorkspace() {
         >
           <h3>Inspector</h3>
 
-          {/* Task 60 (issue #58): position/scale/rotation/opacity/fill/
-              stroke/stroke-width fields for the actively selected shape —
-              see ShapeInspectorPanel.tsx's own doc comment for the
-              out-of-range (clamp) policy and how it handles no
-              selection/multi-selection/a hidden selection/selection
-              deletion without ever showing a stale value. */}
-          <ShapeInspectorPanel sceneEditor={sceneEditor} />
+          {/* Task 94 (issue #94), point 3: same independently collapsible
+              section pattern as the Tools panel above — see that panel's
+              own comment. */}
+          <CollapsibleSection heading="Shape inspector">
+            {/* Task 60 (issue #58): position/scale/rotation/opacity/fill/
+                stroke/stroke-width fields for the actively selected shape —
+                see ShapeInspectorPanel.tsx's own doc comment for the
+                out-of-range (clamp) policy and how it handles no
+                selection/multi-selection/a hidden selection/selection
+                deletion without ever showing a stale value. */}
+            <ShapeInspectorPanel sceneEditor={sceneEditor} />
+          </CollapsibleSection>
 
-          {/* Task 41: explicit save plus the immutable version-history
-              view (list/restore/soft-delete). `onSaved`/`onRestored`
-              update `project`/`persistedVersion` from the exact version
-              the server just returned — no refetch needed — so
-              `isDirty` above immediately reflects the new saved state;
-              `onRestored` also replaces `workingCopy` with the restored
-              snapshot, since restoring is meant to load that historical
-              scene back into the editor. */}
-          {id && (
-            <VersionHistoryPanel
-              projectId={id}
-              project={project}
-              persistedVersion={persistedVersion}
-              workingCopy={workingCopy}
-              isDirty={isDirty}
-              onSaved={(version) => {
-                setPersistedVersion(version);
-                setProject((current) =>
-                  current ? { ...current, current_version: version.id } : current,
-                );
-                // Task 42/43: the version-save API call succeeded, so
-                // neither the local nor the server recovery draft for this
-                // project is needed anymore — clear both. Never called on
-                // a failed save (see `useVersionHistory.save`'s error
-                // handling: this callback only ever fires with the saved
-                // version on success).
-                void draftAutosave.clearDraft();
-                void draftServerSync.deleteServerDraft();
-              }}
-              onRestored={(version) => {
-                setPersistedVersion(version);
-                setWorkingCopy(structuredClone(version.scene_json));
-                setProject((current) =>
-                  current ? { ...current, current_version: version.id } : current,
-                );
-                // Task 43: restoring a historical version is this
-                // codebase's defined "meaningful action" — sync the
-                // restored working copy to the server draft immediately
-                // rather than waiting for the next periodic tick. Passes
-                // `version.scene_json` explicitly (see
-                // `useDraftServerSync.ts`'s comment on `snapshotOverride`)
-                // rather than relying on `workingCopy`, which hasn't
-                // re-rendered into this hook's ref yet.
-                draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
-              }}
-            />
-          )}
+          <CollapsibleSection heading="Version history">
+            {/* Task 41: explicit save plus the immutable version-history
+                view (list/restore/soft-delete). `onSaved`/`onRestored`
+                update `project`/`persistedVersion` from the exact version
+                the server just returned — no refetch needed — so
+                `isDirty` above immediately reflects the new saved state;
+                `onRestored` also replaces `workingCopy` with the restored
+                snapshot, since restoring is meant to load that historical
+                scene back into the editor. */}
+            {id && (
+              <VersionHistoryPanel
+                projectId={id}
+                project={project}
+                persistedVersion={persistedVersion}
+                workingCopy={workingCopy}
+                isDirty={isDirty}
+                onSaved={(version) => {
+                  setPersistedVersion(version);
+                  setProject((current) =>
+                    current ? { ...current, current_version: version.id } : current,
+                  );
+                  // Task 42/43: the version-save API call succeeded, so
+                  // neither the local nor the server recovery draft for
+                  // this project is needed anymore — clear both. Never
+                  // called on a failed save (see `useVersionHistory.save`'s
+                  // error handling: this callback only ever fires with the
+                  // saved version on success).
+                  void draftAutosave.clearDraft();
+                  void draftServerSync.deleteServerDraft();
+                }}
+                onRestored={(version) => {
+                  setPersistedVersion(version);
+                  setWorkingCopy(structuredClone(version.scene_json));
+                  setProject((current) =>
+                    current ? { ...current, current_version: version.id } : current,
+                  );
+                  // Task 43: restoring a historical version is this
+                  // codebase's defined "meaningful action" — sync the
+                  // restored working copy to the server draft immediately
+                  // rather than waiting for the next periodic tick. Passes
+                  // `version.scene_json` explicitly (see
+                  // `useDraftServerSync.ts`'s comment on
+                  // `snapshotOverride`) rather than relying on
+                  // `workingCopy`, which hasn't re-rendered into this
+                  // hook's ref yet.
+                  draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
+                }}
+              />
+            )}
+          </CollapsibleSection>
 
-          {/* Task 55: export configuration dialog. Read-only against
-              version history/project metadata — it never restores a
-              version or changes `project.current_version`, and its
-              terminal "Export" action is an intentional stub (logs the
-              assembled config) until Task 56+ builds real artifact
-              generation. See `ExportConfigDialog.tsx`'s module doc
-              comment. */}
-          {id && <ExportConfigDialog projectId={id} project={project} />}
+          <CollapsibleSection heading="Export">
+            {/* Task 55: export configuration dialog. Read-only against
+                version history/project metadata — it never restores a
+                version or changes `project.current_version`, and its
+                terminal "Export" action is an intentional stub (logs the
+                assembled config) until Task 56+ builds real artifact
+                generation. See `ExportConfigDialog.tsx`'s module doc
+                comment. */}
+            {id && <ExportConfigDialog projectId={id} project={project} />}
+          </CollapsibleSection>
 
-          {/* Task 48: AI create/edit proposal preview and acceptance. The
-              proposal itself is a third state entirely inside
-              AIProposalPanel/useAIProposal — nothing here is touched until
-              `onAccepted` fires, which only ever happens after the accept
-              endpoint has actually persisted a new version. Handled
-              exactly like VersionHistoryPanel's onRestored above (a new
-              scene replaces the working copy wholesale), plus the same
-              draft-clearing/meaningful-action-sync Task 42/43 already do
-              for save/restore. */}
-          {id && (
-            <AIProposalPanel
-              projectId={id}
-              workingCopy={workingCopy}
-              currentVersionId={project?.current_version ?? null}
-              onAccepted={(version) => {
-                setPersistedVersion(version);
-                setWorkingCopy(structuredClone(version.scene_json));
-                setProject((current) =>
-                  current ? { ...current, current_version: version.id } : current,
-                );
-                void draftAutosave.clearDraft();
-                draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
-              }}
-            />
-          )}
+          <CollapsibleSection heading="AI proposals">
+            {/* Task 48: AI create/edit proposal preview and acceptance.
+                The proposal itself is a third state entirely inside
+                AIProposalPanel/useAIProposal — nothing here is touched
+                until `onAccepted` fires, which only ever happens after
+                the accept endpoint has actually persisted a new version.
+                Handled exactly like VersionHistoryPanel's onRestored
+                above (a new scene replaces the working copy wholesale),
+                plus the same draft-clearing/meaningful-action-sync Task
+                42/43 already do for save/restore. */}
+            {id && (
+              <AIProposalPanel
+                projectId={id}
+                workingCopy={workingCopy}
+                currentVersionId={project?.current_version ?? null}
+                onAccepted={(version) => {
+                  setPersistedVersion(version);
+                  setWorkingCopy(structuredClone(version.scene_json));
+                  setProject((current) =>
+                    current ? { ...current, current_version: version.id } : current,
+                  );
+                  void draftAutosave.clearDraft();
+                  draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
+                }}
+              />
+            )}
+          </CollapsibleSection>
 
-          {/* Task 40: read-only "Randomness enabled" indicator — renders
-              nothing when the scene doesn't use seeded randomness. */}
-          <RandomnessIndicator scene={sceneEditor.workingCopy} />
+          <CollapsibleSection heading="Behaviors">
+            {/* Task 40: read-only "Randomness enabled" indicator — renders
+                nothing when the scene doesn't use seeded randomness. */}
+            <RandomnessIndicator scene={sceneEditor.workingCopy} />
 
-          {/* Task 34: behavior cards ("Follow hand," "React to pinch,"
-              "Pulse," "Emit particles") — reads/writes `workingCopy`
-              through `sceneEditor`, so it participates in the same
-              undo/redo history as every other scene edit. */}
-          <BehaviorCardsPanel sceneEditor={sceneEditor} />
+            {/* Task 34: behavior cards ("Follow hand," "React to pinch,"
+                "Pulse," "Emit particles") — reads/writes `workingCopy`
+                through `sceneEditor`, so it participates in the same
+                undo/redo history as every other scene edit. */}
+            <BehaviorCardsPanel sceneEditor={sceneEditor} />
 
-          {/* Task 36: the advanced typed behavior graph — React Flow
-              canvas plus its accessible keyboard-operable list-view
-              alternative, both driven by the exact same `sceneEditor`
-              graph actions (see GraphView.tsx/GraphListView.tsx). */}
-          <button
-            type="button"
-            aria-expanded={showLogic}
-            aria-controls="editor-graph-section"
-            onClick={() => setShowLogic((current) => !current)}
-          >
-            {showLogic ? 'Hide logic' : 'Show logic'}
-          </button>
-          {showLogic && (
-            <div id="editor-graph-section">
-              <h4>Advanced graph</h4>
-              <p>
-                Inspect and edit the constrained typed behavior graph directly. Only
-                type-compatible, directionally valid connections can be created.
-              </p>
-              <GraphView sceneEditor={sceneEditor} />
-              <GraphListView sceneEditor={sceneEditor} />
-            </div>
-          )}
+            {/* Task 36: the advanced typed behavior graph — React Flow
+                canvas plus its accessible keyboard-operable list-view
+                alternative, both driven by the exact same `sceneEditor`
+                graph actions (see GraphView.tsx/GraphListView.tsx). */}
+            <button
+              type="button"
+              aria-expanded={showLogic}
+              aria-controls="editor-graph-section"
+              onClick={() => setShowLogic((current) => !current)}
+            >
+              {showLogic ? 'Hide logic' : 'Show logic'}
+            </button>
+            {showLogic && (
+              <div id="editor-graph-section">
+                <h4>Advanced graph</h4>
+                <p>
+                  Inspect and edit the constrained typed behavior graph directly. Only
+                  type-compatible, directionally valid connections can be created.
+                </p>
+                <GraphView sceneEditor={sceneEditor} />
+                <GraphListView sceneEditor={sceneEditor} />
+              </div>
+            )}
+          </CollapsibleSection>
         </section>
       </div>
     </div>

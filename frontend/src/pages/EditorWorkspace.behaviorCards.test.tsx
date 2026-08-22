@@ -30,7 +30,6 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     tags: [],
     visibility: 'private',
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     export_attribution: false,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',

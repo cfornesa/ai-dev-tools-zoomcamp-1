@@ -28,7 +28,6 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     tags: [],
     visibility: 'private',
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     export_attribution: false,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
@@ -152,6 +151,91 @@ describe('EditorWorkspace shape creation', () => {
       .getAllByRole('button')
       .map((btn) => btn.textContent);
     expect(new Set(labels).size).toBe(2);
+  });
+});
+
+// Issue #93: the Preview canvas previously rendered no visible shapes at
+// all — `.editor-scene-shape` carried no size/position/fill/stroke.
+// These assert real, geometry-derived SVG output per shape type, plus a
+// visible highlight on the selected shape, rather than only the textContent
+// checks the rest of this suite already relies on.
+describe('EditorWorkspace shape canvas rendering (issue #93)', () => {
+  it('renders a circle with its actual fill/stroke/geometry, not an empty placeholder', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const canvas = screen.getByTestId('scene-canvas');
+    const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
+    const circle = shapeGroup.querySelector('circle');
+    expect(circle).not.toBeNull();
+    expect(circle).toHaveAttribute('r', '50');
+    expect(circle).toHaveAttribute('fill', '#4f46e5');
+    expect(circle).toHaveAttribute('stroke', '#1e1b4b');
+  });
+
+  it('renders a rectangle as a real, positioned/sized rect element', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+
+    const canvas = screen.getByTestId('scene-canvas');
+    const rect = within(canvas)
+      .getByTestId(/^scene-shape-/)
+      .querySelector('rect');
+    expect(rect).not.toBeNull();
+    expect(rect).toHaveAttribute('width', '100');
+    expect(rect).toHaveAttribute('height', '80');
+  });
+
+  it('renders a line as a visible stroked line element even with no explicit stroke color', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add line' }));
+
+    const canvas = screen.getByTestId('scene-canvas');
+    const line = within(canvas)
+      .getByTestId(/^scene-shape-/)
+      .querySelector('line');
+    expect(line).not.toBeNull();
+    // A line has no `fill` to fall back to visually — it must always get a
+    // non-'none' stroke, even for a shape whose style.stroke happens to be
+    // null, or it would render completely invisibly.
+    expect(line?.getAttribute('stroke')).not.toBe('none');
+    expect(line?.getAttribute('stroke')).not.toBeNull();
+  });
+
+  it('renders a closed polygon as a filled, closed SVG path', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add polygon' }));
+
+    const canvas = screen.getByTestId('scene-canvas');
+    const path = within(canvas)
+      .getByTestId(/^scene-shape-/)
+      .querySelector('path');
+    expect(path).not.toBeNull();
+    expect(path?.getAttribute('d')).toMatch(/Z$/);
+    expect(path).toHaveAttribute('fill', '#4f46e5');
+  });
+
+  it('gives the selected shape a visible highlight outline distinct from its own fill/stroke', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+
+    const canvas = screen.getByTestId('scene-canvas');
+    const groups = within(canvas).getAllByTestId(/^scene-shape-/);
+    // The most recently added shape (the rectangle) is selected by default.
+    const selectedGroup = groups.find((g) => g.classList.contains('editor-scene-shape-selected'));
+    expect(selectedGroup).toBeDefined();
+    expect(selectedGroup!.querySelector('.editor-scene-shape-selection-outline')).not.toBeNull();
+
+    const unselectedGroups = groups.filter((g) => g !== selectedGroup);
+    unselectedGroups.forEach((g) => {
+      expect(g.querySelector('.editor-scene-shape-selection-outline')).toBeNull();
+    });
   });
 });
 

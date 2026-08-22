@@ -93,7 +93,6 @@ class Project(models.Model):
     # never a version-creating action) before or after publishing.
     allow_public_remix = models.BooleanField(default=True)
     tags = models.JSONField(default=list, blank=True)
-    thumbnail_choice = models.CharField(max_length=50, default="auto", blank=True)
     # Off by default per _docs/plan.md's "Optional attribution" section.
     export_attribution = models.BooleanField(default=False)
     current_version = models.ForeignKey(

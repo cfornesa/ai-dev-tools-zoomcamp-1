@@ -77,9 +77,25 @@ npm --prefix frontend run dev -- --host 0.0.0.0 --port "$frontend_port" &
 frontend_pid=$!
 
 # Fail fast if either service exits, while EXIT cleanup stops its companion.
+# The bash 4.3+ "wait" flag that blocks on the first of several pids isn't
+# available on macOS's stock /bin/bash (3.2), so poll each pid's process
+# state instead, matching the health-check loop above.
 set +e
-wait -n "$django_pid" "$frontend_pid"
-status=$?
+while true; do
+  django_state="$(ps -o stat= -p "$django_pid" 2>/dev/null || true)"
+  if [[ -z "$django_state" || "$django_state" == Z* ]]; then
+    wait "$django_pid"
+    status=$?
+    break
+  fi
+  frontend_state="$(ps -o stat= -p "$frontend_pid" 2>/dev/null || true)"
+  if [[ -z "$frontend_state" || "$frontend_state" == Z* ]]; then
+    wait "$frontend_pid"
+    status=$?
+    break
+  fi
+  sleep 1
+done
 set -e
 
 if (( status != 0 )); then

@@ -97,7 +97,9 @@ def test_launcher_has_publish_and_cleanup_contract():
     assert "Django health check passed; starting Vite" in launcher
     assert "startup_deadline" in launcher
     assert "trap cleanup EXIT INT TERM" in launcher
-    assert 'wait -n "$django_pid" "$frontend_pid"' in launcher
+    assert "wait -n" not in launcher
+    assert 'wait "$django_pid"' in launcher
+    assert 'wait "$frontend_pid"' in launcher
     assert "RUN_MIGRATIONS_ON_START" in launcher
 
 

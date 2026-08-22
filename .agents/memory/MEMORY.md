@@ -4,3 +4,4 @@
 - [Replit publish verification](replit-publish-verification.md) — Use deployment-status events for checks that must run after publishing; deployment commands run too early.
 - [Mistral credential rotation](mistral-credential-rotation.md) — Retain prior Fernet roots during controlled credential re-encryption before retiring them.
 - [Allauth JWT runtime dependency](allauth-jwt-runtime-dependency.md) — Pin PyJWT explicitly because the installed allauth release imports jwt during OAuth callback validation without declaring it.
+- [Browser-facing CSRF origin](browser-facing-csrf-origin.md) — Same-origin browser POSTs must trust the Vite origin, not only Django's internal backend port.

@@ -22,7 +22,7 @@ export async function loginViaUI(page: Page, email: string, password: string): P
   await page.goto('/accounts/login/');
   await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: /sign in/i }).click();
+  await page.getByRole('button', { name: 'Login', exact: true }).click();
   // LOGIN_REDIRECT_URL = '/' (config/settings.py); Home.tsx then renders
   // the signed-in Gallery, whose heading is the most reliable "login
   // actually succeeded" signal (rather than just asserting the URL, which

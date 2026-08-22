@@ -30,7 +30,7 @@ test.describe('Personal Mistral credential settings', () => {
 
     await expect(page.getByRole('status').filter({ hasText: 'not configured' })).toBeVisible();
 
-    const keyInput = page.getByLabel('Mistral API key', { exact: true });
+    const keyInput = page.getByRole('textbox', { name: 'Mistral API key', exact: true });
     await keyInput.fill(testKey);
     await page.getByRole('button', { name: 'Save key' }).click();
 

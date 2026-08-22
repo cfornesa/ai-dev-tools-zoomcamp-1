@@ -86,6 +86,8 @@ def test_valid_example_derived_env_loads_settings(monkeypatch):
         "http://localhost:8000",
         "https://animate.creatrweb.com",
         "https://creatrweb.replit.app",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
     ]
     assert settings_module.SECURE_PROXY_SSL_HEADER == ("HTTP_X_FORWARDED_PROTO", "https")
     assert settings_module.USE_X_FORWARDED_HOST is True
@@ -117,6 +119,17 @@ def test_optional_allowed_hosts_defaults_when_unset(monkeypatch):
     settings_module = _reload_settings(monkeypatch, env)
 
     assert settings_module.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
+
+
+def test_default_csrf_origins_allow_vite_browser_requests(monkeypatch):
+    """Local browser traffic reaches Django through Vite rather than port 8000."""
+    env = dict(VALID_ENV)
+    del env["CSRF_TRUSTED_ORIGINS"]
+
+    settings_module = _reload_settings(monkeypatch, env)
+
+    assert "http://localhost:5000" in settings_module.CSRF_TRUSTED_ORIGINS
+    assert "http://127.0.0.1:5000" in settings_module.CSRF_TRUSTED_ORIGINS
 
 
 @pytest.mark.parametrize(

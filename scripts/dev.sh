@@ -142,11 +142,16 @@ free_port "$BACKEND_PORT"
 free_port "$FRONTEND_PORT"
 
 log "Starting backend on http://localhost:$BACKEND_PORT ..."
-(uv run --env-file .env python manage.py runserver "$BACKEND_PORT" 2>&1 | prefix backend) &
+(uv run --env-file .env python manage.py runserver "$BACKEND_PORT" </dev/null 2>&1 | prefix backend) &
 BACKEND_PID=$!
 
+# Vite detects a TTY on stdin and enables an interactive keypress listener
+# (raw mode, its own Ctrl+C/quit handling) -- running that as a background
+# job while still sharing this script's controlling terminal is a known
+# source of spurious signals. Redirecting stdin from /dev/null makes Vite
+# treat it as non-interactive and skip that listener entirely.
 log "Starting frontend on http://localhost:$FRONTEND_PORT ..."
-(cd frontend && npm run dev 2>&1 | prefix frontend) &
+(cd frontend && npm run dev </dev/null 2>&1 | prefix frontend) &
 FRONTEND_PID=$!
 
 log "Both servers running. Press Ctrl+C to stop everything."

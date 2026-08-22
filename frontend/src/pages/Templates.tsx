@@ -105,6 +105,7 @@ function Templates() {
                         </p>
                       )}
                       <button
+                        className="shell-action"
                         type="button"
                         aria-label={`Use the "${template.name}" template to create a new project`}
                         onClick={() => handleUseTemplate(template)}

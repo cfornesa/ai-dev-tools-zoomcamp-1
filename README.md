@@ -13,16 +13,16 @@ AGENTS.md does.
 
 ## Run locally
 
-`DATABASE_URL` must point at a real, reachable PostgreSQL server —
-there is no SQLite fallback outside the test suite. If you don't have
-one running locally yet, one option (not the only one) is Docker:
-
-```
-docker run --name scenes-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
-```
-
-then point `DATABASE_URL` at that container (or use Homebrew/your own
-PostgreSQL install instead).
+The two blocks below are exact, complete, copy-pasteable command
+sequences — every command needed to go from a clean checkout to both
+dev servers running, nothing left to fill in by hand. They assume you
+don't already have PostgreSQL running locally: Terminal 1 starts a
+disposable Docker Postgres container on the default port (5432) and
+sets `.env`'s `DATABASE_URL`/`DJANGO_SECRET_KEY` to match it
+automatically. If you already run PostgreSQL some other way (a
+different port, Homebrew, Postgres.app, an existing container), delete
+the `docker run` line and edit `DATABASE_URL` in `.env` to match your
+setup instead before running the rest of the block.
 
 Google sign-in will not work against real Google accounts with the
 placeholder `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`
@@ -40,21 +40,18 @@ AirPlay Receiver and retry.
 **Terminal 1 (backend):**
 
 ```bash
+docker run --name scenes-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
 uv sync
 cp .env.example .env
-```
-
-Edit `.env`: set `DATABASE_URL` to your PostgreSQL connection string.
-Then generate a secret key and copy its output into `.env` as
-`DJANGO_SECRET_KEY`:
-
-```bash
-uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
-
-Once `.env` is filled in:
-
-```bash
+export SECRET_KEY=$(uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
+uv run python -c "
+import os, pathlib
+p = pathlib.Path('.env')
+text = p.read_text()
+text = text.replace('DJANGO_SECRET_KEY=changeme-generate-a-real-secret-key', 'DJANGO_SECRET_KEY=' + os.environ['SECRET_KEY'])
+text = text.replace('DATABASE_URL=postgres://gesture_studio:changeme@localhost:5432/gesture_studio', 'DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres')
+p.write_text(text)
+"
 uv run --env-file .env python manage.py migrate
 uv run --env-file .env python manage.py runserver
 ```

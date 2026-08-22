@@ -16,12 +16,29 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
 }
 
+async function expectNoOverlap(first: Locator, second: Locator): Promise<void> {
+  const boxes = await Promise.all([first.boundingBox(), second.boundingBox()]);
+  expect(boxes[0]).not.toBeNull();
+  expect(boxes[1]).not.toBeNull();
+
+  const firstBox = boxes[0]!;
+  const secondBox = boxes[1]!;
+  const separated =
+    firstBox.x + firstBox.width <= secondBox.x ||
+    secondBox.x + secondBox.width <= firstBox.x ||
+    firstBox.y + firstBox.height <= secondBox.y ||
+    secondBox.y + secondBox.height <= firstBox.y;
+  expect(separated).toBe(true);
+}
+
 async function expectVisibleAndInViewport(locator: Locator): Promise<void> {
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
+  const viewportWidth = locator.page().viewportSize()?.width;
   expect(box).not.toBeNull();
+  expect(viewportWidth).toBeDefined();
   expect(box!.x).toBeGreaterThanOrEqual(0);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(NARROW_VIEWPORT.width);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth!);
 }
 
 test.describe('Responsive app shell', () => {
@@ -85,6 +102,37 @@ test.describe('Responsive app shell', () => {
       const emptyCenter = emptyBox!.x + emptyBox!.width / 2;
       const panelCenter = panelBox!.x + panelBox!.width / 2;
       expect(Math.abs(emptyCenter - panelCenter)).toBeLessThanOrEqual(1);
+      await expectNoHorizontalOverflow(page);
+    });
+
+    test('keeps the shell title and actions separated at desktop and narrow widths', async ({
+      page,
+    }) => {
+      const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
+      const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+      const authActions = page.locator('.app-shell-auth');
+      const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
+
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await loginViaUI(page, fixtures.other.email, fixtures.password);
+
+      await expectVisibleAndInViewport(title);
+      await expectVisibleAndInViewport(navigation);
+      await expectVisibleAndInViewport(authActions);
+      await expectVisibleAndInViewport(motion);
+      await expectNoOverlap(title, navigation);
+      await expectNoOverlap(title, authActions);
+      await expectNoOverlap(title, motion);
+      await expectNoHorizontalOverflow(page);
+
+      await page.setViewportSize(NARROW_VIEWPORT);
+      await expectVisibleAndInViewport(title);
+      await expectVisibleAndInViewport(navigation);
+      await expectVisibleAndInViewport(authActions);
+      await expectVisibleAndInViewport(motion);
+      await expectNoOverlap(title, navigation);
+      await expectNoOverlap(title, authActions);
+      await expectNoOverlap(title, motion);
       await expectNoHorizontalOverflow(page);
     });
   });

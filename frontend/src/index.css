@@ -71,19 +71,22 @@ body {
 }
 
 .app-shell-header {
-  position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+  grid-template-areas:
+    "nav title auth"
+    ". motion .";
   align-items: center;
-  gap: 24px;
+  column-gap: 24px;
+  row-gap: 16px;
   padding: 0 24px 40px;
 }
 
 .app-shell-auth {
-  position: absolute;
-  top: 24px;
-  right: 24px;
+  grid-area: auth;
+  justify-self: end;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
 }
@@ -113,11 +116,18 @@ body {
 }
 
 .app-shell-header h1 {
+  grid-area: title;
   margin: 40px 0 0;
 }
 
-.app-shell-nav,
+.app-shell-nav {
+  grid-area: nav;
+  display: flex;
+  justify-content: flex-start;
+}
+
 .app-shell-motion {
+  grid-area: motion;
   display: flex;
   justify-content: center;
 }
@@ -255,6 +265,12 @@ code {
 
 @media (max-width: 600px) {
   .app-shell-header {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "nav"
+      "motion"
+      "auth";
     gap: 20px;
     padding: 0 16px 32px;
   }
@@ -264,12 +280,7 @@ code {
   }
 
   .app-shell-auth {
-    top: 16px;
-    right: 16px;
-  }
-
-  .app-shell-header h1 {
-    margin-top: 72px;
+    justify-self: center;
   }
 
   .content-panel {

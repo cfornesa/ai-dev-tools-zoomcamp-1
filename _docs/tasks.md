@@ -306,7 +306,13 @@ Description: Generate exports using hostile titles, descriptions, colors, labels
 Goal: Replace the placeholder values used during development (Google OAuth client id/secret, Mistral API key, and any other provider credentials introduced by Tasks 12+) with real, securely-stored values in every deployed environment.
 Description: Enumerate every environment variable/secret placeholder introduced so far (starting with `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` from Task 12) and any added by later AI-integration tasks. Document where each real credential comes from (Google Cloud Console OAuth client, Mistral API console, Replit-managed PostgreSQL, etc.), provision them in Replit's development and production secret stores separately, and verify the application behaves correctly with real values instead of placeholders. Confirm no placeholder or real secret is ever committed to the repository.
 Status: COMPLETE
-Ordering: Remains the LAST task in the entire backlog. The project owner has provisioned the required credentials through Replit's secure secret mechanism, and verification confirmed their presence without exposing values. Do not reorder or reopen this task unless the credential configuration changes.
+Ordering: Remains the last credential-provisioning task in the original V1 backlog. The project owner has provisioned the required credentials through Replit's secure secret mechanism, and verification confirmed their presence without exposing values. Do not reorder or reopen this task unless the credential configuration changes.
+
+## 76. Make production deployment pass operational readiness checks
+Goal: Ensure the imported application can be published safely after code and database changes.
+Description: Apply and verify all committed Django migrations in the appropriate Replit environment, including the `scenes.0017_remove_project_thumbnail_choice` migration. Make `manage.py check --deploy` pass with an intentional production email backend, `DEBUG=False`, HTTPS redirects, secure session/CSRF cookies, and an explicitly reviewed HSTS policy. Verify development and production secrets remain separate, the health endpoint and anonymous/authenticated smoke checks work against the published URL, and the documented publish/pre-deploy migration path is reproducible without exposing credentials or live data.
+Status: PROPOSED
+GitHub issue: #97
 
 ## Completed execution task archive
 

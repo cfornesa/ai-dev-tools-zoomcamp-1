@@ -13,24 +13,6 @@ AGENTS.md does.
 
 ## Run locally
 
-1. Install backend dependencies: `uv sync`
-2. Create your local backend env file: `cp .env.example .env`, then
-   edit `.env` and set `DJANGO_SECRET_KEY`, `DATABASE_URL`, and
-   `CSRF_TRUSTED_ORIGINS` (see `.env.example` for details and how to
-   generate a secret key).
-3. Install frontend dependencies: `cd frontend && npm install`
-4. Create your local frontend env file:
-   `cp frontend/.env.example frontend/.env`
-5. Apply database migrations:
-   `uv run --env-file .env python manage.py migrate`
-6. Start the backend dev server:
-   `uv run --env-file .env python manage.py runserver`
-7. In a second terminal, start the frontend dev server:
-   `cd frontend && npm run dev` (always port 5000 — see AGENTS.md's
-   "Environment setup" section for how this port, `CSRF_TRUSTED_ORIGINS`,
-   and the Google OAuth redirect URI must stay in sync, including the
-   macOS AirPlay Receiver port-5000 conflict gotcha)
-
 `DATABASE_URL` must point at a real, reachable PostgreSQL server —
 there is no SQLite fallback outside the test suite. If you don't have
 one running locally yet, one option (not the only one) is Docker:
@@ -47,7 +29,30 @@ placeholder `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`
 values from `.env.example` — everything else, including the full test
 suite, works fine without real values. Replit-deployed environments
 already have real OAuth credentials provisioned, so this only affects
-a fresh local checkout.
+a fresh local checkout. The frontend dev server always runs on port
+5000 — see AGENTS.md's "Environment setup" section for how this port,
+`CSRF_TRUSTED_ORIGINS`, and the Google OAuth redirect URI must stay in
+sync, including the macOS AirPlay Receiver port-5000 conflict gotcha.
+
+**Terminal 1 (backend):**
+
+```bash
+uv sync
+cp .env.example .env
+# Edit .env: set DATABASE_URL and CSRF_TRUSTED_ORIGINS
+uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+# Copy that output into .env as DJANGO_SECRET_KEY
+uv run --env-file .env python manage.py migrate
+uv run --env-file .env python manage.py runserver
+```
+
+**Terminal 2 (frontend):**
+
+```bash
+cd frontend && npm install
+cp frontend/.env.example frontend/.env
+npm run dev
+```
 
 ## Run on Replit
 

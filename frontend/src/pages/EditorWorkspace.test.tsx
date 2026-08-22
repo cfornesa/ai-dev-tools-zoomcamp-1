@@ -318,12 +318,8 @@ describe('EditorWorkspace keyboard accessibility', () => {
     await user.tab();
     expect(screen.getByRole('button', { name: 'Publish' })).toHaveFocus();
 
-    // The header's Save control (change-label field, next to Publish) --
-    // its Save button itself is disabled with nothing unsaved, so it's
-    // skipped in the tab order and only its text field is a stop here.
-    await user.tab();
-    expect(screen.getByLabelText('Change label (optional)')).toHaveFocus();
-
+    // The header's Save control (next to Publish) is disabled with
+    // nothing unsaved, so it's skipped entirely in the tab order.
     await user.tab();
     expect(screen.getByRole('button', { name: 'Exit without saving' })).toHaveFocus();
 

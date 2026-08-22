@@ -1,5 +1,3 @@
-import { useState, type FormEvent } from 'react';
-
 import type { SceneDocument, SceneVersion } from '../api/projects';
 import { useVersionHistory } from './useVersionHistory';
 import { ActionErrorMessage } from './VersionHistoryPanel';
@@ -11,10 +9,14 @@ import { ActionErrorMessage } from './VersionHistoryPanel';
  * a new version was to open the Inspector's "Version history" accordion
  * section (collapsed by default since issue #95, point 6), which buried
  * the one action every edit session eventually needs behind an extra
- * click. Ported unchanged from `VersionHistoryPanel.tsx`'s old inline
- * `<form>` (same `save`/change-label/validation-error behavior), which no
- * longer renders its own Save form now that this exists — see that
- * file's own doc comment.
+ * click. `VersionHistoryPanel.tsx` no longer renders its own Save form
+ * now that this exists — see that file's own doc comment.
+ *
+ * A single click, with no change-label field: this control's whole point
+ * is "save without publishing," symmetric with Publish's own one-click
+ * shape (which saves implicitly) rather than a small form of its own.
+ * Every version created here still shows up in Version History exactly
+ * like any other save, just without a custom label attached.
  *
  * Self-contained: calls `useVersionHistory(projectId, false)` for its own
  * `save` action rather than sharing the Inspector panel's instance —
@@ -36,32 +38,24 @@ function SaveControl({
   onSaved: (version: SceneVersion) => void;
 }) {
   const { save, saveState } = useVersionHistory(projectId, false);
-  const [changeLabel, setChangeLabel] = useState('');
 
-  async function handleSave(event: FormEvent) {
-    event.preventDefault();
+  async function handleSave() {
     if (!workingCopy) return;
-    const saved = await save(workingCopy, 'manual', changeLabel);
+    const saved = await save(workingCopy, 'manual', '');
     if (saved) {
-      setChangeLabel('');
       onSaved(saved);
     }
   }
 
   return (
     <div className="editor-save-control">
-      <form aria-label="Save version" onSubmit={(event) => void handleSave(event)}>
-        <label htmlFor="editor-save-change-label">Change label (optional)</label>
-        <input
-          id="editor-save-change-label"
-          type="text"
-          value={changeLabel}
-          onChange={(event) => setChangeLabel(event.target.value)}
-        />
-        <button type="submit" disabled={!workingCopy || !isDirty || saveState.pending}>
-          {saveState.pending ? 'Saving…' : 'Save'}
-        </button>
-      </form>
+      <button
+        type="button"
+        onClick={() => void handleSave()}
+        disabled={!workingCopy || !isDirty || saveState.pending}
+      >
+        {saveState.pending ? 'Saving…' : 'Save'}
+      </button>
 
       {saveState.error && <ActionErrorMessage error={saveState.error} testId="save-error" />}
     </div>

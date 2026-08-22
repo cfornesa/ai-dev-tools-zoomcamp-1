@@ -182,20 +182,18 @@ describe('save', () => {
         baseVersion({
           id: 2,
           sequence: 2,
-          change_label: 'Added a shape',
           scene_json: input.scene_json,
         }),
       ),
     );
 
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.type(screen.getByLabelText('Change label (optional)'), 'Added a shape');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(mockedSaveSceneVersion).toHaveBeenCalledTimes(1));
     const [, payload] = mockedSaveSceneVersion.mock.calls[0];
     expect(payload.origin).toBe('manual');
-    expect(payload.change_label).toBe('Added a shape');
+    expect(payload.change_label).toBe('');
     expect(Array.isArray((payload.scene_json as { shapes: unknown[] }).shapes)).toBe(true);
     expect((payload.scene_json as { shapes: unknown[] }).shapes).toHaveLength(1);
 

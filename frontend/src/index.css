@@ -135,6 +135,42 @@ body {
   display: none;
 }
 
+/* App-wide baseline for every plain <button> (the editor workspace's Tools
+ * panel, scene outline row controls, camera/export/version-history dialogs,
+ * etc. render dozens of buttons with no class of their own -- without this
+ * they fall back to the browser's native dark-mode form-control look,
+ * which reads as "unstyled" next to shell-action/demo-radio-option/
+ * editor-panel-tab's deliberate styling). A low-specificity type selector
+ * so any more specific class (.shell-action, .demo-radio-option,
+ * .editor-panel-tab, ...) still wins on color/border/shape for its own
+ * emphasis or selected-state treatment; this only sets the shared shape/
+ * sizing/interaction language every button should have by default. */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+/* Plain type selector (lower specificity than any class-based hover rule
+ * like .shell-action:hover), so those still win for their own hover color. */
+button:hover {
+  background: var(--code-bg);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .shell-action {
   display: inline-flex;
   align-items: center;
@@ -154,11 +190,6 @@ body {
 
 .shell-action:hover {
   background: var(--accent-border);
-}
-
-.shell-action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .account-settings-form {

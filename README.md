@@ -32,23 +32,29 @@ already have real OAuth credentials provisioned, so this only affects
 a fresh local checkout. The frontend dev server always runs on port
 5000 — see AGENTS.md's "Environment setup" section for how this port,
 `CSRF_TRUSTED_ORIGINS`, and the Google OAuth redirect URI must stay in
-sync, including the macOS AirPlay Receiver port-5000 conflict gotcha.
-
-Every command below is real — none are comments, so the whole block for
-each terminal pastes and runs verbatim in both bash and zsh. The
-`${EDITOR:-nano} .env` line opens your terminal editor and blocks until
-you save and quit (`Ctrl+O`, `Enter`, `Ctrl+X` in nano); that's your cue
-to set `DATABASE_URL` and paste in the printed `DJANGO_SECRET_KEY`
-before the rest of the block continues. Set `EDITOR` first (e.g.
-`export EDITOR=vim`) if you'd rather use a different editor.
+sync. **On macOS, port 5000 is very likely already taken by AirPlay
+Receiver** — if `npm run dev` below fails with "Port 5000 is already in
+use", turn it off at System Settings → General → AirDrop & Handoff →
+AirPlay Receiver and retry.
 
 **Terminal 1 (backend):**
 
 ```bash
 uv sync
 cp .env.example .env
+```
+
+Edit `.env`: set `DATABASE_URL` to your PostgreSQL connection string.
+Then generate a secret key and copy its output into `.env` as
+`DJANGO_SECRET_KEY`:
+
+```bash
 uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-${EDITOR:-nano} .env
+```
+
+Once `.env` is filled in:
+
+```bash
 uv run --env-file .env python manage.py migrate
 uv run --env-file .env python manage.py runserver
 ```
@@ -57,7 +63,7 @@ uv run --env-file .env python manage.py runserver
 
 ```bash
 cd frontend && npm install
-cp frontend/.env.example frontend/.env
+cp .env.example .env
 npm run dev
 ```
 

@@ -26,7 +26,10 @@ AGENTS.md does.
 6. Start the backend dev server:
    `uv run --env-file .env python manage.py runserver`
 7. In a second terminal, start the frontend dev server:
-   `cd frontend && npm run dev`
+   `cd frontend && npm run dev` (always port 5000 — see AGENTS.md's
+   "Environment setup" section for how this port, `CSRF_TRUSTED_ORIGINS`,
+   and the Google OAuth redirect URI must stay in sync, including the
+   macOS AirPlay Receiver port-5000 conflict gotcha)
 
 `DATABASE_URL` must point at a real, reachable PostgreSQL server —
 there is no SQLite fallback outside the test suite. If you don't have

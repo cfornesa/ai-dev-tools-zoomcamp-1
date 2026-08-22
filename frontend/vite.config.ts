@@ -8,6 +8,12 @@ export default defineConfig({
   server: {
     host: true,
     port: 5000,
+    // Fail loudly if 5000 is already taken (e.g. macOS AirPlay Receiver)
+    // instead of silently drifting to 5001/5002/etc. Google OAuth's
+    // Authorized redirect URI is registered against port 5000 specifically
+    // -- see AGENTS.md's "Environment setup" section for the full
+    // port <-> CSRF_TRUSTED_ORIGINS <-> OAuth redirect URI relationship.
+    strictPort: true,
     allowedHosts: true,
     fs: {
       // Allows importing the canonical scene schema/limits/fixtures from

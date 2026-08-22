@@ -134,10 +134,28 @@ jobs:
 
       - name: Write disposable staging environment
         run: |
+          test -n "$DJANGO_SECRET_KEY" || { echo "Missing STAGING_DJANGO_SECRET_KEY"; exit 1; }
+          test -n "$DATABASE_URL" || { echo "Missing STAGING_DATABASE_URL"; exit 1; }
+          test -n "$GOOGLE_OAUTH_CLIENT_ID" || { echo "Missing STAGING_GOOGLE_OAUTH_CLIENT_ID"; exit 1; }
+          test -n "$GOOGLE_OAUTH_CLIENT_SECRET" || { echo "Missing STAGING_GOOGLE_OAUTH_CLIENT_SECRET"; exit 1; }
+          test -n "$MISTRAL_CREDENTIAL_ENCRYPTION_KEY" || { echo "Missing STAGING_MISTRAL_CREDENTIAL_ENCRYPTION_KEY"; exit 1; }
+          python - "$DATABASE_URL" <<'PY'
+          import sys
+          from urllib.parse import urlparse
+
+          parsed = urlparse(sys.argv[1])
+          database_name = parsed.path.lstrip("/").lower()
+          if parsed.scheme not in {"postgres", "postgresql"} or not parsed.hostname or not database_name:
+              raise SystemExit("STAGING_DATABASE_URL must be a PostgreSQL URL with a host and database name")
+          if any(marker in database_name for marker in ("prod", "production", "shared")):
+              raise SystemExit("STAGING_DATABASE_URL points at a production or shared database")
+          if not any(marker in database_name for marker in ("stage", "staging", "disposable", "e2e")):
+              raise SystemExit("STAGING_DATABASE_URL database name must identify a disposable staging database")
+          PY
           staging_host="${BASE_URL#*://}"
           staging_host="${staging_host%%/*}"
           staging_origin="${BASE_URL%/}"
-          cat > .env <<'EOF'
+          cat > .env <<EOF
           DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
           DATABASE_URL=${DATABASE_URL}
           GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}

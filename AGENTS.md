@@ -98,6 +98,55 @@ Google OAuth client) — see "Out of scope" in
 for why the port isn't made configurable via an environment variable
 instead.
 
+Deployment tracks and preflight
+
+Keep deployment environments isolated: Replit development and Replit
+published production receive different `DATABASE_URL` values from their
+respective environment configuration. An external local deployment must use
+its own non-production PostgreSQL URL in `.env`; never copy a published
+database URL or production secret into that file. `POSTGRES_TEST_DATABASE_URL`
+is optional and only used by PostgreSQL health tests; if set, it must point
+at a separate disposable test database.
+
+For a Replit publish, the deployment build runs dependency installation,
+`manage.py check --deploy`, and all migrations before building the frontend.
+The runtime is `scripts/start.sh`, which waits for Django health before
+starting Vite. Replit Secrets and the production environment supply the
+production database, OAuth, Mistral encryption, and mail settings; local
+values are not reused.
+
+For an external non-production deployment, create `.env` from
+`.env.example`, set its own PostgreSQL `DATABASE_URL`, then run:
+
+```bash
+uv sync --locked
+npm --prefix frontend ci
+make deploy-check
+make migrate
+BASE_URL=http://localhost:5000 make smoke-local
+```
+
+Production-like settings use `DJANGO_DEBUG=False`, explicit
+`DJANGO_ALLOWED_HOSTS`, HTTPS redirects, secure session/CSRF cookies, and a
+reviewed positive `DJANGO_SECURE_HSTS_SECONDS`. Production mail defaults to
+SMTP and must not use console, locmem, or dummy backends. Missing required
+values or unsafe combinations fail before startup without printing
+connection strings or secrets. Treat any `make deploy-check` warning as a
+release blocker.
+
+The published anonymous smoke check is credential-free:
+
+```bash
+PUBLISHED_APP_URL=https://published.example.com scripts/smoke-published.sh
+```
+
+It waits for `/health/`, then checks `/`, anonymous `/api/whoami/`, and the
+login form. The authenticated smoke path is only for an external local or
+disposable PostgreSQL deployment: `make smoke-local` creates fixture users,
+logs in one, checks authenticated `/api/whoami/`, and removes the fixtures
+even when the check fails. Never run it against a shared or published
+database.
+
 Commands
 
 Quality checks (run from the repo root):

@@ -68,6 +68,10 @@ credentials unusable, but never reveals their plaintext.
   `scripts/start.sh` and keeps the existing 8000/5000 development ports.
 - Replit Publish: use `scripts/start.sh` as the run command. Replit's `PORT`
   value is forwarded to Vite so the externally exposed web port is reachable.
+  The deployment build runs `uv sync --locked`, `npm ci`, `manage.py
+  check --deploy`, and `manage.py migrate --noinput` before the frontend
+  build. Development and published environments receive separate
+  Replit-managed `DATABASE_URL` values.
   The launcher waits for Django's `/health/` endpoint before starting Vite,
   preventing the proxy from attempting backend requests during startup.
 - Published routing smoke check: run
@@ -78,6 +82,12 @@ credentials unusable, but never reveals their plaintext.
   `PUBLISHED_APP_URL` to the published app URL. A successful GitHub deployment
   status automatically runs the same check against that event's environment or
   target URL; the event URL takes precedence over the repository variable.
+- External local deployment: keep a separate non-production `.env` and
+  PostgreSQL database, then run `make deploy-check`, `make migrate`, and
+  `BASE_URL=http://localhost:5000 make smoke-local`. The local smoke command
+  uses disposable fixture users and cleans them up; never point it at a
+  published or shared database. `POSTGRES_TEST_DATABASE_URL` is optional and
+  must remain a separate disposable test database.
 
 ## By Default
 For all other items, defer to @AGENTS.md

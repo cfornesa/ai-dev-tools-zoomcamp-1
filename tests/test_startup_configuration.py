@@ -98,6 +98,7 @@ def test_launcher_has_publish_and_cleanup_contract():
     assert "startup_deadline" in launcher
     assert "trap cleanup EXIT INT TERM" in launcher
     assert 'wait -n "$django_pid" "$frontend_pid"' in launcher
+    assert "RUN_MIGRATIONS_ON_START" in launcher
 
 
 def test_published_smoke_waits_for_health_before_browser_routes():

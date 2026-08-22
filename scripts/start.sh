@@ -33,6 +33,14 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+if [[ "${RUN_MIGRATIONS_ON_START:-false}" == "true" ]]; then
+  printf 'Applying database migrations before starting Django\n'
+  if ! uv run python manage.py migrate --noinput; then
+    printf 'Database migrations failed; refusing to start the application\n' >&2
+    exit 1
+  fi
+fi
+
 uv run python manage.py runserver 0.0.0.0:8000 &
 django_pid=$!
 

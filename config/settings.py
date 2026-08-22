@@ -118,6 +118,46 @@ CSRF_TRUSTED_ORIGINS = get_csrf_trusted_origins()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 
+# Deployment security is enabled automatically whenever DEBUG is off. Each
+# flag remains overridable so an operator can make the policy explicit in
+# environment configuration, but production refuses unsafe combinations.
+SECURE_SSL_REDIRECT = get_bool_env("DJANGO_SECURE_SSL_REDIRECT", default=not DEBUG)
+SESSION_COOKIE_SECURE = get_bool_env("DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)
+CSRF_COOKIE_SECURE = get_bool_env("DJANGO_CSRF_COOKIE_SECURE", default=not DEBUG)
+try:
+    SECURE_HSTS_SECONDS = int(
+        os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000" if not DEBUG else "0")
+    )
+except ValueError:
+    raise ImproperlyConfigured(
+        "DJANGO_SECURE_HSTS_SECONDS must be a whole number of seconds."
+    ) from None
+SECURE_HSTS_INCLUDE_SUBDOMAINS = get_bool_env(
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", default=not DEBUG
+)
+SECURE_HSTS_PRELOAD = get_bool_env("DJANGO_SECURE_HSTS_PRELOAD", default=not DEBUG)
+
+if not DEBUG:
+    if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
+        raise ImproperlyConfigured(
+            "Production requires DJANGO_ALLOWED_HOSTS with explicit hostnames; "
+            "wildcards are not allowed."
+        )
+    if not SECURE_SSL_REDIRECT:
+        raise ImproperlyConfigured("Production requires DJANGO_SECURE_SSL_REDIRECT=True.")
+    if not SESSION_COOKIE_SECURE or not CSRF_COOKIE_SECURE:
+        raise ImproperlyConfigured(
+            "Production requires secure session and CSRF cookies "
+            "(DJANGO_SESSION_COOKIE_SECURE=True and "
+            "DJANGO_CSRF_COOKIE_SECURE=True)."
+        )
+    if SECURE_HSTS_SECONDS <= 0:
+        raise ImproperlyConfigured(
+            "Production requires an explicitly reviewed positive DJANGO_SECURE_HSTS_SECONDS value."
+        )
+elif SECURE_HSTS_SECONDS < 0:
+    raise ImproperlyConfigured("DJANGO_SECURE_HSTS_SECONDS cannot be negative.")
+
 # PostgreSQL connection, supplied as a single `DATABASE_URL` (Replit's
 # convention for its managed PostgreSQL databases: a development Repl and
 # a deployed production environment each get their own URL, injected as
@@ -308,11 +348,33 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 
-# Email
+# Email. Development intentionally prints messages locally. Production uses
+# SMTP by default; operators may select another deliberate backend through
+# EMAIL_BACKEND rather than silently inheriting the development console.
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend"
+    if not DEBUG
+    else "django.core.mail.backends.console.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+try:
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+except ValueError:
+    raise ImproperlyConfigured("EMAIL_PORT must be a whole number.") from None
+EMAIL_USE_TLS = get_bool_env("EMAIL_USE_TLS", default=not DEBUG)
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
+
+if not DEBUG and EMAIL_BACKEND in {
+    "django.core.mail.backends.console.EmailBackend",
+    "django.core.mail.backends.locmem.EmailBackend",
+    "django.core.mail.backends.dummy.EmailBackend",
+}:
+    raise ImproperlyConfigured(
+        "Production EMAIL_BACKEND must deliver mail; console, locmem, and "
+        "dummy backends are development/test-only."
+    )

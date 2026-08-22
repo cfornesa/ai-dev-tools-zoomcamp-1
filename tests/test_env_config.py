@@ -26,6 +26,14 @@ ALL_SETTINGS_ENV_VARS = REQUIRED_ENV_VARS + [
     "DJANGO_DEBUG",
     "DJANGO_ALLOWED_HOSTS",
     "CSRF_TRUSTED_ORIGINS",
+    "DJANGO_SECURE_SSL_REDIRECT",
+    "DJANGO_SESSION_COOKIE_SECURE",
+    "DJANGO_CSRF_COOKIE_SECURE",
+    "DJANGO_SECURE_HSTS_SECONDS",
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS",
+    "DJANGO_SECURE_HSTS_PRELOAD",
+    "EMAIL_BACKEND",
+    "EMAIL_PORT",
 ]
 
 VALID_ENV = {
@@ -109,6 +117,36 @@ def test_optional_debug_defaults_to_false_when_unset(monkeypatch):
     settings_module = _reload_settings(monkeypatch, env)
 
     assert settings_module.DEBUG is False
+
+
+def test_production_defaults_enable_reviewed_security_and_delivery(monkeypatch):
+    env = dict(VALID_ENV)
+    env["DJANGO_DEBUG"] = "False"
+
+    settings_module = _reload_settings(monkeypatch, env)
+
+    assert settings_module.SECURE_SSL_REDIRECT is True
+    assert settings_module.SESSION_COOKIE_SECURE is True
+    assert settings_module.CSRF_COOKIE_SECURE is True
+    assert settings_module.SECURE_HSTS_SECONDS == 31536000
+    assert settings_module.SECURE_HSTS_INCLUDE_SUBDOMAINS is True
+    assert settings_module.EMAIL_BACKEND.endswith("smtp.EmailBackend")
+
+
+def test_production_rejects_wildcard_hosts(monkeypatch):
+    env = dict(VALID_ENV)
+    env.update(DJANGO_DEBUG="False", DJANGO_ALLOWED_HOSTS="*")
+
+    with pytest.raises(ImproperlyConfigured, match="wildcards"):
+        _reload_settings(monkeypatch, env)
+
+
+def test_production_rejects_insecure_cookie_override(monkeypatch):
+    env = dict(VALID_ENV)
+    env.update(DJANGO_DEBUG="False", DJANGO_CSRF_COOKIE_SECURE="False")
+
+    with pytest.raises(ImproperlyConfigured, match="secure session and CSRF"):
+        _reload_settings(monkeypatch, env)
 
 
 def test_optional_allowed_hosts_defaults_when_unset(monkeypatch):

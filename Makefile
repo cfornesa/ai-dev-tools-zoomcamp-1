@@ -1,8 +1,8 @@
 .PHONY: check backend-check frontend-check \
 	lint format format-check typecheck test \
 	backend-lint backend-format backend-format-check backend-typecheck backend-test \
-	frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
-	e2e dev
+frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
+e2e dev deploy-check migrate smoke-local
 
 # Run every backend and frontend check (same checks CI runs).
 check: backend-check frontend-check
@@ -61,3 +61,14 @@ e2e:
 # frontend together from one terminal. Ctrl+C stops all of them cleanly.
 dev:
 	@bash scripts/dev.sh
+
+# Production-like checks are intentionally separate from local development.
+# Supply a non-production .env with explicit production settings.
+deploy-check:
+uv run --env-file .env python manage.py check --deploy
+
+migrate:
+uv run --env-file .env python manage.py migrate --noinput
+
+smoke-local:
+BASE_URL=$${BASE_URL:-http://localhost:5000}; export BASE_URL; uv run --env-file .env python manage.py check --deploy && scripts/smoke-local.sh

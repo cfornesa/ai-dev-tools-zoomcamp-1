@@ -60,12 +60,9 @@ def get_csrf_trusted_origins() -> list[str]:
     origins = []
     configured_origins = os.environ.get(
         "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:8000,http://127.0.0.1:8000,"
-        "http://localhost:5000,http://127.0.0.1:5000",
+        "http://localhost:8000,http://127.0.0.1:8000,http://localhost:5000,http://127.0.0.1:5000",
     ).split(",")
-    configured_origins.extend(
-        ["https://animate.creatrweb.com", "https://creatrweb.replit.app"]
-    )
+    configured_origins.extend(["https://animate.creatrweb.com", "https://creatrweb.replit.app"])
     if DEBUG:
         # Vite is the browser-facing local server, so its origin—not Django's
         # internal :8000 origin—appears in a real form POST's Origin header.

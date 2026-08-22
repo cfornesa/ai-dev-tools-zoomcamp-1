@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
-import type { Project, SceneDocument, SceneVersion, SceneVersionSummary } from '../api/projects';
+import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
 import { useVersionHistory, type VersionActionError } from './useVersionHistory';
 
 const ORIGIN_LABELS: Record<string, string> = {
@@ -21,7 +21,13 @@ function formatTimestamp(iso: string): string {
   return Number.isNaN(date.getTime()) ? iso : date.toLocaleString();
 }
 
-function ActionErrorMessage({ error, testId }: { error: VersionActionError; testId: string }) {
+export function ActionErrorMessage({
+  error,
+  testId,
+}: {
+  error: VersionActionError;
+  testId: string;
+}) {
   return (
     <div role="alert" aria-live="assertive" data-testid={testId}>
       <p>{error.message}</p>
@@ -89,19 +95,26 @@ type VersionHistoryPanelProps = {
   projectId: string;
   project: Project | null;
   persistedVersion: SceneVersion | null;
-  workingCopy: SceneDocument | null;
   isDirty: boolean;
-  onSaved: (version: SceneVersion) => void;
   onRestored: (version: SceneVersion) => void;
 };
 
 /**
- * Task 41: explicit save plus the immutable version-history view — save,
- * inspect, restore, and soft-delete, all going through the Task 14/15
- * APIs via `useVersionHistory`. Deliberately separate from Task 42-44's
+ * Task 41: the immutable version-history view — inspect, restore, and
+ * soft-delete, all going through the Task 14/15 APIs via
+ * `useVersionHistory`. Deliberately separate from Task 42-44's
  * crash-recovery draft UI (autosave, recovery prompt) — this panel only
- * ever acts on an explicit user action (Save / Restore / Delete), never
- * saves anything automatically.
+ * ever acts on an explicit user action (Restore / Delete), never saves
+ * anything automatically.
+ *
+ * Issue #95 follow-up ("Maybe there needs to be a Save button as well"):
+ * the explicit Save action itself moved out of this panel and into the
+ * editor header (`SaveControl.tsx`, next to Publish) so it's reachable
+ * without ever opening this section — this panel's own `useVersionHistory`
+ * instance therefore no longer needs `save`/`saveState` at all; the
+ * header's `SaveControl` owns its own separate instance for that (see its
+ * doc comment on why a second instance, rather than a lifted/shared one,
+ * is the simpler and cheaper choice here).
  *
  * Row previews: no thumbnail-generation system exists yet server-side
  * (`scenes/serializers.py`'s `THUMBNAIL_CHOICES` comment — that's Task
@@ -114,9 +127,7 @@ function VersionHistoryPanel({
   projectId,
   project,
   persistedVersion,
-  workingCopy,
   isDirty,
-  onSaved,
   onRestored,
 }: VersionHistoryPanelProps) {
   const {
@@ -124,28 +135,15 @@ function VersionHistoryPanel({
     historyError,
     versions,
     reloadHistory,
-    save,
-    saveState,
     restore,
     restoreState,
     remove,
     deleteState,
   } = useVersionHistory(projectId, true);
 
-  const [changeLabel, setChangeLabel] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const currentVersionId = project?.current_version ?? null;
-
-  async function handleSave(event: FormEvent) {
-    event.preventDefault();
-    if (!workingCopy) return;
-    const saved = await save(workingCopy, 'manual', changeLabel);
-    if (saved) {
-      setChangeLabel('');
-      onSaved(saved);
-    }
-  }
 
   async function handleRestore(versionId: number) {
     const restored = await restore(versionId);
@@ -167,30 +165,13 @@ function VersionHistoryPanel({
 
   return (
     <div className="version-history-panel">
-      <h4>Save &amp; version history</h4>
+      <h4>Version history</h4>
 
       <p role="status" aria-live="polite" data-testid="working-state-status">
         {isDirty
           ? 'Unsaved changes'
           : `Saved${persistedVersion ? ` as version ${persistedVersion.sequence}` : ''}`}
       </p>
-
-      <form aria-label="Save version" onSubmit={handleSave}>
-        <div className="behavior-card-field">
-          <label htmlFor="version-change-label">Change label (optional)</label>
-          <input
-            id="version-change-label"
-            type="text"
-            value={changeLabel}
-            onChange={(event) => setChangeLabel(event.target.value)}
-          />
-        </div>
-        <button type="submit" disabled={!workingCopy || !isDirty || saveState.pending}>
-          {saveState.pending ? 'Saving…' : 'Save'}
-        </button>
-      </form>
-
-      {saveState.error && <ActionErrorMessage error={saveState.error} testId="save-error" />}
 
       <h5>History</h5>
 
@@ -216,7 +197,7 @@ function VersionHistoryPanel({
         <p role="alert" aria-live="assertive">
           No saved versions were found for this project. Every project is expected to always have at
           least one saved version, so this is unexpected — your working changes have not been lost.
-          Try reloading the page, or use Save above to create the first version.
+          Try reloading the page, or use the Save button in the header to create the first version.
         </p>
       )}
 

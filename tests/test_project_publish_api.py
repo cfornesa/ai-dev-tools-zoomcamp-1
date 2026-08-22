@@ -373,7 +373,6 @@ def test_public_detail_excludes_owner_private_fields(
         "description",
         "tags",
         "allow_public_remix",
-        "thumbnail_choice",
         "thumbnail_url",
         "remix_provenance",
         "current_version",

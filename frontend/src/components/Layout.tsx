@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 
 import ReducedMotionControl from './ReducedMotionControl';
+import { useIsMobileHeader } from './useIsMobileHeader';
 import { useAuth } from '../auth/useAuth';
 
 /**
@@ -25,30 +27,83 @@ import { useAuth } from '../auth/useAuth';
  */
 function Layout() {
   const auth = useAuth();
+  const isMobileHeader = useIsMobileHeader();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Issue #90: collapsing back to desktop width while the mobile menu is
+  // open would otherwise leave menuOpen stuck true, showing the (now
+  // hidden-by-layout) menu markup with stale aria-expanded state next time
+  // the viewport narrows again.
+  useEffect(() => {
+    if (!isMobileHeader) setMenuOpen(false);
+  }, [isMobileHeader]);
+
+  function closeMenuOnEscape(event: React.KeyboardEvent) {
+    if (event.key === 'Escape') {
+      setMenuOpen(false);
+    }
+  }
+
+  const signInOrOutAction =
+    auth.status === 'signed-in' ? (
+      <>
+        <Link className="shell-action" to="/account/settings">Account settings</Link>
+        <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>Logout</button>
+      </>
+    ) : auth.status === 'loading' ? (
+      <span role="status" aria-label="Checking account">Checking account…</span>
+    ) : (
+      <a className="shell-action" href="/accounts/login/">Login</a>
+    );
 
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <header className="app-shell-header">
-        <h1>Creatrweb Animation Studio</h1>
-        <nav className="app-shell-nav" aria-label="Primary navigation">
-          <Link className="shell-action" to="/gallery">Public gallery</Link>
-        </nav>
-        <div className="app-shell-auth">
-          {auth.status === 'signed-in' ? (
-            <>
-              <Link className="shell-action" to="/account/settings">Account settings</Link>
-              <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>Logout</button>
-            </>
-          ) : auth.status === 'loading' ? (
-            <span role="status" aria-label="Checking account">Checking account…</span>
-          ) : (
-            <a className="shell-action" href="/accounts/login/">Login</a>
+      <header className="app-shell-header" onKeyDown={closeMenuOnEscape}>
+        {/* Issue #95, point 1: at mobile widths the heading stays
+            left-aligned while the hamburger toggle sits right-aligned on
+            the same row, rather than both centered above one another —
+            see `.app-shell-header-row`'s `justify-content: space-between`
+            below that breakpoint. */}
+        <div className="app-shell-header-row">
+          <h1>Creatrweb Animation Studio</h1>
+          {isMobileHeader && (
+            <button
+              type="button"
+              className="shell-action app-shell-hamburger"
+              aria-expanded={menuOpen}
+              aria-controls="app-shell-mobile-menu"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
           )}
-          {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
         </div>
+        {isMobileHeader ? (
+          <>
+            <nav
+              id="app-shell-mobile-menu"
+              className="app-shell-nav app-shell-mobile-menu"
+              aria-label="Primary navigation"
+              hidden={!menuOpen}
+            >
+              <Link className="shell-action" to="/">Home</Link>
+              <Link className="shell-action" to="/gallery">Public gallery</Link>
+              {signInOrOutAction}
+              {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
+            </nav>
+          </>
+        ) : (
+          <nav className="app-shell-nav" aria-label="Primary navigation">
+            <Link className="shell-action" to="/">Home</Link>
+            <Link className="shell-action" to="/gallery">Public gallery</Link>
+            {signInOrOutAction}
+            {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
+          </nav>
+        )}
         <div className="app-shell-motion">
           <ReducedMotionControl />
         </div>

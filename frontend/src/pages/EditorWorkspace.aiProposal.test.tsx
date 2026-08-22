@@ -7,6 +7,7 @@ import * as aiApi from '../api/ai';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
+import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
 /**
  * Task 48: rendered integration tests for the AI proposal panel embedded
@@ -36,7 +37,6 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     tags: [],
     visibility: 'private',
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     export_attribution: false,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
@@ -95,6 +95,7 @@ async function loadReadyWorkspace() {
   mockedGetSceneVersion.mockResolvedValue(baseVersion());
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
+  expandAllCollapsibleSections();
 }
 
 async function generateProposal(user: ReturnType<typeof userEvent.setup>) {

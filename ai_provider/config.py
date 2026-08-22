@@ -72,5 +72,3 @@ def get_provider_api_key(env_var: str) -> str:
         raise ImproperlyConfigured(
             f"Required environment variable '{env_var}' is not set."
         ) from None
-
-

@@ -7,6 +7,7 @@ import * as projectsApi from '../api/projects';
 import { ApiError } from '../api/client';
 import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
+import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
 /**
  * Task 41: rendered UI tests for explicit save + version history — the
@@ -35,7 +36,6 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     tags: [],
     visibility: 'private',
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     export_attribution: false,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
@@ -95,6 +95,7 @@ async function loadReadyWorkspace() {
   mockedGetSceneVersion.mockResolvedValue(baseVersion());
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
+  expandAllCollapsibleSections();
 }
 
 beforeEach(() => {
@@ -160,6 +161,7 @@ describe('history display', () => {
     ]);
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const list = await screen.findByRole('list', { name: 'Version history' });
     const items = within(list).getAllByRole('listitem');
@@ -180,20 +182,18 @@ describe('save', () => {
         baseVersion({
           id: 2,
           sequence: 2,
-          change_label: 'Added a shape',
           scene_json: input.scene_json,
         }),
       ),
     );
 
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.type(screen.getByLabelText('Change label (optional)'), 'Added a shape');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(mockedSaveSceneVersion).toHaveBeenCalledTimes(1));
     const [, payload] = mockedSaveSceneVersion.mock.calls[0];
     expect(payload.origin).toBe('manual');
-    expect(payload.change_label).toBe('Added a shape');
+    expect(payload.change_label).toBe('');
     expect(Array.isArray((payload.scene_json as { shapes: unknown[] }).shapes)).toBe(true);
     expect((payload.scene_json as { shapes: unknown[] }).shapes).toHaveLength(1);
 
@@ -241,6 +241,7 @@ describe('restore', () => {
     mockedGetSceneVersion.mockResolvedValue(baseVersion({ id: 2, sequence: 2 }));
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const sourceSummary = { id: 1, sequence: 1 } as const;
     const beforeRestoreSnapshot = JSON.stringify(sourceSummary);
@@ -294,6 +295,7 @@ describe('soft-delete', () => {
     mockedGetSceneVersion.mockResolvedValue(baseVersion({ id: 2, sequence: 2 }));
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const user = userEvent.setup();
     const list = await screen.findByRole('list', { name: 'Version history' });
@@ -326,6 +328,7 @@ describe('soft-delete', () => {
     mockedGetSceneVersion.mockResolvedValue(baseVersion({ id: 2, sequence: 2 }));
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const user = userEvent.setup();
     const list = await screen.findByRole('list', { name: 'Version history' });
@@ -362,6 +365,7 @@ describe('soft-delete', () => {
     );
     renderWorkspace();
     await screen.findByRole('region', { name: 'Tools' });
+    expandAllCollapsibleSections();
 
     const user = userEvent.setup();
     const list = await screen.findByRole('list', { name: 'Version history' });

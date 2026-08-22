@@ -70,36 +70,35 @@ body {
   margin: 0;
 }
 
+/* Issue #90: the header is a simple centered vertical stack — heading,
+ * then the primary nav/auth actions (or the hamburger toggle below the
+ * mobile breakpoint), then the reduced-motion control — rather than a
+ * multi-column row, so nothing has to compete for horizontal space at
+ * any width. */
 .app-shell-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
-  grid-template-areas:
-    "nav title auth"
-    ". motion .";
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  column-gap: 24px;
-  row-gap: 16px;
-  padding: 0 24px 40px;
+  gap: 20px;
+  padding: 40px 24px;
+  text-align: center;
 }
 
-.app-shell-auth {
-  grid-area: auth;
-  justify-self: end;
+/* Issue #95, point 1: the heading + (mobile-only) hamburger toggle share
+   one row; centered as a single item at desktop (no hamburger renders
+   there), left/right split at mobile widths (see the max-width: 767px
+   override below). */
+.app-shell-header-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  width: 100%;
 }
 
 .auth-error {
-  position: absolute;
-  top: 48px;
-  right: 0;
-  width: max-content;
-  max-width: 280px;
+  width: 100%;
   color: #b42318;
   font-size: 13px;
-  text-align: right;
 }
 
 #main-content {
@@ -115,25 +114,72 @@ body {
   font-size: 14px;
 }
 
-.app-shell-header h1 {
-  grid-area: title;
-  margin: 40px 0 0;
-}
-
 .app-shell-nav {
-  grid-area: nav;
   display: flex;
-  justify-content: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .app-shell-motion {
-  grid-area: motion;
   display: flex;
   justify-content: center;
 }
 
-.app-shell-motion {
-  margin-top: 4px;
+/* Issue #90: harmonizes ReducedMotionControl's radio-pill buttons with the
+   rest of the header's controls (border radius, border treatment) without
+   changing `.demo-radio-option`'s shared pill style used elsewhere (the
+   editor's demo controls and snap-preference toggles), since
+   ReducedMotionControl is also rendered outside the header
+   (PublicProjectViewer.tsx). */
+.app-shell-motion .demo-radio-option {
+  border-radius: 6px;
+}
+
+.app-shell-hamburger {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.app-shell-mobile-menu[hidden] {
+  display: none;
+}
+
+/* App-wide baseline for every plain <button> (the editor workspace's Tools
+ * panel, scene outline row controls, camera/export/version-history dialogs,
+ * etc. render dozens of buttons with no class of their own -- without this
+ * they fall back to the browser's native dark-mode form-control look,
+ * which reads as "unstyled" next to shell-action/demo-radio-option/
+ * editor-panel-tab's deliberate styling). A low-specificity type selector
+ * so any more specific class (.shell-action, .demo-radio-option,
+ * .editor-panel-tab, ...) still wins on color/border/shape for its own
+ * emphasis or selected-state treatment; this only sets the shared shape/
+ * sizing/interaction language every button should have by default. */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+/* Plain type selector (lower specificity than any class-based hover rule
+ * like .shell-action:hover), so those still win for their own hover color. */
+button:hover {
+  background: var(--code-bg);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .shell-action {
@@ -155,6 +201,25 @@ body {
 
 .shell-action:hover {
   background: var(--accent-border);
+}
+
+.account-settings-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.account-settings-input {
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
 }
 
 .content-panel {
@@ -259,30 +324,42 @@ code {
   text-align: left;
 }
 
+.gallery-panel {
+  display: flex;
+  flex-direction: column;
+}
+
 .gallery-empty-state {
-  min-height: 280px;
+  flex: 1;
+}
+
+/* Issue #90: below this width the header shows a hamburger toggle
+ * (`.app-shell-hamburger`) and collapsible menu (`.app-shell-mobile-menu`)
+ * instead of the inline nav/auth actions — see
+ * `components/useIsMobileHeader.ts` for why this is a distinct, wider
+ * breakpoint than the 600px one used below for unrelated panel spacing. */
+@media (max-width: 767px) {
+  .app-shell-header {
+    gap: 16px;
+    padding: 32px 16px;
+  }
+
+  .app-shell-header-row {
+    justify-content: space-between;
+  }
+
+  .app-shell-header-row h1 {
+    text-align: left;
+  }
+
+  .app-shell-mobile-menu {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
 }
 
 @media (max-width: 600px) {
-  .app-shell-header {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "title"
-      "nav"
-      "motion"
-      "auth";
-    gap: 20px;
-    padding: 0 16px 32px;
-  }
-
-  .app-shell-header h1 {
-    margin-top: 32px;
-  }
-
-  .app-shell-auth {
-    justify-self: center;
-  }
-
   .content-panel {
     margin-inline: 16px;
   }
@@ -343,14 +420,147 @@ code {
   font-size: 18px;
 }
 
+/* Issue #95, point 3: the header reflows into four stacked rows below the
+   1024px panel-switcher breakpoint (title; save status; visibility; Publish
+   + Exit together) — the `.editor-header-break` spans force a wrap point
+   between each, regardless of how much horizontal room the row's own
+   content would otherwise take. At >=1024px, the breaks are hidden and
+   `order` regroups the same items into "title, Publish, Exit" on one row
+   with "save status, visibility" on a second (`editor-header-break-desktop`
+   forces that one wrap point) — see the min-width: 1024px override below. */
 .editor-workspace-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 8px 12px;
   text-align: left;
   padding: 0 24px;
+}
+
+.editor-header-break {
+  flex-basis: 100%;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.editor-header-break-desktop {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .editor-header-break {
+    display: none;
+  }
+
+  .editor-header-break-desktop {
+    display: block;
+    flex-basis: 100%;
+    width: 0;
+    height: 0;
+    order: 4;
+  }
+
+  .editor-title-display,
+  .editor-title-edit {
+    order: 0;
+  }
+
+  .editor-publish-action {
+    order: 1;
+  }
+
+  .editor-save-control {
+    order: 2;
+  }
+
+  .editor-exit-button {
+    order: 3;
+  }
+
+  .editor-save-status {
+    order: 5;
+  }
+
+  .editor-publish-visibility {
+    order: 6;
+  }
+}
+
+/* Task 94 (issue #94): inline project-title editing, next to the title
+   above Preview. */
+.editor-title-display,
+.editor-title-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-title-display h2 {
+  margin: 0;
+}
+
+/* Issue #95, point 2: icon-only affordances for "Edit title" and "Exit
+   without saving", matching the universal pencil/X conventions — both
+   keep an `aria-label` (set in EditorWorkspace.tsx) since the visible text
+   label goes away. */
+.editor-icon-button {
+  padding: 6px 10px;
+  line-height: 1;
+  font-size: 16px;
+}
+
+/* Task 94 (issue #94): the header's Publish/Unpublish control. This whole
+   wrapper renders as `display: contents` (issue #95, point 3) so its two
+   children — `.editor-publish-visibility` and `.editor-publish-action` —
+   become direct flex items of `.editor-workspace-header` instead of being
+   locked next to each other as a single unit; the Publish button itself
+   reuses `.shell-action` (set directly on the button in
+   PublishControl.tsx) for the same emphasized/primary treatment
+   `.shell-action` already gives "Create new animation"/"Browse
+   templates". */
+.editor-publish-control {
+  display: contents;
+}
+
+.editor-publish-visibility,
+.editor-publish-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Save button follow-up to issue #95: a header-level explicit-Save action
+   next to Publish, so creating a new version never requires opening the
+   Inspector's "Version history" section first (see SaveControl.tsx). */
+.editor-save-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Task 94 (issue #94): the independently expandable/collapsible Tools/
+   Inspector sub-sections (CollapsibleSection.tsx). */
+.editor-collapsible-section {
+  margin: 12px 0;
+}
+
+.editor-collapsible-section-heading {
+  margin: 0;
+}
+
+.editor-collapsible-section-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  font-weight: 600;
+}
+
+.editor-collapsible-section-content {
+  margin-top: 8px;
 }
 
 .editor-panel-switcher {
@@ -391,6 +601,29 @@ code {
   border-color: var(--accent-border);
   background: var(--accent-bg);
   color: var(--text-h);
+}
+
+/* Issue #95, point 5: each "Continuous signals" row's label and slider
+   land in fixed-width columns (rather than each row's slider starting
+   wherever its own label happens to end), so every slider starts at the
+   same x-position regardless of label length. The `minmax` label column
+   caps out at 200px so a long label wraps instead of squeezing the slider
+   column on narrow viewports. */
+.demo-signal-slider {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.demo-signal-slider label {
+  font-size: 14px;
+}
+
+.demo-signal-slider output {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* Task 29: the global Reduce motion control (ReducedMotionControl.tsx) —
@@ -590,6 +823,115 @@ textarea:focus-visible {
   left: 8px;
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Issue #93: base styling for the remaining native form controls (button
+   already got this treatment for issue #90) — the Scene outline's
+   layer-rename input, its target-layer/target-group selects, and the
+   Behavior cards / AI proposal panels' selects and textarea all fell back
+   to the browser's unstyled native look before this rule existed. Low
+   specificity, matching `button`'s own precedent above, so any more
+   specific class still wins on its own emphasis/selected-state treatment. */
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+  line-height: 1.3;
+}
+
+textarea {
+  resize: vertical;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Issue #93: the Preview canvas's actual shape rendering — previously
+   `.editor-scene-shape`/`.editor-shape-handle` (and every handle variant)
+   had zero rules, so nothing added to a scene was ever visible. The shapes
+   themselves get their fill/stroke straight from inline SVG attributes (see
+   EditorWorkspace.tsx's `shapeGeometry`); this only needs to size the
+   overlay and style the selection outline + drag handles. */
+.editor-scene-shapes-layer {
+  overflow: visible;
+}
+
+/* Issue #95, point 4: the canvas wrapper itself already caps its own
+   width at 100% of its panel (EditorWorkspace.tsx's inline `maxWidth:
+   '100%'` on `.editor-scene-canvas`), but its children — the p5-created
+   `<canvas>` (p5Adapter.ts sets a fixed pixel width/height as an inline
+   style, which this file deliberately never touches) and the absolutely-
+   positioned SVG overlays (grid/guide/shape layers, each given an explicit
+   `width`/`height` presentation attribute equal to the scene's canvas
+   size) — otherwise keep their own fixed pixel width regardless of how
+   narrow the wrapper itself has shrunk, visibly overflowing past the
+   panel's right edge. `max-width` always wins over a conflicting `width`
+   in the used-value calculation regardless of specificity/origin, so this
+   needs no `!important` for width; `height` does, to override p5's own
+   inline pixel height and keep the canvas's aspect ratio proportional as
+   it scales down. */
+.editor-scene-canvas canvas,
+.editor-scene-canvas svg {
+  max-width: 100%;
+}
+
+.editor-scene-canvas canvas {
+  height: auto !important;
+}
+
+.editor-scene-shape-selection-outline {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.editor-shape-handle {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.editor-shape-handle-move,
+.editor-group-handle-move {
+  border-radius: 999px;
+  cursor: move;
+}
+
+.editor-shape-handle-resize,
+.editor-group-handle-resize {
+  cursor: nwse-resize;
+}
+
+.editor-shape-handle-rotate,
+.editor-group-handle-rotate {
+  border-radius: 999px;
+  background: var(--accent-bg);
+  cursor: grab;
+}
+
+.editor-vertex-handle {
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.editor-vertex-handle-selected {
+  background: var(--accent);
 }
 
 /* Task 41: save/version-history status + panel. */

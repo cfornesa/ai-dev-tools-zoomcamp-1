@@ -85,14 +85,6 @@ def remix_provenance_data(project: Project) -> dict | None:
     }
 
 
-# `thumbnail_choice` predates the Task 54 thumbnail generator and is not
-# consumed by it (Task 54 always generates one deterministic rendering of
-# the current version; it does not offer a first-shape/solid-color
-# strategy choice) -- kept here unchanged as an existing project-metadata
-# field/contract this task does not touch.
-THUMBNAIL_CHOICES = ["auto", "first-shape", "solid-color"]
-
-
 class TagListField(serializers.ListField):
     child = serializers.CharField(max_length=MAX_TAG_LENGTH, allow_blank=False)
 
@@ -115,7 +107,6 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
     """
 
     tags = TagListField(required=False)
-    thumbnail_choice = serializers.ChoiceField(choices=THUMBNAIL_CHOICES, required=False)
 
     class Meta:
         model = Project
@@ -124,7 +115,6 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
             "description",
             "tags",
             "allow_public_remix",
-            "thumbnail_choice",
             "export_attribution",
         ]
         extra_kwargs = {
@@ -149,7 +139,6 @@ class ProjectSerializer(serializers.ModelSerializer):
             "tags",
             "visibility",
             "allow_public_remix",
-            "thumbnail_choice",
             "export_attribution",
             "current_version",
             "created_at",
@@ -203,7 +192,6 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "description",
             "tags",
             "allow_public_remix",
-            "thumbnail_choice",
             "thumbnail_url",
             "remix_provenance",
             "current_version",
@@ -234,7 +222,7 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
 
     Deliberately narrower than `PublicProjectSerializer` above (Task 49's
     single-project public detail): no `description`, `tags`,
-    `allow_public_remix`, `thumbnail_choice`, or `current_version` (the
+    `allow_public_remix`, or `current_version` (the
     nested scene snapshot) -- a gallery card only ever needs enough
     to render a tile and link out, never full scene content or an editing
     preference. Same identifier convention as `PublicProjectSerializer`:

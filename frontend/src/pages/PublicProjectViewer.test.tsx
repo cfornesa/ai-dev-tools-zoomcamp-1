@@ -38,7 +38,6 @@ function basePublicProject(overrides: Partial<PublicProject> = {}): PublicProjec
     description: 'A hand-reactive circle.',
     tags: [],
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     thumbnail_url: '/api/public/projects/p1/thumbnail.png',
     remix_provenance: null,
     current_version: {
@@ -357,7 +356,6 @@ describe('PublicProjectViewer Fork action (Task 51)', () => {
       tags: [],
       visibility: 'private',
       allow_public_remix: true,
-      thumbnail_choice: 'auto',
       export_attribution: false,
       current_version: 1,
       created_at: '2026-01-01T00:00:00Z',

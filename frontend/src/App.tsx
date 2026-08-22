@@ -1,14 +1,22 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 import { AuthProvider } from './auth/AuthContext';
 import Layout from './components/Layout';
 import EditorWorkspace from './pages/EditorWorkspace';
 import Home from './pages/Home';
-import ProjectMetadataForm from './pages/ProjectMetadataForm';
 import PublicGallery from './pages/PublicGallery';
 import PublicProjectViewer from './pages/PublicProjectViewer';
 import Templates from './pages/Templates';
 import AccountSettings from './pages/AccountSettings';
+
+/** Task 94 (issue #94): `/projects/:id/settings` no longer exists as a
+ * standalone page (project-metadata editing is now the editor's own
+ * "Details" panel) — this redirects any existing bookmark/link straight to
+ * that project's unified editor instead of leaving the old URL dead. */
+function ProjectSettingsRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/projects/${id}`} replace />;
+}
 
 function App() {
   return (
@@ -31,7 +39,14 @@ function App() {
             <Route path="templates" element={<Templates />} />
             <Route path="account/settings" element={<AccountSettings />} />
             <Route path="projects/:id" element={<EditorWorkspace />} />
-            <Route path="projects/:id/settings" element={<ProjectMetadataForm />} />
+            {/* Task 94 (issue #94): project-metadata editing folded into
+                the editor itself as a "Details" panel (EditorWorkspace.tsx)
+                — the old standalone `ProjectMetadataForm.tsx` page is
+                deleted. A redirect (rather than removing the route
+                outright) keeps any existing bookmark/link to
+                `/projects/:id/settings` working, landing on the same
+                project's unified editor instead of a dead route. */}
+            <Route path="projects/:id/settings" element={<ProjectSettingsRedirect />} />
           </Route>
         </Routes>
       </BrowserRouter>

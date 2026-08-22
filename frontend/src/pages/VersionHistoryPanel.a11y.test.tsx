@@ -45,7 +45,6 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     tags: [],
     visibility: 'private',
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     export_attribution: false,
     current_version: 2,
     created_at: '2026-01-01T00:00:00Z',
@@ -90,9 +89,7 @@ function renderPanel() {
                   projectId="p1"
                   project={baseProject()}
                   persistedVersion={{ ...summary({ id: 2, sequence: 2 }), scene_json: BASE_SCENE }}
-                  workingCopy={BASE_SCENE}
                   isDirty={false}
-                  onSaved={vi.fn()}
                   onRestored={vi.fn()}
                 />
               </>

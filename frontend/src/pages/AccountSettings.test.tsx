@@ -20,7 +20,8 @@ describe('AccountSettings', () => {
 
     expect(await screen.findByText('Mistral key: configured')).toBeInTheDocument();
     expect(screen.getByLabelText(/^mistral api key$/i, { selector: 'input' })).toHaveValue('');
-    expect(screen.getByRole('button', { name: /replace key/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /replace key/i })).toHaveClass('shell-action');
+    expect(screen.getByRole('button', { name: /remove key/i })).toHaveClass('shell-action');
   });
 
   it('submits a key, clears the input, and supports removal', async () => {

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
+import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
 /**
  * Task 24: interaction and keyboard-operability tests for the scene
@@ -30,7 +31,6 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     tags: [],
     visibility: 'private',
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     export_attribution: false,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
@@ -85,6 +85,7 @@ async function loadReadyWorkspace() {
   mockedGetSceneVersion.mockResolvedValue(baseVersion());
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
+  expandAllCollapsibleSections();
 }
 
 function outlineList() {

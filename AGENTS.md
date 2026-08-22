@@ -68,6 +68,36 @@ loads `.env` into the process environment for that command. Vite loads
 `frontend/.env` on its own, so `npm run dev`/`npm test`/`npm run build`
 need no extra flag.
 
+Frontend dev server port, `CSRF_TRUSTED_ORIGINS`, and Google OAuth must
+stay in sync: `frontend/vite.config.ts` fixes the Vite dev server
+(`npm run dev`) at port `5000` with `strictPort: true`, so it always
+either starts on `http://localhost:5000` or fails loudly with Vite's own
+"Port 5000 is already in use" error — it never silently drifts to
+5001/5002/etc. Local sign-in is served through that frontend origin (the
+Vite dev server proxies `/accounts`, `/api`, and `/health` to Django —
+see the `server.proxy` comment in `vite.config.ts`), so three things must
+name the exact same port together, and changing the port means updating
+all three:
+
+1. `frontend/vite.config.ts`'s `server.port`.
+2. `.env`'s `CSRF_TRUSTED_ORIGINS`, which must include
+   `http://localhost:5000`.
+3. The Google OAuth client's registered "Authorized redirect URI"
+   (`http://localhost:5000/accounts/google/login/callback/`) and
+   "Authorized JavaScript origin" (`http://localhost:5000`).
+
+A mismatch among these three shows up as `redirect_uri_mismatch` from
+Google during sign-in. Known gotcha on macOS: AirPlay Receiver also
+listens on port 5000 by default, which is what most often occupies it
+before `npm run dev` ever runs. Fix it by disabling AirPlay Receiver
+(System Settings → General → AirDrop & Handoff → AirPlay Receiver), or,
+if you'd rather keep it enabled, change the fixed port everywhere it's
+referenced (`vite.config.ts`, `.env`'s `CSRF_TRUSTED_ORIGINS`, and the
+Google OAuth client) — see "Out of scope" in
+[issue #86](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/86)
+for why the port isn't made configurable via an environment variable
+instead.
+
 Commands
 
 Quality checks (run from the repo root):

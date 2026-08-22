@@ -50,12 +50,26 @@ function AccountSettings() {
         <p role="status" aria-live="polite">
           {configured === null ? 'Checking key status…' : configured ? 'Mistral key: configured' : 'Mistral key: not configured'}
         </p>
-        <form onSubmit={submit} aria-label="Mistral API key">
+        <form onSubmit={submit} aria-label="Mistral API key" className="account-settings-form">
           <label htmlFor="mistral-key">Mistral API key</label>
-          <input id="mistral-key" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} disabled={busy} />
-          <button type="submit" disabled={busy || key.length < 10}>{busy ? 'Saving…' : configured ? 'Replace key' : 'Save key'}</button>
+          <input
+            id="mistral-key"
+            className="account-settings-input"
+            type="password"
+            autoComplete="off"
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            disabled={busy}
+          />
+          <button className="shell-action" type="submit" disabled={busy || key.length < 10}>
+            {busy ? 'Saving…' : configured ? 'Replace key' : 'Save key'}
+          </button>
         </form>
-        {configured && <button type="button" onClick={() => void remove()} disabled={busy}>Remove key</button>}
+        {configured && (
+          <button className="shell-action" type="button" onClick={() => void remove()} disabled={busy}>
+            Remove key
+          </button>
+        )}
         {message && <p role="status">{message}</p>}
         {error && <p role="alert">{error}</p>}
       </div>

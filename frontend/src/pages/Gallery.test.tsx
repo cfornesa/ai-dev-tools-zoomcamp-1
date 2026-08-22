@@ -24,7 +24,6 @@ function baseProject(overrides: Partial<projectsApi.Project> = {}): projectsApi.
     tags: [],
     visibility: 'private',
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     export_attribution: false,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
@@ -95,7 +94,7 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(screen.getByRole('heading', { name: 'Pinch Burst' })).toBeInTheDocument();
     expect(screen.getAllByText('Public')).toHaveLength(1);
     expect(screen.getAllByText('Private')).toHaveLength(1);
-    expect(screen.getAllByRole('link', { name: /open in editor/i })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: /^edit$/i })).toHaveLength(2);
     expect(screen.getByRole('list')).toHaveClass('project-grid');
     expect(screen.getByRole('list').closest('.content-panel')).not.toBeNull();
   });
@@ -133,13 +132,10 @@ describe('Gallery keyboard accessibility', () => {
     expect(screen.getByRole('link', { name: /browse templates/i })).toHaveFocus();
 
     await user.tab();
-    expect(screen.getAllByRole('link', { name: /open in editor/i })[0]).toHaveFocus();
+    expect(screen.getAllByRole('link', { name: /^edit$/i })[0]).toHaveFocus();
 
     await user.tab();
-    expect(screen.getAllByRole('link', { name: /edit details/i })[0]).toHaveFocus();
-
-    await user.tab();
-    expect(screen.getAllByRole('link', { name: /open in editor/i })[1]).toHaveFocus();
+    expect(screen.getAllByRole('link', { name: /^edit$/i })[1]).toHaveFocus();
   });
 });
 

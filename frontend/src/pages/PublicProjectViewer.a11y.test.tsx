@@ -49,7 +49,6 @@ function basePublicProject(overrides: Partial<PublicProject> = {}): PublicProjec
     description: 'A hand-reactive circle.',
     tags: [],
     allow_public_remix: false,
-    thumbnail_choice: 'auto',
     thumbnail_url: '/api/public/projects/p1/thumbnail.png',
     remix_provenance: null,
     current_version: {

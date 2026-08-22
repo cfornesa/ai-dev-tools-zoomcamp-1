@@ -39,9 +39,18 @@ sync, including the macOS AirPlay Receiver port-5000 conflict gotcha.
 ```bash
 uv sync
 cp .env.example .env
-# Edit .env: set DATABASE_URL and CSRF_TRUSTED_ORIGINS
+```
+
+Edit `.env` now: set `DATABASE_URL` and `CSRF_TRUSTED_ORIGINS`. Then
+generate a secret key:
+
+```bash
 uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-# Copy that output into .env as DJANGO_SECRET_KEY
+```
+
+Copy that output into `.env` as `DJANGO_SECRET_KEY`. Then:
+
+```bash
 uv run --env-file .env python manage.py migrate
 uv run --env-file .env python manage.py runserver
 ```

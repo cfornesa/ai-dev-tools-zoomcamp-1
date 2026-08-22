@@ -27,6 +27,7 @@ created, so a single delete is enough to leave no cross-run residue.
 """
 
 import json
+import os
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
@@ -86,6 +87,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         action = options["action"]
         as_json = options["json"]
+        if (
+            os.environ.get("E2E_FIXTURE_ENVIRONMENT") == "disposable-staging"
+            and os.environ.get("STAGING_SMOKE") != "1"
+        ):
+            raise CommandError(
+                "Disposable staging fixtures require STAGING_SMOKE=1; "
+                "refusing to modify an unknown environment."
+            )
 
         if action == "create":
             self._create(as_json)

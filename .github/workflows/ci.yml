@@ -93,6 +93,69 @@ jobs:
             }}
         run: scripts/smoke-published.sh
 
+  staging-authenticated-smoke:
+    name: Disposable staging authenticated smoke check
+    # This job is deliberately separate from the anonymous published probe.
+    # GitHub environment secrets below must belong to a disposable staging
+    # database, never the production/shared deployment.
+    if: >-
+      ${{
+        github.event_name == 'deployment_status' &&
+        github.event.deployment_status.state == 'success' &&
+        github.event.deployment_status.environment == 'staging' &&
+        (github.event.deployment_status.environment_url != '' ||
+          github.event.deployment_status.target_url != '')
+      }}
+    environment: staging
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ${{ secrets.STAGING_DJANGO_SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_OAUTH_CLIENT_ID }}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.STAGING_GOOGLE_OAUTH_CLIENT_SECRET }}
+      MISTRAL_CREDENTIAL_ENCRYPTION_KEY: ${{ secrets.STAGING_MISTRAL_CREDENTIAL_ENCRYPTION_KEY }}
+      DJANGO_DEBUG: "False"
+      BASE_URL: >-
+        ${{
+          github.event.deployment_status.environment_url ||
+          github.event.deployment_status.target_url
+        }}
+      E2E_FIXTURE_ENVIRONMENT: disposable-staging
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install backend dependencies
+        run: uv sync --locked
+
+      - name: Write disposable staging environment
+        run: |
+          staging_host="${BASE_URL#*://}"
+          staging_host="${staging_host%%/*}"
+          staging_origin="${BASE_URL%/}"
+          cat > .env <<'EOF'
+          DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+          DATABASE_URL=${DATABASE_URL}
+          GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+          GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+          MISTRAL_CREDENTIAL_ENCRYPTION_KEY=${MISTRAL_CREDENTIAL_ENCRYPTION_KEY}
+          DJANGO_DEBUG=${DJANGO_DEBUG}
+          DJANGO_ALLOWED_HOSTS=${staging_host}
+          CSRF_TRUSTED_ORIGINS=${staging_origin}
+          EOF
+
+      - name: Run authenticated staging smoke check
+        env:
+          STAGING_SMOKE: "1"
+        run: |
+          staging_host="${BASE_URL#*://}"
+          staging_host="${staging_host%%/*}"
+          STAGING_HOST="$staging_host" scripts/smoke-local.sh
+
   e2e-responsive:
     name: Responsive shell E2E
     if: ${{ github.event_name != 'deployment_status' }}

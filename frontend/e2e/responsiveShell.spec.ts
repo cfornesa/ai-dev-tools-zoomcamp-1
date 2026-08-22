@@ -64,6 +64,10 @@ test.describe('Responsive app shell', () => {
     await expectVisibleAndInViewport(
       page.getByRole('heading', { name: 'Creatrweb Animation Studio' }),
     );
+    // Below the mobile-header breakpoint, primary nav lives behind the
+    // hamburger toggle (issue #90) rather than being inline, so it must be
+    // opened before asserting its contents are visible and in-viewport.
+    await page.getByRole('button', { name: 'Open menu' }).click();
     await expectVisibleAndInViewport(page.getByRole('navigation', { name: 'Primary navigation' }));
     await expectVisibleAndInViewport(page.getByRole('radiogroup', { name: 'Reduce motion' }));
     await expectVisibleAndInViewport(page.locator('.content-panel'));
@@ -78,6 +82,7 @@ test.describe('Responsive app shell', () => {
 
     await expectTabOrder(page, [
       page.getByRole('link', { name: 'Skip to main content' }),
+      page.getByRole('link', { name: 'Home', exact: true }),
       page.getByRole('link', { name: 'Public gallery' }),
       page.getByRole('link', { name: 'Login', exact: true }),
       page.getByRole('radio', { name: 'Match system' }),
@@ -100,6 +105,7 @@ test.describe('Responsive app shell', () => {
     // The group is one tab stop, and focus enters on its checked choice.
     await expectTabOrder(page, [
       page.getByRole('link', { name: 'Skip to main content' }),
+      page.getByRole('link', { name: 'Home', exact: true }),
       page.getByRole('link', { name: 'Public gallery' }),
       page.getByRole('link', { name: 'Login', exact: true }),
       system,
@@ -170,7 +176,8 @@ test.describe('Responsive app shell', () => {
     }) => {
       const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
       const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-      const authActions = page.locator('.app-shell-auth');
+      const accountLink = page.getByRole('link', { name: 'Account settings' });
+      const logoutButton = page.getByRole('button', { name: 'Logout' });
       const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
 
       await page.setViewportSize({ width: 1280, height: 900 });
@@ -178,20 +185,27 @@ test.describe('Responsive app shell', () => {
 
       await expectVisibleAndInViewport(title);
       await expectVisibleAndInViewport(navigation);
-      await expectVisibleAndInViewport(authActions);
+      await expectVisibleAndInViewport(accountLink);
+      await expectVisibleAndInViewport(logoutButton);
       await expectVisibleAndInViewport(motion);
       await expectNoOverlap(title, navigation);
-      await expectNoOverlap(title, authActions);
+      await expectNoOverlap(title, accountLink);
+      await expectNoOverlap(title, logoutButton);
       await expectNoOverlap(title, motion);
       await expectNoHorizontalOverflow(page);
 
       await page.setViewportSize(NARROW_VIEWPORT);
+      // Below the mobile-header breakpoint, primary nav (and the auth
+      // actions inside it) live behind the hamburger toggle (issue #90).
+      await page.getByRole('button', { name: 'Open menu' }).click();
       await expectVisibleAndInViewport(title);
       await expectVisibleAndInViewport(navigation);
-      await expectVisibleAndInViewport(authActions);
+      await expectVisibleAndInViewport(accountLink);
+      await expectVisibleAndInViewport(logoutButton);
       await expectVisibleAndInViewport(motion);
       await expectNoOverlap(title, navigation);
-      await expectNoOverlap(title, authActions);
+      await expectNoOverlap(title, accountLink);
+      await expectNoOverlap(title, logoutButton);
       await expectNoOverlap(title, motion);
       await expectNoHorizontalOverflow(page);
     });
@@ -227,6 +241,7 @@ test.describe('Responsive app shell', () => {
 
       await expectTabOrder(page, [
         page.getByRole('link', { name: 'Skip to main content' }),
+        page.getByRole('link', { name: 'Home', exact: true }),
         page.getByRole('link', { name: 'Public gallery' }),
         page.getByRole('link', { name: 'Account settings' }),
         page.getByRole('button', { name: 'Logout' }),

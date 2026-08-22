@@ -81,6 +81,7 @@ function Layout() {
               aria-label="Primary navigation"
               hidden={!menuOpen}
             >
+              <Link className="shell-action" to="/">Home</Link>
               <Link className="shell-action" to="/gallery">Public gallery</Link>
               {signInOrOutAction}
               {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}
@@ -88,6 +89,7 @@ function Layout() {
           </>
         ) : (
           <nav className="app-shell-nav" aria-label="Primary navigation">
+            <Link className="shell-action" to="/">Home</Link>
             <Link className="shell-action" to="/gallery">Public gallery</Link>
             {signInOrOutAction}
             {auth.logoutError && <p className="auth-error" role="alert">{auth.logoutError}</p>}

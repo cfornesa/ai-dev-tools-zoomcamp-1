@@ -104,6 +104,7 @@ describe('Layout: mobile hamburger menu', () => {
 
     expect(screen.queryByRole('button', { name: /menu/i })).not.toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Home' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Login' })).toBeVisible();
   });
 
@@ -128,6 +129,7 @@ describe('Layout: mobile hamburger menu', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     const menu = screen.getByRole('navigation', { name: 'Primary navigation' });
     expect(menu).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Home' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Public gallery' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Login' })).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Account settings' })).not.toBeInTheDocument();

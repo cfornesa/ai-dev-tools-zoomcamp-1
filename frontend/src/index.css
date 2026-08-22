@@ -156,6 +156,30 @@ body {
   background: var(--accent-border);
 }
 
+.shell-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account-settings-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.account-settings-input {
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
 .content-panel {
   min-height: 360px;
   margin: 0 24px 32px;

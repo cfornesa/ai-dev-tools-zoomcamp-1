@@ -59,7 +59,7 @@ async function probeHealth(baseURL: string): Promise<{ ok: boolean; detail: stri
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
   const baseURL =
-    config.projects[0]?.use?.baseURL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5173';
+    config.projects[0]?.use?.baseURL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5000';
 
   const health = await probeHealth(baseURL);
   if (!health.ok) {

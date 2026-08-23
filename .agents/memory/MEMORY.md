@@ -9,3 +9,4 @@
 - [Replit production schema publishing](replit-production-schema-publishing.md) — Replit applies production schema diffs during Publish; Django migrations must stay out of build and startup commands.
 - [Critical operational decisions](critical-actions.md) — Structured index of the security, deployment, database, authentication, and verification decisions that must not regress.
 - [p5.js getUserMedia polyfill](p5-getusermedia-polyfill.md) — Mocking navigator.mediaDevices.getUserMedia wrong crashes the bundle via p5.js's own load-time polyfill.
+- [Local e2e baseURL default](e2e-baseurl-port-default.md) — RESOLVED: Playwright's default baseURL now matches Vite's pinned :5000; historical note on issue #123.

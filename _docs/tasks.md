@@ -609,6 +609,19 @@ purely whitespace/line-wrapping, no behavior change. `make check` (580
 backend tests; frontend lint, format:check, typecheck, and 1520 frontend
 tests) is green.
 
+## 92. Fix local Playwright default baseURL still targeting :5173, not :5000
+Goal: `make e2e` / bare `npx playwright test`, run exactly per AGENTS.md's documented local steps with no extra env vars, passes without most scenarios silently self-skipping.
+Description: Discovered while verifying backlog task 76/issue #97's readiness in this session — running the documented local e2e workflow with no extra env vars fails 3 `responsiveShell.spec.ts` scenarios (`net::ERR_CONNECTION_REFUSED at http://localhost:5173/`) and skips nearly everything else, because `frontend/playwright.config.ts` and `frontend/e2e/support/global-setup.ts` both still hardcode a `http://localhost:5173` fallback when `E2E_BASE_URL` is unset. Issue #103 fixed this for CI's `e2e-responsive` job by setting `E2E_BASE_URL` in that job's `env:` block, but incorrectly assumed local `make e2e` "shouldn't need to" set it since `npm run dev` is pinned to :5000 — the fallback literal itself was never updated. Workaround confirmed this session: `E2E_BASE_URL=http://localhost:5000 npx playwright test` passes (103/109, with 4 flaky-in-parallel-but-pass-in-isolation).
+Status: COMPLETE
+GitHub issue: #123
+Verification: Changed both `http://localhost:5173` fallback literals (`frontend/playwright.config.ts`'s `baseURL` and `frontend/e2e/support/global-setup.ts`'s health probe) to `http://localhost:5000`, matching the Vite dev server's permanently pinned port. `npx playwright test --list` confirms the config is still syntactically valid (109 tests, 10 files). Verified against a real local PostgreSQL-backed Django + Vite stack, run exactly per AGENTS.md's documented steps with no `E2E_BASE_URL` override: `responsiveShell.spec.ts` alone is 7/7 (previously 3 scenarios failed with `ERR_CONNECTION_REFUSED` at :5173); the full `make e2e` is 102 passed / 5 failed / 2 skipped, with zero connection-refused or self-skip failures. The 5 failures all pass individually in isolation (`aiAndRecovery.spec.ts:266`, `projectLifecycle.spec.ts:355`, `responsiveShell.spec.ts:134`) or are already tracked separately (`aiAndRecovery.spec.ts:792`/`:929`, backlog task 93/issue #124) — matching this task's own original note that the workaround run was "103/109, with 4 flaky-in-parallel-but-pass-in-isolation," so this is pre-existing parallel-run flakiness, not a regression from this change.
+
+## 93. Fix draft recovery prompt suppression when a stale/no-diff server draft outraces a real local draft
+Goal: `useDraftRecovery.ts`'s local/server conflict resolution never silently discards a real, different local draft just because the timestamp-winning candidate happens to look like a no-op.
+Description: Discovered while verifying backlog task 76/issue #97's readiness in this session — `e2e/aiAndRecovery.spec.ts:792` and `:929` fail reproducibly (not flaky, confirmed in isolation): the "Recover unsaved work?" prompt never appears. Root cause traced to `useDraftRecovery.ts`'s effect: `pickNewer(local, server)` picks only the later-timestamped candidate and discards the other entirely; when the server draft (written after the local one in both failing tests) has a content-identical diff against the persisted scene, its `changeSummary` computes to `NO_SCENE_CHANGES_SUMMARY`, and the `!winner || winner.changeSummary === NO_SCENE_CHANGES_SUMMARY` check then treats the whole comparison as "nothing to recover" — silently dropping the real local draft that was never itself evaluated.
+Status: PROPOSED
+GitHub issue: #124
+
 ## Completed execution task archive
 
 This is the canonical repository record for completed execution work. The

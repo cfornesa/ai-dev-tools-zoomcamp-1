@@ -1,5 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -213,6 +215,42 @@ describe('EditorWorkspace responsive layout', () => {
     expect(screen.getByRole('region', { name: 'Preview' })).toBeVisible();
     expect(screen.getByRole('region', { name: 'Inspector' })).toBeVisible();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+  });
+
+  // Issue #109: at >=1024px the CSS grid gives Preview a dominant column
+  // (`.editor-panel[data-panel='preview']`) and stacks Details/Tools/
+  // Inspector in a narrower sidebar column instead of the previous
+  // equal-width four-panel flex row — see index.css's `.editor-workspace`
+  // comment. jsdom doesn't apply real CSS grid layout, so this can't
+  // measure rendered widths; it instead asserts the two things this test
+  // suite CAN verify: every panel section still carries the `data-panel`
+  // attribute the grid's column/row placement selectors key off of (so a
+  // future rename of that attribute would be caught here), and the
+  // stylesheet itself actually defines a wider `fr` share for the preview
+  // column than the sidebar column. Real rendered-width/no-overflow
+  // verification is manual (see AGENTS.md's e2e/manual verification
+  // conventions) since jsdom cannot lay out CSS grid.
+  it('gives the Preview panel a dominant grid column in the desktop stylesheet', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    setViewportWidth(1024);
+
+    renderWorkspace();
+
+    await screen.findByRole('region', { name: 'Preview' });
+    for (const panel of ['preview', 'details', 'tools', 'inspector']) {
+      expect(document.querySelector(`[data-panel="${panel}"]`)).not.toBeNull();
+    }
+
+    const css = readFileSync(join(__dirname, '..', 'index.css'), 'utf-8');
+    const gridMatch = css.match(
+      /\.editor-workspace\s*\{[^}]*grid-template-columns:\s*minmax\((\d+)px,\s*([\d.]+)fr\)\s+minmax\((\d+)px,\s*([\d.]+)fr\)/,
+    );
+    expect(gridMatch).not.toBeNull();
+    const previewFr = Number(gridMatch?.[2]);
+    const sidebarFr = Number(gridMatch?.[4]);
+    expect(previewFr).toBeGreaterThan(sidebarFr);
+    expect(css).toMatch(/\.editor-panel\[data-panel='preview'\]\s*\{\s*grid-column:\s*1;/);
   });
 
   // Issue #93 hard requirement: Preview must never become unreachable while

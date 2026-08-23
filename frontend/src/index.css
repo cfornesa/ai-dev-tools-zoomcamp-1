@@ -732,16 +732,29 @@ code {
   color: var(--text);
 }
 
+/* Issue #109: at >=1024px (desktop) Preview gets its own dominant column —
+   a CSS grid rather than the previous equal-width flex row, since four
+   panels (Preview, Details, Tools, Inspector — `panelHidden` shows all of
+   them together at this width) sharing one flex row left Preview no wider
+   than any supporting panel, and the fixed-pixel `.editor-scene-canvas`
+   below it never actually used the extra room. Details/Tools/Inspector
+   move into a second, narrower column and stack vertically there instead,
+   which keeps each one full-width-of-its-column (readable, no squeezed
+   controls) rather than one-quarter of the workspace. Below 1024px this
+   collapses back to the pre-existing single-column stack driven by
+   `useIsNarrowViewport`/`EditorPanelSwitcher` (Preview always visible,
+   Details/Tools/Inspector alternating behind the switcher) — see the
+   max-width: 1023px override below. */
 .editor-workspace {
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(420px, 2fr) minmax(300px, 1fr);
+  align-items: start;
   gap: 16px;
   margin: 0 24px 24px;
   text-align: left;
 }
 
 .editor-panel {
-  flex: 1 1 0;
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -749,16 +762,65 @@ code {
   box-sizing: border-box;
 }
 
+.editor-panel[data-panel='preview'] {
+  grid-column: 1;
+  /* Spans all three of the sidebar column's rows (Details/Tools/
+     Inspector), so Preview reaches the sidebar's full stacked height
+     rather than only its first row. */
+  grid-row: 1 / span 3;
+}
+
+.editor-panel[data-panel='details'] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.editor-panel[data-panel='tools'] {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.editor-panel[data-panel='inspector'] {
+  grid-column: 2;
+  grid-row: 3;
+}
+
 /* Matches useIsNarrowViewport's `window.innerWidth < 1024` breakpoint
    (frontend/src/pages/useIsNarrowViewport.ts): exactly 1024px must stay
-   side-by-side, so this query only applies strictly below it. */
+   side-by-side, so this query only applies strictly below it. Below this
+   width the panel switcher (`EditorPanelSwitcher.tsx`) takes over showing
+   one of Details/Tools/Inspector at a time, so the grid's column/row
+   placement is no longer relevant — every visible panel simply stacks
+   full-width in DOM order (Preview first). */
 @media (max-width: 1023px) {
   .editor-workspace {
     flex-direction: column;
+    display: flex;
+    gap: 20px;
   }
 
   .editor-panel {
     width: 100%;
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+/* Issue #109: a distinct narrow/phone band below the 1023px tablet band
+   above — same switcher-driven stacked layout (nothing here changes
+   *which* panel is visible), just tighter spacing so the workspace's own
+   margins don't eat into the little width a phone-sized viewport has to
+   give a panel. Matches this file's existing precedent for a narrower
+   second breakpoint under a wider layout-mode threshold (see the
+   `.app-shell-hamburger` comment above, at max-width: 767px). */
+@media (max-width: 767px) {
+  .editor-workspace {
+    margin: 0 16px 24px;
+    gap: 16px;
+  }
+
+  .editor-panel {
+    padding: 12px;
   }
 }
 
@@ -866,20 +928,24 @@ textarea:disabled {
   overflow: visible;
 }
 
-/* Issue #95, point 4: the canvas wrapper itself already caps its own
-   width at 100% of its panel (EditorWorkspace.tsx's inline `maxWidth:
-   '100%'` on `.editor-scene-canvas`), but its children — the p5-created
-   `<canvas>` (p5Adapter.ts sets a fixed pixel width/height as an inline
-   style, which this file deliberately never touches) and the absolutely-
-   positioned SVG overlays (grid/guide/shape layers, each given an explicit
-   `width`/`height` presentation attribute equal to the scene's canvas
-   size) — otherwise keep their own fixed pixel width regardless of how
-   narrow the wrapper itself has shrunk, visibly overflowing past the
+/* Issue #95, point 4 (updated by issue #109): the canvas wrapper itself
+   already caps its own width at 100% of its panel and matches its height
+   to the scene's aspect ratio (EditorWorkspace.tsx's inline `maxWidth:
+   '100%'`/`aspectRatio` on `.editor-scene-canvas`), but its children — the
+   p5-created `<canvas>` (p5Adapter.ts sets a fixed pixel width/height as an
+   inline style, which this file deliberately never touches) and the
+   absolutely-positioned SVG overlays (grid/guide/shape layers, each given
+   an explicit `width`/`height` presentation attribute equal to the scene's
+   canvas size) — otherwise keep their own fixed pixel width regardless of
+   how narrow the wrapper itself has shrunk, visibly overflowing past the
    panel's right edge. `max-width` always wins over a conflicting `width`
    in the used-value calculation regardless of specificity/origin, so this
    needs no `!important` for width; `height` does, to override p5's own
    inline pixel height and keep the canvas's aspect ratio proportional as
-   it scales down. */
+   it scales down. (The overlay SVGs are also absolutely positioned with
+   `inset: 0`, which independently stretches them to the wrapper's actual
+   box regardless of their `width`/`height` attributes — this rule is
+   belt-and-suspenders for them, load-bearing only for the p5 `<canvas>`.) */
 .editor-scene-canvas canvas,
 .editor-scene-canvas svg {
   max-width: 100%;

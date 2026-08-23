@@ -343,8 +343,33 @@ GitHub issue: #108
 ## 79. Give the editor preview and control panels usable space
 Goal: Make the editor workspace's visual hierarchy and preview area comfortable at common desktop and tablet widths without changing scene behavior.
 Description: Replace the current equal-width panel treatment with an intentional hierarchy that gives Preview a usable dominant area while keeping Details, Tools, and Inspector readable. Preserve preview aspect ratio, SVG overlay alignment, pointer-coordinate mapping, keyboard navigation, reduced-motion behavior, and the responsive narrow-width panel switcher. Verify representative desktop, tablet, and narrow widths without horizontal overflow.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: #109
+Verification: `frontend/src/index.css`'s `.editor-workspace` is now a CSS grid at
+>=1024px (`minmax(420px, 2fr) minmax(300px, 1fr)`) with `.editor-panel[data-panel='preview']`
+spanning column 1 across all three sidebar rows, so Preview gets roughly double the
+Details/Tools/Inspector sidebar's width instead of the previous equal four-way flex split; the
+existing `max-width: 1023px` breakpoint (matched to `useIsNarrowViewport`'s JS threshold) still
+collapses to the pre-existing single-column stack + `EditorPanelSwitcher` layout, with a new
+`max-width: 767px` band underneath it tightening margins/padding for phone widths — three
+distinct bands (desktop grid, tablet stack, narrow stack) as required. `EditorWorkspace.tsx`'s
+`.editor-scene-canvas` wrapper switched from a fixed pixel `height` to `aspectRatio:
+`${canvasWidth} / ${canvasHeight}``, so when `maxWidth: '100%'` caps its width below the scene's
+logical size the height now shrinks proportionally instead of leaving dead space — the absolutely
+positioned overlay SVGs (`inset: 0`) and the p5 canvas (`height: auto !important`, unchanged)
+both continue tracking the same box, and `clientToCanvasPoint` (untouched) already scales pointer
+coordinates by the canvas element's actual rendered rect, so alignment holds at any panel width.
+`make frontend-lint`/`typecheck`/`test` all green (1501 tests, including a new regression test in
+`EditorWorkspace.test.tsx` asserting the stylesheet's preview column has a larger `fr` share than
+the sidebar's and that every panel still carries its `data-panel` attribute; `useIsNarrowViewport.test.ts`'s
+existing CSS/JS breakpoint-consistency regression test also stayed green). Manually verified against
+a real Django+PostgreSQL+Vite stack (signed in as the `e2e_fixtures` owner) in a real browser at
+1440px (Preview 706px vs. sidebar 353px, exactly the designed 2:1 split; canvas 672x504, matching
+the scene's 4:3 ratio; `document.documentElement.scrollWidth` 1425 <= 1440, no overflow), 820px
+(switcher visible, Preview stacked full-width above it, `scrollWidth` 805 <= 820), and 375px
+(canvas 315x236.25, ratio still exactly 4:3; `scrollWidth` 375 === 375, no overflow; switcher tab
+clicks correctly toggle `aria-selected` and swap the visible supporting panel while Preview stays
+visible). No out-of-scope issues found.
 
 ## 80. Make shapes and their attributes understandable through layers
 Goal: Make the layer/group/shape hierarchy the clear source of truth for selecting a shape and understanding which attributes the Inspector edits.

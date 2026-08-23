@@ -1255,8 +1255,22 @@ function EditorWorkspace() {
             style={{
               position: 'relative',
               width: canvasWidth,
-              height: canvasHeight,
               maxWidth: '100%',
+              // Issue #109: the wrapper's own box tracks the scene's
+              // aspect ratio (rather than a fixed pixel `height`) so that
+              // when `maxWidth: '100%'` caps its width below the logical
+              // `canvasWidth` (a panel narrower than the scene, e.g. at
+              // tablet/narrow widths), the height shrinks proportionally
+              // instead of leaving dead space or a squashed image. The
+              // absolutely-positioned overlay SVGs below (`inset: 0`) and
+              // the p5-mounted <canvas> (`.editor-scene-canvas canvas`'s
+              // own `height: auto !important` in index.css) both then
+              // track this same box, so grid/guide/shape overlays and
+              // pointer coordinates (`clientToCanvasPoint`, which already
+              // scales by the canvas element's actual rendered
+              // `getBoundingClientRect()` vs. logical size) stay aligned
+              // at any panel width.
+              aspectRatio: `${canvasWidth} / ${canvasHeight}`,
             }}
             onClick={handleCanvasClick}
             onPointerDown={handleCanvasPointerDown}

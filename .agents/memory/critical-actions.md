@@ -30,6 +30,14 @@ concise index rather than an implementation changelog.
   source. `[userenv.production]` is pinned to production-safe values as
   defense-in-depth regardless.
   See [Replit userenv scope](replit-userenv-scope.md).
+- **Deployment run command can silently drift from the interactive
+  workspace:** `.replit`'s `[deployment].run` ran the same
+  `npm run dev` (Vite's dev server, live HMR) as the interactive workflow
+  until issue #133, confirmed only by inspecting the live published
+  deployment's own network requests/console, not by reading source. Verify
+  "what's actually running in production" against the live URL when it
+  matters, not just `.replit`/`scripts/`.
+  See [Replit production frontend serving](replit-production-frontend-serving.md).
 
 ## Authentication and secrets
 

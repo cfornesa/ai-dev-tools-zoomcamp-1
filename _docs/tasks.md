@@ -951,13 +951,30 @@ whether this double-paint is only a rendering-layer redundancy (positions
 agree, so it is invisible except for stacked semi-transparent shapes) or
 whether it is an actual data-duplication bug — the user-visible screenshot
 this task originated from is ambiguous.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#130](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/130)
 Evidence: See investigation notes above; `EditorWorkspace.tsx:1540-1546`
 comment block explicitly documents the static case as out of scope for #126.
 Discovery gate: Searched `_docs/tasks.md` for existing duplication entries;
 found #126 (task 95, closed) covers a different code path (load/recovery),
 not the static-scene double-render case described here.
+Resolution: Confirmed a real (not merely redundant) double-paint: the SVG
+overlay's `shapeGeometry(shape)` never applied `transform.opacity` (unlike
+`p5Adapter.ts`'s `drawShapeGeometry`, which does), so any shape with reduced
+opacity rendered fully opaque in the SVG layer, stacked on its own
+correctly-translucent p5-canvas render underneath — visible ghosting/
+doubling for exactly the shapes a user would notice it on. Removed
+`shapeGeometry` and its only call site entirely (`EditorWorkspace.tsx`) —
+the p5 canvas (kept synchronously in sync with `workingCopy` via the
+existing render effect, whether or not behaviors are active) is now the
+sole body-rendering surface in both cases, matching what issue #126 already
+did for the active-behaviors case. The SVG `<g>` per shape still provides
+its non-body affordances (testid, selection/hover outline, `<title>`
+summary). Updated `EditorWorkspace.shapes.test.tsx`'s "issue #93" suite and
+one `EditorWorkspace.duplicateShapes.test.tsx` case to assert the SVG layer
+paints zero bodies (pixel-level shape-rendering fidelity was already
+separately covered by `p5Adapter.test.ts`, unaffected by this change).
+`make check` passes (backend 583 passed; frontend 1578 passed).
 
 ## 100. Unify the Shapes and Layers panels into one cohesive per-layer UI
 Goal: A single "Layers" panel is the one place to see, select, and edit every
@@ -978,7 +995,7 @@ close to true structurally), each layer row shows a compact primary view
 with secondary reorder/reparent controls collapsed behind a details
 disclosure, and shape creation ("Add circle/rectangle/line/polygon") moves
 into or docks onto the same Layers panel instead of a separate Tools section.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/131)
 Evidence: See investigation notes above; issue #127's own resolution
 (`_docs/tasks.md` task 96) explicitly split Layers out as an *independent*
@@ -989,6 +1006,75 @@ Discovery gate: Searched `_docs/tasks.md`/GitHub issues for an existing
 but scoped to drag-and-drop reordering within Layers, not panel unification
 or per-layer color editing — treated as a new, larger UX task rather than a
 duplicate.
+Resolution: Implemented the chosen direction exactly. Deleted the Tools
+panel's `<h4>Shapes</h4>` + `<ul aria-label="Shape list">` (a straight
+duplicate of the outline) and its "Add circle/rectangle/line/polygon"
+buttons/`SHAPE_TYPES` array from `EditorWorkspace.tsx`, moving both the
+array and the buttons into `LayersPanel.tsx` (a new `role="group"
+aria-label="Add shape"` toolbar above the existing "Outline actions"
+toolbar) — the button labels stayed identical since many tests assert on
+them by accessible name. Renamed the now shape-creation-free
+`CollapsibleSection heading="Add & edit shapes"` to `"Shape actions"`,
+since all it still holds is duplicate/delete-selected, undo/redo, the snap
+preference, and the lock-error display. Redesigned every `LayersPanel.tsx`
+outline row so its always-visible primary view is name/label, visibility
+and lock toggles (layer/group rows — shapes have no data-model field of
+their own to toggle, only the pre-existing read-only inherited-state
+annotation), an inline fill-color swatch (shape rows only, via a new
+`ShapeColorSwatch` component), and a per-row delete button; move up/down
+and the `MoveControls` reparent select+button pair now live behind a new
+per-row `<details><summary>More</summary>...</details>` disclosure
+(`RowMoreDisclosure`). `useSceneEditor.ts`'s `deleteSelected`/
+`deleteGroupSelected` were generalized to take an optional explicit `id`
+(defaulting to the current selection, so every pre-existing caller is
+unchanged) so a row's delete button can remove *that* row's shape/group
+directly, sidestepping the documented `selectShape` + same-render stale-
+closure hazard entirely rather than working around it. The color swatch
+instead gates its editable field on `sceneEditor.selectedShapeId ===
+row.id` being true on a *subsequent* render before calling
+`updateSelectedShapeColorField`, per that same hazard, and reuses the
+identical validation/error-display pattern `ShapeInspectorPanel.tsx`'s
+`ColorStyleField` already established. No new dependency: the swatch is a
+plain text hex input, matching `LayersPanel.tsx`'s own doc-comment
+constraint. Updated every affected suite (`EditorWorkspace.layers.test.tsx`,
+`.accordion`, `.multiTransform`, `.transform`, `.lock`, `.shapes`,
+`.vertexEdit`, `.snap`, `.shapeInspector.test.tsx`) to open a row's `<details>`
+before touching what's now inside it, and replaced every "Shape list"
+reference with the outline's own shape rows via a new shared
+`frontend/src/testUtils/shapeOutline.ts` helper (`shapeOutlineRows`/
+`shapeSelectButton`/`shapeOutlineSelectButtons`) rather than duplicating
+that lookup in eight files. Final gate: `npm run lint` (only the 4
+pre-existing `only-export-components` warnings), `npm run format:check`,
+`npm run typecheck`, and `npm test` all clean — 106 test files, 1577 tests
+passed (independently re-verified in a separate pass: same result, plus one
+confirmed pre-existing, unrelated flaky timing test in
+`src/storage/draftAutosave.test.ts` that passes on its own).
+
+Found during `/production-readiness`'s post-hoc audit of this task (2026-08-23):
+the Playwright e2e suite (`frontend/e2e/`, not part of `make check`/`npm test`
+— see AGENTS.md) had four stale references this refactor's own unit-test
+sweep didn't cover, since none of those specs run under Vitest:
+`layersPanel.spec.ts` and `interactionRuntime.spec.ts` both called
+`expandSection(page, 'Add & edit shapes')` to reach "Add circle" before it
+moved to the always-visible LayersPanel toolbar (removed, now a no-op
+comment); `layersPanel.spec.ts` clicked a "Move ... down" button directly,
+which the new per-row `<details>` disclosure made inert until opened (fixed
+by opening the row's "More" summary first); `projectLifecycle.spec.ts` and
+`publishingAndRemix.spec.ts` both queried the now-deleted `aria-label="Shape
+list"` (replaced with a `[data-outline-kind="shape"] button[aria-pressed]`
+locator against the outline). Fixed directly (all four are corrections to
+this task's own change, not a separate issue) and verified statically:
+`npx playwright test --list` still discovers all 115 tests across 11 files
+with no syntax errors, `npx tsc -p tsconfig.e2e.json --noEmit` is clean
+(would have caught an unused import), and oxlint/prettier are clean on the
+touched files. **Verification boundary**: this repo's e2e suite requires a
+real, already-running PostgreSQL-backed Django dev server plus the Vite dev
+server (see AGENTS.md's "End-to-end tests (Playwright)"), which this
+session's environment does not have (no local PostgreSQL) — the actual
+runtime behavior of these four fixes (and of the rest of the suite against
+the new LayersPanel DOM) is unverified beyond the static checks above. Next
+action: run `make e2e` in an environment with PostgreSQL available before
+trusting this suite's LayersPanel/shape-selection coverage as green.
 
 ## 101. Diagnose why "Enable camera" does nothing in production
 Goal: Clicking "Enable camera" in the Live camera panel either starts hand
@@ -1017,6 +1103,39 @@ original UX) and #119 (task 88, closed, a different bug — the Enable-camera
 button never appearing at all when `navigator.mediaDevices` is undefined).
 Neither covers Enable camera being present but non-functional, so this is
 treated as new.
+Investigation (2026-08-23, still PROPOSED — not fully resolved): reproduced
+live against `https://animate.creatrweb.com`'s public viewer (`/p/<id>` for
+the one public project, "Blank canvas") and clicked "Enable camera" with
+devtools open. The browser-denied-permission path worked exactly as
+designed — a visible `role="alert"` with actionable text and a Retry
+button — which rules out "the whole error-handling system is silently
+broken." No CDN (`cdn.jsdelivr.net`/`storage.googleapis.com`) request was
+ever attempted before that denial, consistent with `CameraControl.tsx`
+requesting camera access before loading MediaPipe, so the MediaPipe-CDN
+failure mode named in the original description is still unconfirmed either
+way — testing it needs a browser that can actually grant camera permission,
+which the available tooling could not do (the sandboxed browser used for
+this investigation unconditionally denies camera access at the browser
+level, not the application level). No `Permissions-Policy`/CSP header
+blocking `camera` was found in the response headers, ruling that theory
+out. The same investigation directly confirmed task 102/issue #133's
+diagnosis: the page's network requests included raw `/src/*.ts` files and
+`node_modules/.vite/deps/*` bundles, and the console logged `[vite]
+connecting...`/`[vite] connected.` — the published deployment was running
+Vite's dev server with a live HMR socket. This raises a plausible
+(unconfirmed) mechanism tying the two issues together: MediaPipe's Wasm/
+model CDN loads are large and slow, so an HMR reconnect or full-reload event
+firing while that load is in flight would silently abort the async
+enable-camera flow with no error ever surfacing (the whole page just resets
+to its initial state) — a strong match for "does nothing," as opposed to
+"shows an error." Task 102's fix (serving the built bundle via `vite
+preview`, no HMR client) removes this specific failure mode regardless of
+whether it was the actual cause. Recommended next step, deferred to a fresh
+task/session with real camera hardware and a live deployment rebuilt with
+task 102's fix already applied: re-test "Enable camera" post-deploy: if the
+symptom is already gone, this task can close as resolved-by-#133; if it
+still reproduces, capture the actual console/network error with real camera
+permission granted, which this session's tooling could not do.
 
 ## 102. Serve the production deployment from the built frontend bundle, not the Vite dev server
 Goal: The published Replit deployment serves the production `dist/` build
@@ -1038,14 +1157,41 @@ built `dist/` (e.g. `vite preview` or a static file server) behind the same
 host/port contract `scripts/start.sh` already establishes, verify Django
 `/api`/`/health` proxying or routing still works without Vite's dev proxy,
 and confirm via `scripts/smoke-published.sh` after deploying.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/133)
 Evidence: `.replit` `[deployment].run`, `scripts/start.sh:77`; no reload call
-found anywhere in `frontend/src`.
+found anywhere in `frontend/src`. Confirmed live against the published
+deployment (`https://animate.creatrweb.com`) before implementing: its
+network requests included raw `/src/*.ts` files, `@fs/home/runner/
+workspace/...` paths, and `node_modules/.vite/deps/*.js` — unambiguous
+Vite-dev-server-in-production, and its console logged `[vite] connecting...`
+/ `[vite] connected.` (the live HMR socket).
 Discovery gate: Searched `_docs/tasks.md` for prior "unexpected refresh"
 entries; found #112 (task 82, closed) which only added UI messaging for
 draft-sync failures and never touched how the app is served in production —
 not a duplicate of this deployment-configuration issue.
+Resolution: `scripts/start.sh` now reads `FRONTEND_SERVE_MODE` (`dev` by
+default), and in `preview` mode runs `npm run preview` (`vite preview`)
+against the already-built `frontend/dist/` instead of `npm run dev` — `vite
+preview` has no HMR client, so it cannot trigger this class of reload, and
+inherits `vite.config.ts`'s `server.proxy`/`allowedHosts`/`strictPort` by
+Vite's own documented default (verified locally: `vite preview` served
+hashed `/assets/*.js` bundles with no HMR client script, and proxied
+`/health/` to Django on 8000 exactly like dev mode). `.replit`'s
+`[deployment].run` now points at a new `scripts/start-production.sh`
+wrapper (not an inline `bash -c` in `.replit` itself — an existing test,
+`test_replit_uses_repository_launcher_for_startup`, guards against
+reintroducing that fragile pattern from a prior fix) that sets
+`FRONTEND_SERVE_MODE=preview` and delegates to `scripts/start.sh`. The
+interactive Replit workflow is unaffected: it still runs `scripts/start.sh`
+directly with no `FRONTEND_SERVE_MODE` set, defaulting to `dev`. Covered by
+new cases in `tests/test_startup_configuration.py` (mode selection,
+rejection of an invalid mode, `.replit` wiring, the wrapper script) using
+that file's existing double-based launcher harness. `make check` passes
+(backend 594 passed; frontend 1578 passed). Not yet verified against a live
+publish — that requires the user to trigger an actual Replit deployment and
+re-run `scripts/smoke-published.sh` against it, which this task deliberately
+did not do on its own (publishing is a user-authorized action).
 
 ## 103. Backfill or lazily generate public gallery thumbnails for existing projects
 Goal: Every published project shows a real visual preview in the public
@@ -1064,9 +1210,26 @@ backfill path. Scope: add a management command (none exist today under
 `scenes/management/commands/`) to backfill thumbnails for existing published
 projects, or trigger lazy generation on gallery/public-page read when a
 project's thumbnail is still the fallback.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/134)
 Evidence: See investigation notes above.
+Resolution: The task's own evidence was slightly imprecise —
+`PublicProjectThumbnailView`'s "Lazy fallback at serve time" path already
+covers the "no `Thumbnail` row at all" case on every request. The real gap
+is a project whose current version *does* have a `Thumbnail` row but it's
+`is_fallback=True` (a prior render failure): that view's `if thumbnail is
+None` check is false for it, so it keeps serving the same stale fallback
+PNG forever with no retry, exactly the gap `ensure_thumbnail_for_version`'s
+own docstring names ("a later retry ... from a management command"). Added
+`scenes/management/commands/backfill_thumbnails.py`: for every public
+project with a current version and no existing non-fallback thumbnail
+(missing row or `is_fallback=True`), calls `ensure_thumbnail_for_version`
+to generate/regenerate it; `--dry-run` reports the count without rendering.
+Never touches private projects (filtered by `visibility=PUBLIC`, matching
+every other thumbnail trigger's content-source boundary). Covered by
+`tests/test_backfill_thumbnails_command.py` (missing row, stuck fallback,
+already-good thumbnail left alone, private project never touched, dry run).
+`make check` passes (backend 588 passed).
 Discovery gate: Searched `_docs/tasks.md` for the thumbnail-generation entry
 (#54, "Generate public preview thumbnails", closed) — that task built
 event-triggered generation only; no backfill task exists, so this is new.
@@ -1084,7 +1247,7 @@ thumbnail while public gallery cards do. Investigation found
 simply never updated when the public card gained the feature. Scope: add the
 same thumbnail `<img>` + fallback pattern `PublicProjectCard.tsx` already
 uses to `ProjectCard.tsx`.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/135)
 Evidence: `frontend/src/components/ProjectCard.tsx` (no thumbnail_url
 reference); `frontend/src/api/projects.ts:181`; `PublicProjectCard.tsx:54-70`
@@ -1092,6 +1255,22 @@ for the existing pattern to reuse.
 Discovery gate: Searched `_docs/tasks.md` for an existing ProjectCard
 thumbnail entry; none found — #54 (closed) scoped generation and the public
 card only, not "Your projects."
+Resolution: The task's own evidence was stale — `Project`
+(`frontend/src/api/projects.ts`, backed by `scenes.serializers.ProjectSerializer`)
+did *not* actually carry `thumbnail_url`; only `PublicGalleryProject`/
+`PublicProject` did, and `PublicProjectThumbnailView` 404s for anything not
+`visibility == PUBLIC`, including the owner. Added an owner-gated
+`ProjectThumbnailView` (`scenes/api.py`, same `Action.PROJECT_READ`
+404-not-403 convention as `ProjectDetailView`) at
+`projects/<uuid:public_id>/thumbnail.png` (`scenes/urls.py`,
+`name="project-thumbnail"`), added `thumbnail_url` to `ProjectSerializer`
+resolving through that route, added the same field to the frontend `Project`
+type, and gave `ProjectCard.tsx` the same image/fallback pattern
+`PublicProjectCard.tsx` uses (`ProjectCard.test.tsx`,
+`tests/test_project_thumbnail_api.py`). All `baseProject()` test fixtures
+across the frontend suite updated for the new required field. `make test`
+(backend 583 passed, frontend 1578 passed) and `make lint`/`typecheck`/
+`format-check` all pass.
 
 ## 105. Add a visible active-tab indicator to the primary navigation
 Goal: The current page's nav link (Home / Public gallery / Account settings)
@@ -1103,9 +1282,123 @@ found `frontend/src/components/Layout.tsx:101-123` renders the nav with
 plain react-router `<Link>` elements (not `NavLink`), a static
 `className="shell-action"` regardless of route, no `aria-current`, and no
 `useLocation`-based active check anywhere in the file.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/136)
 Evidence: `frontend/src/components/Layout.tsx:101-123`.
 Discovery gate: Searched `_docs/tasks.md` and the accessibility audit tasks
 (#62/#63/#64, all closed) for existing nav-active-state coverage; none of
 those audits covered the primary shell nav specifically, so this is new.
+Resolution: Switched every primary-nav `Link` (Home, Public gallery, Account
+settings, in both the desktop and mobile-menu nav variants) to react-router's
+`NavLink`, which sets `aria-current="page"` automatically on the active
+route; `Home` uses `end` so it isn't matched for every other route. Added a
+`.shell-action[aria-current='page']` rule in `frontend/src/index.css` for a
+visible background/border/weight change. Covered by two new
+`Layout.test.tsx` cases asserting `aria-current` on the right link for `/`
+and `/gallery`.
+
+## 106. PostgreSQL-only concurrency/trigger test suite is broken: `.using("postgres_test").create_user()` raises AttributeError
+Goal: Every test gated behind `POSTGRES_TEST_DATABASE_URL` (the suite that
+specifically verifies real-Postgres concurrency serialization, trigger
+enforcement, and rollback-on-injected-failure — semantics SQLite cannot
+provide) actually runs to completion against a real PostgreSQL database,
+rather than erroring before it can exercise anything.
+Description: A `/production-readiness` audit (2026-08-23) spun up a real
+local PostgreSQL 16 instance via Docker, pointed `POSTGRES_TEST_DATABASE_URL`
+at a disposable database, and ran the full backend suite for the first time
+with that variable actually set. Nine test files
+(`test_ai_accept_proposal_api.py`, `test_blank_project_creation_api.py`,
+`test_edit_session_draft_sync_api.py`, `test_project_publish_api.py`,
+`test_project_fork_api.py`, `test_project_scene_version_models.py`,
+`test_scene_version_restore_delete_api.py`, `test_scene_version_save_api.py`,
+`test_template_browsing_cloning_api.py`) call
+`get_user_model().objects.using("postgres_test").create_user(...)` —
+`Manager.using(alias)` returns a plain `QuerySet` bound to that alias, which
+does not have `create_user` (only the custom `UserManager` does), so every
+one of these calls raises `AttributeError: 'QuerySet' object has no
+attribute 'create_user'` before the test can exercise anything.
+`POSTGRES_TEST_DATABASE_URL` is optional and unset in CI/`make check`
+(SQLite backs `default` otherwise per Task 3's own design), so this had
+apparently never been caught — the entire category of tests that exist
+specifically to prove concurrency/consistency guarantees has silently never
+run to completion. Fix: replace `.objects.using("postgres_test")` with
+`.objects.db_manager("postgres_test")` everywhere it precedes a
+`create_user` call — `Manager.db_manager(alias)` returns the manager itself
+bound to that alias, preserving custom methods, unlike `.using(alias)`.
+Status: COMPLETE
+GitHub issue: [#137](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/137)
+Evidence: See description above; reproduced against a real local PostgreSQL
+16 (Docker) instance.
+Discovery gate: Searched `_docs/tasks.md` and open GitHub issues for an
+existing "postgres_test create_user" entry; none found — new.
+Resolution: Replaced every `User.objects.using("postgres_test")`/
+`get_user_model().objects.using("postgres_test")` call immediately preceding
+`.create_user(...)` with `.objects.db_manager("postgres_test")` across all
+nine affected files — every other `.using("postgres_test")` call (`.create()`,
+`.filter()`, `.get()`, `.count()`, `.select_for_update()`) was left
+unchanged since those methods exist on plain `QuerySet` and were never
+broken. This specific `AttributeError` is confirmed fixed (re-running any
+affected test in isolation no longer raises it). Re-running the full backend
+suite with a real PostgreSQL 16 instance and `POSTGRES_TEST_DATABASE_URL`
+set surfaced three further, *distinct* pre-existing problems in this same
+test category — none related to `.using()`/`.db_manager()`, none introduced
+by this fix — split out to task 107 (issue #138) rather than folded in here,
+since they're architecturally unrelated and substantially larger in scope.
+`uv run pytest` (SQLite-only, matching `make check`'s own invocation, no
+`POSTGRES_TEST_DATABASE_URL`) remains unaffected and green — 594 passed, 22
+skipped — since none of the changed lines are reachable without
+`POSTGRES_TEST_DATABASE_URL` set.
+
+## 107. PostgreSQL-semantics test suite has never successfully run: 3 distinct pre-existing bugs
+Goal: Every test gated behind `POSTGRES_TEST_DATABASE_URL` runs to completion
+against a real PostgreSQL database and actually proves the concurrency/
+trigger/rollback guarantee it was written to verify, without corrupting
+unrelated SQLite-only tests as a side effect of the variable being set.
+Description: Continuing the `/production-readiness` audit that produced
+task 106/issue #137, running the full backend suite against a real local
+PostgreSQL 16 instance (via Docker) surfaced three further, architecturally
+distinct problems, none related to task 106's `.using()`/`create_user` fix
+and none introduced by it:
+1. **Double-seeded built-in templates on `default`**: merely having both
+   `default` (SQLite) and `postgres_test` registered in `DATABASES` during
+   test setup causes migration `0010_seed_builtin_templates` to apply twice
+   against `default`, leaving 16 `Template` rows instead of 8 — breaking 6
+   of 10 tests in `test_template_browsing_cloning_api.py` (which never
+   touch `postgres_test` at all) plus
+   `test_template_catalog.py::test_migration_seeded_exactly_eight_built_in_templates`.
+   Confirmed by isolating the variable: the same file passes cleanly with
+   `POSTGRES_TEST_DATABASE_URL` unset. This is a real regression risk:
+   setting the variable to get *better* coverage currently makes *more*
+   tests fail.
+2. **`test_postgres_concurrent_*` tests write to `postgres_test` but read
+   from `default`**: e.g.
+   `test_ai_accept_proposal_api.py::test_postgres_concurrent_duplicate_accepts_produce_exactly_one_version`
+   creates its fixtures via `Project.objects.using("postgres_test").create(...)`
+   then drives real HTTP requests through `APIClient`, whose view code has
+   no `.using(...)` override and therefore always reads `default` — every
+   request 404s. Same pattern in `test_edit_session_draft_sync_api.py` and
+   `test_project_fork_api.py`. Needs a `DATABASE_ROUTERS` config or a
+   session-scoped `override_settings` making `default` mean `postgres_test`
+   for these tests' duration — no such mechanism exists today.
+3. **Raw SQL out of sync with the schema**:
+   `test_project_scene_version_models.py::test_postgres_trigger_blocks_raw_sql_snapshot_mutation`
+   (and likely its siblings, plus
+   `test_template_fork_provenance_models.py::test_postgres_trigger_blocks_raw_sql_mismatched_fork_source`)
+   hand-write an `INSERT INTO scenes_project (...)` omitting the `is_deleted`
+   column (`NOT NULL`, no DB default) — fails with
+   `psycopg.errors.NotNullViolation` before ever reaching the trigger
+   behavior being tested.
+Status: PROPOSED
+GitHub issue: [#138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/138)
+Evidence: See description above; reproduced against a real local PostgreSQL
+16 (Docker) instance, isolating each finding by toggling
+`POSTGRES_TEST_DATABASE_URL` and running individual files/tests.
+Discovery gate: Searched `_docs/tasks.md` and open GitHub issues for an
+existing entry covering this test category; task 106/issue #137 covers only
+the narrower, already-fixed `.using().create_user()` `AttributeError` — this
+is new, distinct, and substantially larger in scope (three independent root
+causes, one needing a design decision, not just a bug fix), so it is
+recorded separately rather than folded into #137. Recommendation recorded
+in the issue: treat as a dedicated-session-sized body of work; `make
+check`/CI are unaffected either way since `POSTGRES_TEST_DATABASE_URL` is
+never set there.

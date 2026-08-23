@@ -1591,3 +1591,36 @@ the `scenes-postgres` container already provisioned for this repo) passes
 pytest` (SQLite-only, matching `make check`/CI exactly) remains unaffected:
 594 passed, 22 skipped. Full `make check` (backend lint/format/typecheck/
 test, frontend lint/format/typecheck/test) passes.
+
+## 108. Republish so production actually runs task 102/#133's fix
+Goal: The published Replit deployment at `https://animate.creatrweb.com`
+serves the built frontend bundle via `vite preview` (no live HMR
+WebSocket), matching what task 102/issue #133 already fixed in code —
+confirmed live, not just from source.
+Description: Task 102/issue #133 fixed the actual defect (production ran
+Vite's dev server, whose HMR client force-reloads the page on socket
+disconnect/reconnect) back on 2026-08-23, and it has sat merged on `main`
+since. Two further sessions' worth of live-production investigation for
+task 101/issue #132 repeatedly confirmed the fix was still not live:
+`https://animate.creatrweb.com`'s browser console still logs `[vite]
+connecting...`/`[vite] connected.` (the dev-server HMR client), not the
+hashed, HMR-free `/assets/*.js` bundles `vite preview` serves. The
+deeper reason: the fix was never even pushed to `origin` (GitHub) until
+this task's own session pushed it — Replit's workspace syncs via git
+merge (`.replit`'s `[postMerge]` hook runs `scripts/post-merge.sh`), so
+there was nothing for Replit to have pulled yet, on top of Publish itself
+being a separate, user-authorized step no session automated.
+Status: PROPOSED
+GitHub issue: [#139](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/139)
+Evidence: `e6832e9` (task 102's fix, `scripts/start.sh`'s
+`FRONTEND_SERVE_MODE`, `scripts/start-production.sh`,
+`.replit`'s `[deployment].run`) was 11 commits behind `origin/main` until
+pushed as part of this task; live console checks against
+`https://animate.creatrweb.com` on 2026-08-23 (twice, in separate
+sessions) both showed the Vite dev client still active.
+Discovery gate: Searched `_docs/tasks.md` for an existing "push"/
+"republish"/"deploy" reminder task; task 102/#133 itself only covers the
+code fix and explicitly deferred live verification ("Not yet verified
+against a live publish... requires the user to trigger an actual Replit
+deployment") rather than tracking the deploy step itself — this task
+tracks that specific outstanding step, new and not a duplicate.

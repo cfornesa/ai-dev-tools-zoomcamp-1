@@ -419,6 +419,13 @@ Status: COMPLETE
 GitHub issue: #117
 Verification: Corrected the hardcoded counts to 5 connections/9 nodes, and added a second `openLogicPanel(page)` call after `saveAndReload` in the randomness scenario. All 7/7 scenarios in `interactionRuntime.spec.ts` now pass.
 
+## 88. Diagnose public-viewer camera "unsupported browser" scenario (issue #119)
+Goal: Confirm whether `mediapipeProvider.ts`'s "no `navigator.mediaDevices`" detection is a real app bug or a test-mocking limitation, and improve whichever is fixable.
+Description: `publishingAndRemix.spec.ts`'s "mocked unsupported browser" scenario times out waiting for "Enable camera" after simulating a missing `navigator.mediaDevices` via `addInitScript`. Investigated three different `Object.defineProperty` strategies against `navigator.mediaDevices` itself (non-writable value, writable value, get/set accessor) — all either hang the whole page before React mounts or let something else on the page quietly restore a working `mediaDevices` object, defeating the simulation. A fourth strategy — deleting just `getUserMedia` off the real, still-native `mediaDevices` object instead of touching `navigator.mediaDevices` itself — is more semantically correct (reaches the exact `navigator.mediaDevices?.getUserMedia` check `defaultIsSupported()` makes) but still hangs in this local Chromium environment, for reasons that look infrastructure-specific (fake-media-stream/permission negotiation at the browser-launch level) rather than an app or even a test-script bug.
+Status: COMPLETE (diagnosis); e2e scenario itself still not passing locally
+GitHub issue: #119
+Verification: Added a focused Vitest unit test (`mediapipeProvider.test.ts`) that calls the real, unmocked `defaultIsSupported()` (every other test in that file overrides `isSupported` via deps, so the actual production function had never been exercised) against a genuinely stubbed global `navigator.mediaDevices`, and confirms it correctly routes to the "not supported" error without ever calling `getUserMedia`. This proves the application logic itself is correct, independent of the real-browser e2e mocking difficulty. Left the e2e scenario using the safer `getUserMedia`-only deletion (an improvement over the original whole-`mediaDevices` mock even though it doesn't resolve the local hang) and the issue open, since the remaining problem looks like a Playwright/Chromium environment limitation rather than something fixable in this repo's code.
+
 ## Completed execution task archive
 
 This is the canonical repository record for completed execution work. The

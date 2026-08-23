@@ -406,6 +406,43 @@ describe('createMediaPipeTrackingProvider failure routing', () => {
     expect(harness.getUserMedia).not.toHaveBeenCalled();
   });
 
+  it('issue #119: the real default isSupported() (no override) correctly detects a missing navigator.mediaDevices', () => {
+    // Every other test in this file overrides `isSupported` directly via
+    // deps, so `defaultIsSupported()` itself -- the function that actually
+    // runs in production -- was never exercised. Stubs the real global
+    // `navigator.mediaDevices` (not a deps override) to prove the default
+    // detection genuinely works, independent of the real-browser mocking
+    // difficulties `publishingAndRemix.spec.ts`'s e2e equivalent ran into
+    // (a plain `Object.defineProperty(..., { value: undefined })` either
+    // hangs the whole page if some other script tries to reassign it, or
+    // -- once made writable -- lets that reassignment quietly restore a
+    // working mediaDevices object and defeat the simulation).
+    const originalDescriptor = Object.getOwnPropertyDescriptor(navigator, 'mediaDevices');
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: undefined,
+    });
+    try {
+      const getUserMedia = vi.fn();
+      // Deliberately omits `isSupported` (unlike `createHarness`, which
+      // always supplies one) so `resolveDeps` falls through to the real
+      // `defaultIsSupported()`.
+      const provider = createMediaPipeTrackingProvider({ getUserMedia });
+      const errors: TrackingProviderError[] = [];
+      provider.onError((error) => errors.push(error));
+
+      provider.start();
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].message).toMatch(/not supported/i);
+      expect(getUserMedia).not.toHaveBeenCalled();
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(navigator, 'mediaDevices', originalDescriptor);
+      }
+    }
+  });
+
   it('routes a camera permission/hardware failure to onError', async () => {
     const cause = new Error('Permission denied');
     const harness = createHarness({ getUserMedia: vi.fn().mockRejectedValue(cause) });

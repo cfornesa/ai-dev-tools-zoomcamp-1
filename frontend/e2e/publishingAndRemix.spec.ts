@@ -399,10 +399,24 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       // navigator.mediaDevices?.getUserMedia, so deleting the whole
       // property (not just getUserMedia) is the faithful "unsupported"
       // simulation.
-      Object.defineProperty(window.navigator, 'mediaDevices', {
-        configurable: true,
-        value: undefined,
-      });
+      // Redefining `navigator.mediaDevices` itself (a native, browser-
+      // implemented accessor) reliably breaks something else on the page
+      // in real Chromium -- a plain `value: undefined` either hangs the
+      // whole page (some other script's write attempt throws before React
+      // ever mounts) or, once made writable, lets that same write quietly
+      // restore a working object and defeat the simulation; an accessor
+      // `get`/`set` pair hangs the same way the non-writable data property
+      // did. Deleting just `getUserMedia` off the real (still-native)
+      // `mediaDevices` object -- an ordinary, safely reconfigurable own
+      // property -- reaches the exact same `navigator.mediaDevices
+      // ?.getUserMedia` check `mediapipeProvider.ts`'s `defaultIsSupported()`
+      // makes, without touching `navigator.mediaDevices` itself.
+      if (window.navigator.mediaDevices) {
+        Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+          configurable: true,
+          value: undefined,
+        });
+      }
     });
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);

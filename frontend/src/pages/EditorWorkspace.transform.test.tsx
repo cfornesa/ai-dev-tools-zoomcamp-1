@@ -182,6 +182,66 @@ describe('EditorWorkspace transform handles: visibility', () => {
   });
 });
 
+describe('EditorWorkspace canvas affordances (issue #111)', () => {
+  it('shows the always-visible interaction hint explaining select/move/resize/rotate/cancel', async () => {
+    await loadReadyWorkspace();
+
+    const hint = screen.getByTestId('editor-canvas-hint');
+    expect(hint.textContent).toMatch(/select/i);
+    expect(hint.textContent).toMatch(/move/i);
+    expect(hint.textContent).toMatch(/resize/i);
+    expect(hint.textContent).toMatch(/rotate/i);
+    expect(hint.textContent).toMatch(/esc/i);
+  });
+
+  it('applies a distinct selected-outline class to the selected shape, never the hover class', async () => {
+    await loadReadyWorkspace();
+    await addAndSelectCircle();
+    const canvas = mockCanvasRect();
+
+    const shapeGroup = canvas.querySelector('[data-shape-type="circle"]') as HTMLElement;
+    expect(shapeGroup).toHaveClass('editor-scene-shape-selected');
+    expect(shapeGroup).not.toHaveClass('editor-scene-shape-hovered');
+  });
+
+  it('applies a hover-only class and outline to a shape under the pointer that is not selected', async () => {
+    await loadReadyWorkspace();
+    await addAndSelectCircle();
+    const canvas = mockCanvasRect();
+    fireEvent.click(canvas, { clientX: 5, clientY: 5 }); // deselect
+
+    fireEvent.pointerMove(canvas, { clientX: 400, clientY: 300 }); // over the circle body
+
+    const shapeGroup = canvas.querySelector('[data-shape-type="circle"]') as HTMLElement;
+    expect(shapeGroup).toHaveClass('editor-scene-shape-hovered');
+    expect(shapeGroup).not.toHaveClass('editor-scene-shape-selected');
+    expect(
+      canvas.querySelector('[data-testid^="scene-shape-hover-outline-"]'),
+    ).toBeInTheDocument();
+  });
+
+  it('clears the hover affordance once the pointer moves off the shape or the canvas', async () => {
+    await loadReadyWorkspace();
+    await addAndSelectCircle();
+    const canvas = mockCanvasRect();
+    fireEvent.click(canvas, { clientX: 5, clientY: 5 }); // deselect
+
+    fireEvent.pointerMove(canvas, { clientX: 400, clientY: 300 }); // over the circle body
+    expect(canvas.querySelector('[data-shape-type="circle"]')).toHaveClass(
+      'editor-scene-shape-hovered',
+    );
+
+    fireEvent.pointerLeave(canvas);
+
+    expect(canvas.querySelector('[data-shape-type="circle"]')).not.toHaveClass(
+      'editor-scene-shape-hovered',
+    );
+    expect(
+      canvas.querySelector('[data-testid^="scene-shape-hover-outline-"]'),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe('EditorWorkspace transform handles: move', () => {
   it('drags the shape body live and commits exactly one undo step for the whole gesture', async () => {
     await loadReadyWorkspace();

@@ -962,6 +962,47 @@ textarea:disabled {
   vector-effect: non-scaling-stroke;
 }
 
+/* Issue #111: a hover-only outline, deliberately distinct from the
+   selected-state outline above (thinner, solid instead of dashed, a muted
+   neutral color instead of the accent color) so hovering a shape and
+   having it selected never look the same at a glance. Never rendered
+   together for the same shape (`EditorWorkspace.tsx` only computes
+   `hoverBounds` for a shape that isn't already selected). */
+.editor-scene-shape-hover-outline {
+  stroke: var(--text);
+  stroke-width: 1.5;
+  stroke-opacity: 0.6;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+/* A locked (or effectively-locked via layer/group) shape shows a distinct
+   "can't manipulate this" hover cue instead of the ordinary one above —
+   a dashed, warm-toned outline — so hovering it doesn't invite a drag
+   `checkUnlocked` would just reject with an error toast anyway. */
+.editor-scene-shape-hover-outline-locked {
+  stroke: #b42318;
+  stroke-width: 1.5;
+  stroke-opacity: 0.7;
+  stroke-dasharray: 3 3;
+}
+
+.editor-scene-shape-hovered-locked {
+  cursor: not-allowed;
+}
+
+/* Issue #111: a short, always-visible caption near the canvas explaining
+   the primary pointer interactions (see EditorWorkspace.tsx's
+   `editor-canvas-hint` paragraph) — compact and low-emphasis so it reads
+   as ambient help, not a warning or a blocking instruction. */
+.editor-canvas-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+  max-width: 60ch;
+}
+
 .editor-shape-handle {
   position: absolute;
   box-sizing: border-box;
@@ -971,6 +1012,22 @@ textarea:disabled {
   box-shadow: var(--shadow);
   cursor: pointer;
   touch-action: none;
+}
+
+/* Issue #111: a visible hover/focus ring on handles themselves, so they
+   read as discoverable, grabbable controls rather than small decorative
+   dots — especially once the canvas is scaled down at narrower panel
+   widths (issue #109's `aspectRatio` sizing). Handle *position* still
+   tracks the shape by percentage and *size* stays a fixed CSS pixel value
+   regardless of canvas scale (see `HANDLE_SIZE` in EditorWorkspace.tsx) —
+   this only adds a bigger, high-contrast visual cue on hover/focus, not a
+   bigger hit target (the handle element itself is already the hit
+   target, and enlarging it on hover would shift adjacent handles'
+   effective spacing mid-interaction).  */
+.editor-shape-handle:hover,
+.editor-shape-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .editor-shape-handle-move,

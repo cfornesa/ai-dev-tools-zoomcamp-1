@@ -429,8 +429,58 @@ change. No out-of-scope issues found.
 ## 81. Make selecting and dragging shapes obvious and reliable
 Goal: Give canvas manipulation clear affordances and predictable pointer behavior while preserving the keyboard-accessible outline path.
 Description: Make hover/selected states and manipulation handles discoverable at the rendered canvas scale; explain primary selection, move, resize, rotate, and cancel interactions; keep hit targets usable for small or overlapping shapes; prevent accidental edits to locked items; and verify pointer/keyboard parity, schema validity, and undo/redo behavior in browser/component coverage. Do not change the layer data model or overall workspace layout.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: #111
+Verification: `EditorWorkspace.tsx` gained a `hoveredShapeId` state, tracked via
+new `handleCanvasPointerMove`/`handleCanvasPointerLeave` handlers that reuse
+the same `hitTestTopmostShapeAt` topmost-shape-wins hit test
+`handleCanvasClick`/`handleCanvasPointerDown` already use, so hover, click,
+and drag can never disagree on which shape is targeted. Each shape now
+renders a distinct hover-only outline (`editor-scene-shape-hover-outline`,
+thin/solid/muted) separate from the existing selected outline
+(dashed/accent-colored), and a shape that's effectively locked
+(`isEffectivelyLocked`, issue #110's cascade) shows a different warm-toned
+dashed "can't manipulate this" cue instead, matching what `checkUnlocked`'s
+existing error toast would do if a drag were attempted. A new always-visible
+`editor-canvas-hint` caption above the canvas explains the actual
+move/resize/rotate/cancel gestures the code implements (worded from the real
+`HandleKind`/`getShapeHandles`/`dragHandlers.onKey` Escape-cancel behavior,
+not assumed). Handle hit-target size (`HANDLE_SIZE` in `handleStyle()`) grew
+from a fixed 12px to 18px — still positioned by percentage (tracks the shape)
+and sized in fixed CSS pixels (independent of shape size and of the
+canvas's issue #109 `aspectRatio` scaling) — plus a hover/focus outline ring
+in `index.css` so handles read as discoverable controls. The existing
+topmost-shape-wins / lock-guard-before-gesture-start pointer logic in
+`handleCanvasPointerDown`/`handleHandlePointerDown`/
+`handleGroupHandlePointerDown`/`handleVertexPointerDown` was read closely and
+left unchanged — no real gap found, only the hover-cue addition above it.
+New Vitest coverage: `EditorWorkspace.transform.test.tsx` gained a "canvas
+affordances" describe block (hint text presence/wording, selected-vs-hover
+class exclusivity, hover-outline presence, hover clearing on
+pointerleave/pointer-off-shape); `EditorWorkspace.lock.test.tsx` gained a
+"hover affordance" describe block asserting the locked-hover outline class
+vs. the ordinary one. `cd frontend && npm run lint && npm run typecheck &&
+npm test` all green (104 files / 1520 tests passed, up from 1514). Manually
+verified in a real browser against a local PostgreSQL-backed Django + Vite
+stack (`AI_PROVIDER=fake`, fixture users via `e2e_fixtures create --json`,
+cleaned up after): created two overlapping shapes (circle behind rect),
+confirmed the topmost-wins hover/selection resolves correctly for both the
+overlapping region and a sliver where only the underneath shape's bounds
+apply; confirmed the locked-hover red-dashed cue and no-handles-while-locked
+state; confirmed a pointer-driven move gesture followed by Undo then Redo
+round-trips correctly; confirmed at a 400px-wide viewport (issue #109's
+`aspectRatio`-scaled canvas, ~340x255px rendered) the move/resize/rotate
+handles stay a full 18x18px real hit target and remain clearly visible and
+distinguishable, and the hint caption stays legible. Ran
+`E2E_BASE_URL=http://localhost:5000 npx playwright test
+interactionRuntime.spec.ts projectLifecycle.spec.ts` against the same real
+stack per this task's verification requirement: 13/14 passed; the one
+failure (`projectLifecycle.spec.ts`'s concurrent-restore-from-two-tabs
+scenario, a 404-instead-of-201 on one of two concurrent restore requests) is
+unrelated to this issue's canvas/pointer scope (no version-restore or
+concurrency code was touched) and reproduced identically on two consecutive
+runs — filed separately as issue #121 (task 90) per the discovery-gate
+convention rather than investigated further here.
 
 ## 82. Stop unexpected editor refreshes from interrupting unsaved work
 Goal: Identify and prevent unintended document reload/navigation during editing, and make unavoidable leave/recovery states explicit.
@@ -520,6 +570,12 @@ Description: `scripts/smoke-local.sh` declared `fixture_environment=()` (an empt
 Status: COMPLETE
 GitHub issue: #120
 Verification: Replaced the array expansion with a plain if/else branching on `staging_smoke` that avoids arrays entirely. `bash -n scripts/smoke-local.sh` and a full `BASE_URL=http://localhost:5000 make smoke-local` run now pass end to end (health, anonymous `/api/whoami/` 401, login form, authenticated `/api/whoami/` 200); the `STAGING_SMOKE=1` branch CI's own staging job exercises is unchanged in behavior.
+
+## 90. Diagnose flaky concurrent-restore result in projectLifecycle.spec.ts
+Goal: Determine whether the two-tabs concurrent-restore scenario's intermittent 404 (instead of the expected 201) on one of two simultaneous restore requests is a real backend race or a test-timing issue, and fix whichever it is.
+Description: Found while manually verifying backlog task 81/issue #111 by running `E2E_BASE_URL=http://localhost:5000 npx playwright test interactionRuntime.spec.ts projectLifecycle.spec.ts` against a real local PostgreSQL-backed Django + Vite stack: 13/14 passed, but `projectLifecycle.spec.ts`'s "concurrent saves and restores from two tabs of the same session serialize to one consistent state" (around line 355/424) failed consistently across two consecutive runs with `expect(restoreA.status()).toBe(201)` receiving 404 instead. Unrelated to issue #111's canvas/pointer scope — no version-restore or concurrency code was touched by that task.
+Status: PROPOSED
+GitHub issue: #121
 
 ## Completed execution task archive
 

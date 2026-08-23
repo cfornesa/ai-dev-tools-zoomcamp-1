@@ -447,6 +447,15 @@ function EditorWorkspace() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<P5ScenePreview | null>(null);
+  // Issue #111: the shape currently under the pointer, hit-tested the same
+  // way `handleCanvasClick`/`handleCanvasPointerDown` do (topmost-shape-
+  // wins), so hovering can show a distinct affordance from the selected
+  // outline below without changing what a click/drag actually acts on.
+  // `null` whenever nothing is hovered — including while the pointer is off
+  // the canvas entirely (`handleCanvasPointerLeave`) and, deliberately, kept
+  // updating during an active drag (it's cheap, and freezing it mid-drag
+  // would just leave a stale highlight behind once the gesture ends).
+  const [hoveredShapeId, setHoveredShapeId] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   // Task 26: "latest value" refs so the window-level drag listeners below
@@ -865,6 +874,24 @@ function EditorWorkspace() {
     sceneEditor.selectShape(hit ? hit.id : null);
   }
 
+  // Issue #111: tracks `hoveredShapeId` for the hover affordance, using the
+  // exact same topmost-shape hit test `handleCanvasClick`/
+  // `handleCanvasPointerDown` already use, so "what lights up on hover" and
+  // "what a click/drag would act on" never disagree.
+  function handleCanvasPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const pointer = canvasPointFromClient(event.clientX, event.clientY);
+    if (!pointer) return;
+    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y);
+    setHoveredShapeId((current) => {
+      const nextId = hit ? hit.id : null;
+      return current === nextId ? current : nextId;
+    });
+  }
+
+  function handleCanvasPointerLeave() {
+    setHoveredShapeId(null);
+  }
+
   // Starts a Task 26 (single-shape) or issue #77 (group) move/resize/
   // rotate gesture: snapshots the pre-gesture scene and registers the
   // window-level listeners `dragHandlers` built once above.
@@ -1058,15 +1085,30 @@ function EditorWorkspace() {
     sceneEditor.insertVertexAtPoint(pointer);
   }
 
+  // Issue #111: handles are positioned by percentage (so their position
+  // always tracks the shape regardless of canvas scale) but sized in fixed
+  // CSS pixels (so their hit target stays constant regardless of shape
+  // size) — both already true before this issue. The one thing this issue
+  // changes: the fixed size itself grew from 12px to 18px, since the canvas
+  // is now responsively `aspectRatio`-scaled (issue #109) and can render
+  // considerably smaller than its logical size at tablet/narrow widths,
+  // where a 12px handle got uncomfortably close to typical touch-target
+  // guidance (~44px is the usual recommendation, but this canvas already
+  // has small on-screen shapes to contend with — 18px plus the handle's own
+  // visible border/shadow, see index.css, is the practical middle ground
+  // that stays discoverable without the handles overlapping each other on
+  // a small shape).
+  const HANDLE_SIZE = 18;
+
   function handleStyle(point: Point): CSSProperties {
     return {
       position: 'absolute',
       left: `${(point.x / canvasWidth) * 100}%`,
       top: `${(point.y / canvasHeight) * 100}%`,
-      width: 12,
-      height: 12,
-      marginLeft: -6,
-      marginTop: -6,
+      width: HANDLE_SIZE,
+      height: HANDLE_SIZE,
+      marginLeft: -HANDLE_SIZE / 2,
+      marginTop: -HANDLE_SIZE / 2,
       touchAction: 'none',
     };
   }
@@ -1241,6 +1283,21 @@ function EditorWorkspace() {
         >
           <h3>Preview</h3>
           <p>{shapeCount} shape(s) in the working copy.</p>
+          {/* Issue #111: a short, always-visible, non-intrusive explanation
+              of the primary pointer interactions — matches the actual
+              gestures `getShapeHandles`/`applyShapeDrag` implement (move/
+              resize/rotate via three handles, plus Escape-to-cancel already
+              wired in `dragHandlers.onKey`) rather than assuming wording
+              that doesn't match the code. Plain caption text, not a
+              dismissible/modal hint like `OnboardingHints` above — that
+              component is for per-scene, dismiss-once template guidance,
+              while this is a durable explanation of the canvas itself. */}
+          <p className="editor-canvas-hint" data-testid="editor-canvas-hint">
+            Click a shape to select it. Drag its body or the round move
+            handle to move it, the square handle to resize it, or the
+            top handle to rotate it. Press Esc to cancel a drag in
+            progress.
+          </p>
           {previewError && (
             <p role="alert" aria-live="assertive">
               Couldn't render the preview: {previewError}
@@ -1274,6 +1331,8 @@ function EditorWorkspace() {
             }}
             onClick={handleCanvasClick}
             onPointerDown={handleCanvasPointerDown}
+            onPointerMove={handleCanvasPointerMove}
+            onPointerLeave={handleCanvasPointerLeave}
             onDoubleClick={handleCanvasDoubleClick}
           >
             {/* Task 25: the p5.js preview mounts its <canvas> into this div.
@@ -1371,17 +1430,34 @@ function EditorWorkspace() {
             >
               {sceneEditor.shapes.map((shape) => {
                 const isSelected = shape.id === sceneEditor.selectedShapeId;
+                // Issue #111: a hovered-but-not-selected shape gets its own
+                // distinct affordance from the selected outline; a shape
+                // that's effectively locked (via its own/layer's/group's
+                // lock — see `isEffectivelyLocked`) gets a different "can't
+                // manipulate this" hover cue instead of the normal one,
+                // matching `checkUnlocked`'s existing error-toast behavior
+                // when a drag on it is actually attempted.
+                const isHovered = !isSelected && shape.id === hoveredShapeId;
+                const isHoveredLocked =
+                  isHovered &&
+                  !!sceneEditor.workingCopy &&
+                  isEffectivelyLocked(sceneEditor.workingCopy, shape.id);
                 const bounds = isSelected ? shapeBounds(shape) : null;
+                const hoverBounds = isHovered ? shapeBounds(shape) : null;
+                const shapeClassName = [
+                  'editor-scene-shape',
+                  isSelected ? 'editor-scene-shape-selected' : '',
+                  isHovered && !isHoveredLocked ? 'editor-scene-shape-hovered' : '',
+                  isHoveredLocked ? 'editor-scene-shape-hovered-locked' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ');
                 return (
                   <g
                     key={shape.id}
                     data-testid={`scene-shape-${shape.id}`}
                     data-shape-type={shape.type}
-                    className={
-                      isSelected
-                        ? 'editor-scene-shape editor-scene-shape-selected'
-                        : 'editor-scene-shape'
-                    }
+                    className={shapeClassName}
                   >
                     {shapeGeometry(shape)}
                     {/* A visible selection highlight independent of the
@@ -1397,6 +1473,30 @@ function EditorWorkspace() {
                         y={bounds.minY - 4}
                         width={bounds.maxX - bounds.minX + 8}
                         height={bounds.maxY - bounds.minY + 8}
+                        fill="none"
+                      />
+                    )}
+                    {/* Issue #111: a hover-only outline, visually distinct
+                        (thinner, un-dashed, muted color) from the selected
+                        outline above so "what's under the pointer" and
+                        "what's selected" never look the same. A locked
+                        shape gets a different color/dash so hovering it
+                        reads as "can't manipulate this" rather than an
+                        ordinary hoverable target, matching what actually
+                        happens if a drag on it is attempted
+                        (`checkUnlocked`'s error toast). */}
+                    {hoverBounds && (
+                      <rect
+                        data-testid={`scene-shape-hover-outline-${shape.id}`}
+                        className={
+                          isHoveredLocked
+                            ? 'editor-scene-shape-hover-outline editor-scene-shape-hover-outline-locked'
+                            : 'editor-scene-shape-hover-outline'
+                        }
+                        x={hoverBounds.minX - 3}
+                        y={hoverBounds.minY - 3}
+                        width={hoverBounds.maxX - hoverBounds.minX + 6}
+                        height={hoverBounds.maxY - hoverBounds.minY + 6}
                         fill="none"
                       />
                     )}

@@ -204,6 +204,40 @@ describe('EditorWorkspace lock guard: single-shape gesture blocked', () => {
   });
 });
 
+describe('EditorWorkspace lock guard: hover affordance (issue #111)', () => {
+  it('shows a distinct locked-hover outline instead of the ordinary hover outline for a locked shape', async () => {
+    await loadReadyWorkspace();
+    await addAndSelectCircle();
+    toggleLayerLock();
+    const canvas = mockCanvasRect();
+    fireEvent.click(canvas, { clientX: 5, clientY: 5 }); // deselect, so it's hover-only
+
+    fireEvent.pointerMove(canvas, { clientX: 400, clientY: 300 }); // over the circle body
+
+    const shapeId = canvas.querySelector('[data-shape-type="circle"]')!.getAttribute('data-testid');
+    const outline = canvas.querySelector(
+      `[data-testid="scene-shape-hover-outline-${shapeId!.replace('scene-shape-', '')}"]`,
+    );
+    expect(outline).toHaveClass('editor-scene-shape-hover-outline-locked');
+  });
+
+  it('shows the ordinary (non-locked) hover outline for an unlocked shape', async () => {
+    await loadReadyWorkspace();
+    await addAndSelectCircle();
+    const canvas = mockCanvasRect();
+    fireEvent.click(canvas, { clientX: 5, clientY: 5 }); // deselect, so it's hover-only
+
+    fireEvent.pointerMove(canvas, { clientX: 400, clientY: 300 }); // over the circle body
+
+    const shapeId = canvas.querySelector('[data-shape-type="circle"]')!.getAttribute('data-testid');
+    const outline = canvas.querySelector(
+      `[data-testid="scene-shape-hover-outline-${shapeId!.replace('scene-shape-', '')}"]`,
+    );
+    expect(outline).toHaveClass('editor-scene-shape-hover-outline');
+    expect(outline).not.toHaveClass('editor-scene-shape-hover-outline-locked');
+  });
+});
+
 describe('EditorWorkspace lock guard: multi-shape whole-gesture block (issue #77)', () => {
   it('one locked shape among several selected blocks the entire group gesture, not just that shape', async () => {
     await loadReadyWorkspace();

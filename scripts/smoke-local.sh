@@ -64,12 +64,11 @@ get /health/ 200
 get /api/whoami/ 401
 get /accounts/login/ 200
 
-fixture_environment=()
 if [[ "$staging_smoke" == "1" ]]; then
-  fixture_environment=(E2E_FIXTURE_ENVIRONMENT=disposable-staging)
+  E2E_FIXTURE_ENVIRONMENT=disposable-staging uv run --env-file .env python manage.py e2e_fixtures create --json >"$fixture_json"
+else
+  uv run --env-file .env python manage.py e2e_fixtures create --json >"$fixture_json"
 fi
-
-"${fixture_environment[@]}" uv run --env-file .env python manage.py e2e_fixtures create --json >"$fixture_json"
 email="$(uv run python -c 'import json,sys; print(json.load(open(sys.argv[1]))["owner"]["email"])' "$fixture_json")"
 password="$(uv run python -c 'import json,sys; print(json.load(open(sys.argv[1]))["password"])' "$fixture_json")"
 csrf="$(sed -n 's/.*name="csrfmiddlewaretoken" value="\([^"]*\)".*/\1/p' /tmp/smoke-body | head -1)"

@@ -114,6 +114,35 @@ runserver` and, in a second shell, `cd frontend && npm run dev`.
 CI runs on every push and pull request. See AGENTS.md's "Commands"
 section for the full list of `make`/`npm` targets.
 
+## Safe Git pushes
+
+When pushing `main` from a Replit workspace, use the repository-local guarded
+workflow rather than diagnosing a rejected push from a stale tracking ref:
+
+```bash
+make git-safe-push
+```
+
+In Replit, `GIT_URL` should be supplied by the workspace secret/environment
+setup before running the command; do not paste a token into a shell command or
+commit it to a file.
+
+The command fetches `origin/main` first, then treats equal commits as already
+complete and pushes only when the local branch is strictly ahead of the
+refreshed remote. A remote-ahead branch and a truly diverged branch are
+reported separately. Authentication or permission failures are reported as
+credential problems, never as missing remote commits. The credential is read
+only through a temporary helper and is not written to Git configuration,
+command output, or a repository file.
+
+For an external local deployment, safely reconcile a remote-ahead or diverged
+branch by fetching, inspecting both histories, and rebasing or merging the
+local work onto the remote `main` as appropriate. Resolve and test conflicts,
+then run this command again. Never use `--force` or reset the remote to make
+the check pass; preserve the remote history and choose explicitly which
+commits to keep. Replit's native Git service remains the source of truth for
+workspace synchronization; this helper is a safe repository-local fallback.
+
 ## Health check
 
 `GET /health/` confirms the app and database are reachable (no

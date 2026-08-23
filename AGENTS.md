@@ -176,6 +176,8 @@ Backend (run from the repo root):
 - `uv run pytest tests/test_home.py` - one test file
 - `uv run --env-file .env python manage.py migrate` - apply DB migrations
 - `uv run --env-file .env python manage.py runserver` - start the backend dev server
+- `GIT_URL=... make git-safe-push` - refresh and safely push `main` without
+  force-pushing or persisting the credential
 
 Frontend (run from `frontend/`):
 

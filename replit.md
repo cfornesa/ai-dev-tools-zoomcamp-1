@@ -61,6 +61,27 @@ credentials unusable, but never reveals their plaintext.
 - Backend tests: `uv run pytest`
 - Frontend build: `cd frontend && npm run build`
 - Frontend tests: `cd frontend && npm test`
+- Safe workspace push: `make git-safe-push` (with the workspace-provided
+  `GIT_URL` environment value)
+
+## Safe workspace Git pushes
+
+`make git-safe-push` refreshes the remote `main` ref before evaluating a push.
+It succeeds when refs are equal, performs a normal fast-forward push when the
+local branch is ahead, and reports remote-ahead and diverged histories
+distinctly. It never force-pushes, resets, or overwrites a remote branch.
+
+The active `GIT_URL` value is supplied to Git through a temporary credential
+helper. The helper reads it from the process environment, does not put it in
+Git config or a file, and the workflow sanitizes Git errors before printing
+them. If authentication or authorization fails, check the active Replit
+credential and GitHub repository write permission; do not merge or reset based
+on that error.
+
+For an external local deployment, fetch and inspect `origin/main`, then
+rebase or merge local `main` onto it, resolve and test conflicts, and retry
+the guarded command. A true divergence must be reconciled deliberately;
+automatic force-push and history overwrite are intentionally unavailable.
 
 ## Startup commands
 

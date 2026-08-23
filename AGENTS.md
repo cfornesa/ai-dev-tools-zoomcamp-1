@@ -61,6 +61,8 @@ variable Django, PostgreSQL, and the frontend use; neither example file
 contains real credentials. `.env` files are gitignored and must never be
 committed.
 
+The codebase should be implemented and designed as such to where it works as a Replit web application and a local deployment.
+
 `DATABASE_URL` must point at a real, reachable PostgreSQL server — there
 is no SQLite fallback outside the test suite. In Replit-deployed
 environments Replit's managed PostgreSQL integration supplies

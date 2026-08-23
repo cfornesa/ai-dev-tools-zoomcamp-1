@@ -38,7 +38,26 @@ export type CameraControlProps = {
    * stream. Optional and purely additive, matching `onStatusChange`'s
    * existing pattern. */
   onFrame?: (frame: TrackingFrame) => void;
+  /** Test seam for `PERMISSION_HINT_DELAY_MS` (issue #132) — how long
+   * `status` must stay `'starting'` before the permission-prompt hint
+   * appears. Defaults to the real delay; tests override it with a small
+   * value so they don't need fake timers to exercise the hint. */
+  permissionHintDelayMs?: number;
 };
+
+/** Issue #132: a live production investigation found that `start()`'s
+ * `getUserMedia` call was working exactly as designed — the browser was
+ * correctly showing its own native, OS-level camera-permission prompt —
+ * but the prompt is easy to miss (it doesn't grab focus, and can look
+ * like a small icon rather than a modal depending on browser/OS), and
+ * this control's own UI gave no indication one might be pending beyond
+ * the generic "Starting camera…" status. From the user's perspective
+ * that reads as "Enable camera does nothing." If `status` stays
+ * `'starting'` this long without resolving to `'active'` or `'error'`,
+ * that's the most likely explanation, so a hint appears pointing the
+ * user at their browser chrome instead of leaving them looking at an
+ * unchanging in-page message. */
+const PERMISSION_HINT_DELAY_MS = 5000;
 
 export type CameraStatus = 'idle' | 'starting' | 'active' | 'error' | 'stopped';
 
@@ -101,12 +120,14 @@ function CameraControl({
   isSecureContext = () => window.isSecureContext,
   onStatusChange,
   onFrame,
+  permissionHintDelayMs = PERMISSION_HINT_DELAY_MS,
 }: CameraControlProps) {
   const onFrameRef = useRef(onFrame);
   onFrameRef.current = onFrame;
   const providerRef = useRef<TrackingProvider | null>(null);
   const [status, setStatus] = useState<CameraStatus>('idle');
   const [failure, setFailure] = useState<CameraFailureCategory | null>(null);
+  const [showPermissionHint, setShowPermissionHint] = useState(false);
 
   // Task 82: notify the caller on every status change (including the
   // initial 'idle' render) so it can derive its own state from the same
@@ -116,6 +137,16 @@ function CameraControl({
     onStatusChange?.(status);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
+
+  // Issue #132: see PERMISSION_HINT_DELAY_MS's doc comment above.
+  useEffect(() => {
+    if (status !== 'starting') {
+      setShowPermissionHint(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowPermissionHint(true), permissionHintDelayMs);
+    return () => clearTimeout(timer);
+  }, [status, permissionHintDelayMs]);
 
   function getProvider(): TrackingProvider {
     if (!providerRef.current) {
@@ -188,6 +219,13 @@ function CameraControl({
       {status === 'error' && failure && (
         <p role="alert" aria-live="assertive" data-testid="camera-error">
           {recoveryMessageFor(failure)}
+        </p>
+      )}
+
+      {status === 'starting' && showPermissionHint && (
+        <p role="status" aria-live="polite" data-testid="camera-permission-hint">
+          Still waiting on your camera — check for a permission request near your browser's address
+          bar and allow it to continue.
         </p>
       )}
 

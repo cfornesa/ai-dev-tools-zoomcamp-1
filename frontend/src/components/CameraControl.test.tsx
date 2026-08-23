@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -209,6 +209,59 @@ describe('CameraControl', () => {
 
     fake.emitFrame();
     expect(screen.getByTestId('camera-status')).toHaveTextContent(/camera is active/i);
+  });
+
+  it('shows a permission-prompt hint if starting takes too long, and clears it once active', async () => {
+    vi.useFakeTimers();
+    try {
+      const fake = createFakeProvider();
+      render(
+        <CameraControl
+          createProvider={() => fake.provider}
+          isSecureContext={secureContext}
+          permissionHintDelayMs={1000}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Enable camera' }));
+      expect(screen.queryByTestId('camera-permission-hint')).not.toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(screen.getByTestId('camera-permission-hint')).toHaveTextContent(
+        /check for a permission request/i,
+      );
+
+      fake.emitFrame();
+      expect(screen.queryByTestId('camera-permission-hint')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('never shows the permission-prompt hint if starting resolves before the delay elapses', async () => {
+    vi.useFakeTimers();
+    try {
+      const fake = createFakeProvider();
+      render(
+        <CameraControl
+          createProvider={() => fake.provider}
+          isSecureContext={secureContext}
+          permissionHintDelayMs={5000}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Enable camera' }));
+      fake.emitFrame();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(screen.queryByTestId('camera-permission-hint')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps the demo controls panel present and usable before camera activation, during a camera failure, and after stopping', async () => {

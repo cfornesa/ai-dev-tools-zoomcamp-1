@@ -1117,7 +1117,7 @@ actual console/network error, then scope the fix (likely one of: unreachable
 CDN dependency in production, a Permissions-Policy/CSP header blocking
 `camera`, or a genuinely swallowed rejection not caught by the reviewed code
 paths).
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/132)
 Evidence: See investigation notes above.
 Discovery gate: Searched `_docs/tasks.md` for prior camera-enable entries;
@@ -1248,6 +1248,45 @@ deployed), and a human operator who can answer a real, native browser
 permission dialog — both require the user's own action (publishing; a
 real permission decision) that no browser-automation tooling available to
 this session can substitute for.
+
+Resolution (2026-08-23, same session): the user answered the pending
+native permission dialog on the same live-production tab left open for
+them. Re-checked immediately after: `navigator.permissions.query({name:
+'camera'})` now reported `state: "granted"`. Re-ran "Enable camera" on
+the real "Blank canvas" project against live production (still on the
+un-republished, Vite-dev-server build — task 102/#133's fix was not a
+factor in this result) and it worked completely correctly end-to-end:
+status reached "Camera is active. Hand tracking is running locally in
+your browser.", with real `gesture_recognizer_graph`/`gl_context`
+initialization and live inference in the console — no code bug anywhere
+in the reachable path. This conclusively confirms the root cause: the
+browser's own native camera-permission prompt was sitting unanswered
+(`state: "prompt"`), and this control's UI gave no indication one might
+be pending beyond the generic, unchanging "Starting camera…" message —
+easy to miss since the prompt doesn't grab focus and can render as a
+small icon rather than a modal depending on browser/OS. From the user's
+perspective that reads as "does nothing," even though both the app and
+the browser were behaving exactly as designed.
+Fix: added a `permissionHintDelayMs`-gated hint (default 5s) to
+`CameraControl.tsx` — if `status` stays `'starting'` this long without
+resolving to `'active'` or `'error'`, an additional `role="status"`
+message appears: "Still waiting on your camera — check for a permission
+request near your browser's address bar and allow it to continue." This
+directly closes the gap against this task's own goal ("never a silent
+no-op") for the one scenario that wasn't already handled (a denied
+permission already showed a clear, working error path; a pending one now
+does too). Covered by two new cases in `CameraControl.test.tsx` (hint
+appears after the delay while `starting`; hint never appears if `active`
+is reached first) using `vi.useFakeTimers()`/`fireEvent.click` (plain
+`userEvent` combined with fake timers proved flaky/hung in this
+component's async-heavy tests — `fireEvent` sidesteps that). `make check`
+passes (backend 594 passed/22 skipped; frontend 1579 passed, up from
+1577).
+Not folded into task 102/#133's scope: republishing so #133's fix is
+live in production is still outstanding and remains the user's own
+action to take, but is no longer a blocker for this task, since the
+"does nothing" symptom is now fully explained and addressed independent
+of which frontend-serving mode production runs.
 
 ## 102. Serve the production deployment from the built frontend bundle, not the Vite dev server
 Goal: The published Replit deployment serves the production `dist/` build

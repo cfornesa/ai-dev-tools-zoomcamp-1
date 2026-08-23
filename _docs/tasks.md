@@ -364,22 +364,21 @@ while adding this coverage: backlog tasks 83 (issue #113) and 84 (issue #114).
 ## 83. Restore the Playwright e2e suite against the collapsed-by-default editor
 Goal: Make `make e2e` pass again against the current editor UI.
 Description: Issue #95 flipped `CollapsibleSection` to default closed, but no Playwright spec (`projectLifecycle.spec.ts`, `interactionRuntime.spec.ts`, `aiAndRecovery.spec.ts`, `publishingAndRemix.spec.ts`, `exportConfigDialog.spec.ts`) expands a section before interacting with an element inside it, so nearly every scenario that reaches the editor now times out waiting for a collapsed control (confirmed locally: `projectLifecycle.spec.ts`'s blank-canvas scenario times out waiting for "Add circle"). CI never caught this because these specs are deliberately excluded from CI/`npm test`/`make check`, and the one E2E spec CI does run (`responsiveShell.spec.ts`) never opens a collapsed section. Add a shared expand-section helper (mirroring `frontend/src/testUtils/expandCollapsibleSections.ts`'s role in the Vitest suite) and use it wherever a scenario needs a collapsed section's contents, without changing `CollapsibleSection`'s reviewed default-closed behavior itself.
-Status: ACTIVE
+Status: COMPLETE
 GitHub issue: #113
-Progress: Added `frontend/e2e/support/expandCollapsibleSections.ts` (`expandAllCollapsibleSections`/
-`expandSection`) and wired it into all five spec files. `aiAndRecovery.spec.ts` and
-`projectLifecycle.spec.ts` are now fully green. `interactionRuntime.spec.ts` needed a second,
-narrower helper (`expandSection`) rather than expanding everything at once, because opening
-"Behaviors" before a shape exists permanently disables `BehaviorCardsPanel`'s "Add card" button
-(a real app bug, tracked separately as issue #116) — 5 of 7 scenarios there now pass, 2 remain
-blocked on a second, distinct graph-state bug (issue #117). `exportConfigDialog.spec.ts` (and
-likely parts of `publishingAndRemix.spec.ts`) hit a third, unrelated pre-existing issue: both
-still navigate to a `/projects/:id/settings` route that issue #94 removed (title/description
-editing moved into the editor itself) — tracked as issue #118, not yet fixed. Along the way this
-work also found and fixed two real, unrelated app bugs: a phantom "Recover unsaved work?" prompt
-after an ordinary save+reload (`useDraftRecovery.ts`, closes the loop on issue #112) and a stale
-Version History panel after AI-accept/explicit Save (`VersionHistoryPanel.tsx`, issue #115,
-closed). `make e2e` is not fully green yet; issues #116/#117/#118 track what's left.
+Verification: Added `frontend/e2e/support/expandCollapsibleSections.ts` (`expandAllCollapsibleSections`/
+`expandSection`) and wired it into all five spec files. `aiAndRecovery.spec.ts`,
+`projectLifecycle.spec.ts`, `interactionRuntime.spec.ts` (7/7), and `exportConfigDialog.spec.ts`
+(4/4) are fully green; `publishingAndRemix.spec.ts` is 10/11 (the one remaining failure is a
+distinct, unrelated bug filed as issue #119 — public-viewer camera controls not rendering when
+`navigator.mediaDevices` is entirely undefined). Restoring this coverage surfaced and fixed five
+further real bugs along the way, each tracked and closed separately: issue #112 (phantom "Recover
+unsaved work?" prompt after an ordinary save+reload), #115 (stale Version History panel after
+AI-accept/explicit Save), #116 (`BehaviorCardsPanel`'s target select getting stuck if "Behaviors"
+opens before any shape exists), #117 (two stale hardcoded graph node/connection counts, and a
+"Show logic" toggle — not a `CollapsibleSection` — silently closing on reload), and #118 (two specs
+still targeting a `/projects/:id/settings` route issue #94 removed). `make e2e` is green apart from
+the one distinct issue #119 gap.
 
 ## 84. Fix e2e_fixtures cleanup ProtectedError leaving orphaned local test data
 Goal: Make `e2e_fixtures cleanup` reliably remove every row it created.
@@ -412,6 +411,13 @@ Description: `publishingAndRemix.spec.ts`'s `saveMeaningfulMetadata` and `export
 Status: COMPLETE
 GitHub issue: #118
 Verification: Both helpers now click "Edit title", fill `#editor-title-input`, and fill the Details panel's existing fields directly, with no reference to the dead route. Restoring this also surfaced three further pre-existing, unrelated bugs in `publishingAndRemix.spec.ts`, all now fixed: two CSRF-cookie setup calls visited `/` (this app's React SPA shell, which Django serves with no template-rendered CSRF token) instead of a real Django page like `/accounts/login/`; a fork-provenance assertion hardcoded `/versions/1/` assuming a pristine database instead of reading the fork's own `current_version` id; and a shape assertion read `shape.style.positionX` instead of the real `shape.transform.x` path. All 4 `exportConfigDialog.spec.ts` scenarios and 10/11 `publishingAndRemix.spec.ts` scenarios now pass; the remaining one is a distinct pre-existing bug tracked as issue #119 (public-viewer camera controls don't render when `navigator.mediaDevices` is entirely undefined).
+
+## 87. Fix stale graph node/connection counts and a reload-closed "Show logic" toggle in interactionRuntime.spec.ts
+Goal: `interactionRuntime.spec.ts`'s two remaining scenarios pass with graph state matching what each test actually builds.
+Description: Two scenarios failed with graph state that looked inconsistent with the test's own steps — both turned out to be test bugs rather than app bugs. "graph authoring..." hardcoded stale connection/node counts (4/8) against a scenario that actually authors 5 connections and 9 nodes. "deterministic randomness..." reopens "Show logic" once, then triggers a mid-test `saveAndReload` — but "Show logic" is a plain `useState` toggle in `EditorWorkspace.tsx`, not a `CollapsibleSection`, so `expandAllCollapsibleSections` can't (and doesn't) reopen it after the reload silently closes it, hiding the graph fragment the test goes on to check. Discovered while restoring backlog task 83/issue #113.
+Status: COMPLETE
+GitHub issue: #117
+Verification: Corrected the hardcoded counts to 5 connections/9 nodes, and added a second `openLogicPanel(page)` call after `saveAndReload` in the randomness scenario. All 7/7 scenarios in `interactionRuntime.spec.ts` now pass.
 
 ## Completed execution task archive
 

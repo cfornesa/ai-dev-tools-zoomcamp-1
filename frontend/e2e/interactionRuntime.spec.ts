@@ -453,22 +453,27 @@ test.describe('Interaction runtime', () => {
     );
 
     await expect(page.getByRole('alert')).toHaveCount(0);
+    // 5 connections: handSignal->mapRange, mapRange->shapeProperty,
+    // conditionSignal->ifElse, gestureEvent->cooldown,
+    // cooldown->particleEmitter.
     await expect(
       page.getByRole('list', { name: 'Graph connection list' }).getByRole('listitem'),
-    ).toHaveCount(4);
+    ).toHaveCount(5);
 
-    // The whole authored graph -- 8 nodes, 4 connections, every configured
-    // param -- round-trips through an explicit save and a full reload,
-    // proving the authoring path (not the runtime evaluation, see this
-    // file's module doc comment) is correct end to end.
+    // The whole authored graph -- 9 nodes (handSignal, mapRange,
+    // shapeProperty, conditionSignal, ifElse, timer, gestureEvent,
+    // cooldown, particleEmitter), 5 connections, every configured param --
+    // round-trips through an explicit save and a full reload, proving the
+    // authoring path (not the runtime evaluation, see this file's module
+    // doc comment) is correct end to end.
     await saveAndReload(page, /Saved as version 2/);
     await openLogicPanel(page);
     await expect(
       page.getByRole('list', { name: 'Graph node list' }).getByRole('listitem'),
-    ).toHaveCount(8);
+    ).toHaveCount(9);
     await expect(
       page.getByRole('list', { name: 'Graph connection list' }).getByRole('listitem'),
-    ).toHaveCount(4);
+    ).toHaveCount(5);
     await expect(page.locator(`#graph-list-node-${mapRangeId}-outMax`)).toHaveValue('800');
     await expect(page.locator(`#graph-list-node-${ifElseId}-threshold`)).toHaveValue('0.5');
     await expect(page.locator(`#graph-list-node-${ifElseId}-comparison`)).toHaveValue(
@@ -573,7 +578,10 @@ test.describe('Interaction runtime', () => {
     // Random range node added above, plus this card's input node) is not
     // asserted by count here since the exact prior graph size varies by
     // test order; instead assert the specific fragment this card must
-    // have produced.
+    // have produced. "Show logic" is a plain toggle, not a
+    // CollapsibleSection -- saveAndReload's expandAllCollapsibleSections
+    // doesn't touch it, so the reload above closed it again.
+    await openLogicPanel(page);
     await expect(
       page.getByRole('list', { name: 'Graph node list' }).filter({ hasText: 'Gesture event' }),
     ).toBeVisible();

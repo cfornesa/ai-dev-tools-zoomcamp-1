@@ -347,8 +347,19 @@ GitHub issue: #111
 ## 82. Stop unexpected editor refreshes from interrupting unsaved work
 Goal: Identify and prevent unintended document reload/navigation during editing, and make unavoidable leave/recovery states explicit.
 Description: Add real-browser coverage that distinguishes intentional navigation from unexpected document refreshes. Verify controlled autosave/server-sync failures stay on the editor route, preserve working state or a recovery candidate, and show actionable errors; verify dirty and clean beforeunload behavior; make intentional leave links clear; and keep the existing Mistral credential failure journey separate.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: #112
+Verification: `EditorWorkspace.tsx` now polls `useDraftAutosave`/`useDraftServerSync`'s
+`getLastFailure()` and shows a non-blocking, actionable notice (`draft-sync-error`), cleared on
+the next successful Save (unit-tested in `EditorWorkspace.draftSyncError.test.tsx`). New Playwright
+coverage in `aiAndRecovery.spec.ts`: a forced 503 on the periodic server-draft sync shows the
+notice while staying on the same editor route with the unsaved shape intact; a dirty editor shows
+the native `beforeunload` prompt on `page.close({ runBeforeUnload: true })` and a clean one shows
+none. Draft-recovery-after-reload determinism, discard/cancel/expired/corrupt/unauthorized/conflict
+paths, and clearly-labeled leave affordances ("Exit without saving", "Back to your projects") were
+already covered by pre-existing tests and reviewed as still correct. The Mistral credential
+failure journey (`mistralCredential.spec.ts`) was not touched. Discovered and filed separately
+while adding this coverage: backlog tasks 83 (issue #113) and 84 (issue #114).
 
 ## 83. Restore the Playwright e2e suite against the collapsed-by-default editor
 Goal: Make `make e2e` pass again against the current editor UI.

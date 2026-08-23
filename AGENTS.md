@@ -139,12 +139,18 @@ database URL or production secret into that file. `POSTGRES_TEST_DATABASE_URL`
 is optional and only used by PostgreSQL health tests; if set, it must point
 at a separate disposable test database.
 
-For a Replit publish, the deployment build runs dependency installation,
-`manage.py check --deploy`, and all migrations before building the frontend.
-The runtime is `scripts/start.sh`, which waits for Django health before
-starting Vite. Replit Secrets and the production environment supply the
-production database, OAuth, Mistral encryption, and mail settings; local
-values are not reused.
+For a Replit publish, the deployment build (`.replit`'s `[deployment].build`)
+runs dependency installation, `manage.py check --deploy`, and the frontend
+build — it does not run migrations. Development migrations run through
+`scripts/post-merge.sh` (Replit's post-merge/development setup flow); Replit's
+Publish flow separately compares development and production schemas and
+applies the diff. `scripts/start.sh` (the deployment runtime) only runs
+`manage.py migrate` when `RUN_MIGRATIONS_ON_START=true` is explicitly set, and
+otherwise waits for Django health before starting Vite. See
+`.agents/memory/replit-production-schema-publishing.md` for why migrations
+must stay out of the deployment build. Replit Secrets and the production
+environment supply the production database, OAuth, Mistral encryption, and
+mail settings; local values are not reused.
 
 For an external non-production deployment, create `.env` from
 `.env.example`, set its own PostgreSQL `DATABASE_URL`, then run:

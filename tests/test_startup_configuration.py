@@ -89,9 +89,7 @@ def test_replit_uses_repository_launcher_for_startup():
 
 def test_deployment_build_does_not_run_django_migrations():
     config = (ROOT / ".replit").read_text()
-    deployment_build = next(
-        line for line in config.splitlines() if line.startswith("build =")
-    )
+    deployment_build = next(line for line in config.splitlines() if line.startswith("build ="))
 
     assert "python manage.py migrate" not in deployment_build
     assert "python manage.py check --deploy" in deployment_build

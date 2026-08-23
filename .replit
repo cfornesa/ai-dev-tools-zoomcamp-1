@@ -59,4 +59,4 @@ timeoutMs = 180000
 [deployment]
 deploymentTarget = "autoscale"
 run = ["bash", "scripts/start.sh"]
-build = ["bash", "-c", "uv sync --locked && npm --prefix frontend ci && uv run python manage.py check --deploy && uv run python manage.py migrate --noinput && npm --prefix frontend run build"]
+build = ["bash", "-c", "uv sync --locked && npm --prefix frontend ci && uv run python manage.py check --deploy && npm --prefix frontend run build"]

@@ -6,3 +6,4 @@
 - [Allauth JWT runtime dependency](allauth-jwt-runtime-dependency.md) — Pin PyJWT explicitly because the installed allauth release imports jwt during OAuth callback validation without declaring it.
 - [Browser-facing CSRF origin](browser-facing-csrf-origin.md) — Same-origin browser POSTs must trust the Vite origin, not only Django's internal backend port.
 - [GitHub HTTPS credential helper](github-https-credential-helper.md) — A valid GIT_URL secret may need an explicit one-command Git credential helper to bypass stale HTTPS credentials.
+- [Replit production schema publishing](replit-production-schema-publishing.md) — Replit applies production schema diffs during Publish; Django migrations must stay out of build and startup commands.

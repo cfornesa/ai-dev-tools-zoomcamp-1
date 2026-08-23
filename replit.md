@@ -90,8 +90,11 @@ automatic force-push and history overwrite are intentionally unavailable.
 - Replit Publish: use `scripts/start.sh` as the run command. Replit's `PORT`
   value is forwarded to Vite so the externally exposed web port is reachable.
   The deployment build runs `uv sync --locked`, `npm ci`, `manage.py
-  check --deploy`, and `manage.py migrate --noinput` before the frontend
-  build. Development and published environments receive separate
+  check --deploy`, and the frontend build. Do not run Django migrations in
+  the deployment build or on application startup: Replit compares the
+  development and production schemas and applies the reviewed schema diff as
+  part of Publish. Development migrations run through the post-merge setup
+  script. Development and published environments receive separate
   Replit-managed `DATABASE_URL` values.
   The launcher waits for Django's `/health/` endpoint before starting Vite,
   preventing the proxy from attempting backend requests during startup.

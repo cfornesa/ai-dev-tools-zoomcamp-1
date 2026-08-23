@@ -360,6 +360,37 @@ function EditorWorkspace() {
   const draftServerSync = useDraftServerSync(id, gatedWorkingCopy);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
+  // Issue #112: `draftAutosave`/`draftServerSync` above already classify
+  // and record autosave/sync failures via `getLastFailure()`, but nothing
+  // read that back into the UI — a failed local or server draft write
+  // failed completely silently, which is indistinguishable from "nothing
+  // happened yet" to the person editing. Poll both controllers' recorded
+  // failure (cheap in-memory reads, no network) while a project is loaded
+  // and surface the most recent one as a non-blocking, actionable status
+  // message next to the save status — the editor stays on the same route
+  // and the working copy is untouched either way.
+  const [draftFailureNotice, setDraftFailureNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!id) {
+      setDraftFailureNotice(null);
+      return;
+    }
+    function pollFailures() {
+      const autosaveFailure = draftAutosave.getLastFailure();
+      const syncFailure = draftServerSync.getLastFailure();
+      const failure = syncFailure ?? autosaveFailure;
+      setDraftFailureNotice(
+        failure
+          ? `Recovery draft couldn't be saved (${failure.message}). Your changes are still here — try saving explicitly.`
+          : null,
+      );
+    }
+    pollFailures();
+    const intervalId = window.setInterval(pollFailures, 3000);
+    return () => window.clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   // Issue #95 follow-up: shared by the header's `SaveControl` (the
   // prominent, always-reachable Save action) — the only caller now that
   // `VersionHistoryPanel.tsx`'s own inline Save form was removed in favor
@@ -374,6 +405,10 @@ function EditorWorkspace() {
     setProject((current) => (current ? { ...current, current_version: version.id } : current));
     void draftAutosave.clearDraft();
     void draftServerSync.deleteServerDraft();
+    // An explicit Save just persisted the authoritative version, so a
+    // stale draft-sync failure notice from before this save no longer
+    // describes anything the user needs to act on.
+    setDraftFailureNotice(null);
   }
 
   async function handleConfirmExit() {
@@ -1139,6 +1174,16 @@ function EditorWorkspace() {
             ? 'Unsaved changes'
             : `Saved${persistedVersion ? ` as version ${persistedVersion.sequence}` : ''}`}
         </p>
+        {draftFailureNotice && (
+          <p
+            role="status"
+            aria-live="polite"
+            data-testid="draft-sync-error"
+            className="editor-save-status editor-draft-sync-error"
+          >
+            {draftFailureNotice}
+          </p>
+        )}
         <span className="editor-header-break" aria-hidden="true" />
         {id && <PublishControl id={id} project={project} setProject={setProject} />}
         {id && (

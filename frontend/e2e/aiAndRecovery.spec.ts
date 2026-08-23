@@ -137,6 +137,17 @@ function versionRow(page: Page, sequence: number) {
   return page.locator('.version-history-item', { hasText: `Version ${sequence}` });
 }
 
+/** Issue #95 flipped every Tools/Inspector `CollapsibleSection` to default
+ * closed; expand the one named `heading` before interacting with anything
+ * inside it. Scoped to this file's own new scenarios below — restoring the
+ * rest of this suite's collapsed-section handling is tracked separately in
+ * issue #113. No-ops if the section is already open. */
+async function expandSection(page: Page, heading: string): Promise<void> {
+  const toggle = page.getByRole('button', { name: new RegExp(`^▸ ${heading}$`) });
+  await toggle.waitFor({ state: 'visible' });
+  await toggle.click();
+}
+
 /** Probes that the target dev server is actually running with
  * `AI_PROVIDER=fake` (see this file's module doc comment): creates one
  * throwaway project (cleaned up along with everything else `e2e_owner`
@@ -521,6 +532,42 @@ test.describe('Local and server draft autosave', () => {
     expect(stored.draft_json.shapes).toHaveLength(1);
   });
 
+  test('issue #112: a failing server draft sync surfaces an actionable notice, stays on the editor route, and does not lose the working copy', async ({
+    page,
+  }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    const projectId = await createBlankProjectViaUI(page);
+    await expandSection(page, 'Add & edit shapes');
+
+    await page.route('**/draft/**', (route) => {
+      if (route.request().method() === 'PUT') {
+        void route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+      } else {
+        void route.continue();
+      }
+    });
+
+    await page.clock.install();
+    await page.getByRole('button', { name: 'Add circle' }).click();
+
+    const [syncResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
+      ),
+      page.clock.fastForward(25_000),
+    ]);
+    expect(syncResponse.status()).toBe(503);
+
+    // The notice is on a 3s poll, not tied to the sync response itself.
+    await page.clock.fastForward(3_000);
+    await expect(page.getByTestId('draft-sync-error')).toBeVisible();
+
+    // Still the same editor route, and the unsaved shape is still there —
+    // a failed background sync never navigates away or drops working state.
+    await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
+    await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
+  });
+
   test('page-hide dispatches one keepalive draft sync attempt', async ({ page, context }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
@@ -617,6 +664,55 @@ test.describe('Local and server draft autosave', () => {
       .click();
     await page.waitForURL('/');
     expect(await readLocalDraft(page, projectId)).toBeNull();
+  });
+});
+
+/**
+ * Issue #112: real-browser coverage for `useBeforeUnloadGuard.ts`'s native
+ * `beforeunload` safeguard, previously only unit-tested. `page.goto`/
+ * `page.reload` bypass `beforeunload` entirely in Playwright by default, so
+ * this uses `page.close({ runBeforeUnload: true })` — the documented way to
+ * actually run unload handlers and surface the resulting native dialog via
+ * `page.on('dialog')` — to prove a dirty editor shows the browser's own
+ * leave-site prompt and a clean one shows nothing.
+ */
+test.describe('beforeunload guard', () => {
+  let fixtures: Fixtures;
+
+  test.beforeAll(() => {
+    fixtures = requireE2EFixtures();
+  });
+
+  test('a dirty editor triggers the native beforeunload prompt on close', async ({ page }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await createBlankProjectViaUI(page);
+    await expandSection(page, 'Add & edit shapes');
+
+    const dialogPromise = page.waitForEvent('dialog', { timeout: 5_000 });
+    await page.getByRole('button', { name: 'Add circle' }).click();
+    await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
+
+    await page.close({ runBeforeUnload: true });
+    const dialog = await dialogPromise;
+    expect(dialog.type()).toBe('beforeunload');
+    await dialog.dismiss().catch(() => undefined);
+  });
+
+  test('a clean (nothing-unsaved) editor shows no prompt on close', async ({ page }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await createBlankProjectViaUI(page);
+    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved/);
+
+    let dialogSeen = false;
+    page.on('dialog', (dialog) => {
+      dialogSeen = true;
+      void dialog.dismiss();
+    });
+
+    await page.close({ runBeforeUnload: true });
+    // Give a real (short) beat for a dialog that shouldn't come.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(dialogSeen).toBe(false);
   });
 });
 

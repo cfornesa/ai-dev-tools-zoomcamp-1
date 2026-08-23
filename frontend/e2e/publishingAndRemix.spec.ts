@@ -396,25 +396,39 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await anonContext.addInitScript(() => {
       // Simulates a browser with no camera-capture API at all --
       // mediapipeProvider.ts's defaultIsSupported() reads
-      // navigator.mediaDevices?.getUserMedia, so deleting the whole
-      // property (not just getUserMedia) is the faithful "unsupported"
+      // navigator.mediaDevices?.getUserMedia, so making that read
+      // permanently resolve to undefined is the faithful "unsupported"
       // simulation.
-      // Redefining `navigator.mediaDevices` itself (a native, browser-
-      // implemented accessor) reliably breaks something else on the page
-      // in real Chromium -- a plain `value: undefined` either hangs the
-      // whole page (some other script's write attempt throws before React
-      // ever mounts) or, once made writable, lets that same write quietly
-      // restore a working object and defeat the simulation; an accessor
-      // `get`/`set` pair hangs the same way the non-writable data property
-      // did. Deleting just `getUserMedia` off the real (still-native)
-      // `mediaDevices` object -- an ordinary, safely reconfigurable own
-      // property -- reaches the exact same `navigator.mediaDevices
-      // ?.getUserMedia` check `mediapipeProvider.ts`'s `defaultIsSupported()`
-      // makes, without touching `navigator.mediaDevices` itself.
+      // Root cause of the earlier hang (issue #119): this app depends on
+      // p5.js, which polyfills navigator.mediaDevices.getUserMedia at
+      // module-load time whenever it reads as undefined --
+      // `if (navigator.mediaDevices.getUserMedia === undefined) {
+      // navigator.mediaDevices.getUserMedia = function ... }` (see
+      // node_modules/p5/lib/p5.js). A plain `value: undefined` data
+      // property (written or left at the default non-writable) makes that
+      // *assignment* throw a strict-mode TypeError, which is an uncaught
+      // exception during the bundle's own module evaluation -- it crashes
+      // before React ever mounts, which is what looked like the whole
+      // page "hanging". Redefining `navigator.mediaDevices` itself made
+      // this worse, not better, since it also affects unrelated native
+      // machinery on the page.
+      // The fix is an accessor property on the real, still-native
+      // `mediaDevices` object: the getter always reports `undefined` (so
+      // defaultIsSupported() and any other unsupported-check reads see a
+      // consistently missing method), while the setter is a silent no-op
+      // that absorbs p5's polyfill assignment instead of throwing --
+      // reaching the exact same `navigator.mediaDevices?.getUserMedia`
+      // check without crashing anything else that writes to the property.
       if (window.navigator.mediaDevices) {
         Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
           configurable: true,
-          value: undefined,
+          get() {
+            return undefined;
+          },
+          set() {
+            // Absorb polyfill assignment attempts (e.g. p5.js) instead of
+            // throwing, so getUserMedia stays undefined either way.
+          },
         });
       }
     });

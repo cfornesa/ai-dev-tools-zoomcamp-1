@@ -13,6 +13,16 @@ The `Start application` workflow runs the full development stack:
 The managed Replit PostgreSQL database is used through its automatically
 supplied `DATABASE_URL`. Database migrations have been applied.
 
+## Agent memory
+
+The durable project memory index is
+`.agents/memory/MEMORY.md`. Agents should read it before non-trivial work and
+open the linked topic page for the relevant boundary. It records non-obvious
+lessons about Replit publishing and production schema ownership, OAuth/CSRF
+configuration, encrypted credentials, safe Git pushes, and browser testing.
+Keep entries focused on durable decisions rather than routine implementation
+logs, and never store secrets or credentials.
+
 ## Required secrets
 
 Configure these through Replit Secrets:

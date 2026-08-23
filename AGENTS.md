@@ -22,6 +22,20 @@ Layout
   (`Gallery`, `ProjectMetadataForm`, `EditorPlaceholder`, `Home`) and
   shared UI (`ProjectCard`, `Layout`) — see `App.tsx` for the route table.
 
+## Durable agent memory
+
+Before making a non-trivial change, read
+`.agents/memory/MEMORY.md`, then open the linked topic pages relevant to the
+boundary being changed. The index records durable lessons that are easy to
+miss from the current source alone, especially Replit publishing/database
+behavior, authentication and secret handling, Git push safety, and browser
+test prerequisites.
+
+When work reveals a new non-obvious, durable constraint, update or add one
+topic page and one concise index entry before finishing. Do not use memory as
+a changelog, and never store credentials, tokens, connection strings, or
+other sensitive values there.
+
 Environment setup (clean checkout)
 
 Django reads required settings (secret key, PostgreSQL `DATABASE_URL`)

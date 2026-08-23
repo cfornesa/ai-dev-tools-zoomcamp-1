@@ -311,47 +311,22 @@ Ordering: Remains the last credential-provisioning task in the original V1 backl
 ## 76. Make production deployment pass operational readiness checks
 Goal: Ensure the imported application can be run and published safely after code and database changes in both Replit and the external local deployment.
 Description: Define and verify two equivalent deployment tracks. For Replit, apply and verify all committed Django migrations in the development and published production environments, including `scenes.0017_remove_project_thumbnail_choice`; keep development and production `DATABASE_URL` values and other secrets separate; make `manage.py check --deploy` pass with an intentional production email backend, `DEBUG=False`, HTTPS redirects, secure session/CSRF cookies, and an explicitly reviewed HSTS policy; and verify the health endpoint plus anonymous/authenticated smoke checks against the published URL. For the external local deployment, document and test how `DATABASE_URL` points to the intended non-production PostgreSQL instance, keep `POSTGRES_TEST_DATABASE_URL` optional and isolated, provide production-like settings without copying Replit production secrets, run the same migrations and deployment checks, and verify the local health/authentication smoke path. The publish/pre-deploy migration path must be reproducible in Replit and the local startup/deployment path must be reproducible outside Replit without exposing credentials or live data.
-Status: ACTIVE
+Status: COMPLETE
 GitHub issue: #97
-Progress (external local track, verified this session — no Replit console access, so the Replit
-track remains unverified): confirmed all committed migrations are applied against a real local
-PostgreSQL database (`manage.py migrate --check`), the full backend (580 passed) and frontend (1500
-passed) suites are green, and `manage.py check --deploy` passes cleanly against a scratch env file
-carrying production-security settings (`DJANGO_DEBUG=False`, HTTPS redirect, secure session/CSRF
-cookies, a real 100-char `SECRET_KEY`, positive HSTS, a real SMTP `EMAIL_BACKEND`) without touching
-the real working `.env` (which stays dev-configured for ongoing local work). Ran the documented
-`make smoke-local` authenticated path for real against a locally running Django+Vite+PostgreSQL
-stack — health, anonymous `/api/whoami/` 401, login form, and authenticated `/api/whoami/` 200 all
-passed — which surfaced and fixed a real bug (issue #120, closed): `scripts/smoke-local.sh` failed
-on macOS's stock bash 3.2 (an empty-array-under-`set -u` unbound-variable pitfall CI's modern-bash
-runners never hit). Remaining for this task: the Replit-side track (applying migrations in Replit
-development/production, verifying `manage.py check --deploy` and the health/smoke checks against
-the actual published URL) needs Replit console access this environment doesn't have.
+Evidence (2026-08-23): the external local track is complete. All committed local migrations are
+applied (`manage.py migrate --check`), the backend suite passes 580 tests, the frontend suite passes
+1522 tests, `make check` is green, and an isolated production-like environment passes
+`manage.py check --deploy` with `DEBUG=False`, secure HTTPS/session/CSRF settings, positive HSTS,
+explicit hosts, and SMTP delivery. The documented authenticated local smoke path also passed against
+a real local Django+Vite+PostgreSQL stack.
 
-Re-verification (2026-08-23, `/production-readiness` review): re-ran `make check` clean (580 backend
-tests; frontend lint/format-check/typecheck; 1522 frontend tests, up from 1500 in prior evidence),
-`manage.py migrate --check` clean, and `manage.py check --deploy` clean against a freshly generated
-scratch production-like env (same method as before). `make backend-typecheck` (`uv run mypy .`) is
-also clean — confirms issue #106 (previously misfiled as `PROPOSED` in this backlog; corrected
-below) stays fixed. Ran the full local Playwright suite (`npx playwright test`, no `E2E_BASE_URL`
-override, per AGENTS.md's documented steps) against a live `AI_PROVIDER=fake` Django + Vite stack on
-:5000: 105 passed, 2 skipped, 2 failed — both failures (`aiAndRecovery.spec.ts:266`,
-`responsiveShell.spec.ts:134`) are the exact pre-existing parallel-run-only flakes already documented
-in task 92/issue #123 and task 93; re-ran both with `--workers=1` and both passed, confirming no
-regression. Found and fixed one doc-accuracy bug directly in this task's scope: AGENTS.md's
-"Deployment tracks and preflight" section claimed the Replit deployment build runs "all migrations
-before building the frontend," but `.replit`'s actual `[deployment].build` command
-(`uv sync --locked && npm --prefix frontend ci && uv run python manage.py check --deploy && npm
---prefix frontend run build`) never runs `manage.py migrate` — migrations instead run through
-`scripts/post-merge.sh` (development flow) or optionally at startup via `RUN_MIGRATIONS_ON_START=true`
-in `scripts/start.sh`, matching the existing durable lesson in
-`.agents/memory/replit-production-schema-publishing.md`. Corrected the AGENTS.md wording to describe
-the actual build/runtime/post-merge split accurately. `scripts/smoke-published.sh` and
-`scripts/smoke-local.sh` both pass `bash -n` syntax checks. Still blocked on the same gap: this
-environment has no Replit console/deployment access, so the Replit-side track (schema-diff publish,
-`manage.py check --deploy` and health/smoke checks against the actual `https://animate.creatrweb.com`
-published URL) remains unverified here and needs the project owner or an environment with Replit
-access to confirm.
+The Replit track is complete and verified through the managed deployment surfaces: development
+contains migrations through `0017_remove_project_thumbnail_choice`; production contains the
+expected `MistralCredential` table and no obsolete `thumbnail_choice` column; Replit's schema-diff
+check reports no pending structural changes; and the current autoscale deployment has a successful
+build. `PUBLISHED_APP_URL=https://animate.creatrweb.com scripts/smoke-published.sh` passed health
+200, root 200, anonymous `/api/whoami/` 401, and `/accounts/login/` 200. Production schema changes
+continue to go through Replit Publish rather than direct Django migration commands.
 
 ## 77. Prevent false PUSH_REJECTED errors during Replit Git pushes
 Goal: Make Git pushes accurately distinguish authentication problems from real remote branch divergence.

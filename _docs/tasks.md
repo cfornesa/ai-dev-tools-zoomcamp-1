@@ -773,11 +773,20 @@ pre-save working-copy snapshot cannot be written after the authoritative save.
 Preserve the saved version and surface cleanup failures. Cover save, autosave,
 page-hide, navigation, AI accept, restore, and unmount races in browser and
 component tests.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/125)
 Execution plan: `.local/tasks/editor-draft-resurrection.md`
 Evidence: The 2026-08-23 deployment sequence recorded `POST /versions/` 201,
 `DELETE /draft/<session>/` 204, then a later `PUT /draft/<session>/` 200.
+Resolution: Added a `markClean`/`isClean` baseline gate to
+`DraftServerSyncController`/`DraftAutosaveController` so periodic, debounced,
+page-hide, and meaningful-action writes all skip while the working copy
+matches the last persisted/cleared state, and resume automatically on a real
+edit. `onRestored`/`onAccepted` now clear both drafts like an explicit Save
+instead of re-syncing a server draft. `make check` green (backend 580
+passed/22 skipped, frontend 1543 passed). QA verdict: PASS (commit a52dfec,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/125#issuecomment-5384873605).
+Closed.
 
 ## 95. Prevent duplicated shapes from appearing after editor load or recovery
 Goal: Isolate and eliminate shape duplication that makes the editor unusable.
@@ -811,11 +820,14 @@ still not a dedicated Layers panel with direct drag-and-drop stacking control.
 Goal: Ensure entering a meaningful description and title through the editor
 results in a reliable, understandable publishing flow.
 Description: Reconcile the Details panel's local metadata state with the
-header Publish action. Choose whether Publish persists pending metadata or
-clearly requires and guides the user through saving it, while preserving input
-and surfacing validation or network errors. Cover title/description edits,
-confirmation cancel, retry, public visibility, and public metadata in browser
-tests.
+header Publish action. Chosen behavior (see execution plan for rationale):
+Publish auto-persists pending Details-panel metadata (description, tags,
+allow-remix, export-attribution) via the same `updateProjectMetadata` PATCH
+before validating and opening the confirmation dialog, rather than blocking
+and telling the user to save separately. Preserve input and surface
+validation or network errors from that persist step without data loss. Cover
+title/description edits, confirmation cancel, retry, public visibility, and
+public metadata in browser tests.
 Status: PROPOSED
 GitHub issue: [#128](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/128)
 Execution plan: `.local/tasks/editor-publish-metadata-flow.md`

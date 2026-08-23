@@ -601,8 +601,13 @@ task 91 (issue #122).
 ## 91. Fix Prettier drift in EditorWorkspace.tsx and EditorWorkspace.transform.test.tsx
 Goal: `make frontend-format-check`/`make check` pass again on `main`.
 Description: `frontend/src/pages/EditorWorkspace.tsx` and `frontend/src/pages/EditorWorkspace.transform.test.tsx` have drifted from the repo's configured Prettier style — a hint paragraph in `EditorWorkspace.tsx` and an assertion in the test file are each wrapped across extra lines Prettier would collapse. Discovered while verifying backlog task 90/issue #121; confirmed pre-existing and unrelated by reproducing the same failure against `main` via `git stash` before that task's fix was applied.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: #122
+
+Resolution: Ran `npx prettier --write` (from `frontend/`) on both files —
+purely whitespace/line-wrapping, no behavior change. `make check` (580
+backend tests; frontend lint, format:check, typecheck, and 1520 frontend
+tests) is green.
 
 ## Completed execution task archive
 

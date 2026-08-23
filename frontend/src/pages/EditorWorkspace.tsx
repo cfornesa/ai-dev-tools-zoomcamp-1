@@ -1293,10 +1293,9 @@ function EditorWorkspace() {
               component is for per-scene, dismiss-once template guidance,
               while this is a durable explanation of the canvas itself. */}
           <p className="editor-canvas-hint" data-testid="editor-canvas-hint">
-            Click a shape to select it. Drag its body or the round move
-            handle to move it, the square handle to resize it, or the
-            top handle to rotate it. Press Esc to cancel a drag in
-            progress.
+            Click a shape to select it. Drag its body or the round move handle to move it, the
+            square handle to resize it, or the top handle to rotate it. Press Esc to cancel a drag
+            in progress.
           </p>
           {previewError && (
             <p role="alert" aria-live="assertive">

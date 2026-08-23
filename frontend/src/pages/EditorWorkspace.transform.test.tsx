@@ -215,9 +215,7 @@ describe('EditorWorkspace canvas affordances (issue #111)', () => {
     const shapeGroup = canvas.querySelector('[data-shape-type="circle"]') as HTMLElement;
     expect(shapeGroup).toHaveClass('editor-scene-shape-hovered');
     expect(shapeGroup).not.toHaveClass('editor-scene-shape-selected');
-    expect(
-      canvas.querySelector('[data-testid^="scene-shape-hover-outline-"]'),
-    ).toBeInTheDocument();
+    expect(canvas.querySelector('[data-testid^="scene-shape-hover-outline-"]')).toBeInTheDocument();
   });
 
   it('clears the hover affordance once the pointer moves off the shape or the canvas', async () => {

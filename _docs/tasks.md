@@ -1203,12 +1203,51 @@ task 102's fix and the exact network conditions in production remain
 untested here) the specific "HMR interrupts the CDN load" mechanism as
 *the* explanation, though task 102/#133 already independently removes
 Vite's dev server (and therefore this entire class of risk) from
-production regardless of whether it was the actual cause. This task
-remains blocked on the same two things as before — a live deployment
-already running task 102's fix, and either real camera hardware or an
-operator manually granting camera permission in a real browser — both of
-which require the user's own action (publishing, and camera hardware this
-session's sandboxed browser cannot provide).
+production regardless of whether it was the actual cause.
+
+Direct live-production test (2026-08-23, same session, using a real
+Chrome browser this session had access to — not the sandboxed one used
+above): first confirmed via console (`[vite] connecting...`/`connected.`,
+the `@vite/client` script) that `https://animate.creatrweb.com` is, as of
+this test, **still serving Vite's dev server**, i.e. task 102/#133's fix
+has not yet been deployed to production despite being merged — the
+republish/redeploy itself is a separate, user-authorized action this
+session cannot take. With that caveat, tested "Enable camera" directly
+against live production, signed in as the real account, on the real
+"Blank canvas" project's editor (`Tools → Camera → Live camera`): clicking
+it correctly called `getUserMedia`, the UI correctly showed "Starting
+camera…", and it stayed there indefinitely with no error and no MediaPipe
+CDN request ever appearing in the network log — an exact match for the
+user's original "does nothing" report. `navigator.permissions.query({name:
+'camera'})` on that same tab reported `state: "prompt"` (not `"denied"`),
+confirming the browser has a native, OS-level camera-permission dialog
+outstanding and is correctly waiting on it — this is not a silent
+failure, a swallowed rejection, or a code bug at all; `getUserMedia`'s
+promise is genuinely pending real user input on a dialog outside the
+page (and outside what CDP-based browser automation can see or interact
+with — granting media permissions through a synthetic click is a
+deliberate browser security boundary, not a tooling gap). Left the
+control in a clean `'stopped'` state afterward (see `Stop camera`) and
+closed the tab.
+Given `state: "prompt"` rather than `"denied"`, this specific run cannot
+distinguish between two remaining explanations for the original report:
+(a) the user's browser/OS was showing this same native prompt but it went
+unnoticed (easy to miss if it doesn't grab visual focus, or if a
+previous, unrelated site's camera-permission decision is being confused
+for this one), or (b) some other environment has permission pre-set to
+`"denied"` or has no camera device at all, in which case the app's
+already-verified-working denial/error path (`role="alert"`, Retry) should
+have fired but for some reason didn't in that instance. Distinguishing
+these needs the same operator step either way: reproduce with the actual
+affected browser/OS, watching specifically for a native permission
+prompt (not just the page's own UI) before concluding anything is broken
+in application code.
+This task remains blocked on the same two things as before — a live
+deployment actually running task 102's fix (confirmed above: not yet
+deployed), and a human operator who can answer a real, native browser
+permission dialog — both require the user's own action (publishing; a
+real permission decision) that no browser-automation tooling available to
+this session can substitute for.
 
 ## 102. Serve the production deployment from the built frontend bundle, not the Vite dev server
 Goal: The published Replit deployment serves the production `dist/` build

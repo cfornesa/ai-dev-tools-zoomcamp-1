@@ -247,6 +247,48 @@ describe('DraftAutosaveController debounce and race safety', () => {
     realDb.close();
   });
 
+  it('issue #125 regression: a write mid-flight (timer fired, awaiting the IndexedDB handle) at the exact moment clearDraft() runs during Save is still correctly superseded', async () => {
+    const identity = { projectId: 'proj-save-race', userKey: 'alice', sessionId: 'sess-1' };
+    const baseline = scene();
+    const realDb = await openDraftDatabase();
+
+    let resolveOpen: (db: IDBDatabase) => void = () => {};
+    const controller = new DraftAutosaveController({
+      debounceMs: DEBOUNCE_MS,
+      openDb: () =>
+        new Promise<IDBDatabase>((resolve) => {
+          resolveOpen = resolve;
+        }),
+    });
+
+    controller.schedule(
+      identity,
+      baseline,
+      scene({ shapes: [{ id: 'about-to-be-superseded', type: 'circle' }] }),
+    );
+    await wait(DEBOUNCE_MS + 20);
+    // The debounced write's timer has fired and it's now blocked awaiting
+    // the (still-pending, shared) DB handle -- exactly the "mid-flight"
+    // moment this criterion is about. Save fires clearDraft() for the same
+    // project at this exact instant: `cancelPending()` bumps `seq`
+    // synchronously (before clearDraft's own `await this.getDb()`, which
+    // shares the same still-pending open), so the stale write is already
+    // superseded regardless of when the DB handle actually resolves.
+    const clearPromise = controller.clearDraft('proj-save-race');
+
+    // Now unblock the DB handle both clearDraft() and the stale write are
+    // awaiting. The stale write's post-open seq check must find itself
+    // superseded and abort -- it must never resurrect a draft clearDraft()
+    // is in the middle of removing.
+    resolveOpen(realDb);
+    await clearPromise;
+    await wait(40);
+
+    expect(controller.getLastWrite()).toBeNull();
+    expect(await controller.readDraft('proj-save-race')).toBeNull();
+    realDb.close();
+  });
+
   it('clearDraft cancels any pending write and removes the persisted record', async () => {
     const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
     const identity = { projectId: 'proj-clear', userKey: 'alice', sessionId: 'sess-1' };
@@ -323,5 +365,59 @@ describe('DraftAutosaveController debounce and race safety', () => {
     const draftA = await controller.readDraft('proj-a');
     expect(draftA?.projectId).toBe('proj-a');
     expect((draftA?.sceneJson.shapes as unknown[])?.[0]).toMatchObject({ id: 'a1' });
+  });
+
+  // Issue #125: restoring a historical version or accepting an AI proposal
+  // both replace the working copy with content that already matches what
+  // was just persisted server-side -- which still reaches `schedule()` as
+  // an ordinary working-copy change. Without a "nothing unsaved" gate, that
+  // would debounce-write a redundant "no changes since last save" draft a
+  // moment later, duplicating content the new persisted version already
+  // captures. These cover `markClean()`/`resetCleanBaseline()` directly.
+  describe('markClean/resetCleanBaseline gating', () => {
+    it('prevents scheduling a write for a snapshot matching the clean baseline, cancelling any already-pending one', async () => {
+      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const identity = { projectId: 'proj-clean', userKey: 'alice', sessionId: 'sess-1' };
+      const clean = scene({ shapes: [{ id: 'saved', type: 'circle' }] });
+
+      // A pending write from before the clean baseline was set.
+      controller.schedule(
+        identity,
+        scene(),
+        scene({ shapes: [{ id: 'stale-pending', type: 'circle' }] }),
+      );
+      controller.markClean(clean);
+      controller.schedule(identity, scene(), clean);
+
+      await wait(DEBOUNCE_MS + 40);
+      expect(controller.getLastWrite()).toBeNull();
+    });
+
+    it('resumes scheduling once a genuine edit differs from the clean baseline', async () => {
+      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const identity = { projectId: 'proj-resume', userKey: 'alice', sessionId: 'sess-1' };
+      const clean = scene();
+
+      controller.markClean(clean);
+      controller.schedule(identity, clean, scene({ shapes: [{ id: 'new-edit', type: 'circle' }] }));
+
+      await wait(DEBOUNCE_MS + 40);
+      const write = controller.getLastWrite();
+      expect(write).not.toBeNull();
+      expect((write?.sceneJson.shapes as unknown[])?.[0]).toMatchObject({ id: 'new-edit' });
+    });
+
+    it('resetCleanBaseline restores normal scheduling', async () => {
+      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const identity = { projectId: 'proj-reset', userKey: 'alice', sessionId: 'sess-1' };
+      const snapshot = scene({ shapes: [{ id: 's1', type: 'circle' }] });
+
+      controller.markClean(snapshot);
+      controller.resetCleanBaseline();
+      controller.schedule(identity, null, snapshot);
+
+      await wait(DEBOUNCE_MS + 40);
+      expect(controller.getLastWrite()).not.toBeNull();
+    });
   });
 });

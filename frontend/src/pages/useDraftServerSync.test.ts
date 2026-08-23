@@ -167,6 +167,130 @@ describe('useDraftServerSync', () => {
     expect(deleteSpy).toHaveBeenCalledWith('proj-1', expect.any(String));
   });
 
+  it('stops the periodic timer on unmount, so no dangling interval outlives the component', async () => {
+    const upsertSpy = vi.spyOn(draftsApi, 'upsertDraftSync').mockResolvedValue({
+      draft_json: scene(),
+      client_seq: 1,
+      last_autosaved_at: '2026-01-01T00:00:00Z',
+      expires_at: '2026-01-02T00:00:00Z',
+      applied: true,
+    });
+
+    const { unmount } = renderHook(() =>
+      useDraftServerSync('proj-1', scene(), { intervalMs: 1000 }),
+    );
+    unmount();
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(upsertSpy).not.toHaveBeenCalled();
+  });
+
+  // Issue #125: `DraftServerSyncController`'s periodic setInterval kept
+  // firing after `deleteServerDraft()` cleared the row once, unconditionally
+  // PUTing the working copy back on its next tick even though nothing had
+  // changed. These reproduce that regression against the hook (the real
+  // wiring `EditorWorkspace.tsx` calls into) rather than only the
+  // underlying controller.
+  describe('issue #125: deleteServerDraft gates further writes until a real edit', () => {
+    function okResponse() {
+      return {
+        draft_json: scene(),
+        client_seq: 1,
+        last_autosaved_at: '2026-01-01T00:00:00Z',
+        expires_at: '2026-01-02T00:00:00Z',
+        applied: true,
+      };
+    }
+
+    it('reproduces the evidence sequence (POST /versions/ -> DELETE /draft/<session>/ -> would-be PUT /draft/<session>/) and asserts the PUT no longer happens', async () => {
+      const upsertSpy = vi.spyOn(draftsApi, 'upsertDraftSync').mockResolvedValue(okResponse());
+      vi.spyOn(draftsApi, 'deleteDraftSync').mockResolvedValue(undefined);
+      const snapshot = scene();
+
+      const { result } = renderHook(() =>
+        useDraftServerSync('proj-1', snapshot, { intervalMs: 1000 }),
+      );
+
+      // Simulates EditorWorkspace.tsx's handleVersionSaved: an explicit
+      // Save (POST /versions/, not modeled here since this hook doesn't
+      // call it) already completed, and this is the cleanup call it makes
+      // right after.
+      await result.current.deleteServerDraft();
+
+      // The next two periodic ticks (well past DEFAULT_SYNC_INTERVAL_MS)
+      // must not recreate the draft, since the working copy hasn't changed.
+      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(upsertSpy).not.toHaveBeenCalled();
+    });
+
+    it('resumes periodic writes once the working copy actually changes after deleteServerDraft', async () => {
+      const upsertSpy = vi.spyOn(draftsApi, 'upsertDraftSync').mockResolvedValue(okResponse());
+      vi.spyOn(draftsApi, 'deleteDraftSync').mockResolvedValue(undefined);
+
+      const { result, rerender } = renderHook(
+        ({ workingCopy }: { workingCopy: ReturnType<typeof scene> }) =>
+          useDraftServerSync('proj-1', workingCopy, { intervalMs: 1000 }),
+        { initialProps: { workingCopy: scene() } },
+      );
+
+      await result.current.deleteServerDraft();
+      rerender({ workingCopy: scene('scene-2') });
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(upsertSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('deleteServerDraft accepts a snapshotOverride (for restore/AI-accept, whose workingCopy prop has not re-rendered yet)', async () => {
+      const upsertSpy = vi.spyOn(draftsApi, 'upsertDraftSync').mockResolvedValue(okResponse());
+      vi.spyOn(draftsApi, 'deleteDraftSync').mockResolvedValue(undefined);
+      const restoredScene = scene('restored-scene');
+
+      // The hook's own `workingCopy` prop still holds the pre-restore
+      // scene (mirroring EditorWorkspace.tsx calling this synchronously
+      // before its own re-render lands) -- the override must be what gets
+      // marked clean, not the stale prop.
+      const { result } = renderHook(() =>
+        useDraftServerSync('proj-1', scene('pre-restore-scene'), { intervalMs: 1000 }),
+      );
+
+      await result.current.deleteServerDraft(restoredScene);
+      result.current.syncAfterMeaningfulAction(restoredScene);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(upsertSpy).not.toHaveBeenCalled();
+    });
+
+    it('surfaces a failed cleanup delete via getLastFailure instead of silently swallowing it', async () => {
+      vi.spyOn(draftsApi, 'deleteDraftSync').mockRejectedValue(new Error('network down'));
+
+      const { result } = renderHook(() => useDraftServerSync('proj-1', scene()));
+
+      await result.current.deleteServerDraft();
+
+      expect(result.current.getLastFailure()).toMatchObject({
+        kind: 'unknown',
+        message: 'network down',
+      });
+    });
+
+    it('a failed cleanup delete still gates periodic sync (the orphaned row stays inert rather than being kept alive)', async () => {
+      const upsertSpy = vi.spyOn(draftsApi, 'upsertDraftSync').mockResolvedValue(okResponse());
+      vi.spyOn(draftsApi, 'deleteDraftSync').mockRejectedValue(new Error('network down'));
+      const snapshot = scene();
+
+      const { result } = renderHook(() =>
+        useDraftServerSync('proj-1', snapshot, { intervalMs: 1000 }),
+      );
+
+      await result.current.deleteServerDraft();
+      await vi.advanceTimersByTimeAsync(2000);
+
+      expect(upsertSpy).not.toHaveBeenCalled();
+    });
+  });
+
   it('offline/timeout/validation failures surface via getLastFailure without throwing', async () => {
     const upsertSpy = vi
       .spyOn(draftsApi, 'upsertDraftSync')

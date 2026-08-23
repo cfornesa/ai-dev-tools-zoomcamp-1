@@ -403,6 +403,13 @@ function EditorWorkspace() {
   function handleVersionSaved(version: SceneVersion) {
     setPersistedVersion(version);
     setProject((current) => (current ? { ...current, current_version: version.id } : current));
+    // Issue #125: `clearDraft()`/`deleteServerDraft()` called with no
+    // argument default to the current `workingCopy` — accurate here
+    // because Save persisted exactly that content (this callback never
+    // replaces `workingCopy` itself), so it also becomes the "no unsaved
+    // changes" baseline that stops periodic/meaningful-action/page-hide
+    // sync from recreating a draft afterward (see `draftServerSync.ts`'s
+    // `markClean()`).
     void draftAutosave.clearDraft();
     void draftServerSync.deleteServerDraft();
     // An explicit Save just persisted the authoritative version, so a
@@ -412,6 +419,11 @@ function EditorWorkspace() {
   }
 
   async function handleConfirmExit() {
+    // Issue #125: same default-to-`workingCopy` baseline as
+    // `handleVersionSaved` above — after this, the working copy won't
+    // change again in this component (the confirmation navigates away),
+    // so no queued/in-flight periodic write can recreate a draft even if
+    // the component hasn't fully unmounted yet.
     await draftAutosave.clearDraft();
     void draftServerSync.deleteServerDraft();
     setShowExitConfirm(false);
@@ -1824,16 +1836,21 @@ function EditorWorkspace() {
                   setProject((current) =>
                     current ? { ...current, current_version: version.id } : current,
                   );
-                  // Task 43: restoring a historical version is this
-                  // codebase's defined "meaningful action" — sync the
-                  // restored working copy to the server draft immediately
-                  // rather than waiting for the next periodic tick. Passes
-                  // `version.scene_json` explicitly (see
-                  // `useDraftServerSync.ts`'s comment on
+                  // Issue #125: restoring a historical version already
+                  // persists a new authoritative version server-side, the
+                  // same as an explicit Save — so, like Save, it must clear
+                  // both drafts rather than the old behavior of calling
+                  // `syncAfterMeaningfulAction`, which re-wrote a server
+                  // draft duplicating the content this restore just
+                  // persisted (and never cleared the local one at all).
+                  // Passes `version.scene_json` explicitly (see
+                  // `useDraftAutosave`/`useDraftServerSync`'s comments on
                   // `snapshotOverride`) rather than relying on
-                  // `workingCopy`, which hasn't re-rendered into this
-                  // hook's ref yet.
-                  draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
+                  // `workingCopy`, which hasn't re-rendered into either
+                  // hook's tracking yet.
+                  const restoredScene = structuredClone(version.scene_json);
+                  void draftAutosave.clearDraft(restoredScene);
+                  void draftServerSync.deleteServerDraft(restoredScene);
                 }}
               />
             )}
@@ -1871,8 +1888,14 @@ function EditorWorkspace() {
                   setProject((current) =>
                     current ? { ...current, current_version: version.id } : current,
                   );
-                  void draftAutosave.clearDraft();
-                  draftServerSync.syncAfterMeaningfulAction(structuredClone(version.scene_json));
+                  // Issue #125: same treatment as `onRestored` above — an
+                  // accepted AI proposal already persists a new
+                  // authoritative version server-side, so it must clear
+                  // both drafts rather than re-write a server draft
+                  // duplicating that just-persisted content.
+                  const acceptedScene = structuredClone(version.scene_json);
+                  void draftAutosave.clearDraft(acceptedScene);
+                  void draftServerSync.deleteServerDraft(acceptedScene);
                 }}
               />
             )}

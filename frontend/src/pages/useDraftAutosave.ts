@@ -86,6 +86,10 @@ export function useDraftAutosave(
   useEffect(() => {
     if (previousProjectIdRef.current !== projectId) {
       controllerRef.current?.cancelPending();
+      // Issue #125: a clean baseline recorded for the previous project must
+      // never gate scheduling for this one — see `resetCleanBaseline()`'s
+      // own doc comment.
+      controllerRef.current?.resetCleanBaseline();
       previousProjectIdRef.current = projectId;
       // The working copy can still contain the previous project's scene for
       // this render. Do not attribute that stale snapshot to the new project;
@@ -121,10 +125,21 @@ export function useDraftAutosave(
   }, []);
 
   return {
-    clearDraft: () =>
-      projectId
-        ? (controllerRef.current?.clearDraft(projectId) ?? Promise.resolve())
-        : Promise.resolve(),
+    // Issue #125: `snapshotOverride` mirrors `useDraftServerSync.ts`'s
+    // `syncAfterMeaningfulAction`/`deleteServerDraft` pattern — restoring a
+    // version or accepting an AI proposal must mark the *restored/accepted*
+    // scene clean, not whatever `workingCopy` this render still holds
+    // (`setWorkingCopy` hasn't re-rendered into it yet at the point those
+    // callers invoke this synchronously). Explicit Save and confirmed Exit
+    // both already call this with no argument, defaulting to the current
+    // `workingCopy` — accurate for them since neither replaces it first.
+    clearDraft: (snapshotOverride?: SceneDocument | null) => {
+      if (!projectId) return Promise.resolve();
+      controllerRef.current?.markClean(
+        snapshotOverride !== undefined ? snapshotOverride : workingCopy,
+      );
+      return controllerRef.current?.clearDraft(projectId) ?? Promise.resolve();
+    },
     readDraft: () =>
       projectId
         ? (controllerRef.current?.readDraft(projectId) ?? Promise.resolve(null))

@@ -234,4 +234,135 @@ describe('DraftServerSyncController', () => {
     // Not applied, so lastSyncedAt is not updated to this response's value either.
     expect(controller.getLastSyncedAt()).toBeNull();
   });
+
+  // Issue #125: `DraftServerSyncController`'s periodic `setInterval` used to
+  // fire unconditionally with whatever `getSnapshot()` currently returns —
+  // including right after `deleteServerDraft()` (`../pages/useDraftServerSync.ts`)
+  // had just cleared the row, recreating it on the very next tick. These
+  // cover the "no unsaved changes since the last markClean() baseline"
+  // gate directly against the controller for every path that can write:
+  // periodic tick, meaningful action, and page hide.
+  describe('markClean/resetCleanBaseline gating', () => {
+    it('stops periodic ticks whose snapshot matches the clean baseline', async () => {
+      const upsert = vi.fn().mockResolvedValue(okResponse());
+      const controller = new DraftServerSyncController({ intervalMs: 1000, upsert });
+      const snapshot = scene();
+
+      controller.start(IDENTITY, () => snapshot);
+      controller.markClean(snapshot);
+
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(upsert).not.toHaveBeenCalled();
+    });
+
+    it('does not gate a snapshot that genuinely differs from the clean baseline', async () => {
+      const upsert = vi.fn().mockResolvedValue(okResponse());
+      const controller = new DraftServerSyncController({ intervalMs: 1000, upsert });
+
+      controller.markClean(scene('clean-baseline'));
+      controller.start(IDENTITY, () => scene('dirty-again'));
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(upsert).toHaveBeenCalledTimes(1);
+    });
+
+    it('resumes writing on the normal schedule once a real edit follows markClean, with no further action needed', async () => {
+      const upsert = vi.fn().mockResolvedValue(okResponse());
+      const controller = new DraftServerSyncController({ intervalMs: 1000, upsert });
+      let snapshot = scene('clean');
+
+      controller.start(IDENTITY, () => snapshot);
+      controller.markClean(scene('clean'));
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(upsert).not.toHaveBeenCalled();
+
+      // A real edit changes what getSnapshot() returns -- every subsequent
+      // tick sees a snapshot differing from the (unchanged) baseline and
+      // resumes writing, with no explicit "un-gate" call required.
+      snapshot = scene('edited');
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(upsert).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(upsert).toHaveBeenCalledTimes(2);
+    });
+
+    it('resetCleanBaseline restores normal always-sync behavior', async () => {
+      const upsert = vi.fn().mockResolvedValue(okResponse());
+      const controller = new DraftServerSyncController({ intervalMs: 1000, upsert });
+      const snapshot = scene();
+
+      controller.markClean(snapshot);
+      controller.resetCleanBaseline();
+      controller.start(IDENTITY, () => snapshot);
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(upsert).toHaveBeenCalledTimes(1);
+    });
+
+    it('syncOnPageHide is skipped when the snapshot matches the clean baseline, but still fires when genuinely dirty at hide time', () => {
+      const upsert = vi.fn().mockResolvedValue(okResponse());
+      const controller = new DraftServerSyncController({ upsert });
+      const snapshot = scene();
+
+      controller.markClean(snapshot);
+      controller.syncOnPageHide(IDENTITY, snapshot);
+      expect(upsert).not.toHaveBeenCalled();
+
+      controller.syncOnPageHide(IDENTITY, scene('genuinely-dirty'));
+      expect(upsert).toHaveBeenCalledTimes(1);
+    });
+
+    it('syncAfterMeaningfulAction skips the immediate sync when clean, but still restarts the periodic timer', async () => {
+      const upsert = vi.fn().mockResolvedValue(okResponse());
+      const controller = new DraftServerSyncController({ intervalMs: 1000, upsert });
+      const snapshot = scene();
+
+      controller.start(IDENTITY, () => snapshot);
+      controller.markClean(snapshot);
+
+      controller.syncAfterMeaningfulAction(IDENTITY, snapshot, () => snapshot);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(upsert).not.toHaveBeenCalled();
+
+      // The restarted timer is still gated the same way -- no PUT even
+      // once the (restarted) interval elapses, since nothing changed.
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(upsert).not.toHaveBeenCalled();
+    });
+
+    it('two controllers (representing two tabs/sessions of the same project) gate independently', async () => {
+      const upsertA = vi.fn().mockResolvedValue(okResponse());
+      const upsertB = vi.fn().mockResolvedValue(okResponse());
+      const controllerA = new DraftServerSyncController({ intervalMs: 1000, upsert: upsertA });
+      const controllerB = new DraftServerSyncController({ intervalMs: 1000, upsert: upsertB });
+      const snapshot = scene();
+
+      // Tab A just saved (clean); tab B is still actively editing the same
+      // project under a different session id and never calls markClean.
+      controllerA.start(IDENTITY, () => snapshot);
+      controllerA.markClean(snapshot);
+      controllerB.start({ projectId: IDENTITY.projectId, sessionId: 'sess-2' }, () => snapshot);
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(upsertA).not.toHaveBeenCalled();
+      expect(upsertB).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('reportDeleteFailure', () => {
+    it('records a classified failure retrievable via getLastFailure, for the cleanup delete call made outside this controller', () => {
+      const controller = new DraftServerSyncController({ upsert: vi.fn() });
+      expect(controller.getLastFailure()).toBeNull();
+
+      controller.reportDeleteFailure(new Error('network down'));
+
+      expect(controller.getLastFailure()).toMatchObject({
+        kind: 'unknown',
+        message: 'network down',
+      });
+    });
+  });
 });

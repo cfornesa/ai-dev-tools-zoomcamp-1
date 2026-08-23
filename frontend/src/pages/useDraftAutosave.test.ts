@@ -158,6 +158,76 @@ describe('useDraftAutosave', () => {
     db.close();
   });
 
+  // Issue #125: restoring a historical version or accepting an AI proposal
+  // replace `workingCopy` with content matching what was just persisted —
+  // which still reaches this hook's `schedule()` effect as an ordinary
+  // working-copy change. Without gating, that would debounce-write a
+  // redundant "no changes since last save" local draft a moment later.
+  describe('issue #125: clearDraft gates further scheduling until a real edit', () => {
+    it('a workingCopy change matching clearDraft(snapshotOverride) does not write a redundant draft', async () => {
+      const persisted = version(scene());
+      const restoredScene = scene({ shapes: [{ id: 'restored', type: 'circle' }] });
+      const { result, rerender } = renderHook(
+        ({ workingCopy }: { workingCopy: SceneDocument }) =>
+          useDraftAutosave('proj-1', workingCopy, persisted, { debounceMs: DEBOUNCE_MS }),
+        { initialProps: { workingCopy: scene() } },
+      );
+
+      // Mirrors EditorWorkspace.tsx's onRestored: clearDraft() is called
+      // with the restored scene explicitly (workingCopy hasn't re-rendered
+      // into this hook yet), then the component's own setWorkingCopy call
+      // lands as an ordinary prop change on the next render.
+      await result.current.clearDraft(restoredScene);
+      rerender({ workingCopy: restoredScene });
+
+      await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS + 60));
+      expect(await result.current.readDraft()).toBeNull();
+    });
+
+    it('resumes autosave once a genuine edit follows clearDraft', async () => {
+      const persisted = version(scene());
+      const { result, rerender } = renderHook(
+        ({ workingCopy }: { workingCopy: SceneDocument }) =>
+          useDraftAutosave('proj-2', workingCopy, persisted, { debounceMs: DEBOUNCE_MS }),
+        { initialProps: { workingCopy: scene() } },
+      );
+
+      await result.current.clearDraft();
+      rerender({ workingCopy: scene({ shapes: [{ id: 'new-edit', type: 'rect' }] }) });
+
+      await waitFor(async () => {
+        const draft = await result.current.readDraft();
+        expect(draft).not.toBeNull();
+      });
+    });
+
+    it('resetCleanBaseline (via a project switch) does not leak a clean baseline from one project to another', async () => {
+      const persisted = version(scene());
+      const { result, rerender } = renderHook(
+        ({ projectId, workingCopy }: { projectId: string; workingCopy: SceneDocument }) =>
+          useDraftAutosave(projectId, workingCopy, persisted, { debounceMs: DEBOUNCE_MS }),
+        { initialProps: { projectId: 'proj-a', workingCopy: scene() } },
+      );
+
+      // Project A was just saved/cleared with this exact scene as the
+      // clean baseline.
+      await result.current.clearDraft(scene());
+
+      // Switching to project B with the SAME scene content must not be
+      // gated by project A's now-stale baseline.
+      rerender({ projectId: 'proj-b', workingCopy: scene() });
+      rerender({
+        projectId: 'proj-b',
+        workingCopy: scene({ shapes: [{ id: 'b1', type: 'circle' }] }),
+      });
+
+      await waitFor(async () => {
+        const draft = await result.current.readDraft();
+        expect(draft).not.toBeNull();
+      });
+    });
+  });
+
   it('is safe (does not throw) when indexedDB is unavailable', async () => {
     const original = (globalThis as { indexedDB?: unknown }).indexedDB;
     // @ts-expect-error simulating an environment without IndexedDB

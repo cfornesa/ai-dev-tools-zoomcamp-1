@@ -313,6 +313,10 @@ export class DraftAutosaveController {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private lastFailure: DraftAutosaveFailure | null = null;
   private lastWrite: DraftRecord | null = null;
+  // Issue #125: mirrors `DraftServerSyncController`'s "no unsaved changes"
+  // baseline — see `markClean()`'s own doc comment below.
+  private cleanBaselineSet = false;
+  private cleanBaseline: SceneDocument | null = null;
 
   constructor(options: DraftAutosaveControllerOptions = {}) {
     this.debounceMs = options.debounceMs ?? DEFAULT_DEBOUNCE_MS;
@@ -320,8 +324,25 @@ export class DraftAutosaveController {
   }
 
   /** Schedules a debounced write. Safe to call on every working-copy
-   * change; only the write from the last call in a burst ever persists. */
+   * change; only the write from the last call in a burst ever persists.
+   *
+   * Issue #125: a no-op (cancelling any still-pending write instead of
+   * scheduling a new one) whenever `current` matches the clean baseline
+   * `markClean()` most recently recorded — e.g. restoring a historical
+   * version or accepting an AI proposal both replace the working copy
+   * with content that already matches what was just persisted, which
+   * still reaches this method as an ordinary `workingCopy` change; without
+   * this check it would debounce-write a redundant "no changes since last
+   * save" draft a moment later. */
   schedule(identity: DraftIdentity, baseline: SceneDocument | null, current: SceneDocument): void {
+    if (this.isClean(current)) {
+      if (this.timer !== null) {
+        clearTimeout(this.timer);
+        this.timer = null;
+      }
+      this.seq += 1;
+      return;
+    }
     if (this.timer !== null) {
       clearTimeout(this.timer);
     }
@@ -330,6 +351,30 @@ export class DraftAutosaveController {
       this.timer = null;
       void this.performWrite(localSeq, identity, baseline, current);
     }, this.debounceMs);
+  }
+
+  /**
+   * Issue #125: marks `snapshot` as "nothing unsaved" — see
+   * `DraftServerSyncController.markClean()`'s doc comment for the full
+   * rationale, which applies identically here. Passing `null` marks "no
+   * draft should exist for any snapshot" as the clean state.
+   */
+  markClean(snapshot: SceneDocument | null): void {
+    this.cleanBaselineSet = true;
+    this.cleanBaseline = snapshot;
+  }
+
+  /** Discards the current clean baseline (if any) — called when the
+   * identity a baseline was scoped to (project) is about to change, so a
+   * baseline recorded for one project can never gate scheduling for
+   * another. */
+  resetCleanBaseline(): void {
+    this.cleanBaselineSet = false;
+    this.cleanBaseline = null;
+  }
+
+  private isClean(snapshot: SceneDocument): boolean {
+    return this.cleanBaselineSet && JSON.stringify(snapshot) === JSON.stringify(this.cleanBaseline);
   }
 
   private async performWrite(

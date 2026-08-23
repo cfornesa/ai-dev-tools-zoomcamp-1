@@ -57,6 +57,10 @@ export function useDraftServerSync(
     const controller = controllerRef.current;
     if (!projectId || !controller) return;
     const identity = { projectId, sessionId: sessionIdFor(projectId) };
+    // Issue #125: a clean baseline recorded for a previous project must
+    // never gate syncing for this one — see `resetCleanBaseline()`'s own
+    // doc comment.
+    controller.resetCleanBaseline();
     controller.start(identity, () => workingCopyRef.current);
     return () => controller.stop();
   }, [projectId]);
@@ -99,9 +103,25 @@ export function useDraftServerSync(
       const snapshot = snapshotOverride !== undefined ? snapshotOverride : workingCopyRef.current;
       controller.syncAfterMeaningfulAction(identity, snapshot, () => workingCopyRef.current);
     },
-    deleteServerDraft: (): Promise<void> => {
+    // Issue #125: mirrors `syncAfterMeaningfulAction`'s `snapshotOverride`
+    // pattern above — defaults to `workingCopyRef.current` (correct for
+    // explicit Save/confirmed Exit, which don't replace the working copy
+    // first), but restore/AI-accept must pass the just-restored/accepted
+    // scene explicitly since `workingCopyRef` hasn't re-rendered yet.
+    // Marks the controller's clean baseline *before* attempting the
+    // delete (not after), so the gate applies even if the delete itself
+    // fails — see `reportDeleteFailure`'s own doc comment on why a failed
+    // cleanup still must not let periodic sync keep refreshing the
+    // orphaned row.
+    deleteServerDraft: (snapshotOverride?: SceneDocument | null): Promise<void> => {
+      const controller = controllerRef.current;
       if (!projectId) return Promise.resolve();
-      return deleteDraftSync(projectId, sessionIdFor(projectId)).catch(() => undefined);
+      controller?.markClean(
+        snapshotOverride !== undefined ? snapshotOverride : workingCopyRef.current,
+      );
+      return deleteDraftSync(projectId, sessionIdFor(projectId)).catch((err: unknown) => {
+        controller?.reportDeleteFailure(err);
+      });
     },
     getLastFailure: () => controllerRef.current?.getLastFailure() ?? null,
     getLastSyncedAt: () => controllerRef.current?.getLastSyncedAt() ?? null,

@@ -120,6 +120,12 @@ export class DraftServerSyncController {
   private lastFailure: DraftServerSyncFailure | null = null;
   private lastSyncedAt: string | null = null;
   private syncAttempts = 0;
+  // Issue #125: "no unsaved changes" baseline set by `markClean()` — see
+  // that method's own doc comment for the full rationale. `cleanBaselineSet`
+  // is tracked separately from `cleanBaseline` because `null` is itself a
+  // valid baseline value (e.g. "no working copy exists").
+  private cleanBaselineSet = false;
+  private cleanBaseline: SceneDocument | null = null;
 
   constructor(options: DraftServerSyncControllerOptions = {}) {
     this.intervalMs = options.intervalMs ?? DEFAULT_SYNC_INTERVAL_MS;
@@ -130,11 +136,24 @@ export class DraftServerSyncController {
   /** Begins periodic syncing. `getSnapshot` is read fresh at every tick
    * (rather than captured once) so the timer never needs restarting just
    * because the working copy changed — only a project/session switch
-   * should call `stop()`+`start()` again. */
+   * should call `stop()`+`start()` again.
+   *
+   * Issue #125: each tick also re-checks `isClean()` against whatever
+   * baseline the most recent `markClean()` call set — a tick whose
+   * snapshot matches that baseline is skipped entirely (not even counted
+   * as a sync attempt), which is what stops this timer from recreating a
+   * server draft after `deleteServerDraft()` clears it. `start()` itself
+   * does not touch the clean baseline (a meaningful-action restart, see
+   * `syncAfterMeaningfulAction`, must not silently discard a baseline
+   * `markClean()` just set) — callers that need a fresh baseline call
+   * `resetCleanBaseline()` explicitly (see `../pages/useDraftServerSync.ts`'s
+   * project-switch effect). */
   start(identity: DraftServerSyncIdentity, getSnapshot: () => SceneDocument | null): void {
     this.stop();
     this.timer = setInterval(() => {
-      void this.performSync(identity, getSnapshot());
+      const snapshot = getSnapshot();
+      if (this.isClean(snapshot)) return;
+      void this.performSync(identity, snapshot);
     }, this.intervalMs);
   }
 
@@ -148,16 +167,52 @@ export class DraftServerSyncController {
   /** Task 43's meaningful-action trigger: syncs immediately rather than
    * waiting for the next periodic tick. Restarts the periodic timer (when
    * one is running) so the immediate sync and the next scheduled tick
-   * don't land back-to-back a moment later. */
+   * don't land back-to-back a moment later. Issue #125: skips the
+   * immediate sync (but still restarts the timer) when `snapshot` matches
+   * the current clean baseline — see `start()`'s doc comment. */
   syncAfterMeaningfulAction(
     identity: DraftServerSyncIdentity,
     snapshot: SceneDocument | null,
     getSnapshot?: () => SceneDocument | null,
   ): void {
-    void this.performSync(identity, snapshot);
+    if (!this.isClean(snapshot)) {
+      void this.performSync(identity, snapshot);
+    }
     if (this.timer !== null && getSnapshot) {
       this.start(identity, getSnapshot);
     }
+  }
+
+  /**
+   * Issue #125: marks `snapshot` (typically the working copy at the exact
+   * moment of an explicit Save, a confirmed Exit-without-saving, a version
+   * restore, or an AI-proposal accept) as "nothing unsaved" — every sync
+   * path above (periodic tick, meaningful action, page hide) skips writing
+   * for as long as the snapshot it would send still matches this baseline.
+   * The moment a real edit makes the working copy differ from `snapshot`
+   * again, every path resumes writing on its normal schedule with no
+   * further action needed — there is nothing to "unmark," since the
+   * comparison is re-evaluated fresh every time. Passing `null` marks "no
+   * draft should exist for any snapshot" as the clean state (matches a
+   * project with no working copy at all). */
+  markClean(snapshot: SceneDocument | null): void {
+    this.cleanBaselineSet = true;
+    this.cleanBaseline = snapshot;
+  }
+
+  /** Discards the current clean baseline (if any), returning to this
+   * controller's original always-sync behavior until `markClean()` is
+   * called again. Used when the identity a baseline was scoped to (e.g.
+   * project) is about to change — a baseline recorded for one project must
+   * never gate syncing for a different one. */
+  resetCleanBaseline(): void {
+    this.cleanBaselineSet = false;
+    this.cleanBaseline = null;
+  }
+
+  private isClean(snapshot: SceneDocument | null): boolean {
+    if (!this.cleanBaselineSet) return false;
+    return JSON.stringify(snapshot) === JSON.stringify(this.cleanBaseline);
   }
 
   /**
@@ -177,9 +232,16 @@ export class DraftServerSyncController {
    * Never awaited by the caller — the returned promise is intentionally
    * not returned from this method, so nothing here can delay or block
    * navigation.
+   *
+   * Issue #125: also skipped when `snapshot` matches the current clean
+   * baseline (see `markClean()`) — e.g. the page is hidden immediately
+   * after a Save completed and nothing has changed since. Still fires
+   * normally whenever the working copy is genuinely dirty at hide time,
+   * preserving the crash-recovery purpose this exists for.
    */
   syncOnPageHide(identity: DraftServerSyncIdentity, snapshot: SceneDocument | null): void {
     if (!snapshot) return;
+    if (this.isClean(snapshot)) return;
     const localSeq = ++this.seq;
     this.syncAttempts += 1;
     this.upsert(
@@ -240,6 +302,23 @@ export class DraftServerSyncController {
   private applyFailure(localSeq: number, err: unknown): void {
     if (this.isStale(localSeq)) return;
     this.highestSeenSeq = localSeq;
+    this.lastFailure = classifyFailure(err);
+  }
+
+  /**
+   * Issue #125: the cleanup `DELETE /draft/<session>/` call
+   * (`../pages/useDraftServerSync.ts`'s `deleteServerDraft`) is made
+   * directly against the API, not through this controller's own scheduler
+   * — routed through here on failure so it is visible via the same
+   * `getLastFailure()` the periodic/meaningful-action/page-hide paths
+   * already use, and therefore surfaced through `EditorWorkspace.tsx`'s
+   * existing `draftFailureNotice` polling. A failed cleanup must never
+   * roll back or hide a successful Save — this only records the failure
+   * for display, it never affects `markClean()`'s own gating, so the
+   * orphaned row simply stays stale/inert until it expires or a cleanup
+   * command reclaims it, per this controller's periodic-sync gate.
+   */
+  reportDeleteFailure(err: unknown): void {
     this.lastFailure = classifyFailure(err);
   }
 

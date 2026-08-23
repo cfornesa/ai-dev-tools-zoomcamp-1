@@ -657,6 +657,84 @@ test.describe('Local and server draft autosave', () => {
     expect(draftAfterSave.status()).toBe(404);
   });
 
+  test('issue #125: a periodic tick after explicit Save must not recreate the server draft, and resumes once a real edit follows', async ({
+    page,
+    context,
+  }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    const projectId = await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
+    const sessionId = await readSessionId(page, projectId);
+    if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
+    const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
+
+    await page.clock.install();
+    await page.getByRole('button', { name: 'Add circle' }).click();
+    await page.clock.fastForward(1700); // local debounce fires, seeding a local draft
+    expect(await readLocalDraft(page, projectId)).not.toBeNull();
+
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+
+    // Reproduces the exact evidence sequence from issue #125: POST
+    // /versions/ (the Save click above) -> DELETE /draft/<session>/
+    // (handleVersionSaved's cleanup) -> and, before this fix, a later PUT
+    // /draft/<session>/ from the next unguarded periodic tick recreating
+    // the row. Waiting past a full periodic interval (25s, plus margin)
+    // with nothing further edited must now produce no further PUT at all.
+    let putSeenDuringCleanInterval = false;
+    page.on('response', (response) => {
+      if (response.url().includes('/draft/') && response.request().method() === 'PUT') {
+        putSeenDuringCleanInterval = true;
+      }
+    });
+    await page.clock.fastForward(26_000);
+    expect(putSeenDuringCleanInterval).toBe(false);
+
+    const draftAfterInterval = await apiGet(context, draftPath);
+    expect(draftAfterInterval.status()).toBe(404);
+
+    // The fix must not permanently disable autosave for the rest of the
+    // session -- a genuine new edit resumes normal periodic syncing.
+    await page.getByRole('button', { name: 'Add rectangle' }).click();
+    const [resumedSync] = await Promise.all([
+      page.waitForResponse(
+        (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
+      ),
+      page.clock.fastForward(25_000),
+    ]);
+    expect(resumedSync.status()).toBe(200);
+  });
+
+  test('issue #125: reopening a project right after Save never shows the recovery prompt, whether reopened before or after a full sync interval', async ({
+    page,
+  }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    const projectId = await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
+
+    await page.clock.install();
+    await page.getByRole('button', { name: 'Add circle' }).click();
+    await page.clock.fastForward(1700);
+    expect(await readLocalDraft(page, projectId)).not.toBeNull();
+
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+
+    // Reopen before a full periodic interval would have elapsed.
+    await page.reload();
+    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+
+    // And again after virtual time equal to a full interval has passed --
+    // covers both issue #124's pre-existing NO_SCENE_CHANGES_SUMMARY
+    // filter and this task's "don't write while clean" fix as independent,
+    // overlapping safety nets, per the groomed spec's own wording.
+    await page.clock.fastForward(25_000);
+    await page.reload();
+    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+  });
+
   test('Exit without saving clears the local draft only after the confirmation is accepted, never on Cancel', async ({
     page,
   }) => {

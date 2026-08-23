@@ -619,8 +619,28 @@ Verification: Changed both `http://localhost:5173` fallback literals (`frontend/
 ## 93. Fix draft recovery prompt suppression when a stale/no-diff server draft outraces a real local draft
 Goal: `useDraftRecovery.ts`'s local/server conflict resolution never silently discards a real, different local draft just because the timestamp-winning candidate happens to look like a no-op.
 Description: Discovered while verifying backlog task 76/issue #97's readiness in this session — `e2e/aiAndRecovery.spec.ts:792` and `:929` fail reproducibly (not flaky, confirmed in isolation): the "Recover unsaved work?" prompt never appears. Root cause traced to `useDraftRecovery.ts`'s effect: `pickNewer(local, server)` picks only the later-timestamped candidate and discards the other entirely; when the server draft (written after the local one in both failing tests) has a content-identical diff against the persisted scene, its `changeSummary` computes to `NO_SCENE_CHANGES_SUMMARY`, and the `!winner || winner.changeSummary === NO_SCENE_CHANGES_SUMMARY` check then treats the whole comparison as "nothing to recover" — silently dropping the real local draft that was never itself evaluated.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: #124
+Verification: In `frontend/src/pages/useDraftRecovery.ts`, moved the
+`changeSummary === NO_SCENE_CHANGES_SUMMARY` no-op check to apply per-candidate
+(`realLocal`/`realServer`) before `pickNewer`, instead of only to whichever
+candidate wins the timestamp race — so a genuinely different candidate is
+never discarded just because it happened to lose that race against a no-op
+one. Added two regression cases to `useDraftRecovery.test.ts`: issue #124's
+exact scenario (older real local draft, newer no-op server draft, still
+prompts with the local candidate) and issue #112's original case (both
+candidates genuinely no-op, still resolves to `'none'`) run under the new
+code path. `npx vitest run src/pages/useDraftRecovery.test.ts` is 18/18;
+the full frontend suite (`npm test`) is 104 files / 1522 tests, all green;
+`npm run typecheck`, `prettier --check`, and `oxlint` are clean on both
+changed files. Verified against a real local PostgreSQL-backed Django
+(`AI_PROVIDER=fake`) + Vite stack, run exactly per AGENTS.md's documented
+steps: `E2E_BASE_URL=http://localhost:5000 npx playwright test -g "Discard
+clears both|local/server conflict: the genuinely newer"` — both previously-
+failing scenarios (`aiAndRecovery.spec.ts:792`, `:929`) now pass. The full
+`aiAndRecovery.spec.ts` file is 20/21 (one unrelated pre-existing flake,
+`:266`, confirmed passing in isolation — already noted as pre-existing
+parallel-run flakiness in task 92/issue #123's own verification).
 
 ## Completed execution task archive
 

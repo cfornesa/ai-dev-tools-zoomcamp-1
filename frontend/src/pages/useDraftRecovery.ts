@@ -193,7 +193,6 @@ export function useDraftRecovery(
         loadServerCandidate(projectId, sessionId, persistedSceneJson),
       ]);
       if (cancelled) return;
-      const winner = pickNewer(local, server);
       // A candidate whose own recorded diff is "no changes" is a leftover
       // from a debounced autosave/server-sync write that landed just
       // before (and independently of) an explicit Save or Exit already
@@ -203,8 +202,15 @@ export function useDraftRecovery(
       // completing. Recovering it would restore exactly what's already
       // persisted, so prompting for it would only ever look like an
       // unexplained, pointless interruption (issue #112) -- treat it the
-      // same as no candidate at all.
-      if (!winner || winner.changeSummary === NO_SCENE_CHANGES_SUMMARY) {
+      // same as no candidate at all. Applied per-candidate, BEFORE the
+      // timestamp race, so a genuinely different (real) candidate is never
+      // discarded just because it happened to lose the timestamp
+      // comparison against a no-op candidate (issue #124).
+      const realLocal = local && local.changeSummary !== NO_SCENE_CHANGES_SUMMARY ? local : null;
+      const realServer =
+        server && server.changeSummary !== NO_SCENE_CHANGES_SUMMARY ? server : null;
+      const winner = pickNewer(realLocal, realServer);
+      if (!winner) {
         setStatus('none');
         return;
       }

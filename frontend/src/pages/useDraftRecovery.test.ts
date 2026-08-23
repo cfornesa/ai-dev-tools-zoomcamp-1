@@ -234,6 +234,49 @@ describe('useDraftRecovery', () => {
     expect(mockedDeleteDraftSync).toHaveBeenCalledWith('proj-1', expect.any(String));
   });
 
+  it('issue #124: a real (older) local draft still surfaces when the newer server candidate is a no-op diff', async () => {
+    // The server draft wins the timestamp race but is structurally
+    // identical to the persisted scene (a stale, harmless autosave), while
+    // the local draft is genuinely different. The no-op check must apply
+    // per-candidate, before the timestamp race -- otherwise the real local
+    // draft is discarded just because it lost that race, not because its
+    // own diff was a no-op.
+    await seedLocalDraft('proj-1', {
+      savedAt: isoOffset(-2 * 60_000),
+      changeSummary: '1 shape added',
+    });
+    mockedReadDraftSync.mockResolvedValue({
+      draft_json: blankScene(),
+      client_seq: 1,
+      last_autosaved_at: isoOffset(-60_000),
+      expires_at: isoOffset(HOUR_MS),
+    });
+
+    const { result } = renderHook(() => useDraftRecovery('proj-1', true, blankScene()));
+    await waitFor(() => expect(result.current.status).toBe('prompt'));
+    expect(result.current.candidate).toMatchObject({
+      source: 'local',
+      changeSummary: '1 shape added',
+    });
+  });
+
+  it('issue #112 (regression under the #124 fix): both candidates being genuinely no-op still resolves to "none"', async () => {
+    await seedLocalDraft('proj-1', {
+      savedAt: isoOffset(-2 * 60_000),
+      changeSummary: 'No changes detected',
+    });
+    mockedReadDraftSync.mockResolvedValue({
+      draft_json: blankScene(),
+      client_seq: 1,
+      last_autosaved_at: isoOffset(-60_000),
+      expires_at: isoOffset(HOUR_MS),
+    });
+
+    const { result } = renderHook(() => useDraftRecovery('proj-1', true, blankScene()));
+    await waitFor(() => expect(result.current.status).toBe('none'));
+    expect(result.current.candidate).toBeNull();
+  });
+
   it('policy: an already-deleted server draft (local still present) reconciles to the local draft', async () => {
     await seedLocalDraft('proj-1');
     mockedReadDraftSync.mockRejectedValue(notFound());

@@ -374,8 +374,57 @@ visible). No out-of-scope issues found.
 ## 80. Make shapes and their attributes understandable through layers
 Goal: Make the layer/group/shape hierarchy the clear source of truth for selecting a shape and understanding which attributes the Inspector edits.
 Description: Present layers, groups, and shapes with readable stable labels and clear nesting/draw order. Synchronize canvas selection, outline selection, and Inspector context; identify the selected shape's friendly name/type and layer/group; make visibility and lock inheritance apparent; and preserve grouping, reordering, keyboard access, and schema-valid scene behavior. Do not redesign overall panel sizing or pointer-drag mechanics.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: #110
+Verification: Shapes carry no `name` field in `schema/scene.schema.json` (only
+layers/groups do), so `frontend/src/pages/sceneShapes.ts` grew a derived,
+non-persisted `shapeLabel(shape, allShapes)` — "Circle 2", "Rectangle 1" —
+from the shape's type plus its 1-based position among same-type shapes in
+draw-order/array order, replacing the old `type (uuid-prefix)` label
+everywhere a shape is named: the outline (`sceneOutline.ts`'s `buildOutline`
+now stamps a `label` field onto every shape row), the Shapes list and
+behavior-card target picker in `EditorWorkspace.tsx`/`BehaviorCardsPanel.tsx`.
+`sceneOutline.ts` also grew `outlineBreadcrumb(scene, id)`, returning the
+ordered layer → group → … → item path for the active selection;
+`useSceneEditor.ts` exposes it as `selectedBreadcrumb`, and
+`ShapeInspectorPanel.tsx` renders it ("Layer 1 › Group 1 › Circle 2") above
+the editable attribute fields so the Inspector visibly agrees with the
+outline/canvas on which item is selected. Selection was already unified
+end-to-end before this task (`useSceneEditor.ts`'s single `selectedShapeId`
+already served canvas clicks, the outline, the Shapes list, and the
+Inspector) — verified rather than re-plumbed, plus a new outline↔Shapes-list
+sync regression test. Group outline rows now carry cascaded
+`inheritedVisible`/`inheritedLocked` (via the existing `isEffectivelyLocked`
+OR-cascade) alongside their own `visible`/`locked` flags, so
+`SceneOutlinePanel.tsx` can show "(hidden (from an ancestor))" on a group
+nested under a hidden layer even while the group's own toggle still reads
+"Visible" — the same annotation shape rows already had, extended to groups.
+Added layer/group/shape kind icons and left-border row styling
+(`index.css`) for nesting legibility, on top of the existing depth-based
+indentation; kept the existing list/listitem + native-button keyboard
+pattern (Tab/Enter/Space) rather than inventing a treegrid, consistent with
+`CollapsibleSection.tsx`'s disclosure pattern elsewhere in the editor.
+`cd frontend && npm run lint && npm run typecheck && npm test` all green
+(1514 tests, up from 1503: new/updated coverage in `sceneShapes.test.ts`
+(`shapeLabel` ordinal numbering), `sceneOutline.test.ts` (`outlineBreadcrumb`
+path construction), `EditorWorkspace.outline.test.tsx` (friendly labels
+never contain a raw UUID, outline↔Shapes-list selection sync, a group's own
+vs. inherited visible/locked legibility), and
+`EditorWorkspace.shapeInspector.test.tsx` (breadcrumb rendering with and
+without an intervening group, and the empty-selection case). Manually
+verified against a real Django+PostgreSQL+Vite stack (signed in as the
+`e2e_fixtures` owner): added two circles and a rectangle (outline and Shapes
+list both showed "Circle 1"/"Circle 2"/"Rectangle 1"), grouped the two
+circles ("Group: Group 1 (2 item(s))"), selected "Circle 1" inside the group
+and confirmed the Inspector breadcrumb read "Layer 1 › Group 1 › Circle 1"
+above its style fields, then hid Layer 1 and confirmed the group row showed
+"(hidden (from an ancestor))" while its own toggle still read "Visible", the
+two circles/rectangle rows showed "(hidden)", and the Inspector's existing
+hidden-selection notice and breadcrumb both rendered together — then
+restored visibility, cleaned up the `e2e_fixtures`, and stopped both dev
+servers. Did not touch `EditorWorkspace.tsx`'s pointer-down handlers or
+`sceneShapes.ts`'s drag helpers (out of scope per issue #111). No schema
+change. No out-of-scope issues found.
 
 ## 81. Make selecting and dragging shapes obvious and reliable
 Goal: Give canvas manipulation clear affordances and predictable pointer behavior while preserving the keyboard-accessible outline path.

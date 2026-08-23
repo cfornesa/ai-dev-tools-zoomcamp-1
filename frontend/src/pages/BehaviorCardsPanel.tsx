@@ -74,7 +74,7 @@ function targetOptionsFor(sceneEditor: SceneEditor): TargetOption[] {
     ...sceneEditor.shapes.map((shape) => ({
       id: shape.id,
       scope: 'shape' as const,
-      label: shapeLabel(shape),
+      label: shapeLabel(shape, sceneEditor.shapes),
     })),
     ...sceneEditor.groups.map((group) => ({
       id: group.id,

@@ -16,10 +16,6 @@ import type { SceneEditor } from './useSceneEditor';
  * row's controls call straight through to that hook.
  */
 
-function capitalize(value: string): string {
-  return value.length === 0 ? value : value[0].toUpperCase() + value.slice(1);
-}
-
 type LayerNameFieldProps = {
   layerId: string;
   name: string;
@@ -135,7 +131,15 @@ function OutlineRowItem({ row, sceneEditor }: { row: OutlineRow; sceneEditor: Sc
 
   if (row.kind === 'layer') {
     return (
-      <li style={indent} data-outline-kind="layer" data-outline-id={row.id}>
+      <li
+        style={indent}
+        data-outline-kind="layer"
+        data-outline-id={row.id}
+        className="editor-outline-row editor-outline-row-layer"
+      >
+        <span className="editor-outline-kind-icon" aria-hidden="true">
+          ▥
+        </span>
         <span>Layer:</span>{' '}
         <LayerNameField layerId={row.id} name={row.name} onRename={sceneEditor.renameLayer} />
         <button
@@ -181,8 +185,27 @@ function OutlineRowItem({ row, sceneEditor }: { row: OutlineRow; sceneEditor: Sc
 
   if (row.kind === 'group') {
     const label = `Group: ${row.name} (${row.childCount} item(s))`;
+    // Task 80 (issue #110): make an ancestor's hidden/locked state visibly
+    // apparent on this group too, not just on the shapes underneath it —
+    // `inheritedVisible`/`inheritedLocked` fold in every ancestor group and
+    // the layer, the same OR-cascade `isEffectivelyLocked` already applies.
+    // This is purely a display annotation alongside the group's own
+    // Visible/Locked toggle buttons, which still show (and mutate) its own
+    // flag — an ancestor's state can't be changed from a descendant's row.
+    const inherited = [
+      row.inheritedVisible ? null : 'hidden (from an ancestor)',
+      !row.locked && row.inheritedLocked ? 'locked (from an ancestor)' : null,
+    ].filter(Boolean);
     return (
-      <li style={indent} data-outline-kind="group" data-outline-id={row.id}>
+      <li
+        style={indent}
+        data-outline-kind="group"
+        data-outline-id={row.id}
+        className="editor-outline-row editor-outline-row-group"
+      >
+        <span className="editor-outline-kind-icon" aria-hidden="true">
+          ▤
+        </span>
         <label>
           <input
             type="checkbox"
@@ -199,6 +222,9 @@ function OutlineRowItem({ row, sceneEditor }: { row: OutlineRow; sceneEditor: Sc
         >
           {label}
         </button>
+        {inherited.length > 0 && (
+          <span className="editor-outline-inherited-state"> ({inherited.join(', ')})</span>
+        )}
         <button
           type="button"
           aria-pressed={row.visible}
@@ -240,15 +266,27 @@ function OutlineRowItem({ row, sceneEditor }: { row: OutlineRow; sceneEditor: Sc
     );
   }
 
-  const label = `${capitalize(row.typeLabel)} shape`;
-  const moveLabel = `${label} (${row.id.slice(0, 8)})`;
+  // Task 80 (issue #110): `row.label` is the friendly, stable label
+  // (`sceneShapes.ts`'s `shapeLabel`, e.g. "Circle 2") — no more truncated
+  // UUID in the outline row, its move-button `aria-label`s, or the "Select
+  // for grouping" checkbox's label.
+  const label = row.label;
+  const moveLabel = label;
   const inherited = [
     row.inheritedVisible ? null : 'hidden',
     row.inheritedLocked ? 'locked' : null,
   ].filter(Boolean);
 
   return (
-    <li style={indent} data-outline-kind="shape" data-outline-id={row.id}>
+    <li
+      style={indent}
+      data-outline-kind="shape"
+      data-outline-id={row.id}
+      className="editor-outline-row editor-outline-row-shape"
+    >
+      <span className="editor-outline-kind-icon" aria-hidden="true">
+        ◆
+      </span>
       <label>
         <input
           type="checkbox"
@@ -265,7 +303,9 @@ function OutlineRowItem({ row, sceneEditor }: { row: OutlineRow; sceneEditor: Sc
       >
         {label}
       </button>
-      {inherited.length > 0 ? <span> ({inherited.join(', ')})</span> : null}
+      {inherited.length > 0 ? (
+        <span className="editor-outline-inherited-state"> ({inherited.join(', ')})</span>
+      ) : null}
       <button
         type="button"
         aria-label={`Move ${moveLabel} up`}

@@ -1624,7 +1624,7 @@ function EditorWorkspace() {
                       aria-pressed={shape.id === sceneEditor.selectedShapeId}
                       onClick={() => sceneEditor.selectShape(shape.id)}
                     >
-                      {shapeLabel(shape)}
+                      {shapeLabel(shape, sceneEditor.shapes)}
                     </button>
                   </li>
                 ))}

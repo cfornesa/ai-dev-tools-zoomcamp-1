@@ -215,6 +215,42 @@ describe('ShapeInspectorPanel: selection states', () => {
   });
 });
 
+describe('ShapeInspectorPanel: selection breadcrumb (Task 80 / issue #110)', () => {
+  it("shows the selected shape's friendly label and layer context", async () => {
+    await loadReadyWorkspace();
+    await addAndSelectCircle();
+
+    expect(screen.getByLabelText('Selected item location')).toHaveTextContent('Layer 1');
+    expect(screen.getByLabelText('Selected item location')).toHaveTextContent('Circle 1');
+  });
+
+  it('includes an intervening group in the breadcrumb path', async () => {
+    await loadReadyWorkspace();
+    fireEvent.click(screen.getByRole('button', { name: 'Add circle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const checkboxes = screen.getAllByRole('checkbox', { name: /Add .* to group selection/ });
+    fireEvent.click(checkboxes[0]);
+    fireEvent.click(checkboxes[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Combine into group' }));
+
+    const outlineList = screen.getByRole('list', { name: 'Scene outline' });
+    const shapeButton = within(outlineList)
+      .getAllByRole('listitem')
+      .find((r) => r.dataset.outlineKind === 'shape')!;
+    fireEvent.click(within(shapeButton).getByRole('button', { name: /^Circle 1$/ }));
+
+    const breadcrumb = screen.getByLabelText('Selected item location');
+    expect(breadcrumb).toHaveTextContent('Layer 1');
+    expect(breadcrumb).toHaveTextContent('Group 1');
+    expect(breadcrumb).toHaveTextContent('Circle 1');
+  });
+
+  it('renders no breadcrumb when nothing is selected', async () => {
+    await loadReadyWorkspace();
+    expect(screen.queryByLabelText('Selected item location')).not.toBeInTheDocument();
+  });
+});
+
 describe('ShapeInspectorPanel: editing', () => {
   it('commits a valid direct-entry edit to canonical scene state and the preview, without changing the shape id', async () => {
     await loadReadyWorkspace();

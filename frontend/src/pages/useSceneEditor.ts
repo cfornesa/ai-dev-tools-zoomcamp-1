@@ -41,6 +41,7 @@ import {
   moveItemToGroup as moveItemToGroupOp,
   moveItemToLayer as moveItemToLayerOp,
   moveLayer as moveLayerOp,
+  outlineBreadcrumb,
   removeShapeFromScene,
   renameLayer as renameLayerOp,
   toggleGroupFlag,
@@ -321,6 +322,15 @@ export function useSceneEditor(
     [workingCopy, multiSelectedIds],
   );
   const outline = useMemo(() => (workingCopy ? buildOutline(workingCopy) : []), [workingCopy]);
+  // Task 80 (issue #110): the layer → group → … → item path for whichever
+  // shape or group is the single active selection, so the Inspector panel
+  // can show that context ("Layer 1 > Group A > Circle 2") right alongside
+  // the attributes it edits — see `sceneOutline.ts`'s `outlineBreadcrumb`.
+  // Empty when nothing is selected or the selection is stale.
+  const selectedBreadcrumb = useMemo(
+    () => (workingCopy ? outlineBreadcrumb(workingCopy, selectedShapeId) : []),
+    [workingCopy, selectedShapeId],
+  );
   // Task 34: cards are reconstructed fresh from `workingCopy.bindings` on
   // every render rather than kept as separate state — that's what makes
   // save/reload (and undo/redo) round trip losslessly for free, with no
@@ -1217,6 +1227,7 @@ export function useSceneEditor(
     groups,
     selectedGroup,
     outline,
+    selectedBreadcrumb,
     multiSelectedIds,
     toggleMultiSelect,
     clearMultiSelect,

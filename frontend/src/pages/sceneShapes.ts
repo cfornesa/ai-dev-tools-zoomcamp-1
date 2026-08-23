@@ -181,8 +181,44 @@ export function hitTestTopmostShapeAt(shapes: Shape[], x: number, y: number): Sh
   return null;
 }
 
-export function shapeLabel(shape: Shape): string {
-  return `${shape.type} (${shape.id.slice(0, 8)})`;
+/** Task 80 (issue #110): the friendly, human-facing name for each shape
+ * type — used everywhere a shape's type is shown to a user (the outline,
+ * the Inspector breadcrumb, the Shapes list, behavior-card target pickers)
+ * rather than the raw schema `type` string. */
+const SHAPE_TYPE_DISPLAY_NAMES: Record<ShapeType, string> = {
+  circle: 'Circle',
+  rect: 'Rectangle',
+  line: 'Line',
+  path: 'Polygon',
+};
+
+export function shapeTypeDisplayName(type: ShapeType): string {
+  return SHAPE_TYPE_DISPLAY_NAMES[type];
+}
+
+/** Task 80 (issue #110): a stable, readable label for `shape` — e.g.
+ * "Circle 2" — derived from its type plus its 1-based position among
+ * same-type shapes in `allShapes`' array order (creation order), rather
+ * than a truncated UUID. Shapes carry no user-facing `name` field of their
+ * own in the schema (unlike layers/groups — see `schema/scene.schema.json`),
+ * so this label is always derived, never persisted; it stays stable across
+ * renders of the same scene state, but is not a permanent identity — e.g.
+ * deleting "Circle 1" renumbers a later "Circle 2" down to "Circle 1", the
+ * same way a plain ordinal position would. Callers that need every shape in
+ * a scene labeled (the outline, the Shapes list, behavior-card target
+ * pickers) should pass the same `allShapes` array (typically
+ * `sceneEditor.shapes`) so labels agree everywhere a shape is named.
+ *
+ * Falls back to `allShapes.length + 1` as the ordinal when `shape` isn't
+ * actually present in `allShapes` (e.g. a stale reference) rather than
+ * throwing, so a caller can never crash rendering a shape it's about to
+ * discover is gone.
+ */
+export function shapeLabel(shape: Shape, allShapes: Shape[]): string {
+  const sameType = allShapes.filter((s) => s.type === shape.type);
+  const index = sameType.findIndex((s) => s.id === shape.id);
+  const ordinal = index >= 0 ? index + 1 : sameType.length + 1;
+  return `${shapeTypeDisplayName(shape.type)} ${ordinal}`;
 }
 
 /**

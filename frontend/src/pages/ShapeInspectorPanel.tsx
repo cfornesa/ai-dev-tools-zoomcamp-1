@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { POSITION_LIMIT } from './sceneShapes';
+import type { BreadcrumbSegment } from './sceneOutline';
 import {
   COLOR_FIELD_LABELS,
   getColorFieldValue,
@@ -184,6 +185,30 @@ function ColorStyleField({
   );
 }
 
+/** Task 80 (issue #110): renders the selected item's layer/group context —
+ * e.g. "Layer 1 › Group A › Circle 2" — right above its editable
+ * attributes, so the Inspector visibly agrees with the outline/canvas about
+ * *which* item is selected and where it lives in the hierarchy, instead of
+ * showing attribute fields with no surrounding context. Renders nothing
+ * when there's no breadcrumb (nothing selected, or a stale selection). */
+function SelectionBreadcrumb({ segments }: { segments: BreadcrumbSegment[] }) {
+  if (segments.length === 0) return null;
+  return (
+    <p className="shape-inspector-breadcrumb" aria-label="Selected item location">
+      {segments.map((segment, index) => (
+        <span key={segment.id}>
+          {index > 0 && (
+            <span aria-hidden="true" className="shape-inspector-breadcrumb-separator">
+              {' › '}
+            </span>
+          )}
+          {segment.label}
+        </span>
+      ))}
+    </p>
+  );
+}
+
 /**
  * Task 60 (issue #58): the Inspector panel's shape-styling section —
  * position X/Y, scale X/Y, rotation, opacity, fill, stroke, and stroke
@@ -246,6 +271,7 @@ function ShapeInspectorPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
     return (
       <div className="shape-inspector" role="group" aria-label="Shape style">
         <h4>Shape style</h4>
+        <SelectionBreadcrumb segments={sceneEditor.selectedBreadcrumb} />
         <p role="status" aria-live="polite">
           A group is selected. Select an individual shape inside it to edit its style.
         </p>
@@ -271,6 +297,7 @@ function ShapeInspectorPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
   return (
     <div className="shape-inspector" role="group" aria-label="Shape style">
       <h4>Shape style</h4>
+      <SelectionBreadcrumb segments={sceneEditor.selectedBreadcrumb} />
       {isHidden && (
         <p role="status" aria-live="polite">
           This shape is currently hidden (its layer or group visibility is off). Editing its style

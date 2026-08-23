@@ -199,7 +199,7 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
-    const outlineShapeButton = within(outlineList()).getByRole('button', { name: 'Circle shape' });
+    const outlineShapeButton = within(outlineList()).getByRole('button', { name: 'Circle 1' });
     await user.click(outlineShapeButton);
 
     expect(outlineShapeButton).toHaveAttribute('aria-pressed', 'true');
@@ -207,6 +207,76 @@ describe('EditorWorkspace scene outline: selection sync', () => {
       'button',
     );
     expect(shapeListButton).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('selecting a shape from the shape list also marks it selected in the outline', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' })); // auto-selected
+
+    const outlineRectangleButton = within(outlineList()).getByRole('button', {
+      name: 'Rectangle 1',
+    });
+    expect(outlineRectangleButton).toHaveAttribute('aria-pressed', 'true');
+
+    const shapeListCircleButton = within(
+      screen.getByRole('list', { name: 'Shape list' }),
+    ).getByRole('button', { name: 'Circle 1' });
+    await user.click(shapeListCircleButton);
+
+    const outlineCircleButton = within(outlineList()).getByRole('button', { name: 'Circle 1' });
+    expect(outlineCircleButton).toHaveAttribute('aria-pressed', 'true');
+    expect(outlineRectangleButton).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+describe('EditorWorkspace scene outline: friendly shape labels (Task 80 / issue #110)', () => {
+  it('labels each shape by friendly type name and 1-based ordinal, never a raw UUID', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+
+    expect(within(outlineList()).getByRole('button', { name: 'Circle 1' })).toBeInTheDocument();
+    expect(within(outlineList()).getByRole('button', { name: 'Circle 2' })).toBeInTheDocument();
+    expect(within(outlineList()).getByRole('button', { name: 'Rectangle 1' })).toBeInTheDocument();
+
+    const shapeRows = within(outlineList())
+      .getAllByRole('listitem')
+      .filter((r) => r.dataset.outlineKind === 'shape');
+    for (const row of shapeRows) {
+      // A raw scene id is a UUID (36 chars including hyphens); no row's
+      // text should contain one verbatim.
+      expect(row.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/i);
+    }
+  });
+});
+
+describe('EditorWorkspace scene outline: inherited visibility/lock legibility (Task 80 / issue #110)', () => {
+  it("shows a group's own Visible/Locked toggle state independent of an ancestor's", async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: 'Combine into group' }));
+
+    const rows = within(outlineList()).getAllByRole('listitem');
+    const layerRow = rows.find((r) => r.dataset.outlineKind === 'layer')!;
+    const groupRow = rows.find((r) => r.dataset.outlineKind === 'group')!;
+    expect(within(groupRow).queryByText(/hidden \(from an ancestor\)/)).not.toBeInTheDocument();
+
+    // Hiding the layer (the group's only ancestor) makes the cascade
+    // visible on the group's row, even though the group's own toggle
+    // still reads "Visible".
+    await user.click(within(layerRow).getByRole('button', { name: 'Visible' }));
+
+    expect(within(groupRow).getByText(/hidden \(from an ancestor\)/)).toBeInTheDocument();
+    expect(within(groupRow).getByRole('button', { name: 'Visible' })).toBeInTheDocument();
   });
 });
 

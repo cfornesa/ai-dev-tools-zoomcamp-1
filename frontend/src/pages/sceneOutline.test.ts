@@ -13,6 +13,7 @@ import {
   moveItemToGroup,
   moveItemToLayer,
   moveLayer,
+  outlineBreadcrumb,
   pruneEmptyGroups,
   removeShapeFromScene,
   renameLayer,
@@ -871,5 +872,61 @@ describe('sceneOutline reparenting: moveItemToGroup', () => {
     if (outcome.ok) return;
     expect(outcome.error).toMatch(/maxGroupNestingDepth/);
     expect(outcome.error).toMatch(/7/);
+  });
+});
+
+describe('outlineBreadcrumb (Task 80 / issue #110)', () => {
+  it('returns an empty path for a null id', () => {
+    const scene = baseScene();
+    expect(outlineBreadcrumb(scene, null)).toEqual([]);
+  });
+
+  it('returns an empty path for an id that resolves to nothing', () => {
+    const scene = baseScene();
+    expect(outlineBreadcrumb(scene, 'nope')).toEqual([]);
+  });
+
+  it('is just [layer, shape] for a top-level shape', () => {
+    const s1 = shapeIn('layer-1');
+    const scene = baseScene({ shapes: [s1] });
+
+    const path = outlineBreadcrumb(scene, s1.id);
+    expect(path.map((seg) => seg.kind)).toEqual(['layer', 'shape']);
+    expect(path[0].label).toBe('Layer 0');
+    expect(path[1].label).toBe('Circle 1');
+  });
+
+  it('includes every ancestor group, outermost first, for a nested shape', () => {
+    const s1 = shapeIn('layer-1', 'inner');
+    const inner = group({
+      id: 'inner',
+      name: 'Inner group',
+      layerId: 'layer-1',
+      childIds: [s1.id],
+    });
+    const outer = group({
+      id: 'outer',
+      name: 'Outer group',
+      layerId: 'layer-1',
+      childIds: ['inner'],
+    });
+    const scene = baseScene({ shapes: [s1], groups: [inner, outer] });
+
+    const path = outlineBreadcrumb(scene, s1.id);
+    expect(path.map((seg) => seg.label)).toEqual([
+      'Layer 0',
+      'Outer group',
+      'Inner group',
+      'Circle 1',
+    ]);
+  });
+
+  it('ends with the group itself when a group (not a shape) is selected', () => {
+    const s1 = shapeIn('layer-1', 'g1');
+    const g1 = group({ id: 'g1', name: 'My group', layerId: 'layer-1', childIds: [s1.id] });
+    const scene = baseScene({ shapes: [s1], groups: [g1] });
+
+    const path = outlineBreadcrumb(scene, 'g1');
+    expect(path.map((seg) => seg.label)).toEqual(['Layer 0', 'My group']);
   });
 });

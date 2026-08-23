@@ -39,7 +39,7 @@
  */
 import type { SceneDocument } from '../api/projects';
 import { validateScene } from '../validation/scene';
-import { getEditableShapes, type Shape } from './sceneShapes';
+import { getEditableShapes, shapeLabel, type Shape } from './sceneShapes';
 
 export type Layer = {
   id: string;
@@ -881,6 +881,16 @@ export type OutlineRow =
       name: string;
       visible: boolean;
       locked: boolean;
+      // Task 80 (issue #110): the group's *own* visibility/lock flags,
+      // cascaded down through every ancestor group and its layer — the
+      // same OR-cascade `isEffectivelyLocked` applies to shapes, computed
+      // here for groups too so a group nested under a hidden/locked
+      // ancestor reads as hidden/locked in the outline even though its own
+      // flag is still "visible"/"unlocked". `visible`/`locked` above stay
+      // as the group's own flags (what the toggle buttons reflect and
+      // mutate); these are the display-only cascaded values.
+      inheritedVisible: boolean;
+      inheritedLocked: boolean;
       childCount: number;
       layerId: string;
       isFirst: boolean;
@@ -892,6 +902,9 @@ export type OutlineRow =
       depth: number;
       typeLabel: string;
       shapeType: Shape['type'];
+      // Task 80 (issue #110): a stable, readable label ("Circle 2") in
+      // place of a truncated UUID — see `sceneShapes.ts`'s `shapeLabel`.
+      label: string;
       inheritedVisible: boolean;
       inheritedLocked: boolean;
       layerId: string;
@@ -924,6 +937,7 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
       depth,
       typeLabel: shape.type,
       shapeType: shape.type,
+      label: shapeLabel(shape, shapes),
       inheritedVisible,
       inheritedLocked: isEffectivelyLocked(scene, shape.id),
       layerId: shape.layerId,
@@ -946,6 +960,8 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
       name: group.name,
       visible: group.visible,
       locked: group.locked,
+      inheritedVisible: ancestorVisible && group.visible,
+      inheritedLocked: isEffectivelyLocked(scene, group.id),
       childCount: group.childIds.length,
       layerId: group.layerId,
       isFirst,
@@ -990,4 +1006,58 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
   });
 
   return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Selection breadcrumb (Task 80 / issue #110)
+// ---------------------------------------------------------------------------
+
+export type BreadcrumbSegment = { id: string; kind: 'layer' | 'group' | 'shape'; label: string };
+
+/** Builds the ordered layer → group → … → item path for `id` (a shape or
+ * group id) — e.g. `[Layer 1, Group A, Circle 2]` — so the Inspector panel
+ * can show the selected item's context alongside its editable attributes
+ * without the user having to cross-reference the outline tree by eye. The
+ * last segment is always the item itself (its friendly label, from
+ * `shapeLabel` for a shape or its own `name` for a group); every segment
+ * before it is an ancestor, outermost (the layer) first.
+ *
+ * Returns an empty array for an id that doesn't resolve to a shape or group
+ * in `scene` (e.g. nothing selected, or a stale id) — callers should treat
+ * that the same as "no breadcrumb to show". */
+export function outlineBreadcrumb(scene: SceneDocument, id: string | null): BreadcrumbSegment[] {
+  if (id === null) return [];
+  const shapes = getEditableShapes(rawShapes(scene));
+  const groups = getGroups(scene);
+  const layers = getLayers(scene);
+  const layersById = new Map(layers.map((l) => [l.id, l]));
+
+  const shape = shapes.find((s) => s.id === id);
+  const group = shape ? undefined : groups.find((g) => g.id === id);
+  if (!shape && !group) return [];
+
+  const layerId = shape ? shape.layerId : group!.layerId;
+  const layer = layersById.get(layerId);
+  const segments: BreadcrumbSegment[] = layer
+    ? [{ id: layer.id, kind: 'layer', label: layer.name }]
+    : [];
+
+  const ancestorChain: Group[] = [];
+  let ancestorId = shape ? shape.groupId : (findParentGroup(group!.id, groups)?.id ?? null);
+  const visited = new Set<string>();
+  while (ancestorId && !visited.has(ancestorId)) {
+    visited.add(ancestorId);
+    const g = groups.find((x) => x.id === ancestorId);
+    if (!g) break;
+    ancestorChain.unshift(g);
+    ancestorId = findParentGroup(g.id, groups)?.id ?? null;
+  }
+  segments.push(...ancestorChain.map((g) => ({ id: g.id, kind: 'group' as const, label: g.name })));
+
+  if (shape) {
+    segments.push({ id: shape.id, kind: 'shape', label: shapeLabel(shape, shapes) });
+  } else if (group) {
+    segments.push({ id: group.id, kind: 'group', label: group.name });
+  }
+  return segments;
 }

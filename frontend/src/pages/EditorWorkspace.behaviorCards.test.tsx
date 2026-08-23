@@ -164,7 +164,7 @@ describe('behavior cards panel', () => {
     const items = within(list).getAllByRole('listitem');
     expect(items).toHaveLength(1);
     expect(items[0]).toHaveTextContent(/When the primary hand's index finger tip moves/i);
-    expect(items[0]).toHaveTextContent('circle');
+    expect(items[0]).toHaveTextContent('Circle 1');
   });
 
   it('every card field is a labeled form control reachable by label text', async () => {

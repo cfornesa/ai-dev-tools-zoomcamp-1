@@ -1059,3 +1059,71 @@ textarea:disabled {
   padding: 8px;
   margin-top: 8px;
 }
+
+/* Task 80 (issue #110): make the scene outline's layer/group/shape nesting
+   and draw order legible at a glance, on top of the existing paddingLeft
+   indentation (`SceneOutlinePanel.tsx`'s `indent` style). Each row gets a
+   left border scaled to its own kind so a layer/group/shape read as visibly
+   distinct rows in a hierarchy, not just an indented flat list; a small
+   kind icon reinforces the same distinction for sighted users who skim
+   rather than read every label, and is `aria-hidden` since the row's own
+   text (e.g. "Layer:"/"Group: …"/the shape's friendly label) already says
+   the same thing to a screen reader. */
+.editor-outline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.editor-outline-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+}
+
+.editor-outline-row-layer {
+  border-left-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.editor-outline-row-group {
+  border-left-color: var(--border);
+}
+
+.editor-outline-row-shape {
+  border-left-color: var(--border);
+}
+
+.editor-outline-kind-icon {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+/* Distinguishes a cascaded (inherited from an ancestor layer/group) hidden
+   or locked state from the row's own toggle-button state — same convention
+   already established for shape rows, extended to group rows so a group
+   nested under a hidden/locked ancestor reads as hidden/locked too instead
+   of only the shapes at the very bottom of the tree. */
+.editor-outline-inherited-state {
+  color: var(--text);
+  font-style: italic;
+}
+
+/* Task 80 (issue #110): the Inspector panel's "Layer 1 › Group A › Circle 2"
+   selection-location breadcrumb (ShapeInspectorPanel.tsx's
+   SelectionBreadcrumb), shown above the editable attribute fields so the
+   Inspector visibly agrees with the outline/canvas about which item is
+   selected and where it lives in the hierarchy. */
+.shape-inspector-breadcrumb {
+  margin: 0 0 8px;
+  font-size: 0.9em;
+  color: var(--text);
+}
+
+.shape-inspector-breadcrumb-separator {
+  opacity: 0.6;
+}

@@ -158,9 +158,23 @@ describe('hitTestTopmostShapeAt', () => {
 });
 
 describe('shapeLabel', () => {
-  it('includes the shape type and a slice of its id', () => {
+  it('labels a shape with its friendly type name and 1-based ordinal', () => {
     const shape = createShape('circle', 'layer-1', CANVAS);
-    expect(shapeLabel(shape)).toContain('circle');
-    expect(shapeLabel(shape)).toContain(shape.id.slice(0, 8));
+    expect(shapeLabel(shape, [shape])).toBe('Circle 1');
+  });
+
+  it('numbers same-type shapes independently in array order', () => {
+    const rect1 = createShape('rect', 'layer-1', CANVAS);
+    const circle1 = createShape('circle', 'layer-1', CANVAS);
+    const rect2 = createShape('rect', 'layer-1', CANVAS);
+    const all = [rect1, circle1, rect2];
+    expect(shapeLabel(rect1, all)).toBe('Rectangle 1');
+    expect(shapeLabel(circle1, all)).toBe('Circle 1');
+    expect(shapeLabel(rect2, all)).toBe('Rectangle 2');
+  });
+
+  it('never includes the raw UUID', () => {
+    const shape = createShape('path', 'layer-1', CANVAS);
+    expect(shapeLabel(shape, [shape])).not.toContain(shape.id);
   });
 });

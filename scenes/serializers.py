@@ -128,6 +128,7 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.CharField(source="owner.username", read_only=True)
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -140,11 +141,21 @@ class ProjectSerializer(serializers.ModelSerializer):
             "visibility",
             "allow_public_remix",
             "export_attribution",
+            "thumbnail_url",
             "current_version",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_thumbnail_url(self, project: Project) -> str | None:
+        # Issue #135: mirrors PublicProjectSerializer.get_thumbnail_url, but
+        # via the owner-gated `project-thumbnail` route (ProjectThumbnailView)
+        # rather than the public-only one, so this resolves for the owner's
+        # private projects too.
+        if project.current_version_id is None:
+            return None
+        return reverse("project-thumbnail", kwargs={"public_id": project.public_id})
 
 
 class PublicSceneVersionSerializer(serializers.ModelSerializer):

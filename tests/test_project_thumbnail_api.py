@@ -91,6 +91,14 @@ def _thumbnail_url(project):
     return f"/api/public/projects/{project.public_id}/thumbnail.png"
 
 
+def _owner_thumbnail_url(project):
+    return f"/api/projects/{project.public_id}/thumbnail.png"
+
+
+def _project_detail_url(project):
+    return f"/api/projects/{project.public_id}/"
+
+
 # --- Regeneration/invalidation policy ---
 
 
@@ -252,3 +260,44 @@ def test_public_project_serializer_exposes_a_resolvable_thumbnail_url(
     image_response = anon_client.get(thumbnail_url)
     assert image_response.status_code == 200
     assert image_response["Content-Type"] == "image/png"
+
+
+# --- Owner-facing thumbnail endpoint (issue #135, "Your projects" cards) ---
+
+
+@pytest.mark.django_db(transaction=True)
+def test_owner_project_serializer_exposes_a_resolvable_thumbnail_url_even_when_private(
+    owner_client, publishable_project
+):
+    # Never published: still private, but the owner's own project list must
+    # still resolve a thumbnail_url for it.
+    response = owner_client.get(_project_detail_url(publishable_project))
+    assert response.status_code == 200
+    thumbnail_url = response.json()["thumbnail_url"]
+    assert thumbnail_url is not None
+
+    image_response = owner_client.get(thumbnail_url)
+    assert image_response.status_code == 200
+    assert image_response["Content-Type"] == "image/png"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_owner_thumbnail_endpoint_404s_for_a_project_with_no_current_version(owner_client, owner):
+    project = Project.objects.create(owner=owner, title="No version yet", description="")
+    response = owner_client.get(_owner_thumbnail_url(project))
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db(transaction=True)
+def test_owner_thumbnail_endpoint_404s_for_a_non_owner_and_anonymous_caller(
+    anon_client, publishable_project
+):
+    other = get_user_model().objects.create_user(username="mallory")
+    other_client = APIClient()
+    other_client.force_authenticate(other)
+
+    other_response = other_client.get(_owner_thumbnail_url(publishable_project))
+    assert other_response.status_code == 404
+
+    anon_response = anon_client.get(_owner_thumbnail_url(publishable_project))
+    assert anon_response.status_code == 404

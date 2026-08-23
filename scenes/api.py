@@ -396,6 +396,33 @@ class PublicProjectThumbnailView(APIView):
         return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)
 
 
+class ProjectThumbnailView(APIView):
+    """Issue #135: serve the owner-facing thumbnail (PNG) for a project's
+    *current* saved version, for "Your projects" cards.
+
+    Gated by `Action.PROJECT_READ` (same 404-not-403 convention as
+    `ProjectDetailView`) rather than `PublicProjectThumbnailView`'s
+    public-only check -- a private project's thumbnail must still be visible
+    to its owner. Otherwise identical to `PublicProjectThumbnailView`: lazily
+    generates on first request if the current version has no stored
+    `Thumbnail` yet.
+    """
+
+    def get(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.PROJECT_READ, project)
+        if project.current_version_id is None:
+            raise Http404
+
+        thumbnail = Thumbnail.objects.filter(scene_version_id=project.current_version_id).first()
+        if thumbnail is None:
+            thumbnail = ensure_thumbnail_for_version(project.current_version_id)
+        if thumbnail is None:
+            raise Http404
+
+        return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)
+
+
 class ProjectForkNotAvailable(Exception):
     """Raised inside the locked fork transaction when the source project turns
     out not to be forkable after all (checked fresh under the lock)."""

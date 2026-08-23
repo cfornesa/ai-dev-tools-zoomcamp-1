@@ -8,6 +8,7 @@ from scenes.api import (
     ProjectForkView,
     ProjectListCreateView,
     ProjectPublishView,
+    ProjectThumbnailView,
     ProjectUnpublishView,
     PublicProjectDetailView,
     PublicProjectListView,
@@ -32,6 +33,11 @@ urlpatterns = [
         name="template-clone",
     ),
     path("projects/<uuid:public_id>/", ProjectDetailView.as_view(), name="project-detail"),
+    path(
+        "projects/<uuid:public_id>/thumbnail.png",
+        ProjectThumbnailView.as_view(),
+        name="project-thumbnail",
+    ),
     path(
         "projects/<uuid:public_id>/publish/",
         ProjectPublishView.as_view(),

@@ -36,6 +36,13 @@ topic page and one concise index entry before finishing. Do not use memory as
 a changelog, and never store credentials, tokens, connection strings, or
 other sensitive values there.
 
+Pending implementation and verification work belongs in `_docs/tasks.md`,
+using `_docs/task-template.md` and, when needed, a `.local/tasks/<slug>.md`
+execution plan. Do not put ordinary TODOs or task status in memory. Use
+`.agents/memory/` only for durable unresolved constraints, platform behavior,
+decisions, or lessons that future agents would otherwise lose. The complete
+capture and reconciliation loop is documented in `_docs/process.md`.
+
 Environment setup (clean checkout)
 
 Django reads required settings (secret key, PostgreSQL `DATABASE_URL`)

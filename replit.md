@@ -23,6 +23,11 @@ configuration, encrypted credentials, safe Git pushes, and browser testing.
 Keep entries focused on durable decisions rather than routine implementation
 logs, and never store secrets or credentials.
 
+Pending work is tracked in `_docs/tasks.md`, not in agent memory. When a
+pending item reveals durable platform behavior, a reusable constraint, or an
+unresolved verification boundary, record that knowledge in a linked memory
+topic and follow the capture loop in `_docs/process.md`.
+
 ## Required secrets
 
 Configure these through Replit Secrets:

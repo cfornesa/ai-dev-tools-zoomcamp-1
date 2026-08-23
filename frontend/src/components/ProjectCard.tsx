@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { Project } from '../api/projects';
@@ -10,11 +11,35 @@ function formatDate(iso: string): string {
   });
 }
 
+/**
+ * Issue #135: "Your projects" cards had no thumbnail at all even though
+ * `Project` already carries `thumbnail_url` — `PublicProjectCard.tsx` gained
+ * the same image/fallback pattern under issue #54 but this card was never
+ * updated to match. Reuses that same fallback-on-null-or-error approach.
+ */
 function ProjectCard({ project }: { project: Project }) {
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const titleId = `project-${project.id}-title`;
+  const showFallback = !project.thumbnail_url || thumbnailFailed;
 
   return (
     <article aria-labelledby={titleId} className="project-card">
+      {showFallback ? (
+        <div
+          className="project-card-thumbnail-fallback"
+          role="img"
+          aria-label={`No preview available for ${project.title}`}
+        >
+          No preview available
+        </div>
+      ) : (
+        <img
+          src={project.thumbnail_url ?? undefined}
+          alt={`Preview of ${project.title}`}
+          className="project-card-thumbnail"
+          onError={() => setThumbnailFailed(true)}
+        />
+      )}
       <h3 id={titleId}>{project.title}</h3>
       <p>
         <span className="visibility-badge">

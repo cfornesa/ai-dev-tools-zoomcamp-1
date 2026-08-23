@@ -11,6 +11,7 @@ export type Project = {
   visibility: Visibility;
   allow_public_remix: boolean;
   export_attribution: boolean;
+  thumbnail_url: string | null;
   current_version: number | null;
   created_at: string;
   updated_at: string;

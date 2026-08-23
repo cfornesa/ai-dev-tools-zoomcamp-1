@@ -85,6 +85,35 @@ describe('Layout: authentication control and attribution', () => {
   });
 });
 
+describe('Layout: active nav indicator (issue #136)', () => {
+  it('marks the current page link with aria-current="page" and leaves the others unmarked', () => {
+    renderWithAuth({ status: 'signed-out', user: null });
+
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Public gallery' })).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
+  it('marks Public gallery active instead of Home when on the gallery route', () => {
+    render(
+      <MemoryRouter initialEntries={['/gallery']}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route path="gallery" element={<button type="button">Gallery content</button>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Public gallery' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
+  });
+});
+
 describe('Layout: mobile hamburger menu', () => {
   const ORIGINAL_INNER_WIDTH = window.innerWidth;
 

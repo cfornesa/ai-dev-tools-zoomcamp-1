@@ -203,6 +203,15 @@ button:disabled {
   background: var(--accent-border);
 }
 
+/* Issue #136: give the current page's primary nav link a visible active
+   state to accompany aria-current="page", so the active tab is
+   distinguishable both visually and to assistive technology. */
+.shell-action[aria-current='page'] {
+  background: var(--accent-border);
+  border-color: var(--text-h);
+  font-weight: 600;
+}
+
 .account-settings-form {
   display: flex;
   flex-wrap: wrap;
@@ -388,6 +397,25 @@ code {
 .project-card h3 {
   margin: 0 0 8px;
   font-size: 18px;
+}
+
+.project-card-thumbnail,
+.project-card-thumbnail-fallback {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  object-fit: cover;
+}
+
+.project-card-thumbnail-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--code-bg);
+  color: var(--text);
+  font-size: 13px;
+  text-align: center;
 }
 
 .visibility-badge {

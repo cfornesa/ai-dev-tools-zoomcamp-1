@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 
 import ReducedMotionControl from './ReducedMotionControl';
 import { useIsMobileHeader } from './useIsMobileHeader';
@@ -47,9 +47,9 @@ function Layout() {
   const signInOrOutAction =
     auth.status === 'signed-in' ? (
       <>
-        <Link className="shell-action" to="/account/settings">
+        <NavLink className="shell-action" to="/account/settings">
           Account settings
-        </Link>
+        </NavLink>
         <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>
           Logout
         </button>
@@ -98,12 +98,12 @@ function Layout() {
               aria-label="Primary navigation"
               hidden={!menuOpen}
             >
-              <Link className="shell-action" to="/">
+              <NavLink className="shell-action" to="/" end>
                 Home
-              </Link>
-              <Link className="shell-action" to="/gallery">
+              </NavLink>
+              <NavLink className="shell-action" to="/gallery">
                 Public gallery
-              </Link>
+              </NavLink>
               {signInOrOutAction}
               {auth.logoutError && (
                 <p className="auth-error" role="alert">
@@ -114,12 +114,12 @@ function Layout() {
           </>
         ) : (
           <nav className="app-shell-nav" aria-label="Primary navigation">
-            <Link className="shell-action" to="/">
+            <NavLink className="shell-action" to="/" end>
               Home
-            </Link>
-            <Link className="shell-action" to="/gallery">
+            </NavLink>
+            <NavLink className="shell-action" to="/gallery">
               Public gallery
-            </Link>
+            </NavLink>
             {signInOrOutAction}
             {auth.logoutError && (
               <p className="auth-error" role="alert">

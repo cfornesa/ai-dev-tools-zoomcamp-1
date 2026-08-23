@@ -822,11 +822,17 @@ responsive Layers panel. Show readable hierarchy, visibility, locks, and
 stacking order; provide pointer drag-and-drop with insertion feedback and
 keyboard reorder parity; and keep the canonical scene state synchronized with
 rendering, selection, Inspector, save, undo/redo, and recovery.
-Status: COMPLETE (issue left open per task instructions — see comment)
+Status: COMPLETE
 GitHub issue: [#127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/127)
 Execution plan: `.local/tasks/editor-dedicated-layers-panel.md`
 Evidence: Issue #110 improved labels and hierarchy, but the current outline is
 still not a dedicated Layers panel with direct drag-and-drop stacking control.
+Resolution: New `LayersPanel.tsx` reuses existing `sceneOutline.ts`/
+`useSceneEditor` move* functions for both drag-and-drop and keyboard reorder,
+with a new `'layers'` tab in the narrow-viewport switcher. `make check` green;
+QA verdict PASS (commit fd90790,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/127#issuecomment-5385221079).
+Closed.
 Resolution: `SceneOutlinePanel.tsx` renamed to `LayersPanel.tsx` and promoted
 to its own `role="region" aria-label="Layers"` landmark in
 `EditorWorkspace.tsx` (removed from the Tools `CollapsibleSection`), with a

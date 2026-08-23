@@ -1,7 +1,7 @@
+import base64
 import os
 import shutil
 import subprocess
-import base64
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -11,6 +11,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "git-safe-push.sh"
+HOSTED_SCRIPT = ROOT / "scripts" / "smoke-hosted-git.sh"
 
 
 def run(command: list[str], cwd: Path, **env: str) -> subprocess.CompletedProcess[str]:
@@ -45,6 +46,18 @@ def invoke(local: Path, **env: str) -> subprocess.CompletedProcess[str]:
     return run(["bash", str(SCRIPT)], local, **env)
 
 
+def test_hosted_smoke_is_opt_in(tmp_path: Path):
+    result = run(
+        ["bash", str(HOSTED_SCRIPT)],
+        tmp_path,
+        HOSTED_GIT_SMOKE="0",
+        GIT_URL="https://user:super-secret@example.test/repo.git",
+    )
+    assert result.returncode == 0
+    assert "SKIP" in result.stdout
+    assert "super-secret" not in result.stdout + result.stderr
+
+
 class _AuthenticatedGitHandler(BaseHTTPRequestHandler):
     server_version = "TestGitHTTP/1.0"
 
@@ -59,12 +72,15 @@ class _AuthenticatedGitHandler(BaseHTTPRequestHandler):
         parsed = urlsplit(self.path)
         content_length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(content_length) if content_length else b""
-        git_backend = subprocess.run(
-            ["git", "--exec-path"],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip() + "/git-http-backend"
+        git_backend = (
+            subprocess.run(
+                ["git", "--exec-path"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            + "/git-http-backend"
+        )
         environment = os.environ.copy()
         environment.update(
             GIT_PROJECT_ROOT=str(self.server.repository_root),
@@ -168,12 +184,12 @@ def test_local_ahead_is_fast_forwarded(git_repositories):
     )
 
 
-def test_remote_update_during_push_is_rejected_without_overwrite(
-    git_repositories, tmp_path: Path
-):
+def test_remote_update_during_push_is_rejected_without_overwrite(git_repositories, tmp_path: Path):
     local, bare = git_repositories
     second = local.parent / "second"
-    run(["git", "clone", "--branch", "main", str(bare), str(second)], local.parent).check_returncode()
+    run(
+        ["git", "clone", "--branch", "main", str(bare), str(second)], local.parent
+    ).check_returncode()
     git(second, "config", "user.email", "test@example.com")
     git(second, "config", "user.name", "Test User")
     (second / "state").write_text("remote\n")
@@ -210,9 +226,7 @@ exec "{real_git}" "$@"
 
     assert result.returncode != 0
     assert "safe fast-forward push failed" in result.stderr
-    remote_tip = run(
-        ["git", "--git-dir", str(bare), "rev-parse", "refs/heads/main"], local
-    )
+    remote_tip = run(["git", "--git-dir", str(bare), "rev-parse", "refs/heads/main"], local)
     assert remote_tip.stdout.strip() == remote_commit
     assert remote_tip.stdout.strip() != local_commit
 
@@ -222,12 +236,18 @@ def test_authenticated_remote_update_during_push_is_rejected_without_overwrite(
 ):
     local, remote_url, bare = authenticated_git_remote
     second = local.parent / "second-authenticated"
-    run(["git", "clone", "--branch", "main", str(bare), str(second)], local.parent).check_returncode()
+    run(
+        ["git", "clone", "--branch", "main", str(bare), str(second)], local.parent
+    ).check_returncode()
     git(second, "config", "user.email", "test@example.com")
     git(second, "config", "user.name", "Test User")
-    git(second, "remote", "set-url", "origin", remote_url.replace(
-        "http://", "http://race-user:race-secret@"
-    ))
+    git(
+        second,
+        "remote",
+        "set-url",
+        "origin",
+        remote_url.replace("http://", "http://race-user:race-secret@"),
+    )
     (second / "state").write_text("remote-authenticated\n")
     git(second, "commit", "-am", "remote authenticated")
     remote_commit = run(["git", "rev-parse", "HEAD"], second).stdout.strip()
@@ -264,9 +284,7 @@ exec "{real_git}" "$@"
 
     assert result.returncode != 0
     assert "safe fast-forward push failed" in result.stderr
-    remote_tip = run(
-        ["git", "--git-dir", str(bare), "rev-parse", "refs/heads/main"], local
-    )
+    remote_tip = run(["git", "--git-dir", str(bare), "rev-parse", "refs/heads/main"], local)
     assert remote_tip.stdout.strip() == remote_commit
     assert remote_tip.stdout.strip() != local_commit
     assert "race-secret" not in result.stdout + result.stderr
@@ -310,7 +328,9 @@ exec {real_git} "$@"
 def test_remote_ahead_is_rejected_distinctly(git_repositories):
     local, bare = git_repositories
     second = local.parent / "second"
-    run(["git", "clone", "--branch", "main", str(bare), str(second)], local.parent).check_returncode()
+    run(
+        ["git", "clone", "--branch", "main", str(bare), str(second)], local.parent
+    ).check_returncode()
     git(second, "config", "user.email", "test@example.com")
     git(second, "config", "user.name", "Test User")
     (second / "state").write_text("remote\n")

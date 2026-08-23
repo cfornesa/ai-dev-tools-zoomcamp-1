@@ -93,6 +93,23 @@ jobs:
             }}
         run: scripts/smoke-published.sh
 
+  hosted-git-safe-push:
+    name: Hosted safe-push smoke check
+    # Repository administration and the credential are deliberately opt-in.
+    # Without both settings this job exits with a safe SKIP.
+    if: ${{ vars.HOSTED_GIT_SMOKE == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      HOSTED_GIT_SMOKE: "1"
+      HOSTED_GIT_OWNER: ${{ github.repository_owner }}
+      GIT_URL: ${{ secrets.GIT_URL }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install GitHub CLI
+        run: gh --version
+      - name: Run disposable hosted Git smoke check
+        run: scripts/smoke-hosted-git.sh
+
   staging-authenticated-smoke:
     name: Disposable staging authenticated smoke check
     # This job is deliberately separate from the anonymous published probe.

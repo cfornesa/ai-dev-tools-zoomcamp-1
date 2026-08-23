@@ -3,7 +3,7 @@
 	backend-lint backend-format backend-format-check backend-typecheck backend-test \
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
 git-safe-push \
-e2e dev deploy-check migrate smoke-local
+e2e dev deploy-check migrate smoke-local smoke-hosted-git
 
 # Run every backend and frontend check (same checks CI runs).
 check: backend-check frontend-check
@@ -73,6 +73,9 @@ migrate:
 
 smoke-local:
 	BASE_URL=$${BASE_URL:-http://localhost:5000}; export BASE_URL; uv run --env-file .env python manage.py check --deploy && scripts/smoke-local.sh
+
+smoke-hosted-git:
+	HOSTED_GIT_SMOKE=$${HOSTED_GIT_SMOKE:-0} scripts/smoke-hosted-git.sh
 
 # Refresh origin/main, classify history safely, and push only a fast-forward.
 # GIT_URL is read by a temporary credential helper and is never persisted.

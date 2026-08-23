@@ -9,6 +9,7 @@ import {
   type PublishValidationErrorBody,
 } from '../api/projects';
 import { validateProjectMetadataForPublish, type FieldErrors } from '../validation/projectMetadata';
+import type { PersistDetailsResult } from './EditorDetailsPanel';
 
 /**
  * Task 63 (issue #63), moved here by Task 94 (issue #94): the "publish this
@@ -64,30 +65,73 @@ function PublishConfirmDialog({
  * gives the Publish button its own `.shell-action` emphasized styling so it
  * reads as the expected action, matching this app's existing
  * primary-button convention.
+ *
+ * Issue #128: `handlePublishClick` used to validate `project.title`/
+ * `project.description` directly — stale if the user had just typed into
+ * the Details panel's description field without clicking its separate
+ * "Save changes" button. It now first calls `persistPendingDetails` (owned
+ * by `EditorWorkspace.tsx`, backed by `EditorDetailsPanel`'s imperative
+ * handle), which PATCHes whatever's currently pending there (or no-ops if
+ * nothing changed since the last save), merges the result into `project`,
+ * and only then runs `validateProjectMetadataForPublish` against the fresh
+ * values — "auto-persist, then validate/publish," per the groomed task doc.
+ * A persist failure (client-side/400 field errors, or a network/5xx error)
+ * blocks the confirmation dialog the same way a validation failure always
+ * has, leaves every typed value untouched, and is retryable by clicking
+ * Publish again.
  */
 function PublishControl({
   id,
   project,
   setProject,
+  persistPendingDetails,
 }: {
   id: string;
   project: Project | null;
   setProject: Dispatch<SetStateAction<Project | null>>;
+  persistPendingDetails: () => Promise<PersistDetailsResult>;
 }) {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [publishState, setPublishState] = useState<'idle' | 'publishing' | 'unpublishing'>('idle');
   const [publishErrors, setPublishErrors] = useState<FieldErrors>({});
 
   const title = project?.title ?? '';
-  const description = project?.description ?? '';
   const ownerName = project?.owner ?? '';
   const visibility = project?.visibility ?? 'private';
 
-  /** Task 49: field-level validation blocks even opening the confirmation
-   * dialog — checked before the user ever sees the "this becomes public"
-   * confirmation. */
-  function handlePublishClick() {
-    const errors = validateProjectMetadataForPublish({ title, description });
+  /** Task 49, extended by issue #128: field-level validation blocks even
+   * opening the confirmation dialog — checked before the user ever sees
+   * the "this becomes public" confirmation. Now runs against freshly
+   * auto-persisted values (see the component doc comment above) instead of
+   * `project` as it stood before this click. */
+  async function handlePublishClick() {
+    setPublishState('publishing');
+    setPublishErrors({});
+
+    const persistResult = await persistPendingDetails();
+    if (persistResult.status === 'client-error') {
+      setPublishState('idle');
+      setPublishErrors({
+        form: [
+          "Could not save your details before publishing — check the Details panel's errors, fix them, and try again.",
+        ],
+      });
+      return;
+    }
+    if (persistResult.status === 'server-error') {
+      setPublishState('idle');
+      setPublishErrors({
+        form: ['Could not save your details before publishing. Please try again.'],
+      });
+      return;
+    }
+
+    const latestProject = persistResult.status === 'success' ? persistResult.project : project;
+    const errors = validateProjectMetadataForPublish({
+      title: latestProject?.title ?? '',
+      description: latestProject?.description ?? '',
+    });
+    setPublishState('idle');
     if (Object.keys(errors).length > 0) {
       setPublishErrors(errors);
       return;
@@ -161,7 +205,7 @@ function PublishControl({
           <button
             type="button"
             className="shell-action"
-            onClick={handlePublishClick}
+            onClick={() => void handlePublishClick()}
             disabled={publishState === 'publishing'}
           >
             {publishState === 'publishing' ? 'Publishing…' : 'Publish'}

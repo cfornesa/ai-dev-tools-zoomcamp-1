@@ -261,6 +261,74 @@ test.describe('Publishing', () => {
     await anonContext.close();
   });
 
+  test('issue #128: clicking Publish directly (without a separate Details "Save changes" click) honors title/description just typed in the editor', async ({
+    page,
+    context,
+  }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    const projectId = await createBlankProjectViaUI(page); // version 1, still-default title/description
+
+    // Type a meaningful title through the header's inline editor and a
+    // meaningful description through the Details panel -- exactly the
+    // "auto-persist, then validate/publish" scenario the groomed task doc
+    // (.local/tasks/editor-publish-metadata-flow.md) describes: never
+    // click the Details panel's own "Save changes" button, and never
+    // reload/renavigate in between, which would otherwise mask a stale-
+    // `project` bug behind a fresh page load.
+    await page.getByRole('button', { name: 'Edit title' }).click();
+    const titleForm = page.locator('.editor-title-edit');
+    await titleForm.locator('#editor-title-input').fill('Typed straight into Publish');
+    await titleForm.getByRole('button', { name: 'Save' }).click();
+    await expect(titleForm).toHaveCount(0);
+
+    await page
+      .locator('#project-description')
+      .fill('Typed into the Details panel, never explicitly saved before Publish.');
+
+    // Publish directly -- no click on the Details panel's "Save changes".
+    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+
+    // The auto-persist ran the freshly-typed description through
+    // validation successfully, so the confirmation dialog opens (not the
+    // publish-title-error/publish-description-error path) naming the
+    // just-typed title.
+    const dialog = page.getByRole('alertdialog', { name: /Publish/ });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Typed straight into Publish');
+    await expect(page.getByTestId('publish-description-error')).toHaveCount(0);
+
+    await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
+    await expect(page.getByTestId('visibility-status')).toContainText('Public');
+
+    // The Details panel itself now reflects the auto-persisted value (the
+    // same PATCH "Save changes" would have sent), and the public surface
+    // shows exactly what was typed -- proving the auto-persist actually
+    // reached the server, not just the client-side validation check.
+    await expect(page.locator('#project-description')).toHaveValue(
+      'Typed into the Details panel, never explicitly saved before Publish.',
+    );
+
+    const anonContext = await context.browser()!.newContext();
+    const anonPage = await anonContext.newPage();
+    const publicDetail = await apiGet(anonContext, `/api/public/projects/${projectId}/`);
+    expect(publicDetail.status()).toBe(200);
+    const publicBody = (await publicDetail.json()) as {
+      title: string;
+      description: string;
+    };
+    expect(publicBody.title).toBe('Typed straight into Publish');
+    expect(publicBody.description).toBe(
+      'Typed into the Details panel, never explicitly saved before Publish.',
+    );
+
+    await anonPage.goto(`/p/${projectId}`);
+    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
+      'Typed straight into Publish',
+    );
+
+    await anonContext.close();
+  });
+
   test('unpublishing removes gallery/anonymous access on the very next request without deleting history', async ({
     page,
     context,

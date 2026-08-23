@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useState, type MutableRefObject } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '../api/client';
 import * as projectsApi from '../api/projects';
 import type { Project } from '../api/projects';
-import EditorDetailsPanel from './EditorDetailsPanel';
+import EditorDetailsPanel, { type EditorDetailsPanelHandle } from './EditorDetailsPanel';
 
 /**
  * Task 94 (issue #94): coverage ported from the deleted
@@ -44,6 +44,33 @@ function Harness({ initialProject }: { initialProject: Project }) {
   const [project, setProject] = useState<Project | null>(initialProject);
   return (
     <EditorDetailsPanel projectId={project?.id ?? 'p1'} project={project} setProject={setProject} />
+  );
+}
+
+// Issue #128: exposes the ref so tests can drive `getPendingDetails()`/
+// `save()` the same way `EditorWorkspace.tsx`'s `persistPendingDetails`
+// does, without going through `PublishControl` itself. `handleRef` is a
+// plain mutable object supplied by the test (not created via `useRef`
+// inside this harness) so reading `handleRef.current` after an interaction
+// always sees the imperative handle React most recently assigned — a
+// `useRef` captured once via an effect inside this component wouldn't
+// re-run when only `EditorDetailsPanel`'s own internal state changes,
+// since that never re-renders this parent.
+function RefHarness({
+  initialProject,
+  handleRef,
+}: {
+  initialProject: Project;
+  handleRef: MutableRefObject<EditorDetailsPanelHandle | null>;
+}) {
+  const [project, setProject] = useState<Project | null>(initialProject);
+  return (
+    <EditorDetailsPanel
+      ref={handleRef}
+      projectId={project?.id ?? 'p1'}
+      project={project}
+      setProject={setProject}
+    />
   );
 }
 
@@ -140,5 +167,85 @@ describe('EditorDetailsPanel', () => {
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
+  });
+
+  describe('issue #128: imperative handle used by PublishControl to auto-persist', () => {
+    it('getPendingDetails reflects unsaved typed values, not just the last-saved project', async () => {
+      const handleRef: MutableRefObject<EditorDetailsPanelHandle | null> = { current: null };
+      const user = userEvent.setup();
+
+      render(
+        <RefHarness
+          initialProject={baseProject({ description: 'Original' })}
+          handleRef={handleRef}
+        />,
+      );
+      await user.clear(screen.getByLabelText(/description/i));
+      await user.type(screen.getByLabelText(/description/i), 'Typed but not yet saved');
+      await user.type(screen.getByLabelText(/tags/i), 'fun, demo');
+
+      expect(handleRef.current!.getPendingDetails()).toEqual({
+        description: 'Typed but not yet saved',
+        tags: ['fun', 'demo'],
+        allowRemix: false,
+        exportAttribution: false,
+      });
+      // Nothing was PATCHed just by reading the pending values.
+      expect(mockedUpdateProjectMetadata).not.toHaveBeenCalled();
+    });
+
+    it('save() runs the same persist path as the "Save changes" button, including success side effects', async () => {
+      mockedUpdateProjectMetadata.mockResolvedValue(baseProject({ description: 'Persisted' }));
+      const handleRef: MutableRefObject<EditorDetailsPanelHandle | null> = { current: null };
+      const user = userEvent.setup();
+
+      render(<RefHarness initialProject={baseProject()} handleRef={handleRef} />);
+      await user.clear(screen.getByLabelText(/description/i));
+      await user.type(screen.getByLabelText(/description/i), 'Persisted');
+
+      const result = await handleRef.current!.save();
+
+      expect(result).toEqual({
+        status: 'success',
+        project: baseProject({ description: 'Persisted' }),
+      });
+      expect(mockedUpdateProjectMetadata).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({ description: 'Persisted' }),
+      );
+      expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
+    });
+
+    it('save() surfaces a 400 field error via fieldErrors without clearing the typed value', async () => {
+      mockedUpdateProjectMetadata.mockRejectedValue(
+        new ApiError(400, { description: ['Too long.'] }),
+      );
+      const handleRef: MutableRefObject<EditorDetailsPanelHandle | null> = { current: null };
+      const user = userEvent.setup();
+
+      render(<RefHarness initialProject={baseProject()} handleRef={handleRef} />);
+      await user.type(screen.getByLabelText(/description/i), 'Too long value');
+
+      const result = await handleRef.current!.save();
+
+      expect(result).toEqual({ status: 'client-error' });
+      expect(await screen.findByRole('alert')).toHaveTextContent(/too long/i);
+      expect(screen.getByLabelText(/description/i)).toHaveValue('Too long value');
+    });
+
+    it('save() surfaces a network/5xx failure as a server-error without clearing the typed value', async () => {
+      mockedUpdateProjectMetadata.mockRejectedValue(new Error('network down'));
+      const handleRef: MutableRefObject<EditorDetailsPanelHandle | null> = { current: null };
+      const user = userEvent.setup();
+
+      render(<RefHarness initialProject={baseProject()} handleRef={handleRef} />);
+      await user.type(screen.getByLabelText(/description/i), 'Still here');
+
+      const result = await handleRef.current!.save();
+
+      expect(result).toEqual({ status: 'server-error' });
+      expect(await screen.findByRole('alert')).toHaveTextContent(/could not save changes/i);
+      expect(screen.getByLabelText(/description/i)).toHaveValue('Still here');
+    });
   });
 });

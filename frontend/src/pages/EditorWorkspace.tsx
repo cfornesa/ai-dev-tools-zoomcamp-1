@@ -65,7 +65,10 @@ import BehaviorCardsPanel from './BehaviorCardsPanel';
 import CollapsibleSection from './CollapsibleSection';
 import DemoControlsPanel from './DemoControlsPanel';
 import DraftRecoveryPrompt from './DraftRecoveryPrompt';
-import EditorDetailsPanel from './EditorDetailsPanel';
+import EditorDetailsPanel, {
+  type EditorDetailsPanelHandle,
+  type PersistDetailsResult,
+} from './EditorDetailsPanel';
 import ExportConfigDialog from './ExportConfigDialog';
 import GraphListView from './GraphListView';
 import GraphView from './GraphView';
@@ -260,6 +263,37 @@ function EditorWorkspace() {
     setPersistedVersion,
     retry,
   } = useEditorWorkspaceState(id);
+
+  // Issue #128: a ref to `EditorDetailsPanel`'s imperative handle, so
+  // `PublishControl` (rendered as a sibling in the header below) can read
+  // and, when needed, persist that panel's currently-pending
+  // description/tags/allow-remix/export-attribution values before
+  // publishing — without lifting its local `useState` up wholesale, which
+  // would have meant rewriting every existing `EditorDetailsPanel`
+  // behavior/test around controlled props instead of just adding this one
+  // new access path. See `EditorDetailsPanel.tsx`'s own doc comment.
+  const detailsPanelRef = useRef<EditorDetailsPanelHandle>(null);
+
+  // Issue #128: `PublishControl`'s "auto-persist, then validate/publish"
+  // flow calls this before running `validateProjectMetadataForPublish`.
+  // "Concurrent edit safety" (the groomed task doc's term): if the Details
+  // panel's current field values already match `project`'s last-saved
+  // ones, this skips the PATCH entirely rather than sending a redundant
+  // no-op write — the common case where the user never touched the Details
+  // panel, or already clicked its own "Save changes".
+  const persistPendingDetails = useCallback(async (): Promise<PersistDetailsResult> => {
+    const panel = detailsPanelRef.current;
+    if (!panel || !project) return { status: 'skipped' };
+    const pending = panel.getPendingDetails();
+    const changed =
+      pending.description !== project.description ||
+      JSON.stringify(pending.tags) !== JSON.stringify(project.tags) ||
+      pending.allowRemix !== project.allow_public_remix ||
+      pending.exportAttribution !== project.export_attribution;
+    if (!changed) return { status: 'skipped' };
+    return panel.save();
+  }, [project]);
+
   const isNarrow = useIsNarrowViewport();
   // Issue #93: Preview is no longer one of the switchable tabs (it's always
   // rendered — see `panelHidden` below), so the switcher only ever toggles
@@ -1239,7 +1273,14 @@ function EditorWorkspace() {
           </p>
         )}
         <span className="editor-header-break" aria-hidden="true" />
-        {id && <PublishControl id={id} project={project} setProject={setProject} />}
+        {id && (
+          <PublishControl
+            id={id}
+            project={project}
+            setProject={setProject}
+            persistPendingDetails={persistPendingDetails}
+          />
+        )}
         {id && (
           <SaveControl
             projectId={id}
@@ -1676,7 +1717,14 @@ function EditorWorkspace() {
           hidden={panelHidden('details')}
         >
           <h3>Details</h3>
-          {id && <EditorDetailsPanel projectId={id} project={project} setProject={setProject} />}
+          {id && (
+            <EditorDetailsPanel
+              ref={detailsPanelRef}
+              projectId={id}
+              project={project}
+              setProject={setProject}
+            />
+          )}
         </section>
 
         <section

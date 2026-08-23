@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/client';
 import * as projectsApi from '../api/projects';
 import type { Project } from '../api/projects';
+import type { PersistDetailsResult } from './EditorDetailsPanel';
 import PublishControl from './PublishControl';
 
 /**
@@ -37,9 +38,33 @@ function baseProject(overrides: Partial<Project> = {}): Project {
   };
 }
 
-function Harness({ initialProject }: { initialProject: Project }) {
+/**
+ * Issue #128: `PublishControl` now takes a `persistPendingDetails` prop
+ * (owned by `EditorWorkspace.tsx` in production, backed by
+ * `EditorDetailsPanel`'s imperative handle) that it calls before validating
+ * for publish. This harness defaults to a resolved `{ status: 'skipped' }`
+ * — "nothing pending in the Details panel" — so every pre-existing test
+ * below, which never touched the Details panel, keeps exercising exactly
+ * the same validate-then-confirm behavior it always has. Tests that care
+ * about the auto-persist step itself pass their own `persistPendingDetails`
+ * override.
+ */
+function Harness({
+  initialProject,
+  persistPendingDetails = () => Promise.resolve({ status: 'skipped' as const }),
+}: {
+  initialProject: Project;
+  persistPendingDetails?: () => Promise<PersistDetailsResult>;
+}) {
   const [project, setProject] = useState<Project | null>(initialProject);
-  return <PublishControl id="p1" project={project} setProject={setProject} />;
+  return (
+    <PublishControl
+      id="p1"
+      project={project}
+      setProject={setProject}
+      persistPendingDetails={persistPendingDetails}
+    />
+  );
 }
 
 beforeEach(() => {
@@ -145,6 +170,110 @@ describe('PublishControl', () => {
 
     expect(await screen.findByTestId('publish-title-error')).toHaveTextContent(/meaningful title/i);
     expect(screen.getByTestId('visibility-status')).toHaveTextContent(/private/i);
+  });
+
+  describe('issue #128: auto-persist pending Details-panel metadata before publishing', () => {
+    it('persists pending metadata, then validates against the freshly-saved values and opens the confirm dialog', async () => {
+      const persisted = baseProject({ description: 'Just typed in the Details panel.' });
+      const persistPendingDetails = vi
+        .fn<() => Promise<PersistDetailsResult>>()
+        .mockResolvedValue({ status: 'success', project: persisted });
+      const user = userEvent.setup();
+
+      render(
+        <Harness
+          initialProject={baseProject({ description: '' })}
+          persistPendingDetails={persistPendingDetails}
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: /^publish$/i }));
+
+      expect(persistPendingDetails).toHaveBeenCalledTimes(1);
+      // Validation ran against the persisted result, not the stale initial
+      // project (which had a blank description and would have blocked).
+      const dialog = await screen.findByRole('alertdialog');
+      expect(dialog).toBeInTheDocument();
+      expect(screen.queryByTestId('publish-description-error')).not.toBeInTheDocument();
+    });
+
+    it('skips validation and the confirm dialog when the auto-persist fails with client-side field errors, and does not clear anything', async () => {
+      const persistPendingDetails = vi
+        .fn<() => Promise<PersistDetailsResult>>()
+        .mockResolvedValue({ status: 'client-error' });
+      const user = userEvent.setup();
+
+      render(
+        <Harness initialProject={baseProject()} persistPendingDetails={persistPendingDetails} />,
+      );
+      await user.click(screen.getByRole('button', { name: /^publish$/i }));
+
+      expect(await screen.findByTestId('publish-form-error')).toHaveTextContent(
+        /could not save your details/i,
+      );
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(mockedPublishProject).not.toHaveBeenCalled();
+    });
+
+    it('skips validation and the confirm dialog when the auto-persist fails with a network/5xx error, and Publish is retryable', async () => {
+      const persistPendingDetails = vi
+        .fn<() => Promise<PersistDetailsResult>>()
+        .mockResolvedValueOnce({ status: 'server-error' })
+        .mockResolvedValueOnce({ status: 'skipped' });
+      const user = userEvent.setup();
+
+      render(
+        <Harness initialProject={baseProject()} persistPendingDetails={persistPendingDetails} />,
+      );
+      const trigger = screen.getByRole('button', { name: /^publish$/i });
+      await user.click(trigger);
+
+      expect(await screen.findByTestId('publish-form-error')).toHaveTextContent(
+        /could not save your details before publishing\. please try again\./i,
+      );
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(trigger).toBeEnabled();
+
+      // Retry, with no further edits: the underlying problem is now gone
+      // (the mock's second resolution), and the flow succeeds.
+      await user.click(trigger);
+      expect(persistPendingDetails).toHaveBeenCalledTimes(2);
+      expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    });
+
+    it('skips the redundant PATCH (a no-op diff) and goes straight to validate+confirm', async () => {
+      const persistPendingDetails = vi
+        .fn<() => Promise<PersistDetailsResult>>()
+        .mockResolvedValue({ status: 'skipped' });
+      const user = userEvent.setup();
+
+      render(
+        <Harness initialProject={baseProject()} persistPendingDetails={persistPendingDetails} />,
+      );
+      await user.click(screen.getByRole('button', { name: /^publish$/i }));
+
+      expect(persistPendingDetails).toHaveBeenCalledTimes(1);
+      expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    });
+
+    it('canceling the confirmation dialog after a successful auto-persist leaves the project private without re-running the persist step', async () => {
+      const persisted = baseProject({ description: 'Saved via auto-persist.' });
+      const persistPendingDetails = vi
+        .fn<() => Promise<PersistDetailsResult>>()
+        .mockResolvedValue({ status: 'success', project: persisted });
+      const user = userEvent.setup();
+
+      render(
+        <Harness initialProject={baseProject()} persistPendingDetails={persistPendingDetails} />,
+      );
+      await user.click(screen.getByRole('button', { name: /^publish$/i }));
+      const dialog = await screen.findByRole('alertdialog');
+      await user.click(within(dialog).getByRole('button', { name: /cancel/i }));
+
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(screen.getByTestId('visibility-status')).toHaveTextContent(/private/i);
+      expect(mockedPublishProject).not.toHaveBeenCalled();
+      expect(persistPendingDetails).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('offers a separate, immediate unpublish action for a public project, without a confirmation dialog', async () => {

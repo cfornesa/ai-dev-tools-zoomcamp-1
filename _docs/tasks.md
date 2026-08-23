@@ -326,6 +326,30 @@ Description: Enforce a discovery gate across exploration, implementation, QA, an
 Status: PROPOSED
 GitHub issue: #108
 
+## 79. Give the editor preview and control panels usable space
+Goal: Make the editor workspace's visual hierarchy and preview area comfortable at common desktop and tablet widths without changing scene behavior.
+Description: Replace the current equal-width panel treatment with an intentional hierarchy that gives Preview a usable dominant area while keeping Details, Tools, and Inspector readable. Preserve preview aspect ratio, SVG overlay alignment, pointer-coordinate mapping, keyboard navigation, reduced-motion behavior, and the responsive narrow-width panel switcher. Verify representative desktop, tablet, and narrow widths without horizontal overflow.
+Status: PROPOSED
+GitHub issue: #109
+
+## 80. Make shapes and their attributes understandable through layers
+Goal: Make the layer/group/shape hierarchy the clear source of truth for selecting a shape and understanding which attributes the Inspector edits.
+Description: Present layers, groups, and shapes with readable stable labels and clear nesting/draw order. Synchronize canvas selection, outline selection, and Inspector context; identify the selected shape's friendly name/type and layer/group; make visibility and lock inheritance apparent; and preserve grouping, reordering, keyboard access, and schema-valid scene behavior. Do not redesign overall panel sizing or pointer-drag mechanics.
+Status: PROPOSED
+GitHub issue: #110
+
+## 81. Make selecting and dragging shapes obvious and reliable
+Goal: Give canvas manipulation clear affordances and predictable pointer behavior while preserving the keyboard-accessible outline path.
+Description: Make hover/selected states and manipulation handles discoverable at the rendered canvas scale; explain primary selection, move, resize, rotate, and cancel interactions; keep hit targets usable for small or overlapping shapes; prevent accidental edits to locked items; and verify pointer/keyboard parity, schema validity, and undo/redo behavior in browser/component coverage. Do not change the layer data model or overall workspace layout.
+Status: PROPOSED
+GitHub issue: #111
+
+## 82. Stop unexpected editor refreshes from interrupting unsaved work
+Goal: Identify and prevent unintended document reload/navigation during editing, and make unavoidable leave/recovery states explicit.
+Description: Add real-browser coverage that distinguishes intentional navigation from unexpected document refreshes. Verify controlled autosave/server-sync failures stay on the editor route, preserve working state or a recovery candidate, and show actionable errors; verify dirty and clean beforeunload behavior; make intentional leave links clear; and keep the existing Mistral credential failure journey separate.
+Status: PROPOSED
+GitHub issue: #112
+
 ## Completed execution task archive
 
 This is the canonical repository record for completed execution work. The

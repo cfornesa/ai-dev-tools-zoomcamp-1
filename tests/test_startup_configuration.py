@@ -50,6 +50,7 @@ def launcher_doubles(tmp_path):
             """\
             #!/usr/bin/env bash
             date +%s%N > "${STATE_FILE}.vite-started"
+            printf '%s\\n' "$*" > "${STATE_FILE}.npm-args"
             exit 1
             """
         )
@@ -85,6 +86,33 @@ def test_replit_uses_repository_launcher_for_startup():
 
     assert 'args = "scripts/start.sh"' in config
     assert "bash -c" not in config
+
+
+def test_replit_deployment_run_uses_the_production_wrapper_not_the_dev_server():
+    """Issue #133: the deployed process must not run Vite's dev server (with
+    its live HMR WebSocket, the "editor reloads at random" root cause) --
+    `[deployment].run` delegates to a dedicated wrapper script instead of
+    running scripts/start.sh directly, so it can select preview mode without
+    reintroducing an inline `bash -c` (see the test above)."""
+    config = (ROOT / ".replit").read_text()
+    deployment_run = next(line for line in config.splitlines() if line.startswith("run ="))
+
+    assert "scripts/start-production.sh" in deployment_run
+    assert "bash -c" not in deployment_run
+
+
+def test_production_wrapper_selects_preview_mode_via_the_shared_launcher():
+    wrapper = (ROOT / "scripts" / "start-production.sh").read_text()
+
+    assert "FRONTEND_SERVE_MODE=preview" in wrapper
+    assert 'exec "$(dirname "${BASH_SOURCE[0]}")/start.sh"' in wrapper
+
+
+def test_launcher_runs_vite_preview_against_the_built_frontend_in_preview_mode():
+    launcher = (ROOT / "scripts" / "start.sh").read_text()
+
+    assert "npm --prefix frontend run preview" in launcher
+    assert 'frontend_serve_mode="${FRONTEND_SERVE_MODE:-dev}"' in launcher
 
 
 def test_deployment_build_does_not_run_django_migrations():
@@ -151,6 +179,48 @@ def test_launcher_exits_when_django_health_times_out(launcher_doubles):
 
     assert result.returncode == 1
     assert "Django did not become healthy within 1 seconds" in result.stderr
+    assert not (state_file.parent / "startup-state.vite-started").exists()
+
+
+def test_launcher_runs_the_dev_server_by_default(launcher_doubles):
+    bin_dir, state_file = launcher_doubles
+
+    run_launcher(bin_dir, state_file, HEALTH_AFTER="1", STARTUP_TIMEOUT_SECONDS="5")
+
+    npm_args = (state_file.parent / "startup-state.npm-args").read_text()
+    assert "run dev" in npm_args
+    assert "run preview" not in npm_args
+
+
+def test_launcher_runs_vite_preview_when_frontend_serve_mode_is_preview(launcher_doubles):
+    bin_dir, state_file = launcher_doubles
+
+    run_launcher(
+        bin_dir,
+        state_file,
+        FRONTEND_SERVE_MODE="preview",
+        HEALTH_AFTER="1",
+        STARTUP_TIMEOUT_SECONDS="5",
+    )
+
+    npm_args = (state_file.parent / "startup-state.npm-args").read_text()
+    assert "run preview" in npm_args
+    assert "run dev" not in npm_args
+
+
+def test_launcher_rejects_an_invalid_frontend_serve_mode(launcher_doubles):
+    bin_dir, state_file = launcher_doubles
+
+    result = run_launcher(
+        bin_dir,
+        state_file,
+        FRONTEND_SERVE_MODE="bogus",
+        HEALTH_AFTER="1",
+        STARTUP_TIMEOUT_SECONDS="5",
+    )
+
+    assert result.returncode == 2
+    assert "Invalid FRONTEND_SERVE_MODE: bogus" in result.stderr
     assert not (state_file.parent / "startup-state.vite-started").exists()
 
 

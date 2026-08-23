@@ -4,7 +4,33 @@
 #
 # The web server is the externally visible process.  Django remains on 8000
 # because Vite proxies the API, auth, and health paths to that port.
+#
+# Issue #133: FRONTEND_SERVE_MODE selects how the frontend process is
+# started -- "dev" (default, used by the interactive Replit workflow) runs
+# Vite's own dev server with live HMR; "preview" (set only by
+# `.replit`'s `[deployment].run`) runs `vite preview` against the
+# already-built `frontend/dist/` from `[deployment].build`'s `npm run
+# build` step instead. Every connected browser holds a live HMR WebSocket
+# to the dev server, and Vite's HMR client issues a full
+# `location.reload()` when that socket disconnects/reconnects (an
+# autoscale restart, a redeploy, a transient network hiccup) -- a strong
+# match for the "editor reloads at random" symptom this issue reported,
+# since the published deployment had no reason to ever run the dev
+# server in the first place. `vite preview` has no HMR client at all, so
+# it cannot trigger this class of reload; it also inherits
+# `vite.config.ts`'s `server.proxy`/`allowedHosts`/`strictPort` settings
+# by Vite's own documented default (each `preview.*` option falls back to
+# its `server.*` counterpart except `preview.port`, which this script
+# always passes explicitly anyway), so `/api`/`/accounts`/`/health`
+# proxying to Django on 8000 is unchanged in either mode.
 set -Eeuo pipefail
+
+frontend_serve_mode="${FRONTEND_SERVE_MODE:-dev}"
+if [[ "$frontend_serve_mode" != "dev" && "$frontend_serve_mode" != "preview" ]]; then
+  printf 'Invalid FRONTEND_SERVE_MODE: %s (must be "dev" or "preview")\n' \
+    "$frontend_serve_mode" >&2
+  exit 2
+fi
 
 frontend_port="${PORT:-5000}"
 if [[ ! "$frontend_port" =~ ^[0-9]+$ ]] || (( frontend_port < 1 || frontend_port > 65535 )); then
@@ -62,7 +88,7 @@ while true; do
   fi
   if curl --silent --show-error --fail --max-time 2 \
     http://127.0.0.1:8000/health/ >/dev/null 2>&1; then
-    printf 'Django health check passed; starting Vite\n'
+    printf 'Django health check passed; starting Vite (%s mode)\n' "$frontend_serve_mode"
     break
   fi
   if (( SECONDS >= startup_deadline )); then
@@ -73,7 +99,11 @@ while true; do
   sleep 1
 done
 
-npm --prefix frontend run dev -- --host 0.0.0.0 --port "$frontend_port" &
+if [[ "$frontend_serve_mode" == "preview" ]]; then
+  npm --prefix frontend run preview -- --host 0.0.0.0 --port "$frontend_port" &
+else
+  npm --prefix frontend run dev -- --host 0.0.0.0 --port "$frontend_port" &
+fi
 frontend_pid=$!
 
 # Fail fast if either service exits, while EXIT cleanup stops its companion.

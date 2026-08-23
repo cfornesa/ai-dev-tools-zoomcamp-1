@@ -60,5 +60,13 @@ timeoutMs = 180000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["bash", "scripts/start.sh"]
+# Issue #133: scripts/start-production.sh sets FRONTEND_SERVE_MODE=preview
+# so the deployed process serves the frontend build this section's own
+# `build` command already produces (`npm run build` -> frontend/dist/) via
+# `vite preview`, instead of running Vite's dev server with a live HMR
+# WebSocket in production -- see scripts/start.sh's own comment for why
+# that caused unexpected reloads. The interactive Replit workflow
+# ([workflows.workflow] above) is unaffected: it still runs
+# scripts/start.sh directly, defaulting to "dev" mode.
+run = ["bash", "scripts/start-production.sh"]
 build = ["bash", "-c", "uv sync --locked && npm --prefix frontend ci && uv run python manage.py check --deploy && npm --prefix frontend run build"]

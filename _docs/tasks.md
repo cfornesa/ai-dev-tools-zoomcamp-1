@@ -574,8 +574,35 @@ Verification: Replaced the array expansion with a plain if/else branching on `st
 ## 90. Diagnose flaky concurrent-restore result in projectLifecycle.spec.ts
 Goal: Determine whether the two-tabs concurrent-restore scenario's intermittent 404 (instead of the expected 201) on one of two simultaneous restore requests is a real backend race or a test-timing issue, and fix whichever it is.
 Description: Found while manually verifying backlog task 81/issue #111 by running `E2E_BASE_URL=http://localhost:5000 npx playwright test interactionRuntime.spec.ts projectLifecycle.spec.ts` against a real local PostgreSQL-backed Django + Vite stack: 13/14 passed, but `projectLifecycle.spec.ts`'s "concurrent saves and restores from two tabs of the same session serialize to one consistent state" (around line 355/424) failed consistently across two consecutive runs with `expect(restoreA.status()).toBe(201)` receiving 404 instead. Unrelated to issue #111's canvas/pointer scope — no version-restore or concurrency code was touched by that task.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: #121
+Verification: Not a backend race — a test bug. The scenario hardcoded
+`versions/1/restore/`, assuming the freshly-created project's first version
+has database primary key `1`. `SceneVersion.id` is a table-wide
+auto-increment shared across every project, not a per-project counter (that
+role belongs to the separate `sequence` field), so `id === 1` only holds when
+no other version row exists anywhere in the database yet. This scenario runs
+fourth in `projectLifecycle.spec.ts`'s describe block, after three earlier
+tests already create their own projects/versions, so the assumption failed
+consistently once real prior rows existed. Fixed by looking up the actual id
+via `GET /api/projects/:id/` (`current_version`) right after project
+creation instead of assuming `1`. Verified against a real local
+PostgreSQL-backed Django + Vite stack (`AI_PROVIDER=fake`, fixture users via
+`e2e_fixtures create --json`, cleaned up after): `projectLifecycle.spec.ts`
+alone is 7/7, and `interactionRuntime.spec.ts projectLifecycle.spec.ts`
+together (the exact command that originally surfaced the flake) is 14/14.
+`make check` (580 backend tests, frontend lint/typecheck) is green; the one
+`format:check` failure it reports (`EditorWorkspace.tsx`,
+`EditorWorkspace.transform.test.tsx`) is pre-existing and confirmed
+unrelated by reproducing it against `main` before this change via
+`git stash`. Filed separately per the discovery-gate convention as backlog
+task 91 (issue #122).
+
+## 91. Fix Prettier drift in EditorWorkspace.tsx and EditorWorkspace.transform.test.tsx
+Goal: `make frontend-format-check`/`make check` pass again on `main`.
+Description: `frontend/src/pages/EditorWorkspace.tsx` and `frontend/src/pages/EditorWorkspace.transform.test.tsx` have drifted from the repo's configured Prettier style — a hint paragraph in `EditorWorkspace.tsx` and an assertion in the test file are each wrapped across extra lines Prettier would collapse. Discovered while verifying backlog task 90/issue #121; confirmed pre-existing and unrelated by reproducing the same failure against `main` via `git stash` before that task's fix was applied.
+Status: PROPOSED
+GitHub issue: #122
 
 ## Completed execution task archive
 

@@ -367,6 +367,16 @@ test.describe('Project lifecycle', () => {
     const projectId = await createBlankProjectViaUI(pageA); // version 1
     await pageB.goto(`/projects/${projectId}`);
 
+    // version 1's primary key is a global auto-increment shared across every
+    // project's versions, not a per-project sequence -- it is only "1" if no
+    // other version row exists yet anywhere in the database. Earlier tests in
+    // this same describe block already create their own projects/versions
+    // first, so it must be looked up rather than assumed.
+    const projectAtCreation = (await (
+      await apiGet(contextA, `/api/projects/${projectId}/`)
+    ).json()) as { current_version: number };
+    const firstVersionId = projectAtCreation.current_version;
+
     const scenePayload = {
       schemaVersion: 1,
       id: 'scene-concurrent-test',
@@ -418,7 +428,7 @@ test.describe('Project lifecycle', () => {
     // land, deterministically, on whichever one committed last —
     // proving no restore silently overwrote or corrupted the other.
     const [restoreA, restoreB] = await Promise.all([
-      apiPost(contextA, `/api/projects/${projectId}/versions/1/restore/`, {}),
+      apiPost(contextA, `/api/projects/${projectId}/versions/${firstVersionId}/restore/`, {}),
       apiPost(contextB, `/api/projects/${projectId}/versions/${savedA.id}/restore/`, {}),
     ]);
     expect(restoreA.status()).toBe(201);

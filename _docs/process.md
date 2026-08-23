@@ -22,7 +22,7 @@ Lifecycle
 4. QA verifies it
 5. On FAIL, back to step 3 with the QA comment as input
 6. On PASS, close the issue. Do NOT proceed until the issue can be closed.
-7. Repeat until the backlog is emptyß
+7. Repeat until the backlog is empty OR the specified task is complete.
 
 Rules
 

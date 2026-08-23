@@ -320,6 +320,12 @@ Description: Fetch current remote refs before evaluating a push and use the acti
 Status: COMPLETE
 GitHub issue: #104
 
+## 78. Capture newly discovered work before it disappears
+Goal: Ensure every new actionable issue found during a task becomes a durable, linked backlog item before the agent continues or closes the current task.
+Description: Enforce a discovery gate across exploration, implementation, QA, and review. Search the canonical backlog, local task plans, and existing GitHub issues for duplicates; create a PROPOSED entry in `_docs/tasks.md` and a matching GitHub issue when the work is new; link both records; explicitly record any unavailable issue linkage; and reconcile all discovered work before the current task is marked complete. Keep ordinary pending work out of long-term memory while preserving durable blockers and lessons in `.agents/memory/`.
+Status: PROPOSED
+GitHub issue: #108
+
 ## Completed execution task archive
 
 This is the canonical repository record for completed execution work. The

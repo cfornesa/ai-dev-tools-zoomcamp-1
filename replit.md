@@ -28,6 +28,11 @@ pending item reveals durable platform behavior, a reusable constraint, or an
 unresolved verification boundary, record that knowledge in a linked memory
 topic and follow the capture loop in `_docs/process.md`.
 
+When an agent discovers new actionable work, the discovery gate requires a
+duplicate search, a `PROPOSED` backlog entry, and a matching linked GitHub
+issue before the work is continued or deferred. If GitHub is unavailable,
+the missing issue link must remain explicitly recorded.
+
 ## Required secrets
 
 Configure these through Replit Secrets:

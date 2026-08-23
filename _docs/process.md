@@ -59,19 +59,40 @@ Rules
 Use this loop whenever work reveals something incomplete or uncertain:
 
 1. **Capture immediately:** Write the item down before changing context.
-2. **Classify it:** Put ordinary work, follow-up behavior, and acceptance
+2. **Apply the discovery gate:** If the item is actionable and outside the
+   current scope, stop unrelated implementation and create a proposed
+   backlog task before continuing. The task must have a goal, description,
+   status, acceptance criteria, and next action.
+3. **Classify it:** Put ordinary work, follow-up behavior, and acceptance
    criteria in `_docs/tasks.md`; put a durable constraint, unresolved
    platform behavior, or reusable lesson in a linked
    `.agents/memory/<topic>.md`.
-3. **Add evidence:** State what was observed, what remains unverified, and
+4. **Add evidence:** State what was observed, what remains unverified, and
    what result would resolve the uncertainty. Never store a secret as
    evidence.
-4. **Link the surfaces:** A task may link to a memory topic when the task
+5. **Link the surfaces:** A task may link to a memory topic when the task
    depends on that lesson. The memory index must link to the topic, not to
    conversation-local identifiers.
-5. **Reconcile before exit:** Update the task status and acceptance checklist,
+6. **Reconcile before exit:** Update the task status and acceptance checklist,
    merge duplicate memory entries, and leave a clear next action if the work
    cannot close.
+
+### Discovery gate
+
+For every new actionable issue found during exploration, implementation, QA,
+or review:
+
+1. Search `_docs/tasks.md`, `.local/tasks/`, and the GitHub issue list for an
+   existing equivalent before creating anything.
+2. If no equivalent exists, add a `PROPOSED` entry to `_docs/tasks.md` and
+   create a matching GitHub issue when repository access is available.
+3. Put the issue link in the backlog entry and the backlog/task reference in
+   the issue body. If issue creation is unavailable, record that pending
+   linkage explicitly; never silently discard it.
+4. Only then decide whether to implement the item now, defer it, or return
+   it to the user for prioritization.
+5. Before marking the current task complete, repeat the search for newly
+   discovered actionable items and reconcile every item.
 
 ### Where each item belongs
 

@@ -43,6 +43,14 @@ execution plan. Do not put ordinary TODOs or task status in memory. Use
 decisions, or lessons that future agents would otherwise lose. The complete
 capture and reconciliation loop is documented in `_docs/process.md`.
 
+**Discovery gate:** whenever exploration, implementation, QA, or review finds
+an actionable issue outside the current scope, stop and check for duplicates
+in the backlog, task files, and GitHub issues. If it is new, create a
+`PROPOSED` backlog entry and matching GitHub issue, link both records, and
+only then continue or defer the work. If issue access is unavailable, record
+the missing link explicitly instead of dropping the item. Reconcile newly
+discovered issues before declaring the current task complete.
+
 Environment setup (clean checkout)
 
 Django reads required settings (secret key, PostgreSQL `DATABASE_URL`)

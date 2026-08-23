@@ -91,6 +91,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -271,17 +272,19 @@ describe('issue #126 category (c): rendering-overlay duplication', () => {
     assertOneToOnePerShape(container, ['shape-a']);
   });
 
-  it('an unbound (no active behaviors) shape still paints its body in the SVG layer exactly once, unaffected by the fix', async () => {
+  it('an unbound (no active behaviors) shape paints its body zero times in the SVG layer — the p5 canvas is the sole body layer (issue #130)', async () => {
     const scene = baseScene({ shapes: [circleShape('shape-a'), circleShape('shape-b')] });
     const { container } = await loadWorkspace(scene);
 
-    // No bindings/graph -> `hasActiveBehaviors` is false -> the p5 canvas
-    // and this SVG layer are both driven synchronously by the same
-    // `workingCopy`, so the SVG layer remains the (only, still
-    // synchronous) source of the visible body per issue #93's original
-    // behavior.
-    expect(svgBodyElementCount(container, 'shape-a')).toBe(1);
-    expect(svgBodyElementCount(container, 'shape-b')).toBe(1);
+    // No bindings/graph -> `hasActiveBehaviors` is false, but issue #130
+    // found the SVG layer painting a body here too was itself a real bug
+    // (it never applied `transform.opacity`, unlike the p5 canvas
+    // underneath it — a translucent shape rendered fully opaque, stacked on
+    // its own correctly-translucent p5 render). The SVG layer no longer
+    // paints a body in either case; see p5Adapter.test.ts for pixel-level
+    // coverage of the p5 canvas' own rendering.
+    expect(svgBodyElementCount(container, 'shape-a')).toBe(0);
+    expect(svgBodyElementCount(container, 'shape-b')).toBe(0);
     assertOneToOnePerShape(container, ['shape-a', 'shape-b']);
   });
 

@@ -6,6 +6,7 @@ import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
+import { shapeOutlineRows, shapeSelectButton } from '../testUtils/shapeOutline';
 
 /**
  * Task 80 (issue #80): rendered interaction tests for the lock guard's
@@ -34,6 +35,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -166,9 +168,7 @@ describe('EditorWorkspace lock guard: handle visibility', () => {
     // Deselect first.
     fireEvent.click(canvas, { clientX: 5, clientY: 5 });
 
-    const shapeListButton = within(screen.getByRole('list', { name: 'Shape list' })).getByRole(
-      'button',
-    );
+    const shapeListButton = shapeSelectButton(shapeOutlineRows()[0]);
     expect(shapeListButton).toHaveAttribute('aria-pressed', 'false');
 
     // Click on the shape body (circle center, 400,300).
@@ -192,9 +192,7 @@ describe('EditorWorkspace lock guard: single-shape gesture blocked', () => {
     fireEvent.pointerMove(window, { clientX: 460, clientY: 260 });
     fireEvent.pointerUp(window, { clientX: 460, clientY: 260 });
 
-    const shapeListButton = within(screen.getByRole('list', { name: 'Shape list' })).getByRole(
-      'button',
-    );
+    const shapeListButton = shapeSelectButton(shapeOutlineRows()[0]);
     // Selection happened (the pointerdown click-to-select still fires)...
     expect(shapeListButton).toHaveAttribute('aria-pressed', 'true');
     // ...but the shape never moved, and no undo step was produced.

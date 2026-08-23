@@ -37,7 +37,6 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
-import { expandSection } from './support/expandCollapsibleSections.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
@@ -46,7 +45,10 @@ async function createBlankProjectViaUI(page: Page): Promise<void> {
   await page.goto('/');
   await page.getByRole('button', { name: 'Create new animation' }).click();
   await page.waitForURL(/\/projects\/[^/]+$/);
-  await expandSection(page, 'Add & edit shapes');
+  // Issue #131: "Add circle/rectangle/line/polygon" moved from the Tools
+  // panel's (formerly collapsed) "Add & edit shapes" section into the
+  // always-visible LayersPanel toolbar, so no section needs expanding to
+  // reach them anymore.
 }
 
 function outlineList(page: Page): Locator {
@@ -215,8 +217,10 @@ test.describe('Layers panel', () => {
 
     // Keyboard-only reorder: the existing "Move up" button swaps the same
     // pair straight back -- the exact position a drag could also reach,
-    // reachable with no pointer at all.
+    // reachable with no pointer at all. Issue #131 moved this button behind
+    // a per-row <details>/<summary> disclosure, so it must be opened first.
     const thirdCircleRowAfterDrag = await shapeRow(page, thirdCircleLabel!);
+    await thirdCircleRowAfterDrag.getByRole('button', { name: 'More' }).click();
     await thirdCircleRowAfterDrag.getByRole('button', { name: /^Move .* down$/ }).click();
 
     const zAfterKeyboard = await canvasZOrder(page);

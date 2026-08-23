@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,6 +6,7 @@ import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
+import { shapeOutlineRows, shapeOutlineSelectButtons } from '../testUtils/shapeOutline';
 
 /**
  * Task 26: interaction tests for the preview's pointer-based move/resize/
@@ -29,6 +30,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -151,9 +153,7 @@ describe('EditorWorkspace transform handles: visibility', () => {
     let moveHandle = screen.getByTestId('shape-handle-move');
     expect(moveHandle.style.left).toBe('43.75%');
 
-    const [circleButton] = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
+    const [circleButton] = shapeOutlineSelectButtons();
     fireEvent.click(circleButton);
 
     // Circle is now selected; its move handle sits at its center (400,300)
@@ -261,7 +261,7 @@ describe('EditorWorkspace transform handles: move', () => {
     // is the original "add circle".
     expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('clamps live intermediate positions to the schema range mid-drag, not just on release', async () => {
@@ -301,9 +301,7 @@ describe('EditorWorkspace transform handles: move', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add rectangle' }));
     const canvas = mockCanvasRect();
 
-    const [circleButton, rectButton] = within(
-      screen.getByRole('list', { name: 'Shape list' }),
-    ).getAllByRole('button');
+    const [circleButton, rectButton] = shapeOutlineSelectButtons();
     expect(rectButton).toHaveAttribute('aria-pressed', 'true'); // rect auto-selected by add
 
     // Both shapes overlap at the canvas center; the rect (added last) is
@@ -336,7 +334,7 @@ describe('EditorWorkspace transform handles: move', () => {
     // Undo still only reverts the original add — the cancelled drag left
     // no history entry of its own.
     fireEvent.click(undoButton);
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 });
 
@@ -422,7 +420,7 @@ describe('EditorWorkspace transform handles: idle handles do not manipulate a st
     // Only the original "add circle" is on the undo stack; the empty-space
     // pointerdown/move/up produced no additional history entry.
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
   });
 });

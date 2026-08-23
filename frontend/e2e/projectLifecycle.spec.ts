@@ -79,8 +79,16 @@ async function createBlankProjectViaUI(page: Page): Promise<string> {
   return match[1];
 }
 
+// Issue #131: the Tools panel's separate "Shape list" (`<ul aria-label="Shape
+// list">`) was removed as a straight duplicate of the outline `LayersPanel`
+// already rendered -- select-a-shape now goes through that outline instead.
+// Scoped to `[data-outline-kind="shape"]` rows' `button[aria-pressed]`
+// specifically (the row's "select this shape" button) rather than any
+// button in the outline list, since a shape row also has a color-swatch
+// toggle, a delete button, and a "More" disclosure summary that would
+// otherwise match too.
 function shapeListItem(page: Page) {
-  return page.getByRole('list', { name: 'Shape list' }).getByRole('button');
+  return page.locator('[data-outline-kind="shape"] button[aria-pressed]');
 }
 
 function versionRow(page: Page, sequence: number) {

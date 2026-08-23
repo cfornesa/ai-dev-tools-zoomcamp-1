@@ -1,4 +1,4 @@
-import { useState, type DragEvent as ReactDragEvent } from 'react';
+import { useEffect, useState, type DragEvent as ReactDragEvent, type ReactNode } from 'react';
 
 import type { SceneDocument } from '../api/projects';
 import {
@@ -6,7 +6,21 @@ import {
   moveItemToLayer as moveItemToLayerOp,
   type OutlineRow,
 } from './sceneOutline';
+import type { ShapeType } from './sceneShapes';
+import { getColorFieldValue } from './shapeStyleFields';
 import type { SceneEditor } from './useSceneEditor';
+
+/** Issue #131: moved here verbatim from `EditorWorkspace.tsx`'s Tools
+ * panel, which used to render these four buttons above a `CollapsibleSection
+ * heading="Add & edit shapes"` that also duplicated this panel's own shape
+ * listing. Creation now lives alongside the listing it populates — see this
+ * file's own doc comment above and issue #131 for the full rationale. */
+const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
+  { type: 'circle', label: 'Add circle' },
+  { type: 'rect', label: 'Add rectangle' },
+  { type: 'line', label: 'Add line' },
+  { type: 'path', label: 'Add polygon' },
+];
 
 /**
  * Issue #127: `SceneOutlinePanel.tsx` (Task 24, extended by Tasks 76/80)
@@ -181,6 +195,121 @@ function MoveControls({
       >
         Move to group
       </button>
+    </span>
+  );
+}
+
+/** Issue #131: every row's *secondary* controls (move up/down, the
+ * `MoveControls` reparent select+button pair) live behind this one
+ * `<details>`/`<summary>` disclosure, so a row's always-visible primary view
+ * stays to name/visibility/lock/color/delete — the small, frequently-used
+ * set — while the keyboard-reachable reparenting/reordering controls
+ * `MoveControls`' own doc comment describes are still fully present, just
+ * one extra `<summary>` activation away. `<summary>` itself is a real,
+ * natively focusable/keyboard-operable disclosure widget (Enter/Space
+ * toggles it), so nothing here is any less keyboard-operable than before —
+ * it's simply not *always* in the tab order. */
+function RowMoreDisclosure({ children }: { children: ReactNode }) {
+  return (
+    <details className="editor-outline-row-more">
+      <summary>More</summary>
+      {children}
+    </details>
+  );
+}
+
+/** Issue #131: the inline fill-color editor attached to every shape row's
+ * primary view. Reuses the exact mutation path `ShapeInspectorPanel.tsx`'s
+ * `ColorStyleField` already exercises (`updateSelectedShapeColorField`), but
+ * cannot reuse that component verbatim — that one always edits *the* active
+ * selection, while this one is one of potentially many rows, each needing
+ * to edit *its own* shape without disturbing what's currently selected
+ * elsewhere.
+ *
+ * Hazard this works around (see this task's own write-up and
+ * `useSceneEditor.ts`'s `selectShape`/`updateSelectedShapeColorField`):
+ * `updateSelectedShapeColorField` always acts on the hook's *current-render*
+ * `selectedShape`, and a `selectShape(id)` call doesn't update that state
+ * synchronously within the same handler. Calling both in one click handler
+ * would silently edit whatever shape *was* selected before this click, not
+ * `row.id`. So the editor's editable field is gated on
+ * `sceneEditor.selectedShapeId === row.id` — it only ever renders (and only
+ * ever calls `updateSelectedShapeColorField`) once a render has confirmed
+ * selection actually landed on this row's shape. Opening the editor is a
+ * separate two-step affair: click the swatch, which both requests selection
+ * and requests the editor open; the *open* local flag is inert until that
+ * render-confirmed condition is also true. */
+function ShapeColorSwatch({
+  row,
+  sceneEditor,
+}: {
+  row: Extract<OutlineRow, { kind: 'shape' }>;
+  sceneEditor: SceneEditor;
+}) {
+  const [wantsOpen, setWantsOpen] = useState(false);
+  const isSelected = sceneEditor.selectedShapeId === row.id;
+  const isOpen = wantsOpen && isSelected;
+  const shape = sceneEditor.shapes.find((s) => s.id === row.id) ?? null;
+  const value = shape ? getColorFieldValue(shape, 'fill') : null;
+
+  const [draft, setDraft] = useState(value ?? '');
+  const [error, setError] = useState<string | null>(null);
+
+  // Re-sync the draft to the canonical value whenever the editor (re)opens
+  // on this row, or the underlying value changes out from under it (e.g.
+  // an undo) while it's open — the same re-sync `ColorStyleField` performs
+  // on `value` changes.
+  useEffect(() => {
+    if (isOpen) {
+      setDraft(value ?? '');
+      setError(null);
+    }
+  }, [isOpen, value]);
+
+  const fieldId = `layer-row-fill-${row.id}`;
+  const errorId = `${fieldId}-error`;
+
+  return (
+    <span className="editor-outline-color-swatch">
+      <button
+        type="button"
+        className="editor-outline-color-swatch-toggle"
+        style={{ backgroundColor: value ?? 'transparent' }}
+        aria-label={`Edit fill color for ${row.label}`}
+        aria-expanded={isOpen}
+        onClick={() => {
+          sceneEditor.selectShape(row.id);
+          setWantsOpen(true);
+        }}
+      >
+        {value ? '' : '∅'}
+      </button>
+      {isOpen && (
+        <span className="editor-outline-color-swatch-editor">
+          <input
+            id={fieldId}
+            type="text"
+            value={draft}
+            aria-label={`Fill color hex for ${row.label}`}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            onChange={(event) => {
+              const next = event.target.value;
+              setDraft(next);
+              const outcome = sceneEditor.updateSelectedShapeColorField('fill', next);
+              setError(outcome.ok ? null : outcome.error);
+            }}
+          />
+          <button type="button" onClick={() => setWantsOpen(false)}>
+            Close
+          </button>
+          {error && (
+            <span id={errorId} role="alert">
+              {error}
+            </span>
+          )}
+        </span>
+      )}
     </span>
   );
 }
@@ -500,27 +629,29 @@ function OutlineRowItem({
         </button>
         <button
           type="button"
-          aria-label={`Move layer ${row.name} up`}
-          disabled={row.isFirst}
-          onClick={() => sceneEditor.moveLayer(row.id, 'up')}
-        >
-          Move up
-        </button>
-        <button
-          type="button"
-          aria-label={`Move layer ${row.name} down`}
-          disabled={row.isLast}
-          onClick={() => sceneEditor.moveLayer(row.id, 'down')}
-        >
-          Move down
-        </button>
-        <button
-          type="button"
           aria-label={`Delete layer ${row.name}`}
           onClick={() => sceneEditor.deleteLayer(row.id)}
         >
           Delete layer
         </button>
+        <RowMoreDisclosure>
+          <button
+            type="button"
+            aria-label={`Move layer ${row.name} up`}
+            disabled={row.isFirst}
+            onClick={() => sceneEditor.moveLayer(row.id, 'up')}
+          >
+            Move up
+          </button>
+          <button
+            type="button"
+            aria-label={`Move layer ${row.name} down`}
+            disabled={row.isLast}
+            onClick={() => sceneEditor.moveLayer(row.id, 'down')}
+          >
+            Move down
+          </button>
+        </RowMoreDisclosure>
       </li>
     );
   }
@@ -595,27 +726,36 @@ function OutlineRowItem({
         </button>
         <button
           type="button"
-          aria-label={`Move ${row.name} up`}
-          disabled={row.isFirst}
-          onClick={moveUp}
+          aria-label={`Delete group ${row.name}`}
+          onClick={() => sceneEditor.deleteGroupSelected(row.id)}
         >
-          Move up
+          Delete group
         </button>
-        <button
-          type="button"
-          aria-label={`Move ${row.name} down`}
-          disabled={row.isLast}
-          onClick={moveDown}
-        >
-          Move down
-        </button>
-        <MoveControls
-          itemId={row.id}
-          itemLabel={row.name}
-          itemLayerId={row.layerId}
-          currentGroupId={sceneEditor.groups.find((g) => g.childIds.includes(row.id))?.id ?? null}
-          sceneEditor={sceneEditor}
-        />
+        <RowMoreDisclosure>
+          <button
+            type="button"
+            aria-label={`Move ${row.name} up`}
+            disabled={row.isFirst}
+            onClick={moveUp}
+          >
+            Move up
+          </button>
+          <button
+            type="button"
+            aria-label={`Move ${row.name} down`}
+            disabled={row.isLast}
+            onClick={moveDown}
+          >
+            Move down
+          </button>
+          <MoveControls
+            itemId={row.id}
+            itemLabel={row.name}
+            itemLayerId={row.layerId}
+            currentGroupId={sceneEditor.groups.find((g) => g.childIds.includes(row.id))?.id ?? null}
+            sceneEditor={sceneEditor}
+          />
+        </RowMoreDisclosure>
       </li>
     );
   }
@@ -672,29 +812,39 @@ function OutlineRowItem({
       {inherited.length > 0 ? (
         <span className="editor-outline-inherited-state"> ({inherited.join(', ')})</span>
       ) : null}
+      <ShapeColorSwatch row={row} sceneEditor={sceneEditor} />
       <button
         type="button"
-        aria-label={`Move ${moveLabel} up`}
-        disabled={row.isFirst}
-        onClick={moveUp}
+        aria-label={`Delete shape ${label}`}
+        onClick={() => sceneEditor.deleteSelected(row.id)}
       >
-        Move up
+        Delete shape
       </button>
-      <button
-        type="button"
-        aria-label={`Move ${moveLabel} down`}
-        disabled={row.isLast}
-        onClick={moveDown}
-      >
-        Move down
-      </button>
-      <MoveControls
-        itemId={row.id}
-        itemLabel={moveLabel}
-        itemLayerId={row.layerId}
-        currentGroupId={sceneEditor.groups.find((g) => g.childIds.includes(row.id))?.id ?? null}
-        sceneEditor={sceneEditor}
-      />
+      <RowMoreDisclosure>
+        <button
+          type="button"
+          aria-label={`Move ${moveLabel} up`}
+          disabled={row.isFirst}
+          onClick={moveUp}
+        >
+          Move up
+        </button>
+        <button
+          type="button"
+          aria-label={`Move ${moveLabel} down`}
+          disabled={row.isLast}
+          onClick={moveDown}
+        >
+          Move down
+        </button>
+        <MoveControls
+          itemId={row.id}
+          itemLabel={moveLabel}
+          itemLayerId={row.layerId}
+          currentGroupId={sceneEditor.groups.find((g) => g.childIds.includes(row.id))?.id ?? null}
+          sceneEditor={sceneEditor}
+        />
+      </RowMoreDisclosure>
     </li>
   );
 }
@@ -775,6 +925,17 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
           {sceneEditor.outlineError}
         </p>
       )}
+
+      {/* Issue #131: shape creation, formerly a separate toolbar in
+          EditorWorkspace.tsx's Tools panel, now lives directly above the
+          listing it populates — see this file's module doc comment. */}
+      <div role="group" aria-label="Add shape" className="editor-tool-group">
+        {SHAPE_TYPES.map(({ type, label }) => (
+          <button key={type} type="button" onClick={() => sceneEditor.addShape(type)}>
+            {label}
+          </button>
+        ))}
+      </div>
 
       <div role="group" aria-label="Outline actions" className="editor-tool-group">
         <button type="button" onClick={() => sceneEditor.addLayer()}>

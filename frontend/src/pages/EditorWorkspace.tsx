@@ -37,14 +37,12 @@ import {
   GRID_SIZE,
   hitTestTopmostShapeAt,
   shapeBounds,
-  shapeLabel,
   type AlignmentGuide,
   type Bounds,
   type HandleKind,
   type PathShape,
   type Point,
   type Shape,
-  type ShapeType,
 } from './sceneShapes';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useSnapSettings } from '../editor/snapSettings';
@@ -79,13 +77,6 @@ import RandomnessIndicator from './RandomnessIndicator';
 import SaveControl from './SaveControl';
 import ShapeInspectorPanel from './ShapeInspectorPanel';
 import VersionHistoryPanel from './VersionHistoryPanel';
-
-const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
-  { type: 'circle', label: 'Add circle' },
-  { type: 'rect', label: 'Add rectangle' },
-  { type: 'line', label: 'Add line' },
-  { type: 'path', label: 'Add polygon' },
-];
 
 /**
  * Task 64 (issue #64): the "Exit without saving" confirmation, as its own
@@ -1159,81 +1150,6 @@ function EditorWorkspace() {
     };
   }
 
-  // Issue #93: the Preview canvas previously had zero visual rendering for
-  // shapes — `.editor-scene-shape` divs carried no geometry, so nothing a
-  // user added was ever visible. This renders each shape's actual fill/
-  // stroke/geometry as SVG, following the same "translate(x, y) then
-  // rotate(rotation)" convention `sceneShapes.ts`'s handle-position helpers
-  // (and `p5Adapter.ts`) already use, so what's drawn here always agrees
-  // with where the move/resize/rotate handles sit.
-  function shapeGeometry(shape: Shape) {
-    const { x, y, rotation } = shape.transform;
-    const fill = shape.style.fill ?? 'none';
-    // A line has no fill, so its "fill" is really its visible color; a null
-    // stroke elsewhere would otherwise render completely invisibly, which
-    // defeats the point of this rendering fix.
-    const stroke =
-      shape.style.stroke ?? (shape.type === 'line' ? shape.style.fill : null) ?? '#1e1b4b';
-    const strokeWidth = shape.style.strokeWidth;
-    const transform = rotation ? `rotate(${rotation} ${x} ${y})` : undefined;
-
-    switch (shape.type) {
-      case 'circle':
-        return (
-          <circle
-            cx={x}
-            cy={y}
-            r={shape.radius}
-            fill={fill}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-            transform={transform}
-          />
-        );
-      case 'rect':
-        return (
-          <rect
-            x={x}
-            y={y}
-            width={shape.width}
-            height={shape.height}
-            rx={shape.cornerRadius}
-            ry={shape.cornerRadius}
-            fill={fill}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-            transform={transform}
-          />
-        );
-      case 'line':
-        return (
-          <line
-            x1={x}
-            y1={y}
-            x2={shape.x2}
-            y2={shape.y2}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-            transform={transform}
-          />
-        );
-      case 'path': {
-        const d = shape.points
-          .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x + p.x} ${y + p.y}`)
-          .join(' ');
-        return (
-          <path
-            d={shape.closed ? `${d} Z` : d}
-            fill={shape.closed ? fill : 'none'}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-            transform={transform}
-          />
-        );
-      }
-    }
-  }
-
   function shapeSummary(shape: Shape): string {
     switch (shape.type) {
       case 'circle':
@@ -1511,39 +1427,31 @@ function EditorWorkspace() {
                     data-shape-type={shape.type}
                     className={shapeClassName}
                   >
-                    {/* Issue #126: while `hasActiveBehaviors` is true, the p5
-                        canvas beneath this overlay (see the
-                        `usePreviewRuntime`/`hasActiveBehaviors` wiring above)
-                        is continuously re-rendered from the runtime's live,
-                        behavior-evaluated shape positions — never from
-                        `workingCopy` directly, since bindings/graph output is
-                        ephemeral and intentionally never written back to
-                        scene state (see `usePreviewRuntime.ts`'s own doc
-                        comment). This `shapeGeometry(shape)` call, by
-                        contrast, always draws from the static
-                        `sceneEditor.shapes` (i.e. `workingCopy`), which does
-                        not move with the runtime. Drawing both at once made
-                        every behavior-driven shape appear twice — a static
-                        copy frozen at its scene-JSON position from this SVG
-                        layer, plus a second, live copy animating underneath
-                        on the p5 canvas — the root cause of issue #126's
-                        "duplicated shapes" report (category (c): two
-                        rendering layers independently painting the same
-                        shape body, one of them a stale render never
-                        superseded by the runtime's newer output). Suppressing
-                        the static body paint here whenever behaviors are
-                        active leaves the p5 canvas as the single visible
-                        source of truth for shape bodies in that mode, while
-                        every other affordance this `<g>` provides (the
-                        testid, the selection/hover outline below, the
-                        `<title>` summary) is unaffected — none of them paint
-                        a shape body of their own. The static (no active
-                        bindings/graph) case is untouched: `shapeGeometry`
-                        still renders exactly as issue #93 established, since
-                        the p5 canvas and this overlay are then both driven by
-                        the same synchronous `workingCopy` render and can
-                        never disagree. */}
-                    {!hasActiveBehaviors && shapeGeometry(shape)}
+                    {/* Issue #126 (behavior-active case) and issue #130
+                        (static case): the p5 canvas beneath this overlay
+                        (`previewRef`, mounted in the sibling div with
+                        `zIndex: -1` above) is the single source of truth for
+                        every shape's *body* — continuously re-rendered from
+                        the runtime's live, behavior-evaluated positions
+                        while `hasActiveBehaviors` is true
+                        (`usePreviewRuntime`), and synchronously re-rendered
+                        from `workingCopy` on every change otherwise (the
+                        `previewRef.current.render(workingCopy)` effect
+                        above). This SVG layer used to also paint each
+                        shape's fill/stroke geometry (`shapeGeometry`,
+                        removed by issue #130) on top of that canvas for the
+                        static case, reasoning the two were always in sync so
+                        drawing both was harmless. That reasoning missed that
+                        `shapeGeometry` never applied `transform.opacity` —
+                        p5Adapter's `drawShapeGeometry` does — so any shape
+                        with reduced opacity rendered fully opaque here,
+                        stacked on its correctly-translucent p5 render
+                        underneath: a real, visible double-paint, not just a
+                        redundant identical one. This `<g>` now only ever
+                        provides non-body affordances (the testid, the
+                        selection/hover outline below, the `<title>`
+                        summary) — no path here paints a shape body of its
+                        own, active behaviors or not. */}
                     {/* A visible selection highlight independent of the
                         shape's own fill/stroke — a dashed bounding-box
                         outline, the same rotation-ignoring approximation
@@ -1742,15 +1650,16 @@ function EditorWorkspace() {
               state, so expanding/collapsing one never affects another (not
               a single-open-at-a-time accordion). See
               `EditorWorkspace.accordion.test.tsx`. */}
-          <CollapsibleSection heading="Add & edit shapes">
-            <div role="group" aria-label="Add shape" className="editor-tool-group">
-              {SHAPE_TYPES.map(({ type, label }) => (
-                <button key={type} type="button" onClick={() => sceneEditor.addShape(type)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-
+          {/* Issue #131: this section used to own shape creation (the four
+              "Add circle/rectangle/line/polygon" buttons) and a duplicate
+              `<ul aria-label="Shape list">` shape listing. Both moved into
+              `LayersPanel.tsx` (its outline is now the single place shapes
+              are listed, and its own toolbar is where they're created) —
+              see that file's module doc comment. What's left here is
+              genuinely just shape *actions* (duplicate/delete the current
+              selection, undo/redo) plus the snap preference and lock-error
+              channel, hence the renamed heading. */}
+          <CollapsibleSection heading="Shape actions">
             {/* Issue #78: the client-only snap-to-grid / alignment-guide
                 toggle — editor-specific, so it lives here in the Tools
                 panel (not the global header, unlike Reduce motion). */}
@@ -1802,25 +1711,6 @@ function EditorWorkspace() {
                 Redo
               </button>
             </div>
-
-            <h4>Shapes</h4>
-            {sceneEditor.shapes.length === 0 ? (
-              <p>No shapes yet.</p>
-            ) : (
-              <ul aria-label="Shape list" className="editor-shape-list">
-                {sceneEditor.shapes.map((shape) => (
-                  <li key={shape.id}>
-                    <button
-                      type="button"
-                      aria-pressed={shape.id === sceneEditor.selectedShapeId}
-                      onClick={() => sceneEditor.selectShape(shape.id)}
-                    >
-                      {shapeLabel(shape, sceneEditor.shapes)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </CollapsibleSection>
 
           {/* Issue #95, point 7: what was one "Camera & demo controls"

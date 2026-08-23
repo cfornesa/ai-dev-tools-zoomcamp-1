@@ -548,29 +548,41 @@ export function useSceneEditor(
     setSelectedShapeId(copy.id);
   }, [workingCopy, selectedShapeId, commit, checkUnlocked]);
 
-  const deleteSelected = useCallback(() => {
-    if (!workingCopy || !selectedShapeId) return;
-    const all = rawShapes(workingCopy);
-    const stillExists = all.some((s) => (s as { id?: unknown })?.id === selectedShapeId);
-    if (!stillExists) {
-      // Stale selection: clear it without touching scene state.
-      setSelectedShapeId(null);
-      return;
-    }
-    if (
-      !checkUnlocked(
-        [selectedShapeId],
-        "This shape is on a locked layer or group and can't be deleted. Unlock it first.",
-      )
-    ) {
-      return;
-    }
-    // Task 24: a shape can now belong to a group, so deleting it must also
-    // drop its id from that group's childIds (and prune the group if that
-    // was its last child) rather than just filtering `shapes`.
-    commit(removeShapeFromScene(workingCopy, selectedShapeId));
-    setSelectedShapeId(null);
-  }, [workingCopy, selectedShapeId, commit, checkUnlocked]);
+  // Issue #131: generalized to take an explicit shape `id`, defaulting to
+  // the current selection so every pre-existing caller (the Tools panel's
+  // "Delete selected shape" button) is unchanged. This lets LayersPanel's
+  // per-row delete button remove *any* row's shape directly, without first
+  // calling `selectShape` and racing this hook's not-yet-committed state —
+  // see this hook's module doc comment / issue #131's stale-closure hazard
+  // for why a two-call `selectShape` + `deleteSelected` sequence in one
+  // event handler would silently operate on the *previous* selection.
+  const deleteSelected = useCallback(
+    (id?: string) => {
+      const targetId = id ?? selectedShapeId;
+      if (!workingCopy || !targetId) return;
+      const all = rawShapes(workingCopy);
+      const stillExists = all.some((s) => (s as { id?: unknown })?.id === targetId);
+      if (!stillExists) {
+        // Stale selection: clear it without touching scene state.
+        if (targetId === selectedShapeId) setSelectedShapeId(null);
+        return;
+      }
+      if (
+        !checkUnlocked(
+          [targetId],
+          "This shape is on a locked layer or group and can't be deleted. Unlock it first.",
+        )
+      ) {
+        return;
+      }
+      // Task 24: a shape can now belong to a group, so deleting it must also
+      // drop its id from that group's childIds (and prune the group if that
+      // was its last child) rather than just filtering `shapes`.
+      commit(removeShapeFromScene(workingCopy, targetId));
+      if (targetId === selectedShapeId) setSelectedShapeId(null);
+    },
+    [workingCopy, selectedShapeId, commit, checkUnlocked],
+  );
 
   // Task 60 (issue #58): Inspector panel field edits for the single
   // actively selected shape's transform/style properties (position X/Y,
@@ -1081,22 +1093,29 @@ export function useSceneEditor(
     if (outcome.ok) setSelectedShapeId(null);
   }, [workingCopy, selectedShapeId, applyOutcome]);
 
-  const deleteGroupSelected = useCallback(() => {
-    if (!workingCopy || !selectedShapeId) return;
-    if (!getGroups(workingCopy).some((g) => g.id === selectedShapeId)) return;
-    const guard = guardUnlocked(
-      workingCopy,
-      [selectedShapeId],
-      "This group is on a locked layer or is itself locked, and can't be deleted. Unlock it first.",
-    );
-    if (!guard.ok) {
-      setOutlineError(guard.error);
-      return;
-    }
-    const outcome = deleteGroupRecursive(workingCopy, selectedShapeId);
-    applyOutcome(outcome);
-    if (outcome.ok) setSelectedShapeId(null);
-  }, [workingCopy, selectedShapeId, applyOutcome]);
+  // Issue #131: generalized to take an explicit group `id`, defaulting to
+  // the current selection — same rationale as `deleteSelected` above, for
+  // LayersPanel's per-row delete button on a group row.
+  const deleteGroupSelected = useCallback(
+    (id?: string) => {
+      const targetId = id ?? selectedShapeId;
+      if (!workingCopy || !targetId) return;
+      if (!getGroups(workingCopy).some((g) => g.id === targetId)) return;
+      const guard = guardUnlocked(
+        workingCopy,
+        [targetId],
+        "This group is on a locked layer or is itself locked, and can't be deleted. Unlock it first.",
+      );
+      if (!guard.ok) {
+        setOutlineError(guard.error);
+        return;
+      }
+      const outcome = deleteGroupRecursive(workingCopy, targetId);
+      applyOutcome(outcome);
+      if (outcome.ok && targetId === selectedShapeId) setSelectedShapeId(null);
+    },
+    [workingCopy, selectedShapeId, applyOutcome],
+  );
 
   // --- Task 34: behavior cards ---
   // `addBehaviorCard` never silently overwrites an occupied continuous

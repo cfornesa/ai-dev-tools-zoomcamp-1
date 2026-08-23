@@ -120,8 +120,11 @@ async function createBlankProjectViaUI(page: Page): Promise<string> {
   return match[1];
 }
 
+// Issue #131: see the identical helper's comment in projectLifecycle.spec.ts
+// -- the Tools panel's separate "Shape list" was removed as a duplicate of
+// the outline `LayersPanel` already rendered.
 function shapeListItem(page: Page) {
-  return page.getByRole('list', { name: 'Shape list' }).getByRole('button');
+  return page.locator('[data-outline-kind="shape"] button[aria-pressed]');
 }
 
 /** Navigates to the given project's editor and fills in meaningful

@@ -97,14 +97,16 @@ type Fixtures = Extract<E2EState, { available: true }>;
 
 /**
  * Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
- * defaults closed. Opens only "Add & edit shapes" -- enough for every
- * scenario's own "Add circle" -- rather than every section
+ * defaults closed. Deliberately does *not* open every section up front
  * (`expandAllCollapsibleSections`), because `BehaviorCardsPanel.tsx`'s
  * target `<select>` (inside "Behaviors") seeds its selected option from
  * `targetOptions[0]` only once, at mount (`useState`'s initializer) --
  * opening "Behaviors" before a shape exists mounts that panel with zero
  * target options, and it never recovers even after a shape is added
- * later (issue #116). Each scenario below calls
+ * later (issue #116). Issue #131 moved "Add circle" (and the other shape
+ * types) out of the Tools panel's "Add & edit shapes" section entirely,
+ * into the always-visible `LayersPanel` toolbar, so no section needs
+ * expanding to reach it anymore. Each scenario below calls
  * `expandAllCollapsibleSections` itself once it's safe to (immediately,
  * if it never adds a shape; after `Add circle`, if it does and drives
  * `BehaviorCardsPanel`'s `followHand`/`reactToPinch`/`emitParticles`
@@ -116,7 +118,6 @@ async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.waitForURL(/\/projects\/[^/]+$/);
   const match = /\/projects\/([^/]+)$/.exec(page.url());
   if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
-  await expandSection(page, 'Add & edit shapes');
   return match[1];
 }
 

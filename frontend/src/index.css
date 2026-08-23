@@ -1259,6 +1259,55 @@ textarea:disabled {
   font-style: italic;
 }
 
+/* Issue #131: each row's secondary controls (move up/down, the
+   MoveControls reparent select+button pair) collapse behind this
+   disclosure so a row's always-visible primary view stays small — see
+   `LayersPanel.tsx`'s `RowMoreDisclosure`. */
+.editor-outline-row-more {
+  display: inline-block;
+}
+
+.editor-outline-row-more > summary {
+  cursor: pointer;
+  color: var(--text);
+  opacity: 0.75;
+}
+
+.editor-outline-row-more[open] {
+  display: block;
+  flex-basis: 100%;
+  margin-top: 4px;
+  padding-left: 1.5rem;
+}
+
+/* Issue #131: the inline fill-color swatch/editor on a shape row — see
+   `LayersPanel.tsx`'s `ShapeColorSwatch`. */
+.editor-outline-color-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-outline-color-swatch-toggle {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0;
+  font-size: 0.7em;
+  line-height: 1;
+}
+
+.editor-outline-color-swatch-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-outline-color-swatch-editor input {
+  width: 7rem;
+}
+
 /* Task 80 (issue #110): the Inspector panel's "Layer 1 › Group A › Circle 2"
    selection-location breadcrumb (ShapeInspectorPanel.tsx's
    SelectionBreadcrumb), shown above the editable attribute fields so the

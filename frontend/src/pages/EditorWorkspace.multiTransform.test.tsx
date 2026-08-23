@@ -6,6 +6,7 @@ import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
+import { shapeOutlineRows, shapeOutlineSelectButtons } from '../testUtils/shapeOutline';
 
 /**
  * Issue #77: interaction tests for the preview's combined multi-shape
@@ -31,6 +32,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -171,9 +173,7 @@ describe('EditorWorkspace combined multi-shape handles: drag (translate)', () =>
     // Select the rect first (so its live summary text is visible) and
     // start the drag on the circle's body (center 400,300) — a member of
     // the active multi-selection — which should move both shapes.
-    const [circleButton] = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
+    const [circleButton] = shapeOutlineSelectButtons();
     fireEvent.click(circleButton);
 
     fireEvent.pointerDown(canvas, { clientX: 400, clientY: 300 });
@@ -190,7 +190,7 @@ describe('EditorWorkspace combined multi-shape handles: drag (translate)', () =>
     // Only the two "add shape" steps remain.
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('starting a drag on a shape outside the multi-selection falls back to ordinary single-shape select+drag', async () => {
@@ -205,9 +205,7 @@ describe('EditorWorkspace combined multi-shape handles: drag (translate)', () =>
     multiSelectShapesAt(0, 1);
     expect(screen.getByTestId('group-handle-move')).toBeInTheDocument();
 
-    const shapeButtons = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
+    const shapeButtons = shapeOutlineSelectButtons();
     const [firstCircleButton, , secondCircleButton] = shapeButtons;
     // Explicitly select the first circle so the active selection starts
     // out as something other than the shape this test is about to drag.
@@ -242,9 +240,7 @@ describe('EditorWorkspace combined multi-shape handles: drag (translate)', () =>
     await addCircleAndRect();
     const canvas = mockCanvasRect();
     multiSelectShapesAt(0, 1);
-    const [circleButton] = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
+    const [circleButton] = shapeOutlineSelectButtons();
     fireEvent.click(circleButton); // so the circle's live summary is visible below
 
     // Drag the group's move handle far enough that the circle (starting
@@ -268,9 +264,7 @@ describe('EditorWorkspace combined multi-shape handles: drag (translate)', () =>
     await addCircleAndRect();
     const canvas = mockCanvasRect();
     multiSelectShapesAt(0, 1);
-    const [circleButton] = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
+    const [circleButton] = shapeOutlineSelectButtons();
     fireEvent.click(circleButton); // so the circle's live summary is visible below
     const undoButton = screen.getByRole('button', { name: 'Undo' });
 
@@ -288,7 +282,7 @@ describe('EditorWorkspace combined multi-shape handles: drag (translate)', () =>
     // steps remain.
     fireEvent.click(undoButton);
     fireEvent.click(undoButton);
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 });
 
@@ -334,7 +328,7 @@ describe('EditorWorkspace combined multi-shape handles: rotate', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 });
 

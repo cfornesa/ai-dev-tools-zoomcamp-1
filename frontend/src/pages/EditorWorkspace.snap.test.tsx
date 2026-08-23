@@ -6,6 +6,7 @@ import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
+import { shapeOutlineRows, shapeOutlineSelectButtons } from '../testUtils/shapeOutline';
 
 /**
  * Issue #78: interaction tests for the preview's snap-to-grid and
@@ -39,6 +40,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -237,9 +239,7 @@ describe('EditorWorkspace snap preference: alignment guides on move', () => {
     // Now enable guides (and grid, to also exercise the "guide wins"
     // precedence rule) and select+drag A toward B.
     setSnapToggles(true, true);
-    const [aButton] = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
+    const [aButton] = shapeOutlineSelectButtons();
     fireEvent.click(aButton);
 
     fireEvent.pointerDown(canvas, { clientX: 400, clientY: 300 }); // A's body (350-450, 260-340)
@@ -295,7 +295,7 @@ describe('EditorWorkspace snap preference: cancel and toggling', () => {
     // Only the original "add circle" is left to undo — the cancelled,
     // snapped drag created no history entry of its own.
     fireEvent.click(undoButton);
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('turning grid snapping off mid-gesture stops snapping later frames of that same gesture', async () => {
@@ -355,9 +355,7 @@ describe('EditorWorkspace snap preference: multi-shape group gestures are unaffe
     // Select the circle explicitly so its live summary text is visible
     // (only the actively selected shape renders one) — matching
     // EditorWorkspace.multiTransform.test.tsx's own convention.
-    const [circleButton] = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
+    const [circleButton] = shapeOutlineSelectButtons();
     fireEvent.click(circleButton);
 
     fireEvent.pointerDown(canvas, { clientX: 400, clientY: 300 }); // circle body, a group member

@@ -6,6 +6,11 @@ import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
+import {
+  shapeOutlineRows,
+  shapeOutlineSelectButtons,
+  shapeSelectButton,
+} from '../testUtils/shapeOutline';
 
 /**
  * Task 60 (issue #58): rendered-UI tests for the Inspector panel's
@@ -36,6 +41,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -180,9 +186,7 @@ describe('ShapeInspectorPanel: selection states', () => {
 
     expect(numericInput('Position X').value).toBe('350');
 
-    const [circleButton] = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
+    const [circleButton] = shapeOutlineSelectButtons();
     fireEvent.click(circleButton);
 
     expect(numericInput('Position X').value).toBe('400');
@@ -255,9 +259,7 @@ describe('ShapeInspectorPanel: editing', () => {
   it('commits a valid direct-entry edit to canonical scene state and the preview, without changing the shape id', async () => {
     await loadReadyWorkspace();
     await addAndSelectCircle();
-    const shapeButton = within(screen.getByRole('list', { name: 'Shape list' })).getByRole(
-      'button',
-    );
+    const shapeButton = shapeSelectButton(shapeOutlineRows()[0]);
     const originalLabel = shapeButton.textContent; // "circle (xxxxxxxx)" — includes the stable id prefix
 
     fireEvent.change(numericInput('Position X'), { target: { value: '450' } });
@@ -305,7 +307,7 @@ describe('ShapeInspectorPanel: editing', () => {
     // Only the original "add circle" is on the undo stack — the rejected
     // edit produced no additional history entry.
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('rejects a non-finite value (Infinity) and never commits it', async () => {
@@ -318,7 +320,7 @@ describe('ShapeInspectorPanel: editing', () => {
     expect(numericInput('Rotation').value).toBe('Infinity');
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('rejects a syntactically-valid number that overflows to Infinity and never commits it', async () => {
@@ -330,7 +332,7 @@ describe('ShapeInspectorPanel: editing', () => {
     expect(screen.getByText(/Rotation must be a finite number/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('supports keyboard increment/decrement with no pointer interaction, committing each step to canonical state', async () => {
@@ -374,7 +376,7 @@ describe('ShapeInspectorPanel: editing', () => {
     expect((screen.getByLabelText('Fill') as HTMLInputElement).value).toBe('not-a-color');
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('commits a valid fill/stroke edit, reflected back in the field', async () => {

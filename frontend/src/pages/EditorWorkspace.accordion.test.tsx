@@ -38,6 +38,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -109,14 +110,14 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
     renderWorkspace();
 
     await screen.findByRole('region', { name: 'Tools' });
-    const toggles = screen.getAllByRole('button', { name: /Add & edit shapes|Camera/ });
+    const toggles = screen.getAllByRole('button', { name: /Shape actions|Camera/ });
     toggles.forEach((toggle) => expect(toggle).toHaveAttribute('aria-expanded', 'false'));
   });
 
   // Issue #127: "Scene outline" was removed from Tools (it's now the
   // dedicated, always-visible Layers panel — no longer a
   // `CollapsibleSection` at all), so this independence check now pairs
-  // "Add & edit shapes" against "Camera", one of Tools' remaining
+  // "Shape actions" against "Camera", one of Tools' remaining
   // collapsible sections.
   it('expanding one Tools section leaves a different, still-closed section closed', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
@@ -127,7 +128,7 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
     await screen.findByRole('region', { name: 'Tools' });
 
     const cameraToggle = screen.getByRole('button', { name: /Camera/ });
-    const addEditToggle = screen.getByRole('button', { name: /Add & edit shapes/ });
+    const addEditToggle = screen.getByRole('button', { name: /Shape actions/ });
     expect(cameraToggle).toHaveAttribute('aria-expanded', 'false');
     expect(addEditToggle).toHaveAttribute('aria-expanded', 'false');
 

@@ -7,6 +7,11 @@ import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
+import {
+  shapeOutlineRows,
+  shapeOutlineSelectButtons,
+  shapeSelectButton,
+} from '../testUtils/shapeOutline';
 
 /**
  * Task 23: interaction tests for shape add/select/duplicate/delete and
@@ -30,6 +35,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -118,9 +124,7 @@ describe('EditorWorkspace shape creation', () => {
     await user.click(screen.getByRole('button', { name: 'Add line' }));
     await user.click(screen.getByRole('button', { name: 'Add polygon' }));
 
-    const list = screen.getByRole('list', { name: 'Shape list' });
-    const items = within(list).getAllByRole('listitem');
-    expect(items).toHaveLength(4);
+    expect(shapeOutlineRows()).toHaveLength(4);
     expect(screen.getByText(/4 shape\(s\) in the working copy/)).toBeInTheDocument();
   });
 
@@ -133,12 +137,11 @@ describe('EditorWorkspace shape creation', () => {
     expect(addCircleButton).toHaveFocus();
     await user.keyboard('{Enter}');
 
-    const list = screen.getByRole('list', { name: 'Shape list' });
-    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    expect(shapeOutlineRows()).toHaveLength(1);
 
     // A second keyboard-only add, this time via Space activation.
     await user.keyboard(' ');
-    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(shapeOutlineRows()).toHaveLength(2);
   });
 
   it('gives each added shape a distinct, stable id shown in the shape list', async () => {
@@ -148,77 +151,64 @@ describe('EditorWorkspace shape creation', () => {
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
-    const list = screen.getByRole('list', { name: 'Shape list' });
-    const labels = within(list)
-      .getAllByRole('button')
-      .map((btn) => btn.textContent);
+    const labels = shapeOutlineSelectButtons().map((btn) => btn.textContent);
     expect(new Set(labels).size).toBe(2);
   });
 });
 
-// Issue #93: the Preview canvas previously rendered no visible shapes at
-// all — `.editor-scene-shape` carried no size/position/fill/stroke.
-// These assert real, geometry-derived SVG output per shape type, plus a
-// visible highlight on the selected shape, rather than only the textContent
-// checks the rest of this suite already relies on.
-describe('EditorWorkspace shape canvas rendering (issue #93)', () => {
-  it('renders a circle with its actual fill/stroke/geometry, not an empty placeholder', async () => {
+// Issue #93 originally added real, geometry-derived SVG output per shape
+// type here because the p5 preview canvas had no visible shape rendering of
+// its own at the time. Issue #130 found that once the p5 canvas gained its
+// own shape-body rendering, this SVG layer painting a body *too* was a real
+// double-paint bug (it never applied `transform.opacity`, so a translucent
+// shape rendered fully opaque here, stacked on its own correctly-translucent
+// p5 render underneath) — see EditorWorkspace.tsx's shape-`<g>` comment.
+// These now assert the SVG layer paints *no* body for any shape type,
+// leaving the p5 canvas (pixel-level fidelity covered by p5Adapter.test.ts)
+// as the sole body-rendering surface; a visible highlight on the selected
+// shape is unaffected, since selection outlines are a separate element.
+describe('EditorWorkspace shape canvas rendering (issue #93 / #130)', () => {
+  it('paints no circle body in the SVG layer for a circle shape — the p5 canvas is the sole body layer', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
     const canvas = screen.getByTestId('scene-canvas');
     const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
-    const circle = shapeGroup.querySelector('circle');
-    expect(circle).not.toBeNull();
-    expect(circle).toHaveAttribute('r', '50');
-    expect(circle).toHaveAttribute('fill', '#4f46e5');
-    expect(circle).toHaveAttribute('stroke', '#1e1b4b');
+    expect(shapeGroup.querySelector('circle')).toBeNull();
   });
 
-  it('renders a rectangle as a real, positioned/sized rect element', async () => {
+  it('paints no rect body in the SVG layer for a rectangle shape', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
 
     const canvas = screen.getByTestId('scene-canvas');
-    const rect = within(canvas)
-      .getByTestId(/^scene-shape-/)
-      .querySelector('rect');
-    expect(rect).not.toBeNull();
-    expect(rect).toHaveAttribute('width', '100');
-    expect(rect).toHaveAttribute('height', '80');
+    const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
+    // A rect shape's selection outline is itself a `<rect>` (the dashed
+    // bounding box), so this must exclude it specifically to check for the
+    // shape's own painted body rather than that outline.
+    expect(shapeGroup.querySelector('rect:not(.editor-scene-shape-selection-outline)')).toBeNull();
   });
 
-  it('renders a line as a visible stroked line element even with no explicit stroke color', async () => {
+  it('paints no line body in the SVG layer for a line shape', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add line' }));
 
     const canvas = screen.getByTestId('scene-canvas');
-    const line = within(canvas)
-      .getByTestId(/^scene-shape-/)
-      .querySelector('line');
-    expect(line).not.toBeNull();
-    // A line has no `fill` to fall back to visually — it must always get a
-    // non-'none' stroke, even for a shape whose style.stroke happens to be
-    // null, or it would render completely invisibly.
-    expect(line?.getAttribute('stroke')).not.toBe('none');
-    expect(line?.getAttribute('stroke')).not.toBeNull();
+    const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
+    expect(shapeGroup.querySelector('line')).toBeNull();
   });
 
-  it('renders a closed polygon as a filled, closed SVG path', async () => {
+  it('paints no path body in the SVG layer for a closed polygon shape', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add polygon' }));
 
     const canvas = screen.getByTestId('scene-canvas');
-    const path = within(canvas)
-      .getByTestId(/^scene-shape-/)
-      .querySelector('path');
-    expect(path).not.toBeNull();
-    expect(path?.getAttribute('d')).toMatch(/Z$/);
-    expect(path).toHaveAttribute('fill', '#4f46e5');
+    const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
+    expect(shapeGroup.querySelector('path')).toBeNull();
   });
 
   it('gives the selected shape a visible highlight outline distinct from its own fill/stroke', async () => {
@@ -247,9 +237,7 @@ describe('EditorWorkspace shape selection', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
-    const shapeButton = within(screen.getByRole('list', { name: 'Shape list' })).getByRole(
-      'button',
-    );
+    const shapeButton = shapeSelectButton(shapeOutlineRows()[0]);
     await user.click(shapeButton);
 
     expect(shapeButton).toHaveAttribute('aria-pressed', 'true');
@@ -261,9 +249,7 @@ describe('EditorWorkspace shape selection', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
 
-    const shapeButton = within(screen.getByRole('list', { name: 'Shape list' })).getByRole(
-      'button',
-    );
+    const shapeButton = shapeSelectButton(shapeOutlineRows()[0]);
     // Deselect first (add auto-selects), to prove selection can be driven
     // purely by keyboard from a neutral state.
     shapeButton.focus();
@@ -284,10 +270,7 @@ describe('EditorWorkspace shape selection', () => {
     canvas.getBoundingClientRect = () =>
       ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 }) as DOMRect;
 
-    const listItems = within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole(
-      'button',
-    );
-    const [, rectButton] = listItems; // rect was added second, so it's on top
+    const [, rectButton] = shapeOutlineSelectButtons(); // rect was added second, so it's on top
 
     fireEvent.click(canvas, { clientX: 400, clientY: 300 });
 
@@ -305,9 +288,7 @@ describe('EditorWorkspace shape selection', () => {
 
     fireEvent.click(canvas, { clientX: 10, clientY: 10 }); // far from the centered circle
 
-    const shapeButton = within(screen.getByRole('list', { name: 'Shape list' })).getByRole(
-      'button',
-    );
+    const shapeButton = shapeSelectButton(shapeOutlineRows()[0]);
     expect(shapeButton).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Delete selected shape' })).toBeDisabled();
   });
@@ -321,8 +302,7 @@ describe('EditorWorkspace duplicate', () => {
 
     await user.click(screen.getByRole('button', { name: 'Duplicate selected shape' }));
 
-    const list = screen.getByRole('list', { name: 'Shape list' });
-    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(shapeOutlineRows()).toHaveLength(2);
     expect(screen.getByText(/2 shape\(s\) in the working copy/)).toBeInTheDocument();
   });
 
@@ -339,14 +319,14 @@ describe('EditorWorkspace delete', () => {
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
 
-    const list = screen.getByRole('list', { name: 'Shape list' });
-    const [circleButton, rectButton] = within(list).getAllByRole('button');
+    const [circleButton, rectButton] = shapeOutlineSelectButtons();
     await user.click(circleButton); // select the circle (rect was auto-selected by add)
 
     await user.click(screen.getByRole('button', { name: 'Delete selected shape' }));
 
-    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
-    expect(within(list).getByRole('button')).toHaveTextContent(rectButton.textContent ?? '');
+    const rowsAfter = shapeOutlineRows();
+    expect(rowsAfter).toHaveLength(1);
+    expect(shapeSelectButton(rowsAfter[0])).toHaveTextContent(rectButton.textContent ?? '');
   });
 
   it('deletes the selected shape via keyboard-only interaction', async () => {
@@ -361,7 +341,7 @@ describe('EditorWorkspace delete', () => {
     deleteButton.focus();
     await user.keyboard('{Enter}');
 
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
     expect(screen.getByText(/0 shape\(s\) in the working copy/)).toBeInTheDocument();
   });
 
@@ -370,9 +350,7 @@ describe('EditorWorkspace delete', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
-    const shapeButton = within(screen.getByRole('list', { name: 'Shape list' })).getByRole(
-      'button',
-    );
+    const shapeButton = shapeSelectButton(shapeOutlineRows()[0]);
     await user.click(shapeButton); // toggling selection off by re-clicking is not supported;
     // instead directly verify the delete button reflects disabled state when
     // there is no selection by deselecting via a canvas click on empty space.
@@ -382,9 +360,7 @@ describe('EditorWorkspace delete', () => {
     fireEvent.click(canvas, { clientX: 5, clientY: 5 });
 
     expect(screen.getByRole('button', { name: 'Delete selected shape' })).toBeDisabled();
-    expect(
-      within(screen.getByRole('list', { name: 'Shape list' })).getAllByRole('listitem'),
-    ).toHaveLength(1);
+    expect(shapeOutlineRows()).toHaveLength(1);
   });
 });
 
@@ -396,7 +372,7 @@ describe('EditorWorkspace undo/redo', () => {
 
     await user.click(screen.getByRole('button', { name: 'Undo' }));
 
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('redoes via the Redo button after an undo', async () => {
@@ -407,8 +383,7 @@ describe('EditorWorkspace undo/redo', () => {
 
     await user.click(screen.getByRole('button', { name: 'Redo' }));
 
-    const list = screen.getByRole('list', { name: 'Shape list' });
-    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    expect(shapeOutlineRows()).toHaveLength(1);
   });
 
   it('undoes via Ctrl+Z and redoes via Ctrl+Shift+Z keyboard shortcuts', async () => {
@@ -417,11 +392,10 @@ describe('EditorWorkspace undo/redo', () => {
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
     await user.keyboard('{Control>}z{/Control}');
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
 
     await user.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
-    const list = screen.getByRole('list', { name: 'Shape list' });
-    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    expect(shapeOutlineRows()).toHaveLength(1);
   });
 
   it('Undo/Redo buttons are disabled when there is nothing to undo/redo', async () => {

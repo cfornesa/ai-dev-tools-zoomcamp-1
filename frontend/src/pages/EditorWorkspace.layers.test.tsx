@@ -48,6 +48,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -110,6 +111,20 @@ function outlineList() {
 
 function outlineRows() {
   return within(outlineList()).getAllByRole('listitem');
+}
+
+/** Issue #131: a row's move up/down buttons and `MoveControls` reparent
+ * select+button pair now live behind a per-row `<details>`/`<summary>`
+ * disclosure (`LayersPanel.tsx`'s `RowMoreDisclosure`) rather than being
+ * always visible, so any interaction with them has to open the row's
+ * disclosure first — the same "click summary, then use what's inside"
+ * sequence a real user (and a real browser, which actually hides collapsed
+ * `<details>` content — jsdom does not) needs. `<summary>` doesn't expose
+ * a `button` role via the accessibility tree computation this suite's
+ * `getByRole` relies on, so this targets it by its visible "More" text
+ * instead. */
+async function openMore(row: HTMLElement, user: ReturnType<typeof userEvent.setup>) {
+  await user.click(within(row).getByText('More'));
 }
 
 /** A stub `DataTransfer` covering only what `LayersPanel.tsx` touches
@@ -260,6 +275,10 @@ describe('EditorWorkspace scene outline: layers', () => {
     await user.click(screen.getByRole('button', { name: 'Add layer' }));
 
     // Second layer is "Layer 2"; move it above "Layer 1".
+    const layer2Row = within(outlineList())
+      .getAllByRole('listitem')
+      .find((r) => r.dataset.outlineKind === 'layer' && within(r).queryByDisplayValue('Layer 2'))!;
+    await openMore(layer2Row, user);
     await user.click(screen.getByRole('button', { name: 'Move layer Layer 2 up' }));
 
     const layerNames = within(outlineList())
@@ -284,22 +303,13 @@ describe('EditorWorkspace scene outline: layers', () => {
 });
 
 describe('EditorWorkspace scene outline: selection sync', () => {
-  it('selecting a shape from the outline also marks it selected on the shape list', async () => {
-    await loadReadyWorkspace();
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
-
-    const outlineShapeButton = within(outlineList()).getByRole('button', { name: 'Circle 1' });
-    await user.click(outlineShapeButton);
-
-    expect(outlineShapeButton).toHaveAttribute('aria-pressed', 'true');
-    const shapeListButton = within(screen.getByRole('list', { name: 'Shape list' })).getByRole(
-      'button',
-    );
-    expect(shapeListButton).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('selecting a shape from the shape list also marks it selected in the outline', async () => {
+  // Issue #131: the Tools panel's separate "Shape list" `<ul>` (a
+  // duplicate of this exact outline) was removed — `LayersPanel.tsx`'s
+  // outline is now the single place shapes are listed and selected, so
+  // there's nothing left to cross-check selection against. This still
+  // exercises the same underlying selection behavior these two tests used
+  // to (clicking a shape row marks it, and only it, selected).
+  it('selecting a shape in the outline marks only that shape selected', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
@@ -310,12 +320,9 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     });
     expect(outlineRectangleButton).toHaveAttribute('aria-pressed', 'true');
 
-    const shapeListCircleButton = within(
-      screen.getByRole('list', { name: 'Shape list' }),
-    ).getByRole('button', { name: 'Circle 1' });
-    await user.click(shapeListCircleButton);
-
     const outlineCircleButton = within(outlineList()).getByRole('button', { name: 'Circle 1' });
+    await user.click(outlineCircleButton);
+
     expect(outlineCircleButton).toHaveAttribute('aria-pressed', 'true');
     expect(outlineRectangleButton).toHaveAttribute('aria-pressed', 'false');
   });
@@ -440,7 +447,6 @@ describe('EditorWorkspace scene outline: grouping', () => {
     const rows = within(outlineList()).getAllByRole('listitem');
     expect(rows.filter((r) => r.dataset.outlineKind === 'group')).toHaveLength(0);
     expect(rows.filter((r) => r.dataset.outlineKind === 'shape')).toHaveLength(0);
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
   });
 });
 
@@ -457,6 +463,7 @@ describe('EditorWorkspace scene outline: reorder', () => {
     expect(shapeRowsBefore.map((r) => r.dataset.outlineId)).toHaveLength(2);
     const [firstId, secondId] = shapeRowsBefore.map((r) => r.dataset.outlineId);
 
+    await openMore(shapeRowsBefore[1], user);
     await user.click(within(shapeRowsBefore[1]).getByRole('button', { name: /Move .* up/ }));
 
     const shapeRowsAfter = within(outlineList())
@@ -476,6 +483,7 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     const shapeRow = within(outlineList())
       .getAllByRole('listitem')
       .find((r) => r.dataset.outlineKind === 'shape')!;
+    await openMore(shapeRow, user);
     const layerSelect = within(shapeRow).getByRole('combobox', { name: /Target layer for/ });
     await user.selectOptions(layerSelect, 'Layer 2');
     await user.click(within(shapeRow).getByRole('button', { name: /Move .* to layer/ }));
@@ -499,6 +507,7 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     const shapeRow = within(outlineList())
       .getAllByRole('listitem')
       .find((r) => r.dataset.outlineKind === 'shape')!;
+    await openMore(shapeRow, user);
     const layerSelect = within(shapeRow).getByRole('combobox', {
       name: /Target layer for/,
     }) as HTMLSelectElement;
@@ -534,6 +543,7 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
       .getAllByRole('listitem')
       .filter((r) => r.dataset.outlineKind === 'shape');
     const looseShapeRow = shapeRows[shapeRows.length - 1];
+    await openMore(looseShapeRow, user);
 
     const groupSelect = within(looseShapeRow).getByRole('combobox', { name: /Target group for/ });
     await user.selectOptions(groupSelect, 'Group 1');
@@ -558,6 +568,7 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     const groupedShapeRow = within(outlineList())
       .getAllByRole('listitem')
       .find((r) => r.dataset.outlineKind === 'shape')!;
+    await openMore(groupedShapeRow, user);
     const groupSelect = within(groupedShapeRow).getByRole('combobox', {
       name: /Target group for/,
     }) as HTMLSelectElement;
@@ -604,6 +615,7 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
       .getAllByRole('listitem')
       .filter((r) => r.dataset.outlineKind === 'group');
     const outerGroupRow = groupRows.find((r) => within(r).queryByText(/Group: Group 2/))!;
+    await openMore(outerGroupRow, user);
     const groupSelect = within(outerGroupRow).getByRole('combobox', { name: /Target group for/ });
     await user.selectOptions(groupSelect, 'Group 1');
     await user.click(within(outerGroupRow).getByRole('button', { name: /Move .* to group/ }));
@@ -620,6 +632,7 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     const shapeRow = within(outlineList())
       .getAllByRole('listitem')
       .find((r) => r.dataset.outlineKind === 'shape')!;
+    await openMore(shapeRow, user);
     const layerSelect = within(shapeRow).getByRole('combobox', { name: /Target layer for/ });
     await user.selectOptions(layerSelect, 'Layer 2');
     await user.click(within(shapeRow).getByRole('button', { name: /Move .* to layer/ }));

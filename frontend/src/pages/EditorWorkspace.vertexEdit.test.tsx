@@ -6,6 +6,7 @@ import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
+import { shapeOutlineRows, shapeSelectButton } from '../testUtils/shapeOutline';
 import { POSITION_LIMIT } from './sceneShapes';
 
 /**
@@ -34,6 +35,7 @@ function baseProject(overrides: Partial<Project> = {}): Project {
     visibility: 'private',
     allow_public_remix: false,
     export_attribution: false,
+    thumbnail_url: null,
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -301,7 +303,7 @@ describe('Vertex drag', () => {
     // The only remaining history entry is the original "add polygon".
     expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('clamps live intermediate positions to the schema point range', async () => {
@@ -346,7 +348,7 @@ describe('Vertex drag', () => {
     expect(screen.getByTestId('path-vertex-handle-0').style.left).toBe('50%');
     // No extra undo step: only the original "add polygon" remains.
     fireEvent.click(undoButton);
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
   });
 
   it('a plain click on a handle (no movement) selects the vertex without creating an undo step', async () => {
@@ -365,7 +367,7 @@ describe('Vertex drag', () => {
     // Only "add polygon" is on the undo stack — the no-op click/release
     // produced no history entry.
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
   });
 });
@@ -430,7 +432,7 @@ describe('Delete via keyboard', () => {
     // Only "add polygon" is on the undo stack — the no-op Delete produced
     // no additional history entry.
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(screen.getByText('No shapes yet.')).toBeInTheDocument();
+    expect(shapeOutlineRows()).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
   });
 
@@ -442,7 +444,7 @@ describe('Delete via keyboard', () => {
     await loadReadyWorkspace(
       baseVersion({ scene_json: { ...BLANK_SCENE, shapes: [pathShape('p1', points)] } }),
     );
-    fireEvent.click(screen.getByRole('list', { name: 'Shape list' }).querySelector('button')!);
+    fireEvent.click(shapeSelectButton(shapeOutlineRows()[0]));
     mockCanvasRect();
     fireEvent.click(editPointsToggle());
 
@@ -516,7 +518,7 @@ describe('Keyboard point-coordinate list', () => {
     await loadReadyWorkspace(
       baseVersion({ scene_json: { ...BLANK_SCENE, shapes: [pathShape('p1', points)] } }),
     );
-    fireEvent.click(screen.getByRole('list', { name: 'Shape list' }).querySelector('button')!);
+    fireEvent.click(shapeSelectButton(shapeOutlineRows()[0]));
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete point 1' }));
 

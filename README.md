@@ -1,10 +1,12 @@
-# ai-dev-tools-zoomcamp-1
+# AI Dev Tools Zoomcamp Project 1: Creatrweb Animation Studio
 
-A Django + React/TypeScript app for building and editing "scenes" — a
+I created this project as part of the Week 1 project for the AI Dev Tools Zoomcamp offered by <a href="https://datatalks.club" target="_blank">DataTalks Club</a>. The GitHub repository for this specific project details and associated assignment is located at <a href="https://github.com/DataTalksClub/ai-dev-tools-zoomcamp/tree/main" target="_blank">this link</a>.
+
+This project is a Django + React/TypeScript app for building and editing "scenes", instantiated as JavaScript library animations. Each scene contains a
 canonical JSON-schema-backed scene domain with projects, versions,
 drafts, templates, and an AI-assisted editing workflow. The backend is
 a Django project at the repo root; the frontend is a Vite-based
-React/TypeScript app in `frontend/`.
+React/TypeScript app in `frontend/`. This project is hosted at Replit and the live site can be found <a href="https://animate.creatrweb.com">here</a>.
 
 **[AGENTS.md](./AGENTS.md) is the authoritative reference** for exact
 commands, environment variables, and repo layout. This README is a

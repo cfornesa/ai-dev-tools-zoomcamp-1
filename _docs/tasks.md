@@ -932,3 +932,180 @@ runtime, at zero cost. Documented in AGENTS.md and
 `.agents/memory/critical-actions.md`. `make check` unaffected (no
 Python/TypeScript source touched); `.replit` TOML validity verified with
 `python3 -c "import tomllib; tomllib.load(open('.replit','rb'))"`.
+
+## 99. Stop the editor from double-painting shapes for scenes with no active behaviors
+Goal: A newly added shape (circle/rectangle/line/polygon) renders exactly
+once in the editor preview, with no visible doubling/ghosting for ordinary
+scenes that have no active bindings or behavior graph.
+Description: A 2026-08-23 user report against the live Replit production
+deployment found shapes appearing duplicated after being added. Issue #126
+("Prevent duplicated shapes from appearing after editor load or recovery")
+previously fixed one duplication mechanism by guarding the SVG overlay with
+`!hasActiveBehaviors && shapeGeometry(shape)` in
+`frontend/src/pages/EditorWorkspace.tsx` (~line 1546), but its own resolution
+notes state the static (no active bindings/graph) case is deliberately left
+untouched — the p5 canvas (`EditorWorkspace.tsx:705-730`) and the SVG overlay
+(~line 1483 onward) both still paint every shape whenever no behaviors are
+active, which is the common case right after adding a shape. Investigate
+whether this double-paint is only a rendering-layer redundancy (positions
+agree, so it is invisible except for stacked semi-transparent shapes) or
+whether it is an actual data-duplication bug — the user-visible screenshot
+this task originated from is ambiguous.
+Status: PROPOSED
+GitHub issue: [#130](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/130)
+Evidence: See investigation notes above; `EditorWorkspace.tsx:1540-1546`
+comment block explicitly documents the static case as out of scope for #126.
+Discovery gate: Searched `_docs/tasks.md` for existing duplication entries;
+found #126 (task 95, closed) covers a different code path (load/recovery),
+not the static-scene double-render case described here.
+
+## 100. Unify the Shapes and Layers panels into one cohesive per-layer UI
+Goal: A single "Layers" panel is the one place to see, select, and edit every
+shape in the scene — no separate "Add & edit shapes" panel duplicating shape
+listing, and each row reads as one clearly delineated layer rather than a
+loose cluster of buttons.
+Description: A 2026-08-23 user report found the "Add & edit shapes" panel
+(`EditorWorkspace.tsx:1745`, inside Tools) and the "Scene outline"/Layers
+panel (`LayersPanel.tsx`, promoted to its own top-level region by issue #127)
+remain two disconnected surfaces, and that Layers rows (~lines 487-611) pack
+5-8 unlabeled controls (visible/lock, move up/down, move-to-layer,
+move-to-group, delete) per row with no visual separation between layers and
+no inline edit/color affordance — color editing exists only in a third,
+separately-reachable Inspector panel (issue #58). Chosen direction (default;
+confirm before implementing): one shape = one layer by default (already
+close to true structurally), each layer row shows a compact primary view
+(name, visibility/lock, color swatch opening an inline color picker, delete)
+with secondary reorder/reparent controls collapsed behind a details
+disclosure, and shape creation ("Add circle/rectangle/line/polygon") moves
+into or docks onto the same Layers panel instead of a separate Tools section.
+Status: PROPOSED
+GitHub issue: [#131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/131)
+Evidence: See investigation notes above; issue #127's own resolution
+(`_docs/tasks.md` task 96) explicitly split Layers out as an *independent*
+region rather than merging it with shape creation, which is the reverse of
+what this task asks for.
+Discovery gate: Searched `_docs/tasks.md`/GitHub issues for an existing
+"unify shapes and layers" entry; #127 (task 96, closed) is the closest match
+but scoped to drag-and-drop reordering within Layers, not panel unification
+or per-layer color editing — treated as a new, larger UX task rather than a
+duplicate.
+
+## 101. Diagnose why "Enable camera" does nothing in production
+Goal: Clicking "Enable camera" in the Live camera panel either starts hand
+tracking or shows a clearly visible error the user can act on — never a
+silent no-op.
+Description: A 2026-08-23 user report found clicking "Enable camera" on the
+published deployment produces no observable effect, leaving the Demo signal
+controls (manual/synthetic playback) as the only usable path. Static review
+of `CameraControl.tsx` and `tracking/mediapipeProvider.ts` found every async
+step (`getUserMedia`, `video.play()`, MediaPipe's
+`FilesetResolver`/`GestureRecognizer` CDN loads from `cdn.jsdelivr.net` and
+`storage.googleapis.com`) already wrapped in try/catch routing to a visible
+`role="alert"` error, so the failure mode could not be confirmed from source
+alone. Next step is to reproduce against the live published URL
+(`https://animate.creatrweb.com`) with browser devtools open and capture the
+actual console/network error, then scope the fix (likely one of: unreachable
+CDN dependency in production, a Permissions-Policy/CSP header blocking
+`camera`, or a genuinely swallowed rejection not caught by the reviewed code
+paths).
+Status: PROPOSED
+GitHub issue: [#132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/132)
+Evidence: See investigation notes above.
+Discovery gate: Searched `_docs/tasks.md` for prior camera-enable entries;
+found #31 (task "Build camera permission and privacy UX", closed, builds the
+original UX) and #119 (task 88, closed, a different bug — the Enable-camera
+button never appearing at all when `navigator.mediaDevices` is undefined).
+Neither covers Enable camera being present but non-functional, so this is
+treated as new.
+
+## 102. Serve the production deployment from the built frontend bundle, not the Vite dev server
+Goal: The published Replit deployment serves the production `dist/` build
+with no live HMR WebSocket, so the editor no longer reloads unexpectedly
+mid-session.
+Description: A 2026-08-23 user report found the editor page reloading at
+random. Investigation found `.replit`'s `[deployment].run` and
+`scripts/start.sh:77` start the frontend in production via
+`npm --prefix frontend run dev -- --host 0.0.0.0 --port "$frontend_port"` —
+Vite's dev server with hot module replacement — while `[deployment].build`
+separately runs `npm run build` and appears to leave that `dist/` output
+unused at runtime. Every connected browser holds a live HMR WebSocket to the
+dev server; Vite's HMR client issues a full `location.reload()` when that
+socket disconnects/reconnects (autoscale restart, redeploy, transient
+network hiccup) or receives a full-reload HMR event, which is a strong match
+for "random refresh." No `location.reload`/`.href =` call exists anywhere in
+`frontend/src` itself. Scope: change the production run command to serve the
+built `dist/` (e.g. `vite preview` or a static file server) behind the same
+host/port contract `scripts/start.sh` already establishes, verify Django
+`/api`/`/health` proxying or routing still works without Vite's dev proxy,
+and confirm via `scripts/smoke-published.sh` after deploying.
+Status: PROPOSED
+GitHub issue: [#133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/133)
+Evidence: `.replit` `[deployment].run`, `scripts/start.sh:77`; no reload call
+found anywhere in `frontend/src`.
+Discovery gate: Searched `_docs/tasks.md` for prior "unexpected refresh"
+entries; found #112 (task 82, closed) which only added UI messaging for
+draft-sync failures and never touched how the app is served in production —
+not a duplicate of this deployment-configuration issue.
+
+## 103. Backfill or lazily generate public gallery thumbnails for existing projects
+Goal: Every published project shows a real visual preview in the public
+gallery and on its own public page, including projects published before
+thumbnail generation existed or whose current version hasn't changed since.
+Description: A 2026-08-23 user report found the public gallery preview
+"utterly useless" with no visual thumbnail. Investigation found thumbnail
+generation (`scenes/thumbnail_generation.py:114-176`) is correctly wired
+into save/publish/fork/AI-accept, and `PublicProjectCard.tsx:54-70` correctly
+renders `thumbnail_url` with a fallback tile — but
+`maybe_schedule_thumbnail_generation` (`thumbnail_generation.py:152-170`)
+only fires from those same event call sites and no-ops if a non-fallback
+thumbnail already exists, so any project untouched since before this feature
+shipped (task/issue #54) shows "No preview available" indefinitely with no
+backfill path. Scope: add a management command (none exist today under
+`scenes/management/commands/`) to backfill thumbnails for existing published
+projects, or trigger lazy generation on gallery/public-page read when a
+project's thumbnail is still the fallback.
+Status: PROPOSED
+GitHub issue: [#134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/134)
+Evidence: See investigation notes above.
+Discovery gate: Searched `_docs/tasks.md` for the thumbnail-generation entry
+(#54, "Generate public preview thumbnails", closed) — that task built
+event-triggered generation only; no backfill task exists, so this is new.
+
+## 104. Render the project thumbnail on "Your Projects" ProjectCard
+Goal: A project's own card in the signed-in "Your projects" gallery shows the
+same thumbnail image the public gallery card already shows for the same
+project.
+Description: A 2026-08-23 user report found "Your Projects" cards have no
+thumbnail while public gallery cards do. Investigation found
+`frontend/src/components/ProjectCard.tsx` has no reference to
+`thumbnail_url` at all — no `<img>`, no fallback element — despite `Project`
+(`frontend/src/api/projects.ts:181`) already carrying the same
+`thumbnail_url` field `PublicProjectCard.tsx` consumes. `ProjectCard.tsx` was
+simply never updated when the public card gained the feature. Scope: add the
+same thumbnail `<img>` + fallback pattern `PublicProjectCard.tsx` already
+uses to `ProjectCard.tsx`.
+Status: PROPOSED
+GitHub issue: [#135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/135)
+Evidence: `frontend/src/components/ProjectCard.tsx` (no thumbnail_url
+reference); `frontend/src/api/projects.ts:181`; `PublicProjectCard.tsx:54-70`
+for the existing pattern to reuse.
+Discovery gate: Searched `_docs/tasks.md` for an existing ProjectCard
+thumbnail entry; none found — #54 (closed) scoped generation and the public
+card only, not "Your projects."
+
+## 105. Add a visible active-tab indicator to the primary navigation
+Goal: The current page's nav link (Home / Public gallery / Account settings)
+is visually distinguishable from the others and exposed to assistive
+technology via `aria-current="page"`, meeting WCAG 2.4.8 (Location).
+Description: A 2026-08-23 user report found no visual or programmatic way to
+tell which nav tab is active, which is an accessibility gap. Investigation
+found `frontend/src/components/Layout.tsx:101-123` renders the nav with
+plain react-router `<Link>` elements (not `NavLink`), a static
+`className="shell-action"` regardless of route, no `aria-current`, and no
+`useLocation`-based active check anywhere in the file.
+Status: PROPOSED
+GitHub issue: [#136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/136)
+Evidence: `frontend/src/components/Layout.tsx:101-123`.
+Discovery gate: Searched `_docs/tasks.md` and the accessibility audit tasks
+(#62/#63/#64, all closed) for existing nav-active-state coverage; none of
+those audits covered the primary shell nav specifically, so this is new.

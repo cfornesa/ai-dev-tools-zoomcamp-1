@@ -53,7 +53,9 @@ def test_equal_refs_are_a_success(git_repositories):
 def test_fetch_refreshes_stale_remote_and_fast_forwards(git_repositories):
     local, bare = git_repositories
     second = local.parent / "second"
-    run(["git", "clone", "--branch", "main", str(bare), str(second)], local.parent).check_returncode()
+    run(
+        ["git", "clone", "--branch", "main", str(bare), str(second)], local.parent
+    ).check_returncode()
     git(second, "config", "user.email", "test@example.com")
     git(second, "config", "user.name", "Test User")
     (second / "state").write_text("remote\n")
@@ -79,6 +81,55 @@ def test_local_ahead_is_fast_forwarded(git_repositories):
         run(["git", "--git-dir", str(bare), "rev-parse", "refs/heads/main"], local).stdout
         == run(["git", "rev-parse", "HEAD"], local).stdout
     )
+
+
+def test_remote_update_during_push_is_rejected_without_overwrite(
+    git_repositories, tmp_path: Path
+):
+    local, bare = git_repositories
+    second = local.parent / "second"
+    run(["git", "clone", "--branch", "main", str(bare), str(second)], local.parent).check_returncode()
+    git(second, "config", "user.email", "test@example.com")
+    git(second, "config", "user.name", "Test User")
+    (second / "state").write_text("remote\n")
+    git(second, "commit", "-am", "remote")
+    remote_commit = run(["git", "rev-parse", "HEAD"], second).stdout.strip()
+
+    (local / "state").write_text("local\n")
+    git(local, "commit", "-am", "local")
+    local_commit = run(["git", "rev-parse", "HEAD"], local).stdout.strip()
+
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    real_git = shutil.which("git")
+    assert real_git is not None
+    (fake_bin / "git").write_text(
+        f"""#!/usr/bin/env bash
+for argument in "$@"; do
+  if [[ "$argument" == "push" ]]; then
+    "{real_git}" -C "$RACE_REPOSITORY" push origin main
+    break
+  fi
+done
+exec "{real_git}" "$@"
+"""
+    )
+    (fake_bin / "git").chmod(0o755)
+
+    result = run(
+        ["bash", str(SCRIPT)],
+        local,
+        PATH=f"{fake_bin}:{os.environ['PATH']}",
+        RACE_REPOSITORY=str(second),
+    )
+
+    assert result.returncode != 0
+    assert "safe fast-forward push failed" in result.stderr
+    remote_tip = run(
+        ["git", "--git-dir", str(bare), "rev-parse", "refs/heads/main"], local
+    )
+    assert remote_tip.stdout.strip() == remote_commit
+    assert remote_tip.stdout.strip() != local_commit
 
 
 def test_push_uses_ephemeral_helper_with_git_url(git_repositories, tmp_path: Path):

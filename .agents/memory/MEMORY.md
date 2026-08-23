@@ -11,4 +11,4 @@
 - [p5.js getUserMedia polyfill](p5-getusermedia-polyfill.md) — Mocking navigator.mediaDevices.getUserMedia wrong crashes the bundle via p5.js's own load-time polyfill.
 - [Local e2e baseURL default](e2e-baseurl-port-default.md) — RESOLVED: Playwright's default baseURL now matches Vite's pinned :5000; historical note on issue #123.
 - [jsdom drag-event clientY](jsdom-drag-event-clientY.md) — `fireEvent.drag*` silently drops `clientY`/`clientX` in jsdom; build the event by hand and fire it with `fireEvent(el, event)` instead.
-- [Replit userenv scope unverified](replit-userenv-scope-unverified.md) — `.replit`'s `[userenv]` precedence over Replit Secrets on the published deployment is unconfirmed; see issue #129.
+- [Replit userenv scope](replit-userenv-scope.md) — `[userenv]` is workspace-scoped, not deployment-authoritative; `[userenv.production]` now pins production-safe values as defense-in-depth.

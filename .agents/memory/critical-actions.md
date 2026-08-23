@@ -23,6 +23,13 @@ concise index rather than an implementation changelog.
 - **Database isolation:** Development and production PostgreSQL databases are
   separate; local testing uses an explicitly disposable database when real
   PostgreSQL semantics are required.
+- **`[userenv]` is workspace-scoped, not deployment-authoritative:**
+  `.replit`'s `[userenv.shared]` dev-unsafe `DEBUG`/`ALLOWED_HOSTS` values are
+  not confirmed to reach the published deployment process; Replit Secrets
+  configured separately in the Deployments pane are the actual production
+  source. `[userenv.production]` is pinned to production-safe values as
+  defense-in-depth regardless.
+  See [Replit userenv scope](replit-userenv-scope.md).
 
 ## Authentication and secrets
 

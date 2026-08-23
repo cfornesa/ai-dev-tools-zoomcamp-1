@@ -903,11 +903,32 @@ already fine in practice (Replit Secrets or a workspace-only scope probably
 govern the real deployment), but neither AGENTS.md nor
 `.agents/memory/replit-production-schema-publishing.md`/
 `replit-publish-verification.md` state this explicitly.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#129](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/129)
-Evidence: `.replit`'s `[userenv.production]` section is empty; `[userenv.shared]`
+Evidence: `.replit`'s `[userenv.production]` section was empty; `[userenv.shared]`
 sets `DJANGO_DEBUG = "true"` and `DJANGO_ALLOWED_HOSTS = "*"`. Issue #97's
 closing comment records a passing `manage.py check --deploy` and a passing
 published smoke check, both consistent with the live deployment actually
 running `DEBUG=False` today — i.e., likely a documentation gap, not a live
 production defect, but unverified from the repository alone.
+Resolution: Could not obtain a definitive confirmation of `[userenv]`
+precedence — Replit publishes no official reference for the `[userenv]`
+block, and this session has no way to inspect a live production process's
+actual environment. The available evidence (AGENTS.md already documents that
+Replit Secrets, configured separately in the Deployments pane, supply
+production DB/OAuth/Mistral/mail settings; Replit's own docs describe
+workspace and deployment secrets as separate, non-carrying-over stores;
+issue #97's passing anonymous smoke check requires a real `ALLOWED_HOSTS`
+hostname already, which `config/settings.py` never defaults to) points
+strongly, but not conclusively, at `[userenv]` being workspace-scoped and
+not deployment-authoritative. Rather than leave the gap open on an
+unconfirmed assumption, `[userenv.production]` is now pinned to
+`DJANGO_DEBUG = "false"` and the real production hostnames
+(`animate.creatrweb.com,creatrweb.replit.app`) as defense-in-depth — this
+closes the residual risk regardless of which layer actually wins at
+runtime, at zero cost. Documented in AGENTS.md and
+`.agents/memory/replit-userenv-scope.md` (supersedes the withdrawn
+`replit-userenv-scope-unverified.md`), indexed in
+`.agents/memory/critical-actions.md`. `make check` unaffected (no
+Python/TypeScript source touched); `.replit` TOML validity verified with
+`python3 -c "import tomllib; tomllib.load(open('.replit','rb'))"`.

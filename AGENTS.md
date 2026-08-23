@@ -150,7 +150,12 @@ otherwise waits for Django health before starting Vite. See
 `.agents/memory/replit-production-schema-publishing.md` for why migrations
 must stay out of the deployment build. Replit Secrets and the production
 environment supply the production database, OAuth, Mistral encryption, and
-mail settings; local values are not reused.
+mail settings; local values are not reused. `.replit`'s `[userenv]` blocks
+are workspace-scoped (the interactive Agent/dev workspace), not confirmed to
+reach the published deployment process; `[userenv.production]` is pinned to
+production-safe `DJANGO_DEBUG`/`DJANGO_ALLOWED_HOSTS` values as
+defense-in-depth regardless of that precedence. See
+`.agents/memory/replit-userenv-scope.md`.
 
 For an external non-production deployment, create `.env` from
 `.env.example`, set its own PostgreSQL `DATABASE_URL`, then run:

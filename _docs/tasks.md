@@ -1160,6 +1160,56 @@ symptom is already gone, this task can close as resolved-by-#133; if it
 still reproduces, capture the actual console/network error with real camera
 permission granted, which this session's tooling could not do.
 
+Further investigation (2026-08-23, still PROPOSED — root cause remains
+unconfirmed): this session's sandboxed browser again could not grant real
+camera permission, so the exact production failure still could not be
+reproduced end-to-end. However, the "HMR reload interrupts an in-flight
+MediaPipe CDN/model load" theory (the leading hypothesis linking this task
+to task 102/#133) could be tested *without* real camera hardware, by
+overriding `navigator.mediaDevices.getUserMedia` in a real local dev
+session (Django + `npm run dev`, a real public project,
+`PublicProjectViewer.tsx`'s `/p/<id>` route) to resolve with a synthetic
+`canvas.captureStream()` `MediaStream` — this lets the real (non-test-double)
+`createMediaPipeTrackingProvider` code path run past `getUserMedia` and
+actually fetch the real MediaPipe Wasm/model assets from
+`cdn.jsdelivr.net`/`storage.googleapis.com`, reach `'active'` status, and
+run real gesture-recognizer inference against the synthetic stream —
+confirming dynamically, not just from static review, that every step of
+`mediapipeProvider.ts`'s pipeline genuinely works end-to-end locally.
+Two variants of the theory were then tested directly against this working
+pipeline while a click's `runStartPipeline` was deliberately kept in
+flight (via a `window.fetch` override adding an 8s delay to the CDN/model
+URLs specifically):
+1. Restarting the Vite dev server process mid-flight (bare process
+   kill + restart, no code change) — the client logged "server connection
+   lost. Polling for restart..." and reconnected, but did **not** reload
+   the page; `status` stayed `'active'` once the pipeline finished. (An
+   earlier attempt using this session's `preview_stop`/`preview_start`
+   tool pair *did* appear to reset the page to `idle`/logged-out Home —
+   but that was this session's own tooling explicitly re-navigating the
+   tab to `/`, not organic Vite/HMR behavior, and is not evidence for the
+   production symptom.)
+2. Editing `mediapipeProvider.ts` (appending a comment) while
+   `runStartPipeline` was mid-flight, forcing a genuine Vite HMR
+   propagation up to `CameraControl.tsx` (confirmed via the Vite server's
+   own log: `hmr update /src/components/CameraControl.tsx`) — the
+   gesture-recognizer graph visibly reinitialized (fresh
+   `gesture_recognizer_graph.cc`/`gl_context.cc` log lines), but `status`
+   still reached `'active'` moments later; no silent reset to `idle` and
+   no full page reload occurred.
+Neither controlled HMR scenario reproduced "does nothing" locally — this
+weakens (does not disprove; Replit's autoscale-restart mechanics before
+task 102's fix and the exact network conditions in production remain
+untested here) the specific "HMR interrupts the CDN load" mechanism as
+*the* explanation, though task 102/#133 already independently removes
+Vite's dev server (and therefore this entire class of risk) from
+production regardless of whether it was the actual cause. This task
+remains blocked on the same two things as before — a live deployment
+already running task 102's fix, and either real camera hardware or an
+operator manually granting camera permission in a real browser — both of
+which require the user's own action (publishing, and camera hardware this
+session's sandboxed browser cannot provide).
+
 ## 102. Serve the production deployment from the built frontend bundle, not the Vite dev server
 Goal: The published Replit deployment serves the production `dist/` build
 with no live HMR WebSocket, so the editor no longer reloads unexpectedly

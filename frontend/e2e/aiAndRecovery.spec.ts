@@ -119,11 +119,27 @@ import {
   seedCorruptLocalDraft,
   seedLocalDraft,
 } from './support/draftStorage.js';
+import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+/**
+ * Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
+ * defaults closed, so a scenario that needs one open must call
+ * `expandAllCollapsibleSections` explicitly at its own call site --
+ * deliberately NOT baked into `createBlankProjectViaUI` itself. This
+ * suite's "Draft recovery" scenarios seed a local IndexedDB draft right
+ * after creating the project, with no fake clock installed yet, racing
+ * the app's own real (uncontrolled) ~1.5s "no changes since last save"
+ * autosave debounce that starts ticking the moment the editor mounts
+ * (`useDraftAutosave.ts`) -- adding the several real round-trips expanding
+ * every section costs is enough extra real wall-clock time for that timer
+ * to fire and silently overwrite the just-seeded draft before `reload()`
+ * ever runs. Expanding only at the specific call sites that actually read
+ * collapsed content keeps every other scenario's timing exactly as it was.
+ */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
   await page.getByRole('button', { name: 'Create new animation' }).click();
@@ -134,18 +150,16 @@ async function createBlankProjectViaUI(page: Page): Promise<string> {
 }
 
 function versionRow(page: Page, sequence: number) {
-  return page.locator('.version-history-item', { hasText: `Version ${sequence}` });
-}
-
-/** Issue #95 flipped every Tools/Inspector `CollapsibleSection` to default
- * closed; expand the one named `heading` before interacting with anything
- * inside it. Scoped to this file's own new scenarios below — restoring the
- * rest of this suite's collapsed-section handling is tracked separately in
- * issue #113. No-ops if the section is already open. */
-async function expandSection(page: Page, heading: string): Promise<void> {
-  const toggle = page.getByRole('button', { name: new RegExp(`^▸ ${heading}$`) });
-  await toggle.waitFor({ state: 'visible' });
-  await toggle.click();
+  // A row's own change-label text can legitimately contain "version N"
+  // as a substring for an unrelated N (e.g. a restore's auto-generated
+  // "Restored from version 1" label) -- Playwright's `hasText` string
+  // matching is case-insensitive, so filtering the whole row's text
+  // would match both that row and the actual "Version N" row. Scope the
+  // filter to the row's own `<strong>Version N</strong>` heading
+  // (VersionHistoryPanel.tsx), matched exactly, to avoid that collision.
+  return page.locator('.version-history-item').filter({
+    has: page.locator('strong', { hasText: new RegExp(`^Version ${sequence}$`) }),
+  });
 }
 
 /** Probes that the target dev server is actually running with
@@ -193,6 +207,7 @@ test.describe('AI create/edit proposals', () => {
   test('create: success, then Accept persists exactly one AI-origin version', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page); // version 1
+    await expandAllCollapsibleSections(page);
     await setAIScenario(page, 'success');
 
     await page
@@ -217,6 +232,7 @@ test.describe('AI create/edit proposals', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page); // version 1
+    await expandAllCollapsibleSections(page);
 
     async function attemptAndExpectError(
       scenario: 'invalid_structured_output' | 'quota_exceeded' | 'timeout',
@@ -252,6 +268,7 @@ test.describe('AI create/edit proposals', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page); // version 1
+    await expandAllCollapsibleSections(page);
     await setAIScenario(page, 'success');
 
     await page
@@ -271,6 +288,7 @@ test.describe('AI create/edit proposals', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page); // version 1
+    await expandAllCollapsibleSections(page);
 
     await page.getByRole('radio', { name: 'Edit' }).click();
 
@@ -490,6 +508,7 @@ test.describe('Local and server draft autosave', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
 
     await page.clock.install();
 
@@ -512,6 +531,7 @@ test.describe('Local and server draft autosave', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
     const sessionId = await readSessionId(page, projectId);
     if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
@@ -537,7 +557,7 @@ test.describe('Local and server draft autosave', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
-    await expandSection(page, 'Add & edit shapes');
+    await expandAllCollapsibleSections(page);
 
     await page.route('**/draft/**', (route) => {
       if (route.request().method() === 'PUT') {
@@ -571,6 +591,7 @@ test.describe('Local and server draft autosave', () => {
   test('page-hide dispatches one keepalive draft sync attempt', async ({ page, context }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
     const sessionId = await readSessionId(page, projectId);
     if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
@@ -593,6 +614,7 @@ test.describe('Local and server draft autosave', () => {
   test('explicit Save clears both the local and server draft', async ({ page, context }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
     const sessionId = await readSessionId(page, projectId);
     if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
     const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
@@ -640,6 +662,7 @@ test.describe('Local and server draft autosave', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
 
     await page.clock.install();
     await page.getByRole('button', { name: 'Add circle' }).click();
@@ -686,7 +709,7 @@ test.describe('beforeunload guard', () => {
   test('a dirty editor triggers the native beforeunload prompt on close', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
-    await expandSection(page, 'Add & edit shapes');
+    await expandAllCollapsibleSections(page);
 
     const dialogPromise = page.waitForEvent('dialog', { timeout: 5_000 });
     await page.getByRole('button', { name: 'Add circle' }).click();
@@ -760,6 +783,8 @@ test.describe('Draft recovery', () => {
     await prompt.getByRole('button', { name: 'Recover draft' }).click();
     await expect(prompt).toHaveCount(0);
     await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
+    // A reload re-mounts the editor with every section collapsed again.
+    await expandAllCollapsibleSections(page);
     // Saved history is still exactly version 1 -- recover never persists.
     await expect(page.locator('.version-history-item')).toHaveCount(1);
   });

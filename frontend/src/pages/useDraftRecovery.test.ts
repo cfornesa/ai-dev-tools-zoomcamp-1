@@ -180,6 +180,19 @@ describe('useDraftRecovery', () => {
     expect(result.current.candidate?.source).toBe('local');
   });
 
+  it('issue #112: a local draft whose own summary is "No changes detected" is treated as no draft, never prompted', async () => {
+    // Simulates the race `EditorWorkspace.tsx`'s fire-and-forget
+    // `clearDraft()`/`deleteServerDraft()` calls (handleVersionSaved)
+    // leave open: a debounced autosave scheduled just before an explicit
+    // Save can still land afterward, writing a draft that matches the
+    // just-saved (persisted) scene exactly. Recovering it would restore
+    // nothing new, so it must never surface as a prompt.
+    await seedLocalDraft('proj-1', { changeSummary: 'No changes detected' });
+    const { result } = renderHook(() => useDraftRecovery('proj-1', true, blankScene()));
+    await waitFor(() => expect(result.current.status).toBe('none'));
+    expect(result.current.candidate).toBeNull();
+  });
+
   it('policy: an expired local draft (>24h old) behaves as no draft, and is cleared', async () => {
     await seedLocalDraft('proj-1', { savedAt: isoOffset(-25 * HOUR_MS) });
     const { result } = renderHook(() => useDraftRecovery('proj-1', true, blankScene()));

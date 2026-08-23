@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
@@ -142,6 +142,29 @@ function VersionHistoryPanel({
   } = useVersionHistory(projectId, true);
 
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+
+  // Issue #115: `save`/`restore` above append their own result straight
+  // into this hook's `versions` state, but a version created through a
+  // sibling code path with its own separate `useVersionHistory` instance
+  // -- the header's one-click `SaveControl`, or an accepted AI proposal
+  // (`AIProposalPanel`'s `onAccepted`) -- only ever reaches this panel via
+  // the `persistedVersion` prop `EditorWorkspace.tsx` updates, never this
+  // list. Re-fetch whenever `persistedVersion` points at an id this list
+  // doesn't already have, so every save path ends up visible here without
+  // a reload. Skipped when it's already present (i.e. it came from this
+  // instance's own `save`/`restore` moments ago) to avoid a redundant
+  // fetch right after the optimistic append.
+  const persistedVersionId = persistedVersion?.id ?? null;
+  useEffect(() => {
+    if (persistedVersionId == null) return;
+    if (versions.some((version) => version.id === persistedVersionId)) return;
+    reloadHistory();
+    // Deliberately keyed only on the id changing, not on `versions`
+    // itself -- including it would re-run this effect on every optimistic
+    // append `save`/`restore` already make, which is harmless but
+    // pointless extra work.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persistedVersionId]);
 
   const currentVersionId = project?.current_version ?? null;
 

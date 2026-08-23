@@ -5,6 +5,7 @@ import type { SceneDocument } from '../api/projects';
 import {
   deleteDraftRecord,
   getDraftRecord,
+  NO_SCENE_CHANGES_SUMMARY,
   openDraftDatabase,
   summarizeSceneChange,
 } from '../storage/draftAutosave';
@@ -193,7 +194,17 @@ export function useDraftRecovery(
       ]);
       if (cancelled) return;
       const winner = pickNewer(local, server);
-      if (!winner) {
+      // A candidate whose own recorded diff is "no changes" is a leftover
+      // from a debounced autosave/server-sync write that landed just
+      // before (and independently of) an explicit Save or Exit already
+      // clearing it -- both `EditorWorkspace.tsx`'s `clearDraft()`/
+      // `deleteServerDraft()` calls are fire-and-forget, so a reload that
+      // follows quickly enough can race ahead of that deletion actually
+      // completing. Recovering it would restore exactly what's already
+      // persisted, so prompting for it would only ever look like an
+      // unexplained, pointless interruption (issue #112) -- treat it the
+      // same as no candidate at all.
+      if (!winner || winner.changeSummary === NO_SCENE_CHANGES_SUMMARY) {
         setStatus('none');
         return;
       }

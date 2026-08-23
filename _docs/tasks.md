@@ -364,8 +364,22 @@ while adding this coverage: backlog tasks 83 (issue #113) and 84 (issue #114).
 ## 83. Restore the Playwright e2e suite against the collapsed-by-default editor
 Goal: Make `make e2e` pass again against the current editor UI.
 Description: Issue #95 flipped `CollapsibleSection` to default closed, but no Playwright spec (`projectLifecycle.spec.ts`, `interactionRuntime.spec.ts`, `aiAndRecovery.spec.ts`, `publishingAndRemix.spec.ts`, `exportConfigDialog.spec.ts`) expands a section before interacting with an element inside it, so nearly every scenario that reaches the editor now times out waiting for a collapsed control (confirmed locally: `projectLifecycle.spec.ts`'s blank-canvas scenario times out waiting for "Add circle"). CI never caught this because these specs are deliberately excluded from CI/`npm test`/`make check`, and the one E2E spec CI does run (`responsiveShell.spec.ts`) never opens a collapsed section. Add a shared expand-section helper (mirroring `frontend/src/testUtils/expandCollapsibleSections.ts`'s role in the Vitest suite) and use it wherever a scenario needs a collapsed section's contents, without changing `CollapsibleSection`'s reviewed default-closed behavior itself.
-Status: PROPOSED
+Status: ACTIVE
 GitHub issue: #113
+Progress: Added `frontend/e2e/support/expandCollapsibleSections.ts` (`expandAllCollapsibleSections`/
+`expandSection`) and wired it into all five spec files. `aiAndRecovery.spec.ts` and
+`projectLifecycle.spec.ts` are now fully green. `interactionRuntime.spec.ts` needed a second,
+narrower helper (`expandSection`) rather than expanding everything at once, because opening
+"Behaviors" before a shape exists permanently disables `BehaviorCardsPanel`'s "Add card" button
+(a real app bug, tracked separately as issue #116) — 5 of 7 scenarios there now pass, 2 remain
+blocked on a second, distinct graph-state bug (issue #117). `exportConfigDialog.spec.ts` (and
+likely parts of `publishingAndRemix.spec.ts`) hit a third, unrelated pre-existing issue: both
+still navigate to a `/projects/:id/settings` route that issue #94 removed (title/description
+editing moved into the editor itself) — tracked as issue #118, not yet fixed. Along the way this
+work also found and fixed two real, unrelated app bugs: a phantom "Recover unsaved work?" prompt
+after an ordinary save+reload (`useDraftRecovery.ts`, closes the loop on issue #112) and a stale
+Version History panel after AI-accept/explicit Save (`VersionHistoryPanel.tsx`, issue #115,
+closed). `make e2e` is not fully green yet; issues #116/#117/#118 track what's left.
 
 ## 84. Fix e2e_fixtures cleanup ProtectedError leaving orphaned local test data
 Goal: Make `e2e_fixtures cleanup` reliably remove every row it created.

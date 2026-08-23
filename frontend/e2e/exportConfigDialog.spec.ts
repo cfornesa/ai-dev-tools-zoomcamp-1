@@ -56,17 +56,23 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+/** Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
+ * defaults closed -- expand them all right after the editor mounts.
+ * Nothing here drives `BehaviorCardsPanel`'s target select (issue #116),
+ * so there's no mount-order trap to avoid by deferring this. */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
   await page.getByRole('button', { name: 'Create new animation' }).click();
   await page.waitForURL(/\/projects\/[^/]+$/);
   const match = /\/projects\/([^/]+)$/.exec(page.url());
   if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
+  await expandAllCollapsibleSections(page);
   return match[1];
 }
 
@@ -93,11 +99,14 @@ async function fillMetadata(
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
   await page.goto(`/projects/${projectId}`);
+  await expandAllCollapsibleSections(page);
 }
 
-async function addShapeAndSave(page: Page, label: string): Promise<void> {
+async function addShapeAndSave(page: Page): Promise<void> {
+  // SaveControl.tsx (issue #95 follow-up) is a single-click Save with no
+  // change-label field by design -- see projectLifecycle.spec.ts's own
+  // `addShapeAndSave` for the same fix, applied here for the same reason.
   await page.getByRole('button', { name: 'Add circle' }).click();
-  await page.getByLabel('Change label (optional)').fill(label);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version/);
 }
@@ -124,7 +133,7 @@ test.describe('ExportConfigDialog: real version selection, options, and download
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page); // version 1: an empty canvas
-    await addShapeAndSave(page, 'second shape'); // version 2: one circle
+    await addShapeAndSave(page); // version 2: one circle
 
     await fillMetadata(page, projectId, {
       title: 'Export version-selection fixture',

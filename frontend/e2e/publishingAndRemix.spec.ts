@@ -99,17 +99,24 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+/** Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
+ * defaults closed -- expand them all right after the editor mounts.
+ * Unlike `interactionRuntime.spec.ts`, nothing here ever drives
+ * `BehaviorCardsPanel`'s `followHand`/`reactToPinch` target select (see
+ * issue #116), so there's no mount-order trap to avoid by deferring this. */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
   await page.getByRole('button', { name: 'Create new animation' }).click();
   await page.waitForURL(/\/projects\/[^/]+$/);
   const match = /\/projects\/([^/]+)$/.exec(page.url());
   if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
+  await expandAllCollapsibleSections(page);
   return match[1];
 }
 
@@ -440,6 +447,7 @@ test.describe('Remix and fork', () => {
     await expect(visitorPage.getByRole('button', { name: 'Fork this project' })).toBeVisible();
     await visitorPage.getByRole('button', { name: 'Fork this project' }).click();
     await visitorPage.waitForURL(/\/projects\/[^/]+$/);
+    await expandAllCollapsibleSections(visitorPage);
     const forkMatch = /\/projects\/([^/]+)$/.exec(visitorPage.url());
     if (!forkMatch) throw new Error('Fork did not navigate to a new project.');
     const forkedId = forkMatch[1];

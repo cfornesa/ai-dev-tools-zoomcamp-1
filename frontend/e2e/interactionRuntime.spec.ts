@@ -87,16 +87,36 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
+import {
+  expandAllCollapsibleSections,
+  expandSection,
+} from './support/expandCollapsibleSections.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+/**
+ * Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
+ * defaults closed. Opens only "Add & edit shapes" -- enough for every
+ * scenario's own "Add circle" -- rather than every section
+ * (`expandAllCollapsibleSections`), because `BehaviorCardsPanel.tsx`'s
+ * target `<select>` (inside "Behaviors") seeds its selected option from
+ * `targetOptions[0]` only once, at mount (`useState`'s initializer) --
+ * opening "Behaviors" before a shape exists mounts that panel with zero
+ * target options, and it never recovers even after a shape is added
+ * later (issue #116). Each scenario below calls
+ * `expandAllCollapsibleSections` itself once it's safe to (immediately,
+ * if it never adds a shape; after `Add circle`, if it does and drives
+ * `BehaviorCardsPanel`'s `followHand`/`reactToPinch`/`emitParticles`
+ * cards) to open everything else.
+ */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
   await page.getByRole('button', { name: 'Create new animation' }).click();
   await page.waitForURL(/\/projects\/[^/]+$/);
   const match = /\/projects\/([^/]+)$/.exec(page.url());
   if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
+  await expandSection(page, 'Add & edit shapes');
   return match[1];
 }
 
@@ -149,6 +169,10 @@ async function connectNodes(
 }
 
 async function openLogicPanel(page: Page): Promise<void> {
+  // "Show logic" lives inside "Behaviors" (EditorWorkspace.tsx), alongside
+  // BehaviorCardsPanel -- see createBlankProjectViaUI's own comment on
+  // why that section isn't opened any earlier than each scenario needs.
+  await expandSection(page, 'Behaviors');
   const toggle = page.getByRole('button', { name: /^(Show logic|Hide logic)$/ });
   if ((await toggle.textContent()) === 'Show logic') {
     await toggle.click();
@@ -161,6 +185,7 @@ async function saveAndReload(page: Page, expectedVersionText: RegExp): Promise<v
   await expect(page.getByTestId('editor-save-status')).toHaveText(expectedVersionText);
   await page.reload();
   await expect(page.getByTestId('editor-save-status')).toHaveText(expectedVersionText);
+  await expandAllCollapsibleSections(page);
 }
 
 test.describe('Interaction runtime', () => {
@@ -173,6 +198,7 @@ test.describe('Interaction runtime', () => {
   test('one-hand manual controls produce live, observable frame state', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
 
     await expect(lastFrameStatus(page)).toHaveText('No frame emitted yet.');
 
@@ -215,6 +241,7 @@ test.describe('Interaction runtime', () => {
   test('synthetic playback is deterministic across replay and a fresh reload', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
 
     await page.getByRole('radio', { name: 'Synthetic playback' }).click();
     await expect(playbackProgress(page)).toHaveText('0 of 9 events played');
@@ -247,6 +274,7 @@ test.describe('Interaction runtime', () => {
     // same "same seeded fixture and mock tracking timeline" the issue
     // asks for) reproduces the same sequence again from a clean start.
     await page.reload();
+    await expandAllCollapsibleSections(page);
     await page.getByRole('radio', { name: 'Synthetic playback' }).click();
     const reloadedFrames: string[] = [];
     for (let i = 0; i < 9; i += 1) {
@@ -259,6 +287,7 @@ test.describe('Interaction runtime', () => {
   test('reduced motion replaces playback auto-advance with manual stepping', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
 
     await page.getByRole('radio', { name: 'Synthetic playback' }).click();
     // Full motion (the default in a fresh Chromium profile, no OS
@@ -293,6 +322,10 @@ test.describe('Interaction runtime', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
+    // Issue #113/#116: open "Behaviors" only after the shape exists --
+    // BehaviorCardsPanel.tsx's target select otherwise mounts with no
+    // options and never recovers (see createBlankProjectViaUI's comment).
+    await expandAllCollapsibleSections(page);
 
     // Two "Follow hand" cards on the same target but different axes
     // occupy different channels (positionX vs positionY) -- compatible
@@ -310,8 +343,13 @@ test.describe('Interaction runtime', () => {
       page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
     ).toHaveCount(2);
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    await expect(page.getByText('horizontal axis')).toBeVisible();
-    await expect(page.getByText('vertical axis')).toBeVisible();
+    // Scoped to the card list itself -- the live draft preview just above
+    // it (`BehaviorCardsPanel.tsx`'s "Preview: ...") can describe the same
+    // axis in its own text, which would make an unscoped page-wide
+    // `getByText` ambiguous once a card matching it actually exists.
+    const cardList = page.getByRole('list', { name: 'Behavior card list' });
+    await expect(cardList.getByText('horizontal axis')).toBeVisible();
+    await expect(cardList.getByText('vertical axis')).toBeVisible();
 
     // A second CONTINUOUS binding back on the already-occupied horizontal
     // (positionX) channel must trigger BehaviorCardsPanel's conflict
@@ -521,6 +559,7 @@ test.describe('Interaction runtime', () => {
     // graph fragment, visible consistently in both BehaviorCardsPanel and
     // GraphListView.
     await page.getByRole('button', { name: 'Add circle' }).click();
+    await expandAllCollapsibleSections(page);
     await page.getByRole('radio', { name: 'Emit particles', exact: true }).click();
     await page.locator('#behavior-card-event').selectOption('pinchStart');
     await page.getByRole('button', { name: 'Add card', exact: true }).click();

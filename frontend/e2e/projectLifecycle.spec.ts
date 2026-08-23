@@ -56,17 +56,26 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+/** Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
+ * defaults closed -- expand them all right after the editor mounts so
+ * this file's scenarios (which drive shape creation/inspector fields/
+ * version history throughout) never have to remember to do it themselves.
+ * Unlike `aiAndRecovery.spec.ts`, nothing here seeds a local draft ahead
+ * of an uninstalled fake clock, so there's no real-timer race to worry
+ * about baking this into the helper itself. */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
   await page.getByRole('button', { name: 'Create new animation' }).click();
   await page.waitForURL(/\/projects\/[^/]+$/);
   const match = /\/projects\/([^/]+)$/.exec(page.url());
   if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
+  await expandAllCollapsibleSections(page);
   return match[1];
 }
 
@@ -75,7 +84,16 @@ function shapeListItem(page: Page) {
 }
 
 function versionRow(page: Page, sequence: number) {
-  return page.locator('.version-history-item', { hasText: `Version ${sequence}` });
+  // A row's own change-label text can legitimately contain "version N"
+  // as a substring for an unrelated N (e.g. a restore's auto-generated
+  // "Restored from version 1" label) -- Playwright's `hasText` string
+  // matching is case-insensitive, so filtering the whole row's text
+  // would match both that row and the actual "Version N" row. Scope the
+  // filter to the row's own `<strong>Version N</strong>` heading
+  // (VersionHistoryPanel.tsx), matched exactly, to avoid that collision.
+  return page.locator('.version-history-item').filter({
+    has: page.locator('strong', { hasText: new RegExp(`^Version ${sequence}$`) }),
+  });
 }
 
 test.describe('Project lifecycle', () => {
@@ -117,6 +135,7 @@ test.describe('Project lifecycle', () => {
     // content come back — the acceptance criterion's actual assertion.
     await page.reload();
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+    await expandAllCollapsibleSections(page);
 
     await shapeListItem(page).first().click();
     await expect(page.locator('#shape-style-positionX')).toHaveValue('321');
@@ -135,6 +154,7 @@ test.describe('Project lifecycle', () => {
       .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
       .click();
     await page.waitForURL(/\/projects\/[^/]+$/);
+    await expandAllCollapsibleSections(page);
 
     await shapeListItem(page).first().click();
     const clonePositionX = page.locator('#shape-style-positionX');
@@ -156,6 +176,7 @@ test.describe('Project lifecycle', () => {
       .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
       .click();
     await page.waitForURL(/\/projects\/[^/]+$/);
+    await expandAllCollapsibleSections(page);
 
     await shapeListItem(page).first().click();
     await expect(page.locator('#shape-style-positionX')).toHaveValue('400');
@@ -167,15 +188,17 @@ test.describe('Project lifecycle', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page); // version 1
 
-    async function addShapeAndSave(label: string) {
+    async function addShapeAndSave() {
       await page.getByRole('button', { name: 'Add circle' }).click();
-      await page.getByLabel('Change label (optional)').fill(label);
+      // SaveControl.tsx (issue #95 follow-up) is a single-click Save with
+      // no change-label field by design -- every version created here
+      // shows up in history unlabeled, same as any other explicit Save.
       await page.getByRole('button', { name: 'Save', exact: true }).click();
       await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version/);
     }
 
-    await addShapeAndSave('second shape'); // version 2
-    await addShapeAndSave('third shape'); // version 3
+    await addShapeAndSave(); // version 2
+    await addShapeAndSave(); // version 3
 
     // Sequence metadata + latest marker: versions 1-3 all present, only
     // version 3 (the current one) carries the "Latest" marker.

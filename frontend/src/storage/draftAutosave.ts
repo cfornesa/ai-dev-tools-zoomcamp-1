@@ -247,6 +247,10 @@ function describe(
  * random. Modeled on `_docs/plan.md`'s example format, e.g. "3 shapes
  * changed · 1 gesture binding added."
  */
+/** Exported so callers (e.g. `useDraftRecovery.ts`) can recognize a
+ * no-op summary programmatically rather than duplicating this literal. */
+export const NO_SCENE_CHANGES_SUMMARY = 'No changes detected';
+
 export function summarizeSceneChange(before: SceneDocument | null, after: SceneDocument): string {
   const shapes = diffById(before?.shapes, after.shapes);
   const layers = diffById(before?.layers, after.layers);
@@ -278,7 +282,7 @@ export function summarizeSceneChange(before: SceneDocument | null, after: SceneD
     describe('graph connection', 'graph connections', 'changed', connections.changed),
   ].filter((part): part is string => part !== null);
 
-  return parts.length > 0 ? parts.join(', ') : 'No changes detected';
+  return parts.length > 0 ? parts.join(', ') : NO_SCENE_CHANGES_SUMMARY;
 }
 
 // --- Debounced, race-safe write scheduler -----------------------------

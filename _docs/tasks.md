@@ -827,12 +827,6 @@ GitHub issue: [#127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/
 Execution plan: `.local/tasks/editor-dedicated-layers-panel.md`
 Evidence: Issue #110 improved labels and hierarchy, but the current outline is
 still not a dedicated Layers panel with direct drag-and-drop stacking control.
-Resolution: New `LayersPanel.tsx` reuses existing `sceneOutline.ts`/
-`useSceneEditor` move* functions for both drag-and-drop and keyboard reorder,
-with a new `'layers'` tab in the narrow-viewport switcher. `make check` green;
-QA verdict PASS (commit fd90790,
-https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/127#issuecomment-5385221079).
-Closed.
 Resolution: `SceneOutlinePanel.tsx` renamed to `LayersPanel.tsx` and promoted
 to its own `role="region" aria-label="Layers"` landmark in
 `EditorWorkspace.tsx` (removed from the Tools `CollapsibleSection`), with a
@@ -858,8 +852,9 @@ reorder against a real browser, asserting both canvas z-order and
 persisted order after save/reload; confirmed discoverable via
 `npx playwright test --list` but not executed live (no local PostgreSQL in
 this environment). `make check` green (backend 580 passed/22 skipped,
-frontend 1564 passed). Left open per the Software Engineer role's
-instructions — see the implementation commit and issue comment for why.
+frontend 1564 passed). QA verdict: PASS (commit fd90790,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/127#issuecomment-5385221079).
+Closed.
 
 ## 97. Make Publish honor metadata entered in the editor
 Goal: Ensure entering a meaningful description and title through the editor
@@ -873,9 +868,20 @@ and telling the user to save separately. Preserve input and surface
 validation or network errors from that persist step without data loss. Cover
 title/description edits, confirmation cancel, retry, public visibility, and
 public metadata in browser tests.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#128](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/128)
 Execution plan: `.local/tasks/editor-publish-metadata-flow.md`
 Evidence: `EditorDetailsPanel.tsx` stores the description locally, but
 `PublishControl.tsx` validates `project.description`; entering text without the
 separate metadata save can therefore leave Publish validating the old value.
+Resolution: `EditorDetailsPanel.tsx` exposes an imperative ref handle
+(`getPendingDetails()`/`save()`) reflecting live-typed values and reusing its
+own "Save changes" persist path; `EditorWorkspace.tsx`'s `persistPendingDetails`
+diffs all four fields against `project` and skips a no-op PATCH;
+`PublishControl.tsx`'s `handlePublishClick` persists first, then validates and
+opens the confirm dialog, blocking on 400/network errors while preserving
+typed values and staying retryable. Server-side validation/authorization
+untouched. `make check` green (backend 580 passed/22 skipped, frontend 1573
+passed). QA verdict: PASS (commit b12e951,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/128#issuecomment-5385258122).
+Closed.

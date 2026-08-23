@@ -1067,14 +1067,37 @@ this task's own change, not a separate issue) and verified statically:
 `npx playwright test --list` still discovers all 115 tests across 11 files
 with no syntax errors, `npx tsc -p tsconfig.e2e.json --noEmit` is clean
 (would have caught an unused import), and oxlint/prettier are clean on the
-touched files. **Verification boundary**: this repo's e2e suite requires a
-real, already-running PostgreSQL-backed Django dev server plus the Vite dev
-server (see AGENTS.md's "End-to-end tests (Playwright)"), which this
-session's environment does not have (no local PostgreSQL) — the actual
-runtime behavior of these four fixes (and of the rest of the suite against
-the new LayersPanel DOM) is unverified beyond the static checks above. Next
-action: run `make e2e` in an environment with PostgreSQL available before
-trusting this suite's LayersPanel/shape-selection coverage as green.
+touched files.
+
+**Verification boundary closed (2026-08-23, later same day)**: once local
+PostgreSQL became available (Docker), `make e2e` was actually run live. The
+four static fixes above were all correct as written. It also found one
+genuine, deterministic, 100%-reproducible bug in `layersPanel.spec.ts`
+itself (not application code, and not one of the four fixes above): its
+`fireLayerDrag` helper fired `dragstart`/`dragover`/`drop`/`dragend` as four
+synchronous `dispatchEvent` calls inside one `page.evaluate`, but
+`LayersPanel.tsx`'s drag handlers call React state setters
+(`setDragId`/`setHover`), and React 18's automatic batching does not flush
+a re-render between multiple `dispatchEvent` calls issued within the same
+synchronous script — `onRowDragOver`'s closure still saw the pre-dragstart
+`dragId` (null) and silently no-op'd the entire drag, every time. Rewrote
+`fireLayerDrag` to await each dispatch as its own separate `page.evaluate`
+call, forcing a real task boundary between them. Also found the "Move ...
+down" fix from the paragraph above needed one more correction: a bare
+`<summary>` computes to accessibility role "generic" in Chromium, not
+"button", so `getByRole('button', { name: 'More' })` never matched —
+switched to `getByText('More', { exact: true })` (the same pattern
+`EditorWorkspace.layers.test.tsx`'s Vitest/jsdom suite already used
+correctly). All three `layersPanel.spec.ts` tests now pass reliably,
+verified across multiple repeated runs. The rest of the e2e suite (109-110
+of ~113 non-skipped tests passing per run) showed real but non-deterministic
+flakiness unrelated to any change this session made — three consecutive
+full-suite runs each failed a different, non-overlapping set of tests
+(including files never touched this session, like `interactionRuntime.spec.ts`),
+while the same tests passed individually in isolation; the test machine had
+under 200MB free RAM during these runs (Docker Postgres + Django + Vite +
+Chromium all concurrent), consistent with environment resource pressure
+rather than a code defect. Not investigated further given that signature.
 
 ## 101. Diagnose why "Enable camera" does nothing in production
 Goal: Clicking "Enable camera" in the Live camera panel either starts hand

@@ -67,12 +67,25 @@ async function layerRow(page: Page, name: string): Promise<Locator> {
   return page.getByLabel(`Layer name for ${name}`).locator('xpath=ancestor::li[1]');
 }
 
-/** Fires the real `dragstart`/`dragover`/`drop`/`dragend` sequence against
+/**
+ * Fires the real `dragstart`/`dragover`/`drop`/`dragend` sequence against
  * `source`/`target`'s actual DOM nodes, with `clientY` placed at
  * `targetFraction` of `target`'s own height (0 = top edge/"before" zone,
  * 0.5 = middle/"into" zone for a group or layer row, 1 = bottom edge/
  * "after" zone) — see `LayersPanel.tsx`'s `zoneForRow` for the exact
- * thresholds this lines up with. */
+ * thresholds this lines up with.
+ *
+ * Each dispatch is its own `page.evaluate` call, awaited separately, rather
+ * than one `page.evaluate` firing all four synchronously: `LayersPanel.tsx`'s
+ * drag handlers call React state setters (`setDragId`/`setHover`), and React
+ * 18's automatic batching does not flush a re-render between multiple
+ * `dispatchEvent` calls issued within the same synchronous script —
+ * `onRowDragOver`'s closure would still see the pre-dragstart `dragId`
+ * (null) and bail out early, silently no-oping the entire drag. Awaiting
+ * each dispatch as a separate `page.evaluate` call forces a task boundary
+ * between them, so React has actually committed each state update before
+ * the next handler reads it.
+ */
 async function fireLayerDrag(
   page: Page,
   source: Locator,
@@ -84,24 +97,29 @@ async function fireLayerDrag(
   if (!sourceHandle || !targetHandle) {
     throw new Error('fireLayerDrag: source/target row not found in the DOM.');
   }
-  await page.evaluate(
-    ({ source, target, targetFraction }) => {
-      const rect = target.getBoundingClientRect();
-      const clientY = rect.top + rect.height * targetFraction;
-      const clientX = rect.left + rect.width / 2;
-      const dataTransfer = new DataTransfer();
-      const fire = (type: string, el: Element) => {
+  const dataTransferHandle = await page.evaluateHandle(() => new DataTransfer());
+  const { clientX, clientY } = await target.evaluate((el, targetFraction) => {
+    const rect = el.getBoundingClientRect();
+    return {
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height * targetFraction,
+    };
+  }, targetFraction);
+
+  const dispatch = (handle: typeof sourceHandle, type: string) =>
+    page.evaluate(
+      ({ el, type, clientX, clientY, dataTransfer }) => {
         el.dispatchEvent(
           new DragEvent(type, { bubbles: true, cancelable: true, clientX, clientY, dataTransfer }),
         );
-      };
-      fire('dragstart', source);
-      fire('dragover', target);
-      fire('drop', target);
-      fire('dragend', source);
-    },
-    { source: sourceHandle, target: targetHandle, targetFraction },
-  );
+      },
+      { el: handle, type, clientX, clientY, dataTransfer: dataTransferHandle },
+    );
+
+  await dispatch(sourceHandle, 'dragstart');
+  await dispatch(targetHandle, 'dragover');
+  await dispatch(targetHandle, 'drop');
+  await dispatch(sourceHandle, 'dragend');
 }
 
 /** Every currently rendered shape's id, in the SVG overlay's own DOM
@@ -218,9 +236,11 @@ test.describe('Layers panel', () => {
     // Keyboard-only reorder: the existing "Move up" button swaps the same
     // pair straight back -- the exact position a drag could also reach,
     // reachable with no pointer at all. Issue #131 moved this button behind
-    // a per-row <details>/<summary> disclosure, so it must be opened first.
+    // a per-row <details>/<summary> disclosure, so it must be opened first --
+    // a bare <summary> computes to accessibility role "generic" (not
+    // "button") in Chromium, so this targets it by its text instead.
     const thirdCircleRowAfterDrag = await shapeRow(page, thirdCircleLabel!);
-    await thirdCircleRowAfterDrag.getByRole('button', { name: 'More' }).click();
+    await thirdCircleRowAfterDrag.getByText('More', { exact: true }).click();
     await thirdCircleRowAfterDrag.getByRole('button', { name: /^Move .* down$/ }).click();
 
     const zAfterKeyboard = await canvasZOrder(page);

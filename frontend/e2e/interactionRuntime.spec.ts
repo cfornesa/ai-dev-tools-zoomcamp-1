@@ -378,8 +378,9 @@ test.describe('Interaction runtime', () => {
     // positionX replaced -- not duplicated) -- both axes still present.
     const cards = page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem');
     await expect(cards).toHaveCount(2);
-    await expect(page.getByText('horizontal axis')).toBeVisible();
-    await expect(page.getByText('vertical axis')).toBeVisible();
+    // Scoped for the same reason as the earlier assertion above.
+    await expect(cardList.getByText('horizontal axis')).toBeVisible();
+    await expect(cardList.getByText('vertical axis')).toBeVisible();
 
     // Persists through an explicit save and a full reload.
     await saveAndReload(page, /Saved as version 2/);

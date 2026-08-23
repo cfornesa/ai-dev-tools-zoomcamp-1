@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
@@ -130,6 +130,27 @@ function BehaviorCardsPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
     cardType,
     setCardType,
   );
+
+  // Issue #116: `targetKey`'s useState initializer only ever runs once, at
+  // mount. If this panel first mounts before any shape/group exists (its
+  // "Behaviors" CollapsibleSection can be opened at any time, independent
+  // of when shapes are added), `targetOptions` is empty then, and
+  // `targetKey` is stuck at `''` forever -- `selectedTarget` never
+  // resolves even after a shape is added, permanently disabling "Add
+  // card" for `followHand`/`reactToPinch` with no visible explanation.
+  // Re-sync whenever the currently selected id stops being a valid option
+  // (empty because nothing existed yet, or the previously-selected
+  // shape/group was since deleted) but options are available again.
+  const targetOptionIds = targetOptions.map((option) => option.id).join(',');
+  useEffect(() => {
+    if (targetOptions.length === 0) return;
+    if (targetOptions.some((option) => option.id === targetKey)) return;
+    setTargetKey(targetOptions[0].id);
+    // Keyed on the stable id-list string, not `targetOptions` itself (a
+    // fresh array every render) or `targetKey` (would fight this effect's
+    // own update) -- see the comment above for what this corrects.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetOptionIds]);
 
   const selectedTarget = targetOptions.find((option) => option.id === targetKey) ?? null;
   const needsTarget = cardType === 'followHand' || cardType === 'reactToPinch';

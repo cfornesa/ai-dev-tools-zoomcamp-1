@@ -120,7 +120,36 @@ beforeEach(() => {
   ]);
 });
 
+const BLANK_SCENE = {
+  ...SCENE_WITH_SHAPE,
+  id: 'scene-blank',
+  shapes: [],
+};
+
 describe('behavior cards panel', () => {
+  it('issue #116: a target becomes selectable once a shape is added, even if "Behaviors" was opened first with none', async () => {
+    const user = userEvent.setup();
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion({ scene_json: BLANK_SCENE }));
+    renderWorkspace();
+    await screen.findByRole('region', { name: 'Tools' });
+    // Mounts BehaviorCardsPanel while the scene has zero shapes -- exactly
+    // the ordering that used to leave `targetKey` stuck at '' forever
+    // (see BehaviorCardsPanel.tsx's own comment on why this now re-syncs).
+    expandAllCollapsibleSections();
+
+    expect(screen.getByRole('button', { name: 'Add card' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const addButton = screen.getByRole('button', { name: 'Add card' });
+    expect(addButton).toBeEnabled();
+    await user.click(addButton);
+
+    const list = screen.getByRole('list', { name: 'Behavior card list' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+  });
+
   it('adds a Follow hand card via keyboard and reads it as a sentence', async () => {
     const user = userEvent.setup();
     await loadReadyWorkspace();

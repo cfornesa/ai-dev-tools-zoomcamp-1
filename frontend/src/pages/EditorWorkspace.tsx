@@ -1470,7 +1470,39 @@ function EditorWorkspace() {
                     data-shape-type={shape.type}
                     className={shapeClassName}
                   >
-                    {shapeGeometry(shape)}
+                    {/* Issue #126: while `hasActiveBehaviors` is true, the p5
+                        canvas beneath this overlay (see the
+                        `usePreviewRuntime`/`hasActiveBehaviors` wiring above)
+                        is continuously re-rendered from the runtime's live,
+                        behavior-evaluated shape positions — never from
+                        `workingCopy` directly, since bindings/graph output is
+                        ephemeral and intentionally never written back to
+                        scene state (see `usePreviewRuntime.ts`'s own doc
+                        comment). This `shapeGeometry(shape)` call, by
+                        contrast, always draws from the static
+                        `sceneEditor.shapes` (i.e. `workingCopy`), which does
+                        not move with the runtime. Drawing both at once made
+                        every behavior-driven shape appear twice — a static
+                        copy frozen at its scene-JSON position from this SVG
+                        layer, plus a second, live copy animating underneath
+                        on the p5 canvas — the root cause of issue #126's
+                        "duplicated shapes" report (category (c): two
+                        rendering layers independently painting the same
+                        shape body, one of them a stale render never
+                        superseded by the runtime's newer output). Suppressing
+                        the static body paint here whenever behaviors are
+                        active leaves the p5 canvas as the single visible
+                        source of truth for shape bodies in that mode, while
+                        every other affordance this `<g>` provides (the
+                        testid, the selection/hover outline below, the
+                        `<title>` summary) is unaffected — none of them paint
+                        a shape body of their own. The static (no active
+                        bindings/graph) case is untouched: `shapeGeometry`
+                        still renders exactly as issue #93 established, since
+                        the p5 canvas and this overlay are then both driven by
+                        the same synchronous `workingCopy` render and can
+                        never disagree. */}
+                    {!hasActiveBehaviors && shapeGeometry(shape)}
                     {/* A visible selection highlight independent of the
                         shape's own fill/stroke — a dashed bounding-box
                         outline, the same rotation-ignoring approximation

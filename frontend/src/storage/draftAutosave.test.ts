@@ -15,15 +15,53 @@ import {
   type DraftRecord,
 } from './draftAutosave';
 
+// Issue #126, acceptance criterion 3: the write path now runs every scene
+// through `validateScene` before persisting (see `draftAutosave.ts`'s
+// `performWrite`), so this fixture must itself be a schema-valid
+// `SceneDocument` (every field `schema/scene.schema.json`'s top-level
+// `required` lists) rather than the pre-#126 minimal shape (just
+// `layers`/`shapes`/`groups`/`bindings`/`graph`) — a scene missing
+// `schemaVersion`/`id`/`canvas`/`renderer`/`accessibility`/`randomness`
+// would now be silently dropped by the very validation gate this suite
+// exercises, which would make every write-path test below fail for a
+// reason unrelated to what it's actually testing (debounce/race
+// behavior, not schema conformance). Individual tests still layer
+// `overrides` on top for the specific field(s) they care about (e.g. a
+// duplicate-id `shapes` array).
 function scene(overrides: Partial<SceneDocument> = {}): SceneDocument {
   return {
-    layers: [{ id: 'layer-1' }],
+    schemaVersion: 1,
+    id: 'scene-1',
+    canvas: { width: 800, height: 600, backgroundColor: '#ffffff' },
+    renderer: { preferred: 'p5' },
+    layers: [{ id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false }],
     shapes: [],
     groups: [],
     bindings: [],
     graph: { nodes: [], connections: [] },
+    accessibility: { reducedMotion: 'auto' },
+    randomness: { seed: 0, enabled: false },
     ...overrides,
+  } as SceneDocument;
+}
+
+// Same rationale as `scene()` above: a shape passed through the (now
+// validated) write path needs every field `schema/scene.schema.json`'s
+// per-type `allOf` requires (e.g. `radius` for a circle, `width`/`height`/
+// `cornerRadius` for a rect) — the tests below only ever vary `id`/`type`,
+// so this fills in schema-satisfying defaults for the two types used here.
+function testShape(id: string, type: 'circle' | 'rect' = 'circle'): Record<string, unknown> {
+  const base = {
+    id,
+    type,
+    layerId: 'layer-1',
+    groupId: null,
+    transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+    style: { fill: '#000000', stroke: null, strokeWidth: 0 },
   };
+  return type === 'circle'
+    ? { ...base, radius: 10 }
+    : { ...base, width: 10, height: 10, cornerRadius: 0 };
 }
 
 function wait(ms: number): Promise<void> {
@@ -147,7 +185,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     // A rapid burst: an edit every 10ms, well under the debounce window
     // each time, so only the very last one should ever persist.
     for (let i = 1; i <= 5; i++) {
-      controller.schedule(identity, baseline, scene({ shapes: [{ id: `s${i}`, type: 'circle' }] }));
+      controller.schedule(identity, baseline, scene({ shapes: [testShape(`s${i}`, 'circle')] }));
       await wait(10);
     }
 
@@ -168,7 +206,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
     const identity = { projectId: 'proj-shape', userKey: 'alice', sessionId: 'sess-1' };
     const before = new Date();
-    controller.schedule(identity, scene(), scene({ shapes: [{ id: 's1', type: 'circle' }] }));
+    controller.schedule(identity, scene(), scene({ shapes: [testShape('s1', 'circle')] }));
     await wait(DEBOUNCE_MS + 40);
 
     const write = controller.getLastWrite();
@@ -178,7 +216,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
       sessionId: 'sess-1',
       changeSummary: '1 shape added',
     });
-    expect(write?.sceneJson).toEqual(scene({ shapes: [{ id: 's1', type: 'circle' }] }));
+    expect(write?.sceneJson).toEqual(scene({ shapes: [testShape('s1', 'circle')] }));
     expect(new Date(write!.savedAt).getTime()).toBeGreaterThanOrEqual(before.getTime());
   });
 
@@ -187,12 +225,12 @@ describe('DraftAutosaveController debounce and race safety', () => {
     const identity = { projectId: 'proj-race', userKey: 'alice', sessionId: 'sess-1' };
     const baseline = scene();
 
-    controller.schedule(identity, baseline, scene({ shapes: [{ id: 'old', type: 'circle' }] }));
+    controller.schedule(identity, baseline, scene({ shapes: [testShape('old', 'circle')] }));
     // Before the first write's debounce fires, a newer edit arrives and
     // reschedules — cancel-and-reschedule means the old timer never fires
     // at all.
     await wait(DEBOUNCE_MS / 2);
-    controller.schedule(identity, baseline, scene({ shapes: [{ id: 'new', type: 'rect' }] }));
+    controller.schedule(identity, baseline, scene({ shapes: [testShape('new', 'rect')] }));
     await wait(DEBOUNCE_MS + 40);
 
     const write = controller.getLastWrite();
@@ -225,13 +263,13 @@ describe('DraftAutosaveController debounce and race safety', () => {
         }),
     });
 
-    controller.schedule(identity, baseline, scene({ shapes: [{ id: 'stale', type: 'circle' }] }));
+    controller.schedule(identity, baseline, scene({ shapes: [testShape('stale', 'circle')] }));
     await wait(DEBOUNCE_MS + 20);
     // The first write's DB open is now pending (never resolved yet), so
     // its continuation is blocked before ever reaching the seq check. A
     // newer edit is scheduled and reaches the exact same point, blocked on
     // the same (cached, still-pending) DB handle.
-    controller.schedule(identity, baseline, scene({ shapes: [{ id: 'fresh', type: 'rect' }] }));
+    controller.schedule(identity, baseline, scene({ shapes: [testShape('fresh', 'rect')] }));
     await wait(DEBOUNCE_MS + 40);
     expect(controller.getLastWrite()).toBeNull(); // neither has persisted yet
 
@@ -264,7 +302,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     controller.schedule(
       identity,
       baseline,
-      scene({ shapes: [{ id: 'about-to-be-superseded', type: 'circle' }] }),
+      scene({ shapes: [testShape('about-to-be-superseded', 'circle')] }),
     );
     await wait(DEBOUNCE_MS + 20);
     // The debounced write's timer has fired and it's now blocked awaiting
@@ -292,7 +330,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
   it('clearDraft cancels any pending write and removes the persisted record', async () => {
     const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
     const identity = { projectId: 'proj-clear', userKey: 'alice', sessionId: 'sess-1' };
-    controller.schedule(identity, scene(), scene({ shapes: [{ id: 's1', type: 'circle' }] }));
+    controller.schedule(identity, scene(), scene({ shapes: [testShape('s1', 'circle')] }));
 
     await controller.clearDraft('proj-clear');
     // The pending write must not fire after clear, even once its debounce
@@ -311,7 +349,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     unavailable.schedule(
       { projectId: 'proj-unavailable', userKey: 'alice', sessionId: 'sess-1' },
       scene(),
-      scene({ shapes: [{ id: 's1', type: 'circle' }] }),
+      scene({ shapes: [testShape('s1', 'circle')] }),
     );
     await wait(DEBOUNCE_MS + 40);
     expect(unavailable.getLastWrite()).toBeNull();
@@ -327,7 +365,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     quotaFull.schedule(
       { projectId: 'proj-quota', userKey: 'alice', sessionId: 'sess-1' },
       scene(),
-      scene({ shapes: [{ id: 's1', type: 'circle' }] }),
+      scene({ shapes: [testShape('s1', 'circle')] }),
     );
     await wait(DEBOUNCE_MS + 40);
     expect(quotaFull.getLastFailure()?.kind).toBe('quota-exceeded');
@@ -339,7 +377,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     controller.schedule(
       { projectId: 'proj-a', userKey: 'alice', sessionId: 'sess-1' },
       scene(),
-      scene({ shapes: [{ id: 'a1', type: 'circle' }] }),
+      scene({ shapes: [testShape('a1', 'circle')] }),
     );
     await wait(DEBOUNCE_MS + 40);
     expect(controller.getLastWrite()?.projectId).toBe('proj-a');
@@ -349,13 +387,13 @@ describe('DraftAutosaveController debounce and race safety', () => {
     controller.schedule(
       { projectId: 'proj-a', userKey: 'alice', sessionId: 'sess-1' },
       scene(),
-      scene({ shapes: [{ id: 'a2', type: 'circle' }] }),
+      scene({ shapes: [testShape('a2', 'circle')] }),
     );
     controller.cancelPending();
     controller.schedule(
       { projectId: 'proj-b', userKey: 'alice', sessionId: 'sess-1' },
       scene(),
-      scene({ shapes: [{ id: 'b1', type: 'rect' }] }),
+      scene({ shapes: [testShape('b1', 'rect')] }),
     );
     await wait(DEBOUNCE_MS + 40);
 
@@ -378,13 +416,13 @@ describe('DraftAutosaveController debounce and race safety', () => {
     it('prevents scheduling a write for a snapshot matching the clean baseline, cancelling any already-pending one', async () => {
       const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
       const identity = { projectId: 'proj-clean', userKey: 'alice', sessionId: 'sess-1' };
-      const clean = scene({ shapes: [{ id: 'saved', type: 'circle' }] });
+      const clean = scene({ shapes: [testShape('saved', 'circle')] });
 
       // A pending write from before the clean baseline was set.
       controller.schedule(
         identity,
         scene(),
-        scene({ shapes: [{ id: 'stale-pending', type: 'circle' }] }),
+        scene({ shapes: [testShape('stale-pending', 'circle')] }),
       );
       controller.markClean(clean);
       controller.schedule(identity, scene(), clean);
@@ -399,7 +437,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
       const clean = scene();
 
       controller.markClean(clean);
-      controller.schedule(identity, clean, scene({ shapes: [{ id: 'new-edit', type: 'circle' }] }));
+      controller.schedule(identity, clean, scene({ shapes: [testShape('new-edit', 'circle')] }));
 
       await wait(DEBOUNCE_MS + 40);
       const write = controller.getLastWrite();
@@ -410,7 +448,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     it('resetCleanBaseline restores normal scheduling', async () => {
       const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
       const identity = { projectId: 'proj-reset', userKey: 'alice', sessionId: 'sess-1' };
-      const snapshot = scene({ shapes: [{ id: 's1', type: 'circle' }] });
+      const snapshot = scene({ shapes: [testShape('s1', 'circle')] });
 
       controller.markClean(snapshot);
       controller.resetCleanBaseline();
@@ -418,6 +456,72 @@ describe('DraftAutosaveController debounce and race safety', () => {
 
       await wait(DEBOUNCE_MS + 40);
       expect(controller.getLastWrite()).not.toBeNull();
+    });
+  });
+
+  // Issue #126, acceptance criterion 3: `scenes/validation.py` and
+  // `../validation/scene.ts` both reject a scene with duplicate shape
+  // `id`s within `shapes` (the `duplicateId` rule) on every other path
+  // that persists a scene (explicit Save, server draft PUT, version
+  // restore, AI-proposal accept — see `scenes/models.py`'s
+  // `SceneVersion.save`/`EditSessionDraft.save`, both of which call
+  // `validate_scene`), but this local IndexedDB write had no validation
+  // gate of its own before this issue. These are the write path's own
+  // dedicated pass/fail tests for that gate.
+  describe('issue #126: duplicateId validation gate on the local write path', () => {
+    it('drops a scene with duplicate shape ids and reports it via getLastFailure, without persisting anything', async () => {
+      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const identity = { projectId: 'proj-dup-id', userKey: 'alice', sessionId: 'sess-1' };
+      const duplicateScene = scene({
+        shapes: [testShape('dup', 'circle'), testShape('dup', 'rect')],
+      });
+
+      controller.schedule(identity, scene(), duplicateScene);
+      await wait(DEBOUNCE_MS + 40);
+
+      expect(controller.getLastWrite()).toBeNull();
+      expect(controller.getLastFailure()?.kind).toBe('corrupt-data');
+      expect(await controller.readDraft('proj-dup-id')).toBeNull();
+    });
+
+    it('a valid (no duplicate ids) scene still writes normally through the same gate', async () => {
+      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const identity = { projectId: 'proj-valid', userKey: 'alice', sessionId: 'sess-1' };
+      const validScene = scene({ shapes: [testShape('a', 'circle'), testShape('b', 'rect')] });
+
+      controller.schedule(identity, scene(), validScene);
+      await wait(DEBOUNCE_MS + 40);
+
+      expect(controller.getLastFailure()).toBeNull();
+      const write = controller.getLastWrite();
+      expect(write).not.toBeNull();
+      expect(
+        ((write as DraftRecord).sceneJson.shapes as unknown[]).map((s) => (s as { id: string }).id),
+      ).toEqual(['a', 'b']);
+    });
+
+    it('a rejected write is superseded normally: a subsequent valid edit still writes and clears the failure', async () => {
+      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const identity = {
+        projectId: 'proj-recover-after-dup',
+        userKey: 'alice',
+        sessionId: 'sess-1',
+      };
+      const duplicateScene = scene({
+        shapes: [testShape('dup', 'circle'), testShape('dup', 'rect')],
+      });
+      const fixedScene = scene({ shapes: [testShape('dup', 'circle')] });
+
+      controller.schedule(identity, scene(), duplicateScene);
+      await wait(DEBOUNCE_MS + 40);
+      expect(controller.getLastFailure()?.kind).toBe('corrupt-data');
+
+      controller.schedule(identity, duplicateScene, fixedScene);
+      await wait(DEBOUNCE_MS + 40);
+
+      expect(controller.getLastFailure()).toBeNull();
+      expect(controller.getLastWrite()).not.toBeNull();
+      expect(await controller.readDraft('proj-recover-after-dup')).not.toBeNull();
     });
   });
 });

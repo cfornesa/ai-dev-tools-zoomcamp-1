@@ -20,15 +20,44 @@ import { useDraftAutosave } from './useDraftAutosave';
 
 const DEBOUNCE_MS = 30;
 
+// Issue #126, acceptance criterion 3: `draftAutosave.ts`'s write path now
+// runs every scene through `validateScene` before persisting, so this
+// fixture must be a schema-valid `SceneDocument` (every field
+// `schema/scene.schema.json`'s top-level `required` lists), not the
+// pre-#126 minimal shape — otherwise every write in this suite would be
+// silently dropped for a reason unrelated to what's under test.
 function scene(overrides: Partial<SceneDocument> = {}): SceneDocument {
   return {
-    layers: [{ id: 'layer-1' }],
+    schemaVersion: 1,
+    id: 'scene-1',
+    canvas: { width: 800, height: 600, backgroundColor: '#ffffff' },
+    renderer: { preferred: 'p5' },
+    layers: [{ id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false }],
     shapes: [],
     groups: [],
     bindings: [],
     graph: { nodes: [], connections: [] },
+    accessibility: { reducedMotion: 'auto' },
+    randomness: { seed: 0, enabled: false },
     ...overrides,
+  } as SceneDocument;
+}
+
+// Same rationale: a shape passed through the write path needs every field
+// its type requires (e.g. `radius` for a circle) — these tests only ever
+// vary `id`/`type`.
+function testShape(id: string, type: 'circle' | 'rect' = 'circle'): Record<string, unknown> {
+  const base = {
+    id,
+    type,
+    layerId: 'layer-1',
+    groupId: null,
+    transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+    style: { fill: '#000000', stroke: null, strokeWidth: 0 },
   };
+  return type === 'circle'
+    ? { ...base, radius: 10 }
+    : { ...base, width: 10, height: 10, cornerRadius: 0 };
 }
 
 function version(sceneJson: SceneDocument): SceneVersion {
@@ -61,7 +90,7 @@ describe('useDraftAutosave', () => {
 
     expect(await result.current.readDraft()).toBeNull();
 
-    rerender({ workingCopy: scene({ shapes: [{ id: 's1', type: 'circle' }] }) });
+    rerender({ workingCopy: scene({ shapes: [testShape('s1', 'circle')] }) });
 
     await waitFor(async () => {
       const draft = await result.current.readDraft();
@@ -73,7 +102,7 @@ describe('useDraftAutosave', () => {
       projectId: 'proj-1',
       changeSummary: '1 shape added',
     });
-    expect(draft?.sceneJson).toEqual(scene({ shapes: [{ id: 's1', type: 'circle' }] }));
+    expect(draft?.sceneJson).toEqual(scene({ shapes: [testShape('s1', 'circle')] }));
 
     await result.current.clearDraft();
     expect(await result.current.readDraft()).toBeNull();
@@ -88,7 +117,7 @@ describe('useDraftAutosave', () => {
     );
 
     for (let i = 1; i <= 4; i++) {
-      rerender({ workingCopy: scene({ shapes: [{ id: `s${i}`, type: 'circle' }] }) });
+      rerender({ workingCopy: scene({ shapes: [testShape(`s${i}`, 'circle')] }) });
       await new Promise((resolve) => setTimeout(resolve, 5));
     }
 
@@ -111,7 +140,7 @@ describe('useDraftAutosave', () => {
 
     rerender({
       projectId: 'proj-a',
-      workingCopy: scene({ shapes: [{ id: 'a1', type: 'circle' }] }),
+      workingCopy: scene({ shapes: [testShape('a1', 'circle')] }),
     });
     // Switch projects before the debounce for project A's edit fires —
     // that pending write must be cancelled, never landing under project A
@@ -137,7 +166,7 @@ describe('useDraftAutosave', () => {
       {
         initialProps: {
           projectId: 'proj-a',
-          workingCopy: scene({ shapes: [{ id: 'a1', type: 'circle' }] }),
+          workingCopy: scene({ shapes: [testShape('a1', 'circle')] }),
         },
       },
     );
@@ -146,7 +175,7 @@ describe('useDraftAutosave', () => {
     // previous working copy with project B's scene.
     rerender({
       projectId: 'proj-b',
-      workingCopy: scene({ shapes: [{ id: 'a1', type: 'circle' }] }),
+      workingCopy: scene({ shapes: [testShape('a1', 'circle')] }),
     });
 
     await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS + 60));
@@ -166,7 +195,7 @@ describe('useDraftAutosave', () => {
   describe('issue #125: clearDraft gates further scheduling until a real edit', () => {
     it('a workingCopy change matching clearDraft(snapshotOverride) does not write a redundant draft', async () => {
       const persisted = version(scene());
-      const restoredScene = scene({ shapes: [{ id: 'restored', type: 'circle' }] });
+      const restoredScene = scene({ shapes: [testShape('restored', 'circle')] });
       const { result, rerender } = renderHook(
         ({ workingCopy }: { workingCopy: SceneDocument }) =>
           useDraftAutosave('proj-1', workingCopy, persisted, { debounceMs: DEBOUNCE_MS }),
@@ -193,7 +222,7 @@ describe('useDraftAutosave', () => {
       );
 
       await result.current.clearDraft();
-      rerender({ workingCopy: scene({ shapes: [{ id: 'new-edit', type: 'rect' }] }) });
+      rerender({ workingCopy: scene({ shapes: [testShape('new-edit', 'rect')] }) });
 
       await waitFor(async () => {
         const draft = await result.current.readDraft();
@@ -218,7 +247,7 @@ describe('useDraftAutosave', () => {
       rerender({ projectId: 'proj-b', workingCopy: scene() });
       rerender({
         projectId: 'proj-b',
-        workingCopy: scene({ shapes: [{ id: 'b1', type: 'circle' }] }),
+        workingCopy: scene({ shapes: [testShape('b1', 'circle')] }),
       });
 
       await waitFor(async () => {
@@ -235,14 +264,9 @@ describe('useDraftAutosave', () => {
     try {
       const persisted = version(scene());
       const { result } = renderHook(() =>
-        useDraftAutosave(
-          'proj-no-idb',
-          scene({ shapes: [{ id: 's1', type: 'circle' }] }),
-          persisted,
-          {
-            debounceMs: DEBOUNCE_MS,
-          },
-        ),
+        useDraftAutosave('proj-no-idb', scene({ shapes: [testShape('s1', 'circle')] }), persisted, {
+          debounceMs: DEBOUNCE_MS,
+        }),
       );
       await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS + 40));
       await expect(result.current.readDraft()).resolves.toBeNull();

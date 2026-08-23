@@ -1,4 +1,5 @@
 import type { SceneDocument } from '../api/projects';
+import { validateScene } from '../validation/scene';
 
 /**
  * Task 42: browser-local crash-recovery drafts (`_docs/plan.md`'s "Active-
@@ -384,6 +385,28 @@ export class DraftAutosaveController {
     current: SceneDocument,
   ): Promise<void> {
     if (localSeq !== this.seq) return; // superseded before this write's DB open even began
+    // Issue #126, acceptance criterion 3: `scenes/validation.py` and
+    // `../validation/scene.ts` both reject a scene with duplicate shape
+    // `id`s (the `duplicateId` rule), but unlike every server-persisted
+    // path (explicit Save, the server draft PUT — see `scenes/api.py`'s
+    // `DraftDetailView.put`, which calls `validate_scene` before writing),
+    // this local IndexedDB write had no validation gate of its own: it
+    // persisted whatever `current` happened to be. In practice `workingCopy`
+    // can only ever be mutated through `useSceneEditor.ts`'s commit-based
+    // operations, which mint fresh `crypto.randomUUID()` ids and can't
+    // themselves introduce a duplicate — but this write path has no way to
+    // know that invariant holds for every future caller, so it validates
+    // directly rather than relying on it. A scene that fails validation is
+    // never written; the pending write is simply dropped (as if it had been
+    // superseded), and the failure is reported through the same
+    // `getLastFailure()` channel every other rejection here already uses.
+    if (!validateScene(current).valid) {
+      this.lastFailure = {
+        kind: 'corrupt-data',
+        message: 'This scene failed validation and was not saved locally.',
+      };
+      return;
+    }
     try {
       const db = await this.getDb();
       if (localSeq !== this.seq) return; // superseded while awaiting the DB handle

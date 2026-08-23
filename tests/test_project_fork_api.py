@@ -9,10 +9,10 @@ from pathlib import Path
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import connections
 from rest_framework.test import APIClient
 
 from scenes.models import ForkProvenance, Project, SceneVersion
+from tests._postgres_routing import close_thread_connections, route_default_to_postgres_test
 
 BLANK_SCENE = json.loads(
     (
@@ -356,13 +356,14 @@ def test_postgres_concurrent_duplicate_fork_submission_creates_exactly_one_fork(
                 )
                 results.append((response.status_code, response.json().get("id")))
             finally:
-                connections["postgres_test"].close()
+                close_thread_connections()
 
         threads = [threading.Thread(target=do_fork) for _ in range(2)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+        with route_default_to_postgres_test():
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
         assert sorted(status for status, _ in results) == [200, 201]
         fork_ids = {fork_id for _, fork_id in results}
@@ -411,13 +412,14 @@ def test_postgres_concurrent_forks_without_request_id_both_succeed_independently
                 response = client.post(f"/api/public/projects/{source.public_id}/fork/")
                 results.append(response.status_code)
             finally:
-                connections["postgres_test"].close()
+                close_thread_connections()
 
         threads = [threading.Thread(target=do_fork) for _ in range(2)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+        with route_default_to_postgres_test():
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
         assert results == [201, 201]
         assert Project.objects.using("postgres_test").filter(owner=visitor).count() == 2

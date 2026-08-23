@@ -21,10 +21,10 @@ from pathlib import Path
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import connections
 from rest_framework.test import APIClient
 
 from scenes.models import Project, SceneVersion
+from tests._postgres_routing import close_thread_connections, route_default_to_postgres_test
 
 _FIXTURE_PATH = (
     Path(__file__).resolve().parent.parent / "schema" / "fixtures" / "valid" / "blank.json"
@@ -382,13 +382,14 @@ def test_postgres_concurrent_duplicate_accepts_produce_exactly_one_version(djang
                 )
                 results.append((response.status_code, response.json().get("id")))
             finally:
-                connections["postgres_test"].close()
+                close_thread_connections()
 
         threads = [threading.Thread(target=do_accept) for _ in range(2)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+        with route_default_to_postgres_test():
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
         assert sorted(status for status, _ in results) == [200, 201]
         version_ids = {version_id for _, version_id in results}
@@ -439,13 +440,14 @@ def test_postgres_concurrent_accepts_without_request_id_serialize_to_distinct_se
                 )
                 results.append(response.status_code)
             finally:
-                connections["postgres_test"].close()
+                close_thread_connections()
 
         threads = [threading.Thread(target=do_accept) for _ in range(2)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+        with route_default_to_postgres_test():
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
         # Exactly one of the two "no prior base" accepts should win (201);
         # the other finds current_version has already moved and gets a

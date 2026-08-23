@@ -19,10 +19,10 @@ from pathlib import Path
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import connections
 from rest_framework.test import APIClient
 
 from scenes.models import EditSessionDraft, Project, SceneVersion
+from tests._postgres_routing import close_thread_connections, route_default_to_postgres_test
 
 BLANK_SCENE = json.loads(
     (
@@ -376,23 +376,29 @@ def test_postgres_concurrent_upserts_never_let_an_older_client_seq_win(django_db
                 )
                 results[label] = applied
             finally:
-                connections["postgres_test"].close()
+                close_thread_connections()
 
         threads = [
             threading.Thread(target=do_upsert, args=("newer", newer_scene, 10)),
             threading.Thread(target=do_upsert, args=("older", older_scene, 3)),
         ]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+        with route_default_to_postgres_test():
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
-        # The higher client_seq (10) must always be applied; the lower one
-        # (3) must never be applied, no matter which thread's transaction
-        # committed first.
-        assert results["newer"] is True
-        assert results["older"] is False
-
+        # Per-thread `applied` isn't a reliable proxy for "which client_seq
+        # won": whichever thread's `create()` happens to reach Postgres
+        # first legitimately gets `applied=True` for creating the very
+        # first row, regardless of whether it carried the older or newer
+        # client_seq -- the other thread then serializes behind it via
+        # `select_for_update()` and, seeing a lower stored client_seq,
+        # also legitimately applies (`applied=True`). The actual guarantee
+        # this test exists to prove is the *final stored state*: whichever
+        # interleaving occurred, the higher client_seq (10) is always what
+        # ends up persisted, never the lower one (3).
+        assert True in results.values()
         stored = EditSessionDraft.objects.using("postgres_test").get(
             project=project, user=user, session_id="session-1"
         )
@@ -434,16 +440,17 @@ def test_postgres_concurrent_first_writes_serialize_without_duplicate_rows(djang
                 )
                 results[label] = applied
             finally:
-                connections["postgres_test"].close()
+                close_thread_connections()
 
         threads = [
             threading.Thread(target=do_upsert, args=("a", 1)),
             threading.Thread(target=do_upsert, args=("b", 2)),
         ]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+        with route_default_to_postgres_test():
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
         rows = list(
             EditSessionDraft.objects.using("postgres_test").filter(

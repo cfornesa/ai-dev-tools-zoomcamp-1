@@ -1411,7 +1411,7 @@ and none introduced by it:
    column (`NOT NULL`, no DB default) — fails with
    `psycopg.errors.NotNullViolation` before ever reaching the trigger
    behavior being tested.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/138)
 Evidence: See description above; reproduced against a real local PostgreSQL
 16 (Docker) instance, isolating each finding by toggling
@@ -1425,3 +1425,41 @@ recorded separately rather than folded into #137. Recommendation recorded
 in the issue: treat as a dedicated-session-sized body of work; `make
 check`/CI are unaffected either way since `POSTGRES_TEST_DATABASE_URL` is
 never set there.
+Resolution: Fixed all three findings, plus two further sub-bugs the fixes
+exposed once the suite could finally run to completion (full detail in
+`.agents/memory/postgres-multi-db-test-pitfalls.md`):
+1. `scenes/migrations/0010_seed_builtin_templates.py`'s `RunPython` seed/
+   remove functions now write via `.using(schema_editor.connection.alias)`
+   instead of the bare default manager, which silently wrote to `default`
+   regardless of which alias's migration executor was actually running —
+   the double-seed's real root cause.
+2. Added `tests/_postgres_routing.py` (`route_default_to_postgres_test()`,
+   `close_thread_connections()`), used by every `postgres_concurrent_*`
+   thread in `test_ai_accept_proposal_api.py`, `test_project_fork_api.py`,
+   and `test_edit_session_draft_sync_api.py`: physically aliases `default`
+   onto the same PostgreSQL connection as `postgres_test` for the
+   threaded-request duration (needed because a database router has no
+   hook for which alias `transaction.atomic()` targets) plus a permissive
+   `allow_relation` router (Django's own default falls back to a literal
+   `_state.db` string comparison that doesn't know two alias names can be
+   the same physical database). Running to completion also surfaced a
+   flaky test assertion in `test_postgres_concurrent_upserts_never_let_an_older_client_seq_win`
+   that assumed a specific thread always wins the initial create-race;
+   fixed to assert only the real invariant (final stored state), not an
+   unreliable per-thread `applied` value.
+3. Both raw-SQL trigger tests
+   (`test_postgres_trigger_blocks_raw_sql_snapshot_mutation`,
+   `test_postgres_trigger_blocks_raw_sql_mismatched_fork_source`) now
+   supply every `NOT NULL`-without-DB-default `scenes_project` column
+   (`is_deleted`, `export_attribution`, `tags`). Running to completion
+   also surfaced that all four trigger tests in these two files asserted
+   `pytest.raises(OperationalError)`, but a plain PL/pgSQL `RAISE
+   EXCEPTION` (no explicit `SQLSTATE`) maps to `psycopg.errors.RaiseException`
+   → Django's `ProgrammingError`, never `OperationalError` — corrected in
+   both files.
+`uv run --env-file .env pytest` (real local PostgreSQL 16 via Docker, using
+the `scenes-postgres` container already provisioned for this repo) passes
+616/616 across 5 consecutive full-suite runs with no flakes. `uv run
+pytest` (SQLite-only, matching `make check`/CI exactly) remains unaffected:
+594 passed, 22 skipped. Full `make check` (backend lint/format/typecheck/
+test, frontend lint/format/typecheck/test) passes.

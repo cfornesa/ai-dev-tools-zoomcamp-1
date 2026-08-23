@@ -15,7 +15,7 @@ import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, connections, transaction
-from django.db.utils import OperationalError
+from django.db.utils import ProgrammingError
 
 from scenes.models import Project, SceneVersion, SceneVersionImmutableError
 
@@ -194,9 +194,10 @@ def test_postgres_trigger_blocks_raw_sql_snapshot_mutation(django_db_blocker):
             (user_id,) = cursor.fetchone()
             cursor.execute(
                 "INSERT INTO scenes_project (public_id, owner_id, title, description, "
-                "visibility, allow_public_remix, created_at, updated_at) "
+                "visibility, allow_public_remix, created_at, updated_at, is_deleted, "
+                "export_attribution, tags) "
                 "VALUES (gen_random_uuid(), %s, 'Untitled animation', '', 'private', false, "
-                "now(), now()) RETURNING id",
+                "now(), now(), false, false, '[]') RETURNING id",
                 [user_id],
             )
             (project_id,) = cursor.fetchone()
@@ -208,7 +209,7 @@ def test_postgres_trigger_blocks_raw_sql_snapshot_mutation(django_db_blocker):
             )
             (version_id,) = cursor.fetchone()
 
-            with pytest.raises(OperationalError):
+            with pytest.raises(ProgrammingError):
                 cursor.execute(
                     "UPDATE scenes_sceneversion SET change_label = 'tampered' WHERE id = %s",
                     [version_id],
@@ -233,7 +234,7 @@ def test_postgres_trigger_blocks_current_version_from_other_project(django_db_bl
         )
 
         project_a.current_version = version_b
-        with pytest.raises(OperationalError):
+        with pytest.raises(ProgrammingError):
             project_a.save(using="postgres_test")
 
 
@@ -255,7 +256,7 @@ def test_postgres_trigger_blocks_soft_deleted_current_version(django_db_blocker)
         )
 
         project.current_version = version
-        with pytest.raises(OperationalError):
+        with pytest.raises(ProgrammingError):
             project.save(using="postgres_test")
 
 
@@ -278,5 +279,5 @@ def test_postgres_trigger_protects_current_version_from_soft_delete(django_db_bl
         project.save(using="postgres_test")
 
         version.is_deleted = True
-        with pytest.raises(OperationalError):
+        with pytest.raises(ProgrammingError):
             version.save(using="postgres_test")

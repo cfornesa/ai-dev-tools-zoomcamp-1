@@ -18,10 +18,11 @@ FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "templates"
 
 def seed_built_in_templates(apps, schema_editor):
     Template = apps.get_model("scenes", "Template")
+    alias = schema_editor.connection.alias
     for filename, name, category, description in BUILT_IN_TEMPLATES:
         with (FIXTURES_DIR / filename).open() as f:
             scene_json = json.load(f)
-        Template.objects.create(
+        Template.objects.using(alias).create(
             source_type="built_in",
             owner=None,
             name=name,
@@ -33,8 +34,9 @@ def seed_built_in_templates(apps, schema_editor):
 
 def remove_built_in_templates(apps, schema_editor):
     Template = apps.get_model("scenes", "Template")
+    alias = schema_editor.connection.alias
     names = [name for _, name, _, _ in BUILT_IN_TEMPLATES]
-    Template.objects.filter(source_type="built_in", name__in=names).delete()
+    Template.objects.using(alias).filter(source_type="built_in", name__in=names).delete()
 
 
 class Migration(migrations.Migration):

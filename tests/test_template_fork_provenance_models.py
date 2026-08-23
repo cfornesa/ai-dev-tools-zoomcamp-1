@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connections, transaction
 from django.db.models import ProtectedError
-from django.db.utils import OperationalError
+from django.db.utils import ProgrammingError
 
 from scenes.models import (
     ForkProvenance,
@@ -205,9 +205,10 @@ def test_postgres_trigger_blocks_raw_sql_mismatched_fork_source(django_db_blocke
             def make_project():
                 cursor.execute(
                     "INSERT INTO scenes_project (public_id, owner_id, title, description, "
-                    "visibility, allow_public_remix, created_at, updated_at) "
+                    "visibility, allow_public_remix, created_at, updated_at, is_deleted, "
+                    "export_attribution, tags) "
                     "VALUES (gen_random_uuid(), %s, 'Untitled animation', '', 'private', false, "
-                    "now(), now()) RETURNING id",
+                    "now(), now(), false, false, '[]') RETURNING id",
                     [user_id],
                 )
                 return cursor.fetchone()[0]
@@ -224,7 +225,7 @@ def test_postgres_trigger_blocks_raw_sql_mismatched_fork_source(django_db_blocke
             )
             (version_a,) = cursor.fetchone()
 
-            with pytest.raises(OperationalError):
+            with pytest.raises(ProgrammingError):
                 cursor.execute(
                     "INSERT INTO scenes_forkprovenance (project_id, source_project_id, "
                     "source_version_id, created_at) VALUES (%s, %s, %s, now())",

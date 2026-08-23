@@ -124,15 +124,33 @@ function shapeListItem(page: Page) {
   return page.getByRole('list', { name: 'Shape list' }).getByRole('button');
 }
 
-/** Fills in meaningful title/description (and optionally toggles the
- * remix checkbox) on the project settings page and saves via the plain
- * metadata PATCH -- never touches visibility. Caller must already be on
- * `/projects/<id>/settings`. */
+/** Navigates to the given project's editor and fills in meaningful
+ * title/description (and optionally toggles the remix checkbox) through
+ * the real, current in-editor UI -- never touches visibility. Issue #94
+ * folded the old standalone `/projects/:id/settings` route
+ * (`ProjectMetadataForm.tsx`) into the editor itself: title editing is the
+ * header's inline `EditableProjectTitle` ("Edit title" pencil button), and
+ * description/remix live in the "Details" panel (`EditorDetailsPanel.tsx`),
+ * a plain always-visible `<section>` -- not gated by any
+ * `CollapsibleSection`, so no expand call is needed to reach it. */
 async function saveMeaningfulMetadata(
   page: Page,
+  projectId: string,
   { title, description, allowRemix }: { title: string; description: string; allowRemix?: boolean },
 ): Promise<void> {
-  await page.locator('#project-title').fill(title);
+  await page.goto(`/projects/${projectId}`);
+  // A fresh navigation re-mounts the editor with every Tools/Inspector
+  // CollapsibleSection collapsed again (issue #95/#113) -- restore
+  // whatever expanded state a caller relies on afterward (e.g. "Add
+  // circle" right after this call returns).
+  await expandAllCollapsibleSections(page);
+
+  await page.getByRole('button', { name: 'Edit title' }).click();
+  const titleForm = page.locator('.editor-title-edit');
+  await titleForm.locator('#editor-title-input').fill(title);
+  await titleForm.getByRole('button', { name: 'Save' }).click();
+  await expect(titleForm).toHaveCount(0);
+
   await page.locator('#project-description').fill(description);
   if (allowRemix !== undefined) {
     const checkbox = page.locator('#project-remix');
@@ -180,8 +198,6 @@ test.describe('Publishing', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
-    await page.goto(`/projects/${projectId}/settings`);
-
     // 1. Invalid metadata (still the untouched default title, still a
     //    blank description) blocks Publish client-side -- field errors
     //    surface, and the confirmation dialog never opens.
@@ -194,7 +210,7 @@ test.describe('Publishing', () => {
     // 2. Fix metadata, then Publish requires an explicit confirmation --
     //    the dialog names the project and only *its own* Publish button
     //    actually flips visibility.
-    await saveMeaningfulMetadata(page, {
+    await saveMeaningfulMetadata(page, projectId, {
       title: 'A meaningful public title',
       description: 'A meaningful public description of this animation.',
     });
@@ -251,8 +267,7 @@ test.describe('Publishing', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
-    await page.goto(`/projects/${projectId}/settings`);
-    await saveMeaningfulMetadata(page, {
+    await saveMeaningfulMetadata(page, projectId, {
       title: 'Unpublish-me project',
       description: 'This project will be published, then unpublished.',
     });
@@ -313,8 +328,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const page = await context.newPage();
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     publicProjectId = await createBlankProjectViaUI(page);
-    await page.goto(`/projects/${publicProjectId}/settings`);
-    await saveMeaningfulMetadata(page, {
+    await saveMeaningfulMetadata(page, publicProjectId, {
       title: 'Anonymous viewer fixture project',
       description: 'Used by the demo-mode/camera-failure scenarios.',
     });
@@ -427,8 +441,7 @@ test.describe('Remix and fork', () => {
     await ownerPage.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(ownerPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
-    await ownerPage.goto(`/projects/${sourceId}/settings`);
-    await saveMeaningfulMetadata(ownerPage, {
+    await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Remixable source project',
       description: 'A project other users may remix.',
       allowRemix: true,
@@ -460,9 +473,14 @@ test.describe('Remix and fork', () => {
 
     // Exact source version: fork_source_version on the fork's first
     // version must equal whatever was current on the source at fork
-    // time -- not some later save.
+    // time -- not some later save. `versions/<id>/` takes the version's
+    // real database id (scenes/urls.py), not its sequence number --
+    // `forkedProject.current_version` above is exactly that id for the
+    // fork's one (so far) version, never a hardcoded "1" that only
+    // happens to be correct against an otherwise-empty database.
+    const forkedVersionId = forkedProject.current_version;
     const forkedFirstVersion = (await (
-      await apiGet(visitorContext, `/api/projects/${forkedId}/versions/1/`)
+      await apiGet(visitorContext, `/api/projects/${forkedId}/versions/${forkedVersionId}/`)
     ).json()) as { fork_source_version: number | null };
     expect(forkedFirstVersion.fork_source_version).toBe(sourceVersionBefore.current_version);
 
@@ -472,7 +490,7 @@ test.describe('Remix and fork', () => {
     await ownerPage.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(ownerPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 3/);
     const forkedFirstVersionAfterSourceEdit = (await (
-      await apiGet(visitorContext, `/api/projects/${forkedId}/versions/1/`)
+      await apiGet(visitorContext, `/api/projects/${forkedId}/versions/${forkedVersionId}/`)
     ).json()) as { fork_source_version: number | null };
     expect(forkedFirstVersionAfterSourceEdit.fork_source_version).toBe(
       sourceVersionBefore.current_version,
@@ -502,16 +520,15 @@ test.describe('Remix and fork', () => {
         ownerContext,
         `/api/projects/${sourceId}/versions/${sourceCurrent.current_version}/`,
       )
-    ).json()) as { scene_json: { shapes: Array<{ style: { positionX: number } }> } };
-    expect(
-      sourceCurrentScene.scene_json.shapes.some((shape) => shape.style.positionX === 100),
-    ).toBe(true);
+    ).json()) as { scene_json: { shapes: Array<{ transform: { x: number } }> } };
+    expect(sourceCurrentScene.scene_json.shapes.some((shape) => shape.transform.x === 100)).toBe(
+      true,
+    );
 
     // Durable attribution: publish the fork too, and confirm the public
     // "Remixed from" line appears and links back to the still-public
     // source.
-    await visitorPage.goto(`/projects/${forkedId}/settings`);
-    await saveMeaningfulMetadata(visitorPage, {
+    await saveMeaningfulMetadata(visitorPage, forkedId, {
       title: 'My remix of the source project',
       description: 'A remix built from the source project above.',
     });
@@ -530,7 +547,7 @@ test.describe('Remix and fork', () => {
 
     // Durability across a source-side change: unpublishing the SOURCE
     // must never remove the fork's attribution -- only drop the link.
-    await ownerPage.goto(`/projects/${sourceId}/settings`);
+    await ownerPage.goto(`/projects/${sourceId}`);
     await ownerPage.getByRole('button', { name: 'Unpublish', exact: true }).click();
     await expect(ownerPage.getByTestId('visibility-status')).toContainText('Private');
 
@@ -551,8 +568,7 @@ test.describe('Remix and fork', () => {
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
     const sourceId = await createBlankProjectViaUI(ownerPage);
-    await ownerPage.goto(`/projects/${sourceId}/settings`);
-    await saveMeaningfulMetadata(ownerPage, {
+    await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Remix-disabled source project',
       description: 'Publicly viewable, but remixing is off.',
       allowRemix: false,
@@ -614,9 +630,12 @@ test.describe('Remix and fork', () => {
     // endpoint conflates them).
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
-    // A GET first, so csrftoken exists for the POST helper (matches
-    // support/api.ts's csrfHeaders documented requirement).
-    await anonPage.goto('/');
+    // A GET against a Django-rendered page first, so csrftoken exists for
+    // the POST helper (matches support/api.ts's csrfHeaders documented
+    // requirement) -- '/' is this app's React SPA shell, which Django
+    // serves with no template-rendered CSRF token at all, so only a real
+    // Django page like the login form actually sets the cookie.
+    await anonPage.goto('/accounts/login/');
     const anonForkAttempt = await apiPost(anonContext, `/api/public/projects/${privateId}/fork/`, {
       client_request_id: crypto.randomUUID(),
     });
@@ -642,8 +661,7 @@ test.describe('Fork concurrency (PostgreSQL)', () => {
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
     const sourceId = await createBlankProjectViaUI(ownerPage);
-    await ownerPage.goto(`/projects/${sourceId}/settings`);
-    await saveMeaningfulMetadata(ownerPage, {
+    await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Concurrency source project',
       description: 'Raced by two overlapping fork requests.',
       allowRemix: true,
@@ -704,8 +722,7 @@ test.describe('Fork concurrency (PostgreSQL)', () => {
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
     const sourceId = await createBlankProjectViaUI(ownerPage);
-    await ownerPage.goto(`/projects/${sourceId}/settings`);
-    await saveMeaningfulMetadata(ownerPage, {
+    await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Concurrency source project (no request id)',
       description: 'Raced by two overlapping fork requests without a shared idempotency key.',
       allowRemix: true,
@@ -751,8 +768,7 @@ test.describe('Authorization boundaries', () => {
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(ownerPage);
-    await ownerPage.goto(`/projects/${projectId}/settings`);
-    await saveMeaningfulMetadata(ownerPage, {
+    await saveMeaningfulMetadata(ownerPage, projectId, {
       title: 'Authorization boundary project',
       description: 'Only its owner may publish or unpublish it.',
     });
@@ -783,16 +799,15 @@ test.describe('Authorization boundaries', () => {
     // authentication.
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
-    await anonPage.goto('/');
+    // '/' is this app's React SPA shell -- Django serves it with no
+    // template-rendered CSRF token, so only a real Django page like the
+    // login form actually sets the csrftoken cookie the POST helper needs.
+    await anonPage.goto('/accounts/login/');
     const anonPublishAttempt = await apiPost(
       anonContext,
       `/api/projects/${projectId}/publish/`,
       {},
     );
-    // No csrftoken cookie exists yet for a never-authenticated context
-    // that has only ever visited a page with no Django form on it --
-    // Home.tsx renders no form, so confirm the cookie exists (set by
-    // Django on any request) before asserting on the response status.
     expect(anonPublishAttempt.status()).toBe(404);
 
     // Owner succeeds, from an independent context too.

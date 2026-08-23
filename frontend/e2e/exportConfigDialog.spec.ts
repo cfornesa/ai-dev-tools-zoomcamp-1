@@ -76,30 +76,32 @@ async function createBlankProjectViaUI(page: Page): Promise<string> {
   return match[1];
 }
 
-/** Fills in meaningful title/description on the separate project-settings
- * route (`/projects/:id/settings`, `ProjectMetadataForm.tsx`) and saves,
- * then navigates back to the editor (`/projects/:id`, where
- * `ExportConfigDialog` actually lives) -- title/description are not
- * editable from the editor page itself (`EditorWorkspace.tsx` only links
- * to the settings page via "Edit project details"). `ExportConfigDialog`'s
- * `canExport` gate (mirroring the publish flow's own
+/** Fills in meaningful title/description through the real, current
+ * in-editor UI -- issue #94 folded the old standalone `/projects/:id/settings`
+ * route (`ProjectMetadataForm.tsx`) into the editor itself: title editing is
+ * the header's inline `EditableProjectTitle` ("Edit title" pencil button),
+ * and description lives in the "Details" panel (`EditorDetailsPanel.tsx`),
+ * a plain always-visible `<section>` -- not gated by any
+ * `CollapsibleSection`, so no expand call is needed to reach it.
+ * `ExportConfigDialog`'s `canExport` gate (mirroring the publish flow's own
  * `validateProjectMetadataForPublish`) blocks Export entirely until both
  * are meaningful, exactly like `publishingAndRemix.spec.ts`'s own
- * `saveMeaningfulMetadata` helper for the same underlying validator and
- * the same `#project-title`/`#project-description`/"Save changes"/"Saved."
- * selectors. */
+ * `saveMeaningfulMetadata` helper for the same underlying validator. Caller
+ * must already be on the editor page (`/projects/:id`). */
 async function fillMetadata(
   page: Page,
-  projectId: string,
   { title, description }: { title: string; description: string },
 ) {
-  await page.goto(`/projects/${projectId}/settings`);
-  await page.locator('#project-title').fill(title);
+  const titleEditButton = page.getByRole('button', { name: 'Edit title' });
+  await titleEditButton.click();
+  const titleForm = page.locator('.editor-title-edit');
+  await titleForm.locator('#editor-title-input').fill(title);
+  await titleForm.getByRole('button', { name: 'Save' }).click();
+  await expect(titleForm).toHaveCount(0);
+
   await page.locator('#project-description').fill(description);
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
-  await page.goto(`/projects/${projectId}`);
-  await expandAllCollapsibleSections(page);
 }
 
 async function addShapeAndSave(page: Page): Promise<void> {
@@ -132,10 +134,10 @@ test.describe('ExportConfigDialog: real version selection, options, and download
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page); // version 1: an empty canvas
+    await createBlankProjectViaUI(page); // version 1: an empty canvas
     await addShapeAndSave(page); // version 2: one circle
 
-    await fillMetadata(page, projectId, {
+    await fillMetadata(page, {
       title: 'Export version-selection fixture',
       description: 'Proves ExportConfigDialog exports the selected version, not always latest.',
     });
@@ -187,8 +189,8 @@ test.describe('ExportConfigDialog: real version selection, options, and download
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await fillMetadata(page, projectId, {
+    await createBlankProjectViaUI(page);
+    await fillMetadata(page, {
       title: 'Export options wiring fixture',
       description: 'Proves the attribution/ZIP checkboxes reach the real download.',
     });
@@ -221,14 +223,14 @@ test.describe('ExportConfigDialog: real version selection, options, and download
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page); // still-default title/blank description
+    await createBlankProjectViaUI(page); // still-default title/blank description
 
     await openExportDialog(page);
     await expect(page.getByTestId('export-metadata-errors')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeDisabled();
 
     await page.getByRole('button', { name: 'Cancel' }).click();
-    await fillMetadata(page, projectId, {
+    await fillMetadata(page, {
       title: 'Now a meaningful title',
       description: 'Now a meaningful description of this animation.',
     });
@@ -244,7 +246,7 @@ test.describe('ExportConfigDialog: real version selection, options, and download
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
-    await fillMetadata(page, projectId, {
+    await fillMetadata(page, {
       title: 'Interaction mode gating fixture',
       description: 'A scene with no camera-driven bindings at all.',
     });

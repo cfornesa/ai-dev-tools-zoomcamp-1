@@ -13,8 +13,8 @@ Definition of done:
 
 - Every acceptance criterion in the issue is implemented
 - Tests are written for the new behaviour, and the whole suite passes
-- The work is committed
-- The issue is still open, with a comment saying what you did
+- The changes are expected to work in all relevant environments (even if untested in all environments) 
+- The task is considered finished and the issue is closed OR the issue is still open, with a comment saying what you did and why you could not close despite expecting the changes to work on all environments
 
 If an acceptance criterion is wrong, impossible, or contradicts
 another one, create a comment on the issue about it.

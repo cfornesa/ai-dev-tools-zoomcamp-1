@@ -370,8 +370,20 @@ GitHub issue: #113
 ## 84. Fix e2e_fixtures cleanup ProtectedError leaving orphaned local test data
 Goal: Make `e2e_fixtures cleanup` reliably remove every row it created.
 Description: `scenes/management/commands/e2e_fixtures.py`'s `cleanup` action fails with `django.db.models.deletion.ProtectedError` because `Project.current_version` is `on_delete=PROTECT` against `SceneVersion`, which blocks the cascade from deleting fixture users even though their owned projects are being deleted in the same operation. Confirmed locally: `make e2e`'s `global-teardown.ts` reports the cleanup failure, and running the command by hand reproduces it, leaving orphaned `e2e_owner`/`e2e_other` projects/versions in whatever database the suite targeted. A first attempt at nulling `current_version` before delete also hit a `scenes_sceneversion_prevent_snapshot_mutation()` trigger ("SceneVersion snapshot fields are immutable") that may be firing more broadly than intended.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: #114
+Verification: `_cleanup` now (1) deletes any `ForkProvenance` row whose `source_project`/
+`source_version` (both `PROTECT`) belongs to a fixture user, (2) nulls `Project.current_version`
+(`PROTECT`, across `all_objects` including soft-deleted) for fixture-owned projects, and (3), on
+PostgreSQL only, disables `scenes_sceneversion_prevent_snapshot_mutation_trigger` for one plain
+pre-nulling `UPDATE` of `parent_id`/`fork_source_version_id`/`created_by_id` (immediately
+re-enabling it before any delete starts, since Postgres refuses `ALTER TABLE` while a transaction
+has pending trigger events) so Django's own `SET_NULL` cascade during the delete becomes a no-op
+the trigger's `IS DISTINCT FROM` check allows. New tests in `tests/test_e2e_fixtures_command.py`
+(SQLite, exercises the ORM/PROTECT half) plus manual verification against a real local PostgreSQL
+database with orphaned data from prior runs and through a real `make e2e`-equivalent run (its
+`global-teardown.ts` reported success afterward, and a follow-up manual `cleanup --json` returned
+`{"deleted": 0}`, confirming nothing was left behind).
 
 ## Completed execution task archive
 

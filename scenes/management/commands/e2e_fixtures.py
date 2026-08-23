@@ -31,7 +31,7 @@ import os
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import connection, transaction
 
 # Fixed, non-secret credentials -- these users only ever exist against a
 # throwaway/dev PostgreSQL database for the lifetime of one E2E run, never
@@ -127,12 +127,109 @@ class Command(BaseCommand):
             )
 
     def _cleanup(self, as_json: bool):
+        from django.db.models import Q
+
+        from scenes.models import ForkProvenance, Project
+
         User = get_user_model()
         usernames = [username for username, _email in E2E_USERS.values()]
+
         # CASCADE on Project.owner (scenes/models.py) removes every
         # project/version/draft/activity row these users own along with
-        # the users themselves -- see this file's module docstring.
-        deleted_count, _ = User.objects.filter(username__in=usernames).delete()
+        # the users themselves -- see this file's module docstring. Three
+        # things stand in the way of that single cascading delete, none
+        # of which real application code ever hits in the same way
+        # (nothing else hard-deletes a SceneVersion, only soft-deletes
+        # it, and nothing else deletes the *source* side of a fork):
+        #
+        # 0. `ForkProvenance.source_project`/`source_version` are both
+        #    `on_delete=PROTECT` -- if any project (a fixture's own or
+        #    someone else's) was ever forked *from* a fixture project or
+        #    version, that provenance row blocks deleting the source.
+        #    Delete every such row outright first; a fork's provenance
+        #    record has no meaning left once its source no longer exists
+        #    either way.
+        # 1. `Project.current_version` is `on_delete=PROTECT` against
+        #    SceneVersion, which blocks deleting a version while any
+        #    project (even one being deleted in this same cascade) still
+        #    points `current_version` at it. Null it first, across every
+        #    project including soft-deleted ones (`all_objects`), so
+        #    nothing protects the versions this cleanup is about to
+        #    remove.
+        # 2. Deleting a SceneVersion that another (also-being-deleted)
+        #    SceneVersion still references as `parent`/`fork_source_version`,
+        #    or that a deleted user still authored (`created_by`), requires
+        #    Django's collector to null those FKs first (all three
+        #    `on_delete=SET_NULL`) -- and that UPDATE trips
+        #    `scenes_sceneversion_prevent_snapshot_mutation_trigger`
+        #    (migration 0002_postgres_invariants), which treats all three as
+        #    immutable snapshot fields. Rather than disabling the trigger
+        #    around the delete itself (Postgres refuses `ALTER TABLE`
+        #    while a transaction has pending trigger events queued, so a
+        #    disable/delete/re-enable in one transaction fails with
+        #    "cannot ALTER TABLE ... because it has pending trigger
+        #    events"), pre-null both fields directly -- with the trigger
+        #    disabled only for that plain UPDATE, then immediately
+        #    re-enabled, before any delete starts. Django's own SET_NULL
+        #    pass during the cascade below then writes the same NULL
+        #    value the trigger already saw, which its `IS DISTINCT FROM`
+        #    check treats as a no-op, not a mutation.
+        #
+        # PostgreSQL only for both; SQLite (offline tests) has neither
+        # the trigger nor a real PROTECT-vs-CASCADE ordering conflict
+        # worth guarding against here.
+        with transaction.atomic():
+            ForkProvenance.objects.filter(
+                Q(source_project__owner__username__in=usernames)
+                | Q(source_version__project__owner__username__in=usernames)
+            ).delete()
+            Project.all_objects.filter(owner__username__in=usernames).update(current_version=None)
+            if connection.vendor == "postgresql":
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "ALTER TABLE scenes_sceneversion "
+                        "DISABLE TRIGGER scenes_sceneversion_prevent_snapshot_mutation_trigger"
+                    )
+                    # Null out any reference -- from *any* version, in
+                    # *any* project, not just the fixture users' own --
+                    # to a version that's about to be deleted (`doomed`),
+                    # since a fork elsewhere could point back at a
+                    # fixture version (`fork_source_version`) just as
+                    # easily as a fixture version could reference another
+                    # fixture version as its own `parent`. Also null
+                    # `created_by` on every version any fixture user
+                    # authored, `doomed` or not (e.g. an AI-accepted
+                    # version's `created_by` recorded the accepting user,
+                    # who need not own the project it landed in).
+                    cursor.execute(
+                        "WITH doomed AS ("
+                        "  SELECT id FROM scenes_sceneversion WHERE project_id IN ("
+                        "    SELECT id FROM scenes_project WHERE owner_id IN ("
+                        "      SELECT id FROM auth_user WHERE username = ANY(%s)"
+                        "    )"
+                        "  )"
+                        "), fixture_user_ids AS ("
+                        "  SELECT id FROM auth_user WHERE username = ANY(%s)"
+                        ") "
+                        "UPDATE scenes_sceneversion SET "
+                        "  parent_id = CASE WHEN parent_id IN (SELECT id FROM doomed) "
+                        "    THEN NULL ELSE parent_id END, "
+                        "  fork_source_version_id = CASE "
+                        "    WHEN fork_source_version_id IN (SELECT id FROM doomed) "
+                        "    THEN NULL ELSE fork_source_version_id END, "
+                        "  created_by_id = CASE "
+                        "    WHEN created_by_id IN (SELECT id FROM fixture_user_ids) "
+                        "    THEN NULL ELSE created_by_id END "
+                        "WHERE parent_id IN (SELECT id FROM doomed) "
+                        "  OR fork_source_version_id IN (SELECT id FROM doomed) "
+                        "  OR created_by_id IN (SELECT id FROM fixture_user_ids)",
+                        [usernames, usernames],
+                    )
+                    cursor.execute(
+                        "ALTER TABLE scenes_sceneversion "
+                        "ENABLE TRIGGER scenes_sceneversion_prevent_snapshot_mutation_trigger"
+                    )
+            deleted_count, _ = User.objects.filter(username__in=usernames).delete()
 
         if as_json:
             self.stdout.write(json.dumps({"deleted": deleted_count}))

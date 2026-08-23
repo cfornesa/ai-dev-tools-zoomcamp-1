@@ -5,6 +5,7 @@ import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import cast
 from urllib.parse import urlsplit
 
 import pytest
@@ -12,6 +13,11 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "git-safe-push.sh"
 HOSTED_SCRIPT = ROOT / "scripts" / "smoke-hosted-git.sh"
+
+
+class _GitServer(ThreadingHTTPServer):
+    allow_reuse_address = True
+    repository_root: Path
 
 
 def run(command: list[str], cwd: Path, **env: str) -> subprocess.CompletedProcess[str]:
@@ -83,7 +89,7 @@ class _AuthenticatedGitHandler(BaseHTTPRequestHandler):
         )
         environment = os.environ.copy()
         environment.update(
-            GIT_PROJECT_ROOT=str(self.server.repository_root),
+            GIT_PROJECT_ROOT=str(cast(_GitServer, self.server).repository_root),
             GIT_HTTP_EXPORT_ALL="1",
             PATH_INFO=parsed.path,
             QUERY_STRING=parsed.query,
@@ -128,10 +134,7 @@ class _AuthenticatedGitHandler(BaseHTTPRequestHandler):
 def authenticated_git_remote(git_repositories):
     local, bare = git_repositories
 
-    class Server(ThreadingHTTPServer):
-        allow_reuse_address = True
-
-    server = Server(("127.0.0.1", 0), _AuthenticatedGitHandler)
+    server = _GitServer(("127.0.0.1", 0), _AuthenticatedGitHandler)
     server.repository_root = bare.parent
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()

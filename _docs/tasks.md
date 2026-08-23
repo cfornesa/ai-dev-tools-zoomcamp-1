@@ -885,3 +885,29 @@ untouched. `make check` green (backend 580 passed/22 skipped, frontend 1573
 passed). QA verdict: PASS (commit b12e951,
 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/128#issuecomment-5385258122).
 Closed.
+
+## 98. Clarify and document .replit's [userenv] DEBUG/ALLOWED_HOSTS scope for production
+Goal: Determine whether `.replit`'s `[userenv.shared]` (`DJANGO_DEBUG = "true"`,
+`DJANGO_ALLOWED_HOSTS = "*"`) can apply to the published autoscale deployment
+and, if so, close that gap; otherwise document the actual precedence between
+`[userenv]` and Replit Secrets so it does not need to be re-derived.
+Description: A 2026-08-23 production-readiness audit found `[userenv.production]`
+is empty, so it does not override `[userenv.shared]`'s dev-unsafe DEBUG/
+ALLOWED_HOSTS values. If those values reach the live deployment process,
+`config/settings.py`'s hard production-safety block (HSTS, secure cookies,
+HTTPS redirect, non-console email) is skipped entirely, since it is gated on
+`DEBUG=False`. Mitigating evidence from issue #97 (closed) — `check --deploy`
+passing and `scripts/smoke-published.sh` passing against the real published
+URL with `DEBUG=False`-consistent behavior — suggests this is very likely
+already fine in practice (Replit Secrets or a workspace-only scope probably
+govern the real deployment), but neither AGENTS.md nor
+`.agents/memory/replit-production-schema-publishing.md`/
+`replit-publish-verification.md` state this explicitly.
+Status: PROPOSED
+GitHub issue: [#129](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/129)
+Evidence: `.replit`'s `[userenv.production]` section is empty; `[userenv.shared]`
+sets `DJANGO_DEBUG = "true"` and `DJANGO_ALLOWED_HOSTS = "*"`. Issue #97's
+closing comment records a passing `manage.py check --deploy` and a passing
+published smoke check, both consistent with the live deployment actually
+running `DEBUG=False` today — i.e., likely a documentation gap, not a live
+production defect, but unverified from the repository alone.

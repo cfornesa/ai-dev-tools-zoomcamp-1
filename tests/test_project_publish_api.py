@@ -433,7 +433,9 @@ def test_postgres_concurrent_publish_and_save_leave_a_consistent_public_state(dj
         from scenes.publishing import validate_meaningful_metadata
 
         User = get_user_model()
-        user = User.objects.using("postgres_test").create_user(username="concurrent-publish-user")
+        user = User.objects.db_manager("postgres_test").create_user(
+            username="concurrent-publish-user"
+        )
         project = Project.objects.using("postgres_test").create(
             owner=user, title="Concurrency test", description="Racing publish and save."
         )

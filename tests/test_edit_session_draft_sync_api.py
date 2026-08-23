@@ -353,7 +353,9 @@ def test_postgres_concurrent_upserts_never_let_an_older_client_seq_win(django_db
         from scenes.api import _upsert_draft
 
         User = get_user_model()
-        user = User.objects.using("postgres_test").create_user(username="concurrent-draft-user")
+        user = User.objects.db_manager("postgres_test").create_user(
+            username="concurrent-draft-user"
+        )
         project = Project.objects.using("postgres_test").create(owner=user)
 
         newer_scene = {**BLANK_SCENE, "id": "scene-newer"}
@@ -412,7 +414,9 @@ def test_postgres_concurrent_first_writes_serialize_without_duplicate_rows(djang
         from scenes.api import _upsert_draft
 
         User = get_user_model()
-        user = User.objects.using("postgres_test").create_user(username="concurrent-first-write")
+        user = User.objects.db_manager("postgres_test").create_user(
+            username="concurrent-first-write"
+        )
         project = Project.objects.using("postgres_test").create(owner=user)
 
         barrier = threading.Barrier(2)

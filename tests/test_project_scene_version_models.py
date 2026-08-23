@@ -220,7 +220,9 @@ def test_postgres_trigger_blocks_raw_sql_snapshot_mutation(django_db_blocker):
 def test_postgres_trigger_blocks_current_version_from_other_project(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()
-        user = User.objects.using("postgres_test").create_user(username="postgres-trigger-user")
+        user = User.objects.db_manager("postgres_test").create_user(
+            username="postgres-trigger-user"
+        )
         project_a = Project.objects.using("postgres_test").create(owner=user)
         project_b = Project.objects.using("postgres_test").create(owner=user)
         version_b = SceneVersion.objects.using("postgres_test").create(
@@ -240,7 +242,9 @@ def test_postgres_trigger_blocks_current_version_from_other_project(django_db_bl
 def test_postgres_trigger_blocks_soft_deleted_current_version(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()
-        user = User.objects.using("postgres_test").create_user(username="postgres-trigger-user-2")
+        user = User.objects.db_manager("postgres_test").create_user(
+            username="postgres-trigger-user-2"
+        )
         project = Project.objects.using("postgres_test").create(owner=user)
         version = SceneVersion.objects.using("postgres_test").create(
             project=project,
@@ -260,7 +264,9 @@ def test_postgres_trigger_blocks_soft_deleted_current_version(django_db_blocker)
 def test_postgres_trigger_protects_current_version_from_soft_delete(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()
-        user = User.objects.using("postgres_test").create_user(username="postgres-trigger-user-3")
+        user = User.objects.db_manager("postgres_test").create_user(
+            username="postgres-trigger-user-3"
+        )
         project = Project.objects.using("postgres_test").create(owner=user)
         version = SceneVersion.objects.using("postgres_test").create(
             project=project,

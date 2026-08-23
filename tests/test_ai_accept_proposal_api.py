@@ -355,7 +355,9 @@ def test_postgres_concurrent_duplicate_accepts_produce_exactly_one_version(djang
     """
     with django_db_blocker.unblock():
         User = get_user_model()
-        user = User.objects.using("postgres_test").create_user(username="concurrent-accept-user")
+        user = User.objects.db_manager("postgres_test").create_user(
+            username="concurrent-accept-user"
+        )
         project = Project.objects.using("postgres_test").create(owner=user)
         request_id = uuid.uuid4()
 
@@ -411,7 +413,9 @@ def test_postgres_concurrent_accepts_without_request_id_serialize_to_distinct_se
     """
     with django_db_blocker.unblock():
         User = get_user_model()
-        user = User.objects.using("postgres_test").create_user(username="concurrent-accept-user-2")
+        user = User.objects.db_manager("postgres_test").create_user(
+            username="concurrent-accept-user-2"
+        )
         project = Project.objects.using("postgres_test").create(owner=user)
 
         client = APIClient()

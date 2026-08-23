@@ -268,9 +268,13 @@ def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_block
     with django_db_blocker.unblock():
         from django.db import transaction as txn
 
-        owner = get_user_model().objects.using("postgres_test").create_user(username="fork-owner")
+        owner = (
+            get_user_model().objects.db_manager("postgres_test").create_user(username="fork-owner")
+        )
         visitor = (
-            get_user_model().objects.using("postgres_test").create_user(username="fork-visitor")
+            get_user_model()
+            .objects.db_manager("postgres_test")
+            .create_user(username="fork-visitor")
         )
         source = Project.objects.using("postgres_test").create(
             owner=owner,
@@ -323,8 +327,8 @@ def test_postgres_concurrent_duplicate_fork_submission_creates_exactly_one_fork(
     """
     with django_db_blocker.unblock():
         User = get_user_model()
-        owner = User.objects.using("postgres_test").create_user(username="pg-fork-owner")
-        visitor = User.objects.using("postgres_test").create_user(username="pg-fork-visitor")
+        owner = User.objects.db_manager("postgres_test").create_user(username="pg-fork-owner")
+        visitor = User.objects.db_manager("postgres_test").create_user(username="pg-fork-visitor")
         source = Project.objects.using("postgres_test").create(
             owner=owner,
             visibility=Project.Visibility.PUBLIC,
@@ -382,8 +386,8 @@ def test_postgres_concurrent_forks_without_request_id_both_succeed_independently
     """
     with django_db_blocker.unblock():
         User = get_user_model()
-        owner = User.objects.using("postgres_test").create_user(username="pg-fork-owner-2")
-        visitor = User.objects.using("postgres_test").create_user(username="pg-fork-visitor-2")
+        owner = User.objects.db_manager("postgres_test").create_user(username="pg-fork-owner-2")
+        visitor = User.objects.db_manager("postgres_test").create_user(username="pg-fork-visitor-2")
         source = Project.objects.using("postgres_test").create(
             owner=owner,
             visibility=Project.Visibility.PUBLIC,

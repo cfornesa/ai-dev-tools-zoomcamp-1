@@ -172,7 +172,7 @@ pytestmark_postgres = pytest.mark.skipif(
 @pytest.mark.django_db(databases=["postgres_test"])
 def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_blocker):
     with django_db_blocker.unblock():
-        user = get_user_model().objects.using("postgres_test").create_user(username="clone-rb")
+        user = get_user_model().objects.db_manager("postgres_test").create_user(username="clone-rb")
         template = Template.objects.using("postgres_test").create(
             source_type=Template.SourceType.BUILT_IN,
             owner=None,

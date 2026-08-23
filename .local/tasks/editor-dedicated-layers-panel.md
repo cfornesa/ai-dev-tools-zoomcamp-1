@@ -180,7 +180,8 @@ recovery.
 
 ## Evidence and pending items
 
-- **Status:** PROPOSED
+- **Status:** IMPLEMENTED (issue left open per the Software Engineer role's
+  instructions; see the implementation commit)
 - **Evidence so far:** Read `frontend/src/pages/SceneOutlinePanel.tsx`,
   `frontend/src/pages/sceneOutline.ts`, `frontend/src/pages/EditorWorkspace.tsx`
   (panel layout, `panelHidden`, `EditorPanelName` usage), and
@@ -201,14 +202,26 @@ recovery.
   visibility/lock display — this task builds on top of that rather than
   redoing it, per the issue's own acknowledgment ("This remains a
   usability gap even though issue #110 improved labels and hierarchy").
-- **Pending verification:** None yet — this is a grooming pass only, no
-  implementation started.
-- **Next action:** Decide the drag-and-drop implementation approach (native
-  HTML5 drag events vs. a pointer-events-based library-free implementation
-  vs. an existing dependency) — note per `AGENTS.md`, any new frontend
-  dependency requires asking first before adding it to
-  `frontend/package.json`.
-- **Durable memory link:** None yet.
+- **Pending verification:** `make e2e` (the new `frontend/e2e/layersPanel.spec.ts`
+  scenarios) was not executed live — this environment has no local
+  PostgreSQL. The suite is confirmed syntactically valid and discoverable
+  via `npx playwright test --list` (114 tests across 11 files, including
+  the 3 new ones). `make check` (backend+frontend lint/format/typecheck/
+  test) is green.
+- **Next action:** Chosen approach: native HTML5 drag-and-drop
+  (`draggable`/`onDragStart`/`onDragOver`/`onDrop`), no new dependency —
+  see `LayersPanel.tsx`'s own module doc comment ("Drag-and-drop
+  mechanics") for the full mechanism, including how same-container
+  reorder-to-arbitrary-position and reparent both route through the
+  existing `sceneOutline.ts` mutations without duplicating any
+  scene-mutation logic. Whoever next runs `make e2e` against a real
+  PostgreSQL-backed dev server should confirm `layersPanel.spec.ts` passes
+  live and update this file.
+- **Durable memory link:** None yet — nothing here surfaced a new
+  non-obvious, durable constraint beyond what `.agents/memory/MEMORY.md`
+  already records (jsdom's missing `DragEvent`/`MouseEvent` support, worked
+  around in `EditorWorkspace.layers.test.tsx`'s own module doc comment, is
+  scoped and explained inline rather than a repo-wide gotcha).
 
 ## Discovery gate
 

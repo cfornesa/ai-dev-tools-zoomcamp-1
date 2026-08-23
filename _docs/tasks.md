@@ -822,11 +822,38 @@ responsive Layers panel. Show readable hierarchy, visibility, locks, and
 stacking order; provide pointer drag-and-drop with insertion feedback and
 keyboard reorder parity; and keep the canonical scene state synchronized with
 rendering, selection, Inspector, save, undo/redo, and recovery.
-Status: PROPOSED
+Status: COMPLETE (issue left open per task instructions — see comment)
 GitHub issue: [#127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/127)
 Execution plan: `.local/tasks/editor-dedicated-layers-panel.md`
 Evidence: Issue #110 improved labels and hierarchy, but the current outline is
 still not a dedicated Layers panel with direct drag-and-drop stacking control.
+Resolution: `SceneOutlinePanel.tsx` renamed to `LayersPanel.tsx` and promoted
+to its own `role="region" aria-label="Layers"` landmark in
+`EditorWorkspace.tsx` (removed from the Tools `CollapsibleSection`), with a
+matching `'layers'` tab in `EditorPanelSwitcher.tsx`/`EditorPanelName` for
+the narrow (<1024px) layout. Pointer drag-and-drop (native HTML5 DnD, no new
+dependency) reorders/reparents shapes, groups, and layers with a before/
+after/into insertion indicator and a rejected-drop affordance for locked
+rows and invalid targets, routed entirely through the existing
+`moveItem`/`moveLayer`/`moveItemToLayer`/`moveItemToGroup` mutations in
+`sceneOutline.ts`/`useSceneEditor.ts` (two new orchestration-only helpers,
+`moveItemBySteps`/`moveLayerBySteps`, apply those same pure functions
+repeatedly against one local candidate scene before a single `commit()`, so
+a drag to an arbitrary position still lands as one undo step). Existing
+keyboard controls (Move up/down, the target-select Move-to-layer/group
+pair) are unchanged. Component tests
+(`EditorWorkspace.layers.test.tsx`, renamed/extended from
+`EditorWorkspace.outline.test.tsx`) cover pointer reorder/reparent, keyboard
+parity, locked-row rejection, and no-duplicate/missing rows across add/
+remove/reorder/reparent/undo/redo. New Playwright coverage
+(`frontend/e2e/layersPanel.spec.ts` — `editor.spec.ts`, named in the
+original issue, does not exist in this repo) exercises pointer + keyboard
+reorder against a real browser, asserting both canvas z-order and
+persisted order after save/reload; confirmed discoverable via
+`npx playwright test --list` but not executed live (no local PostgreSQL in
+this environment). `make check` green (backend 580 passed/22 skipped,
+frontend 1564 passed). Left open per the Software Engineer role's
+instructions — see the implementation commit and issue comment for why.
 
 ## 97. Make Publish honor metadata entered in the editor
 Goal: Ensure entering a meaningful description and title through the editor

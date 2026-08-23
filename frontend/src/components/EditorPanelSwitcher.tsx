@@ -1,25 +1,32 @@
-export type EditorPanelName = 'details' | 'tools' | 'preview' | 'inspector';
+export type EditorPanelName = 'details' | 'tools' | 'preview' | 'inspector' | 'layers';
 
 // Issue #93: Preview is never a switchable tab — the workspace always keeps
 // it rendered (see EditorWorkspace.tsx's `panelHidden`), since the hard
 // requirement is that live Preview stays reachable alongside whichever of
-// Details/Tools/Inspector is active, at every viewport width. Issue #94
-// adds Details (project metadata, folded in from the old standalone
+// Details/Tools/Inspector/Layers is active, at every viewport width. Issue
+// #94 adds Details (project metadata, folded in from the old standalone
 // `/projects/:id/settings` page) as a third switchable tab alongside
-// Tools/Inspector.
+// Tools/Inspector. Issue #127 adds Layers as a fourth: the dedicated Layers
+// panel (`LayersPanel.tsx`) is mutually exclusive with Details/Tools/
+// Inspector below the breakpoint exactly like the other three — this task
+// does not change which of the four is the default active tab (still
+// `'tools'`, set in `EditorWorkspace.tsx`), only makes `'layers'` a
+// reachable tab alongside them.
 const PANELS: Array<{ name: Exclude<EditorPanelName, 'preview'>; label: string }> = [
   { name: 'details', label: 'Details' },
   { name: 'tools', label: 'Tools' },
+  { name: 'layers', label: 'Layers' },
   { name: 'inspector', label: 'Inspector' },
 ];
 
-/** Task 21 (reworked by issue #93, extended by issue #94): the narrow-layout
- * (<1024px) panel switcher — a keyboard-operable tab list for moving
- * between the Details, Tools, and Inspector panels when they can't be shown
- * side by side with Preview. Preview itself is never one of these tabs; it
- * stays visible regardless of which tab is active (see the module comment
- * above). Each tab is an independently tabbable button, so it participates
- * in the normal Tab/Shift+Tab order without a roving-tabindex pattern. */
+/** Task 21 (reworked by issue #93, extended by issue #94/#127): the
+ * narrow-layout (<1024px) panel switcher — a keyboard-operable tab list for
+ * moving between the Details, Tools, Layers, and Inspector panels when they
+ * can't be shown side by side with Preview. Preview itself is never one of
+ * these tabs; it stays visible regardless of which tab is active (see the
+ * module comment above). Each tab is an independently tabbable button, so
+ * it participates in the normal Tab/Shift+Tab order without a
+ * roving-tabindex pattern. */
 function EditorPanelSwitcher({
   activePanel,
   onSelect,

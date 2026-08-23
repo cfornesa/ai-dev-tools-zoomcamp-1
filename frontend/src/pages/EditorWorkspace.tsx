@@ -69,11 +69,11 @@ import EditorDetailsPanel from './EditorDetailsPanel';
 import ExportConfigDialog from './ExportConfigDialog';
 import GraphListView from './GraphListView';
 import GraphView from './GraphView';
+import LayersPanel from './LayersPanel';
 import OnboardingHints from './OnboardingHints';
 import PublishControl from './PublishControl';
 import RandomnessIndicator from './RandomnessIndicator';
 import SaveControl from './SaveControl';
-import SceneOutlinePanel from './SceneOutlinePanel';
 import ShapeInspectorPanel from './ShapeInspectorPanel';
 import VersionHistoryPanel from './VersionHistoryPanel';
 
@@ -1775,10 +1775,6 @@ function EditorWorkspace() {
             )}
           </CollapsibleSection>
 
-          <CollapsibleSection heading="Scene outline">
-            <SceneOutlinePanel sceneEditor={sceneEditor} />
-          </CollapsibleSection>
-
           {/* Issue #95, point 7: what was one "Camera & demo controls"
               section (too large once its content is visible, bundling
               CameraControl and the much larger DemoControlsPanel under one
@@ -1820,6 +1816,28 @@ function EditorWorkspace() {
               onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
             />
           </CollapsibleSection>
+        </section>
+
+        {/* Issue #127: the former "Scene outline" `CollapsibleSection`
+            buried inside Tools is now its own dedicated, always-reachable
+            landmark panel — same chrome (heading, `editor-panel` border/
+            background) as Details/Tools/Inspector, and (below the 1024px
+            breakpoint) its own `EditorPanelSwitcher` tab, rather than one
+            more disclosure a user has to know to expand. `LayersPanel.tsx`
+            (renamed from `SceneOutlinePanel.tsx`) reuses the exact same
+            `sceneEditor.outline`/mutation surface that section always
+            rendered from — this is a container/interaction change, not a
+            new data layer. */}
+        <section
+          role="region"
+          aria-label="Layers"
+          data-panel="layers"
+          id="editor-panel-layers"
+          className="editor-panel"
+          hidden={panelHidden('layers')}
+        >
+          <h3>Layers</h3>
+          <LayersPanel sceneEditor={sceneEditor} />
         </section>
 
         <section

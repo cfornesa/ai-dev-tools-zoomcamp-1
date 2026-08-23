@@ -1,7 +1,7 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
@@ -9,11 +9,27 @@ import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
 /**
- * Task 24: interaction and keyboard-operability tests for the scene
- * outline (layers, groups, reordering, visibility/lock, grouping and
- * ungrouping) layered on top of the Task 21/23 workspace shell. See
+ * Task 24 (renamed/extended by issue #127): interaction and
+ * keyboard-operability tests for the Layers panel (`LayersPanel.tsx`,
+ * formerly `SceneOutlinePanel.tsx`) — layers, groups, reordering,
+ * visibility/lock, grouping/ungrouping, and (issue #127) pointer
+ * drag-and-drop reordering/reparenting and its locked-row rejection —
+ * layered on top of the Task 21/23 workspace shell. See
  * `sceneOutline.test.ts` and `useSceneEditor.outline.test.ts` for the
  * underlying logic tests.
+ *
+ * ## Simulating native drag-and-drop in jsdom
+ *
+ * jsdom has no real layout engine and no native `DataTransfer`
+ * constructor, so `fireDrag` below fires the raw `dragstart`/`dragover`/
+ * `drop`/`dragend` sequence directly via `fireEvent` with a hand-rolled
+ * `dataTransfer` stub (a plain object with the handful of properties
+ * `LayersPanel.tsx` actually touches), and `getBoundingClientRect` is
+ * stubbed once per test file to a fixed rect so the drop-zone math
+ * (`LayersPanel.tsx`'s `zoneForRow`) is deterministic — the same
+ * "stub the geometry, fire the real events" approach any RTL suite needs
+ * for drag-and-drop, since `@testing-library/user-event` has no built-in
+ * drag support.
  */
 
 vi.mock('../api/projects');
@@ -91,6 +107,80 @@ async function loadReadyWorkspace() {
 function outlineList() {
   return screen.getByRole('list', { name: 'Scene outline' });
 }
+
+function outlineRows() {
+  return within(outlineList()).getAllByRole('listitem');
+}
+
+/** A stub `DataTransfer` covering only what `LayersPanel.tsx` touches
+ * (`setData`/`getData`/`effectAllowed`/`dropEffect`) — jsdom has no real
+ * `DataTransfer` constructor to instantiate instead. */
+function stubDataTransfer() {
+  const data: Record<string, string> = {};
+  return {
+    setData: (key: string, value: string) => {
+      data[key] = value;
+    },
+    getData: (key: string) => data[key] ?? '',
+    effectAllowed: 'none',
+    dropEffect: 'none',
+  };
+}
+
+/** jsdom has no `DragEvent`/`MouseEvent` constructor (see
+ * https://github.com/jsdom/jsdom/issues/1568 and the lack of any
+ * `window.DragEvent` at all), so `@testing-library/dom`'s `fireEvent.drag*`
+ * sugar — which asks `window.DragEvent || window.Event` for a constructor
+ * and passes `clientY` through *that constructor's* `init` dictionary —
+ * silently drops `clientY` (a plain `Event` constructor ignores unknown
+ * init keys). Building the event by hand and assigning `clientY`/
+ * `dataTransfer` directly onto the instance (a plain own-property
+ * assignment, not routed through any constructor) sidesteps that: React's
+ * synthetic event layer reads `nativeEvent.clientY` off whatever object it
+ * receives, so this only needs the property to exist, not a "real"
+ * `DragEvent` instance. */
+function makeDragEvent(type: string, props: Record<string, unknown>): Event {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.assign(event, props);
+  return event;
+}
+
+/** Fires the full native drag-and-drop event sequence `LayersPanel.tsx`
+ * listens for: `dragstart` on `source`, `dragover` then `drop` on
+ * `target` at `clientY` (interpreted against the stubbed fixed-height
+ * bounding rect from `beforeEach` below to land on a specific
+ * before/after/into zone — see `zoneForRow` in `LayersPanel.tsx`), then
+ * `dragend` on `source` to mirror what a real drag always does whether or
+ * not the drop was accepted. */
+function fireDrag(source: HTMLElement, target: HTMLElement, clientY: number) {
+  const dataTransfer = stubDataTransfer();
+  fireEvent(source, makeDragEvent('dragstart', { dataTransfer }));
+  fireEvent(target, makeDragEvent('dragover', { dataTransfer, clientY }));
+  fireEvent(target, makeDragEvent('drop', { dataTransfer, clientY }));
+  fireEvent(source, makeDragEvent('dragend', { dataTransfer }));
+}
+
+beforeEach(() => {
+  // A fixed, deterministic bounding rect for every row so `zoneForRow`'s
+  // before(<1/3)/into(1/3-2/3)/after(>2/3) math (or before(<1/2)/after
+  // for shape rows, which never offer "into") produces a known zone from
+  // a known `clientY`, regardless of jsdom's lack of real layout.
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+    top: 0,
+    left: 0,
+    right: 100,
+    bottom: 40,
+    width: 100,
+    height: 40,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  } as DOMRect);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -575,5 +665,275 @@ describe('EditorWorkspace scene outline: undo integration', () => {
         .getAllByRole('listitem')
         .filter((r) => r.dataset.outlineKind === 'group'),
     ).toHaveLength(0);
+  });
+});
+
+describe('EditorWorkspace scene outline: dedicated Layers panel landmark (issue #127)', () => {
+  it('renders the outline inside its own "Layers" region, distinct from Tools', async () => {
+    await loadReadyWorkspace();
+
+    const layersRegion = screen.getByRole('region', { name: 'Layers' });
+    expect(within(layersRegion).getByRole('list', { name: 'Scene outline' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'Tools' })).queryByRole('list', {
+        name: 'Scene outline',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('is reachable as its own switcher tab below 1024px, mutually exclusive with Tools', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 320,
+    });
+    window.dispatchEvent(new Event('resize'));
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('tablist', { name: /editor panels/i });
+
+    // Tools is the default active tab; Layers isn't visible yet.
+    expect(document.querySelector('[data-panel="layers"]')).not.toBeVisible();
+
+    await user.click(screen.getByRole('tab', { name: 'Layers' }));
+
+    expect(screen.getByRole('region', { name: 'Layers' })).toBeVisible();
+    expect(document.querySelector('[data-panel="tools"]')).not.toBeVisible();
+    // Preview never goes away, regardless of which switcher tab is active.
+    expect(screen.getByRole('region', { name: 'Preview' })).toBeVisible();
+
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1024,
+    });
+    window.dispatchEvent(new Event('resize'));
+  });
+});
+
+describe('EditorWorkspace scene outline: pointer drag-and-drop (issue #127)', () => {
+  it('reorders two top-level shapes by dragging one above the other, matching canvas z-order', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // Circle 1
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' })); // Rectangle 1
+
+    const [circleRow, rectangleRow] = outlineRows().filter(
+      (r) => r.dataset.outlineKind === 'shape',
+    );
+    const circleId = circleRow.dataset.outlineId;
+    const rectangleId = rectangleRow.dataset.outlineId;
+
+    const zOrderBefore = Array.from(document.querySelectorAll('[data-testid^="scene-shape-"]')).map(
+      (el) => el.getAttribute('data-testid'),
+    );
+    expect(zOrderBefore).toEqual([`scene-shape-${circleId}`, `scene-shape-${rectangleId}`]);
+
+    // Drag Rectangle above Circle (clientY 5, a shape row's "before" zone —
+    // see the stubbed 40px-tall rect in `beforeEach`).
+    fireDrag(rectangleRow, circleRow, 5);
+
+    const shapeRowsAfter = outlineRows().filter((r) => r.dataset.outlineKind === 'shape');
+    expect(shapeRowsAfter.map((r) => r.dataset.outlineId)).toEqual([rectangleId, circleId]);
+
+    // The canvas SVG overlay renders `sceneEditor.shapes` in array order —
+    // the same array `moveItemBySteps` reordered — so the drop's new
+    // Layers-panel order must be reflected 1:1 in the rendered z-order.
+    const zOrderAfter = Array.from(document.querySelectorAll('[data-testid^="scene-shape-"]')).map(
+      (el) => el.getAttribute('data-testid'),
+    );
+    expect(zOrderAfter).toEqual([`scene-shape-${rectangleId}`, `scene-shape-${circleId}`]);
+  });
+
+  it('undoes a pointer drag reorder in a single step', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const [circleRow, rectangleRow] = outlineRows().filter(
+      (r) => r.dataset.outlineKind === 'shape',
+    );
+    const circleId = circleRow.dataset.outlineId;
+    const rectangleId = rectangleRow.dataset.outlineId;
+
+    fireDrag(rectangleRow, circleRow, 5);
+    expect(
+      outlineRows()
+        .filter((r) => r.dataset.outlineKind === 'shape')
+        .map((r) => r.dataset.outlineId),
+    ).toEqual([rectangleId, circleId]);
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+    expect(
+      outlineRows()
+        .filter((r) => r.dataset.outlineKind === 'shape')
+        .map((r) => r.dataset.outlineId),
+    ).toEqual([circleId, rectangleId]);
+  });
+
+  it('reparents a loose shape into a group by dragging it onto the group row', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: 'Combine into group' })); // -> Group 1
+
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // loose Circle 2
+    const rowsBefore = outlineRows();
+    const looseShapeRow = rowsBefore.filter((r) => r.dataset.outlineKind === 'shape').slice(-1)[0];
+    const groupRow = rowsBefore.find((r) => r.dataset.outlineKind === 'group')!;
+
+    // clientY 20 lands in a group row's middle-third "into" zone (see
+    // `zoneForRow` in LayersPanel.tsx and the stubbed 40px rect above).
+    fireDrag(looseShapeRow, groupRow, 20);
+
+    const groupRowAfter = outlineRows().find((r) => r.dataset.outlineKind === 'group')!;
+    expect(within(groupRowAfter).getByText(/Group: Group 1 \(3 item\(s\)\)/)).toBeInTheDocument();
+  });
+
+  it('reparents a shape to a different layer by dragging it onto that layer row', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add layer' })); // Layer 2
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // on Layer 1
+
+    const shapeRow = outlineRows().find((r) => r.dataset.outlineKind === 'shape')!;
+    const layer2Row = outlineRows()
+      .filter((r) => r.dataset.outlineKind === 'layer')
+      .find((r) => within(r).queryByDisplayValue('Layer 2'))!;
+
+    fireDrag(shapeRow, layer2Row, 20);
+
+    const rowsAfter = outlineRows();
+    const layer2Index = rowsAfter.findIndex(
+      (r) => r.dataset.outlineKind === 'layer' && within(r).queryByDisplayValue('Layer 2'),
+    );
+    const shapeIndex = rowsAfter.findIndex((r) => r.dataset.outlineKind === 'shape');
+    expect(shapeIndex).toBeGreaterThan(layer2Index);
+  });
+
+  it('reorders two layers by dragging one above the other', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add layer' })); // Layer 2
+
+    const layerRows = outlineRows().filter((r) => r.dataset.outlineKind === 'layer');
+    const [layer1Row, layer2Row] = layerRows;
+
+    // clientY 5 lands in a layer row's "before" zone (top third).
+    fireDrag(layer2Row, layer1Row, 5);
+
+    const namesAfter = outlineRows()
+      .filter((r) => r.dataset.outlineKind === 'layer')
+      .map((r) => within(r).getByRole('textbox').getAttribute('value') ?? '');
+    expect(namesAfter[0]).toBe('Layer 2');
+  });
+});
+
+describe('EditorWorkspace scene outline: locked-row drag rejection (issue #127)', () => {
+  it('is not draggable once its effective lock state is true', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Unlocked' })); // locks the only layer
+
+    const shapeRow = outlineRows().find((r) => r.dataset.outlineKind === 'shape')!;
+    expect(shapeRow).toHaveAttribute('draggable', 'false');
+  });
+
+  it('rejects a drop that would reparent an item into a locked layer, leaving the scene unchanged', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add layer' })); // Layer 2
+
+    const layer2RowInit = outlineRows()
+      .filter((r) => r.dataset.outlineKind === 'layer')
+      .find((r) => within(r).queryByDisplayValue('Layer 2'))!;
+    await user.click(within(layer2RowInit).getByRole('button', { name: 'Unlocked' }));
+    expect(within(layer2RowInit).getByRole('button', { name: 'Locked' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // on Layer 1
+
+    const shapeRow = outlineRows().find((r) => r.dataset.outlineKind === 'shape')!;
+    const layer2Row = outlineRows()
+      .filter((r) => r.dataset.outlineKind === 'layer')
+      .find((r) => within(r).queryByDisplayValue('Layer 2'))!;
+
+    fireDrag(shapeRow, layer2Row, 20);
+
+    const rowsAfter = outlineRows();
+    const layer2Index = rowsAfter.findIndex(
+      (r) => r.dataset.outlineKind === 'layer' && within(r).queryByDisplayValue('Layer 2'),
+    );
+    const shapeIndex = rowsAfter.findIndex((r) => r.dataset.outlineKind === 'shape');
+    // Rejected: the shape stays under Layer 1 (before Layer 2 in the
+    // outline), not reparented onto the locked layer.
+    expect(shapeIndex).toBeLessThan(layer2Index);
+    expect(rowsAfter.filter((r) => r.dataset.outlineKind === 'shape')).toHaveLength(1);
+    expect(sceneEditorOutlineErrorAbsent()).toBe(true);
+  });
+});
+
+/** A rejected drag-and-drop is a silent no-op by design (the same
+ * "invalid drops... show a rejected/no-drop affordance" acceptance
+ * criterion, not a textual error) — unlike a rejected keyboard "Move to
+ * layer"/"Move to group" action, which does surface `outlineError`. This
+ * just documents/confirms no stray alert leaks from a rejected drag. */
+function sceneEditorOutlineErrorAbsent(): boolean {
+  return screen.queryByRole('alert') === null;
+}
+
+describe('EditorWorkspace scene outline: no duplicate/missing rows (issue #127)', () => {
+  it('renders exactly one row per layer/group/shape across add/remove/reorder/reparent/undo/redo', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+
+    function assertNoDuplicates(expectedCount: number) {
+      const rows = outlineRows();
+      const ids = rows.map((r) => r.dataset.outlineId);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(rows).toHaveLength(expectedCount);
+    }
+
+    assertNoDuplicates(1); // Layer 1 only
+
+    await user.click(screen.getByRole('button', { name: 'Add layer' }));
+    assertNoDuplicates(2); // + Layer 2
+
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    assertNoDuplicates(4); // + 2 shapes on Layer 1
+
+    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: 'Combine into group' }));
+    assertNoDuplicates(5); // 2 layers + 1 group + 2 nested shapes
+
+    const shapesInGroup = outlineRows().filter((r) => r.dataset.outlineKind === 'shape');
+    fireDrag(shapesInGroup[1], shapesInGroup[0], 5); // reorder within the group
+    assertNoDuplicates(5);
+
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // loose Circle 2
+    assertNoDuplicates(6);
+
+    const looseShape = outlineRows()
+      .filter((r) => r.dataset.outlineKind === 'shape')
+      .slice(-1)[0];
+    const groupRow = outlineRows().find((r) => r.dataset.outlineKind === 'group')!;
+    fireDrag(looseShape, groupRow, 20); // reparent into the group
+    assertNoDuplicates(6);
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    assertNoDuplicates(6);
+    await user.click(screen.getByRole('button', { name: 'Redo' }));
+    assertNoDuplicates(6);
   });
 });

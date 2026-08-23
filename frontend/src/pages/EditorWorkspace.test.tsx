@@ -115,9 +115,9 @@ describe('EditorWorkspace load states', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/loading editor/i);
   });
 
-  // Issue #94: Preview leads the layout, in DOM order — not just visually —
-  // followed by Details/Tools/Inspector.
-  it('renders the four landmark regions, in DOM order with Preview first, once the working copy loads', async () => {
+  // Issue #94 (extended by issue #127): Preview leads the layout, in DOM
+  // order — not just visually — followed by Details/Tools/Layers/Inspector.
+  it('renders the five landmark regions, in DOM order with Preview first, once the working copy loads', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
 
@@ -129,6 +129,7 @@ describe('EditorWorkspace load states', () => {
       'preview',
       'details',
       'tools',
+      'layers',
       'inspector',
     ]);
     expect(screen.getByRole('region', { name: 'Preview' })).toHaveAttribute(
@@ -140,6 +141,7 @@ describe('EditorWorkspace load states', () => {
       'details',
     );
     expect(screen.getByRole('region', { name: 'Tools' })).toHaveAttribute('data-panel', 'tools');
+    expect(screen.getByRole('region', { name: 'Layers' })).toHaveAttribute('data-panel', 'layers');
     expect(screen.getByRole('region', { name: 'Inspector' })).toHaveAttribute(
       'data-panel',
       'inspector',
@@ -238,7 +240,7 @@ describe('EditorWorkspace responsive layout', () => {
     renderWorkspace();
 
     await screen.findByRole('region', { name: 'Preview' });
-    for (const panel of ['preview', 'details', 'tools', 'inspector']) {
+    for (const panel of ['preview', 'details', 'tools', 'layers', 'inspector']) {
       expect(document.querySelector(`[data-panel="${panel}"]`)).not.toBeNull();
     }
 
@@ -302,7 +304,7 @@ describe('EditorWorkspace responsive layout', () => {
 
     const tablist = await screen.findByRole('tablist');
     const tabs = within(tablist).getAllByRole('tab');
-    expect(tabs).toHaveLength(3);
+    expect(tabs).toHaveLength(4);
     tabs.forEach((tab) => expect(tab).toBeVisible());
   });
 
@@ -368,11 +370,14 @@ describe('EditorWorkspace keyboard accessibility', () => {
     expect(screen.getByRole('tab', { name: 'Tools' })).toHaveFocus();
 
     await user.tab();
+    expect(screen.getByRole('tab', { name: 'Layers' })).toHaveFocus();
+
+    await user.tab();
     expect(screen.getByRole('tab', { name: 'Inspector' })).toHaveFocus();
 
     // Shift+Tab reverses the same order, with no trap.
     await user.tab({ shift: true });
-    expect(screen.getByRole('tab', { name: 'Tools' })).toHaveFocus();
+    expect(screen.getByRole('tab', { name: 'Layers' })).toHaveFocus();
   });
 
   it('moves focus into the exit-without-saving dialog on open and restores it to the trigger on cancel', async () => {

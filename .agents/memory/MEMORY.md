@@ -10,3 +10,4 @@
 - [Critical operational decisions](critical-actions.md) — Structured index of the security, deployment, database, authentication, and verification decisions that must not regress.
 - [p5.js getUserMedia polyfill](p5-getusermedia-polyfill.md) — Mocking navigator.mediaDevices.getUserMedia wrong crashes the bundle via p5.js's own load-time polyfill.
 - [Local e2e baseURL default](e2e-baseurl-port-default.md) — RESOLVED: Playwright's default baseURL now matches Vite's pinned :5000; historical note on issue #123.
+- [jsdom drag-event clientY](jsdom-drag-event-clientY.md) — `fireEvent.drag*` silently drops `clientY`/`clientX` in jsdom; build the event by hand and fire it with `fireEvent(el, event)` instead.

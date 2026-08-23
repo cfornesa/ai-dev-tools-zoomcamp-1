@@ -916,6 +916,58 @@ export function useSceneEditor(
     [workingCopy, applyOutcome],
   );
 
+  // Issue #127: the Layers panel's pointer drag-and-drop can reorder an
+  // item to any position among its siblings, not just one step up/down —
+  // but the "one undo step per drop" convention every other outline
+  // mutation here follows (see `commit`'s doc comment and
+  // `applyOutcome`) means a single drag-drop gesture must still land as
+  // exactly one `past` entry, not one per intermediate swap. Rather than
+  // duplicating `moveItemOp`'s/`moveLayerOp`'s swap logic to jump straight
+  // to an arbitrary index, these two helpers apply the *existing* pure
+  // adjacent-swap functions repeatedly against a local candidate scene
+  // (never touching React state until the loop finishes), then call
+  // `commit()` exactly once with the final result — the same "reuse the
+  // existing mutation, don't reimplement it" approach every other Task 24/
+  // 76 mutation uses, just sequenced by the caller instead of the scene
+  // document. `LayersPanel.tsx` computes `steps` by diffing the dragged
+  // item's current sibling-list position against its intended one (see
+  // that file's `planReorder`).
+  const moveItemBySteps = useCallback(
+    (itemId: string, direction: 'up' | 'down', steps: number) => {
+      if (!workingCopy || steps <= 0) return;
+      let current = workingCopy;
+      for (let i = 0; i < steps; i += 1) {
+        const outcome = moveItemOp(current, itemId, direction);
+        if (!outcome.ok) {
+          setOutlineError(outcome.error);
+          return;
+        }
+        current = outcome.scene;
+      }
+      setOutlineError(null);
+      if (current !== workingCopy) commit(current);
+    },
+    [workingCopy, commit],
+  );
+
+  const moveLayerBySteps = useCallback(
+    (layerId: string, direction: 'up' | 'down', steps: number) => {
+      if (!workingCopy || steps <= 0) return;
+      let current = workingCopy;
+      for (let i = 0; i < steps; i += 1) {
+        const outcome = moveLayerOp(current, layerId, direction);
+        if (!outcome.ok) {
+          setOutlineError(outcome.error);
+          return;
+        }
+        current = outcome.scene;
+      }
+      setOutlineError(null);
+      if (current !== workingCopy) commit(current);
+    },
+    [workingCopy, commit],
+  );
+
   // Task 76: reparenting — move a shape/group to a different layer's top
   // level, or into a different group on the same layer (or promote it out
   // to that layer's top level with `targetGroupId: null`). Both route
@@ -1241,6 +1293,8 @@ export function useSceneEditor(
     toggleGroupVisible,
     toggleGroupLocked,
     moveItem,
+    moveItemBySteps,
+    moveLayerBySteps,
     moveItemToLayer,
     moveItemToGroup,
     groupSelected,

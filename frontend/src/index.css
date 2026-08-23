@@ -764,10 +764,11 @@ code {
 
 .editor-panel[data-panel='preview'] {
   grid-column: 1;
-  /* Spans all three of the sidebar column's rows (Details/Tools/
-     Inspector), so Preview reaches the sidebar's full stacked height
-     rather than only its first row. */
-  grid-row: 1 / span 3;
+  /* Issue #127: spans all four of the sidebar column's rows (Details/
+     Tools/Layers/Inspector, up from three before the dedicated Layers
+     panel existed), so Preview reaches the sidebar's full stacked height
+     rather than only part of it. */
+  grid-row: 1 / span 4;
 }
 
 .editor-panel[data-panel='details'] {
@@ -780,9 +781,17 @@ code {
   grid-row: 2;
 }
 
-.editor-panel[data-panel='inspector'] {
+/* Issue #127: the former "Scene outline" CollapsibleSection's replacement,
+   now its own sidebar row between Tools and Inspector rather than nested
+   inside Tools. */
+.editor-panel[data-panel='layers'] {
   grid-column: 2;
   grid-row: 3;
+}
+
+.editor-panel[data-panel='inspector'] {
+  grid-column: 2;
+  grid-row: 4;
 }
 
 /* Matches useIsNarrowViewport's `window.innerWidth < 1024` breakpoint
@@ -1158,6 +1167,58 @@ textarea:disabled {
 .editor-outline-kind-icon {
   color: var(--text);
   opacity: 0.7;
+}
+
+/* Issue #127: the Layers panel's pointer drag-and-drop (see
+   `LayersPanel.tsx`'s module doc comment). The drag handle glyph is purely
+   decorative (`aria-hidden`) — every row is already `draggable` in full,
+   not just this glyph — it just signals "this row can be picked up" at a
+   glance, mirroring the kind icon's role. */
+.editor-outline-drag-handle {
+  color: var(--text);
+  opacity: 0.45;
+  cursor: grab;
+}
+
+.editor-outline-row-dragging {
+  opacity: 0.5;
+}
+
+/* A thin accent-colored rule on the edge the item will land, so "before"
+   vs. "after" is unambiguous even when several rows are the same height —
+   distinct from the `-into` treatment below, which highlights the whole
+   row instead of one edge, since dropping "into" a group/layer doesn't
+   pick a position among that row's own siblings. */
+.editor-outline-row-drop-before {
+  box-shadow: inset 0 2px 0 0 var(--accent);
+}
+
+.editor-outline-row-drop-after {
+  box-shadow: inset 0 -2px 0 0 var(--accent);
+}
+
+.editor-outline-row-drop-into {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-bg);
+}
+
+/* The rejected-drop affordance the "locked row / invalid cycle / limit
+   violation" acceptance criterion asks for — a warm-toned dashed outline,
+   the same visual language `.editor-scene-shape-hover-outline-locked`
+   already uses for a locked shape's canvas hover cue, so "this can't be
+   dropped here" reads consistently across the app. */
+.editor-outline-row-drop-rejected {
+  outline: 2px dashed #b42318;
+  outline-offset: -2px;
+  cursor: not-allowed;
+}
+
+.editor-outline-order-hint {
+  margin: 0 0 8px;
+  font-size: 0.85em;
+  color: var(--text);
+  opacity: 0.75;
 }
 
 /* Distinguishes a cascaded (inherited from an ancestor layer/group) hidden

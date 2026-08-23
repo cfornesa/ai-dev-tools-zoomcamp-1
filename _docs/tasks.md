@@ -764,3 +764,61 @@ Same convention as above: independently groomed follow-ups, not prerequisites fo
 - #100 `test_google_oauth.py`: 3 tests fail with `DisallowedHost` (400) instead of expected response; creatweb/creatrweb domain typo — Status: COMPLETE. Fixed the `creatweb`→`creatrweb` typo across `AGENTS.md`, `config/settings.py`'s error message, and `tests/test_env_config.py`/`tests/test_google_oauth.py`'s fixtures/assertions, and added the missing `ALLOWED_HOSTS` overrides the three origin tests needed. `make check` is green, the published routing smoke check passes, and the project owner confirmed a real Google OAuth sign-in round trip through the deployed `https://animate.creatrweb.com` app. Delivered on [PR #102](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/102).
 - #103 Responsive shell E2E job fails: Playwright defaults to :5173 but CI starts Vite on :5000 — Status: COMPLETE. Root cause part 1: the job's `Start Django and Vite`/`Wait for both servers` steps correctly use port 5000, but the job never set `E2E_BASE_URL`, so `frontend/playwright.config.ts` and `frontend/e2e/support/global-setup.ts` both fell back to their default of `http://localhost:5173`, where nothing listens — explaining both the direct `net::ERR_CONNECTION_REFUSED` failures and the self-skipped signed-in tests (global-setup's own reachability probe against the wrong port marked the server unreachable). Fixed by adding `env: E2E_BASE_URL: http://localhost:5000` to the "Run responsive shell checks at 375px" step in `.github/workflows/ci.yml`. Root cause part 2, found only once the base-URL fix let the job actually connect: because this job had never successfully run against a live server, three later header refactors (hamburger mobile nav behind a toggle per issue #90, a new "Home" nav link, and removal of the `.app-shell-auth` wrapper class) had silently drifted out of sync with `frontend/e2e/responsiveShell.spec.ts`, which predates all three. Updated the spec to match the shipped, intentional behavior: open the hamburger ("Open menu" button) before asserting nav visibility/tab order below the 768px mobile-header breakpoint, added "Home" to every expected tab-order sequence, and replaced the dead `.app-shell-auth` locator with the individual "Account settings" link / "Logout" button locators the tablet-width test already used. Verified locally end-to-end against a real PostgreSQL-backed Django + Vite pair (`AI_PROVIDER=fake`, `E2E_BASE_URL=http://localhost:5000 npx playwright test e2e/responsiveShell.spec.ts`): all 7 scenarios pass. `make frontend-lint`/`typecheck`/`format-check` all green. Local `make e2e` was unaffected by the CI-side base-URL fix since it always runs on the fixed :5000 Vite port already, but does now exercise the corrected spec. Confirmed green in actual CI on commit 25c0ced: [run 32606135290](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/32606135290), "Responsive shell E2E" job passed all 7 scenarios in 1m25s. [Issue #103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/103) closed.
 - #106 mypy fails on `tests/test_git_safe_push.py`: `BaseServer` has no attribute `repository_root` — Status: COMPLETE (stale `PROPOSED` status corrected during the 2026-08-23 production-readiness review; the issue was already closed on GitHub — `git log --grep 106` shows it fixed by commit 252aa7f, "Fix mypy attr-defined error in test_git_safe_push.py" — and `uv run mypy .`/`make check` are confirmed clean on the current `main` tip). [Issue #106](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/106).
+
+## 94. Stop autosave from resurrecting drafts after an explicit save
+Goal: Prevent stale local or server autosave work from recreating a draft after
+an explicit version save has deleted it.
+Description: Reconcile the save callback with both draft controllers so a
+pre-save working-copy snapshot cannot be written after the authoritative save.
+Preserve the saved version and surface cleanup failures. Cover save, autosave,
+page-hide, navigation, AI accept, restore, and unmount races in browser and
+component tests.
+Status: PROPOSED
+GitHub issue: [#125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/125)
+Execution plan: `.local/tasks/editor-draft-resurrection.md`
+Evidence: The 2026-08-23 deployment sequence recorded `POST /versions/` 201,
+`DELETE /draft/<session>/` 204, then a later `PUT /draft/<session>/` 200.
+
+## 95. Prevent duplicated shapes from appearing after editor load or recovery
+Goal: Isolate and eliminate shape duplication that makes the editor unusable.
+Description: Determine whether duplicate shapes enter persisted scene JSON,
+are introduced by local/server draft recovery, or are rendered by duplicate
+visual/selection overlays. Enforce one-to-one shape IDs and rendered instances
+through load, recovery, save, reload, undo/redo, selection, Inspector, outline,
+and hit-testing without silently dropping legitimate shapes.
+Status: PROPOSED
+GitHub issue: [#126](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/126)
+Execution plan: `.local/tasks/editor-duplicate-shapes.md`
+Evidence: The latest browser session had no thrown JavaScript exception, so this
+is explicitly an investigation task; the report of duplicated shapes must be
+reproduced and classified before choosing a fix.
+
+## 96. Give the editor a dedicated Layers panel with drag-and-drop ordering
+Goal: Give users a clear, persistent view of stacking order and direct control
+over valid layer, group, and shape reordering.
+Description: Replace the compact outline placement with a visually distinct
+responsive Layers panel. Show readable hierarchy, visibility, locks, and
+stacking order; provide pointer drag-and-drop with insertion feedback and
+keyboard reorder parity; and keep the canonical scene state synchronized with
+rendering, selection, Inspector, save, undo/redo, and recovery.
+Status: PROPOSED
+GitHub issue: [#127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/127)
+Execution plan: `.local/tasks/editor-dedicated-layers-panel.md`
+Evidence: Issue #110 improved labels and hierarchy, but the current outline is
+still not a dedicated Layers panel with direct drag-and-drop stacking control.
+
+## 97. Make Publish honor metadata entered in the editor
+Goal: Ensure entering a meaningful description and title through the editor
+results in a reliable, understandable publishing flow.
+Description: Reconcile the Details panel's local metadata state with the
+header Publish action. Choose whether Publish persists pending metadata or
+clearly requires and guides the user through saving it, while preserving input
+and surfacing validation or network errors. Cover title/description edits,
+confirmation cancel, retry, public visibility, and public metadata in browser
+tests.
+Status: PROPOSED
+GitHub issue: [#128](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/128)
+Execution plan: `.local/tasks/editor-publish-metadata-flow.md`
+Evidence: `EditorDetailsPanel.tsx` stores the description locally, but
+`PublishControl.tsx` validates `project.description`; entering text without the
+separate metadata save can therefore leave Publish validating the old value.

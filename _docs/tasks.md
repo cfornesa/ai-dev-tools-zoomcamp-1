@@ -795,12 +795,24 @@ are introduced by local/server draft recovery, or are rendered by duplicate
 visual/selection overlays. Enforce one-to-one shape IDs and rendered instances
 through load, recovery, save, reload, undo/redo, selection, Inspector, outline,
 and hit-testing without silently dropping legitimate shapes.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#126](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/126)
 Execution plan: `.local/tasks/editor-duplicate-shapes.md`
 Evidence: The latest browser session had no thrown JavaScript exception, so this
 is explicitly an investigation task; the report of duplicated shapes must be
 reproduced and classified before choosing a fix.
+Resolution: Classified as category (c) — the SVG shape-body overlay in
+`EditorWorkspace.tsx` and the p5 canvas both painted a shape's body while
+behavior playback was active, producing a frozen copy plus a live copy.
+Fixed with a `!hasActiveBehaviors` render guard. Category (b) (recovery/
+restore/AI-accept merge duplication) was investigated and ruled out — all
+replace `workingCopy` wholesale. Category (a) had no reproducible path but
+was hardened defensively with a `validateScene` gate on the local IndexedDB
+draft write, matching every other persistence path. `make check` green
+(backend 580 passed/22 skipped, frontend 1554 passed). QA verdict: PASS
+(commit d0b8dfe,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/126#issuecomment-5385108975).
+Closed.
 
 ## 96. Give the editor a dedicated Layers panel with drag-and-drop ordering
 Goal: Give users a clear, persistent view of stacking order and direct control

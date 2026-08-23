@@ -53,10 +53,11 @@ def test_equal_refs_are_a_success(git_repositories):
 def test_fetch_refreshes_stale_remote_and_fast_forwards(git_repositories):
     local, bare = git_repositories
     second = local.parent / "second"
-    run(["git", "clone", str(bare), str(second)], local.parent).check_returncode()
+    run(["git", "clone", "--branch", "main", str(bare), str(second)], local.parent).check_returncode()
     git(second, "config", "user.email", "test@example.com")
     git(second, "config", "user.name", "Test User")
     (second / "state").write_text("remote\n")
+    git(second, "add", "state")
     git(second, "commit", "-am", "remote")
     git(second, "push", "origin", "main")
     (local / "state").write_text("local\n")
@@ -118,10 +119,11 @@ exec {real_git} "$@"
 def test_remote_ahead_is_rejected_distinctly(git_repositories):
     local, bare = git_repositories
     second = local.parent / "second"
-    run(["git", "clone", str(bare), str(second)], local.parent).check_returncode()
+    run(["git", "clone", "--branch", "main", str(bare), str(second)], local.parent).check_returncode()
     git(second, "config", "user.email", "test@example.com")
     git(second, "config", "user.name", "Test User")
     (second / "state").write_text("remote\n")
+    git(second, "add", "state")
     git(second, "commit", "-am", "remote")
     git(second, "push", "origin", "main")
     result = invoke(local)

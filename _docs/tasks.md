@@ -2428,3 +2428,49 @@ GitHub issue: [#149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/
 - **Durable memory link:** None yet — no non-obvious constraint surfaced during implementation beyond what's already documented inline.
 
 GitHub issue: [#150](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/150)
+
+## 116. Decide whether the camera video overlay should extend to the public project viewer
+
+### Goal
+
+Task 110/#141 added a live camera video overlay with user-controllable
+opacity to the editor's Preview only. Issue #145 asked whether the same
+overlay should extend to `PublicProjectViewer.tsx` (the anonymous `/p/:id`
+public viewing surface), and to implement it if wanted.
+
+### Decision: not implemented — closed without shipping
+
+PM grooming determined this should not ship now:
+
+- Task 110's overlay answers a specific, explicit request scoped to the
+  editor's *authoring* Preview (seeing yourself with adjustable opacity
+  while working on a scene). There is no equivalent signal that an
+  anonymous visitor to someone else's *published* scene wants or benefits
+  from a self-camera overlay composited over it.
+- The public viewer's existing `CameraControl` usage already serves a
+  distinct, previously-decided purpose — opt-in interactive camera
+  tracking per `_docs/plan.md`'s "demo and opt-in camera mode" — and
+  conflating that with a vanity/self-view overlay would confuse two
+  different features rather than extend one.
+- The issue's own premise (reuse whatever component #141 introduced)
+  doesn't hold on inspection: task 110's overlay is inline state/JSX in
+  `EditorWorkspace.tsx` (`cameraStream`/`cameraOverlayOpacity` state, the
+  `srcObject` effect, `P5ScenePreview`'s `transparentBackground` flag),
+  not a standalone reusable component. Shipping this properly would first
+  require extracting a shared component — new scope nobody has asked for.
+
+### Evidence
+
+- Confirmed `frontend/src/components/CameraControl.tsx` already exposes
+  the reusable primitive needed (`onStreamChange` prop) but
+  `PublicProjectViewer.tsx` doesn't currently pass it.
+- Confirmed no separate `CameraVideoOverlay` component exists to reuse.
+
+### Next action
+
+None planned. Reopen [#145](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/145)
+with a concrete product ask if real user signal for this surface appears
+later.
+
+Status: DECLINED — closed without implementation, per grooming decision above.
+GitHub issue: [#145](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/145)

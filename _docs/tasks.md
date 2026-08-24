@@ -2474,3 +2474,53 @@ later.
 
 Status: DECLINED — closed without implementation, per grooming decision above.
 GitHub issue: [#145](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/145)
+
+## 117. Decide whether the camera video overlay should extend to the standalone HTML export
+
+### Goal
+
+Task 110/#141 added a live camera video overlay with user-controllable
+opacity to the editor's Preview only. Issue #146 asked whether the same
+overlay should extend to the standalone HTML export output
+(`generateHtmlExport.ts`/`standaloneCameraSource.ts`), and to implement it
+if wanted.
+
+### Decision: not implemented — closed without shipping
+
+PM grooming determined this should not ship:
+
+- Task 110's overlay answers a specific, explicit request scoped to the
+  editor's authoring Preview, where the viewer is the project's own
+  author. The standalone HTML export is a self-contained page a project
+  owner can host or embed anywhere; its visitors have no relationship to
+  "the project" at all and no expectation of seeing themselves overlaid
+  on someone else's animation — a strictly more niche case than #145's
+  public-viewer grooming (also closed not-implement), since a
+  public-viewer visitor is at least on this app's own domain.
+- The export's existing camera pipeline (`standaloneCameraSource.ts`)
+  exists purely to drive tracking-based scene *behavior* (hand-gesture
+  bindings) — a functional purpose, not a vanity self-view.
+- Implementing this would add new `<video>`/mirroring/opacity-slider/
+  privacy-notice surface to the hand-rolled, no-bundler
+  `standaloneCameraSource.ts` runtime for a feature with no demonstrated
+  demand. As with #145, task 110's overlay also isn't a reusable
+  component — it's inline state/JSX in `EditorWorkspace.tsx` — so there
+  is nothing to "extend," only new work to invent from scratch.
+
+### Evidence
+
+- Reviewed `frontend/src/export/generateHtmlExport.ts` and
+  `frontend/src/export/standaloneCameraSource.ts` in full; confirmed the
+  export's camera usage today is functional tracking only, with no
+  self-view rendering.
+- Reviewed task 110's entry (`_docs/tasks.md` lines 1778-1858) confirming
+  its overlay is inline `EditorWorkspace.tsx` state/JSX, not extracted.
+
+### Next action
+
+None planned. Reopen [#146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/146)
+with a concrete product ask if real user signal for this surface appears
+later.
+
+Status: DECLINED — closed without implementation, per grooming decision above.
+GitHub issue: [#146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/146)

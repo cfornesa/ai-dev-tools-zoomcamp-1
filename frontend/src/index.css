@@ -1154,6 +1154,47 @@ textarea:disabled {
   gap: 4px;
 }
 
+/* Issue #156: the Preview canvas's zoom in/out/reset controls and live
+   percentage readout — see EditorWorkspace.tsx's `editor-zoom-controls`. */
+.editor-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.editor-zoom-readout {
+  min-width: 3.5em;
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.editor-zoom-reset-button {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.editor-zoom-reset-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Issue #156: the fixed-size clipping viewport panning happens inside —
+   `overflow` itself is toggled inline (EditorWorkspace.tsx) between
+   `visible` (at 100% zoom, matching this box's pre-issue-#156 behavior
+   exactly) and `hidden` (once zoomed, so panned content never spills past
+   this box into the rest of the Preview panel). */
+.editor-scene-canvas-viewport {
+  touch-action: none;
+}
+
 .editor-shape-handle {
   position: absolute;
   box-sizing: border-box;

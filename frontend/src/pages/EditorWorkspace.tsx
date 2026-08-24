@@ -221,6 +221,50 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 /**
+ * Issue #156: the Preview canvas's client-side zoom/pan view state — never
+ * written to `workingCopy`/scene JSON (see `EditorWorkspace.tsx`'s render
+ * below, which applies it purely as a CSS `transform` on `.editor-scene-
+ * canvas`, never touching the scene). Bounded to a comfortable 25%-400%
+ * range in 25-point-percentage steps, matching this issue's "sensible
+ * range... comfortable steps" acceptance criterion.
+ */
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 4;
+const ZOOM_STEP = 0.25;
+// Floating-point tolerance for the zoom-bound disabled-button comparisons
+// below (0.25-multiples are exactly representable in binary, but this stays
+// safe against any future step-size change that isn't).
+const ZOOM_EPSILON = 1e-6;
+
+function clampZoomValue(zoom: number): number {
+  const rounded = Math.round(zoom * 100) / 100;
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, rounded));
+}
+
+/**
+ * Clamps a pan offset (raw screen pixels, applied as a CSS `translate` on
+ * `.editor-scene-canvas` — see the render below) so the zoomed content
+ * never pans further than its own zoomed-in overflow, i.e. the clipping
+ * viewport (`.editor-scene-canvas-viewport`, `overflow: hidden`) always
+ * stays fully covered rather than exposing dead space at an edge. At
+ * `zoom <= 1` the only valid pan is none (there is no overflow to reveal),
+ * which callers enforce by resetting pan to `{x: 0, y: 0}` themselves
+ * rather than relying on this clamp collapsing to a zero range.
+ */
+function clampPanValue(
+  pan: Point,
+  zoom: number,
+  viewport: { width: number; height: number },
+): Point {
+  const maxX = Math.max(0, (viewport.width * (zoom - 1)) / 2);
+  const maxY = Math.max(0, (viewport.height * (zoom - 1)) / 2);
+  return {
+    x: Math.min(maxX, Math.max(-maxX, pan.x)),
+    y: Math.min(maxY, Math.max(-maxY, pan.y)),
+  };
+}
+
+/**
  * Task 112 (issue #143): one always-visible toolbar button — a visible
  * `aria-hidden` glyph plus a CSS tooltip (`.editor-toolbar-tooltip`, shown
  * on `:hover`/`:focus-visible` in index.css) so the label is visible on
@@ -619,6 +663,56 @@ function EditorWorkspace() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<P5ScenePreview | null>(null);
+
+  // Issue #156: the Preview canvas's zoom/pan view state. Purely local —
+  // never derived from or written into `workingCopy` — and reset to
+  // 100%/centered on every fresh mount (a plain `useState` initializer,
+  // not anything persisted), matching the issue's "not persisted" and
+  // "resets... on every fresh mount" acceptance criteria.
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
+  // "Latest value" ref for `zoom`, read by the window-level drag listeners
+  // and the native (non-passive) wheel listener below — both are created
+  // once/lazily and reused across renders, so they can't close over a
+  // fresh `zoom` each render the way an inline render-scope handler can
+  // (same rationale as `sceneEditorRef`/`snapSettingsRef` above).
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  // The clipping viewport (`.editor-scene-canvas-viewport`, `overflow:
+  // hidden` once zoomed) that pan is bounded against — see
+  // `clampPanValue`. A callback ref (matching `previewMountCallbackRef`'s
+  // own rationale below): this component early-returns for several
+  // `loadState`/`draftRecovery.status` values before the Preview panel
+  // ever renders, so a plain `useRef` + `useEffect(fn, [])` pair for the
+  // native wheel listener would attach before the node exists on the
+  // commit where it's first created, and never re-run once it finally
+  // does. The callback ref fires exactly when the node attaches/detaches,
+  // so the listener (registered `{ passive: false }`, required to
+  // `preventDefault()` a wheel event — React's own `onWheel` prop is
+  // passive by default and can't block the page's native scroll) is
+  // always attached to the real, current node.
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const wheelCleanupRef = useRef<(() => void) | null>(null);
+  const viewportCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    wheelCleanupRef.current?.();
+    wheelCleanupRef.current = null;
+    viewportRef.current = node;
+    if (!node) return;
+    // Issue #156: Ctrl/Cmd+scroll-wheel is the zoom accelerator — a plain
+    // scroll (no modifier) must NOT be hijacked, so this only ever calls
+    // `preventDefault()` once the modifier check below passes.
+    const onWheel = (event: WheelEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+      const next = clampZoomValue(zoomRef.current - event.deltaY * 0.001);
+      setZoom(next);
+      setPan((current) =>
+        next <= 1 ? { x: 0, y: 0 } : clampPanValue(current, next, node.getBoundingClientRect()),
+      );
+    };
+    node.addEventListener('wheel', onWheel, { passive: false });
+    wheelCleanupRef.current = () => node.removeEventListener('wheel', onWheel);
+  }, []);
   // Issue #111: the shape currently under the pointer, hit-tested the same
   // way `handleCanvasClick`/`handleCanvasPointerDown` do (topmost-shape-
   // wins), so hovering can show a distinct affordance from the selected
@@ -666,6 +760,13 @@ function EditorWorkspace() {
   // modes above, snapshots its `startShape` once at gesture start so a
   // long drag stays numerically stable and Escape-to-cancel is trivial
   // (see `applyShapeDrag`'s own doc comment in sceneShapes.ts).
+  // Issue #156: a fourth gesture kind, `mode: 'pan'` — dragging on empty
+  // canvas background (no shape hit) while zoomed beyond 100% shifts the
+  // visible viewport instead of manipulating any shape. Carries the pan
+  // offset (raw screen pixels) at gesture start and the pointer's starting
+  // client position, so `onMove` below only ever needs the pointer's
+  // client-space delta (never `clientToCanvasPoint`'s scene-space
+  // conversion — pan is a view-space concept, not a scene one).
   type DragState =
     | { mode: 'single'; kind: HandleKind; startShape: Shape; startPointer: Point }
     | {
@@ -675,7 +776,8 @@ function EditorWorkspace() {
         bounds: Bounds;
         startPointer: Point;
       }
-    | { mode: 'vertex'; startShape: PathShape; pointIndex: number; startPointer: Point };
+    | { mode: 'vertex'; startShape: PathShape; pointIndex: number; startPointer: Point }
+    | { mode: 'pan'; startPan: Point; startClientX: number; startClientY: number };
   const dragRef = useRef<DragState | null>(null);
   // Lazily built once (see the `if` below) and reused for every gesture,
   // so `window.addEventListener`/`removeEventListener` always agree on the
@@ -691,6 +793,19 @@ function EditorWorkspace() {
     const onMove = (event: PointerEvent) => {
       const drag = dragRef.current;
       if (!drag) return;
+      if (drag.mode === 'pan') {
+        // Issue #156: pan is tracked in raw client-pixel deltas (never
+        // `clientToCanvasPoint`'s scene-space conversion — panning moves
+        // the *view*, not any scene coordinate), then clamped against the
+        // clipping viewport's actual current size so the zoomed content
+        // never scrolls past its own overflow.
+        const dx = event.clientX - drag.startClientX;
+        const dy = event.clientY - drag.startClientY;
+        const nextPan = { x: drag.startPan.x + dx, y: drag.startPan.y + dy };
+        const viewportRect = viewportRef.current?.getBoundingClientRect();
+        setPan(viewportRect ? clampPanValue(nextPan, zoomRef.current, viewportRect) : nextPan);
+        return;
+      }
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
       const { width, height } = canvasSizeRef.current;
@@ -743,18 +858,31 @@ function EditorWorkspace() {
       sceneEditorRef.current.updateSelectedTransform(updated);
     };
     const onUp = (event: PointerEvent) => {
-      if (!dragRef.current) return;
+      const drag = dragRef.current;
+      if (!drag) return;
       event.preventDefault();
       stopDragListening();
       dragRef.current = null;
+      // Issue #156: a pan gesture never touches the scene (no
+      // `beginTransform()` was ever called for it either — see
+      // `beginPanGesture` below), so there's no transform to commit and no
+      // guide overlay it could have set.
+      if (drag.mode === 'pan') return;
       setActiveGuides({ x: null, y: null });
       sceneEditorRef.current.commitTransform();
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || !dragRef.current) return;
+      const drag = dragRef.current;
+      if (event.key !== 'Escape' || !drag) return;
       event.preventDefault();
       stopDragListening();
       dragRef.current = null;
+      if (drag.mode === 'pan') {
+        // Escape-to-cancel a pan gesture restores the pre-gesture offset,
+        // matching every other gesture kind's own Escape-cancel behavior.
+        setPan(drag.startPan);
+        return;
+      }
       setActiveGuides({ x: null, y: null });
       sceneEditorRef.current.cancelTransform();
     };
@@ -916,6 +1044,34 @@ function EditorWorkspace() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [sceneEditor]);
+
+  // Issue #156: Ctrl/Cmd+"+"/"-" zoom in/out and Ctrl/Cmd+0 resets to
+  // 100%/centered — the keyboard-accelerator counterpart to the +/- zoom
+  // buttons and Ctrl/Cmd+scroll-wheel below. Ignored while typing in a
+  // text field, matching every other shortcut listener's `isTypingTarget`
+  // guard in this file. `applyZoomChange` is a plain function declaration
+  // further down this component (hoisted to the top of the function body,
+  // so it's already callable here) that owns the shared clamp-then-
+  // `setZoom`/`setPan` logic every zoom entry point (these shortcuts, the
+  // wheel listener above, and the +/- buttons in the render below) goes
+  // through.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || isTypingTarget(event.target)) return;
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        applyZoomChange(zoomRef.current + ZOOM_STEP);
+      } else if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        applyZoomChange(zoomRef.current - ZOOM_STEP);
+      } else if (event.key === '0') {
+        event.preventDefault();
+        applyZoomChange(1);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   // Issue #79: vertex edit mode's two keyboard affordances that aren't
   // already covered by the generic drag-cancel/undo-redo listeners above:
@@ -1101,6 +1257,24 @@ function EditorWorkspace() {
     return clientToCanvasPoint(rect, clientX, clientY, canvasWidth, canvasHeight);
   }
 
+  // Issue #156: the single entry point every zoom-changing affordance (the
+  // +/- toolbar buttons below, the Ctrl/Cmd+"+"/"-"/0 keyboard shortcuts
+  // above, and the Ctrl/Cmd+scroll-wheel listener registered in
+  // `viewportCallbackRef` above) goes through — clamps the new zoom to
+  // [MIN_ZOOM, MAX_ZOOM], and either resets pan to centered (at/below
+  // 100%, where there is no overflow to pan into) or re-clamps the
+  // existing pan against the new zoom level (so zooming back down never
+  // leaves the view stuck panned past the now-smaller overflow).
+  function applyZoomChange(nextRaw: number) {
+    const next = clampZoomValue(nextRaw);
+    setZoom(next);
+    setPan((current) => {
+      if (next <= 1) return { x: 0, y: 0 };
+      const rect = viewportRef.current?.getBoundingClientRect();
+      return rect ? clampPanValue(current, next, rect) : current;
+    });
+  }
+
   function handleCanvasClick(event: ReactMouseEvent<HTMLDivElement>) {
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
@@ -1134,6 +1308,21 @@ function EditorWorkspace() {
     if (!handlers) return;
     dragRef.current = next;
     sceneEditor.beginTransform();
+    window.addEventListener('pointermove', handlers.onMove);
+    window.addEventListener('pointerup', handlers.onUp);
+    window.addEventListener('keydown', handlers.onKey);
+  }
+
+  // Issue #156: starts a pan gesture — deliberately NOT `beginTransformGesture`
+  // (no `sceneEditor.beginTransform()` call, since panning never touches the
+  // scene/`workingCopy` at all, only this component's own `pan` view state).
+  // Registers the exact same window-level listeners so Escape-to-cancel and
+  // "keep tracking outside the canvas element's own bounds" behave exactly
+  // like every other gesture kind.
+  function beginPanGesture(clientX: number, clientY: number) {
+    const handlers = dragHandlers.current;
+    if (!handlers) return;
+    dragRef.current = { mode: 'pan', startPan: pan, startClientX: clientX, startClientY: clientY };
     window.addEventListener('pointermove', handlers.onMove);
     window.addEventListener('pointerup', handlers.onUp);
     window.addEventListener('keydown', handlers.onKey);
@@ -1178,7 +1367,19 @@ function EditorWorkspace() {
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
     const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y);
-    if (!hit) return; // no shape body under the pointer: nothing to drag
+    if (!hit) {
+      // Issue #156: reuses this exact hit-test-then-branch structure
+      // (rather than a second, separate hit-test) to distinguish "no shape
+      // under the pointer" from "a shape's body" — dragging empty canvas
+      // background pans the view instead, but only once zoomed beyond
+      // 100% (at 100%/no pan there is nothing to pan into, and this must
+      // stay a no-op there so a plain click-to-deselect, handled by the
+      // sibling `onClick`, behaves identically to before this issue).
+      if (zoom > 1) {
+        beginPanGesture(event.clientX, event.clientY);
+      }
+      return;
+    }
     if (groupSelection && groupBounds && groupSelection.some((s) => s.id === hit.id)) {
       // Task 80 (issue #80): the guard runs before the gesture starts — a
       // locked member blocks the whole group gesture, not just its own
@@ -1545,39 +1746,119 @@ function EditorWorkspace() {
               </label>
             </div>
           )}
+          {/* Issue #156: zoom in/out buttons, a live percentage readout,
+              and a reset-to-100% action. Reuses `ToolbarButton` (issue
+              #143's existing icon-button pattern — visible `aria-hidden`
+              glyph, `aria-label` for the accessible name, a CSS hover/
+              focus tooltip) rather than a new one-off control. Each
+              zoom button is disabled at its respective bound (comparing
+              with a small epsilon since `zoom` is a floating-point
+              accumulator), and the readout is `aria-live="polite"` so
+              screen-reader users hear it change without needing to
+              re-focus it after every zoom action. */}
+          <div className="editor-zoom-controls" role="group" aria-label="Zoom controls">
+            <ToolbarButton
+              label="Zoom out"
+              glyph="−"
+              onClick={() => applyZoomChange(zoom - ZOOM_STEP)}
+              disabled={zoom <= MIN_ZOOM + ZOOM_EPSILON}
+            />
+            <span
+              className="editor-zoom-readout"
+              data-testid="editor-zoom-readout"
+              aria-live="polite"
+            >
+              {Math.round(zoom * 100)}%
+            </span>
+            <ToolbarButton
+              label="Zoom in"
+              glyph="+"
+              onClick={() => applyZoomChange(zoom + ZOOM_STEP)}
+              disabled={zoom >= MAX_ZOOM - ZOOM_EPSILON}
+            />
+            <button
+              type="button"
+              className="editor-zoom-reset-button"
+              onClick={() => applyZoomChange(1)}
+              disabled={zoom === 1 && pan.x === 0 && pan.y === 0}
+            >
+              Reset zoom
+            </button>
+          </div>
+          {/* Issue #156: the fixed-size, `overflow: hidden` (once zoomed)
+              clipping viewport panning happens inside. Carries the exact
+              same responsive width/aspect-ratio sizing `.editor-scene-
+              canvas` itself used to own alone (issue #109) — the inner
+              `.editor-scene-canvas` below now just fills 100% of this box
+              and is scaled/translated via CSS `transform`, so at the
+              default 100%/no-pan state the two together occupy the exact
+              same on-screen box as before this issue, with `overflow`
+              deliberately left `visible` there too (only switched to
+              `hidden` once actually zoomed) so a handle that pokes
+              slightly outside the canvas at 100% (unchanged pre-existing
+              behavior) isn't newly clipped. */}
           <div
-            ref={canvasRef}
-            data-testid="scene-canvas"
-            role="group"
-            aria-label="Scene canvas"
-            className="editor-scene-canvas"
+            ref={viewportCallbackRef}
+            data-testid="scene-canvas-viewport"
+            className="editor-scene-canvas-viewport"
             style={{
               position: 'relative',
               width: canvasWidth,
               maxWidth: '100%',
-              // Issue #109: the wrapper's own box tracks the scene's
-              // aspect ratio (rather than a fixed pixel `height`) so that
-              // when `maxWidth: '100%'` caps its width below the logical
-              // `canvasWidth` (a panel narrower than the scene, e.g. at
-              // tablet/narrow widths), the height shrinks proportionally
-              // instead of leaving dead space or a squashed image. The
-              // absolutely-positioned overlay SVGs below (`inset: 0`) and
-              // the p5-mounted <canvas> (`.editor-scene-canvas canvas`'s
-              // own `height: auto !important` in index.css) both then
-              // track this same box, so grid/guide/shape overlays and
-              // pointer coordinates (`clientToCanvasPoint`, which already
-              // scales by the canvas element's actual rendered
-              // `getBoundingClientRect()` vs. logical size) stay aligned
-              // at any panel width.
               aspectRatio: `${canvasWidth} / ${canvasHeight}`,
+              overflow: zoom > 1 ? 'hidden' : 'visible',
             }}
-            onClick={handleCanvasClick}
-            onPointerDown={handleCanvasPointerDown}
-            onPointerMove={handleCanvasPointerMove}
-            onPointerLeave={handleCanvasPointerLeave}
-            onDoubleClick={handleCanvasDoubleClick}
           >
-            {/* Task 110 (issue #141): the live camera feed, composited via
+            <div
+              ref={canvasRef}
+              data-testid="scene-canvas"
+              role="group"
+              aria-label="Scene canvas"
+              className="editor-scene-canvas"
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                // Issue #156: the single CSS transform that implements
+                // zoom/pan — see this file's module doc comment and the
+                // issue's own "Implementation note" for why a `transform:
+                // scale()` (rather than resizing the p5 canvas's internal
+                // pixel resolution) needs NO changes to
+                // `clientToCanvasPoint`/any drag or hit-test code: it
+                // already derives its scale factor from this exact
+                // element's rendered `getBoundingClientRect()`, which
+                // already reflects this transform. `translate` is applied
+                // outermost (rightmost `scale` composes first) so `pan` is
+                // always a raw, zoom-independent screen-pixel offset —
+                // matching how `beginPanGesture`/`onMove` above compute it
+                // from the pointer's client-space delta.
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: 'center',
+                cursor: zoom > 1 ? 'grab' : 'default',
+                // Issue #109: the wrapper's own box tracks the scene's
+                // aspect ratio (rather than a fixed pixel `height`) so that
+                // when `maxWidth: '100%'` caps its width below the logical
+                // `canvasWidth` (a panel narrower than the scene, e.g. at
+                // tablet/narrow widths), the height shrinks proportionally
+                // instead of leaving dead space or a squashed image. The
+                // absolutely-positioned overlay SVGs below (`inset: 0`) and
+                // the p5-mounted <canvas> (`.editor-scene-canvas canvas`'s
+                // own `height: auto !important` in index.css) both then
+                // track this same box, so grid/guide/shape overlays and
+                // pointer coordinates (`clientToCanvasPoint`, which already
+                // scales by the canvas element's actual rendered
+                // `getBoundingClientRect()` vs. logical size) stay aligned
+                // at any panel width — now including zoom/pan, applied via
+                // the `transform` above, which `getBoundingClientRect()`
+                // reflects automatically.
+              }}
+              onClick={handleCanvasClick}
+              onPointerDown={handleCanvasPointerDown}
+              onPointerMove={handleCanvasPointerMove}
+              onPointerLeave={handleCanvasPointerLeave}
+              onDoubleClick={handleCanvasDoubleClick}
+            >
+              {/* Task 110 (issue #141): the live camera feed, composited via
                 CSS behind the p5 canvas (zIndex -2 vs. the mount div's -1
                 below) — never drawn into the p5 canvas itself, so it stays
                 structurally absent from any canvas-only capture path
@@ -1587,38 +1868,38 @@ function EditorWorkspace() {
                 `transform` live via the `cameraOverlayMirrored` state —
                 the `<video>` element itself never re-mounts, so the live
                 feed is uninterrupted. */}
-            {cameraStatus === 'active' && cameraStream && (
-              <video
-                ref={cameraVideoRef}
-                data-testid="camera-overlay-video"
-                aria-hidden="true"
-                muted
-                playsInline
-                autoPlay
-                className="editor-camera-overlay"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: -2,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
-                  opacity: cameraOverlayOpacity,
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
-            {/* Task 25: the p5.js preview mounts its <canvas> into this div.
+              {cameraStatus === 'active' && cameraStream && (
+                <video
+                  ref={cameraVideoRef}
+                  data-testid="camera-overlay-video"
+                  aria-hidden="true"
+                  muted
+                  playsInline
+                  autoPlay
+                  className="editor-camera-overlay"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: -2,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
+                    opacity: cameraOverlayOpacity,
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+              {/* Task 25: the p5.js preview mounts its <canvas> into this div.
                 React is never given any children to reconcile here (no JSX
                 children below), so it never touches — or fights over —
                 nodes p5 appends directly to the real DOM. */}
-            <div
-              ref={previewMountCallbackRef}
-              aria-hidden="true"
-              style={{ position: 'absolute', inset: 0, zIndex: -1 }}
-            />
-            {/* Issue #78: the grid overlay — a visible line at every
+              <div
+                ref={previewMountCallbackRef}
+                aria-hidden="true"
+                style={{ position: 'absolute', inset: 0, zIndex: -1 }}
+              />
+              {/* Issue #78: the grid overlay — a visible line at every
                 20-scene-unit grid coordinate, so snapping is never
                 invisible/implicit (acceptance criterion). Rendered as an
                 SVG (not a `p5Adapter.ts` draw call — that file stays
@@ -1626,114 +1907,114 @@ function EditorWorkspace() {
                 to exactly the logical canvas, so its coordinates line up
                 with shape `transform.x/y` with no separate unit
                 conversion. */}
-            {snapSettings.gridEnabled && (
-              <svg
-                aria-hidden="true"
-                data-testid="editor-snap-grid-overlay"
-                className="editor-snap-grid-overlay"
-                style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-                width={canvasWidth}
-                height={canvasHeight}
-                viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
-              >
-                {gridLinesX.map((x) => (
-                  <line
-                    key={`grid-x-${x}`}
-                    className="editor-snap-grid-line"
-                    x1={x}
-                    y1={0}
-                    x2={x}
-                    y2={canvasHeight}
-                  />
-                ))}
-                {gridLinesY.map((y) => (
-                  <line
-                    key={`grid-y-${y}`}
-                    className="editor-snap-grid-line"
-                    x1={0}
-                    y1={y}
-                    x2={canvasWidth}
-                    y2={y}
-                  />
-                ))}
-              </svg>
-            )}
-            {/* Issue #78: alignment-guide lines — only rendered for the
+              {snapSettings.gridEnabled && (
+                <svg
+                  aria-hidden="true"
+                  data-testid="editor-snap-grid-overlay"
+                  className="editor-snap-grid-overlay"
+                  style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+                  width={canvasWidth}
+                  height={canvasHeight}
+                  viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+                >
+                  {gridLinesX.map((x) => (
+                    <line
+                      key={`grid-x-${x}`}
+                      className="editor-snap-grid-line"
+                      x1={x}
+                      y1={0}
+                      x2={x}
+                      y2={canvasHeight}
+                    />
+                  ))}
+                  {gridLinesY.map((y) => (
+                    <line
+                      key={`grid-y-${y}`}
+                      className="editor-snap-grid-line"
+                      x1={0}
+                      y1={y}
+                      x2={canvasWidth}
+                      y2={y}
+                    />
+                  ))}
+                </svg>
+              )}
+              {/* Issue #78: alignment-guide lines — only rendered for the
                 duration an active single-shape move gesture is actually
                 snapped onto a sibling's edge/center (`activeGuides` is
                 cleared on every gesture end, so nothing stale is ever left
                 behind after pointerup). */}
-            {(activeGuides.x || activeGuides.y) && (
+              {(activeGuides.x || activeGuides.y) && (
+                <svg
+                  aria-hidden="true"
+                  className="editor-snap-guide-overlay"
+                  style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+                  width={canvasWidth}
+                  height={canvasHeight}
+                  viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+                >
+                  {activeGuides.x && (
+                    <line
+                      data-testid="snap-guide-x"
+                      className="editor-snap-guide-line"
+                      x1={activeGuides.x.value}
+                      y1={0}
+                      x2={activeGuides.x.value}
+                      y2={canvasHeight}
+                    />
+                  )}
+                  {activeGuides.y && (
+                    <line
+                      data-testid="snap-guide-y"
+                      className="editor-snap-guide-line"
+                      x1={0}
+                      y1={activeGuides.y.value}
+                      x2={canvasWidth}
+                      y2={activeGuides.y.value}
+                    />
+                  )}
+                </svg>
+              )}
               <svg
                 aria-hidden="true"
-                className="editor-snap-guide-overlay"
+                className="editor-scene-shapes-layer"
                 style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
                 width={canvasWidth}
                 height={canvasHeight}
                 viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
               >
-                {activeGuides.x && (
-                  <line
-                    data-testid="snap-guide-x"
-                    className="editor-snap-guide-line"
-                    x1={activeGuides.x.value}
-                    y1={0}
-                    x2={activeGuides.x.value}
-                    y2={canvasHeight}
-                  />
-                )}
-                {activeGuides.y && (
-                  <line
-                    data-testid="snap-guide-y"
-                    className="editor-snap-guide-line"
-                    x1={0}
-                    y1={activeGuides.y.value}
-                    x2={canvasWidth}
-                    y2={activeGuides.y.value}
-                  />
-                )}
-              </svg>
-            )}
-            <svg
-              aria-hidden="true"
-              className="editor-scene-shapes-layer"
-              style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-              width={canvasWidth}
-              height={canvasHeight}
-              viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
-            >
-              {shapesInDrawOrder.map((shape) => {
-                const isSelected = shape.id === sceneEditor.selectedShapeId;
-                // Issue #111: a hovered-but-not-selected shape gets its own
-                // distinct affordance from the selected outline; a shape
-                // that's effectively locked (via its own/layer's/group's
-                // lock — see `isEffectivelyLocked`) gets a different "can't
-                // manipulate this" hover cue instead of the normal one,
-                // matching `checkUnlocked`'s existing error-toast behavior
-                // when a drag on it is actually attempted.
-                const isHovered = !isSelected && shape.id === hoveredShapeId;
-                const isHoveredLocked =
-                  isHovered &&
-                  !!sceneEditor.workingCopy &&
-                  isEffectivelyLocked(sceneEditor.workingCopy, shape.id);
-                const bounds = isSelected ? shapeBounds(shape) : null;
-                const hoverBounds = isHovered ? shapeBounds(shape) : null;
-                const shapeClassName = [
-                  'editor-scene-shape',
-                  isSelected ? 'editor-scene-shape-selected' : '',
-                  isHovered && !isHoveredLocked ? 'editor-scene-shape-hovered' : '',
-                  isHoveredLocked ? 'editor-scene-shape-hovered-locked' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ');
-                return (
-                  <g
-                    key={shape.id}
-                    data-testid={`scene-shape-${shape.id}`}
-                    data-shape-type={shape.type}
-                    className={shapeClassName}
-                  >
-                    {/* Issue #126 (behavior-active case) and issue #130
+                {shapesInDrawOrder.map((shape) => {
+                  const isSelected = shape.id === sceneEditor.selectedShapeId;
+                  // Issue #111: a hovered-but-not-selected shape gets its own
+                  // distinct affordance from the selected outline; a shape
+                  // that's effectively locked (via its own/layer's/group's
+                  // lock — see `isEffectivelyLocked`) gets a different "can't
+                  // manipulate this" hover cue instead of the normal one,
+                  // matching `checkUnlocked`'s existing error-toast behavior
+                  // when a drag on it is actually attempted.
+                  const isHovered = !isSelected && shape.id === hoveredShapeId;
+                  const isHoveredLocked =
+                    isHovered &&
+                    !!sceneEditor.workingCopy &&
+                    isEffectivelyLocked(sceneEditor.workingCopy, shape.id);
+                  const bounds = isSelected ? shapeBounds(shape) : null;
+                  const hoverBounds = isHovered ? shapeBounds(shape) : null;
+                  const shapeClassName = [
+                    'editor-scene-shape',
+                    isSelected ? 'editor-scene-shape-selected' : '',
+                    isHovered && !isHoveredLocked ? 'editor-scene-shape-hovered' : '',
+                    isHoveredLocked ? 'editor-scene-shape-hovered-locked' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ');
+                  return (
+                    <g
+                      key={shape.id}
+                      data-testid={`scene-shape-${shape.id}`}
+                      data-shape-type={shape.type}
+                      className={shapeClassName}
+                    >
+                      {/* Issue #126 (behavior-active case) and issue #130
                         (static case): the p5 canvas beneath this overlay
                         (`previewRef`, mounted in the sibling div with
                         `zIndex: -1` above) is the single source of truth for
@@ -1758,23 +2039,23 @@ function EditorWorkspace() {
                         selection/hover outline below, the `<title>`
                         summary) — no path here paints a shape body of its
                         own, active behaviors or not. */}
-                    {/* A visible selection highlight independent of the
+                      {/* A visible selection highlight independent of the
                         shape's own fill/stroke — a dashed bounding-box
                         outline, the same rotation-ignoring approximation
                         `shapeBounds` already uses for hit-testing (see that
                         function's own comment), since there's no rotated-
                         box primitive to reuse here. */}
-                    {bounds && (
-                      <rect
-                        className="editor-scene-shape-selection-outline"
-                        x={bounds.minX - 4}
-                        y={bounds.minY - 4}
-                        width={bounds.maxX - bounds.minX + 8}
-                        height={bounds.maxY - bounds.minY + 8}
-                        fill="none"
-                      />
-                    )}
-                    {/* Issue #111: a hover-only outline, visually distinct
+                      {bounds && (
+                        <rect
+                          className="editor-scene-shape-selection-outline"
+                          x={bounds.minX - 4}
+                          y={bounds.minY - 4}
+                          width={bounds.maxX - bounds.minX + 8}
+                          height={bounds.maxY - bounds.minY + 8}
+                          fill="none"
+                        />
+                      )}
+                      {/* Issue #111: a hover-only outline, visually distinct
                         (thinner, un-dashed, muted color) from the selected
                         outline above so "what's under the pointer" and
                         "what's selected" never look the same. A locked
@@ -1783,33 +2064,33 @@ function EditorWorkspace() {
                         ordinary hoverable target, matching what actually
                         happens if a drag on it is attempted
                         (`checkUnlocked`'s error toast). */}
-                    {hoverBounds && (
-                      <rect
-                        data-testid={`scene-shape-hover-outline-${shape.id}`}
-                        className={
-                          isHoveredLocked
-                            ? 'editor-scene-shape-hover-outline editor-scene-shape-hover-outline-locked'
-                            : 'editor-scene-shape-hover-outline'
-                        }
-                        x={hoverBounds.minX - 3}
-                        y={hoverBounds.minY - 3}
-                        width={hoverBounds.maxX - hoverBounds.minX + 6}
-                        height={hoverBounds.maxY - hoverBounds.minY + 6}
-                        fill="none"
-                      />
-                    )}
-                    {/* Kept as an SVG <title> (not rendered as page text)
+                      {hoverBounds && (
+                        <rect
+                          data-testid={`scene-shape-hover-outline-${shape.id}`}
+                          className={
+                            isHoveredLocked
+                              ? 'editor-scene-shape-hover-outline editor-scene-shape-hover-outline-locked'
+                              : 'editor-scene-shape-hover-outline'
+                          }
+                          x={hoverBounds.minX - 3}
+                          y={hoverBounds.minY - 3}
+                          width={hoverBounds.maxX - hoverBounds.minX + 6}
+                          height={hoverBounds.maxY - hoverBounds.minY + 6}
+                          fill="none"
+                        />
+                      )}
+                      {/* Kept as an SVG <title> (not rendered as page text)
                         rather than the plain visible text this used to be:
                         a raw numeric readout isn't the "visible indication
                         of selection" the issue asks for (the outline above
                         is), but existing tests still assert on this text
                         via `.textContent`. */}
-                    {isSelected && <title>{shapeSummary(shape)}</title>}
-                  </g>
-                );
-              })}
-            </svg>
-            {/* Issue #77: when 2+ shapes are multi-selected, one combined
+                      {isSelected && <title>{shapeSummary(shape)}</title>}
+                    </g>
+                  );
+                })}
+              </svg>
+              {/* Issue #77: when 2+ shapes are multi-selected, one combined
                 bounding-box handle set drives a rigid group move/resize/
                 rotate gesture over the whole resolved selection, entirely
                 replacing the single-shape handle set below for that
@@ -1821,7 +2102,7 @@ function EditorWorkspace() {
                 selection change, a delete, or an undo/redo that changes
                 the selection automatically leaves no stale handle
                 behind. */}
-            {/* Issue #79: while vertex edit mode is active for the single
+              {/* Issue #79: while vertex edit mode is active for the single
                 selected `path` shape, one draggable handle per point
                 entirely replaces Task 26's move/resize/rotate handles for
                 that shape (never issue #77's group handles above it in
@@ -1831,85 +2112,86 @@ function EditorWorkspace() {
                 `sceneEditor.selectedShape.points` on every render, so an
                 insert/delete/undo/redo immediately shows the right set of
                 handles with nothing stale left behind. */}
-            {sceneEditor.vertexEditActive &&
-            sceneEditor.selectedShape?.type === 'path' &&
-            !isSelectedShapeLocked
-              ? getPathPointHandles(sceneEditor.selectedShape).map((point, index) => (
-                  <div
-                    key={`vertex-handle-${sceneEditor.selectedShape!.id}-${index}`}
-                    data-testid={`path-vertex-handle-${index}`}
-                    role="button"
-                    tabIndex={-1}
-                    aria-pressed={sceneEditor.selectedVertexIndex === index}
-                    aria-label={`Point ${index + 1}`}
-                    className={
-                      sceneEditor.selectedVertexIndex === index
-                        ? 'editor-shape-handle editor-vertex-handle editor-vertex-handle-selected'
-                        : 'editor-shape-handle editor-vertex-handle'
-                    }
-                    style={handleStyle(point)}
-                    onPointerDown={handleVertexPointerDown(index)}
-                  />
-                ))
-              : groupSelection && groupBounds && !isGroupSelectionLocked
-                ? (() => {
-                    const handles = getGroupHandles(groupBounds);
-                    return (
-                      <>
-                        <div
-                          data-testid="group-handle-move"
-                          aria-hidden="true"
-                          className="editor-shape-handle editor-group-handle-move"
-                          style={handleStyle(handles.move)}
-                          onPointerDown={handleGroupHandlePointerDown('move')}
-                        />
-                        <div
-                          data-testid="group-handle-resize"
-                          aria-hidden="true"
-                          className="editor-shape-handle editor-group-handle-resize"
-                          style={handleStyle(handles.resize)}
-                          onPointerDown={handleGroupHandlePointerDown('resize')}
-                        />
-                        <div
-                          data-testid="group-handle-rotate"
-                          aria-hidden="true"
-                          className="editor-shape-handle editor-group-handle-rotate"
-                          style={handleStyle(handles.rotate)}
-                          onPointerDown={handleGroupHandlePointerDown('rotate')}
-                        />
-                      </>
-                    );
-                  })()
-                : sceneEditor.selectedShape &&
-                  !isSelectedShapeLocked &&
-                  (() => {
-                    const handles = getShapeHandles(sceneEditor.selectedShape);
-                    return (
-                      <>
-                        <div
-                          data-testid="shape-handle-move"
-                          aria-hidden="true"
-                          className="editor-shape-handle editor-shape-handle-move"
-                          style={handleStyle(handles.move)}
-                          onPointerDown={handleHandlePointerDown('move')}
-                        />
-                        <div
-                          data-testid="shape-handle-resize"
-                          aria-hidden="true"
-                          className="editor-shape-handle editor-shape-handle-resize"
-                          style={handleStyle(handles.resize)}
-                          onPointerDown={handleHandlePointerDown('resize')}
-                        />
-                        <div
-                          data-testid="shape-handle-rotate"
-                          aria-hidden="true"
-                          className="editor-shape-handle editor-shape-handle-rotate"
-                          style={handleStyle(handles.rotate)}
-                          onPointerDown={handleHandlePointerDown('rotate')}
-                        />
-                      </>
-                    );
-                  })()}
+              {sceneEditor.vertexEditActive &&
+              sceneEditor.selectedShape?.type === 'path' &&
+              !isSelectedShapeLocked
+                ? getPathPointHandles(sceneEditor.selectedShape).map((point, index) => (
+                    <div
+                      key={`vertex-handle-${sceneEditor.selectedShape!.id}-${index}`}
+                      data-testid={`path-vertex-handle-${index}`}
+                      role="button"
+                      tabIndex={-1}
+                      aria-pressed={sceneEditor.selectedVertexIndex === index}
+                      aria-label={`Point ${index + 1}`}
+                      className={
+                        sceneEditor.selectedVertexIndex === index
+                          ? 'editor-shape-handle editor-vertex-handle editor-vertex-handle-selected'
+                          : 'editor-shape-handle editor-vertex-handle'
+                      }
+                      style={handleStyle(point)}
+                      onPointerDown={handleVertexPointerDown(index)}
+                    />
+                  ))
+                : groupSelection && groupBounds && !isGroupSelectionLocked
+                  ? (() => {
+                      const handles = getGroupHandles(groupBounds);
+                      return (
+                        <>
+                          <div
+                            data-testid="group-handle-move"
+                            aria-hidden="true"
+                            className="editor-shape-handle editor-group-handle-move"
+                            style={handleStyle(handles.move)}
+                            onPointerDown={handleGroupHandlePointerDown('move')}
+                          />
+                          <div
+                            data-testid="group-handle-resize"
+                            aria-hidden="true"
+                            className="editor-shape-handle editor-group-handle-resize"
+                            style={handleStyle(handles.resize)}
+                            onPointerDown={handleGroupHandlePointerDown('resize')}
+                          />
+                          <div
+                            data-testid="group-handle-rotate"
+                            aria-hidden="true"
+                            className="editor-shape-handle editor-group-handle-rotate"
+                            style={handleStyle(handles.rotate)}
+                            onPointerDown={handleGroupHandlePointerDown('rotate')}
+                          />
+                        </>
+                      );
+                    })()
+                  : sceneEditor.selectedShape &&
+                    !isSelectedShapeLocked &&
+                    (() => {
+                      const handles = getShapeHandles(sceneEditor.selectedShape);
+                      return (
+                        <>
+                          <div
+                            data-testid="shape-handle-move"
+                            aria-hidden="true"
+                            className="editor-shape-handle editor-shape-handle-move"
+                            style={handleStyle(handles.move)}
+                            onPointerDown={handleHandlePointerDown('move')}
+                          />
+                          <div
+                            data-testid="shape-handle-resize"
+                            aria-hidden="true"
+                            className="editor-shape-handle editor-shape-handle-resize"
+                            style={handleStyle(handles.resize)}
+                            onPointerDown={handleHandlePointerDown('resize')}
+                          />
+                          <div
+                            data-testid="shape-handle-rotate"
+                            aria-hidden="true"
+                            className="editor-shape-handle editor-shape-handle-rotate"
+                            style={handleStyle(handles.rotate)}
+                            onPointerDown={handleHandlePointerDown('rotate')}
+                          />
+                        </>
+                      );
+                    })()}
+            </div>
           </div>
         </section>
 

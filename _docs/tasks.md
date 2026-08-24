@@ -2667,3 +2667,103 @@ investigation didn't anticipate.
 
 Status: DECLINED — investigated per the issue's own scope, not pursuing.
 GitHub issue: [#148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/148)
+
+## 120. Add camera video overlay + persisted opacity/mirror control to the public project viewer
+
+### Goal
+
+Extend task 118's editor-only camera overlay (opacity slider + mirror
+toggle) to `PublicProjectViewer.tsx`, reusing `cameraOverlaySettings.ts`'s
+existing store directly. Supersedes the "not implemented" decision on
+issue #145 (task 116) given new explicit product demand: the project
+owner directly requested this while reviewing the deployed public viewer.
+
+### Status
+
+PROPOSED — full groomed write-up filed as
+[#152](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/152).
+
+## 121. Layers panel doesn't visibly reflect canvas selection (and vice versa)
+
+Goal: A selected shape/group is visibly highlighted in its Layers panel
+row, and vice versa — the underlying `selectedShapeId` state is already
+correctly shared in both directions; only the visible feedback is
+missing (`aria-pressed` is set but never styled).
+Status: PROPOSED — full groomed write-up filed as
+[#153](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/153).
+
+## 122. Promote Layers to the top of the editor sidebar and replace the text-accordion sections with icon-driven collapsible panels
+
+Goal: Reposition the Layers panel as the first/topmost sidebar panel, and
+replace the plain-text `CollapsibleSection` accordion pattern used across
+Tools/Inspector subsections with a standard icon-driven click-to-toggle
+pattern.
+Status: PROPOSED — full groomed write-up filed as
+[#154](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/154).
+
+## 123. Selection marquee outline is wrong for rotated/scaled shapes
+
+Goal: Fix `shapeBounds()` (and its selection-outline/hover-outline/
+hit-test consumers) to account for `transform.rotation`/`scaleX`/
+`scaleY`, which it currently ignores despite rotate/scale handles having
+shipped since (a stale doc comment predates them).
+Status: PROPOSED — full groomed write-up filed as
+[#155](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/155).
+
+## 124. Add zoom and pan controls to the editor Preview canvas
+
+Goal: +/- zoom buttons with a live percentage readout, keyboard/scroll
+accelerators, and click-drag panning once zoomed, implemented as a CSS
+`transform: scale()` on the canvas wrapper (not a p5 resolution change)
+so the existing `clientToCanvasPoint` coordinate math keeps working
+unmodified.
+Status: PROPOSED — full groomed write-up filed as
+[#156](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/156).
+
+## 125. Rebalance the editor layout toward a canvas-dominant (~80/20) split at every viewport size
+
+Goal: Preview should occupy ~80% of the editor's width on desktop/
+tablet (currently ~66/33% per task 79/#109's own measurement), with the
+sidebar reclaiming width when collapsed to icon-only. Sequenced after
+task 122/#154 if that issue introduces an icon-rail mechanism the
+sidebar's fixed-width column depends on.
+Status: PROPOSED — full groomed write-up filed as
+[#157](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/157).
+
+## 126. AI edit patches can silently touch shapes/layers the prompt never mentioned
+
+Goal: Add a server-side check that rejects (or flags) an AI edit patch
+touching a shape/layer/group/binding/graph element the prompt gave no
+reasonable reference to, distinguishing accidental scope creep from
+legitimately broad/global prompts. `scenes/patch.py` already enforces
+structural guarantees (path allowlist, protected fields, size caps) but
+has no semantic reference-scoping check today — the system prompt only
+asks the model informally to keep changes minimal, unenforced.
+Status: PROPOSED — full groomed write-up filed as
+[#158](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/158).
+
+## 127. Add a Code tab with Visual/Code parity and AI-assisted error recovery for scene JSON
+
+Goal: A dedicated "Code" tab showing the live scene JSON alongside the
+existing Visual/Preview tab, two-way synced and validated through the
+existing `frontend/src/validation/scene.ts`; extend the existing
+`previewError` render-failure path to name where in the document the
+problem originates, with a one-click "Ask AI to fix this" affordance
+reusing the existing AI-edit path. Confirmed during investigation:
+live/unsaved editor state (including mid-session layer renames) is
+already sent to the AI on every request — that part of the original ask
+is already satisfied and needs no new work.
+Status: PROPOSED — full groomed write-up filed as
+[#159](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/159).
+
+## 128. Mobile-responsiveness audit: close remaining gaps outside the editor workspace and header
+
+Goal: Close mobile-responsive gaps in surfaces the prior header (#89/#90)
+and editor-workspace (#95, task 79/#109) passes never touched — export
+dialog, AI proposal panel, version history, behavior cards/graph view,
+demo controls, Layers panel (including its touch-incompatible native
+HTML5 drag-reorder), Shape Inspector, Account Settings, template gallery
+polish, and the public gallery/viewer chrome (the public gallery has no
+CSS at all, at any width).
+Status: PROPOSED — full groomed write-up filed as
+[#160](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/160).

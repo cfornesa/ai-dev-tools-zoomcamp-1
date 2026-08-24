@@ -2802,13 +2802,30 @@ touch/pinch-to-zoom explicitly out of scope. `npm run
 typecheck`/`lint`/`format`/`build` clean; full frontend suite green (see
 this task's combined verification note below).
 
-## 125. Rebalance the editor layout toward a canvas-dominant (~80/20) split at every viewport size
+## 125. Rebalance the editor layout: ~80/20 canvas-dominant split on desktop/tablet, repositioned toolbar + preserved artwork aspect ratio on mobile
 
 Goal: Preview should occupy ~80% of the editor's width on desktop/
 tablet (currently ~66/33% per task 79/#109's own measurement), with the
 sidebar reclaiming width when collapsed to icon-only. Sequenced after
 task 122/#154 if that issue introduces an icon-rail mechanism the
 sidebar's fixed-width column depends on.
+
+Scope correction (2026-08-24, owner direction): the original "canvas is
+the widest element" criterion for below-breakpoint/mobile widths was
+insufficient on its own — it doesn't guarantee a comparably *useful*
+interface or protect the canvas from distortion. Mobile scope is now
+explicit and separate from the desktop/tablet proportion requirement: at
+mobile/narrow widths (effectively 100% width, below the responsive
+breakpoint), the editor must remain similarly useful — the always-visible
+toolbar (task 112/#143) repositions to sit directly above or below the
+canvas (implementer's choice of which) so every toolbar control stays
+reachable without obscuring the canvas, the canvas itself stays fully
+interactive (select/move/resize/rotate/vertex-edit/zoom-pan, not just
+rendering), and the canvas preserves the scene's own configured
+`canvas.width`/`canvas.height` aspect ratio exactly (fit-by-shrinking via
+the existing `aspectRatio` + `maxWidth: 100%` mechanism, never
+stretched/cropped to force-fill the viewport). Full updated acceptance
+criteria filed on the issue.
 Status: PROPOSED — full groomed write-up filed as
 [#157](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/157).
 

@@ -2989,5 +2989,94 @@ demo controls, Layers panel (including its touch-incompatible native
 HTML5 drag-reorder), Shape Inspector, Account Settings, template gallery
 polish, and the public gallery/viewer chrome (the public gallery has no
 CSS at all, at any width).
-Status: PROPOSED — full groomed write-up filed as
-[#160](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/160).
+Status: COMPLETE
+GitHub issue: [#160](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/160).
+Resolution (2026-08-24): re-verified every item in #160's inventory against
+current `main` (post #157/#154/#159/#152 landings) before touching
+anything; every gap the issue listed still applied. CSS-only fixes for
+every surface, added to `frontend/src/index.css` following this file's
+existing breakpoint conventions (`max-width: 767px`/`600px`, matching
+`.project-grid`'s existing pattern): `.export-config-dialog` (previously
+zero CSS) got a bordered, `max-width: 480px` panel treatment;
+`.behavior-card-field` (shared verbatim by `ExportConfigDialog.tsx`,
+`BehaviorCardsPanel.tsx`, `GraphView.tsx`'s node-config via
+`NodeParamFields.tsx`, and `GraphListView.tsx`) got one stacked-label
+layout fixing all four panels' field overflow risk at once;
+`.ai-proposal-preview` (the AI proposal panel's own p5 preview instance,
+now mounted twice per issue #159) got the same `max-width: 100%`/`height:
+auto` canvas-scaling fix `.editor-scene-canvas canvas` already has;
+`.version-history-item`/`.version-history-details` got `flex-wrap`/
+`min-width: 0` to stop text forcing the row wider than its panel;
+`.behavior-card-list` (previously a bare bulleted `<ul>`) got real card
+styling; `.demo-signal-slider`'s range input got `width: 100%` plus a
+767px single-column stack, replacing its previously-fixed intrinsic
+width; `.editor-outline-move-controls` (Layers panel reparent controls,
+previously unstyled) got an explicit wrapping flex layout, and
+`.editor-outline-row` got narrow-width padding/font-size tightening;
+`.shape-style-field`/`.shape-vertex-editor`/`.shape-vertex-list`
+(Shape Inspector, previously zero CSS) got stacked-label/wrapped-row
+layouts; the graph view's `.graph-editor-canvas` got `overflow: hidden`
+plus a shorter height below 767px (a v1 "doesn't overflow, stays
+scrollable" fix per the issue's own scope note, not a full graph UX
+redesign), and `.graph-list-node-list`/`.graph-list-connection-list`
+(previously bare `<ul>`s) got real row styling; `.account-settings-form`
+got a single-column stack below 600px; `.template-grid` got the same
+600px single-column collapse `.project-grid` already has.
+`.public-project-grid`/`.public-project-card`/`.public-project-card-link`/
+`.public-project-thumbnail(-fallback)`/`.public-project-attribution`/
+`.public-project-provenance`/`.remix-badge` — confirmed to have **zero**
+CSS at any width, exactly as the issue described — got full grid/card
+styling modeled directly on `.project-grid`/`.project-card`/
+`ProjectCard.tsx`'s existing visual language, no markup changes needed
+(every class was already present, unstyled, in `PublicProjectCard.tsx`).
+`.public-project-viewer` (also previously zero CSS) got header/attribution
+spacing around its already-responsive `.editor-workspace` canvas area.
+Layers panel: confirmed the `Move up`/`Move down` buttons inside each
+row's `RowMoreDisclosure` (`<details>`/`<summary>`, always in the DOM
+regardless of viewport) remain the fully keyboard-and-touch-operable
+fallback for every reorder/reparent the native-HTML5-DnD pointer path
+can't reach on touch — no code change needed there, only the follow-up
+issue below. Discovery gate: searched for an existing touch-drag issue
+(none found), then filed
+[#161](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/161)
+(task 129 below) proposing real touch-drag support as separate, explicitly
+out-of-scope follow-up work, linked back to this issue.
+New test coverage: `frontend/e2e/responsiveShell.spec.ts` gained a
+"populated gallery at narrow width" describe block — one scenario
+creating a real project via the UI and checking `.project-grid`/
+`.project-card` for no horizontal overflow/cramping at 375px, and one
+publishing a project then loading `/gallery` in a fresh anonymous
+context to check the newly-styled `.public-project-grid`/
+`.public-project-card`; syntax/discoverability verified via
+`npx playwright test --list` (9 scenarios listed, up from 7) — not run
+live against a real PostgreSQL+Django+Vite stack, matching this repo's
+own documented convention for e2e work done without one available.
+`frontend/src/pages/Home.test.tsx` is new: a Vitest test asserting the
+signed-out panel's narrow-width-relevant class structure
+(`.content-panel.home-panel > .centered-state`) and that nothing in it
+carries a fixed-pixel inline width, with an explicit doc-comment caveat
+that jsdom cannot perform real CSS layout and the genuine "does this
+overflow at 375px" guarantee is `responsiveShell.spec.ts`'s job instead.
+Verified: `npm run typecheck` clean; `npm run lint` clean (four
+pre-existing `react(only-export-components)` warnings, all in files this
+task didn't touch — `LayersPanel.tsx`, `EditorDetailsPanel.tsx`); `npm run
+format`/`format:check` clean; full Vitest suite green, 1709/1709 (1708
+before this task's one new test), zero regressions, no flake observed on
+this run.
+
+## 129. Layers panel drag-and-drop reordering doesn't work on touch (iOS Safari/Android Chrome)
+
+Goal: Investigate, and if judged worthwhile implement, a touch-compatible
+drag mechanism for `LayersPanel.tsx`'s row reordering/reparenting —
+native HTML5 Drag-and-Drop (what it uses today) has no touch-input
+support at all in iOS Safari or Android Chrome. Every reorder/reparent
+that drag mechanism reaches is already reachable through the fully
+keyboard-*and*-touch-operable `Move up`/`Move down`/`MoveControls`
+fallback inside each row's `RowMoreDisclosure`, so nothing is functionally
+unreachable on a touch device today — this is a slower-workflow gap, not
+a broken one.
+Status: PROPOSED — discovered and filed during task 128/#160's own
+mobile-responsiveness audit, per that issue's explicit guidance to file
+this as a separate follow-up rather than fold a substantial, risky
+pointer-drag reimplementation into a CSS/styling audit.
+GitHub issue: [#161](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/161).

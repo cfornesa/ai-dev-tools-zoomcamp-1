@@ -1552,3 +1552,479 @@ textarea:disabled {
 .shape-inspector-breadcrumb-separator {
   opacity: 0.6;
 }
+
+/* Task 128 (issue #160): a mobile-responsiveness audit of every
+   editor-adjacent panel and non-editor page the prior header (#89/#90)
+   and editor-workspace (#95, task 79/#109) passes never touched. Several
+   of the classes below had no CSS rule at all before this task, at any
+   width — not just missing a mobile breakpoint — see each block's own
+   note. Every panel below follows this file's existing convention: a
+   readable base style, plus a `max-width: 767px` tightening where the
+   base style alone still risks overflow/clipping at 375px/428px widths.
+
+   `.behavior-card-field` is the single shared field wrapper `ExportConfigDialog.tsx`,
+   `BehaviorCardsPanel.tsx`, `GraphView.tsx`'s node-config
+   (`NodeParamFields.tsx`), and `GraphListView.tsx` all already reuse for
+   every labeled select/input — styling it once here fixes the same
+   "label + full-width control" overflow risk in all four panels at once,
+   rather than four separate near-duplicate rules. */
+.behavior-card-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.behavior-card-field select,
+.behavior-card-field input {
+  width: 100%;
+  max-width: 320px;
+  box-sizing: border-box;
+}
+
+/* Task 55: the export configuration dialog (`ExportConfigDialog.tsx`) had
+   no CSS rule at all — it rendered as an unstyled block with no visual
+   separation from the rest of the panel it's mounted in, and its
+   `<fieldset>`/checkboxes could run edge-to-edge at narrow widths. */
+.export-config-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 480px;
+  width: 100%;
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.export-config-dialog fieldset {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+@media (max-width: 767px) {
+  .export-config-dialog {
+    padding: 12px;
+  }
+}
+
+/* Task 48: the AI proposal Accept/Reject preview (`AIProposalPanel.tsx`).
+   `.ai-proposal-preview` is the mount point for a second, independent p5
+   instance (see that file's doc comment) — without this, the p5 canvas's
+   own fixed pixel width (set inline by `p5Adapter.ts`, exactly like the
+   main editor canvas) overflowed past the panel at narrow widths, the
+   same class of bug `.editor-scene-canvas canvas` above already fixes for
+   the main canvas. Issue #159 added a second `AIProposalPanel` instance
+   ("Ask AI to fix this") that reuses this exact class, so this fix
+   applies to both mount points with no extra selector. */
+.ai-proposal-panel {
+  text-align: left;
+}
+
+.ai-proposal-preview {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 8px 0;
+  box-sizing: border-box;
+}
+
+.ai-proposal-preview canvas {
+  max-width: 100%;
+  height: auto !important;
+}
+
+/* Task 41: the Version History panel (`VersionHistoryPanel.tsx`). The
+   `.version-history-item` row's flex children had no `min-width: 0`, so
+   its `.version-history-details` (title/timestamp/change-label text)
+   could force the row wider than its panel rather than wrapping — the
+   classic flex-child overflow trap. `flex-wrap` on the row itself lets
+   the fixed-width thumb, the flexible details, and the actions column
+   reflow onto separate lines instead of clipping once they no longer fit
+   one row at 375px/428px widths. */
+.version-history-item {
+  flex-wrap: wrap;
+}
+
+.version-history-details {
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .version-history-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* Task 34: the Behavior cards panel (`BehaviorCardsPanel.tsx`). Its added-
+   card list (`.behavior-card-list`) had no CSS at all — a bare bulleted
+   `<ul>` — and its per-card type label had no visual treatment. */
+.behavior-cards-panel {
+  text-align: left;
+}
+
+.behavior-card-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.behavior-card-list li {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.behavior-card-type {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.75;
+}
+
+.behavior-card-conflict {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+/* Task 28: the demo/camera signal controls (`DemoControlsPanel.tsx`).
+   `.demo-signal-slider`'s range input had no explicit width, so its
+   intrinsic browser-default width (well over 200px in some browsers)
+   could overflow the slider's own `1fr` grid track at narrow panel
+   widths rather than shrinking to fit it — the issue's own "currently
+   fixed-width range input, needs to shrink" note. Below 767px the row
+   also drops from its three-column [label | slider | value] grid to a
+   single stacked column, since a 200px label column plus any usable
+   slider width no longer both fit at 375px/428px. */
+.demo-controls-panel {
+  text-align: left;
+}
+
+.demo-signal-slider input[type='range'] {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .demo-signal-slider {
+    grid-template-columns: 1fr;
+    row-gap: 4px;
+  }
+
+  .demo-signal-slider output {
+    text-align: left;
+  }
+}
+
+/* Issue #127: the Layers panel (`LayersPanel.tsx`). Row content already
+   wraps (`.editor-outline-row`'s existing `flex-wrap: wrap`); this only
+   tightens spacing at narrow widths and gives the reparent controls'
+   wrapper (`MoveControls`' `.editor-outline-move-controls`, previously
+   unstyled) an explicit wrapping flex layout instead of relying on
+   default inline wrapping. Per this task's own scope note: native HTML5
+   drag-and-drop reordering has no touch-compatible replacement here — the
+   `Move up`/`Move down` buttons inside each row's `RowMoreDisclosure`
+   (`<details>`/`<summary>`, always present in the DOM regardless of
+   viewport width) remain the documented, fully keyboard *and*
+   touch-operable fallback; see task 129/#161 for the tracked follow-up
+   proposing real touch-drag support. */
+.editor-outline-move-controls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 767px) {
+  .editor-outline-row {
+    padding: 4px;
+    gap: 4px;
+    font-size: 13px;
+  }
+}
+
+/* Task 60 (issue #58): the Shape Inspector panel (`ShapeInspectorPanel.tsx`).
+   `.shape-style-field`/`.shape-vertex-editor`/`.shape-vertex-list` had no
+   CSS at all — each numeric/color field's label and input ran together
+   inline with no wrapping guard, and the per-vertex point rows had no
+   layout beyond default inline flow. */
+.shape-inspector {
+  text-align: left;
+}
+
+.shape-style-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.shape-style-field input {
+  width: 100%;
+  max-width: 220px;
+  box-sizing: border-box;
+}
+
+.shape-style-field-range {
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+}
+
+.shape-vertex-editor {
+  margin: 12px 0;
+}
+
+.shape-vertex-list ul {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shape-vertex-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+/* Task 36: the behavior graph view (`GraphView.tsx`/`GraphListView.tsx`).
+   Per this task's own scope note, a v1 fix here is "doesn't
+   overflow/clip and remains scrollable," not a full mobile-optimized
+   graph UX redesign — React Flow (`.graph-editor-canvas`) already manages
+   its own internal pan/zoom viewport, so `overflow: hidden` on the
+   wrapper is enough to stop it from ever pushing the page wider; the
+   fixed height also shrinks somewhat below 767px so the canvas takes up
+   less of a narrow, height-constrained viewport. `.graph-list-node-list`/
+   `.graph-list-connection-list` (the keyboard-operable list-view
+   alternative) had no CSS at all — a bare `<ul>` whose row content ran
+   together inline with no wrapping guard. */
+.graph-editor {
+  text-align: left;
+}
+
+.graph-editor-canvas {
+  overflow: hidden;
+}
+
+.graph-editor-node-config {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.graph-list-view {
+  text-align: left;
+}
+
+.graph-list-node-list,
+.graph-list-connection-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.graph-list-node-list li,
+.graph-list-connection-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.graph-list-node-family,
+.graph-list-node-type,
+.graph-list-node-id {
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.8;
+}
+
+@media (max-width: 767px) {
+  .graph-editor-canvas {
+    height: 260px;
+  }
+}
+
+/* Account Settings page (`AccountSettings.tsx`). `.account-settings-form`
+   already wraps and centers at any width; below 600px (matching this
+   file's existing narrow-panel-spacing breakpoint) it instead stacks to a
+   single column so the label, key input, and Save/Replace button are each
+   full-width, easy-to-hit tap targets rather than three centered items
+   competing for one row's worth of space. */
+@media (max-width: 600px) {
+  .account-settings-form {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .account-settings-input {
+    width: 100%;
+  }
+}
+
+/* Task 20: the template gallery (`Templates.tsx`). `.template-grid`'s
+   `auto-fill`/`minmax` grid already survives narrow widths structurally
+   (it was never literally broken), but — unlike `.project-grid` above —
+   it never got the same breakpoint-specific padding/margin tightening;
+   this brings it in line with that existing precedent. */
+@media (max-width: 600px) {
+  .template-grid {
+    grid-template-columns: 1fr;
+    margin: 16px;
+  }
+}
+
+/* Task 50: the public (anonymous) gallery (`PublicGallery.tsx`). Per this
+   task's own inventory: `.public-project-grid` had **no CSS rule at all**
+   before this, at any width — it rendered as a bare, unstyled `<ul>` with
+   default browser list styling (bullets, default margin/padding), not
+   even a desktop grid. This gives it the same grid/card visual language
+   `.project-grid`/`.project-card`/`ProjectCard.tsx` already establish for
+   the signed-in gallery, responsive at every width including the same
+   600px single-column collapse `.project-grid` already uses. Every class
+   below (`.public-project-card`, `.public-project-card-link`,
+   `.public-project-thumbnail(-fallback)`, `.public-project-attribution`,
+   `.public-project-provenance`, `.remix-badge`) is already present,
+   unstyled, in `PublicProjectCard.tsx`'s markup — no markup change was
+   needed, only these missing rules. `.remix-badge`/`.public-project-
+   attribution`/`.public-project-provenance` are shared verbatim with
+   `PublicProjectViewer.tsx`'s own header below, so one rule styles both
+   surfaces identically. */
+.public-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  list-style: none;
+  margin: 16px 24px;
+  padding: 0;
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .public-project-grid {
+    grid-template-columns: 1fr;
+    margin: 16px;
+  }
+}
+
+.public-project-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.public-project-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.public-project-card-link h3 {
+  margin: 12px 0 0;
+  font-size: 18px;
+  color: var(--text-h);
+}
+
+.public-project-thumbnail,
+.public-project-thumbnail-fallback {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.public-project-thumbnail-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--code-bg);
+  color: var(--text);
+  font-size: 13px;
+  text-align: center;
+}
+
+.public-project-attribution {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.public-project-provenance {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.remix-badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+  margin-left: 6px;
+}
+
+/* Task 51 (issue #53): the public project viewer's own chrome
+   (`PublicProjectViewer.tsx`) — `.public-project-viewer`/
+   `.public-project-attribution` had no CSS rule at all before this
+   (the latter is shared with `PublicProjectCard.tsx` above). This is
+   specifically the viewer's header/attribution/provenance wrapper around
+   its canvas/panel area — that area already reuses
+   `.editor-workspace`/`.editor-panel` and gets editor breakpoint
+   treatment from issue #157 unchanged. */
+.public-project-viewer {
+  text-align: left;
+  padding: 0 24px 24px;
+  box-sizing: border-box;
+}
+
+.public-project-viewer header {
+  margin: 0 0 16px;
+}
+
+.public-project-viewer header h2 {
+  display: inline-block;
+  margin: 0 8px 8px 0;
+}
+
+@media (max-width: 767px) {
+  .public-project-viewer {
+    padding: 0 16px 16px;
+  }
+}

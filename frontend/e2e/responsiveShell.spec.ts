@@ -1,10 +1,54 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
+
+/** Mirrors `projectLifecycle.spec.ts`'s/`publishingAndRemix.spec.ts`'s own
+ * identically-named helper (each spec file keeps its own copy rather than
+ * sharing one, per this suite's existing convention). */
+async function createBlankProjectViaUI(page: Page): Promise<string> {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Create new animation' }).click();
+  await page.waitForURL(/\/projects\/[^/]+$/);
+  const match = /\/projects\/([^/]+)$/.exec(page.url());
+  if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
+  await expandAllCollapsibleSections(page);
+  return match[1];
+}
+
+/** Mirrors `publishingAndRemix.spec.ts`'s own `saveMeaningfulMetadata` +
+ * `confirmPublish` helpers, condensed to what this file's populated-gallery
+ * scenario needs: a project with meaningful title/description, published,
+ * so it appears in both the owner's own gallery and the public gallery. */
+async function publishProjectViaUI(
+  page: Page,
+  projectId: string,
+  title: string,
+  description: string,
+): Promise<void> {
+  await page.goto(`/projects/${projectId}`);
+  await expandAllCollapsibleSections(page);
+
+  await page.getByRole('button', { name: 'Edit title' }).click();
+  const titleForm = page.locator('.editor-title-edit');
+  await titleForm.locator('#editor-title-input').fill(title);
+  await titleForm.getByRole('button', { name: 'Save' }).click();
+  await expect(titleForm).toHaveCount(0);
+
+  await page.locator('#project-description').fill(description);
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByText('Saved.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Publish', exact: true }).click();
+  const dialog = page.getByRole('alertdialog', { name: /Publish/ });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
+  await expect(page.getByTestId('visibility-status')).toContainText('Public');
+}
 
 const NARROW_VIEWPORT = { width: 375, height: 800 };
 const TABLET_VIEWPORT = { width: 768, height: 900 };
@@ -247,6 +291,69 @@ test.describe('Responsive app shell', () => {
         page.getByRole('button', { name: 'Logout' }),
         page.getByRole('radio', { name: 'Match system' }),
       ]);
+    });
+  });
+
+  // Task 128 (issue #160): every scenario above only ever exercises the
+  // *empty* Gallery/PublicGallery state at narrow width -- a populated
+  // gallery with real project cards (`.project-grid`/`.project-card`,
+  // `.public-project-grid`/`.public-project-card`, both newly given real
+  // CSS by this task) had never been checked for overflow/cramping at
+  // 375px. Uses the `owner` fixture specifically (not `other`, which the
+  // "signed-in empty gallery" describe block above depends on staying
+  // project-less for its own assertions within this same file/database).
+  test.describe('populated gallery at narrow width', () => {
+    let fixtures: Fixtures;
+
+    test.beforeAll(() => {
+      fixtures = requireE2EFixtures();
+    });
+
+    test('renders the signed-in gallery with a real project card, no horizontal overflow, at 375px', async ({
+      page,
+    }) => {
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+
+      await page.setViewportSize(NARROW_VIEWPORT);
+      await page.goto('/');
+
+      const grid = page.locator('.project-grid');
+      await expect(grid).toBeVisible();
+      const card = grid.locator('.project-card').first();
+      await expectVisibleAndInViewport(card);
+      await expectNoHorizontalOverflow(page);
+    });
+
+    test('renders the public gallery with a real project card, no horizontal overflow, at 375px', async ({
+      page,
+      browser,
+    }) => {
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await publishProjectViaUI(
+        page,
+        projectId,
+        'Responsive audit gallery card',
+        'A published project used only to exercise the populated public gallery layout at narrow width.',
+      );
+
+      // A fresh, unauthenticated context -- the public gallery must be
+      // reachable and correctly laid out for an anonymous visitor, not
+      // just the owner who just published from a signed-in session.
+      const anonymousContext = await browser.newContext({ viewport: NARROW_VIEWPORT });
+      try {
+        const anonymousPage = await anonymousContext.newPage();
+        await anonymousPage.goto('/gallery');
+
+        const grid = anonymousPage.locator('.public-project-grid');
+        await expect(grid).toBeVisible();
+        const card = grid.locator('.public-project-card').first();
+        await expectVisibleAndInViewport(card);
+        await expectNoHorizontalOverflow(anonymousPage);
+      } finally {
+        await anonymousContext.close();
+      }
     });
   });
 });

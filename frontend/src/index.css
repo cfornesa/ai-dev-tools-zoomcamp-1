@@ -1131,11 +1131,14 @@ textarea:disabled {
 
 /* Task 110 (issue #141): the camera overlay opacity slider, shown only
    while the live camera is active — see EditorWorkspace.tsx's
-   `editor-camera-overlay-control`/`editor-camera-overlay`. */
+   `editor-camera-overlay-control`/`editor-camera-overlay`. Task 118
+   (issue #147) added the mirror toggle alongside it, wrapping so both
+   controls stay usable at narrow panel widths. */
 .editor-camera-overlay-control {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 8px 16px;
   margin: 0 0 8px;
   font-size: 12px;
   color: var(--text);
@@ -1143,6 +1146,12 @@ textarea:disabled {
 
 .editor-camera-overlay-control input[type='range'] {
   width: 160px;
+}
+
+.editor-camera-overlay-control label:has(input[type='checkbox']) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .editor-shape-handle {

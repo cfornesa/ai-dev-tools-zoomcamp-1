@@ -2524,3 +2524,86 @@ later.
 
 Status: DECLINED — closed without implementation, per grooming decision above.
 GitHub issue: [#146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/146)
+
+## 118. Persist camera overlay opacity and add an un-mirror toggle
+
+### Goal
+
+The editor's live camera overlay (task 110/#141) remembers the user's
+last-chosen opacity across page reloads/sessions instead of resetting to
+the default every time the camera is (re-)enabled, and gains a labeled,
+keyboard-operable toggle to show the feed as-captured (un-mirrored)
+instead of always selfie-mirrored — both preferences persist the same
+way.
+
+### Acceptance criteria
+
+- [x] A new `frontend/src/editor/cameraOverlaySettings.ts` module follows
+      the exact pattern already used by `frontend/src/editor/snapSettings.ts`
+      / `frontend/src/a11y/reducedMotion.ts`: module-singleton state, a
+      `useSyncExternalStore`-based hook, a namespaced
+      `gesture-studio:camera-overlay-settings` localStorage key, JSON
+      read/parse with a safe fallback to defaults on missing/malformed
+      data, and a try/catch around every read and write so a storage
+      failure never throws — the in-memory value still works for the
+      rest of the session.
+- [x] `EditorWorkspace.tsx`'s `cameraOverlayOpacity` state is initialized
+      from this store instead of always starting at the hardcoded
+      default, and every change via the existing opacity range input
+      writes through to the store live.
+- [x] The effect that currently resets `cameraOverlayOpacity` to the
+      default on every camera-active transition is removed or changed to
+      reset to the *stored* value — re-enabling the camera within the
+      same browser restores the last-chosen opacity.
+- [x] A simulated reload (fresh module registry via `vi.resetModules()` +
+      dynamic re-import, localStorage untouched) recovers the previously
+      chosen opacity.
+- [x] A new labeled, keyboard-operable "Mirror camera overlay" control
+      appears alongside the opacity slider whenever the camera is active,
+      defaulting to mirrored (today's shipped behavior) when no stored
+      preference exists.
+- [x] Toggling it live flips the overlay `<video>`'s `transform` between
+      mirrored and un-mirrored with no re-mount and no interruption to
+      the live feed.
+- [x] The mirror preference persists through the same store/key
+      convention as opacity and is recovered on reload the same way.
+- [x] Both persisted values are purely client-side: never part of the
+      scene document, never sent to the backend, never included in a
+      save/export/fork payload.
+- [x] No change to when the overlay renders/disappears, and it remains
+      absent from every canvas-only capture path (thumbnail generation,
+      export).
+- [x] No regression to `EditorWorkspace.cameraOverlay.test.tsx`,
+      `EditorWorkspace.cameraPreview.test.tsx`, or
+      `EditorWorkspace.cameraPreviewRealControl.test.tsx`; new coverage
+      for: opacity recovered after simulated reload, opacity persists
+      live, mirror toggle flips the transform live, mirror preference
+      recovered after simulated reload, storage-failure fallback doesn't
+      crash the editor.
+- [x] `make frontend-test`, `typecheck`, `lint`, `format:check` all pass.
+
+### Out of scope
+
+- Independent drag/resize/reposition of the overlay — filed as
+  [#151](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/151),
+  deferred pending real user demand (materially larger scope: new pointer
+  interaction model, coordinate math, its own position/size persistence).
+- Any change to where the camera overlay is allowed to appear — public
+  viewer (#145) and standalone export (#146) were both already declined.
+- Any change to the overlay's default size/canvas-filling behavior.
+- Any server-side or per-project persistence of these preferences.
+
+### Evidence and pending items
+
+- **Status:** COMPLETE
+- Task 110/#141 shipped the overlay with opacity explicitly session-only
+  and mirroring explicitly non-toggleable, both flagged as deliberate
+  scope cuts filed as #147. #147 groomed 2026-08-24: split into this task
+  (low-risk, clear value, matches the existing `snapSettings.ts`/
+  `reducedMotion.ts` localStorage preference pattern) plus deferred
+  follow-up #151 for reposition/resize.
+- **Next action:** Implement `cameraOverlaySettings.ts` following
+  `snapSettings.ts`'s pattern, wire it into `EditorWorkspace.tsx`, add the
+  mirror toggle control.
+
+GitHub issue: [#147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/147)

@@ -5,6 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import type { CameraStatus } from '../components/CameraControl';
+import {
+  DEFAULT_CAMERA_OVERLAY_SETTINGS,
+  setCameraOverlayMirrored,
+  setCameraOverlayOpacity,
+} from '../editor/cameraOverlaySettings';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
@@ -134,6 +139,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   onStatusChangeRef.current = null;
   onStreamChangeRef.current = null;
+  // Task 118 (issue #147): the opacity/mirror store is a module singleton
+  // that now persists across activations (and, in this static-import test
+  // file, across tests too) — reset both localStorage and the in-memory
+  // state back to the shipped default before every test for isolation.
+  window.localStorage.clear();
+  setCameraOverlayOpacity(DEFAULT_CAMERA_OVERLAY_SETTINGS.opacity);
+  setCameraOverlayMirrored(DEFAULT_CAMERA_OVERLAY_SETTINGS.mirrored);
   mockedListSceneVersions.mockResolvedValue([
     {
       id: 1,
@@ -213,7 +225,7 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     expect(screen.getByTestId('camera-overlay-video').style.opacity).toBe('0');
   });
 
-  it('resets opacity to the 50% default on every fresh activation', async () => {
+  it('restores the last-chosen opacity (not the 50% default) on re-activation (Task 118, issue #147)', async () => {
     await loadWorkspace();
     setCameraStream(fakeStream());
     setCameraStatus('active');
@@ -226,7 +238,7 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     setCameraStream(fakeStream());
     setCameraStatus('active');
 
-    expect(screen.getByLabelText('Camera overlay opacity')).toHaveProperty('value', '50');
+    expect(screen.getByLabelText('Camera overlay opacity')).toHaveProperty('value', '90');
   });
 
   it('removes the overlay and slider immediately on Stop (no frozen frame)', async () => {
@@ -258,6 +270,47 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     setCameraStream(fakeStream());
     setCameraStatus('active');
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('mirror toggle defaults to checked/mirrored and flips the transform live with no re-mount (Task 118, issue #147)', async () => {
+    await loadWorkspace();
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+
+    const mirrorToggle = screen.getByLabelText('Mirror camera overlay') as HTMLInputElement;
+    expect(mirrorToggle.checked).toBe(true);
+    const video = screen.getByTestId('camera-overlay-video') as HTMLVideoElement;
+    expect(video.style.transform).toBe('scaleX(-1)');
+
+    fireEvent.click(mirrorToggle);
+
+    expect(mirrorToggle.checked).toBe(false);
+    // Same <video> element, not a fresh mount, so the live feed is never
+    // interrupted.
+    expect(screen.getByTestId('camera-overlay-video')).toBe(video);
+    expect(video.style.transform).toBe('none');
+
+    fireEvent.click(mirrorToggle);
+    expect(video.style.transform).toBe('scaleX(-1)');
+  });
+
+  it('opacity and mirror preferences persist to the store live and are recovered by a fresh activation (Task 118, issue #147)', async () => {
+    await loadWorkspace();
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+
+    fireEvent.change(screen.getByLabelText('Camera overlay opacity'), { target: { value: '75' } });
+    fireEvent.click(screen.getByLabelText('Mirror camera overlay'));
+
+    const { getSnapshot } = await import('../editor/cameraOverlaySettings');
+    expect(getSnapshot()).toEqual({ opacity: 0.75, mirrored: false });
+
+    setCameraStatus('stopped');
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+
+    expect(screen.getByLabelText('Camera overlay opacity')).toHaveProperty('value', '75');
+    expect(screen.getByLabelText('Mirror camera overlay')).toHaveProperty('checked', false);
   });
 
   it('scene shapes stay present in the DOM and the canvas wrapper is unaffected while the overlay is active', async () => {

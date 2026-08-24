@@ -45,6 +45,7 @@ import {
   type Shape,
 } from './sceneShapes';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
+import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
 import { normalizeSceneLayers } from '../validation/scene';
@@ -408,19 +409,19 @@ function EditorWorkspace() {
   // Task 110 (issue #141): the live camera `MediaStream` `CameraControl`'s
   // tracking provider already has open, forwarded here so the Preview
   // overlay can display it via a plain <video> element — no second
-  // `getUserMedia` call. `cameraOverlayOpacity` is session-only state (not
-  // persisted; resets to the default below every time the camera reaches
-  // 'active') per the issue's explicit scope.
-  const CAMERA_OVERLAY_DEFAULT_OPACITY = 0.5;
+  // `getUserMedia` call. Task 118 (issue #147): `cameraOverlayOpacity`/
+  // mirrored are now persisted client-side (see `../editor/
+  // cameraOverlaySettings.ts`) instead of session-only state that reset to
+  // a hardcoded default every time the camera became active — re-enabling
+  // the camera now restores the last-chosen values.
+  const {
+    opacity: cameraOverlayOpacity,
+    mirrored: cameraOverlayMirrored,
+    setOpacity: setCameraOverlayOpacity,
+    setMirrored: setCameraOverlayMirrored,
+  } = useCameraOverlaySettings();
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [cameraOverlayOpacity, setCameraOverlayOpacity] = useState(CAMERA_OVERLAY_DEFAULT_OPACITY);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    if (cameraStatus === 'active') {
-      setCameraOverlayOpacity(CAMERA_OVERLAY_DEFAULT_OPACITY);
-    }
-  }, [cameraStatus]);
 
   useEffect(() => {
     const videoEl = cameraVideoRef.current;
@@ -1517,7 +1518,9 @@ function EditorWorkspace() {
           )}
           {/* Task 110 (issue #141): the camera overlay opacity slider,
               visible only while the live camera is active — see the
-              <video> overlay itself below, inside `.editor-scene-canvas`. */}
+              <video> overlay itself below, inside `.editor-scene-canvas`.
+              Task 118 (issue #147): both the opacity and the mirror toggle
+              now persist via `useCameraOverlaySettings`. */}
           {cameraStatus === 'active' && (
             <div className="editor-camera-overlay-control">
               <label htmlFor="editor-camera-overlay-opacity">Camera overlay opacity</label>
@@ -1531,6 +1534,15 @@ function EditorWorkspace() {
                 aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
                 onChange={(event) => setCameraOverlayOpacity(Number(event.target.value) / 100)}
               />
+              <label htmlFor="editor-camera-overlay-mirror">
+                <input
+                  id="editor-camera-overlay-mirror"
+                  type="checkbox"
+                  checked={cameraOverlayMirrored}
+                  onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
+                />
+                Mirror camera overlay
+              </label>
             </div>
           )}
           <div
@@ -1570,7 +1582,11 @@ function EditorWorkspace() {
                 below) — never drawn into the p5 canvas itself, so it stays
                 structurally absent from any canvas-only capture path
                 (thumbnails, exports). Mirrored (selfie view) by default;
-                `pointerEvents: 'none'` keeps shape click/drag unaffected. */}
+                `pointerEvents: 'none'` keeps shape click/drag unaffected.
+                Task 118 (issue #147): the mirror toggle flips the
+                `transform` live via the `cameraOverlayMirrored` state —
+                the `<video>` element itself never re-mounts, so the live
+                feed is uninterrupted. */}
             {cameraStatus === 'active' && cameraStream && (
               <video
                 ref={cameraVideoRef}
@@ -1587,7 +1603,7 @@ function EditorWorkspace() {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  transform: 'scaleX(-1)',
+                  transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
                   opacity: cameraOverlayOpacity,
                   pointerEvents: 'none',
                 }}

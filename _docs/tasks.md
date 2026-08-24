@@ -2175,7 +2175,7 @@ pixels), the prompt-pending/granted/no-camera-hardware camera states
 stop behavior, plus extending the existing anonymous-viewer Playwright
 describe block in `publishingAndRemix.spec.ts` (lines 392-519) rather than
 building a new one.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#144](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/144)
 Discovery gate: Searched `_docs/tasks.md` and GitHub issues; no single
 existing task/issue covers the public-viewer camera path end-to-end with
@@ -2184,7 +2184,67 @@ linked in issue #144) — none duplicated, only the genuine remainder
 scoped. No new out-of-scope work discovered during grooming beyond the
 conditional follow-ups already named in issue #144's "Out of scope"
 section (to be filed only if the new tests reveal a real bug).
-Next action: implement the pixel-level persisted-rendering assertion and
-the new/extended Playwright scenarios in `publishingAndRemix.spec.ts`'s
-existing anonymous-viewer describe block, per issue #144's acceptance
-criteria.
+Resolution (2026-08-23): Extended `publishingAndRemix.spec.ts`'s existing
+"Anonymous viewer: demo mode and camera-failure fallbacks" describe block
+with 8 new scenarios (the 3 pre-existing ones untouched) — persisted-scene
+pixel rendering (a new `samplePixelColors` helper reads the mounted p5
+canvas's real `getImageData`, not just container visibility), an empty-
+scene fixture, loading/unavailable/error states, a `previewError` render
+failure that doesn't blank the page, the `permissionHintDelayMs` hint
+(issue #132's fix) observed on `/p/:id` for the first time, and a
+no-camera-hardware (`NotFoundError`) + Retry-re-attempts scenario. All 11
+scenarios in the describe block pass against a real PostgreSQL + Django +
+Vite stack.
+**A real, previously-undiscovered production bug was found and fixed**:
+implementing the pixel-level rendering assertion revealed that
+`PublicProjectViewer.tsx` never actually mounted a p5 canvas for any
+project, ever — it used a plain `useRef` + `useEffect(fn, [])` pair to
+mount the preview, but the mount `<div>` only exists in the DOM once
+`loadState` reaches `'ready'`, and that effect (empty deps) only ever runs
+once, on this component's first render, while `loadState` is still
+`'loading'` — so `previewMountRef.current` was always `null` the one time
+it mattered, and the guard silently no-opped forever. This is the *exact*
+timing bug issue #83 already found and fixed in `EditorWorkspace.tsx`
+(that fix's own doc comment predicted this outcome almost verbatim: "the p5
+preview was never created for any project loaded the normal (async) way —
+nothing exercised this before, since no earlier test asserted an actual
+`<canvas>` element"), but `PublicProjectViewer.tsx` was never given the
+same fix. Ported the identical solution: a *callback* ref
+(`previewMountCallbackRef`) plus a `previewMounted` state flag, so the p5
+instance mounts the instant its div actually attaches (whichever render
+that turns out to be) rather than being gated by a stale effect-dependency
+snapshot. This means every anonymous visitor to every published project's
+public page has never seen its actual scene rendered, in production, since
+this page shipped — confirmed as the acceptance criteria's own point:
+"unless the new pixel-level rendering assertion above actually fails and
+reveals a real bug" (issue #144's own out-of-scope carve-out anticipated
+and explicitly permitted exactly this outcome).
+Evidence: `PublicProjectViewer.test.tsx`/`PublicProjectViewer.a11y.test.tsx`
+(jsdom) still pass unchanged (27/27) — the bug was invisible to jsdom-level
+component tests because they mock `p5Adapter`/never assert a real
+`<canvas>` element either, which is exactly why only a real-browser e2e
+test could catch it. Full `make e2e` run: 119 passed, 2 skipped (this
+suite's own graceful self-skip convention for unrelated missing
+prerequisites), 2 failures — both `aiAndRecovery.spec.ts` and
+`responsiveShell.spec.ts`, neither touching `PublicProjectViewer.tsx` or
+`publishingAndRemix.spec.ts`, both confirmed pre-existing flakes by
+rerunning each individually (both pass in isolation). `make frontend-test`
+green at 1624/1624 (no regressions); `tsc`/`oxlint`/`prettier` all clean.
+Not done: the "Granted: reaches `status === 'active'`" and "Stop after
+active" acceptance criteria could not be completed — `mediapipeProvider.ts`
+(the real SPA's camera pipeline `CameraControl.tsx` uses everywhere,
+including `/p/:id`) has no test-only seam to intercept its dynamic
+`import('@mediapipe/tasks-vision')` from a real-browser Playwright context,
+unlike the *exported standalone HTML* runtime
+(`standaloneCameraSource.ts`), which deliberately exposes
+`window.__exportCameraLoadVisionTasksModule` for exactly this purpose (see
+`exportArtifacts.spec.ts`'s `installCameraTestSeams`). Reaching a real
+`'active'` state would need either genuine network access to Google's
+MediaPipe CDN plus real WASM inference against a fake video source, or a
+new production test seam — filed as
+[#150](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/150)
+rather than expanding this task's scope, per issue #144's own "file a
+follow-up issue and link it here" guidance for exactly this situation.
+Every other camera-permission state (denied, unsupported, no-hardware,
+prompt-pending, retry-not-a-dead-end) resolves before the MediaPipe import
+ever runs and was fully covered without this seam.

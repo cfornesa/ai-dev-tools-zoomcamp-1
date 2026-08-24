@@ -389,21 +389,86 @@ test.describe('Publishing', () => {
   });
 });
 
+/** Task 113 (issue #144): reads every distinct RGBA color present in a
+ * mounted p5 canvas's actual pixel buffer (native `canvas.width`/`height`,
+ * not the CSS-scaled display size), so a test can assert specific known
+ * fill colors are genuinely painted — strictly more than the existing
+ * "publishing..." scenario's container-visibility-only check (that
+ * scenario's own comment explicitly notes it "doesn't parse pixel data";
+ * this is that gap closed, for the anonymous viewer specifically). p5's
+ * `createCanvas` here uses the default P2D (2D) renderer, never WEBGL
+ * (confirmed by reading `render/p5Adapter.ts`), so `getContext('2d')` is
+ * always valid. */
+async function samplePixelColors(page: Page, testId: string): Promise<Set<string>> {
+  const colors = await page.evaluate((testId: string) => {
+    const container = document.querySelector(`[data-testid="${testId}"]`);
+    const canvas = container?.querySelector('canvas') as HTMLCanvasElement | null;
+    if (!canvas) return [];
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return [];
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const seen = new Set<string>();
+    for (let i = 0; i < data.length; i += 4) {
+      seen.add(`${data[i]},${data[i + 1]},${data[i + 2]}`);
+    }
+    return Array.from(seen);
+  }, testId);
+  return new Set(colors);
+}
+
+function hexToRgbTriple(hex: string): string {
+  const value = hex.replace('#', '');
+  const r = Number.parseInt(value.slice(0, 2), 16);
+  const g = Number.parseInt(value.slice(2, 4), 16);
+  const b = Number.parseInt(value.slice(4, 6), 16);
+  return `${r},${g},${b}`;
+}
+
 test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => {
   let fixtures: Fixtures;
   let publicProjectId: string;
+  let emptyScenePublicProjectId: string;
+  const circleFill = '#ff00aa';
+  const rectFill = '#22cc88';
 
   test.beforeAll(async ({ browser }) => {
     fixtures = requireE2EFixtures();
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
+
     publicProjectId = await createBlankProjectViaUI(page);
+    // Task 113 (issue #144): a circle and a rectangle, each with a
+    // distinct, deliberately unusual fill color unlikely to collide with
+    // the canvas background/any other default color -- this is what the
+    // persisted-rendering pixel check and the "granted camera + populated
+    // scene" scenario both need a non-empty scene for.
+    await page.getByRole('button', { name: 'Add circle' }).click();
+    const circleFillInput = page.locator('#shape-style-fill');
+    await circleFillInput.fill(circleFill);
+    await circleFillInput.blur();
+    await page.getByRole('button', { name: 'Add rectangle' }).click();
+    const rectFillInput = page.locator('#shape-style-fill');
+    await rectFillInput.fill(rectFill);
+    await rectFillInput.blur();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
     await saveMeaningfulMetadata(page, publicProjectId, {
       title: 'Anonymous viewer fixture project',
       description: 'Used by the demo-mode/camera-failure scenarios.',
     });
     await confirmPublish(page);
+
+    // A second, deliberately empty-scene project (still version 1, the
+    // untouched blank canvas) for the "renders an empty scene cleanly"
+    // criterion.
+    emptyScenePublicProjectId = await createBlankProjectViaUI(page);
+    await saveMeaningfulMetadata(page, emptyScenePublicProjectId, {
+      title: 'Anonymous viewer empty-scene fixture project',
+      description: 'Used by the empty-scene rendering scenario.',
+    });
+    await confirmPublish(page);
+
     await context.close();
   });
 
@@ -513,6 +578,223 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
     await anonPage.getByRole('radio', { name: 'Synthetic playback' }).click();
     await expect(anonPage.getByTestId('demo-playback-controls')).toBeVisible();
+
+    await anonContext.close();
+  });
+
+  // ---------------------------------------------------------------------
+  // Task 113 (issue #144): persisted-scene rendering, loading/empty/error
+  // states, and additional camera-permission states specific to /p/:id --
+  // see that issue's reconciliation against #93/#119/#132/#140 for why
+  // this is verification of already-shared code, not new implementation,
+  // and why the denied/unsupported-browser states above are not
+  // duplicated here.
+  // ---------------------------------------------------------------------
+
+  test("renders the persisted scene's shapes visibly in the canvas, matching the public API's current version", async ({
+    browser,
+  }) => {
+    const anonContext = await browser.newContext();
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto(`/p/${publicProjectId}`);
+    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
+      'Anonymous viewer fixture project',
+    );
+
+    const canvas = anonPage.getByTestId('public-scene-canvas').locator('canvas');
+    await expect(canvas).toBeVisible();
+    await expect
+      .poll(async () => Array.from(await samplePixelColors(anonPage, 'public-scene-canvas')), {
+        timeout: 5000,
+      })
+      .toEqual(expect.arrayContaining([hexToRgbTriple(circleFill), hexToRgbTriple(rectFill)]));
+
+    // Provably the persisted current version, not a stale/draft render:
+    // the same two shapes, same count, at the data layer.
+    const publicDetail = await apiGet(anonContext, `/api/public/projects/${publicProjectId}/`);
+    expect(publicDetail.status()).toBe(200);
+    const publicBody = (await publicDetail.json()) as {
+      current_version: { scene_json: { shapes: Array<{ type: string }> } };
+    };
+    expect(publicBody.current_version.scene_json.shapes).toHaveLength(2);
+    expect(publicBody.current_version.scene_json.shapes.map((s) => s.type).sort()).toEqual([
+      'circle',
+      'rect',
+    ]);
+
+    await anonContext.close();
+  });
+
+  test('renders an empty scene cleanly: visible canvas, no shapes, no error', async ({
+    browser,
+  }) => {
+    const anonContext = await browser.newContext();
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto(`/p/${emptyScenePublicProjectId}`);
+    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
+      'Anonymous viewer empty-scene fixture project',
+    );
+
+    await expect(anonPage.getByTestId('public-scene-canvas').locator('canvas')).toBeVisible();
+    await expect(anonPage.getByRole('alert')).toHaveCount(0);
+
+    const publicDetail = await apiGet(
+      anonContext,
+      `/api/public/projects/${emptyScenePublicProjectId}/`,
+    );
+    const publicBody = (await publicDetail.json()) as {
+      current_version: { scene_json: { shapes: unknown[] } };
+    };
+    expect(publicBody.current_version.scene_json.shapes).toHaveLength(0);
+
+    await anonContext.close();
+  });
+
+  test('shows the loading state before the project finishes fetching', async ({ browser }) => {
+    const anonContext = await browser.newContext();
+    // Delays the public API response just long enough to reliably observe
+    // the transient 'loading' state before it resolves to 'ready'.
+    await anonContext.route(`**/api/public/projects/${publicProjectId}/`, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await route.continue();
+    });
+    const anonPage = await anonContext.newPage();
+    const navigation = anonPage.goto(`/p/${publicProjectId}`);
+
+    // The global reduced-motion status ("Motion is currently...") also
+    // carries role="status", so this must scope to the exact text rather
+    // than the bare role.
+    await expect(anonPage.getByRole('status').getByText(/Loading project/)).toBeVisible();
+    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveCount(0);
+
+    await navigation;
+    await expect(anonPage.getByRole('heading', { level: 2 })).toBeVisible();
+
+    await anonContext.close();
+  });
+
+  test('shows the unavailable state (distinct from error) for a public id that never existed, with a working gallery link', async ({
+    browser,
+  }) => {
+    const anonContext = await browser.newContext();
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto('/p/this-id-does-not-exist-e2e');
+
+    await expect(anonPage.getByRole('alert')).toContainText("isn't available");
+    const galleryLink = anonPage.getByRole('link', { name: 'Back to the public gallery' });
+    await expect(galleryLink).toBeVisible();
+    await galleryLink.click();
+    await anonPage.waitForURL(/\/gallery$/);
+
+    await anonContext.close();
+  });
+
+  test('shows a distinct error state (not "unavailable") for a non-404/403 fetch failure, with a working gallery link', async ({
+    browser,
+  }) => {
+    const anonContext = await browser.newContext();
+    await anonContext.route(`**/api/public/projects/${publicProjectId}/`, (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
+    );
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto(`/p/${publicProjectId}`);
+
+    const alert = anonPage.getByRole('alert');
+    await expect(alert).toContainText('Something went wrong');
+    await expect(alert).not.toContainText("isn't available");
+    await expect(anonPage.getByRole('link', { name: 'Back to the public gallery' })).toBeVisible();
+
+    await anonContext.close();
+  });
+
+  test('a scene that fails to render surfaces previewError without blanking the rest of the page', async ({
+    browser,
+  }) => {
+    const anonContext = await browser.newContext();
+    // A canvas width of 5 fails schema/scene.schema.json's minimum (16),
+    // so buildScenePlan's own validateScene call throws deterministically
+    // -- mirrors #140's "a render-time failure must never blank the whole
+    // page" principle, scoped to this page's own try/catch around
+    // previewRef.current.render(...).
+    await anonContext.route(`**/api/public/projects/${publicProjectId}/`, async (route) => {
+      const response = await route.fetch();
+      const body = (await response.json()) as {
+        current_version: { scene_json: { canvas: { width: number } } };
+      };
+      body.current_version.scene_json.canvas.width = 5;
+      await route.fulfill({ response, json: body });
+    });
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto(`/p/${publicProjectId}`);
+
+    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
+      'Anonymous viewer fixture project',
+    );
+    await expect(anonPage.getByRole('alert')).toContainText("Couldn't render the preview");
+
+    // The rest of the page stays usable -- header, camera, and demo
+    // controls are never blanked by a preview-render failure.
+    await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toBeVisible();
+    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+
+    await anonContext.close();
+  });
+
+  test("a pending permission prompt shows the recovery hint on /p/:id (issue #132's fix, never previously observed on this route)", async ({
+    browser,
+  }) => {
+    test.setTimeout(15000);
+    const anonContext = await browser.newContext();
+    await anonContext.addInitScript(() => {
+      Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+        configurable: true,
+        // Never resolves or rejects -- simulates a native permission
+        // prompt the user hasn't answered yet.
+        value: () => new Promise(() => {}),
+      });
+    });
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto(`/p/${publicProjectId}`);
+
+    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+    await expect(anonPage.getByTestId('camera-permission-hint')).toBeVisible({ timeout: 8000 });
+
+    await anonContext.close();
+  });
+
+  test('no camera hardware (NotFoundError) shows an appropriate message and Retry, which re-attempts getUserMedia', async ({
+    browser,
+  }) => {
+    const anonContext = await browser.newContext();
+    await anonContext.addInitScript(() => {
+      let calls = 0;
+      (window as unknown as { __getUserMediaCalls: () => number }).__getUserMediaCalls = () =>
+        calls;
+      Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+        configurable: true,
+        value: () => {
+          calls += 1;
+          return Promise.reject(new DOMException('No camera was found', 'NotFoundError'));
+        },
+      });
+    });
+    const anonPage = await anonContext.newPage();
+    await anonPage.goto(`/p/${publicProjectId}`);
+
+    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+    await expect(anonPage.getByTestId('camera-error')).toContainText(/no camera/i);
+    const retryButton = anonPage.getByRole('button', { name: 'Retry' });
+    await expect(retryButton).toBeVisible();
+    expect(await anonPage.evaluate('window.__getUserMediaCalls()')).toBe(1);
+
+    // Retry is not a dead end -- it genuinely re-attempts getUserMedia
+    // rather than leaving the control permanently stuck on this failure.
+    await retryButton.click();
+    await expect(anonPage.getByTestId('camera-error')).toContainText(/no camera/i);
+    expect(await anonPage.evaluate('window.__getUserMediaCalls()')).toBe(2);
+
+    // Demo controls remain fully usable throughout.
+    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
 
     await anonContext.close();
   });

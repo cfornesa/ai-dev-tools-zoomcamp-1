@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
@@ -83,8 +83,33 @@ function PublicProjectViewer() {
   const [forkError, setForkError] = useState<string | null>(null);
   const forkRequestIdRef = useRef<string | null>(null);
 
-  const previewMountRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<P5ScenePreview | null>(null);
+  // Task 113 (issue #144): a *callback* ref, not a plain `useRef` +
+  // `useEffect(fn, [])` pair -- porting `EditorWorkspace.tsx`'s issue #83
+  // fix here too. The mount div below only exists in the DOM once
+  // `loadState` reaches `'ready'`, so a `[]`-deps effect reading a plain
+  // ref runs (once, on this component's first render, while still in the
+  // `'loading'` early-return branch) *before* the div — and therefore
+  // `previewRef.current` — ever exists, and never runs again: the p5
+  // preview was silently never created for any project loaded the normal
+  // (async) way. Confirmed live: no earlier test asserted an actual
+  // `<canvas>` element ever appeared here, only the wrapper div's
+  // visibility (see `publishingAndRemix.spec.ts`'s "publishing..."
+  // scenario) -- this task's own new pixel-level rendering assertion is
+  // what caught it. A callback ref sidesteps "which commit was the div
+  // actually attached during": React invokes it with the real node the
+  // instant it's attached, whichever commit that turns out to be.
+  const [previewMounted, setPreviewMounted] = useState(false);
+  const previewMountCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      previewRef.current = createP5ScenePreview(node);
+      setPreviewMounted(true);
+    } else {
+      previewRef.current?.destroy();
+      previewRef.current = null;
+      setPreviewMounted(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -112,19 +137,6 @@ function PublicProjectViewer() {
     };
   }, [id]);
 
-  // Same pattern as EditorWorkspace.tsx's Task 25 wiring: mount the p5
-  // instance once, tear it down on unmount, and never mount it into a div
-  // React itself reconciles children into.
-  useEffect(() => {
-    if (!previewMountRef.current) return;
-    const preview = createP5ScenePreview(previewMountRef.current);
-    previewRef.current = preview;
-    return () => {
-      preview.destroy();
-      previewRef.current = null;
-    };
-  }, []);
-
   useEffect(() => {
     if (!previewRef.current || !project?.current_version) return;
     try {
@@ -139,7 +151,11 @@ function PublicProjectViewer() {
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
     }
-  }, [project]);
+    // `previewMounted` is a real, effect-dependency-visible signal for
+    // "does previewRef.current exist yet" -- see the callback ref's own
+    // doc comment above for why an untracked ref read in the dependency
+    // array (the old bug) isn't enough.
+  }, [project, previewMounted]);
 
   async function handleFork() {
     if (!id) return;
@@ -256,7 +272,7 @@ function PublicProjectViewer() {
                 see EditorWorkspace.tsx's identical comment for why React
                 is never given children to reconcile here. */}
             <div
-              ref={previewMountRef}
+              ref={previewMountCallbackRef}
               aria-hidden="true"
               style={{ position: 'absolute', inset: 0, zIndex: -1 }}
             />

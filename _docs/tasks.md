@@ -2722,8 +2722,31 @@ Goal: Fix `shapeBounds()` (and its selection-outline/hover-outline/
 hit-test consumers) to account for `transform.rotation`/`scaleX`/
 `scaleY`, which it currently ignores despite rotate/scale handles having
 shipped since (a stale doc comment predates them).
-Status: PROPOSED — full groomed write-up filed as
-[#155](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/155).
+Status: COMPLETE
+GitHub issue: [#155](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/155).
+Resolution (2026-08-24): `shapeBounds()` in `sceneShapes.ts` now maps each
+shape type's local (unrotated, unscaled, origin-relative) bounding box
+through a new `transformedBounds()` helper that applies `scaleX`/`scaleY`
+then `rotation` to all four corners, then translates by `transform.x/y` —
+the same scale-then-rotate-then-translate order `p5Adapter.ts`'s
+`applyTransform` renders with, reusing the existing `rotateAround` helper
+rather than reinventing rotation math (per the issue's own note). Reduces
+to the exact old unrotated/unscaled math at identity transform (verified
+by a new "unaffected by identity" test). Since `hitTestTopmostShapeAt` and
+the hover outline are both built directly on `shapeBounds()`, all three
+consumers named in the issue's title are fixed by this one function change
+— no separate hit-testing-specific work was needed; a fully precise
+rotated-hit-test (vs. rotated-AABB) remains out of scope, unchanged from
+before. `getCombinedBounds` (multi-select group box, issue #77) was left
+untouched, per the issue's explicit note not to conflate the two. The
+stale "scale/rotation ignored" module doc comment was corrected. New tests
+in `sceneShapes.test.ts` cover identity (no change), a 90-degree rotated
+rect (axis swap), a uniformly scaled circle, and a combined
+non-uniform-scale + rotation case checked against independent manual
+corner math. `npm run typecheck`/`lint`/`format` clean; full frontend
+suite green (1660/1661 — the one failure, `draftAutosave.test.ts`, is the
+same unrelated pre-existing flake task 109's evidence already documented,
+confirmed passing 22/22 in isolation).
 
 ## 124. Add zoom and pan controls to the editor Preview canvas
 

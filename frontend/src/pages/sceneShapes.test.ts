@@ -6,6 +6,7 @@ import {
   duplicateShape,
   getEditableShapes,
   hitTestTopmostShapeAt,
+  shapeBounds,
   shapeLabel,
   type ShapeType,
 } from './sceneShapes';
@@ -53,6 +54,84 @@ describe('createShape', () => {
     if (shape.type !== 'path') throw new Error('expected a path shape');
     expect(shape.closed).toBe(true);
     expect(shape.points.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// Issue #155: shapeBounds() previously ignored transform.rotation/scaleX/
+// scaleY, so the selection/hover outline (and hit-testing, both built on
+// this same function) no longer matched a rotated or scaled shape's actual
+// on-screen extent drawn by p5Adapter.ts's applyTransform.
+describe('shapeBounds: rotation and scale', () => {
+  it('is unaffected by identity rotation/scale (matches the pre-fix unrotated math)', () => {
+    const shape = createShape('rect', 'layer-1', CANVAS);
+    const b = shapeBounds(shape);
+    expect(b).toEqual({
+      minX: shape.transform.x,
+      minY: shape.transform.y,
+      maxX: shape.transform.x + (shape as { width: number }).width,
+      maxY: shape.transform.y + (shape as { height: number }).height,
+    });
+  });
+
+  it('a 90-degree rotated rect swaps its effective width/height in the bounding box', () => {
+    const shape = createShape('rect', 'layer-1', CANVAS);
+    const { width, height } = shape as { width: number; height: number };
+    const rotated = {
+      ...shape,
+      transform: { ...shape.transform, rotation: 90 },
+    };
+    const b = shapeBounds(rotated);
+    // A rect's local box is [0,0]..[width,height]; rotating 90 degrees
+    // about its own origin (transform.x/y) swaps which axis each extent
+    // lands on.
+    expect(b.maxX - b.minX).toBeCloseTo(height, 5);
+    expect(b.maxY - b.minY).toBeCloseTo(width, 5);
+  });
+
+  it('a scaled circle grows its bounding box by the same factor', () => {
+    const shape = createShape('circle', 'layer-1', CANVAS);
+    const { radius } = shape as { radius: number };
+    const scaled = {
+      ...shape,
+      transform: { ...shape.transform, scaleX: 2, scaleY: 2 },
+    };
+    const b = shapeBounds(scaled);
+    expect(b.maxX - b.minX).toBeCloseTo(radius * 4, 5);
+    expect(b.maxY - b.minY).toBeCloseTo(radius * 4, 5);
+  });
+
+  it('a non-uniformly scaled and rotated rect matches manual corner math', () => {
+    const shape = createShape('rect', 'layer-1', CANVAS);
+    const { x, y } = shape.transform;
+    const { width, height } = shape as { width: number; height: number };
+    const transformed = {
+      ...shape,
+      transform: { ...shape.transform, scaleX: 1.5, scaleY: 0.5, rotation: 30 },
+    };
+    const rad = (30 * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const corners = [
+      [0, 0],
+      [width, 0],
+      [width, height],
+      [0, height],
+    ].map(([lx, ly]) => {
+      const sx = lx * 1.5;
+      const sy = ly * 0.5;
+      return { x: x + sx * cos - sy * sin, y: y + sx * sin + sy * cos };
+    });
+    const expected = {
+      minX: Math.min(...corners.map((c) => c.x)),
+      maxX: Math.max(...corners.map((c) => c.x)),
+      minY: Math.min(...corners.map((c) => c.y)),
+      maxY: Math.max(...corners.map((c) => c.y)),
+    };
+    const b = shapeBounds(transformed);
+    expect(b.minX).toBeCloseTo(expected.minX, 5);
+    expect(b.maxX).toBeCloseTo(expected.maxX, 5);
+    expect(b.minY).toBeCloseTo(expected.minY, 5);
+    expect(b.maxY).toBeCloseTo(expected.maxY, 5);
   });
 });
 

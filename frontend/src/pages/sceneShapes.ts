@@ -13,9 +13,13 @@
  * not part of the schema): a circle's `transform.x/y` is its center; a
  * rect's `transform.x/y` is its top-left corner; a line runs from
  * `transform.x/y` to `x2/y2`; a path's points are relative offsets from
- * `transform.x/y`. `scaleX/scaleY/rotation` are ignored by the bounds/hit
- * test math below — there's no transform-handle UI yet (Task 26), so
- * nothing in this task produces a non-default scale or rotation.
+ * `transform.x/y`. `shapeBounds()` (and therefore the selection/hover
+ * outline and click/drag hit-testing, which are all built on it) accounts
+ * for `scaleX`/`scaleY`/`rotation` — Task 26 added rotate/resize handles
+ * that do write non-default values for these, and `p5Adapter.ts`'s
+ * `applyTransform` applies them (`translate` then `rotate` then `scale`)
+ * when actually drawing a shape's body, so the bounds math here matches
+ * that same order (issue #155).
  */
 
 import rawLimits from '../../../schema/limits.json';
@@ -142,36 +146,77 @@ export function getEditableShapes(shapes: unknown): Shape[] {
 
 export type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
 
+/** Maps a shape's *local* (unrotated, unscaled, origin-relative) bounding
+ * box to its actual on-screen axis-aligned bounding box, applying
+ * `transform.scaleX/scaleY` then `transform.rotation` then
+ * `transform.x/y` to each of the box's four corners — the same
+ * scale-then-rotate-then-translate order `p5Adapter.ts`'s `applyTransform`
+ * renders with (issue #155). Reduces to a plain translate of `localBounds`
+ * when `scaleX === scaleY === 1` and `rotation === 0`. */
+function transformedBounds(localBounds: Bounds, transform: Transform): Bounds {
+  const { x, y, scaleX, scaleY, rotation } = transform;
+  const corners: Point[] = [
+    { x: localBounds.minX * scaleX, y: localBounds.minY * scaleY },
+    { x: localBounds.maxX * scaleX, y: localBounds.minY * scaleY },
+    { x: localBounds.maxX * scaleX, y: localBounds.maxY * scaleY },
+    { x: localBounds.minX * scaleX, y: localBounds.maxY * scaleY },
+  ];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const corner of corners) {
+    const rotated = rotateAround(corner.x, corner.y, 0, 0, rotation);
+    const worldX = x + rotated.x;
+    const worldY = y + rotated.y;
+    minX = Math.min(minX, worldX);
+    maxX = Math.max(maxX, worldX);
+    minY = Math.min(minY, worldY);
+    maxY = Math.max(maxY, worldY);
+  }
+  return { minX, minY, maxX, maxY };
+}
+
 export function shapeBounds(shape: Shape): Bounds {
   const { x, y } = shape.transform;
   switch (shape.type) {
     case 'circle':
-      return {
-        minX: x - shape.radius,
-        minY: y - shape.radius,
-        maxX: x + shape.radius,
-        maxY: y + shape.radius,
-      };
+      return transformedBounds(
+        { minX: -shape.radius, minY: -shape.radius, maxX: shape.radius, maxY: shape.radius },
+        shape.transform,
+      );
     case 'rect':
-      return { minX: x, minY: y, maxX: x + shape.width, maxY: y + shape.height };
+      return transformedBounds(
+        { minX: 0, minY: 0, maxX: shape.width, maxY: shape.height },
+        shape.transform,
+      );
     case 'line': {
       const pad = Math.max(shape.style.strokeWidth, 6) / 2 + 4;
-      return {
-        minX: Math.min(x, shape.x2) - pad,
-        maxX: Math.max(x, shape.x2) + pad,
-        minY: Math.min(y, shape.y2) - pad,
-        maxY: Math.max(y, shape.y2) + pad,
-      };
+      const localX2 = shape.x2 - x;
+      const localY2 = shape.y2 - y;
+      const b = transformedBounds(
+        {
+          minX: Math.min(0, localX2),
+          minY: Math.min(0, localY2),
+          maxX: Math.max(0, localX2),
+          maxY: Math.max(0, localY2),
+        },
+        shape.transform,
+      );
+      return { minX: b.minX - pad, minY: b.minY - pad, maxX: b.maxX + pad, maxY: b.maxY + pad };
     }
     case 'path': {
-      const xs = shape.points.map((p) => p.x + x);
-      const ys = shape.points.map((p) => p.y + y);
-      return {
-        minX: Math.min(...xs),
-        maxX: Math.max(...xs),
-        minY: Math.min(...ys),
-        maxY: Math.max(...ys),
-      };
+      const xs = shape.points.map((p) => p.x);
+      const ys = shape.points.map((p) => p.y);
+      return transformedBounds(
+        {
+          minX: Math.min(...xs),
+          minY: Math.min(...ys),
+          maxX: Math.max(...xs),
+          maxY: Math.max(...ys),
+        },
+        shape.transform,
+      );
     }
   }
 }

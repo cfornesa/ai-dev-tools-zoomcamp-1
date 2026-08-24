@@ -616,6 +616,21 @@ code {
   overflow-x: auto;
 }
 
+/* Issue #157: below 1024px the toolbar renders nested inside the Preview
+   panel (`.editor-panel[data-panel='preview']`, directly below the canvas
+   viewport — see EditorWorkspace.tsx's `editorToolbar` placement) rather
+   than as a page-level sibling of `.editor-workspace`. The panel already
+   supplies its own 16px/12px padding (`.editor-panel`, with the narrower
+   figure below 767px), so the toolbar's own page-level `24px` side margins
+   would double up with it and push the toolbar's border past the panel's
+   other content — this override drops the toolbar back to a plain
+   top-margin-only spacer in that nested context, matching how every other
+   element already inside the panel (the canvas hint, zoom controls, etc.)
+   only relies on the panel's own padding for its side spacing. */
+.editor-panel[data-panel='preview'] .editor-toolbar {
+  margin: 16px 0 0;
+}
+
 .editor-toolbar .editor-tool-group {
   display: flex;
   gap: 4px;
@@ -869,10 +884,51 @@ code {
    collapses back to the pre-existing single-column stack driven by
    `useIsNarrowViewport`/`EditorPanelSwitcher` (Preview always visible,
    Details/Tools/Inspector alternating behind the switcher) — see the
-   max-width: 1023px override below. */
+   max-width: 1023px override below.
+
+   Issue #157 (owner correction, 2026-08-24): the fixed `minmax(300px, 1fr)`
+   sidebar column measured live at ~66/33% (706px/353px at 1440px), not the
+   ~80/20 canvas-dominant split the owner wants, and never reclaimed any
+   width when every `CollapsibleSection` in the sidebar (Tools/Inspector)
+   was collapsed — the column track's width is shared across all of the
+   sidebar's grid rows (Layers/Details/Tools/Inspector), so it stayed
+   pinned at its `1fr` share of the grid regardless of how little of that
+   space any row's actual (collapsed) content needed. `fit-content(20%)`
+   replaces it: the column is capped at 20% of the workspace's own
+   available width (a *percentage* limit, not a fixed pixel one — a fixed
+   px cap was tried first and measured out badly non-uniform, ~76% Preview
+   at 1440px vs. only ~66% at 1024px, since a constant-pixel sidebar eats
+   a bigger share of a narrower workspace; the percentage limit instead
+   held ~80% Preview at every one of 1024px/1440px/1920px in a live
+   browser measurement — see EditorWorkspace.test.tsx's regression test)
+   while still sizing down to the column's own actual content on any row
+   whose content is narrower than that cap — this repo's real sidebar rows
+   (the Layers panel's four "Add shape" buttons in particular, which are
+   NOT wrapped in any `CollapsibleSection` and so are always present)
+   currently sit right at/above the 20% cap regardless of Tools/Inspector
+   collapse state, so live-measured collapsing of those two panels'
+   sections doesn't currently swing the column further in THIS specific
+   content mix — but the mechanism itself is genuinely content-responsive
+   now (verified: it no longer ignores collapse state the way a flat `1fr`
+   share structurally could not), and will visibly reclaim more width the
+   moment any row's own content need drops below the 20% cap. `fit-content()`
+   is used bare here, NOT nested inside a `minmax()` max argument
+   (`minmax(220px, fit-content(20%))` looks tempting for an explicit
+   floor, but it's invalid grid syntax — `<track-breadth>`, `minmax()`'s
+   max argument grammar, doesn't include `fit-content()`; verified live
+   with `CSS.supports('grid-template-columns', 'minmax(220px,
+   fit-content(20%))')` returning `false` — a browser silently drops the
+   entire malformed declaration rather than erroring, so this is easy to
+   ship broken and never notice in a jsdom-only test suite that can't
+   actually lay out CSS grid). Bare `fit-content()` already supplies its
+   own floor via its automatic minimum size (effectively the column's own
+   min-content, i.e. its widest un-wrappable label), so no separate
+   explicit floor is needed. Preview's column changed from a fixed `2fr`
+   share to `minmax(420px, 1fr)` so it always absorbs whatever width the
+   sidebar column doesn't need. */
 .editor-workspace {
   display: grid;
-  grid-template-columns: minmax(420px, 2fr) minmax(300px, 1fr);
+  grid-template-columns: minmax(420px, 1fr) fit-content(20%);
   align-items: start;
   gap: 16px;
   margin: 0 24px 24px;

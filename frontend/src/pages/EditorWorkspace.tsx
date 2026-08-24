@@ -1561,6 +1561,67 @@ function EditorWorkspace() {
     }
   }
 
+  // Task 112 (issue #143): an always-visible toolbar for the editor's
+  // most-used actions — Undo, Redo, Duplicate selected shape, Delete
+  // selected shape, and a contextual fill-color control — reachable
+  // without expanding a collapsed accordion or switching panel tabs, at
+  // every supported viewport width. `lockError` is rendered here too, so a
+  // rejected action is always visibly announced regardless of any
+  // accordion's open/closed state or active tab.
+  //
+  // Issue #157 (owner correction, 2026-08-24): extracted into a variable,
+  // rendered at ONE of two different DOM positions rather than always in
+  // the same spot, so the desktop/tablet layout and the mobile layout can
+  // each place it correctly without duplicating this JSX (and without ever
+  // rendering it twice, which would create a second `role="toolbar"`
+  // landmark with the same accessible name). At >=1024px (`!isNarrow`) it
+  // stays exactly where it always has, above `.editor-workspace` next to
+  // `OnboardingHints`. Below 1024px (`isNarrow`) it's rendered instead
+  // inside the Preview panel, directly below the canvas viewport (see the
+  // `{isNarrow && editorToolbar}` placement further down, right after
+  // `.editor-scene-canvas-viewport` closes) — every control stays
+  // reachable without obscuring the canvas or needing horizontal scroll,
+  // and it no longer sits above the Details/Tools/Layers/Inspector
+  // switcher tabs where it used to fall in mobile document flow.
+  const editorToolbar = (
+    <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
+      <span role="group" aria-label="History" className="editor-tool-group">
+        <ToolbarButton
+          label="Undo"
+          glyph="↶"
+          onClick={() => sceneEditor.undo()}
+          disabled={!sceneEditor.canUndo}
+        />
+        <ToolbarButton
+          label="Redo"
+          glyph="↷"
+          onClick={() => sceneEditor.redo()}
+          disabled={!sceneEditor.canRedo}
+        />
+      </span>
+      <span role="group" aria-label="Edit shape" className="editor-tool-group">
+        <ToolbarButton
+          label="Duplicate selected shape"
+          glyph="⧉"
+          onClick={() => sceneEditor.duplicateSelected()}
+          disabled={!sceneEditor.selectedShape}
+        />
+        <ToolbarButton
+          label="Delete selected shape"
+          glyph="✕"
+          onClick={() => sceneEditor.deleteSelected()}
+          disabled={!sceneEditor.selectedShape}
+        />
+      </span>
+      <EditorToolbarColorControl sceneEditor={sceneEditor} />
+      {sceneEditor.lockError && (
+        <p role="alert" aria-live="assertive" className="editor-toolbar-lock-error">
+          {sceneEditor.lockError}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <div>
       <header className="editor-workspace-header">
@@ -1631,53 +1692,15 @@ function EditorWorkspace() {
         pinchEventCount={pinchEventCount}
       />
 
-      {/* Task 112 (issue #143): an always-visible toolbar for the editor's
-          most-used actions — Undo, Redo, Duplicate selected shape, Delete
-          selected shape, and a contextual fill-color control — reachable
-          without expanding a collapsed accordion or switching panel tabs,
-          at every supported viewport width. Rendered here (outside the
-          panel switcher, same placement as OnboardingHints above) so it
-          stays visible regardless of which of Details/Tools/Layers/
-          Inspector is active on a narrow viewport, matching how Preview
-          is already always visible. `lockError` moved here too, so a
-          rejected action is always visibly announced regardless of any
-          accordion's open/closed state or active tab. */}
-      <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
-        <span role="group" aria-label="History" className="editor-tool-group">
-          <ToolbarButton
-            label="Undo"
-            glyph="↶"
-            onClick={() => sceneEditor.undo()}
-            disabled={!sceneEditor.canUndo}
-          />
-          <ToolbarButton
-            label="Redo"
-            glyph="↷"
-            onClick={() => sceneEditor.redo()}
-            disabled={!sceneEditor.canRedo}
-          />
-        </span>
-        <span role="group" aria-label="Edit shape" className="editor-tool-group">
-          <ToolbarButton
-            label="Duplicate selected shape"
-            glyph="⧉"
-            onClick={() => sceneEditor.duplicateSelected()}
-            disabled={!sceneEditor.selectedShape}
-          />
-          <ToolbarButton
-            label="Delete selected shape"
-            glyph="✕"
-            onClick={() => sceneEditor.deleteSelected()}
-            disabled={!sceneEditor.selectedShape}
-          />
-        </span>
-        <EditorToolbarColorControl sceneEditor={sceneEditor} />
-        {sceneEditor.lockError && (
-          <p role="alert" aria-live="assertive" className="editor-toolbar-lock-error">
-            {sceneEditor.lockError}
-          </p>
-        )}
-      </div>
+      {/* Issue #157: at >=1024px the toolbar stays in its original
+          position — outside the panel switcher (there isn't one at this
+          width), same placement as OnboardingHints above, visible
+          regardless of which of Details/Tools/Layers/Inspector is active.
+          Below 1024px it's rendered instead inside the Preview panel,
+          directly below the canvas — see `editorToolbar`'s own doc
+          comment above and the `{isNarrow && editorToolbar}` placement
+          further down. */}
+      {!isNarrow && editorToolbar}
 
       {isNarrow && <EditorPanelSwitcher activePanel={activePanel} onSelect={setActivePanel} />}
 
@@ -2193,6 +2216,15 @@ function EditorWorkspace() {
                     })()}
             </div>
           </div>
+          {/* Issue #157: the mobile placement of the always-visible
+              toolbar — directly below the canvas viewport, inside the
+              Preview panel itself, rather than above the Details/Tools/
+              Layers/Inspector switcher where it used to fall in mobile
+              document flow. Preview is never hidden (`panelHidden`
+              always returns false for it), so this is unconditionally
+              reachable at every narrow width, and never obscures the
+              canvas since it renders after it in normal document flow. */}
+          {isNarrow && editorToolbar}
         </section>
 
         {/* Task 94 (issue #94), point 1: project-metadata editing folded

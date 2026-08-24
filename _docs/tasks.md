@@ -2844,8 +2844,41 @@ rendering), and the canvas preserves the scene's own configured
 the existing `aspectRatio` + `maxWidth: 100%` mechanism, never
 stretched/cropped to force-fill the viewport). Full updated acceptance
 criteria filed on the issue.
-Status: PROPOSED — full groomed write-up filed as
-[#157](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/157).
+Status: COMPLETE
+GitHub issue: [#157](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/157).
+Resolution (2026-08-24): `.editor-workspace`'s grid-template-columns
+changed from a fixed `minmax(420px, 2fr) minmax(300px, 1fr)` to
+`minmax(420px, 1fr) fit-content(20%)` — the sidebar column now caps at
+20% of the workspace's own width (a percentage, not a fixed pixel value —
+a fixed-px cap was tried first and measured non-uniformly across widths)
+while sizing down to its own content when narrower, so it's genuinely
+content-responsive rather than a flat fraction; Preview absorbs whatever
+the sidebar doesn't need. Live-measured in a real browser: 1024px → 79.7%
+Preview, 1440px → 79.8%, 1920px → 79.8%, zero horizontal overflow at any
+width. Known caveat, documented directly in the CSS comment rather than
+filed separately: the Layers panel's "Add shape" buttons aren't wrapped
+in a `CollapsibleSection` and are always present, so with today's actual
+sidebar content mix the column sits pinned at the 20% cap regardless of
+Tools/Inspector collapse state — the mechanism itself is correct and will
+visibly reclaim more width the moment any row's content need drops below
+the cap. Mobile: the always-visible toolbar (task 112/#143) is now
+extracted into a single `editorToolbar` JSX variable rendered at exactly
+one of two positions — its original spot above `.editor-workspace` at
+`!isNarrow`, or nested inside the Preview panel directly below
+`.editor-scene-canvas-viewport` at `isNarrow` (<1024px) — with a CSS
+override so its margins don't double up with the panel's own padding in
+the nested position. Aspect-ratio preservation needed no change (already
+handled by issue #109's `aspectRatio`/`maxWidth: 100%` mechanism on
+`.editor-scene-canvas-viewport`); verified via a new test reading the
+computed inline style. `EditorPanelSwitcher` remains reachable below the
+repositioned canvas+toolbar, unchanged. `npm run
+typecheck`/`lint`/`format` clean; full frontend suite green (1695 tests;
+one `draftAutosave.test.ts` failure on the full run is the same
+documented pre-existing flake, confirmed passing 8/8 in isolation). New/
+updated tests cover the percentage-based fr-ratio regression (superseding
+issue #109's original fixed-ratio assertion), mobile toolbar DOM position
+at both widths, mobile aspect-ratio preservation, and mobile canvas
+interactivity (add/select/drag-move at 375px).
 
 ## 126. AI edit patches can silently touch shapes/layers the prompt never mentioned
 

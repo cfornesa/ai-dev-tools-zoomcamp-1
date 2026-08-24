@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -220,20 +220,37 @@ describe('EditorWorkspace responsive layout', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
 
-  // Issue #109: at >=1024px the CSS grid gives Preview a dominant column
+  // Issue #109 (revised by issue #157, owner correction 2026-08-24): at
+  // >=1024px the CSS grid gives Preview a dominant column
   // (`.editor-panel[data-panel='preview']`) and stacks Details/Tools/
   // Inspector in a narrower sidebar column instead of the previous
   // equal-width four-panel flex row — see index.css's `.editor-workspace`
   // comment. jsdom doesn't apply real CSS grid layout, so this can't
-  // measure rendered widths; it instead asserts the two things this test
+  // measure rendered widths; it instead asserts the things this test
   // suite CAN verify: every panel section still carries the `data-panel`
   // attribute the grid's column/row placement selectors key off of (so a
   // future rename of that attribute would be caught here), and the
-  // stylesheet itself actually defines a wider `fr` share for the preview
-  // column than the sidebar column. Real rendered-width/no-overflow
-  // verification is manual (see AGENTS.md's e2e/manual verification
-  // conventions) since jsdom cannot lay out CSS grid.
-  it('gives the Preview panel a dominant grid column in the desktop stylesheet', async () => {
+  // stylesheet itself actually defines the ~80/20 canvas-dominant column
+  // split — Preview as a greedy `minmax(420px, 1fr)` column and the
+  // sidebar as a `fit-content()`-sized column (issue #157: this is what
+  // makes the sidebar reclaim width as its content need shrinks — a fixed
+  // `Nfr` share, what issue #109 originally shipped, can never respond to
+  // how much content a column's rows actually need). A *percentage*
+  // fit-content limit (not a fixed pixel one) is required for the ratio to
+  // hold steady across widths — manually verified in a real browser (a
+  // static harness reproducing this stylesheet and DOM structure, since
+  // jsdom cannot lay out CSS grid): a fixed-px cap measured ~76% Preview
+  // at 1440px but only ~66% at 1024px (a constant-width sidebar eats a
+  // bigger share of a narrower workspace), while `fit-content(20%)`
+  // measured ~80% Preview at every one of 1024px/1440px/1920px. Also
+  // verified live that `fit-content()` must NOT be nested inside a
+  // `minmax()` max argument (`minmax(220px, fit-content(20%))` is invalid
+  // grid syntax per the spec and silently drops the whole declaration in
+  // real browsers — `CSS.supports(...)` returns `false` — even though
+  // nothing in this jsdom-only regex assertion below would ever catch
+  // that), which is why the sidebar column here is a bare
+  // `fit-content(20%)`, not wrapped in `minmax()`.
+  it('gives the Preview panel a dominant, sidebar-reclaiming grid column in the desktop stylesheet', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     setViewportWidth(1024);
@@ -247,12 +264,24 @@ describe('EditorWorkspace responsive layout', () => {
 
     const css = readFileSync(join(__dirname, '..', 'index.css'), 'utf-8');
     const gridMatch = css.match(
-      /\.editor-workspace\s*\{[^}]*grid-template-columns:\s*minmax\((\d+)px,\s*([\d.]+)fr\)\s+minmax\((\d+)px,\s*([\d.]+)fr\)/,
+      /\.editor-workspace\s*\{[^}]*grid-template-columns:\s*minmax\((\d+)px,\s*1fr\)\s+fit-content\((\d+)%\)/,
     );
     expect(gridMatch).not.toBeNull();
-    const previewFr = Number(gridMatch?.[2]);
-    const sidebarFr = Number(gridMatch?.[4]);
-    expect(previewFr).toBeGreaterThan(sidebarFr);
+    const previewMinPx = Number(gridMatch?.[1]);
+    const sidebarCapPct = Number(gridMatch?.[2]);
+    // The sidebar's fit-content cap stays comfortably within the owner's
+    // 75-85% desktop-dominant range (a 20% cap leaves Preview ~80%), and
+    // Preview keeps its own generous floor so it can never be squeezed
+    // below a usable size even at the narrow end of the desktop/tablet
+    // band this same column serves.
+    expect(sidebarCapPct).toBeGreaterThanOrEqual(15);
+    expect(sidebarCapPct).toBeLessThanOrEqual(25);
+    expect(previewMinPx).toBeGreaterThanOrEqual(400);
+    // Guards against the invalid-nested-minmax mistake this comment
+    // documents above: that form would still match a looser regex, so
+    // this explicitly asserts the sidebar's track function is bare (no
+    // `minmax(` immediately preceding it on the same declaration).
+    expect(css).not.toMatch(/grid-template-columns:[^;]*minmax\([^)]*fit-content/);
     expect(css).toMatch(/\.editor-panel\[data-panel='preview'\]\s*\{\s*grid-column:\s*1;/);
   });
 
@@ -341,6 +370,112 @@ describe('EditorWorkspace responsive layout', () => {
       expect(screen.getByRole('region', { name: 'Preview' })).toBeVisible();
     },
   );
+
+  // Issue #157 (owner correction, 2026-08-24): below the 1024px breakpoint
+  // the always-visible toolbar (task 112/#143) must sit directly above or
+  // below the canvas, not wherever it used to fall in mobile document flow
+  // relative to the Details/Tools/Layers/Inspector switcher. This
+  // implementation places it inside the Preview panel, immediately after
+  // the canvas viewport — asserted here two ways: the toolbar's closest
+  // `[data-panel]` ancestor is "preview" (not a page-level sibling of the
+  // switcher), and it appears exactly once (never duplicated between the
+  // desktop and mobile render positions).
+  it('nests the toolbar inside the Preview panel, directly below the canvas, below 1024px', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    setViewportWidth(375);
+
+    renderWorkspace();
+
+    await screen.findByRole('tablist', { name: /editor panels/i });
+    const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
+    expect(toolbars).toHaveLength(1);
+    const toolbar = toolbars[0];
+    expect(toolbar.closest('[data-panel]')).toHaveAttribute('data-panel', 'preview');
+
+    const canvasViewport = screen.getByTestId('scene-canvas-viewport');
+    // The toolbar must follow the canvas viewport in document order (i.e.
+    // sit "below" it, this implementation's chosen side) rather than
+    // precede it — DOCUMENT_POSITION_FOLLOWING (4) means `toolbar` comes
+    // after `canvasViewport`.
+    // eslint-disable-next-line no-bitwise
+    expect(canvasViewport.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  // Issue #157: at >=1024px the toolbar keeps its original placement — a
+  // page-level sibling of `.editor-workspace`, not nested inside any panel
+  // — since the desktop/tablet layout already shows every panel side by
+  // side and has no switcher for the toolbar to get lost above.
+  it('keeps the toolbar outside any panel at >=1024px', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    setViewportWidth(1024);
+
+    renderWorkspace();
+
+    await screen.findByRole('region', { name: 'Preview' });
+    const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
+    expect(toolbars).toHaveLength(1);
+    expect(toolbars[0].closest('[data-panel]')).toBeNull();
+  });
+
+  // Issue #157: the canvas viewport's aspect-ratio-preserving sizing
+  // (`aspectRatio` + `maxWidth: 100%`, shipped in issue #109) must survive
+  // unchanged at mobile width — verified by reading the actual inline
+  // style this component computes from the scene's own
+  // `canvas.width`/`canvas.height` (800x600 here, a 4:3 ratio), rather
+  // than a fixed/different ratio forced to fill the viewport.
+  it('preserves the scene canvas aspect ratio at mobile width', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    setViewportWidth(375);
+
+    renderWorkspace();
+
+    const canvasViewport = await screen.findByTestId('scene-canvas-viewport');
+    expect(canvasViewport.style.aspectRatio).toBe('800 / 600');
+    expect(canvasViewport.style.maxWidth).toBe('100%');
+  });
+
+  // Issue #157: "canvas is the widest element" was the original (owner-
+  // rejected) criterion; the corrected scope requires the canvas to stay
+  // genuinely interactive at mobile width, not just render. This mirrors
+  // EditorWorkspace.transform.test.tsx's own move-drag assertion, just at
+  // a 375px viewport instead of the suite's implicit desktop default,
+  // confirming the Task 26 pointer handlers (add, select, and drag-to-
+  // move) still work once the toolbar/layout changes above land.
+  it('keeps the canvas selectable and draggable at mobile width', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    setViewportWidth(375);
+
+    renderWorkspace();
+
+    // "Add circle" lives in the Layers panel (issue #131), which isn't the
+    // switcher's default active tab ('tools') — switch to it first, same
+    // as a real mobile user would tap the Layers tab before adding a shape.
+    await screen.findByRole('tab', { name: 'Layers' });
+    fireEvent.click(screen.getByRole('tab', { name: 'Layers' }));
+    await screen.findByRole('button', { name: 'Add circle' });
+    fireEvent.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const canvas = screen.getByTestId('scene-canvas');
+    canvas.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 }) as DOMRect;
+
+    // Added circle is auto-selected with move/resize/rotate handles, same
+    // as the desktop-width behavior this issue must not regress.
+    expect(screen.getByTestId('shape-handle-move')).toBeInTheDocument();
+
+    fireEvent.pointerDown(canvas, { clientX: 400, clientY: 300 });
+    fireEvent.pointerMove(window, { clientX: 450, clientY: 260 });
+    fireEvent.pointerUp(window, { clientX: 450, clientY: 260 });
+
+    const liveSummary = canvas.querySelector('.editor-scene-shape') as HTMLElement;
+    expect(liveSummary.textContent).toContain('x=450, y=260');
+  });
 });
 
 describe('EditorWorkspace keyboard accessibility', () => {

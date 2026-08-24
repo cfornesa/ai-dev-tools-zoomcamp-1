@@ -3080,3 +3080,18 @@ mobile-responsiveness audit, per that issue's explicit guidance to file
 this as a separate follow-up rather than fold a substantial, risky
 pointer-drag reimplementation into a CSS/styling audit.
 GitHub issue: [#161](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/161).
+
+## 130. Frontend production bundle exceeds 500kB (1.99MB main chunk) with no code-splitting
+
+Goal: Reduce the main JS chunk (`npm run build` currently emits a single
+1.99MB/539KB-gzipped chunk, past Vite's own 500kB warning threshold) via
+`React.lazy`/dynamic `import()` for routes or heavy subsystems not needed
+on first paint (editor graph view, export dialog, AI proposal panel),
+mirroring the dynamic-import pattern this codebase already uses for
+`@mediapipe/tasks-vision` (already its own `vision_bundle` chunk).
+Discovered during a 2026-08-24 production-readiness pass — the app builds
+and functions correctly; this is a load-performance concern (first-time
+visitor pays ~540KB gzipped before the app is interactive), not a
+correctness blocker, and not a new regression from this session's work.
+Status: PROPOSED.
+GitHub issue: [#162](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/162).

@@ -38,6 +38,14 @@ export type CameraControlProps = {
    * stream. Optional and purely additive, matching `onStatusChange`'s
    * existing pattern. */
   onFrame?: (frame: TrackingFrame) => void;
+  /** Task 110 (issue #141): forwards the live camera `MediaStream` this
+   * control's provider acquires (or `null` once it's released), so a
+   * caller (`EditorWorkspace.tsx`'s Preview overlay) can display the same
+   * feed without requesting a second `getUserMedia` stream. Optional and
+   * purely additive, matching `onFrame`/`onStatusChange`'s existing
+   * pattern. A provider with no `onStream` method (e.g. a test double)
+   * simply never triggers this. */
+  onStreamChange?: (stream: MediaStream | null) => void;
   /** Test seam for `PERMISSION_HINT_DELAY_MS` (issue #132) — how long
    * `status` must stay `'starting'` before the permission-prompt hint
    * appears. Defaults to the real delay; tests override it with a small
@@ -120,10 +128,13 @@ function CameraControl({
   isSecureContext = () => window.isSecureContext,
   onStatusChange,
   onFrame,
+  onStreamChange,
   permissionHintDelayMs = PERMISSION_HINT_DELAY_MS,
 }: CameraControlProps) {
   const onFrameRef = useRef(onFrame);
   onFrameRef.current = onFrame;
+  const onStreamChangeRef = useRef(onStreamChange);
+  onStreamChangeRef.current = onStreamChange;
   const providerRef = useRef<TrackingProvider | null>(null);
   const [status, setStatus] = useState<CameraStatus>('idle');
   const [failure, setFailure] = useState<CameraFailureCategory | null>(null);
@@ -165,6 +176,11 @@ function CameraControl({
       provider.onError((error: TrackingProviderError) => {
         setFailure(categorizeProviderError(error));
         setStatus('error');
+      });
+      // Task 110: forward the provider's camera stream, if it exposes one
+      // (see `onStream`'s doc comment on the `TrackingProvider` interface).
+      provider.onStream?.((stream) => {
+        onStreamChangeRef.current?.(stream);
       });
       providerRef.current = provider;
     }

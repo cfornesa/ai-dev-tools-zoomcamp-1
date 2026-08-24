@@ -161,4 +161,18 @@ export interface TrackingProvider {
    * errors are never delivered as, or folded into, frames. Returns an
    * `Unsubscribe` function. */
   onError(listener: (error: TrackingProviderError) => void): Unsubscribe;
+  /** Task 110 (issue #141): registers `listener` to be called with the
+   * raw camera `MediaStream` this provider acquires internally for
+   * tracking, or `null` once that stream is released (on `stop()`, a
+   * mid-`start()` failure, or a superseded `start()` call) — so a caller
+   * (`CameraControl`'s Preview overlay) can display the same live camera
+   * feed the tracking pipeline already has open, without requesting a
+   * second `getUserMedia` stream. Optional: a provider with no camera of
+   * its own (e.g. a mock or demo provider) simply never calls `listener`.
+   * Never emits a frame's pixel data or any derived image — only the
+   * `MediaStream` handle itself, consistent with this contract's
+   * hardware-independence (a provider without a camera has nothing to
+   * emit here). Returns an `Unsubscribe` function, mirroring
+   * `onFrame`/`onError`. */
+  onStream?(listener: (stream: MediaStream | null) => void): Unsubscribe;
 }

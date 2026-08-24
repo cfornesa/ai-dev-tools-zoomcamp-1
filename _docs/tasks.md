@@ -1824,14 +1824,50 @@ showing it in standalone HTML export
 persisting the opacity value, an un-mirror toggle, and independent
 reposition/resize of the overlay —
 [#147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/147).
-Status: PROPOSED
+Status: ACTIVE
 GitHub issue: [#141](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/141)
 Discovery gate: Searched `_docs/tasks.md` and existing GitHub issues for a
 camera-overlay/video-preview task; none exists. New, not a duplicate.
 Newly discovered out-of-scope work reconciled by filing and linking
 #145/#146/#147 above (grooming's discovery gate).
-Next action: Implement per issue #141's acceptance criteria, starting with
-the `TrackingProvider`/`CameraControl` stream-exposure design noted above.
+Resolution: Extended the `TrackingProvider` contract
+(`frontend/src/tracking/types.ts`) with an optional `onStream` channel and
+implemented it in `mediapipeProvider.ts` (`emitStream` on acquisition,
+`null` on every release path via the existing `stopStream`) — no second
+`getUserMedia` call, and providers without a camera (mocks) simply never
+call it. `CameraControl.tsx` gained an optional `onStreamChange` prop that
+forwards `provider.onStream?.(...)`. `EditorWorkspace.tsx` wires that into
+new `cameraStream`/`cameraOverlayOpacity` state: a `<video>` element is
+rendered as the first child of `.editor-scene-canvas` (CSS `zIndex: -2`,
+behind the p5 mount div's `-1`) only while `cameraStatus === 'active'` and
+a stream is present, mirrored (`scaleX(-1)`), `pointerEvents: 'none'`, and
+never drawn into the p5 canvas — so it stays structurally absent from
+`captureSocialThumbnail.ts`/`generateSocialThumbnailZip.ts`. A labeled
+native `<input type="range">` (0–100%, default 50%, resets on every fresh
+`'active'` transition, not persisted) sits above the canvas whenever
+`cameraStatus === 'active'`, changing `cameraOverlayOpacity` live via
+React state (no extra render delay). Stopping/erroring the camera removes
+both immediately (state-driven, no frozen frame). Test coverage: 5 new
+`onStream` cases in `mediapipeProvider.test.ts`, 2 new forwarding cases in
+`CameraControl.test.tsx`, and a new
+`EditorWorkspace.cameraOverlay.test.tsx` (9 cases: idle/starting hide the
+overlay, active+stream shows it at the 50% default, slider changes opacity
+live and is keyboard-operable via native range semantics, opacity resets
+on re-activation, Stop/error remove both immediately, no `previewError`
+side effect, scene shapes stay rendered). `make frontend-test` is green at
+1609/1609 (was 1593), plus `typecheck`/`lint`/`format:check` all pass.
+Live-camera-hardware verification (an actual `getUserMedia` prompt showing
+real mirrored video, matching task 109/#140's live-production check) was
+not performed in this session — no camera hardware was available in this
+environment — so that residual manual check is still open before this can
+be considered fully verified end-to-end; every acceptance criterion
+checkable without real camera hardware passes. Leaving Status ACTIVE
+(not COMPLETE) until that live check is done.
+Next action: A live-camera pass (real `getUserMedia`, real MediaPipe
+frames) against the running app, confirming the overlay actually renders
+mirrored video behind the shapes and the slider visibly changes its
+opacity — the one acceptance criterion this session's automated coverage
+cannot exercise.
 
 ## 111. Make every shape independently manageable as its own layer
 Goal: Every shape is enforced as its own independent layer at the

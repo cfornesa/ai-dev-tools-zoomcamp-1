@@ -1040,6 +1040,22 @@ textarea:disabled {
   max-width: 60ch;
 }
 
+/* Task 110 (issue #141): the camera overlay opacity slider, shown only
+   while the live camera is active — see EditorWorkspace.tsx's
+   `editor-camera-overlay-control`/`editor-camera-overlay`. */
+.editor-camera-overlay-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.editor-camera-overlay-control input[type='range'] {
+  width: 160px;
+}
+
 .editor-shape-handle {
   position: absolute;
   box-sizing: border-box;

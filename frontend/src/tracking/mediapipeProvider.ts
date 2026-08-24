@@ -207,6 +207,7 @@ export function createMediaPipeTrackingProvider(
 
   const frameListeners = new Set<(frame: TrackingFrame) => void>();
   const errorListeners = new Set<(error: TrackingProviderError) => void>();
+  const streamListeners = new Set<(stream: MediaStream | null) => void>();
 
   function emitError(message: string, cause?: unknown): void {
     const error: TrackingProviderError = { message, timestamp: now(), cause };
@@ -218,10 +219,15 @@ export function createMediaPipeTrackingProvider(
     for (const listener of frameListeners) listener(sanitized);
   }
 
+  function emitStream(nextStream: MediaStream | null): void {
+    for (const listener of streamListeners) listener(nextStream);
+  }
+
   function stopStream(): void {
     if (!stream) return;
     for (const track of stream.getTracks()) track.stop();
     stream = null;
+    emitStream(null);
   }
 
   function detachVideo(): void {
@@ -292,6 +298,7 @@ export function createMediaPipeTrackingProvider(
       return;
     }
     stream = acquiredStream;
+    emitStream(acquiredStream);
 
     const videoElement = createVideoElement();
     videoElement.muted = true;
@@ -483,5 +490,10 @@ export function createMediaPipeTrackingProvider(
     return () => errorListeners.delete(listener);
   }
 
-  return { start, stop, onFrame, onError };
+  function onStream(listener: (stream: MediaStream | null) => void): Unsubscribe {
+    streamListeners.add(listener);
+    return () => streamListeners.delete(listener);
+  }
+
+  return { start, stop, onFrame, onError, onStream };
 }

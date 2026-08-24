@@ -38,7 +38,16 @@ function createFakeProvider() {
     };
   });
 
-  const provider: TrackingProvider = { start, stop, onFrame, onError };
+  const streamListeners: Array<(stream: MediaStream | null) => void> = [];
+  const onStream = vi.fn((listener: (stream: MediaStream | null) => void) => {
+    streamListeners.push(listener);
+    return () => {
+      const index = streamListeners.indexOf(listener);
+      if (index >= 0) streamListeners.splice(index, 1);
+    };
+  });
+
+  const provider: TrackingProvider = { start, stop, onFrame, onError, onStream };
 
   return {
     provider,
@@ -46,6 +55,7 @@ function createFakeProvider() {
     stop,
     onFrame,
     onError,
+    onStream,
     frameListenerCount: () => frameListeners.length,
     errorListenerCount: () => errorListeners.length,
     emitFrame: (frame: TrackingFrame = { timestamp: 1, hands: [], events: [] }) => {
@@ -56,6 +66,11 @@ function createFakeProvider() {
     emitError: (error: TrackingProviderError) => {
       act(() => {
         for (const listener of [...errorListeners]) listener(error);
+      });
+    },
+    emitStream: (stream: MediaStream | null) => {
+      act(() => {
+        for (const listener of [...streamListeners]) listener(stream);
       });
     },
   };
@@ -291,5 +306,47 @@ describe('CameraControl', () => {
     fake.emitFrame();
     await user.click(screen.getByRole('button', { name: 'Stop camera' }));
     expect(handButton()).toBeEnabled();
+  });
+
+  it('forwards the provider stream to onStreamChange, and providers with no onStream never call it (Task 110, issue #141)', async () => {
+    const user = userEvent.setup({ delay: null });
+    const fake = createFakeProvider();
+    const onStreamChange = vi.fn();
+    render(
+      <CameraControl
+        createProvider={() => fake.provider}
+        isSecureContext={secureContext}
+        onStreamChange={onStreamChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Enable camera' }));
+    const fakeStream = {} as MediaStream;
+    fake.emitStream(fakeStream);
+    expect(onStreamChange).toHaveBeenCalledWith(fakeStream);
+
+    fake.emitStream(null);
+    expect(onStreamChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it('never throws when the provider has no onStream method', async () => {
+    const user = userEvent.setup({ delay: null });
+    const start = vi.fn();
+    const stop = vi.fn();
+    const onFrame = vi.fn(() => () => {});
+    const onError = vi.fn(() => () => {});
+    const noStreamProvider: TrackingProvider = { start, stop, onFrame, onError };
+    const onStreamChange = vi.fn();
+
+    render(
+      <CameraControl
+        createProvider={() => noStreamProvider}
+        isSecureContext={secureContext}
+        onStreamChange={onStreamChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Enable camera' }));
+    expect(onStreamChange).not.toHaveBeenCalled();
   });
 });

@@ -318,6 +318,36 @@ function EditorWorkspace() {
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
   const [pinchEventCount, setPinchEventCount] = useState(0);
 
+  // Task 110 (issue #141): the live camera `MediaStream` `CameraControl`'s
+  // tracking provider already has open, forwarded here so the Preview
+  // overlay can display it via a plain <video> element — no second
+  // `getUserMedia` call. `cameraOverlayOpacity` is session-only state (not
+  // persisted; resets to the default below every time the camera reaches
+  // 'active') per the issue's explicit scope.
+  const CAMERA_OVERLAY_DEFAULT_OPACITY = 0.5;
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraOverlayOpacity, setCameraOverlayOpacity] = useState(CAMERA_OVERLAY_DEFAULT_OPACITY);
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (cameraStatus === 'active') {
+      setCameraOverlayOpacity(CAMERA_OVERLAY_DEFAULT_OPACITY);
+    }
+  }, [cameraStatus]);
+
+  useEffect(() => {
+    const videoEl = cameraVideoRef.current;
+    if (!videoEl) return;
+    videoEl.srcObject = cameraStream;
+    if (cameraStream) {
+      void videoEl.play().catch(() => {
+        // Autoplay can be rejected in some environments; the video element
+        // still renders (just paused) and this is not a scene-breaking
+        // failure worth surfacing as `previewError`.
+      });
+    }
+  }, [cameraStream]);
+
   // Task 83 (issue #83): the shared "current tracking frame" mailbox the
   // live preview runtime loop reads from — see `previewTrackingSource.ts`'s
   // own doc comment for why this taps into the SAME `CameraControl`/
@@ -1271,6 +1301,24 @@ function EditorWorkspace() {
               Couldn't render the preview: {previewError}
             </p>
           )}
+          {/* Task 110 (issue #141): the camera overlay opacity slider,
+              visible only while the live camera is active — see the
+              <video> overlay itself below, inside `.editor-scene-canvas`. */}
+          {cameraStatus === 'active' && (
+            <div className="editor-camera-overlay-control">
+              <label htmlFor="editor-camera-overlay-opacity">Camera overlay opacity</label>
+              <input
+                id="editor-camera-overlay-opacity"
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={Math.round(cameraOverlayOpacity * 100)}
+                aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                onChange={(event) => setCameraOverlayOpacity(Number(event.target.value) / 100)}
+              />
+            </div>
+          )}
           <div
             ref={canvasRef}
             data-testid="scene-canvas"
@@ -1303,6 +1351,34 @@ function EditorWorkspace() {
             onPointerLeave={handleCanvasPointerLeave}
             onDoubleClick={handleCanvasDoubleClick}
           >
+            {/* Task 110 (issue #141): the live camera feed, composited via
+                CSS behind the p5 canvas (zIndex -2 vs. the mount div's -1
+                below) — never drawn into the p5 canvas itself, so it stays
+                structurally absent from any canvas-only capture path
+                (thumbnails, exports). Mirrored (selfie view) by default;
+                `pointerEvents: 'none'` keeps shape click/drag unaffected. */}
+            {cameraStatus === 'active' && cameraStream && (
+              <video
+                ref={cameraVideoRef}
+                data-testid="camera-overlay-video"
+                aria-hidden="true"
+                muted
+                playsInline
+                autoPlay
+                className="editor-camera-overlay"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: -2,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transform: 'scaleX(-1)',
+                  opacity: cameraOverlayOpacity,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
             {/* Task 25: the p5.js preview mounts its <canvas> into this div.
                 React is never given any children to reconcile here (no JSX
                 children below), so it never touches — or fights over —
@@ -1738,6 +1814,7 @@ function EditorWorkspace() {
                 trackingSourceRef.current.setCameraActive(status === 'active');
               }}
               onFrame={(frame) => trackingSourceRef.current.reportCameraFrame(frame)}
+              onStreamChange={setCameraStream}
             />
           </CollapsibleSection>
 

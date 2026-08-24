@@ -396,6 +396,67 @@ describe('createMediaPipeTrackingProvider cleanup', () => {
   });
 });
 
+describe('createMediaPipeTrackingProvider onStream (Task 110, issue #141)', () => {
+  it('emits the acquired camera stream once getUserMedia resolves, before the recognizer is ready', async () => {
+    const harness = createHarness();
+    const streams: (MediaStream | null)[] = [];
+    harness.provider.onStream?.((stream) => streams.push(stream));
+
+    harness.provider.start();
+    await harness.flushMicrotasks();
+
+    expect(streams).toHaveLength(1);
+    expect(streams[0]).not.toBeNull();
+  });
+
+  it('emits null once stop() releases the stream', async () => {
+    const harness = createHarness();
+    const streams: (MediaStream | null)[] = [];
+    harness.provider.onStream?.((stream) => streams.push(stream));
+
+    harness.provider.start();
+    await harness.flushMicrotasks();
+    harness.provider.stop();
+
+    expect(streams).toEqual([streams[0], null]);
+  });
+
+  it('never emits a stream if getUserMedia rejects', async () => {
+    const harness = createHarness({ getUserMedia: vi.fn().mockRejectedValue(new Error('denied')) });
+    const streams: (MediaStream | null)[] = [];
+    harness.provider.onStream?.((stream) => streams.push(stream));
+
+    harness.provider.start();
+    await harness.flushMicrotasks();
+
+    expect(streams).toEqual([]);
+  });
+
+  it('a listener registered after stop() receives nothing retroactively (no replay)', async () => {
+    const harness = createHarness();
+    harness.provider.start();
+    await harness.flushMicrotasks();
+    harness.provider.stop();
+
+    const streams: (MediaStream | null)[] = [];
+    harness.provider.onStream?.((stream) => streams.push(stream));
+    expect(streams).toEqual([]);
+  });
+
+  it('unsubscribing stops further stream notifications', async () => {
+    const harness = createHarness();
+    const streams: (MediaStream | null)[] = [];
+    const unsubscribe = harness.provider.onStream?.((stream) => streams.push(stream));
+
+    harness.provider.start();
+    await harness.flushMicrotasks();
+    unsubscribe?.();
+    harness.provider.stop();
+
+    expect(streams).toEqual([streams[0]]);
+  });
+});
+
 describe('createMediaPipeTrackingProvider failure routing', () => {
   it('routes unsupported-browser conditions to onError without calling getUserMedia', () => {
     const harness = createHarness({ isSupported: () => false });

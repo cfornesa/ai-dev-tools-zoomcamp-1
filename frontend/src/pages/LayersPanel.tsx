@@ -151,9 +151,13 @@ function MoveControls({
   const [layerTarget, setLayerTarget] = useState(itemLayerId);
   const [groupTarget, setGroupTarget] = useState(currentGroupId ?? '');
 
-  const groupOptions = sceneEditor.groups.filter(
-    (g) => g.layerId === itemLayerId && g.id !== itemId,
-  );
+  // Task 111 (issue #142): `moveItemToGroup` no longer requires the moved
+  // item and target group to share a layerId (every shape is its own
+  // independent layer now, so that precondition would reject nearly every
+  // move) -- this option list must offer every group, not just ones on
+  // `itemLayerId`, to stay in sync with what the underlying mutation
+  // actually allows.
+  const groupOptions = sceneEditor.groups.filter((g) => g.id !== itemId);
 
   return (
     <span className="editor-outline-move-controls">
@@ -460,6 +464,32 @@ export function planDrop(
     return {
       kind: 'reorderItem',
       itemId: dragId,
+      direction: result.direction,
+      steps: result.steps,
+    };
+  }
+
+  // Task 111 (issue #142): two top-level shapes now almost always sit on
+  // two DIFFERENT layers (every shape is its own independent layer), so
+  // the `dragContainer === targetContainer` branch above -- which used to
+  // catch "reorder two shapes on the same layer" -- can no longer match
+  // for shapes the way it still does for groups (which may still share a
+  // layerId). Dragging one top-level shape onto another now reorders
+  // their two layers instead, mirroring `moveItem`'s identical shift (see
+  // that function's doc comment in sceneOutline.ts).
+  if (
+    dragRow.kind === 'shape' &&
+    targetRow.kind === 'shape' &&
+    dragContainer.startsWith('layer:') &&
+    targetContainer.startsWith('layer:') &&
+    zone !== 'into'
+  ) {
+    const list = outline.filter((r) => r.kind === 'layer').map((r) => r.id);
+    const result = computeSteps(list, dragRow.layerId, targetRow.layerId, zone);
+    if (!result || result.steps === 0) return null;
+    return {
+      kind: 'reorderLayer',
+      layerId: dragRow.layerId,
       direction: result.direction,
       steps: result.steps,
     };
@@ -812,6 +842,24 @@ function OutlineRowItem({
       {inherited.length > 0 ? (
         <span className="editor-outline-inherited-state"> ({inherited.join(', ')})</span>
       ) : null}
+      {/* Task 111 (issue #142): a shape's own visibility/lock toggle,
+          mirroring the layer/group rows' existing pattern — this reflects
+          and mutates the shape's OWN flag (`row.visible`/`row.locked`),
+          not the cascaded `inherited` state shown just above. */}
+      <button
+        type="button"
+        aria-pressed={row.visible}
+        onClick={() => sceneEditor.toggleShapeVisible(row.id)}
+      >
+        {row.visible ? 'Visible' : 'Hidden'}
+      </button>
+      <button
+        type="button"
+        aria-pressed={row.locked}
+        onClick={() => sceneEditor.toggleShapeLocked(row.id)}
+      >
+        {row.locked ? 'Locked' : 'Unlocked'}
+      </button>
       <ShapeColorSwatch row={row} sceneEditor={sceneEditor} />
       <button
         type="button"

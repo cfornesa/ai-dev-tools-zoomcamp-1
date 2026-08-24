@@ -18,6 +18,7 @@ import {
   triggerZipDownload,
 } from '../export/generateSocialThumbnailZip';
 import { validateProjectMetadataForPublish } from '../validation/projectMetadata';
+import { normalizeSceneLayers } from '../validation/scene';
 import { useVersionHistory } from './useVersionHistory';
 
 /**
@@ -210,7 +211,12 @@ function ExportConfigDialog({
     getSceneVersion(projectId, selectedVersionId)
       .then((version) => {
         if (cancelled) return;
-        setSceneDetail(version.scene_json);
+        // Task 111 (issue #142): this version may predate the shared-
+        // layerId invariant `generateHtmlExport`'s own `buildScenePlan`
+        // call now enforces -- normalize first so an existing legacy
+        // scene doesn't spuriously fail export compatibility checking.
+        const { scene: normalizedScene } = normalizeSceneLayers(version.scene_json);
+        setSceneDetail(normalizedScene);
         setSceneDetailState('ready');
       })
       .catch(() => {

@@ -90,9 +90,15 @@ describe('duplicateShape', () => {
   });
 
   it('produces a schema-valid duplicate alongside its source', () => {
+    // Task 111 (issue #142): duplicateShape itself only copies position/id
+    // -- the caller (useSceneEditor.ts's duplicateSelected) is responsible
+    // for giving the copy its own new layer, since every shape needs one.
+    // baseScene's second layer here stands in for that caller-assigned layer.
     const source = createShape('line', 'layer-1', CANVAS);
-    const copy = duplicateShape(source);
-    const result = validateScene(baseScene([source, copy]));
+    const copy = { ...duplicateShape(source), layerId: 'layer-2' };
+    const scene = baseScene([source, copy]);
+    scene.layers.push({ id: 'layer-2', name: 'Layer 2', order: 1, visible: true, locked: false });
+    const result = validateScene(scene);
     expect(result.valid).toBe(true);
   });
 });

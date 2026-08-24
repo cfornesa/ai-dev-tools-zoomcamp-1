@@ -6,6 +6,7 @@ import { forkProject, getPublicProject, type PublicProject } from '../api/projec
 import { useAuth } from '../auth/useAuth';
 import CameraControl from '../components/CameraControl';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
+import { normalizeSceneLayers } from '../validation/scene';
 import DemoControlsPanel from './DemoControlsPanel';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
@@ -127,7 +128,13 @@ function PublicProjectViewer() {
   useEffect(() => {
     if (!previewRef.current || !project?.current_version) return;
     try {
-      previewRef.current.render(project.current_version.scene_json);
+      // Task 111 (issue #142): a published project's current version may
+      // predate the shared-layerId invariant `render()`'s own
+      // `validateScene` call now enforces -- normalize first so a legacy
+      // public scene still renders, matching `useEditorWorkspaceState.ts`'s
+      // identical normalization on the editor's load path.
+      const { scene: normalizedScene } = normalizeSceneLayers(project.current_version.scene_json);
+      previewRef.current.render(normalizedScene);
       setPreviewError(null);
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');

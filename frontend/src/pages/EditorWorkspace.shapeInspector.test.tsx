@@ -196,7 +196,17 @@ describe('ShapeInspectorPanel: selection states', () => {
     await loadReadyWorkspace();
     await addAndSelectCircle();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Visible' })); // toggles layer 1 to Hidden
+    // Task 111 (issue #142): addShape gives the circle its own fresh
+    // layer ("Layer 2", after the scene's pre-existing "Layer 1") -- more
+    // than one "Visible" button now exists, so hide that one specifically.
+    const circleLayerRow = screen
+      .getAllByRole('listitem')
+      .find(
+        (r) =>
+          (r as HTMLElement).dataset.outlineKind === 'layer' &&
+          within(r).queryByDisplayValue('Layer 2'),
+      )!;
+    fireEvent.click(within(circleLayerRow).getByRole('button', { name: 'Visible' }));
 
     expect(screen.getByText(/This shape is currently hidden/)).toBeInTheDocument();
     // Fields still render and remain editable while hidden.
@@ -224,7 +234,9 @@ describe('ShapeInspectorPanel: selection breadcrumb (Task 80 / issue #110)', () 
     await loadReadyWorkspace();
     await addAndSelectCircle();
 
-    expect(screen.getByLabelText('Selected item location')).toHaveTextContent('Layer 1');
+    // Task 111 (issue #142): addShape gives the circle its own fresh
+    // layer ("Layer 2"), not the scene's pre-existing "Layer 1".
+    expect(screen.getByLabelText('Selected item location')).toHaveTextContent('Layer 2');
     expect(screen.getByLabelText('Selected item location')).toHaveTextContent('Circle 1');
   });
 
@@ -243,8 +255,11 @@ describe('ShapeInspectorPanel: selection breadcrumb (Task 80 / issue #110)', () 
       .find((r) => r.dataset.outlineKind === 'shape')!;
     fireEvent.click(within(shapeButton).getByRole('button', { name: /^Circle 1$/ }));
 
+    // Task 111 (issue #142): the group adopts the first selected item's
+    // (the circle's) own fresh layer, "Layer 2" -- not the scene's
+    // pre-existing "Layer 1".
     const breadcrumb = screen.getByLabelText('Selected item location');
-    expect(breadcrumb).toHaveTextContent('Layer 1');
+    expect(breadcrumb).toHaveTextContent('Layer 2');
     expect(breadcrumb).toHaveTextContent('Group 1');
     expect(breadcrumb).toHaveTextContent('Circle 1');
   });

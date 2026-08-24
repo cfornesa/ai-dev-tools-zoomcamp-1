@@ -362,8 +362,16 @@ describe('EditorWorkspace scene outline: inherited visibility/lock legibility (T
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
 
+    // Task 111 (issue #142): addShape gives the circle its own fresh
+    // layer ("Layer 2", created after the scene's pre-existing "Layer 1")
+    // -- the new group adopts the first selected item's (the circle's)
+    // layerId, so that's the group's actual ancestor layer row, not
+    // whichever layer row happens to come first.
     const rows = within(outlineList()).getAllByRole('listitem');
-    const layerRow = rows.find((r) => r.dataset.outlineKind === 'layer')!;
+    const layerRow = rows.find(
+      (r) =>
+        r.dataset.outlineKind === 'layer' && within(r).queryByLabelText('Layer name for Layer 2'),
+    )!;
     const groupRow = rows.find((r) => r.dataset.outlineKind === 'group')!;
     expect(within(groupRow).queryByText(/hidden \(from an ancestor\)/)).not.toBeInTheDocument();
 
@@ -855,7 +863,14 @@ describe('EditorWorkspace scene outline: locked-row drag rejection (issue #127)'
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Unlocked' })); // locks the only layer
+    // Task 111 (issue #142): addShape gives the circle its own fresh
+    // layer ("Layer 2", after the scene's pre-existing "Layer 1") -- lock
+    // that one specifically, since more than one "Unlocked" button now
+    // exists.
+    const circleLayerRow = outlineRows()
+      .filter((r) => r.dataset.outlineKind === 'layer')
+      .find((r) => within(r).queryByDisplayValue('Layer 2'))!;
+    await user.click(within(circleLayerRow).getByRole('button', { name: 'Unlocked' }));
 
     const shapeRow = outlineRows().find((r) => r.dataset.outlineKind === 'shape')!;
     expect(shapeRow).toHaveAttribute('draggable', 'false');
@@ -872,7 +887,9 @@ describe('EditorWorkspace scene outline: locked-row drag rejection (issue #127)'
     await user.click(within(layer2RowInit).getByRole('button', { name: 'Unlocked' }));
     expect(within(layer2RowInit).getByRole('button', { name: 'Locked' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Add circle' })); // on Layer 1
+    // Task 111 (issue #142): addShape gives the circle its own fresh
+    // layer ("Layer 3", not "Layer 1" as this comment used to assume).
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
     const shapeRow = outlineRows().find((r) => r.dataset.outlineKind === 'shape')!;
     const layer2Row = outlineRows()
@@ -881,14 +898,22 @@ describe('EditorWorkspace scene outline: locked-row drag rejection (issue #127)'
 
     fireDrag(shapeRow, layer2Row, 20);
 
+    // Rejected: Layer 2's own section (between its row and the next layer
+    // row) still contains no shape row -- the circle wasn't reparented
+    // onto it. (It stays on its own "Layer 3", which happens to render
+    // after Layer 2 regardless of whether the drop succeeded, since it
+    // was already created after Layer 2 -- so row *position* alone can't
+    // prove rejection here the way it could when every shape shared one
+    // layer.)
     const rowsAfter = outlineRows();
     const layer2Index = rowsAfter.findIndex(
       (r) => r.dataset.outlineKind === 'layer' && within(r).queryByDisplayValue('Layer 2'),
     );
-    const shapeIndex = rowsAfter.findIndex((r) => r.dataset.outlineKind === 'shape');
-    // Rejected: the shape stays under Layer 1 (before Layer 2 in the
-    // outline), not reparented onto the locked layer.
-    expect(shapeIndex).toBeLessThan(layer2Index);
+    const nextLayerIndex = rowsAfter.findIndex(
+      (r, i) => i > layer2Index && r.dataset.outlineKind === 'layer',
+    );
+    const layer2Section = rowsAfter.slice(layer2Index + 1, nextLayerIndex);
+    expect(layer2Section.some((r) => r.dataset.outlineKind === 'shape')).toBe(false);
     expect(rowsAfter.filter((r) => r.dataset.outlineKind === 'shape')).toHaveLength(1);
     expect(sceneEditorOutlineErrorAbsent()).toBe(true);
   });
@@ -920,33 +945,36 @@ describe('EditorWorkspace scene outline: no duplicate/missing rows (issue #127)'
     await user.click(screen.getByRole('button', { name: 'Add layer' }));
     assertNoDuplicates(2); // + Layer 2
 
+    // Task 111 (issue #142): addShape gives every new shape its own fresh
+    // layer too, so each "Add circle"/"Add rectangle" below adds TWO rows
+    // (the shape and its own new layer), not one.
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    assertNoDuplicates(4); // + 2 shapes on Layer 1
+    assertNoDuplicates(6); // + 2 shapes, each on its own new layer
 
     const checkboxes = within(outlineList()).getAllByRole('checkbox');
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
-    assertNoDuplicates(5); // 2 layers + 1 group + 2 nested shapes
+    assertNoDuplicates(7); // 4 layers + 1 group + 2 nested shapes
 
     const shapesInGroup = outlineRows().filter((r) => r.dataset.outlineKind === 'shape');
     fireDrag(shapesInGroup[1], shapesInGroup[0], 5); // reorder within the group
-    assertNoDuplicates(5);
+    assertNoDuplicates(7);
 
-    await user.click(screen.getByRole('button', { name: 'Add circle' })); // loose Circle 2
-    assertNoDuplicates(6);
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // loose Circle 2 + its own layer
+    assertNoDuplicates(9);
 
     const looseShape = outlineRows()
       .filter((r) => r.dataset.outlineKind === 'shape')
       .slice(-1)[0];
     const groupRow = outlineRows().find((r) => r.dataset.outlineKind === 'group')!;
     fireDrag(looseShape, groupRow, 20); // reparent into the group
-    assertNoDuplicates(6);
+    assertNoDuplicates(9);
 
     await user.click(screen.getByRole('button', { name: 'Undo' }));
-    assertNoDuplicates(6);
+    assertNoDuplicates(9);
     await user.click(screen.getByRole('button', { name: 'Redo' }));
-    assertNoDuplicates(6);
+    assertNoDuplicates(9);
   });
 });

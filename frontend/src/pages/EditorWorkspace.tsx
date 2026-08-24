@@ -47,7 +47,8 @@ import {
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
-import { isEffectivelyLocked } from './sceneOutline';
+import { normalizeSceneLayers } from '../validation/scene';
+import { buildOutline, isEffectivelyLocked } from './sceneOutline';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useDraftAutosave } from './useDraftAutosave';
@@ -901,6 +902,29 @@ function EditorWorkspace() {
   const canvasHeight = canvas.height ?? 600;
   canvasSizeRef.current = { width: canvasWidth, height: canvasHeight };
 
+  // Task 111 (issue #142): the selection/hover outline overlay below draws
+  // in the scene's real draw order, matching `render/sceneDrawPlan.ts`'s
+  // `buildScenePlan` (layers first, sorted by `order`, then each layer's
+  // own top-level items) -- `sceneEditor.shapes`' raw array order stopped
+  // being equivalent to that once every shape got its own independent
+  // layer (previously most shapes shared one layer, where array order and
+  // draw order coincided). Recomputed from `buildOutline`, the same
+  // source of truth the outline panel itself uses, rather than a second,
+  // possibly-diverging draw-order implementation. A plain computed value
+  // (not `useMemo`) since this section of the component already runs
+  // after several conditional early returns above (`loadState` guards),
+  // matching `canvasWidth`/`canvasHeight` just above.
+  const shapesInDrawOrder = (() => {
+    if (!workingCopy) return sceneEditor.shapes;
+    const orderedIds = buildOutline(workingCopy)
+      .filter((row) => row.kind === 'shape')
+      .map((row) => row.id);
+    const byId = new Map(sceneEditor.shapes.map((shape) => [shape.id, shape]));
+    return orderedIds
+      .map((id) => byId.get(id))
+      .filter((shape): shape is (typeof sceneEditor.shapes)[number] => shape !== undefined);
+  })();
+
   // Issue #78: the visible grid-line overlay's coordinates, at the fixed
   // 20-scene-unit spacing — only computed when grid snapping is on (the
   // "when disabled, no grid overlay renders" acceptance criterion).
@@ -1472,7 +1496,7 @@ function EditorWorkspace() {
               height={canvasHeight}
               viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
             >
-              {sceneEditor.shapes.map((shape) => {
+              {shapesInDrawOrder.map((shape) => {
                 const isSelected = shape.id === sceneEditor.selectedShapeId;
                 // Issue #111: a hovered-but-not-selected shape gets its own
                 // distinct affordance from the selected outline; a shape
@@ -1896,8 +1920,14 @@ function EditorWorkspace() {
                 persistedVersion={persistedVersion}
                 isDirty={isDirty}
                 onRestored={(version) => {
-                  setPersistedVersion(version);
-                  setWorkingCopy(structuredClone(version.scene_json));
+                  // Task 111 (issue #142): the restored historical version
+                  // may predate the shared-layerId invariant -- see
+                  // `useEditorWorkspaceState.ts`'s identical normalization
+                  // on initial load.
+                  const { scene: normalizedScene } = normalizeSceneLayers(version.scene_json);
+                  const normalizedVersion = { ...version, scene_json: normalizedScene };
+                  setPersistedVersion(normalizedVersion);
+                  setWorkingCopy(structuredClone(normalizedScene));
                   setProject((current) =>
                     current ? { ...current, current_version: version.id } : current,
                   );
@@ -1913,7 +1943,7 @@ function EditorWorkspace() {
                   // `snapshotOverride`) rather than relying on
                   // `workingCopy`, which hasn't re-rendered into either
                   // hook's tracking yet.
-                  const restoredScene = structuredClone(version.scene_json);
+                  const restoredScene = structuredClone(normalizedScene);
                   void draftAutosave.clearDraft(restoredScene);
                   void draftServerSync.deleteServerDraft(restoredScene);
                 }}
@@ -1948,8 +1978,17 @@ function EditorWorkspace() {
                 workingCopy={workingCopy}
                 currentVersionId={project?.current_version ?? null}
                 onAccepted={(version) => {
-                  setPersistedVersion(version);
-                  setWorkingCopy(structuredClone(version.scene_json));
+                  // Task 111 (issue #142): defensive normalization
+                  // matching `onRestored` above -- the accepted version's
+                  // base scene already comes from this session's
+                  // (already-normalized) workingCopy, so this is normally
+                  // a no-op, but stays consistent with every other
+                  // scene_json load site rather than assuming that
+                  // invariant holds without checking.
+                  const { scene: normalizedScene } = normalizeSceneLayers(version.scene_json);
+                  const normalizedVersion = { ...version, scene_json: normalizedScene };
+                  setPersistedVersion(normalizedVersion);
+                  setWorkingCopy(structuredClone(normalizedScene));
                   setProject((current) =>
                     current ? { ...current, current_version: version.id } : current,
                   );
@@ -1958,7 +1997,7 @@ function EditorWorkspace() {
                   // authoritative version server-side, so it must clear
                   // both drafts rather than re-write a server draft
                   // duplicating that just-persisted content.
-                  const acceptedScene = structuredClone(version.scene_json);
+                  const acceptedScene = structuredClone(normalizedScene);
                   void draftAutosave.clearDraft(acceptedScene);
                   void draftServerSync.deleteServerDraft(acceptedScene);
                 }}

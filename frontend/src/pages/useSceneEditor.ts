@@ -31,6 +31,7 @@ import {
 import {
   addLayer as addLayerOp,
   buildOutline,
+  createLayerFor,
   deleteGroupRecursive,
   deleteLayer as deleteLayerOp,
   getGroups,
@@ -45,6 +46,7 @@ import {
   removeShapeFromScene,
   renameLayer as renameLayerOp,
   toggleGroupFlag,
+  toggleShapeFlag as toggleShapeFlagOp,
   toggleLayerFlag,
   ungroupItem,
   type Group,
@@ -107,13 +109,6 @@ import {
  */
 
 const MAX_HISTORY = 50;
-
-function firstLayerId(scene: SceneDocument): string | null {
-  const layers = scene.layers;
-  if (!Array.isArray(layers) || layers.length === 0) return null;
-  const layer = layers[0] as { id?: unknown };
-  return typeof layer?.id === 'string' ? layer.id : null;
-}
 
 function sceneCanvas(scene: SceneDocument): { width: number; height: number } {
   const canvas = scene.canvas as { width?: unknown; height?: unknown } | undefined;
@@ -517,10 +512,18 @@ export function useSceneEditor(
   const addShape = useCallback(
     (type: ShapeType) => {
       if (!workingCopy) return;
-      const layerId = firstLayerId(workingCopy);
-      if (!layerId) return;
-      const shape = createShape(type, layerId, sceneCanvas(workingCopy));
-      commit(withShapes(workingCopy, [...rawShapes(workingCopy), shape]));
+      // Task 111 (issue #142): every shape is its own independent layer --
+      // a new shape gets a brand-new layer of its own rather than reusing
+      // `firstLayerId` (which used to put every new shape on the same
+      // layer). Both the new layer and the new shape are added in one
+      // `commit()`, so undo/redo treats them as a single step.
+      const newLayer = createLayerFor(workingCopy);
+      const shape = createShape(type, newLayer.id, sceneCanvas(workingCopy));
+      const nextScene = withShapes(
+        { ...workingCopy, layers: [...getLayers(workingCopy), newLayer] },
+        [...rawShapes(workingCopy), shape],
+      );
+      commit(nextScene);
       setSelectedShapeId(shape.id);
     },
     [workingCopy, commit],
@@ -543,8 +546,16 @@ export function useSceneEditor(
     ) {
       return;
     }
-    const copy = duplicateShape(source);
-    commit(withShapes(workingCopy, [...rawShapes(workingCopy), copy]));
+    // Task 111 (issue #142): the duplicate gets its own new layer too --
+    // sharing the source shape's layerId would violate the one-shape-per-
+    // layer invariant immediately.
+    const newLayer = createLayerFor(workingCopy);
+    const copy = { ...duplicateShape(source), layerId: newLayer.id };
+    const nextScene = withShapes(
+      { ...workingCopy, layers: [...getLayers(workingCopy), newLayer] },
+      [...rawShapes(workingCopy), copy],
+    );
+    commit(nextScene);
     setSelectedShapeId(copy.id);
   }, [workingCopy, selectedShapeId, commit, checkUnlocked]);
 
@@ -916,6 +927,26 @@ export function useSceneEditor(
     (groupId: string) => {
       if (!workingCopy) return;
       applyOutcome(toggleGroupFlag(workingCopy, groupId, 'locked'));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  // Task 111 (issue #142): a shape's own visibility/lock toggle -- the
+  // per-shape mirror of `toggleGroupVisible`/`toggleGroupLocked` above,
+  // now that a shape carries its own flag rather than only inheriting an
+  // ancestor's.
+  const toggleShapeVisible = useCallback(
+    (shapeId: string) => {
+      if (!workingCopy) return;
+      applyOutcome(toggleShapeFlagOp(workingCopy, shapeId, 'visible'));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const toggleShapeLocked = useCallback(
+    (shapeId: string) => {
+      if (!workingCopy) return;
+      applyOutcome(toggleShapeFlagOp(workingCopy, shapeId, 'locked'));
     },
     [workingCopy, applyOutcome],
   );
@@ -1311,6 +1342,8 @@ export function useSceneEditor(
     toggleLayerLocked,
     toggleGroupVisible,
     toggleGroupLocked,
+    toggleShapeVisible,
+    toggleShapeLocked,
     moveItem,
     moveItemBySteps,
     moveLayerBySteps,

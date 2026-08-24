@@ -212,6 +212,7 @@ describe('p5 scene preview', () => {
     preview.render(
       baseScene({
         canvas: { width: 60, height: 60, backgroundColor: '#000000' },
+        layers: [layer(), layer({ id: 'layer-2' })],
         shapes: [
           // No fill, white stroke: interior stays background, edge is white.
           circleShape({
@@ -223,6 +224,7 @@ describe('p5 scene preview', () => {
           // Red fill, no stroke: interior AND edge are the fill color.
           circleShape({
             id: 'no-stroke',
+            layerId: 'layer-2',
             transform: transform({ x: 45, y: 15 }),
             radius: 10,
             style: style({ fill: '#ff0000', stroke: null, strokeWidth: 4 }),
@@ -279,6 +281,7 @@ describe('p5 scene preview', () => {
     preview.render(
       baseScene({
         canvas: { width: 20, height: 20, backgroundColor: '#000000' },
+        layers: [layer(), layer({ id: 'layer-2' })],
         shapes: [
           circleShape({
             id: 'under',
@@ -288,6 +291,7 @@ describe('p5 scene preview', () => {
           }),
           circleShape({
             id: 'over',
+            layerId: 'layer-2',
             transform: transform({ x: 10, y: 10 }),
             radius: 8,
             style: style({ fill: '#00ff00' }),
@@ -303,6 +307,7 @@ describe('p5 scene preview', () => {
     preview.render(
       baseScene({
         canvas: { width: 20, height: 20, backgroundColor: '#000000' },
+        layers: [layer(), layer({ id: 'layer-2' })],
         shapes: [
           // Top-level shape (drawn after the group despite coming first in
           // the array, because groups draw before top-level shapes).
@@ -314,6 +319,7 @@ describe('p5 scene preview', () => {
           }),
           circleShape({
             id: 'grouped',
+            layerId: 'layer-2',
             groupId: 'g',
             transform: transform({ x: 10, y: 10 }),
             radius: 8,
@@ -331,6 +337,7 @@ describe('p5 scene preview', () => {
     preview.render(
       baseScene({
         canvas: { width: 20, height: 20, backgroundColor: '#000000' },
+        layers: [layer(), layer({ id: 'layer-2' })],
         shapes: [
           circleShape({
             id: 'first',
@@ -341,6 +348,7 @@ describe('p5 scene preview', () => {
           }),
           circleShape({
             id: 'second',
+            layerId: 'layer-2',
             groupId: 'g',
             transform: transform({ x: 10, y: 10 }),
             radius: 8,

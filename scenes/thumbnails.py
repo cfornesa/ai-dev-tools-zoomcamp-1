@@ -85,7 +85,7 @@ from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageOps
 
-from scenes.validation import validate_scene
+from scenes.validation import normalize_scene_layers, validate_scene
 
 CARD_WIDTH = 320
 CARD_HEIGHT = 240
@@ -279,6 +279,14 @@ def _build_scene_plan(scene: dict) -> _ScenePlan:
     the "backstop" role `sceneDrawPlan.ts` documents for its own
     `validateScene` call.
     """
+    # Task 111 (issue #142): an already-published project's current
+    # version may predate the shared-layerId invariant `validate_scene`
+    # now enforces -- normalize before validating so an existing legacy
+    # thumbnail generation request doesn't start failing, matching
+    # `useEditorWorkspaceState.ts`'s identical normalization on the
+    # editor's load path.
+    scene, _ = normalize_scene_layers(scene)
+
     result = validate_scene(scene)
     if not result.valid:
         first = result.errors[0] if result.errors else None

@@ -279,6 +279,31 @@ function checkReferences(data: any): SceneValidationError[] {
     }
   });
 
+  // Task 111 (issue #142): every shape is its own independent layer -- no
+  // two shapes may share a layerId. Mirrors scenes/validation.py's
+  // identical check (see that module's doc comment for why this is a
+  // sibling check to danglingReference rather than a schema constraint,
+  // and why a legacy document isn't rejected outright -- see
+  // `normalizeSceneLayers` below).
+  const shapeIndicesByLayerId = new Map<string, number[]>();
+  shapes.forEach((shape, index) => {
+    if (shape.layerId == null) return;
+    const indices = shapeIndicesByLayerId.get(shape.layerId) ?? [];
+    indices.push(index);
+    shapeIndicesByLayerId.set(shape.layerId, indices);
+  });
+  for (const [layerId, indices] of shapeIndicesByLayerId) {
+    if (indices.length > 1) {
+      for (const index of indices) {
+        errors.push({
+          path: `$.shapes[${index}].layerId`,
+          rule: 'duplicateLayerAssignment',
+          message: `layerId '${layerId}' is assigned to ${indices.length} shapes; each shape must have its own layer.`,
+        });
+      }
+    }
+  }
+
   const groupsById = new Map(groups.map((g) => [g.id, g]));
   groups.forEach((group, index) => {
     if (!layerIds.has(group.layerId)) {
@@ -454,6 +479,100 @@ export function checkLimits(data: any): SceneValidationError[] {
   cap('$', payloadBytes, 'maxScenePayloadBytes');
 
   return errors;
+}
+
+type NormalizableLayer = {
+  id: string;
+  name: string;
+  order: number;
+  visible: boolean;
+  locked: boolean;
+  [key: string]: unknown;
+};
+type NormalizableShape = { id: string; layerId: string; [key: string]: unknown };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NormalizableScene = {
+  layers: NormalizableLayer[];
+  shapes: NormalizableShape[];
+  [key: string]: any;
+};
+
+/**
+ * Task 111 (issue #142): read-time normalization for the shared-layerId
+ * invariant `checkReferences`' `duplicateLayerAssignment` rule now
+ * enforces going forward. Mirrors `scenes/validation.py`'s
+ * `normalize_scene_layers` -- see that function's doc comment for the full
+ * rationale (why this exists as a caller-invoked step rather than inside
+ * `validateScene` itself, and why `SceneVersion.scene_json` immutability
+ * rules out a database backfill).
+ *
+ * Given a scene document that may predate this task (multiple shapes
+ * sharing one `layerId`, which was allowed before), returns an equivalent
+ * document where every such conflict is resolved by giving each
+ * conflicting shape its own new layer (cloned from the original layer's
+ * `visible`/`locked` state, named with a "(copy)" suffix), preserving
+ * every shape's relative position in `shapes` (draw order) and every
+ * other field untouched. Returns the original object unchanged (and
+ * `changed: false`) if there was nothing to normalize.
+ *
+ * Called by `useEditorWorkspaceState.ts` (and every other call site that
+ * loads a `SceneVersion.scene_json` into a working copy --
+ * `EditorWorkspace.tsx`'s restore/AI-accept handlers) before
+ * `validateScene`, so a legacy scene never fails to load just because it
+ * predates this invariant.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function normalizeSceneLayers(data: any): { scene: any; changed: boolean } {
+  const scene = data as NormalizableScene;
+  const shapes: NormalizableShape[] = Array.isArray(scene.shapes) ? scene.shapes : [];
+  const layers: NormalizableLayer[] = Array.isArray(scene.layers) ? scene.layers : [];
+  const layersById = new Map(layers.map((l) => [l.id, l]));
+
+  const usedIds = new Set<string>([
+    ...layers.map((l) => l.id),
+    ...shapes.map((s) => s.id),
+    ...(Array.isArray(scene.groups) ? scene.groups.map((g: { id: string }) => g.id) : []),
+  ]);
+
+  let counter = 1;
+  function freshId(base: string): string {
+    let candidate = `${base}-layer-${counter}`;
+    while (usedIds.has(candidate)) {
+      counter += 1;
+      candidate = `${base}-layer-${counter}`;
+    }
+    usedIds.add(candidate);
+    counter += 1;
+    return candidate;
+  }
+
+  let maxOrder = layers.reduce((max, l) => Math.max(max, l.order ?? 0), -1);
+
+  const seenLayerIds = new Set<string>();
+  const newLayers = [...layers];
+  let changed = false;
+  const newShapes = shapes.map((shape) => {
+    const layerId = shape.layerId;
+    if (layerId != null && seenLayerIds.has(layerId)) {
+      const original = layersById.get(layerId);
+      maxOrder += 1;
+      const newLayer: NormalizableLayer = {
+        id: freshId(layerId),
+        name: original ? `${original.name} (copy)` : 'Layer',
+        order: maxOrder,
+        visible: original?.visible ?? true,
+        locked: original?.locked ?? false,
+      };
+      newLayers.push(newLayer);
+      changed = true;
+      return { ...shape, layerId: newLayer.id };
+    }
+    if (layerId != null) seenLayerIds.add(layerId);
+    return shape;
+  });
+
+  if (!changed) return { scene: data, changed: false };
+  return { scene: { ...scene, layers: newLayers, shapes: newShapes }, changed: true };
 }
 
 export function validateScene(data: unknown): SceneValidationResult {

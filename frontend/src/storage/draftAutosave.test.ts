@@ -50,11 +50,15 @@ function scene(overrides: Partial<SceneDocument> = {}): SceneDocument {
 // per-type `allOf` requires (e.g. `radius` for a circle, `width`/`height`/
 // `cornerRadius` for a rect) — the tests below only ever vary `id`/`type`,
 // so this fills in schema-satisfying defaults for the two types used here.
-function testShape(id: string, type: 'circle' | 'rect' = 'circle'): Record<string, unknown> {
+function testShape(
+  id: string,
+  type: 'circle' | 'rect' = 'circle',
+  layerId = 'layer-1',
+): Record<string, unknown> {
   const base = {
     id,
     type,
-    layerId: 'layer-1',
+    layerId,
     groupId: null,
     transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
     style: { fill: '#000000', stroke: null, strokeWidth: 0 },
@@ -487,7 +491,13 @@ describe('DraftAutosaveController debounce and race safety', () => {
     it('a valid (no duplicate ids) scene still writes normally through the same gate', async () => {
       const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
       const identity = { projectId: 'proj-valid', userKey: 'alice', sessionId: 'sess-1' };
-      const validScene = scene({ shapes: [testShape('a', 'circle'), testShape('b', 'rect')] });
+      const validScene = scene({
+        layers: [
+          { id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false },
+          { id: 'layer-2', name: 'Layer 2', order: 1, visible: true, locked: false },
+        ],
+        shapes: [testShape('a', 'circle', 'layer-1'), testShape('b', 'rect', 'layer-2')],
+      });
 
       controller.schedule(identity, scene(), validScene);
       await wait(DEBOUNCE_MS + 40);

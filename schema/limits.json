@@ -1,10 +1,11 @@
 {
   "$comment": "Centralized V1 scene complexity/payload limits (Task 7). Both validators (frontend/src/validation, config/scenes/validation.py) load this file and enforce it identically after schema/scene.schema.json structural validation passes. Per-field numeric ranges (opacity, rotation, canvas size, etc.) live in scene.schema.json itself; this file governs scene-wide counts and total payload size.",
+  "$maxLayersComment": "Task 111 (issue #142): every shape is now its own independent layer (no two shapes may share a layerId), so maxLayers must be at least maxShapes -- a lower cap would make it impossible to ever reach maxShapes with distinct layers. Raised from 20 to match maxShapes exactly.",
   "maxShapes": 200,
   "maxGroups": 50,
   "maxGroupNestingDepth": 6,
   "maxGroupChildIds": 100,
-  "maxLayers": 20,
+  "maxLayers": 200,
   "maxPathPoints": 500,
   "maxGraphNodes": 100,
   "maxGraphConnections": 150,

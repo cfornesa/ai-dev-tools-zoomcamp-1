@@ -45,6 +45,15 @@ type BaseShape = {
   groupId: string | null;
   transform: Transform;
   style: Style;
+  // Task 111 (issue #142): a shape's own visibility/lock state,
+  // independent of any ancestor group/layer's flag (see
+  // schema/scene.schema.json's `shape.visible`/`shape.locked` doc
+  // comments). Optional for backward compatibility with documents saved
+  // before these fields existed -- absent means visible/unlocked, the
+  // same default `sceneOutline.ts`'s `isEffectivelyLocked` and
+  // `buildOutline` apply.
+  visible?: boolean;
+  locked?: boolean;
 };
 
 export type CircleShape = BaseShape & { type: 'circle'; radius: number };

@@ -58,7 +58,7 @@ from scenes.thumbnail_generation import (
     ensure_thumbnail_for_version,
     maybe_schedule_thumbnail_generation,
 )
-from scenes.validation import SCHEMA_DIR, validate_scene
+from scenes.validation import SCHEMA_DIR, normalize_scene_layers, validate_scene
 
 with (SCHEMA_DIR / "fixtures" / "valid" / "blank.json").open() as _f:
     _BLANK_SCENE_FIXTURE: dict = json.load(_f)
@@ -546,6 +546,11 @@ class ProjectForkView(APIView):
 
                 cloned_scene = copy.deepcopy(source_version.scene_json)
                 cloned_scene["id"] = f"scene-{uuid.uuid4()}"
+                # Task 111 (issue #142): the source version may predate the
+                # shared-layerId invariant `validate_scene` now enforces --
+                # normalize before validating rather than rejecting a fork
+                # of an otherwise-fine legacy scene.
+                cloned_scene, _ = normalize_scene_layers(cloned_scene)
                 result = validate_scene(cloned_scene)
                 if not result.valid:  # pragma: no cover — the source version was already valid
                     raise ProjectForkNotAvailable
@@ -892,6 +897,11 @@ class TemplateCloneView(APIView):
 
         cloned_scene = copy.deepcopy(template.scene_json)
         cloned_scene["id"] = f"scene-{uuid.uuid4()}"
+
+        # Task 111 (issue #142): a private template snapshotted before this
+        # task could carry the same legacy shared-layerId shape as an old
+        # project version -- see ProjectForkView's identical normalization.
+        cloned_scene, _ = normalize_scene_layers(cloned_scene)
 
         result = validate_scene(cloned_scene)
         if not result.valid:  # pragma: no cover — would mean a stored template is broken

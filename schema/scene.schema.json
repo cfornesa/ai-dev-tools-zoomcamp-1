@@ -197,11 +197,22 @@
       "properties": {
         "id": { "$ref": "#/$defs/id" },
         "type": { "enum": ["circle", "rect", "line", "path", "particleEmitter"] },
-        "layerId": { "$ref": "#/$defs/id" },
+        "layerId": {
+          "description": "Task 111 (issue #142): every shape is its own independent layer -- no two shapes in one scene document may share a layerId (enforced by scenes/validation.py and frontend/src/validation/scene.ts, not expressible in JSON Schema alone; a legacy document violating this is normalized at read time rather than rejected outright -- see those modules' own doc comments).",
+          "$ref": "#/$defs/id"
+        },
         "groupId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
         "transform": { "$ref": "#/$defs/transform2D" },
         "style": { "$ref": "#/$defs/style" },
-        "trail": { "$ref": "#/$defs/trail" }
+        "trail": { "$ref": "#/$defs/trail" },
+        "visible": {
+          "description": "Task 111 (issue #142): a shape's own visibility, independent of any ancestor group/layer's visible flag -- the effective (rendered) visibility combines this with inherited ancestor state (see sceneOutline.ts's isEffectivelyLocked/visibility precedence). Optional for backward compatibility with documents saved before this field existed; treated as true when absent.",
+          "type": "boolean"
+        },
+        "locked": {
+          "description": "Task 111 (issue #142): a shape's own lock state, independent of any ancestor group/layer's locked flag -- see the `visible` field's doc comment for the same optional/absent-defaults-to-unlocked convention.",
+          "type": "boolean"
+        }
       },
       "allOf": [
         {
@@ -211,6 +222,7 @@
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
               "transform": true, "style": true, "trail": true,
+              "visible": true, "locked": true,
               "radius": { "type": "number", "minimum": 0.1, "maximum": 5000 }
             },
             "additionalProperties": false
@@ -223,6 +235,7 @@
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
               "transform": true, "style": true, "trail": true,
+              "visible": true, "locked": true,
               "width": { "type": "number", "minimum": 0.1, "maximum": 5000 },
               "height": { "type": "number", "minimum": 0.1, "maximum": 5000 },
               "cornerRadius": { "type": "number", "minimum": 0, "maximum": 1000 }
@@ -237,6 +250,7 @@
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
               "transform": true, "style": true, "trail": true,
+              "visible": true, "locked": true,
               "x2": { "type": "number", "minimum": -100000, "maximum": 100000 },
               "y2": { "type": "number", "minimum": -100000, "maximum": 100000 }
             },
@@ -250,6 +264,7 @@
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
               "transform": true, "style": true, "trail": true,
+              "visible": true, "locked": true,
               "points": {
                 "type": "array",
                 "items": { "$ref": "#/$defs/point" },
@@ -267,6 +282,7 @@
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
               "transform": true, "style": true, "trail": true,
+              "visible": true, "locked": true,
               "rate": { "type": "number", "minimum": 0, "maximum": 500 },
               "size": { "type": "number", "minimum": 0.1, "maximum": 500 },
               "lifespan": { "type": "number", "minimum": 0.1, "maximum": 30 },

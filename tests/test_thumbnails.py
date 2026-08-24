@@ -216,6 +216,21 @@ def test_invalid_scene_raises_before_producing_partial_output():
         render_card_thumbnail_png({"schemaVersion": 1})
 
 
+def test_renders_a_legacy_scene_with_shapes_sharing_one_layer():
+    # Task 111 (issue #142): an already-published project's current
+    # version may predate the shared-layerId invariant validate_scene now
+    # enforces -- _build_scene_plan normalizes before validating, so this
+    # must render cleanly rather than raising ThumbnailRenderError.
+    scene = _solid_circle_scene()
+    second = copy.deepcopy(scene["shapes"][0])
+    second["id"] = "shape-2"
+    second["style"] = {"fill": "#00ff00", "stroke": None, "strokeWidth": 0}
+    scene["shapes"].append(second)  # both shapes share "layer-1"
+
+    image = render_scene_image(scene)
+    assert image.size == (scene["canvas"]["width"], scene["canvas"]["height"])
+
+
 @pytest.mark.django_db
 def test_ensure_thumbnail_for_version_stores_documented_fallback_on_failure(django_user_model):
     from scenes.models import Project

@@ -361,11 +361,11 @@ def test_patch_apply_failure_is_rejected_with_422(owner_client, project, monkeyp
 
 @pytest.mark.django_db
 def test_resulting_scene_over_limit_is_rejected_with_422(owner_client, project, monkeypatch):
-    def circle(shape_id):
+    def circle(shape_id, layer_id="layer-1"):
         return {
             "id": shape_id,
             "type": "circle",
-            "layerId": "layer-1",
+            "layerId": layer_id,
             "groupId": None,
             "transform": {"x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1},
             "style": {"fill": "#14b8a6", "stroke": None, "strokeWidth": 0},
@@ -373,8 +373,17 @@ def test_resulting_scene_over_limit_is_rejected_with_422(owner_client, project, 
         }
 
     scene = copy.deepcopy(BLANK_SCENE)
-    scene["shapes"] = [circle(f"shape-{i}") for i in range(200)]
-    patch = [{"op": "add", "path": "/shapes/-", "value": circle("shape-200")}]
+    # Task 111 (issue #142): every shape needs its own layerId now.
+    scene["shapes"] = [circle(f"shape-{i}", layer_id=f"layer-{i}") for i in range(200)]
+    scene["layers"] = [
+        {"id": f"layer-{i}", "name": f"layer-{i}", "order": i, "visible": True, "locked": False}
+        for i in range(200)
+    ]
+    # Reuses an existing layerId (rather than a new one the patch never adds
+    # to /layers) so the resulting scene fails validate_scene deterministically
+    # via the new Task 111 duplicateLayerAssignment rule, still routed through
+    # the same generic "resulting patched scene fails validation" 422 path.
+    patch = [{"op": "add", "path": "/shapes/-", "value": circle("shape-200", layer_id="layer-0")}]
     _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(patch)))
 
     response = owner_client.post(_url(project), _payload(scene=scene), format="json")

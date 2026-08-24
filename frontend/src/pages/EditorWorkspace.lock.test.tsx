@@ -104,10 +104,26 @@ async function addAndSelectCircle() {
   // createShape centers a circle on the 800x600 canvas: (400,300), r=50.
 }
 
-function toggleLayerLock() {
+// Task 111 (issue #142): every shape gets its own fresh layer now, so more
+// than one "Unlocked"/"Locked" layer-row button can exist at once (the
+// scene's original empty layer, plus one per added shape) -- this locks
+// the layer belonging to the `shapeIndex`-th shape row specifically
+// (shape rows and their own layer row are adjacent in the flat outline
+// list, the layer row immediately preceding its shape), rather than
+// whichever "Unlocked" button happens to be first in the DOM.
+function toggleLayerLock(shapeIndex = 0) {
+  const outline = screen.getByRole('list', { name: 'Scene outline' });
+  const rows = within(outline).getAllByRole('listitem') as HTMLElement[];
+  const shapeRows = rows.filter((row) => row.dataset.outlineKind === 'shape');
+  const targetShapeRow = shapeRows[shapeIndex];
+  const targetIndex = rows.indexOf(targetShapeRow);
+  const layerRow = rows
+    .slice(0, targetIndex)
+    .reverse()
+    .find((row) => row.dataset.outlineKind === 'layer')!;
   const button =
-    screen.queryByRole('button', { name: 'Unlocked' }) ??
-    screen.getByRole('button', { name: 'Locked' });
+    within(layerRow).queryByRole('button', { name: 'Unlocked' }) ??
+    within(layerRow).getByRole('button', { name: 'Locked' });
   fireEvent.click(button);
 }
 
@@ -245,7 +261,11 @@ describe('EditorWorkspace lock guard: multi-shape whole-gesture block (issue #77
     multiSelectShapesAt(0, 1);
     expect(screen.getByTestId('group-handle-move')).toBeInTheDocument();
 
-    toggleLayerLock(); // locks both shapes, since they're both on layer-1
+    // Task 111 (issue #142): each shape has its own layer now, so this
+    // locks only the circle's layer -- exactly matching this test's own
+    // point (one locked shape among several selected still blocks the
+    // whole group gesture).
+    toggleLayerLock(0);
 
     // The combined group handle set is gone entirely — not just for the
     // locked member.

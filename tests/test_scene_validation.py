@@ -13,7 +13,12 @@ from pathlib import Path
 
 import pytest
 
-from scenes.validation import ALLOWED_NODE_TYPES_BY_FAMILY, SUPPORTED_SCHEMA_VERSION, validate_scene
+from scenes.validation import (
+    ALLOWED_NODE_TYPES_BY_FAMILY,
+    SUPPORTED_SCHEMA_VERSION,
+    normalize_scene_layers,
+    validate_scene,
+)
 
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schema"
 FIXTURES_DIR = SCHEMA_DIR / "fixtures"
@@ -165,3 +170,62 @@ def test_prototype_like_keys_are_ordinary_schema_valid_data_not_a_bypass():
     result = validate_scene(data)
     assert result.valid is True
     assert data["graph"]["nodes"][0]["params"]["__proto__"] == "polluted"
+
+
+class TestNormalizeSceneLayers:
+    """Task 111 (issue #142): read-time normalization for legacy scenes
+    that predate the one-shape-per-layer invariant -- see
+    `normalize_scene_layers`'s own doc comment for the full rationale.
+    """
+
+    def _legacy_scene(self):
+        path = FIXTURES_DIR / "invalid" / "duplicate_layer_assignment.json"
+        data = json.loads(path.read_text())
+        assert validate_scene(data).valid is False  # confirms the fixture is genuinely legacy
+        return data
+
+    def test_a_conforming_scene_is_returned_unchanged(self):
+        data = json.loads((FIXTURES_DIR / "valid" / "blank.json").read_text())
+        normalized, changed = normalize_scene_layers(data)
+        assert changed is False
+        assert normalized is data
+
+    def test_gives_each_conflicting_shape_its_own_new_layer(self):
+        data = self._legacy_scene()
+        normalized, changed = normalize_scene_layers(data)
+        assert changed is True
+        layer_ids = [shape["layerId"] for shape in normalized["shapes"]]
+        assert len(layer_ids) == len(set(layer_ids))  # every shape now unique
+
+    def test_normalized_scene_passes_validate_scene(self):
+        data = self._legacy_scene()
+        normalized, _ = normalize_scene_layers(data)
+        result = validate_scene(normalized)
+        assert result.valid is True, [(e.path, e.rule, e.message) for e in result.errors]
+
+    def test_preserves_relative_shape_order(self):
+        data = self._legacy_scene()
+        original_ids = [shape["id"] for shape in data["shapes"]]
+        normalized, _ = normalize_scene_layers(data)
+        assert [shape["id"] for shape in normalized["shapes"]] == original_ids
+
+    def test_synthesized_layer_carries_the_original_layer_s_visible_locked_state(self):
+        data = self._legacy_scene()
+        data["layers"][0]["visible"] = False
+        data["layers"][0]["locked"] = True
+        normalized, _ = normalize_scene_layers(data)
+        new_layer_ids = {layer["id"] for layer in normalized["layers"]} - {
+            layer["id"] for layer in data["layers"]
+        }
+        assert len(new_layer_ids) == 1
+        new_layer = next(layer for layer in normalized["layers"] if layer["id"] in new_layer_ids)
+        assert new_layer["visible"] is False
+        assert new_layer["locked"] is True
+
+    def test_does_not_mutate_the_original_document(self):
+        data = self._legacy_scene()
+        original_shapes = json.loads(json.dumps(data["shapes"]))
+        original_layers = json.loads(json.dumps(data["layers"]))
+        normalize_scene_layers(data)
+        assert data["shapes"] == original_shapes
+        assert data["layers"] == original_layers

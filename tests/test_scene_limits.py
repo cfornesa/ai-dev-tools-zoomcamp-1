@@ -101,14 +101,22 @@ def _connection(conn_id, from_id, to_id):
 
 def test_max_shapes_at_limit_accepted():
     scene = _base_scene()
-    scene["shapes"] = [_circle(f"shape-{i}") for i in range(LIMITS["maxShapes"])]
+    count = LIMITS["maxShapes"]
+    # Task 111 (issue #142): every shape needs its own layerId now, so this
+    # boundary test (deliberately at maxShapes) also needs one layer per
+    # shape -- schema/limits.json's maxLayers was raised to match maxShapes
+    # for exactly this reason (see that file's own comment).
+    scene["shapes"] = [_circle(f"shape-{i}", layer_id=f"layer-{i}") for i in range(count)]
+    scene["layers"] = [_layer(f"layer-{i}", i) for i in range(count)]
 
     assert validate_scene(scene).valid is True
 
 
 def test_max_shapes_over_limit_rejected():
     scene = _base_scene()
-    scene["shapes"] = [_circle(f"shape-{i}") for i in range(LIMITS["maxShapes"] + 1)]
+    count = LIMITS["maxShapes"] + 1
+    scene["shapes"] = [_circle(f"shape-{i}", layer_id=f"layer-{i}") for i in range(count)]
+    scene["layers"] = [_layer(f"layer-{i}", i) for i in range(count)]
 
     result = validate_scene(scene)
 
@@ -146,12 +154,18 @@ def test_max_group_child_ids_boundary():
     limit = LIMITS["maxGroupChildIds"]
 
     at_limit = _base_scene()
-    at_limit["shapes"] = [_circle(f"shape-{i}", group_id="group-1") for i in range(limit)]
+    at_limit["shapes"] = [
+        _circle(f"shape-{i}", layer_id=f"layer-{i}", group_id="group-1") for i in range(limit)
+    ]
+    at_limit["layers"] = [_layer(f"layer-{i}", i) for i in range(limit)]
     at_limit["groups"] = [_group("group-1", child_ids=[f"shape-{i}" for i in range(limit)])]
     assert validate_scene(at_limit).valid is True
 
     over_limit = _base_scene()
-    over_limit["shapes"] = [_circle(f"shape-{i}", group_id="group-1") for i in range(limit + 1)]
+    over_limit["shapes"] = [
+        _circle(f"shape-{i}", layer_id=f"layer-{i}", group_id="group-1") for i in range(limit + 1)
+    ]
+    over_limit["layers"] = [_layer(f"layer-{i}", i) for i in range(limit + 1)]
     over_limit["groups"] = [_group("group-1", child_ids=[f"shape-{i}" for i in range(limit + 1)])]
     result = validate_scene(over_limit)
     assert result.valid is False
@@ -232,24 +246,30 @@ def test_max_particle_emitters_and_total_rate_boundary():
 
     at_limit = _base_scene()
     at_limit["shapes"] = [
-        _particle_emitter("emitter-0", rate=rate_each_at_limit),
-        _particle_emitter("emitter-1", rate=rate_limit - rate_each_at_limit),
+        _particle_emitter("emitter-0", rate=rate_each_at_limit, layer_id="layer-0"),
+        _particle_emitter("emitter-1", rate=rate_limit - rate_each_at_limit, layer_id="layer-1"),
     ]
+    at_limit["layers"] = [_layer("layer-0", 0), _layer("layer-1", 1)]
     assert validate_scene(at_limit).valid is True
 
     too_many_emitters = _base_scene()
     too_many_emitters["shapes"] = [
-        _particle_emitter(f"emitter-{i}", rate=1) for i in range(emitter_limit + 1)
+        _particle_emitter(f"emitter-{i}", rate=1, layer_id=f"layer-{i}")
+        for i in range(emitter_limit + 1)
     ]
+    too_many_emitters["layers"] = [_layer(f"layer-{i}", i) for i in range(emitter_limit + 1)]
     result = validate_scene(too_many_emitters)
     assert result.valid is False
     assert any("maxParticleEmitters" in e.message for e in result.errors)
 
     over_rate = _base_scene()
     over_rate["shapes"] = [
-        _particle_emitter("emitter-0", rate=rate_each_at_limit),
-        _particle_emitter("emitter-1", rate=rate_limit - rate_each_at_limit + 1),
+        _particle_emitter("emitter-0", rate=rate_each_at_limit, layer_id="layer-0"),
+        _particle_emitter(
+            "emitter-1", rate=rate_limit - rate_each_at_limit + 1, layer_id="layer-1"
+        ),
     ]
+    over_rate["layers"] = [_layer("layer-0", 0), _layer("layer-1", 1)]
     result = validate_scene(over_rate)
     assert result.valid is False
     assert any("maxTotalParticleRate" in e.message for e in result.errors)
@@ -325,8 +345,12 @@ def test_nesting_cannot_bypass_max_shapes():
     """Wrapping shapes in nested groups must not change the flat shape count that's capped."""
     scene = _base_scene()
     limit = LIMITS["maxShapes"]
-    scene["shapes"] = [_circle(f"shape-{i}", group_id="group-1") for i in range(limit + 1)]
-    scene["groups"] = [_group("group-1", child_ids=[f"shape-{i}" for i in range(limit + 1)])]
+    count = limit + 1
+    scene["shapes"] = [
+        _circle(f"shape-{i}", layer_id=f"layer-{i}", group_id="group-1") for i in range(count)
+    ]
+    scene["layers"] = [_layer(f"layer-{i}", i) for i in range(count)]
+    scene["groups"] = [_group("group-1", child_ids=[f"shape-{i}" for i in range(count)])]
 
     result = validate_scene(scene)
 

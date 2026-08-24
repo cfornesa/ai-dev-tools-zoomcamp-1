@@ -1938,6 +1938,112 @@ first, then changes `schema/scene.schema.json`, `scenes/validation.py`,
 `buildOutline`), and `LayersPanel.tsx`'s per-shape toggle, in that order,
 with fixtures/tests added alongside each. See issue #142 for the full
 groomed acceptance criteria.
+Status: COMPLETE
+Resolution (2026-08-23): `schemaVersion` stayed at 1 (read-time
+normalization, per the default recommendation) — additive/structural, not
+a new document shape.
+- `schema/scene.schema.json`: `shape.layerId` documented as unique across
+  shapes (enforced by validators, not JSON Schema); shapes gained optional
+  `visible`/`locked` booleans (absent defaults to visible/unlocked, so no
+  legacy document needs a schema-level migration).
+- `scenes/validation.py`: `_check_references` gained a
+  `duplicateLayerAssignment` rule (sibling to the existing
+  `danglingReference` checks). New `normalize_scene_layers(data)` gives
+  each conflicting shape its own synthesized layer (cloned visible/locked,
+  preserved draw order), called wherever a possibly-legacy `scene_json`
+  becomes the base of a NEW document: `ProjectForkView`, `TemplateCloneView`,
+  and (discovered while implementing — not originally listed)
+  `scenes/thumbnails.py`'s `_build_scene_plan`, since server-side
+  thumbnail generation for an already-published pre-Task-111 project would
+  otherwise start failing. `SceneVersionRestoreView` needed no change — it
+  never calls `validate_scene` at all.
+- `frontend/src/validation/scene.ts`: mirrored `duplicateLayerAssignment`
+  check plus an exported `normalizeSceneLayers`, called at every
+  `scene_json`-into-working-copy site: `useEditorWorkspaceState.ts` (initial
+  load — replaces `persistedVersion.scene_json` too, not just
+  `workingCopy`, so `isDirty` doesn't read "unsaved" the instant a legacy
+  scene loads), `EditorWorkspace.tsx`'s restore/AI-accept handlers, and
+  (also discovered while implementing) `PublicProjectViewer.tsx` and
+  `ExportConfigDialog.tsx`, which would otherwise show "Could not render
+  this scene" / spuriously block export for an already-published legacy
+  project.
+- `schema/limits.json`: `maxLayers` raised from 20 to 200 (== `maxShapes`)
+  — with every shape now needing its own layer, a lower cap made it
+  impossible to ever legitimately reach `maxShapes`.
+- `sceneOutline.ts`:
+  - `groupItems` no longer requires a shared layerId to group (adopts the
+    first selected item's layerId for the new group; each member shape's
+    own layerId is untouched).
+  - `moveItemToGroup` no longer requires the target group to share the
+    moved item's layerId, for the same reason.
+  - `moveItemToLayer`'s group branch no longer forces every descendant
+    *shape* onto the target layerId (would violate 1:1 the moment a group
+    has 2+ member shapes) — only the group itself and any descendant
+    *groups* (which may still share a layerId) move; descendant shapes
+    keep their own.
+  - `moveItem` on a top-level shape now delegates to `moveLayer` on that
+    shape's own layer, discovered necessary because `buildOutline` and
+    `render/sceneDrawPlan.ts`'s `buildScenePlan` both bucket top-level
+    ordering by layer first — once every shape is alone on its layer, a
+    plain array-position swap within `shapes` became both impossible (no
+    sibling to swap with) and pointless (draw order no longer read from
+    it). `buildOutline`'s `isFirst`/`isLast` for a top-level shape now
+    reflects its layer's own position among all layers, matching what
+    `moveLayer` actually allows.
+  - New `toggleShapeFlag(scene, shapeId, 'visible' | 'locked')`; a shape's
+    own `locked` flag is now folded into `isEffectivelyLocked`'s cascade,
+    and its own `visible` flag into `buildOutline`'s `inheritedVisible`.
+- `useSceneEditor.ts`: `addShape`/`duplicateSelected` each synthesize a
+  brand-new layer (via `sceneOutline.ts`'s new `createLayerFor`) rather
+  than reusing `firstLayerId` — every newly created or duplicated shape
+  gets its own layer from the start. New `toggleShapeVisible`/
+  `toggleShapeLocked` callbacks.
+- `LayersPanel.tsx`: `MoveControls`' group-target `<select>` no longer
+  filters candidate groups by matching layerId (would offer none, given
+  the above); a shape row gained real Visible/Locked toggle buttons
+  (mirroring the existing layer/group row pattern) reflecting/mutating the
+  shape's own flag, not the read-only cascaded annotation task 100 left in
+  place.
+- `EditorWorkspace.tsx`: the canvas selection/hover-outline `<svg>` overlay
+  now iterates shapes in real draw order (derived from `buildOutline`,
+  matching `sceneDrawPlan.ts`) rather than raw `shapes` array order —
+  discovered necessary once per-shape layering made those two orderings
+  diverge in the common case (previously most shapes shared one layer, so
+  array order and draw order coincided).
+- Regression coverage: a new `schema/fixtures/invalid/duplicate_layer_assignment.json`
+  fixture (+ `expectations.json` entry) exercised by both
+  `tests/test_scene_validation.py` and `frontend/src/validation/scene.test.ts`'s
+  existing shared-fixture loops; `TestNormalizeSceneLayers` (Python) and
+  `sceneLayerNormalization.test.ts` (TS) cover the normalization function
+  directly (no-op on a conforming scene, unique layers after, draw-order
+  preserved, synthesized layer inherits visible/locked, no source
+  mutation); a new `useEditorWorkspaceState.test.ts` case loads a legacy
+  scene end-to-end and confirms `workingCopy`/`persistedVersion` land
+  already-normalized and mutually consistent; a new
+  `test_renders_a_legacy_scene_with_shapes_sharing_one_layer` covers
+  `render_scene_image`; `sceneOutline.test.ts` covers `toggleShapeFlag`,
+  the lock-cascade fold-in, grouping/moving across layers with differing
+  ancestor visible/locked state (each shape's own effective lock stays
+  unambiguous), and every existing fixture across both languages that
+  previously relied on multiple shapes sharing one layerId was updated to
+  give each its own (`schema/fixtures/valid/feature_rich.json`,
+  `schema/fixtures/malicious/{combined_resource_limit_abuse,oversized_document}.json`,
+  `scenes/fixtures/templates/{open_palm_bloom,physics_orbit,svg_kinetic_poster}.json`,
+  and the corresponding backend/frontend limits/patch/AI-edit test
+  fixtures). `make frontend-test` green at 1624/1624 (was 1609 before this
+  task); backend `uv run pytest` green at 602/602 (was 594); `ruff`/`mypy`/
+  `tsc`/`oxlint`/`prettier` all clean.
+- `scenes/permissions.py`: confirmed unaffected by reading it — no new
+  field or endpoint here introduces a mutation path that bypasses the
+  existing authorization service.
+- Not done (acceptable gaps, not required by the acceptance criteria as
+  written): no explicit "undo/redo across a normalization event" UI test
+  beyond the `useEditorWorkspaceState` load-time coverage above (undo/redo
+  itself is untouched by this task — normalization only ever runs once, at
+  load, never mid-session); `deleteLayer`'s existing "refuses to delete a
+  non-empty layer" test was not additionally parametrized for "exactly one
+  shape" since that's now the overwhelmingly common case already covered
+  by the existing test.
 
 ## 112. Give the editor a discoverable toolbar with undo, colors, and essential shape tools
 Goal: Undo, Redo, Duplicate selected shape, Delete selected shape, and a

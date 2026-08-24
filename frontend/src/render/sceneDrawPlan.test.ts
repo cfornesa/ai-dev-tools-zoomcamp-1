@@ -34,11 +34,19 @@ describe('buildScenePlan', () => {
 
   // Acceptance criterion 2
   it('resolves each of the five shape types with their type-specific fields', () => {
+    // Task 111 (issue #142): every shape needs its own layerId now.
     const scene = baseScene({
+      layers: [
+        layer({ id: 'layer-c' }),
+        layer({ id: 'layer-r' }),
+        layer({ id: 'layer-l' }),
+        layer({ id: 'layer-p' }),
+        layer({ id: 'layer-e' }),
+      ],
       shapes: [
-        circleShape({ id: 'c', radius: 12 }),
-        rectShape({ id: 'r', width: 8, height: 9, cornerRadius: 2 }),
-        lineShape({ id: 'l', x2: 30, y2: 40 }),
+        circleShape({ id: 'c', radius: 12, layerId: 'layer-c' }),
+        rectShape({ id: 'r', width: 8, height: 9, cornerRadius: 2, layerId: 'layer-r' }),
+        lineShape({ id: 'l', x2: 30, y2: 40, layerId: 'layer-l' }),
         pathShape({
           id: 'p',
           points: [
@@ -46,8 +54,14 @@ describe('buildScenePlan', () => {
             { x: 1, y: 1 },
           ],
           closed: false,
+          layerId: 'layer-p',
         }),
-        particleEmitterShape({ id: 'e', size: 6, palette: ['#112233'] }),
+        particleEmitterShape({
+          id: 'e',
+          size: 6,
+          palette: ['#112233'],
+          layerId: 'layer-e',
+        }),
       ],
     });
     const plan = buildScenePlan(scene);
@@ -110,9 +124,18 @@ describe('buildScenePlan', () => {
   // Acceptance criterion 4
   it('carries independent null fill/stroke and full-range strokeWidth through', () => {
     const scene = baseScene({
+      layers: [layer({ id: 'layer-a' }), layer({ id: 'layer-b' })],
       shapes: [
-        circleShape({ id: 'a', style: style({ fill: null, stroke: '#ffffff', strokeWidth: 0 }) }),
-        circleShape({ id: 'b', style: style({ fill: '#ffffff', stroke: null, strokeWidth: 64 }) }),
+        circleShape({
+          id: 'a',
+          layerId: 'layer-a',
+          style: style({ fill: null, stroke: '#ffffff', strokeWidth: 0 }),
+        }),
+        circleShape({
+          id: 'b',
+          layerId: 'layer-b',
+          style: style({ fill: '#ffffff', stroke: null, strokeWidth: 64 }),
+        }),
       ],
     });
     const plan = buildScenePlan(scene);
@@ -141,11 +164,18 @@ describe('buildScenePlan', () => {
 
   it('orders top-level groups/shapes by their array order, and group children by childIds order', () => {
     const scene = baseScene({
+      layers: [
+        layer(),
+        layer({ id: 'layer-s1' }),
+        layer({ id: 'layer-s2' }),
+        layer({ id: 'layer-cb' }),
+        layer({ id: 'layer-ca' }),
+      ],
       shapes: [
-        circleShape({ id: 's1' }),
-        circleShape({ id: 's2' }),
-        circleShape({ id: 'child-b', groupId: 'g' }),
-        circleShape({ id: 'child-a', groupId: 'g' }),
+        circleShape({ id: 's1', layerId: 'layer-s1' }),
+        circleShape({ id: 's2', layerId: 'layer-s2' }),
+        circleShape({ id: 'child-b', layerId: 'layer-cb', groupId: 'g' }),
+        circleShape({ id: 'child-a', layerId: 'layer-ca', groupId: 'g' }),
       ],
       groups: [group({ id: 'g', childIds: ['child-a', 'child-b'] })],
     });

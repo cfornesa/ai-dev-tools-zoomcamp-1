@@ -352,28 +352,44 @@ def test_escaped_slash_paths_are_rejected_across_every_identity_bearing_root(pat
 
 def test_result_limit_violation_patch_is_caught_by_scene_revalidation_after_apply():
     # scenes/patch.py's own allowlist has no scene-wide complexity/limits
-    # awareness by design (schema/limits.json's job) -- a patch that would
-    # push the *resulting* scene over a limit (e.g. maxShapes) is allowed
-    # by validate_patch_operations, applies mechanically without error,
-    # and is only caught by re-validating the patched scene with
-    # validate_scene -- exactly what ai_provider.mistral_provider.edit_scene_with_patch
-    # and AIAcceptProposalView both do before ever returning/persisting
+    # (or Task 111/#142 shared-layerId) awareness by design (schema/limits.json
+    # and scenes/validation.py's job) -- a patch that would push the
+    # *resulting* scene over a limit (e.g. maxShapes) is allowed by
+    # validate_patch_operations, applies mechanically without error, and is
+    # only caught by re-validating the patched scene with validate_scene --
+    # exactly what ai_provider.mistral_provider.edit_scene_with_patch and
+    # AIAcceptProposalView both do before ever returning/persisting
     # anything. This test documents and pins that contract at the
     # scenes.patch/scenes.validation boundary.
+    #
+    # Since every shape now needs its own layerId (Task 111/#142), and the
+    # patch mechanism can only append to /shapes/- (never to /layers), a
+    # 201st shape necessarily either reuses an existing layerId
+    # (duplicateLayerAssignment) or references a layerId absent from
+    # /layers (danglingReference) -- both, like limitExceeded, are
+    # validate_scene rejections the patch allowlist has no opinion on and
+    # only re-validation catches, so this test reuses an existing layerId
+    # rather than attempting an unreachable "add a shape with no reference
+    # error" maxShapes-only overflow.
     from scenes.validation import validate_scene
 
     scene = copy.deepcopy(BLANK_SCENE)
-    scene["shapes"] = [_circle(f"shape-{i}") for i in range(200)]  # at maxShapes
+    scene["shapes"] = [{**_circle(f"shape-{i}"), "layerId": f"layer-{i}"} for i in range(200)]
+    scene["layers"] = [
+        {"id": f"layer-{i}", "name": f"layer-{i}", "order": i, "visible": True, "locked": False}
+        for i in range(200)
+    ]  # at maxShapes
     assert validate_scene(scene).valid is True
 
-    patch = [{"op": "add", "path": "/shapes/-", "value": _circle("shape-over-limit")}]
+    over_limit_shape = {**_circle("shape-over-limit"), "layerId": "layer-0"}
+    patch = [{"op": "add", "path": "/shapes/-", "value": over_limit_shape}]
     assert validate_patch_operations(patch, scene=scene) == []  # allowlist has no opinion
 
     patched = apply_patch(scene, patch)  # applies mechanically, no error
     result = validate_scene(patched)
 
     assert result.valid is False
-    assert any(e.rule == "limitExceeded" for e in result.errors)
+    assert any(e.rule == "duplicateLayerAssignment" for e in result.errors)
 
 
 def test_summarize_patch_is_deterministic_and_content_free():

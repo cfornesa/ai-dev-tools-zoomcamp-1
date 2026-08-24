@@ -96,6 +96,50 @@ describe('useEditorWorkspaceState loading', () => {
     expect(result.current.workingCopy).toBeNull();
   });
 
+  it('normalizes a legacy scene (shapes sharing one layerId) into a loadable, 1:1 working copy (Task 111, issue #142)', async () => {
+    const legacyScene = {
+      ...BLANK_SCENE,
+      shapes: [
+        {
+          id: 'shape-1',
+          type: 'circle',
+          layerId: 'layer-1',
+          groupId: null,
+          transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+          style: { fill: '#4f46e5', stroke: null, strokeWidth: 0 },
+          radius: 10,
+        },
+        {
+          id: 'shape-2',
+          type: 'circle',
+          layerId: 'layer-1', // shares a layer with shape-1 -- legacy, pre-Task-111 data
+          groupId: null,
+          transform: { x: 20, y: 20, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+          style: { fill: '#4f46e5', stroke: null, strokeWidth: 0 },
+          radius: 10,
+        },
+      ],
+    };
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion({ scene_json: legacyScene }));
+
+    const { result } = renderHook(() => useEditorWorkspaceState('p1'));
+
+    // Normalization happens before schema validation, so this loads
+    // cleanly rather than reporting 'no-scene' the way an actually
+    // malformed document would.
+    await waitFor(() => expect(result.current.loadState).toBe('ready'));
+
+    const workingShapes = result.current.workingCopy!.shapes as Array<{ layerId: string }>;
+    const layerIds = workingShapes.map((s) => s.layerId);
+    expect(new Set(layerIds).size).toBe(2); // no two shapes share a layer anymore
+
+    // persistedVersion.scene_json was normalized the same way, not just
+    // workingCopy -- so a legacy scene doesn't read as "unsaved changes"
+    // the instant it finishes loading.
+    expect(result.current.persistedVersion!.scene_json).toEqual(result.current.workingCopy);
+  });
+
   it('reports no-scene when the fetched version fails schema validation', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion({ scene_json: { not: 'a valid scene' } }));

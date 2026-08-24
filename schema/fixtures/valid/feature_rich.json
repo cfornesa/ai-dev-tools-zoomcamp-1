@@ -1,11 +1,50 @@
 {
   "schemaVersion": 1,
   "id": "scene-feature-rich",
-  "canvas": { "width": 1024, "height": 768, "backgroundColor": "#101014" },
-  "renderer": { "preferred": "p5" },
+  "canvas": {
+    "width": 1024,
+    "height": 768,
+    "backgroundColor": "#101014"
+  },
+  "renderer": {
+    "preferred": "p5"
+  },
   "layers": [
-    { "id": "layer-bg", "name": "Background", "order": 0, "visible": true, "locked": false },
-    { "id": "layer-fg", "name": "Foreground", "order": 1, "visible": true, "locked": false }
+    {
+      "id": "layer-bg",
+      "name": "Background",
+      "order": 0,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-fg",
+      "name": "Foreground",
+      "order": 1,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-fg-layer-1",
+      "name": "Foreground (copy)",
+      "order": 2,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-bg-layer-2",
+      "name": "Background (copy)",
+      "order": 3,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-fg-layer-3",
+      "name": "Foreground (copy)",
+      "order": 4,
+      "visible": true,
+      "locked": false
+    }
   ],
   "shapes": [
     {
@@ -13,18 +52,42 @@
       "type": "circle",
       "layerId": "layer-fg",
       "groupId": "group-cluster",
-      "transform": { "x": 100, "y": 150, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": "#ff5533", "stroke": "#000000", "strokeWidth": 2 },
-      "trail": { "length": 12 },
+      "transform": {
+        "x": 100,
+        "y": 150,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": {
+        "fill": "#ff5533",
+        "stroke": "#000000",
+        "strokeWidth": 2
+      },
+      "trail": {
+        "length": 12
+      },
       "radius": 40
     },
     {
       "id": "shape-rect",
       "type": "rect",
-      "layerId": "layer-fg",
+      "layerId": "layer-fg-layer-1",
       "groupId": "group-cluster",
-      "transform": { "x": 250, "y": 150, "scaleX": 1, "scaleY": 1, "rotation": 15, "opacity": 0.9 },
-      "style": { "fill": "#33aaff", "stroke": null, "strokeWidth": 0 },
+      "transform": {
+        "x": 250,
+        "y": 150,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 15,
+        "opacity": 0.9
+      },
+      "style": {
+        "fill": "#33aaff",
+        "stroke": null,
+        "strokeWidth": 0
+      },
       "width": 80,
       "height": 50,
       "cornerRadius": 6
@@ -34,38 +97,88 @@
       "type": "line",
       "layerId": "layer-bg",
       "groupId": null,
-      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": null, "stroke": "#ffffff", "strokeWidth": 3 },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": {
+        "fill": null,
+        "stroke": "#ffffff",
+        "strokeWidth": 3
+      },
       "x2": 400,
       "y2": 300
     },
     {
       "id": "shape-path",
       "type": "path",
-      "layerId": "layer-bg",
+      "layerId": "layer-bg-layer-2",
       "groupId": null,
-      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": "#22cc88", "stroke": "#004422", "strokeWidth": 1 },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": {
+        "fill": "#22cc88",
+        "stroke": "#004422",
+        "strokeWidth": 1
+      },
       "points": [
-        { "x": 0, "y": 0 },
-        { "x": 50, "y": 20 },
-        { "x": 30, "y": 80 }
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 50,
+          "y": 20
+        },
+        {
+          "x": 30,
+          "y": 80
+        }
       ],
       "closed": true
     },
     {
       "id": "shape-particles",
       "type": "particleEmitter",
-      "layerId": "layer-fg",
+      "layerId": "layer-fg-layer-3",
       "groupId": null,
-      "transform": { "x": 500, "y": 400, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": "#ffcc00", "stroke": null, "strokeWidth": 0 },
+      "transform": {
+        "x": 500,
+        "y": 400,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": {
+        "fill": "#ffcc00",
+        "stroke": null,
+        "strokeWidth": 0
+      },
       "rate": 20,
       "size": 4,
       "lifespan": 2.5,
       "speed": 60,
-      "palette": ["#ffcc00", "#ff6600"],
-      "physics": { "gravity": 0.5, "drag": 0.1, "forceX": 0, "forceY": 0 }
+      "palette": [
+        "#ffcc00",
+        "#ff6600"
+      ],
+      "physics": {
+        "gravity": 0.5,
+        "drag": 0.1,
+        "forceX": 0,
+        "forceY": 0
+      }
     }
   ],
   "groups": [
@@ -73,8 +186,18 @@
       "id": "group-cluster",
       "name": "Cluster",
       "layerId": "layer-fg",
-      "childIds": ["shape-circle", "shape-rect"],
-      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "childIds": [
+        "shape-circle",
+        "shape-rect"
+      ],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
       "visible": true,
       "locked": false
     }
@@ -88,7 +211,12 @@
       "targetId": "shape-circle",
       "targetProperty": "positionX",
       "composition": "replace",
-      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 1024 },
+      "mapping": {
+        "inMin": 0,
+        "inMax": 1,
+        "outMin": 0,
+        "outMax": 1024
+      },
       "smoothing": 0.3
     },
     {
@@ -99,7 +227,12 @@
       "targetId": "group-cluster",
       "targetProperty": "scaleX",
       "composition": "replace",
-      "mapping": { "inMin": 0, "inMax": 1, "outMin": 0.5, "outMax": 2 },
+      "mapping": {
+        "inMin": 0,
+        "inMax": 1,
+        "outMin": 0.5,
+        "outMax": 2
+      },
       "closeThreshold": 0.2,
       "farThreshold": 0.8,
       "releaseThreshold": 0.1,
@@ -121,43 +254,76 @@
         "id": "node-input-pinch",
         "family": "input",
         "type": "handSignal",
-        "params": { "signal": "pinchStrength" },
-        "position": { "x": 0, "y": 0 }
+        "params": {
+          "signal": "pinchStrength"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        }
       },
       {
         "id": "node-transform-map",
         "family": "transform",
         "type": "mapRange",
-        "params": { "inMin": 0, "inMax": 1, "outMin": 0, "outMax": 100 },
-        "position": { "x": 200, "y": 0 }
+        "params": {
+          "inMin": 0,
+          "inMax": 1,
+          "outMin": 0,
+          "outMax": 100
+        },
+        "position": {
+          "x": 200,
+          "y": 0
+        }
       },
       {
         "id": "node-condition-if",
         "family": "condition",
         "type": "ifElse",
-        "params": { "comparison": "greaterThan", "threshold": 50 },
-        "position": { "x": 400, "y": 0 }
+        "params": {
+          "comparison": "greaterThan",
+          "threshold": 50
+        },
+        "position": {
+          "x": 400,
+          "y": 0
+        }
       },
       {
         "id": "node-visual-shape",
         "family": "visual",
         "type": "shapeProperty",
-        "params": { "targetId": "shape-circle", "property": "opacity" },
-        "position": { "x": 600, "y": -50 }
+        "params": {
+          "targetId": "shape-circle",
+          "property": "opacity"
+        },
+        "position": {
+          "x": 600,
+          "y": -50
+        }
       },
       {
         "id": "node-flow-cooldown",
         "family": "flow",
         "type": "cooldown",
-        "params": { "milliseconds": 500 },
-        "position": { "x": 600, "y": 50 }
+        "params": {
+          "milliseconds": 500
+        },
+        "position": {
+          "x": 600,
+          "y": 50
+        }
       },
       {
         "id": "node-output-preview",
         "family": "output",
         "type": "previewTarget",
         "params": {},
-        "position": { "x": 800, "y": 0 }
+        "position": {
+          "x": 800,
+          "y": 0
+        }
       }
     ],
     "connections": [
@@ -198,7 +364,9 @@
       }
     ]
   },
-  "accessibility": { "reducedMotion": "auto" },
+  "accessibility": {
+    "reducedMotion": "auto"
+  },
   "demoSignals": {
     "palmX": 0.5,
     "palmY": 0.4,
@@ -211,5 +379,8 @@
     "Pinch your thumb and index finger to create particles.",
     "Press H to replay these hints."
   ],
-  "randomness": { "seed": 483920, "enabled": true }
+  "randomness": {
+    "seed": 483920,
+    "enabled": true
+  }
 }

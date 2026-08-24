@@ -92,12 +92,21 @@ function connection(id: string, fromNodeId: string, toNodeId: string) {
 
 describe('scene complexity limits', () => {
   it('accepts exactly maxShapes and rejects one over', () => {
+    // Task 111 (issue #142): every shape needs its own layerId now.
     const atLimit = baseScene();
-    atLimit.shapes = Array.from({ length: LIMITS.maxShapes }, (_, i) => circle(`shape-${i}`));
+    atLimit.shapes = Array.from({ length: LIMITS.maxShapes }, (_, i) =>
+      circle(`shape-${i}`, `layer-${i}`),
+    );
+    atLimit.layers = Array.from({ length: LIMITS.maxShapes }, (_, i) => layer(`layer-${i}`, i));
     expect(validateScene(atLimit).valid).toBe(true);
 
     const overLimit = baseScene();
-    overLimit.shapes = Array.from({ length: LIMITS.maxShapes + 1 }, (_, i) => circle(`shape-${i}`));
+    overLimit.shapes = Array.from({ length: LIMITS.maxShapes + 1 }, (_, i) =>
+      circle(`shape-${i}`, `layer-${i}`),
+    );
+    overLimit.layers = Array.from({ length: LIMITS.maxShapes + 1 }, (_, i) =>
+      layer(`layer-${i}`, i),
+    );
     const result = validateScene(overLimit);
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.message.includes('maxShapes'))).toBe(true);
@@ -134,12 +143,13 @@ describe('scene complexity limits', () => {
 
     const atLimit = baseScene();
     atLimit.shapes = Array.from({ length: limit }, (_, i) =>
-      circle(`shape-${i}`, 'layer-1', 'group-1'),
+      circle(`shape-${i}`, `layer-${i}`, 'group-1'),
     );
+    atLimit.layers = Array.from({ length: limit }, (_, i) => layer(`layer-${i}`, i));
     atLimit.groups = [
       group(
         'group-1',
-        'layer-1',
+        'layer-0',
         Array.from({ length: limit }, (_, i) => `shape-${i}`),
       ),
     ];
@@ -147,12 +157,13 @@ describe('scene complexity limits', () => {
 
     const overLimit = baseScene();
     overLimit.shapes = Array.from({ length: limit + 1 }, (_, i) =>
-      circle(`shape-${i}`, 'layer-1', 'group-1'),
+      circle(`shape-${i}`, `layer-${i}`, 'group-1'),
     );
+    overLimit.layers = Array.from({ length: limit + 1 }, (_, i) => layer(`layer-${i}`, i));
     overLimit.groups = [
       group(
         'group-1',
-        'layer-1',
+        'layer-0',
         Array.from({ length: limit + 1 }, (_, i) => `shape-${i}`),
       ),
     ];
@@ -234,14 +245,18 @@ describe('scene complexity limits', () => {
 
     const atLimit = baseScene();
     atLimit.shapes = [
-      particleEmitter('emitter-0', rateEachAtLimit),
-      particleEmitter('emitter-1', rateLimit - rateEachAtLimit),
+      particleEmitter('emitter-0', rateEachAtLimit, 'layer-0'),
+      particleEmitter('emitter-1', rateLimit - rateEachAtLimit, 'layer-1'),
     ];
+    atLimit.layers = [layer('layer-0', 0), layer('layer-1', 1)];
     expect(validateScene(atLimit).valid).toBe(true);
 
     const tooManyEmitters = baseScene();
     tooManyEmitters.shapes = Array.from({ length: emitterLimit + 1 }, (_, i) =>
-      particleEmitter(`emitter-${i}`, 1),
+      particleEmitter(`emitter-${i}`, 1, `layer-${i}`),
+    );
+    tooManyEmitters.layers = Array.from({ length: emitterLimit + 1 }, (_, i) =>
+      layer(`layer-${i}`, i),
     );
     let result = validateScene(tooManyEmitters);
     expect(result.valid).toBe(false);
@@ -249,9 +264,10 @@ describe('scene complexity limits', () => {
 
     const overRate = baseScene();
     overRate.shapes = [
-      particleEmitter('emitter-0', rateEachAtLimit),
-      particleEmitter('emitter-1', rateLimit - rateEachAtLimit + 1),
+      particleEmitter('emitter-0', rateEachAtLimit, 'layer-0'),
+      particleEmitter('emitter-1', rateLimit - rateEachAtLimit + 1, 'layer-1'),
     ];
+    overRate.layers = [layer('layer-0', 0), layer('layer-1', 1)];
     result = validateScene(overRate);
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.message.includes('maxTotalParticleRate'))).toBe(true);
@@ -322,12 +338,13 @@ describe('scene complexity limits', () => {
     const limit = LIMITS.maxShapes;
     const scene = baseScene();
     scene.shapes = Array.from({ length: limit + 1 }, (_, i) =>
-      circle(`shape-${i}`, 'layer-1', 'group-1'),
+      circle(`shape-${i}`, `layer-${i}`, 'group-1'),
     );
+    scene.layers = Array.from({ length: limit + 1 }, (_, i) => layer(`layer-${i}`, i));
     scene.groups = [
       group(
         'group-1',
-        'layer-1',
+        'layer-0',
         Array.from({ length: limit + 1 }, (_, i) => `shape-${i}`),
       ),
     ];

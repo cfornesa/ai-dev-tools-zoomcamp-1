@@ -1,10 +1,29 @@
 {
   "schemaVersion": 1,
   "id": "template-svg-kinetic-poster",
-  "canvas": { "width": 900, "height": 1200, "backgroundColor": "#fafaf9" },
-  "renderer": { "preferred": "p5" },
+  "canvas": {
+    "width": 900,
+    "height": 1200,
+    "backgroundColor": "#fafaf9"
+  },
+  "renderer": {
+    "preferred": "p5"
+  },
   "layers": [
-    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+    {
+      "id": "layer-1",
+      "name": "Layer 1",
+      "order": 0,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-1-layer-1",
+      "name": "Layer 1 (copy)",
+      "order": 1,
+      "visible": true,
+      "locked": false
+    }
   ],
   "shapes": [
     {
@@ -12,29 +31,76 @@
       "type": "path",
       "layerId": "layer-1",
       "groupId": null,
-      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": null, "stroke": "#111827", "strokeWidth": 6 },
-      "trail": { "length": 0 },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": {
+        "fill": null,
+        "stroke": "#111827",
+        "strokeWidth": 6
+      },
+      "trail": {
+        "length": 0
+      },
       "points": [
-        { "x": 120, "y": 200 },
-        { "x": 420, "y": 260 },
-        { "x": 240, "y": 520 },
-        { "x": 700, "y": 640 }
+        {
+          "x": 120,
+          "y": 200
+        },
+        {
+          "x": 420,
+          "y": 260
+        },
+        {
+          "x": 240,
+          "y": 520
+        },
+        {
+          "x": 700,
+          "y": 640
+        }
       ],
       "closed": false
     },
     {
       "id": "shape-stroke-b",
       "type": "path",
-      "layerId": "layer-1",
+      "layerId": "layer-1-layer-1",
       "groupId": null,
-      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": null, "stroke": "#dc2626", "strokeWidth": 4 },
-      "trail": { "length": 0 },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": {
+        "fill": null,
+        "stroke": "#dc2626",
+        "strokeWidth": 4
+      },
+      "trail": {
+        "length": 0
+      },
       "points": [
-        { "x": 150, "y": 800 },
-        { "x": 500, "y": 760 },
-        { "x": 780, "y": 980 }
+        {
+          "x": 150,
+          "y": 800
+        },
+        {
+          "x": 500,
+          "y": 760
+        },
+        {
+          "x": 780,
+          "y": 980
+        }
       ],
       "closed": false
     }
@@ -49,7 +115,12 @@
       "targetId": "shape-stroke-a",
       "targetProperty": "rotation",
       "composition": "replace",
-      "mapping": { "inMin": 0, "inMax": 1, "outMin": -20, "outMax": 20 },
+      "mapping": {
+        "inMin": 0,
+        "inMax": 1,
+        "outMin": -20,
+        "outMax": 20
+      },
       "smoothing": 0.5
     }
   ],
@@ -59,29 +130,51 @@
         "id": "node-input-speed",
         "family": "input",
         "type": "handSignal",
-        "params": { "signal": "handSpeed" },
-        "position": { "x": 0, "y": 0 }
+        "params": {
+          "signal": "handSpeed"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        }
       },
       {
         "id": "node-transform-map",
         "family": "transform",
         "type": "mapRange",
-        "params": { "inMin": 0, "inMax": 1, "outMin": 0.4, "outMax": 1 },
-        "position": { "x": 200, "y": 0 }
+        "params": {
+          "inMin": 0,
+          "inMax": 1,
+          "outMin": 0.4,
+          "outMax": 1
+        },
+        "position": {
+          "x": 200,
+          "y": 0
+        }
       },
       {
         "id": "node-visual-opacity",
         "family": "visual",
         "type": "shapeProperty",
-        "params": { "targetId": "shape-stroke-b", "property": "opacity" },
-        "position": { "x": 400, "y": 0 }
+        "params": {
+          "targetId": "shape-stroke-b",
+          "property": "opacity"
+        },
+        "position": {
+          "x": 400,
+          "y": 0
+        }
       },
       {
         "id": "node-output-preview",
         "family": "output",
         "type": "previewTarget",
         "params": {},
-        "position": { "x": 600, "y": 0 }
+        "position": {
+          "x": 600,
+          "y": 0
+        }
       }
     ],
     "connections": [
@@ -108,11 +201,22 @@
       }
     ]
   },
-  "accessibility": { "reducedMotion": "auto" },
-  "demoSignals": { "palmX": 0.5, "palmY": 0.5, "pinchStrength": 0, "handDistance": 0.5, "gestureState": "none" },
+  "accessibility": {
+    "reducedMotion": "auto"
+  },
+  "demoSignals": {
+    "palmX": 0.5,
+    "palmY": 0.5,
+    "pinchStrength": 0,
+    "handDistance": 0.5,
+    "gestureState": "none"
+  },
   "onboardingHints": [
     "Enable your camera, then move your hand to tilt and fade the poster strokes.",
     "Press H to replay these hints."
   ],
-  "randomness": { "seed": 4181, "enabled": true }
+  "randomness": {
+    "seed": 4181,
+    "enabled": true
+  }
 }

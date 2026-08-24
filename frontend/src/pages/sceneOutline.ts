@@ -194,16 +194,26 @@ export function removeShapeFromScene(scene: SceneDocument, shapeId: string): Sce
 // Layers
 // ---------------------------------------------------------------------------
 
-export function addLayer(scene: SceneDocument): Outcome {
+/** Builds a fresh, schema-valid layer (unique id, next sequential `order`,
+ * visible and unlocked by default) — the single construction `addLayer`
+ * below and `useSceneEditor.ts`'s `addShape`/`duplicateSelected` (Task 111,
+ * issue #142: every new or duplicated shape gets its own independent
+ * layer, never reusing an existing one) both build on, so a new layer's
+ * shape never drifts between call sites. */
+export function createLayerFor(scene: SceneDocument): Layer {
   const layers = getLayers(scene);
   const nextOrder = layers.reduce((max, l) => Math.max(max, l.order), -1) + 1;
-  const layer: Layer = {
+  return {
     id: crypto.randomUUID(),
     name: `Layer ${layers.length + 1}`,
     order: nextOrder,
     visible: true,
     locked: false,
   };
+}
+
+export function addLayer(scene: SceneDocument): Outcome {
+  const layer = createLayerFor(scene);
   const candidate = withLayers(scene, [...rawLayers(scene), layer]);
   const error = checkCandidate(candidate);
   if (error) return { ok: false, error };
@@ -307,20 +317,23 @@ function sameContainer(a: Container, b: Container): boolean {
   return false;
 }
 
-/** Combines two or more shapes/groups that belong to the same layer — not
- * necessarily the same immediate container — into one brand-new group with
- * an identity transform (Task 24 acceptance criterion: grouping never
- * moves anything visually). Each selected item is detached from wherever
- * it currently sits (the layer top level, or a parent group's `childIds`)
- * and attached to the new group instead, preserving the selected items'
- * relative draw order. When every selected item already shares one
- * immediate container, the new group is spliced into that exact
- * container at the position the selection occupied (matching prior
- * behavior); otherwise — since the items come from different containers —
- * the new group is placed at the layer's top level. Selections spanning
- * more than one layer, or mixing a group with one of its own descendants,
- * are rejected with an explanation rather than silently producing an
- * invalid or duplicated-membership scene document. */
+/** Combines two or more shapes/groups — regardless of which layer each one
+ * individually belongs to (Task 111/#142: every shape is its own
+ * independent layer, so requiring a shared layerId would make grouping
+ * impossible) — into one brand-new group with an identity transform (Task
+ * 24 acceptance criterion: grouping never moves anything visually). Each
+ * selected item is detached from wherever it currently sits (the layer
+ * top level, or a parent group's `childIds`) and attached to the new
+ * group instead, preserving the selected items' relative draw order; each
+ * member shape keeps its own individual `layerId` untouched. The new
+ * group itself adopts the first selected item's layerId. When every
+ * selected item already shares one immediate container, the new group is
+ * spliced into that exact container at the position the selection
+ * occupied (matching prior behavior); otherwise — since the items come
+ * from different containers — the new group is placed at the layer's top
+ * level. Mixing a group with one of its own descendants is rejected with
+ * an explanation rather than silently producing an invalid or
+ * duplicated-membership scene document. */
 export function groupItems(scene: SceneDocument, ids: string[]): Outcome {
   const uniqueIds = Array.from(new Set(ids));
   if (uniqueIds.length < 2) {
@@ -330,20 +343,21 @@ export function groupItems(scene: SceneDocument, ids: string[]): Outcome {
   const shapes = getEditableShapes(rawShapes(scene));
   const groups = getGroups(scene);
 
+  // Task 111 (issue #142): every shape is its own independent layer now,
+  // so requiring every selected item to already share one layerId would
+  // make it impossible to ever group two shapes together. The new group
+  // simply adopts the first selected item's layerId (an arbitrary but
+  // stable choice -- the group's own layerId only affects its outline/
+  // top-level position, never its members' individually-tracked
+  // layerIds, which `nextShapesRaw` below leaves untouched).
   let layerId: string | null = null;
   for (const id of uniqueIds) {
     const shape = shapes.find((s) => s.id === id);
     const group = shape ? undefined : groups.find((g) => g.id === id);
     if (!shape && !group)
       return { ok: false, error: 'One of the selected items no longer exists.' };
-    const itemLayerId = shape ? shape.layerId : group!.layerId;
     if (layerId === null) {
-      layerId = itemLayerId;
-    } else if (layerId !== itemLayerId) {
-      return {
-        ok: false,
-        error: 'You can only group items that belong to the same layer.',
-      };
+      layerId = shape ? shape.layerId : group!.layerId;
     }
     if (group) {
       const { shapeIds, groupIds } = collectDescendantIds(group.id, groups);
@@ -548,6 +562,28 @@ export function toggleGroupFlag(
   return { ok: true, scene: withGroups(scene, next) };
 }
 
+/** Task 111 (issue #142): toggles a shape's own `visible`/`locked` flag —
+ * the per-shape mirror of `toggleLayerFlag`/`toggleGroupFlag` above, now
+ * that a shape carries its own flag rather than only inheriting one.
+ * Absent (`undefined`) reads as `true` for `visible`/`false` for `locked`
+ * (the schema field's own backward-compatibility default — see
+ * `sceneShapes.ts`'s `BaseShape` doc comment), so the first toggle from
+ * that implicit default flips to the explicit opposite. */
+export function toggleShapeFlag(
+  scene: SceneDocument,
+  shapeId: string,
+  flag: 'visible' | 'locked',
+): Outcome {
+  const shapes = rawShapes(scene);
+  const idx = shapes.findIndex((raw) => (raw as { id?: unknown }).id === shapeId);
+  if (idx < 0) return { ok: false, error: 'That shape no longer exists.' };
+  const next = [...shapes];
+  const shape = next[idx] as { visible?: boolean; locked?: boolean };
+  const current = flag === 'visible' ? (shape.visible ?? true) : (shape.locked ?? false);
+  next[idx] = { ...shape, [flag]: !current };
+  return { ok: true, scene: withShapes(scene, next) };
+}
+
 // ---------------------------------------------------------------------------
 // Shared reorder (shapes and groups both live within a layer's top level or
 // a group's childIds — see the draw-order rule above)
@@ -616,19 +652,21 @@ export function moveItem(scene: SceneDocument, itemId: string, direction: 'up' |
       : { ok: true, scene: withGroups(scene, next) };
   }
 
+  // Task 111 (issue #142): every shape is its own independent layer now,
+  // so a "same layerId" sibling filter would always match only the shape
+  // itself, making a plain array-position swap within `shapes` a
+  // permanent no-op AND pointless even if it weren't -- both
+  // `buildOutline` and `sceneDrawPlan.ts`'s `buildScenePlan` iterate
+  // layers (sorted by `order`) as the primary top-level ordering, only
+  // using `shapes`/`groups` array position as a tiebreaker *within* one
+  // layer. Since a top-level shape is now effectively alone on its own
+  // layer, "move this shape up/down" is the same operation as "move its
+  // layer up/down among its peers" -- delegate to `moveLayer` so this
+  // shape's position in the outline and on canvas actually changes,
+  // consistent with a top-level group (still ordered by its own
+  // `layerId`'s layer, unchanged by this task).
   const s = shapes.find((x) => x.id === itemId)!;
-  const next = swapAmongMatching(rawShapes(scene), itemId, direction, (item) => {
-    const si = item as { type?: unknown; layerId?: unknown; groupId?: unknown };
-    return (
-      typeof si.type === 'string' &&
-      si.layerId === s.layerId &&
-      (si.groupId === null || si.groupId === undefined)
-    );
-  });
-  if (next === null) return { ok: false, error: 'That item no longer exists.' };
-  return next === rawShapes(scene)
-    ? { ok: true, scene }
-    : { ok: true, scene: withShapes(scene, next) };
+  return moveLayer(scene, s.layerId, direction);
 }
 
 // ---------------------------------------------------------------------------
@@ -651,8 +689,15 @@ export function moveItem(scene: SceneDocument, itemId: string, direction: 'up' |
 
 /** Moves a shape or group to a different layer's top level, detaching it
  * from its current parent group (if any). Preserves the item's id and
- * every other property; for a group, every descendant shape/group's
- * `layerId` moves with it so the whole subtree stays on one layer. */
+ * every other property. For a group, every descendant *group*'s `layerId`
+ * moves with it (nested groups may freely share a layerId with one
+ * another — only shapes are constrained to one-per-layer), but descendant
+ * *shapes* keep their own individually-tracked `layerId` untouched (Task
+ * 111/#142: forcing every descendant shape onto the same target layerId
+ * would violate the one-shape-per-layer invariant the moment a group has
+ * more than one member shape). Moving a group to a layer is therefore a
+ * statement about the group's own top-level position, not a claim that
+ * its member shapes now share one layer. */
 export function moveItemToLayer(
   scene: SceneDocument,
   itemId: string,
@@ -699,13 +744,7 @@ export function moveItemToLayer(
   if (movedGroup.layerId === targetLayerId && isGroupTopLevel(movedGroup.id, groups)) {
     return { ok: true, scene };
   }
-  const { shapeIds, groupIds } = collectDescendantIds(movedGroup.id, groups);
-  const nextShapesRaw = rawShapes(scene).map((raw) => {
-    const s = raw as { id?: unknown };
-    return shapeIds.has(String(s.id))
-      ? { ...(raw as Record<string, unknown>), layerId: targetLayerId }
-      : raw;
-  });
+  const { groupIds } = collectDescendantIds(movedGroup.id, groups);
   const nextGroupsRaw = rawGroups(scene).map((raw) => {
     const g = raw as { id?: unknown; childIds?: unknown };
     if (groupIds.has(String(g.id))) {
@@ -719,18 +758,22 @@ export function moveItemToLayer(
     }
     return raw;
   });
-  const candidate = pruneEmptyGroups(withGroups(withShapes(scene, nextShapesRaw), nextGroupsRaw));
+  const candidate = pruneEmptyGroups(withGroups(scene, nextGroupsRaw));
   const error = checkCandidate(candidate);
   if (error) return { ok: false, error };
   return { ok: true, scene: candidate };
 }
 
-/** Moves a shape or group into a different group on the same layer, or (when
- * `targetGroupId` is `null`) promotes it out to its layer's top level.
- * Preserves the item's id and every other property. Rejects a move into
- * the item's own descendant, into a group on a different layer, or one
- * that would exceed `maxGroupChildIds`/`maxGroupNestingDepth` — the same
- * `checkCandidate` gate every other mutation here uses. */
+/** Moves a shape or group into a different group — regardless of which
+ * layer either one individually belongs to (Task 111/#142: every shape is
+ * its own independent layer, so a same-layer precondition here would
+ * reject moving almost any shape into almost any group; the moved item's
+ * own `layerId` stays untouched, only its `groupId`/parent changes) — or
+ * (when `targetGroupId` is `null`) promotes it out to its layer's top
+ * level. Preserves the item's id and every other property. Rejects a move
+ * into the item's own descendant, or one that would exceed
+ * `maxGroupChildIds`/`maxGroupNestingDepth` — the same `checkCandidate`
+ * gate every other mutation here uses. */
 export function moveItemToGroup(
   scene: SceneDocument,
   itemId: string,
@@ -741,7 +784,6 @@ export function moveItemToGroup(
   const shape = shapes.find((s) => s.id === itemId);
   const group = shape ? undefined : groups.find((g) => g.id === itemId);
   if (!shape && !group) return { ok: false, error: 'That item no longer exists.' };
-  const itemLayerId = shape ? shape.layerId : group!.layerId;
 
   const detachFromCurrentParent = (rawGroupsList: unknown[]): unknown[] =>
     rawGroupsList.map((raw) => {
@@ -774,9 +816,11 @@ export function moveItemToGroup(
   }
   const targetGroup = groups.find((g) => g.id === targetGroupId);
   if (!targetGroup) return { ok: false, error: 'That group no longer exists.' };
-  if (targetGroup.layerId !== itemLayerId) {
-    return { ok: false, error: 'You can only move an item into a group on the same layer.' };
-  }
+  // Task 111 (issue #142): every shape is its own independent layer now,
+  // so requiring the moved item's layerId to match the target group's
+  // would reject moving almost any shape into almost any group. A
+  // shape's own layerId (like grouping itself -- see groupItems above)
+  // stays untouched by this move; only its groupId changes.
   if (group) {
     const { groupIds } = collectDescendantIds(group.id, groups);
     if (groupIds.has(targetGroupId)) {
@@ -844,7 +888,11 @@ export function isEffectivelyLocked(scene: SceneDocument, id: string): boolean {
   }
 
   const layerId = shape ? shape.layerId : group!.layerId;
-  const ownLocked = shape ? false : group!.locked;
+  // Task 111 (issue #142): a shape now carries its own optional `locked`
+  // flag (absent means unlocked, matching the schema field's own
+  // backward-compatibility default) -- folded into the same OR-cascade a
+  // group's own flag already went through.
+  const ownLocked = shape ? (shape.locked ?? false) : group!.locked;
 
   let ancestorGroupId = shape ? shape.groupId : (findParentGroup(group!.id, groups)?.id ?? null);
   let ancestorLocked = false;
@@ -905,6 +953,15 @@ export type OutlineRow =
       // Task 80 (issue #110): a stable, readable label ("Circle 2") in
       // place of a truncated UUID — see `sceneShapes.ts`'s `shapeLabel`.
       label: string;
+      // Task 111 (issue #142): a shape's own visibility/lock flags, the
+      // same own-vs-cascaded distinction a group row already carries (see
+      // that variant's own doc comment above) -- `visible`/`locked` here
+      // are what the new per-shape toggle buttons reflect and mutate;
+      // `inheritedVisible`/`inheritedLocked` are the display-only
+      // cascaded values folding those in with every ancestor group and
+      // the layer.
+      visible: boolean;
+      locked: boolean;
       inheritedVisible: boolean;
       inheritedLocked: boolean;
       layerId: string;
@@ -938,7 +995,9 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
       typeLabel: shape.type,
       shapeType: shape.type,
       label: shapeLabel(shape, shapes),
-      inheritedVisible,
+      visible: shape.visible ?? true,
+      locked: shape.locked ?? false,
+      inheritedVisible: inheritedVisible && (shape.visible ?? true),
       inheritedLocked: isEffectivelyLocked(scene, shape.id),
       layerId: shape.layerId,
       isFirst,
@@ -1000,8 +1059,23 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
     topGroups.forEach((group, i) => {
       emitGroup(group, 1, i === 0, i === topGroups.length - 1, layer.visible);
     });
+    // Task 111 (issue #142): `moveItem` on a top-level shape now delegates
+    // to `moveLayer` on that shape's own layer (see its doc comment for
+    // why -- every shape is effectively alone on its layer, so the
+    // layer's position among ALL layers is what "move up/down" actually
+    // changes). `isFirst`/`isLast` here must agree with that: the old
+    // "first/last among this layer's topShapes" was always both true for
+    // a layer with exactly one shape, permanently disabling the Move up/
+    // down buttons. Using the layer's own position keeps them enabled/
+    // disabled exactly when a `moveLayer` call would actually be a no-op.
     topShapes.forEach((shape, i) => {
-      emitShape(shape, 1, i === 0, i === topShapes.length - 1, layer.visible);
+      emitShape(
+        shape,
+        1,
+        i === 0 && layerIndex === 0,
+        i === topShapes.length - 1 && layerIndex === layers.length - 1,
+        layer.visible,
+      );
     });
   });
 

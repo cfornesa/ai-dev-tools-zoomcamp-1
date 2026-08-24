@@ -285,6 +285,33 @@ def _check_references(data: dict) -> list[SceneValidationError]:
                 )
             )
 
+    # Task 111 (issue #142): every shape is its own independent layer -- no
+    # two shapes may share a layerId. Not expressible in JSON Schema alone
+    # (it's a cross-item constraint), so this is a sibling check to the
+    # danglingReference rules just above, matching that pattern. A legacy
+    # document that violates this (common in scenes saved before this task)
+    # is never rejected outright here -- callers that read a possibly-legacy
+    # scene_json for use as a new version's content (fork, template clone)
+    # must run `normalize_scene_layers` first; see its doc comment.
+    shape_indices_by_layer_id: dict[str, list[int]] = {}
+    for index, shape in enumerate(shapes):
+        layer_id = shape.get("layerId")
+        if layer_id is not None:
+            shape_indices_by_layer_id.setdefault(layer_id, []).append(index)
+    for layer_id, indices in shape_indices_by_layer_id.items():
+        if len(indices) > 1:
+            for index in indices:
+                errors.append(
+                    SceneValidationError(
+                        path=f"$.shapes[{index}].layerId",
+                        rule="duplicateLayerAssignment",
+                        message=(
+                            f"layerId '{layer_id}' is assigned to {len(indices)} shapes; "
+                            "each shape must have its own layer."
+                        ),
+                    )
+                )
+
     groups_by_id = {group["id"]: group for group in groups}
     for index, group in enumerate(groups):
         if group.get("layerId") not in layer_ids:
@@ -466,6 +493,96 @@ def _check_limits(data: dict) -> list[SceneValidationError]:
     _cap("$", payload_bytes, "maxScenePayloadBytes")
 
     return errors
+
+
+def normalize_scene_layers(data: dict) -> tuple[dict, bool]:
+    """Task 111 (issue #142): read-time normalization for the shared-layerId
+    invariant `_check_references`' `duplicateLayerAssignment` rule now
+    enforces going forward.
+
+    `SceneVersion.scene_json` is immutable after creation (a PostgreSQL
+    trigger -- see `scenes/migrations/0002_postgres_invariants.py`), so an
+    already-stored document that predates this task (multiple shapes
+    sharing one `layerId`, which was allowed before) can never be rewritten
+    in place. This function is the alternative: given a scene document that
+    may be legacy, it returns an equivalent document where every such
+    conflict is resolved by giving each conflicting shape its own new layer
+    (cloned from the original layer's `visible`/`locked` state, named with
+    a `(copy)` suffix), preserving every shape's relative position in
+    `shapes` (draw order) and every other field untouched. Returns the
+    original object unchanged (and `False`) if there was nothing to
+    normalize, so a caller can cheaply detect a no-op.
+
+    This is deliberately NOT called from inside `validate_scene` itself --
+    that function is a pure validator used at every save/AI-accept/
+    publish/export choke point, and silently rewriting its input there
+    would let already-normalized-in-the-frontend saves diverge unnoticed
+    from what a caller thinks it sent. Callers that construct a NEW
+    `SceneVersion`/`Template` from an EXISTING, possibly-legacy
+    `scene_json` (`ProjectForkView`, `TemplateCloneView` in `scenes/api.py`)
+    call this explicitly before `validate_scene`, exactly where
+    `frontend/src/validation/scene.ts`'s equivalent
+    `normalizeSceneLayers` is called before loading a version into the
+    editor. `SceneVersionRestoreView` does not call `validate_scene` at
+    all (restore is unconditional -- see that view's own code), so it
+    needs no normalization call either.
+    """
+    shapes = data.get("shapes", [])
+    layers = data.get("layers", [])
+    layers_by_id = {layer["id"]: layer for layer in layers}
+
+    used_ids: set[str] = {layer["id"] for layer in layers}
+    used_ids |= {shape["id"] for shape in shapes}
+    used_ids |= {group["id"] for group in data.get("groups", [])}
+
+    counter = 1
+
+    def fresh_id(base: str) -> str:
+        nonlocal counter
+        candidate = f"{base}-layer-{counter}"
+        while candidate in used_ids:
+            counter += 1
+            candidate = f"{base}-layer-{counter}"
+        used_ids.add(candidate)
+        counter += 1
+        return candidate
+
+    max_order = max((layer.get("order", 0) for layer in layers), default=-1)
+
+    seen_layer_ids: set[str] = set()
+    new_layers = list(layers)
+    new_shapes: list[dict] = []
+    changed = False
+
+    for shape in shapes:
+        layer_id = shape.get("layerId")
+        if layer_id is not None and layer_id in seen_layer_ids:
+            original = layers_by_id.get(layer_id)
+            max_order += 1
+            new_layer = {
+                "id": fresh_id(layer_id),
+                "name": f"{original['name']} (copy)" if original else "Layer",
+                "order": max_order,
+                "visible": original.get("visible", True) if original else True,
+                "locked": original.get("locked", False) if original else False,
+            }
+            new_layers.append(new_layer)
+            new_shape = dict(shape)
+            new_shape["layerId"] = new_layer["id"]
+            new_shapes.append(new_shape)
+            changed = True
+            continue
+        if layer_id is not None:
+            seen_layer_ids.add(layer_id)
+        new_shapes.append(shape)
+
+    if not changed:
+        return data, False
+
+    normalized = dict(data)
+    normalized["layers"] = new_layers
+    normalized["shapes"] = new_shapes
+    return normalized, True
 
 
 def validate_scene(data: Any) -> SceneValidationResult:

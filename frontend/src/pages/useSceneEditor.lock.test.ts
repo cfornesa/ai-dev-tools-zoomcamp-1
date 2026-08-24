@@ -77,24 +77,26 @@ describe('useSceneEditor lock guard: duplicate/delete', () => {
   it('blocks duplicating a shape on a locked layer, with a clear message, and does not mutate scene state', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
+    // Task 111 (issue #142): addShape gives the new shape its own fresh
+    // layer -- lock that layer, not the scene's pre-existing "layer-1".
     const [a] = result.current.shapes;
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    act(() => result.current.toggleLayerLocked(a.layerId));
 
     act(() => result.current.duplicateSelected());
 
     expect(result.current.shapes).toHaveLength(1);
     expect(result.current.lockError).toMatch(/locked/i);
-    void a;
   });
 
   it('allows duplicating once the layer is unlocked again', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    const [a] = result.current.shapes;
+    act(() => result.current.toggleLayerLocked(a.layerId));
     act(() => result.current.duplicateSelected());
     expect(result.current.shapes).toHaveLength(1);
 
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    act(() => result.current.toggleLayerLocked(a.layerId));
     act(() => result.current.duplicateSelected());
 
     expect(result.current.shapes).toHaveLength(2);
@@ -104,7 +106,8 @@ describe('useSceneEditor lock guard: duplicate/delete', () => {
   it('blocks deleting a shape on a locked layer, with a clear message, and does not mutate scene state', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    const [a] = result.current.shapes;
+    act(() => result.current.toggleLayerLocked(a.layerId));
 
     act(() => result.current.deleteSelected());
 
@@ -115,11 +118,12 @@ describe('useSceneEditor lock guard: duplicate/delete', () => {
   it('allows deleting once unlocked', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    const [a] = result.current.shapes;
+    act(() => result.current.toggleLayerLocked(a.layerId));
     act(() => result.current.deleteSelected());
     expect(result.current.shapes).toHaveLength(1);
 
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    act(() => result.current.toggleLayerLocked(a.layerId));
     act(() => result.current.deleteSelected());
 
     expect(result.current.shapes).toHaveLength(0);
@@ -148,7 +152,8 @@ describe('useSceneEditor lock guard: inspector field edits (Task 60)', () => {
   it('blocks a numeric field edit on a shape whose layer is locked, and does not mutate scene state', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    const [a] = result.current.shapes;
+    act(() => result.current.toggleLayerLocked(a.layerId));
 
     let outcome: { ok: true } | { ok: false; error: string } = { ok: true };
     act(() => {
@@ -163,7 +168,8 @@ describe('useSceneEditor lock guard: inspector field edits (Task 60)', () => {
   it('blocks a color field edit on a locked shape and allows it once unlocked', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    const [a] = result.current.shapes;
+    act(() => result.current.toggleLayerLocked(a.layerId));
 
     let blocked: { ok: true } | { ok: false; error: string } = { ok: true };
     act(() => {
@@ -171,7 +177,7 @@ describe('useSceneEditor lock guard: inspector field edits (Task 60)', () => {
     });
     expect(blocked.ok).toBe(false);
 
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    act(() => result.current.toggleLayerLocked(a.layerId));
     let allowed: { ok: true } | { ok: false; error: string } = { ok: false, error: '' };
     act(() => {
       allowed = result.current.updateSelectedShapeColorField('fill', '#123456');
@@ -238,11 +244,12 @@ describe('useSceneEditor lock guard: reparenting (Task 76)', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
     const [a] = result.current.shapes;
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    const originalLayerId = a.layerId;
+    act(() => result.current.toggleLayerLocked(originalLayerId));
 
     act(() => result.current.moveItemToLayer(a.id, 'layer-2'));
 
-    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-1');
+    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe(originalLayerId);
     expect(result.current.outlineError).toMatch(/locked/i);
   });
 
@@ -250,11 +257,12 @@ describe('useSceneEditor lock guard: reparenting (Task 76)', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
     const [a] = result.current.shapes;
+    const originalLayerId = a.layerId;
     act(() => result.current.toggleLayerLocked('layer-2'));
 
     act(() => result.current.moveItemToLayer(a.id, 'layer-2'));
 
-    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-1');
+    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe(originalLayerId);
     expect(result.current.outlineError).toMatch(/locked/i);
   });
 
@@ -281,7 +289,7 @@ describe('useSceneEditor lock guard: reparenting (Task 76)', () => {
     act(() => result.current.groupSelected());
     const groupId = result.current.groups[0].id;
 
-    act(() => result.current.toggleLayerLocked('layer-1')); // locks `a` too
+    act(() => result.current.toggleLayerLocked(a.layerId)); // locks `a` too
 
     act(() => result.current.moveItemToGroup(a.id, groupId));
 
@@ -316,7 +324,7 @@ describe('useSceneEditor lock guard: group/ungroup/delete-group', () => {
     act(() => result.current.addShape('circle'));
     act(() => result.current.addShape('rect'));
     const [a, b] = result.current.shapes;
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    act(() => result.current.toggleLayerLocked(a.layerId));
 
     act(() => result.current.toggleMultiSelect(a.id));
     act(() => result.current.toggleMultiSelect(b.id));
@@ -430,8 +438,9 @@ describe('useSceneEditor lock guard: selection and unlocking remain unrestricted
     act(() => result.current.toggleMultiSelect(b.id));
     act(() => result.current.groupSelected());
     const groupId = result.current.groups[0].id;
+    const groupLayerId = result.current.groups[0].layerId;
     act(() => result.current.toggleGroupLocked(groupId));
-    act(() => result.current.toggleLayerLocked('layer-1'));
+    act(() => result.current.toggleLayerLocked(groupLayerId));
 
     // Unlocking the group itself always succeeds, even though the layer's
     // own lock means the group stays effectively locked afterward — that's

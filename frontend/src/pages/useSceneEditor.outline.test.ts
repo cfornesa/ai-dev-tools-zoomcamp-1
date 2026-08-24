@@ -221,7 +221,7 @@ describe('useSceneEditor grouping', () => {
 });
 
 describe('useSceneEditor reorder', () => {
-  it('reorders shapes within their layer via moveItem', () => {
+  it("reorders a top-level shape by reordering its own layer (Task 111/#142: each shape is alone on its layer, so 'move up/down' now delegates to moveLayer)", () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
     act(() => result.current.addShape('rect'));
@@ -229,7 +229,16 @@ describe('useSceneEditor reorder', () => {
 
     act(() => result.current.moveItem(b.id, 'up'));
 
-    expect(result.current.shapes.map((s) => s.id)).toEqual([b.id, a.id]);
+    // TWO_LAYER_SCENE's pre-existing "layer-1"/"layer-2" are untouched;
+    // only a's and b's own fresh layers (the last two, swapped) change.
+    expect(result.current.layers.map((l) => l.id)).toEqual([
+      'layer-1',
+      'layer-2',
+      b.layerId,
+      a.layerId,
+    ]);
+    // The shapes array order and each shape's own layerId are untouched.
+    expect(result.current.shapes.map((s) => s.id)).toEqual([a.id, b.id]);
   });
 });
 
@@ -238,7 +247,11 @@ describe('useSceneEditor reparenting (Task 76)', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
     const [a] = result.current.shapes;
-    expect(a.layerId).toBe('layer-1');
+    // Task 111 (issue #142): addShape gives every new shape its own fresh
+    // layer rather than the scene's pre-existing "layer-1" -- capture it
+    // dynamically instead of assuming a fixed id.
+    const originalLayerId = a.layerId;
+    expect(originalLayerId).not.toBe('layer-2');
 
     act(() => result.current.moveItemToLayer(a.id, 'layer-2'));
 
@@ -246,7 +259,7 @@ describe('useSceneEditor reparenting (Task 76)', () => {
     expect(result.current.canUndo).toBe(true);
 
     act(() => result.current.undo());
-    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-1');
+    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe(originalLayerId);
 
     act(() => result.current.redo());
     expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-2');
@@ -256,12 +269,13 @@ describe('useSceneEditor reparenting (Task 76)', () => {
     const { result } = renderSceneEditor();
     act(() => result.current.addShape('circle'));
     const [a] = result.current.shapes;
+    const originalLayerId = a.layerId;
     const undoDepthBefore = result.current.canUndo;
 
     act(() => result.current.moveItemToLayer(a.id, 'does-not-exist'));
 
     expect(result.current.outlineError).toMatch(/layer no longer exists/);
-    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe('layer-1');
+    expect(result.current.shapes.find((s) => s.id === a.id)?.layerId).toBe(originalLayerId);
     expect(result.current.canUndo).toBe(undoDepthBefore); // the rejected move committed no new step
   });
 

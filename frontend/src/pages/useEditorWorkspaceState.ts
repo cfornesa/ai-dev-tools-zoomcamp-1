@@ -8,7 +8,7 @@ import {
   type SceneDocument,
   type SceneVersion,
 } from '../api/projects';
-import { validateScene } from '../validation/scene';
+import { normalizeSceneLayers, validateScene } from '../validation/scene';
 
 export type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
 
@@ -53,16 +53,24 @@ export function useEditorWorkspaceState(id: string | undefined) {
         const version = await getSceneVersion(id, fetchedProject.current_version);
         if (cancelled) return;
 
-        const result = validateScene(version.scene_json);
+        // Task 111 (issue #142): a version saved before this task may have
+        // multiple shapes sharing one layerId, which validateScene now
+        // rejects -- normalize before validating so a legacy scene still
+        // loads. `persistedVersion.scene_json` is replaced with the
+        // normalized form too (not just `workingCopy`), so `isDirty`
+        // (which compares the two) doesn't spuriously read "unsaved
+        // changes" the instant a legacy scene finishes loading.
+        const { scene: normalizedScene } = normalizeSceneLayers(version.scene_json);
+        const result = validateScene(normalizedScene);
         if (!result.valid) {
           setLoadState('no-scene');
           return;
         }
 
-        setPersistedVersion(version);
+        setPersistedVersion({ ...version, scene_json: normalizedScene });
         // A deep copy: the working copy must be free to mutate without
         // ever reaching back into the persisted version's own object graph.
-        setWorkingCopy(structuredClone(version.scene_json));
+        setWorkingCopy(structuredClone(normalizedScene));
         setLoadState('ready');
       } catch (err) {
         if (cancelled) return;

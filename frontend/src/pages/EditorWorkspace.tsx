@@ -48,7 +48,7 @@ import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
-import { normalizeSceneLayers } from '../validation/scene';
+import { normalizeSceneLayers, validateScene } from '../validation/scene';
 import { buildOutline, isEffectivelyLocked } from './sceneOutline';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
@@ -350,6 +350,116 @@ function EditorToolbarColorControl({ sceneEditor }: { sceneEditor: SceneEditor }
 }
 
 /**
+ * Issue #159: the Code tab — an editable, pretty-printed JSON view of the
+ * live `workingCopy`, validated with the exact same `validateScene`
+ * (schema structure + referential integrity — see
+ * `frontend/src/validation/scene.ts`) every other scene-editing surface in
+ * this app already goes through, rather than a second, divergent
+ * validator.
+ *
+ * Sync strategy (both directions documented per the issue's acceptance
+ * criterion):
+ * - **Code -> Visual**: on blur, not on every keystroke. `text` is local
+ *   state the textarea is fully controlled by while focused, so a
+ *   mid-edit, momentarily-invalid JSON string is never validated against
+ *   half-typed content. On blur the text is parsed, then schema-validated;
+ *   only a fully valid document calls `onCommit` (`setWorkingCopy`), which
+ *   the existing render-on-`workingCopy`-change effect elsewhere in this
+ *   file immediately re-renders Visual from — no separate "apply" step.
+ *   An invalid result never calls `onCommit` (Visual's last-known-good
+ *   render is left completely untouched) and is shown as this component's
+ *   own inline error instead, distinct from `previewError`.
+ * - **Visual -> Code**: this component is only ever mounted while the Code
+ *   sub-view is active (see the `previewView === 'code'` guard in the main
+ *   render below) and is unmounted the instant the user switches back to
+ *   Visual — so its `useState` initializer re-derives `text` fresh from
+ *   whatever `workingCopy` is current every time the Code tab becomes
+ *   active again. That satisfies "reflected next time the Code tab is
+ *   viewed/focused" with no extra effect or listener needed: there is
+ *   nothing to resync while the Code tab isn't even mounted.
+ */
+function SceneCodeEditor({
+  workingCopy,
+  onCommit,
+}: {
+  workingCopy: SceneDocument | null;
+  onCommit: (scene: SceneDocument) => void;
+}) {
+  const [text, setText] = useState(() => JSON.stringify(workingCopy, null, 2));
+  const [error, setError] = useState<string | null>(null);
+
+  function commitIfValid() {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch (err) {
+      setError(
+        `Invalid JSON: ${err instanceof Error ? err.message : 'could not parse this text.'}`,
+      );
+      return;
+    }
+    const result = validateScene(parsed);
+    if (!result.valid) {
+      setError(result.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
+      return;
+    }
+    setError(null);
+    onCommit(parsed as SceneDocument);
+  }
+
+  return (
+    <div className="editor-code-tab">
+      <label htmlFor="editor-scene-code-textarea">Scene JSON</label>
+      <textarea
+        id="editor-scene-code-textarea"
+        data-testid="editor-scene-code-textarea"
+        className="editor-scene-code-textarea"
+        spellCheck={false}
+        rows={24}
+        style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85em' }}
+        value={text}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? 'editor-scene-code-error' : undefined}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={commitIfValid}
+      />
+      {error && (
+        <p id="editor-scene-code-error" role="alert" aria-live="assertive">
+          Invalid scene JSON — not applied: {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Issue #159: tries to pull a JSON-Pointer-ish location out of a
+ * `previewError` message, for the two known-shaped, genuinely localizable
+ * failure classes `render/sceneDrawPlan.ts`'s `buildScenePlan` throws (see
+ * that module's `SceneRenderError` call sites) — a dangling reference
+ * caught by its own pre-pass (`shapes[2] (id "s1").layerId: "xyz" does
+ * not match any layer.`), or one caught by its `validateScene` backstop
+ * (`Cannot render an invalid scene: $.shapes[2].layerId — message`).
+ * Returns `null` for any other message (e.g. a generic third-party p5
+ * internal crash), in which case the caller falls back to the plain
+ * message unchanged — matching the issue's "a genuinely generic crash can
+ * still fall back to the existing message" acceptance criterion.
+ */
+function localizePreviewError(message: string): { pointer: string; detail: string } | null {
+  const prePassMatch = message.match(/^(\w+)\[(\d+)] \(id "[^"]*"\)\.([\w.]+): (.*)$/);
+  if (prePassMatch) {
+    const [, collection, index, field, detail] = prePassMatch;
+    return { pointer: `$.${collection}[${index}].${field}`, detail };
+  }
+  const backstopMatch = message.match(/^Cannot render an invalid scene: (\$\S*) — (.*)$/);
+  if (backstopMatch) {
+    const [, pointer, detail] = backstopMatch;
+    return { pointer, detail };
+  }
+  return null;
+}
+
+/**
  * Task 21: the three-panel editor workspace shell. Loads the project and
  * its current scene version into a working copy on mount, then renders
  * three landmark regions (Tools, Preview, Inspector) side by side at
@@ -622,6 +732,33 @@ function EditorWorkspace() {
     setDraftFailureNotice(null);
   }
 
+  // Issue #159: shared by both `AIProposalPanel` instances rendered below
+  // — the always-present one inside the "AI proposals" `CollapsibleSection`
+  // and the "Ask AI to fix this" one seeded from `previewError` — so an
+  // accepted proposal is applied identically regardless of which one it
+  // came from. Extracted from what used to be an inline `onAccepted` on
+  // the sole instance; behavior is unchanged for that existing call site.
+  function handleAIProposalAccepted(version: SceneVersion) {
+    // Task 111 (issue #142): defensive normalization matching
+    // `onRestored`'s identical call below -- the accepted version's base
+    // scene already comes from this session's (already-normalized)
+    // workingCopy, so this is normally a no-op, but stays consistent with
+    // every other scene_json load site rather than assuming that
+    // invariant holds without checking.
+    const { scene: normalizedScene } = normalizeSceneLayers(version.scene_json);
+    const normalizedVersion = { ...version, scene_json: normalizedScene };
+    setPersistedVersion(normalizedVersion);
+    setWorkingCopy(structuredClone(normalizedScene));
+    setProject((current) => (current ? { ...current, current_version: version.id } : current));
+    // Issue #125: same treatment as `onRestored` below — an accepted AI
+    // proposal already persists a new authoritative version server-side,
+    // so it must clear both drafts rather than re-write a server draft
+    // duplicating that just-persisted content.
+    const acceptedScene = structuredClone(normalizedScene);
+    void draftAutosave.clearDraft(acceptedScene);
+    void draftServerSync.deleteServerDraft(acceptedScene);
+  }
+
   async function handleConfirmExit() {
     // Issue #125: same default-to-`workingCopy` baseline as
     // `handleVersionSaved` above — after this, the working copy won't
@@ -723,6 +860,33 @@ function EditorWorkspace() {
   // would just leave a stale highlight behind once the gesture ends).
   const [hoveredShapeId, setHoveredShapeId] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+
+  // Issue #159: Visual/Code is a sub-toggle inside the Preview panel
+  // (implementer's-call option from the issue) rather than a new entry in
+  // `EditorPanelSwitcher`'s narrow-viewport tab list — Preview is never
+  // one of that switcher's tabs (see `panelHidden` below), so a Code view
+  // of the very same scene document belongs alongside it, not behind a
+  // separate top-level tab.
+  const [previewView, setPreviewView] = useState<'visual' | 'code'>('visual');
+
+  // Issue #159: "Ask AI to fix this" (rendered next to `previewError`
+  // below) seeds a SECOND `AIProposalPanel` instance, mounted only while
+  // `showAiFixPanel` is true, rather than reaching into the "AI
+  // proposals" `CollapsibleSection` further down (which owns its own
+  // open/closed state internally and isn't controllable from here without
+  // touching `CollapsibleSection.tsx` — out of this issue's file
+  // constraints). `aiFixSeed.nonce` (not just its `prompt` text) changes
+  // on every click so `AIProposalPanel`'s seed effect fires again even for
+  // two clicks describing the identical error.
+  const [showAiFixPanel, setShowAiFixPanel] = useState(false);
+  const [aiFixSeed, setAiFixSeed] = useState<{ prompt: string; nonce: number } | null>(null);
+
+  // Closes the ask-AI-to-fix panel automatically once the render failure
+  // it was opened for is actually resolved (a scene edit, an accepted AI
+  // proposal, undo, etc.) — never left open pointing at a stale error.
+  useEffect(() => {
+    if (!previewError) setShowAiFixPanel(false);
+  }, [previewError]);
 
   // Task 26: "latest value" refs so the window-level drag listeners below
   // (created once, lazily, and reused for the lifetime of the component —
@@ -1735,41 +1899,153 @@ function EditorWorkspace() {
             square handle to resize it, or the top handle to rotate it. Press Esc to cancel a drag
             in progress.
           </p>
-          {previewError && (
-            <p role="alert" aria-live="assertive">
-              Couldn't render the preview: {previewError}
-            </p>
+          {previewError &&
+            (() => {
+              const localized = localizePreviewError(previewError);
+              const description = localized
+                ? `The scene fails to render at ${localized.pointer}: ${localized.detail}`
+                : `The scene fails to render: ${previewError}`;
+              return (
+                <div className="editor-preview-error" data-testid="editor-preview-error">
+                  <p role="alert" aria-live="assertive">
+                    Couldn't render the preview:{' '}
+                    {localized ? `${localized.pointer} — ${localized.detail}` : previewError}
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="ask-ai-fix-preview-error"
+                    onClick={() => {
+                      setAiFixSeed({
+                        prompt: `Fix this scene so it renders correctly. ${description}`,
+                        nonce: Date.now(),
+                      });
+                      setShowAiFixPanel(true);
+                    }}
+                  >
+                    Ask AI to fix this
+                  </button>
+                </div>
+              );
+            })()}
+          {/* Issue #159: a second, independent `AIProposalPanel` instance
+              (distinct from the always-present one inside the "AI
+              proposals" `CollapsibleSection` further down), mounted only
+              while a fix has actually been requested for the current
+              `previewError` — see `showAiFixPanel`/`aiFixSeed`'s own
+              comment above for why a second instance rather than
+              reaching into that section's own open/closed state. Reuses
+              `AIProposalPanel`/`useAIProposal`/`editAIScene` wholesale —
+              no new AI endpoint — pre-seeded into edit mode via the
+              `seed` prop with a prompt naming the JSON Pointer/field the
+              render failure was localized to. */}
+          {showAiFixPanel && previewError && id && (
+            <div
+              className="editor-ai-fix-panel"
+              data-testid="editor-ai-fix-panel"
+              aria-label="Ask AI to fix the preview error"
+            >
+              <div className="editor-ai-fix-panel-header">
+                <h4>Ask AI to fix this error</h4>
+                <button
+                  type="button"
+                  data-testid="close-ai-fix-panel"
+                  onClick={() => setShowAiFixPanel(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <AIProposalPanel
+                projectId={id}
+                workingCopy={workingCopy}
+                currentVersionId={project?.current_version ?? null}
+                seed={aiFixSeed}
+                onAccepted={handleAIProposalAccepted}
+              />
+            </div>
           )}
-          {/* Task 110 (issue #141): the camera overlay opacity slider,
+          {/* Issue #159: the Visual/Code sub-toggle. Deliberately a
+              `role="radiogroup"`/`role="radio"` pair (the same pattern
+              `AIProposalPanel.tsx`'s own Create/Edit mode selector already
+              uses), not `role="tablist"`/`role="tab"` — `EditorPanelSwitcher.tsx`'s
+              own tablist is a hard "the only switcher, and only below
+              1024px" landmark several existing tests assert on directly
+              (e.g. `queryByRole('tablist')).not.toBeInTheDocument()` at
+              >=1024px), so a second, always-visible tablist here would
+              both violate that assertion and be genuinely confusing to
+              assistive tech (two unrelated tablists with no relationship
+              to each other). This toggle is local to the Preview panel,
+              not one of `EditorPanelSwitcher`'s `EditorPanelName` tabs —
+              Preview is never one of those (see `panelHidden` above) —
+              and stays reachable regardless of narrow/wide viewport,
+              exactly like the rest of the Preview panel already is. */}
+          <div
+            role="radiogroup"
+            aria-label="Preview view"
+            className="editor-tool-group"
+            data-testid="editor-preview-view-toggle"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewView === 'visual'}
+              onClick={() => setPreviewView('visual')}
+            >
+              Visual
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewView === 'code'}
+              onClick={() => setPreviewView('code')}
+            >
+              Code
+            </button>
+          </div>
+          {previewView === 'code' && (
+            <div aria-label="Code">
+              <SceneCodeEditor workingCopy={workingCopy} onCommit={setWorkingCopy} />
+            </div>
+          )}
+          {/* Issue #159: everything below through the end of the canvas
+              viewport is the "Visual" sub-view — hidden (not unmounted;
+              `previewMounted`/the p5 instance and its own render effect
+              must keep running so a background re-render after a Code-tab
+              edit is instant when the user switches back, rather than
+              needing a fresh mount) while "Code" is active. Rendered as
+              `hidden` rather than a conditional so the p5 canvas mount div
+              (`previewMountCallbackRef`) never gets torn down/recreated
+              on every Visual/Code toggle. */}
+          <div hidden={previewView !== 'visual'}>
+            {/* Task 110 (issue #141): the camera overlay opacity slider,
               visible only while the live camera is active — see the
               <video> overlay itself below, inside `.editor-scene-canvas`.
               Task 118 (issue #147): both the opacity and the mirror toggle
               now persist via `useCameraOverlaySettings`. */}
-          {cameraStatus === 'active' && (
-            <div className="editor-camera-overlay-control">
-              <label htmlFor="editor-camera-overlay-opacity">Camera overlay opacity</label>
-              <input
-                id="editor-camera-overlay-opacity"
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={Math.round(cameraOverlayOpacity * 100)}
-                aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
-                onChange={(event) => setCameraOverlayOpacity(Number(event.target.value) / 100)}
-              />
-              <label htmlFor="editor-camera-overlay-mirror">
+            {cameraStatus === 'active' && (
+              <div className="editor-camera-overlay-control">
+                <label htmlFor="editor-camera-overlay-opacity">Camera overlay opacity</label>
                 <input
-                  id="editor-camera-overlay-mirror"
-                  type="checkbox"
-                  checked={cameraOverlayMirrored}
-                  onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
+                  id="editor-camera-overlay-opacity"
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={Math.round(cameraOverlayOpacity * 100)}
+                  aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                  onChange={(event) => setCameraOverlayOpacity(Number(event.target.value) / 100)}
                 />
-                Mirror camera overlay
-              </label>
-            </div>
-          )}
-          {/* Issue #156: zoom in/out buttons, a live percentage readout,
+                <label htmlFor="editor-camera-overlay-mirror">
+                  <input
+                    id="editor-camera-overlay-mirror"
+                    type="checkbox"
+                    checked={cameraOverlayMirrored}
+                    onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
+                  />
+                  Mirror camera overlay
+                </label>
+              </div>
+            )}
+            {/* Issue #156: zoom in/out buttons, a live percentage readout,
               and a reset-to-100% action. Reuses `ToolbarButton` (issue
               #143's existing icon-button pattern — visible `aria-hidden`
               glyph, `aria-label` for the accessible name, a CSS hover/
@@ -1779,36 +2055,36 @@ function EditorWorkspace() {
               accumulator), and the readout is `aria-live="polite"` so
               screen-reader users hear it change without needing to
               re-focus it after every zoom action. */}
-          <div className="editor-zoom-controls" role="group" aria-label="Zoom controls">
-            <ToolbarButton
-              label="Zoom out"
-              glyph="−"
-              onClick={() => applyZoomChange(zoom - ZOOM_STEP)}
-              disabled={zoom <= MIN_ZOOM + ZOOM_EPSILON}
-            />
-            <span
-              className="editor-zoom-readout"
-              data-testid="editor-zoom-readout"
-              aria-live="polite"
-            >
-              {Math.round(zoom * 100)}%
-            </span>
-            <ToolbarButton
-              label="Zoom in"
-              glyph="+"
-              onClick={() => applyZoomChange(zoom + ZOOM_STEP)}
-              disabled={zoom >= MAX_ZOOM - ZOOM_EPSILON}
-            />
-            <button
-              type="button"
-              className="editor-zoom-reset-button"
-              onClick={() => applyZoomChange(1)}
-              disabled={zoom === 1 && pan.x === 0 && pan.y === 0}
-            >
-              Reset zoom
-            </button>
-          </div>
-          {/* Issue #156: the fixed-size, `overflow: hidden` (once zoomed)
+            <div className="editor-zoom-controls" role="group" aria-label="Zoom controls">
+              <ToolbarButton
+                label="Zoom out"
+                glyph="−"
+                onClick={() => applyZoomChange(zoom - ZOOM_STEP)}
+                disabled={zoom <= MIN_ZOOM + ZOOM_EPSILON}
+              />
+              <span
+                className="editor-zoom-readout"
+                data-testid="editor-zoom-readout"
+                aria-live="polite"
+              >
+                {Math.round(zoom * 100)}%
+              </span>
+              <ToolbarButton
+                label="Zoom in"
+                glyph="+"
+                onClick={() => applyZoomChange(zoom + ZOOM_STEP)}
+                disabled={zoom >= MAX_ZOOM - ZOOM_EPSILON}
+              />
+              <button
+                type="button"
+                className="editor-zoom-reset-button"
+                onClick={() => applyZoomChange(1)}
+                disabled={zoom === 1 && pan.x === 0 && pan.y === 0}
+              >
+                Reset zoom
+              </button>
+            </div>
+            {/* Issue #156: the fixed-size, `overflow: hidden` (once zoomed)
               clipping viewport panning happens inside. Carries the exact
               same responsive width/aspect-ratio sizing `.editor-scene-
               canvas` itself used to own alone (issue #109) — the inner
@@ -1820,68 +2096,68 @@ function EditorWorkspace() {
               `hidden` once actually zoomed) so a handle that pokes
               slightly outside the canvas at 100% (unchanged pre-existing
               behavior) isn't newly clipped. */}
-          <div
-            ref={viewportCallbackRef}
-            data-testid="scene-canvas-viewport"
-            className="editor-scene-canvas-viewport"
-            style={{
-              position: 'relative',
-              width: canvasWidth,
-              maxWidth: '100%',
-              aspectRatio: `${canvasWidth} / ${canvasHeight}`,
-              overflow: zoom > 1 ? 'hidden' : 'visible',
-            }}
-          >
             <div
-              ref={canvasRef}
-              data-testid="scene-canvas"
-              role="group"
-              aria-label="Scene canvas"
-              className="editor-scene-canvas"
+              ref={viewportCallbackRef}
+              data-testid="scene-canvas-viewport"
+              className="editor-scene-canvas-viewport"
               style={{
                 position: 'relative',
-                width: '100%',
-                height: '100%',
-                // Issue #156: the single CSS transform that implements
-                // zoom/pan — see this file's module doc comment and the
-                // issue's own "Implementation note" for why a `transform:
-                // scale()` (rather than resizing the p5 canvas's internal
-                // pixel resolution) needs NO changes to
-                // `clientToCanvasPoint`/any drag or hit-test code: it
-                // already derives its scale factor from this exact
-                // element's rendered `getBoundingClientRect()`, which
-                // already reflects this transform. `translate` is applied
-                // outermost (rightmost `scale` composes first) so `pan` is
-                // always a raw, zoom-independent screen-pixel offset —
-                // matching how `beginPanGesture`/`onMove` above compute it
-                // from the pointer's client-space delta.
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                transformOrigin: 'center',
-                cursor: zoom > 1 ? 'grab' : 'default',
-                // Issue #109: the wrapper's own box tracks the scene's
-                // aspect ratio (rather than a fixed pixel `height`) so that
-                // when `maxWidth: '100%'` caps its width below the logical
-                // `canvasWidth` (a panel narrower than the scene, e.g. at
-                // tablet/narrow widths), the height shrinks proportionally
-                // instead of leaving dead space or a squashed image. The
-                // absolutely-positioned overlay SVGs below (`inset: 0`) and
-                // the p5-mounted <canvas> (`.editor-scene-canvas canvas`'s
-                // own `height: auto !important` in index.css) both then
-                // track this same box, so grid/guide/shape overlays and
-                // pointer coordinates (`clientToCanvasPoint`, which already
-                // scales by the canvas element's actual rendered
-                // `getBoundingClientRect()` vs. logical size) stay aligned
-                // at any panel width — now including zoom/pan, applied via
-                // the `transform` above, which `getBoundingClientRect()`
-                // reflects automatically.
+                width: canvasWidth,
+                maxWidth: '100%',
+                aspectRatio: `${canvasWidth} / ${canvasHeight}`,
+                overflow: zoom > 1 ? 'hidden' : 'visible',
               }}
-              onClick={handleCanvasClick}
-              onPointerDown={handleCanvasPointerDown}
-              onPointerMove={handleCanvasPointerMove}
-              onPointerLeave={handleCanvasPointerLeave}
-              onDoubleClick={handleCanvasDoubleClick}
             >
-              {/* Task 110 (issue #141): the live camera feed, composited via
+              <div
+                ref={canvasRef}
+                data-testid="scene-canvas"
+                role="group"
+                aria-label="Scene canvas"
+                className="editor-scene-canvas"
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '100%',
+                  // Issue #156: the single CSS transform that implements
+                  // zoom/pan — see this file's module doc comment and the
+                  // issue's own "Implementation note" for why a `transform:
+                  // scale()` (rather than resizing the p5 canvas's internal
+                  // pixel resolution) needs NO changes to
+                  // `clientToCanvasPoint`/any drag or hit-test code: it
+                  // already derives its scale factor from this exact
+                  // element's rendered `getBoundingClientRect()`, which
+                  // already reflects this transform. `translate` is applied
+                  // outermost (rightmost `scale` composes first) so `pan` is
+                  // always a raw, zoom-independent screen-pixel offset —
+                  // matching how `beginPanGesture`/`onMove` above compute it
+                  // from the pointer's client-space delta.
+                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                  transformOrigin: 'center',
+                  cursor: zoom > 1 ? 'grab' : 'default',
+                  // Issue #109: the wrapper's own box tracks the scene's
+                  // aspect ratio (rather than a fixed pixel `height`) so that
+                  // when `maxWidth: '100%'` caps its width below the logical
+                  // `canvasWidth` (a panel narrower than the scene, e.g. at
+                  // tablet/narrow widths), the height shrinks proportionally
+                  // instead of leaving dead space or a squashed image. The
+                  // absolutely-positioned overlay SVGs below (`inset: 0`) and
+                  // the p5-mounted <canvas> (`.editor-scene-canvas canvas`'s
+                  // own `height: auto !important` in index.css) both then
+                  // track this same box, so grid/guide/shape overlays and
+                  // pointer coordinates (`clientToCanvasPoint`, which already
+                  // scales by the canvas element's actual rendered
+                  // `getBoundingClientRect()` vs. logical size) stay aligned
+                  // at any panel width — now including zoom/pan, applied via
+                  // the `transform` above, which `getBoundingClientRect()`
+                  // reflects automatically.
+                }}
+                onClick={handleCanvasClick}
+                onPointerDown={handleCanvasPointerDown}
+                onPointerMove={handleCanvasPointerMove}
+                onPointerLeave={handleCanvasPointerLeave}
+                onDoubleClick={handleCanvasDoubleClick}
+              >
+                {/* Task 110 (issue #141): the live camera feed, composited via
                 CSS behind the p5 canvas (zIndex -2 vs. the mount div's -1
                 below) — never drawn into the p5 canvas itself, so it stays
                 structurally absent from any canvas-only capture path
@@ -1891,38 +2167,38 @@ function EditorWorkspace() {
                 `transform` live via the `cameraOverlayMirrored` state —
                 the `<video>` element itself never re-mounts, so the live
                 feed is uninterrupted. */}
-              {cameraStatus === 'active' && cameraStream && (
-                <video
-                  ref={cameraVideoRef}
-                  data-testid="camera-overlay-video"
-                  aria-hidden="true"
-                  muted
-                  playsInline
-                  autoPlay
-                  className="editor-camera-overlay"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    zIndex: -2,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
-                    opacity: cameraOverlayOpacity,
-                    pointerEvents: 'none',
-                  }}
-                />
-              )}
-              {/* Task 25: the p5.js preview mounts its <canvas> into this div.
+                {cameraStatus === 'active' && cameraStream && (
+                  <video
+                    ref={cameraVideoRef}
+                    data-testid="camera-overlay-video"
+                    aria-hidden="true"
+                    muted
+                    playsInline
+                    autoPlay
+                    className="editor-camera-overlay"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      zIndex: -2,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
+                      opacity: cameraOverlayOpacity,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+                {/* Task 25: the p5.js preview mounts its <canvas> into this div.
                 React is never given any children to reconcile here (no JSX
                 children below), so it never touches — or fights over —
                 nodes p5 appends directly to the real DOM. */}
-              <div
-                ref={previewMountCallbackRef}
-                aria-hidden="true"
-                style={{ position: 'absolute', inset: 0, zIndex: -1 }}
-              />
-              {/* Issue #78: the grid overlay — a visible line at every
+                <div
+                  ref={previewMountCallbackRef}
+                  aria-hidden="true"
+                  style={{ position: 'absolute', inset: 0, zIndex: -1 }}
+                />
+                {/* Issue #78: the grid overlay — a visible line at every
                 20-scene-unit grid coordinate, so snapping is never
                 invisible/implicit (acceptance criterion). Rendered as an
                 SVG (not a `p5Adapter.ts` draw call — that file stays
@@ -1930,114 +2206,114 @@ function EditorWorkspace() {
                 to exactly the logical canvas, so its coordinates line up
                 with shape `transform.x/y` with no separate unit
                 conversion. */}
-              {snapSettings.gridEnabled && (
-                <svg
-                  aria-hidden="true"
-                  data-testid="editor-snap-grid-overlay"
-                  className="editor-snap-grid-overlay"
-                  style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-                  width={canvasWidth}
-                  height={canvasHeight}
-                  viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
-                >
-                  {gridLinesX.map((x) => (
-                    <line
-                      key={`grid-x-${x}`}
-                      className="editor-snap-grid-line"
-                      x1={x}
-                      y1={0}
-                      x2={x}
-                      y2={canvasHeight}
-                    />
-                  ))}
-                  {gridLinesY.map((y) => (
-                    <line
-                      key={`grid-y-${y}`}
-                      className="editor-snap-grid-line"
-                      x1={0}
-                      y1={y}
-                      x2={canvasWidth}
-                      y2={y}
-                    />
-                  ))}
-                </svg>
-              )}
-              {/* Issue #78: alignment-guide lines — only rendered for the
+                {snapSettings.gridEnabled && (
+                  <svg
+                    aria-hidden="true"
+                    data-testid="editor-snap-grid-overlay"
+                    className="editor-snap-grid-overlay"
+                    style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+                    width={canvasWidth}
+                    height={canvasHeight}
+                    viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+                  >
+                    {gridLinesX.map((x) => (
+                      <line
+                        key={`grid-x-${x}`}
+                        className="editor-snap-grid-line"
+                        x1={x}
+                        y1={0}
+                        x2={x}
+                        y2={canvasHeight}
+                      />
+                    ))}
+                    {gridLinesY.map((y) => (
+                      <line
+                        key={`grid-y-${y}`}
+                        className="editor-snap-grid-line"
+                        x1={0}
+                        y1={y}
+                        x2={canvasWidth}
+                        y2={y}
+                      />
+                    ))}
+                  </svg>
+                )}
+                {/* Issue #78: alignment-guide lines — only rendered for the
                 duration an active single-shape move gesture is actually
                 snapped onto a sibling's edge/center (`activeGuides` is
                 cleared on every gesture end, so nothing stale is ever left
                 behind after pointerup). */}
-              {(activeGuides.x || activeGuides.y) && (
+                {(activeGuides.x || activeGuides.y) && (
+                  <svg
+                    aria-hidden="true"
+                    className="editor-snap-guide-overlay"
+                    style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+                    width={canvasWidth}
+                    height={canvasHeight}
+                    viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+                  >
+                    {activeGuides.x && (
+                      <line
+                        data-testid="snap-guide-x"
+                        className="editor-snap-guide-line"
+                        x1={activeGuides.x.value}
+                        y1={0}
+                        x2={activeGuides.x.value}
+                        y2={canvasHeight}
+                      />
+                    )}
+                    {activeGuides.y && (
+                      <line
+                        data-testid="snap-guide-y"
+                        className="editor-snap-guide-line"
+                        x1={0}
+                        y1={activeGuides.y.value}
+                        x2={canvasWidth}
+                        y2={activeGuides.y.value}
+                      />
+                    )}
+                  </svg>
+                )}
                 <svg
                   aria-hidden="true"
-                  className="editor-snap-guide-overlay"
+                  className="editor-scene-shapes-layer"
                   style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
                   width={canvasWidth}
                   height={canvasHeight}
                   viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
                 >
-                  {activeGuides.x && (
-                    <line
-                      data-testid="snap-guide-x"
-                      className="editor-snap-guide-line"
-                      x1={activeGuides.x.value}
-                      y1={0}
-                      x2={activeGuides.x.value}
-                      y2={canvasHeight}
-                    />
-                  )}
-                  {activeGuides.y && (
-                    <line
-                      data-testid="snap-guide-y"
-                      className="editor-snap-guide-line"
-                      x1={0}
-                      y1={activeGuides.y.value}
-                      x2={canvasWidth}
-                      y2={activeGuides.y.value}
-                    />
-                  )}
-                </svg>
-              )}
-              <svg
-                aria-hidden="true"
-                className="editor-scene-shapes-layer"
-                style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-                width={canvasWidth}
-                height={canvasHeight}
-                viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
-              >
-                {shapesInDrawOrder.map((shape) => {
-                  const isSelected = shape.id === sceneEditor.selectedShapeId;
-                  // Issue #111: a hovered-but-not-selected shape gets its own
-                  // distinct affordance from the selected outline; a shape
-                  // that's effectively locked (via its own/layer's/group's
-                  // lock — see `isEffectivelyLocked`) gets a different "can't
-                  // manipulate this" hover cue instead of the normal one,
-                  // matching `checkUnlocked`'s existing error-toast behavior
-                  // when a drag on it is actually attempted.
-                  const isHovered = !isSelected && shape.id === hoveredShapeId;
-                  const isHoveredLocked =
-                    isHovered &&
-                    !!sceneEditor.workingCopy &&
-                    isEffectivelyLocked(sceneEditor.workingCopy, shape.id);
-                  const bounds = isSelected ? shapeBounds(shape) : null;
-                  const hoverBounds = isHovered ? shapeBounds(shape) : null;
-                  const shapeClassName = [
-                    'editor-scene-shape',
-                    isSelected ? 'editor-scene-shape-selected' : '',
-                    isHovered && !isHoveredLocked ? 'editor-scene-shape-hovered' : '',
-                    isHoveredLocked ? 'editor-scene-shape-hovered-locked' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ');
-                  return (
-                    <g
-                      key={shape.id}
-                      data-testid={`scene-shape-${shape.id}`}
-                      data-shape-type={shape.type}
-                      className={shapeClassName}
-                    >
-                      {/* Issue #126 (behavior-active case) and issue #130
+                  {shapesInDrawOrder.map((shape) => {
+                    const isSelected = shape.id === sceneEditor.selectedShapeId;
+                    // Issue #111: a hovered-but-not-selected shape gets its own
+                    // distinct affordance from the selected outline; a shape
+                    // that's effectively locked (via its own/layer's/group's
+                    // lock — see `isEffectivelyLocked`) gets a different "can't
+                    // manipulate this" hover cue instead of the normal one,
+                    // matching `checkUnlocked`'s existing error-toast behavior
+                    // when a drag on it is actually attempted.
+                    const isHovered = !isSelected && shape.id === hoveredShapeId;
+                    const isHoveredLocked =
+                      isHovered &&
+                      !!sceneEditor.workingCopy &&
+                      isEffectivelyLocked(sceneEditor.workingCopy, shape.id);
+                    const bounds = isSelected ? shapeBounds(shape) : null;
+                    const hoverBounds = isHovered ? shapeBounds(shape) : null;
+                    const shapeClassName = [
+                      'editor-scene-shape',
+                      isSelected ? 'editor-scene-shape-selected' : '',
+                      isHovered && !isHoveredLocked ? 'editor-scene-shape-hovered' : '',
+                      isHoveredLocked ? 'editor-scene-shape-hovered-locked' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
+                    return (
+                      <g
+                        key={shape.id}
+                        data-testid={`scene-shape-${shape.id}`}
+                        data-shape-type={shape.type}
+                        className={shapeClassName}
+                      >
+                        {/* Issue #126 (behavior-active case) and issue #130
                         (static case): the p5 canvas beneath this overlay
                         (`previewRef`, mounted in the sibling div with
                         `zIndex: -1` above) is the single source of truth for
@@ -2062,23 +2338,23 @@ function EditorWorkspace() {
                         selection/hover outline below, the `<title>`
                         summary) — no path here paints a shape body of its
                         own, active behaviors or not. */}
-                      {/* A visible selection highlight independent of the
+                        {/* A visible selection highlight independent of the
                         shape's own fill/stroke — a dashed bounding-box
                         outline, the same rotation-ignoring approximation
                         `shapeBounds` already uses for hit-testing (see that
                         function's own comment), since there's no rotated-
                         box primitive to reuse here. */}
-                      {bounds && (
-                        <rect
-                          className="editor-scene-shape-selection-outline"
-                          x={bounds.minX - 4}
-                          y={bounds.minY - 4}
-                          width={bounds.maxX - bounds.minX + 8}
-                          height={bounds.maxY - bounds.minY + 8}
-                          fill="none"
-                        />
-                      )}
-                      {/* Issue #111: a hover-only outline, visually distinct
+                        {bounds && (
+                          <rect
+                            className="editor-scene-shape-selection-outline"
+                            x={bounds.minX - 4}
+                            y={bounds.minY - 4}
+                            width={bounds.maxX - bounds.minX + 8}
+                            height={bounds.maxY - bounds.minY + 8}
+                            fill="none"
+                          />
+                        )}
+                        {/* Issue #111: a hover-only outline, visually distinct
                         (thinner, un-dashed, muted color) from the selected
                         outline above so "what's under the pointer" and
                         "what's selected" never look the same. A locked
@@ -2087,33 +2363,33 @@ function EditorWorkspace() {
                         ordinary hoverable target, matching what actually
                         happens if a drag on it is attempted
                         (`checkUnlocked`'s error toast). */}
-                      {hoverBounds && (
-                        <rect
-                          data-testid={`scene-shape-hover-outline-${shape.id}`}
-                          className={
-                            isHoveredLocked
-                              ? 'editor-scene-shape-hover-outline editor-scene-shape-hover-outline-locked'
-                              : 'editor-scene-shape-hover-outline'
-                          }
-                          x={hoverBounds.minX - 3}
-                          y={hoverBounds.minY - 3}
-                          width={hoverBounds.maxX - hoverBounds.minX + 6}
-                          height={hoverBounds.maxY - hoverBounds.minY + 6}
-                          fill="none"
-                        />
-                      )}
-                      {/* Kept as an SVG <title> (not rendered as page text)
+                        {hoverBounds && (
+                          <rect
+                            data-testid={`scene-shape-hover-outline-${shape.id}`}
+                            className={
+                              isHoveredLocked
+                                ? 'editor-scene-shape-hover-outline editor-scene-shape-hover-outline-locked'
+                                : 'editor-scene-shape-hover-outline'
+                            }
+                            x={hoverBounds.minX - 3}
+                            y={hoverBounds.minY - 3}
+                            width={hoverBounds.maxX - hoverBounds.minX + 6}
+                            height={hoverBounds.maxY - hoverBounds.minY + 6}
+                            fill="none"
+                          />
+                        )}
+                        {/* Kept as an SVG <title> (not rendered as page text)
                         rather than the plain visible text this used to be:
                         a raw numeric readout isn't the "visible indication
                         of selection" the issue asks for (the outline above
                         is), but existing tests still assert on this text
                         via `.textContent`. */}
-                      {isSelected && <title>{shapeSummary(shape)}</title>}
-                    </g>
-                  );
-                })}
-              </svg>
-              {/* Issue #77: when 2+ shapes are multi-selected, one combined
+                        {isSelected && <title>{shapeSummary(shape)}</title>}
+                      </g>
+                    );
+                  })}
+                </svg>
+                {/* Issue #77: when 2+ shapes are multi-selected, one combined
                 bounding-box handle set drives a rigid group move/resize/
                 rotate gesture over the whole resolved selection, entirely
                 replacing the single-shape handle set below for that
@@ -2125,7 +2401,7 @@ function EditorWorkspace() {
                 selection change, a delete, or an undo/redo that changes
                 the selection automatically leaves no stale handle
                 behind. */}
-              {/* Issue #79: while vertex edit mode is active for the single
+                {/* Issue #79: while vertex edit mode is active for the single
                 selected `path` shape, one draggable handle per point
                 entirely replaces Task 26's move/resize/rotate handles for
                 that shape (never issue #77's group handles above it in
@@ -2135,85 +2411,86 @@ function EditorWorkspace() {
                 `sceneEditor.selectedShape.points` on every render, so an
                 insert/delete/undo/redo immediately shows the right set of
                 handles with nothing stale left behind. */}
-              {sceneEditor.vertexEditActive &&
-              sceneEditor.selectedShape?.type === 'path' &&
-              !isSelectedShapeLocked
-                ? getPathPointHandles(sceneEditor.selectedShape).map((point, index) => (
-                    <div
-                      key={`vertex-handle-${sceneEditor.selectedShape!.id}-${index}`}
-                      data-testid={`path-vertex-handle-${index}`}
-                      role="button"
-                      tabIndex={-1}
-                      aria-pressed={sceneEditor.selectedVertexIndex === index}
-                      aria-label={`Point ${index + 1}`}
-                      className={
-                        sceneEditor.selectedVertexIndex === index
-                          ? 'editor-shape-handle editor-vertex-handle editor-vertex-handle-selected'
-                          : 'editor-shape-handle editor-vertex-handle'
-                      }
-                      style={handleStyle(point)}
-                      onPointerDown={handleVertexPointerDown(index)}
-                    />
-                  ))
-                : groupSelection && groupBounds && !isGroupSelectionLocked
-                  ? (() => {
-                      const handles = getGroupHandles(groupBounds);
-                      return (
-                        <>
-                          <div
-                            data-testid="group-handle-move"
-                            aria-hidden="true"
-                            className="editor-shape-handle editor-group-handle-move"
-                            style={handleStyle(handles.move)}
-                            onPointerDown={handleGroupHandlePointerDown('move')}
-                          />
-                          <div
-                            data-testid="group-handle-resize"
-                            aria-hidden="true"
-                            className="editor-shape-handle editor-group-handle-resize"
-                            style={handleStyle(handles.resize)}
-                            onPointerDown={handleGroupHandlePointerDown('resize')}
-                          />
-                          <div
-                            data-testid="group-handle-rotate"
-                            aria-hidden="true"
-                            className="editor-shape-handle editor-group-handle-rotate"
-                            style={handleStyle(handles.rotate)}
-                            onPointerDown={handleGroupHandlePointerDown('rotate')}
-                          />
-                        </>
-                      );
-                    })()
-                  : sceneEditor.selectedShape &&
-                    !isSelectedShapeLocked &&
-                    (() => {
-                      const handles = getShapeHandles(sceneEditor.selectedShape);
-                      return (
-                        <>
-                          <div
-                            data-testid="shape-handle-move"
-                            aria-hidden="true"
-                            className="editor-shape-handle editor-shape-handle-move"
-                            style={handleStyle(handles.move)}
-                            onPointerDown={handleHandlePointerDown('move')}
-                          />
-                          <div
-                            data-testid="shape-handle-resize"
-                            aria-hidden="true"
-                            className="editor-shape-handle editor-shape-handle-resize"
-                            style={handleStyle(handles.resize)}
-                            onPointerDown={handleHandlePointerDown('resize')}
-                          />
-                          <div
-                            data-testid="shape-handle-rotate"
-                            aria-hidden="true"
-                            className="editor-shape-handle editor-shape-handle-rotate"
-                            style={handleStyle(handles.rotate)}
-                            onPointerDown={handleHandlePointerDown('rotate')}
-                          />
-                        </>
-                      );
-                    })()}
+                {sceneEditor.vertexEditActive &&
+                sceneEditor.selectedShape?.type === 'path' &&
+                !isSelectedShapeLocked
+                  ? getPathPointHandles(sceneEditor.selectedShape).map((point, index) => (
+                      <div
+                        key={`vertex-handle-${sceneEditor.selectedShape!.id}-${index}`}
+                        data-testid={`path-vertex-handle-${index}`}
+                        role="button"
+                        tabIndex={-1}
+                        aria-pressed={sceneEditor.selectedVertexIndex === index}
+                        aria-label={`Point ${index + 1}`}
+                        className={
+                          sceneEditor.selectedVertexIndex === index
+                            ? 'editor-shape-handle editor-vertex-handle editor-vertex-handle-selected'
+                            : 'editor-shape-handle editor-vertex-handle'
+                        }
+                        style={handleStyle(point)}
+                        onPointerDown={handleVertexPointerDown(index)}
+                      />
+                    ))
+                  : groupSelection && groupBounds && !isGroupSelectionLocked
+                    ? (() => {
+                        const handles = getGroupHandles(groupBounds);
+                        return (
+                          <>
+                            <div
+                              data-testid="group-handle-move"
+                              aria-hidden="true"
+                              className="editor-shape-handle editor-group-handle-move"
+                              style={handleStyle(handles.move)}
+                              onPointerDown={handleGroupHandlePointerDown('move')}
+                            />
+                            <div
+                              data-testid="group-handle-resize"
+                              aria-hidden="true"
+                              className="editor-shape-handle editor-group-handle-resize"
+                              style={handleStyle(handles.resize)}
+                              onPointerDown={handleGroupHandlePointerDown('resize')}
+                            />
+                            <div
+                              data-testid="group-handle-rotate"
+                              aria-hidden="true"
+                              className="editor-shape-handle editor-group-handle-rotate"
+                              style={handleStyle(handles.rotate)}
+                              onPointerDown={handleGroupHandlePointerDown('rotate')}
+                            />
+                          </>
+                        );
+                      })()
+                    : sceneEditor.selectedShape &&
+                      !isSelectedShapeLocked &&
+                      (() => {
+                        const handles = getShapeHandles(sceneEditor.selectedShape);
+                        return (
+                          <>
+                            <div
+                              data-testid="shape-handle-move"
+                              aria-hidden="true"
+                              className="editor-shape-handle editor-shape-handle-move"
+                              style={handleStyle(handles.move)}
+                              onPointerDown={handleHandlePointerDown('move')}
+                            />
+                            <div
+                              data-testid="shape-handle-resize"
+                              aria-hidden="true"
+                              className="editor-shape-handle editor-shape-handle-resize"
+                              style={handleStyle(handles.resize)}
+                              onPointerDown={handleHandlePointerDown('resize')}
+                            />
+                            <div
+                              data-testid="shape-handle-rotate"
+                              aria-hidden="true"
+                              className="editor-shape-handle editor-shape-handle-rotate"
+                              style={handleStyle(handles.rotate)}
+                              onPointerDown={handleHandlePointerDown('rotate')}
+                            />
+                          </>
+                        );
+                      })()}
+              </div>
             </div>
           </div>
           {/* Issue #157: the mobile placement of the always-visible
@@ -2470,30 +2747,7 @@ function EditorWorkspace() {
                 projectId={id}
                 workingCopy={workingCopy}
                 currentVersionId={project?.current_version ?? null}
-                onAccepted={(version) => {
-                  // Task 111 (issue #142): defensive normalization
-                  // matching `onRestored` above -- the accepted version's
-                  // base scene already comes from this session's
-                  // (already-normalized) workingCopy, so this is normally
-                  // a no-op, but stays consistent with every other
-                  // scene_json load site rather than assuming that
-                  // invariant holds without checking.
-                  const { scene: normalizedScene } = normalizeSceneLayers(version.scene_json);
-                  const normalizedVersion = { ...version, scene_json: normalizedScene };
-                  setPersistedVersion(normalizedVersion);
-                  setWorkingCopy(structuredClone(normalizedScene));
-                  setProject((current) =>
-                    current ? { ...current, current_version: version.id } : current,
-                  );
-                  // Issue #125: same treatment as `onRestored` above — an
-                  // accepted AI proposal already persists a new
-                  // authoritative version server-side, so it must clear
-                  // both drafts rather than re-write a server draft
-                  // duplicating that just-persisted content.
-                  const acceptedScene = structuredClone(normalizedScene);
-                  void draftAutosave.clearDraft(acceptedScene);
-                  void draftServerSync.deleteServerDraft(acceptedScene);
-                }}
+                onAccepted={handleAIProposalAccepted}
               />
             )}
           </CollapsibleSection>

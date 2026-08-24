@@ -2944,8 +2944,41 @@ reusing the existing AI-edit path. Confirmed during investigation:
 live/unsaved editor state (including mid-session layer renames) is
 already sent to the AI on every request — that part of the original ask
 is already satisfied and needs no new work.
-Status: PROPOSED — full groomed write-up filed as
-[#159](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/159).
+Status: COMPLETE
+GitHub issue: [#159](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/159).
+Resolution (2026-08-24): implemented as a Visual/Code sub-toggle inside the
+Preview panel (`role="radiogroup"`, matching `AIProposalPanel`'s existing
+Create/Edit selector pattern — deliberately not `role="tablist"` since an
+existing test asserts no tablist exists at desktop width), rather than a
+new top-level `EditorPanelSwitcher` panel — both were acceptable per the
+issue. New `SceneCodeEditor` component owns its own `text`/`error` state,
+seeded fresh via `useState(() => JSON.stringify(workingCopy, null, 2))`
+each time it mounts — since it only mounts while `previewView === 'code'`,
+switching away and back naturally re-derives the JSON text from whatever
+`workingCopy` is current, satisfying "reflected next time the Code tab is
+viewed" with no extra sync effect. Code→Visual is on-blur: parse, then
+validate through the exact existing `frontend/src/validation/scene.ts`
+(no second validator) — only a valid document calls `setWorkingCopy`;
+invalid JSON or a schema-invalid document is rejected with its own inline
+`role="alert"`, distinct from `previewError`, and never touches
+`workingCopy` or the Visual tab's last-known-good render. New
+`localizePreviewError()` regex-matches the two known message shapes
+`render/sceneDrawPlan.ts`'s `SceneRenderError` throws (its dangling-
+reference pre-pass, and its `validateScene` backstop) into a `$.`-style
+JSON Pointer + detail; a non-matching (genuinely generic) message falls
+back to the plain text unchanged, per the issue's own fallback allowance.
+"Ask AI to fix this" seeds a new `seed` prop on `AIProposalPanel`
+(`{prompt, nonce}`, keyed by `nonce` so repeated identical errors still
+re-seed) and mounts a second `AIProposalPanel` instance in edit mode —
+reusing the existing `workingCopy`/`editAIScene` path with zero new
+endpoints — since `CollapsibleSection`'s open/closed state is
+uncontrolled and out of this issue's file constraints. New test files
+`EditorWorkspace.codeTab.test.tsx` (round-trip valid/invalid edits,
+Visual→Code sync, Visual/Code parity) and
+`EditorWorkspace.previewErrorLocalization.test.tsx` (both localizable
+message shapes, generic fallback, Ask-AI-fix seeding/generation, auto-
+close once `previewError` clears). `npm run typecheck`/`lint`/`format`
+clean; full frontend suite green (1708/1708, zero regressions).
 
 ## 128. Mobile-responsiveness audit: close remaining gaps outside the editor workspace and header
 

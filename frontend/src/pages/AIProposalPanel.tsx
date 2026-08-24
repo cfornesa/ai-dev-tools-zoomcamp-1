@@ -20,6 +20,12 @@ type AIProposalPanelProps = {
    * `project` from the returned version, exactly like
    * `VersionHistoryPanel`'s `onSaved`. Reject never calls this. */
   onAccepted: (version: SceneVersion) => void;
+  /** Issue #159: when set, seeds this panel into Edit mode with a specific
+   * prompt — e.g. "Ask AI to fix this" from `EditorWorkspace.tsx`'s
+   * `previewError`. Re-applies every time `nonce` changes (even to the
+   * identical `prompt` text), which is why `nonce` exists: two clicks
+   * describing the same error must each re-seed, not just the first. */
+  seed?: { prompt: string; nonce: number } | null;
 };
 
 const MODE_LABELS: Record<ProposalMode, string> = {
@@ -44,6 +50,7 @@ function AIProposalPanel({
   workingCopy,
   currentVersionId,
   onAccepted,
+  seed,
 }: AIProposalPanelProps) {
   const {
     mode,
@@ -59,6 +66,19 @@ function AIProposalPanel({
     accept,
     acceptState,
   } = useAIProposal(projectId);
+
+  // Issue #159: applies (or re-applies) the caller's seed — switches this
+  // panel to Edit mode and fills in `prompt` — every time `seed?.nonce`
+  // changes. Keyed off `nonce` rather than the `seed` object's identity or
+  // `seed.prompt` text alone so a second "Ask AI to fix this" click with
+  // the exact same error message still re-seeds (a caller that memoized
+  // the same object/string wouldn't otherwise re-trigger this effect).
+  useEffect(() => {
+    if (!seed) return;
+    setMode('edit');
+    setPrompt(seed.prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed?.nonce]);
 
   const previewMountRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<P5ScenePreview | null>(null);

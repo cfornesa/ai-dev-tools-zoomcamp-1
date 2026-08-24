@@ -1774,3 +1774,238 @@ reproducible against current `main` in production or in code, across
 every dimension the issue's acceptance criteria enumerate. Closing on that
 basis, with both regression suites left in place as a permanent guardrail
 against a future regression of the same shape.
+
+## 110. Add a camera video overlay with user-controllable opacity to the editor Preview
+Goal: While live camera tracking is active, the editor's Preview canvas
+shows the user's own camera feed as a video overlay layered behind the
+scene render, with a keyboard-accessible slider to control the overlay's
+opacity from fully transparent (today's behavior) to fully opaque, without
+changing where camera video is otherwise allowed to go (still local-only,
+never captured into a thumbnail, export, or network request).
+Description: 2026-08-24 user request, made directly after task 109/#140's
+live-camera investigation: "my intention is for the camera to be shown as
+an overlay for which I can control the opacity, which does not appear to
+be the case here." Confirmed by investigation: `CameraControl.tsx` never
+renders a `<video>` element or any visual representation of the camera
+feed (only status text); no file under `frontend/src` references a camera
+overlay in any form. `_docs/plan.md` only discusses camera video in a
+privacy context (stays on-device, never recorded/uploaded), never as
+something rendered back to the user. Task 109/#140 explicitly scoped this
+out: "Live video feed rendering in Preview — not currently implemented and
+not requested here." Net-new feature, not a regression.
+Groomed acceptance criteria (see issue #141 for the full checkable list):
+overlay renders only while `cameraStatus === 'active'` in
+`EditorWorkspace.tsx`, behind the scene shapes, using the same
+`MediaStream` `CameraControl`/`mediapipeProvider.ts` already acquires (no
+second `getUserMedia` prompt); a labeled, keyboard-operable opacity slider
+(0-100%, default e.g. 50%, resets each activation, not persisted) controls
+it live; overlay disappears immediately on Stop/unmount with no frozen
+frame; mirrored by default (no toggle); implemented as a separate DOM
+element (never drawn into the p5 canvas) so it stays absent from
+`captureSocialThumbnail.ts`/`generateSocialThumbnailZip.ts` output and
+every other canvas-only capture path; no camera frame is ever captured,
+stored, or sent over the network; works on narrow (<1024px) viewports
+inside the Preview tab; `prefers-reduced-motion` does not suppress the
+live feed itself; no new console errors or `previewError` state; no
+regression to `EditorWorkspace.cameraPreview.test.tsx`/
+`EditorWorkspace.cameraPreviewRealControl.test.tsx` (task 109/#140).
+Flagged during grooming (pending verification): the `TrackingProvider`
+contract (`frontend/src/tracking/types.ts`) exposes only
+`onFrame`/`onError`/`start`/`stop` today — no `MediaStream`/`<video>`
+element — so implementation must first extend that contract or
+`CameraControl`'s props to surface the live stream without breaking the
+existing mock-provider test seams.
+Out of scope (moved to follow-up issues filed during grooming): showing
+this overlay on the public project viewer
+(`PublicProjectViewer.tsx`) — [#145](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/145);
+showing it in standalone HTML export
+(`generateHtmlExport.ts`/`standaloneCameraSource.ts`) —
+[#146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/146);
+persisting the opacity value, an un-mirror toggle, and independent
+reposition/resize of the overlay —
+[#147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/147).
+Status: PROPOSED
+GitHub issue: [#141](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/141)
+Discovery gate: Searched `_docs/tasks.md` and existing GitHub issues for a
+camera-overlay/video-preview task; none exists. New, not a duplicate.
+Newly discovered out-of-scope work reconciled by filing and linking
+#145/#146/#147 above (grooming's discovery gate).
+Next action: Implement per issue #141's acceptance criteria, starting with
+the `TrackingProvider`/`CameraControl` stream-exposure design noted above.
+
+## 111. Make every shape independently manageable as its own layer
+Goal: Every shape is enforced as its own independent layer at the
+data-model level (schema + validators + backend) — no two shapes can
+share a `layerId`, each shape carries its own visibility/lock state
+instead of only inheriting a read-only annotation, existing scenes that
+violate the invariant normalize correctly at read time, and grouping
+keeps working across independently-layered shapes.
+Description: 2026-08-24 user request (attempted on Replit as their own
+"#45", never landed as an actual GitHub issue — repo issue numbers 45-47
+already belong to older, unrelated, long-closed issues, and no issue past
+#140 existed before this session). Investigation: `schema/scene.schema.json`
+gives each `Shape` a `layerId` but does not enforce a 1:1 shape-to-layer
+relationship; `sceneOutline.ts`/`LayersPanel.tsx` implement layer/group
+*container* `visible`/`locked` flags, but an individual shape has no
+locking/visibility field of its own (task 100's own resolution notes this
+explicitly). Task 100/issue #131 (closed) unified the Shapes/Layers *panel
+UI* over this existing loosely-associated data — it explicitly did not
+change the underlying data model, and its own text calls one-shape-per-
+layer merely "already close to true structurally," not enforced. No
+migration path exists for pre-existing scenes. Related to, but materially
+larger in scope than, #131 — not a duplicate.
+Grooming pass (2026-08-23, PM): found `sceneOutline.ts`'s `groupItems`
+(~line 333-347) explicitly *requires* every selected item to already
+share one `layerId` ("You can only group items that belong to the same
+layer") — directly incompatible with 1:1 enforcement, since two shapes
+could then never be grouped; this precondition must change. Also found
+`SceneVersion.scene_json` is immutable after creation (PostgreSQL trigger,
+`scenes/migrations/0002_postgres_invariants.py`), which rules out a
+database backfill as the migration mechanism — migration must be
+read-time normalization of legacy documents (assign each shape sharing a
+`layerId` its own synthesized layer, preserving order) followed by the
+existing save-new-version flow, never a rewrite of an existing
+`SceneVersion` row. Whether this needs a `schemaVersion: 2` bump per
+`schema/README.md`'s versioning convention, or can stay within
+`schemaVersion: 1` behind read-time normalization, is left as an explicit
+engineering decision (default recommendation: stay within
+`schemaVersion: 1`). Groomed acceptance criteria now cover: the
+shared-`layerId` rejection rule (mirroring the existing
+`danglingReference` validator pattern), per-shape own `visible`/`locked`
+fields plus one new `LayersPanel.tsx` toggle (reusing #131's existing
+row pattern — no broader panel redesign), the `groupItems` precondition
+fix, `Group.layerId` semantics once members can span layers, read-time
+normalization (not a DB backfill), the `schemaVersion` decision, fixture/
+regression coverage (backend + frontend), zero-shape-layer and
+undo/redo-across-normalization edge cases, and a confirmation that
+`scenes/permissions.py` authorization is unaffected. Filed
+[#148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/148) as
+a follow-up to evaluate collapsing `Layer` and `Shape` into a single
+schema entity (a larger, riskier alternative reading of "as its own
+layer") — kept out of this task's scope so this task stays additive and
+backward-compatible; #148 depends on this task landing first.
+Status: PROPOSED
+GitHub issue: [#142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/142)
+Discovery gate: Searched `_docs/tasks.md` and GitHub issues (including
+`gh issue list --search "layer"` and `--search "migration schema"`) for an
+existing "per-shape layer independence"/migration task; #131 (task 100)
+and #110 (closed — outline/Inspector presentation and selection sync) are
+the closest matches but both are UI/presentation over the existing data
+model, not the data model itself. Treated as new, not a duplicate; #131's
+own delivered scope stays out of scope here (see issue #142's "Out of
+scope"). Follow-up #148 filed and linked per the discovery-gate
+reconciliation step.
+Next action: Implementing engineer resolves the `schemaVersion` question
+first, then changes `schema/scene.schema.json`, `scenes/validation.py`,
+`frontend/src/validation/scene.ts`, `sceneOutline.ts` (`groupItems`,
+`isEffectivelyLocked`, `moveItemToLayer`/`moveItemToGroup`,
+`buildOutline`), and `LayersPanel.tsx`'s per-shape toggle, in that order,
+with fixtures/tests added alongside each. See issue #142 for the full
+groomed acceptance criteria.
+
+## 112. Give the editor a discoverable toolbar with undo, colors, and essential shape tools
+Goal: Undo, Redo, Duplicate selected shape, Delete selected shape, and a
+contextual color-edit control for the current selection are reachable from
+a single always-visible, icon+tooltip, keyboard- and screen-reader-
+accessible toolbar — not buried inside a collapsed accordion or a
+tab-switched panel — at every supported viewport width.
+Description: 2026-08-24 user request (attempted on Replit as their own
+"#46", never landed — see task 111's identical numbering note).
+Investigation: `EditorWorkspace.tsx`'s Undo/Redo, duplicate/delete-selected
+controls all live inside `CollapsibleSection heading="Shape actions"`,
+which defaults closed (issue #95 point 6: every `CollapsibleSection`
+defaults closed). No dedicated always-visible toolbar exists anywhere in
+the editor; every control is a plain text button with no icon or tooltip.
+Color editing exists as an inline per-shape swatch in `LayersPanel.tsx`
+(task 100/#131) but isn't part of any toolbar. No prior closed issue
+proposed a dedicated toolbar. Global Ctrl/Cmd+Z undo/redo keyboard
+shortcuts already exist (`EditorWorkspace.tsx` ~lines 723-742) and are
+unaffected by this task.
+Grooming decisions (PM pass, 2026-08-23): "Essential shape tools" is
+defined as exactly Duplicate selected shape and Delete selected shape —
+shape-*creation* buttons (Add circle/rectangle/line/polygon) stay in
+`LayersPanel.tsx` exactly where task 100/#131 deliberately placed them,
+not moved again. The toolbar's color control reuses (does not duplicate)
+`LayersPanel.tsx`'s existing `updateSelectedShapeColorField`, keeping a
+single source of truth and no new color-picker dependency. Undo, Redo,
+Duplicate, and Delete move out of `CollapsibleSection heading="Shape
+actions"` into the new toolbar, along with the `lockError` alert so
+lock-rejection feedback is never hidden behind a collapsed accordion;
+`SnapPreferenceControl` stays in Tools, and the emptied section is removed
+or renamed. Full acceptance criteria are in the GitHub issue.
+Status: PROPOSED
+GitHub issue: [#143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/143)
+Discovery gate: Searched `_docs/tasks.md` and GitHub issues (`toolbar`,
+`tooltip`, `color picker`, `accessibility`) for an existing toolbar task;
+none exists — #131/task 100 is the closest related work but kept these
+controls inside a collapsed accordion rather than surfacing an
+always-visible toolbar. New, not a duplicate. Filed
+[#149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/149)
+("Add keyboard shortcuts for duplicate/delete selected shape") as a
+follow-up for the one piece of adjacent scope moved out during grooming;
+every other out-of-scope boundary was a design decision, not deferred
+work needing its own issue.
+Next action: Implement per the groomed acceptance criteria in #143: move
+Undo/Redo/Duplicate/Delete and `lockError` into the new toolbar, add the
+contextual color control, add icons/tooltips/accessible names, verify
+responsive behavior at both viewport widths, and update affected tests
+(`EditorWorkspace.a11y.test.tsx` and any test asserting the old DOM
+location of these controls).
+
+## 113. Make public projects render visibly and make camera interaction reliable
+Goal: `PublicProjectViewer.tsx` (the signed-out `/p/:id` route) reliably
+renders a published project's persisted scene, its own loading/empty/error
+states, and every camera-permission outcome, with real-browser (Playwright)
+regression coverage of that path specifically.
+Description: 2026-08-24 user request (attempted on Replit as their own
+"#47", never landed — see tasks 111/112's identical numbering note).
+Groomed 2026-08-24 — full reconciliation below; see issue #144 for the
+complete task-template writeup (Acceptance criteria / Out of scope /
+Evidence / Discovery gate).
+Reconciliation against #93/#119/#132/#140:
+- #93 (scene canvas had no visible rendering) — editor-only, and about a
+  different, now-superseded render path. Its fix styled `.editor-scene-
+  shape` DOM divs in `index.css`; `render/p5Adapter.ts` (the actual live
+  preview both `EditorWorkspace.tsx` and `PublicProjectViewer.tsx` use
+  today) draws straight to canvas via p5's API and never touches
+  `.editor-scene-shape`. Not coverage of this issue; unrelated precedent.
+- #119 (public-viewer "Enable camera" never appearing when
+  `navigator.mediaDevices` is undefined) — public-viewer-specific and
+  already verified: `publishingAndRemix.spec.ts`'s "mocked unsupported
+  browser..." scenario (lines 463-518) runs directly against `/p/:id`
+  anonymously and passes. Do not re-implement or re-test.
+- #132 (Enable camera does nothing in production) — fix lives in the
+  shared `CameraControl.tsx` (commit 9106a71's permission-prompt hint),
+  which `PublicProjectViewer.tsx` also renders unchanged, but the live-
+  production verification that motivated it (commit b06111d) was run
+  against the authenticated editor's Camera section, never `/p/:id`.
+- #140 (Preview canvas blank after camera reaches active) — entirely
+  editor-scoped: both regression suites
+  (`EditorWorkspace.cameraPreview.test.tsx`,
+  `EditorWorkspace.cameraPreviewRealControl.test.tsx`) and the closing
+  live-production verification all target `EditorWorkspace.tsx`; none
+  mention `PublicProjectViewer.tsx`. #140 is COMPLETE (task 109) but does
+  not cover this page.
+Net conclusion: this is not a duplicate of any of the four, but the
+genuinely new scope is narrow — since the rendering and camera code paths
+are almost entirely shared with the already-verified editor, what remains
+is verification specific to `/p/:id`: pixel-level persisted-scene
+rendering (the existing e2e test only checks container visibility, not
+pixels), the prompt-pending/granted/no-camera-hardware camera states
+(denied and unsupported are already covered per #119 above), and retry/
+stop behavior, plus extending the existing anonymous-viewer Playwright
+describe block in `publishingAndRemix.spec.ts` (lines 392-519) rather than
+building a new one.
+Status: PROPOSED
+GitHub issue: [#144](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/144)
+Discovery gate: Searched `_docs/tasks.md` and GitHub issues; no single
+existing task/issue covers the public-viewer camera path end-to-end with
+real-browser tests. Reconciled against #93/#119/#132/#140 above (all
+linked in issue #144) — none duplicated, only the genuine remainder
+scoped. No new out-of-scope work discovered during grooming beyond the
+conditional follow-ups already named in issue #144's "Out of scope"
+section (to be filed only if the new tests reveal a real bug).
+Next action: implement the pixel-level persisted-rendering assertion and
+the new/extended Playwright scenarios in `publishingAndRemix.spec.ts`'s
+existing anonymous-viewer describe block, per issue #144's acceptance
+criteria.

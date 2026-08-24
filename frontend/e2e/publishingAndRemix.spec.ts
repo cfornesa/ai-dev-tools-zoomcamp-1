@@ -95,7 +95,7 @@
  * mechanism every other spec file in this directory already relies on,
  * not a new one.
  */
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -422,6 +422,99 @@ function hexToRgbTriple(hex: string): string {
   const g = Number.parseInt(value.slice(2, 4), 16);
   const b = Number.parseInt(value.slice(4, 6), 16);
   return `${r},${g},${b}`;
+}
+
+/**
+ * Task 115 (issue #150): installs the `window.__mediapipeLoadVisionTasksModule`
+ * test seam `mediapipeProvider.ts`'s `resolveDeps` checks before falling
+ * back to the real dynamic `import('@mediapipe/tasks-vision')`, plus a
+ * `getUserMedia`-succeeds mock and the `HTMLMediaElement.prototype`
+ * `srcObject`/`play`/`pause`/`readyState` overrides a real (non-jsdom)
+ * browser needs to accept a fake `MediaStream` -- adapted from
+ * `exportArtifacts.spec.ts`'s `installCameraTestSeams('succeed')` for this
+ * suite's dev-server-proxied SPA (`CameraControl.tsx` via
+ * `createMediaPipeTrackingProvider`) rather than a `file://` export. Must
+ * run via `context.addInitScript` so it exists before the app's own
+ * bundle evaluates -- `CameraControl.tsx` itself is never touched; the
+ * seam is reachable purely through this `window` global.
+ */
+async function installMediaPipeTestSeam(context: BrowserContext): Promise<void> {
+  await context.addInitScript(() => {
+    // A real browser's <video>.srcObject setter validates its argument is
+    // a genuine MediaStream/MediaSource/Blob and throws otherwise --
+    // unlike jsdom, which leaves it as a plain, unvalidated property. The
+    // fake stream getUserMedia resolves with below is not a real
+    // MediaStream, so the native setter must be replaced with a
+    // permissive one for the pipeline to proceed past stream acquisition
+    // without throwing.
+    const storage = new WeakMap<HTMLMediaElement, unknown>();
+    Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+      configurable: true,
+      get(this: HTMLMediaElement) {
+        return storage.get(this);
+      },
+      set(this: HTMLMediaElement, value: unknown) {
+        storage.set(this, value);
+      },
+    });
+    HTMLMediaElement.prototype.play = () => Promise.resolve();
+    HTMLMediaElement.prototype.pause = () => {};
+    Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
+      configurable: true,
+      get: () => 4,
+    });
+
+    Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+      configurable: true,
+      value: () =>
+        Promise.resolve({
+          getTracks: () => [{ stop: () => {} }],
+        }),
+    });
+
+    const fakeRecognizer = {
+      recognizeForVideo: () => ({ landmarks: [], gestures: [], handedness: [] }),
+      close: () => {},
+    };
+    // @ts-expect-error -- test-only global shape, matching the seam
+    // mediapipeProvider.ts itself documents (mirroring
+    // standaloneCameraSource.ts's window.__exportCameraLoadVisionTasksModule).
+    window.__mediapipeLoadVisionTasksModule = () =>
+      Promise.resolve({
+        FilesetResolver: { forVisionTasks: () => Promise.resolve({}) },
+        GestureRecognizer: { createFromOptions: () => Promise.resolve(fakeRecognizer) },
+      });
+  });
+}
+
+/** Records every request URL this page makes for the duration of a test,
+ * so a "granted camera" scenario can assert none of them ever reached the
+ * real MediaPipe CDN -- with the seam installed, the real
+ * `@mediapipe/tasks-vision` module (and therefore its own internal
+ * wasm/model fetches, normally served from `cdn.jsdelivr.net` --
+ * `MEDIAPIPE_WASM_BASE_URL` -- and `storage.googleapis.com` --
+ * `GESTURE_RECOGNIZER_MODEL_URL` -- see `mediapipeProvider.ts`) is never
+ * imported at all, so this should always come back empty; adapted from
+ * `exportArtifacts.spec.ts`'s `interceptCdnAndTrackRequests` for a real
+ * dev-server-proxied page rather than an isolated `file://` context (no
+ * `page.route` interception needed here since no CDN request is ever
+ * expected to be *made*, only asserted absent). Deliberately checked by
+ * hostname substring rather than importing `mediapipeProvider.ts`'s exact
+ * URL constants -- this file's `tsconfig.e2e.json` uses Node's stricter
+ * `nodenext` module resolution (explicit `.js` extensions required on
+ * every relative import), which the app's own `src/` modules (built under
+ * `tsconfig.app.json`'s bundler resolution) don't satisfy, so importing
+ * one directly here would fail to typecheck.
+ */
+function trackRequestUrls(page: Page): string[] {
+  const observed: string[] = [];
+  page.on('request', (request) => observed.push(request.url()));
+  return observed;
+}
+
+function assertNoMediaPipeCdnRequests(observed: string[]): void {
+  expect(observed.some((url) => url.includes('cdn.jsdelivr.net'))).toBe(false);
+  expect(observed.some((url) => url.includes('storage.googleapis.com'))).toBe(false);
 }
 
 test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => {
@@ -795,6 +888,70 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
 
     // Demo controls remain fully usable throughout.
     await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+
+    await anonContext.close();
+  });
+
+  // -------------------------------------------------------------------
+  // Task 115 (issue #150): the granted/active/stop scenarios task 113/
+  // #144 could not complete, now reachable via the
+  // window.__mediapipeLoadVisionTasksModule seam mediapipeProvider.ts
+  // gained in this task. Never exercises real gesture/landmark output --
+  // the fake recognizer always returns empty landmarks/gestures/handedness.
+  // -------------------------------------------------------------------
+
+  test('granted camera reaches active', async ({ browser }) => {
+    const anonContext = await browser.newContext();
+    await installMediaPipeTestSeam(anonContext);
+    const anonPage = await anonContext.newPage();
+    const observedRequests = trackRequestUrls(anonPage);
+
+    await anonPage.goto(`/p/${publicProjectId}`);
+    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+
+    await expect(anonPage.getByTestId('camera-status')).toHaveText(
+      'Camera is active. Hand tracking is running locally in your browser.',
+    );
+    await expect(anonPage.getByRole('button', { name: 'Stop camera' })).toBeVisible();
+    await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toHaveCount(0);
+    await expect(anonPage.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+
+    // Demo controls remain fully usable while the camera is active.
+    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+
+    assertNoMediaPipeCdnRequests(observedRequests);
+
+    await anonContext.close();
+  });
+
+  test('stop after active', async ({ browser }) => {
+    const anonContext = await browser.newContext();
+    await installMediaPipeTestSeam(anonContext);
+    const anonPage = await anonContext.newPage();
+    const observedRequests = trackRequestUrls(anonPage);
+
+    await anonPage.goto(`/p/${publicProjectId}`);
+    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+    await expect(anonPage.getByTestId('camera-status')).toHaveText(
+      'Camera is active. Hand tracking is running locally in your browser.',
+    );
+
+    await anonPage.getByRole('button', { name: 'Stop camera' }).click();
+
+    await expect(anonPage.getByTestId('camera-status')).toHaveText(
+      'Camera stopped. No video is being captured.',
+    );
+    await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toBeVisible();
+    await expect(anonPage.getByRole('button', { name: 'Stop camera' })).toHaveCount(0);
+
+    // Demo controls remain fully usable/interactive throughout.
+    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+    const presentButton = anonPage.getByRole('button', { name: /Hand (present|absent)/ });
+    const before = await presentButton.textContent();
+    await presentButton.click();
+    await expect(presentButton).not.toHaveText(before ?? '');
+
+    assertNoMediaPipeCdnRequests(observedRequests);
 
     await anonContext.close();
   });

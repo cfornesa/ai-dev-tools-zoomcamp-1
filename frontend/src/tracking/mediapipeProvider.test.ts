@@ -5,7 +5,29 @@
  * and deterministically, driven by manually invoking the captured
  * `requestFrame` callback and advancing a fake clock.
  */
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { MAX_HANDS_PER_FRAME, type TrackingFrame, type TrackingProviderError } from './types';
+
+/** Task 115 (issue #150): stands in for the real `@mediapipe/tasks-vision`
+ * package so a test can prove the real dynamic `import('@mediapipe/tasks-vision')`
+ * path inside `resolveDeps`'s default is genuinely still reachable (no
+ * accidental short-circuit) without ever downloading the real package or
+ * touching the network -- `vi.mock` intercepts the module specifier at the
+ * bundler level, before any dynamic `import()` of it resolves to anything
+ * real. */
+const mediapipeModuleMock = {
+  forVisionTasks: vi.fn().mockResolvedValue({ fake: 'fileset' }),
+  createFromOptions: vi.fn().mockResolvedValue({ recognizeForVideo: vi.fn(), close: vi.fn() }),
+};
+vi.mock('@mediapipe/tasks-vision', () => ({
+  FilesetResolver: {
+    forVisionTasks: (...args: unknown[]) => mediapipeModuleMock.forVisionTasks(...args),
+  },
+  GestureRecognizer: {
+    createFromOptions: (...args: unknown[]) => mediapipeModuleMock.createFromOptions(...args),
+  },
+}));
 
 import {
   createMediaPipeTrackingProvider,
@@ -13,7 +35,6 @@ import {
   MEDIAPIPE_WASM_BASE_URL,
   type MediaPipeTrackingProviderDeps,
 } from './mediapipeProvider';
-import { MAX_HANDS_PER_FRAME, type TrackingFrame, type TrackingProviderError } from './types';
 
 type FakeTrack = { stop: ReturnType<typeof vi.fn> };
 type FakeStream = { getTracks: () => FakeTrack[] };
@@ -571,5 +592,120 @@ describe('createMediaPipeTrackingProvider failure routing', () => {
     harness.recognizeForVideo.mockReturnValue(emptyResult());
     harness.tick();
     expect(harness.frames).toHaveLength(1);
+  });
+});
+
+describe('createMediaPipeTrackingProvider window test seam (Task 115, issue #150)', () => {
+  afterEach(() => {
+    delete (window as { __mediapipeLoadVisionTasksModule?: unknown })
+      .__mediapipeLoadVisionTasksModule;
+    mediapipeModuleMock.forVisionTasks.mockClear();
+    mediapipeModuleMock.createFromOptions.mockClear();
+  });
+
+  it("with window.__mediapipeLoadVisionTasksModule absent and no deps override, the real dynamic import('@mediapipe/tasks-vision') path is still taken", async () => {
+    expect(window.__mediapipeLoadVisionTasksModule).toBeUndefined();
+
+    const getUserMedia = vi.fn().mockResolvedValue({ getTracks: () => [] });
+    const video = createFakeVideo();
+    const provider = createMediaPipeTrackingProvider({
+      getUserMedia: getUserMedia as MediaPipeTrackingProviderDeps['getUserMedia'],
+      createVideoElement: () => video,
+      isSupported: () => true,
+      requestFrame: vi.fn(() => 1),
+      cancelFrame: vi.fn(),
+    });
+
+    provider.start();
+    // Several `await`s deep in the async start pipeline, plus the dynamic
+    // `import()` itself adds at least one extra tick beyond a plain
+    // already-resolved promise -- a real macrotask flush (not just
+    // microtasks) reliably drains all of it.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+
+    // These only get called by the module `vi.mock('@mediapipe/tasks-vision')`
+    // above stands in for -- if `resolveDeps` had somehow short-circuited
+    // to a no-op or thrown before reaching the dynamic import, neither
+    // would ever be invoked. No real network request or real package code
+    // ever runs either way, since `vi.mock` replaces the module entirely.
+    expect(mediapipeModuleMock.forVisionTasks).toHaveBeenCalledWith(MEDIAPIPE_WASM_BASE_URL);
+    expect(mediapipeModuleMock.createFromOptions).toHaveBeenCalledWith(
+      { fake: 'fileset' },
+      expect.objectContaining({
+        baseOptions: expect.objectContaining({ modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL }),
+      }),
+    );
+  });
+
+  it('with window.__mediapipeLoadVisionTasksModule set and no deps override, the window seam wins over the real dynamic import', async () => {
+    const seam = vi.fn().mockResolvedValue({
+      FilesetResolver: { forVisionTasks: vi.fn().mockResolvedValue({ fake: 'seam-fileset' }) },
+      GestureRecognizer: {
+        createFromOptions: vi
+          .fn()
+          .mockResolvedValue({ recognizeForVideo: vi.fn(), close: vi.fn() }),
+      },
+    });
+    (
+      window as unknown as { __mediapipeLoadVisionTasksModule: typeof seam }
+    ).__mediapipeLoadVisionTasksModule = seam;
+
+    const getUserMedia = vi.fn().mockResolvedValue({ getTracks: () => [] });
+    const video = createFakeVideo();
+    const provider = createMediaPipeTrackingProvider({
+      getUserMedia: getUserMedia as MediaPipeTrackingProviderDeps['getUserMedia'],
+      createVideoElement: () => video,
+      isSupported: () => true,
+      requestFrame: vi.fn(() => 1),
+      cancelFrame: vi.fn(),
+    });
+
+    provider.start();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+
+    expect(seam).toHaveBeenCalledTimes(1);
+    expect(mediapipeModuleMock.forVisionTasks).not.toHaveBeenCalled();
+    expect(mediapipeModuleMock.createFromOptions).not.toHaveBeenCalled();
+  });
+
+  it('an explicit deps.loadVisionTasksModule still wins even when window.__mediapipeLoadVisionTasksModule is set', async () => {
+    const seam = vi.fn().mockResolvedValue({
+      FilesetResolver: { forVisionTasks: vi.fn().mockResolvedValue({ fake: 'seam-fileset' }) },
+      GestureRecognizer: {
+        createFromOptions: vi
+          .fn()
+          .mockResolvedValue({ recognizeForVideo: vi.fn(), close: vi.fn() }),
+      },
+    });
+    (
+      window as unknown as { __mediapipeLoadVisionTasksModule: typeof seam }
+    ).__mediapipeLoadVisionTasksModule = seam;
+
+    const explicitLoad = vi.fn().mockResolvedValue({
+      FilesetResolver: { forVisionTasks: vi.fn().mockResolvedValue({ fake: 'explicit-fileset' }) },
+      GestureRecognizer: {
+        createFromOptions: vi
+          .fn()
+          .mockResolvedValue({ recognizeForVideo: vi.fn(), close: vi.fn() }),
+      },
+    });
+    const getUserMedia = vi.fn().mockResolvedValue({ getTracks: () => [] });
+    const video = createFakeVideo();
+    const provider = createMediaPipeTrackingProvider({
+      getUserMedia: getUserMedia as MediaPipeTrackingProviderDeps['getUserMedia'],
+      createVideoElement: () => video,
+      isSupported: () => true,
+      requestFrame: vi.fn(() => 1),
+      cancelFrame: vi.fn(),
+      loadVisionTasksModule: explicitLoad,
+    });
+
+    provider.start();
+    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+
+    expect(explicitLoad).toHaveBeenCalledTimes(1);
+    expect(seam).not.toHaveBeenCalled();
   });
 });

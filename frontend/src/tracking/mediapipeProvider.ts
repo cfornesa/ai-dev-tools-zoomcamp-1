@@ -116,6 +116,21 @@ type MediaPipeVisionModule = {
   GestureRecognizer: typeof GestureRecognizerType;
 };
 
+/** Task 115 (issue #150): a real-browser e2e test seam, mirroring the
+ * shipped `window.__exportCameraLoadVisionTasksModule` pattern in
+ * `../export/standaloneCameraSource.ts`. A real user's build never
+ * defines this global, so `resolveDeps`'s default always falls through
+ * to the real dynamic `import('@mediapipe/tasks-vision')` below -- this
+ * is not gated behind `import.meta.env.DEV` or any build flag, exactly
+ * like that shipped precedent. Only a Playwright test installs it, via
+ * `page.addInitScript`/`context.addInitScript` before the app's own
+ * bundle evaluates. */
+declare global {
+  interface Window {
+    __mediapipeLoadVisionTasksModule?: () => Promise<MediaPipeVisionModule>;
+  }
+}
+
 /** Injectable dependencies. Every field defaults to the real browser API;
  * tests override them with mocks so this module never needs a physical
  * camera, a real MediaPipe download, or a real WebGL/Wasm runtime. */
@@ -157,6 +172,7 @@ function resolveDeps(deps: MediaPipeTrackingProviderDeps): Required<MediaPipeTra
   return {
     loadVisionTasksModule:
       deps.loadVisionTasksModule ??
+      (typeof window !== 'undefined' ? window.__mediapipeLoadVisionTasksModule : undefined) ??
       (() => import('@mediapipe/tasks-vision') as Promise<MediaPipeVisionModule>),
     getUserMedia:
       deps.getUserMedia ?? ((constraints) => navigator.mediaDevices.getUserMedia(constraints)),

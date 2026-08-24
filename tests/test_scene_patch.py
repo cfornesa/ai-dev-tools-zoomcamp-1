@@ -392,6 +392,145 @@ def test_result_limit_violation_patch_is_caught_by_scene_revalidation_after_appl
     assert any(e.rule == "duplicateLayerAssignment" for e in result.errors)
 
 
+# --- Issue #158: prompt-element reference check -----------------------
+
+
+def _scene_with_named_layers_and_shapes() -> dict:
+    scene = copy.deepcopy(BLANK_SCENE)
+    scene["layers"] = [
+        {"id": "layer-1", "name": "Background", "order": 0, "visible": True, "locked": False},
+    ]
+    scene["shapes"] = [
+        {**_circle("shape-sun", fill="#facc15"), "layerId": "layer-1"},
+        {**_circle("shape-moon", fill="#e5e7eb"), "layerId": "layer-1"},
+        {**_circle("shape-star", fill="#ffffff"), "layerId": "layer-1"},
+    ]
+    return scene
+
+
+def test_patch_touching_only_the_named_shape_is_allowed():
+    scene = _scene_with_named_layers_and_shapes()
+    # "Circle 1" is shape-sun's derived label (first circle in array order).
+    patch = [{"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"}]
+
+    assert validate_patch_operations(patch, scene=scene, prompt="make circle 1 bigger") == []
+
+
+def test_patch_touching_an_unreferenced_shape_is_rejected():
+    # A prompt naming one shape must never let the patch also touch an
+    # unrelated shape it never mentioned (the core false-negative risk).
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [
+        {"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"},
+        {"op": "remove", "path": "/shapes/2"},  # shape-star, never mentioned
+    ]
+
+    errs = validate_patch_operations(patch, scene=scene, prompt="make circle 1 bigger")
+
+    assert len(errs) == 1
+    assert errs[0].index == 1
+    assert errs[0].reason == PatchErrorReason.UNREFERENCED_ELEMENT
+
+
+def test_patch_touching_an_unreferenced_layer_by_name_is_rejected():
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [{"op": "replace", "path": "/layers/0/visible", "value": False}]
+
+    errs = validate_patch_operations(patch, scene=scene, prompt="rename the sun shape")
+
+    assert len(errs) == 1
+    assert errs[0].reason == PatchErrorReason.UNREFERENCED_ELEMENT
+
+
+def test_patch_touching_a_layer_referenced_by_name_is_allowed():
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [{"op": "replace", "path": "/layers/0/visible", "value": False}]
+
+    assert validate_patch_operations(patch, scene=scene, prompt="hide the Background layer") == []
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "recolor everything",
+        "reduce the opacity of all layers",
+        "make every shape bigger",
+        "clear the entire scene",
+        "reset the whole scene",
+    ],
+)
+def test_explicitly_bulk_scope_prompts_are_never_blocked(prompt):
+    # False-positive risk: a legitimately broad prompt must not be blocked
+    # just because it touches many/every element.
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [
+        {"op": "replace", "path": "/shapes/0/style/fill", "value": "#111111"},
+        {"op": "replace", "path": "/shapes/1/style/fill", "value": "#222222"},
+        {"op": "remove", "path": "/shapes/2"},
+        {"op": "replace", "path": "/layers/0/visible", "value": False},
+    ]
+
+    assert validate_patch_operations(patch, scene=scene, prompt=prompt) == []
+
+
+def test_bulk_scope_word_does_not_false_positive_on_a_substring():
+    # "all" must not match inside "small"/"recall" etc. -- word-boundary
+    # matched, not a plain substring check.
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [{"op": "remove", "path": "/shapes/2"}]  # shape-star, unreferenced
+
+    errs = validate_patch_operations(
+        patch, scene=scene, prompt="make it a small, recall-worthy scene"
+    )
+
+    assert len(errs) == 1
+    assert errs[0].reason == PatchErrorReason.UNREFERENCED_ELEMENT
+
+
+def test_unreferenced_element_check_is_skipped_without_a_prompt_argument():
+    # Documented: omitting `prompt` only skips this one check, matching
+    # `scene`'s own documented opt-out behavior for the identity check.
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [{"op": "remove", "path": "/shapes/2"}]
+
+    assert validate_patch_operations(patch, scene=scene) == []
+
+
+def test_unreferenced_element_check_is_skipped_without_a_scene_argument():
+    patch = [{"op": "remove", "path": "/shapes/2"}]
+
+    assert validate_patch_operations(patch, prompt="make circle 1 bigger") == []
+
+
+def test_adding_a_brand_new_shape_is_never_flagged_as_unreferenced():
+    # A prompt cannot be expected to name something that doesn't exist
+    # yet -- appending a new element is exempt from this check entirely.
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [{"op": "add", "path": "/shapes/-", "value": _circle("shape-new")}]
+
+    assert validate_patch_operations(patch, scene=scene, prompt="add a new circle") == []
+
+
+def test_referencing_a_shape_by_its_raw_id_is_allowed():
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [{"op": "remove", "path": "/shapes/2"}]
+
+    assert validate_patch_operations(patch, scene=scene, prompt="delete shape-star please") == []
+
+
+def test_worst_reason_prioritizes_unreferenced_element_over_invalid_path():
+    scene = _scene_with_named_layers_and_shapes()
+    errs = validate_patch_operations(
+        [
+            {"op": "remove", "path": "/shapes/2"},
+            {"op": "replace", "path": "/notARealField", "value": "x"},
+        ],
+        scene=scene,
+        prompt="make circle 1 bigger",
+    )
+    assert worst_reason(errs) == PatchErrorReason.UNREFERENCED_ELEMENT
+
+
 def test_summarize_patch_is_deterministic_and_content_free():
     patch = [
         {"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"},

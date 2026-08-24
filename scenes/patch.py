@@ -89,12 +89,80 @@ via an in-place field edit.
 
 Everything else -- including any path the schema doesn't even define --
 is rejected.
+
+## Prompt-element reference check (issue #158)
+
+Everything above bounds *what kind* of change a patch may make. It says
+nothing about *which* shape/group/binding/layer/graph node/connection a
+patch touches versus what the prompt that produced it actually asked
+about -- a prompt like "make the sun bigger" could, before this check
+existed, still legally remove an unrelated shape nobody asked about,
+because removing a shape is an allowed *kind* of operation. The project
+owner's request was explicit: AI edits should "simply manipulat[e] or
+add[] specified layers without touching those that are not referred to,"
+and never destroy layers "unless explicitly stated."
+
+`validate_patch_operations` takes an optional `prompt` string alongside
+`scene`. When both are supplied, a second pass checks every operation
+that touches one whole *existing* element in `shapes`/`groups`/
+`bindings`/`layers`/`graph.nodes`/`graph.connections` (an "existing
+element" here means `_get_at_path` resolves the operation's element-level
+prefix, e.g. `/shapes/2` for an operation at `/shapes/2/style/fill`, to
+something already in `scene` -- a brand-new item being added, e.g.
+`/shapes/-` or an out-of-range index, is exempt: the prompt cannot be
+expected to name something that doesn't exist yet) against a small set of
+"reference candidates" built from that element:
+
+- its own `id` (always present -- every element-level item's schema
+  requires one),
+- its `name` field, for `layers`/`groups` (the only two element kinds
+  the schema gives a user-facing display name -- see
+  `schema/scene.schema.json`'s `layer`/`group` `$defs`),
+- for `shapes` specifically (which carry no `name` field of their own),
+  a derived label matching the frontend's own convention
+  (`frontend/src/pages/sceneShapes.ts`'s `shapeLabel`: type display name
+  + 1-based ordinal among same-type shapes in array order, e.g.
+  "Circle 2") -- `_shape_label` below reimplements that same convention
+  server-side, since `scene` here is exactly the same JSON that function
+  reads client-side.
+
+An operation is flagged as `PatchErrorReason.UNREFERENCED_ELEMENT` if
+none of that element's reference candidates appears (case-insensitive
+substring match -- deliberately simple: exact/fuzzy name-or-id matching
+is enough for this task, not a full NLP/entity-resolution system) inside
+the prompt text, UNLESS the prompt is itself judged "bulk-scope" (see
+below), in which case every element-level operation is exempt from this
+check regardless of what it touches.
+
+### The bulk-scope heuristic (deliberate simplification, not a hidden
+limitation)
+
+A prompt is treated as bulk/global in scope if it contains, as a whole
+word (word-boundary regex, so e.g. "small" does not accidentally match
+"all"), any of: "all", "every", "everything", "entire", "whole". This is
+a fixed, small, first-pass word list -- exactly what this task's own
+constraints call for ("matching a small fixed list of bulk-scope
+words/phrases ... is an acceptable first pass") -- not an attempt to
+understand scope semantically. A prompt that says "recolor everything"
+or "reduce the opacity of all layers" is exempted entirely; a prompt that
+merely happens to contain one of these words in an unrelated sense (rare
+in practice, and only ever *widens* what's allowed, never narrows it) is
+the accepted false-negative cost of keeping this heuristic small and
+auditable.
+
+This check only ever adds a *new* rejection reason on top of every
+existing allowlist/protected-field/size check above -- it never changes
+what those checks themselves accept or reject, and it is entirely
+inert unless a caller passes `prompt` (every existing caller/test that
+doesn't is completely unaffected -- see `validate_patch_operations`'s own
+docstring).
 """
 
 from __future__ import annotations
 
 import copy
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -133,6 +201,12 @@ class PatchErrorReason:
     PROTECTED_FIELD = "protected_field"
     INVALID_PATH = "invalid_path"
     OVERSIZED = "oversized"
+    # Issue #158: an operation touches one whole *existing* shape/group/
+    # binding/layer/graph node/connection that the prompt text gives no
+    # reasonable reference to, and the prompt isn't itself bulk/global in
+    # scope. See this module's docstring's "Prompt-element reference
+    # check" section.
+    UNREFERENCED_ELEMENT = "unreferenced_element"
 
 
 @dataclass(frozen=True)
@@ -249,8 +323,93 @@ def _path_rejection_reason(pointer: str, segments: list[str]) -> str | None:
     return None if allowed else PatchErrorReason.INVALID_PATH
 
 
+# --- Issue #158: prompt-element reference check helpers --------------------
+
+# Mirrors frontend/src/pages/sceneShapes.ts's SHAPE_TYPE_DISPLAY_NAMES --
+# duplicated here (not imported -- this is Python, that's TypeScript) so
+# `_shape_label` can reconstruct the exact same "Circle 2"-style label the
+# editor UI shows a user for the same shape, from the same scene JSON.
+_SHAPE_TYPE_DISPLAY_NAMES = {
+    "circle": "Circle",
+    "rect": "Rectangle",
+    "line": "Line",
+    "path": "Polygon",
+}
+
+# Deliberately small, fixed, first-pass word list (see this module's
+# docstring's "The bulk-scope heuristic" section) -- word-boundary matched
+# so e.g. "small"/"recall" never accidentally match "all".
+_BULK_SCOPE_PATTERN = re.compile(r"\b(all|every|everything|entire|whole)\b", re.IGNORECASE)
+
+
+def _is_bulk_scope_prompt(prompt: str) -> bool:
+    return bool(_BULK_SCOPE_PATTERN.search(prompt))
+
+
+def _shape_label(item: dict[str, Any], scene: dict[str, Any]) -> str | None:
+    """Reimplements `frontend/src/pages/sceneShapes.ts`'s `shapeLabel`
+    convention server-side: `<type display name> <1-based ordinal among
+    same-type shapes in array order>` (e.g. "Circle 2"). Returns None if
+    `item`/`scene` don't carry enough shape data to compute this (should
+    not happen for a real scene document, but this function never raises)."""
+    shape_type = item.get("type")
+    if not isinstance(shape_type, str):
+        return None
+    shapes = scene.get("shapes")
+    if not isinstance(shapes, list):
+        return None
+    item_id = item.get("id")
+    same_type = [s for s in shapes if isinstance(s, dict) and s.get("type") == shape_type]
+    ordinal = next(
+        (i + 1 for i, s in enumerate(same_type) if s.get("id") == item_id and item_id is not None),
+        len(same_type) + 1,
+    )
+    display = _SHAPE_TYPE_DISPLAY_NAMES.get(shape_type, shape_type.capitalize())
+    return f"{display} {ordinal}"
+
+
+def _reference_candidates(root: str, item: dict[str, Any], scene: dict[str, Any]) -> list[str]:
+    """The strings a prompt could plausibly use to refer to `item` (an
+    existing element at top-level section `root`, e.g. "shapes" or
+    "graph.nodes"): its own id, its `name` field when it has one
+    (layers/groups only), and -- for shapes specifically, which carry no
+    `name` of their own -- its derived display label."""
+    candidates: list[str] = []
+    item_id = item.get("id")
+    if isinstance(item_id, str) and item_id:
+        candidates.append(item_id)
+    name = item.get("name")
+    if isinstance(name, str) and name:
+        candidates.append(name)
+    if root == "shapes":
+        label = _shape_label(item, scene)
+        if label:
+            candidates.append(label)
+    return candidates
+
+
+def _prompt_references(prompt_lower: str, candidates: list[str]) -> bool:
+    return any(candidate.lower() in prompt_lower for candidate in candidates)
+
+
+def _touched_element_path(segments: list[str]) -> tuple[str, list[str]] | None:
+    """For an allowlisted patch path's segments, returns `(root_label,
+    element_segments)` -- the path prefix addressing the one whole element
+    (shape/group/binding/layer/graph node/connection) this operation
+    touches -- or None if `segments` doesn't address an element-level
+    section at all (e.g. `/canvas/backgroundColor`, `/accessibility/...`,
+    `/demoSignals`, `/randomness/enabled` -- scene-wide settings, not
+    individual elements, and out of this check's scope)."""
+    top = segments[0]
+    if top in _ELEMENT_LEVEL_ROOTS and len(segments) >= 2:
+        return top, segments[:2]
+    if top == "graph" and len(segments) >= 3 and segments[1] in ("nodes", "connections"):
+        return f"graph.{segments[1]}", segments[:3]
+    return None
+
+
 def validate_patch_operations(
-    patch: Any, *, scene: dict[str, Any] | None = None
+    patch: Any, *, scene: dict[str, Any] | None = None, prompt: str | None = None
 ) -> list[PatchOperationError]:
     """Validate a proposed patch document against the allowlist, structure,
     and size bounds. Returns an empty list iff the patch is acceptable --
@@ -269,8 +428,22 @@ def validate_patch_operations(
     real caller does -- `ai_provider.mistral_provider.edit_scene_with_patch`
     is about to apply the patch to it) should always pass it; omitting it
     only skips this one check, not the rest of allowlist validation.
+
+    `prompt` is the natural-language edit request the patch was generated
+    from. When both `scene` and `prompt` are provided, a further check
+    runs (issue #158, see this module's docstring's "Prompt-element
+    reference check" section): any operation touching one whole *existing*
+    shape/group/binding/layer/graph node/connection the prompt text gives
+    no reasonable reference to is rejected as
+    `PatchErrorReason.UNREFERENCED_ELEMENT`, unless the prompt is itself
+    judged bulk/global in scope. Omitting `prompt` (or `scene`) only skips
+    this one check, not the rest of allowlist validation --
+    `ai_provider.mistral_provider.edit_scene_with_patch` is the one real
+    caller with both on hand, and always passes them.
     """
     errors: list[PatchOperationError] = []
+    bulk_scope = prompt is not None and _is_bulk_scope_prompt(prompt)
+    prompt_lower = prompt.lower() if prompt is not None else ""
 
     if not isinstance(patch, list):
         return [
@@ -391,6 +564,31 @@ def validate_patch_operations(
                         )
                     )
 
+        # Issue #158: prompt-element reference check -- only runs when both
+        # `scene` and `prompt` were supplied (see docstring above), and only
+        # exempted entirely when the prompt is bulk/global in scope.
+        if scene is not None and prompt is not None and not bulk_scope:
+            touched = _touched_element_path(segments)
+            if touched is not None:
+                root, element_segments = touched
+                found, item = _get_at_path(scene, element_segments)
+                if found and isinstance(item, dict):
+                    candidates = _reference_candidates(root, item, scene)
+                    if candidates and not _prompt_references(prompt_lower, candidates):
+                        errors.append(
+                            PatchOperationError(
+                                index=index,
+                                reason=PatchErrorReason.UNREFERENCED_ELEMENT,
+                                message=(
+                                    f"path {path!r} touches an existing {root} element "
+                                    f"({candidates[0]!r}) the prompt text doesn't appear to "
+                                    "reference; name it explicitly, or make the prompt "
+                                    "explicitly broad in scope (e.g. \"all\"/\"every\"/"
+                                    '"everything"/"entire"/"whole"), to allow this change.'
+                                ),
+                            )
+                        )
+
     return errors
 
 
@@ -400,6 +598,7 @@ def validate_patch_operations(
 # violations are surfaced first since they're the most security-relevant.
 _REASON_PRIORITY = (
     PatchErrorReason.PROTECTED_FIELD,
+    PatchErrorReason.UNREFERENCED_ELEMENT,
     PatchErrorReason.INVALID_PATH,
     PatchErrorReason.OVERSIZED,
     PatchErrorReason.MALFORMED,

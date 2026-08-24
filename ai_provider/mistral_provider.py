@@ -43,7 +43,13 @@ Patch handling, in order:
    outside the documented allowlist is rejected outright, with a
    `INVALID_PATCH_PREFIX`-tagged message identifying the specific reason
    (`scenes.patch.PatchErrorReason`) so `scenes/ai_api.py` can map it to
-   its own explicit HTTP response.
+   its own explicit HTTP response. This call also passes `request.prompt`
+   (issue #158): a patch touching an existing shape/group/binding/layer/
+   graph node/connection the prompt text gives no reasonable reference to
+   is rejected as `PatchErrorReason.UNREFERENCED_ELEMENT`, unless the
+   prompt is itself bulk/global in scope — see `scenes/patch.py`'s
+   docstring's "Prompt-element reference check" section for the full
+   mechanism and its deliberately simple word-list bulk-scope heuristic.
 4. Only a patch that passes step 3 is applied, via `scenes.patch.apply_patch`,
    to a **deep copy** of `request.current_scene` — the original the
    caller passed in is never mutated.
@@ -405,7 +411,9 @@ class MistralSceneProvider(AISceneProvider):
                 f"{EMPTY_PATCH_PREFIX} Mistral proposed no changes for this edit request.",
             )
 
-        patch_errors = validate_patch_operations(raw_patch, scene=request.current_scene)
+        patch_errors = validate_patch_operations(
+            raw_patch, scene=request.current_scene, prompt=request.prompt
+        )
         if patch_errors:
             reason = worst_reason(patch_errors)
             detail = "; ".join(f"[{e.index}] {e.message}" for e in patch_errors[:5])

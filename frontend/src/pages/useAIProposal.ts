@@ -73,7 +73,21 @@ const VALIDATION_CODES = new Set<AIErrorCode>([
   'prompt_invalid',
   'current_scene_invalid',
   'request_invalid',
+  // Issue #158: the proposed patch touched a shape/group/binding/layer/
+  // graph node/connection the prompt text never named, and the prompt
+  // wasn't itself bulk/global in scope (see `scenes/patch.py`'s
+  // docstring). Classified as a validation error (a problem with the
+  // prompt's specificity, not a provider/network failure) so it's
+  // surfaced distinctly rather than folded into the generic
+  // provider-error bucket below -- the server's `detail` message already
+  // names which unreferenced element triggered it.
+  'unreferenced_element',
 ]);
+
+const UNREFERENCED_ELEMENT_FALLBACK_MESSAGE =
+  'This edit would also change a shape, group, binding, layer, or graph node/connection ' +
+  'the prompt never mentioned. Name it explicitly in the prompt, or make the prompt ' +
+  'explicitly broad (e.g. "all"/"every"/"everything"/"entire"/"whole") if that was intended.';
 
 function classifyGenerationError(err: unknown): { phase: GenerationPhase; error: GenerationError } {
   if (err instanceof ApiError) {
@@ -85,7 +99,10 @@ function classifyGenerationError(err: unknown): { phase: GenerationPhase; error:
         error: {
           code,
           message:
-            detailMessage(body) ?? 'The request was invalid. Check the prompt and try again.',
+            detailMessage(body) ??
+            (code === 'unreferenced_element'
+              ? UNREFERENCED_ELEMENT_FALLBACK_MESSAGE
+              : 'The request was invalid. Check the prompt and try again.'),
         },
       };
     }

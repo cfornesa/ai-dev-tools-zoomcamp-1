@@ -393,6 +393,77 @@ def test_resulting_scene_over_limit_is_rejected_with_422(owner_client, project, 
     assert SceneVersion.objects.filter(project=project).count() == 0
 
 
+# --- Issue #158: prompt-element reference check ----------------------------
+
+
+def _scene_with_named_shapes():
+    def circle(shape_id, layer_id, fill="#14b8a6"):
+        return {
+            "id": shape_id,
+            "type": "circle",
+            "layerId": layer_id,
+            "groupId": None,
+            "transform": {"x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1},
+            "style": {"fill": fill, "stroke": None, "strokeWidth": 0},
+            "radius": 10,
+        }
+
+    scene = copy.deepcopy(BLANK_SCENE)
+    # Task 111 (issue #142): every shape needs its own layerId.
+    scene["layers"] = [
+        {"id": "layer-1", "name": "Background", "order": 0, "visible": True, "locked": False},
+        {"id": "layer-2", "name": "Middle", "order": 1, "visible": True, "locked": False},
+        {"id": "layer-3", "name": "Foreground", "order": 2, "visible": True, "locked": False},
+    ]
+    scene["shapes"] = [
+        circle("shape-sun", "layer-1"),
+        circle("shape-moon", "layer-2"),
+        circle("shape-star", "layer-3"),
+    ]
+    return scene
+
+
+@pytest.mark.django_db
+def test_patch_touching_an_unreferenced_shape_is_rejected_with_422(
+    owner_client, project, monkeypatch
+):
+    # False-negative risk: a prompt naming one shape must never let an
+    # accepted patch also touch a different, unmentioned shape.
+    scene = _scene_with_named_shapes()
+    patch = [
+        {"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"},  # Circle 1: named
+        {"op": "remove", "path": "/shapes/2"},  # Circle 3: never mentioned
+    ]
+    _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(patch)))
+
+    response = owner_client.post(
+        _url(project), _payload(prompt="make circle 1 red", scene=scene), format="json"
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"] == "unreferenced_element"
+    assert SceneVersion.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
+def test_bulk_scope_prompt_touching_every_shape_is_accepted(owner_client, project, monkeypatch):
+    # False-positive risk: a legitimately broad/global prompt must not be
+    # blocked just because it touches every shape in the scene.
+    scene = _scene_with_named_shapes()
+    patch = [
+        {"op": "replace", "path": "/shapes/0/style/fill", "value": "#111111"},
+        {"op": "replace", "path": "/shapes/1/style/fill", "value": "#222222"},
+        {"op": "replace", "path": "/shapes/2/style/fill", "value": "#333333"},
+    ]
+    _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(patch)))
+
+    response = owner_client.post(
+        _url(project), _payload(prompt="recolor every shape", scene=scene), format="json"
+    )
+
+    assert response.status_code == 200
+
+
 # --- Provider error taxonomy -------------------------------------------------
 
 

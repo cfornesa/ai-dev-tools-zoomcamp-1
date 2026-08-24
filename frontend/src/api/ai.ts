@@ -60,6 +60,7 @@ export type AIErrorCode =
   | 'stale_base'
   | 'empty_patch'
   | 'protected_field'
+  | 'unreferenced_element'
   | 'invalid_patch_path'
   | 'malformed_patch'
   | 'oversized_patch'

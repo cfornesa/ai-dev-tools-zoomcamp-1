@@ -253,6 +253,28 @@ describe('useAIProposal generation phases', () => {
     expect(result.current.genError?.message).toMatch(/protected field/i);
   });
 
+  it('classifies an unreferenced-element patch rejection (issue #158) as a distinct validation error', async () => {
+    mockedEditAIScene.mockRejectedValue(
+      new ApiError(422, {
+        error: 'unreferenced_element',
+        detail:
+          "path '/shapes/2' touches an existing shapes element ('Circle 3') the prompt text doesn't appear to reference.",
+      }),
+    );
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    act(() => result.current.setMode('edit'));
+    act(() => result.current.setPrompt('make the sun bigger'));
+
+    await act(async () => {
+      await result.current.generate(VALID_SCENE, 3);
+    });
+
+    expect(result.current.phase).toBe('validation-error');
+    expect(result.current.genError?.code).toBe('unreferenced_element');
+    expect(result.current.genError?.message).toMatch(/circle 3/i);
+  });
+
   it('rejects edit mode with no working scene without calling the API', async () => {
     const { result } = renderHook(() => useAIProposal('p1'));
     act(() => result.current.setMode('edit'));

@@ -2680,8 +2680,28 @@ owner directly requested this while reviewing the deployed public viewer.
 
 ### Status
 
-PROPOSED — full groomed write-up filed as
-[#152](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/152).
+COMPLETE
+GitHub issue: [#152](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/152).
+
+Resolution (2026-08-24): `PublicProjectViewer.tsx` now carries the same
+`cameraStatus`/`cameraStream`/`cameraVideoRef` state and `srcObject` effect
+as `EditorWorkspace.tsx`, wired via `<CameraControl onStatusChange
+onStreamChange>` (previously unused props on this page), and renders the
+same overlay `<video>` + opacity slider + mirror checkbox — duplicated
+layout JSX rather than a shared component, per the issue's own "Design
+decisions." Both pages import `useCameraOverlaySettings()` from the same
+`cameraOverlaySettings.ts` store — no fork, so a preference set on either
+page is honored on the other in the same browser after reload. New test
+file `PublicProjectViewer.cameraOverlay.test.tsx` covers idle/active
+visibility, live slider/mirror updates, Stop clearing the overlay
+immediately, and the shared-store round-trip in both directions. New
+Playwright scenario in `publishingAndRemix.spec.ts`'s "Anonymous viewer"
+block (reusing the existing `installMediaPipeTestSeam` helper) verifies
+the overlay/controls in a real browser and that the setting lands in real
+`localStorage` under the shared key. `npm run typecheck`/`lint`/`format`
+clean; full frontend suite green (see task 124's combined verification
+note below — all three of tasks 120/124/126 landed together and were
+checked together).
 
 ## 121. Layers panel doesn't visibly reflect canvas selection (and vice versa)
 
@@ -2755,8 +2775,32 @@ accelerators, and click-drag panning once zoomed, implemented as a CSS
 `transform: scale()` on the canvas wrapper (not a p5 resolution change)
 so the existing `clientToCanvasPoint` coordinate math keeps working
 unmodified.
-Status: PROPOSED — full groomed write-up filed as
-[#156](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/156).
+Status: COMPLETE
+GitHub issue: [#156](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/156).
+Resolution (2026-08-24): Zoom/pan state (`zoom`, `pan`) is local `useState`
+in `EditorWorkspace.tsx`, never written to `workingCopy`/scene JSON, reset
+on every fresh mount. A new `.editor-scene-canvas-viewport` wrapper now
+owns the responsive width/aspect-ratio sizing issue #109 gave
+`.editor-scene-canvas`, and clips (`overflow: hidden`) only once zoomed
+past 100% — at the default state rendering is pixel-identical to before.
+The `translate(pan) scale(zoom)` transform applies to `.editor-scene-canvas`
+itself (the element `clientToCanvasPoint` already reads via
+`getBoundingClientRect()`), so no coordinate-conversion code changed at
+all — CSS transforms are automatically reflected in that rect. Pan-vs-
+shape-drag disambiguation reuses `handleCanvasPointerDown`'s existing
+hit-test branch (a miss + zoom > 100% starts a pan gesture instead).
+Zoom controls (+/-, live `aria-live` percentage readout, Reset) use the
+existing `ToolbarButton` a11y pattern; Ctrl/Cmd+scroll, +/-, and 0 are
+keyboard/wheel accelerators guarded by the existing `isTypingTarget`
+pattern, bounded 25%-400% in 25-point steps. New
+`EditorWorkspace.zoomPan.test.tsx` (20 cases) covers bounds, shortcuts,
+wheel zoom vs. plain-scroll non-hijacking, pan-vs-drag disambiguation at
+100%/200% zoom, Escape-cancel, coordinate-math correctness while zoomed,
+and pan resetting at 100%. Scope boundaries honored: editor canvas only
+(not the public viewer or export runtime), no p5 resolution change,
+touch/pinch-to-zoom explicitly out of scope. `npm run
+typecheck`/`lint`/`format`/`build` clean; full frontend suite green (see
+this task's combined verification note below).
 
 ## 125. Rebalance the editor layout toward a canvas-dominant (~80/20) split at every viewport size
 
@@ -2777,8 +2821,49 @@ legitimately broad/global prompts. `scenes/patch.py` already enforces
 structural guarantees (path allowlist, protected fields, size caps) but
 has no semantic reference-scoping check today — the system prompt only
 asks the model informally to keep changes minimal, unenforced.
-Status: PROPOSED — full groomed write-up filed as
-[#158](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/158).
+Status: COMPLETE
+GitHub issue: [#158](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/158).
+Resolution (2026-08-24): `validate_patch_operations` (`scenes/patch.py`)
+gained an optional `prompt` parameter; when supplied alongside `scene`, a
+second pass checks every operation touching one whole existing
+shape/group/binding/layer/graph-node/connection against "reference
+candidates" built from that element (its `id` always; its `name` for
+layers/groups; a derived `shapeLabel`-style label — e.g. "Circle 2" — for
+shapes, which carry no `name` of their own) via case-insensitive substring
+match against the prompt text. A brand-new item being added (e.g.
+`/shapes/-`) is exempt — the prompt can't name something that doesn't
+exist yet. A fixed, word-boundary-matched bulk-scope word list
+("all"/"every"/"everything"/"entire"/"whole") exempts a prompt entirely
+when explicitly global, documented as a deliberate simplification, not a
+hidden limitation. A violation surfaces as the new
+`PatchErrorReason.UNREFERENCED_ELEMENT`, mapped in `scenes/ai_api.py`'s
+`_PATCH_REASON_TO_RESPONSE` to HTTP 422 `"unreferenced_element"` (ranked
+second in `_REASON_PRIORITY`, after `protected_field`), with both the
+module docstring's and `AIEditSceneView`'s failure-taxonomy tables
+updated. `ai_provider/mistral_provider.py`'s `edit_scene_with_patch` now
+passes `prompt=request.prompt`. Frontend: `AIErrorCode` gained
+`'unreferenced_element'`, classified into `useAIProposal.ts`'s
+`VALIDATION_CODES` with a message naming the affected element type. New
+tests: 13 in `tests/test_scene_patch.py` (referenced/unreferenced
+shape/layer, name vs. id matching, 5 bulk-scope prompts never blocked,
+word-boundary false-positive guard, opt-out without prompt/scene, new-item
+exemption, priority ordering), 2 integration tests in
+`tests/test_ai_edit_scene_api.py` (unreferenced shape → 422, bulk-scope
+prompt touching every shape → 200), 1 in `useAIProposal.test.ts`. Backend:
+`ruff check`/`ruff format --check`/`mypy` clean, `pytest` 619 passed, 22
+skipped. Frontend: see this task's combined verification note below (all
+three of tasks 120/124/126 landed together).
+
+### Combined verification (tasks 120/124/126, 2026-08-24)
+
+Tasks 120 (`PublicProjectViewer.tsx` camera overlay), 124 (editor zoom/
+pan), and 126 (AI patch reference-scoping) were implemented in parallel
+against disjoint file sets and landed together. After merging, the full
+suite was re-run against the combined tree: `uv run ruff check .` /
+`ruff format --check .` / `mypy .` all clean; `uv run pytest` 619 passed,
+22 skipped; `cd frontend && npm run typecheck`/`lint`/`format` clean;
+`npx vitest run` 114 test files / 1691 tests, all passed, zero
+regressions.
 
 ## 127. Add a Code tab with Visual/Code parity and AI-assisted error recovery for scene JSON
 

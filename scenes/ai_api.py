@@ -1,6 +1,10 @@
 """Task 46/47: the AI create-scene endpoint. Task 50 adds `AIEditSceneView`,
 the sibling AI edit-scene endpoint, at the bottom of this module -- see
-its own docstring for the patch-specific failure taxonomy, stale-base
+its own docstring for the patch-specific failure taxonomy (including
+issue #158's `"unreferenced_element"` row -- a patch that touches a
+shape/group/binding/layer/graph node/connection the prompt text gives no
+reasonable reference to, and the prompt isn't itself bulk/global in scope
+-- see `scenes/patch.py`'s docstring for the full mechanism), stale-base
 detection, and quota/rate-limit choices; everything below through
 `AICreateSceneView` is unchanged from Task 46/47.
 
@@ -289,6 +293,15 @@ _PATCH_REASON_TO_RESPONSE: dict[str, tuple[int, str]] = {
     PatchErrorReason.INVALID_PATH: (status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_patch_path"),
     PatchErrorReason.OVERSIZED: (status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "oversized_patch"),
     PatchErrorReason.MALFORMED: (status.HTTP_422_UNPROCESSABLE_ENTITY, "malformed_patch"),
+    # Issue #158: the patch touches an existing shape/group/binding/layer/
+    # graph node/connection the prompt text gives no reasonable reference
+    # to, and the prompt isn't itself bulk/global in scope -- its own
+    # distinct code/response, not folded into invalid_patch_path or any
+    # other existing reason (see scenes/patch.py's docstring).
+    PatchErrorReason.UNREFERENCED_ELEMENT: (
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        "unreferenced_element",
+    ),
 }
 
 
@@ -545,6 +558,7 @@ class AIEditSceneView(APIView):
     | `base_version_id` != `project.current_version_id` | 409 | `"stale_base"`          |
     | Empty patch (documented policy: rejected, not a no-op success) | 422 | `"empty_patch"` |
     | Patch touches a protected field (identity/version/seed/id)    | 422  | `"protected_field"`  |
+    | Patch touches an element the prompt never names (#158) | 422 | `"unreferenced_element"` |
     | Patch targets a path outside the documented allowlist | 422 | `"invalid_patch_path"` |
     | Patch is malformed (bad op/shape/missing value) | 422  | `"malformed_patch"`      |
     | Patch exceeds the operation-count/byte-size bound | 413 | `"oversized_patch"`     |

@@ -1610,7 +1610,7 @@ this task's own session pushed it — Replit's workspace syncs via git
 merge (`.replit`'s `[postMerge]` hook runs `scripts/post-merge.sh`), so
 there was nothing for Replit to have pulled yet, on top of Publish itself
 being a separate, user-authorized step no session automated.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#139](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/139)
 Evidence: `e6832e9` (task 102's fix, `scripts/start.sh`'s
 `FRONTEND_SERVE_MODE`, `scripts/start-production.sh`,
@@ -1618,9 +1618,159 @@ Evidence: `e6832e9` (task 102's fix, `scripts/start.sh`'s
 pushed as part of this task; live console checks against
 `https://animate.creatrweb.com` on 2026-08-23 (twice, in separate
 sessions) both showed the Vite dev client still active.
+Resolution (2026-08-23): The project owner republished from Replit
+(`40fd853` "Published your App") after this task pushed the fix to
+`origin`. Issue #139 was verified and closed the same day with direct
+evidence: deployment logs show `scripts/start-production.sh` reaching
+`vite preview` and a passing Django health check; published smoke checks
+pass (`/health/` 200, `/` 200, `/api/whoami/` 401, `/accounts/login/`
+200); the live HTML serves hashed `/assets/*.js`/`.css` bundles and no
+longer contains `/@vite/client`, `/src/main.tsx`, or React refresh
+markers — no production Vite HMR signature remains.
 Discovery gate: Searched `_docs/tasks.md` for an existing "push"/
 "republish"/"deploy" reminder task; task 102/#133 itself only covers the
 code fix and explicitly deferred live verification ("Not yet verified
 against a live publish... requires the user to trigger an actual Replit
 deployment") rather than tracking the deploy step itself — this task
-tracks that specific outstanding step, new and not a duplicate.
+tracked that specific outstanding step, new and not a duplicate at the
+time it was filed.
+
+## 109. Preview canvas goes blank after live camera becomes active
+Goal: The Preview canvas keeps rendering the scene's shapes after live
+camera tracking becomes active — it should never go blank just because
+the camera turned on.
+Description: Three screenshots attached to the repo
+(`attached_assets/image_1787523711773.png`, `image_1787523735976.png`,
+`image_1787523858217.png`) show a working Layers panel and a correctly
+rendered 4-shape Preview, contrasted with a third screenshot where the
+Preview panel is entirely blank below its heading (no shape-count text,
+no hint text, no canvas) while the Live camera panel reads "Camera is
+active." (that third screenshot's side-by-side Preview/Live-camera
+layout confirms the >=1024px wide viewport, not the narrow tabbed one).
+A read-only investigation of `EditorWorkspace.tsx`'s Preview section
+(~lines 1245-1279) found the shape-count paragraph, hint paragraph, and
+canvas wrapper render unconditionally with no code path keyed on
+`cameraStatus`, and that `panelHidden('preview')` always returns `false`
+(~line 892, issue #93) regardless of viewport or active tab — ruling out
+a video-overlay cause (`CameraControl.tsx` renders no `<video>` element)
+and a tab/viewport-visibility cause. `CameraControl` is itself rendered
+inside a `CollapsibleSection` (heading "Camera") that defaults closed and
+only mounts its children while open
+(`frontend/src/pages/CollapsibleSection.tsx` line 42), so whether the
+screenshots' repro path involved collapsing/re-expanding that section is
+still open. Grooming (issue #140) turned this into a live-reproduction
+checklist: first vs. every activation, shape-count dependence, the
+Camera-section collapse/expand interaction, wide vs. narrow viewport,
+reduced-motion on/off, whether the rest of the editor (including Demo
+signal controls) stays usable if Preview does blank, and whether the
+blank state is permanent or recoverable — still pointing toward a
+render-time exception or a mount-order race between the p5 canvas
+lifecycle and `CameraControl`'s `onStatusChange` callback as the leading
+hypothesis, pending that live reproduction.
+Status: ACTIVE
+GitHub issue: [#140](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/140)
+Discovery gate: Searched `_docs/tasks.md` and existing GitHub issues for
+a duplicate. Issue #132 ("Enable camera does nothing in production",
+task 101, closed) is a distinct symptom — the Enable-camera control
+never reaching `'active'` at all — whereas this task assumes the camera
+does reach `'active'` and covers what happens to Preview afterward. New,
+not a duplicate. The `CollapsibleSection` mount/unmount-on-collapse
+question surfaced during grooming is tracked as a pending-verification
+item on issue #140 rather than a separate follow-up issue; file one only
+if live reproduction shows it's a genuine, separate problem.
+Evidence (2026-08-23): Added
+`frontend/src/pages/EditorWorkspace.cameraPreview.test.tsx` (11 cases, all
+passing, `make frontend-test` green at 1590/1590 with no regressions) as
+deterministic, no-real-camera coverage for every dimension of the issue's
+checklist that doesn't itself require a live `getUserMedia` prompt or real
+MediaPipe frames: first vs. repeated `cameraStatus` activation
+(`'idle'`→`'starting'`→`'active'`→`'stopped'`→`'active'`), an empty scene
+and a populated scene, >=1024px and <1024px viewports (including
+activating wide then narrowing), reduced motion forced both ways, the
+Camera `CollapsibleSection` collapsed and re-expanded after activation
+(confirms it unmounts/remounts `CameraControl` per
+`CollapsibleSection.tsx`'s `open && children` guard, and that Preview is
+unaffected either way), shape selection still highlighting on canvas after
+activation, Demo signal controls staying operable, and no `previewError`
+alert appearing as a side effect of a bare status transition. `CameraControl`
+is mocked as a controllable status source only (its own permission/MediaPipe
+state machine is already covered by `CameraControl.test.tsx`), the same
+boundary-mocking convention `EditorWorkspace.previewRuntime.test.tsx` uses
+for `p5Adapter`. Every case passes against the current `main` — this is
+consistent with, and now backs with an automated regression guardrail, the
+original code investigation's finding that `panelHidden('preview')` always
+returns `false` and nothing else in the Preview `<section>` reads
+`cameraStatus`.
+Evidence (2026-08-23, continued): The first suite mocks `CameraControl`
+itself, which cannot exercise the issue's own leading hypothesis — "a
+mount-order race between the p5 canvas lifecycle and `CameraControl`'s
+`onStatusChange` callback." Added a second suite,
+`frontend/src/pages/EditorWorkspace.cameraPreviewRealControl.test.tsx` (3
+cases, all passing), that renders the REAL, unmocked `CameraControl`
+inside the REAL `EditorWorkspace` and replaces only
+`../tracking/mediapipeProvider`'s `createMediaPipeTrackingProvider` with a
+fully controllable fake `TrackingProvider` (the same seam
+`CameraControl.test.tsx` already exercises via its `createProvider` prop;
+`window.isSecureContext` overridden the same way, since jsdom always
+reports it `false`). This drives the actual "Enable camera" button through
+`CameraControl`'s real `handleEnable` → `setStatus('starting')` →
+`getProvider().start()` → a fake-provider frame → the real
+`provider.onFrame` handler flipping `status` to `'active'` → the real
+`status` `useEffect` firing `onStatusChange('active')` into
+`EditorWorkspace.tsx`'s real `setCameraStatus`/`trackingSourceRef` wiring
+— the exact effect-ordering path the hypothesis names, with no manual
+status injection anywhere in the chain. All 3 cases (activation, a
+Stop-camera/re-Enable cycle, and "no render-time error, rest of editor
+stays usable") pass, finding no mount-order race in the current code:
+Preview stays fully populated at every step. `make frontend-test` is green
+(1592/1593; the one failure, `draftAutosave.test.ts`, is an unrelated
+pre-existing flake — confirmed by rerunning that file alone, which passes
+22/22 — and touches a file this task never modified).
+Evidence (2026-08-23, live production): With the user's explicit direction
+to use their already-authenticated real Chrome session
+(`mcp__claude-in-chrome__*`), performed the live reproduction directly
+against `https://animate.creatrweb.com` on the exact project the original
+bug screenshots came from (the 4-shape "Blank canvas" project — circle,
+diamond, rectangle, line — matching `image_1787523711773.png`). Steps and
+results:
+- Loaded the project: Preview showed "4 shape(s) in the working copy.",
+  the interaction hint, and all four shapes rendered correctly (matches
+  the "before" screenshot).
+- Expanded Camera, clicked the real "Enable camera" button (a genuine
+  `getUserMedia` permission prompt against real hardware, already granted
+  in this Chrome profile): status reached "Camera is active. Hand
+  tracking is running locally in your browser." within about a second.
+  Preview stayed fully rendered — shape count, hint, and all four shapes
+  — not blank.
+- Clicked a shape while the camera was active: it selected correctly with
+  visible move/resize/rotate handles, confirming the scene stayed
+  interactive.
+- Collapsed the Camera `CollapsibleSection` while active (the
+  pending-verification item from grooming): Preview was unaffected.
+  Re-expanding reset Camera to a fresh "Enable camera" state (a new
+  `CameraControl` instance mounts on expand per its `open && children`
+  guard, as already flagged and explicitly out of scope for this issue) —
+  Preview remained correct throughout regardless.
+- Re-enabled the camera a second time from that fresh state: reached
+  "active" again immediately, Preview stayed fully populated.
+- Checked the browser console throughout: the only "error"-level entry
+  both times was MediaPipe's own benign
+  `INFO: Created TensorFlow Lite XNNPACK delegate for CPU.` log line (not
+  a real error) — no render-time exception, no blank state, no
+  `previewError` banner.
+The blank-Preview symptom from the original screenshots did not reproduce
+on live production against the same project. Combined with both
+regression suites above (which rule out every code-level path in
+`EditorWorkspace.tsx`/`CameraControl.tsx` the issue names, including the
+"mount-order race" hypothesis) and this direct live-production
+reproduction attempt (which rules out a production-only difference per
+#132's precedent), every acceptance criterion in issue #140 that's
+checkable today has been checked and passes.
+Status: COMPLETE
+Resolution: The exact root cause behind the three original screenshots
+remains unknown (most likely a since-resolved transient condition, or one
+this session's steps didn't happen to hit), but the bug is not
+reproducible against current `main` in production or in code, across
+every dimension the issue's acceptance criteria enumerate. Closing on that
+basis, with both regression suites left in place as a permanent guardrail
+against a future regression of the same shape.

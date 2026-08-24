@@ -1306,6 +1306,15 @@ textarea:disabled {
   border-left-color: var(--border);
 }
 
+/* Issue #153: a shape/group row visibly reflects `selectedShapeId` matching
+   its own id, so canvas <-> Layers-panel selection reads as one obviously
+   shared state in both directions, not just correct underlying data. */
+.editor-outline-row-group[data-selected='true'],
+.editor-outline-row-shape[data-selected='true'] {
+  border-left-color: var(--accent);
+  background: var(--accent-bg);
+}
+
 .editor-outline-kind-icon {
   color: var(--text);
   opacity: 0.7;

@@ -326,6 +326,27 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     expect(outlineCircleButton).toHaveAttribute('aria-pressed', 'true');
     expect(outlineRectangleButton).toHaveAttribute('aria-pressed', 'false');
   });
+
+  // Issue #153: the underlying `selectedShapeId` was already correct in
+  // both directions; only the visible row highlight was missing.
+  it('visibly marks the selected shape row via data-selected, and only that row', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' })); // auto-selected
+
+    const rectangleRow = within(outlineList())
+      .getByRole('button', { name: 'Rectangle 1' })
+      .closest('li');
+    const circleRow = within(outlineList()).getByRole('button', { name: 'Circle 1' }).closest('li');
+    expect(rectangleRow).toHaveAttribute('data-selected', 'true');
+    expect(circleRow).not.toHaveAttribute('data-selected');
+
+    await user.click(within(outlineList()).getByRole('button', { name: 'Circle 1' }));
+
+    expect(circleRow).toHaveAttribute('data-selected', 'true');
+    expect(rectangleRow).not.toHaveAttribute('data-selected');
+  });
 });
 
 describe('EditorWorkspace scene outline: friendly shape labels (Task 80 / issue #110)', () => {

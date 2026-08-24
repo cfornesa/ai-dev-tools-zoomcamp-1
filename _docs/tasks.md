@@ -2689,8 +2689,23 @@ Goal: A selected shape/group is visibly highlighted in its Layers panel
 row, and vice versa — the underlying `selectedShapeId` state is already
 correctly shared in both directions; only the visible feedback is
 missing (`aria-pressed` is set but never styled).
-Status: PROPOSED — full groomed write-up filed as
-[#153](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/153).
+Status: COMPLETE
+GitHub issue: [#153](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/153).
+Resolution (2026-08-24): Added `data-selected="true"` to a group/shape
+`<li>` row in `LayersPanel.tsx` when `row.id === sceneEditor.selectedShapeId`
+(layer rows excluded — no equivalent select concept, per the issue's own
+note), styled in `index.css` via
+`.editor-outline-row-group[data-selected='true'], .editor-outline-row-shape[data-selected='true']`
+(accent border + background, reusing the same `--accent`/`--accent-bg`
+tokens the existing drop-into affordance already uses). Also decided the
+open "scroll into view?" question explicitly: added a `useEffect` in
+`LayersPanel` that scrolls the selected row into view (`{ block: 'nearest' }`)
+whenever `selectedShapeId` changes, guarded with `?.` since jsdom has no
+`scrollIntoView` implementation. Multi-selection (`multiSelectedIds`) left
+untouched, per the issue's explicit note not to conflate the two. New test
+in `EditorWorkspace.layers.test.tsx` ("visibly marks the selected shape row
+via data-selected, and only that row"). `npm run typecheck`/`lint`/`format`
+clean; full frontend suite green at 1657/1657.
 
 ## 122. Promote Layers to the top of the editor sidebar and replace the text-accordion sections with icon-driven collapsible panels
 

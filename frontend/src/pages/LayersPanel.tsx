@@ -1,4 +1,10 @@
-import { useEffect, useState, type DragEvent as ReactDragEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent as ReactDragEvent,
+  type ReactNode,
+} from 'react';
 
 import type { SceneDocument } from '../api/projects';
 import {
@@ -704,6 +710,7 @@ function OutlineRowItem({
         style={indent}
         data-outline-kind="group"
         data-outline-id={row.id}
+        data-selected={row.id === sceneEditor.selectedShapeId ? 'true' : undefined}
         className={`editor-outline-row editor-outline-row-group ${dragAttrs.extraClassName}`.trim()}
         draggable={dragAttrs.draggable}
         onDragStart={dragAttrs.onDragStart}
@@ -806,6 +813,7 @@ function OutlineRowItem({
       style={indent}
       data-outline-kind="shape"
       data-outline-id={row.id}
+      data-selected={row.id === sceneEditor.selectedShapeId ? 'true' : undefined}
       className={`editor-outline-row editor-outline-row-shape ${dragAttrs.extraClassName}`.trim()}
       draggable={dragAttrs.draggable}
       onDragStart={dragAttrs.onDragStart}
@@ -903,6 +911,18 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [hover, setHover] = useState<HoverState | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
+
+  // Issue #153: keep the Layers panel scrolled to whichever row is selected
+  // (e.g. via a canvas click), matching the canvas's own outline highlight
+  // becoming visible without extra user action.
+  useEffect(() => {
+    const id = sceneEditor.selectedShapeId;
+    if (!id || !listRef.current) return;
+    const row = listRef.current.querySelector(`[data-outline-id="${id}"]`);
+    // jsdom (unit tests) has no `scrollIntoView` implementation at all.
+    row?.scrollIntoView?.({ block: 'nearest' });
+  }, [sceneEditor.selectedShapeId]);
 
   const drag: DragController = {
     dragId,
@@ -1016,7 +1036,7 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
       {sceneEditor.outline.length === 0 ? (
         <p>No layers yet.</p>
       ) : (
-        <ul aria-label="Scene outline" className="editor-outline-list">
+        <ul aria-label="Scene outline" className="editor-outline-list" ref={listRef}>
           {sceneEditor.outline.map((row) => (
             <OutlineRowItem key={row.id} row={row} sceneEditor={sceneEditor} drag={drag} />
           ))}

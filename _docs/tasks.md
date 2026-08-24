@@ -2290,3 +2290,101 @@ follow-up issue and link it here" guidance for exactly this situation.
 Every other camera-permission state (denied, unsupported, no-hardware,
 prompt-pending, retry-not-a-dead-end) resolves before the MediaPipe import
 ever runs and was fully covered without this seam.
+
+## 114. Add keyboard shortcuts for duplicate/delete selected shape
+
+### Goal
+
+A keyboard-only user with focus already on the canvas or the layers
+outline can duplicate the currently selected shape (`Ctrl`/`Cmd`+`D`) or
+delete it (`Delete` or `Backspace`) without reaching for the mouse, using
+the same global-listener/`isTypingTarget` pattern the existing Undo/Redo
+shortcut already establishes in `EditorWorkspace.tsx`.
+
+### Acceptance criteria
+
+- [x] With a single shape selected and focus on the canvas (or anywhere
+      outside a text-entry control), pressing `Ctrl`+`D` (Windows/Linux)
+      or `Cmd`+`D` (macOS) duplicates the selected shape — same resulting
+      scene state as clicking the existing "Duplicate selected shape"
+      toolbar button (`sceneEditor.duplicateSelected()`), including the
+      duplicate becoming the new selection.
+- [x] With a single shape selected, pressing `Delete` or `Backspace`
+      deletes the selected shape — same resulting scene state as clicking
+      the existing "Delete selected shape" toolbar button
+      (`sceneEditor.deleteSelected()`), including selection clearing
+      afterward.
+- [x] Both shortcuts call `event.preventDefault()` before acting, so
+      `Ctrl`/`Cmd`+`D` never triggers the browser's "bookmark this page"
+      dialog and `Backspace` never triggers browser back-navigation.
+- [x] Both shortcuts are no-ops (do nothing, no console error, no
+      `preventDefault()` call) when nothing is selected
+      (`sceneEditor.selectedShape` is falsy) — matching the toolbar
+      buttons' existing `disabled={!sceneEditor.selectedShape}` condition.
+- [x] Both shortcuts are ignored (no action, event not prevented) while
+      `isTypingTarget(event.target)` is true — i.e. while focus is in an
+      `<input>`, `<textarea>`, or any `contenteditable` element (title
+      field, layer rename field, color hex input, inspector numeric
+      fields, etc.).
+- [x] A shape on a locked layer or group produces the same rejection
+      behavior as the toolbar buttons already have today:
+      `sceneEditor.lockError` is set and visibly announced via the
+      existing `role="alert"` `.editor-toolbar-lock-error` element,
+      because both shortcuts call the exact same
+      `duplicateSelected()`/`deleteSelected()` functions the toolbar
+      buttons call.
+- [x] After a shortcut-triggered duplicate or delete, keyboard focus stays
+      wherever it already was (the canvas or the outline row that had
+      focus before the key was pressed), and never ends up lost on a
+      detached DOM node after delete.
+- [x] Both actions are undoable via the existing `Ctrl`/`Cmd`+`Z` shortcut,
+      and `sceneEditor.canUndo` reflects one new history entry.
+- [x] The shortcut listener is torn down on unmount — no lingering
+      `keydown` listener after navigating away from the editor.
+- [x] New keyboard-driven test cases cover: successful duplicate,
+      successful delete, ignored while a text field has focus, no-op with
+      nothing selected, and lock-rejection surfacing `lockError`.
+
+### Out of scope
+
+- Extending `duplicateSelected()`/`deleteSelected()` to operate on a
+  multi-shape (`multiSelectedIds`) selection — the existing toolbar
+  buttons already only act on the single `selectedShapeId`, a pre-existing
+  gap this task does not attempt to close.
+- Any change to vertex-edit-mode's existing `Delete`/`Backspace` handling
+  (`EditorWorkspace.tsx` ~lines 914-933). The new listener must not
+  double-fire alongside it — verify entering vertex edit mode and pressing
+  `Delete` only removes the selected vertex, not the whole shape.
+- Adding a visible/discoverable UI hint (tooltip) for the new shortcuts —
+  not required by this issue's goal, and no existing precedent does this
+  for Undo/Redo either.
+- Any change to what counts as `isTypingTarget`. Reuse it as-is.
+
+### Evidence and pending items
+
+- **Status:** COMPLETE
+- Implemented as a new `keydown` `useEffect` in `EditorWorkspace.tsx`
+  (lines 887-917), following the existing Undo/Redo listener's pattern:
+  `Ctrl`/`Cmd`+`D` calls `sceneEditor.duplicateSelected()`,
+  `Delete`/`Backspace` calls `sceneEditor.deleteSelected()`. Both guard on
+  `isTypingTarget`; delete additionally bails when
+  `sceneEditor.vertexEditActive` is true so the pre-existing vertex-delete
+  listener stays sole owner of those keys during vertex editing.
+  `preventDefault()` is only called when a shape is actually selected, so
+  the no-selection case is a genuine no-op (verified via
+  `event.defaultPrevented === false`). Lock-rejection reuses the existing
+  `lockError`/`role="alert"` mechanism unchanged — no parallel error path
+  was added. New test file
+  `frontend/src/pages/EditorWorkspace.duplicateDeleteShortcuts.test.tsx`
+  (12 cases) covers duplicate/delete success, undo, no-op-when-unselected,
+  ignored-while-typing, lock-rejection, and the vertex-edit-mode
+  double-fire guard.
+- QA independently verified all acceptance criteria against the diff and
+  re-ran `npm run typecheck` (clean), `npm run lint` (clean, only
+  pre-existing unrelated warnings), the new test file (12/12 pass), and
+  the full frontend suite (1639/1639 pass, no regressions). Verdict: PASS.
+- Only `_docs/tasks.md`, `EditorWorkspace.tsx`, and the new test file were
+  touched — `useSceneEditor.ts` and multi-select logic untouched, per
+  "Out of scope."
+
+GitHub issue: [#149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/149)

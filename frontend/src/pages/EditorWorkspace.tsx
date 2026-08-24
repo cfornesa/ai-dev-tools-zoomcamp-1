@@ -884,6 +884,38 @@ function EditorWorkspace() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [sceneEditor]);
 
+  // Task 114 (issue #149): Ctrl/Cmd+D duplicates the selected shape, and
+  // Delete/Backspace deletes it -- the same keyboard-only entry points the
+  // toolbar's "Duplicate selected shape"/"Delete selected shape" buttons
+  // already call (`sceneEditor.duplicateSelected()`/`deleteSelected()`).
+  // Ignored while typing in a text field, matching the undo/redo listener's
+  // `isTypingTarget` use above, and Delete/Backspace is ignored outright
+  // while vertex edit mode is active since that mode's own listener below
+  // already owns Delete/Backspace for vertex deletion.
+  // `duplicateSelected()`/`deleteSelected()` already no-op with nothing
+  // selected and surface `lockError` on a locked layer/group on their own,
+  // but `selectedShape` is checked here too so `preventDefault()` is never
+  // called (and the browser's own bookmark/back-navigation shortcuts stay
+  // live) when there is nothing to act on.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (isTypingTarget(event.target)) return;
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
+        if (!sceneEditor.selectedShape) return;
+        event.preventDefault();
+        sceneEditor.duplicateSelected();
+        return;
+      }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (sceneEditor.vertexEditActive || !sceneEditor.selectedShape) return;
+        event.preventDefault();
+        sceneEditor.deleteSelected();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sceneEditor]);
+
   // Issue #79: vertex edit mode's two keyboard affordances that aren't
   // already covered by the generic drag-cancel/undo-redo listeners above:
   // Escape exits the mode outright when no point drag is in progress

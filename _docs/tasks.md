@@ -2607,3 +2607,63 @@ way.
   mirror toggle control.
 
 GitHub issue: [#147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/147)
+
+## 119. Evaluate collapsing Layer and Shape into a single schema entity
+
+### Goal
+
+Investigate whether task 111/#142's additive fix (1:1 shape-to-layer
+referential-integrity enforcement, `Layer` and `Shape` kept as separate
+schema entities) should instead have collapsed `Layer` into `Shape` as a
+single merged entity, since once the relationship is 1:1 the separate
+`Layer` object could appear to carry no information a merged `Shape`
+couldn't hold itself.
+
+### Decision: keep them separate — evaluated, not pursuing
+
+Investigation findings:
+
+1. `Layer` is not actually a 1:1 wrapper around `Shape` even under task
+   111's fully-enforced invariant — it's the shared top-level draw-order
+   container for both shapes *and* groups. Multiple groups can still
+   share one `layerId` (only shapes are constrained to one-per-layer).
+   Removing `Layer` would require inventing a new top-level ordering
+   primitive for groups to replace the one removed — not a net
+   simplification.
+2. The apparent field duplication (`name`/`order`/`visible`/`locked`) is
+   mostly illusory. Task 111 deliberately built an "own vs. inherited"
+   cascade (`isEffectivelyLocked`, `OutlineRow.visible/locked` vs.
+   `inheritedVisible/inheritedLocked`) where a shape's own flag and its
+   layer's/ancestors' flags are semantically distinct and OR together.
+   Merging the entities removes the container whose flag cascades down,
+   undoing that distinction. Separately, shapes have no `name` field
+   today at all — a merge would need to add one as new schema surface
+   across all five type-variant blocks in `shape`'s schema `$def`.
+3. Migration cost is real and disproportionate. `SceneVersion.scene_json`
+   is immutable, so this would need the same read-time-normalization
+   mechanism task 111 established — but for a structural document-shape
+   change requiring a real `schemaVersion: 2` bump (unlike task 111's
+   purely additive change). That cascades through `scenes/validation.py`,
+   `frontend/src/validation/scene.ts`, every call site of both, and
+   effectively all of `sceneOutline.ts`/`LayersPanel.tsx`.
+
+Net: task 111 already delivered the actual user-facing goal. Collapsing
+the entities would trade one indirection for another at the cost of a
+full schema-version migration, for no simplification benefit.
+
+### Evidence
+
+Investigation reviewed: task 111's full entry, `schema/scene.schema.json`'s
+`layer`/`shape` `$def`s, `frontend/src/pages/sceneOutline.ts` in full,
+`scenes/validation.py`'s reference-checking/normalization sections,
+`scenes/migrations/0002_postgres_invariants.py`, and `sceneShapes.ts`'s
+`shapeLabel()`.
+
+### Next action
+
+None planned. Reopen [#148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/148)
+if a concrete simplification need is later identified that this
+investigation didn't anticipate.
+
+Status: DECLINED — investigated per the issue's own scope, not pursuing.
+GitHub issue: [#148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/148)

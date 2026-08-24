@@ -175,6 +175,12 @@ export type UsePreviewRuntimeOptions = {
   getTrackingFrame: () => TrackingFrame;
   reducedMotion: boolean;
   onRenderError: (message: string | null) => void;
+  /** Task 110 (issue #141): forwarded to every `render()` call this
+   * loop makes, so the camera overlay `<video>` behind the canvas
+   * (`EditorWorkspace.tsx`) still shows through while a scene has active
+   * bindings/graph nodes and this runtime loop -- not the plain render
+   * effect -- owns rendering. Defaults to `false`. */
+  transparentBackground?: boolean;
 };
 
 /**
@@ -186,7 +192,14 @@ export type UsePreviewRuntimeOptions = {
  * task).
  */
 export function usePreviewRuntime(options: UsePreviewRuntimeOptions): void {
-  const { previewRef, scene, getTrackingFrame, reducedMotion, onRenderError } = options;
+  const {
+    previewRef,
+    scene,
+    getTrackingFrame,
+    reducedMotion,
+    onRenderError,
+    transparentBackground = false,
+  } = options;
 
   // "Latest value" refs (the same pattern `EditorWorkspace.tsx`'s own drag
   // listeners already use for `sceneEditorRef`/`snapSettingsRef`) so the
@@ -201,6 +214,8 @@ export function usePreviewRuntime(options: UsePreviewRuntimeOptions): void {
   getTrackingFrameRef.current = getTrackingFrame;
   const onRenderErrorRef = useRef(onRenderError);
   onRenderErrorRef.current = onRenderError;
+  const transparentBackgroundRef = useRef(transparentBackground);
+  transparentBackgroundRef.current = transparentBackground;
 
   const active = sceneHasActiveBehaviors(scene);
   const key = active ? structuralKey(scene) : 'inactive';
@@ -261,6 +276,7 @@ export function usePreviewRuntime(options: UsePreviewRuntimeOptions): void {
             evaluatedScene,
             particles,
             buildRenderableTrails(evaluatedScene, trails),
+            transparentBackgroundRef.current,
           );
           onRenderErrorRef.current(null);
         } catch (err) {

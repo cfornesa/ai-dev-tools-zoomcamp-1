@@ -94,6 +94,21 @@ export type P5ScenePreview = {
     scene: SceneDocument,
     particles?: readonly RenderableParticle[],
     trails?: readonly RenderableTrail[],
+    /** Task 110 (issue #141): when `true`, skips painting the scene's
+     * opaque `canvas.backgroundColor` and clears to fully transparent
+     * instead, so a DOM element stacked behind this `<canvas>` (the
+     * camera overlay `<video>` in `EditorWorkspace.tsx`) shows through
+     * wherever the scene doesn't paint over it. Shapes still draw
+     * normally on top -- only the background fill is skipped. Defaults to
+     * `false` (paint the configured background, today's behavior), so
+     * every existing call site is unaffected. Live-verified: without
+     * this, the canvas's own opaque background fill (painted every frame,
+     * `zIndex` above the video's) fully hides the overlay regardless of
+     * the overlay's own CSS opacity, no matter how the two elements are
+     * stacked -- a transparent canvas is the only way a shape can
+     * legitimately appear to sit "in front of" the live camera feed
+     * within a single flat 2D canvas. */
+    transparentBackground?: boolean,
   ): void;
   /** Tears down the underlying p5 instance and removes its `<canvas>`. */
   destroy(): void;
@@ -256,6 +271,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
   let currentPlan: ScenePlan | null = null;
   let currentParticles: readonly RenderableParticle[] = [];
   let currentTrails: readonly RenderableTrail[] = [];
+  let currentTransparentBackground = false;
 
   function ensureInstance(width: number, height: number): void {
     if (instance) return;
@@ -281,7 +297,11 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
           sk.randomSeed(currentPlan.randomness.seed);
           sk.noiseSeed(currentPlan.randomness.seed);
         }
-        sk.background(currentPlan.canvas.backgroundColor);
+        if (currentTransparentBackground) {
+          sk.clear();
+        } else {
+          sk.background(currentPlan.canvas.backgroundColor);
+        }
         // Task 61: trails draw beneath the static scene tree so a shape's
         // own geometry (drawn next) sits on top of its position history —
         // see the module doc comment.
@@ -299,6 +319,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
     scene: SceneDocument,
     particles: readonly RenderableParticle[] = [],
     trails: readonly RenderableTrail[] = [],
+    transparentBackground = false,
   ): void {
     // Acceptance criteria 10/11: buildScenePlan throws before this
     // function touches the p5 instance or canvas at all, so an invalid
@@ -308,6 +329,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
     currentPlan = plan;
     currentParticles = particles;
     currentTrails = trails;
+    currentTransparentBackground = transparentBackground;
 
     if (!instance) {
       ensureInstance(plan.canvas.width, plan.canvas.height);
@@ -327,6 +349,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
     currentPlan = null;
     currentParticles = [];
     currentTrails = [];
+    currentTransparentBackground = false;
   }
 
   function getCanvasElement(): HTMLCanvasElement | null {

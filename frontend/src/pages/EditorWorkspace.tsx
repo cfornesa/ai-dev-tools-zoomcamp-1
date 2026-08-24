@@ -427,13 +427,30 @@ function EditorWorkspace() {
     if (!videoEl) return;
     videoEl.srcObject = cameraStream;
     if (cameraStream) {
-      void videoEl.play().catch(() => {
+      // `Promise.resolve(...)` normalizes jsdom's non-conformant
+      // `HTMLMediaElement.play()` (returns `undefined`, not a `Promise`,
+      // and logs its own "Not implemented" notice) into a real promise,
+      // so this `.catch` is safe in tests without changing real-browser
+      // behavior (where `.play()` already always returns a `Promise`).
+      void Promise.resolve(videoEl.play()).catch(() => {
         // Autoplay can be rejected in some environments; the video element
         // still renders (just paused) and this is not a scene-breaking
         // failure worth surfacing as `previewError`.
       });
     }
-  }, [cameraStream]);
+    // `cameraStream` is set via `onStreamChange` well before `cameraStatus`
+    // ever reaches 'active' (mediapipeProvider.ts acquires the stream
+    // before the recognizer is ready or any frame flows) -- but the
+    // `<video>` element below is only ever mounted while
+    // `cameraStatus === 'active'`. Without `cameraStatus` in this
+    // dependency array, this effect fires once while the element doesn't
+    // exist yet (`cameraVideoRef.current` is null, so it silently no-ops)
+    // and never fires again once `cameraStatus` finally flips to 'active'
+    // and the element actually mounts -- `srcObject` would never get set,
+    // leaving the overlay permanently blank despite a live stream. Live-
+    // verified: this exact bug reproduced (video element present with
+    // `hasSrcObject: false`) before this dependency was added.
+  }, [cameraStream, cameraStatus]);
 
   // Task 83 (issue #83): the shared "current tracking frame" mailbox the
   // live preview runtime loop reads from — see `previewTrackingSource.ts`'s
@@ -817,6 +834,9 @@ function EditorWorkspace() {
     getTrackingFrame: () => trackingSourceRef.current.consumeFrame(),
     reducedMotion: reducedMotion.effective,
     onRenderError: setPreviewError,
+    // Task 110 (issue #141): see the plain render effect's identical
+    // comment below for why this must match `cameraStatus === 'active'`.
+    transparentBackground: cameraStatus === 'active',
   });
 
   // Re-renders the p5 preview whenever the working copy changes. A scene
@@ -830,12 +850,16 @@ function EditorWorkspace() {
   useEffect(() => {
     if (!previewRef.current || !workingCopy || hasActiveBehaviors) return;
     try {
-      previewRef.current.render(workingCopy);
+      // Task 110 (issue #141): a transparent background while the camera
+      // overlay is showing -- see p5Adapter.ts's `render` doc comment for
+      // why an opaque background fill would otherwise hide the overlay
+      // entirely, regardless of its own CSS opacity.
+      previewRef.current.render(workingCopy, [], [], cameraStatus === 'active');
       setPreviewError(null);
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
     }
-  }, [workingCopy, hasActiveBehaviors, previewMounted]);
+  }, [workingCopy, hasActiveBehaviors, previewMounted, cameraStatus]);
 
   // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes — the standard
   // shortcuts for this editor's in-session undo/redo policy (see

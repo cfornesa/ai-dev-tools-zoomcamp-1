@@ -140,8 +140,8 @@ async function loadWorkspace(scene: unknown) {
   expandAllCollapsibleSections();
 }
 
-function lastRenderCall(): [unknown, unknown, unknown] | undefined {
-  return renderMock.mock.calls.at(-1) as [unknown, unknown, unknown] | undefined;
+function lastRenderCall(): [unknown, unknown, unknown, unknown] | undefined {
+  return renderMock.mock.calls.at(-1) as [unknown, unknown, unknown, unknown] | undefined;
 }
 
 beforeEach(() => {
@@ -274,12 +274,15 @@ describe('live preview runtime (Task 83, issue #83)', () => {
       expect(renderMock).toHaveBeenCalled();
     });
 
-    // The plain, pre-existing render path: called with the raw scene only
-    // — never particles, never trails, and never a continuously-looping
-    // rAF-driven re-render (no bindings/graph means `usePreviewRuntime`'s
-    // own effect never starts a loop at all).
+    // The plain, pre-existing render path: called with the raw scene and
+    // (Task 110, issue #141) a trailing `transparentBackground` flag —
+    // never particles, never trails (both empty), and never a
+    // continuously-looping rAF-driven re-render (no bindings/graph means
+    // `usePreviewRuntime`'s own effect never starts a loop at all).
     const call = lastRenderCall();
-    expect(call).toHaveLength(1);
+    expect(call?.[1]).toEqual([]);
+    expect(call?.[2]).toEqual([]);
+    expect(call?.[3]).toBe(false); // no camera active in this test
 
     const callCountAfterMount = renderMock.mock.calls.length;
     await new Promise((resolve) => setTimeout(resolve, 200));

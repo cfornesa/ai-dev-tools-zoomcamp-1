@@ -674,4 +674,53 @@ describe('p5 scene preview', () => {
       expect(pixel(canvas, 10, 10)).toEqual([0x12, 0x34, 0x56, 255]);
     });
   });
+
+  describe('transparentBackground (Task 110, issue #141)', () => {
+    // Live-verified regression: without this option, the camera overlay
+    // `<video>` EditorWorkspace.tsx stacks behind this canvas was
+    // completely invisible in a real browser, no matter its own CSS
+    // opacity -- an opaque `sk.background()` fill (painted every frame)
+    // hides anything behind the canvas regardless of z-index ordering.
+
+    it('defaults to false: paints the configured opaque background, unaffected by this task', () => {
+      const { preview } = tracked();
+      preview.render(baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#123456' } }));
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 10, 10)).toEqual([0x12, 0x34, 0x56, 255]);
+    });
+
+    it('true: clears to fully transparent instead of painting the background color', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#123456' } }),
+        [],
+        [],
+        true,
+      );
+      const canvas = preview.getCanvasElement()!;
+      // Alpha 0 -- a DOM element stacked behind this canvas would show
+      // through here, unlike the opaque-background case above.
+      expect(pixel(canvas, 10, 10)[3]).toBe(0);
+    });
+
+    it('true: a drawn shape still paints normally on top of the transparent background', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 20, height: 20, backgroundColor: '#123456' },
+          shapes: [circleShape({ transform: transform({ x: 10, y: 10 }), radius: 8 })],
+        }),
+        [],
+        [],
+        true,
+      );
+      const canvas = preview.getCanvasElement()!;
+      // The shape's own fill (testSceneFixtures.ts's default, #4f46e5)
+      // still paints fully opaque at its center...
+      expect(pixel(canvas, 10, 10)).toEqual([0x4f, 0x46, 0xe5, 255]);
+      // ...while a point outside the shape stays transparent, proving
+      // this isn't just an opaque background of a different color.
+      expect(pixel(canvas, 1, 1)[3]).toBe(0);
+    });
+  });
 });

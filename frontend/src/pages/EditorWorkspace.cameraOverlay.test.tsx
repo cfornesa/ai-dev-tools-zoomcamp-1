@@ -169,9 +169,10 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
   });
 
   it('renders the overlay and slider once active with a stream, defaulting to 50% opacity', async () => {
+    const stream = fakeStream();
     await loadWorkspace();
     setCameraStatus('starting');
-    setCameraStream(fakeStream());
+    setCameraStream(stream);
     setCameraStatus('active');
 
     const preview = screen.getByRole('region', { name: 'Preview' });
@@ -179,6 +180,17 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     expect(video).toBeInTheDocument();
     expect(video.style.opacity).toBe('0.5');
     expect(video.style.transform).toBe('scaleX(-1)');
+    // Regression check: the mount-effect's dependency array must include
+    // `cameraStatus`, not just `cameraStream` -- the `<video>` element is
+    // only ever mounted once `cameraStatus === 'active'`, which happens
+    // strictly after `cameraStream` is first set (see
+    // `mediapipeProvider.ts`'s own acquisition-order doc comments), so an
+    // effect keyed on `cameraStream` alone would find a still-null ref the
+    // one time it runs and never re-fire once the element actually
+    // exists. Live-verified: this exact bug reproduced (element present,
+    // `srcObject` never set) before `cameraStatus` was added as a
+    // dependency.
+    expect(video.srcObject).toBe(stream);
 
     const slider = screen.getByLabelText('Camera overlay opacity') as HTMLInputElement;
     expect(slider).toBeInTheDocument();

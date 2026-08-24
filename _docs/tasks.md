@@ -1824,7 +1824,6 @@ showing it in standalone HTML export
 persisting the opacity value, an un-mirror toggle, and independent
 reposition/resize of the overlay —
 [#147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/147).
-Status: ACTIVE
 GitHub issue: [#141](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/141)
 Discovery gate: Searched `_docs/tasks.md` and existing GitHub issues for a
 camera-overlay/video-preview task; none exists. New, not a duplicate.
@@ -1856,18 +1855,61 @@ live and is keyboard-operable via native range semantics, opacity resets
 on re-activation, Stop/error remove both immediately, no `previewError`
 side effect, scene shapes stay rendered). `make frontend-test` is green at
 1609/1609 (was 1593), plus `typecheck`/`lint`/`format:check` all pass.
-Live-camera-hardware verification (an actual `getUserMedia` prompt showing
-real mirrored video, matching task 109/#140's live-production check) was
-not performed in this session — no camera hardware was available in this
-environment — so that residual manual check is still open before this can
-be considered fully verified end-to-end; every acceptance criterion
-checkable without real camera hardware passes. Leaving Status ACTIVE
-(not COMPLETE) until that live check is done.
-Next action: A live-camera pass (real `getUserMedia`, real MediaPipe
-frames) against the running app, confirming the overlay actually renders
-mirrored video behind the shapes and the slider visibly changes its
-opacity — the one acceptance criterion this session's automated coverage
-cannot exercise.
+Status: COMPLETE
+Live-camera verification (2026-08-23, continued): performed against a real
+local Django + Vite stack, using the user's own already-authenticated real
+Chrome (via `mcp__claude-in-chrome__*`) with a physical webcam the user
+confirmed is always-allow-permitted. This live pass found and fixed **two
+real bugs** neither the jsdom test suite nor the earlier `EditorWorkspace`
+render-path tests could catch, since neither exercises actual pixel
+compositing or a real `<video>` element's `srcObject`:
+1. The overlay `<video>` element was present in the DOM with the correct
+   styling, but `srcObject` was never set — `hasSrcObject: false`,
+   confirmed via direct DOM inspection. Root cause: the effect that
+   assigns `videoEl.srcObject = cameraStream` only depended on
+   `[cameraStream]`, but `cameraStream` is set (via `onStreamChange`) well
+   before `cameraStatus` ever reaches `'active'` — and the `<video>`
+   element itself is only ever mounted while `cameraStatus === 'active'`.
+   The effect fired once, while the element didn't exist yet (silently
+   no-opped), and never fired again once the element actually mounted.
+   Fixed by adding `cameraStatus` to the dependency array. (The exact same
+   class of bug as the one found and fixed in task 113/#144's
+   `PublicProjectViewer.tsx` — an effect depending on the wrong signal for
+   a conditionally-rendered ref target — independently rediscovered here.)
+2. Even with `srcObject` correctly set and the video genuinely playing
+   (confirmed: `videoWidth: 640, videoHeight: 480`, `paused: false`), the
+   overlay was still completely invisible in the actual rendered canvas.
+   Root cause: `render/p5Adapter.ts`'s draw loop calls
+   `sk.background(canvas.backgroundColor)` every frame — an opaque paint
+   that fully covers the entire canvas, unconditionally. Since shapes and
+   background paint onto the same flat `<canvas>` element, no CSS
+   `zIndex` ordering of a DOM element stacked behind that canvas can ever
+   show through an opaque fill painted every frame. Fixed by adding a
+   `transparentBackground` parameter to `P5ScenePreview.render()` (calls
+   `sk.clear()` instead of `sk.background()` when `true`), threaded
+   through both `EditorWorkspace.tsx` render call sites (the plain
+   `previewRef.current.render(...)` effect and `usePreviewRuntime`'s own
+   internal render call, via a new `transparentBackground` option) keyed
+   on `cameraStatus === 'active'`. Shapes still draw normally on top;
+   only the background fill is skipped while the camera overlay is
+   showing.
+After both fixes, live-verified end to end: "Enable camera" reached
+"Camera is active..." with no permission prompt needed (already granted),
+the mirrored live camera feed rendered visibly in the Preview canvas
+behind the scene, the opacity slider defaulted to 50%, and "Stop camera"
+removed the overlay immediately with no frozen frame (canvas returned
+cleanly to its normal opaque background). New regression tests added:
+`EditorWorkspace.cameraOverlay.test.tsx` now asserts `video.srcObject`
+is actually set (not just that the element exists), and a new
+`p5Adapter.test.ts` `describe('transparentBackground', ...)` block
+covers the default (opaque, unaffected), the `true` case (clears to
+alpha 0), and a drawn shape still painting opaquely on top of a
+transparent background. Also fixed in the same pass: jsdom's
+non-conformant `HTMLMediaElement.play()` (returns `undefined`, not a
+`Promise`) was wrapped in `Promise.resolve(...)` so the existing
+`.catch()` doesn't throw in tests, without changing real-browser
+behavior. `make frontend-test` green at 1627/1627 (was 1624);
+`tsc`/`oxlint`/`prettier` all clean.
 
 ## 111. Make every shape independently manageable as its own layer
 Goal: Every shape is enforced as its own independent layer at the

@@ -8,14 +8,19 @@ export type EditorPanelName = 'details' | 'tools' | 'preview' | 'inspector' | 'l
 // `/projects/:id/settings` page) as a third switchable tab alongside
 // Tools/Inspector. Issue #127 adds Layers as a fourth: the dedicated Layers
 // panel (`LayersPanel.tsx`) is mutually exclusive with Details/Tools/
-// Inspector below the breakpoint exactly like the other three — this task
-// does not change which of the four is the default active tab (still
-// `'tools'`, set in `EditorWorkspace.tsx`), only makes `'layers'` a
-// reachable tab alongside them.
+// Inspector below the breakpoint exactly like the other three. Task 129
+// (issue #154) reorders this array so Layers is the first (leftmost) tab
+// — layer management is one of the most important things a user does
+// here, so it should be positioned first, not buried third. This is a tab
+// *order* change only: `EditorWorkspace.tsx`'s default active tab stays
+// `'tools'` (see `EditorWorkspace.test.tsx`'s "Tools by default" test),
+// so existing narrow-viewport behavior for a first-time visit is
+// unchanged — a user reaches Layers with one switcher click, same as
+// every other non-default tab already required before this change.
 const PANELS: Array<{ name: Exclude<EditorPanelName, 'preview'>; label: string }> = [
+  { name: 'layers', label: 'Layers' },
   { name: 'details', label: 'Details' },
   { name: 'tools', label: 'Tools' },
-  { name: 'layers', label: 'Layers' },
   { name: 'inspector', label: 'Inspector' },
 ];
 

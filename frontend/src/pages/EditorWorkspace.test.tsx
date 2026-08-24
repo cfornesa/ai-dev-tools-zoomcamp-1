@@ -364,6 +364,12 @@ describe('EditorWorkspace keyboard accessibility', () => {
     await user.tab();
     expect(screen.getByRole('button', { name: 'Exit without saving' })).toHaveFocus();
 
+    // Task 129 (issue #154): Layers is now the first switcher tab, ahead
+    // of Details/Tools/Inspector, reflecting `EditorPanelSwitcher.tsx`'s
+    // reordered `PANELS` array.
+    await user.tab();
+    expect(screen.getByRole('tab', { name: 'Layers' })).toHaveFocus();
+
     await user.tab();
     expect(screen.getByRole('tab', { name: 'Details' })).toHaveFocus();
 
@@ -371,14 +377,11 @@ describe('EditorWorkspace keyboard accessibility', () => {
     expect(screen.getByRole('tab', { name: 'Tools' })).toHaveFocus();
 
     await user.tab();
-    expect(screen.getByRole('tab', { name: 'Layers' })).toHaveFocus();
-
-    await user.tab();
     expect(screen.getByRole('tab', { name: 'Inspector' })).toHaveFocus();
 
     // Shift+Tab reverses the same order, with no trap.
     await user.tab({ shift: true });
-    expect(screen.getByRole('tab', { name: 'Layers' })).toHaveFocus();
+    expect(screen.getByRole('tab', { name: 'Tools' })).toHaveFocus();
   });
 
   it('moves focus into the exit-without-saving dialog on open and restores it to the trigger on cancel', async () => {

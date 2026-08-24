@@ -2733,8 +2733,26 @@ Goal: Reposition the Layers panel as the first/topmost sidebar panel, and
 replace the plain-text `CollapsibleSection` accordion pattern used across
 Tools/Inspector subsections with a standard icon-driven click-to-toggle
 pattern.
-Status: PROPOSED — full groomed write-up filed as
-[#154](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/154).
+Status: COMPLETE
+GitHub issue: [#154](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/154).
+Resolution (2026-08-24): Layers is now `grid-row: 1` in `.editor-workspace`
+(desktop) and the first entry in `EditorPanelSwitcher.tsx`'s `PANELS`
+array (narrow-viewport tab order) — `EditorWorkspace.tsx`'s default active
+tab deliberately stays `'tools'`, an existing test's explicit assumption,
+so this is a pure ordering change. `CollapsibleSection.tsx` gained an
+optional `icon?: string` prop rendered as an `aria-hidden` decorative
+prefix inside the existing disclosure `<button>` — icon-prefixed accordion
+headers, deliberately NOT a new icon-only rail that would replace the
+sidebar column, both for lowest accessibility risk (the `aria-expanded`/
+`aria-controls` contract and accessible name are unchanged) and because
+task 125/#157 depends on the sidebar's column-width mechanism staying
+unchanged for its own sequencing. All 8 remaining sections (Editing
+preferences, Camera, Demo signal controls, Shape inspector, Version
+history, Export, AI proposals, Behaviors) got a distinct glyph. Confirmed
+`ShapeInspectorPanel.tsx`'s existing rotation field was not touched or
+further buried. `npm run typecheck`/`lint`/`format` clean; full frontend
+suite green (1691/1691); `EditorWorkspace.a11y.test.tsx`'s jest-axe checks
+pass (8/8).
 
 ## 123. Selection marquee outline is wrong for rotated/scaled shapes
 

@@ -591,6 +591,14 @@ code {
   margin-top: 8px;
 }
 
+/* Task 129 (issue #154): the decorative per-section glyph prefixed inside
+   the disclosure toggle button (see CollapsibleSection.tsx's `icon` prop).
+   `aria-hidden`, so this is purely visual spacing — the text label right
+   after it remains the button's accessible name. */
+.editor-collapsible-section-icon {
+  margin-right: 6px;
+}
+
 /* Task 112 (issue #143): the always-visible editor toolbar (Undo, Redo,
    Duplicate, Delete, fill color). `overflow-x: auto` plus `flex-wrap`
    keeps a narrow viewport from ever growing page-level horizontal scroll
@@ -888,20 +896,22 @@ code {
   grid-row: 1 / span 4;
 }
 
-.editor-panel[data-panel='details'] {
+/* Task 129 (issue #154): Layers promoted to the sidebar's first row —
+   layer management is one of the most-used things a user does in this
+   editor, so it should be the first thing reached, not buried third. Only
+   the grid-row assignments below move; `LayersPanel.tsx`/
+   `useSceneEditor.ts` are untouched, per the issue's own guidance. */
+.editor-panel[data-panel='layers'] {
   grid-column: 2;
   grid-row: 1;
 }
 
-.editor-panel[data-panel='tools'] {
+.editor-panel[data-panel='details'] {
   grid-column: 2;
   grid-row: 2;
 }
 
-/* Issue #127: the former "Scene outline" CollapsibleSection's replacement,
-   now its own sidebar row between Tools and Inspector rather than nested
-   inside Tools. */
-.editor-panel[data-panel='layers'] {
+.editor-panel[data-panel='tools'] {
   grid-column: 2;
   grid-row: 3;
 }

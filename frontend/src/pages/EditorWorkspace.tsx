@@ -2238,6 +2238,20 @@ function EditorWorkspace() {
               state, so expanding/collapsing one never affects another (not
               a single-open-at-a-time accordion). See
               `EditorWorkspace.accordion.test.tsx`. */}
+          {/* Task 129 (issue #154): every `CollapsibleSection` below (and
+              in the Inspector panel further down) now passes a decorative
+              `icon` glyph — one distinct Unicode symbol per section
+              (⚙ Editing preferences, 📷 Camera, ✋ Demo signal controls,
+              📐 Shape inspector, 🕒 Version history, ⇪ Export, ✨ AI
+              proposals, 🔗 Behaviors) — so the sidebar reads as an
+              icon-driven panel instead of a bare-text accordion. This is
+              deliberately the icon-prefixed-header approach, not a new
+              icon-only rail replacing the sidebar column: each glyph is
+              `aria-hidden` inside the existing disclosure `<button>`, so
+              `CollapsibleSection.tsx`'s `aria-expanded`/`aria-controls`
+              contract and every consumer's accessible name are unchanged
+              (see that file's own comment, and
+              `EditorWorkspace.a11y.test.tsx`). */}
           {/* Issue #131: this section used to own shape creation (the four
               "Add circle/rectangle/line/polygon" buttons) and a duplicate
               `<ul aria-label="Shape list">` shape listing. Both moved into
@@ -2247,7 +2261,7 @@ function EditorWorkspace() {
               genuinely just shape *actions* (duplicate/delete the current
               selection, undo/redo) plus the snap preference and lock-error
               channel, hence the renamed heading. */}
-          <CollapsibleSection heading="Editing preferences">
+          <CollapsibleSection heading="Editing preferences" icon="⚙">
             {/* Issue #78: the client-only snap-to-grid / alignment-guide
                 toggle — editor-specific, so it lives here in the Tools
                 panel (not the global header, unlike Reduce motion).
@@ -2266,7 +2280,7 @@ function EditorWorkspace() {
               disclosure) is now two independent CollapsibleSections, each
               with its own open/closed state — consistent with this file's
               existing "opening one must not close another" rule. */}
-          <CollapsibleSection heading="Camera">
+          <CollapsibleSection heading="Camera" icon="📷">
             {/* Task 31: the camera permission/privacy control.
                 Self-contained (owns its own lazily-created MediaPipe
                 tracking-provider instance; see CameraControl.tsx) and
@@ -2289,7 +2303,7 @@ function EditorWorkspace() {
             />
           </CollapsibleSection>
 
-          <CollapsibleSection heading="Demo signal controls">
+          <CollapsibleSection heading="Demo signal controls" icon="✋">
             {/* Task 28: local demo signal controls — sliders/toggles/event
                 buttons plus deterministic synthetic playback, so every
                 normalized gesture signal can be exercised without a
@@ -2339,7 +2353,7 @@ function EditorWorkspace() {
           {/* Task 94 (issue #94), point 3: same independently collapsible
               section pattern as the Tools panel above — see that panel's
               own comment. */}
-          <CollapsibleSection heading="Shape inspector">
+          <CollapsibleSection heading="Shape inspector" icon="📐">
             {/* Task 60 (issue #58): position/scale/rotation/opacity/fill/
                 stroke/stroke-width fields for the actively selected shape —
                 see ShapeInspectorPanel.tsx's own doc comment for the
@@ -2349,7 +2363,7 @@ function EditorWorkspace() {
             <ShapeInspectorPanel sceneEditor={sceneEditor} />
           </CollapsibleSection>
 
-          <CollapsibleSection heading="Version history">
+          <CollapsibleSection heading="Version history" icon="🕒">
             {/* Task 41: the immutable version-history view
                 (list/restore/soft-delete) — explicit Save itself now lives
                 in the header (`SaveControl`, above); see
@@ -2398,7 +2412,7 @@ function EditorWorkspace() {
             )}
           </CollapsibleSection>
 
-          <CollapsibleSection heading="Export">
+          <CollapsibleSection heading="Export" icon="⇪">
             {/* Task 55: export configuration dialog. Read-only against
                 version history/project metadata — it never restores a
                 version or changes `project.current_version`, and its
@@ -2409,7 +2423,7 @@ function EditorWorkspace() {
             {id && <ExportConfigDialog projectId={id} project={project} />}
           </CollapsibleSection>
 
-          <CollapsibleSection heading="AI proposals">
+          <CollapsibleSection heading="AI proposals" icon="✨">
             {/* Task 48: AI create/edit proposal preview and acceptance.
                 The proposal itself is a third state entirely inside
                 AIProposalPanel/useAIProposal — nothing here is touched
@@ -2452,7 +2466,7 @@ function EditorWorkspace() {
             )}
           </CollapsibleSection>
 
-          <CollapsibleSection heading="Behaviors">
+          <CollapsibleSection heading="Behaviors" icon="🔗">
             {/* Task 40: read-only "Randomness enabled" indicator — renders
                 nothing when the scene doesn't use seeded randomness. */}
             <RandomnessIndicator scene={sceneEditor.workingCopy} />

@@ -58,7 +58,8 @@ import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { createPreviewTrackingSource } from './previewTrackingSource';
 import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime';
-import { useSceneEditor } from './useSceneEditor';
+import { useSceneEditor, type SceneEditor } from './useSceneEditor';
+import { getColorFieldValue } from './shapeStyleFields';
 import AIProposalPanel from './AIProposalPanel';
 import BehaviorCardsPanel from './BehaviorCardsPanel';
 import CollapsibleSection from './CollapsibleSection';
@@ -216,6 +217,91 @@ function EditableProjectTitle({
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+}
+
+/**
+ * Task 112 (issue #143): one always-visible toolbar button — a visible
+ * `aria-hidden` glyph plus a CSS tooltip (`.editor-toolbar-tooltip`, shown
+ * on `:hover`/`:focus-visible` in index.css) so the label is visible on
+ * both mouse hover and keyboard focus, while `aria-label` carries the
+ * accessible name independent of the tooltip ever being visible.
+ */
+function ToolbarButton({
+  label,
+  glyph,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  glyph: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className="editor-toolbar-button"
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <span aria-hidden="true">{glyph}</span>
+      <span className="editor-toolbar-tooltip" role="tooltip">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Task 112 (issue #143): the toolbar's contextual color-edit control for
+ * the currently selected shape. Reuses `updateSelectedShapeColorField`
+ * (the exact same write path `LayersPanel.tsx`'s `ShapeColorSwatch` uses)
+ * so editing color here and editing it from the shape's Layers row stay
+ * in sync — this is a second UI surface over one color value, never a
+ * second, divergent one. Disabled (not hidden) when nothing is selected,
+ * matching Duplicate/Delete's existing pattern, so the toolbar's layout
+ * never shifts as the selection changes.
+ */
+function EditorToolbarColorControl({ sceneEditor }: { sceneEditor: SceneEditor }) {
+  const shape = sceneEditor.selectedShape;
+  const value = shape ? getColorFieldValue(shape, 'fill') : null;
+  const [draft, setDraft] = useState(value ?? '');
+  const [error, setError] = useState<string | null>(null);
+
+  // Re-sync the draft to the canonical value whenever the selection or its
+  // fill value changes out from under it (e.g. selecting a different
+  // shape, or an undo) — the same re-sync `ShapeColorSwatch` performs.
+  useEffect(() => {
+    setDraft(value ?? '');
+    setError(null);
+  }, [shape?.id, value]);
+
+  return (
+    <span className="editor-toolbar-color-control">
+      <label htmlFor="editor-toolbar-fill-color">Fill color</label>
+      <input
+        id="editor-toolbar-fill-color"
+        type="text"
+        value={draft}
+        disabled={!shape}
+        placeholder={shape ? '' : 'No shape selected'}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? 'editor-toolbar-fill-color-error' : undefined}
+        onChange={(event) => {
+          const next = event.target.value;
+          setDraft(next);
+          const outcome = sceneEditor.updateSelectedShapeColorField('fill', next);
+          setError(outcome.ok ? null : outcome.error);
+        }}
+      />
+      {error && (
+        <span id="editor-toolbar-fill-color-error" role="alert">
+          {error}
+        </span>
+      )}
+    </span>
+  );
 }
 
 /**
@@ -1287,6 +1373,54 @@ function EditorWorkspace() {
         pinchEventCount={pinchEventCount}
       />
 
+      {/* Task 112 (issue #143): an always-visible toolbar for the editor's
+          most-used actions — Undo, Redo, Duplicate selected shape, Delete
+          selected shape, and a contextual fill-color control — reachable
+          without expanding a collapsed accordion or switching panel tabs,
+          at every supported viewport width. Rendered here (outside the
+          panel switcher, same placement as OnboardingHints above) so it
+          stays visible regardless of which of Details/Tools/Layers/
+          Inspector is active on a narrow viewport, matching how Preview
+          is already always visible. `lockError` moved here too, so a
+          rejected action is always visibly announced regardless of any
+          accordion's open/closed state or active tab. */}
+      <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
+        <span role="group" aria-label="History" className="editor-tool-group">
+          <ToolbarButton
+            label="Undo"
+            glyph="↶"
+            onClick={() => sceneEditor.undo()}
+            disabled={!sceneEditor.canUndo}
+          />
+          <ToolbarButton
+            label="Redo"
+            glyph="↷"
+            onClick={() => sceneEditor.redo()}
+            disabled={!sceneEditor.canRedo}
+          />
+        </span>
+        <span role="group" aria-label="Edit shape" className="editor-tool-group">
+          <ToolbarButton
+            label="Duplicate selected shape"
+            glyph="⧉"
+            onClick={() => sceneEditor.duplicateSelected()}
+            disabled={!sceneEditor.selectedShape}
+          />
+          <ToolbarButton
+            label="Delete selected shape"
+            glyph="✕"
+            onClick={() => sceneEditor.deleteSelected()}
+            disabled={!sceneEditor.selectedShape}
+          />
+        </span>
+        <EditorToolbarColorControl sceneEditor={sceneEditor} />
+        {sceneEditor.lockError && (
+          <p role="alert" aria-live="assertive" className="editor-toolbar-lock-error">
+            {sceneEditor.lockError}
+          </p>
+        )}
+      </div>
+
       {isNarrow && <EditorPanelSwitcher activePanel={activePanel} onSelect={setActivePanel} />}
 
       <div className="editor-workspace">
@@ -1759,58 +1893,17 @@ function EditorWorkspace() {
               genuinely just shape *actions* (duplicate/delete the current
               selection, undo/redo) plus the snap preference and lock-error
               channel, hence the renamed heading. */}
-          <CollapsibleSection heading="Shape actions">
+          <CollapsibleSection heading="Editing preferences">
             {/* Issue #78: the client-only snap-to-grid / alignment-guide
                 toggle — editor-specific, so it lives here in the Tools
-                panel (not the global header, unlike Reduce motion). */}
+                panel (not the global header, unlike Reduce motion).
+                Task 112 (issue #143): this section used to also hold
+                Undo/Redo/Duplicate/Delete and the `lockError` alert; those
+                moved into the new always-visible toolbar above the panel
+                switcher (see `<div role="toolbar">` near the top of this
+                component's return), so the section was renamed to
+                describe what actually remains. */}
             <SnapPreferenceControl />
-
-            {/* Task 80 (issue #80): the net-new `lockError` channel —
-                surfaces a rejected duplicate/delete/move/resize/rotate/
-                reshape against an effectively-locked shape or group, for
-                exactly the call sites that had no existing rejection
-                channel of their own before this issue (every other
-                guarded call site reuses `outlineError`/`vertexError`/its
-                own field-edit error, shown where those already render). */}
-            {sceneEditor.lockError && (
-              <p role="alert" aria-live="assertive">
-                {sceneEditor.lockError}
-              </p>
-            )}
-
-            <div role="group" aria-label="Edit shape" className="editor-tool-group">
-              <button
-                type="button"
-                onClick={() => sceneEditor.duplicateSelected()}
-                disabled={!sceneEditor.selectedShape}
-              >
-                Duplicate selected shape
-              </button>
-              <button
-                type="button"
-                onClick={() => sceneEditor.deleteSelected()}
-                disabled={!sceneEditor.selectedShape}
-              >
-                Delete selected shape
-              </button>
-            </div>
-
-            <div role="group" aria-label="History" className="editor-tool-group">
-              <button
-                type="button"
-                onClick={() => sceneEditor.undo()}
-                disabled={!sceneEditor.canUndo}
-              >
-                Undo
-              </button>
-              <button
-                type="button"
-                onClick={() => sceneEditor.redo()}
-                disabled={!sceneEditor.canRedo}
-              >
-                Redo
-              </button>
-            </div>
           </CollapsibleSection>
 
           {/* Issue #95, point 7: what was one "Camera & demo controls"

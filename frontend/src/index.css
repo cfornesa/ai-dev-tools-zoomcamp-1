@@ -591,6 +591,95 @@ code {
   margin-top: 8px;
 }
 
+/* Task 112 (issue #143): the always-visible editor toolbar (Undo, Redo,
+   Duplicate, Delete, fill color). `overflow-x: auto` plus `flex-wrap`
+   keeps a narrow viewport from ever growing page-level horizontal scroll
+   or clipping a control. */
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 16px 24px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  overflow-x: auto;
+}
+
+.editor-toolbar .editor-tool-group {
+  display: flex;
+  gap: 4px;
+}
+
+.editor-toolbar-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.editor-toolbar-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* A CSS-only tooltip: visually hidden until the button is hovered or
+   keyboard-focused, so the label is visible on both interaction paths per
+   this issue's acceptance criteria, while `aria-label` on the button
+   itself (not this span) carries the accessible name so it never depends
+   on the tooltip being visible. */
+.editor-toolbar-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+  z-index: 1;
+}
+
+.editor-toolbar-button:hover .editor-toolbar-tooltip,
+.editor-toolbar-button:focus-visible .editor-toolbar-tooltip {
+  opacity: 1;
+}
+
+.editor-toolbar-color-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.editor-toolbar-color-control input {
+  width: 100px;
+}
+
+.editor-toolbar-lock-error {
+  margin: 0;
+  color: var(--danger, #b42318);
+  font-size: 12px;
+}
+
 .editor-panel-switcher {
   display: flex;
   gap: 8px;

@@ -2075,7 +2075,7 @@ actions"` into the new toolbar, along with the `lockError` alert so
 lock-rejection feedback is never hidden behind a collapsed accordion;
 `SnapPreferenceControl` stays in Tools, and the emptied section is removed
 or renamed. Full acceptance criteria are in the GitHub issue.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/143)
 Discovery gate: Searched `_docs/tasks.md` and GitHub issues (`toolbar`,
 `tooltip`, `color picker`, `accessibility`) for an existing toolbar task;
@@ -2087,12 +2087,49 @@ always-visible toolbar. New, not a duplicate. Filed
 follow-up for the one piece of adjacent scope moved out during grooming;
 every other out-of-scope boundary was a design decision, not deferred
 work needing its own issue.
-Next action: Implement per the groomed acceptance criteria in #143: move
-Undo/Redo/Duplicate/Delete and `lockError` into the new toolbar, add the
-contextual color control, add icons/tooltips/accessible names, verify
-responsive behavior at both viewport widths, and update affected tests
-(`EditorWorkspace.a11y.test.tsx` and any test asserting the old DOM
-location of these controls).
+Resolution (2026-08-23): `EditorWorkspace.tsx` gained a
+`<div role="toolbar" aria-label="Editor actions">`, rendered right after
+`OnboardingHints` and before `{isNarrow && <EditorPanelSwitcher .../>}` —
+the same "outside the panel switcher, always visible regardless of active
+tab" placement `OnboardingHints`/Preview already use — so it renders
+exactly once and stays visible at both `>=1024px` and `<1024px`. It holds:
+a `History` group (Undo/Redo, unchanged `disabled`/`onClick` wiring), an
+`Edit shape` group (Duplicate/Delete, same), a new
+`EditorToolbarColorControl` (a persistent hex-text `<input>` for the
+selected shape's fill, wired through the exact same
+`updateSelectedShapeColorField` `LayersPanel.tsx`'s `ShapeColorSwatch`
+already calls — one write path, two UI surfaces, always in sync), and the
+`lockError` alert. All five controls kept their exact prior accessible
+names/roles, so every existing test that queried them by name continued
+passing unchanged. Each button (new `ToolbarButton` helper) has a visible
+`aria-hidden` glyph (↶/↷/⧉/✕) plus a CSS-only tooltip
+(`.editor-toolbar-tooltip`, shown via `:hover`/`:focus-visible` in
+`index.css`) — visible on both mouse hover and keyboard focus, while
+`aria-label` on the button carries the accessible name independent of
+tooltip visibility. `.editor-toolbar` uses `flex-wrap` + `overflow-x: auto`
+so a narrow viewport wraps/scrolls the controls rather than clipping them
+or growing page-level horizontal scroll. No new `outline: none` was added
+(global `:focus-visible` styling already covers every button/input). The
+now-emptied `CollapsibleSection heading="Shape actions"` was renamed to
+"Editing preferences" (only `SnapPreferenceControl` remains inside it) per
+the "must not keep a heading that no longer describes its contents"
+criterion — `LayersPanel.tsx`'s own "Add shape" creation toolbar was left
+untouched, exactly where task 100/#131 placed it. One existing test
+(`EditorWorkspace.accordion.test.tsx`) referenced the old "Shape actions"
+heading text and was updated to "Editing preferences"; every other test in
+the suite needed no changes. `make frontend-test` green at 1624/1624 (no
+regressions, including `EditorWorkspace.a11y.test.tsx`'s `jest-axe`
+checks, which already ran with every `CollapsibleSection` pre-expanded and
+so exercised the toolbar's markup too); `tsc`/`oxlint`/`prettier` all
+clean. No new dependency added (plain unicode glyphs + a CSS tooltip, no
+icon or color-picker library).
+Not done: a live-browser visual/manual pass (the pixel layout at each
+breakpoint, real mouse hover/keyboard-focus tooltip behavior) was not
+performed in this session — the authenticated editor route needs a running
+Django backend + a signed-in session this environment wasn't set up for
+mid-task; every acceptance criterion checkable via the automated suite
+(DOM structure, ARIA roles/names, `jest-axe`, disabled-state wiring,
+accessible-name stability) passes.
 
 ## 113. Make public projects render visibly and make camera interaction reliable
 Goal: `PublicProjectViewer.tsx` (the signed-out `/p/:id` route) reliably

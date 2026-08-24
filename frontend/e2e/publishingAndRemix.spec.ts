@@ -924,6 +924,52 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await anonContext.close();
   });
 
+  // Task 119 (issue #152): the camera video overlay + opacity slider +
+  // mirror toggle ported to this page (see PublicProjectViewer.tsx's own
+  // doc comment) -- exercised here against the real DOM/localStorage,
+  // complementing PublicProjectViewer.cameraOverlay.test.tsx's mocked-
+  // CameraControl unit coverage.
+  test('camera overlay video + opacity/mirror controls appear once active and persist', async ({
+    browser,
+  }) => {
+    const anonContext = await browser.newContext();
+    await installMediaPipeTestSeam(anonContext);
+    const anonPage = await anonContext.newPage();
+
+    await anonPage.goto(`/p/${publicProjectId}`);
+
+    // No overlay/controls before the camera is enabled.
+    await expect(anonPage.getByTestId('camera-overlay-video')).toHaveCount(0);
+    await expect(anonPage.getByLabel('Camera overlay opacity')).toHaveCount(0);
+
+    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+    await expect(anonPage.getByTestId('camera-status')).toHaveText(
+      'Camera is active. Hand tracking is running locally in your browser.',
+    );
+
+    const overlayVideo = anonPage.getByTestId('camera-overlay-video');
+    await expect(overlayVideo).toBeVisible();
+    const opacitySlider = anonPage.getByLabel('Camera overlay opacity');
+    const mirrorToggle = anonPage.getByLabel('Mirror camera overlay');
+    await expect(opacitySlider).toHaveValue('50');
+    await expect(mirrorToggle).toBeChecked();
+
+    await opacitySlider.fill('75');
+    await mirrorToggle.uncheck();
+    await expect(overlayVideo).toHaveCSS('opacity', '0.75');
+    await expect(overlayVideo).toHaveCSS('transform', 'none');
+
+    // The preference is the same localStorage-backed store the editor
+    // reads (Task 118/#147's `cameraOverlaySettings.ts`) -- persisted here
+    // without any project/account association, recoverable after reload.
+    const stored = await anonPage.evaluate(() =>
+      window.localStorage.getItem('gesture-studio:camera-overlay-settings'),
+    );
+    expect(JSON.parse(stored ?? '{}')).toEqual({ opacity: 0.75, mirrored: false });
+
+    await anonContext.close();
+  });
+
   test('stop after active', async ({ browser }) => {
     const anonContext = await browser.newContext();
     await installMediaPipeTestSeam(anonContext);

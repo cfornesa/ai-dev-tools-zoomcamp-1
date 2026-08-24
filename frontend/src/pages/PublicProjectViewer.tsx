@@ -4,7 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { forkProject, getPublicProject, type PublicProject } from '../api/projects';
 import { useAuth } from '../auth/useAuth';
-import CameraControl from '../components/CameraControl';
+import CameraControl, { type CameraStatus } from '../components/CameraControl';
+import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import { normalizeSceneLayers } from '../validation/scene';
 import DemoControlsPanel from './DemoControlsPanel';
@@ -36,6 +37,18 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * `Enable camera` click handler, so this page starts in non-camera demo
  * mode and never requests camera permission on mount (acceptance
  * criterion).
+ *
+ * ## Camera video overlay (Task 119, issue #152)
+ *
+ * Ports `EditorWorkspace.tsx`'s Task 110/118 (issues #141, #147) live
+ * camera video overlay + opacity slider + mirror toggle to this page,
+ * duplicating that layout JSX rather than extracting a shared component —
+ * see issue #152's "Design decisions". The opacity/mirror preference reads
+ * and writes through the exact same `useCameraOverlaySettings()` store
+ * (`../editor/cameraOverlaySettings.ts`), not a second instance: it is
+ * `localStorage`-persisted under one generic, page-agnostic key, so a
+ * visitor who adjusts it here also sees it applied in the editor (and vice
+ * versa) in the same browser, after reload.
  *
  * "Unavailable" (never-existed, not-yet-published, unpublished mid-session,
  * or deleted) is a single, deliberately undifferentiated state:
@@ -82,6 +95,33 @@ function PublicProjectViewer() {
   const [forkState, setForkState] = useState<'idle' | 'forking'>('idle');
   const [forkError, setForkError] = useState<string | null>(null);
   const forkRequestIdRef = useRef<string | null>(null);
+
+  // Task 119 (issue #152): mirrors `EditorWorkspace.tsx`'s identical
+  // `cameraStatus`/`cameraStream`/`cameraVideoRef` state and `srcObject`
+  // effect — see that file's own doc comments for why `cameraStatus` must
+  // be in the effect's dependency array alongside `cameraStream`.
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
+  const {
+    opacity: cameraOverlayOpacity,
+    mirrored: cameraOverlayMirrored,
+    setOpacity: setCameraOverlayOpacity,
+    setMirrored: setCameraOverlayMirrored,
+  } = useCameraOverlaySettings();
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const videoEl = cameraVideoRef.current;
+    if (!videoEl) return;
+    videoEl.srcObject = cameraStream;
+    if (cameraStream) {
+      void Promise.resolve(videoEl.play()).catch(() => {
+        // Autoplay can be rejected in some environments; the video element
+        // still renders (just paused) and this is not a scene-breaking
+        // failure worth surfacing as `previewError`.
+      });
+    }
+  }, [cameraStream, cameraStatus]);
 
   const previewRef = useRef<P5ScenePreview | null>(null);
   // Task 113 (issue #144): a *callback* ref, not a plain `useRef` +
@@ -261,6 +301,35 @@ function PublicProjectViewer() {
               Couldn't render the preview: {previewError}
             </p>
           )}
+          {/* Task 119 (issue #152): the camera overlay opacity slider +
+              mirror toggle, visible only while the live camera is active —
+              see the <video> overlay itself below, inside
+              `.editor-scene-canvas`. Ports EditorWorkspace.tsx's identical
+              controls verbatim (Tasks 110/118, issues #141/#147). */}
+          {cameraStatus === 'active' && (
+            <div className="editor-camera-overlay-control">
+              <label htmlFor="public-camera-overlay-opacity">Camera overlay opacity</label>
+              <input
+                id="public-camera-overlay-opacity"
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={Math.round(cameraOverlayOpacity * 100)}
+                aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                onChange={(event) => setCameraOverlayOpacity(Number(event.target.value) / 100)}
+              />
+              <label htmlFor="public-camera-overlay-mirror">
+                <input
+                  id="public-camera-overlay-mirror"
+                  type="checkbox"
+                  checked={cameraOverlayMirrored}
+                  onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
+                />
+                Mirror camera overlay
+              </label>
+            </div>
+          )}
           <div
             data-testid="public-scene-canvas"
             role="group"
@@ -268,6 +337,34 @@ function PublicProjectViewer() {
             className="editor-scene-canvas"
             style={{ position: 'relative', width: 800, height: 600, maxWidth: '100%' }}
           >
+            {/* Task 119 (issue #152): the live camera feed, composited via
+                CSS behind the p5 canvas (zIndex -2 vs. the mount div's -1
+                below) — never drawn into the p5 canvas itself. Mirrored
+                (selfie view) by default; `pointerEvents: 'none'` keeps this
+                purely decorative. Ports EditorWorkspace.tsx's identical
+                overlay <video> verbatim. */}
+            {cameraStatus === 'active' && cameraStream && (
+              <video
+                ref={cameraVideoRef}
+                data-testid="camera-overlay-video"
+                aria-hidden="true"
+                muted
+                playsInline
+                autoPlay
+                className="editor-camera-overlay"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: -2,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
+                  opacity: cameraOverlayOpacity,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
             {/* Task 25's p5.js preview mounts its <canvas> into this div;
                 see EditorWorkspace.tsx's identical comment for why React
                 is never given children to reconcile here. */}
@@ -284,8 +381,10 @@ function PublicProjectViewer() {
               authenticated editor uses (`CameraControl.tsx`) — notice,
               status, stop, and denial/unsupported/failure messaging, all
               unchanged. Never auto-starts; only its own `Enable camera`
-              button can ever request camera access. */}
-          <CameraControl />
+              button can ever request camera access. Task 119 (issue #152):
+              `onStatusChange`/`onStreamChange` feed the overlay <video>
+              above, the same way `EditorWorkspace.tsx` does. */}
+          <CameraControl onStatusChange={setCameraStatus} onStreamChange={setCameraStream} />
 
           {/* Task 28: the exact same demo signal controls the authenticated
               editor uses (`DemoControlsPanel.tsx`) — this is the

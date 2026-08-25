@@ -93,6 +93,7 @@ or review:
    it to the user for prioritization.
 5. Before marking the current task complete, repeat the search for newly
    discovered actionable items and reconcile every item.
+6. When all intended tasks for a session are sufficiently complete, commit the changes as a single pull request, aptly named given the context of each session.
 
 ### Where each item belongs
 

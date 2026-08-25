@@ -3153,3 +3153,130 @@ above; manually verified in the browser preview (no backend running) that
 content/error states with no console errors beyond the expected
 `/api/whoami/`-style 404s from the absent Django backend, confirming the
 `Suspense`/lazy-loading wiring itself introduces no regression.
+
+## 131. Add a canvas-overlaid "active layer" properties HUD
+
+Goal: When a shape, group, or layer is selected (via canvas click, Layers
+panel row, or keyboard), show a small floating window overlaid on top of
+the Preview canvas — near the selection, Photoshop/Figma-popup style —
+exposing the quick-toggle controls that today only live inline in
+`LayersPanel.tsx`'s rows: visibility, lock, fill color, and delete, plus
+the shape-level opacity field `ShapeInspectorPanel.tsx`/
+`shapeStyleFields.ts` already validates and mutates
+(`updateSelectedShapeColorField`/the `opacity` `ShapeStyleField`). This is
+additive and does not remove anything from the Layers panel yet — see
+task 132, which depends on this landing first.
+Description: Live user feedback (screenshot of `animate.creatrweb.com`,
+2026-08-24) describes wanting "an internal small window display (overlaid
+on the canvas) allowing the user to make certain selections and toggles
+for things like visibility, opacity, color, and the like" once a layer is
+"active" (selected), rather than a form embedded in the list row. Reuse
+existing state and mutations wherever possible instead of duplicating
+them: `sceneEditor.selectedShapeId`/`selectedGroup` for "what's active",
+and the same `toggleShapeVisible`/`toggleShapeLocked`/
+`toggleGroupVisible`/`toggleGroupLocked`/`updateSelectedShapeColorField`/
+`deleteSelected`/`deleteGroupSelected` mutations `LayersPanel.tsx` already
+calls (see that file's `OutlineRowItem`) and the `opacity`
+`ShapeStyleField` `ShapeInspectorPanel.tsx` already renders. Needs its own
+`_docs/team/pm.md` grooming pass to settle: exact positioning (anchored to
+the selected shape's canvas bounds vs. a fixed corner of Preview — the
+Preview `<section>` at `EditorWorkspace.tsx`'s `data-panel="preview"` will
+need `position: relative` if anchoring to shape bounds), what happens at
+narrow/mobile viewports where Preview itself is already tight on space,
+keyboard/screen-reader reachability of the HUD's own controls (it must not
+be a mouse-only affordance — every control it exposes already has a
+keyboard-operable equivalent somewhere today, this HUD must keep that
+true), dismiss/reopen behavior (does it follow the selection everywhere,
+hide on deselect, close on Escape), and whether layer rows (not just
+shapes/groups) get a HUD too or only their existing Visible/Locked/Delete
+buttons.
+Status: PROPOSED — filed from live user feedback during a follow-up
+review of tasks 129/130 (issues #161/#162).
+GitHub issue: pending — see reconciliation note at the end of task 133.
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --search
+"layer panel"` / `--search "photoshop"` / `--search "floating panel
+overlay"` for a duplicate. Issue #153 (closed) is the closest prior art —
+it added the Layers panel's current row-level selection highlight
+(`.editor-outline-row-group[data-selected='true']`/`-shape` in
+`index.css`) — but that issue's scope was strictly "make existing
+selection state visible," not a new floating-overlay surface; treated as
+related context, not a duplicate. New, not a duplicate.
+
+## 132. Compact the Layers panel into a minimal Photoshop-style row list
+
+Goal: Once task 131's canvas HUD carries the quick-toggle controls, strip
+`LayersPanel.tsx`'s always-visible row markup down to what a Photoshop/
+Figma-style layers palette actually shows per row — drag handle, kind
+icon, name/label, and a clearly, unmistakably highlighted background when
+that row is the active selection — moving everything else (the inline
+Visible/Locked buttons, `ShapeColorSwatch`, the delete button, and the
+`RowMoreDisclosure` containing Move up/down + `MoveControls`) out of the
+row's always-visible surface.
+Description: The current row (see `OutlineRowItem` in `LayersPanel.tsx`)
+renders name, a "Select for grouping" checkbox, a select/label button,
+inherited-state text, Visible/Locked toggle buttons, (for shapes) a fill
+color swatch, a Delete button, and a "More" disclosure with Move up/down
+and the `MoveControls` reparent selects — all at once, for every row,
+regardless of whether that row is selected. Live user feedback describes
+this as "too cluttered and filled with information that should only be
+necessary to show if the layer is active." Depends on task 131 landing
+first so removed controls have a working replacement home (the HUD) —
+this task must not ship a net loss of reachable functionality partway
+through. Also explicitly strengthen the selection highlight itself: the
+existing `index.css` `[data-selected='true']` rule (left-border color +
+background tint) reads as too subtle against a tall, busy row per user
+feedback ("the layer's background... will be highlighted") — on a
+compact row this same rule should already read as far more obvious, but
+confirm it visually rather than assuming. Reparenting/reordering/renaming/
+grouping actions that don't fit "quick per-row toggle" (Move up/down,
+`MoveControls`, `Combine into group`, layer add/delete) still need a
+keyboard-and-touch-reachable home — likely the HUD from task 131, or kept
+as a still-collapsed-by-default per-row disclosure if the HUD doesn't
+cover them; decide explicitly during grooming, don't drop silently.
+Out of scope: task 129/#161's touch-drag mechanism and task 111/#142's
+per-shape-layer data model are both unaffected — this is presentation
+only, on top of the same `sceneEditor.outline` rows.
+Status: PROPOSED — depends on task 131.
+GitHub issue: pending — see reconciliation note at the end of task 133.
+Discovery gate: Same search as task 131; #153 (closed) and #131/#127
+(closed — the original Layers panel build-out) are prior art on this same
+file, not duplicates of this specific compacting request. New, not a
+duplicate.
+
+## 133. Reconsider the Layers panel's auto-scroll-on-selection now that rows will be compact and highlighted
+
+Goal: Decide explicitly, and implement, what `LayersPanel.tsx`'s
+selection-driven `scrollIntoView` effect (added for issue #153; see that
+file's "Issue #153: keep the Layers panel scrolled to whichever row is
+selected" comment) should do once tasks 131/132 land — live user feedback
+describes the current every-selection auto-scroll as jarring specifically
+because today's tall, cluttered rows make each jump large and disorienting.
+Description: `LayersPanel.tsx` currently calls
+`row.scrollIntoView({ block: 'nearest' })` on every
+`sceneEditor.selectedShapeId` change, unconditionally, including when the
+row is already fully visible. Issue #153 flagged this exact behavior as
+"worth deciding explicitly rather than leaving implicit" and then never
+revisited it. Once task 132 makes rows short and the selection highlight
+prominent, the practical case for auto-scrolling shrinks (more rows fit
+without scrolling, and a highlighted row is easier to spot at a glance
+even off-screen-adjacent) — this task should re-evaluate with that
+context in hand rather than assuming removal, and could land as one of:
+keep it but only scroll when the row is actually out of view (avoid a
+same-viewport jump), remove it entirely in favor of the stronger
+highlight, or keep it unchanged if grooming finds compact rows don't
+actually eliminate the disorientation. Should be sequenced after task 132
+so the decision is made against the real compacted layout, not the
+current cluttered one.
+Status: PROPOSED — depends on task 132.
+GitHub issue: pending — see reconciliation note below.
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --search
+"scroll into view"` for a duplicate — only #153 (closed, the issue that
+added this behavior) matches, and its own text explicitly deferred this
+exact decision rather than making it. New, not a duplicate.
+Reconciliation note: Tasks 131/132/133 were filed together from one
+piece of live user feedback (2026-08-24, a screenshot-driven review of
+the Layers panel after tasks 129/130 shipped) and are sequenced as a
+chain (131 -> 132 -> 133) rather than independently implementable —
+grooming should confirm that ordering still holds before work starts.
+Matching GitHub issues #163/#164/#165 filed for tasks 131/132/133
+respectively, cross-linking this chain.

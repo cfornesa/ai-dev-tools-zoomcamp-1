@@ -2191,14 +2191,21 @@ function EditorWorkspace() {
                 onPointerLeave={handleCanvasPointerLeave}
                 onDoubleClick={handleCanvasDoubleClick}
               >
-                {/* Task 110 (issue #141): the live camera feed, composited via
-                CSS behind the p5 canvas (zIndex -2 vs. the mount div's -1
-                below) — never drawn into the p5 canvas itself, so it stays
-                structurally absent from any canvas-only capture path
-                (thumbnails, exports). Mirrored (selfie view) by default;
-                `pointerEvents: 'none'` keeps shape click/drag unaffected.
-                Task 118 (issue #147): the mirror toggle flips the
-                `transform` live via the `cameraOverlayMirrored` state —
+                {/* Task 110 (issue #141), restacked by task 137 (issue #169):
+                the live camera feed, composited via CSS above the p5 canvas
+                (zIndex -1 vs. the mount div's -2 below) so it's actually
+                visible on-screen instead of hidden behind opaque shape
+                fills — the entire point of a "camera overlay". This is safe
+                for thumbnail/export capture because that path
+                (`captureSocialThumbnail.ts`, driving `createP5ScenePreview`
+                from `p5Adapter.ts`) never touches this live DOM at all: it
+                builds a wholly separate off-screen `<div>`/p5 instance from
+                the saved scene document and has no camera code path
+                whatsoever, so this element's on-screen stacking has zero
+                effect on what gets captured. Mirrored (selfie view) by
+                default; `pointerEvents: 'none'` keeps shape click/drag
+                unaffected. Task 118 (issue #147): the mirror toggle flips
+                the `transform` live via the `cameraOverlayMirrored` state —
                 the `<video>` element itself never re-mounts, so the live
                 feed is uninterrupted. */}
                 {cameraStatus === 'active' && cameraStream && (
@@ -2213,7 +2220,7 @@ function EditorWorkspace() {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      zIndex: -2,
+                      zIndex: -1,
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
@@ -2226,11 +2233,14 @@ function EditorWorkspace() {
                 {/* Task 25: the p5.js preview mounts its <canvas> into this div.
                 React is never given any children to reconcile here (no JSX
                 children below), so it never touches — or fights over —
-                nodes p5 appends directly to the real DOM. */}
+                nodes p5 appends directly to the real DOM. Restacked below
+                the camera video by task 137 (issue #169) — see that
+                element's comment above for why this has no effect on
+                thumbnail/export capture. */}
                 <div
                   ref={previewMountCallbackRef}
                   aria-hidden="true"
-                  style={{ position: 'absolute', inset: 0, zIndex: -1 }}
+                  style={{ position: 'absolute', inset: 0, zIndex: -2 }}
                 />
                 {/* Issue #78: the grid overlay — a visible line at every
                 20-scene-unit grid coordinate, so snapping is never
@@ -2350,7 +2360,7 @@ function EditorWorkspace() {
                         {/* Issue #126 (behavior-active case) and issue #130
                         (static case): the p5 canvas beneath this overlay
                         (`previewRef`, mounted in the sibling div with
-                        `zIndex: -1` above) is the single source of truth for
+                        `zIndex: -2` above) is the single source of truth for
                         every shape's *body* — continuously re-rendered from
                         the runtime's live, behavior-evaluated positions
                         while `hasActiveBehaviors` is true

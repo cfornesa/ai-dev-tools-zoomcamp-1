@@ -82,6 +82,48 @@ it('keeps SUPPORTED_SCHEMA_VERSION in sync with the fixtures', () => {
   expect(blank.schemaVersion).toBe(SUPPORTED_SCHEMA_VERSION);
 });
 
+// Task 138 (issue #170): canvas.opacity is optional (absent means "fully
+// opaque," per this field's own schema description and
+// schema/README.md's additive-field-doesn't-bump-schemaVersion policy),
+// but when present must be a number in 0..1 like every other
+// unitInterval-typed field. Mirrors tests/test_scene_validation.py's
+// TestCanvasOpacity.
+describe('canvas.opacity (Task 138, issue #170)', () => {
+  function blankSceneWithoutOpacity(): Record<string, unknown> {
+    const data = readJson('valid/blank.json') as Record<string, unknown>;
+    const canvas = data.canvas as Record<string, unknown>;
+    expect(canvas.opacity).toBeUndefined();
+    return data;
+  }
+
+  it('is valid when absent -- every pre-Task-138 fixture already proves this', () => {
+    const data = blankSceneWithoutOpacity();
+    const result = validateScene(data);
+    expect(result.valid).toBe(true);
+  });
+
+  it.each([0, 0.5, 1])('is valid at %s', (value) => {
+    const data = blankSceneWithoutOpacity();
+    (data.canvas as Record<string, unknown>).opacity = value;
+    const result = validateScene(data);
+    expect(result.valid).toBe(true);
+  });
+
+  it.each([-0.01, 1.01, 2, -1])('is rejected at %s', (value) => {
+    const data = blankSceneWithoutOpacity();
+    (data.canvas as Record<string, unknown>).opacity = value;
+    const result = validateScene(data);
+    expect(result.valid).toBe(false);
+  });
+
+  it('is rejected with the wrong type', () => {
+    const data = blankSceneWithoutOpacity();
+    (data.canvas as Record<string, unknown>).opacity = '0.5';
+    const result = validateScene(data);
+    expect(result.valid).toBe(false);
+  });
+});
+
 // --- Task 72: NaN/Infinity fixtures excluded from the shared
 // expectations.json loop (see its "$maliciousComment") because they're
 // written with literal NaN/Infinity/-Infinity tokens -- valid for Python's

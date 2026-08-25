@@ -264,6 +264,13 @@ class _ScenePlan:
     height: int
     background_color: str
     nodes: list[dict]
+    # Task 138 (issue #170): overall composite opacity (background + every
+    # shape, as one flattened layer) -- optional in the scene document
+    # itself (`schema/scene.schema.json`'s `canvas.opacity`), defaults to
+    # 1.0 (fully opaque) here so a scene predating this field renders
+    # byte-identical to before. See `render_scene_image`'s use of this
+    # field for how it's applied.
+    canvas_opacity: float = 1.0
 
 
 def _build_scene_plan(scene: dict) -> _ScenePlan:
@@ -297,6 +304,8 @@ def _build_scene_plan(scene: dict) -> _ScenePlan:
         canvas = scene["canvas"]
         width, height = int(canvas["width"]), int(canvas["height"])
         background_color = canvas["backgroundColor"]
+        canvas_opacity_raw = canvas.get("opacity", 1.0)
+        canvas_opacity = float(canvas_opacity_raw) if canvas_opacity_raw is not None else 1.0
 
         layers = list(scene.get("layers") or [])
         groups = list(scene.get("groups") or [])
@@ -332,7 +341,11 @@ def _build_scene_plan(scene: dict) -> _ScenePlan:
                 nodes.append({"kind": "shape", "shape": shape})
 
         return _ScenePlan(
-            width=width, height=height, background_color=background_color, nodes=nodes
+            width=width,
+            height=height,
+            background_color=background_color,
+            nodes=nodes,
+            canvas_opacity=canvas_opacity,
         )
     except ThumbnailRenderError:
         raise
@@ -358,6 +371,21 @@ def render_scene_image(scene: dict) -> Image.Image:
         raise
     except Exception as exc:  # noqa: BLE001 - any drawing failure becomes a safe fallback upstream
         raise ThumbnailRenderError(f"rendering failed: {exc}") from exc
+
+    # Task 138 (issue #170): `canvas.opacity` composites the whole
+    # rendered scene (background + every shape, already flattened into
+    # `base` above) as one layer -- not each shape's own alpha scaled
+    # individually. Scaling the final composite's alpha channel once,
+    # here, is the Pillow equivalent of `p5Adapter.ts`'s offscreen-buffer-
+    # plus-tint approach: shapes still blend with each other inside `base`
+    # at full strength, and only the resulting flattened image's overall
+    # alpha is then multiplied by `canvas_opacity`. At 1.0 (the default,
+    # and every scene predating this field) this is a no-op.
+    if plan.canvas_opacity < 1.0:
+        r, g, b, a = base.split()
+        a = a.point(lambda px: int(round(px * plan.canvas_opacity)))
+        base = Image.merge("RGBA", (r, g, b, a))
+
     return base
 
 

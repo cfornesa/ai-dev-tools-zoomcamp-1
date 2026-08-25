@@ -272,6 +272,27 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
   let currentParticles: readonly RenderableParticle[] = [];
   let currentTrails: readonly RenderableTrail[] = [];
   let currentTransparentBackground = false;
+  // Task 138 (issue #170): an offscreen buffer used only when
+  // `canvas.opacity < 1` -- see `sk.draw`'s doc comment below for why
+  // compositing happens this way rather than multiplying every draw
+  // call's own alpha by `canvasOpacity`.
+  let opacityBuffer: p5.Graphics | null = null;
+
+  /** Lazily creates (or resizes, replacing the old one) the offscreen
+   * buffer `sk.draw` renders into when `canvas.opacity < 1`. A fresh
+   * buffer is transparent by default, which is exactly what's wanted here
+   * -- `sk.draw` always paints over it with either `background()` or
+   * `clear()` before drawing anything else. */
+  function ensureOpacityBuffer(sk: p5, width: number, height: number): p5.Graphics {
+    if (opacityBuffer && opacityBuffer.width === width && opacityBuffer.height === height) {
+      return opacityBuffer;
+    }
+    opacityBuffer?.remove();
+    opacityBuffer = sk.createGraphics(width, height);
+    opacityBuffer.pixelDensity(1);
+    opacityBuffer.noSmooth();
+    return opacityBuffer;
+  }
 
   function ensureInstance(width: number, height: number): void {
     if (instance) return;
@@ -287,30 +308,62 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
       };
       sk.draw = () => {
         if (!currentPlan) return;
-        sk.push();
+
+        // Task 138 (issue #170): `canvas.opacity` composites the whole
+        // rendered frame (background + trails + shapes + particles) as
+        // one flattened layer against whatever sits behind this <canvas>
+        // -- not each shape's own alpha scaled individually. Drawing
+        // straight to `sk` and multiplying every fill/stroke alpha by
+        // `canvasOpacity` was considered and rejected: two overlapping
+        // shapes would then each blend translucently with what's *behind
+        // them on the canvas* as well as what's behind the canvas itself,
+        // visibly darkening/lightening the overlap in a way a single
+        // "whole scene at X% opacity" control should not. Instead, at
+        // opacity < 1 the frame draws into an offscreen `p5.Graphics`
+        // buffer at full internal opacity (so shape-over-shape blending
+        // inside the scene is unaffected), then that buffer is drawn onto
+        // the real canvas once via `tint(255,255,255, opacity*255)` --
+        // exactly one alpha multiply for the entire composite, matching
+        // how a single semi-transparent image layer behaves in any
+        // compositing tool. At opacity === 1 (the default, and every
+        // scene that predates this field) this buffer is never created or
+        // used, so existing renders are byte-for-byte unaffected.
+        const opacity = currentPlan.canvas.opacity;
+        const useBuffer = opacity < 1;
+        const target: p5 = useBuffer ? ensureOpacityBuffer(sk, sk.width, sk.height) : sk;
+
+        target.push();
         if (currentPlan.randomness.enabled) {
           // Acceptance criterion 8: seed the PRNG from randomness.seed
           // when enabled, so later seed-dependent renderer work
           // (particle emission, deterministic randomness) plugs into a
           // seeded, reproducible stream. When disabled, no seed is
           // applied — p5's default (unseeded) PRNG state is left alone.
-          sk.randomSeed(currentPlan.randomness.seed);
-          sk.noiseSeed(currentPlan.randomness.seed);
+          target.randomSeed(currentPlan.randomness.seed);
+          target.noiseSeed(currentPlan.randomness.seed);
         }
         if (currentTransparentBackground) {
-          sk.clear();
+          target.clear();
         } else {
-          sk.background(currentPlan.canvas.backgroundColor);
+          target.background(currentPlan.canvas.backgroundColor);
         }
         // Task 61: trails draw beneath the static scene tree so a shape's
         // own geometry (drawn next) sits on top of its position history —
         // see the module doc comment.
-        for (const trail of currentTrails) drawTrail(sk, trail);
-        for (const node of currentPlan.nodes) drawNode(sk, node, 1);
+        for (const trail of currentTrails) drawTrail(target, trail);
+        for (const node of currentPlan.nodes) drawNode(target, node, 1);
         // Task 39: live particles draw last, on top of everything else —
         // see the module doc comment.
-        for (const particle of currentParticles) drawParticle(sk, particle);
-        sk.pop();
+        for (const particle of currentParticles) drawParticle(target, particle);
+        target.pop();
+
+        if (useBuffer) {
+          sk.clear();
+          sk.push();
+          sk.tint(255, 255, 255, opacity * 255);
+          sk.image(opacityBuffer!, 0, 0);
+          sk.pop();
+        }
       };
     }, container);
   }
@@ -346,6 +399,8 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
   function destroy(): void {
     instance?.remove();
     instance = null;
+    opacityBuffer?.remove();
+    opacityBuffer = null;
     currentPlan = null;
     currentParticles = [];
     currentTrails = [];

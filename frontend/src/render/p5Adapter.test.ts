@@ -723,4 +723,74 @@ describe('p5 scene preview', () => {
       expect(pixel(canvas, 1, 1)[3]).toBe(0);
     });
   });
+
+  describe('canvas.opacity (Task 138, issue #170)', () => {
+    it('defaults to fully opaque when canvas.opacity is absent, unaffected by this task', () => {
+      const { preview } = tracked();
+      preview.render(baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#ff0000' } }));
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 10, 10)).toEqual([0xff, 0x00, 0x00, 255]);
+    });
+
+    it('scales the whole composite alpha (background) by canvas.opacity', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 20, height: 20, backgroundColor: '#ff0000', opacity: 0.5 },
+        }),
+      );
+      const canvas = preview.getCanvasElement()!;
+      const [r, g, b, a] = pixel(canvas, 10, 10);
+      expect([r, g, b]).toEqual([0xff, 0x00, 0x00]);
+      // ~127-128 depending on rounding through the tint/image composite.
+      expect(a).toBeGreaterThanOrEqual(120);
+      expect(a).toBeLessThanOrEqual(135);
+    });
+
+    it('scales a shape drawn on the canvas by the same overall composite opacity', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 20, height: 20, backgroundColor: '#000000', opacity: 0.5 },
+          shapes: [circleShape({ transform: transform({ x: 10, y: 10 }), radius: 8 })],
+        }),
+      );
+      const canvas = preview.getCanvasElement()!;
+      // The shape's own fill (#4f46e5) still shows through -- shape-over-
+      // background blending inside the composite is unaffected -- but the
+      // *whole frame's* resulting alpha is scaled by canvas.opacity.
+      // Within 1 of the exact channel value: reading back a partially
+      // transparent canvas pixel round-trips through un/premultiplied
+      // alpha conversion, which can be off by a rounding unit.
+      const [r, g, b, a] = pixel(canvas, 10, 10);
+      expect(Math.abs(r - 0x4f)).toBeLessThanOrEqual(1);
+      expect(Math.abs(g - 0x46)).toBeLessThanOrEqual(1);
+      expect(Math.abs(b - 0xe5)).toBeLessThanOrEqual(1);
+      expect(a).toBeGreaterThanOrEqual(120);
+      expect(a).toBeLessThanOrEqual(135);
+    });
+
+    it('opacity 0 renders a fully transparent frame', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 20, height: 20, backgroundColor: '#ff0000', opacity: 0 },
+        }),
+      );
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 10, 10)[3]).toBe(0);
+    });
+
+    it('re-rendering from opacity < 1 back to opacity 1 restores a fully opaque frame', () => {
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 20, height: 20, backgroundColor: '#ff0000', opacity: 0.5 },
+        }),
+      );
+      preview.render(baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#ff0000' } }));
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 10, 10)).toEqual([0xff, 0x00, 0x00, 255]);
+    });
+  });
 });

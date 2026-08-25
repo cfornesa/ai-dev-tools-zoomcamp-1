@@ -172,6 +172,44 @@ def test_prototype_like_keys_are_ordinary_schema_valid_data_not_a_bypass():
     assert data["graph"]["nodes"][0]["params"]["__proto__"] == "polluted"
 
 
+def _blank_scene():
+    return json.loads((FIXTURES_DIR / "valid" / "blank.json").read_text())
+
+
+class TestCanvasOpacity:
+    """Task 138 (issue #170): `canvas.opacity` is optional (absent means
+    "fully opaque," per this field's own schema description and
+    `schema/README.md`'s additive-field-doesn't-bump-schemaVersion
+    policy), but when present must be a number in 0..1 like every other
+    `unitInterval`-typed field (shape transform opacity, etc.)."""
+
+    def test_absent_is_valid_every_pre_task_138_fixture_already_proves_this(self):
+        data = _blank_scene()
+        assert "opacity" not in data["canvas"]
+        result = validate_scene(data)
+        assert result.valid is True, [(e.path, e.rule, e.message) for e in result.errors]
+
+    def test_in_range_values_are_valid(self):
+        for value in (0, 0.5, 1):
+            data = _blank_scene()
+            data["canvas"]["opacity"] = value
+            result = validate_scene(data)
+            assert result.valid is True, [(e.path, e.rule, e.message) for e in result.errors]
+
+    def test_out_of_range_values_are_rejected(self):
+        for value in (-0.01, 1.01, 2, -1):
+            data = _blank_scene()
+            data["canvas"]["opacity"] = value
+            result = validate_scene(data)
+            assert result.valid is False
+
+    def test_wrong_type_is_rejected(self):
+        data = _blank_scene()
+        data["canvas"]["opacity"] = "0.5"
+        result = validate_scene(data)
+        assert result.valid is False
+
+
 class TestNormalizeSceneLayers:
     """Task 111 (issue #142): read-time normalization for legacy scenes
     that predate the one-shape-per-layer invariant -- see

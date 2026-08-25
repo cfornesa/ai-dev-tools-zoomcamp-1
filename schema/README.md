@@ -29,6 +29,16 @@ design constraint, not a V1-only limitation.
   document shape (a new schema file or a versioned union), plus an
   explicit migration path; it would not silently reinterpret V1
   documents.
+- An **additive, optional** field — one no existing document has, that
+  isn't added to its parent object's `required` list, and whose absence
+  every reader (both validators and every renderer) treats identically to
+  a documented default — does not need a `schemaVersion` bump. Every
+  pre-existing document stays valid and renders unchanged; only newly
+  authored/edited documents ever carry the new field. `onboardingHints`
+  (Task 82) and `canvas.opacity` (Task 138, issue #170 — see that field's
+  own schema description) both follow this rule. A bump is reserved for a
+  change that would otherwise make an existing valid V1 document invalid,
+  or reinterpret an existing field's meaning.
 
 ## Two kinds of limits
 

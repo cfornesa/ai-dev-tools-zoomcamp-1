@@ -31,7 +31,11 @@
       "properties": {
         "width": { "type": "integer", "minimum": 16, "maximum": 4096 },
         "height": { "type": "integer", "minimum": 16, "maximum": 4096 },
-        "backgroundColor": { "$ref": "#/$defs/color" }
+        "backgroundColor": { "$ref": "#/$defs/color" },
+        "opacity": {
+          "description": "Task 138 (issue #170): opacity of the overall rendered scene composite (background plus every shape, as one flattened layer) against whatever sits behind the canvas -- distinct from, and composed on top of, each shape's own per-shape `transform.opacity`. Deliberately optional (not in canvas's `required` list) rather than a schemaVersion bump: every scene document written before this field existed remains valid as-is, and every renderer treats a missing value as 1 (fully opaque), so no pre-existing scene's appearance changes. See schema/README.md's versioning policy for why an additive, backward-compatible optional field does not need a new schemaVersion.",
+          "$ref": "#/$defs/unitInterval"
+        }
       }
     },
     "renderer": {

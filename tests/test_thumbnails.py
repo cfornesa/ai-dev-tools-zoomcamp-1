@@ -7,6 +7,7 @@ policy this file's tests assert against.
 """
 
 import copy
+import io
 import json
 from pathlib import Path
 
@@ -199,6 +200,65 @@ def test_same_scene_and_seed_produce_byte_identical_thumbnails():
 def test_deep_copied_scene_produces_the_same_thumbnail():
     copy_of_scene = json.loads(json.dumps(FEATURE_RICH_SCENE))
     assert render_card_thumbnail_png(FEATURE_RICH_SCENE) == render_card_thumbnail_png(copy_of_scene)
+
+
+# --- canvas.opacity (Task 138, issue #170) ---
+
+
+def test_missing_canvas_opacity_renders_fully_opaque_unaffected_by_this_task():
+    scene = _solid_circle_scene(background="#ff0000")
+    assert "opacity" not in scene["canvas"]
+    image = render_scene_image(scene)
+    assert image.getpixel((0, 0)) == (0xFF, 0x00, 0x00, 255)
+
+
+def test_canvas_opacity_scales_the_whole_composites_alpha():
+    scene = _solid_circle_scene(background="#ff0000")
+    scene["canvas"]["opacity"] = 0.5
+    image = render_scene_image(scene)
+    r, g, b, a = image.getpixel((0, 0))
+    assert (r, g, b) == (0xFF, 0x00, 0x00)
+    assert a == 128  # round(255 * 0.5)
+
+
+def test_canvas_opacity_scales_shape_pixels_the_same_as_background_pixels():
+    scene = _solid_circle_scene(canvas_width=100, canvas_height=100, background="#000000")
+    scene["canvas"]["opacity"] = 0.25
+    image = render_scene_image(scene)
+    # Center of the circle (shape fill) and a corner (background) should
+    # both carry the same overall composite alpha -- this is a whole-frame
+    # multiply, not a per-shape one.
+    _, _, _, shape_alpha = image.getpixel((50, 50))
+    _, _, _, bg_alpha = image.getpixel((1, 1))
+    assert shape_alpha == bg_alpha == round(255 * 0.25)
+
+
+def test_canvas_opacity_zero_renders_a_fully_transparent_image():
+    scene = _solid_circle_scene(background="#ff0000")
+    scene["canvas"]["opacity"] = 0
+    image = render_scene_image(scene)
+    assert image.getpixel((0, 0))[3] == 0
+
+
+def test_card_thumbnail_flattens_reduced_canvas_opacity_toward_the_opaque_white_backdrop():
+    # render_card_thumbnail always flattens onto opaque white (documented,
+    # pre-existing behavior -- gallery cards never carry transparency). A
+    # reduced canvas.opacity should visibly fade the artwork toward that
+    # white backdrop, exactly as it would in the editor Preview/public
+    # viewer, where whatever sits behind the <canvas> shows through.
+    opaque_scene = _solid_circle_scene(canvas_width=100, canvas_height=100, background="#000000")
+    faded_scene = copy.deepcopy(opaque_scene)
+    faded_scene["canvas"]["opacity"] = 0.2
+
+    opaque_png = render_card_thumbnail_png(opaque_scene)
+    faded_png = render_card_thumbnail_png(faded_scene)
+    assert opaque_png != faded_png
+
+    faded_image = Image.open(io.BytesIO(faded_png))
+    # A background corner pixel should now read much closer to white
+    # (255,255,255) than to the scene's own black background.
+    corner = faded_image.convert("RGB").getpixel((1, 1))
+    assert corner[0] > 150  # faded well toward white, not still near-black
 
 
 # --- Failure fallback (acceptance criterion 4) ---

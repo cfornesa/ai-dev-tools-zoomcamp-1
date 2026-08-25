@@ -76,6 +76,7 @@ import {
   type ColorShapeField,
   type NumericShapeField,
 } from './shapeStyleFields';
+import { parseCanvasBackgroundColorEdit, parseCanvasOpacityEdit } from './canvasSettingsFields';
 
 /**
  * Task 23: shape add/select/duplicate/delete, plus this editor's in-session
@@ -660,6 +661,39 @@ export function useSceneEditor(
       return { ok: true };
     },
     [workingCopy, selectedShape, commit],
+  );
+
+  // Task 138 (issue #170): the canvas/background settings row —
+  // `canvas.backgroundColor` (already required by the schema, but
+  // previously reachable only via the Code tab's raw JSON, #159) and the
+  // new `canvas.opacity` field. Neither field belongs to a shape or
+  // layer, so unlike `updateSelectedShapeColorField`/
+  // `updateSelectedShapeNumericField` above these need no selection and
+  // no lock guard — the canvas itself has no lock/visibility concept
+  // (issue #170 explicitly excludes a canvas visibility toggle), and its
+  // settings are always editable whenever a scene is loaded at all.
+  const updateCanvasBackgroundColor = useCallback(
+    (raw: string): { ok: true } | { ok: false; error: string } => {
+      if (!workingCopy) return { ok: false, error: 'No scene loaded.' };
+      const outcome = parseCanvasBackgroundColorEdit(raw);
+      if (!outcome.ok) return outcome;
+      const canvas = (workingCopy.canvas ?? {}) as Record<string, unknown>;
+      commit({ ...workingCopy, canvas: { ...canvas, backgroundColor: outcome.value } });
+      return { ok: true };
+    },
+    [workingCopy, commit],
+  );
+
+  const updateCanvasOpacity = useCallback(
+    (raw: string): { ok: true } | { ok: false; error: string } => {
+      if (!workingCopy) return { ok: false, error: 'No scene loaded.' };
+      const outcome = parseCanvasOpacityEdit(raw);
+      if (!outcome.ok) return outcome;
+      const canvas = (workingCopy.canvas ?? {}) as Record<string, unknown>;
+      commit({ ...workingCopy, canvas: { ...canvas, opacity: outcome.value } });
+      return { ok: true };
+    },
+    [workingCopy, commit],
   );
 
   // --- Issue #79: per-vertex path editing ---
@@ -1313,6 +1347,9 @@ export function useSceneEditor(
     // Task 60 (issue #58)
     updateSelectedShapeNumericField,
     updateSelectedShapeColorField,
+    // Task 138 (issue #170)
+    updateCanvasBackgroundColor,
+    updateCanvasOpacity,
     // Issue #79
     vertexEditActive,
     toggleVertexEditMode,

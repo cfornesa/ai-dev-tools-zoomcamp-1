@@ -124,7 +124,18 @@ export type DrawGroupNode = { kind: 'group'; group: GroupNode; children: DrawNod
 export type DrawNode = DrawShapeNode | DrawGroupNode;
 
 export type ScenePlan = {
-  canvas: { width: number; height: number; backgroundColor: string };
+  canvas: {
+    width: number;
+    height: number;
+    backgroundColor: string;
+    /** Task 138 (issue #170): opacity of the overall rendered composite
+     * (background + every shape, as one flattened layer) -- distinct from
+     * each shape's own `transform.opacity`. Optional in the scene document
+     * itself (`schema/scene.schema.json`'s `canvas.opacity`); defaults to
+     * 1 (fully opaque) here so every scene predating this field renders
+     * exactly as before. */
+    opacity: number;
+  };
   randomness: { seed: number; enabled: boolean };
   nodes: DrawNode[];
 };
@@ -307,7 +318,16 @@ function readCanvas(scene: Record<string, unknown>): ScenePlan['canvas'] {
   if (typeof c.backgroundColor !== 'string') {
     throw new SceneRenderError('canvas.backgroundColor must be a color string.');
   }
-  return { width: c.width, height: c.height, backgroundColor: c.backgroundColor };
+  // Task 138 (issue #170): optional, defaults to 1 (fully opaque) -- see
+  // this field's schema description for why this is additive rather than
+  // a schemaVersion bump. Reject an explicit-but-wrong-typed value the
+  // same way every other field here does; only `undefined` gets the
+  // default.
+  if (c.opacity !== undefined && typeof c.opacity !== 'number') {
+    throw new SceneRenderError('canvas.opacity must be a number.');
+  }
+  const opacity = typeof c.opacity === 'number' ? c.opacity : 1;
+  return { width: c.width, height: c.height, backgroundColor: c.backgroundColor, opacity };
 }
 
 function readRandomness(scene: Record<string, unknown>): ScenePlan['randomness'] {

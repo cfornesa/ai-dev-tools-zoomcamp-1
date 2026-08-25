@@ -198,6 +198,57 @@ def test_malicious_fixtures_create_no_version_and_never_reach_persistence(
 
 
 @pytest.mark.django_db
+def test_canvas_background_color_and_opacity_round_trip_through_save_and_reload(
+    owner_client, project
+):
+    """Task 138 (issue #170): the editor's new canvas settings row writes
+    `canvas.backgroundColor` and the new `canvas.opacity` field directly
+    onto scene JSON -- this proves both survive an actual save (POST) and
+    reload (GET) unchanged, the same round trip the acceptance criteria
+    require, rather than only being checked by in-memory frontend unit
+    tests. `canvas.opacity` is deliberately omitted from the *first* save
+    below (as every pre-Task-138 scene would be) to prove the missing
+    field doesn't block save/reload, then set explicitly on the second
+    save to prove the new field itself round-trips.
+    """
+    scene_without_opacity = {
+        **BLANK_SCENE,
+        "canvas": {**BLANK_SCENE["canvas"], "backgroundColor": "#112233"},
+    }
+    assert "opacity" not in scene_without_opacity["canvas"]
+
+    first = owner_client.post(
+        _versions_url(project),
+        {"scene_json": scene_without_opacity, "origin": "manual"},
+        format="json",
+    ).json()
+    assert first["scene_json"]["canvas"]["backgroundColor"] == "#112233"
+    assert "opacity" not in first["scene_json"]["canvas"]
+
+    detail_url = f"/api/projects/{project.public_id}/versions/{first['id']}/"
+    reloaded = owner_client.get(detail_url).json()
+    assert reloaded["scene_json"]["canvas"]["backgroundColor"] == "#112233"
+    assert "opacity" not in reloaded["scene_json"]["canvas"]
+
+    scene_with_opacity = {
+        **BLANK_SCENE,
+        "canvas": {**BLANK_SCENE["canvas"], "backgroundColor": "#445566", "opacity": 0.42},
+    }
+    second = owner_client.post(
+        _versions_url(project),
+        {"scene_json": scene_with_opacity, "origin": "manual"},
+        format="json",
+    ).json()
+    assert second["scene_json"]["canvas"]["backgroundColor"] == "#445566"
+    assert second["scene_json"]["canvas"]["opacity"] == 0.42
+
+    detail_url_2 = f"/api/projects/{project.public_id}/versions/{second['id']}/"
+    reloaded_2 = owner_client.get(detail_url_2).json()
+    assert reloaded_2["scene_json"]["canvas"]["backgroundColor"] == "#445566"
+    assert reloaded_2["scene_json"]["canvas"]["opacity"] == 0.42
+
+
+@pytest.mark.django_db
 def test_invalid_origin_is_rejected(owner_client, project):
     response = owner_client.post(
         _versions_url(project),

@@ -25,11 +25,35 @@ function nodeIds(nodes: ReturnType<typeof buildScenePlan>['nodes']): string[] {
 
 describe('buildScenePlan', () => {
   // Acceptance criterion 1
-  it('reads canvas width/height/backgroundColor', () => {
+  it('reads canvas width/height/backgroundColor, defaulting opacity to 1', () => {
     const plan = buildScenePlan(
       baseScene({ canvas: { width: 320, height: 240, backgroundColor: '#abcdef' } }),
     );
-    expect(plan.canvas).toEqual({ width: 320, height: 240, backgroundColor: '#abcdef' });
+    expect(plan.canvas).toEqual({
+      width: 320,
+      height: 240,
+      backgroundColor: '#abcdef',
+      opacity: 1,
+    });
+  });
+
+  it('reads an explicit canvas.opacity (Task 138, issue #170)', () => {
+    const plan = buildScenePlan(
+      baseScene({
+        canvas: { width: 320, height: 240, backgroundColor: '#abcdef', opacity: 0.5 },
+      }),
+    );
+    expect(plan.canvas.opacity).toBe(0.5);
+  });
+
+  it('rejects a non-numeric canvas.opacity', () => {
+    expect(() =>
+      buildScenePlan(
+        baseScene({
+          canvas: { width: 320, height: 240, backgroundColor: '#abcdef', opacity: 'nope' },
+        }),
+      ),
+    ).toThrow(/canvas\.opacity must be a number/);
   });
 
   // Acceptance criterion 2

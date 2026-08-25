@@ -826,6 +826,26 @@ export function buildStandaloneRuntimeScript(): string {
 
     // --- p5 sketch ---
     if (canvasHost && window.p5) {
+      // Task 138 (issue #170): offscreen buffer used only when
+      // canvas.opacity < 1 -- ported from p5Adapter.ts's identical
+      // ensureOpacityBuffer/tint-composite approach so an exported
+      // standalone page stays visually consistent with the editor Preview
+      // and public viewer. One whole-frame alpha multiply, rather than
+      // scaling every shape's own alpha by canvasOpacity, so overlapping
+      // shapes inside the scene still blend with each other the same way
+      // regardless of the overall composite opacity.
+      var opacityBuffer = null;
+      function ensureOpacityBuffer(p, width, height) {
+        if (opacityBuffer && opacityBuffer.width === width && opacityBuffer.height === height) {
+          return opacityBuffer;
+        }
+        if (opacityBuffer) opacityBuffer.remove();
+        opacityBuffer = p.createGraphics(width, height);
+        opacityBuffer.pixelDensity(1);
+        opacityBuffer.noSmooth();
+        return opacityBuffer;
+      }
+
       new window.p5(function (p) {
         p.setup = function () {
           var canvasDef = SCENE.canvas || { width: 800, height: 600, backgroundColor: "#ffffff" };
@@ -848,15 +868,28 @@ export function buildStandaloneRuntimeScript(): string {
           });
           var liveScene = applyOutputsToScene(SCENE, tickResult.continuous);
           var plan = buildDrawPlan(liveScene);
+          var canvasOpacity = (plan.canvas && typeof plan.canvas.opacity === "number")
+            ? plan.canvas.opacity
+            : 1;
+          var useBuffer = canvasOpacity < 1;
+          var target = useBuffer ? ensureOpacityBuffer(p, p.width, p.height) : p;
 
-          p.push();
+          target.push();
           if (plan.randomness && plan.randomness.enabled) {
-            p.randomSeed(plan.randomness.seed);
-            p.noiseSeed(plan.randomness.seed);
+            target.randomSeed(plan.randomness.seed);
+            target.noiseSeed(plan.randomness.seed);
           }
-          p.background(plan.canvas.backgroundColor);
-          plan.nodes.forEach(function (node) { drawNode(p, node, 1); });
-          p.pop();
+          target.background(plan.canvas.backgroundColor);
+          plan.nodes.forEach(function (node) { drawNode(target, node, 1); });
+          target.pop();
+
+          if (useBuffer) {
+            p.clear();
+            p.push();
+            p.tint(255, 255, 255, canvasOpacity * 255);
+            p.image(opacityBuffer, 0, 0);
+            p.pop();
+          }
 
           // Reduced motion: hold the last drawn frame instead of
           // continuing to animate every frame (a static render still

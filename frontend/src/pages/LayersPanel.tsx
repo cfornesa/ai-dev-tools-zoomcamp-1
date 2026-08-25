@@ -7,6 +7,7 @@ import {
 } from 'react';
 
 import type { SceneDocument } from '../api/projects';
+import { getCanvasBackgroundColor, getCanvasOpacity } from './canvasSettingsFields';
 import {
   moveItemToGroup as moveItemToGroupOp,
   moveItemToLayer as moveItemToLayerOp,
@@ -812,6 +813,100 @@ function OutlineRowItem({
   );
 }
 
+/**
+ * Task 138 (issue #170): a persistent, always-visible row for the scene's
+ * own canvas/background settings — `backgroundColor` (existing schema
+ * field, previously reachable only via the Code tab's raw JSON) and the
+ * new `opacity` field.
+ *
+ * ## Placement (documented decision)
+ *
+ * The issue's grooming left two candidate homes: a row in this panel's
+ * outline, or the Preview toolbar. This panel was chosen because it
+ * already is the single place every other layer-like scene-composition
+ * control lives (layer/group/shape rows, `SelectionHud.tsx` for the
+ * active selection) — putting canvas settings anywhere else would split
+ * "things that affect how the scene composites" across two panels for no
+ * reason. Within this panel, the row renders at the *bottom* of the
+ * outline (after the `<ul>`), not the top: this panel's own draw-order
+ * convention (see the "Top of the list = drawn last = on top of
+ * everything below it" hint above) already reads top-to-bottom as
+ * front-to-back, and the canvas/background is the one thing every scene
+ * draws *first*, beneath every layer — so the bottom of the list is where
+ * a reader's existing mental model already expects it, without this
+ * needing to be an actual outline row (it isn't draggable, reorderable,
+ * or nestable, and deliberately doesn't participate in the drag-and-drop
+ * machinery above).
+ *
+ * No visibility toggle is rendered here (issue #170 explicitly excludes
+ * one — the canvas can't be meaningfully hidden), and no lock control
+ * either (the canvas has no lock concept; nothing here can be blocked by
+ * a locked layer/group the way shape edits can).
+ */
+function CanvasSettingsRow({ sceneEditor }: { sceneEditor: SceneEditor }) {
+  const scene = sceneEditor.workingCopy;
+  const [colorError, setColorError] = useState<string | null>(null);
+  const [opacityError, setOpacityError] = useState<string | null>(null);
+
+  if (!scene) return null;
+
+  const backgroundColor = getCanvasBackgroundColor(scene);
+  const opacity = getCanvasOpacity(scene);
+
+  return (
+    <div
+      role="group"
+      aria-label="Canvas settings"
+      className="editor-outline-row editor-outline-row-canvas"
+    >
+      <span className="editor-outline-kind-icon" aria-hidden="true">
+        ▦
+      </span>
+      <span>Canvas</span>
+
+      <label>
+        Background color
+        <input
+          type="color"
+          aria-label="Canvas background color"
+          value={/^#([0-9a-fA-F]{6})$/.test(backgroundColor) ? backgroundColor : '#ffffff'}
+          onChange={(event) => {
+            const outcome = sceneEditor.updateCanvasBackgroundColor(event.target.value);
+            setColorError(outcome.ok ? null : outcome.error);
+          }}
+        />
+      </label>
+      {colorError && (
+        <p role="alert" aria-live="assertive">
+          {colorError}
+        </p>
+      )}
+
+      <label>
+        Canvas opacity
+        <input
+          type="number"
+          min={0}
+          max={1}
+          step={0.01}
+          aria-label="Canvas opacity"
+          defaultValue={opacity}
+          key={opacity}
+          onBlur={(event) => {
+            const outcome = sceneEditor.updateCanvasOpacity(event.target.value);
+            setOpacityError(outcome.ok ? null : outcome.error);
+          }}
+        />
+      </label>
+      {opacityError && (
+        <p role="alert" aria-live="assertive">
+          {opacityError}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
   const canGroup = sceneEditor.multiSelectedIds.length >= 2;
   const hasGroupSelected = sceneEditor.selectedGroup !== null;
@@ -1018,6 +1113,12 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
           ))}
         </ul>
       )}
+
+      {/* Task 138 (issue #170): the canvas/background settings row —
+          intentionally rendered outside (below) the outline `<ul>` above,
+          not as one of its `<li>` rows — see `CanvasSettingsRow`'s own
+          doc comment for the full placement rationale. */}
+      <CanvasSettingsRow sceneEditor={sceneEditor} />
     </div>
   );
 }

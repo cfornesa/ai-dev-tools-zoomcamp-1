@@ -4188,10 +4188,186 @@ detailed acceptance criteria, per this investigation's own scoping
 guidance, pending a dedicated grooming/design pass — which may conclude a
 narrower scope (e.g. read-only generated HTML/CSS/JS alongside the
 still-editable JSON tab) is the right first cut.
-Status: PROPOSED
-GitHub issue: [#174](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/174).
+Status: COMPLETE
+GitHub issue: [#174](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/174)
+(left open for QA/closing by the orchestrator, per this task's
+instructions).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all`
 for "code tab," "HTML CSS JavaScript." #159 (Code tab, JSON-only, closed)
 is the direct predecessor. No existing issue proposes HTML/CSS/JS
 sub-tabs. New; explicitly flagged as needing grooming before
 implementation.
+Resolution (2026-08-25): The initial grooming pass above (read-only-MVP
+scope) was superseded live by the user, who explicitly required genuine
+bidirectional editing — see #174's second, authoritative comment
+("Re-groomed acceptance criteria (PM pass), supersedes the prior
+read-only-MVP comment"). Implemented across two commits
+(`3352b10`, `c955e03`), verified both by re-reading the actual shipped
+code (not just the commit messages) and via a full live pass against a
+real Postgres-backed Django + Vite dev stack.
+
+- **The grammar (`frontend/src/export/codeGrammar.ts`)**: a new,
+  from-scratch generator/parser pair — deliberately *not* shared code
+  with the existing one-directional `generateHtmlExport.ts`/
+  `standaloneRuntimeSource.ts`/`standaloneCameraSource.ts` export
+  generators, which produce a self-contained p5.js-canvas-rendering
+  standalone page, not per-shape DOM/CSS suited to reversing. Full
+  grammar v1, documented in the module's own doc comment (kept as the
+  canonical reference so a future engineer never has to reverse-engineer
+  the parser):
+  - HTML: one `<main id="scene-shapes">` root, one `<div>` per editable
+    shape in document order (reordering divs reorders `scene.shapes`
+    z-order — the one structural edit this grammar supports), each
+    carrying `data-shape-id`/`data-shape-type` (both immutable) and
+    `data-layer-id`/`data-group-id` (informational, also immutable via
+    this grammar), plus a `class` allowlist (`scene-shape`, the type
+    name, `hidden`, `locked`).
+  - CSS: one rule for `#scene-shapes` (canvas backgroundColor/width/
+    height/opacity) and one rule per `#shape-{id}` mapping `left`/`top`
+    -> position, `opacity` -> transform opacity, `background-color`/
+    `border-color`/`border-width` -> fill/stroke/strokeWidth, `transform:
+    rotate()/scale()` -> rotation/scaleX/scaleY, `visibility` -> visible
+    (kept redundant with the `hidden` class token by design), and
+    shape-type-specific declarations: `width`/`height` (rect ->
+    width/height; circle, must match -> radius), `border-radius` (rect
+    only -> cornerRadius), and `--x2`/`--y2` custom properties (line only
+    -> the second endpoint, since CSS has no natural second-point
+    property).
+  - A declaration omitted from a saved rule leaves that field unchanged
+    (not reset to a default) — this is what makes "regenerate -> re-save
+    unchanged -> no scene mutation" hold, verified both by
+    `codeGrammar.test.ts` and live (see below).
+  - **What's OUT, and why (all pre-authorized by #174's "Explicit
+    engineering latitude" clause)**: `particleEmitter` shapes are
+    excluded entirely from the editable HTML/CSS surface (no `<div>`
+    generated, never touched by the reverse parser, always preserved
+    unchanged and appended after editable shapes) — consistent with
+    `sceneShapes.ts`'s own pre-existing exclusion of particle emitters
+    from direct Visual-tab editing, not a new boundary. `path` shape
+    vertex geometry (`points`/`closed`) has no representation in this
+    grammar — a path's universal fields (position/rotation/scale/
+    opacity/fill/stroke/strokeWidth/visible/locked) are fully editable
+    like any other shape, but vertex editing stays Visual-tab-only.
+    Adding, removing, retyping, regrouping, or relayering shapes via the
+    Code tab is out of scope — the HTML grammar can only reorder and
+    restyle the *existing* shape set, keeping it a pure, always-reversible
+    projection rather than a second shape-CRUD surface. **JavaScript is
+    not reverse-parsed at all in this pass** — the JS sub-tab shows a
+    real, live-regenerated, editable `<textarea>` (reusing
+    `standaloneRuntimeSource.ts`/`standaloneCameraSource.ts`), but
+    `isEditableJsUnchanged` is the only check its Save performs: saving
+    the text back byte-for-byte unchanged is a safe no-op, and any other
+    edit is rejected with an explicit, actionable message pointing the
+    user at the Visual tab (behavior/logic) or HTML/CSS sub-tabs (shape
+    geometry/style) instead. Follow-up filed and cross-linked below.
+- **Wiring (`frontend/src/pages/EditorWorkspace.tsx`,
+  `useSceneEditor.ts`)**: the Code tab now has JSON/HTML/CSS/JS sub-tabs,
+  all mounted simultaneously (toggled via `hidden`, never conditionally
+  unmounted) so switching between them never loses an in-progress unsaved
+  edit in any of them — verified live: an in-progress, unsaved edit in
+  the HTML box (an inserted HTML comment marker) survived switching
+  through JSON -> JS -> back to HTML, and the JS box independently
+  retained its own unsaved edit and rejection-error state through the
+  same round-trip. HTML and CSS share one Save action (a CSS rule
+  targets an id declared in the HTML, so they're interdependent) that
+  reverse-parses both and applies the result via a single
+  `sceneEditor.commitScene()` call — one undo/redo step for the whole
+  Code-tab save, verified live: after saving a CSS color change, one
+  Undo fully reverted the shape to its pre-save color in a single step.
+  The JSON sub-tab's own save path (`setWorkingCopy` directly) is
+  completely unchanged from #159, confirmed both by code inspection and
+  live: an invalid-JSON edit still produces the exact same "Invalid scene
+  JSON — not applied: ..." error, and the scene is left untouched.
+- **Live verification performed** (real Postgres + Django +
+  `AI_PROVIDER=fake` + Vite dev stack, signed in as the `e2e_owner`
+  fixture user from `manage.py e2e_fixtures create --json`): (1) adding a
+  shape in the Visual tab and switching to Code showed it correctly in
+  both HTML and CSS; (2) editing the CSS `background-color` for that
+  shape and saving updated the Visual tab's rendered fill color
+  immediately (blue -> red, and separately blue -> green); (3) editing a
+  shape's fill via the Inspector's Visual-tab color field regenerated the
+  CSS sub-tab's `background-color` declaration to match; (4) an
+  out-of-grammar HTML edit (an injected `<span>` inside `<main
+  id="scene-shapes">`) was rejected at save with the specific message
+  "Element 2 inside `<main id="scene-shapes">` is a `<span>`, but only
+  `<div>` shape elements are supported," and the scene was left
+  completely unmutated; (5) an edit to the JS sub-tab was rejected with
+  the documented actionable message and no scene mutation; (6) a single
+  Undo after a Code-tab CSS save fully reverted the whole change in one
+  step; (7) making the most recent scene edit via the Code tab (a CSS
+  color change), saving the project (produced a clean, single new
+  `SceneVersion` — "Saved as version 2"), then submitting an AI edit
+  proposal (#158, via the fake provider) worked correctly and produced a
+  further clean single new version ("Saved as version 3") on Accept, with
+  the Code-tab-originated shape color preserved through the AI edit —
+  confirming #158 is unaffected by whether the scene's last edit came
+  from Visual or Code.
+- **Security**: `frontend/src/export/safeEmbed.ts`'s existing injection
+  hardening applies only to the separate one-directional standalone-export
+  path and is untouched by this task. Confirmed the new editable-and-
+  rendered surface doesn't introduce an equivalent new risk: `codeGrammar.ts`
+  never uses `dangerouslySetInnerHTML`, `eval`, `new Function`, or an
+  `iframe srcdoc` (grepped both this module and `EditorWorkspace.tsx`/
+  `useSceneEditor.ts` to confirm); the HTML sub-tab's hand-typed text is
+  parsed with `DOMParser` into a detached, never-attached `Document` (so
+  even a `<script>` tag typed into the HTML box cannot execute — browsers
+  never execute script elements belonging to a document that was never
+  inserted into the live DOM); every value the reverse parser extracts
+  (ids, colors, pixel lengths, unit-interval numbers, transform functions)
+  is validated against a strict pattern before being written into a
+  `SceneDocument` field, mirroring `safeEmbed.ts`'s own "validate before
+  embedding" posture; and the JS sub-tab is compare-only — hand-edited JS
+  is never `eval`'d, executed, or live-previewed at all in this pass.
+- **Test counts**: `make check` (backend + frontend) green at the point
+  this resolution note was written: backend 629 passed / 22 skipped;
+  frontend 1801/1801 passed (one `behaviorRuntime.test.ts` smoothing test
+  flaked once on a full concurrent `make check` run and passed cleanly on
+  two subsequent isolated/full reruns — a pre-existing timing-sensitive
+  test last touched by task 72, unrelated to this task's changes, not a
+  regression introduced here).
+- **Follow-up filed (discovery-gated)**: full JavaScript reverse-parsing
+  into the scene's `graph`/`bindings` interaction-runtime model (node/
+  connection/behavior-binding editing via the JS sub-tab) is explicitly
+  out of scope for this task, as pre-authorized by #174's own grooming
+  comment. Searched `_docs/tasks.md` and `gh issue list --state all
+  --search "javascript graph bindings"` / `--search "code tab"` first —
+  no existing duplicate. Filed as
+  [#175](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/175)
+  and task 143 below.
+
+## 143. Reverse-parse the JavaScript sub-tab into the scene's graph/bindings interaction-runtime model
+
+Goal: Extend task 142/#174's Code-tab grammar so hand-edited JavaScript in
+the JS sub-tab can be reverse-parsed back onto the scene's `graph`/
+`bindings` interaction-runtime model (nodes, connections, behavior/camera
+bindings), not just viewed and compare-saved.
+Description: Task 142 shipped a genuine bidirectional HTML/CSS <->
+`SceneDocument` grammar for shape geometry/style/color/opacity/
+visibility/lock, but explicitly deferred JavaScript reverse-parsing as an
+authorized, documented scoping decision (per #174's own "Explicit
+engineering latitude" clause allowing "a narrower first cut or a
+follow-up issue" for "complex interaction-runtime graph/connection
+editing via raw JS"). Today the JS sub-tab
+(`frontend/src/export/codeGrammar.ts`'s `generateEditableJs`) shows a
+live-generated, editable view of the interaction runtime, but
+`isEditableJsUnchanged` is the only check its Save performs — saving it
+back unchanged is a no-op, and any other edit is rejected with an
+actionable message. This task needs its own grooming pass to define:
+what JS constructs map onto which `graph`/`bindings` fields (mirroring
+`codeGrammar.ts`'s existing HTML/CSS documentation style); whether/how
+graph node add/remove should be supported via JS (the interaction-runtime
+graph doesn't have the same shape-identity constraints the HTML/CSS
+grammar's "no add/remove" rule was built around); how to guarantee the
+JS sub-tab is never `eval`'d or otherwise executed as live code when
+hand-edited (parse via an AST walk against a whitelisted subset, the same
+"never eval, never execute" posture `codeGrammar.ts` and `safeEmbed.ts`
+already hold); and interaction with undo/redo (one Code-tab save = one
+undo step, matching the HTML/CSS grammar) and draft-autosave (#125).
+Status: PROPOSED
+GitHub issue: [#175](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/175).
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
+--search "javascript graph bindings"` / `--search "code tab"` before
+filing — no existing issue proposes JS-to-graph/bindings reverse parsing.
+New; task 142/#174 (the HTML/CSS half of the same original request) is
+the direct predecessor; explicitly flagged as needing its own grooming
+pass before implementation.

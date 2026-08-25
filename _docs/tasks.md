@@ -3810,9 +3810,125 @@ clarification).
 Out of scope: Visibility toggle for the canvas (explicitly excluded);
 per-shape opacity and camera-overlay opacity (both already exist,
 unaffected).
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#170](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/170)
+(left open for QA/closing by the orchestrator, per this task's
+instructions).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
 --search "canvas background"` / `"background color"` — no existing issue
 adds a UI control for scene-level background color or canvas-level
 opacity. New, not a duplicate.
+Resolution (2026-08-25): Implemented both controls and settled every
+sub-decision this task's own grooming flagged as open:
+
+- **Control placement (backgroundColor + new opacity)**: a persistent
+  "Canvas" settings row in `LayersPanel.tsx` (`CanvasSettingsRow`),
+  rendered *below* the outline `<ul>` rather than as one of its
+  draggable/reorderable `<li>` rows, and below rather than above the
+  layer list. Chosen over the Preview-toolbar alternative because this
+  panel is already the single place every other layer-like composition
+  control lives (layer/group/shape rows, `SelectionHud.tsx`); splitting
+  canvas settings into a second panel for no functional reason would
+  just make them harder to find. Placed at the bottom, not the top,
+  because this panel's own draw-order convention ("Top of the list =
+  drawn last = on top of everything below it") already reads
+  top-to-bottom as front-to-back, and the canvas/background is the one
+  thing every scene draws *first* — the bottom of the list is where that
+  existing mental model already points. No visibility toggle and no lock
+  control were added (the canvas has no lock concept and #170 explicitly
+  excludes a visibility toggle), and "layer-like configurations... with
+  the exception of visibility" was scoped narrowly to exactly the two
+  concretely-named controls (background color, opacity), per this
+  issue's groomed acceptance criteria — no lock/reorder/fill-pattern
+  control was invented for the canvas.
+- **New field shape and schemaVersion**: `canvas.opacity`, a
+  `unitInterval` (0-1, default-when-absent 1), added to
+  `schema/scene.schema.json`'s `canvas` object but deliberately **not**
+  added to `canvas`'s `required` list, and **no `schemaVersion` bump**.
+  `schema/README.md` now documents this explicitly as a general rule
+  (an additive, optional field whose absence every reader already
+  treats as a documented default doesn't need a version bump — Task 82's
+  `onboardingHints` is the existing precedent; `canvas.opacity` is the
+  second). A bump was rejected because it would be pure churn: every
+  validator, fixture, and renderer already needs "field absent -> treat
+  as 1" logic regardless of the document's declared version, so gating
+  that behind `schemaVersion: 2` would only add a parallel document
+  shape with no actual behavioral difference from V1-plus-a-default.
+- **Compositing mechanics**: canvas opacity composites the *whole
+  rendered frame* (background + trails + shapes + particles, already
+  flattened) as one layer, not each shape's own alpha scaled
+  individually. Rejected the alternative (multiply every shape's own
+  fill/stroke alpha by `canvasOpacity`) because it double-blends
+  overlapping shapes — two shapes stacked on each other would darken/
+  lighten their overlap in a way a single "whole scene at X% opacity"
+  slider should not. Implemented as an offscreen-buffer-plus-tint
+  composite: `p5Adapter.ts`'s `createP5ScenePreview` draws into a
+  `p5.Graphics` buffer at full internal opacity when `canvas.opacity < 1`
+  (shape-over-shape blending inside the scene is therefore unaffected),
+  then draws that buffer onto the real canvas once via
+  `tint(255,255,255,opacity*255)` — a single alpha multiply for the
+  whole composite. Ported the identical approach into
+  `standaloneRuntimeSource.ts` (the hand-written export runtime) so a
+  downloaded standalone HTML export matches. The backend Pillow gallery-
+  thumbnail rasterizer (`scenes/thumbnails.py`) has no offscreen-buffer
+  concept, so the equivalent there is a single final-image alpha-channel
+  scale (`Image.split()`/`.point()`/`Image.merge()`) after every node has
+  already drawn into the RGBA composite at full internal opacity — same
+  "flatten first, scale once" result via the tool this renderer actually
+  has.
+- **Surface coverage (no deferrals needed)**: every surface the
+  acceptance criteria list — editor Preview, thumbnail generation,
+  project export, and the public project viewer — already routes through
+  one of exactly two rendering implementations
+  (`createP5ScenePreview`/`p5Adapter.ts`, or the hand-written compact
+  export runtime), so applying `canvas.opacity` in those two places
+  covers the editor Preview, the public viewer (`PublicProjectViewer.tsx`
+  calls the same `createP5ScenePreview`), the frontend social-thumbnail
+  ZIP capture (`captureSocialThumbnail.ts` also calls
+  `createP5ScenePreview`), and the standalone HTML export
+  (`standaloneRuntimeSource.ts`) without duplicating logic. The one
+  additional, genuinely separate renderer discovered during
+  implementation — `scenes/thumbnails.py`'s server-side Pillow rasterizer
+  for gallery-card thumbnails (Task 54) — was also updated rather than
+  deferred, since the change was a small, self-contained final-alpha
+  scale. No surface was left inconsistent, so no follow-up issue was
+  filed for a deferred surface.
+Verified: `schema/scene.schema.json`/`schema/README.md` updated;
+`scenes/validation.py` needs no code change (it loads the schema file
+directly via `jsonschema`); `frontend/src/validation/scene.ts` likewise
+needs no code change (same reason) — both gained new test coverage
+instead (`tests/test_scene_validation.py::TestCanvasOpacity`,
+`frontend/src/validation/scene.test.ts`'s "canvas.opacity" describe
+block) proving absent/in-range/out-of-range/wrong-type behavior matches
+on both sides. New `frontend/src/pages/canvasSettingsFields.ts` (+
+`.test.ts`) holds the pure validation/getter logic the `CanvasSettingsRow`
+UI and `useSceneEditor.ts`'s new `updateCanvasBackgroundColor`/
+`updateCanvasOpacity` mutations call
+(`useSceneEditor.canvasSettings.test.ts`). Compositing correctness is
+unit-tested directly against real pixel reads in
+`frontend/src/render/p5Adapter.test.ts` (new "canvas.opacity" describe
+block: default-opaque, alpha scaling, shape-plus-background scaling
+together, opacity 0, and restoring opacity 1) and
+`tests/test_thumbnails.py` (five new tests, including one proving a
+reduced-opacity gallery card visibly fades toward the always-opaque-white
+flatten backdrop). Save/reload persistence is verified by a new backend
+test, `tests/test_scene_version_save_api.py::
+test_canvas_background_color_and_opacity_round_trip_through_save_and_reload`,
+which POSTs a scene with both fields set, then GETs the version back and
+asserts both survive unchanged (plus a variant proving a scene that
+predates `canvas.opacity` still saves/reloads fine without it). `make
+check` (backend + frontend) passes: 629 backend tests passed (22
+pre-existing skips), 1770 frontend tests passed, both zero regressions.
+Live-verified against a local Postgres-backed dev stack (real `/accounts/
+login/` sign-in as an `e2e_fixtures`-created user, not Google OAuth):
+created a blank project, set the Layers panel's new Canvas row to
+background `#3355ff` / opacity `0.4`, confirmed the Preview `<canvas>`'s
+actual pixel data read back as `rgba(50,85,255,102)` (102/255 ≈ 0.4,
+exactly the configured opacity), saved (version 2), fully reloaded the
+page, reopened the project, and confirmed the same exact pixel value and
+the same `0.4`/`#3355ff` field values persisted — plus confirmed the
+gallery card's thumbnail for this project visibly showed the background
+faded toward white (the documented always-opaque-white gallery-card
+flatten), proving the backend Pillow thumbnail path picked up the new
+field too. e2e fixture users were cleaned up afterward (`e2e_fixtures
+cleanup`); no data was left behind in the local dev database.

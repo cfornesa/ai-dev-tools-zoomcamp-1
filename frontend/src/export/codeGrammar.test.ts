@@ -8,6 +8,7 @@ import {
   generateEditableJs,
   isEditableJsUnchanged,
   parseEditableHtmlAndCss,
+  parseEditableJs,
 } from './codeGrammar';
 
 function baseScene(overrides: Partial<SceneDocument> = {}): SceneDocument {
@@ -108,11 +109,185 @@ describe('generateEditableHtml / generateEditableCss: forward direction', () => 
     expect(css).not.toContain('emitter-1');
   });
 
-  it('the JS sub-tab documents that JS is not yet reverse-parsed', () => {
+  it('the JS sub-tab documents the Grammar v2 bindings whitelist and round-trips unchanged', () => {
     const js = generateEditableJs(baseScene());
-    expect(js).toContain('NOT YET REVERSE-PARSED');
+    expect(js).toContain('Grammar v2');
+    expect(js).toContain('const bindings = [];');
     expect(isEditableJsUnchanged(js, baseScene())).toBe(true);
     expect(isEditableJsUnchanged(js + '\n// hand edit', baseScene())).toBe(false);
+  });
+
+  it('serializes an existing binding into the editable bindings array', () => {
+    const scene = baseScene({
+      bindings: [
+        {
+          id: 'binding-1',
+          signal: 'indexTipX',
+          handTarget: 'primary',
+          targetScope: 'shape',
+          targetId: 'shape-1',
+          targetProperty: 'positionX',
+          composition: 'replace',
+          mapping: { inMin: 0, inMax: 1, outMin: 0, outMax: 800 },
+        },
+      ],
+    });
+    const js = generateEditableJs(scene);
+    expect(js).toContain('const bindings = [');
+    expect(js).toContain('id: "binding-1"');
+    expect(js).toContain('signal: "indexTipX"');
+    expect(js).toContain('mapping: { inMin: 0, inMax: 1, outMin: 0, outMax: 800 }');
+  });
+});
+
+describe('parseEditableJs: Grammar v2 reverse direction (bindings)', () => {
+  it('round-trips unchanged: regenerated JS re-saved produces no scene mutation', () => {
+    const scene = baseScene({
+      bindings: [
+        {
+          id: 'binding-1',
+          signal: 'palmY',
+          handTarget: 'either',
+          targetScope: 'scene',
+          targetId: null,
+          targetProperty: 'globalForce',
+          composition: 'replace',
+          smoothing: 0.5,
+        },
+      ],
+    });
+    const js = generateEditableJs(scene);
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(validateScene(result.scene).valid).toBe(true);
+    expect(generateEditableJs(result.scene)).toBe(js);
+  });
+
+  it('adds a new binding via the JS sub-tab', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const bindings = [];',
+      [
+        'const bindings = [',
+        '  {',
+        '    id: "binding-new",',
+        '    signal: "pinchStrength",',
+        '    handTarget: "right",',
+        '    targetScope: "group",',
+        '    targetId: "group-1",',
+        '    targetProperty: "scaleX",',
+        '    composition: "replace"',
+        '  }',
+        '];',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const bindings = result.scene.bindings as any[];
+    expect(bindings).toHaveLength(1);
+    expect(bindings[0]).toMatchObject({
+      id: 'binding-new',
+      signal: 'pinchStrength',
+      handTarget: 'right',
+      targetScope: 'group',
+      targetId: 'group-1',
+      targetProperty: 'scaleX',
+      composition: 'replace',
+    });
+  });
+
+  it('removes a binding via the JS sub-tab', () => {
+    const scene = baseScene({
+      bindings: [
+        {
+          id: 'binding-1',
+          signal: 'palmY',
+          handTarget: 'either',
+          targetScope: 'scene',
+          targetId: null,
+          targetProperty: 'globalForce',
+          composition: 'replace',
+        },
+      ],
+    });
+    const js = generateEditableJs(scene).replace(
+      /const bindings = \[[\s\S]*?\];/,
+      'const bindings = [];',
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.scene.bindings).toEqual([]);
+  });
+
+  it('rejects an out-of-whitelist field on a binding with a specific, actionable error', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const bindings = [];',
+      [
+        'const bindings = [',
+        '  {',
+        '    id: "binding-new",',
+        '    signal: "pinchStrength",',
+        '    handTarget: "right",',
+        '    targetScope: "scene",',
+        '    targetId: null,',
+        '    targetProperty: "scaleX",',
+        '    composition: "replace",',
+        '    evalCode: "alert(1)"',
+        '  }',
+        '];',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join(' ')).toMatch(/unsupported field.*"evalCode"/);
+  });
+
+  it('rejects an edit outside the bindings array (the generated runtime code)', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene) + '\n// hand edit outside the markers';
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join(' ')).toMatch(/not part of the supported grammar yet/);
+  });
+
+  it('rejects an invalid composition value', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const bindings = [];',
+      [
+        'const bindings = [',
+        '  {',
+        '    id: "binding-new",',
+        '    signal: "pinchStrength",',
+        '    handTarget: "right",',
+        '    targetScope: "scene",',
+        '    targetId: null,',
+        '    targetProperty: "scaleX",',
+        '    composition: "add"',
+        '  }',
+        '];',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join(' ')).toMatch(/"composition" must be "replace"/);
+  });
+
+  it('never executes hand-edited JS: a binding array with a function-call-shaped value is rejected, not run', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const bindings = [];',
+      'const bindings = [ { id: alert(1), signal: "pinchStrength" } ];',
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
   });
 });
 

@@ -102,12 +102,66 @@
  *   *existing* shape set. This keeps the grammar a pure, always-reversible
  *   projection instead of a second shape-CRUD surface to keep consistent
  *   with the Visual tab's own.
- * - **The `graph`/`bindings` interaction-runtime model, and therefore the
- *   JavaScript sub-tab, is not reverse-parsed at all in this pass** -- see
- *   `generateEditableJs`'s doc comment. This is the "narrower first cut"
- *   for JS explicitly pre-authorized by issue #174's grooming comment.
- *   Follow-up: issue filed for full graph/connection <-> JS mapping (see
- *   `_docs/tasks.md` task 142's resolution notes).
+ * - **Graph nodes/connections are NOT reverse-parsed in Grammar v2 either**
+ *   -- see the "Grammar v2 (JS)" section below for what IS now supported
+ *   (bindings only) and why node/connection editing is deferred to a
+ *   further follow-up (issue #176 / `_docs/tasks.md` task 144).
+ *
+ * ## Grammar v2 (JS) -- what's IN (task 143 / issue #175)
+ *
+ * The JS sub-tab's text has exactly two parts:
+ * 1. An editable `bindings` array literal, delimited by two fixed sentinel
+ *    comment lines (`BINDINGS_START` / `BINDINGS_END` below):
+ *    `const bindings = [ { ... }, { ... } ];`. Each array element is a
+ *    plain JS object literal (not JSON -- unquoted or quoted keys both
+ *    work, single or double-quoted strings, `//`/`/* *\/` comments allowed
+ *    between tokens) representing exactly one `scene.bindings[]` entry.
+ *    Supported fields, mirroring `schema/scene.schema.json`'s `binding`
+ *    definition exactly: `id`, `signal`, `handTarget`, `targetScope`,
+ *    `targetId`, `targetProperty`, `composition` (required; `composition`
+ *    must be the literal string `"replace"`, the only value V1 supports),
+ *    plus optional `mapping` (`{ inMin, inMax, outMin, outMax }`, all
+ *    numbers), `smoothing`/`closeThreshold`/`farThreshold`/
+ *    `releaseThreshold` (numbers in [0, 1]), and `holdTimeMs` (integer in
+ *    [0, 10000]). Any other field name, on a binding or inside `mapping`,
+ *    is rejected by name. The whole array is a wholesale replacement of
+ *    `scene.bindings` -- unlike the HTML/CSS grammar's shapes (which have
+ *    Visual-tab-only add/remove per #174's decision), bindings carry no
+ *    shape-identity/ordering constraint, so add/edit/remove is fully
+ *    supported simply by adding/editing/removing entries in this array.
+ * 2. Everything else (the explanatory banner comment above the bindings
+ *    block, and the generated runtime/camera boilerplate below it) is
+ *    immutable in this pass -- it must be saved back byte-for-byte
+ *    unchanged, exactly like Grammar v1's whole-file behavior. This is
+ *    where graph node/connection editing would live in a future pass.
+ *
+ * Parsing never uses `eval`, `new Function`, or any other live-execution
+ * path: `parseEditableJs` below locates the two sentinel lines with plain
+ * string search, then walks the bindings array text with a minimal
+ * hand-rolled recursive-descent literal recognizer (`parseJsLiteral`) that
+ * understands exactly: object literals, array literals, quoted strings,
+ * numbers, `true`/`false`/`null`, and `//`/`/* *\/` comments -- nothing
+ * else (no identifiers-as-values, no function calls, no operators, no
+ * template literals). This mirrors Grammar v1's own posture (`DOMParser`
+ * for HTML, a hand-rolled tokenizer for CSS) rather than adding a new
+ * parser dependency to the frontend toolchain, per AGENTS.md's "Dependencies
+ * are added in package.json, do not add one without asking."
+ *
+ * ## Grammar v2 (JS) -- what's OUT, and why (documented latitude per #175)
+ *
+ * - **Graph nodes and connections** (`scene.graph.nodes`/`.connections`)
+ *   are not reverse-parsed in this pass -- issue #175's own grooming
+ *   comment pre-authorizes shipping "camera/gesture binding edits only,
+ *   deferring node/connection add/remove to a further follow-up" as a
+ *   valid narrower first cut, as long as something genuinely new is
+ *   editable-and-saveable, which bindings are. Editing the graph still
+ *   works from the Visual tab (`GraphView.tsx`/`GraphListView.tsx`,
+ *   `BehaviorCardsPanel.tsx`). Follow-up filed: issue #176 / task 144.
+ * - **Everything outside the bindings array** (the banner text and the
+ *   generated runtime/camera script) stays compare-only, exactly as
+ *   Grammar v1 left the entire JS sub-tab -- this is what makes "saving
+ *   this tab back unchanged is a safe no-op" continue to hold for the
+ *   parts that aren't newly editable.
  */
 import type { SceneDocument } from '../api/projects';
 import {
@@ -119,11 +173,116 @@ import {
 import { buildStandaloneCameraScript } from './standaloneCameraSource';
 import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
 
-export const CODE_GRAMMAR_VERSION = 1;
+export const CODE_GRAMMAR_VERSION = 2;
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const SHAPE_TYPES: ShapeType[] = ['circle', 'rect', 'line', 'path'];
+
+// ---------------------------------------------------------------------------
+// Grammar v2 (JS): bindings whitelist -- see the module doc comment's
+// "Grammar v2 (JS)" section for the full rationale. These sets mirror
+// `schema/scene.schema.json`'s `binding` definition's enums exactly.
+// ---------------------------------------------------------------------------
+
+const BINDING_SIGNALS = new Set([
+  'indexTipX',
+  'indexTipY',
+  'palmX',
+  'palmY',
+  'handDepth',
+  'handSpeed',
+  'pinchStrength',
+  'pinchDistance',
+  'gestureConfidence',
+  'handPresence',
+  'gestureState:openPalm',
+  'gestureState:closedFist',
+  'gestureState:pointingUp',
+  'gestureState:thumbsUp',
+  'gestureState:victory',
+  'gestureState:none',
+  'event:pinchStart',
+  'event:pinchEnd',
+  'event:gestureEnter',
+  'event:gestureExit',
+  'event:handAppear',
+  'event:handDisappear',
+  'handDistance',
+  'handsClose',
+  'handsFar',
+  'event:handsBecameClose',
+  'event:handsBecameFar',
+]);
+const BINDING_HAND_TARGETS = new Set(['primary', 'left', 'right', 'either']);
+const BINDING_TARGET_SCOPES = new Set(['shape', 'group', 'scene', 'interaction']);
+const BINDING_TARGET_PROPERTIES = new Set([
+  'positionX',
+  'positionY',
+  'scaleX',
+  'scaleY',
+  'rotation',
+  'opacity',
+  'fill',
+  'stroke',
+  'backgroundColor',
+  'palette',
+  'globalForce',
+  'triggerPreset',
+  'toggleLayer',
+  'emitParticles',
+  'resetScene',
+]);
+const BINDING_FIELDS = new Set([
+  'id',
+  'signal',
+  'handTarget',
+  'targetScope',
+  'targetId',
+  'targetProperty',
+  'composition',
+  'mapping',
+  'smoothing',
+  'closeThreshold',
+  'farThreshold',
+  'releaseThreshold',
+  'holdTimeMs',
+]);
+const BINDING_REQUIRED_FIELDS = [
+  'id',
+  'signal',
+  'handTarget',
+  'targetScope',
+  'targetId',
+  'targetProperty',
+  'composition',
+] as const;
+const MAPPING_FIELDS = new Set(['inMin', 'inMax', 'outMin', 'outMax']);
+const BINDING_UNIT_INTERVAL_FIELDS = [
+  'smoothing',
+  'closeThreshold',
+  'farThreshold',
+  'releaseThreshold',
+] as const;
+
+type RawBinding = {
+  id: string;
+  signal: string;
+  handTarget: string;
+  targetScope: string;
+  targetId: string | null;
+  targetProperty: string;
+  composition: 'replace';
+  mapping?: Record<string, number>;
+  smoothing?: number;
+  closeThreshold?: number;
+  farThreshold?: number;
+  releaseThreshold?: number;
+  holdTimeMs?: number;
+};
+
+const BINDINGS_START = '// >>> editable-bindings:start (Grammar v2 -- see codeGrammar.ts)';
+const BINDINGS_END = '// >>> editable-bindings:end';
 
 type Canvas = { width: number; height: number; backgroundColor: string; opacity?: number };
 
@@ -226,43 +385,98 @@ export function generateEditableCss(scene: SceneDocument | null): string {
   return blocks.join('\n\n');
 }
 
-/**
- * Generates the JavaScript sub-tab's content: a documented, read-generated
- * view of this scene's interaction runtime (reusing the existing
- * one-directional `standaloneRuntimeSource.ts` / `standaloneCameraSource.ts`
- * generators), prefixed with an explicit banner explaining the current
- * grammar boundary. This sub-tab IS a real, editable textarea (per issue
- * #174's re-groomed acceptance criteria), but the reverse direction for JS
- * is explicitly out of scope for this pass -- see the module doc comment's
- * "what's OUT" section. `isEditableJsUnchanged` below is the only check
- * a save against this sub-tab performs: identical text saves as a no-op
- * (zero scene mutation, matching the round-trip requirement), and any
- * other edit is rejected with an actionable message rather than silently
- * applied or silently dropped.
- */
-export function generateEditableJs(scene: SceneDocument | null): string {
-  if (!scene) return '';
-  const banner = [
+function rawBindingsOf(scene: SceneDocument): RawBinding[] {
+  const bindings = (scene as { bindings?: unknown }).bindings;
+  return Array.isArray(bindings) ? (bindings as RawBinding[]) : [];
+}
+
+function jsStringLiteral(value: string): string {
+  // JSON.stringify's double-quoted escaping is a safe, standard superset of
+  // what this grammar's own string parser (`parseJsLiteral` below) accepts
+  // back -- this is pure serialization, never `eval`/`new Function`.
+  return JSON.stringify(value);
+}
+
+/** Renders one `scene.bindings[]` entry as a JS object literal -- see the
+ * module doc comment's "Grammar v2 (JS)" section for the exact field list. */
+function renderBindingLiteral(binding: RawBinding): string {
+  const lines: string[] = [];
+  lines.push(`    id: ${jsStringLiteral(binding.id)},`);
+  lines.push(`    signal: ${jsStringLiteral(binding.signal)},`);
+  lines.push(`    handTarget: ${jsStringLiteral(binding.handTarget)},`);
+  lines.push(`    targetScope: ${jsStringLiteral(binding.targetScope)},`);
+  lines.push(
+    `    targetId: ${binding.targetId === null || binding.targetId === undefined ? 'null' : jsStringLiteral(binding.targetId)},`,
+  );
+  lines.push(`    targetProperty: ${jsStringLiteral(binding.targetProperty)},`);
+  lines.push(`    composition: ${jsStringLiteral(binding.composition ?? 'replace')},`);
+  if (binding.mapping && Object.keys(binding.mapping).length > 0) {
+    const parts = Object.entries(binding.mapping).map(([k, v]) => `${k}: ${num(v)}`);
+    lines.push(`    mapping: { ${parts.join(', ')} },`);
+  }
+  for (const field of BINDING_UNIT_INTERVAL_FIELDS) {
+    const value = binding[field];
+    if (value !== undefined) lines.push(`    ${field}: ${num(value)},`);
+  }
+  if (binding.holdTimeMs !== undefined) lines.push(`    holdTimeMs: ${num(binding.holdTimeMs)},`);
+  lines[lines.length - 1] = lines[lines.length - 1].replace(/,$/, '');
+  return `  {\n${lines.join('\n')}\n  }`;
+}
+
+/** Renders the whole editable `const bindings = [...]` statement -- see
+ * the module doc comment's "Grammar v2 (JS)" section. */
+function renderBindingsArray(bindings: RawBinding[]): string {
+  if (bindings.length === 0) return 'const bindings = [];';
+  return `const bindings = [\n${bindings.map(renderBindingLiteral).join(',\n')}\n];`;
+}
+
+/** The part of the JS sub-tab that Grammar v2 does NOT reverse-parse (the
+ * explanatory banner plus the generated runtime/camera boilerplate) --
+ * split out so both `generateEditableJs` and `parseEditableJs` build/compare
+ * it from the exact same logic. Depends only on `scene.bindings`'s presence
+ * (a pre-existing, unchanged `hasCamera` gate carried over from v1), never
+ * on the bindings' actual content, so an edit to the bindings array alone
+ * never touches this part's text. */
+function immutableJsShell(scene: SceneDocument): { header: string; footer: string } {
+  const header = [
     "// Generated from this scene's interaction runtime (graph + bindings).",
-    "// NOT YET REVERSE-PARSED: this repo's Code-tab grammar (task 142 / issue",
-    '// #174) does not map hand-edited JavaScript back onto the graph/bindings',
-    '// model yet -- that is tracked as an explicit follow-up (see',
-    "// _docs/tasks.md task 142's resolution notes for the issue number).",
-    '// Editing shapes/behaviors here has no effect; use the Visual tab (for',
-    '// behaviors/logic) or the HTML/CSS sub-tabs (for shape geometry/style)',
-    '// instead. Saving this tab unchanged is a safe no-op.',
+    '// Grammar v2 (task 143 / issue #175): the "bindings" array between the',
+    '// sentinel comment lines just below is editable -- add, edit, or',
+    '// remove entries to change camera/gesture behavior bindings. See',
+    "// codeGrammar.ts's module doc comment for the exact whitelist of",
+    '// supported fields. Graph nodes/connections are NOT yet reverse-parsed',
+    "// (tracked as a follow-up -- see _docs/tasks.md task 144's resolution",
+    '// notes for the issue number); the runtime code below the closing',
+    '// sentinel must be saved back unchanged, or the save is rejected.',
     '',
   ].join('\n');
   const hasCamera = Array.isArray((scene as { bindings?: unknown[] }).bindings);
-  return (
-    banner +
+  const footer =
+    '\n\n' +
     buildStandaloneRuntimeScript() +
-    (hasCamera ? '\n\n' + buildStandaloneCameraScript() : '')
-  );
+    (hasCamera ? '\n\n' + buildStandaloneCameraScript() : '');
+  return { header, footer };
 }
 
-/** Used by the Code tab's JS sub-tab save handler -- see
- * `generateEditableJs`'s doc comment for why JS is compare-only in v1. */
+/**
+ * Generates the JavaScript sub-tab's content (Grammar v2, task 143 / issue
+ * #175): an editable `const bindings = [...]` array literal reflecting
+ * `scene.bindings` exactly, delimited by fixed sentinel comment lines,
+ * followed by the same compare-only banner + generated runtime/camera
+ * boilerplate Grammar v1 showed for the whole file. See the module doc
+ * comment's "Grammar v2 (JS)" section for the full field-by-field mapping.
+ */
+export function generateEditableJs(scene: SceneDocument | null): string {
+  if (!scene) return '';
+  const shell = immutableJsShell(scene);
+  const bindingsSrc = renderBindingsArray(rawBindingsOf(scene));
+  return `${shell.header}${BINDINGS_START}\n${bindingsSrc}\n${BINDINGS_END}${shell.footer}`;
+}
+
+/** Used by the Code tab's JS sub-tab save handler as a fast, exact-string
+ * no-op check before attempting to reverse-parse -- saving the JS sub-tab
+ * back byte-for-byte unchanged (bindings included) is always a safe no-op,
+ * matching Grammar v1's whole-file guarantee. */
 export function isEditableJsUnchanged(text: string, scene: SceneDocument | null): boolean {
   return text === generateEditableJs(scene);
 }
@@ -681,4 +895,436 @@ function applyShapeDeclarations(
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Grammar v2 (JS): reverse direction -- JS bindings array -> SceneDocument
+// ---------------------------------------------------------------------------
+
+/** The subset of JS literal syntax `parseJsLiteral` recognizes. Deliberately
+ * NOT a general JS value type -- there is no "function," "identifier
+ * reference," or similar executable-ish variant. */
+type JsLiteralValue =
+  string | number | boolean | null | JsLiteralValue[] | { [key: string]: JsLiteralValue };
+
+/**
+ * A minimal hand-rolled recursive-descent recognizer for the tiny subset of
+ * JS literal syntax Grammar v2's bindings array needs: object literals
+ * (quoted or bare identifier keys), array literals, single/double-quoted
+ * strings (with `\\`, `\"`, `\'`, `\n`, `\t` escapes only), numbers,
+ * `true`/`false`/`null`, and `//`/`/* *\/` comments. This is a pure text
+ * walk -- it never evaluates or executes any part of `source`, and it has
+ * no representation for function calls, identifiers-as-values, operators,
+ * or template literals, so none of those can ever reach a `SceneDocument`
+ * field even if the whitelist checks below it were somehow bypassed.
+ */
+function parseJsLiteral(
+  source: string,
+): { ok: true; value: JsLiteralValue } | { ok: false; error: string } {
+  let i = 0;
+  const n = source.length;
+
+  function skipTrivia(): void {
+    for (;;) {
+      const c = source[i];
+      if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+        i++;
+        continue;
+      }
+      if (c === '/' && source[i + 1] === '/') {
+        i += 2;
+        while (i < n && source[i] !== '\n') i++;
+        continue;
+      }
+      if (c === '/' && source[i + 1] === '*') {
+        i += 2;
+        while (i < n && !(source[i] === '*' && source[i + 1] === '/')) i++;
+        i += 2;
+        continue;
+      }
+      break;
+    }
+  }
+
+  function fail(message: string): never {
+    throw new Error(message);
+  }
+
+  function parseValue(): JsLiteralValue {
+    skipTrivia();
+    const c = source[i];
+    if (c === '{') return parseObject();
+    if (c === '[') return parseArray();
+    if (c === '"' || c === "'") return parseString();
+    if (c === '-' || (c >= '0' && c <= '9')) return parseNumber();
+    if (source.startsWith('true', i)) {
+      i += 4;
+      return true;
+    }
+    if (source.startsWith('false', i)) {
+      i += 5;
+      return false;
+    }
+    if (source.startsWith('null', i)) {
+      i += 4;
+      return null;
+    }
+    fail(
+      `unexpected token at position ${i}: "${source.slice(i, i + 20)}" -- only object/array literals, quoted strings, numbers, true/false/null are supported.`,
+    );
+  }
+
+  function parseKey(): string {
+    skipTrivia();
+    if (source[i] === '"' || source[i] === "'") return parseString();
+    const match = /^[A-Za-z_$][A-Za-z0-9_$]*/.exec(source.slice(i));
+    if (!match) fail(`expected an object key at position ${i}.`);
+    i += match[0].length;
+    return match[0];
+  }
+
+  function parseObject(): Record<string, JsLiteralValue> {
+    i++; // consume '{'
+    const obj: Record<string, JsLiteralValue> = {};
+    skipTrivia();
+    if (source[i] === '}') {
+      i++;
+      return obj;
+    }
+    for (;;) {
+      const key = parseKey();
+      skipTrivia();
+      if (source[i] !== ':') fail(`expected ':' after key "${key}" at position ${i}.`);
+      i++;
+      obj[key] = parseValue();
+      skipTrivia();
+      if (source[i] === ',') {
+        i++;
+        skipTrivia();
+        if (source[i] === '}') {
+          i++;
+          break;
+        }
+        continue;
+      }
+      if (source[i] === '}') {
+        i++;
+        break;
+      }
+      fail(`expected ',' or '}' at position ${i}.`);
+    }
+    return obj;
+  }
+
+  function parseArray(): JsLiteralValue[] {
+    i++; // consume '['
+    const arr: JsLiteralValue[] = [];
+    skipTrivia();
+    if (source[i] === ']') {
+      i++;
+      return arr;
+    }
+    for (;;) {
+      arr.push(parseValue());
+      skipTrivia();
+      if (source[i] === ',') {
+        i++;
+        skipTrivia();
+        if (source[i] === ']') {
+          i++;
+          break;
+        }
+        continue;
+      }
+      if (source[i] === ']') {
+        i++;
+        break;
+      }
+      fail(`expected ',' or ']' at position ${i}.`);
+    }
+    return arr;
+  }
+
+  function parseString(): string {
+    const quote = source[i];
+    i++;
+    let out = '';
+    while (i < n && source[i] !== quote) {
+      if (source[i] === '\\') {
+        const next = source[i + 1];
+        if (next === 'n') out += '\n';
+        else if (next === 't') out += '\t';
+        else if (next === '"' || next === "'" || next === '\\') out += next;
+        else fail(`unsupported escape sequence "\\${next}" at position ${i}.`);
+        i += 2;
+      } else {
+        out += source[i];
+        i++;
+      }
+    }
+    if (source[i] !== quote) fail('unterminated string literal.');
+    i++;
+    return out;
+  }
+
+  function parseNumber(): number {
+    const match = /^-?[0-9]+(?:\.[0-9]+)?/.exec(source.slice(i));
+    if (!match) fail(`expected a number at position ${i}.`);
+    i += match[0].length;
+    return Number(match[0]);
+  }
+
+  try {
+    const value = parseValue();
+    skipTrivia();
+    if (source[i] === ';') {
+      i++;
+      skipTrivia();
+    }
+    if (i !== n) {
+      return {
+        ok: false,
+        error: `unexpected trailing content at position ${i}: "${source.slice(i, i + 20)}".`,
+      };
+    }
+    return { ok: true, value };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'could not parse.' };
+  }
+}
+
+/** Strips the `const bindings = ` prefix and hands the remainder to
+ * `parseJsLiteral`, requiring the result to be an array literal. */
+function parseBindingsSource(
+  source: string,
+): { ok: true; items: JsLiteralValue[] } | { ok: false; error: string } {
+  const trimmed = source.trim();
+  const prefixMatch = /^const\s+bindings\s*=\s*/.exec(trimmed);
+  if (!prefixMatch) {
+    return {
+      ok: false,
+      error: 'Expected exactly one "const bindings = [ ... ];" statement between the markers.',
+    };
+  }
+  const parsed = parseJsLiteral(trimmed.slice(prefixMatch[0].length));
+  if (!parsed.ok)
+    return { ok: false, error: `Could not parse the bindings array: ${parsed.error}` };
+  if (!Array.isArray(parsed.value)) {
+    return {
+      ok: false,
+      error: '"bindings" must be assigned an array literal, e.g. "[ { ... } ]".',
+    };
+  }
+  return { ok: true, items: parsed.value };
+}
+
+/** Validates one parsed bindings-array element against the Grammar v2
+ * whitelist (see the module doc comment). Pushes every violation found onto
+ * `errors` (not just the first) and returns `null` when the entry can't be
+ * turned into a `RawBinding` at all; secondary field errors (e.g. an
+ * out-of-range `mapping` value) are also pushed but don't stop validation of
+ * the rest of the object, so a save surfaces every problem at once. */
+function validateBindingLiteral(
+  raw: JsLiteralValue,
+  index: number,
+  errors: string[],
+): RawBinding | null {
+  const label = `Binding ${index + 1}`;
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    errors.push(`${label}: must be an object literal, e.g. { id: "b1", signal: "...", ... }.`);
+    return null;
+  }
+  const obj = raw as Record<string, JsLiteralValue>;
+
+  const unknownFields = Object.keys(obj).filter((key) => !BINDING_FIELDS.has(key));
+  const missingFields = BINDING_REQUIRED_FIELDS.filter((key) => !(key in obj));
+  if (unknownFields.length > 0) {
+    errors.push(
+      `${label}: unsupported field(s) ${unknownFields.map((f) => `"${f}"`).join(', ')} (allowed: ${[...BINDING_FIELDS].join(', ')}).`,
+    );
+  }
+  if (missingFields.length > 0) {
+    errors.push(
+      `${label}: missing required field(s) ${missingFields.map((f) => `"${f}"`).join(', ')}.`,
+    );
+  }
+  if (unknownFields.length > 0 || missingFields.length > 0) return null;
+
+  const id = obj.id;
+  if (typeof id !== 'string' || !ID_PATTERN.test(id)) {
+    errors.push(`${label}: "id" must be a string id (letters/digits/-/_, 1-64 chars).`);
+    return null;
+  }
+  const signal = obj.signal;
+  if (typeof signal !== 'string' || !BINDING_SIGNALS.has(signal)) {
+    errors.push(`${label}: "signal" must be one of: ${[...BINDING_SIGNALS].join(', ')}.`);
+    return null;
+  }
+  const handTarget = obj.handTarget;
+  if (typeof handTarget !== 'string' || !BINDING_HAND_TARGETS.has(handTarget)) {
+    errors.push(`${label}: "handTarget" must be one of: ${[...BINDING_HAND_TARGETS].join(', ')}.`);
+    return null;
+  }
+  const targetScope = obj.targetScope;
+  if (typeof targetScope !== 'string' || !BINDING_TARGET_SCOPES.has(targetScope)) {
+    errors.push(
+      `${label}: "targetScope" must be one of: ${[...BINDING_TARGET_SCOPES].join(', ')}.`,
+    );
+    return null;
+  }
+  const targetIdRaw = obj.targetId;
+  let targetId: string | null;
+  if (targetIdRaw === null) {
+    targetId = null;
+  } else if (typeof targetIdRaw === 'string' && ID_PATTERN.test(targetIdRaw)) {
+    targetId = targetIdRaw;
+  } else {
+    errors.push(`${label}: "targetId" must be a string id or null.`);
+    return null;
+  }
+  const targetProperty = obj.targetProperty;
+  if (typeof targetProperty !== 'string' || !BINDING_TARGET_PROPERTIES.has(targetProperty)) {
+    errors.push(
+      `${label}: "targetProperty" must be one of: ${[...BINDING_TARGET_PROPERTIES].join(', ')}.`,
+    );
+    return null;
+  }
+  const composition = obj.composition;
+  if (composition !== 'replace') {
+    errors.push(`${label}: "composition" must be "replace" (the only value this pass supports).`);
+    return null;
+  }
+
+  const binding: RawBinding = {
+    id,
+    signal,
+    handTarget,
+    targetScope,
+    targetId,
+    targetProperty,
+    composition: 'replace',
+  };
+
+  if ('mapping' in obj) {
+    const mappingRaw = obj.mapping;
+    if (typeof mappingRaw !== 'object' || mappingRaw === null || Array.isArray(mappingRaw)) {
+      errors.push(`${label}: "mapping" must be an object literal, e.g. { inMin: 0, inMax: 1 }.`);
+    } else {
+      const mapping: Record<string, number> = {};
+      for (const [key, value] of Object.entries(mappingRaw as Record<string, JsLiteralValue>)) {
+        if (!MAPPING_FIELDS.has(key)) {
+          errors.push(
+            `${label}: mapping field "${key}" is unsupported (allowed: ${[...MAPPING_FIELDS].join(', ')}).`,
+          );
+        } else if (typeof value !== 'number') {
+          errors.push(`${label}: mapping.${key} must be a number.`);
+        } else {
+          mapping[key] = value;
+        }
+      }
+      binding.mapping = mapping;
+    }
+  }
+
+  for (const field of BINDING_UNIT_INTERVAL_FIELDS) {
+    if (field in obj) {
+      const value = obj[field];
+      if (typeof value !== 'number' || value < 0 || value > 1) {
+        errors.push(`${label}: "${field}" must be a number between 0 and 1.`);
+      } else {
+        binding[field] = value;
+      }
+    }
+  }
+  if ('holdTimeMs' in obj) {
+    const value = obj.holdTimeMs;
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 10000) {
+      errors.push(`${label}: "holdTimeMs" must be an integer between 0 and 10000.`);
+    } else {
+      binding.holdTimeMs = value;
+    }
+  }
+
+  return binding;
+}
+
+/**
+ * Reverse-parses the Code tab's JS sub-tab text (Grammar v2, task 143 /
+ * issue #175) back onto `previousScene`'s `bindings` array. Everything
+ * outside the `BINDINGS_START`/`BINDINGS_END` markers (the banner and the
+ * generated runtime/camera boilerplate) must be saved back byte-for-byte
+ * identical to what `generateEditableJs` would produce for `previousScene`
+ * -- any drift there is rejected with a specific, actionable error, exactly
+ * like every other out-of-grammar edit in this module. `graph` and every
+ * other field are carried over from `previousScene` completely unchanged
+ * -- see the module doc comment's "what's OUT" section for why graph
+ * nodes/connections aren't part of this pass.
+ */
+export function parseEditableJs(text: string, previousScene: SceneDocument): GrammarParseResult {
+  const errors: string[] = [];
+  const startIdx = text.indexOf(BINDINGS_START);
+  const endIdx =
+    startIdx === -1 ? -1 : text.indexOf(BINDINGS_END, startIdx + BINDINGS_START.length);
+  if (startIdx === -1 || endIdx === -1) {
+    return {
+      ok: false,
+      errors: [
+        `JavaScript must contain exactly one "${BINDINGS_START}" ... "${BINDINGS_END}" block -- only the bindings array between those two marker lines is editable. Switch away from the JS tab and back to regenerate it if the markers were removed.`,
+      ],
+    };
+  }
+  if (
+    text.indexOf(BINDINGS_START, startIdx + BINDINGS_START.length) !== -1 ||
+    text.indexOf(BINDINGS_END, endIdx + BINDINGS_END.length) !== -1
+  ) {
+    return {
+      ok: false,
+      errors: [`Only one "${BINDINGS_START}" / "${BINDINGS_END}" block is allowed.`],
+    };
+  }
+
+  const before = text.slice(0, startIdx);
+  const bindingsSrc = text
+    .slice(startIdx + BINDINGS_START.length, endIdx)
+    .replace(/^\n/, '')
+    .trimEnd();
+  const after = text.slice(endIdx + BINDINGS_END.length);
+
+  const expectedShell = immutableJsShell(previousScene);
+  if (before !== expectedShell.header) {
+    errors.push(
+      `Only the bindings array is editable -- the JavaScript above "${BINDINGS_START}" must stay exactly as generated. Use the Visual tab for graph/behavior changes, or switch away from and back to the JS tab to discard this part of the edit.`,
+    );
+  }
+  if (after !== expectedShell.footer) {
+    errors.push(
+      `Only the bindings array is editable -- the generated runtime code below "${BINDINGS_END}" is not part of the supported grammar yet (see codeGrammar.ts's module doc comment) and must stay exactly as generated. Use the Visual tab for graph node/connection changes instead.`,
+    );
+  }
+
+  const parsedDecl = parseBindingsSource(bindingsSrc);
+  if (!parsedDecl.ok) {
+    errors.push(parsedDecl.error);
+    return { ok: false, errors };
+  }
+
+  const bindings: RawBinding[] = [];
+  const seenIds = new Set<string>();
+  parsedDecl.items.forEach((item, index) => {
+    const binding = validateBindingLiteral(item, index, errors);
+    if (!binding) return;
+    if (seenIds.has(binding.id)) {
+      errors.push(
+        `Binding ${index + 1}: duplicate id "${binding.id}" -- binding ids must be unique.`,
+      );
+      return;
+    }
+    seenIds.add(binding.id);
+    bindings.push(binding);
+  });
+
+  if (errors.length > 0) return { ok: false, errors };
+
+  const nextScene: SceneDocument = { ...previousScene, bindings };
+  return { ok: true, scene: nextScene };
 }

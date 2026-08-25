@@ -4363,11 +4363,178 @@ hand-edited (parse via an AST walk against a whitelisted subset, the same
 "never eval, never execute" posture `codeGrammar.ts` and `safeEmbed.ts`
 already hold); and interaction with undo/redo (one Code-tab save = one
 undo step, matching the HTML/CSS grammar) and draft-autosave (#125).
-Status: PROPOSED
-GitHub issue: [#175](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/175).
+Status: COMPLETE
+GitHub issue: [#175](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/175)
+(left open for QA/closing by the orchestrator, per this task's
+instructions).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
 --search "javascript graph bindings"` / `--search "code tab"` before
 filing — no existing issue proposes JS-to-graph/bindings reverse parsing.
 New; task 142/#174 (the HTML/CSS half of the same original request) is
 the direct predecessor; explicitly flagged as needing its own grooming
 pass before implementation.
+Resolution (2026-08-25): Implemented Grammar v2 (JS) per issue #175's
+"Groomed acceptance criteria (PM pass)" comment, using the pre-authorized
+"Engineering latitude" clause to ship a narrower first cut: **bindings
+only** in this pass, with graph node/connection editing discovery-gated
+and deferred to a filed follow-up (see below). Verified both by re-reading
+the shipped code and via a full live pass against a real Postgres-backed
+Django + Vite dev stack.
+
+- **The grammar (`frontend/src/export/codeGrammar.ts`)**: added a
+  documented "Grammar v2 (JS)" section to the module's own doc comment
+  (mirroring Grammar v1's style) alongside the existing HTML/CSS section.
+  The JS sub-tab's text now has two parts: (1) an editable
+  `const bindings = [ {...}, {...} ];` array literal, delimited by two
+  fixed sentinel comment lines (`BINDINGS_START`/`BINDINGS_END`), that is
+  a wholesale, order-preserving projection of `scene.bindings` — because
+  bindings carry no shape-identity/ordering constraint (unlike Grammar
+  v1's shapes), add/edit/remove is fully supported simply by
+  adding/editing/removing entries in this one array, with no separate
+  "shapes cannot be added/removed" restriction needed; and (2) the
+  pre-existing banner + generated runtime/camera boilerplate below the
+  closing marker, which stays compare-only exactly as the whole file was
+  in Grammar v1 — an edit there is rejected with a specific, actionable
+  error pointing at the Visual tab, and the scene is left completely
+  untouched.
+  - **Whitelisted binding fields** (mirroring `schema/scene.schema.json`'s
+    `binding` definition exactly): `id`, `signal` (28-value enum),
+    `handTarget` (4-value enum), `targetScope` (4-value enum), `targetId`
+    (string id or `null`), `targetProperty` (15-value enum), `composition`
+    (must be the literal `"replace"` — the only value V1 of the schema
+    supports), plus optional `mapping` (`{ inMin, inMax, outMin, outMax }`,
+    all numbers), `smoothing`/`closeThreshold`/`farThreshold`/
+    `releaseThreshold` (numbers in [0, 1]), and `holdTimeMs` (integer in
+    [0, 10000]). Any other field name on a binding, or inside `mapping`,
+    is rejected by name, with every violation surfaced at once (not just
+    the first).
+  - **Parsing never `eval`s, `new Function`s, or otherwise executes
+    anything**: `parseEditableJs` locates the two sentinel marker lines
+    with plain string search, then hands the text between them to
+    `parseJsLiteral` — a from-scratch, ~150-line hand-rolled
+    recursive-descent recognizer understanding only object/array
+    literals, quoted strings, numbers, `true`/`false`/`null`, and
+    comments. It has no representation for function calls,
+    identifier-as-value references, operators, or template literals, so
+    a hand-edit like `{ id: alert(1) }` is rejected as an unparseable
+    token rather than ever being evaluated — covered by a dedicated test
+    (`codeGrammar.test.ts`'s "never executes hand-edited JS" case).
+    Deliberately did NOT add a new parser dependency (no full JS AST
+    parser package): `frontend/package.json` already carries `typescript`
+    only as a devDependency for `tsc`/build tooling, and bundling its
+    compiler into the browser runtime just to parse a tiny literal
+    subset would reintroduce the exact bundle-bloat/dependency-weight
+    problem AGENTS.md's "ask before adding a dependency" note and issue
+    #175 itself warn against — a hand-rolled recognizer mirrors Grammar
+    v1's own posture (`DOMParser` for HTML, a hand-rolled tokenizer for
+    CSS) exactly.
+  - **Round-trip guarantee preserved**: `generateEditableJs` and
+    `parseEditableJs` build/compare the immutable shell (banner + runtime
+    boilerplate) from the exact same `immutableJsShell` helper, so
+    "regenerate -> re-save unchanged -> no scene mutation" holds for both
+    the bindings array and the compare-only remainder — verified by
+    `codeGrammar.test.ts` and live (see below). `isEditableJsUnchanged`
+    (Grammar v1's fast no-op check) is unchanged in spirit — now compares
+    against the Grammar v2 shape of `generateEditableJs`'s output — so a
+    byte-for-byte-unchanged save (bindings included) is still a safe
+    no-op before any parsing is attempted.
+- **Wiring (`frontend/src/pages/EditorWorkspace.tsx`)**: `JsCodeEditor`
+  now takes an `onCommit` prop (`sceneEditor.commitScene`, the same
+  handler the HTML/CSS sub-tabs already use) and calls
+  `parseEditableJs`/`onCommit` on Save, exactly mirroring
+  `HtmlCssCodeEditor`'s save flow — one Code-tab JS save is one
+  `commitScene()` call, i.e. one undo/redo step, with errors rendered as
+  a list (matching the HTML/CSS sub-tabs' convention) instead of a single
+  string. `CodeTab`'s `onCommitCode` prop doc comment was updated to
+  reflect it now backs three sub-tabs (HTML, CSS, JS), not two.
+- **What's OUT, and why (pre-authorized by #175's own "Engineering
+  latitude" clause)**: graph nodes and connections
+  (`scene.graph.nodes`/`.connections`) are NOT reverse-parsed in this
+  pass — they remain compare-only, part of the immutable shell below the
+  bindings markers. Graph editing still works from the Visual tab
+  (`GraphView.tsx`/`GraphListView.tsx`/`BehaviorCardsPanel.tsx`, via
+  `graphEditing.ts`'s existing pure mutation functions), and Visual-tab
+  edits there still show up correctly in the JS sub-tab's compare-only
+  section on next Code-tab mount (nothing regressed). Follow-up filed and
+  cross-linked below.
+- **Live verification performed** (real Postgres + Django +
+  `AI_PROVIDER=fake` + Vite dev stack, signed in as the `e2e_owner`
+  fixture user from `manage.py e2e_fixtures create --json`): (1) opened a
+  new project's Code tab, JS sub-tab — confirmed the updated banner text
+  and an empty `const bindings = [];` render correctly; (2) hand-edited
+  the JS textarea to add a binding (`targetScope: "scene"`,
+  `targetProperty: "globalForce"`, with a `mapping` sub-object) and
+  clicked Save JavaScript — no error, and switching to the JSON sub-tab
+  (after a Visual round-trip to force remount, since each Code sub-tab
+  only re-derives its text from `workingCopy` on `CodeTab` mount, an
+  existing, unchanged convention from task 142) confirmed the new binding
+  landed in `scene.bindings` exactly as typed; (3) appended a hand-edit
+  outside the bindings markers (into the generated runtime code) and
+  clicked Save — rejected with the specific message "Only the bindings
+  array is editable -- the generated runtime code below
+  '// >>> editable-bindings:end' is not part of the supported grammar
+  yet ... Use the Visual tab for graph node/connection changes instead,"
+  and re-checking the JSON sub-tab confirmed the scene was completely
+  unmutated (the earlier hand-added binding was still present, unchanged)
+  — no crash, no silent drop, no partial mutation; (4) added a shape via
+  the Visual tab, then added a Behavior Card ("Follow hand" on that
+  shape) via `BehaviorCardsPanel.tsx`, saved the project, and confirmed
+  the JS sub-tab's `bindings` array regenerated to include both the
+  earlier hand-added binding AND the new behavior-card-derived binding
+  side by side — confirming Visual-tab bindings edits regenerate the JS
+  sub-tab, the acceptance criterion's reverse direction.
+- **Security**: grepped `codeGrammar.ts` and `EditorWorkspace.tsx` for
+  `eval(`, `new Function(`, `srcdoc`, and `dangerouslySetInnerHTML` —
+  none present. `parseJsLiteral` is a pure text walk with no code
+  execution path, confirmed both by static reading and by a dedicated
+  test asserting a `{ id: alert(1) }`-shaped hand-edit is rejected (as an
+  unparseable token — `alert` isn't a valid literal value in this
+  grammar) rather than ever being called.
+- **Test counts**: `make check` (backend + frontend) green at the point
+  this resolution note was written: backend 629 passed / 22 skipped;
+  frontend 1809/1809 passed. `codeGrammar.test.ts` gained 8 new test
+  cases covering forward serialization (with and without a binding),
+  round-trip-unchanged, add, remove, an out-of-whitelist field
+  rejection, an edit-outside-the-bindings-array rejection, an invalid
+  `composition` value rejection, and the never-executes-hand-edited-JS
+  case.
+- **Follow-up filed (discovery-gated)**: full graph node/connection
+  add/edit/remove via the JS sub-tab is explicitly out of scope for this
+  task, as pre-authorized by #175's own "Engineering latitude" clause.
+  Searched `_docs/tasks.md` and `gh issue list --state all --search
+  "graph node connection editing JS"` first — no existing duplicate.
+  Filed as
+  [#176](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/176)
+  and task 144 below.
+
+## 144. Reverse-parse graph nodes/connections from the JS sub-tab into the scene's interaction-runtime model
+
+Goal: Extend task 143/#175's Grammar v2 (JS) so hand-edited JavaScript in
+the JS sub-tab can also reverse-parse `scene.graph.nodes` and
+`scene.graph.connections` (add/edit/remove), not just `scene.bindings`.
+Description: Task 143 shipped Grammar v2 (JS) with a narrower first cut
+pre-authorized by issue #175's own "Engineering latitude" clause: bindings
+only, deferring graph node/connection editing via JS to this follow-up.
+Today `codeGrammar.ts`'s `parseEditableJs`/`generateEditableJs` treat
+everything below the bindings array's closing sentinel marker (including
+all graph node/connection data, which isn't even serialized into the JS
+text today) as compare-only generated runtime boilerplate. This task needs
+its own design pass to define: what JS literal shape represents a graph
+node (`id`/`family`/`type`/`params`/`position`) and a connection
+(`id`/`fromNodeId`/`fromPort`/`toNodeId`/`toPort`) — likely a second
+`const graph = { nodes: [...], connections: [...] };` sentinel-delimited
+block using the same hand-rolled-literal-parser approach; how to reuse
+`frontend/src/pages/graphEditing.ts`'s existing allowlist/port-
+compatibility/cycle-detection validation
+(`ALLOWED_NODE_TYPES_BY_FAMILY`/`NODE_PORTS`/`findCycle`/
+`checkGraphConnection`) without duplicating it; how to validate a graph
+node's `params` (arbitrary leaf-valued JSON whose shape varies per node
+`type`); and the same "never eval, never execute" posture task 143 already
+established.
+Status: PROPOSED
+GitHub issue: [#176](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/176).
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
+--search "graph node connection editing JS"` before filing — no existing
+issue proposes graph node/connection reverse parsing via JS. New; task
+143/#175 (the bindings half of Grammar v2) is the direct predecessor;
+explicitly flagged as needing its own design pass before implementation.

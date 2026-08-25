@@ -999,3 +999,153 @@ describe('EditorWorkspace scene outline: no duplicate/missing rows (issue #127)'
     assertNoDuplicates(9);
   });
 });
+
+/** Task 129 (issue #161): the touch-compatible counterpart to `fireDrag`
+ * above, exercising `LayersPanel.tsx`'s Pointer Events path
+ * (`onHandlePointerDown`/`Move`/`Up`) instead of native HTML5
+ * `dragstart`/`dragover`/`drop`. Unlike `DragEvent`, jsdom's real
+ * `PointerEvent` constructor honors `pointerId`/`pointerType`/`clientX`/
+ * `clientY` directly, so no hand-rolled event/`dataTransfer` stub is needed
+ * — only `document.elementFromPoint` (which jsdom doesn't implement at all)
+ * needs stubbing, standing in for "whichever row is currently under the
+ * finger" the same way `target`'s own bounding rect already stands in for
+ * real layout. Every event fires on the row's own `.editor-outline-drag-handle`
+ * span, matching where `LayersPanel.tsx` actually attaches these listeners
+ * (not the row itself). */
+function firePointerDrag(source: HTMLElement, target: HTMLElement, clientY: number) {
+  const handle = source.querySelector('.editor-outline-drag-handle');
+  if (!handle) throw new Error('row has no drag handle');
+  document.elementFromPoint = vi.fn().mockReturnValue(target);
+  const pointerId = 7;
+  fireEvent(
+    handle,
+    new PointerEvent('pointerdown', {
+      bubbles: true,
+      pointerId,
+      pointerType: 'touch',
+      clientX: 0,
+      clientY: 0,
+    }),
+  );
+  fireEvent(
+    handle,
+    new PointerEvent('pointermove', {
+      bubbles: true,
+      pointerId,
+      pointerType: 'touch',
+      clientX: 0,
+      clientY,
+    }),
+  );
+  fireEvent(
+    handle,
+    new PointerEvent('pointerup', {
+      bubbles: true,
+      pointerId,
+      pointerType: 'touch',
+      clientX: 0,
+      clientY,
+    }),
+  );
+}
+
+describe('EditorWorkspace scene outline: touch drag-and-drop (issue #161)', () => {
+  it('reorders two top-level shapes by touch-dragging one above the other', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // Circle 1
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' })); // Rectangle 1
+
+    const [circleRow, rectangleRow] = outlineRows().filter(
+      (r) => r.dataset.outlineKind === 'shape',
+    );
+    const circleId = circleRow.dataset.outlineId;
+    const rectangleId = rectangleRow.dataset.outlineId;
+
+    // clientY 5 lands in a shape row's "before" zone (see the stubbed 40px
+    // rect in the top-level `beforeEach`).
+    firePointerDrag(rectangleRow, circleRow, 5);
+
+    const shapeRowsAfter = outlineRows().filter((r) => r.dataset.outlineKind === 'shape');
+    expect(shapeRowsAfter.map((r) => r.dataset.outlineId)).toEqual([rectangleId, circleId]);
+  });
+
+  it('reparents a loose shape into a group by touch-dragging it onto the group row', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: 'Combine into group' })); // -> Group 1
+
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // loose Circle 2
+    const rowsBefore = outlineRows();
+    const looseShapeRow = rowsBefore.filter((r) => r.dataset.outlineKind === 'shape').slice(-1)[0];
+    const groupRow = rowsBefore.find((r) => r.dataset.outlineKind === 'group')!;
+
+    // clientY 20 lands in a group row's middle-third "into" zone.
+    firePointerDrag(looseShapeRow, groupRow, 20);
+
+    const groupRowAfter = outlineRows().find((r) => r.dataset.outlineKind === 'group')!;
+    expect(within(groupRowAfter).getByText(/Group: Group 1 \(3 item\(s\)\)/)).toBeInTheDocument();
+  });
+
+  it('ignores a mouse pointerdown on the drag handle, leaving the native HTML5 path as the only mouse mechanism', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const [circleRow, rectangleRow] = outlineRows().filter(
+      (r) => r.dataset.outlineKind === 'shape',
+    );
+    const circleId = circleRow.dataset.outlineId;
+    const rectangleId = rectangleRow.dataset.outlineId;
+
+    const handle = rectangleRow.querySelector('.editor-outline-drag-handle')!;
+    document.elementFromPoint = vi.fn().mockReturnValue(circleRow);
+    fireEvent(
+      handle,
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 7,
+        pointerType: 'mouse',
+        clientX: 0,
+        clientY: 0,
+      }),
+    );
+    fireEvent(
+      handle,
+      new PointerEvent('pointerup', { bubbles: true, pointerId: 7, pointerType: 'mouse' }),
+    );
+
+    expect(outlineRows().map((r) => r.dataset.outlineId)).toContain(rectangleId);
+    const shapeRowsAfter = outlineRows().filter((r) => r.dataset.outlineKind === 'shape');
+    expect(shapeRowsAfter.map((r) => r.dataset.outlineId)).toEqual([circleId, rectangleId]);
+  });
+
+  it('does not touch-drag a locked row', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    const circleLayerRow = outlineRows()
+      .filter((r) => r.dataset.outlineKind === 'layer')
+      .find((r) => within(r).queryByDisplayValue('Layer 2'))!;
+    await user.click(within(circleLayerRow).getByRole('button', { name: 'Unlocked' }));
+
+    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    const shapeRows = outlineRows().filter((r) => r.dataset.outlineKind === 'shape');
+    const lockedShapeRow = shapeRows[0]; // the circle, on the now-locked Layer 2
+    const otherShapeRow = shapeRows[1];
+    const idsBefore = shapeRows.map((r) => r.dataset.outlineId);
+
+    firePointerDrag(lockedShapeRow, otherShapeRow, 5);
+
+    const idsAfter = outlineRows()
+      .filter((r) => r.dataset.outlineKind === 'shape')
+      .map((r) => r.dataset.outlineId);
+    expect(idsAfter).toEqual(idsBefore);
+    expect(sceneEditorOutlineErrorAbsent()).toBe(true);
+  });
+});

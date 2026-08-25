@@ -3075,11 +3075,38 @@ keyboard-*and*-touch-operable `Move up`/`Move down`/`MoveControls`
 fallback inside each row's `RowMoreDisclosure`, so nothing is functionally
 unreachable on a touch device today — this is a slower-workflow gap, not
 a broken one.
-Status: PROPOSED — discovered and filed during task 128/#160's own
-mobile-responsiveness audit, per that issue's explicit guidance to file
-this as a separate follow-up rather than fold a substantial, risky
-pointer-drag reimplementation into a CSS/styling audit.
+Status: COMPLETE
 GitHub issue: [#161](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/161).
+Resolution (2026-08-24): Implemented a Pointer Events-based touch drag path
+in `LayersPanel.tsx` alongside (not replacing) the existing native HTML5
+DnD mouse path — the two are gated by `event.pointerType === 'mouse'` so
+they never compete for the same input, and both funnel through the exact
+same pure `planDrop`/`isPlanValid`/`applyPlan` logic and the same
+`dragId`/`hover` React state, so there is one drag/hover/drop-indicator
+implementation, not two parallel ones. Each row's existing
+`.editor-outline-drag-handle` span gained
+`onPointerDown`/`onPointerMove`/`onPointerUp`/`onPointerCancel` handlers:
+`onPointerDown` calls `setPointerCapture` (guarded with `?.` since jsdom
+has no implementation, mirroring the existing `scrollIntoView?.()`
+pattern) so move/up events keep reaching the handle even once the finger
+has moved off it; move/up resolve "which row is the finger over" via
+`document.elementFromPoint` + `closest('li[data-outline-id]')`, the touch
+equivalent of what `dragover`/`drop` targets give the native path for
+free. Added `touch-action: none` to `.editor-outline-drag-handle` in
+`index.css` so a touch-drag gesture isn't also interpreted as a page
+scroll. No new dependency, per `AGENTS.md`. The existing native
+mouse-drag path and the keyboard-operable `Move up`/`Move down`/
+`MoveControls` fallback are both unchanged.
+Verified: added 4 new tests to
+`frontend/src/pages/EditorWorkspace.layers.test.tsx` (touch-reorder,
+touch-reparent-into-group, mouse-pointerType-ignored, locked-row
+rejection) using jsdom's real `PointerEvent` constructor plus a stubbed
+`document.elementFromPoint` (jsdom implements neither `elementFromPoint`
+nor `setPointerCapture` at all). Full frontend suite green, 1713/1713
+(1709 before this task's 4 new tests), zero regressions.
+`npm run typecheck`/`lint`/`format:check` all clean (same four
+pre-existing `react(only-export-components)` warnings as before, none in
+lines this task touched).
 
 ## 130. Frontend production bundle exceeds 500kB (1.99MB main chunk) with no code-splitting
 
@@ -3093,5 +3120,36 @@ Discovered during a 2026-08-24 production-readiness pass — the app builds
 and functions correctly; this is a load-performance concern (first-time
 visitor pays ~540KB gzipped before the app is interactive), not a
 correctness blocker, and not a new regression from this session's work.
-Status: PROPOSED.
+Status: COMPLETE
 GitHub issue: [#162](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/162).
+Resolution (2026-08-24): `frontend/src/App.tsx`'s route table now
+`React.lazy`-loads every route except `Home` (`EditorWorkspace`,
+`PublicGallery`, `PublicProjectViewer`, `Templates`, `AccountSettings`),
+wrapped in one `<Suspense fallback={null}>` around `<Routes>`. Separately,
+`EditorWorkspace.tsx`'s `GraphView` (the `@xyflow/react`/React Flow-backed
+"Advanced graph" view, only rendered once a user opens "Show logic") is
+now also `React.lazy`-loaded with its own local `<Suspense>` around its
+single usage site, so React Flow's ~180KB doesn't load just to open the
+editor. Net effect: the single 1,998.68kB/539.38kB-gzipped entry chunk is
+now a 233.79kB/74.72kB-gzipped entry chunk (`index-*.js`) plus
+route-specific chunks that load on demand
+(`EditorWorkspace-*.js` 349.66kB, `GraphView-*.js` 180.99kB, a few small
+KB-scale chunks for the other routes) plus one unavoidable
+~1.2MB/305KB-gzipped chunk shared between `EditorWorkspace` and
+`PublicProjectViewer` (both render scenes via the same `p5Adapter`, and
+p5.js itself is the bulk of that weight) — that shared chunk only loads
+once a visitor opens an actual project, never on first paint of `/`. This
+matches the issue's own framing ("so a first-time visitor's initial load
+is lighter"); removing/replacing p5.js to shrink that remaining
+on-demand chunk further is explicitly out of scope per the issue's own
+"Out of scope" section ("Removing or replacing any dependency").
+Verified: `npm run typecheck`/`lint`/`format:check` clean; full frontend
+suite green, 1713/1713 (one pre-existing, order-dependent flake in
+`EditorWorkspace.a11y.test.tsx` reproduced under full-suite load and
+confirmed to pass in isolation — unrelated to this task, touches none of
+the files this task changed); `npm run build` succeeds with the sizes
+above; manually verified in the browser preview (no backend running) that
+`/`, `/templates`, and `/gallery` each render their expected
+content/error states with no console errors beyond the expected
+`/api/whoami/`-style 404s from the absent Django backend, confirming the
+`Suspense`/lazy-loading wiring itself introduces no regression.

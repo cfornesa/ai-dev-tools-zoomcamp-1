@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
   type DragEvent as ReactDragEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
 
@@ -93,6 +94,27 @@ const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
  * drag UI itself; it doesn't add lock enforcement to the underlying
  * mutations (issue #80's separately tracked scope, per this task's own
  * "Out of scope").
+ *
+ * ## Touch drag support (Task 129, issue #161)
+ *
+ * Native HTML5 Drag-and-Drop (above) has no touch-input support at all in
+ * iOS Safari or Android Chrome — a `draggable` element there never fires
+ * `dragstart` from a touch gesture. Rather than replace the mouse path (which
+ * works fine and is well-tested), each row's drag-handle span
+ * (`.editor-outline-drag-handle`) additionally listens for Pointer Events
+ * (`onPointerDown`/`onPointerMove`/`onPointerUp`/`onPointerCancel`), which
+ * *do* fire for touch. `onHandlePointerDown` ignores `pointerType === 'mouse'`
+ * so the two mechanisms never compete for the same input. Move/up delivery
+ * during a touch drag uses `setPointerCapture` (so events keep reaching the
+ * handle even once the finger has moved off it) plus
+ * `document.elementFromPoint` (to find whichever row is currently under the
+ * finger) — the touch equivalent of what `dragover`/`drop` give the native
+ * path for free. Everything downstream of "which row, which zone" is the
+ * exact same pure `planDrop`/`isPlanValid`/`applyPlan` the native path calls,
+ * and the two paths share the same `dragId`/`hover` state, so there is
+ * exactly one drag/hover/drop-indicator implementation, not two parallel
+ * ones. `touch-action: none` on the handle (see the stylesheet) stops the
+ * browser from also interpreting the gesture as a page scroll.
  */
 
 type LayerNameFieldProps = {
@@ -580,6 +602,14 @@ type DragController = {
   onRowDragOver: (event: ReactDragEvent<HTMLLIElement>, row: OutlineRow) => void;
   onRowDragLeave: (row: OutlineRow) => void;
   onRowDrop: (event: ReactDragEvent<HTMLLIElement>, row: OutlineRow) => void;
+  // Task 129 (issue #161): the touch-compatible counterpart to the native
+  // HTML5 DnD handlers above — see the module doc comment's "Touch drag
+  // support" section. Attached to each row's drag-handle span, not the row
+  // itself, so touch scrolling elsewhere in the row/list is unaffected.
+  onHandlePointerDown: (event: ReactPointerEvent<HTMLSpanElement>, row: OutlineRow) => void;
+  onHandlePointerMove: (event: ReactPointerEvent<HTMLSpanElement>) => void;
+  onHandlePointerUp: (event: ReactPointerEvent<HTMLSpanElement>) => void;
+  onHandlePointerCancel: (event: ReactPointerEvent<HTMLSpanElement>) => void;
 };
 
 /** Every drag-related prop a row needs, computed once per row from the
@@ -610,6 +640,19 @@ function dragAttributesFor(row: OutlineRow, drag: DragController) {
   };
 }
 
+/** The drag-handle span's own pointer-event props (Task 129/#161's touch
+ * path) — separate from `dragAttributesFor` above since these attach to the
+ * handle span, not the row `<li>`. */
+function handlePointerPropsFor(row: OutlineRow, drag: DragController) {
+  return {
+    onPointerDown: (event: ReactPointerEvent<HTMLSpanElement>) =>
+      drag.onHandlePointerDown(event, row),
+    onPointerMove: drag.onHandlePointerMove,
+    onPointerUp: drag.onHandlePointerUp,
+    onPointerCancel: drag.onHandlePointerCancel,
+  };
+}
+
 function OutlineRowItem({
   row,
   sceneEditor,
@@ -623,6 +666,7 @@ function OutlineRowItem({
   const moveUp = () => sceneEditor.moveItem(row.id, 'up');
   const moveDown = () => sceneEditor.moveItem(row.id, 'down');
   const dragAttrs = dragAttributesFor(row, drag);
+  const handleProps = handlePointerPropsFor(row, drag);
 
   if (row.kind === 'layer') {
     return (
@@ -641,7 +685,7 @@ function OutlineRowItem({
         data-drop-zone={dragAttrs['data-drop-zone']}
         data-drop-valid={dragAttrs['data-drop-valid']}
       >
-        <span className="editor-outline-drag-handle" aria-hidden="true">
+        <span className="editor-outline-drag-handle" aria-hidden="true" {...handleProps}>
           ⠿
         </span>
         <span className="editor-outline-kind-icon" aria-hidden="true">
@@ -722,7 +766,7 @@ function OutlineRowItem({
         data-drop-zone={dragAttrs['data-drop-zone']}
         data-drop-valid={dragAttrs['data-drop-valid']}
       >
-        <span className="editor-outline-drag-handle" aria-hidden="true">
+        <span className="editor-outline-drag-handle" aria-hidden="true" {...handleProps}>
           ⠿
         </span>
         <span className="editor-outline-kind-icon" aria-hidden="true">
@@ -825,7 +869,7 @@ function OutlineRowItem({
       data-drop-zone={dragAttrs['data-drop-zone']}
       data-drop-valid={dragAttrs['data-drop-valid']}
     >
-      <span className="editor-outline-drag-handle" aria-hidden="true">
+      <span className="editor-outline-drag-handle" aria-hidden="true" {...handleProps}>
         ⠿
       </span>
       <span className="editor-outline-kind-icon" aria-hidden="true">
@@ -912,6 +956,27 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [hover, setHover] = useState<HoverState | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
+  // Task 129 (issue #161): which pointer (if any) is mid touch-drag — a ref,
+  // not state, since it's read-and-cleared synchronously inside the same
+  // move/up handlers that also drive `dragId`/`hover` and doesn't itself
+  // need to trigger a render.
+  const pointerDragIdRef = useRef<number | null>(null);
+
+  // Task 129 (issue #161): finds whichever outline row is currently under a
+  // touch point — the touch-drag equivalent of what `dragover`/`drop`
+  // targets give the native HTML5 path for free via their own event target.
+  const resolveRowFromPoint = (
+    clientX: number,
+    clientY: number,
+  ): { row: OutlineRow; rect: DOMRect } | null => {
+    const el = document.elementFromPoint(clientX, clientY);
+    const li = el?.closest('li[data-outline-id]') ?? null;
+    if (!li) return null;
+    const id = li.getAttribute('data-outline-id');
+    const row = sceneEditor.outline.find((r) => r.id === id) ?? null;
+    if (!row) return null;
+    return { row, rect: li.getBoundingClientRect() };
+  };
 
   // Issue #153: keep the Layers panel scrolled to whichever row is selected
   // (e.g. via a canvas click), matching the canvas's own outline highlight
@@ -972,6 +1037,53 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
       const plan = planDrop(sceneEditor.outline, currentDragId, row.id, zone);
       if (!plan || !isPlanValid(sceneEditor.workingCopy, plan)) return; // rejected: a no-op release
       applyPlan(sceneEditor, plan);
+    },
+    // Task 129 (issue #161): the touch-compatible counterpart — see the
+    // module doc comment's "Touch drag support" section. Ignores
+    // `pointerType === 'mouse'` so mouse users keep using the native HTML5
+    // DnD path above unchanged.
+    onHandlePointerDown: (event, row) => {
+      if (event.pointerType === 'mouse' || isRowLocked(row)) return;
+      event.preventDefault();
+      // jsdom (unit tests) has no `setPointerCapture` implementation at all
+      // — the same "call it if present" guard `scrollIntoView` above needs.
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      pointerDragIdRef.current = event.pointerId;
+      setDragId(row.id);
+      setHover(null);
+    },
+    onHandlePointerMove: (event) => {
+      if (pointerDragIdRef.current !== event.pointerId) return;
+      if (!dragId || !sceneEditor.workingCopy) return;
+      const hit = resolveRowFromPoint(event.clientX, event.clientY);
+      if (!hit) {
+        setHover(null);
+        return;
+      }
+      const zone = zoneForRow(hit.row, hit.rect, event.clientY);
+      const plan = planDrop(sceneEditor.outline, dragId, hit.row.id, zone);
+      const valid = plan !== null && isPlanValid(sceneEditor.workingCopy, plan);
+      setHover({ id: hit.row.id, zone, valid });
+    },
+    onHandlePointerUp: (event) => {
+      if (pointerDragIdRef.current !== event.pointerId) return;
+      pointerDragIdRef.current = null;
+      const currentDragId = dragId;
+      setDragId(null);
+      setHover(null);
+      if (!currentDragId || !sceneEditor.workingCopy) return;
+      const hit = resolveRowFromPoint(event.clientX, event.clientY);
+      if (!hit) return;
+      const zone = zoneForRow(hit.row, hit.rect, event.clientY);
+      const plan = planDrop(sceneEditor.outline, currentDragId, hit.row.id, zone);
+      if (!plan || !isPlanValid(sceneEditor.workingCopy, plan)) return; // rejected: a no-op release
+      applyPlan(sceneEditor, plan);
+    },
+    onHandlePointerCancel: (event) => {
+      if (pointerDragIdRef.current !== event.pointerId) return;
+      pointerDragIdRef.current = null;
+      setDragId(null);
+      setHover(null);
     },
   };
 

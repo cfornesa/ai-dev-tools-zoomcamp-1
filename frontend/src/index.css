@@ -1436,6 +1436,10 @@ textarea:disabled {
   color: var(--text);
   opacity: 0.45;
   cursor: grab;
+  /* Task 129 (issue #161): without this, a touch-drag gesture on the handle
+     is also interpreted as a page/list scroll, fighting the pointer-drag
+     logic in LayersPanel.tsx that makes this handle touch-draggable. */
+  touch-action: none;
 }
 
 .editor-outline-row-dragging {

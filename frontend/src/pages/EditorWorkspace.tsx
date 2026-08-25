@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -72,7 +74,11 @@ import EditorDetailsPanel, {
 } from './EditorDetailsPanel';
 import ExportConfigDialog from './ExportConfigDialog';
 import GraphListView from './GraphListView';
-import GraphView from './GraphView';
+/** Task 130 (issue #162): pulls in `@xyflow/react` (React Flow), one of the
+ * largest dependencies in this file's chunk, but only renders once the user
+ * opens "Show logic" -- lazy-loading it keeps that weight out of the
+ * editor's own initial chunk. */
+const GraphView = lazy(() => import('./GraphView'));
 import LayersPanel from './LayersPanel';
 import OnboardingHints from './OnboardingHints';
 import PublishControl from './PublishControl';
@@ -2782,7 +2788,9 @@ function EditorWorkspace() {
                   Inspect and edit the constrained typed behavior graph directly. Only
                   type-compatible, directionally valid connections can be created.
                 </p>
-                <GraphView sceneEditor={sceneEditor} />
+                <Suspense fallback={<p>Loading graph editor…</p>}>
+                  <GraphView sceneEditor={sceneEditor} />
+                </Suspense>
                 <GraphListView sceneEditor={sceneEditor} />
               </div>
             )}

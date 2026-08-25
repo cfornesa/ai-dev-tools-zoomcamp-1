@@ -335,4 +335,46 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     expect(screen.getByTestId('scene-canvas')).toBeInTheDocument();
     expect(screen.getByText('1 shape(s) in the working copy.')).toBeInTheDocument();
   });
+
+  it('stacks the video above the p5 mount div so opaque shape fill no longer fully hides it (task 137, issue #169)', async () => {
+    await loadWorkspace(
+      baseScene({
+        shapes: [
+          {
+            id: 'shape-1',
+            type: 'circle',
+            layerId: 'layer-1',
+            groupId: null,
+            transform: { x: 100, y: 100, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+            style: { fill: '#4f46e5', stroke: null, strokeWidth: 0 },
+            radius: 20,
+          },
+        ],
+      }),
+    );
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+
+    const preview = screen.getByRole('region', { name: 'Preview' });
+    const video = within(preview).getByTestId('camera-overlay-video') as HTMLVideoElement;
+    // The p5 preview mounts its <canvas> into this aria-hidden sibling div
+    // (see `previewMountCallbackRef` in EditorWorkspace.tsx); it has no
+    // other identifying attribute, so it's found as the video's next
+    // sibling in DOM order, matching the JSX order in EditorWorkspace.tsx.
+    const p5MountDiv = video.nextElementSibling as HTMLElement;
+    expect(p5MountDiv).toBeInTheDocument();
+    expect(p5MountDiv.style.position).toBe('absolute');
+
+    const videoZIndex = Number(video.style.zIndex);
+    const mountZIndex = Number(p5MountDiv.style.zIndex);
+    expect(Number.isNaN(videoZIndex)).toBe(false);
+    expect(Number.isNaN(mountZIndex)).toBe(false);
+    // Regression check for task 137 (issue #169): before this fix the
+    // video sat at zIndex -2 vs. the mount div's -1, so the p5 canvas
+    // (and any opaque shape fill it drew) always painted over the camera
+    // feed, defeating the overlay's entire purpose. It must now stack
+    // strictly above the p5 canvas so the live feed is visible on-screen
+    // regardless of shape fill.
+    expect(videoZIndex).toBeGreaterThan(mountZIndex);
+  });
 });

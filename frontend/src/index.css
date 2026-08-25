@@ -931,7 +931,7 @@ code {
 .editor-workspace {
   width: calc(100% - 48px);
   display: grid;
-  grid-template-columns: minmax(420px, 1fr) fit-content(20%);
+  grid-template-columns: minmax(420px, 1fr) minmax(280px, 320px);
   align-items: start;
   gap: 16px;
   margin: 0 24px 24px;
@@ -1503,6 +1503,8 @@ textarea:disabled {
   font-weight: 600;
   flex-wrap: nowrap;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* The layer name field's default browser input width (~20 characters)
@@ -1532,6 +1534,22 @@ textarea:disabled {
 
 .editor-outline-layer-toggle input[type='checkbox'] {
   margin: 0;
+}
+
+.editor-outline-row-layer > button,
+.editor-outline-row-more {
+  flex: 0 0 auto;
+  min-width: 0;
+  font-size: 0.75em;
+}
+
+.editor-outline-row-layer > button {
+  padding: 3px 5px;
+}
+
+.editor-outline-row-more summary {
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .editor-outline-row-group {

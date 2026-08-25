@@ -230,26 +230,9 @@ describe('EditorWorkspace responsive layout', () => {
   // suite CAN verify: every panel section still carries the `data-panel`
   // attribute the grid's column/row placement selectors key off of (so a
   // future rename of that attribute would be caught here), and the
-  // stylesheet itself actually defines the ~80/20 canvas-dominant column
-  // split — Preview as a greedy `minmax(420px, 1fr)` column and the
-  // sidebar as a `fit-content()`-sized column (issue #157: this is what
-  // makes the sidebar reclaim width as its content need shrinks — a fixed
-  // `Nfr` share, what issue #109 originally shipped, can never respond to
-  // how much content a column's rows actually need). A *percentage*
-  // fit-content limit (not a fixed pixel one) is required for the ratio to
-  // hold steady across widths — manually verified in a real browser (a
-  // static harness reproducing this stylesheet and DOM structure, since
-  // jsdom cannot lay out CSS grid): a fixed-px cap measured ~76% Preview
-  // at 1440px but only ~66% at 1024px (a constant-width sidebar eats a
-  // bigger share of a narrower workspace), while `fit-content(20%)`
-  // measured ~80% Preview at every one of 1024px/1440px/1920px. Also
-  // verified live that `fit-content()` must NOT be nested inside a
-  // `minmax()` max argument (`minmax(220px, fit-content(20%))` is invalid
-  // grid syntax per the spec and silently drops the whole declaration in
-  // real browsers — `CSS.supports(...)` returns `false` — even though
-  // nothing in this jsdom-only regex assertion below would ever catch
-  // that), which is why the sidebar column here is a bare
-  // `fit-content(20%)`, not wrapped in `minmax()`.
+  // stylesheet itself gives Preview a generous `minmax(420px, 1fr)` track
+  // and the Layers sidebar a bounded `minmax(280px, 320px)` track (issue
+  // #179), guaranteeing room for its controls at desktop widths.
   it('gives the Preview panel a dominant, sidebar-reclaiming grid column in the desktop stylesheet', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
@@ -264,24 +247,17 @@ describe('EditorWorkspace responsive layout', () => {
 
     const css = readFileSync(join(__dirname, '..', 'index.css'), 'utf-8');
     const gridMatch = css.match(
-      /\.editor-workspace\s*\{[^}]*grid-template-columns:\s*minmax\((\d+)px,\s*1fr\)\s+fit-content\((\d+)%\)/,
+      /\.editor-workspace\s*\{[^}]*grid-template-columns:\s*minmax\((\d+)px,\s*1fr\)\s+minmax\((\d+)px,\s+(\d+)px\)/,
     );
     expect(gridMatch).not.toBeNull();
     const previewMinPx = Number(gridMatch?.[1]);
-    const sidebarCapPct = Number(gridMatch?.[2]);
-    // The sidebar's fit-content cap stays comfortably within the owner's
-    // 75-85% desktop-dominant range (a 20% cap leaves Preview ~80%), and
-    // Preview keeps its own generous floor so it can never be squeezed
-    // below a usable size even at the narrow end of the desktop/tablet
-    // band this same column serves.
-    expect(sidebarCapPct).toBeGreaterThanOrEqual(15);
-    expect(sidebarCapPct).toBeLessThanOrEqual(25);
+    const sidebarMinPx = Number(gridMatch?.[2]);
+    const sidebarMaxPx = Number(gridMatch?.[3]);
+    // Preview keeps its own generous floor, while the sidebar keeps enough
+    // room for all layer-row controls even at the narrow end of desktop.
+    expect(sidebarMinPx).toBeGreaterThanOrEqual(280);
+    expect(sidebarMaxPx).toBeLessThanOrEqual(320);
     expect(previewMinPx).toBeGreaterThanOrEqual(400);
-    // Guards against the invalid-nested-minmax mistake this comment
-    // documents above: that form would still match a looser regex, so
-    // this explicitly asserts the sidebar's track function is bare (no
-    // `minmax(` immediately preceding it on the same declaration).
-    expect(css).not.toMatch(/grid-template-columns:[^;]*minmax\([^)]*fit-content/);
     expect(css).toMatch(/\.editor-panel\[data-panel='preview'\]\s*\{\s*grid-column:\s*1;/);
   });
 
@@ -293,6 +269,17 @@ describe('EditorWorkspace responsive layout', () => {
     expect(css).toMatch(/\.editor-workspace\s*\{[^}]*width:\s*calc\(100%\s*-\s*48px\)/);
     expect(css).toMatch(/\.content-panel\s*\{[^}]*max-width:\s*1126px/);
     expect(css).toMatch(/\.content-panel\s*\{[^}]*margin:\s*0\s+auto\s+32px/);
+  });
+
+  it('gives layer rows a contained, non-shrinking control strip', () => {
+    const css = readFileSync(join(__dirname, '..', 'index.css'), 'utf-8');
+
+    expect(css).toMatch(/\.editor-outline-row-layer\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%/);
+    expect(css).toMatch(
+      /\.editor-outline-row-layer > button,\s*\.editor-outline-row-more\s*\{[^}]*flex:\s*0 0 auto/,
+    );
+    expect(css).toMatch(/\.editor-outline-layer-name\s*\{[^}]*min-width:\s*0/);
+    expect(css).toMatch(/\.editor-outline-row-more summary\s*\{[^}]*white-space:\s*nowrap/);
   });
 
   // Issue #93 hard requirement: Preview must never become unreachable while

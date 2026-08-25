@@ -344,8 +344,12 @@ describe('EditorWorkspace snap preference: multi-shape group gestures are unaffe
     fireEvent.click(screen.getByRole('button', { name: 'Add rectangle' })); // (350,260)
     const canvas = mockCanvasRect();
 
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer rows
+    // in this same outline list, so an unscoped `getAllByRole` would also
+    // pick those up -- filter to the "Select for grouping" checkboxes.
     const checkboxes = within(screen.getByRole('list', { name: 'Scene outline' })).getAllByRole(
       'checkbox',
+      { name: /to group selection$/i },
     );
     fireEvent.click(checkboxes[0]);
     fireEvent.click(checkboxes[1]);

@@ -164,8 +164,12 @@ describe('Edit points toggle: visibility gating', () => {
     await loadReadyWorkspace();
     fireEvent.click(screen.getByRole('button', { name: 'Add circle' }));
     addAndSelectPath();
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer rows
+    // in this same outline list, so an unscoped `getAllByRole` would also
+    // pick those up -- filter to the "Select for grouping" checkboxes.
     const checkboxes = within(screen.getByRole('list', { name: 'Scene outline' })).getAllByRole(
       'checkbox',
+      { name: /to group selection$/i },
     );
     fireEvent.click(checkboxes[0]);
     fireEvent.click(checkboxes[1]);
@@ -534,8 +538,12 @@ describe('Regression: Task 77 multi-shape gestures and Task 78 snapping are unaf
     addAndSelectPath();
     mockCanvasRect();
 
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer rows
+    // in this same outline list, so an unscoped `getAllByRole` would also
+    // pick those up -- filter to the "Select for grouping" checkboxes.
     const checkboxes = within(screen.getByRole('list', { name: 'Scene outline' })).getAllByRole(
       'checkbox',
+      { name: /to group selection$/i },
     );
     fireEvent.click(checkboxes[0]);
     fireEvent.click(checkboxes[1]);

@@ -3532,12 +3532,65 @@ redesign the layout).
 Out of scope: The specific control-type change from buttons to
 checkboxes (task 136/#168); shape/group row content, already compacted by
 #164.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#167](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/167)
+(open for QA/closing by the orchestrator).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
 --search "layers panel"` — #164 (closed) compacted row *content*; #154
 (closed) repositioned the panel within the sidebar accordion. Neither
 covers row/panel *geometry*. New, not a duplicate.
+Resolution (2026-08-25): Landed together with task 136/#168 (same file,
+same rows, one engineer pass, per #167's own grooming note) but each
+verified independently. `LayersPanel.tsx`'s layer-row branch: dropped the
+standalone "Layer:" text label (redundant with the row's existing left
+accent border/bold weight/kind icon from task 80/#110, and the name
+field's own `aria-label` still says "Layer" explicitly for a screen
+reader); the name `<input>` now takes an optional `className` prop so the
+row can apply `.editor-outline-layer-name` (`frontend/src/index.css`:
+`flex: 1 1 5rem; min-width: 0; width: 5rem`) instead of the browser's
+much wider default input width. `.editor-outline-row-layer` changed from
+inheriting `.editor-outline-row`'s `flex-wrap: wrap` to `flex-wrap:
+nowrap`, so the row's controls stay on one line instead of spilling onto
+a second/third at normal sidebar width. Combined with task 136/#168's
+checkbox conversion (which itself frees significant width — see that
+task's entry), this eliminated wrapping without needing the Layers
+sidebar column widened at all: the `evaluate whether to widen` acceptance
+criterion was genuinely evaluated (see Verified below) and the answer was
+no, the repacking alone was sufficient, so `.editor-workspace`'s
+`grid-template-columns: minmax(420px, 1fr) fit-content(20%)` is
+unchanged. Shape/group rows (`.editor-outline-row-shape`/`-group`) were
+not touched — they keep the base `.editor-outline-row` `flex-wrap: wrap`
+untouched, matching #167's own "don't regress the already-compact shape/
+group rows" acceptance criterion.
+Verified: Real-browser (not jsdom) before/after screenshot comparison,
+since this task's own acceptance criteria call for one. The actual
+`frontend/src/index.css` (via `git show HEAD` for the pre-change
+baseline, and the working tree for the post-change version) was linked
+into two static harness pages reproducing the exact `.editor-workspace` >
+`.editor-panel[data-panel='layers']` > `.editor-outline-list` DOM
+`LayersPanel.tsx` renders for two layer rows plus one shape row, served
+over a local `python3 -m http.server` and opened in the Claude Code
+browser tool (direct login through `/accounts/login/` is blocked by this
+environment's own safety policy against automating credentialed sign-in,
+even with disposable e2e-fixture credentials, so this harness approach
+substituted for driving the real authenticated editor). Measured via
+`getBoundingClientRect()` at the same panel width in both versions
+(495px, a real desktop-viewport measurement, not an assumed one): layer
+row height went from 74px (wrapped onto 2 lines: name/icon/handle on one
+line, Delete layer/More on a second) to 39px (single line, all controls
+including Delete layer and More visible together) — essentially the
+"vertically shorter" half of #167's goal met exactly, with no sidebar
+widening. Re-checked at a 375px mobile viewport (the narrow/stacked
+single-panel-at-a-time layout `EditorPanelSwitcher.tsx` switches to under
+1024px): row height 43px, still one line, no horizontal overflow or
+scrollbar, confirming no regression at the narrow end of #167's own
+">=1024px and narrow/mobile viewports" acceptance criterion. The shape
+row (`.editor-outline-row-shape`) rendered identically in both versions,
+confirming no regression to task 132/#164's existing compaction.
+`make frontend-lint`/`frontend-typecheck`/`frontend-format-check` all
+clean; full frontend suite green (see task 136's entry below for the
+shared test-suite numbers, since both tasks' test changes landed in the
+same commit).
 
 ## 136. Convert layer-row Visible/Locked buttons to compact checkboxes
 
@@ -3558,12 +3611,72 @@ swap or the deferred `SelectionHud.tsx` extension to layer rows that
 Out of scope: Delete layer and the "More" disclosure (Move up/down,
 reparent), unless grooming finds a HUD extension makes relocating them
 free; shape/group rows (already compacted by #164).
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#168](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/168)
+(open for QA/closing by the orchestrator).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
 --search "layers panel"` — #163/#164 (closed) are the direct prior art
 whose own documented carve-out this task asks to reopen; not a
 duplicate.
+Resolution (2026-08-25): Chose the minimal in-place control swap over a
+`SelectionHud.tsx` extension, per this issue's own PM-groomed decision
+note — "keep this task surgical; a full HUD extension for layer rows is
+a larger follow-up if wanted later, not required here." `LayersPanel.tsx`'s
+layer-row Visible/Locked `<button>`s (which toggled `aria-pressed` and
+flipped their own label text between "Visible"/"Hidden" and "Unlocked"/
+"Locked") became `<label><input type="checkbox" .../> Visible</label>`
+pairs — the exact same `<label>`-wraps-`<input>`-plus-visible-text
+pattern this file's group/shape rows already use for their "Select for
+grouping" checkbox, so no new accessibility pattern was introduced.
+`checked` reflects `row.visible`/`row.locked` directly; `onChange` calls
+the identical `sceneEditor.toggleLayerVisible`/`toggleLayerLocked`
+mutations the old `onClick` handlers called — no new mutation, no change
+to `useSceneEditor.ts`. Each checkbox carries a static `aria-label`
+(`Layer ${row.name} visible` / `Layer ${row.name} locked`) that doesn't
+flip with checked state (unlike the old buttons' label text), which is
+what let several existing tests simplify from a "query one name, fall
+back to the other" pattern to a single stable query. New
+`.editor-outline-layer-toggle` class (`frontend/src/index.css`):
+`font-size: 0.8em`, tight `gap: 3px`, `white-space: nowrap` — the
+"smaller text" half of the live feedback this task and #167 share.
+Delete layer and the "More" disclosure are untouched, per this issue's
+explicit out-of-scope.
+Out-of-scope note not in this task's own acceptance criteria but
+discovered during implementation: adding two checkboxes per layer row to
+`.editor-outline-list` broke every existing test that queried
+`getAllByRole('checkbox')` unscoped within that list and indexed into the
+result (previously always exactly the "Select for grouping" checkboxes,
+one per shape/group row) — the layer rows' new checkboxes now precede
+them in DOM order and shifted every index. Fixed by scoping each such
+query to `{ name: /to group selection$/i }` across
+`EditorWorkspace.layers.test.tsx`, `EditorWorkspace.lock.test.tsx`,
+`EditorWorkspace.selectionHud.test.tsx`, `EditorWorkspace.snap.test.tsx`,
+`EditorWorkspace.multiTransform.test.tsx`, and
+`EditorWorkspace.vertexEdit.test.tsx` — no behavior change, since that's
+what those queries always meant to select; `EditorWorkspace.a11y.test.tsx`
+and `EditorWorkspace.shapeInspector.test.tsx` already queried by that
+same name pattern and needed no change.
+Verified: Updated existing layer-row Visible/Locked assertions (in
+`EditorWorkspace.layers.test.tsx`, `EditorWorkspace.lock.test.tsx`,
+`EditorWorkspace.shapeInspector.test.tsx`,
+`EditorWorkspace.duplicateDeleteShortcuts.test.tsx`) from button
+`aria-pressed`/label-text assertions to checkbox `toBeChecked()`
+assertions. Added two new tests in
+`EditorWorkspace.layers.test.tsx` (describe block "layer row Visible/
+Locked checkboxes (issue #168)"): one asserting each checkbox has a
+distinct, non-empty accessible name (`getByRole('checkbox', { name:
+'Layer Layer 1 visible' })` / `'Layer Layer 1 locked'`), one exercising
+real Tab-focus + Space-key toggling via `userEvent.keyboard(' ')` (not
+just a click) to directly cover this issue's "Tab to reach, Space to
+toggle" keyboard-operability acceptance criterion. The pre-existing
+automated `EditorWorkspace.a11y.test.tsx` axe-core suite (which asserts
+zero accessibility violations across several rendered states, including
+one with layer rows present) passed unchanged, giving independent
+automated confirmation the new checkboxes have valid accessible names
+and no `aria-*`/labeling violations. `make frontend-lint`/
+`frontend-typecheck`/`frontend-format-check` all clean; full frontend
+suite green, 1736/1736 (1734 before this pair of tasks' 2 new tests,
+zero regressions across both tasks 135 and 136's combined test changes).
 
 ## 137. Fix camera overlay stacking so it renders on top of the scene canvas
 

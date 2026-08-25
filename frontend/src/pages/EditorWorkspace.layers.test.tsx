@@ -288,17 +288,58 @@ describe('EditorWorkspace scene outline: layers', () => {
     expect(layerNames[0]).toBe('Layer 2');
   });
 
+  // Issue #168 (task 136): the layer row's Visible/Locked toggle buttons
+  // were converted to compact checkboxes wired to the exact same
+  // `toggleLayerVisible`/`toggleLayerLocked` mutations — this now asserts
+  // `checked` state rather than the old buttons' `aria-pressed`/label-text
+  // flip, since a checkbox's accessible name ("Layer <name> visible") is
+  // static across its checked/unchecked states.
   it('toggles layer visibility and lock state', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
 
-    const visibleButton = screen.getByRole('button', { name: 'Visible' });
-    await user.click(visibleButton);
-    expect(screen.getByRole('button', { name: 'Hidden' })).toHaveAttribute('aria-pressed', 'false');
+    const visibleCheckbox = screen.getByRole('checkbox', { name: /visible$/i });
+    expect(visibleCheckbox).toBeChecked();
+    await user.click(visibleCheckbox);
+    expect(visibleCheckbox).not.toBeChecked();
 
-    const unlockedButton = screen.getByRole('button', { name: 'Unlocked' });
-    await user.click(unlockedButton);
-    expect(screen.getByRole('button', { name: 'Locked' })).toHaveAttribute('aria-pressed', 'true');
+    const lockedCheckbox = screen.getByRole('checkbox', { name: /locked$/i });
+    expect(lockedCheckbox).not.toBeChecked();
+    await user.click(lockedCheckbox);
+    expect(lockedCheckbox).toBeChecked();
+  });
+});
+
+// Issue #168 (task 136) acceptance criteria this describe block covers
+// directly: each checkbox has a real accessible name (not a bare
+// unlabeled checkbox), and Tab/Space keyboard operability is preserved or
+// improved versus the old buttons -- both properties `userEvent`
+// exercises through actual keyboard events here, not just a click.
+describe('EditorWorkspace scene outline: layer row Visible/Locked checkboxes (issue #168)', () => {
+  it('gives each checkbox a distinct, non-empty accessible name', async () => {
+    await loadReadyWorkspace();
+
+    const visibleCheckbox = screen.getByRole('checkbox', { name: 'Layer Layer 1 visible' });
+    const lockedCheckbox = screen.getByRole('checkbox', { name: 'Layer Layer 1 locked' });
+    expect(visibleCheckbox).toBeInTheDocument();
+    expect(lockedCheckbox).toBeInTheDocument();
+    expect(visibleCheckbox).not.toBe(lockedCheckbox);
+  });
+
+  it('is reachable by Tab and toggles with Space, like any native checkbox', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+
+    const visibleCheckbox = screen.getByRole('checkbox', { name: /visible$/i });
+    visibleCheckbox.focus();
+    expect(visibleCheckbox).toHaveFocus();
+    expect(visibleCheckbox).toBeChecked();
+
+    await user.keyboard(' ');
+    expect(visibleCheckbox).not.toBeChecked();
+
+    await user.keyboard(' ');
+    expect(visibleCheckbox).toBeChecked();
   });
 });
 
@@ -387,7 +428,13 @@ describe('EditorWorkspace scene outline: inherited visibility/lock legibility (T
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
@@ -408,8 +455,9 @@ describe('EditorWorkspace scene outline: inherited visibility/lock legibility (T
     // Hiding the layer (the group's only ancestor) doesn't touch the
     // group's own flag -- the HUD's Visible toggle (which reflects/mutates
     // only the group's own state, never the cascaded one) still reads
-    // "Visible" afterward.
-    await user.click(within(layerRow).getByRole('button', { name: 'Visible' }));
+    // "Visible" afterward. Issue #168 (task 136): the layer row's own
+    // Visible toggle is now a checkbox, not a button.
+    await user.click(within(layerRow).getByRole('checkbox', { name: /visible$/i }));
 
     const hud = screen.getByTestId('selection-hud');
     expect(within(hud).getByRole('button', { name: 'Visible' })).toBeInTheDocument();
@@ -423,7 +471,13 @@ describe('EditorWorkspace scene outline: grouping', () => {
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
 
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     expect(checkboxes).toHaveLength(2);
     checkboxes[0].focus();
     await user.keyboard(' ');
@@ -451,7 +505,13 @@ describe('EditorWorkspace scene outline: grouping', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
@@ -473,7 +533,13 @@ describe('EditorWorkspace scene outline: grouping', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
@@ -573,7 +639,13 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
@@ -597,7 +669,13 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
@@ -640,7 +718,13 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' })); // -> Group 1
@@ -706,7 +790,13 @@ describe('EditorWorkspace scene outline: undo integration', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
@@ -838,7 +928,13 @@ describe('EditorWorkspace scene outline: pointer drag-and-drop (issue #127)', ()
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' })); // -> Group 1
@@ -902,12 +998,13 @@ describe('EditorWorkspace scene outline: locked-row drag rejection (issue #127)'
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     // Task 111 (issue #142): addShape gives the circle its own fresh
     // layer ("Layer 2", after the scene's pre-existing "Layer 1") -- lock
-    // that one specifically, since more than one "Unlocked" button now
-    // exists.
+    // that one specifically, since more than one Locked checkbox now
+    // exists. Issue #168 (task 136): the layer row's Locked toggle is now
+    // a checkbox, not a button.
     const circleLayerRow = outlineRows()
       .filter((r) => r.dataset.outlineKind === 'layer')
       .find((r) => within(r).queryByDisplayValue('Layer 2'))!;
-    await user.click(within(circleLayerRow).getByRole('button', { name: 'Unlocked' }));
+    await user.click(within(circleLayerRow).getByRole('checkbox', { name: /locked$/i }));
 
     const shapeRow = outlineRows().find((r) => r.dataset.outlineKind === 'shape')!;
     expect(shapeRow).toHaveAttribute('draggable', 'false');
@@ -921,8 +1018,9 @@ describe('EditorWorkspace scene outline: locked-row drag rejection (issue #127)'
     const layer2RowInit = outlineRows()
       .filter((r) => r.dataset.outlineKind === 'layer')
       .find((r) => within(r).queryByDisplayValue('Layer 2'))!;
-    await user.click(within(layer2RowInit).getByRole('button', { name: 'Unlocked' }));
-    expect(within(layer2RowInit).getByRole('button', { name: 'Locked' })).toBeInTheDocument();
+    const layer2LockedCheckbox = within(layer2RowInit).getByRole('checkbox', { name: /locked$/i });
+    await user.click(layer2LockedCheckbox);
+    expect(layer2LockedCheckbox).toBeChecked();
 
     // Task 111 (issue #142): addShape gives the circle its own fresh
     // layer ("Layer 3", not "Layer 1" as this comment used to assume).
@@ -989,7 +1087,13 @@ describe('EditorWorkspace scene outline: no duplicate/missing rows (issue #127)'
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
     assertNoDuplicates(6); // + 2 shapes, each on its own new layer
 
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
@@ -1091,7 +1195,13 @@ describe('EditorWorkspace scene outline: touch drag-and-drop (issue #161)', () =
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' })); // -> Group 1
@@ -1148,7 +1258,7 @@ describe('EditorWorkspace scene outline: touch drag-and-drop (issue #161)', () =
     const circleLayerRow = outlineRows()
       .filter((r) => r.dataset.outlineKind === 'layer')
       .find((r) => within(r).queryByDisplayValue('Layer 2'))!;
-    await user.click(within(circleLayerRow).getByRole('button', { name: 'Unlocked' }));
+    await user.click(within(circleLayerRow).getByRole('checkbox', { name: /locked$/i }));
 
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
     const shapeRows = outlineRows().filter((r) => r.dataset.outlineKind === 'shape');

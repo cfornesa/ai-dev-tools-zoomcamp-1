@@ -117,10 +117,10 @@ function toggleLayerLock() {
   const outline = screen.getByRole('list', { name: 'Scene outline' });
   const rows = within(outline).getAllByRole('listitem') as HTMLElement[];
   const layerRow = [...rows].reverse().find((row) => row.dataset.outlineKind === 'layer')!;
-  const button =
-    within(layerRow).queryByRole('button', { name: 'Unlocked' }) ??
-    within(layerRow).getByRole('button', { name: 'Locked' });
-  fireEvent.click(button);
+  // Issue #168 (task 136): the layer row's Locked toggle is now a
+  // checkbox with a static accessible name, regardless of checked state.
+  const checkbox = within(layerRow).getByRole('checkbox', { name: /locked$/i });
+  fireEvent.click(checkbox);
 }
 
 beforeEach(() => {

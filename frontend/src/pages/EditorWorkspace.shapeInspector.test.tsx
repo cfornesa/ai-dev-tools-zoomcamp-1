@@ -198,7 +198,9 @@ describe('ShapeInspectorPanel: selection states', () => {
 
     // Task 111 (issue #142): addShape gives the circle its own fresh
     // layer ("Layer 2", after the scene's pre-existing "Layer 1") -- more
-    // than one "Visible" button now exists, so hide that one specifically.
+    // than one Visible checkbox now exists, so hide that one specifically.
+    // Issue #168 (task 136): the layer row's Visible toggle is now a
+    // checkbox, not a button.
     const circleLayerRow = screen
       .getAllByRole('listitem')
       .find(
@@ -206,7 +208,7 @@ describe('ShapeInspectorPanel: selection states', () => {
           (r as HTMLElement).dataset.outlineKind === 'layer' &&
           within(r).queryByDisplayValue('Layer 2'),
       )!;
-    fireEvent.click(within(circleLayerRow).getByRole('button', { name: 'Visible' }));
+    fireEvent.click(within(circleLayerRow).getByRole('checkbox', { name: /visible$/i }));
 
     expect(screen.getByText(/This shape is currently hidden/)).toBeInTheDocument();
     // Fields still render and remain editable while hidden.

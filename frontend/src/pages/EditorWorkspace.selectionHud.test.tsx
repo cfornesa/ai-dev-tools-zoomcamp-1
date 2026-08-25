@@ -145,7 +145,13 @@ describe('SelectionHud: visibility (issue #163)', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
@@ -298,7 +304,13 @@ describe('SelectionHud: group controls reuse the exact LayersPanel mutations (is
   async function selectAGroup(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    const checkboxes = within(outlineList()).getAllByRole('checkbox');
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer
+    // rows in this same outline list, so an unscoped `getAllByRole`
+    // would also pick those up -- filter to the "Select for grouping"
+    // checkboxes this helper actually means.
+    const checkboxes = within(outlineList()).getAllByRole('checkbox', {
+      name: /to group selection$/i,
+    });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));

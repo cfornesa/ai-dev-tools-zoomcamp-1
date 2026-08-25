@@ -119,6 +119,11 @@ type LayerNameFieldProps = {
   layerId: string;
   name: string;
   onRename: (layerId: string, name: string) => void;
+  // Issue #167 (task 135): lets the layer row apply a width-constraining
+  // class so the name field no longer dominates the row's horizontal
+  // space at its default browser input width — see
+  // `.editor-outline-layer-name` in index.css.
+  className?: string;
 };
 
 /** An uncontrolled text field that commits a rename on blur/Enter — one
@@ -127,11 +132,12 @@ type LayerNameFieldProps = {
  * name (not the in-progress draft) means the field re-syncs to the
  * canonical name after an undo/redo without ever interrupting an
  * in-progress edit. */
-function LayerNameField({ layerId, name, onRename }: LayerNameFieldProps) {
+function LayerNameField({ layerId, name, onRename, className }: LayerNameFieldProps) {
   return (
     <input
       key={name}
       type="text"
+      className={className}
       defaultValue={name}
       aria-label={`Layer name for ${name}`}
       onBlur={(event) => {
@@ -609,22 +615,47 @@ function OutlineRowItem({
         <span className="editor-outline-kind-icon" aria-hidden="true">
           ▥
         </span>
-        <span>Layer:</span>{' '}
-        <LayerNameField layerId={row.id} name={row.name} onRename={sceneEditor.renameLayer} />
-        <button
-          type="button"
-          aria-pressed={row.visible}
-          onClick={() => sceneEditor.toggleLayerVisible(row.id)}
-        >
-          {row.visible ? 'Visible' : 'Hidden'}
-        </button>
-        <button
-          type="button"
-          aria-pressed={row.locked}
-          onClick={() => sceneEditor.toggleLayerLocked(row.id)}
-        >
-          {row.locked ? 'Locked' : 'Unlocked'}
-        </button>
+        {/* Issue #167 (task 135): the standalone "Layer:" text label was
+            dropped to reclaim horizontal width — the left accent border,
+            bold weight, and kind icon (all pre-existing, task 80/#110)
+            already distinguish a layer row at a glance, and the name
+            field's own `aria-label` ("Layer name for X") still says
+            "Layer" explicitly for a screen reader, so removing the
+            redundant visible text loses no information. */}
+        <LayerNameField
+          layerId={row.id}
+          name={row.name}
+          onRename={sceneEditor.renameLayer}
+          className="editor-outline-layer-name"
+        />
+        {/* Issue #168 (task 136): Visible/Locked converted from full-size
+            toggle buttons to compact checkboxes at reduced text size, per
+            live user feedback that checkboxes would "accommodate a
+            horizontally longer layer space." Wired to the exact same
+            `toggleLayerVisible`/`toggleLayerLocked` mutations the old
+            buttons called. Delete layer and the "More" disclosure below
+            are unchanged — out of scope per #168. Same `<label>`-wraps-
+            `<input>`-plus-visible-text pattern the group/shape rows'
+            "Select for grouping" checkbox already uses (below), so this
+            introduces no new accessibility pattern to this file. */}
+        <label className="editor-outline-layer-toggle">
+          <input
+            type="checkbox"
+            checked={row.visible}
+            onChange={() => sceneEditor.toggleLayerVisible(row.id)}
+            aria-label={`Layer ${row.name} visible`}
+          />
+          Visible
+        </label>
+        <label className="editor-outline-layer-toggle">
+          <input
+            type="checkbox"
+            checked={row.locked}
+            onChange={() => sceneEditor.toggleLayerLocked(row.id)}
+            aria-label={`Layer ${row.name} locked`}
+          />
+          Locked
+        </label>
         <button
           type="button"
           aria-label={`Delete layer ${row.name}`}

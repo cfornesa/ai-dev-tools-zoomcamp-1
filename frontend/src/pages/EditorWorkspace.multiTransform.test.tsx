@@ -102,8 +102,12 @@ function mockCanvasRect() {
 // checkboxes — the only supported way to build `multiSelectedIds` (no new
 // selection UI is in scope for this task).
 function multiSelectShapesAt(...indices: number[]) {
+  // Issue #168 (task 136) added Visible/Locked checkboxes to layer rows
+  // in this same outline list, so an unscoped `getAllByRole` would also
+  // pick those up -- filter to the "Select for grouping" checkboxes.
   const checkboxes = within(screen.getByRole('list', { name: 'Scene outline' })).getAllByRole(
     'checkbox',
+    { name: /to group selection$/i },
   );
   for (const index of indices) {
     fireEvent.click(checkboxes[index]);
@@ -227,9 +231,12 @@ describe('EditorWorkspace combined multi-shape handles: drag (translate)', () =>
     fireEvent.pointerUp(window, { clientX: 450, clientY: 350 });
 
     expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
+    // Issue #168 (task 136) added Visible/Locked checkboxes to layer rows
+    // in this same outline list, so an unscoped `getAllByRole` would also
+    // pick those up -- filter to the "Select for grouping" checkboxes.
     const outlineCheckboxes = within(
       screen.getByRole('list', { name: 'Scene outline' }),
-    ).getAllByRole('checkbox');
+    ).getAllByRole('checkbox', { name: /to group selection$/i });
     expect(outlineCheckboxes[0]).toBeChecked();
     expect(outlineCheckboxes[1]).toBeChecked();
     expect(outlineCheckboxes[2]).not.toBeChecked();

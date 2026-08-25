@@ -105,12 +105,16 @@ async function addAndSelectCircle() {
 }
 
 // Task 111 (issue #142): every shape gets its own fresh layer now, so more
-// than one "Unlocked"/"Locked" layer-row button can exist at once (the
-// scene's original empty layer, plus one per added shape) -- this locks
-// the layer belonging to the `shapeIndex`-th shape row specifically
-// (shape rows and their own layer row are adjacent in the flat outline
-// list, the layer row immediately preceding its shape), rather than
-// whichever "Unlocked" button happens to be first in the DOM.
+// than one Locked layer-row checkbox can exist at once (the scene's
+// original empty layer, plus one per added shape) -- this locks the layer
+// belonging to the `shapeIndex`-th shape row specifically (shape rows and
+// their own layer row are adjacent in the flat outline list, the layer row
+// immediately preceding its shape), rather than whichever Locked checkbox
+// happens to be first in the DOM. Issue #168 (task 136): the layer row's
+// Locked toggle is now a checkbox with a static accessible name ("Layer
+// <name> locked"), regardless of checked state -- unlike the old button
+// whose label text flipped between "Unlocked"/"Locked", so there's no
+// longer a need to try one name then fall back to the other.
 function toggleLayerLock(shapeIndex = 0) {
   const outline = screen.getByRole('list', { name: 'Scene outline' });
   const rows = within(outline).getAllByRole('listitem') as HTMLElement[];
@@ -121,15 +125,18 @@ function toggleLayerLock(shapeIndex = 0) {
     .slice(0, targetIndex)
     .reverse()
     .find((row) => row.dataset.outlineKind === 'layer')!;
-  const button =
-    within(layerRow).queryByRole('button', { name: 'Unlocked' }) ??
-    within(layerRow).getByRole('button', { name: 'Locked' });
-  fireEvent.click(button);
+  const checkbox = within(layerRow).getByRole('checkbox', { name: /locked$/i });
+  fireEvent.click(checkbox);
 }
 
 function multiSelectShapesAt(...indices: number[]) {
+  // Issue #168 (task 136) added Visible/Locked checkboxes to layer rows
+  // in this same outline list, so an unscoped `getAllByRole` would also
+  // pick those up -- filter to the "Select for grouping" checkboxes this
+  // helper actually means.
   const checkboxes = within(screen.getByRole('list', { name: 'Scene outline' })).getAllByRole(
     'checkbox',
+    { name: /to group selection$/i },
   );
   for (const index of indices) {
     fireEvent.click(checkboxes[index]);

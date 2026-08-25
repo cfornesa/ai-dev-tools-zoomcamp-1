@@ -1465,9 +1465,53 @@ textarea:disabled {
   border-radius: 4px;
 }
 
+/* Issue #167 (task 135): layer rows were the one row kind #164 (task 132)
+   deliberately left uncompacted (its Visible/Locked/Delete/More controls
+   were kept as-is because `SelectionHud.tsx` was scoped to exclude layer
+   rows entirely). Live user feedback described the resulting layout as
+   wasting space "centering everything when the reality is that the layers
+   could be horizontally longer while being vertically smaller" — this
+   rule stops the row's controls from wrapping onto a second/third line at
+   normal sidebar width, letting the row use its available width instead
+   of growing taller. Shape/group rows (`.editor-outline-row-shape`/
+   `-group`, already compact per #164) keep the base `.editor-outline-row`
+   `flex-wrap: wrap` untouched — this is scoped to layer rows only, per
+   #167's own "don't regress the already-compact shape/group rows"
+   acceptance criterion. */
 .editor-outline-row-layer {
   border-left-color: var(--accent-border);
   font-weight: 600;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+/* The layer name field's default browser input width (~20 characters)
+   dominated the row's horizontal space; a smaller, flexible width leaves
+   room for the Visible/Locked checkboxes and Delete button to sit on the
+   same line. `min-width: 0` lets it actually shrink inside the row's flex
+   layout rather than enforcing its intrinsic content width as a floor. */
+.editor-outline-layer-name {
+  flex: 1 1 5rem;
+  min-width: 0;
+  width: 5rem;
+}
+
+/* Issue #168 (task 136): the compact checkbox-style Visible/Locked
+   controls replacing the old full-size toggle buttons — smaller text,
+   tight gap to the checkbox itself, matching the row-compaction goal
+   #167 also targets. `white-space: nowrap` keeps "Visible"/"Locked"
+   from line-wrapping mid-label inside the row's own nowrap layout. */
+.editor-outline-layer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8em;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.editor-outline-layer-toggle input[type='checkbox'] {
+  margin: 0;
 }
 
 .editor-outline-row-group {

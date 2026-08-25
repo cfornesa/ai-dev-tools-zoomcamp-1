@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useRef,
   useState,
   type DragEvent as ReactDragEvent,
@@ -288,22 +287,6 @@ export type DragPlan =
  * comment) — so this needs no second lookup into the scene document. */
 export function isRowLocked(row: OutlineRow): boolean {
   return row.kind === 'layer' ? row.locked : row.inheritedLocked;
-}
-
-/** Issue #165 (task 133): is `el` already fully within the browser
- * viewport's vertical extent — the "should the selection-driven
- * `scrollIntoView` effect below actually scroll" check. Exported purely
- * for direct unit testing against a stubbed `getBoundingClientRect`/
- * `window.innerHeight`, the same style of pure-helper-plus-effect split
- * this file already uses elsewhere (e.g. `planDrop`/`isPlanValid` backing
- * the drag-and-drop effect handlers). A row with no rendered box at all
- * (both `top`/`bottom` at 0, e.g. `display: none` or not yet laid out)
- * is treated as "visible" — there's nothing meaningful to scroll to. */
-export function isRowFullyVisible(el: Element): boolean {
-  const rect = el.getBoundingClientRect();
-  if (rect.top === 0 && rect.bottom === 0) return true;
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-  return rect.top >= 0 && rect.bottom <= viewportHeight;
 }
 
 /** Identifies row `index`'s immediate container as `'root'` (a layer row
@@ -804,7 +787,6 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [hover, setHover] = useState<HoverState | null>(null);
-  const listRef = useRef<HTMLUListElement | null>(null);
   // Task 129 (issue #161): which pointer (if any) is mid touch-drag — a ref,
   // not state, since it's read-and-cleared synchronously inside the same
   // move/up handlers that also drive `dragId`/`hover` and doesn't itself
@@ -827,44 +809,19 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
     return { row, rect: li.getBoundingClientRect() };
   };
 
-  // Issue #153: keep the Layers panel scrolled to whichever row is selected
-  // (e.g. via a canvas click), matching the canvas's own outline highlight
-  // becoming visible without extra user action.
-  //
-  // Issue #165 (task 133): originally unconditional — every selection
-  // change called `scrollIntoView`, even when the newly-selected row was
-  // already fully on screen. Live user feedback after task 132 compacted
-  // the rows still flagged this as jarring specifically for that
-  // already-visible case (a same-viewport jump has no reason to happen at
-  // all), so this now only scrolls when the row is actually out of view —
-  // acceptance option (a) of this task's three, chosen over (b) removing
-  // auto-scroll entirely or (c) keeping it unconditional. Rationale for
-  // not choosing (b)/(c): compact rows and the strengthened `[data-
-  // selected='true']` highlight (task 132) genuinely shrink how often a
-  // jump happens at all (more rows now fit without scrolling) and make a
-  // selected-but-off-screen row easier to spot once scrolled to, but
-  // neither eliminates the real case this effect exists for — selecting a
-  // shape via a canvas click while the Layers panel is scrolled somewhere
-  // else entirely still needs *some* scroll to bring it into view, so
-  // removing the behavior outright (b) would be a net loss for that case;
-  // keeping it unconditional (c) would keep the exact jarring same-
-  // viewport jump this task was filed to fix.
-  //
-  // "Visible" is checked against the browser viewport (`window.innerHeight`),
-  // not a dedicated scrollable ancestor: `.editor-outline-list` (and its
-  // containing `.editor-panel[data-panel='layers']`) has no `overflow-y`
-  // of its own in `index.css` — the page/panel scrolls as a whole, so the
-  // viewport is the actual "visible scroll area" a real user experiences
-  // here, not a false proxy for it.
-  useEffect(() => {
-    const id = sceneEditor.selectedShapeId;
-    if (!id || !listRef.current) return;
-    const row = listRef.current.querySelector(`[data-outline-id="${id}"]`);
-    if (!row || isRowFullyVisible(row)) return;
-    // jsdom (unit tests) has no `scrollIntoView` implementation at all.
-    row.scrollIntoView?.({ block: 'nearest' });
-  }, [sceneEditor.selectedShapeId]);
-
+  // Issue #153 introduced a selection-driven auto-scroll effect (jumping
+  // the panel to whichever row was selected); issue #165 (task 133)
+  // narrowed it to only fire when the newly-selected row was actually out
+  // of view. Issue #166 (task 134): live user feedback
+  // after #165 shipped reported the "only scroll when out of view" heuristic
+  // *still* reads as the same jarring jump when the panel is off-screen, so
+  // this panel now performs NO automatic page/panel scrolling on selection
+  // at all — `SelectionHud.tsx` (#163) and each row's own
+  // `[data-selected='true']` highlight (#164) are relied on entirely to
+  // surface what's selected. Selecting a row directly by clicking it in
+  // this panel is unaffected (that's a user-initiated scroll into their own
+  // view, not this removed behavior). See `_docs/tasks.md` task 134's
+  // resolution notes for the full writeup.
   const drag: DragController = {
     dragId,
     hover,
@@ -921,8 +878,8 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
     onHandlePointerDown: (event, row) => {
       if (event.pointerType === 'mouse' || isRowLocked(row)) return;
       event.preventDefault();
-      // jsdom (unit tests) has no `setPointerCapture` implementation at all
-      // — the same "call it if present" guard `scrollIntoView` above needs.
+      // jsdom (unit tests) has no `setPointerCapture` implementation at
+      // all, hence the optional-call guard.
       event.currentTarget.setPointerCapture?.(event.pointerId);
       pointerDragIdRef.current = event.pointerId;
       setDragId(row.id);
@@ -1024,7 +981,7 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
       {sceneEditor.outline.length === 0 ? (
         <p>No layers yet.</p>
       ) : (
-        <ul aria-label="Scene outline" className="editor-outline-list" ref={listRef}>
+        <ul aria-label="Scene outline" className="editor-outline-list">
           {sceneEditor.outline.map((row) => (
             <OutlineRowItem key={row.id} row={row} sceneEditor={sceneEditor} drag={drag} />
           ))}

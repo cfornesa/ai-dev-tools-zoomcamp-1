@@ -3447,3 +3447,182 @@ clean (one added `react(only-export-components)` warning for the new
 `isRowFullyVisible` export, same pre-existing warning class as this
 file's other exported helpers); full frontend suite green, 1737/1737
 (1730 before this task's 7 new tests), zero regressions.
+Follow-up note (2026-08-25): this resolution's chosen option (a) — "only
+scroll when the row is out of view" — was reversed by task 134/#166 after
+further live user feedback showed the same jarring jump persists whenever
+the panel itself is off-screen. Task 134 removed the effect (and
+`isRowFullyVisible`) entirely; see that task's own entry and resolution
+below for the reversal's rationale and verification. This note points at
+that reversal without rewriting the historical resolution above, which
+remains an accurate record of what was decided and why at the time.
+
+## 134. Revisit #165: eliminate or scope down Layers-panel auto-scroll-on-selection
+
+Goal: Live user feedback obtained after tasks 131-133 shipped directly
+contradicts the #165 (task 133) resolution — the user wants selecting a
+shape to highlight it (via #163's HUD and #164's `[data-selected='true']`
+row styling) without any page/panel scroll jump at all, not just a scroll
+suppressed while already in view.
+Description: This is a reversal signal from real usage of the shipped
+behavior, not a fresh idea — #165 explicitly weighed and rejected removing
+auto-scroll entirely (its option "(b)") based on a hypothesis that
+compact/highlighted rows would meaningfully reduce, but not eliminate, the
+need for it. The 2026-08-25 feedback ("Clicking on a shape still
+automatically scrolls down to the layer details instead of simply
+highlighting the layer") reports the predicted improvement didn't resolve
+the disorientation complaint in practice. Needs re-grooming against this
+new data point: remove the scroll entirely, make it opt-in, or scope it to
+a dedicated scrollable region instead of the whole page/panel
+(`LayersPanel.tsx`'s effect currently checks visibility against
+`window.innerHeight` because neither `.editor-outline-list` nor
+`.editor-panel[data-panel='layers']` has its own `overflow-y`).
+Out of scope: #163's HUD and #164's row compaction/highlight are assumed
+sufficient replacements for "showing what's selected" — this task is only
+about whether/how the scroll itself still happens.
+Status: COMPLETE
+GitHub issue: [#166](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/166)
+(open for QA/closing by the orchestrator).
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
+--search "auto-scroll"` / `"scroll into view"` — only #165 (closed)
+matches, and it is the decision being reopened here, not a duplicate.
+Resolution (2026-08-25): Chose full removal — the PM-groomed acceptance
+criteria on #166 explicitly settled this re-grooming in favor of "remove
+the scroll-into-view entirely," on the rationale that `SelectionHud.tsx`
+(#163) already shows what's selected without the Layers panel needing to
+be in view, and the "only scroll when out of view" heuristic (#165) still
+produces the same jarring jump whenever the panel itself is off-screen.
+`LayersPanel.tsx`'s selection-driven `useEffect`, its `isRowFullyVisible`
+helper, and the `listRef` that existed only to support that effect were
+all deleted outright (no scoped/opt-in middle ground); selecting a row
+directly by clicking it in the panel is unaffected (that's a user-
+initiated scroll into their own view, not the removed auto-scroll).
+Verified: `frontend/src/pages/LayersPanel.autoScroll.test.ts` was updated
+in place (not deleted) — since there is no longer a pure helper to unit-
+test, it now asserts `isRowFullyVisible` is no longer exported from the
+module and that the component's source contains no `scrollIntoView` call,
+a source-level regression guard against the behavior being silently
+reintroduced. `frontend/src/pages/EditorWorkspace.layersAutoScroll.test.tsx`
+was updated in place too: both its existing scenarios (row already fully
+visible, row off-screen) now assert `scrollIntoView` is never called,
+where the second previously asserted it *was* called with
+`{ block: 'nearest' }`. `make frontend-lint`/`frontend-typecheck`/
+`frontend-format-check` all clean (the `isRowFullyVisible`
+`react(only-export-components)` warning from task 133 is gone, since that
+export no longer exists); full frontend suite green, 1734/1734, zero
+regressions.
+
+## 135. Redesign the Layers panel toward a horizontally-longer, vertically-shorter layout
+
+Goal: Reduce vertical space consumed per row and make better use of
+horizontal space in the Layers panel, per live user feedback describing
+the current layout as wasting "so much screen real estate... on centering
+everything when the reality is that the layers could be horizontally
+longer while being vertically smaller."
+Description: `frontend/src/index.css`'s `.editor-outline-row` is already
+compact for shape/group rows (task 132/#164), but layer-level rows
+(`OutlineRowItem`'s layer branch, `LayersPanel.tsx`) remain tall because
+of #164's own deliberate carve-out leaving their Visible/Locked/Delete/
+More controls unchanged. The complaint is about overall row/panel
+geometry and proportions, not which controls render — needs grooming on
+whether to widen the Layers panel's sidebar allocation, repack controls
+within the current width, or both, and how this interacts with task
+136/#168's separate ask to convert layer-row Visible/Locked buttons to
+checkboxes (that alone frees some horizontal space but doesn't itself
+redesign the layout).
+Out of scope: The specific control-type change from buttons to
+checkboxes (task 136/#168); shape/group row content, already compacted by
+#164.
+Status: PROPOSED
+GitHub issue: [#167](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/167)
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
+--search "layers panel"` — #164 (closed) compacted row *content*; #154
+(closed) repositioned the panel within the sidebar accordion. Neither
+covers row/panel *geometry*. New, not a duplicate.
+
+## 136. Convert layer-row Visible/Locked buttons to compact checkboxes
+
+Goal: Replace the layer row's full-size "Visible"/"Unlocked" toggle
+buttons with smaller checkbox-style controls at reduced text size, per
+live user feedback: "smaller text and using checkboxes, instead, could
+accommodate a horizontally longer layer space."
+Description: `LayersPanel.tsx`'s `OutlineRowItem` layer branch renders
+Visible/Locked as full buttons (plus Delete and a "More" disclosure) by
+task 132/#164's own explicit, documented decision to leave layer rows
+uncompacted — because task 131/#163's `SelectionHud.tsx` was scoped to
+exclude layer rows entirely. That was a reasoned carve-out, not an
+oversight, and this task asks to partially reopen it: specifically for
+Visible/Locked only (not Delete or More, unless grooming decides
+otherwise). Needs grooming on whether this is a minimal in-place control
+swap or the deferred `SelectionHud.tsx` extension to layer rows that
+#163/#164 explicitly left on the table rather than ruling out.
+Out of scope: Delete layer and the "More" disclosure (Move up/down,
+reparent), unless grooming finds a HUD extension makes relocating them
+free; shape/group rows (already compacted by #164).
+Status: PROPOSED
+GitHub issue: [#168](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/168)
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
+--search "layers panel"` — #163/#164 (closed) are the direct prior art
+whose own documented carve-out this task asks to reopen; not a
+duplicate.
+
+## 137. Fix camera overlay stacking so it renders on top of the scene canvas
+
+Goal: Make the camera overlay actually appear composited on top of scene
+shapes (or, if not achievable, at minimum genuinely on top rather than
+behind), matching what its own name and controls ("Camera overlay
+opacity") imply — per live user feedback and confirmed root cause in
+source, not just the screenshot.
+Description: `frontend/src/pages/EditorWorkspace.tsx`'s `<video>` overlay
+element renders with `zIndex: -2` while the p5 shape-canvas mount div
+immediately below it renders with `zIndex: -1` — since -1 stacks above
+-2, the shape canvas always paints over the camera feed by design (task
+110/#141's own comment: kept behind "so it stays structurally absent from
+any canvas-only capture path (thumbnails, exports)"). The user's
+screenshot showing only a sliver of video at the canvas's bottom edge is
+consistent with this stacking, not a transitional glitch. Needs grooming
+on how to make the camera visually on-top for the live editor/Preview
+while still keeping it out of thumbnail/export capture — likely by
+confirming capture code already targets the p5 `<canvas>` element
+specifically (not its parent container), in which case the video's own
+stacking can safely move above it with no capture-path change needed.
+Out of scope: Task 151/#151's drag/resize/reposition work (unaffected,
+separate concern); the public project viewer's/standalone export's
+camera overlay (#145/#146/#152) — scope to the editor Preview first, file
+separately if the same defect is confirmed there.
+Status: PROPOSED
+GitHub issue: [#169](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/169)
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
+--search "camera overlay"` — #141/#147 (closed) shipped the overlay
+itself; #151 (open) is drag/resize only. Neither covers the stacking/
+z-index defect. New, not a duplicate.
+
+## 138. Add canvas/background-level opacity, color, and layer-like settings
+
+Goal: Let the user control the scene canvas/background's own opacity and
+color, plus other "layer-like" configuration, excluding a visibility
+toggle (the canvas can't be meaningfully hidden) — a genuinely new
+feature, per live user feedback.
+Description: `schema/scene.schema.json` already has a required scene-level
+`backgroundColor` field, but no file under `frontend/src/pages/` exposes
+any UI control for it — it's only reachable via the Code tab's raw JSON
+editing (#159). There is no canvas-level opacity field in the schema or
+UI at all (existing opacity controls are all per-shape, via
+`ShapeInspectorPanel.tsx`/`shapeStyleFields.ts`, or per-camera-overlay,
+via `cameraOverlaySettings.ts` — distinct concepts). Needs its own
+grooming pass to settle: where the control lives (a permanent row in the
+Layers panel outline, a dedicated settings section, or a HUD analogous to
+`SelectionHud.tsx` for "nothing else selected"), how canvas opacity
+composites with per-shape opacity in `p5Adapter.ts` and in thumbnail/
+export/public-viewer rendering, and what "layer-like configurations...
+with the exception of visibility" concretely means beyond opacity/color
+(the request is underspecified there and needs a follow-up
+clarification).
+Out of scope: Visibility toggle for the canvas (explicitly excluded);
+per-shape opacity and camera-overlay opacity (both already exist,
+unaffected).
+Status: PROPOSED
+GitHub issue: [#170](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/170)
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
+--search "canvas background"` / `"background color"` — no existing issue
+adds a UI control for scene-level background color or canvas-level
+opacity. New, not a duplicate.

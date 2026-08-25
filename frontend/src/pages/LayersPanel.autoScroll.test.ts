@@ -1,65 +1,38 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { isRowFullyVisible } from './LayersPanel';
+import { describe, expect, it } from 'vitest';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Issue #165 (task 133): unit tests for `isRowFullyVisible`, the pure
- * helper gating `LayersPanel.tsx`'s selection-driven `scrollIntoView`
- * effect — see that file's "Issue #165" comment for the full decision
- * writeup (option (a): only scroll when the row is genuinely out of the
- * viewport, not unconditionally on every selection change).
+ * Issue #165 (task 133) added a selection-driven `scrollIntoView` effect
+ * gated by a pure `isRowFullyVisible` helper, unit-tested directly here.
+ *
+ * Issue #166 (task 134): live user feedback reported the gated "only
+ * scroll when out of view" behavior *still* reads as jarring, so
+ * `LayersPanel.tsx` now performs no automatic scrolling on selection at
+ * all — the effect and `isRowFullyVisible` were removed outright rather
+ * than further tuned. Per this task's acceptance criteria this file is
+ * updated (not deleted) to assert the NEW behavior: no such helper is
+ * exported any more, and the component's source contains no
+ * `scrollIntoView` call — a source-level regression guard against the
+ * behavior being silently reintroduced. Behavioral (DOM-level) coverage
+ * that selecting a shape never triggers a scroll lives in
+ * `EditorWorkspace.layersAutoScroll.test.tsx`, which mounts the full
+ * component tree end-to-end.
  */
 
-function rect(top: number, bottom: number): DOMRect {
-  return {
-    top,
-    bottom,
-    left: 0,
-    right: 100,
-    width: 100,
-    height: bottom - top,
-    x: 0,
-    y: top,
-    toJSON: () => ({}),
-  } as DOMRect;
-}
+const layersPanelSource = readFileSync(path.resolve(__dirname, './LayersPanel.tsx'), 'utf-8');
 
-function elementWithRect(r: DOMRect): Element {
-  const el = document.createElement('li');
-  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(r);
-  return el;
-}
-
-beforeEach(() => {
-  Object.defineProperty(window, 'innerHeight', {
-    writable: true,
-    configurable: true,
-    value: 800,
-  });
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
-
-describe('isRowFullyVisible', () => {
-  it('treats an unlaid-out element (all-zero rect) as visible', () => {
-    expect(isRowFullyVisible(elementWithRect(rect(0, 0)))).toBe(true);
+describe('LayersPanel auto-scroll removal (issue #166)', () => {
+  it('no longer exports isRowFullyVisible', async () => {
+    const module = await import('./LayersPanel');
+    expect('isRowFullyVisible' in module).toBe(false);
   });
 
-  it('is visible when fully within the viewport', () => {
-    expect(isRowFullyVisible(elementWithRect(rect(100, 140)))).toBe(true);
-  });
-
-  it('is visible when exactly flush with the viewport edges', () => {
-    expect(isRowFullyVisible(elementWithRect(rect(0, 800)))).toBe(true);
-  });
-
-  it('is not visible when above the viewport (negative top)', () => {
-    expect(isRowFullyVisible(elementWithRect(rect(-50, 10)))).toBe(false);
-  });
-
-  it('is not visible when below the viewport (bottom past innerHeight)', () => {
-    expect(isRowFullyVisible(elementWithRect(rect(790, 850)))).toBe(false);
+  it('contains no scrollIntoView call', () => {
+    expect(layersPanelSource).not.toContain('scrollIntoView');
   });
 });

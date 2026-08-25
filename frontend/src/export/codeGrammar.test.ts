@@ -64,7 +64,11 @@ describe('generateEditableHtml / generateEditableCss: forward direction', () => 
 
   it('marks a hidden/locked shape with the documented class tokens', () => {
     const scene = baseScene();
-    (scene.shapes as unknown[])[0] = { ...(scene.shapes as any[])[0], visible: false, locked: true };
+    (scene.shapes as unknown[])[0] = {
+      ...(scene.shapes as any[])[0],
+      visible: false,
+      locked: true,
+    };
     const html = generateEditableHtml(scene);
     expect(html).toMatch(/class="scene-shape circle hidden locked"/);
   });
@@ -135,10 +139,9 @@ describe('parseEditableHtmlAndCss: reverse direction', () => {
   it('applies a position/color edit back onto the scene', () => {
     const scene = baseScene();
     const html = generateEditableHtml(scene);
-    const css = generateEditableCss(scene).replace('left: 100px;', 'left: 250px;').replace(
-      'background-color: #ff0000;',
-      'background-color: #0000ff;',
-    );
+    const css = generateEditableCss(scene)
+      .replace('left: 100px;', 'left: 250px;')
+      .replace('background-color: #ff0000;', 'background-color: #0000ff;');
     const result = parseEditableHtmlAndCss(html, css, scene);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -228,10 +231,7 @@ describe('parseEditableHtmlAndCss: reverse direction', () => {
 
   it('rejects a non-div element inside <main id="scene-shapes">', () => {
     const scene = baseScene();
-    const html = generateEditableHtml(scene).replace(
-      '</main>',
-      '  <span>injected</span>\n</main>',
-    );
+    const html = generateEditableHtml(scene).replace('</main>', '  <span>injected</span>\n</main>');
     const css = generateEditableCss(scene);
     const result = parseEditableHtmlAndCss(html, css, scene);
     expect(result.ok).toBe(false);
@@ -241,7 +241,10 @@ describe('parseEditableHtmlAndCss: reverse direction', () => {
 
   it('rejects an attempt to change layer/group membership via the Code tab', () => {
     const scene = baseScene();
-    const html = generateEditableHtml(scene).replace('data-layer-id="layer-1"', 'data-layer-id="layer-2"');
+    const html = generateEditableHtml(scene).replace(
+      'data-layer-id="layer-1"',
+      'data-layer-id="layer-2"',
+    );
     const css = generateEditableCss(scene);
     const result = parseEditableHtmlAndCss(html, css, scene);
     expect(result.ok).toBe(false);

@@ -26,6 +26,13 @@ import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
 import {
+  generateEditableCss,
+  generateEditableHtml,
+  generateEditableJs,
+  isEditableJsUnchanged,
+  parseEditableHtmlAndCss,
+} from '../export/codeGrammar';
+import {
   applyGroupDrag,
   applyMoveSnap,
   applyResizeSnap,
@@ -457,6 +464,226 @@ function SceneCodeEditor({
           Invalid scene JSON — not applied: {error}
         </p>
       )}
+    </div>
+  );
+}
+
+type CodeSubTab = 'json' | 'html' | 'css' | 'js';
+
+/**
+ * Task 142 (issue #174): the HTML/CSS sub-tabs' Save action -- reverse-
+ * parses the CURRENT text in both boxes (they're interdependent: a CSS rule
+ * targets an id declared in the HTML) against the constrained grammar in
+ * `../export/codeGrammar.ts`, and on success applies the result as one
+ * `sceneEditor.commitScene()` call, i.e. one undo/redo step, exactly like
+ * every Visual-tab mutation. On failure, nothing is applied -- the working
+ * copy is left completely untouched and the specific grammar violations are
+ * shown, mirroring the JSON sub-tab's own "never silently apply/never
+ * silently drop" behavior (#159).
+ */
+function HtmlCssCodeEditor({
+  activeSubTab,
+  workingCopy,
+  onCommit,
+}: {
+  activeSubTab: CodeSubTab;
+  workingCopy: SceneDocument | null;
+  onCommit: (scene: SceneDocument) => void;
+}) {
+  const [htmlText, setHtmlText] = useState(() => generateEditableHtml(workingCopy));
+  const [cssText, setCssText] = useState(() => generateEditableCss(workingCopy));
+  const [errors, setErrors] = useState<string[] | null>(null);
+
+  function handleSave() {
+    if (!workingCopy) return;
+    const result = parseEditableHtmlAndCss(htmlText, cssText, workingCopy);
+    if (!result.ok) {
+      setErrors(result.errors);
+      return;
+    }
+    setErrors(null);
+    onCommit(result.scene);
+    // Re-canonicalize both boxes from the just-applied scene so the visible
+    // text always matches what `generateEditableHtml`/`generateEditableCss`
+    // would produce for it -- this is what makes "re-save unchanged -> no
+    // diff" hold even after a save that only touched a few properties.
+    setHtmlText(generateEditableHtml(result.scene));
+    setCssText(generateEditableCss(result.scene));
+  }
+
+  return (
+    <div
+      className="editor-code-tab editor-code-tab--html-css"
+      hidden={activeSubTab !== 'html' && activeSubTab !== 'css'}
+    >
+      <p className="editor-code-tab-note">
+        HTML and CSS are saved together (a CSS rule targets a shape declared in the HTML) — editing
+        shape geometry/color/opacity/visibility/lock here updates the Visual tab&apos;s shapes on
+        Save. Shapes cannot be added, removed, retyped, or moved between layers/groups from here —
+        use the Visual tab for that.
+      </p>
+      <div hidden={activeSubTab !== 'html'}>
+        <label htmlFor="editor-scene-html-textarea">Scene HTML</label>
+        <textarea
+          id="editor-scene-html-textarea"
+          data-testid="editor-scene-html-textarea"
+          className="editor-scene-code-textarea"
+          spellCheck={false}
+          rows={20}
+          style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85em' }}
+          value={htmlText}
+          onChange={(event) => setHtmlText(event.target.value)}
+        />
+      </div>
+      <div hidden={activeSubTab !== 'css'}>
+        <label htmlFor="editor-scene-css-textarea">Scene CSS</label>
+        <textarea
+          id="editor-scene-css-textarea"
+          data-testid="editor-scene-css-textarea"
+          className="editor-scene-code-textarea"
+          spellCheck={false}
+          rows={20}
+          style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85em' }}
+          value={cssText}
+          onChange={(event) => setCssText(event.target.value)}
+        />
+      </div>
+      <button type="button" data-testid="editor-scene-html-css-save" onClick={handleSave}>
+        Save {activeSubTab === 'html' ? 'HTML' : 'CSS'}
+      </button>
+      {errors && (
+        <ul
+          id="editor-scene-html-css-error"
+          role="alert"
+          aria-live="assertive"
+          className="editor-scene-code-errors"
+        >
+          {errors.map((message, index) => (
+            <li key={index}>{message}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Task 142 (issue #174): the JavaScript sub-tab. Shows a live-generated
+ * view of this scene's interaction runtime and is a real editable textarea
+ * with a Save action (per issue #174's re-groomed acceptance criteria), but
+ * JS is not yet reverse-parsed onto `graph`/`bindings` -- see
+ * `codeGrammar.ts`'s `generateEditableJs` doc comment for the full
+ * rationale and the tracked follow-up. Saving the text back unchanged is a
+ * safe no-op; any other edit is rejected with an actionable message instead
+ * of being silently applied or silently dropped.
+ */
+function JsCodeEditor({ workingCopy }: { workingCopy: SceneDocument | null }) {
+  const [text, setText] = useState(() => generateEditableJs(workingCopy));
+  const [error, setError] = useState<string | null>(null);
+
+  function handleSave() {
+    if (isEditableJsUnchanged(text, workingCopy)) {
+      setError(null);
+      return;
+    }
+    setError(
+      'JavaScript editing is not part of the supported Code-tab grammar yet ' +
+        '(task 142/issue #174 tracks the follow-up for interaction-runtime ' +
+        'graph/binding edits via JS). Make behavior/logic changes in the ' +
+        'Visual tab, or shape geometry/style changes in the HTML/CSS ' +
+        'sub-tabs, instead — this edit was not applied.',
+    );
+  }
+
+  return (
+    <div className="editor-code-tab">
+      <p className="editor-code-tab-note">
+        Generated from this scene&apos;s interaction runtime. Not yet editable/saveable — see the
+        note below if you try to save a change.
+      </p>
+      <label htmlFor="editor-scene-js-textarea">Scene JavaScript</label>
+      <textarea
+        id="editor-scene-js-textarea"
+        data-testid="editor-scene-js-textarea"
+        className="editor-scene-code-textarea"
+        spellCheck={false}
+        rows={20}
+        style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85em' }}
+        value={text}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? 'editor-scene-js-error' : undefined}
+        onChange={(event) => setText(event.target.value)}
+      />
+      <button type="button" data-testid="editor-scene-js-save" onClick={handleSave}>
+        Save JavaScript
+      </button>
+      {error && (
+        <p id="editor-scene-js-error" role="alert" aria-live="assertive">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Task 142 (issue #174): the Code tab's sub-tab shell -- JSON (#159,
+ * completely unchanged), plus the new HTML/CSS/JS sub-tabs. All four
+ * sub-editors stay mounted simultaneously (toggled with `hidden`, not
+ * conditionally rendered) so switching between them never loses an
+ * in-progress unsaved edit in another sub-tab within the same Code-tab
+ * session. Each sub-editor's own local text state is seeded once, from
+ * `workingCopy` at the moment this whole `CodeTab` mounts -- exactly the
+ * same "Visual and Code are mutually exclusive views, so resync on mount is
+ * enough" convention `SceneCodeEditor` already established for JSON (see
+ * its own doc comment): a Visual-tab edit is only ever made while Code is
+ * unmounted, so the next time Code mounts, every sub-tab's generated
+ * content is already current.
+ */
+function CodeTab({
+  workingCopy,
+  onCommitJson,
+  onCommitCode,
+}: {
+  workingCopy: SceneDocument | null;
+  /** JSON sub-tab save handler -- `setWorkingCopy` directly, exactly as
+   * before (#159's behavior is explicitly unchanged by task 142). */
+  onCommitJson: (scene: SceneDocument) => void;
+  /** HTML/CSS sub-tabs' save handler -- `sceneEditor.commitScene`, so a
+   * Code-tab save of shape geometry/style lands as one undo/redo step, the
+   * same guarantee every Visual-tab mutation already gets. */
+  onCommitCode: (scene: SceneDocument) => void;
+}) {
+  const [activeSubTab, setActiveSubTab] = useState<CodeSubTab>('json');
+
+  return (
+    <div className="editor-code-tab-shell">
+      <div role="tablist" aria-label="Code format" className="editor-code-subtabs">
+        {(['json', 'html', 'css', 'js'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            aria-selected={activeSubTab === tab}
+            className={`editor-code-subtab editor-code-subtab--${tab}`}
+            data-testid={`editor-code-subtab-${tab}`}
+            onClick={() => setActiveSubTab(tab)}
+          >
+            {tab.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      <div hidden={activeSubTab !== 'json'}>
+        <SceneCodeEditor workingCopy={workingCopy} onCommit={onCommitJson} />
+      </div>
+      <HtmlCssCodeEditor
+        activeSubTab={activeSubTab}
+        workingCopy={workingCopy}
+        onCommit={onCommitCode}
+      />
+      <div hidden={activeSubTab !== 'js'}>
+        <JsCodeEditor workingCopy={workingCopy} />
+      </div>
     </div>
   );
 }
@@ -2104,7 +2331,11 @@ function EditorWorkspace() {
           </div>
           {previewView === 'code' && (
             <div aria-label="Code">
-              <SceneCodeEditor workingCopy={workingCopy} onCommit={setWorkingCopy} />
+              <CodeTab
+                workingCopy={workingCopy}
+                onCommitJson={setWorkingCopy}
+                onCommitCode={sceneEditor.commitScene}
+              />
             </div>
           )}
           {/* Issue #159: everything below through the end of the canvas

@@ -1409,6 +1409,13 @@ export function useSceneEditor(
     moveGraphNode,
     updateGraphNodeParams,
     clearGraphError,
+    // Task 142 (issue #174): the Code tab's HTML/CSS sub-tab save handler
+    // needs to apply a whole-scene replacement (parsed from hand-edited
+    // HTML+CSS) as exactly one undo/redo step, the same guarantee every
+    // other mutation above already gets via `commit()` -- exposed under
+    // a more self-descriptive name than the internal `commit` since it's
+    // now part of this hook's public surface.
+    commitScene: commit,
   };
 }
 

@@ -157,7 +157,9 @@ function nonEditableShapesOf(scene: SceneDocument): unknown[] {
 }
 
 function num(value: number, digits = 4): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(digits).replace(/0+$/, '').replace(/\.$/, '');
+  return Number.isInteger(value)
+    ? String(value)
+    : value.toFixed(digits).replace(/0+$/, '').replace(/\.$/, '');
 }
 
 function px(value: number): string {
@@ -241,11 +243,11 @@ export function generateEditableCss(scene: SceneDocument | null): string {
 export function generateEditableJs(scene: SceneDocument | null): string {
   if (!scene) return '';
   const banner = [
-    '// Generated from this scene\'s interaction runtime (graph + bindings).',
-    '// NOT YET REVERSE-PARSED: this repo\'s Code-tab grammar (task 142 / issue',
+    "// Generated from this scene's interaction runtime (graph + bindings).",
+    "// NOT YET REVERSE-PARSED: this repo's Code-tab grammar (task 142 / issue",
     '// #174) does not map hand-edited JavaScript back onto the graph/bindings',
     '// model yet -- that is tracked as an explicit follow-up (see',
-    '// _docs/tasks.md task 142\'s resolution notes for the issue number).',
+    "// _docs/tasks.md task 142's resolution notes for the issue number).",
     '// Editing shapes/behaviors here has no effect; use the Visual tab (for',
     '// behaviors/logic) or the HTML/CSS sub-tabs (for shape geometry/style)',
     '// instead. Saving this tab unchanged is a safe no-op.',
@@ -270,8 +272,7 @@ export function isEditableJsUnchanged(text: string, scene: SceneDocument | null)
 // ---------------------------------------------------------------------------
 
 export type GrammarParseResult =
-  | { ok: true; scene: SceneDocument }
-  | { ok: false; errors: string[] };
+  { ok: true; scene: SceneDocument } | { ok: false; errors: string[] };
 
 type ParsedShapeAttrs = {
   id: string;
@@ -282,7 +283,9 @@ type ParsedShapeAttrs = {
   locked: boolean;
 };
 
-function parseHtml(html: string): { ok: true; shapes: ParsedShapeAttrs[] } | { ok: false; errors: string[] } {
+function parseHtml(
+  html: string,
+): { ok: true; shapes: ParsedShapeAttrs[] } | { ok: false; errors: string[] } {
   let doc: Document;
   try {
     doc = new DOMParser().parseFromString(html, 'text/html');
@@ -301,7 +304,9 @@ function parseHtml(html: string): { ok: true; shapes: ParsedShapeAttrs[] } | { o
   const seenIds = new Set<string>();
   Array.from(main.children).forEach((child, index) => {
     if (child.tagName.toLowerCase() !== 'div') {
-      errors.push(`Element ${index + 1} inside <main id="scene-shapes"> is a <${child.tagName.toLowerCase()}>, but only <div> shape elements are supported.`);
+      errors.push(
+        `Element ${index + 1} inside <main id="scene-shapes"> is a <${child.tagName.toLowerCase()}>, but only <div> shape elements are supported.`,
+      );
       return;
     }
     const id = child.getAttribute('data-shape-id');
@@ -323,7 +328,9 @@ function parseHtml(html: string): { ok: true; shapes: ParsedShapeAttrs[] } | { o
     const allowedClasses = new Set(['scene-shape', type, 'hidden', 'locked']);
     for (const cls of classList) {
       if (!allowedClasses.has(cls)) {
-        errors.push(`Shape "${id}": unrecognized class "${cls}" (allowed: ${[...allowedClasses].join(', ')}).`);
+        errors.push(
+          `Shape "${id}": unrecognized class "${cls}" (allowed: ${[...allowedClasses].join(', ')}).`,
+        );
       }
     }
     shapes.push({
@@ -345,7 +352,10 @@ function parseCss(css: string): { ok: true; rules: CssRule[] } | { ok: false; er
   const stripped = css.replace(/\/\*[\s\S]*?\*\//g, '').trim();
   if (stripped.length === 0) return { ok: true, rules: [] };
   if (stripped.includes('@')) {
-    return { ok: false, errors: ['At-rules (e.g. @media) are not supported by the Code tab CSS grammar.'] };
+    return {
+      ok: false,
+      errors: ['At-rules (e.g. @media) are not supported by the Code tab CSS grammar.'],
+    };
   }
   const rules: CssRule[] = [];
   const errors: string[] = [];
@@ -404,7 +414,11 @@ function parseUnitInterval(value: string, field: string, errors: string[]): numb
   return n;
 }
 
-function parseColorOrNone(value: string, field: string, errors: string[]): string | null | undefined {
+function parseColorOrNone(
+  value: string,
+  field: string,
+  errors: string[],
+): string | null | undefined {
   const trimmed = value.trim();
   if (trimmed === 'none') return null;
   if (!COLOR_PATTERN.test(trimmed)) {
@@ -459,7 +473,9 @@ export function parseEditableHtmlAndCss(
     const existing = existingById.get(parsed.id);
     if (!existing) continue; // already reported as "extra" above
     if (parsed.type !== existing.type) {
-      errors.push(`Shape "${parsed.id}": type cannot change from "${existing.type}" to "${parsed.type}" via the Code tab.`);
+      errors.push(
+        `Shape "${parsed.id}": type cannot change from "${existing.type}" to "${parsed.type}" via the Code tab.`,
+      );
     }
     if (parsed.layerId !== null && parsed.layerId !== existing.layerId) {
       errors.push(`Shape "${parsed.id}": data-layer-id cannot be changed via the Code tab.`);
@@ -486,7 +502,9 @@ export function parseEditableHtmlAndCss(
     }
     const shapeMatch = /^#shape-([A-Za-z0-9_-]{1,64})$/.exec(rule.selector);
     if (!shapeMatch) {
-      errors.push(`Unsupported CSS selector "${rule.selector}" -- only "#scene-shapes" and "#shape-{id}" are supported.`);
+      errors.push(
+        `Unsupported CSS selector "${rule.selector}" -- only "#scene-shapes" and "#shape-{id}" are supported.`,
+      );
       continue;
     }
     const id = shapeMatch[1];
@@ -519,7 +537,11 @@ export function parseEditableHtmlAndCss(
   return { ok: true, scene: nextScene };
 }
 
-function applyCanvasDeclarations(decls: Record<string, string>, canvas: Canvas, errors: string[]): void {
+function applyCanvasDeclarations(
+  decls: Record<string, string>,
+  canvas: Canvas,
+  errors: string[],
+): void {
   for (const [prop, value] of Object.entries(decls)) {
     if (prop === 'background-color') {
       const color = parseColorOrNone(value, '#scene-shapes background-color', errors);
@@ -539,7 +561,11 @@ function applyCanvasDeclarations(decls: Record<string, string>, canvas: Canvas, 
   }
 }
 
-function applyShapeDeclarations(decls: Record<string, string>, shape: Shape, errors: string[]): void {
+function applyShapeDeclarations(
+  decls: Record<string, string>,
+  shape: Shape,
+  errors: string[],
+): void {
   const label = `#shape-${shape.id}`;
   for (const [prop, value] of Object.entries(decls)) {
     switch (prop) {
@@ -585,7 +611,9 @@ function applyShapeDeclarations(decls: Record<string, string>, shape: Shape, err
       case 'transform': {
         const match = TRANSFORM_FN_PATTERN.exec(value.trim());
         if (!match) {
-          errors.push(`${label} transform: only "rotate(Ndeg)" and/or "scale(sx, sy)" are supported.`);
+          errors.push(
+            `${label} transform: only "rotate(Ndeg)" and/or "scale(sx, sy)" are supported.`,
+          );
           break;
         }
         if (match[1] !== undefined) {

@@ -285,6 +285,16 @@ describe('EditorWorkspace responsive layout', () => {
     expect(css).toMatch(/\.editor-panel\[data-panel='preview'\]\s*\{\s*grid-column:\s*1;/);
   });
 
+  it('lets the editor use the full desktop viewport while keeping content panels bounded', () => {
+    const css = readFileSync(join(__dirname, '..', 'index.css'), 'utf-8');
+
+    expect(css).toMatch(/#root\s*\{[^}]*width:\s*100%/);
+    expect(css).toMatch(/\.app-shell\s*\{[^}]*width:\s*100%/);
+    expect(css).toMatch(/\.editor-workspace\s*\{[^}]*width:\s*calc\(100%\s*-\s*48px\)/);
+    expect(css).toMatch(/\.content-panel\s*\{[^}]*max-width:\s*1126px/);
+    expect(css).toMatch(/\.content-panel\s*\{[^}]*margin:\s*0\s+auto\s+32px/);
+  });
+
   // Issue #93 hard requirement: Preview must never become unreachable while
   // using Tools or Inspector, at any viewport width — so below 1024px it's
   // no longer one of three mutually-exclusive tabs. It always stays

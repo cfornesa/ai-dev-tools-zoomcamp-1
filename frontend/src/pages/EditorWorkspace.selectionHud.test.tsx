@@ -212,33 +212,31 @@ describe('SelectionHud: visibility (issue #163)', () => {
 });
 
 describe('SelectionHud: shape controls reuse the exact LayersPanel mutations (issue #163)', () => {
-  it('toggles shape visibility, matching the outline row state', async () => {
+  // Issue #164 (task 132): the outline row's own Visible/Locked buttons
+  // are gone (compacted away) — the HUD's own re-rendered `aria-pressed`
+  // state after each toggle is now the only on-screen reflection of
+  // `toggleShapeVisible`/`toggleShapeLocked` actually having run.
+  it('toggles shape visibility', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
     await user.click(within(hud()!).getByRole('button', { name: 'Visible' }));
 
-    const shapeRow = within(outlineList()).getByRole('button', { name: 'Circle 1' }).closest('li')!;
-    expect(within(shapeRow).getByRole('button', { name: 'Hidden' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
     expect(within(hud()!).getByRole('button', { name: 'Hidden' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
   });
 
-  it('toggles shape lock, matching the outline row state', async () => {
+  it('toggles shape lock', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
     await user.click(within(hud()!).getByRole('button', { name: 'Unlocked' }));
 
-    const shapeRow = within(outlineList()).getByRole('button', { name: 'Circle 1' }).closest('li')!;
-    expect(within(shapeRow).getByRole('button', { name: 'Locked' })).toHaveAttribute(
+    expect(within(hud()!).getByRole('button', { name: 'Locked' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -308,33 +306,30 @@ describe('SelectionHud: group controls reuse the exact LayersPanel mutations (is
     await user.click(groupButton);
   }
 
-  it('toggles group visibility, matching the outline row state', async () => {
+  // Issue #164 (task 132): the outline row's own Visible/Locked buttons
+  // are gone (compacted away) — asserting on the HUD's own re-rendered
+  // `aria-pressed` state after each toggle instead.
+  it('toggles group visibility', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await selectAGroup(user);
 
     await user.click(within(hud()!).getByRole('button', { name: 'Visible' }));
 
-    const groupRow = within(outlineList())
-      .getByRole('button', { name: /Group: Group 1/ })
-      .closest('li')!;
-    expect(within(groupRow).getByRole('button', { name: 'Hidden' })).toHaveAttribute(
+    expect(within(hud()!).getByRole('button', { name: 'Hidden' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
   });
 
-  it('toggles group lock, matching the outline row state', async () => {
+  it('toggles group lock', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await selectAGroup(user);
 
     await user.click(within(hud()!).getByRole('button', { name: 'Unlocked' }));
 
-    const groupRow = within(outlineList())
-      .getByRole('button', { name: /Group: Group 1/ })
-      .closest('li')!;
-    expect(within(groupRow).getByRole('button', { name: 'Locked' })).toHaveAttribute(
+    expect(within(hud()!).getByRole('button', { name: 'Locked' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );

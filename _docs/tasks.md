@@ -3295,12 +3295,85 @@ cover them; decide explicitly during grooming, don't drop silently.
 Out of scope: task 129/#161's touch-drag mechanism and task 111/#142's
 per-shape-layer data model are both unaffected — this is presentation
 only, on top of the same `sceneEditor.outline` rows.
-Status: PROPOSED — depends on task 131.
-GitHub issue: pending — see reconciliation note at the end of task 133.
+Status: COMPLETE
+GitHub issue: [#164](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/164)
+(open for QA/closing by the orchestrator).
 Discovery gate: Same search as task 131; #153 (closed) and #131/#127
 (closed — the original Layers panel build-out) are prior art on this same
 file, not duplicates of this specific compacting request. New, not a
 duplicate.
+Resolution (2026-08-24): `LayersPanel.tsx`'s `OutlineRowItem` group and
+shape branches now render, unconditionally, only: the drag handle, kind
+icon, "Select for grouping" checkbox (kept on the row per this task's own
+option — it's a lightweight, always-relevant per-row utility, not one of
+the four things this task's acceptance criteria named for removal), the
+select/name button (doubling as the row's label and its selection
+highlight target via the existing `data-selected` attribute), and nothing
+else. Removed from both branches: the Visible/Locked toggle buttons, the
+(shape-only) `ShapeColorSwatch` component (now fully unused and deleted
+outright, not just unrendered), the Delete button, the `RowMoreDisclosure`
+(Move up/down + `MoveControls`), and the inherited-hidden/locked
+annotation text (informational, not a control — dropped per this task's
+own "too cluttered... should only be necessary to show if the layer is
+active" framing, since it has no HUD equivalent and isn't a "reachable
+functionality" the acceptance criteria protects).
+Explicit decisions this task's grooming required, recorded here per its
+own instruction to "pick one and record the choice":
+- **Layer rows are deliberately left uncompacted.** Issue #163's own
+  acceptance criteria already carved layer rows out of the HUD entirely
+  ("Layer rows... keep their existing Visible/Locked/Delete buttons
+  only"), so a layer row has no HUD to relocate its controls into.
+  Compacting it anyway would ship exactly the "net loss of reachable
+  functionality" both #163 and #164's acceptance criteria forbid — so
+  `LayersPanel.tsx`'s layer-row branch, its `RowMoreDisclosure`, and its
+  inline Visible/Locked/Delete buttons are all unchanged by this task.
+  This is the one place task 132's generic "every row" framing is
+  narrowed by task 131's own explicit boundary, not a contradiction —
+  applying the compacting to layer rows was never actually
+  self-consistent with #163 as already written.
+- **Move up/down and `MoveControls` (Move to layer/Move to group) were
+  relocated into `SelectionHud.tsx`** (extending it, per this task's own
+  "either the HUD, extended if needed, or a... disclosure" option) rather
+  than kept as a second, row-local collapsed disclosure — the HUD already
+  only renders while that exact row is the active selection, so it's
+  exactly as reachable (no more, no less) as a per-row disclosure would
+  be, without a second parallel "is this the active selection" check.
+  `MoveControls` itself is now exported from `LayersPanel.tsx` and
+  imported by `SelectionHud.tsx` rather than reimplemented, so the
+  group-options-filtering/layer-options-list logic stays in exactly one
+  place.
+- **"Combine into group" needed no relocation at all** — it was already
+  the always-visible "Outline actions" toolbar button above the outline
+  list, never a per-row control inside `RowMoreDisclosure`, so this
+  task's own text flagging it as needing "an explicit... home" was
+  already satisfied before this task started.
+- **"Select for grouping" is kept on the compact row**, not relocated —
+  explicitly one of this task's own sanctioned options.
+Verified: a static HTML/CSS reproduction of the compact row markup and
+the exact existing `[data-selected='true']` CSS rule was screenshotted in
+the browser preview — the selected row's left-accent border + background
+tint reads as clearly, unmistakably distinct from its unselected
+siblings now that the row is short (drag handle/icon/checkbox/name only),
+confirming visually rather than assuming, per this task's own acceptance
+criterion. `EditorWorkspace.layers.test.tsx` and
+`EditorWorkspace.selectionHud.test.tsx` were updated for the new row
+structure: tests that used to open a shape/group row's `RowMoreDisclosure`
+directly now select that row (where it wasn't already selected by the
+preceding action) and interact with `SelectionHud.tsx`'s Move up/down/
+`MoveControls` instead; the "own vs. inherited" Visible/Locked test now
+asserts through the HUD instead of the now-removed inline row annotation
+and buttons; nothing keyboard-reachable before this task became
+mouse-only after it (the HUD's controls are the same focusable
+`<button>`/`<select>` elements the row used to render, just relocated).
+`make frontend-lint`/`frontend-typecheck`/`frontend-format-check` all
+clean (same four pre-existing `react(only-export-components)` warnings —
+now including `MoveControls`'s new export, expected for the same
+class of reason the other three already existed); full frontend suite
+green, 1730/1730 (unchanged count — no tests added or removed, only
+updated), confirmed on a clean run after separately reproducing and
+ruling out two pre-existing, order-dependent timing flakes in unrelated
+`useDraftAutosave`/draft-autosave-controller tests (both pass in
+isolation; same flake class already documented for task 130).
 
 ## 133. Reconsider the Layers panel's auto-scroll-on-selection now that rows will be compact and highlighted
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { MoveControls } from './LayersPanel';
 import { getColorFieldValue, getNumericFieldValue } from './shapeStyleFields';
 import type { SceneEditor } from './useSceneEditor';
 
@@ -12,23 +13,36 @@ import type { SceneEditor } from './useSceneEditor';
  * shape or group is the active selection.
  *
  * This is deliberately a *second* surface over the exact same state/
- * mutations `LayersPanel.tsx`'s `OutlineRowItem` already reads and calls —
- * `toggleShapeVisible`/`toggleShapeLocked`/`updateSelectedShapeColorField`/
- * the `opacity` `ShapeStyleField` mutation (`updateSelectedShapeNumericField`)
- * /`deleteSelected` for a shape, and `toggleGroupVisible`/
- * `toggleGroupLocked`/`deleteGroupSelected` for a group — never a new,
- * parallel mutation path. `LayersPanel.tsx` is left completely unchanged by
- * this task (additive only; see that file's own doc comment and issue #164,
- * which will remove the now-redundant inline controls once this HUD is the
- * documented replacement home for them).
+ * mutations `LayersPanel.tsx`'s `OutlineRowItem` used to read and call
+ * inline — `toggleShapeVisible`/`toggleShapeLocked`/
+ * `updateSelectedShapeColorField`/the `opacity` `ShapeStyleField` mutation
+ * (`updateSelectedShapeNumericField`)/`deleteSelected` for a shape, and
+ * `toggleGroupVisible`/`toggleGroupLocked`/`deleteGroupSelected` for a
+ * group — never a new, parallel mutation path.
+ *
+ * Issue #164 (task 132): now that `LayersPanel.tsx`'s rows are compacted
+ * to drag handle/kind icon/checkbox/name, this is also the documented
+ * replacement home for a selected shape/group's Move up/down and
+ * `MoveControls` (Move to layer/Move to group) reparent pair — imported
+ * from `LayersPanel.tsx` (now exported) rather than reimplemented, so the
+ * group-options filtering / layer-options list logic stays defined in
+ * exactly one place. "Combine into group" already had its own home before
+ * either task: the always-visible toolbar button above the outline list
+ * (`LayersPanel.tsx`'s "Outline actions" group), never a per-row control,
+ * so it needs no relocation here.
  *
  * Renders nothing for: no selection, a layer row (layers are never
- * `selectedShapeId` — see `useSceneEditor.ts`'s `selectShape`), or an
- * outline multi-select pick with no single active shape/group (this HUD
- * only ever tracks the single `selectedShapeId`/`selectedGroup`, the same
- * "single active selection" concept `ShapeInspectorPanel.tsx` already
- * follows — multi-selection style editing is out of scope here exactly as
- * it is there).
+ * `selectedShapeId` — see `useSceneEditor.ts`'s `selectShape`, and per
+ * issue #163's own acceptance criteria a layer row keeps its existing
+ * inline Visible/Locked/Delete/Move-up-down buttons unchanged rather than
+ * getting a HUD — `LayersPanel.tsx`'s layer row is therefore also left
+ * uncompacted by issue #164, since compacting it with no HUD replacement
+ * would be exactly the "net loss of reachable functionality" both tasks'
+ * acceptance criteria forbid), or an outline multi-select pick with no
+ * single active shape/group (this HUD only ever tracks the single
+ * `selectedShapeId`/`selectedGroup`, the same "single active selection"
+ * concept `ShapeInspectorPanel.tsx` already follows — multi-selection
+ * style editing is out of scope here exactly as it is there).
  *
  * Dismiss behavior: this component just renders (or doesn't) from
  * `sceneEditor.selectedShape`/`selectedGroup` on every render, so clicking
@@ -75,6 +89,11 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
     const row = outline.find((r) => r.kind === 'group' && r.id === selectedGroup.id);
     const visible = row?.kind === 'group' ? row.visible : true;
     const locked = row?.kind === 'group' ? row.locked : false;
+    const isFirst = row?.kind === 'group' ? row.isFirst : true;
+    const isLast = row?.kind === 'group' ? row.isLast : true;
+    const layerId = row?.kind === 'group' ? row.layerId : null;
+    const currentGroupId =
+      sceneEditor.groups.find((g) => g.childIds.includes(selectedGroup.id))?.id ?? null;
     return (
       <div
         className="editor-selection-hud"
@@ -105,6 +124,31 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
           >
             Delete group
           </button>
+          <button
+            type="button"
+            aria-label={`Move ${selectedGroup.name} up`}
+            disabled={isFirst}
+            onClick={() => sceneEditor.moveItem(selectedGroup.id, 'up')}
+          >
+            Move up
+          </button>
+          <button
+            type="button"
+            aria-label={`Move ${selectedGroup.name} down`}
+            disabled={isLast}
+            onClick={() => sceneEditor.moveItem(selectedGroup.id, 'down')}
+          >
+            Move down
+          </button>
+          {layerId !== null && (
+            <MoveControls
+              itemId={selectedGroup.id}
+              itemLabel={selectedGroup.name}
+              itemLayerId={layerId}
+              currentGroupId={currentGroupId}
+              sceneEditor={sceneEditor}
+            />
+          )}
         </div>
       </div>
     );
@@ -116,6 +160,11 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
   const visible = row?.kind === 'shape' ? row.visible : true;
   const locked = row?.kind === 'shape' ? row.locked : false;
   const label = row?.kind === 'shape' ? row.label : selectedShape.id;
+  const isFirst = row?.kind === 'shape' ? row.isFirst : true;
+  const isLast = row?.kind === 'shape' ? row.isLast : true;
+  const layerId = row?.kind === 'shape' ? row.layerId : null;
+  const currentGroupId =
+    sceneEditor.groups.find((g) => g.childIds.includes(selectedShape.id))?.id ?? null;
 
   return (
     <div
@@ -202,6 +251,31 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
         >
           Delete shape
         </button>
+        <button
+          type="button"
+          aria-label={`Move ${label} up`}
+          disabled={isFirst}
+          onClick={() => sceneEditor.moveItem(selectedShape.id, 'up')}
+        >
+          Move up
+        </button>
+        <button
+          type="button"
+          aria-label={`Move ${label} down`}
+          disabled={isLast}
+          onClick={() => sceneEditor.moveItem(selectedShape.id, 'down')}
+        >
+          Move down
+        </button>
+        {layerId !== null && (
+          <MoveControls
+            itemId={selectedShape.id}
+            itemLabel={label}
+            itemLayerId={layerId}
+            currentGroupId={currentGroupId}
+            sceneEditor={sceneEditor}
+          />
+        )}
       </div>
     </div>
   );

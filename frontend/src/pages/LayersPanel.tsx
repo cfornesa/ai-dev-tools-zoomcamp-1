@@ -14,7 +14,6 @@ import {
   type OutlineRow,
 } from './sceneOutline';
 import type { ShapeType } from './sceneShapes';
-import { getColorFieldValue } from './shapeStyleFields';
 import type { SceneEditor } from './useSceneEditor';
 
 /** Issue #131: moved here verbatim from `EditorWorkspace.tsx`'s Tools
@@ -150,7 +149,7 @@ function LayerNameField({ layerId, name, onRename }: LayerNameFieldProps) {
   );
 }
 
-type MoveControlsProps = {
+export type MoveControlsProps = {
   itemId: string;
   itemLabel: string;
   itemLayerId: string;
@@ -160,15 +159,24 @@ type MoveControlsProps = {
 
 /** Task 76: keyboard-operable ("select a destination, then press a button"
  * — the same pattern `GraphListView.tsx` uses for its reconnect controls)
- * reparenting controls attached to every group/shape outline row: move the
- * item to a different layer's top level, or into a different group on the
- * same layer (or back out to that layer's top level via the "Top level"
- * option). Both native `<select>`+`<button>` pairs are fully reachable by
- * Tab/arrow keys/Enter, so no separate drag-based interaction is needed to
- * satisfy the "pointer and keyboard" acceptance criterion — the same
- * controls serve both a mouse click and an all-keyboard sequence. Issue
- * #127: unchanged by the addition of pointer drag-and-drop above; this
- * remains the keyboard-only path to every reparent a drag can reach. */
+ * reparenting controls for a group/shape: move the item to a different
+ * layer's top level, or into a different group on the same layer (or back
+ * out to that layer's top level via the "Top level" option). Both native
+ * `<select>`+`<button>` pairs are fully reachable by Tab/arrow keys/Enter,
+ * so no separate drag-based interaction is needed to satisfy the "pointer
+ * and keyboard" acceptance criterion — the same controls serve both a
+ * mouse click and an all-keyboard sequence. Issue #127: unchanged by the
+ * addition of pointer drag-and-drop above; this remains the keyboard-only
+ * path to every reparent a drag can reach.
+ *
+ * Issue #164 (task 132): exported (was module-private) so `SelectionHud.tsx`
+ * can render this exact component for a selected shape/group's Move-to-
+ * layer/Move-to-group controls — this task's chosen "explicit, documented
+ * home" for the reparenting controls that used to live in every row's own
+ * `RowMoreDisclosure` (removed from the row below; see that removal's own
+ * comment for the full rationale). Reused verbatim rather than
+ * reimplemented so the group-options filtering / layer-options list stay
+ * defined in exactly one place. */
 function MoveControls({
   itemId,
   itemLabel,
@@ -250,106 +258,19 @@ function RowMoreDisclosure({ children }: { children: ReactNode }) {
   );
 }
 
-/** Issue #131: the inline fill-color editor attached to every shape row's
- * primary view. Reuses the exact mutation path `ShapeInspectorPanel.tsx`'s
- * `ColorStyleField` already exercises (`updateSelectedShapeColorField`), but
- * cannot reuse that component verbatim — that one always edits *the* active
- * selection, while this one is one of potentially many rows, each needing
- * to edit *its own* shape without disturbing what's currently selected
- * elsewhere.
- *
- * Hazard this works around (see this task's own write-up and
- * `useSceneEditor.ts`'s `selectShape`/`updateSelectedShapeColorField`):
- * `updateSelectedShapeColorField` always acts on the hook's *current-render*
- * `selectedShape`, and a `selectShape(id)` call doesn't update that state
- * synchronously within the same handler. Calling both in one click handler
- * would silently edit whatever shape *was* selected before this click, not
- * `row.id`. So the editor's editable field is gated on
- * `sceneEditor.selectedShapeId === row.id` — it only ever renders (and only
- * ever calls `updateSelectedShapeColorField`) once a render has confirmed
- * selection actually landed on this row's shape. Opening the editor is a
- * separate two-step affair: click the swatch, which both requests selection
- * and requests the editor open; the *open* local flag is inert until that
- * render-confirmed condition is also true. */
-function ShapeColorSwatch({
-  row,
-  sceneEditor,
-}: {
-  row: Extract<OutlineRow, { kind: 'shape' }>;
-  sceneEditor: SceneEditor;
-}) {
-  const [wantsOpen, setWantsOpen] = useState(false);
-  const isSelected = sceneEditor.selectedShapeId === row.id;
-  const isOpen = wantsOpen && isSelected;
-  const shape = sceneEditor.shapes.find((s) => s.id === row.id) ?? null;
-  const value = shape ? getColorFieldValue(shape, 'fill') : null;
-
-  const [draft, setDraft] = useState(value ?? '');
-  const [error, setError] = useState<string | null>(null);
-
-  // Re-sync the draft to the canonical value whenever the editor (re)opens
-  // on this row, or the underlying value changes out from under it (e.g.
-  // an undo) while it's open — the same re-sync `ColorStyleField` performs
-  // on `value` changes.
-  useEffect(() => {
-    if (isOpen) {
-      setDraft(value ?? '');
-      setError(null);
-    }
-  }, [isOpen, value]);
-
-  const fieldId = `layer-row-fill-${row.id}`;
-  const errorId = `${fieldId}-error`;
-
-  return (
-    <span className="editor-outline-color-swatch">
-      <button
-        type="button"
-        className="editor-outline-color-swatch-toggle"
-        style={{ backgroundColor: value ?? 'transparent' }}
-        aria-label={`Edit fill color for ${row.label}`}
-        aria-expanded={isOpen}
-        onClick={() => {
-          sceneEditor.selectShape(row.id);
-          setWantsOpen(true);
-        }}
-      >
-        {value ? '' : '∅'}
-      </button>
-      {isOpen && (
-        <span className="editor-outline-color-swatch-editor">
-          <input
-            id={fieldId}
-            type="text"
-            value={draft}
-            aria-label={`Fill color hex for ${row.label}`}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
-            onChange={(event) => {
-              const next = event.target.value;
-              setDraft(next);
-              const outcome = sceneEditor.updateSelectedShapeColorField('fill', next);
-              setError(outcome.ok ? null : outcome.error);
-            }}
-          />
-          <button type="button" onClick={() => setWantsOpen(false)}>
-            Close
-          </button>
-          {error && (
-            <span id={errorId} role="alert">
-              {error}
-            </span>
-          )}
-        </span>
-      )}
-    </span>
-  );
-}
+// Issue #164 (task 132): `ShapeColorSwatch` (the inline per-row fill-color
+// editor issue #131 added) was removed here — its always-visible row
+// affordance is exactly what this task compacts away. Fill-color editing
+// for the active selection now lives in `SelectionHud.tsx`, which calls
+// the identical `sceneEditor.updateSelectedShapeColorField('fill', ...)`
+// mutation this component used to.
 
 // ---------------------------------------------------------------------------
 // Drag-and-drop planning (pure — no React, no scene mutation; see the
 // module doc comment's "Drag-and-drop mechanics" section)
 // ---------------------------------------------------------------------------
+
+export { MoveControls };
 
 export type DropZone = 'before' | 'after' | 'into';
 
@@ -663,8 +584,6 @@ function OutlineRowItem({
   drag: DragController;
 }) {
   const indent = { paddingLeft: `${row.depth * 1.25}rem` };
-  const moveUp = () => sceneEditor.moveItem(row.id, 'up');
-  const moveDown = () => sceneEditor.moveItem(row.id, 'down');
   const dragAttrs = dragAttributesFor(row, drag);
   const handleProps = handlePointerPropsFor(row, drag);
 
@@ -738,17 +657,28 @@ function OutlineRowItem({
 
   if (row.kind === 'group') {
     const label = `Group: ${row.name} (${row.childCount} item(s))`;
-    // Task 80 (issue #110): make an ancestor's hidden/locked state visibly
-    // apparent on this group too, not just on the shapes underneath it —
-    // `inheritedVisible`/`inheritedLocked` fold in every ancestor group and
-    // the layer, the same OR-cascade `isEffectivelyLocked` already applies.
-    // This is purely a display annotation alongside the group's own
-    // Visible/Locked toggle buttons, which still show (and mutate) its own
-    // flag — an ancestor's state can't be changed from a descendant's row.
-    const inherited = [
-      row.inheritedVisible ? null : 'hidden (from an ancestor)',
-      !row.locked && row.inheritedLocked ? 'locked (from an ancestor)' : null,
-    ].filter(Boolean);
+    // Issue #164 (task 132): the group row's Visible/Locked toggle buttons,
+    // Delete button, Move up/down, and MoveControls reparent pair — plus
+    // the inherited-hidden/locked annotation text that used to sit next to
+    // them — are all removed from this always-visible row. Every one of
+    // them still exists, just relocated:
+    //  - Visible/Locked/Delete: `SelectionHud.tsx`, shown while this row's
+    //    group is the active selection — the exact same
+    //    `toggleGroupVisible`/`toggleGroupLocked`/`deleteGroupSelected`
+    //    calls this row used to make.
+    //  - Move up/down, MoveControls (Move to layer/Move to group):
+    //    `SelectionHud.tsx` too — this task's grooming chose "extend the
+    //    HUD" over a second, row-local collapsed disclosure, since the HUD
+    //    already only renders while this exact row is selected, so it's no
+    //    more (and no less) reachable than a per-row disclosure would be,
+    //    without a second parallel implementation of "is this the active
+    //    selection."
+    // The inherited-state annotation (whether a *cascaded* ancestor's
+    // hidden/locked state applies) has no HUD equivalent — it was a purely
+    // informational annotation, not a control, and dropping it from the
+    // always-visible row matches this task's own "too cluttered... should
+    // only be necessary to show if the layer is active" framing. See this
+    // task's `_docs/tasks.md` resolution notes for the full writeup.
     return (
       <li
         style={indent}
@@ -788,55 +718,6 @@ function OutlineRowItem({
         >
           {label}
         </button>
-        {inherited.length > 0 && (
-          <span className="editor-outline-inherited-state"> ({inherited.join(', ')})</span>
-        )}
-        <button
-          type="button"
-          aria-pressed={row.visible}
-          onClick={() => sceneEditor.toggleGroupVisible(row.id)}
-        >
-          {row.visible ? 'Visible' : 'Hidden'}
-        </button>
-        <button
-          type="button"
-          aria-pressed={row.locked}
-          onClick={() => sceneEditor.toggleGroupLocked(row.id)}
-        >
-          {row.locked ? 'Locked' : 'Unlocked'}
-        </button>
-        <button
-          type="button"
-          aria-label={`Delete group ${row.name}`}
-          onClick={() => sceneEditor.deleteGroupSelected(row.id)}
-        >
-          Delete group
-        </button>
-        <RowMoreDisclosure>
-          <button
-            type="button"
-            aria-label={`Move ${row.name} up`}
-            disabled={row.isFirst}
-            onClick={moveUp}
-          >
-            Move up
-          </button>
-          <button
-            type="button"
-            aria-label={`Move ${row.name} down`}
-            disabled={row.isLast}
-            onClick={moveDown}
-          >
-            Move down
-          </button>
-          <MoveControls
-            itemId={row.id}
-            itemLabel={row.name}
-            itemLayerId={row.layerId}
-            currentGroupId={sceneEditor.groups.find((g) => g.childIds.includes(row.id))?.id ?? null}
-            sceneEditor={sceneEditor}
-          />
-        </RowMoreDisclosure>
       </li>
     );
   }
@@ -846,12 +727,18 @@ function OutlineRowItem({
   // UUID in the outline row, its move-button `aria-label`s, or the "Select
   // for grouping" checkbox's label.
   const label = row.label;
-  const moveLabel = label;
-  const inherited = [
-    row.inheritedVisible ? null : 'hidden',
-    row.inheritedLocked ? 'locked' : null,
-  ].filter(Boolean);
 
+  // Issue #164 (task 132): same relocation as the group row above — the
+  // shape row's Visible/Locked toggle buttons, `ShapeColorSwatch`, Delete
+  // button, Move up/down, MoveControls, and the inherited-hidden/locked
+  // annotation are all removed from this always-visible row. Visible/
+  // Locked/fill color/opacity/Delete now live in `SelectionHud.tsx` while
+  // this row's shape is selected (the exact same
+  // `toggleShapeVisible`/`toggleShapeLocked`/`updateSelectedShapeColorField`/
+  // the `opacity` `ShapeStyleField` mutation/`deleteSelected` calls this row
+  // used to make); Move up/down and MoveControls are there too, per the
+  // same "extend the HUD" choice the group row's comment explains. See this
+  // task's `_docs/tasks.md` resolution notes for the full writeup.
   return (
     <li
       style={indent}
@@ -891,60 +778,6 @@ function OutlineRowItem({
       >
         {label}
       </button>
-      {inherited.length > 0 ? (
-        <span className="editor-outline-inherited-state"> ({inherited.join(', ')})</span>
-      ) : null}
-      {/* Task 111 (issue #142): a shape's own visibility/lock toggle,
-          mirroring the layer/group rows' existing pattern — this reflects
-          and mutates the shape's OWN flag (`row.visible`/`row.locked`),
-          not the cascaded `inherited` state shown just above. */}
-      <button
-        type="button"
-        aria-pressed={row.visible}
-        onClick={() => sceneEditor.toggleShapeVisible(row.id)}
-      >
-        {row.visible ? 'Visible' : 'Hidden'}
-      </button>
-      <button
-        type="button"
-        aria-pressed={row.locked}
-        onClick={() => sceneEditor.toggleShapeLocked(row.id)}
-      >
-        {row.locked ? 'Locked' : 'Unlocked'}
-      </button>
-      <ShapeColorSwatch row={row} sceneEditor={sceneEditor} />
-      <button
-        type="button"
-        aria-label={`Delete shape ${label}`}
-        onClick={() => sceneEditor.deleteSelected(row.id)}
-      >
-        Delete shape
-      </button>
-      <RowMoreDisclosure>
-        <button
-          type="button"
-          aria-label={`Move ${moveLabel} up`}
-          disabled={row.isFirst}
-          onClick={moveUp}
-        >
-          Move up
-        </button>
-        <button
-          type="button"
-          aria-label={`Move ${moveLabel} down`}
-          disabled={row.isLast}
-          onClick={moveDown}
-        >
-          Move down
-        </button>
-        <MoveControls
-          itemId={row.id}
-          itemLabel={moveLabel}
-          itemLayerId={row.layerId}
-          currentGroupId={sceneEditor.groups.find((g) => g.childIds.includes(row.id))?.id ?? null}
-          sceneEditor={sceneEditor}
-        />
-      </RowMoreDisclosure>
     </li>
   );
 }

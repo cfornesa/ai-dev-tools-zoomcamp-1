@@ -373,7 +373,16 @@ describe('EditorWorkspace scene outline: friendly shape labels (Task 80 / issue 
 });
 
 describe('EditorWorkspace scene outline: inherited visibility/lock legibility (Task 80 / issue #110)', () => {
-  it("shows a group's own Visible/Locked toggle state independent of an ancestor's", async () => {
+  // Issue #164 (task 132): the group row's inherited-hidden/locked
+  // annotation text (the thing this test used to assert on directly) was
+  // removed from the always-visible row along with the row's own Visible/
+  // Locked buttons — see `LayersPanel.tsx`'s group-row comment and this
+  // task's `_docs/tasks.md` resolution notes. The underlying "own state is
+  // unaffected by an ancestor's" behavior this test protects still exists
+  // (the mutations are unchanged), so this now verifies it through
+  // `SelectionHud.tsx`'s Visible toggle instead of the row's own inline
+  // one.
+  it("shows a group's own Visible toggle state independent of an ancestor's, via the selection HUD", async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
@@ -393,16 +402,17 @@ describe('EditorWorkspace scene outline: inherited visibility/lock legibility (T
       (r) =>
         r.dataset.outlineKind === 'layer' && within(r).queryByLabelText('Layer name for Layer 2'),
     )!;
-    const groupRow = rows.find((r) => r.dataset.outlineKind === 'group')!;
-    expect(within(groupRow).queryByText(/hidden \(from an ancestor\)/)).not.toBeInTheDocument();
+    const groupButton = within(outlineList()).getByRole('button', { name: /Group: Group 1/ });
+    await user.click(groupButton); // select the group so its HUD appears
 
-    // Hiding the layer (the group's only ancestor) makes the cascade
-    // visible on the group's row, even though the group's own toggle
-    // still reads "Visible".
+    // Hiding the layer (the group's only ancestor) doesn't touch the
+    // group's own flag -- the HUD's Visible toggle (which reflects/mutates
+    // only the group's own state, never the cascaded one) still reads
+    // "Visible" afterward.
     await user.click(within(layerRow).getByRole('button', { name: 'Visible' }));
 
-    expect(within(groupRow).getByText(/hidden \(from an ancestor\)/)).toBeInTheDocument();
-    expect(within(groupRow).getByRole('button', { name: 'Visible' })).toBeInTheDocument();
+    const hud = screen.getByTestId('selection-hud');
+    expect(within(hud).getByRole('button', { name: 'Visible' })).toBeInTheDocument();
   });
 });
 
@@ -492,8 +502,12 @@ describe('EditorWorkspace scene outline: reorder', () => {
     expect(shapeRowsBefore.map((r) => r.dataset.outlineId)).toHaveLength(2);
     const [firstId, secondId] = shapeRowsBefore.map((r) => r.dataset.outlineId);
 
-    await openMore(shapeRowsBefore[1], user);
-    await user.click(within(shapeRowsBefore[1]).getByRole('button', { name: /Move .* up/ }));
+    // Issue #164 (task 132): Move up/down for a shape/group row now live
+    // in `SelectionHud.tsx`, shown while that row is selected -- the
+    // rectangle (`shapeRowsBefore[1]`) already is, since "Add rectangle"
+    // auto-selects it.
+    const hud = screen.getByTestId('selection-hud');
+    await user.click(within(hud).getByRole('button', { name: /Move .* up/ }));
 
     const shapeRowsAfter = within(outlineList())
       .getAllByRole('listitem')
@@ -509,13 +523,13 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     await user.click(screen.getByRole('button', { name: 'Add layer' })); // Layer 2
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
-    const shapeRow = within(outlineList())
-      .getAllByRole('listitem')
-      .find((r) => r.dataset.outlineKind === 'shape')!;
-    await openMore(shapeRow, user);
-    const layerSelect = within(shapeRow).getByRole('combobox', { name: /Target layer for/ });
+    // Issue #164 (task 132): the shape's `MoveControls` (Move to layer/
+    // Move to group) now live in `SelectionHud.tsx`, shown while the shape
+    // is selected -- the just-added circle already is (add auto-selects).
+    const hud = screen.getByTestId('selection-hud');
+    const layerSelect = within(hud).getByRole('combobox', { name: /Target layer for/ });
     await user.selectOptions(layerSelect, 'Layer 2');
-    await user.click(within(shapeRow).getByRole('button', { name: /Move .* to layer/ }));
+    await user.click(within(hud).getByRole('button', { name: /Move .* to layer/ }));
 
     const rowsAfter = within(outlineList()).getAllByRole('listitem');
     // The shape row should now be nested under Layer 2, i.e. appear after
@@ -533,18 +547,15 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     await user.click(screen.getByRole('button', { name: 'Add layer' })); // Layer 2
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
-    const shapeRow = within(outlineList())
-      .getAllByRole('listitem')
-      .find((r) => r.dataset.outlineKind === 'shape')!;
-    await openMore(shapeRow, user);
-    const layerSelect = within(shapeRow).getByRole('combobox', {
+    const hud = screen.getByTestId('selection-hud');
+    const layerSelect = within(hud).getByRole('combobox', {
       name: /Target layer for/,
     }) as HTMLSelectElement;
     layerSelect.focus();
     expect(layerSelect).toHaveFocus();
     await user.selectOptions(layerSelect, 'Layer 2');
 
-    const moveButton = within(shapeRow).getByRole('button', { name: /Move .* to layer/ });
+    const moveButton = within(hud).getByRole('button', { name: /Move .* to layer/ });
     moveButton.focus();
     expect(moveButton).toHaveFocus();
     await user.keyboard('{Enter}');
@@ -567,16 +578,13 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
 
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    const shapeRows = within(outlineList())
-      .getAllByRole('listitem')
-      .filter((r) => r.dataset.outlineKind === 'shape');
-    const looseShapeRow = shapeRows[shapeRows.length - 1];
-    await openMore(looseShapeRow, user);
+    await user.click(screen.getByRole('button', { name: 'Add circle' })); // auto-selected
 
-    const groupSelect = within(looseShapeRow).getByRole('combobox', { name: /Target group for/ });
+    // Issue #164 (task 132): same relocation as the layer-move tests above.
+    const hud = screen.getByTestId('selection-hud');
+    const groupSelect = within(hud).getByRole('combobox', { name: /Target group for/ });
     await user.selectOptions(groupSelect, 'Group 1');
-    await user.click(within(looseShapeRow).getByRole('button', { name: /Move .* to group/ }));
+    await user.click(within(hud).getByRole('button', { name: /Move .* to group/ }));
 
     const groupRow = within(outlineList())
       .getAllByRole('listitem')
@@ -594,18 +602,27 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     await user.click(checkboxes[1]);
     await user.click(screen.getByRole('button', { name: 'Combine into group' }));
 
+    // Issue #164 (task 132): grouping selects the new *group*, not one of
+    // its member shapes (`groupItems`'s `selectId`), so this shape's
+    // `MoveControls` (now in `SelectionHud.tsx`) aren't visible until it's
+    // explicitly selected first — a step this test didn't need before,
+    // since the row's own always-visible `MoveControls` needed no
+    // selection at all.
     const groupedShapeRow = within(outlineList())
       .getAllByRole('listitem')
       .find((r) => r.dataset.outlineKind === 'shape')!;
-    await openMore(groupedShapeRow, user);
-    const groupSelect = within(groupedShapeRow).getByRole('combobox', {
+    // The compact row's only button is its own select/name button.
+    await user.click(within(groupedShapeRow).getByRole('button'));
+
+    const hud = screen.getByTestId('selection-hud');
+    const groupSelect = within(hud).getByRole('combobox', {
       name: /Target group for/,
     }) as HTMLSelectElement;
     groupSelect.focus();
     expect(groupSelect).toHaveFocus();
     await user.selectOptions(groupSelect, 'Top level');
 
-    const moveButton = within(groupedShapeRow).getByRole('button', { name: /Move .* to group/ });
+    const moveButton = within(hud).getByRole('button', { name: /Move .* to group/ });
     moveButton.focus();
     await user.keyboard('{Enter}');
 
@@ -640,14 +657,14 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     await user.click(innerGroupCheckbox);
     await user.click(screen.getByRole('button', { name: 'Combine into group' })); // -> Group 2 (outer)
 
-    const groupRows = within(outlineList())
-      .getAllByRole('listitem')
-      .filter((r) => r.dataset.outlineKind === 'group');
-    const outerGroupRow = groupRows.find((r) => within(r).queryByText(/Group: Group 2/))!;
-    await openMore(outerGroupRow, user);
-    const groupSelect = within(outerGroupRow).getByRole('combobox', { name: /Target group for/ });
+    // Issue #164 (task 132): grouping selects the newly created group
+    // (`groupItems`'s `selectId`), so "Group 2" (the outer group just
+    // created) is already selected and its `MoveControls` are already in
+    // `SelectionHud.tsx` -- no explicit selection click needed here.
+    const hud = screen.getByTestId('selection-hud');
+    const groupSelect = within(hud).getByRole('combobox', { name: /Target group for/ });
     await user.selectOptions(groupSelect, 'Group 1');
-    await user.click(within(outerGroupRow).getByRole('button', { name: /Move .* to group/ }));
+    await user.click(within(hud).getByRole('button', { name: /Move .* to group/ }));
 
     expect(screen.getByRole('alert')).toHaveTextContent(/descendant/i);
   });
@@ -658,13 +675,12 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     await user.click(screen.getByRole('button', { name: 'Add layer' }));
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
-    const shapeRow = within(outlineList())
-      .getAllByRole('listitem')
-      .find((r) => r.dataset.outlineKind === 'shape')!;
-    await openMore(shapeRow, user);
-    const layerSelect = within(shapeRow).getByRole('combobox', { name: /Target layer for/ });
+    // Issue #164 (task 132): same relocation as the earlier layer-move
+    // tests -- the just-added circle is already selected.
+    const hud = screen.getByTestId('selection-hud');
+    const layerSelect = within(hud).getByRole('combobox', { name: /Target layer for/ });
     await user.selectOptions(layerSelect, 'Layer 2');
-    await user.click(within(shapeRow).getByRole('button', { name: /Move .* to layer/ }));
+    await user.click(within(hud).getByRole('button', { name: /Move .* to layer/ }));
 
     const rowsAfterMove = within(outlineList()).getAllByRole('listitem');
     const layer2IndexAfterMove = rowsAfterMove.findIndex(

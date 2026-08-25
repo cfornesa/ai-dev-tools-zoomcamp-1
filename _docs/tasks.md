@@ -4631,3 +4631,136 @@ real Postgres-backed Django + Vite dev stack.
   the Visual tab's graph list view; then edited that node's `type` to an
   invalid value for its family and confirmed the save was rejected with
   the exact allowlist error and the scene was left unmutated.
+
+## 145. Production-readiness re-audit: tasks 142-144 Code-tab editability (post-#174-176)
+
+Goal: Re-verify overall production readiness (Replit publish, local
+deployment, intended functionality) after tasks 142-144 (#174-176) shipped
+the full HTML/CSS/JS Code-tab editability chain, with a specific focus on
+stress-testing that new feature for regressions the two prior audits this
+session wouldn't have covered.
+Status: COMPLETE
+GitHub issue: none (an audit task, not a feature) -- one new issue,
+[#177](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/177),
+was filed as a discovered finding; see below.
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
+--search "code tab undo redo stale"` / `--search "code tab preview view
+stale"` before filing #177 -- no existing duplicate.
+Resolution (2026-08-25):
+
+- **`make check`**: clean. Backend: ruff/format/mypy clean, 629 passed / 22
+  skipped. Frontend: lint (pre-existing `only-export-components` warnings
+  only, unrelated to this session)/format/typecheck clean, 126 test
+  files / 1821 tests passed. Matches task 144's own documented counts
+  exactly -- no drift since the last commit on `main`.
+- **Local environment note (not a code defect)**: an unrelated Docker
+  Compose stack from a sibling project directory
+  (`/Users/Fornesus/Code/ai-dev-tools-zoomcamp`, no `-1` suffix) was
+  squatting the IPv6 wildcard on `localhost:8000`, silently intercepting
+  this repo's Django dev server traffic (confirmed by response-shape
+  mismatch against the real `/health/` view). Rather than stop another
+  project's running container, verification ran Django on port 8001 with
+  `frontend/vite.config.ts`'s three proxy targets temporarily repointed at
+  `127.0.0.1:8001`; the file was reverted to its committed
+  `http://localhost:8000` targets before finishing (confirmed via `git
+  diff` showing no residual change). This is the same known conflict
+  documented in
+  `.agents/memory/local-port-8000-docker-conflict.md` (already recorded
+  from a 2026-08-24/2026-08-25 session) -- that memory's own documented
+  workaround (point the proxy at `127.0.0.1:8000` and keep Django on
+  8000 itself, since Docker only squats the IPv6 wildcard) is simpler
+  than what this pass actually did (moved Django to 8001 too, since the
+  conflict wasn't checked against memory before improvising a fix); no
+  functional difference to the verification performed, just noted here
+  so a future pass reads memory first.
+- **Live stress test** (real Postgres-backed Django +
+  `AI_PROVIDER=fake` + Vite dev stack, signed in as the `e2e_owner` fixture
+  user, project seeded via the JSON sub-tab from
+  `schema/fixtures/valid/feature_rich.json` with a corrected, fully valid
+  behavior graph -- 5 shapes across 5 layers, 1 group, 3 bindings, a
+  4-node/3-connection graph):
+  - All four Code sub-tabs (JSON/HTML/CSS/JS) coexist correctly: confirmed
+    via direct DOM inspection that all four textareas stay mounted
+    simultaneously (toggled with `hidden`, not conditionally rendered)
+    inside one `CodeTab` mount, so an unsaved edit typed into HTML, then
+    CSS, then JS survived every intermediate sub-tab switch without loss
+    or interference, exactly as task 142's `CodeTab` doc comment
+    describes.
+  - A rejected HTML save (attempted a `data-layer-id` change, which the
+    grammar correctly forbids) left the scene completely unmutated and
+    did not disturb the already-pending, unsaved CSS/JS edits sitting in
+    sibling sub-tabs -- confirmed by reading their textarea values
+    afterward.
+  - A successful combined HTML+CSS save correctly updated the Visual
+    tab's shapes in one commit (verified the circle rendered green at
+    reduced opacity immediately after Save), and the underlying scene
+    JSON reflected exactly the intended change with no corruption.
+  - **Adversarial input**: hand-edited the HTML sub-tab to inject
+    `<script>window.__xss_marker=1337;</script>` and `<img src=x
+    onerror="...">` as children of a shape's `<div>`. Save succeeded with
+    no crash and no validation error (the injected markup isn't part of
+    the whitelisted grammar, so it's silently ignored rather than
+    rejected); confirmed via `window.__xss_marker`/`__xss_marker2` staying
+    `undefined` after Save that neither payload executed, and via the
+    JSON sub-tab that the resulting scene still had exactly 5 shapes with
+    no `"script"` substring anywhere -- no crash, no partial corruption,
+    no XSS execution.
+  - **AI proposal regression (#158/#159)**: after a Code-tab-originated
+    save (version 5), submitted an Edit-mode AI proposal ("Make the circle
+    bigger") through the `AI_PROVIDER=fake` provider, got back a proposal
+    ("1 canvas property updated"), clicked Accept, and it saved cleanly as
+    version 6 with no errors -- confirms the AI proposal/accept path is
+    unaffected by whether the scene's last edit came from Visual or Code,
+    consistent with task 142's own resolution note making the same claim.
+  - **Undo/redo across mixed Visual+Code edits**: added a shape via
+    Visual (commit A), then changed a different shape's opacity via the
+    CSS sub-tab and saved (commit B). Two Undo clicks correctly reverted
+    B then A in order (verified via the JSON sub-tab and the Visual tab's
+    live shape count independently); two Redo clicks correctly re-applied
+    both in order. The underlying undo/redo *stack* is coherent -- no
+    duplication, no corruption, no skipped steps.
+- **New finding, filed as
+  [#177](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/177)
+  (not fixed here -- requires a design decision about resync-on-change vs.
+  a discard-confirmation prompt, so correctly scoped as backlog rather
+  than a same-task fix)**: while the undo/redo *stack* itself is coherent
+  (previous bullet), the Code tab's *displayed* text does not observe
+  Undo/Redo -- clicking the toolbar's Undo/Redo buttons (which stay
+  visible and clickable while the Code tab is open) updates `workingCopy`
+  correctly but does not remount `CodeTab`, so the JSON/HTML/CSS/JS
+  textareas keep showing pre-undo content until the user leaves and
+  re-enters the Code tab. Separately, and for the same root-cause reason
+  (`CodeTab` is conditionally rendered on `previewView === 'code'`, not
+  just hidden, per task 127/#159's original, still-intentional
+  convention), toggling Visual -> Code -> back to Code silently discards
+  any unsaved edit sitting in a Code sub-tab, with zero warning -- typed
+  an unsaved JS-tab edit, clicked "Visual" (without editing anything
+  there), clicked back to "Code", and the JS textarea had reset to the
+  last-committed value, the typed edit gone. Both are real, live-
+  reproduced silent-desync/data-loss risks (not crashes), made materially
+  more consequential by tasks 142-144 adding three new explicit-Save (not
+  on-blur-commit) surfaces on top of the pre-existing JSON tab's
+  mount-once convention.
+- **`manage.py check --deploy`** (against the local disposable `.env`,
+  `DJANGO_DEBUG=True`, no HTTPS): 5 expected warnings
+  (`security.W004`/`W008`/`W012`/`W016`/`W018`), all attributable to this
+  being a local dev-mode `.env` rather than a production-shaped one per
+  AGENTS.md's "Deployment tracks and preflight" section -- no new or
+  unexpected warning.
+- **`npm run build`**: succeeds. Only pre-existing bundle-size warning
+  remains -- the `DemoControlsPanel-*.js` (p5.js-shared) chunk at
+  1,217.29 kB / gzip 305.68 kB, already accepted per task 130/#162.
+  `EditorWorkspace-*.js` (which now bundles `codeGrammar.ts`) grew from
+  349.66 kB (task 130's baseline) to 385.25 kB -- a modest +35.6 kB
+  (~10%) increase consistent with the new ~650-line parser, and still
+  well under the 500 kB per-chunk warning threshold. No new
+  bundle-size warning introduced by tasks 142-144.
+- **Verdict**: Local deployment and intended functionality both remain
+  ready, with one new, filed, non-blocking finding (#177) about Code-tab
+  display staleness/unsaved-edit loss across Undo/Redo and Visual/Code
+  toggling. Replit publish readiness is unaffected (no new environment,
+  dependency, or build-config change from this audit; the local
+  port-8000 collision was a workstation-only artifact of an unrelated
+  sibling project, not a deployment concern). No direct code fixes were
+  made in this task -- #177 is correctly scoped as its own follow-up
+  given it needs a design decision, not a one-line patch.

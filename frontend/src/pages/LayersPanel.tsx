@@ -13,20 +13,7 @@ import {
   moveItemToLayer as moveItemToLayerOp,
   type OutlineRow,
 } from './sceneOutline';
-import type { ShapeType } from './sceneShapes';
 import type { SceneEditor } from './useSceneEditor';
-
-/** Issue #131: moved here verbatim from `EditorWorkspace.tsx`'s Tools
- * panel, which used to render these four buttons above a `CollapsibleSection
- * heading="Add & edit shapes"` that also duplicated this panel's own shape
- * listing. Creation now lives alongside the listing it populates — see this
- * file's own doc comment above and issue #131 for the full rationale. */
-const SHAPE_TYPES: Array<{ type: ShapeType; label: string }> = [
-  { type: 'circle', label: 'Add circle' },
-  { type: 'rect', label: 'Add rectangle' },
-  { type: 'line', label: 'Add line' },
-  { type: 'path', label: 'Add polygon' },
-];
 
 /**
  * Issue #127: `SceneOutlinePanel.tsx` (Task 24, extended by Tasks 76/80)
@@ -1090,16 +1077,13 @@ function LayersPanel({
         </p>
       )}
 
-      {/* Issue #131: shape creation, formerly a separate toolbar in
-          EditorWorkspace.tsx's Tools panel, now lives directly above the
-          listing it populates — see this file's module doc comment. */}
-      <div role="group" aria-label="Add shape" className="editor-tool-group">
-        {SHAPE_TYPES.map(({ type, label }) => (
-          <button key={type} type="button" onClick={() => sceneEditor.addShape(type)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Issue #172 (task 140): shape creation moved out of this panel into
+          `EditorWorkspace.tsx`'s always-visible top toolbar, as icon
+          buttons — see that file's `editorToolbar`'s "Add shape" group and
+          its own doc comment for the full placement rationale. This
+          explicitly reverses task 112/#143's prior decision to keep these
+          buttons here (per new, later user direction); "Add layer" below
+          was NOT part of that request and stays exactly where it was. */}
 
       <div role="group" aria-label="Outline actions" className="editor-tool-group">
         <button type="button" onClick={() => sceneEditor.addLayer()}>

@@ -45,6 +45,7 @@ import {
   type PathShape,
   type Point,
   type Shape,
+  type ShapeType,
 } from './sceneShapes';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
@@ -304,6 +305,27 @@ function ToolbarButton({
     </button>
   );
 }
+
+/**
+ * Task 140 (issue #172): the four shape-creation actions, each with its own
+ * distinct `aria-hidden` glyph — moved here from `LayersPanel.tsx`'s sidebar
+ * "Add shape" group per new, later user direction, explicitly reversing
+ * task 112/#143's own prior decision to keep them there (see that task's
+ * grooming notes, which this issue's own acceptance criteria required
+ * referencing). The underlying mutation (`sceneEditor.addShape(type)`) is
+ * completely unchanged — this is a relocation/re-skin from text buttons to
+ * icon buttons via the toolbar's existing `ToolbarButton` glyph+tooltip+
+ * `aria-label` convention, not new shape-creation logic. No new icon
+ * library is used, per `AGENTS.md`'s "no new dependency without asking"
+ * rule — these are plain Unicode glyphs, the same approach Undo/Redo/
+ * Duplicate/Delete already use above.
+ */
+const ADD_SHAPE_TYPES: Array<{ type: ShapeType; label: string; glyph: string }> = [
+  { type: 'circle', label: 'Add circle', glyph: '○' },
+  { type: 'rect', label: 'Add rectangle', glyph: '▭' },
+  { type: 'line', label: 'Add line', glyph: '╱' },
+  { type: 'path', label: 'Add polygon', glyph: '⬠' },
+];
 
 /**
  * Task 112 (issue #143): the toolbar's contextual color-edit control for
@@ -1817,6 +1839,16 @@ function EditorWorkspace() {
   // switcher tabs where it used to fall in mobile document flow.
   const editorToolbar = (
     <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
+      <span role="group" aria-label="Add shape" className="editor-tool-group">
+        {ADD_SHAPE_TYPES.map(({ type, label, glyph }) => (
+          <ToolbarButton
+            key={type}
+            label={label}
+            glyph={glyph}
+            onClick={() => sceneEditor.addShape(type)}
+          />
+        ))}
+      </span>
       <span role="group" aria-label="History" className="editor-tool-group">
         <ToolbarButton
           label="Undo"

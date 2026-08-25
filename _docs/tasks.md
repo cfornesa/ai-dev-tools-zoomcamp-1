@@ -4024,13 +4024,64 @@ CSS-tooltip + `aria-label` pattern; no new icon library without asking
 first, per `AGENTS.md`'s dependency rule. Whether "Add layer" also moves
 was not specified by the user and needs explicit confirmation during
 grooming.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#172](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/172).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all`
 for "toolbar," "add shape buttons," "shape icons." #143 (the toolbar) and
 #131 (original placement) are the directly relevant prior art; no existing
 issue proposes toolbar-icon shape creation. New, but explicitly overrides
 #143's placement decision.
+
+### Evidence
+
+Implemented per the PM-groomed acceptance criteria on issue #172,
+explicitly reversing task 112/#143's prior placement decision (referenced
+in the implementation commit). `LayersPanel.tsx`'s sidebar "Add shape"
+`role="group"` and its `SHAPE_TYPES` array were removed outright; the four
+actions now live in `EditorWorkspace.tsx`'s always-visible top toolbar
+(`role="toolbar" aria-label="Editor actions"`) as a new `role="group"
+aria-label="Add shape"` group (a new `ADD_SHAPE_TYPES` array), rendered
+first, ahead of History/Edit-shape/Fill-color. Each button reuses the
+toolbar's existing `ToolbarButton` component verbatim — an `aria-hidden`
+Unicode glyph (○ circle, ▭ rectangle, ╱ line, ⬠ polygon) plus the same
+CSS `role="tooltip"` shown on hover/focus, and a real `aria-label` (e.g.
+"Add circle") — so no new icon library was added, per `AGENTS.md`'s
+dependency rule. The underlying mutation (`sceneEditor.addShape(type)`)
+is byte-for-byte unchanged — this is purely a relocation/re-skin. "Add
+layer" was left exactly where it was, still grouped with "Combine into
+group"/"Ungroup selected"/"Delete selected group" in the Layers panel
+sidebar, per the issue's own note; no reason was found during
+implementation to move it.
+
+New coverage in `EditorWorkspace.toolbarAddShape.test.tsx`: all four
+buttons render inside the toolbar's "Add shape" group with correct
+accessible names and visible tooltips; none render inside the Layers
+panel region any more; "Add layer" stays in the Layers panel and is not
+in the toolbar; clicking a toolbar button still adds a shape via the same
+mutation (verified via the outline list and shape count); Tab-then-
+Enter/Space activates a button, matching the toolbar's existing keyboard-
+operability convention. The full existing suite (`EditorWorkspace.shapes.test.tsx`'s
+pre-existing keyboard-only Add-shape test, `EditorWorkspace.accordion.test.tsx`'s
+"Add shape" group presence check, and every other test that clicks "Add
+circle"/"Add rectangle"/etc. by accessible name) needed no changes — all
+124 test files / 1778 tests pass unmodified, since role+name queries are
+location-agnostic and none of the existing tests scoped an Add-shape
+query specifically to the Layers panel region.
+
+Live verification (real Postgres/Django/Vite stack, signed in as an
+`e2e_fixtures` user, per this task's own requirement): at a >=1024px
+desktop viewport, the toolbar shows all four Add-shape icon buttons ahead
+of Undo/Redo/Duplicate/Delete/Fill color, and clicking "Add circle" added
+a shape (confirmed via the "1 shape(s) in the working copy" counter, the
+new "Circle 1" outline row, and `SelectionHud`'s auto-selection) while
+the Layers panel sidebar showed only "Add layer"/"Combine into group"/
+"Ungroup selected"/"Delete selected group" — no Add-shape buttons. At a
+375px mobile viewport the toolbar (rendered below the canvas per task
+125/#157's existing narrow-viewport placement) showed all four icons
+wrapping onto a second row via the toolbar's existing `flex-wrap`, with
+`scrollWidth` measured equal to `clientWidth` (no horizontal overflow) —
+confirmed no clipping. `make frontend-lint`, `make frontend-typecheck`,
+and `make frontend-format-check` all pass with no new warnings.
 
 ## 141. Add a dismiss/reopen control for the canvas selection HUD that preserves the active selection
 

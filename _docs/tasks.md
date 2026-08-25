@@ -4103,13 +4103,62 @@ any kind; it renders unconditionally whenever a shape/group is selected,
 with no wrapping `CollapsibleSection` in `EditorWorkspace.tsx`. This is a
 gap in the original #163 design (always-on-while-selected was intentional,
 but no independent hide/show was considered), not a regression.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#173](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/173).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all`
 for "selection HUD," "close panel," "inspector panel." #163 (added the
 HUD) and #164/#165/#166 (Layers panel compaction/auto-scroll) are the
 closest related work; none proposed a dismiss/collapse control for the HUD
 itself. New, not a duplicate.
+
+### Evidence
+
+Implemented per the PM-groomed acceptance criteria and decision on issue
+#173 (collapse state resets on every new selection, not persisted).
+`SelectionHud.tsx` gained a shared `HudCollapseToggle` header button
+(`aria-expanded` reflecting state, `aria-label` "Collapse selection
+panel"/"Expand selection panel"), rendered in a new
+`.editor-selection-hud-header` row alongside the existing title, for both
+the group and shape render branches. A `collapsed` boolean local to this
+component gates only the existing `.editor-selection-hud-controls` body
+(`{!collapsed && (...)}`) — the outer `.editor-selection-hud` wrapper,
+its title, and the toggle itself always render whenever a selection is
+active, so a collapsed HUD keeps exactly the persistent header/pill this
+issue's acceptance criteria require. Collapsing touches no `sceneEditor`
+state at all: `selectedShapeId`/`multiSelectedIds`, the canvas move/
+resize/rotate handles, and the Layers-panel row's
+`[data-selected='true']` highlight are all driven entirely by
+`sceneEditor`, which this toggle never calls into. A new
+`activeSelectionId` (`selectedGroup?.id ?? selectedShape?.id ?? null`)
+feeds a `useEffect` that resets `collapsed` to `false` whenever it
+changes, satisfying "a fresh selection always resets to expanded." The
+existing deselect paths (`handleCanvasClick`'s empty-canvas click,
+Escape) are untouched — both already worked by nulling `sceneEditor`'s
+selection, which flows straight through this component's existing early
+`return null`s regardless of `collapsed`.
+
+New coverage in `EditorWorkspace.selectionHudCollapse.test.tsx`: starts
+expanded on a fresh selection; collapsing hides the body while keeping
+the header/toggle pill and the HUD's own accessible name; re-expanding
+restores the body; collapsing leaves the Layers-panel row's
+`data-selected` attribute and the HUD's `aria-label` unchanged; selecting
+a different shape while collapsed resets to expanded; Escape still
+dismisses the whole HUD even while collapsed; the toggle is Tab-reachable
+and Enter/Space-activatable. The full pre-existing
+`EditorWorkspace.selectionHud.test.tsx` suite (17 tests) needed no
+changes and continues to pass unmodified, since every test there operates
+against a freshly-selected (therefore expanded-by-default) HUD. The full
+frontend suite (125 files / 1785 tests) passes, and `make frontend-lint`/
+`make frontend-typecheck`/`make frontend-format-check` are all clean (the
+same pre-existing `only-export-components` warnings as before, unrelated
+to this change).
+
+Live-verified against the real Postgres/Django/Vite stack, signed in as
+an `e2e_fixtures` user: added a circle, confirmed the HUD's collapse
+toggle hid the Visible/Locked/fill/opacity/delete/move controls down to a
+"Circle 1 ▸" pill while the canvas selection handles and the Layers
+row's checked/highlighted state stayed visibly unchanged underneath, then
+confirmed re-expanding via the same toggle restored every control.
 
 ## 142. [Needs grooming] Editable HTML/CSS/JS sub-tabs in the Code tab, round-tripping into the scene document
 

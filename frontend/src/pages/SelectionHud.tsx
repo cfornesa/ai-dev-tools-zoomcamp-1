@@ -52,8 +52,49 @@ import type { SceneEditor } from './useSceneEditor';
  * exist) is added as its own small `EditorWorkspace.tsx` keydown listener,
  * not here — this component has no window-level listeners of its own.
  */
+/**
+ * Issue #173 (task 141): the collapse/expand affordance itself — a small
+ * header button shared by both the group and shape render branches below,
+ * so there is exactly one implementation of the toggle's accessible-name/
+ * `aria-expanded` pairing rather than two copies drifting apart. Always
+ * rendered (this is the "persistent pill" a collapsed HUD keeps, per this
+ * issue's own acceptance criteria) — only the body next to it is ever
+ * conditionally omitted.
+ */
+function HudCollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className="editor-selection-hud-collapse-toggle"
+      aria-expanded={!collapsed}
+      aria-label={collapsed ? 'Expand selection panel' : 'Collapse selection panel'}
+      onClick={onToggle}
+    >
+      <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
+    </button>
+  );
+}
+
 function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
   const { selectedShape, selectedGroup, outline } = sceneEditor;
+
+  // Issue #173 (task 141): a collapse/expand toggle for this HUD's body,
+  // independent of the underlying selection — collapsing must never touch
+  // `selectedShapeId`/`multiSelectedIds`, the canvas handles, or the
+  // Layers-panel row highlight (`[data-selected='true']`), all of which
+  // are driven entirely by `sceneEditor` state this component doesn't
+  // own or mutate here. Per this issue's own groomed decision, a fresh
+  // selection always resets to expanded regardless of the previous
+  // shape/group's collapsed state — tracked below by re-running the effect
+  // whenever the active selection's id changes. Deselecting still
+  // dismisses the whole HUD via the early `return null`s below (unaffected
+  // by this state, since those returns happen before this local state is
+  // ever read for rendering).
+  const activeSelectionId = selectedGroup?.id ?? selectedShape?.id ?? null;
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    setCollapsed(false);
+  }, [activeSelectionId]);
 
   // Local drafts for the two free-text fields (fill color, opacity),
   // re-synced whenever the selected shape or its canonical value changes —
@@ -101,55 +142,60 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
         aria-label={`Selected: ${selectedGroup.name}`}
         data-testid="selection-hud"
       >
-        <p className="editor-selection-hud-title">{selectedGroup.name}</p>
-        <div className="editor-selection-hud-controls">
-          <button
-            type="button"
-            aria-pressed={visible}
-            onClick={() => sceneEditor.toggleGroupVisible(selectedGroup.id)}
-          >
-            {visible ? 'Visible' : 'Hidden'}
-          </button>
-          <button
-            type="button"
-            aria-pressed={locked}
-            onClick={() => sceneEditor.toggleGroupLocked(selectedGroup.id)}
-          >
-            {locked ? 'Locked' : 'Unlocked'}
-          </button>
-          <button
-            type="button"
-            aria-label={`Delete group ${selectedGroup.name}`}
-            onClick={() => sceneEditor.deleteGroupSelected(selectedGroup.id)}
-          >
-            Delete group
-          </button>
-          <button
-            type="button"
-            aria-label={`Move ${selectedGroup.name} up`}
-            disabled={isFirst}
-            onClick={() => sceneEditor.moveItem(selectedGroup.id, 'up')}
-          >
-            Move up
-          </button>
-          <button
-            type="button"
-            aria-label={`Move ${selectedGroup.name} down`}
-            disabled={isLast}
-            onClick={() => sceneEditor.moveItem(selectedGroup.id, 'down')}
-          >
-            Move down
-          </button>
-          {layerId !== null && (
-            <MoveControls
-              itemId={selectedGroup.id}
-              itemLabel={selectedGroup.name}
-              itemLayerId={layerId}
-              currentGroupId={currentGroupId}
-              sceneEditor={sceneEditor}
-            />
-          )}
+        <div className="editor-selection-hud-header">
+          <p className="editor-selection-hud-title">{selectedGroup.name}</p>
+          <HudCollapseToggle collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
         </div>
+        {!collapsed && (
+          <div className="editor-selection-hud-controls">
+            <button
+              type="button"
+              aria-pressed={visible}
+              onClick={() => sceneEditor.toggleGroupVisible(selectedGroup.id)}
+            >
+              {visible ? 'Visible' : 'Hidden'}
+            </button>
+            <button
+              type="button"
+              aria-pressed={locked}
+              onClick={() => sceneEditor.toggleGroupLocked(selectedGroup.id)}
+            >
+              {locked ? 'Locked' : 'Unlocked'}
+            </button>
+            <button
+              type="button"
+              aria-label={`Delete group ${selectedGroup.name}`}
+              onClick={() => sceneEditor.deleteGroupSelected(selectedGroup.id)}
+            >
+              Delete group
+            </button>
+            <button
+              type="button"
+              aria-label={`Move ${selectedGroup.name} up`}
+              disabled={isFirst}
+              onClick={() => sceneEditor.moveItem(selectedGroup.id, 'up')}
+            >
+              Move up
+            </button>
+            <button
+              type="button"
+              aria-label={`Move ${selectedGroup.name} down`}
+              disabled={isLast}
+              onClick={() => sceneEditor.moveItem(selectedGroup.id, 'down')}
+            >
+              Move down
+            </button>
+            {layerId !== null && (
+              <MoveControls
+                itemId={selectedGroup.id}
+                itemLabel={selectedGroup.name}
+                itemLayerId={layerId}
+                currentGroupId={currentGroupId}
+                sceneEditor={sceneEditor}
+              />
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -173,110 +219,115 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
       aria-label={`Selected: ${label}`}
       data-testid="selection-hud"
     >
-      <p className="editor-selection-hud-title">{label}</p>
-      <div className="editor-selection-hud-controls">
-        <button
-          type="button"
-          aria-pressed={visible}
-          onClick={() => sceneEditor.toggleShapeVisible(selectedShape.id)}
-        >
-          {visible ? 'Visible' : 'Hidden'}
-        </button>
-        <button
-          type="button"
-          aria-pressed={locked}
-          onClick={() => sceneEditor.toggleShapeLocked(selectedShape.id)}
-        >
-          {locked ? 'Locked' : 'Unlocked'}
-        </button>
-        <div className="editor-selection-hud-field">
-          {/* Issue #163: labeled "Selection fill" rather than plain "Fill"
-              — `ShapeInspectorPanel.tsx`'s own `ColorStyleField` already
-              uses the exact accessible name "Fill" for its identical
-              field, and both can be mounted simultaneously (this HUD and
-              the Inspector panel both read/write the same selected
-              shape's fill), so a shared name would make `getByLabelText`
-              ambiguous for any test/assistive-tech query not already
-              scoped to one container or the other. */}
-          <label htmlFor="selection-hud-fill">Selection fill</label>
-          <input
-            id="selection-hud-fill"
-            type="text"
-            value={fillDraft}
-            aria-invalid={fillError ? true : undefined}
-            aria-describedby={fillError ? 'selection-hud-fill-error' : undefined}
-            onChange={(event) => {
-              const next = event.target.value;
-              setFillDraft(next);
-              const outcome = sceneEditor.updateSelectedShapeColorField('fill', next);
-              setFillError(outcome.ok ? null : outcome.error);
-            }}
-          />
-          {fillError && (
-            <p id="selection-hud-fill-error" role="alert">
-              {fillError}
-            </p>
-          )}
-        </div>
-        <div className="editor-selection-hud-field">
-          {/* Issue #163: "Selection opacity", not `OPACITY_SPEC.label`
-              ("Opacity") verbatim — same ambiguity rationale as "Selection
-              fill" above, against `ShapeInspectorPanel.tsx`'s own
-              `NumericStyleField` for the identical `opacity` field. */}
-          <label htmlFor="selection-hud-opacity">Selection opacity</label>
-          <input
-            id="selection-hud-opacity"
-            type="text"
-            inputMode="decimal"
-            value={opacityDraft}
-            aria-invalid={opacityError ? true : undefined}
-            aria-describedby={opacityError ? 'selection-hud-opacity-error' : undefined}
-            onChange={(event) => {
-              const next = event.target.value;
-              setOpacityDraft(next);
-              const outcome = sceneEditor.updateSelectedShapeNumericField('opacity', next);
-              setOpacityError(outcome.ok ? null : outcome.error);
-            }}
-          />
-          {opacityError && (
-            <p id="selection-hud-opacity-error" role="alert">
-              {opacityError}
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          aria-label={`Delete shape ${label}`}
-          onClick={() => sceneEditor.deleteSelected(selectedShape.id)}
-        >
-          Delete shape
-        </button>
-        <button
-          type="button"
-          aria-label={`Move ${label} up`}
-          disabled={isFirst}
-          onClick={() => sceneEditor.moveItem(selectedShape.id, 'up')}
-        >
-          Move up
-        </button>
-        <button
-          type="button"
-          aria-label={`Move ${label} down`}
-          disabled={isLast}
-          onClick={() => sceneEditor.moveItem(selectedShape.id, 'down')}
-        >
-          Move down
-        </button>
-        {layerId !== null && (
-          <MoveControls
-            itemId={selectedShape.id}
-            itemLabel={label}
-            itemLayerId={layerId}
-            currentGroupId={currentGroupId}
-            sceneEditor={sceneEditor}
-          />
-        )}
+      <div className="editor-selection-hud-header">
+        <p className="editor-selection-hud-title">{label}</p>
+        <HudCollapseToggle collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
       </div>
+      {!collapsed && (
+        <div className="editor-selection-hud-controls">
+          <button
+            type="button"
+            aria-pressed={visible}
+            onClick={() => sceneEditor.toggleShapeVisible(selectedShape.id)}
+          >
+            {visible ? 'Visible' : 'Hidden'}
+          </button>
+          <button
+            type="button"
+            aria-pressed={locked}
+            onClick={() => sceneEditor.toggleShapeLocked(selectedShape.id)}
+          >
+            {locked ? 'Locked' : 'Unlocked'}
+          </button>
+          <div className="editor-selection-hud-field">
+            {/* Issue #163: labeled "Selection fill" rather than plain "Fill"
+                — `ShapeInspectorPanel.tsx`'s own `ColorStyleField` already
+                uses the exact accessible name "Fill" for its identical
+                field, and both can be mounted simultaneously (this HUD and
+                the Inspector panel both read/write the same selected
+                shape's fill), so a shared name would make `getByLabelText`
+                ambiguous for any test/assistive-tech query not already
+                scoped to one container or the other. */}
+            <label htmlFor="selection-hud-fill">Selection fill</label>
+            <input
+              id="selection-hud-fill"
+              type="text"
+              value={fillDraft}
+              aria-invalid={fillError ? true : undefined}
+              aria-describedby={fillError ? 'selection-hud-fill-error' : undefined}
+              onChange={(event) => {
+                const next = event.target.value;
+                setFillDraft(next);
+                const outcome = sceneEditor.updateSelectedShapeColorField('fill', next);
+                setFillError(outcome.ok ? null : outcome.error);
+              }}
+            />
+            {fillError && (
+              <p id="selection-hud-fill-error" role="alert">
+                {fillError}
+              </p>
+            )}
+          </div>
+          <div className="editor-selection-hud-field">
+            {/* Issue #163: "Selection opacity", not `OPACITY_SPEC.label`
+                ("Opacity") verbatim — same ambiguity rationale as "Selection
+                fill" above, against `ShapeInspectorPanel.tsx`'s own
+                `NumericStyleField` for the identical `opacity` field. */}
+            <label htmlFor="selection-hud-opacity">Selection opacity</label>
+            <input
+              id="selection-hud-opacity"
+              type="text"
+              inputMode="decimal"
+              value={opacityDraft}
+              aria-invalid={opacityError ? true : undefined}
+              aria-describedby={opacityError ? 'selection-hud-opacity-error' : undefined}
+              onChange={(event) => {
+                const next = event.target.value;
+                setOpacityDraft(next);
+                const outcome = sceneEditor.updateSelectedShapeNumericField('opacity', next);
+                setOpacityError(outcome.ok ? null : outcome.error);
+              }}
+            />
+            {opacityError && (
+              <p id="selection-hud-opacity-error" role="alert">
+                {opacityError}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            aria-label={`Delete shape ${label}`}
+            onClick={() => sceneEditor.deleteSelected(selectedShape.id)}
+          >
+            Delete shape
+          </button>
+          <button
+            type="button"
+            aria-label={`Move ${label} up`}
+            disabled={isFirst}
+            onClick={() => sceneEditor.moveItem(selectedShape.id, 'up')}
+          >
+            Move up
+          </button>
+          <button
+            type="button"
+            aria-label={`Move ${label} down`}
+            disabled={isLast}
+            onClick={() => sceneEditor.moveItem(selectedShape.id, 'down')}
+          >
+            Move down
+          </button>
+          {layerId !== null && (
+            <MoveControls
+              itemId={selectedShape.id}
+              itemLabel={label}
+              itemLayerId={layerId}
+              currentGroupId={currentGroupId}
+              sceneEditor={sceneEditor}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

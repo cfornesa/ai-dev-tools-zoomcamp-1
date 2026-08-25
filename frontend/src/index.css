@@ -982,11 +982,28 @@ code {
   box-shadow: var(--shadow);
 }
 
+/* Issue #173 (task 141): the header row pairs the title with the collapse/
+   expand toggle so both stay visible even when the body below is hidden —
+   the "persistent pill" a collapsed HUD keeps, per this task's acceptance
+   criteria. */
+.editor-selection-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .editor-selection-hud-title {
   margin: 0;
   font-weight: 600;
   font-size: 0.85em;
   overflow-wrap: anywhere;
+}
+
+.editor-selection-hud-collapse-toggle {
+  flex: none;
+  line-height: 1;
+  padding: 2px 6px;
 }
 
 .editor-selection-hud-controls {

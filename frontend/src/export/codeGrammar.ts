@@ -102,14 +102,14 @@
  *   *existing* shape set. This keeps the grammar a pure, always-reversible
  *   projection instead of a second shape-CRUD surface to keep consistent
  *   with the Visual tab's own.
- * - **Graph nodes/connections are NOT reverse-parsed in Grammar v2 either**
- *   -- see the "Grammar v2 (JS)" section below for what IS now supported
- *   (bindings only) and why node/connection editing is deferred to a
- *   further follow-up (issue #176 / `_docs/tasks.md` task 144).
+ * - **Graph nodes/connections are reverse-parsed via a second JS literal
+ *   block** -- see the "Grammar v2 (JS)" section below (task 144 / issue
+ *   #176) for the exact shape and whitelist.
  *
- * ## Grammar v2 (JS) -- what's IN (task 143 / issue #175)
+ * ## Grammar v2 (JS) -- what's IN (task 143 / issue #175; extended by task
+ * 144 / issue #176)
  *
- * The JS sub-tab's text has exactly two parts:
+ * The JS sub-tab's text has exactly three parts:
  * 1. An editable `bindings` array literal, delimited by two fixed sentinel
  *    comment lines (`BINDINGS_START` / `BINDINGS_END` below):
  *    `const bindings = [ { ... }, { ... } ];`. Each array element is a
@@ -129,47 +129,118 @@
  *    Visual-tab-only add/remove per #174's decision), bindings carry no
  *    shape-identity/ordering constraint, so add/edit/remove is fully
  *    supported simply by adding/editing/removing entries in this array.
- * 2. Everything else (the explanatory banner comment above the bindings
- *    block, and the generated runtime/camera boilerplate below it) is
- *    immutable in this pass -- it must be saved back byte-for-byte
- *    unchanged, exactly like Grammar v1's whole-file behavior. This is
- *    where graph node/connection editing would live in a future pass.
+ * 2. A second editable `graph` object literal, delimited by its own fixed
+ *    sentinel comment lines (`GRAPH_START` / `GRAPH_END` below), placed
+ *    right after the bindings block, separated by exactly one blank line:
+ *    `const graph = { nodes: [ { ... } ], connections: [ { ... } ] };`.
+ *    - Each `nodes[]` entry is a plain object literal with exactly the
+ *      fields `id`, `family`, `type`, `params`, `position` (mirroring
+ *      `schema/scene.schema.json`'s `graphNode` definition's
+ *      `additionalProperties: false`/`required` exactly) -- any other
+ *      field name, or a missing required one, is rejected by name.
+ *      `family` must be one of the schema's 6-value enum (`input`,
+ *      `transform`, `condition`, `visual`, `flow`, `output`), and `type`
+ *      must belong to that family's allowlist in
+ *      `frontend/src/runtime/behaviorRuntime.ts`'s exported
+ *      `ALLOWED_NODE_TYPES_BY_FAMILY` -- the exact same registry the
+ *      Visual tab's graph editor (`graphEditing.ts`'s `NODE_TYPE_CATALOG`,
+ *      `GraphView.tsx`, `BehaviorCardsPanel.tsx`) and the runtime's own
+ *      `validateBehaviorGraph` already trust, imported here rather than
+ *      re-declared. `params` accepts any leaf JSON values (numbers,
+ *      strings up to 200 characters, booleans, `null`) under any key --
+ *      per `schema/scene.schema.json`'s own `graphNode.params` definition,
+ *      which places no per-key/per-node-type whitelist on `params` beyond
+ *      "leaf values only," so this grammar doesn't invent a stricter one;
+ *      per-node-type numeric-range/shape checks (e.g. `mapRange`'s
+ *      `inMin`/`inMax`) are still enforced, but by the same
+ *      `validateBehaviorGraph` pass every other graph mutation path goes
+ *      through (see below), not duplicated here. `position` must be an
+ *      object literal with exactly numeric `x`/`y` fields in
+ *      [-100000, 100000], mirroring the schema's `point` definition.
+ *    - Each `connections[]` entry is a plain object literal with exactly
+ *      `id`, `fromNodeId`, `fromPort`, `toNodeId`, `toPort` (mirroring
+ *      `graphConnection`'s `additionalProperties: false`/`required`
+ *      exactly). Every parsed connection is validated by calling
+ *      `graphEditing.ts`'s exported `checkGraphConnection` (the same
+ *      allowlist + port-compatibility + `findCycle` check
+ *      `GraphView.tsx`'s drag-to-connect and `GraphListView.tsx`'s
+ *      keyboard add-connection form call before ever proposing a
+ *      mutation) against the full parsed node list and the rest of the
+ *      parsed connections -- never a second, independently-maintained
+ *      copy of that logic.
+ *    - Both arrays are a wholesale replacement of `scene.graph.nodes`/
+ *      `.connections`, exactly like the bindings array above: add, edit,
+ *      or remove entries freely; node/connection identity has no
+ *      ordering constraint the way HTML/CSS shapes do.
+ *    - After per-item validation and the `checkGraphConnection` pass, the
+ *      *entire* candidate scene (bindings + graph together) is run
+ *      through `frontend/src/runtime/behaviorRuntime.ts`'s exported
+ *      `validateBehaviorGraph` -- the same umbrella check
+ *      `graphEditing.ts`'s `addGraphNode`/`addGraphConnection`/etc. run
+ *      before ever returning `{ ok: true }` to the Visual tab -- as the
+ *      final authoritative gate. This is what catches anything the
+ *      grammar-level checks above don't (e.g. a `mapRange` node's
+ *      `inMin`/`inMax` params being out of the runtime's documented
+ *      range, or a `shapeProperty` node's `targetId` pointing at a shape
+ *      that doesn't exist), so the JS-tab path can never accept a graph
+ *      the Visual tab's own editor would reject.
+ * 3. Everything else (the explanatory banner comment above the bindings
+ *    block, and the generated runtime/camera boilerplate below the graph
+ *    block) is immutable -- it must be saved back byte-for-byte unchanged,
+ *    exactly like Grammar v1's whole-file behavior.
  *
  * Parsing never uses `eval`, `new Function`, or any other live-execution
- * path: `parseEditableJs` below locates the two sentinel lines with plain
- * string search, then walks the bindings array text with a minimal
+ * path: `parseEditableJs` below locates the sentinel lines with plain
+ * string search, then walks each block's text with the same minimal
  * hand-rolled recursive-descent literal recognizer (`parseJsLiteral`) that
  * understands exactly: object literals, array literals, quoted strings,
  * numbers, `true`/`false`/`null`, and `//`/`/* *\/` comments -- nothing
  * else (no identifiers-as-values, no function calls, no operators, no
- * template literals). This mirrors Grammar v1's own posture (`DOMParser`
- * for HTML, a hand-rolled tokenizer for CSS) rather than adding a new
- * parser dependency to the frontend toolchain, per AGENTS.md's "Dependencies
- * are added in package.json, do not add one without asking."
+ * template literals). One recognizer serves both the bindings block and
+ * the graph block -- this task deliberately extended the existing
+ * `parseJsLiteral` rather than writing a second parser. This mirrors
+ * Grammar v1's own posture (`DOMParser` for HTML, a hand-rolled tokenizer
+ * for CSS) rather than adding a new parser dependency to the frontend
+ * toolchain, per AGENTS.md's "Dependencies are added in package.json, do
+ * not add one without asking."
  *
- * ## Grammar v2 (JS) -- what's OUT, and why (documented latitude per #175)
+ * ## Grammar v2 (JS) -- what's OUT, and why (documented latitude per #175
+ * and #176)
  *
- * - **Graph nodes and connections** (`scene.graph.nodes`/`.connections`)
- *   are not reverse-parsed in this pass -- issue #175's own grooming
- *   comment pre-authorizes shipping "camera/gesture binding edits only,
- *   deferring node/connection add/remove to a further follow-up" as a
- *   valid narrower first cut, as long as something genuinely new is
- *   editable-and-saveable, which bindings are. Editing the graph still
- *   works from the Visual tab (`GraphView.tsx`/`GraphListView.tsx`,
- *   `BehaviorCardsPanel.tsx`). Follow-up filed: issue #176 / task 144.
- * - **Everything outside the bindings array** (the banner text and the
- *   generated runtime/camera script) stays compare-only, exactly as
- *   Grammar v1 left the entire JS sub-tab -- this is what makes "saving
+ * - **Everything outside the bindings and graph blocks** (the banner text
+ *   and the generated runtime/camera script) stays compare-only, exactly
+ *   as Grammar v1 left the entire JS sub-tab -- this is what makes "saving
  *   this tab back unchanged is a safe no-op" continue to hold for the
- *   parts that aren't newly editable.
+ *   parts that aren't editable.
+ * - **A graph node's `params` shape is not independently whitelisted per
+ *   node `type` by this grammar** -- only the schema's own "leaf values
+ *   only" constraint is enforced at parse time, with type-specific
+ *   range/shape checks left entirely to `validateBehaviorGraph` (see
+ *   above). This is a deliberate non-duplication decision, not a gap: a
+ *   second, hand-maintained per-type param schema in this file would
+ *   drift from `behaviorRuntime.ts`'s validators the moment either one
+ *   changed, which is exactly the divergence issue #176 asked this task
+ *   to avoid.
+ * - **`output`-family nodes have no allowlisted node type yet** (mirroring
+ *   `graphEditing.ts`'s own documented gap -- see that module's
+ *   `NODE_TYPE_CATALOG` doc comment): `ALLOWED_NODE_TYPES_BY_FAMILY.output`
+ *   is currently empty, so any `type` under `family: "output"` is rejected
+ *   by the same allowlist check every other family goes through. This is
+ *   an existing project-wide boundary, not one newly introduced here.
  */
 import type { SceneDocument } from '../api/projects';
+import {
+  checkGraphConnection,
+  type GraphConnectionData,
+  type GraphNodeData,
+} from '../pages/graphEditing';
 import {
   getEditableShapes,
   type Shape,
   type ShapeType,
   ROTATION_LIMIT,
 } from '../pages/sceneShapes';
+import { ALLOWED_NODE_TYPES_BY_FAMILY, validateBehaviorGraph } from '../runtime/behaviorRuntime';
 import { buildStandaloneCameraScript } from './standaloneCameraSource';
 import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
 
@@ -284,6 +355,32 @@ type RawBinding = {
 const BINDINGS_START = '// >>> editable-bindings:start (Grammar v2 -- see codeGrammar.ts)';
 const BINDINGS_END = '// >>> editable-bindings:end';
 
+// ---------------------------------------------------------------------------
+// Grammar v2 (JS): graph whitelist (task 144 / issue #176) -- see the module
+// doc comment's "Grammar v2 (JS)" section for the full rationale. `family`
+// mirrors schema/scene.schema.json's `graphNode.family` enum; the allowed
+// (family, type) pairs are NOT re-declared here -- they're imported directly
+// from `ALLOWED_NODE_TYPES_BY_FAMILY` (behaviorRuntime.ts) so this grammar
+// can never drift from the Visual tab's own graph editor / runtime.
+// ---------------------------------------------------------------------------
+
+const GRAPH_START = '// >>> editable-graph:start (Grammar v2 -- see codeGrammar.ts)';
+const GRAPH_END = '// >>> editable-graph:end';
+
+const GRAPH_NODE_FAMILIES = new Set([
+  'input',
+  'transform',
+  'condition',
+  'visual',
+  'flow',
+  'output',
+]);
+const GRAPH_NODE_FIELDS = new Set(['id', 'family', 'type', 'params', 'position']);
+const GRAPH_CONNECTION_FIELDS = new Set(['id', 'fromNodeId', 'fromPort', 'toNodeId', 'toPort']);
+const GRAPH_TOP_FIELDS = new Set(['nodes', 'connections']);
+const GRAPH_PARAM_STRING_MAX_LENGTH = 200;
+const GRAPH_POSITION_RANGE = { min: -100000, max: 100000 };
+
 type Canvas = { width: number; height: number; backgroundColor: string; opacity?: number };
 
 function rawShapesOf(scene: SceneDocument): unknown[] {
@@ -390,6 +487,20 @@ function rawBindingsOf(scene: SceneDocument): RawBinding[] {
   return Array.isArray(bindings) ? (bindings as RawBinding[]) : [];
 }
 
+function rawGraphOf(scene: SceneDocument): {
+  nodes: GraphNodeData[];
+  connections: GraphConnectionData[];
+} {
+  const graph = (scene as { graph?: unknown }).graph as
+    { nodes?: unknown; connections?: unknown } | undefined;
+  return {
+    nodes: Array.isArray(graph?.nodes) ? (graph!.nodes as GraphNodeData[]) : [],
+    connections: Array.isArray(graph?.connections)
+      ? (graph!.connections as GraphConnectionData[])
+      : [],
+  };
+}
+
 function jsStringLiteral(value: string): string {
   // JSON.stringify's double-quoted escaping is a safe, standard superset of
   // what this grammar's own string parser (`parseJsLiteral` below) accepts
@@ -430,6 +541,66 @@ function renderBindingsArray(bindings: RawBinding[]): string {
   return `const bindings = [\n${bindings.map(renderBindingLiteral).join(',\n')}\n];`;
 }
 
+/** Renders a graph node's `params` as a JS object literal of leaf values --
+ * see the module doc comment's "Grammar v2 (JS)" section on why `params`
+ * has no per-key/per-type whitelist beyond "leaf values only." */
+function renderParamsLiteral(params: Record<string, unknown>): string {
+  const keys = Object.keys(params);
+  if (keys.length === 0) return '{}';
+  const parts = keys.map((key) => `${key}: ${renderLeafLiteral(params[key])}`);
+  return `{ ${parts.join(', ')} }`;
+}
+
+function renderLeafLiteral(value: unknown): string {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value === 'number') return num(value);
+  if (typeof value === 'boolean') return String(value);
+  return jsStringLiteral(String(value));
+}
+
+/** Renders one `scene.graph.nodes[]` entry as a JS object literal -- see
+ * the module doc comment's "Grammar v2 (JS)" section for the exact field
+ * list (mirrors `schema/scene.schema.json`'s `graphNode` definition). */
+function renderGraphNodeLiteral(node: GraphNodeData): string {
+  const lines = [
+    `    id: ${jsStringLiteral(node.id)},`,
+    `    family: ${jsStringLiteral(node.family)},`,
+    `    type: ${jsStringLiteral(node.type)},`,
+    `    params: ${renderParamsLiteral(node.params ?? {})},`,
+    `    position: { x: ${num(node.position.x)}, y: ${num(node.position.y)} }`,
+  ];
+  return `  {\n${lines.join('\n')}\n  }`;
+}
+
+/** Renders one `scene.graph.connections[]` entry as a JS object literal --
+ * mirrors `schema/scene.schema.json`'s `graphConnection` definition. */
+function renderGraphConnectionLiteral(connection: GraphConnectionData): string {
+  const lines = [
+    `    id: ${jsStringLiteral(connection.id)},`,
+    `    fromNodeId: ${jsStringLiteral(connection.fromNodeId)},`,
+    `    fromPort: ${jsStringLiteral(connection.fromPort)},`,
+    `    toNodeId: ${jsStringLiteral(connection.toNodeId)},`,
+    `    toPort: ${jsStringLiteral(connection.toPort)}`,
+  ];
+  return `  {\n${lines.join('\n')}\n  }`;
+}
+
+/** Renders the whole editable `const graph = { nodes: [...], connections:
+ * [...] };` statement -- see the module doc comment's "Grammar v2 (JS)"
+ * section. */
+function renderGraphLiteral(nodes: GraphNodeData[], connections: GraphConnectionData[]): string {
+  if (nodes.length === 0 && connections.length === 0) {
+    return 'const graph = { nodes: [], connections: [] };';
+  }
+  const nodesSrc =
+    nodes.length === 0 ? '[]' : `[\n${nodes.map(renderGraphNodeLiteral).join(',\n')}\n  ]`;
+  const connectionsSrc =
+    connections.length === 0
+      ? '[]'
+      : `[\n${connections.map(renderGraphConnectionLiteral).join(',\n')}\n  ]`;
+  return `const graph = {\n  nodes: ${nodesSrc},\n  connections: ${connectionsSrc},\n};`;
+}
+
 /** The part of the JS sub-tab that Grammar v2 does NOT reverse-parse (the
  * explanatory banner plus the generated runtime/camera boilerplate) --
  * split out so both `generateEditableJs` and `parseEditableJs` build/compare
@@ -440,14 +611,14 @@ function renderBindingsArray(bindings: RawBinding[]): string {
 function immutableJsShell(scene: SceneDocument): { header: string; footer: string } {
   const header = [
     "// Generated from this scene's interaction runtime (graph + bindings).",
-    '// Grammar v2 (task 143 / issue #175): the "bindings" array between the',
-    '// sentinel comment lines just below is editable -- add, edit, or',
-    '// remove entries to change camera/gesture behavior bindings. See',
-    "// codeGrammar.ts's module doc comment for the exact whitelist of",
-    '// supported fields. Graph nodes/connections are NOT yet reverse-parsed',
-    "// (tracked as a follow-up -- see _docs/tasks.md task 144's resolution",
-    '// notes for the issue number); the runtime code below the closing',
-    '// sentinel must be saved back unchanged, or the save is rejected.',
+    '// Grammar v2 (task 143 / issue #175; extended by task 144 / issue',
+    '// #176): the "bindings" array and the "graph" object between their own',
+    '// sentinel comment lines just below are both editable -- add, edit, or',
+    '// remove entries to change camera/gesture behavior bindings and graph',
+    "// nodes/connections. See codeGrammar.ts's module doc comment for the",
+    '// exact whitelist of supported fields. The runtime code below the',
+    '// closing sentinel must be saved back unchanged, or the save is',
+    '// rejected.',
     '',
   ].join('\n');
   const hasCamera = Array.isArray((scene as { bindings?: unknown[] }).bindings);
@@ -460,23 +631,31 @@ function immutableJsShell(scene: SceneDocument): { header: string; footer: strin
 
 /**
  * Generates the JavaScript sub-tab's content (Grammar v2, task 143 / issue
- * #175): an editable `const bindings = [...]` array literal reflecting
- * `scene.bindings` exactly, delimited by fixed sentinel comment lines,
- * followed by the same compare-only banner + generated runtime/camera
- * boilerplate Grammar v1 showed for the whole file. See the module doc
- * comment's "Grammar v2 (JS)" section for the full field-by-field mapping.
+ * #175; extended by task 144 / issue #176): an editable `const bindings =
+ * [...]` array literal reflecting `scene.bindings` exactly, followed by an
+ * editable `const graph = { nodes: [...], connections: [...] };` object
+ * literal reflecting `scene.graph` exactly, each delimited by its own fixed
+ * sentinel comment lines, followed by the same compare-only banner +
+ * generated runtime/camera boilerplate Grammar v1 showed for the whole
+ * file. See the module doc comment's "Grammar v2 (JS)" section for the
+ * full field-by-field mapping.
  */
 export function generateEditableJs(scene: SceneDocument | null): string {
   if (!scene) return '';
   const shell = immutableJsShell(scene);
   const bindingsSrc = renderBindingsArray(rawBindingsOf(scene));
-  return `${shell.header}${BINDINGS_START}\n${bindingsSrc}\n${BINDINGS_END}${shell.footer}`;
+  const { nodes, connections } = rawGraphOf(scene);
+  const graphSrc = renderGraphLiteral(nodes, connections);
+  return (
+    `${shell.header}${BINDINGS_START}\n${bindingsSrc}\n${BINDINGS_END}\n\n` +
+    `${GRAPH_START}\n${graphSrc}\n${GRAPH_END}${shell.footer}`
+  );
 }
 
 /** Used by the Code tab's JS sub-tab save handler as a fast, exact-string
  * no-op check before attempting to reverse-parse -- saving the JS sub-tab
- * back byte-for-byte unchanged (bindings included) is always a safe no-op,
- * matching Grammar v1's whole-file guarantee. */
+ * back byte-for-byte unchanged (bindings and graph included) is always a
+ * safe no-op, matching Grammar v1's whole-file guarantee. */
 export function isEditableJsUnchanged(text: string, scene: SceneDocument | null): boolean {
   return text === generateEditableJs(scene);
 }
@@ -1248,34 +1427,316 @@ function validateBindingLiteral(
   return binding;
 }
 
+/** Strips the `const graph = ` prefix and hands the remainder to
+ * `parseJsLiteral`, requiring the result to be an object literal -- the
+ * same recognizer `parseBindingsSource` uses, per the module doc comment's
+ * "one recognizer serves both blocks" decision. */
+function parseGraphSource(
+  source: string,
+): { ok: true; raw: Record<string, JsLiteralValue> } | { ok: false; error: string } {
+  const trimmed = source.trim();
+  const prefixMatch = /^const\s+graph\s*=\s*/.exec(trimmed);
+  if (!prefixMatch) {
+    return {
+      ok: false,
+      error:
+        'Expected exactly one "const graph = { nodes: [ ... ], connections: [ ... ] };" statement between the markers.',
+    };
+  }
+  const parsed = parseJsLiteral(trimmed.slice(prefixMatch[0].length));
+  if (!parsed.ok) return { ok: false, error: `Could not parse the graph object: ${parsed.error}` };
+  if (typeof parsed.value !== 'object' || parsed.value === null || Array.isArray(parsed.value)) {
+    return {
+      ok: false,
+      error:
+        '"graph" must be assigned an object literal, e.g. "{ nodes: [ ... ], connections: [ ... ] }".',
+    };
+  }
+  return { ok: true, raw: parsed.value as Record<string, JsLiteralValue> };
+}
+
+/** Validates one parsed `graph.nodes[]` element against the Grammar v2
+ * graph whitelist (see the module doc comment). Field/type checks mirror
+ * `validateBindingLiteral`'s pattern; `type` is checked against
+ * `ALLOWED_NODE_TYPES_BY_FAMILY` (imported from `behaviorRuntime.ts`, not
+ * re-declared) so this can never drift from the Visual tab's own
+ * allowlist. `params` accepts any leaf JSON values without a per-key
+ * whitelist, per `schema/scene.schema.json`'s own looseness there. */
+function validateGraphNodeLiteral(
+  raw: JsLiteralValue,
+  index: number,
+  errors: string[],
+): GraphNodeData | null {
+  const label = `Graph node ${index + 1}`;
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    errors.push(
+      `${label}: must be an object literal, e.g. { id: "n1", family: "input", type: "handSignal", params: {}, position: { x: 0, y: 0 } }.`,
+    );
+    return null;
+  }
+  const obj = raw as Record<string, JsLiteralValue>;
+
+  const unknownFields = Object.keys(obj).filter((key) => !GRAPH_NODE_FIELDS.has(key));
+  const missingFields = [...GRAPH_NODE_FIELDS].filter((key) => !(key in obj));
+  if (unknownFields.length > 0) {
+    errors.push(
+      `${label}: unsupported field(s) ${unknownFields.map((f) => `"${f}"`).join(', ')} (allowed: ${[...GRAPH_NODE_FIELDS].join(', ')}).`,
+    );
+  }
+  if (missingFields.length > 0) {
+    errors.push(
+      `${label}: missing required field(s) ${missingFields.map((f) => `"${f}"`).join(', ')}.`,
+    );
+  }
+  if (unknownFields.length > 0 || missingFields.length > 0) return null;
+
+  const id = obj.id;
+  if (typeof id !== 'string' || !ID_PATTERN.test(id)) {
+    errors.push(`${label}: "id" must be a string id (letters/digits/-/_, 1-64 chars).`);
+    return null;
+  }
+  const family = obj.family;
+  if (typeof family !== 'string' || !GRAPH_NODE_FAMILIES.has(family)) {
+    errors.push(`${label}: "family" must be one of: ${[...GRAPH_NODE_FAMILIES].join(', ')}.`);
+    return null;
+  }
+  const type = obj.type;
+  const allowedTypes = ALLOWED_NODE_TYPES_BY_FAMILY[family];
+  if (typeof type !== 'string' || !allowedTypes?.has(type)) {
+    errors.push(
+      `${label}: "type" ${typeof type === 'string' ? `"${type}"` : '(missing/invalid)'} is not an allowed node type for family "${family}" (allowed: ${allowedTypes && allowedTypes.size > 0 ? [...allowedTypes].join(', ') : 'none'}).`,
+    );
+    return null;
+  }
+
+  const paramsRaw = obj.params;
+  if (typeof paramsRaw !== 'object' || paramsRaw === null || Array.isArray(paramsRaw)) {
+    errors.push(
+      `${label}: "params" must be an object literal of leaf values (numbers, strings, booleans, null).`,
+    );
+    return null;
+  }
+  let paramsValid = true;
+  const params: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(paramsRaw as Record<string, JsLiteralValue>)) {
+    if (typeof value === 'object' && value !== null) {
+      errors.push(
+        `${label}: params.${key} must be a leaf value (number, string, boolean, or null) -- nested objects/arrays are not supported.`,
+      );
+      paramsValid = false;
+      continue;
+    }
+    if (typeof value === 'string' && value.length > GRAPH_PARAM_STRING_MAX_LENGTH) {
+      errors.push(
+        `${label}: params.${key} string value exceeds ${GRAPH_PARAM_STRING_MAX_LENGTH} characters.`,
+      );
+      paramsValid = false;
+      continue;
+    }
+    params[key] = value;
+  }
+
+  const positionRaw = obj.position;
+  if (typeof positionRaw !== 'object' || positionRaw === null || Array.isArray(positionRaw)) {
+    errors.push(`${label}: "position" must be an object literal, e.g. { x: 0, y: 0 }.`);
+    return null;
+  }
+  const posObj = positionRaw as Record<string, JsLiteralValue>;
+  const posUnknown = Object.keys(posObj).filter((key) => key !== 'x' && key !== 'y');
+  if (posUnknown.length > 0 || !('x' in posObj) || !('y' in posObj)) {
+    errors.push(`${label}: "position" must have exactly "x" and "y" numeric fields.`);
+    return null;
+  }
+  const px = posObj.x;
+  const py = posObj.y;
+  if (
+    typeof px !== 'number' ||
+    typeof py !== 'number' ||
+    px < GRAPH_POSITION_RANGE.min ||
+    px > GRAPH_POSITION_RANGE.max ||
+    py < GRAPH_POSITION_RANGE.min ||
+    py > GRAPH_POSITION_RANGE.max
+  ) {
+    errors.push(
+      `${label}: "position.x"/"position.y" must be numbers between ${GRAPH_POSITION_RANGE.min} and ${GRAPH_POSITION_RANGE.max}.`,
+    );
+    return null;
+  }
+
+  if (!paramsValid) return null;
+  return { id, family, type, params, position: { x: px, y: py } };
+}
+
+/** Validates one parsed `graph.connections[]` element's shape (field names/
+ * id patterns only) -- allowlist/port-compatibility/cycle checks happen
+ * afterward, once the full node/connection lists are known, via
+ * `graphEditing.ts`'s `checkGraphConnection`. */
+function validateGraphConnectionLiteral(
+  raw: JsLiteralValue,
+  index: number,
+  errors: string[],
+): GraphConnectionData | null {
+  const label = `Graph connection ${index + 1}`;
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    errors.push(
+      `${label}: must be an object literal, e.g. { id: "c1", fromNodeId: "n1", fromPort: "value", toNodeId: "n2", toPort: "in" }.`,
+    );
+    return null;
+  }
+  const obj = raw as Record<string, JsLiteralValue>;
+
+  const unknownFields = Object.keys(obj).filter((key) => !GRAPH_CONNECTION_FIELDS.has(key));
+  const missingFields = [...GRAPH_CONNECTION_FIELDS].filter((key) => !(key in obj));
+  if (unknownFields.length > 0) {
+    errors.push(
+      `${label}: unsupported field(s) ${unknownFields.map((f) => `"${f}"`).join(', ')} (allowed: ${[...GRAPH_CONNECTION_FIELDS].join(', ')}).`,
+    );
+  }
+  if (missingFields.length > 0) {
+    errors.push(
+      `${label}: missing required field(s) ${missingFields.map((f) => `"${f}"`).join(', ')}.`,
+    );
+  }
+  if (unknownFields.length > 0 || missingFields.length > 0) return null;
+
+  const id = obj.id;
+  if (typeof id !== 'string' || !ID_PATTERN.test(id)) {
+    errors.push(`${label}: "id" must be a string id (letters/digits/-/_, 1-64 chars).`);
+    return null;
+  }
+  const fromNodeId = obj.fromNodeId;
+  if (typeof fromNodeId !== 'string' || !ID_PATTERN.test(fromNodeId)) {
+    errors.push(`${label}: "fromNodeId" must be a string id (letters/digits/-/_, 1-64 chars).`);
+    return null;
+  }
+  const toNodeId = obj.toNodeId;
+  if (typeof toNodeId !== 'string' || !ID_PATTERN.test(toNodeId)) {
+    errors.push(`${label}: "toNodeId" must be a string id (letters/digits/-/_, 1-64 chars).`);
+    return null;
+  }
+  const fromPort = obj.fromPort;
+  if (typeof fromPort !== 'string' || fromPort.length < 1 || fromPort.length > 64) {
+    errors.push(`${label}: "fromPort" must be a non-empty string up to 64 characters.`);
+    return null;
+  }
+  const toPort = obj.toPort;
+  if (typeof toPort !== 'string' || toPort.length < 1 || toPort.length > 64) {
+    errors.push(`${label}: "toPort" must be a non-empty string up to 64 characters.`);
+    return null;
+  }
+
+  return { id, fromNodeId, fromPort, toNodeId, toPort };
+}
+
+/** Validates the parsed `graph` object literal as a whole: top-level field
+ * names, then each node/connection via `validateGraphNodeLiteral`/
+ * `validateGraphConnectionLiteral`, then every connection against the full
+ * parsed node list via `graphEditing.ts`'s exported `checkGraphConnection`
+ * -- the same allowlist + port-compatibility + cycle-detection check the
+ * Visual tab's graph editor already trusts, never a second implementation
+ * of it. See the module doc comment's "Grammar v2 (JS)" section. */
+function validateGraphLiteral(
+  raw: Record<string, JsLiteralValue>,
+  errors: string[],
+): { nodes: GraphNodeData[]; connections: GraphConnectionData[] } | null {
+  const unknownTop = Object.keys(raw).filter((key) => !GRAPH_TOP_FIELDS.has(key));
+  if (unknownTop.length > 0) {
+    errors.push(
+      `graph: unsupported field(s) ${unknownTop.map((f) => `"${f}"`).join(', ')} (allowed: ${[...GRAPH_TOP_FIELDS].join(', ')}).`,
+    );
+  }
+  const nodesRaw = raw.nodes;
+  const connectionsRaw = raw.connections;
+  if (!Array.isArray(nodesRaw)) {
+    errors.push('graph.nodes must be an array literal, e.g. "nodes: [ ... ]".');
+  }
+  if (!Array.isArray(connectionsRaw)) {
+    errors.push('graph.connections must be an array literal, e.g. "connections: [ ... ]".');
+  }
+  if (errors.length > 0) return null;
+
+  const nodes: GraphNodeData[] = [];
+  const seenNodeIds = new Set<string>();
+  (nodesRaw as JsLiteralValue[]).forEach((item, index) => {
+    const node = validateGraphNodeLiteral(item, index, errors);
+    if (!node) return;
+    if (seenNodeIds.has(node.id)) {
+      errors.push(`Graph node ${index + 1}: duplicate id "${node.id}" -- node ids must be unique.`);
+      return;
+    }
+    seenNodeIds.add(node.id);
+    nodes.push(node);
+  });
+
+  const connections: GraphConnectionData[] = [];
+  const seenConnectionIds = new Set<string>();
+  (connectionsRaw as JsLiteralValue[]).forEach((item, index) => {
+    const connection = validateGraphConnectionLiteral(item, index, errors);
+    if (!connection) return;
+    if (seenConnectionIds.has(connection.id)) {
+      errors.push(
+        `Graph connection ${index + 1}: duplicate id "${connection.id}" -- connection ids must be unique.`,
+      );
+      return;
+    }
+    seenConnectionIds.add(connection.id);
+    connections.push(connection);
+  });
+
+  if (errors.length > 0) return null;
+
+  connections.forEach((connection, index) => {
+    const others = connections.filter((c) => c.id !== connection.id);
+    const check = checkGraphConnection(nodes, others, {
+      fromNodeId: connection.fromNodeId,
+      fromPort: connection.fromPort,
+      toNodeId: connection.toNodeId,
+      toPort: connection.toPort,
+    });
+    if (!check.valid) {
+      errors.push(
+        `Graph connection ${index + 1} ("${connection.id}"): ${check.error ?? 'This connection is not allowed.'}`,
+      );
+    }
+  });
+
+  if (errors.length > 0) return null;
+  return { nodes, connections };
+}
+
 /**
  * Reverse-parses the Code tab's JS sub-tab text (Grammar v2, task 143 /
- * issue #175) back onto `previousScene`'s `bindings` array. Everything
- * outside the `BINDINGS_START`/`BINDINGS_END` markers (the banner and the
- * generated runtime/camera boilerplate) must be saved back byte-for-byte
- * identical to what `generateEditableJs` would produce for `previousScene`
- * -- any drift there is rejected with a specific, actionable error, exactly
- * like every other out-of-grammar edit in this module. `graph` and every
- * other field are carried over from `previousScene` completely unchanged
- * -- see the module doc comment's "what's OUT" section for why graph
- * nodes/connections aren't part of this pass.
+ * issue #175; extended by task 144 / issue #176) back onto
+ * `previousScene`'s `bindings` array and `graph.nodes`/`graph.connections`.
+ * Everything outside the `BINDINGS_START`/`BINDINGS_END` and
+ * `GRAPH_START`/`GRAPH_END` markers (the banner and the generated runtime/
+ * camera boilerplate) must be saved back byte-for-byte identical to what
+ * `generateEditableJs` would produce for `previousScene` -- any drift there
+ * is rejected with a specific, actionable error, exactly like every other
+ * out-of-grammar edit in this module. Every other scene field is carried
+ * over from `previousScene` completely unchanged. As a final gate (after
+ * both blocks parse and every individually-checked node/connection is
+ * valid), the *entire* candidate scene is run through
+ * `behaviorRuntime.ts`'s `validateBehaviorGraph` -- the same umbrella
+ * validation `graphEditing.ts`'s own mutating functions run before ever
+ * applying a Visual-tab graph edit -- so this path can never accept
+ * something that editor would reject.
  */
 export function parseEditableJs(text: string, previousScene: SceneDocument): GrammarParseResult {
   const errors: string[] = [];
-  const startIdx = text.indexOf(BINDINGS_START);
-  const endIdx =
-    startIdx === -1 ? -1 : text.indexOf(BINDINGS_END, startIdx + BINDINGS_START.length);
-  if (startIdx === -1 || endIdx === -1) {
+  const bStart = text.indexOf(BINDINGS_START);
+  const bEnd = bStart === -1 ? -1 : text.indexOf(BINDINGS_END, bStart + BINDINGS_START.length);
+  if (bStart === -1 || bEnd === -1) {
     return {
       ok: false,
       errors: [
-        `JavaScript must contain exactly one "${BINDINGS_START}" ... "${BINDINGS_END}" block -- only the bindings array between those two marker lines is editable. Switch away from the JS tab and back to regenerate it if the markers were removed.`,
+        `JavaScript must contain exactly one "${BINDINGS_START}" ... "${BINDINGS_END}" block -- only the bindings array and the graph object between their marker lines are editable. Switch away from the JS tab and back to regenerate it if the markers were removed.`,
       ],
     };
   }
   if (
-    text.indexOf(BINDINGS_START, startIdx + BINDINGS_START.length) !== -1 ||
-    text.indexOf(BINDINGS_END, endIdx + BINDINGS_END.length) !== -1
+    text.indexOf(BINDINGS_START, bStart + BINDINGS_START.length) !== -1 ||
+    text.indexOf(BINDINGS_END, bEnd + BINDINGS_END.length) !== -1
   ) {
     return {
       ok: false,
@@ -1283,34 +1744,66 @@ export function parseEditableJs(text: string, previousScene: SceneDocument): Gra
     };
   }
 
-  const before = text.slice(0, startIdx);
+  const gStart = text.indexOf(GRAPH_START, bEnd + BINDINGS_END.length);
+  const gEnd = gStart === -1 ? -1 : text.indexOf(GRAPH_END, gStart + GRAPH_START.length);
+  if (gStart === -1 || gEnd === -1) {
+    return {
+      ok: false,
+      errors: [
+        `JavaScript must contain exactly one "${GRAPH_START}" ... "${GRAPH_END}" block, after the bindings block -- only the bindings array and the graph object between their marker lines are editable. Switch away from the JS tab and back to regenerate it if the markers were removed.`,
+      ],
+    };
+  }
+  if (
+    text.indexOf(GRAPH_START, gStart + GRAPH_START.length) !== -1 ||
+    text.indexOf(GRAPH_END, gEnd + GRAPH_END.length) !== -1
+  ) {
+    return {
+      ok: false,
+      errors: [`Only one "${GRAPH_START}" / "${GRAPH_END}" block is allowed.`],
+    };
+  }
+
+  const before = text.slice(0, bStart);
   const bindingsSrc = text
-    .slice(startIdx + BINDINGS_START.length, endIdx)
+    .slice(bStart + BINDINGS_START.length, bEnd)
     .replace(/^\n/, '')
     .trimEnd();
-  const after = text.slice(endIdx + BINDINGS_END.length);
+  const between = text.slice(bEnd + BINDINGS_END.length, gStart);
+  const graphSrc = text
+    .slice(gStart + GRAPH_START.length, gEnd)
+    .replace(/^\n/, '')
+    .trimEnd();
+  const after = text.slice(gEnd + GRAPH_END.length);
 
   const expectedShell = immutableJsShell(previousScene);
   if (before !== expectedShell.header) {
     errors.push(
-      `Only the bindings array is editable -- the JavaScript above "${BINDINGS_START}" must stay exactly as generated. Use the Visual tab for graph/behavior changes, or switch away from and back to the JS tab to discard this part of the edit.`,
+      `Only the bindings array and graph object are editable -- the JavaScript above "${BINDINGS_START}" must stay exactly as generated. Switch away from and back to the JS tab to discard this part of the edit.`,
+    );
+  }
+  if (between !== '\n\n') {
+    errors.push(
+      `Only the bindings array and graph object are editable -- the JavaScript between "${BINDINGS_END}" and "${GRAPH_START}" must stay exactly as generated (a single blank line).`,
     );
   }
   if (after !== expectedShell.footer) {
     errors.push(
-      `Only the bindings array is editable -- the generated runtime code below "${BINDINGS_END}" is not part of the supported grammar yet (see codeGrammar.ts's module doc comment) and must stay exactly as generated. Use the Visual tab for graph node/connection changes instead.`,
+      `Only the bindings array and graph object are editable -- the generated runtime code below "${GRAPH_END}" must stay exactly as generated.`,
     );
   }
 
-  const parsedDecl = parseBindingsSource(bindingsSrc);
-  if (!parsedDecl.ok) {
-    errors.push(parsedDecl.error);
+  const parsedBindings = parseBindingsSource(bindingsSrc);
+  if (!parsedBindings.ok) errors.push(parsedBindings.error);
+  const parsedGraph = parsedBindings.ok ? parseGraphSource(graphSrc) : null;
+  if (parsedGraph && !parsedGraph.ok) errors.push(parsedGraph.error);
+  if (!parsedBindings.ok || !parsedGraph || !parsedGraph.ok) {
     return { ok: false, errors };
   }
 
   const bindings: RawBinding[] = [];
   const seenIds = new Set<string>();
-  parsedDecl.items.forEach((item, index) => {
+  parsedBindings.items.forEach((item, index) => {
     const binding = validateBindingLiteral(item, index, errors);
     if (!binding) return;
     if (seenIds.has(binding.id)) {
@@ -1323,8 +1816,26 @@ export function parseEditableJs(text: string, previousScene: SceneDocument): Gra
     bindings.push(binding);
   });
 
-  if (errors.length > 0) return { ok: false, errors };
+  const graphResult = validateGraphLiteral(parsedGraph.raw, errors);
 
-  const nextScene: SceneDocument = { ...previousScene, bindings };
+  if (errors.length > 0 || !graphResult) return { ok: false, errors };
+
+  const nextScene: SceneDocument = {
+    ...previousScene,
+    bindings,
+    graph: { nodes: graphResult.nodes, connections: graphResult.connections },
+  };
+
+  const behaviorCheck = validateBehaviorGraph(nextScene);
+  if (!behaviorCheck.valid) {
+    return {
+      ok: false,
+      errors:
+        behaviorCheck.errors.length > 0
+          ? behaviorCheck.errors.map((e) => e.message)
+          : ['This change would make the graph invalid.'],
+    };
+  }
+
   return { ok: true, scene: nextScene };
 }

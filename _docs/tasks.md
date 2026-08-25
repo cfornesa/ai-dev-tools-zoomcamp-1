@@ -4531,10 +4531,103 @@ compatibility/cycle-detection validation
 node's `params` (arbitrary leaf-valued JSON whose shape varies per node
 `type`); and the same "never eval, never execute" posture task 143 already
 established.
-Status: PROPOSED
-GitHub issue: [#176](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/176).
+Status: COMPLETE
+GitHub issue: [#176](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/176)
+(left open for QA/closing by the orchestrator, per this task's
+instructions).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
 --search "graph node connection editing JS"` before filing — no existing
 issue proposes graph node/connection reverse parsing via JS. New; task
 143/#175 (the bindings half of Grammar v2) is the direct predecessor;
 explicitly flagged as needing its own design pass before implementation.
+Resolution (2026-08-25): Implemented per issue #176's "Groomed acceptance
+criteria (PM pass)" comment — this closes out the full HTML/CSS/JS
+editability request (tasks 142/143/144, issues #174/#175/#176). Verified
+both by re-reading the shipped code and via a full live pass against a
+real Postgres-backed Django + Vite dev stack.
+
+- **The grammar (`frontend/src/export/codeGrammar.ts`)**: extended the
+  existing "Grammar v2 (JS)" doc-comment section with a second editable
+  block: `const graph = { nodes: [...], connections: [...] };`,
+  delimited by its own sentinel comment lines (`GRAPH_START`/`GRAPH_END`),
+  placed immediately after the bindings block (separated by exactly one
+  blank line). Parsed by extending the same hand-rolled
+  `parseJsLiteral` recognizer task 143 built for bindings — no second
+  parser, no new dependency. `generateEditableJs` now emits both blocks;
+  `parseEditableJs` reverse-parses both, and both together still commit
+  as one `sceneEditor.commitScene()` call (one undo step).
+  - **`graph.nodes[]`** fields mirror `schema/scene.schema.json`'s
+    `graphNode` definition exactly (`id`, `family`, `type`, `params`,
+    `position`, all required, no others allowed). `family` must be one of
+    the schema's 6-value enum; `type` is checked directly against
+    `frontend/src/runtime/behaviorRuntime.ts`'s exported
+    `ALLOWED_NODE_TYPES_BY_FAMILY` — imported, not re-declared, so this
+    grammar can never drift from the Visual tab's own graph editor
+    (`graphEditing.ts`'s `NODE_TYPE_CATALOG` is itself built from the same
+    registry). `params` accepts any leaf JSON values (number/string up to
+    200 chars/boolean/null) under any key with no per-node-type schema of
+    its own, matching `schema/scene.schema.json`'s own looseness there;
+    per-type numeric-range checks (e.g. `mapRange`'s `inMin`/`inMax`) are
+    still enforced, but only via the final `validateBehaviorGraph` gate
+    below, never duplicated in the grammar. `position.x`/`.y` must be
+    numbers in [-100000, 100000], mirroring the schema's `point`
+    definition.
+  - **`graph.connections[]`** fields mirror `graphConnection` exactly
+    (`id`, `fromNodeId`, `fromPort`, `toNodeId`, `toPort`). Every parsed
+    connection is validated by calling `graphEditing.ts`'s exported
+    `checkGraphConnection` — the same allowlist + port-compatibility +
+    `findCycle` check `GraphView.tsx`'s drag-to-connect and
+    `GraphListView.tsx`'s keyboard add-connection form already call before
+    ever proposing a mutation — against the full parsed node list and the
+    rest of the parsed connections, never a second implementation of that
+    logic.
+  - **Final gate**: after per-item and per-connection checks pass, the
+    entire candidate scene (bindings + graph together) is run through
+    `behaviorRuntime.ts`'s exported `validateBehaviorGraph` — the exact
+    umbrella check `graphEditing.ts`'s `addGraphNode`/`addGraphConnection`/
+    etc. already run before ever returning `{ ok: true }` to the Visual
+    tab — so the JS-tab path can never accept something that editor would
+    reject (e.g. a `shapeProperty` node's `targetId` pointing at a
+    nonexistent shape). This also caught a latent gap in task 143's own
+    test fixtures (a binding with a `targetId` pointing at a nonexistent
+    group, which `validateScene`'s referential-integrity check — already
+    used at the real JSON-tab save path — would always have rejected);
+    fixed those two pre-existing tests rather than weakening the new gate.
+  - Both `nodes[]` and `connections[]` are a wholesale replacement of
+    `scene.graph.nodes`/`.connections`, exactly like the bindings array:
+    add/edit/remove freely, no ordering/identity constraint (unlike Grammar
+    v1's shapes).
+  - `output`-family nodes have no allowlisted node type yet (mirroring
+    `graphEditing.ts`'s own pre-existing, documented gap in
+    `ALLOWED_NODE_TYPES_BY_FAMILY.output`) — not a new boundary introduced
+    here, and not something this task's scope covers filling in.
+- **`EditorWorkspace.tsx`**: `JsCodeEditor`'s doc comment and its
+  in-app help text (the paragraph above the JS textarea) updated to
+  describe both editable blocks — the old text said graph changes needed
+  the Visual tab, which stopped being true. No change needed to the
+  commit/save wiring itself: it was already generic over whatever
+  `parseEditableJs` returns.
+- **Tests** (`frontend/src/export/codeGrammar.test.ts`, 36 total, up from
+  24): valid add/edit/remove of nodes and connections; a rejected invalid
+  node type for its family; a rejected incompatible-port connection
+  (event → value); a rejected cycle-creating connection; a rejected
+  unknown field on a graph node; a rejected function-call-shaped value
+  (never executed); confirmed bindings-only edits still work unchanged
+  alongside an untouched graph (no regression to #175); and a full
+  round-trip test using `graphEditing.ts`'s own `addGraphNode`/
+  `addGraphConnection` (Visual-tab path) → `generateEditableJs` →
+  `parseEditableJs` → re-generate → byte-identical, with no scene
+  mutation.
+- **Verification**: `make check` green (backend: 629 passed/22 skipped;
+  frontend: 126 test files/1821 tests, lint/format/typecheck clean for
+  both stacks — one frontend test file flaked on an unrelated timer-based
+  debounce test and passed cleanly in isolation, confirmed unrelated to
+  this change). Grepped both changed files for `eval(`, `new Function(`,
+  and `srcdoc` — no matches. Live-verified against a real Postgres-backed
+  Django + Vite dev stack: added a "Follow hand" behavior card via the
+  Visual tab, confirmed its nodes/connection appeared correctly in the
+  regenerated JS sub-tab's `graph` block; hand-edited the JS sub-tab to
+  add an isolated `randomRange` node, saved, and confirmed it appeared in
+  the Visual tab's graph list view; then edited that node's `type` to an
+  invalid value for its family and confirmed the save was rejected with
+  the exact allowlist error and the scene was left unmutated.

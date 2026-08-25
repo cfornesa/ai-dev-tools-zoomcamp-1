@@ -569,15 +569,17 @@ function HtmlCssCodeEditor({
 }
 
 /**
- * Task 143 (issue #175): the JavaScript sub-tab. Shows a live-generated
- * view of this scene's interaction runtime with an editable `bindings`
- * array (Grammar v2 -- see `codeGrammar.ts`'s module doc comment for the
- * exact field whitelist). Saving the text back unchanged is still a safe
- * no-op (Grammar v1's guarantee, preserved); an edit to the bindings array
- * is reverse-parsed and applied as one `sceneEditor.commitScene()` call,
- * same as the HTML/CSS sub-tabs; an edit outside the bindings array (or an
- * out-of-whitelist binding field) is rejected with a specific, actionable
- * error and the scene is left completely untouched.
+ * Task 143 (issue #175; extended by task 144 / issue #176): the JavaScript
+ * sub-tab. Shows a live-generated view of this scene's interaction runtime
+ * with an editable `bindings` array and an editable `graph` object
+ * (Grammar v2 -- see `codeGrammar.ts`'s module doc comment for the exact
+ * field whitelists). Saving the text back unchanged is still a safe no-op
+ * (Grammar v1's guarantee, preserved); an edit to either block is
+ * reverse-parsed and applied as one `sceneEditor.commitScene()` call, same
+ * as the HTML/CSS sub-tabs; an edit outside those two blocks (or an
+ * out-of-whitelist field, or a graph mutation `graphEditing.ts`'s
+ * validation would reject) is rejected with a specific, actionable error
+ * and the scene is left completely untouched.
  */
 function JsCodeEditor({
   workingCopy,
@@ -611,9 +613,10 @@ function JsCodeEditor({
     <div className="editor-code-tab">
       <p className="editor-code-tab-note">
         Generated from this scene&apos;s interaction runtime. Add, edit, or remove entries in the{' '}
-        <code>bindings</code> array to change camera/gesture behavior bindings — the rest of this
-        file (the generated runtime code) is not part of the editable grammar yet; use the Visual
-        tab for graph node/connection changes.
+        <code>bindings</code> array to change camera/gesture behavior bindings, or in the{' '}
+        <code>graph</code> object&apos;s <code>nodes</code>/<code>connections</code> arrays to
+        change graph nodes and connections — the rest of this file (the generated runtime code) is
+        not part of the editable grammar.
       </p>
       <label htmlFor="editor-scene-js-textarea">Scene JavaScript</label>
       <textarea

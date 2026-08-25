@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SceneDocument } from '../api/projects';
+import { addGraphNode, addGraphConnection } from '../pages/graphEditing';
 import { validateScene } from '../validation/scene';
 import {
   generateEditableCss,
@@ -138,6 +139,363 @@ describe('generateEditableHtml / generateEditableCss: forward direction', () => 
     expect(js).toContain('signal: "indexTipX"');
     expect(js).toContain('mapping: { inMin: 0, inMax: 1, outMin: 0, outMax: 800 }');
   });
+
+  it('emits an empty editable graph object and round-trips unchanged', () => {
+    const js = generateEditableJs(baseScene());
+    expect(js).toContain('const graph = { nodes: [], connections: [] };');
+    expect(isEditableJsUnchanged(js, baseScene())).toBe(true);
+  });
+
+  it('serializes existing graph nodes/connections into the editable graph object', () => {
+    const scene = baseScene({
+      graph: {
+        nodes: [
+          {
+            id: 'node-1',
+            family: 'input',
+            type: 'handSignal',
+            params: { signal: 'indexTipX', handTarget: 'primary' },
+            position: { x: 10, y: 20 },
+          },
+          {
+            id: 'node-2',
+            family: 'visual',
+            type: 'shapeProperty',
+            params: { targetId: 'shape-1', property: 'positionX' },
+            position: { x: 200, y: 20 },
+          },
+        ],
+        connections: [
+          {
+            id: 'conn-1',
+            fromNodeId: 'node-1',
+            fromPort: 'value',
+            toNodeId: 'node-2',
+            toPort: 'in',
+          },
+        ],
+      },
+    });
+    const js = generateEditableJs(scene);
+    expect(js).toContain('const graph = {');
+    expect(js).toContain('id: "node-1"');
+    expect(js).toContain('family: "input"');
+    expect(js).toContain('type: "handSignal"');
+    expect(js).toContain('params: { signal: "indexTipX", handTarget: "primary" }');
+    expect(js).toContain('position: { x: 10, y: 20 }');
+    expect(js).toContain('fromNodeId: "node-1"');
+    expect(js).toContain('toPort: "in"');
+  });
+});
+
+describe('parseEditableJs: Grammar v2 reverse direction (graph)', () => {
+  function sceneWithHandSignalAndShapeProperty(): SceneDocument {
+    return baseScene({
+      graph: {
+        nodes: [
+          {
+            id: 'node-1',
+            family: 'input',
+            type: 'handSignal',
+            params: { signal: 'indexTipX', handTarget: 'primary' },
+            position: { x: 10, y: 20 },
+          },
+          {
+            id: 'node-2',
+            family: 'visual',
+            type: 'shapeProperty',
+            params: { targetId: 'shape-1', property: 'positionX' },
+            position: { x: 200, y: 20 },
+          },
+        ],
+        connections: [
+          {
+            id: 'conn-1',
+            fromNodeId: 'node-1',
+            fromPort: 'value',
+            toNodeId: 'node-2',
+            toPort: 'in',
+          },
+        ],
+      },
+    });
+  }
+
+  it('round-trips unchanged: regenerated JS re-saved produces no scene mutation', () => {
+    const scene = sceneWithHandSignalAndShapeProperty();
+    const js = generateEditableJs(scene);
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(validateScene(result.scene).valid).toBe(true);
+    expect(generateEditableJs(result.scene)).toBe(js);
+  });
+
+  it('adds a new graph node and connection via the JS sub-tab', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const graph = { nodes: [], connections: [] };',
+      [
+        'const graph = {',
+        '  nodes: [',
+        '    {',
+        '      id: "node-1",',
+        '      family: "input",',
+        '      type: "handSignal",',
+        '      params: { signal: "indexTipX", handTarget: "primary" },',
+        '      position: { x: 0, y: 0 }',
+        '    },',
+        '    {',
+        '      id: "node-2",',
+        '      family: "visual",',
+        '      type: "shapeProperty",',
+        '      params: { targetId: "shape-1", property: "positionX" },',
+        '      position: { x: 200, y: 0 }',
+        '    }',
+        '  ],',
+        '  connections: [',
+        '    {',
+        '      id: "conn-1",',
+        '      fromNodeId: "node-1",',
+        '      fromPort: "value",',
+        '      toNodeId: "node-2",',
+        '      toPort: "in"',
+        '    }',
+        '  ],',
+        '};',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const graph = result.scene.graph as { nodes: any[]; connections: any[] };
+    expect(graph.nodes).toHaveLength(2);
+    expect(graph.connections).toHaveLength(1);
+    expect(graph.nodes[0]).toMatchObject({ id: 'node-1', family: 'input', type: 'handSignal' });
+    expect(graph.connections[0]).toMatchObject({
+      id: 'conn-1',
+      fromNodeId: 'node-1',
+      toNodeId: 'node-2',
+    });
+  });
+
+  it('removes a graph node and its connection via the JS sub-tab', () => {
+    const scene = sceneWithHandSignalAndShapeProperty();
+    const js = generateEditableJs(scene).replace(
+      /const graph = \{[\s\S]*?\};/,
+      'const graph = { nodes: [], connections: [] };',
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const graph = result.scene.graph as { nodes: any[]; connections: any[] };
+    expect(graph.nodes).toEqual([]);
+    expect(graph.connections).toEqual([]);
+  });
+
+  it('bindings-only edits still work unchanged alongside an untouched graph (no regression to #175)', () => {
+    const scene = sceneWithHandSignalAndShapeProperty();
+    const js = generateEditableJs(scene).replace(
+      'const bindings = [];',
+      [
+        'const bindings = [',
+        '  {',
+        '    id: "binding-new",',
+        '    signal: "pinchStrength",',
+        '    handTarget: "right",',
+        '    targetScope: "scene",',
+        '    targetId: null,',
+        '    targetProperty: "globalForce",',
+        '    composition: "replace"',
+        '  }',
+        '];',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.scene.bindings as any[]).toHaveLength(1);
+    const graph = result.scene.graph as { nodes: any[]; connections: any[] };
+    expect(graph.nodes).toHaveLength(2);
+    expect(graph.connections).toHaveLength(1);
+  });
+
+  it('rejects a node whose type is not allowed for its family, with a specific, actionable error', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const graph = { nodes: [], connections: [] };',
+      [
+        'const graph = {',
+        '  nodes: [',
+        '    {',
+        '      id: "node-1",',
+        '      family: "input",',
+        '      type: "shapeProperty",',
+        '      params: {},',
+        '      position: { x: 0, y: 0 }',
+        '    }',
+        '  ],',
+        '  connections: [],',
+        '};',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join(' ')).toMatch(
+      /"type" "shapeProperty" is not an allowed node type for family "input"/,
+    );
+  });
+
+  it('rejects an incompatible-port connection (event -> value) with a specific, actionable error', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const graph = { nodes: [], connections: [] };',
+      [
+        'const graph = {',
+        '  nodes: [',
+        '    {',
+        '      id: "node-1",',
+        '      family: "input",',
+        '      type: "gestureEvent",',
+        '      params: { signal: "event:pinchStart", handTarget: "primary" },',
+        '      position: { x: 0, y: 0 }',
+        '    },',
+        '    {',
+        '      id: "node-2",',
+        '      family: "visual",',
+        '      type: "shapeProperty",',
+        '      params: { targetId: "shape-1", property: "positionX" },',
+        '      position: { x: 200, y: 0 }',
+        '    }',
+        '  ],',
+        '  connections: [',
+        '    {',
+        '      id: "conn-1",',
+        '      fromNodeId: "node-1",',
+        '      fromPort: "event",',
+        '      toNodeId: "node-2",',
+        '      toPort: "in"',
+        '    }',
+        '  ],',
+        '};',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join(' ')).toMatch(/Cannot connect a 'event' output to a 'value' input/);
+  });
+
+  it('rejects a connection that would create a cycle, with a specific, actionable error', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const graph = { nodes: [], connections: [] };',
+      [
+        'const graph = {',
+        '  nodes: [',
+        '    {',
+        '      id: "node-a",',
+        '      family: "transform",',
+        '      type: "mapRange",',
+        '      params: {},',
+        '      position: { x: 0, y: 0 }',
+        '    },',
+        '    {',
+        '      id: "node-b",',
+        '      family: "transform",',
+        '      type: "mapRange",',
+        '      params: {},',
+        '      position: { x: 200, y: 0 }',
+        '    }',
+        '  ],',
+        '  connections: [',
+        '    {',
+        '      id: "conn-a-b",',
+        '      fromNodeId: "node-a",',
+        '      fromPort: "out",',
+        '      toNodeId: "node-b",',
+        '      toPort: "in"',
+        '    },',
+        '    {',
+        '      id: "conn-b-a",',
+        '      fromNodeId: "node-b",',
+        '      fromPort: "out",',
+        '      toNodeId: "node-a",',
+        '      toPort: "in"',
+        '    }',
+        '  ],',
+        '};',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join(' ')).toMatch(/would create a cycle/);
+  });
+
+  it('rejects an out-of-whitelist field on a graph node with a specific, actionable error', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const graph = { nodes: [], connections: [] };',
+      [
+        'const graph = {',
+        '  nodes: [',
+        '    {',
+        '      id: "node-1",',
+        '      family: "input",',
+        '      type: "handSignal",',
+        '      params: {},',
+        '      position: { x: 0, y: 0 },',
+        '      evalCode: "alert(1)"',
+        '    }',
+        '  ],',
+        '  connections: [],',
+        '};',
+      ].join('\n'),
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join(' ')).toMatch(/unsupported field.*"evalCode"/);
+  });
+
+  it('never executes hand-edited JS: a graph object with a function-call-shaped value is rejected, not run', () => {
+    const scene = baseScene();
+    const js = generateEditableJs(scene).replace(
+      'const graph = { nodes: [], connections: [] };',
+      'const graph = { nodes: [ { id: alert(1) } ], connections: [] };',
+    );
+    const result = parseEditableJs(js, scene);
+    expect(result.ok).toBe(false);
+  });
+
+  it('round-trip: a Visual-tab graph edit regenerates the JS sub-tab, and resaving it unchanged produces no mutation', () => {
+    const scene = baseScene();
+    const added = addGraphNode(scene, 'handSignal', { x: 5, y: 5 });
+    expect(added.ok).toBe(true);
+    if (!added.ok) return;
+    const withNode = added.scene;
+    const added2 = addGraphNode(withNode, 'shapeProperty', { x: 100, y: 5 });
+    expect(added2.ok).toBe(true);
+    if (!added2.ok) return;
+    const connected = addGraphConnection(added2.scene, {
+      fromNodeId: added.nodeId!,
+      fromPort: 'value',
+      toNodeId: added2.nodeId!,
+      toPort: 'in',
+    });
+    expect(connected.ok).toBe(true);
+    if (!connected.ok) return;
+
+    const js = generateEditableJs(connected.scene);
+    expect(js).toContain(`id: "${added.nodeId}"`);
+    const result = parseEditableJs(js, connected.scene);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.scene).toEqual(connected.scene);
+    expect(generateEditableJs(result.scene)).toBe(js);
+  });
 });
 
 describe('parseEditableJs: Grammar v2 reverse direction (bindings)', () => {
@@ -174,9 +532,9 @@ describe('parseEditableJs: Grammar v2 reverse direction (bindings)', () => {
         '    id: "binding-new",',
         '    signal: "pinchStrength",',
         '    handTarget: "right",',
-        '    targetScope: "group",',
-        '    targetId: "group-1",',
-        '    targetProperty: "scaleX",',
+        '    targetScope: "scene",',
+        '    targetId: null,',
+        '    targetProperty: "globalForce",',
         '    composition: "replace"',
         '  }',
         '];',
@@ -191,9 +549,9 @@ describe('parseEditableJs: Grammar v2 reverse direction (bindings)', () => {
       id: 'binding-new',
       signal: 'pinchStrength',
       handTarget: 'right',
-      targetScope: 'group',
-      targetId: 'group-1',
-      targetProperty: 'scaleX',
+      targetScope: 'scene',
+      targetId: null,
+      targetProperty: 'globalForce',
       composition: 'replace',
     });
   });
@@ -253,7 +611,7 @@ describe('parseEditableJs: Grammar v2 reverse direction (bindings)', () => {
     const result = parseEditableJs(js, scene);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join(' ')).toMatch(/not part of the supported grammar yet/);
+    expect(result.errors.join(' ')).toMatch(/must stay exactly as generated/);
   });
 
   it('rejects an invalid composition value', () => {

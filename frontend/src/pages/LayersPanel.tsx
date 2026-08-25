@@ -290,6 +290,22 @@ export function isRowLocked(row: OutlineRow): boolean {
   return row.kind === 'layer' ? row.locked : row.inheritedLocked;
 }
 
+/** Issue #165 (task 133): is `el` already fully within the browser
+ * viewport's vertical extent — the "should the selection-driven
+ * `scrollIntoView` effect below actually scroll" check. Exported purely
+ * for direct unit testing against a stubbed `getBoundingClientRect`/
+ * `window.innerHeight`, the same style of pure-helper-plus-effect split
+ * this file already uses elsewhere (e.g. `planDrop`/`isPlanValid` backing
+ * the drag-and-drop effect handlers). A row with no rendered box at all
+ * (both `top`/`bottom` at 0, e.g. `display: none` or not yet laid out)
+ * is treated as "visible" — there's nothing meaningful to scroll to. */
+export function isRowFullyVisible(el: Element): boolean {
+  const rect = el.getBoundingClientRect();
+  if (rect.top === 0 && rect.bottom === 0) return true;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  return rect.top >= 0 && rect.bottom <= viewportHeight;
+}
+
 /** Identifies row `index`'s immediate container as `'root'` (a layer row
  * itself has no container in this sense), `'layer:<id>'` (top-level of
  * that layer), or `'group:<id>'` (a child of that group) — derived purely
@@ -814,12 +830,39 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
   // Issue #153: keep the Layers panel scrolled to whichever row is selected
   // (e.g. via a canvas click), matching the canvas's own outline highlight
   // becoming visible without extra user action.
+  //
+  // Issue #165 (task 133): originally unconditional — every selection
+  // change called `scrollIntoView`, even when the newly-selected row was
+  // already fully on screen. Live user feedback after task 132 compacted
+  // the rows still flagged this as jarring specifically for that
+  // already-visible case (a same-viewport jump has no reason to happen at
+  // all), so this now only scrolls when the row is actually out of view —
+  // acceptance option (a) of this task's three, chosen over (b) removing
+  // auto-scroll entirely or (c) keeping it unconditional. Rationale for
+  // not choosing (b)/(c): compact rows and the strengthened `[data-
+  // selected='true']` highlight (task 132) genuinely shrink how often a
+  // jump happens at all (more rows now fit without scrolling) and make a
+  // selected-but-off-screen row easier to spot once scrolled to, but
+  // neither eliminates the real case this effect exists for — selecting a
+  // shape via a canvas click while the Layers panel is scrolled somewhere
+  // else entirely still needs *some* scroll to bring it into view, so
+  // removing the behavior outright (b) would be a net loss for that case;
+  // keeping it unconditional (c) would keep the exact jarring same-
+  // viewport jump this task was filed to fix.
+  //
+  // "Visible" is checked against the browser viewport (`window.innerHeight`),
+  // not a dedicated scrollable ancestor: `.editor-outline-list` (and its
+  // containing `.editor-panel[data-panel='layers']`) has no `overflow-y`
+  // of its own in `index.css` — the page/panel scrolls as a whole, so the
+  // viewport is the actual "visible scroll area" a real user experiences
+  // here, not a false proxy for it.
   useEffect(() => {
     const id = sceneEditor.selectedShapeId;
     if (!id || !listRef.current) return;
     const row = listRef.current.querySelector(`[data-outline-id="${id}"]`);
+    if (!row || isRowFullyVisible(row)) return;
     // jsdom (unit tests) has no `scrollIntoView` implementation at all.
-    row?.scrollIntoView?.({ block: 'nearest' });
+    row.scrollIntoView?.({ block: 'nearest' });
   }, [sceneEditor.selectedShapeId]);
 
   const drag: DragController = {

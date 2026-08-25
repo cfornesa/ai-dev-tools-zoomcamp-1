@@ -3399,8 +3399,9 @@ highlight, or keep it unchanged if grooming finds compact rows don't
 actually eliminate the disorientation. Should be sequenced after task 132
 so the decision is made against the real compacted layout, not the
 current cluttered one.
-Status: PROPOSED — depends on task 132.
-GitHub issue: pending — see reconciliation note below.
+Status: COMPLETE
+GitHub issue: [#165](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/165)
+(open for QA/closing by the orchestrator).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --search
 "scroll into view"` for a duplicate — only #153 (closed, the issue that
 added this behavior) matches, and its own text explicitly deferred this
@@ -3412,3 +3413,37 @@ chain (131 -> 132 -> 133) rather than independently implementable —
 grooming should confirm that ordering still holds before work starts.
 Matching GitHub issues #163/#164/#165 filed for tasks 131/132/133
 respectively, cross-linking this chain.
+Resolution (2026-08-24): Chose option (a) of this task's own three —
+"only scroll when the newly-selected row is actually out of view" —
+over (b) removing auto-scroll entirely or (c) keeping it unconditional.
+Rationale: task 132's compact rows and strengthened `[data-
+selected='true']` highlight genuinely shrink how often a scroll jump
+happens at all (more rows fit without scrolling) and make a selected
+row easier to spot once scrolled to, but neither eliminates the real
+case this effect exists for in the first place — selecting a shape via
+a canvas click while the Layers panel is scrolled somewhere else
+entirely still needs *some* scroll to bring the newly-selected row into
+view, so removing it outright (b) would be a net loss for that case;
+keeping it unconditional (c) would preserve the exact jarring
+same-viewport jump this task was filed to fix. `LayersPanel.tsx`'s
+effect now checks a new exported pure helper, `isRowFullyVisible(el)`,
+before calling `scrollIntoView`; "visible" is checked against the
+browser viewport (`window.innerHeight`) rather than a dedicated
+scrollable ancestor, since neither `.editor-outline-list` nor its
+containing `.editor-panel[data-panel='layers']` has its own `overflow-y`
+in `index.css` — the page/panel scrolls as a whole, so the viewport is
+the actual "visible scroll area" a real user experiences here.
+Verified: added `frontend/src/pages/LayersPanel.autoScroll.test.ts` (5
+new tests) unit-testing `isRowFullyVisible` directly (an all-zero/
+unlaid-out rect, fully within viewport, flush with viewport edges,
+above viewport, below viewport) and
+`frontend/src/pages/EditorWorkspace.layersAutoScroll.test.tsx` (2 new
+tests) exercising the full effect end-to-end through a real selection
+change, asserting `scrollIntoView` is not called when the row's stubbed
+`getBoundingClientRect` places it fully within the stubbed 800px
+viewport, and is called with `{ block: 'nearest' }` when it doesn't.
+`make frontend-lint`/`frontend-typecheck`/`frontend-format-check` all
+clean (one added `react(only-export-components)` warning for the new
+`isRowFullyVisible` export, same pre-existing warning class as this
+file's other exported helpers); full frontend suite green, 1737/1737
+(1730 before this task's 7 new tests), zero regressions.

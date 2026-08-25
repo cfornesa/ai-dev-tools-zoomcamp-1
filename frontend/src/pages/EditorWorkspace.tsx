@@ -836,6 +836,40 @@ function EditorWorkspace() {
   // passive by default and can't block the page's native scroll) is
   // always attached to the real, current node.
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  // Issue #171 (task 139): the Preview/canvas `<section>` itself (not the
+  // inner scroll/zoom viewport `viewportRef` above tracks) — the element
+  // `handleLayerRowSelect` below scrolls into view when a Layers-panel row
+  // click selects a shape/group while that section is off screen.
+  const previewSectionRef = useRef<HTMLElement | null>(null);
+
+  // Issue #171 (task 139): live user feedback after tasks 131-138 shipped
+  // reported that selecting a shape via a Layers-panel row click gave no
+  // perceivable feedback when the resulting selection (canvas handles,
+  // `SelectionHud`) was scrolled out of view. Task 134/#166 already
+  // established (and this codebase's tests already guard) that
+  // unconditional/heuristic auto-scroll of the *Layers panel itself* reads
+  // as jarring, so this deliberately does the opposite-direction, narrower
+  // thing instead: scroll the Preview/canvas section into view, and only
+  // when it isn't already visible — never on every row click, and never
+  // for a canvas-originated click (`handleCanvasClick` below never calls
+  // this). Passed to `LayersPanel` as `onRowSelect`, invoked only from a
+  // row's own select button — see that file's `OutlineRowItem`. Declared
+  // here (unconditionally, before this component's loading/error early
+  // returns further down) since it's a hook and must run every render.
+  const handleLayerRowSelect = useCallback(() => {
+    const el = previewSectionRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    // No rendered box at all (e.g. not yet laid out) — nothing meaningful
+    // to scroll to, so treat as already visible, matching
+    // `isRowFullyVisible`'s identical guard before it was removed by #166.
+    if (rect.top === 0 && rect.bottom === 0) return;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const fullyVisible = rect.top >= 0 && rect.bottom <= viewportHeight;
+    if (fullyVisible) return;
+    // jsdom (unit tests) has no `scrollIntoView` implementation at all.
+    el.scrollIntoView?.({ block: 'nearest' });
+  }, []);
   const wheelCleanupRef = useRef<(() => void) | null>(null);
   const viewportCallbackRef = useCallback((node: HTMLDivElement | null) => {
     wheelCleanupRef.current?.();
@@ -1910,6 +1944,7 @@ function EditorWorkspace() {
             Tools and Inspector, since the live scene is the actual product
             being made. */}
         <section
+          ref={previewSectionRef}
           role="region"
           aria-label="Preview"
           data-panel="preview"
@@ -2700,7 +2735,7 @@ function EditorWorkspace() {
           hidden={panelHidden('layers')}
         >
           <h3>Layers</h3>
-          <LayersPanel sceneEditor={sceneEditor} />
+          <LayersPanel sceneEditor={sceneEditor} onRowSelect={handleLayerRowSelect} />
         </section>
 
         <section

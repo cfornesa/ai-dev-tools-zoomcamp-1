@@ -3932,3 +3932,166 @@ faded toward white (the documented always-opaque-white gallery-card
 flatten), proving the backend Pillow thumbnail path picked up the new
 field too. e2e fixture users were cleaned up afterward (`e2e_fixtures
 cleanup`); no data was left behind in the local dev database.
+
+## 139. Give visible/scroll feedback when a Layers-panel row click selects an off-screen shape
+
+Goal: When selecting a shape/group via a Layers-panel row click (not a
+canvas click) results in a selection whose canvas handles/`SelectionHud`
+are currently scrolled out of view, make that selection perceivable
+without requiring the user to notice or manually scroll.
+Description: 2026-08-25 live user feedback, given right after tasks
+131-138 (#163-170) shipped. User reported "I still cannot select a layer
+and for the respective shape to be automatically show as being selected
+as well." Live reproduction (real Postgres/Django/Vite stack, signed in as
+an `e2e_fixtures` user) found the underlying wiring already correct:
+clicking a shape's name button in `LayersPanel.tsx` calls
+`sceneEditor.selectShape(row.id)`, which updates the same
+`selectedShapeId` state task 121/#153 already synced bidirectionally —
+confirmed via the accessibility tree that `SelectionHud.tsx`'s
+`aria-label="Selected: <name>"` updates correctly. The likely real gap is
+perceptual: no scroll-into-view or other feedback ties the Layers-panel
+click to the resulting on-canvas change, so a user can reasonably believe
+"nothing happened." Only the bare "Layer:" header row intentionally has no
+select semantics (#153's own explicit note); that's a deliberate design
+decision, not part of this task.
+Status: COMPLETE
+GitHub issue: [#171](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/171).
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all`
+for "layer selection," "selection HUD." #153 (bidirectional row
+highlighting) and #163/#164/#165/#166 (HUD/compaction/auto-scroll) are
+closely related prior art but none covers canvas-side scroll-into-view
+feedback when selection originates in the Layers panel. New, not a
+duplicate — but any auto-scroll behavior must account for #165/#166's
+documented user pushback on over-eager auto-scroll in the *other*
+direction.
+
+### Evidence
+
+Implemented per the PM-groomed acceptance criteria on issue #171:
+`EditorWorkspace.tsx` now holds a `previewSectionRef` on the Preview
+`<section>` (`aria-label="Preview"`, `data-panel="preview"`) plus a new
+`handleLayerRowSelect` callback that scrolls that section into view
+(`scrollIntoView({ block: 'nearest' })`) only when its
+`getBoundingClientRect()` isn't already fully within
+`window.innerHeight` — the exact same "no rendered box"/"fully visible"
+guard shape #165's now-removed `isRowFullyVisible` used, just applied to
+the Preview section instead of an outline row. `LayersPanel.tsx` gained
+an optional `onRowSelect` prop threaded through `OutlineRowItem`, called
+(in addition to the existing `sceneEditor.selectShape(row.id)`) only from
+a group/shape row's own select button — never from
+`EditorWorkspace.tsx`'s `handleCanvasClick`, so a canvas-driven selection
+is provably unaffected. `LayersPanel.tsx` itself still makes no
+scroll-into-view call of its own kind (verified by the existing
+`LayersPanel.autoScroll.test.ts` regression guard from #166, which
+required rewording one comment to avoid a literal substring match rather
+than any behavior change), keeping #166's "no Layers-panel auto-scroll"
+decision fully intact — this task only adds Preview-section scroll
+feedback in the other direction.
+
+New coverage in `EditorWorkspace.previewAutoScroll.test.tsx`: scrolls the
+Preview section when a row click selects a shape while it's stubbed
+off-screen; does not scroll when the Preview section is stubbed as
+already fully visible; does not scroll when a selection is instead driven
+by a canvas-adjacent path (Escape-to-deselect, which never touches
+`onRowSelect`). All three pass, alongside the full existing
+`EditorWorkspace.layersAutoScroll.test.tsx`/`LayersPanel.autoScroll.test.ts`/
+`EditorWorkspace.selectionHud.test.tsx` suites (63 tests, unchanged
+behavior confirmed) and the full frontend suite (123 files / 1773 tests,
+all passing). `make frontend-lint`, `make frontend-typecheck`, and
+`make frontend-format-check` all pass with no new warnings (pre-existing
+`only-export-components` warnings in `LayersPanel.tsx`/
+`EditorDetailsPanel.tsx` are unrelated to this change).
+
+## 140. Move Add-shape buttons into the editor's top toolbar as icon buttons
+
+Goal: Relocate "Add circle"/"Add rectangle"/"Add line"/"Add polygon" from
+the Layers panel sidebar (`LayersPanel.tsx`) into the always-visible top
+toolbar (`role="toolbar"`, task 112/#143), rendered as distinct shape-icon
+glyphs instead of text labels.
+Description: 2026-08-25 live user feedback, given right after tasks
+131-138 (#163-170) shipped. User asked for these buttons "placed INSIDE
+the editor in its top toolbar, rather than on the sidebar," represented by
+shape icons. Live reproduction confirmed the current toolbar holds only
+Undo/Redo/Duplicate/Delete/Fill-color, and the Add-shape buttons are still
+plain text buttons in `LayersPanel.tsx`, exactly where task 100/#131 put
+them. This directly reverses an explicit prior decision: task 112/#143's
+own grooming notes state shape-creation buttons "stay in `LayersPanel.tsx`
+exactly where task 100/#131 deliberately placed them, not moved again."
+The new user request should be treated as a reopening of that placement
+call, referencing #143's prior rationale, rather than a fresh unconsidered
+ask. Icon glyphs should follow the toolbar's existing `aria-hidden` glyph +
+CSS-tooltip + `aria-label` pattern; no new icon library without asking
+first, per `AGENTS.md`'s dependency rule. Whether "Add layer" also moves
+was not specified by the user and needs explicit confirmation during
+grooming.
+Status: PROPOSED
+GitHub issue: [#172](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/172).
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all`
+for "toolbar," "add shape buttons," "shape icons." #143 (the toolbar) and
+#131 (original placement) are the directly relevant prior art; no existing
+issue proposes toolbar-icon shape creation. New, but explicitly overrides
+#143's placement decision.
+
+## 141. Add a dismiss/reopen control for the canvas selection HUD that preserves the active selection
+
+Goal: Let the user collapse/hide `SelectionHud.tsx`'s body while a
+shape/group stays selected (canvas highlight, `selectedShapeId`, and the
+Layers-panel row highlight from #153 all unaffected), and reopen it later
+without needing to reselect.
+Description: 2026-08-25 live user feedback, given right after tasks
+131-138 (#163-170) shipped. User asked for "the layer dialog to be
+closable but also to be able to be opened again... while keeping the
+layer highlighted." The described panel (Visible/Unlocked buttons,
+Selection fill/opacity, Delete shape, Move up/down, Move to layer/group)
+is `SelectionHud.tsx` (task 131/#163's canvas-overlaid HUD), not the
+separate collapsible "Shape inspector" accordion (`ShapeInspectorPanel.tsx`,
+already independently collapsible since task 122/#154) — easy to conflate
+since both show overlapping fields for the selected shape. Live
+inspection confirmed `SelectionHud.tsx` has no dismiss/collapse control of
+any kind; it renders unconditionally whenever a shape/group is selected,
+with no wrapping `CollapsibleSection` in `EditorWorkspace.tsx`. This is a
+gap in the original #163 design (always-on-while-selected was intentional,
+but no independent hide/show was considered), not a regression.
+Status: PROPOSED
+GitHub issue: [#173](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/173).
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all`
+for "selection HUD," "close panel," "inspector panel." #163 (added the
+HUD) and #164/#165/#166 (Layers panel compaction/auto-scroll) are the
+closest related work; none proposed a dismiss/collapse control for the HUD
+itself. New, not a duplicate.
+
+## 142. [Needs grooming] Editable HTML/CSS/JS sub-tabs in the Code tab, round-tripping into the scene document
+
+Goal: Investigate and groom (not yet implement) adding HTML/CSS/JS
+sub-tabs to the Code tab (task 127/#159) alongside (or instead of) the
+current JSON-only view, fully editable with changes saved and reflected
+live in the Visual tab once reactivated.
+Description: 2026-08-25 live user feedback, given right after tasks
+131-138 (#163-170) shipped. User asked for Code-tab subtabs for HTML/CSS/
+JavaScript, editable and round-tripping back into the scene, keeping the
+existing JSON subtab "if... it can still be placed and manipulated," or
+dropping it otherwise. Confirmed live and via source that the Code tab
+today is JSON-only (a single "Scene JSON" `<textarea>`), and that
+`frontend/src/export/` (`generateHtmlExport.ts`, `standaloneRuntimeSource.ts`,
+`standaloneCameraSource.ts`, `safeEmbed.ts`, etc.) already generates
+one-directional, non-reversible HTML/CSS/JS from a `SceneDocument` for
+export only — it has no designed path back from hand-edited HTML/CSS/JS
+into `SceneDocument` fields. This request is architecturally open-ended:
+the canonical `SceneDocument` contract (validated against `schema/`'s JSON
+Schema on both `scenes/validation.py` and `frontend/src/validation/
+scene.ts`) underlies versioning, AI patch editing (#158), thumbnails, the
+public viewer, and undo/redo — a reversible HTML/CSS/JS mapping, live
+re-parse-on-edit semantics, and interaction with draft-autosave (#125) and
+undo history all need an explicit design decision before any
+implementation, not an assumed naive mapping. Deliberately filed without
+detailed acceptance criteria, per this investigation's own scoping
+guidance, pending a dedicated grooming/design pass — which may conclude a
+narrower scope (e.g. read-only generated HTML/CSS/JS alongside the
+still-editable JSON tab) is the right first cut.
+Status: PROPOSED
+GitHub issue: [#174](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/174).
+Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all`
+for "code tab," "HTML CSS JavaScript." #159 (Code tab, JSON-only, closed)
+is the direct predecessor. No existing issue proposes HTML/CSS/JS
+sub-tabs. New; explicitly flagged as needing grooming before
+implementation.

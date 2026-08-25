@@ -584,10 +584,20 @@ function OutlineRowItem({
   row,
   sceneEditor,
   drag,
+  onRowSelect,
 }: {
   row: OutlineRow;
   sceneEditor: SceneEditor;
   drag: DragController;
+  // Issue #171 (task 139): called (in addition to `sceneEditor.selectShape`)
+  // only when a group/shape row's own select button is clicked — never for
+  // a canvas-driven selection. `EditorWorkspace.tsx` uses this to scroll
+  // the Preview/canvas section into view when it isn't already visible; see
+  // that file's `handleLayerRowSelect` doc comment for the full rationale.
+  // Deliberately kept out of this file's own auto-scroll call surface: a
+  // regression test (`LayersPanel.autoScroll.test.ts`) asserts this source
+  // file itself makes no such call anywhere, per issue #166.
+  onRowSelect?: () => void;
 }) {
   const indent = { paddingLeft: `${row.depth * 1.25}rem` };
   const dragAttrs = dragAttributesFor(row, drag);
@@ -745,7 +755,10 @@ function OutlineRowItem({
         <button
           type="button"
           aria-pressed={row.id === sceneEditor.selectedShapeId}
-          onClick={() => sceneEditor.selectShape(row.id)}
+          onClick={() => {
+            sceneEditor.selectShape(row.id);
+            onRowSelect?.();
+          }}
         >
           {label}
         </button>
@@ -805,7 +818,10 @@ function OutlineRowItem({
       <button
         type="button"
         aria-pressed={row.id === sceneEditor.selectedShapeId}
-        onClick={() => sceneEditor.selectShape(row.id)}
+        onClick={() => {
+          sceneEditor.selectShape(row.id);
+          onRowSelect?.();
+        }}
       >
         {label}
       </button>
@@ -907,7 +923,16 @@ function CanvasSettingsRow({ sceneEditor }: { sceneEditor: SceneEditor }) {
   );
 }
 
-function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
+function LayersPanel({
+  sceneEditor,
+  onRowSelect,
+}: {
+  sceneEditor: SceneEditor;
+  // Issue #171 (task 139): see `OutlineRowItem`'s identically-named prop
+  // doc comment for the full rationale — threaded straight through to
+  // every row unchanged.
+  onRowSelect?: () => void;
+}) {
   const canGroup = sceneEditor.multiSelectedIds.length >= 2;
   const hasGroupSelected = sceneEditor.selectedGroup !== null;
 
@@ -1109,7 +1134,13 @@ function LayersPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
       ) : (
         <ul aria-label="Scene outline" className="editor-outline-list">
           {sceneEditor.outline.map((row) => (
-            <OutlineRowItem key={row.id} row={row} sceneEditor={sceneEditor} drag={drag} />
+            <OutlineRowItem
+              key={row.id}
+              row={row}
+              sceneEditor={sceneEditor}
+              drag={drag}
+              onRowSelect={onRowSelect}
+            />
           ))}
         </ul>
       )}

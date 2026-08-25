@@ -3702,12 +3702,89 @@ Out of scope: Task 151/#151's drag/resize/reposition work (unaffected,
 separate concern); the public project viewer's/standalone export's
 camera overlay (#145/#146/#152) — scope to the editor Preview first, file
 separately if the same defect is confirmed there.
-Status: PROPOSED
+Status: COMPLETE
 GitHub issue: [#169](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/169)
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --state all
 --search "camera overlay"` — #141/#147 (closed) shipped the overlay
 itself; #151 (open) is drag/resize only. Neither covers the stacking/
 z-index defect. New, not a duplicate.
+Evidence (2026-08-25): Read `frontend/src/export/captureSocialThumbnail.ts`
+in full (the only thumbnail/export capture path in the repo — confirmed by
+grepping `frontend/src` for `toDataURL`/`thumbnail`; `generateSocialThumbnailZip.ts`
+calls it, `generateHtmlExport.ts`'s standalone export is explicitly
+out of scope per the issue). It builds a wholly separate, off-screen
+`<div>` (positioned at `top:-100000px`, never appended anywhere visible)
+and hands that to a *fresh* `createP5ScenePreview(container)` instance
+(`p5Adapter.ts`), rendering directly from the saved `SceneDocument` — not
+from the live editor's DOM at all. `p5Adapter.ts` has no camera/MediaPipe
+code path whatsoever (module doc comment: "this function's own signature
+takes only a `SceneDocument`... a capture can structurally never read a
+live camera frame"). This means the live editor `<video>` element's
+on-screen z-index has zero effect on capture output either way — the
+capture path is isolated by construction, not by z-index — so criterion
+5 (adjust the capture path if it's not already isolated) does not apply;
+the CSS-only re-stack was correct and sufficient per criterion 1's own
+decision framing.
+Changed `frontend/src/pages/EditorWorkspace.tsx`: swapped the camera
+`<video>` element's `zIndex` from `-2` to `-1` and the p5 mount div's from
+`-1` to `-2` (video now stacks strictly above the shape canvas instead of
+below it), and updated the three comments referencing the old stacking
+(including task 110/#141's original comment explaining the now-obsolete
+reasoning, and task 126/#130's comment citing the mount div's old
+`zIndex: -1`).
+Added a regression test to
+`frontend/src/pages/EditorWorkspace.cameraOverlay.test.tsx` ("stacks the
+video above the p5 mount div so opaque shape fill no longer fully hides
+it") asserting `video`'s numeric `zIndex` is strictly greater than the p5
+mount div's (found as the video's next DOM sibling) with an opaque shape
+present in the scene — guards against the video sinking back below the
+canvas. `make frontend-test` (`npx vitest run`) passes at 1737/1737 (was
+1736/1736 before the new test), no regressions; `make frontend-lint`,
+`make frontend-typecheck`, and `make frontend-format-check` all pass clean
+(pre-existing `only-export-components` oxlint warnings in unrelated files
+are untouched).
+Live verification: started a real local Postgres-backed Django
+(`AI_PROVIDER=fake`) + Vite dev stack, created e2e fixture users
+(`manage.py e2e_fixtures create --json`), and drove the app through the
+Browser tool. Signed in as the fixture owner, opened a project's editor,
+added a circle shape, and confirmed via the DOM/comments that Demo signal
+controls (`Manual controls`/`Synthetic playback`) only exercise
+interaction-runtime gesture signals (fingertip X/Y/Z, gesture state) and
+never set `cameraStream`/`cameraStatus` — grep of `EditorWorkspace.tsx`
+confirms those two pieces of state are written only from
+`CameraControl`'s real `onStatusChange`/`onStreamChange` callbacks, which
+require an actual `getUserMedia` grant. Clicking "Enable camera" in the
+live browser correctly surfaced "Camera access was denied... or use the
+demo controls below instead" — the Browser tool's pane blocks real camera
+device access, so this specific criterion (visually confirming the video
+renders above shapes with a genuine live feed) could not be exercised
+end-to-end in this environment, consistent with the task's own
+anticipation of that limitation. The added jsdom regression test above is
+the equivalent deterministic verification the repo's own convention uses
+for this exact boundary (`EditorWorkspace.cameraOverlay.test.tsx`'s
+existing suite already mocks `CameraControl` as "a controllable
+status/stream source only," matching how `CameraControl`'s own real
+permission/MediaPipe state machine is separately covered by
+`CameraControl.test.tsx`) — driving `cameraStatus`/`cameraStream` directly
+produces byte-for-byte the same render path a real camera activation
+would, since the `<video>` element's presence and stacking are 100%
+determined by that state, not by what produced it. The "Camera overlay
+opacity" slider's post-fix behavior is covered by this same test file's
+pre-existing, still-passing cases ("moving the slider updates the overlay
+opacity live," "restores the last-chosen opacity on re-activation") — the
+stacking change touched only the `zIndex` style property, not the
+`opacity` binding, and no test in that file needed updating beyond the one
+new case. Thumbnail/export non-regression is verified structurally (see
+capture-path finding above) rather than by an on/off pixel comparison,
+since camera activation itself could not be exercised live in this
+environment; `captureSocialThumbnail.ts`'s own existing test coverage
+(part of the 1737 passing) is unaffected by this change, as expected for a
+file this task did not touch.
+No new backlog items surfaced; the temporary `frontend/vite.config.ts`
+proxy-target and `.claude/launch.json` `autoPort` edits made only to work
+around this sandbox's `localhost`-vs-`127.0.0.1` DNS quirk during live
+verification were reverted before finishing and are not part of the
+shipped change.
 
 ## 138. Add canvas/background-level opacity, color, and layer-like settings
 

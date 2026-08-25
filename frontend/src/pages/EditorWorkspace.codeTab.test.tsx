@@ -107,12 +107,31 @@ function codeTextarea(): HTMLTextAreaElement {
   return screen.getByTestId('editor-scene-code-textarea') as HTMLTextAreaElement;
 }
 
+function htmlTextarea(): HTMLTextAreaElement {
+  return screen.getByTestId('editor-scene-html-textarea') as HTMLTextAreaElement;
+}
+
+function cssTextarea(): HTMLTextAreaElement {
+  return screen.getByTestId('editor-scene-css-textarea') as HTMLTextAreaElement;
+}
+
+function jsTextarea(): HTMLTextAreaElement {
+  return screen.getByTestId('editor-scene-js-textarea') as HTMLTextAreaElement;
+}
+
 async function openCodeTab(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('radio', { name: 'Code' }));
 }
 
 async function openVisualTab(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('radio', { name: 'Visual' }));
+}
+
+async function openSubTab(
+  user: ReturnType<typeof userEvent.setup>,
+  tab: 'json' | 'html' | 'css' | 'js',
+) {
+  await user.click(screen.getByTestId(`editor-code-subtab-${tab}`));
 }
 
 beforeEach(() => {
@@ -267,5 +286,140 @@ describe('Code tab: Visual/Code parity', () => {
     const viaCode = JSON.parse(codeTextarea().value) as Record<string, unknown>;
 
     expect(viaVisual).toEqual(viaCode);
+  });
+});
+
+/**
+ * Issue #177 (task 145's audit finding): the Code tab's sub-editors used to
+ * seed their local text state once, on `CodeTab` mount, and never resynced
+ * from a later `workingCopy` change -- so clicking the toolbar's Undo/Redo
+ * (which stay visible and clickable while the Code tab is open) silently
+ * left the displayed text stale, and a bare Visual<->Code toggle (with no
+ * real scene change) silently discarded an in-progress unsaved edit. The
+ * fix keeps `CodeTab` permanently mounted and resyncs each sub-tab off
+ * `workingCopy`'s identity via a `useEffect`, only when there's no pending
+ * unsaved edit in that sub-tab -- see `SceneCodeEditor`'s doc comment in
+ * `EditorWorkspace.tsx` for the full strategy.
+ */
+describe('Code tab: resyncs on workingCopy change (issue #177)', () => {
+  it('Undo while the Code tab is open, with no pending edit, silently updates the JSON sub-tab', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+
+    await openCodeTab(user);
+    expect(JSON.parse(codeTextarea().value).shapes).toHaveLength(0);
+
+    // Add a shape via the toolbar, which stays visible while Code is open.
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    expect(JSON.parse(codeTextarea().value).shapes).toHaveLength(1);
+
+    // Undo, without ever leaving the Code tab.
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(JSON.parse(codeTextarea().value).shapes).toHaveLength(0);
+
+    // Redo, again without leaving the Code tab.
+    await user.click(screen.getByRole('button', { name: 'Redo' }));
+    expect(JSON.parse(codeTextarea().value).shapes).toHaveLength(1);
+
+    // No stale-content warning shown for a clean resync.
+    expect(screen.queryByTestId('editor-scene-code-reload')).not.toBeInTheDocument();
+  });
+
+  it('Undo while the JSON sub-tab has a pending unsaved edit does not silently overwrite it', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+
+    // A committed change to undo.
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    await openCodeTab(user);
+    const unsavedEdit = '{ "still typing this JSON edit"';
+    fireEvent.change(codeTextarea(), { target: { value: unsavedEdit } });
+    // Deliberately no blur -- this is a pending, uncommitted edit.
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+    // The unsaved edit is preserved, not silently replaced by the
+    // post-undo workingCopy.
+    expect(codeTextarea().value).toBe(unsavedEdit);
+    // A clear inline notice is shown instead of a silent overwrite.
+    const notice = await screen.findByTestId('editor-scene-code-reload');
+    expect(notice).toBeInTheDocument();
+
+    // The user can explicitly discard their edit and load the latest.
+    await user.click(notice);
+    expect(JSON.parse(codeTextarea().value).shapes).toHaveLength(0);
+    expect(screen.queryByTestId('editor-scene-code-reload')).not.toBeInTheDocument();
+  });
+
+  it('a Visual -> Code -> Visual -> Code round trip preserves an unsaved edit in every sub-tab', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+
+    await openCodeTab(user);
+
+    // JSON sub-tab (already active).
+    const jsonEdit = '{ "unsaved json edit"';
+    fireEvent.change(codeTextarea(), { target: { value: jsonEdit } });
+
+    // HTML sub-tab.
+    await openSubTab(user, 'html');
+    const originalHtml = htmlTextarea().value;
+    const htmlEdit = `${originalHtml}\n<!-- unsaved html edit -->`;
+    fireEvent.change(htmlTextarea(), { target: { value: htmlEdit } });
+
+    // CSS sub-tab.
+    await openSubTab(user, 'css');
+    const originalCss = cssTextarea().value;
+    const cssEdit = `${originalCss}\n/* unsaved css edit */`;
+    fireEvent.change(cssTextarea(), { target: { value: cssEdit } });
+
+    // JS sub-tab.
+    await openSubTab(user, 'js');
+    const originalJs = jsTextarea().value;
+    const jsEdit = `${originalJs}\n// unsaved js edit`;
+    fireEvent.change(jsTextarea(), { target: { value: jsEdit } });
+
+    // Round trip: Code -> Visual -> Code, with no actual workingCopy change.
+    await openVisualTab(user);
+    await openCodeTab(user);
+
+    expect(codeTextarea().value).toBe(jsonEdit);
+    expect(htmlTextarea().value).toBe(htmlEdit);
+    expect(cssTextarea().value).toBe(cssEdit);
+    expect(jsTextarea().value).toBe(jsEdit);
+
+    // A second round trip confirms it isn't a one-time fluke.
+    await openVisualTab(user);
+    await openCodeTab(user);
+
+    expect(codeTextarea().value).toBe(jsonEdit);
+    expect(htmlTextarea().value).toBe(htmlEdit);
+    expect(cssTextarea().value).toBe(cssEdit);
+    expect(jsTextarea().value).toBe(jsEdit);
+  });
+
+  it('a save in the HTML/CSS sub-tab does not corrupt a pending unsaved edit in the sibling JS sub-tab', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+
+    await openCodeTab(user);
+
+    // Unsaved, uncommitted edit sitting in JS.
+    await openSubTab(user, 'js');
+    const originalJs = jsTextarea().value;
+    const jsEdit = `${originalJs}\n// unsaved js edit, not yet saved`;
+    fireEvent.change(jsTextarea(), { target: { value: jsEdit } });
+
+    // A real, successful HTML/CSS save (opacity change on the layer's
+    // background is not part of this scene, so just re-save the
+    // unmodified, valid HTML/CSS as-is to exercise a real commit).
+    await openSubTab(user, 'html');
+    await user.click(screen.getByTestId('editor-scene-html-css-save'));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    // The sibling JS sub-tab's unsaved edit is untouched by that save.
+    await openSubTab(user, 'js');
+    expect(jsTextarea().value).toBe(jsEdit);
   });
 });

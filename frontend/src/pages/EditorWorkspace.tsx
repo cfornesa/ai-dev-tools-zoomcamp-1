@@ -386,49 +386,87 @@ function EditorToolbarColorControl({ sceneEditor }: { sceneEditor: SceneEditor }
   );
 }
 
+type CodeSubTab = 'json' | 'html' | 'css' | 'js';
+
 /**
- * Issue #159: the Code tab — an editable, pretty-printed JSON view of the
- * live `workingCopy`, validated with the exact same `validateScene`
- * (schema structure + referential integrity — see
- * `frontend/src/validation/scene.ts`) every other scene-editing surface in
- * this app already goes through, rather than a second, divergent
- * validator.
+ * Issue #177 (task 145's audit finding): every Code sub-tab's sync strategy,
+ * shared by the three `use*CodeSync` hooks just below.
  *
- * Sync strategy (both directions documented per the issue's acceptance
- * criterion):
- * - **Code -> Visual**: on blur, not on every keystroke. `text` is local
- *   state the textarea is fully controlled by while focused, so a
- *   mid-edit, momentarily-invalid JSON string is never validated against
- *   half-typed content. On blur the text is parsed, then schema-validated;
- *   only a fully valid document calls `onCommit` (`setWorkingCopy`), which
- *   the existing render-on-`workingCopy`-change effect elsewhere in this
- *   file immediately re-renders Visual from — no separate "apply" step.
- *   An invalid result never calls `onCommit` (Visual's last-known-good
- *   render is left completely untouched) and is shown as this component's
- *   own inline error instead, distinct from `previewError`.
- * - **Visual -> Code**: this component is only ever mounted while the Code
- *   sub-view is active (see the `previewView === 'code'` guard in the main
- *   render below) and is unmounted the instant the user switches back to
- *   Visual — so its `useState` initializer re-derives `text` fresh from
- *   whatever `workingCopy` is current every time the Code tab becomes
- *   active again. That satisfies "reflected next time the Code tab is
- *   viewed/focused" with no extra effect or listener needed: there is
- *   nothing to resync while the Code tab isn't even mounted.
+ * Before this fix, each sub-editor (`SceneCodeEditor`/`HtmlCssCodeEditor`/
+ * `JsCodeEditor`) seeded its own local text `useState` once, lazily, and
+ * `CodeTab` (further below) was only ever mounted while
+ * `previewView === 'code'` -- so a mount-once initializer was relied on to
+ * pick up whatever `workingCopy` was current. That broke two ways: an
+ * Undo/Redo made while the Code tab stayed open never re-ran the
+ * initializer, so the displayed text went stale; and a bare
+ * Visual->Code->Visual->Code toggle unmounted and remounted every
+ * sub-editor even though `workingCopy` never actually changed, silently
+ * discarding whatever the user had just typed.
+ *
+ * The fix moves each sub-tab's text state out of the (still conditionally
+ * mounted, see `CodeTab`'s own doc comment) presentational components and
+ * into a hook called unconditionally from `EditorWorkspace`'s top level, so
+ * the state survives Code<->Visual toggling regardless of whether `CodeTab`
+ * itself is mounted at any given moment. Each hook:
+ * - Tracks `workingCopy` by object identity (every mutation path in this
+ *   file replaces `workingCopy` wholesale rather than mutating it in place,
+ *   so `===` reliably means "no real change" -- a bare toggle never even
+ *   changes the reference, so it never reaches the resync branch at all).
+ * - On a genuine `workingCopy` change, resyncs its text from it -- but only
+ *   when there is no pending unsaved edit: a `lastSynced*Ref` records the
+ *   text this hook last generated/committed, compared against a `*Ref` kept
+ *   current on every keystroke (the dirty check).
+ * - A clean sub-tab resyncs silently (covers Undo/Redo, an AI proposal
+ *   accept, a version restore, or a sibling sub-tab's save, all made while
+ *   this one had nothing unsaved to lose).
+ * - A dirty sub-tab is left completely untouched, with `externalChangePending`
+ *   turned on so the presentational component can show an inline notice
+ *   with an explicit "discard and reload" action -- never silently
+ *   overwritten.
  */
-function SceneCodeEditor({
-  workingCopy,
-  onCommit,
-}: {
-  workingCopy: SceneDocument | null;
-  onCommit: (scene: SceneDocument) => void;
-}) {
+function useJsonCodeSync(
+  workingCopy: SceneDocument | null,
+  onCommit: (scene: SceneDocument) => void,
+) {
   const [text, setText] = useState(() => JSON.stringify(workingCopy, null, 2));
   const [error, setError] = useState<string | null>(null);
+  const [externalChangePending, setExternalChangePending] = useState(false);
+  const textRef = useRef(text);
+  const lastSyncedTextRef = useRef(text);
+  const lastSyncedWorkingCopyRef = useRef(workingCopy);
 
-  function commitIfValid() {
+  useEffect(() => {
+    if (workingCopy === lastSyncedWorkingCopyRef.current) return;
+    lastSyncedWorkingCopyRef.current = workingCopy;
+    if (textRef.current !== lastSyncedTextRef.current) {
+      setExternalChangePending(true);
+      return;
+    }
+    const generated = JSON.stringify(workingCopy, null, 2);
+    lastSyncedTextRef.current = generated;
+    textRef.current = generated;
+    setText(generated);
+  }, [workingCopy]);
+
+  function onChange(value: string) {
+    textRef.current = value;
+    setText(value);
+  }
+
+  function onReload() {
+    const generated = JSON.stringify(workingCopy, null, 2);
+    lastSyncedTextRef.current = generated;
+    textRef.current = generated;
+    lastSyncedWorkingCopyRef.current = workingCopy;
+    setText(generated);
+    setError(null);
+    setExternalChangePending(false);
+  }
+
+  function onBlur() {
     let parsed: unknown;
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(textRef.current);
     } catch (err) {
       setError(
         `Invalid JSON: ${err instanceof Error ? err.message : 'could not parse this text.'}`,
@@ -442,7 +480,36 @@ function SceneCodeEditor({
     }
     setError(null);
     onCommit(parsed as SceneDocument);
+    // Re-canonicalize from the just-committed document (matching the
+    // HTML/CSS/JS sub-tabs' own convention) and mark it as already synced,
+    // so the `workingCopy` change this commit causes doesn't turn around and
+    // flag itself as an external change on the next render.
+    const canonical = JSON.stringify(parsed, null, 2);
+    lastSyncedTextRef.current = canonical;
+    textRef.current = canonical;
+    lastSyncedWorkingCopyRef.current = parsed as SceneDocument;
+    setText(canonical);
+    setExternalChangePending(false);
   }
+
+  return { text, error, externalChangePending, onChange, onBlur, onReload };
+}
+
+type JsonCodeSync = ReturnType<typeof useJsonCodeSync>;
+
+/**
+ * Issue #159: the Code tab's JSON sub-tab -- an editable, pretty-printed
+ * view of the live `workingCopy`, validated with the exact same
+ * `validateScene` (schema structure + referential integrity — see
+ * `frontend/src/validation/scene.ts`) every other scene-editing surface in
+ * this app already goes through, rather than a second, divergent
+ * validator. Purely presentational -- all sync state/logic lives in
+ * `useJsonCodeSync` above (see its doc comment for the full strategy),
+ * called from `EditorWorkspace`'s top level so it survives this
+ * component's own conditional mounting.
+ */
+function SceneCodeEditor({ sync }: { sync: JsonCodeSync }) {
+  const { text, error, externalChangePending, onChange, onBlur, onReload } = sync;
 
   return (
     <div className="editor-code-tab">
@@ -457,19 +524,136 @@ function SceneCodeEditor({
         value={text}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? 'editor-scene-code-error' : undefined}
-        onChange={(event) => setText(event.target.value)}
-        onBlur={commitIfValid}
+        onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
       />
       {error && (
         <p id="editor-scene-code-error" role="alert" aria-live="assertive">
           Invalid scene JSON — not applied: {error}
         </p>
       )}
+      {externalChangePending && (
+        <p
+          id="editor-scene-code-external-change"
+          role="alert"
+          aria-live="assertive"
+          className="editor-code-external-change-notice"
+        >
+          This tab&apos;s content changed elsewhere (e.g. Undo/Redo) while you had an unsaved edit
+          here — your edit was kept.{' '}
+          <button type="button" data-testid="editor-scene-code-reload" onClick={onReload}>
+            Discard my edit and reload
+          </button>
+        </p>
+      )}
     </div>
   );
 }
 
-type CodeSubTab = 'json' | 'html' | 'css' | 'js';
+/**
+ * Issue #177: the HTML/CSS sub-tabs' shared sync hook -- see
+ * `useJsonCodeSync`'s doc comment for the general strategy. Here "dirty"
+ * means either box's text no longer matches what was last
+ * generated/committed, since a Save always applies both together.
+ */
+function useHtmlCssCodeSync(
+  workingCopy: SceneDocument | null,
+  onCommit: (scene: SceneDocument) => void,
+) {
+  const [htmlText, setHtmlText] = useState(() => generateEditableHtml(workingCopy));
+  const [cssText, setCssText] = useState(() => generateEditableCss(workingCopy));
+  const [errors, setErrors] = useState<string[] | null>(null);
+  const [externalChangePending, setExternalChangePending] = useState(false);
+  const htmlTextRef = useRef(htmlText);
+  const cssTextRef = useRef(cssText);
+  const lastSyncedHtmlRef = useRef(htmlText);
+  const lastSyncedCssRef = useRef(cssText);
+  const lastSyncedWorkingCopyRef = useRef(workingCopy);
+
+  useEffect(() => {
+    if (workingCopy === lastSyncedWorkingCopyRef.current) return;
+    lastSyncedWorkingCopyRef.current = workingCopy;
+    const dirty =
+      htmlTextRef.current !== lastSyncedHtmlRef.current ||
+      cssTextRef.current !== lastSyncedCssRef.current;
+    if (dirty) {
+      setExternalChangePending(true);
+      return;
+    }
+    const generatedHtml = generateEditableHtml(workingCopy);
+    const generatedCss = generateEditableCss(workingCopy);
+    lastSyncedHtmlRef.current = generatedHtml;
+    lastSyncedCssRef.current = generatedCss;
+    htmlTextRef.current = generatedHtml;
+    cssTextRef.current = generatedCss;
+    setHtmlText(generatedHtml);
+    setCssText(generatedCss);
+  }, [workingCopy]);
+
+  function onHtmlChange(value: string) {
+    htmlTextRef.current = value;
+    setHtmlText(value);
+  }
+
+  function onCssChange(value: string) {
+    cssTextRef.current = value;
+    setCssText(value);
+  }
+
+  function onReload() {
+    const generatedHtml = generateEditableHtml(workingCopy);
+    const generatedCss = generateEditableCss(workingCopy);
+    lastSyncedHtmlRef.current = generatedHtml;
+    lastSyncedCssRef.current = generatedCss;
+    htmlTextRef.current = generatedHtml;
+    cssTextRef.current = generatedCss;
+    lastSyncedWorkingCopyRef.current = workingCopy;
+    setHtmlText(generatedHtml);
+    setCssText(generatedCss);
+    setErrors(null);
+    setExternalChangePending(false);
+  }
+
+  function onSave() {
+    if (!workingCopy) return;
+    const result = parseEditableHtmlAndCss(htmlTextRef.current, cssTextRef.current, workingCopy);
+    if (!result.ok) {
+      setErrors(result.errors);
+      return;
+    }
+    setErrors(null);
+    onCommit(result.scene);
+    // Re-canonicalize both boxes from the just-applied scene so the visible
+    // text always matches what `generateEditableHtml`/`generateEditableCss`
+    // would produce for it -- this is what makes "re-save unchanged -> no
+    // diff" hold even after a save that only touched a few properties. Also
+    // mark them (and `workingCopy`) as already synced, so the `workingCopy`
+    // change this Save causes doesn't flag itself as an external change.
+    const generatedHtml = generateEditableHtml(result.scene);
+    const generatedCss = generateEditableCss(result.scene);
+    lastSyncedHtmlRef.current = generatedHtml;
+    lastSyncedCssRef.current = generatedCss;
+    htmlTextRef.current = generatedHtml;
+    cssTextRef.current = generatedCss;
+    lastSyncedWorkingCopyRef.current = result.scene;
+    setHtmlText(generatedHtml);
+    setCssText(generatedCss);
+    setExternalChangePending(false);
+  }
+
+  return {
+    htmlText,
+    cssText,
+    errors,
+    externalChangePending,
+    onHtmlChange,
+    onCssChange,
+    onSave,
+    onReload,
+  };
+}
+
+type HtmlCssCodeSync = ReturnType<typeof useHtmlCssCodeSync>;
 
 /**
  * Task 142 (issue #174): the HTML/CSS sub-tabs' Save action -- reverse-
@@ -480,37 +664,26 @@ type CodeSubTab = 'json' | 'html' | 'css' | 'js';
  * every Visual-tab mutation. On failure, nothing is applied -- the working
  * copy is left completely untouched and the specific grammar violations are
  * shown, mirroring the JSON sub-tab's own "never silently apply/never
- * silently drop" behavior (#159).
+ * silently drop" behavior (#159). Purely presentational -- all sync
+ * state/logic lives in `useHtmlCssCodeSync` above.
  */
 function HtmlCssCodeEditor({
   activeSubTab,
-  workingCopy,
-  onCommit,
+  sync,
 }: {
   activeSubTab: CodeSubTab;
-  workingCopy: SceneDocument | null;
-  onCommit: (scene: SceneDocument) => void;
+  sync: HtmlCssCodeSync;
 }) {
-  const [htmlText, setHtmlText] = useState(() => generateEditableHtml(workingCopy));
-  const [cssText, setCssText] = useState(() => generateEditableCss(workingCopy));
-  const [errors, setErrors] = useState<string[] | null>(null);
-
-  function handleSave() {
-    if (!workingCopy) return;
-    const result = parseEditableHtmlAndCss(htmlText, cssText, workingCopy);
-    if (!result.ok) {
-      setErrors(result.errors);
-      return;
-    }
-    setErrors(null);
-    onCommit(result.scene);
-    // Re-canonicalize both boxes from the just-applied scene so the visible
-    // text always matches what `generateEditableHtml`/`generateEditableCss`
-    // would produce for it -- this is what makes "re-save unchanged -> no
-    // diff" hold even after a save that only touched a few properties.
-    setHtmlText(generateEditableHtml(result.scene));
-    setCssText(generateEditableCss(result.scene));
-  }
+  const {
+    htmlText,
+    cssText,
+    errors,
+    externalChangePending,
+    onHtmlChange,
+    onCssChange,
+    onSave,
+    onReload,
+  } = sync;
 
   return (
     <div
@@ -533,7 +706,7 @@ function HtmlCssCodeEditor({
           rows={20}
           style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85em' }}
           value={htmlText}
-          onChange={(event) => setHtmlText(event.target.value)}
+          onChange={(event) => onHtmlChange(event.target.value)}
         />
       </div>
       <div hidden={activeSubTab !== 'css'}>
@@ -546,10 +719,10 @@ function HtmlCssCodeEditor({
           rows={20}
           style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85em' }}
           value={cssText}
-          onChange={(event) => setCssText(event.target.value)}
+          onChange={(event) => onCssChange(event.target.value)}
         />
       </div>
-      <button type="button" data-testid="editor-scene-html-css-save" onClick={handleSave}>
+      <button type="button" data-testid="editor-scene-html-css-save" onClick={onSave}>
         Save {activeSubTab === 'html' ? 'HTML' : 'CSS'}
       </button>
       {errors && (
@@ -564,9 +737,96 @@ function HtmlCssCodeEditor({
           ))}
         </ul>
       )}
+      {externalChangePending && (
+        <p
+          id="editor-scene-html-css-external-change"
+          role="alert"
+          aria-live="assertive"
+          className="editor-code-external-change-notice"
+        >
+          This tab&apos;s content changed elsewhere (e.g. Undo/Redo) while you had an unsaved edit
+          here — your edit was kept.{' '}
+          <button type="button" data-testid="editor-scene-html-css-reload" onClick={onReload}>
+            Discard my edit and reload
+          </button>
+        </p>
+      )}
     </div>
   );
 }
+
+/**
+ * Issue #177: the JS sub-tab's sync hook -- see `useJsonCodeSync`'s doc
+ * comment for the general strategy.
+ */
+function useJsCodeSync(
+  workingCopy: SceneDocument | null,
+  onCommit: (scene: SceneDocument) => void,
+) {
+  const [text, setText] = useState(() => generateEditableJs(workingCopy));
+  const [errors, setErrors] = useState<string[] | null>(null);
+  const [externalChangePending, setExternalChangePending] = useState(false);
+  const textRef = useRef(text);
+  const lastSyncedTextRef = useRef(text);
+  const lastSyncedWorkingCopyRef = useRef(workingCopy);
+
+  useEffect(() => {
+    if (workingCopy === lastSyncedWorkingCopyRef.current) return;
+    lastSyncedWorkingCopyRef.current = workingCopy;
+    if (textRef.current !== lastSyncedTextRef.current) {
+      setExternalChangePending(true);
+      return;
+    }
+    const generated = generateEditableJs(workingCopy);
+    lastSyncedTextRef.current = generated;
+    textRef.current = generated;
+    setText(generated);
+  }, [workingCopy]);
+
+  function onChange(value: string) {
+    textRef.current = value;
+    setText(value);
+  }
+
+  function onReload() {
+    const generated = generateEditableJs(workingCopy);
+    lastSyncedTextRef.current = generated;
+    textRef.current = generated;
+    lastSyncedWorkingCopyRef.current = workingCopy;
+    setText(generated);
+    setErrors(null);
+    setExternalChangePending(false);
+  }
+
+  function onSave() {
+    if (!workingCopy) return;
+    if (isEditableJsUnchanged(textRef.current, workingCopy)) {
+      setErrors(null);
+      return;
+    }
+    const result = parseEditableJs(textRef.current, workingCopy);
+    if (!result.ok) {
+      setErrors(result.errors);
+      return;
+    }
+    setErrors(null);
+    onCommit(result.scene);
+    // Re-canonicalize from the just-applied scene, matching the HTML/CSS
+    // sub-tabs' own convention, so "re-save unchanged -> no diff" holds. Also
+    // mark it (and `workingCopy`) as already synced, so the `workingCopy`
+    // change this Save causes doesn't flag itself as an external change.
+    const generated = generateEditableJs(result.scene);
+    lastSyncedTextRef.current = generated;
+    textRef.current = generated;
+    lastSyncedWorkingCopyRef.current = result.scene;
+    setText(generated);
+    setExternalChangePending(false);
+  }
+
+  return { text, errors, externalChangePending, onChange, onSave, onReload };
+}
+
+type JsCodeSync = ReturnType<typeof useJsCodeSync>;
 
 /**
  * Task 143 (issue #175; extended by task 144 / issue #176): the JavaScript
@@ -579,35 +839,11 @@ function HtmlCssCodeEditor({
  * as the HTML/CSS sub-tabs; an edit outside those two blocks (or an
  * out-of-whitelist field, or a graph mutation `graphEditing.ts`'s
  * validation would reject) is rejected with a specific, actionable error
- * and the scene is left completely untouched.
+ * and the scene is left completely untouched. Purely presentational -- all
+ * sync state/logic lives in `useJsCodeSync` above.
  */
-function JsCodeEditor({
-  workingCopy,
-  onCommit,
-}: {
-  workingCopy: SceneDocument | null;
-  onCommit: (scene: SceneDocument) => void;
-}) {
-  const [text, setText] = useState(() => generateEditableJs(workingCopy));
-  const [errors, setErrors] = useState<string[] | null>(null);
-
-  function handleSave() {
-    if (!workingCopy) return;
-    if (isEditableJsUnchanged(text, workingCopy)) {
-      setErrors(null);
-      return;
-    }
-    const result = parseEditableJs(text, workingCopy);
-    if (!result.ok) {
-      setErrors(result.errors);
-      return;
-    }
-    setErrors(null);
-    onCommit(result.scene);
-    // Re-canonicalize from the just-applied scene, matching the HTML/CSS
-    // sub-tabs' own convention, so "re-save unchanged -> no diff" holds.
-    setText(generateEditableJs(result.scene));
-  }
+function JsCodeEditor({ sync }: { sync: JsCodeSync }) {
+  const { text, errors, externalChangePending, onChange, onSave, onReload } = sync;
 
   return (
     <div className="editor-code-tab">
@@ -629,9 +865,9 @@ function JsCodeEditor({
         value={text}
         aria-invalid={errors ? true : undefined}
         aria-describedby={errors ? 'editor-scene-js-error' : undefined}
-        onChange={(event) => setText(event.target.value)}
+        onChange={(event) => onChange(event.target.value)}
       />
-      <button type="button" data-testid="editor-scene-js-save" onClick={handleSave}>
+      <button type="button" data-testid="editor-scene-js-save" onClick={onSave}>
         Save JavaScript
       </button>
       {errors && (
@@ -646,6 +882,20 @@ function JsCodeEditor({
           ))}
         </ul>
       )}
+      {externalChangePending && (
+        <p
+          id="editor-scene-js-external-change"
+          role="alert"
+          aria-live="assertive"
+          className="editor-code-external-change-notice"
+        >
+          This tab&apos;s content changed elsewhere (e.g. Undo/Redo) while you had an unsaved edit
+          here — your edit was kept.{' '}
+          <button type="button" data-testid="editor-scene-js-reload" onClick={onReload}>
+            Discard my edit and reload
+          </button>
+        </p>
+      )}
     </div>
   );
 }
@@ -656,28 +906,30 @@ function JsCodeEditor({
  * sub-editors stay mounted simultaneously (toggled with `hidden`, not
  * conditionally rendered) so switching between them never loses an
  * in-progress unsaved edit in another sub-tab within the same Code-tab
- * session. Each sub-editor's own local text state is seeded once, from
- * `workingCopy` at the moment this whole `CodeTab` mounts -- exactly the
- * same "Visual and Code are mutually exclusive views, so resync on mount is
- * enough" convention `SceneCodeEditor` already established for JSON (see
- * its own doc comment): a Visual-tab edit is only ever made while Code is
- * unmounted, so the next time Code mounts, every sub-tab's generated
- * content is already current.
+ * session.
+ *
+ * `CodeTab` itself is still only rendered while `previewView === 'code'`
+ * (see the caller below) -- issue #177 deliberately does NOT make it always
+ * mounted like the Visual pane, because each sub-tab's full generated
+ * text (in particular the JS sub-tab's exported-runtime script, which
+ * embeds this app's own UI copy such as "Camera is active") would then sit
+ * in the DOM at all times, invisible but still matched by text-content
+ * queries elsewhere in the app/tests. Instead, every sub-tab's actual text
+ * state lives in the `use*CodeSync` hooks above, called from
+ * `EditorWorkspace`'s top level (see the `jsonCodeSync`/`htmlCssCodeSync`/
+ * `jsCodeSync` calls there) so that state survives `CodeTab` unmounting and
+ * remounting on every Visual<->Code toggle -- which is what makes an
+ * unsaved edit and a stale-after-Undo/Redo display both correct without
+ * `CodeTab` needing to stay mounted at all.
  */
 function CodeTab({
-  workingCopy,
-  onCommitJson,
-  onCommitCode,
+  jsonSync,
+  htmlCssSync,
+  jsSync,
 }: {
-  workingCopy: SceneDocument | null;
-  /** JSON sub-tab save handler -- `setWorkingCopy` directly, exactly as
-   * before (#159's behavior is explicitly unchanged by task 142). */
-  onCommitJson: (scene: SceneDocument) => void;
-  /** HTML/CSS *and* (as of task 143/#175) JS sub-tabs' save handler --
-   * `sceneEditor.commitScene`, so a Code-tab save of shape geometry/style
-   * or bindings lands as one undo/redo step, the same guarantee every
-   * Visual-tab mutation already gets. */
-  onCommitCode: (scene: SceneDocument) => void;
+  jsonSync: JsonCodeSync;
+  htmlCssSync: HtmlCssCodeSync;
+  jsSync: JsCodeSync;
 }) {
   const [activeSubTab, setActiveSubTab] = useState<CodeSubTab>('json');
 
@@ -699,15 +951,11 @@ function CodeTab({
         ))}
       </div>
       <div hidden={activeSubTab !== 'json'}>
-        <SceneCodeEditor workingCopy={workingCopy} onCommit={onCommitJson} />
+        <SceneCodeEditor sync={jsonSync} />
       </div>
-      <HtmlCssCodeEditor
-        activeSubTab={activeSubTab}
-        workingCopy={workingCopy}
-        onCommit={onCommitCode}
-      />
+      <HtmlCssCodeEditor activeSubTab={activeSubTab} sync={htmlCssSync} />
       <div hidden={activeSubTab !== 'js'}>
-        <JsCodeEditor workingCopy={workingCopy} onCommit={onCommitCode} />
+        <JsCodeEditor sync={jsSync} />
       </div>
     </div>
   );
@@ -819,6 +1067,15 @@ function EditorWorkspace() {
   // experience stays "composing an animation recipe."
   const [showLogic, setShowLogic] = useState(false);
   const sceneEditor = useSceneEditor(workingCopy, setWorkingCopy);
+  // Issue #177: called unconditionally here (not inside `CodeTab`, which
+  // stays conditionally mounted -- see its doc comment) so each Code
+  // sub-tab's unsaved-edit/dirty-tracking state survives a Visual<->Code
+  // toggle, and so a `workingCopy` change (Undo/Redo, an AI proposal
+  // accept, a version restore) is observed even while the Code tab isn't
+  // the one currently on screen.
+  const jsonCodeSync = useJsonCodeSync(workingCopy, setWorkingCopy);
+  const htmlCssCodeSync = useHtmlCssCodeSync(workingCopy, sceneEditor.commitScene);
+  const jsCodeSync = useJsCodeSync(workingCopy, sceneEditor.commitScene);
   // Issue #78: the client-only snap-to-grid / alignment-guide preference —
   // see `../editor/snapSettings.ts`'s own doc comment for why this is a
   // plain external store rather than scene state.
@@ -2354,13 +2611,15 @@ function EditorWorkspace() {
               Code
             </button>
           </div>
+          {/* Issue #177: still a conditional render, not `hidden` -- see
+              `CodeTab`'s doc comment for why. The sub-tabs' unsaved-edit
+              state lives in the `jsonCodeSync`/`htmlCssCodeSync`/
+              `jsCodeSync` hooks above (always mounted at this component's
+              top level), not in `CodeTab` itself, so it survives this
+              conditional unmounting a Visual<->Code toggle causes. */}
           {previewView === 'code' && (
             <div aria-label="Code">
-              <CodeTab
-                workingCopy={workingCopy}
-                onCommitJson={setWorkingCopy}
-                onCommitCode={sceneEditor.commitScene}
-              />
+              <CodeTab jsonSync={jsonCodeSync} htmlCssSync={htmlCssCodeSync} jsSync={jsCodeSync} />
             </div>
           )}
           {/* Issue #159: everything below through the end of the canvas

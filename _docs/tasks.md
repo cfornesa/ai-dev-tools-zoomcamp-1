@@ -4764,3 +4764,72 @@ Resolution (2026-08-25):
   sibling project, not a deployment concern). No direct code fixes were
   made in this task -- #177 is correctly scoped as its own follow-up
   given it needs a design decision, not a one-line patch.
+
+Resolution follow-up (2026-08-25, #177 fixed):
+
+- **Root cause confirmed**: `EditorWorkspace.tsx`'s `CodeTab` and its three
+  children (`SceneCodeEditor`/`HtmlCssCodeEditor`/`JsCodeEditor`) each
+  seeded local text state once via a lazy `useState` initializer, and
+  `CodeTab` itself was only ever mounted while `previewView === 'code'`. An
+  Undo/Redo made while Code stayed open never re-ran the initializer
+  (stale display); a bare Visual->Code->Visual->Code toggle unmounted and
+  remounted every sub-editor even though `workingCopy` never actually
+  changed, silently discarding an in-progress unsaved edit.
+- **Fix (per the groomed acceptance criteria)**: moved each sub-tab's text
+  state and dirty-tracking out of the presentational components into three
+  hooks (`useJsonCodeSync`/`useHtmlCssCodeSync`/`useJsCodeSync`) called
+  unconditionally at `EditorWorkspace`'s top level, so the state survives
+  `CodeTab` unmounting/remounting on every Visual<->Code toggle. Each hook
+  resyncs off `workingCopy`'s object identity via a `useEffect` (every
+  mutation path in this file replaces `workingCopy` wholesale, so `===`
+  reliably means "no real change"): a clean sub-tab (current text still
+  equal to what was last generated/committed) resyncs silently; a dirty
+  sub-tab is left untouched and shown an inline notice
+  (`editor-scene-{code,html-css,js}-external-change`, `role="alert"`) with
+  an explicit "Discard my edit and reload" button
+  (`editor-scene-{code,html-css,js}-reload`) rather than being silently
+  overwritten. `CodeTab` itself deliberately stays conditionally rendered
+  (not always-mounted with `hidden`) -- an earlier draft of this fix tried
+  keeping it permanently mounted and broke
+  `EditorWorkspace.cameraPreviewRealControl.test.tsx` (a `findByText(/Camera
+  is active/i)` match went ambiguous), because the JS sub-tab's generated
+  exported-runtime script embeds this app's own UI copy (e.g. "Camera is
+  active") as textarea content that stays in the DOM, invisible but still
+  matched by text-content queries, once the component never unmounts. The
+  hooks-based design gets both correctness (state survives toggling) and
+  DOM hygiene (Code-tab content only exists in the DOM while Code is
+  actually shown) at once.
+- **Tests**: `frontend/src/pages/EditorWorkspace.codeTab.test.tsx` gained
+  four new scenarios (7 -> 11 in that file): Undo/Redo with the Code tab
+  open and no pending edit (silent resync, both directions); Undo while
+  the JSON sub-tab has a pending unsaved edit (edit preserved, notice
+  shown, explicit reload works); a two-round Visual<->Code toggle with an
+  unsaved edit pending in all four sub-tabs (JSON/HTML/CSS/JS) at once,
+  confirming every one survives; and a real HTML/CSS save while the
+  sibling JS sub-tab has its own pending unsaved edit (regression guard —
+  already correct pre-fix, confirmed still correct). Full frontend suite:
+  126 test files / 1825 tests passed (up from 126/1821 pre-fix). Backend
+  unaffected (`ruff check`/`ruff format --check` clean; not touched by this
+  change). `make frontend-lint` (only the four pre-existing unrelated
+  `only-export-components` warnings), `make frontend-typecheck`, and
+  `make frontend-format-check` all clean.
+- **Live verification** (real Postgres-backed Django + Vite dev stack,
+  signed in as the `e2e_owner` fixture user, against the existing 5-shape
+  feature-rich project from task 145's own audit): (1) opened the Code
+  tab's CSS sub-tab, changed the circle's opacity from 0.5 to 0.9, saved;
+  confirmed the JSON sub-tab immediately showed `opacity: 0.9` without
+  leaving the Code tab. Clicked Undo once (via the toolbar, without ever
+  leaving Code): the JSON sub-tab's `opacity` value updated live back to
+  `0.5`, and switching to the CSS sub-tab showed `opacity: 0.5` there too
+  — both silently resynced, no stale content, no notice (since neither had
+  an unsaved edit). (2) Typed an unsaved marker comment into the JS
+  sub-tab, switched to Visual, switched back to Code, reselected the JS
+  sub-tab: the unsaved marker text was still present, confirming the bare
+  toggle no longer discards it. Used the local Docker-port-8000 workaround
+  from `.agents/memory/local-port-8000-docker-conflict.md` (Django on
+  `127.0.0.1:8000`, Vite's proxy targets temporarily repointed at
+  `127.0.0.1:8000`); `frontend/vite.config.ts` was reverted to its
+  committed `localhost:8000` targets before finishing, confirmed via `git
+  diff` showing no residual change.
+- Issue #177 left open per instructions (implementation done, not closed
+  by the engineer).

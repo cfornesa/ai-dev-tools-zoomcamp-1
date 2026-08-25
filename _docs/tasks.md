@@ -3190,9 +3190,10 @@ true), dismiss/reopen behavior (does it follow the selection everywhere,
 hide on deselect, close on Escape), and whether layer rows (not just
 shapes/groups) get a HUD too or only their existing Visible/Locked/Delete
 buttons.
-Status: PROPOSED — filed from live user feedback during a follow-up
-review of tasks 129/130 (issues #161/#162).
-GitHub issue: pending — see reconciliation note at the end of task 133.
+Status: COMPLETE
+GitHub issue: [#163](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/163)
+(open for QA/closing by the orchestrator — see that issue's grooming
+comment for the full acceptance criteria this resolution satisfies).
 Discovery gate: Searched `_docs/tasks.md` and `gh issue list --search
 "layer panel"` / `--search "photoshop"` / `--search "floating panel
 overlay"` for a duplicate. Issue #153 (closed) is the closest prior art —
@@ -3201,6 +3202,64 @@ it added the Layers panel's current row-level selection highlight
 `index.css`) — but that issue's scope was strictly "make existing
 selection state visible," not a new floating-overlay surface; treated as
 related context, not a duplicate. New, not a duplicate.
+Resolution (2026-08-24): Added `frontend/src/pages/SelectionHud.tsx`, a
+new presentation-only component rendered inside `EditorWorkspace.tsx`'s
+`data-panel="preview"` `<section>` (now `position: relative`, per this
+task's own grooming note), positioned via `index.css`'s new
+`.editor-selection-hud` (`position: absolute`, anchored to the panel's
+top-right corner — grooming settled on a fixed-corner anchor over
+shape-bounds anchoring: simpler to keep correct across zoom/pan/scroll,
+with no new coordinate-conversion code needed). It renders nothing when
+neither `sceneEditor.selectedShape` nor `sceneEditor.selectedGroup` is
+set (covering "nothing selected" and "a layer row" — layers are never a
+valid `selectedShapeId`, per `useSceneEditor.ts`'s `selectShape`), and
+otherwise exposes, calling the *exact* existing mutations
+`LayersPanel.tsx`'s `OutlineRowItem` already calls — no new mutation
+logic anywhere:
+- Shape selected: visibility (`toggleShapeVisible`), lock
+  (`toggleShapeLocked`), fill color (`updateSelectedShapeColorField`),
+  opacity (`updateSelectedShapeNumericField('opacity', ...)` — the same
+  `opacity` `ShapeStyleField` mutation `ShapeInspectorPanel.tsx` already
+  uses), and delete (`deleteSelected`).
+- Group selected: visibility/lock/delete only
+  (`toggleGroupVisible`/`toggleGroupLocked`/`deleteGroupSelected`) — no
+  color/opacity fields, since groups have none today, matching this
+  task's own acceptance criterion.
+The HUD's fill/opacity fields are labeled "Selection fill"/"Selection
+opacity" rather than plain "Fill"/"Opacity" specifically so they don't
+collide (ambiguous `getByLabelText`/assistive-tech name) with
+`ShapeInspectorPanel.tsx`'s identically-purposed fields, since both can be
+mounted and visible simultaneously for the same selected shape.
+Deselect/dismiss: clicking empty canvas already called
+`selectShape(null)` before this task (`handleCanvasClick`), so the HUD
+already disappears on that with no HUD-specific code; Escape did not
+previously deselect anything, so `EditorWorkspace.tsx` gained one new
+`keydown` listener that calls `selectShape(null)` on Escape, deferring
+(via the same "latest value" ref pattern its sibling listeners already
+use) to the two more specific existing Escape handlers when either
+claims it: an in-progress drag-cancel, and vertex-edit-mode-exit. Every
+HUD control is a plain `<button>`/`<input>` with a visible label/
+`aria-pressed`/`aria-label`, so it's Tab-reachable and Enter/Space-
+activatable with no extra wiring, and at <768px (matching this codebase's
+existing phone breakpoint) `.editor-selection-hud` drops to
+`position: static` and flows in-line instead of overlaying, so it can
+never overlap or block the canvas on a viewport already tight on space.
+`LayersPanel.tsx` itself is completely untouched by this task, per its
+own "additive only" acceptance criterion — task 132/issue #164 handles
+removing its now-redundant inline controls.
+Verified: added `frontend/src/pages/EditorWorkspace.selectionHud.test.tsx`
+(17 new tests) covering HUD-appears-on-shape-selection,
+HUD-appears-on-group-selection-with-color/opacity-omitted,
+no-HUD-with-nothing-selected, no-HUD-for-a-layer-row,
+hide-on-empty-canvas-click, hide-on-Escape, selection-change-updates-HUD-
+with-no-stale-state, each shape/group control driving the same outline-
+row-reflected state a `LayersPanel.tsx` interaction would, a rejected
+invalid fill-color edit surfacing the same validation error path, and
+keyboard-only (Tab + Enter) operation of two representative controls.
+`make frontend-lint`/`frontend-typecheck`/`frontend-format-check` all
+clean (same four pre-existing `react(only-export-components)` warnings as
+before, none in files this task touched); full frontend suite green,
+1730/1730 (1713 before this task's 17 new tests), zero regressions.
 
 ## 132. Compact the Layers panel into a minimal Photoshop-style row list
 

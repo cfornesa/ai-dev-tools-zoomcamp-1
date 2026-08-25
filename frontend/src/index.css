@@ -950,6 +950,71 @@ code {
      panel existed), so Preview reaches the sidebar's full stacked height
      rather than only part of it. */
   grid-row: 1 / span 4;
+  /* Issue #163 (task 131): the containing block `.editor-selection-hud`'s
+     `position: absolute` anchors against, so the HUD overlays a fixed
+     corner of this panel rather than the whole page. */
+  position: relative;
+}
+
+/* Issue #163 (task 131): the canvas-overlaid "active selection" HUD — see
+   `SelectionHud.tsx`'s own doc comment for what it shows and why. Anchored
+   to the Preview panel's top-right corner (a fixed corner, not the
+   selected shape's own canvas bounds — simpler to keep correct across
+   zoom/pan/scroll, and this task's grooming settled on "fixed corner of
+   Preview" over shape-bounds anchoring for exactly that reason) at
+   >=768px; below that (the same phone breakpoint `.editor-panel` already
+   switches layout at above) it drops out of the overlay entirely and
+   flows in-line instead, so it can never overlap or block the canvas on a
+   viewport already tight on space. */
+.editor-selection-hud {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+
+.editor-selection-hud-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+.editor-selection-hud-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.editor-selection-hud-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85em;
+}
+
+.editor-selection-hud-field input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .editor-selection-hud {
+    position: static;
+    max-width: none;
+    margin: 8px 0;
+    box-shadow: none;
+  }
 }
 
 /* Task 129 (issue #154): Layers promoted to the sidebar's first row —

@@ -84,6 +84,7 @@ import OnboardingHints from './OnboardingHints';
 import PublishControl from './PublishControl';
 import RandomnessIndicator from './RandomnessIndicator';
 import SaveControl from './SaveControl';
+import SelectionHud from './SelectionHud';
 import ShapeInspectorPanel from './ShapeInspectorPanel';
 import VersionHistoryPanel from './VersionHistoryPanel';
 
@@ -1290,6 +1291,33 @@ function EditorWorkspace() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [sceneEditor.vertexEditActive]);
+
+  // Issue #163 (task 131): Escape dismisses the canvas-overlaid selection
+  // HUD (`SelectionHud.tsx`, rendered in the Preview panel below) by
+  // clearing the active selection outright — `SelectionHud` itself renders
+  // purely from `selectedShape`/`selectedGroup` with no listener of its
+  // own, so clearing the selection is all this needs to do. Deliberately
+  // defers to the two more specific Escape handlers above when either
+  // claims it: an in-progress drag gesture (cancelled without touching
+  // selection by `dragHandlers.current.onKey`) and vertex edit mode (which
+  // exits the mode first, per the effect just above, rather than
+  // deselecting the shape entirely) — both are checked here via the same
+  // "latest value" ref pattern the rest of this component's keydown
+  // listeners already use, so this can be registered once (`[]` deps)
+  // rather than torn down/re-added on every selection change.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || isTypingTarget(event.target)) return;
+      if (dragRef.current) return; // handled by the drag-cancel listener instead
+      const editor = sceneEditorRef.current;
+      if (editor.vertexEditActive) return; // handled by the vertex-edit listener instead
+      if (!editor.selectedShape && !editor.selectedGroup) return;
+      event.preventDefault();
+      editor.selectShape(null);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   if (loadState === 'loading') {
     return (
@@ -2499,6 +2527,16 @@ function EditorWorkspace() {
               </div>
             </div>
           </div>
+          {/* Issue #163 (task 131): the canvas-overlaid selection HUD —
+              rendered as a sibling of (not inside) the zoom/pan viewport
+              above so it's never subject to that viewport's own `overflow:
+              hidden`/`transform: scale()` while zoomed, but still visually
+              overlaid on the Preview panel via `index.css`'s
+              `.editor-selection-hud` (`position: absolute` against this
+              `<section>`'s own `position: relative`). Renders nothing of
+              its own when nothing is selected — see `SelectionHud.tsx`'s
+              doc comment. */}
+          <SelectionHud sceneEditor={sceneEditor} />
           {/* Issue #157: the mobile placement of the always-visible
               toolbar — directly below the canvas viewport, inside the
               Preview panel itself, rather than above the Details/Tools/

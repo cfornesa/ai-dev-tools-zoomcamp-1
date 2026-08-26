@@ -155,6 +155,8 @@ export type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
  */
 type AffineTransform = { a: number; b: number; c: number; d: number; e: number; f: number };
 
+const IDENTITY_AFFINE: AffineTransform = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+
 function transformForNode(transform: Transform): AffineTransform {
   const radians = (transform.rotation * Math.PI) / 180;
   const cos = Math.cos(radians);
@@ -194,12 +196,16 @@ type RenderGroup = { id: string; childIds: string[]; transform: Transform };
  * accepts the scene-outline group's runtime type without coupling this module
  * to React or the API layer. */
 export function getShapeRenderTransform(shape: Shape, groups: RenderGroup[] = []): AffineTransform {
+  return composeTransforms(getAncestorTransform(shape, groups), transformForNode(shape.transform));
+}
+
+function getAncestorTransform(shape: Shape, groups: RenderGroup[]): AffineTransform {
   const groupForChild = new Map<string, RenderGroup>();
   for (const group of groups) {
     for (const childId of group.childIds) groupForChild.set(childId, group);
   }
 
-  let result = transformForNode(shape.transform);
+  let result = IDENTITY_AFFINE;
   let childId = shape.id;
   const visited = new Set<string>();
   while (groupForChild.has(childId)) {
@@ -210,6 +216,30 @@ export function getShapeRenderTransform(shape: Shape, groups: RenderGroup[] = []
     childId = group.id;
   }
   return result;
+}
+
+/** Maps a pointer from rendered scene space back into canonical scene space
+ * (the coordinate system in which `shape.transform.x/y` and line endpoints
+ * live). Grouped gestures must undo only the ancestor group stack before
+ * applying their existing shape-local mutation helpers. */
+export function renderedPointToShapePoint(
+  shape: Shape,
+  point: Point,
+  groups: RenderGroup[] = [],
+): Point {
+  // Keep the shape's own transform in the returned coordinate system. The
+  // direct-manipulation helpers expect canonical scene coordinates (where
+  // `shape.transform.x/y` live), so only ancestor group transforms are
+  // inverted here.
+  const transform = getAncestorTransform(shape, groups);
+  const determinant = transform.a * transform.d - transform.b * transform.c;
+  if (Math.abs(determinant) < Number.EPSILON) return point;
+  const x = point.x - transform.e;
+  const y = point.y - transform.f;
+  return {
+    x: (transform.d * x - transform.c * y) / determinant,
+    y: (-transform.b * x + transform.a * y) / determinant,
+  };
 }
 
 function boundsForTransform(localBounds: Bounds, transform: AffineTransform): Bounds {

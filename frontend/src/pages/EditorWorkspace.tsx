@@ -50,6 +50,7 @@ import {
   getShapeHandles,
   GRID_SIZE,
   hitTestTopmostShapeAt,
+  renderedPointToShapePoint,
   shapeBounds,
   type AlignmentGuide,
   type Bounds,
@@ -1711,14 +1712,20 @@ function EditorWorkspace() {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
       const { width, height } = canvasSizeRef.current;
-      const pointer = clientToCanvasPoint(rect, event.clientX, event.clientY, width, height);
+      const renderedPointer = clientToCanvasPoint(
+        rect,
+        event.clientX,
+        event.clientY,
+        width,
+        height,
+      );
       if (drag.mode === 'group') {
         const updated = applyGroupDrag(
           drag.kind,
           drag.startShapes,
           drag.bounds,
           drag.startPointer,
-          pointer,
+          renderedPointer,
         );
         sceneEditorRef.current.updateMultiSelectedTransform(updated);
         return;
@@ -1728,10 +1735,20 @@ function EditorWorkspace() {
         // `applyMoveSnap`/`applyResizeSnap` call here, matching this
         // task's own "Out of scope" (snapping stays whole-shape-only,
         // issue #78).
+        const pointer = renderedPointToShapePoint(
+          drag.startShape,
+          renderedPointer,
+          sceneEditorRef.current.groups,
+        );
         const updated = applyVertexDrag(drag.startShape, drag.pointIndex, pointer);
         sceneEditorRef.current.updateSelectedTransform(updated);
         return;
       }
+      const pointer = renderedPointToShapePoint(
+        drag.startShape,
+        renderedPointer,
+        sceneEditorRef.current.groups,
+      );
       const updated = applyShapeDrag(drag.kind, drag.startShape, drag.startPointer, pointer);
       const snap = snapSettingsRef.current;
       // Issue #78: snapping only applies to the single-shape gesture path
@@ -2554,7 +2571,12 @@ function EditorWorkspace() {
     ) {
       return;
     }
-    beginTransformGesture({ mode: 'single', kind: 'move', startShape: hit, startPointer: pointer });
+    beginTransformGesture({
+      mode: 'single',
+      kind: 'move',
+      startShape: hit,
+      startPointer: renderedPointToShapePoint(hit, pointer, sceneEditor.groups),
+    });
   }
 
   // A single-shape resize/rotate handle is only ever rendered for the
@@ -2579,7 +2601,12 @@ function EditorWorkspace() {
       }
       const pointer = canvasPointFromClient(event.clientX, event.clientY);
       if (!pointer) return;
-      beginTransformGesture({ mode: 'single', kind, startShape: shape, startPointer: pointer });
+      beginTransformGesture({
+        mode: 'single',
+        kind,
+        startShape: shape,
+        startPointer: renderedPointToShapePoint(shape, pointer, sceneEditor.groups),
+      });
     };
   }
 
@@ -2640,7 +2667,7 @@ function EditorWorkspace() {
         mode: 'vertex',
         startShape: shape,
         pointIndex,
-        startPointer: pointer,
+        startPointer: renderedPointToShapePoint(shape, pointer, sceneEditor.groups),
       });
     };
   }

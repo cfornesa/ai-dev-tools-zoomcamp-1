@@ -8,9 +8,11 @@ import {
   createShape,
   getCombinedBounds,
   getGroupHandles,
+  getShapeRenderTransform,
   getShapeHandles,
   hitTestTopmostShapeAt,
   POSITION_LIMIT,
+  renderedPointToShapePoint,
   ROTATION_LIMIT,
   shapeBounds,
   SIZE_LIMIT,
@@ -142,6 +144,25 @@ describe('render-space geometry (issue #184)', () => {
     };
     expect(hitTestTopmostShapeAt([circle], 600, 300, [group])?.id).toBe(circle.id);
     expect(hitTestTopmostShapeAt([circle], 400, 300, [group])).toBeNull();
+  });
+
+  it('round-trips rendered pointers through the same grouped transform stack', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const group = {
+      id: 'group-1',
+      childIds: [circle.id],
+      transform: { x: 200, y: 40, scaleX: 1.5, scaleY: 0.5, rotation: 30, opacity: 1 },
+    };
+    const localPoint = { x: 17, y: -9 };
+    const rendered = getShapeRenderTransform(circle, [group]);
+    const renderedPoint = {
+      x: rendered.a * localPoint.x + rendered.c * localPoint.y + rendered.e,
+      y: rendered.b * localPoint.x + rendered.d * localPoint.y + rendered.f,
+    };
+    expect(renderedPointToShapePoint(circle, renderedPoint, [group])).toEqual({
+      x: expect.closeTo(circle.transform.x + localPoint.x),
+      y: expect.closeTo(circle.transform.y + localPoint.y),
+    });
   });
 });
 

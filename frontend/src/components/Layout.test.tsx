@@ -112,6 +112,20 @@ describe('Layout: active nav indicator (issue #136)', () => {
     );
     expect(screen.getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
   });
+
+  it('marks the editor route with the compact studio shell class', () => {
+    render(
+      <MemoryRouter initialEntries={['/projects/p1']}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route path="projects/:id" element={<p>Editor</p>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(document.querySelector('.app-shell')).toHaveClass('app-shell-editor');
+  });
 });
 
 describe('Layout: mobile hamburger menu', () => {

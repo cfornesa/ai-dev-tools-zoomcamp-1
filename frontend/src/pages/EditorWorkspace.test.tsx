@@ -282,6 +282,16 @@ describe('EditorWorkspace responsive layout', () => {
     expect(css).toMatch(/\.editor-outline-row-more summary\s*\{[^}]*white-space:\s*nowrap/);
   });
 
+  it('defines the studio frame and compact panel chrome without removing focusable controls', () => {
+    const css = readFileSync(join(__dirname, '..', 'index.css'), 'utf-8');
+
+    expect(css).toMatch(/\.editor-scene-canvas-viewport\s*\{[^}]*background:\s*#242830/);
+    expect(css).toMatch(/\.editor-scene-canvas-viewport\s*\{[^}]*box-shadow:/);
+    expect(css).toMatch(/\.editor-panel > h3\s*\{[^}]*border-bottom:/);
+    expect(css).toMatch(/\.editor-collapsible-section-toggle\s*\{[^}]*min-height:\s*36px/);
+    expect(css).toMatch(/\.app-shell-editor \.app-shell-header\s*\{[^}]*padding-block:/);
+  });
+
   // Issue #93 hard requirement: Preview must never become unreachable while
   // using Tools or Inspector, at any viewport width — so below 1024px it's
   // no longer one of three mutually-exclusive tabs. It always stays

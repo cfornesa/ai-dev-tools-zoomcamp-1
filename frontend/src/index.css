@@ -66,6 +66,14 @@
   flex-direction: column;
 }
 
+/* Issue #180: editor routes use a compact shell header so the dedicated
+   studio workspace gets more vertical room without changing the more
+   spacious presentation used by Home, Gallery, and Settings. */
+.app-shell-editor .app-shell-header {
+  gap: 12px;
+  padding-block: 20px;
+}
+
 body {
   margin: 0;
 }
@@ -350,6 +358,10 @@ code {
  * `components/useIsMobileHeader.ts` for why this is a distinct, wider
  * breakpoint than the 600px one used below for unrelated panel spacing. */
 @media (max-width: 767px) {
+  .app-shell-editor .app-shell-header {
+    padding-block: 16px;
+  }
+
   .app-shell-header {
     gap: 16px;
     padding: 32px 16px;
@@ -465,6 +477,12 @@ code {
   gap: 8px 12px;
   text-align: left;
   padding: 0 24px;
+}
+
+/* Issue #180: the editor header is a command strip rather than a document
+   heading, so keep its controls compact and visually grouped. */
+.app-shell-editor .editor-workspace-header {
+  padding-block: 4px;
 }
 
 .editor-header-break {
@@ -589,6 +607,32 @@ code {
   font-weight: 600;
 }
 
+/* Issue #180: unified compact panel chrome keeps Layers, Details, Tools, and
+   Inspector visually related while preserving each section's existing
+   accessible heading and focusable controls. */
+.editor-panel > h3 {
+  margin: -16px -16px 16px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--code-bg) 72%, var(--bg));
+  color: var(--text-h);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.editor-collapsible-section {
+  margin: 8px 0;
+}
+
+.editor-collapsible-section-toggle {
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
 .editor-collapsible-section-content {
   margin-top: 8px;
 }
@@ -614,7 +658,8 @@ code {
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg);
+  background: var(--code-bg);
+  box-shadow: var(--shadow);
   overflow-x: auto;
 }
 
@@ -1099,6 +1144,10 @@ code {
   .editor-panel {
     padding: 12px;
   }
+
+  .editor-panel > h3 {
+    margin: -12px -12px 12px;
+  }
 }
 
 .graph-editor-canvas {
@@ -1344,6 +1393,12 @@ textarea:disabled {
    this box into the rest of the Preview panel). */
 .editor-scene-canvas-viewport {
   touch-action: none;
+  padding: 14px;
+  box-sizing: border-box;
+  border: 1px solid #3d424c;
+  border-radius: 10px;
+  background: #242830;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
 }
 
 .editor-shape-handle {

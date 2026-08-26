@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import ReducedMotionControl from './ReducedMotionControl';
 import { useIsMobileHeader } from './useIsMobileHeader';
@@ -27,6 +27,7 @@ import { useAuth } from '../auth/useAuth';
  */
 function Layout() {
   const auth = useAuth();
+  const location = useLocation();
   const isMobileHeader = useIsMobileHeader();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -65,7 +66,9 @@ function Layout() {
     );
 
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell${location.pathname.startsWith('/projects/') ? ' app-shell-editor' : ''}`}
+    >
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>

@@ -44,6 +44,8 @@ import {
   moveLayer as moveLayerOp,
   outlineBreadcrumb,
   removeShapeFromScene,
+  renameGroup as renameGroupOp,
+  groupDisplayLabel,
   renameLayer as renameLayerOp,
   renameShape as renameShapeOp,
   toggleGroupFlag,
@@ -948,6 +950,23 @@ export function useSceneEditor(
     [workingCopy, applyOutcome],
   );
 
+  const renameGroup = useCallback(
+    (groupId: string, name: string) => {
+      if (!workingCopy) return;
+      const guard = guardUnlocked(
+        workingCopy,
+        [groupId],
+        "This group is locked and can't be renamed. Unlock it first.",
+      );
+      if (!guard.ok) {
+        setOutlineError(guard.error);
+        return;
+      }
+      applyOutcome(renameGroupOp(workingCopy, groupId, name));
+    },
+    [workingCopy, applyOutcome],
+  );
+
   const deleteLayer = useCallback(
     (layerId: string) => {
       if (!workingCopy) return;
@@ -1135,7 +1154,9 @@ export function useSceneEditor(
       const group = getGroups(workingCopy).find((candidate) => candidate.id === itemId);
       const itemName = item
         ? shapeLabel(item, getEditableShapes(rawShapes(workingCopy)))
-        : (group?.name ?? itemId);
+        : group
+          ? groupDisplayLabel(group, getGroups(workingCopy).indexOf(group))
+          : itemId;
       const layer = getLayers(workingCopy).find((candidate) => candidate.id === targetLayerId);
       setOutlineStatus(`Moved ${itemName} to layer ${layer?.name ?? targetLayerId}.`);
     },
@@ -1185,7 +1206,9 @@ export function useSceneEditor(
       const group = getGroups(workingCopy).find((candidate) => candidate.id === itemId);
       const itemName = item
         ? shapeLabel(item, getEditableShapes(rawShapes(workingCopy)))
-        : (group?.name ?? itemId);
+        : group
+          ? groupDisplayLabel(group, getGroups(workingCopy).indexOf(group))
+          : itemId;
       const targetName = targetGroupId
         ? (getGroups(workingCopy).find((candidate) => candidate.id === targetGroupId)?.name ??
           targetGroupId)
@@ -1455,6 +1478,7 @@ export function useSceneEditor(
     addLayer,
     renameLayer,
     renameShape,
+    renameGroup,
     deleteLayer,
     moveLayer,
     toggleLayerVisible,

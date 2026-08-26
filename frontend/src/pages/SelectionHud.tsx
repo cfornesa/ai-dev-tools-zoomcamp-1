@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { MoveControls, ShapeNameField } from './LayersPanel';
+import { GroupNameField, MoveControls, ShapeNameField } from './LayersPanel';
 import { shapeTypeDisplayName } from './sceneShapes';
 import { getColorFieldValue, getNumericFieldValue } from './shapeStyleFields';
 import type { SceneEditor } from './useSceneEditor';
@@ -156,6 +156,7 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
 
   if (selectedGroup) {
     const row = outline.find((r) => r.kind === 'group' && r.id === selectedGroup.id);
+    const label = row?.kind === 'group' ? row.name : selectedGroup.name;
     const visible = row?.kind === 'group' ? row.visible : true;
     const locked = row?.kind === 'group' ? row.locked : false;
     const isFirst = row?.kind === 'group' ? row.isFirst : true;
@@ -167,15 +168,21 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
       <div
         className="editor-selection-hud"
         role="group"
-        aria-label={`Selected: ${selectedGroup.name}`}
+        aria-label={`Selected: ${label}`}
         data-testid="selection-hud"
       >
         <div className="editor-selection-hud-header">
-          <p className="editor-selection-hud-title">{selectedGroup.name}</p>
+          <p className="editor-selection-hud-title">{label}</p>
           <HudCollapseToggle collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
         </div>
         {!collapsed && (
           <div className="editor-selection-hud-controls">
+            <GroupNameField
+              groupId={selectedGroup.id}
+              name={label}
+              onRename={sceneEditor.renameGroup}
+              className="editor-selection-hud-group-name"
+            />
             <button
               type="button"
               aria-pressed={visible}
@@ -192,14 +199,14 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
             </button>
             <button
               type="button"
-              aria-label={`Delete group ${selectedGroup.name}`}
+              aria-label={`Delete group ${label}`}
               onClick={() => sceneEditor.deleteGroupSelected(selectedGroup.id)}
             >
               Delete group
             </button>
             <button
               type="button"
-              aria-label={`Move ${selectedGroup.name} up`}
+              aria-label={`Move ${label} up`}
               disabled={isFirst}
               onClick={() => sceneEditor.moveItem(selectedGroup.id, 'up')}
             >
@@ -207,7 +214,7 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
             </button>
             <button
               type="button"
-              aria-label={`Move ${selectedGroup.name} down`}
+              aria-label={`Move ${label} down`}
               disabled={isLast}
               onClick={() => sceneEditor.moveItem(selectedGroup.id, 'down')}
             >
@@ -217,7 +224,7 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
               <section aria-label="Organization controls">
                 <MoveControls
                   itemId={selectedGroup.id}
-                  itemLabel={selectedGroup.name}
+                  itemLabel={label}
                   itemLayerId={layerId}
                   currentGroupId={currentGroupId}
                   sceneEditor={sceneEditor}

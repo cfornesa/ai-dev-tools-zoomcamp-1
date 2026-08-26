@@ -88,7 +88,8 @@ function isGroup(value: unknown): value is Group {
   return (
     !!v &&
     typeof v.id === 'string' &&
-    typeof v.name === 'string' &&
+    // Legacy documents may omit or contain malformed names; those are
+    // normalized only for editor display by `getGroups`.
     typeof v.layerId === 'string' &&
     Array.isArray(v.childIds) &&
     v.childIds.every((c) => typeof c === 'string') &&
@@ -111,6 +112,15 @@ function rawShapes(scene: SceneDocument): unknown[] {
   return Array.isArray(scene.shapes) ? scene.shapes : [];
 }
 
+/** Group names predate the current schema contract in some persisted scenes.
+ * Keep those scenes usable in the editor with the same deterministic label
+ * convention used when groups are created, without writing a fallback back
+ * into the document. */
+export function groupDisplayLabel(group: Pick<Group, 'name'>, index: number): string {
+  const name = typeof group.name === 'string' ? group.name.trim() : '';
+  return name.length >= 1 && name.length <= 200 ? name : `Group ${index + 1}`;
+}
+
 function withLayers(scene: SceneDocument, layers: unknown[]): SceneDocument {
   return { ...scene, layers };
 }
@@ -128,7 +138,9 @@ export function getLayers(scene: SceneDocument): Layer[] {
 }
 
 export function getGroups(scene: SceneDocument): Group[] {
-  return rawGroups(scene).filter(isGroup);
+  return rawGroups(scene)
+    .map((raw, index) => (isGroup(raw) ? { ...raw, name: groupDisplayLabel(raw, index) } : null))
+    .filter((group): group is Group => group !== null);
 }
 
 function identityTransform(): GroupTransform {
@@ -251,6 +263,29 @@ export function renameShape(scene: SceneDocument, shapeId: string, name: string)
       scene,
       shapes.map((raw) =>
         (raw as { id?: unknown }).id === shapeId
+          ? { ...(raw as Record<string, unknown>), name: trimmed }
+          : raw,
+      ),
+    ),
+  };
+}
+
+export function renameGroup(scene: SceneDocument, groupId: string, name: string): Outcome {
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: 'A group name cannot be empty.' };
+  if (trimmed.length > 200) {
+    return { ok: false, error: 'A group name cannot be longer than 200 characters.' };
+  }
+  const groups = rawGroups(scene);
+  if (!groups.some((raw) => (raw as { id?: unknown }).id === groupId)) {
+    return { ok: false, error: 'That group no longer exists.' };
+  }
+  return {
+    ok: true,
+    scene: withGroups(
+      scene,
+      groups.map((raw) =>
+        (raw as { id?: unknown }).id === groupId
           ? { ...(raw as Record<string, unknown>), name: trimmed }
           : raw,
       ),
@@ -1039,7 +1074,7 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
       kind: 'group',
       id: group.id,
       depth,
-      name: group.name,
+      name: groupDisplayLabel(group, groups.indexOf(group)),
       visible: group.visible,
       locked: group.locked,
       inheritedVisible: ancestorVisible && group.visible,
@@ -1149,12 +1184,22 @@ export function outlineBreadcrumb(scene: SceneDocument, id: string | null): Brea
     ancestorChain.unshift(g);
     ancestorId = findParentGroup(g.id, groups)?.id ?? null;
   }
-  segments.push(...ancestorChain.map((g) => ({ id: g.id, kind: 'group' as const, label: g.name })));
+  segments.push(
+    ...ancestorChain.map((g) => ({
+      id: g.id,
+      kind: 'group' as const,
+      label: groupDisplayLabel(g, groups.indexOf(g)),
+    })),
+  );
 
   if (shape) {
     segments.push({ id: shape.id, kind: 'shape', label: shapeLabel(shape, shapes) });
   } else if (group) {
-    segments.push({ id: group.id, kind: 'group', label: group.name });
+    segments.push({
+      id: group.id,
+      kind: 'group',
+      label: groupDisplayLabel(group, groups.indexOf(group)),
+    });
   }
   return segments;
 }

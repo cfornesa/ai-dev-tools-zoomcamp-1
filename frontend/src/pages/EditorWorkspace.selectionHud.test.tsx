@@ -418,6 +418,61 @@ describe('SelectionHud: group controls reuse the exact LayersPanel mutations (is
     ).toHaveLength(0);
     expect(hud()).not.toBeInTheDocument();
   });
+
+  it('renames a selected group from the HUD and supports one-step undo/redo', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await selectAGroup(user);
+
+    const nameInput = within(hud()!).getByRole('textbox', { name: 'Group name for Group 1' });
+    await user.clear(nameInput);
+    await user.type(nameInput, '  Foreground  ');
+    await user.keyboard('{Enter}');
+
+    expect(within(hud()!).getByText('Foreground')).toBeInTheDocument();
+    expect(
+      within(outlineList()!).getByRole('button', { name: /Group: Foreground/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(outlineList()!).getByRole('textbox', { name: 'Group name for Foreground' }),
+    ).toHaveValue('Foreground');
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(within(hud()!).getByText('Group 1')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Redo' }));
+    expect(within(hud()!).getByText('Foreground')).toBeInTheDocument();
+  });
+
+  it('renames a group from the Layers outline without changing selection', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await selectAGroup(user);
+
+    const nameInput = within(outlineList()).getByRole('textbox', {
+      name: 'Group name for Group 1',
+    });
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Nested label');
+    await user.keyboard('{Enter}');
+
+    expect(hud()).toHaveAttribute('aria-label', 'Selected: Nested label');
+    expect(
+      within(outlineList()).getByRole('button', { name: /Group: Nested label/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('rejects invalid group names accessibly without changing the selected group', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await selectAGroup(user);
+
+    const nameInput = within(hud()!).getByRole('textbox', { name: 'Group name for Group 1' });
+    await user.clear(nameInput);
+    await user.keyboard('{Enter}');
+
+    expect(within(hud()!).getByRole('alert')).toHaveTextContent('A group name cannot be empty.');
+    expect(hud()).toHaveAttribute('aria-label', 'Selected: Group 1');
+  });
 });
 
 describe('SelectionHud: keyboard operability (issue #163)', () => {

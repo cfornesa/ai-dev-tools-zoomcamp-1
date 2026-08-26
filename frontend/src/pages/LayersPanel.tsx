@@ -177,6 +177,60 @@ export function ShapeNameField({
   );
 }
 
+export function GroupNameField({
+  groupId,
+  name,
+  onRename,
+  className = 'editor-outline-group-name',
+}: {
+  groupId: string;
+  name: string;
+  onRename: (groupId: string, name: string) => void;
+  className?: string;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <span className="editor-outline-name-field">
+      <input
+        key={name}
+        type="text"
+        className={className}
+        defaultValue={name}
+        aria-label={`Group name for ${name}`}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${groupId}-name-error` : undefined}
+        onChange={() => setError(null)}
+        onBlur={(event) => {
+          const trimmed = event.target.value.trim();
+          if (!trimmed) {
+            setError('A group name cannot be empty.');
+          } else if (trimmed.length > 200) {
+            setError('A group name cannot be longer than 200 characters.');
+          } else if (trimmed !== name) {
+            setError(null);
+            onRename(groupId, trimmed);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.currentTarget.value = name;
+            setError(null);
+            event.currentTarget.blur();
+          } else if (event.key === 'Enter') {
+            event.preventDefault();
+            event.currentTarget.blur();
+          }
+        }}
+      />
+      {error && (
+        <span id={`${groupId}-name-error`} role="alert">
+          {error}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export type MoveControlsProps = {
   itemId: string;
   itemLabel: string;
@@ -794,6 +848,7 @@ function OutlineRowItem({
           />
           Select for grouping
         </label>
+        <GroupNameField groupId={row.id} name={row.name} onRename={sceneEditor.renameGroup} />
         <button
           type="button"
           aria-pressed={row.id === sceneEditor.selectedShapeId}

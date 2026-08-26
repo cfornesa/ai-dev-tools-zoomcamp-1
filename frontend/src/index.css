@@ -1660,6 +1660,27 @@ textarea:disabled {
   max-width: 100%;
 }
 
+.editor-outline-name-field {
+  display: inline-flex;
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-outline-group-name,
+.editor-selection-hud-group-name {
+  min-width: 0;
+  width: min(14rem, 100%);
+  max-width: 100%;
+}
+
+.editor-outline-name-field [role='alert'] {
+  color: var(--danger, #b42318);
+  font-size: 0.75em;
+}
+
 .editor-scene-shape-layer-selected {
   stroke: var(--accent);
   stroke-width: 3;

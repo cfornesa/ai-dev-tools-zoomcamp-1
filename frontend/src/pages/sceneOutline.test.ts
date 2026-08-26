@@ -17,6 +17,7 @@ import {
   outlineBreadcrumb,
   pruneEmptyGroups,
   removeShapeFromScene,
+  renameGroup,
   renameLayer,
   renameShape,
   toggleGroupFlag,
@@ -188,6 +189,38 @@ describe('sceneOutline layers', () => {
     expect(lockOutcome.ok).toBe(true);
     if (!lockOutcome.ok) return;
     expect(getLayers(lockOutcome.scene)[0]).toMatchObject({ visible: false, locked: true });
+  });
+});
+
+describe('sceneOutline group names (issue #186)', () => {
+  it('renames a group with trimming while preserving its scene state', () => {
+    const g = group({ id: 'g1', childIds: ['child'], locked: true });
+    const scene = baseScene({ groups: [g] });
+    const outcome = renameGroup(scene, 'g1', '  Foreground  ');
+    expect(outcome).toMatchObject({ ok: true });
+    if (!outcome.ok) return;
+    expect(outcome.scene.groups).toEqual([{ ...g, name: 'Foreground' }]);
+  });
+
+  it('rejects empty and overlong names without mutation', () => {
+    const scene = baseScene({ groups: [group({ id: 'g1' })] });
+    expect(renameGroup(scene, 'g1', '   ')).toMatchObject({ ok: false });
+    expect(renameGroup(scene, 'g1', 'x'.repeat(201))).toMatchObject({ ok: false });
+    expect(scene.groups).toEqual([group({ id: 'g1' })]);
+  });
+
+  it('uses deterministic fallback labels for legacy groups without writing them', () => {
+    const legacy = group({ id: 'g1', name: '' });
+    const missing = { ...group({ id: 'g2' }) } as Record<string, unknown>;
+    delete missing.name;
+    const scene = baseScene({ groups: [legacy, missing] });
+    expect(getGroups(scene).map((g) => g.name)).toEqual(['Group 1', 'Group 2']);
+    expect(
+      buildOutline(scene)
+        .filter((row) => row.kind === 'group')
+        .map((row) => row.name),
+    ).toEqual(['Group 1', 'Group 2']);
+    expect(scene.groups).toEqual([legacy, missing]);
   });
 });
 

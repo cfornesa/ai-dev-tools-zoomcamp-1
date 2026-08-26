@@ -2374,6 +2374,18 @@ function EditorWorkspace() {
       .filter((shape): shape is (typeof sceneEditor.shapes)[number] => shape !== undefined);
   })();
 
+  // Layer selection highlights the shapes that are actually visible after
+  // layer/group/shape visibility cascades, matching the layer HUD count and
+  // the outline's inherited visibility state rather than only a shape's own
+  // flag.
+  const visibleShapeIds = new Set(
+    workingCopy
+      ? buildOutline(workingCopy)
+          .filter((row) => row.kind === 'shape' && row.inheritedVisible)
+          .map((row) => row.id)
+      : [],
+  );
+
   // Issue #78: the visible grid-line overlay's coordinates, at the fixed
   // 20-scene-unit spacing — only computed when grid snapping is on (the
   // "when disabled, no grid overlay renders" acceptance criterion).
@@ -3400,7 +3412,8 @@ function EditorWorkspace() {
                   {shapesInDrawOrder.map((shape) => {
                     const isSelected = shape.id === sceneEditor.selectedShapeId;
                     const isLayerSelected =
-                      sceneEditor.selectedLayerId === shape.layerId && (shape.visible ?? true);
+                      sceneEditor.selectedLayerId === shape.layerId &&
+                      visibleShapeIds.has(shape.id);
                     // Issue #111: a hovered-but-not-selected shape gets its own
                     // distinct affordance from the selected outline; a shape
                     // that's effectively locked (via its own/layer's/group's

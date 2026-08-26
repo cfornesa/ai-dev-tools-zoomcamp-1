@@ -1705,6 +1705,9 @@ textarea:disabled {
 .editor-outline-row-layer[data-selected='true'] {
   border-left-color: var(--accent);
   background: var(--accent-bg);
+  /* Keep the selected treatment on the row itself so the name and
+     visibility control read as one contiguous interactive surface. */
+  outline: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .editor-outline-shape-name {

@@ -209,6 +209,9 @@ describe('ShapeInspectorPanel: selection states', () => {
           within(r).queryByDisplayValue('Layer 2'),
       )!;
     fireEvent.click(within(circleLayerRow).getByRole('checkbox', { name: /visible$/i }));
+    // Issue #183: the layer checkbox also activates the layer row. Re-select
+    // the shape before asserting the shape inspector's hidden-state notice.
+    fireEvent.click(shapeOutlineSelectButtons()[0]);
 
     expect(screen.getByText(/This shape is currently hidden/)).toBeInTheDocument();
     // Fields still render and remain editable while hidden.

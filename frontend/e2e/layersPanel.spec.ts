@@ -218,6 +218,31 @@ test.describe('Layers panel', () => {
     }
   });
 
+  test('selects a layer from its name and Visible control, then syncs back from the canvas outline', async ({
+    page,
+  }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await createBlankProjectViaUI(page);
+    await page.getByRole('button', { name: 'Add circle' }).click();
+
+    const layer = await layerRow(page, 'Layer 2');
+    const visible = layer.getByRole('checkbox', { name: 'Layer Layer 2 visible' });
+    await visible.click();
+    await expect(visible).not.toBeChecked();
+    await expect(layer).toHaveAttribute('data-selected', 'true');
+    await expect(page.getByTestId('selection-hud')).toContainText('Layer 2');
+
+    await visible.click();
+    await expect(visible).toBeChecked();
+    await expect(layer).toHaveAttribute('data-selected', 'true');
+
+    const circle = await shapeRow(page, 'Circle 1');
+    await circle.getByRole('button', { name: 'Circle 1', exact: true }).click();
+    await expect(layer).not.toHaveAttribute('data-selected', 'true');
+    await expect(circle).toHaveAttribute('data-selected', 'true');
+    await expect(page.getByTestId('selection-hud')).toContainText('Circle 1');
+  });
+
   test('pointer drag-and-drop and keyboard reorder both land in the same canonical scene order, verified on the canvas and after reload', async ({
     page,
   }) => {

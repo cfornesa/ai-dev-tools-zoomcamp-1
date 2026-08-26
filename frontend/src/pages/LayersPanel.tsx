@@ -702,9 +702,14 @@ function OutlineRowItem({
         data-drop-zone={dragAttrs['data-drop-zone']}
         data-drop-valid={dragAttrs['data-drop-valid']}
         data-selected={row.id === sceneEditor.selectedLayerId ? 'true' : undefined}
+        aria-current={row.id === sceneEditor.selectedLayerId ? 'true' : undefined}
         tabIndex={0}
         onClick={(event) => {
-          if ((event.target as HTMLElement).closest('input,button,select,summary')) return;
+          // Buttons/selects own a separate action (delete, More, etc.), but
+          // the row's editable name and Visible/Locked controls are part of
+          // the layer's activation surface. Their click/keyboard events
+          // must both keep their local behavior and select this layer.
+          if ((event.target as HTMLElement).closest('button,select,summary')) return;
           sceneEditor.selectLayer(row.id);
         }}
         onKeyDown={(event) => {

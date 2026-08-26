@@ -388,6 +388,58 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     expect(circleRow).toHaveAttribute('data-selected', 'true');
     expect(rectangleRow).not.toHaveAttribute('data-selected');
   });
+
+  it('selects a layer from its name and Visible checkbox while preserving the toggle', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const layerRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find(
+        (row) => row.dataset.outlineKind === 'layer' && within(row).queryByDisplayValue('Layer 2'),
+      )!;
+    const visible = within(layerRow).getByRole('checkbox', { name: 'Layer Layer 2 visible' });
+    const name = within(layerRow).getByRole('textbox', { name: 'Layer name for Layer 2' });
+
+    await user.click(visible);
+    expect(visible).not.toBeChecked();
+    expect(layerRow).toHaveAttribute('data-selected', 'true');
+    expect(screen.getByTestId('selection-hud')).toHaveTextContent('Layer 2');
+
+    await user.click(visible);
+    expect(visible).toBeChecked();
+    expect(layerRow).toHaveAttribute('data-selected', 'true');
+
+    await user.click(name);
+    expect(layerRow).toHaveAttribute('data-selected', 'true');
+  });
+
+  it('keeps layer selection synchronized with visible canvas highlights and shape selection', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const shapeRow = within(outlineList()).getByRole('button', { name: 'Circle 1' }).closest('li')!;
+    const layerRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find(
+        (row) => row.dataset.outlineKind === 'layer' && within(row).queryByDisplayValue('Layer 2'),
+      )!;
+    await user.click(within(layerRow).getByRole('textbox', { name: 'Layer name for Layer 2' }));
+
+    expect(layerRow).toHaveAttribute('data-selected', 'true');
+    expect(shapeRow).not.toHaveAttribute('data-selected', 'true');
+    expect(document.querySelector('[data-testid^="scene-shape-"]')).toHaveClass(
+      'editor-scene-shape-layer-selected',
+    );
+    expect(screen.getByTestId('selection-hud')).toHaveTextContent(/1 visible shape/);
+
+    await user.click(within(shapeRow).getByRole('button', { name: 'Circle 1' }));
+    expect(layerRow).not.toHaveAttribute('data-selected', 'true');
+    expect(shapeRow).toHaveAttribute('data-selected', 'true');
+    expect(screen.getByTestId('selection-hud')).toHaveTextContent('Circle 1');
+  });
 });
 
 describe('EditorWorkspace scene outline: friendly shape labels (Task 80 / issue #110)', () => {
@@ -458,6 +510,9 @@ describe('EditorWorkspace scene outline: inherited visibility/lock legibility (T
     // "Visible" afterward. Issue #168 (task 136): the layer row's own
     // Visible toggle is now a checkbox, not a button.
     await user.click(within(layerRow).getByRole('checkbox', { name: /visible$/i }));
+    // Issue #183: the complete layer row is also a selection surface, so
+    // the checkbox click selects the layer while toggling its visibility.
+    await user.click(groupButton);
 
     const hud = screen.getByTestId('selection-hud');
     expect(within(hud).getByRole('button', { name: 'Visible' })).toBeInTheDocument();

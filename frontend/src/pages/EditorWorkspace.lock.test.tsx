@@ -176,9 +176,11 @@ describe('EditorWorkspace lock guard: handle visibility', () => {
     await loadReadyWorkspace();
     await addAndSelectCircle();
     toggleLayerLock();
+    fireEvent.click(shapeSelectButton(shapeOutlineRows()[0]));
     expect(screen.queryByTestId('shape-handle-move')).not.toBeInTheDocument();
 
     toggleLayerLock(); // toggles back to Unlocked
+    fireEvent.click(shapeSelectButton(shapeOutlineRows()[0]));
 
     expect(screen.getByTestId('shape-handle-move')).toBeInTheDocument();
   });

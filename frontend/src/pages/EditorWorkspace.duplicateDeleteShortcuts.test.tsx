@@ -6,7 +6,11 @@ import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
-import { shapeOutlineRows, shapeOutlineSelectButtons } from '../testUtils/shapeOutline';
+import {
+  shapeOutlineRows,
+  shapeOutlineSelectButtons,
+  shapeSelectButton,
+} from '../testUtils/shapeOutline';
 
 /**
  * Task 114 (issue #149): keyboard-only entry points for
@@ -200,6 +204,7 @@ describe('Task 114 (issue #149): Ctrl/Cmd+D duplicates the selected shape', () =
     await loadReadyWorkspace();
     addAndSelectCircle();
     toggleLayerLock();
+    fireEvent.click(shapeSelectButton(shapeOutlineRows()[0]));
 
     fireEvent.keyDown(window, { key: 'd', ctrlKey: true });
 
@@ -269,6 +274,7 @@ describe('Task 114 (issue #149): Delete/Backspace deletes the selected shape', (
     await loadReadyWorkspace();
     addAndSelectCircle();
     toggleLayerLock();
+    fireEvent.click(shapeSelectButton(shapeOutlineRows()[0]));
 
     fireEvent.keyDown(window, { key: 'Delete' });
 

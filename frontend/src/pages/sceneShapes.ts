@@ -147,6 +147,86 @@ export function getEditableShapes(shapes: unknown): Shape[] {
 
 export type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
 
+/**
+ * The affine transform p5 uses for a shape after its containing groups have
+ * been pushed onto the drawing stack. Keeping this in the renderer-neutral
+ * geometry module makes the SVG affordances and pointer hit testing use the
+ * same scene-to-screen path as the p5 preview.
+ */
+type AffineTransform = { a: number; b: number; c: number; d: number; e: number; f: number };
+
+function transformForNode(transform: Transform): AffineTransform {
+  const radians = (transform.rotation * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  return {
+    a: cos * transform.scaleX,
+    b: sin * transform.scaleX,
+    c: -sin * transform.scaleY,
+    d: cos * transform.scaleY,
+    e: transform.x,
+    f: transform.y,
+  };
+}
+
+function composeTransforms(parent: AffineTransform, child: AffineTransform): AffineTransform {
+  return {
+    a: parent.a * child.a + parent.c * child.b,
+    b: parent.b * child.a + parent.d * child.b,
+    c: parent.a * child.c + parent.c * child.d,
+    d: parent.b * child.c + parent.d * child.d,
+    e: parent.a * child.e + parent.c * child.f + parent.e,
+    f: parent.b * child.e + parent.d * child.f + parent.f,
+  };
+}
+
+function applyAffine(transform: AffineTransform, point: Point): Point {
+  return {
+    x: transform.a * point.x + transform.c * point.y + transform.e,
+    y: transform.b * point.x + transform.d * point.y + transform.f,
+  };
+}
+
+type RenderGroup = { id: string; childIds: string[]; transform: Transform };
+
+/** Returns the exact scene transform used by p5 for `shape`, including all
+ * containing groups. The optional group list is structural on purpose so it
+ * accepts the scene-outline group's runtime type without coupling this module
+ * to React or the API layer. */
+export function getShapeRenderTransform(shape: Shape, groups: RenderGroup[] = []): AffineTransform {
+  const groupForChild = new Map<string, RenderGroup>();
+  for (const group of groups) {
+    for (const childId of group.childIds) groupForChild.set(childId, group);
+  }
+
+  let result = transformForNode(shape.transform);
+  let childId = shape.id;
+  const visited = new Set<string>();
+  while (groupForChild.has(childId)) {
+    const group = groupForChild.get(childId)!;
+    if (visited.has(group.id)) break;
+    visited.add(group.id);
+    result = composeTransforms(transformForNode(group.transform), result);
+    childId = group.id;
+  }
+  return result;
+}
+
+function boundsForTransform(localBounds: Bounds, transform: AffineTransform): Bounds {
+  const corners = [
+    applyAffine(transform, { x: localBounds.minX, y: localBounds.minY }),
+    applyAffine(transform, { x: localBounds.maxX, y: localBounds.minY }),
+    applyAffine(transform, { x: localBounds.maxX, y: localBounds.maxY }),
+    applyAffine(transform, { x: localBounds.minX, y: localBounds.maxY }),
+  ];
+  return {
+    minX: Math.min(...corners.map((point) => point.x)),
+    minY: Math.min(...corners.map((point) => point.y)),
+    maxX: Math.max(...corners.map((point) => point.x)),
+    maxY: Math.max(...corners.map((point) => point.y)),
+  };
+}
+
 /** Maps a shape's *local* (unrotated, unscaled, origin-relative) bounding
  * box to its actual on-screen axis-aligned bounding box, applying
  * `transform.scaleX/scaleY` then `transform.rotation` then
@@ -154,70 +234,41 @@ export type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
  * scale-then-rotate-then-translate order `p5Adapter.ts`'s `applyTransform`
  * renders with (issue #155). Reduces to a plain translate of `localBounds`
  * when `scaleX === scaleY === 1` and `rotation === 0`. */
-function transformedBounds(localBounds: Bounds, transform: Transform): Bounds {
-  const { x, y, scaleX, scaleY, rotation } = transform;
-  const corners: Point[] = [
-    { x: localBounds.minX * scaleX, y: localBounds.minY * scaleY },
-    { x: localBounds.maxX * scaleX, y: localBounds.minY * scaleY },
-    { x: localBounds.maxX * scaleX, y: localBounds.maxY * scaleY },
-    { x: localBounds.minX * scaleX, y: localBounds.maxY * scaleY },
-  ];
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const corner of corners) {
-    const rotated = rotateAround(corner.x, corner.y, 0, 0, rotation);
-    const worldX = x + rotated.x;
-    const worldY = y + rotated.y;
-    minX = Math.min(minX, worldX);
-    maxX = Math.max(maxX, worldX);
-    minY = Math.min(minY, worldY);
-    maxY = Math.max(maxY, worldY);
-  }
-  return { minX, minY, maxX, maxY };
-}
-
-export function shapeBounds(shape: Shape): Bounds {
+export function shapeBounds(shape: Shape, groups: RenderGroup[] = []): Bounds {
   const { x, y } = shape.transform;
+  const renderTransform = getShapeRenderTransform(shape, groups);
+  const bounds = (localBounds: Bounds) => boundsForTransform(localBounds, renderTransform);
   switch (shape.type) {
     case 'circle':
-      return transformedBounds(
-        { minX: -shape.radius, minY: -shape.radius, maxX: shape.radius, maxY: shape.radius },
-        shape.transform,
-      );
+      return bounds({
+        minX: -shape.radius,
+        minY: -shape.radius,
+        maxX: shape.radius,
+        maxY: shape.radius,
+      });
     case 'rect':
-      return transformedBounds(
-        { minX: 0, minY: 0, maxX: shape.width, maxY: shape.height },
-        shape.transform,
-      );
+      return bounds({ minX: 0, minY: 0, maxX: shape.width, maxY: shape.height });
     case 'line': {
       const pad = Math.max(shape.style.strokeWidth, 6) / 2 + 4;
       const localX2 = shape.x2 - x;
       const localY2 = shape.y2 - y;
-      const b = transformedBounds(
-        {
-          minX: Math.min(0, localX2),
-          minY: Math.min(0, localY2),
-          maxX: Math.max(0, localX2),
-          maxY: Math.max(0, localY2),
-        },
-        shape.transform,
-      );
+      const b = bounds({
+        minX: Math.min(0, localX2),
+        minY: Math.min(0, localY2),
+        maxX: Math.max(0, localX2),
+        maxY: Math.max(0, localY2),
+      });
       return { minX: b.minX - pad, minY: b.minY - pad, maxX: b.maxX + pad, maxY: b.maxY + pad };
     }
     case 'path': {
       const xs = shape.points.map((p) => p.x);
       const ys = shape.points.map((p) => p.y);
-      return transformedBounds(
-        {
-          minX: Math.min(...xs),
-          minY: Math.min(...ys),
-          maxX: Math.max(...xs),
-          maxY: Math.max(...ys),
-        },
-        shape.transform,
-      );
+      return bounds({
+        minX: Math.min(...xs),
+        minY: Math.min(...ys),
+        maxX: Math.max(...xs),
+        maxY: Math.max(...ys),
+      });
     }
   }
 }
@@ -226,9 +277,14 @@ export function shapeBounds(shape: Shape): Bounds {
  * topmost (last-in-array, i.e. drawn-on-top) shape whose bounds contain
  * (x, y), or null if none do. Iterating back-to-front is what makes
  * overlapping shapes resolve to the one visually on top. */
-export function hitTestTopmostShapeAt(shapes: Shape[], x: number, y: number): Shape | null {
+export function hitTestTopmostShapeAt(
+  shapes: Shape[],
+  x: number,
+  y: number,
+  groups: RenderGroup[] = [],
+): Shape | null {
   for (let i = shapes.length - 1; i >= 0; i -= 1) {
-    const b = shapeBounds(shapes[i]);
+    const b = shapeBounds(shapes[i], groups);
     if (x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY) {
       return shapes[i];
     }
@@ -388,14 +444,15 @@ export type ShapeHandles = Record<HandleKind, Point>;
  * coordinates, already rotated to match its current `transform.rotation`
  * about its own transform origin — the same origin the move handle sits
  * at. */
-export function getShapeHandles(shape: Shape): ShapeHandles {
-  const { x, y, rotation } = shape.transform;
+export function getShapeHandles(shape: Shape, groups: RenderGroup[] = []): ShapeHandles {
+  const renderTransform = getShapeRenderTransform(shape, groups);
+  const { x, y } = shape.transform;
   const resizeLocal = localResizeHandle(shape);
   const rotateLocal = localRotateHandle(shape);
   return {
-    move: { x, y },
-    resize: rotateAround(resizeLocal.x, resizeLocal.y, x, y, rotation),
-    rotate: rotateAround(rotateLocal.x, rotateLocal.y, x, y, rotation),
+    move: applyAffine(renderTransform, { x: 0, y: 0 }),
+    resize: applyAffine(renderTransform, { x: resizeLocal.x - x, y: resizeLocal.y - y }),
+    rotate: applyAffine(renderTransform, { x: rotateLocal.x - x, y: rotateLocal.y - y }),
   };
 }
 
@@ -738,14 +795,14 @@ const MIN_GROUP_SCALE = 0.01;
 /** The union of every shape's own `shapeBounds()`, or `null` for an empty
  * list — the "combined bounding box computed at gesture start" the
  * acceptance criteria describe as the anchor for group resize/rotate. */
-export function getCombinedBounds(shapes: Shape[]): Bounds | null {
+export function getCombinedBounds(shapes: Shape[], groups: RenderGroup[] = []): Bounds | null {
   if (shapes.length === 0) return null;
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const shape of shapes) {
-    const b = shapeBounds(shape);
+    const b = shapeBounds(shape, groups);
     minX = Math.min(minX, b.minX);
     minY = Math.min(minY, b.minY);
     maxX = Math.max(maxX, b.maxX);
@@ -916,9 +973,9 @@ export const VERTEX_SEGMENT_INSERT_TOLERANCE = 10;
  * rotated around the transform origin" convention `getShapeHandles` uses
  * for the whole-shape handles it replaces while vertex edit mode is
  * active. */
-export function getPathPointHandles(shape: PathShape): Point[] {
-  const { x, y, rotation } = shape.transform;
-  return shape.points.map((p) => rotateAround(x + p.x, y + p.y, x, y, rotation));
+export function getPathPointHandles(shape: PathShape, groups: RenderGroup[] = []): Point[] {
+  const renderTransform = getShapeRenderTransform(shape, groups);
+  return shape.points.map((point) => applyAffine(renderTransform, point));
 }
 
 /** Moves exactly one point (`pointIndex`) of `startShape` — an immutable

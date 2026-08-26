@@ -9,8 +9,10 @@ import {
   getCombinedBounds,
   getGroupHandles,
   getShapeHandles,
+  hitTestTopmostShapeAt,
   POSITION_LIMIT,
   ROTATION_LIMIT,
+  shapeBounds,
   SIZE_LIMIT,
   type Shape,
 } from './sceneShapes';
@@ -100,6 +102,46 @@ describe('getShapeHandles', () => {
     expect(handles.move).toEqual({ x: path.transform.x, y: path.transform.y });
     // The fixture path's points span -50..50 on both axes.
     expect(handles.resize).toEqual({ x: path.transform.x + 50, y: path.transform.y + 50 });
+  });
+});
+
+describe('render-space geometry (issue #184)', () => {
+  it('matches p5 group translation and rotation for bounds and handles', () => {
+    const rect = createShape('rect', 'layer-1', CANVAS);
+    if (rect.type !== 'rect') throw new Error('expected a rect');
+    const grouped: Shape = {
+      ...rect,
+      transform: { ...rect.transform, rotation: 90 },
+    };
+    const group = {
+      id: 'group-1',
+      childIds: [rect.id],
+      transform: { x: 100, y: 50, scaleX: 1.5, scaleY: 0.5, rotation: 90, opacity: 1 },
+    };
+
+    const localHandles = getShapeHandles(grouped);
+    const renderedHandles = getShapeHandles(grouped, [group]);
+    const bounds = shapeBounds(grouped, [group]);
+
+    // The group rotates the shape origin (350,260) around the scene origin
+    // after applying its scale/translation, exactly as p5's push/translate/
+    // rotate/scale stack does.
+    expect(renderedHandles.move).not.toEqual(localHandles.move);
+    expect(renderedHandles.move.x).toBeCloseTo(-30);
+    expect(renderedHandles.move.y).toBeCloseTo(575);
+    expect(bounds.minX).toBeLessThan(bounds.maxX);
+    expect(bounds.minY).toBeLessThan(bounds.maxY);
+  });
+
+  it('uses the rendered group space for hit testing instead of local shape space', () => {
+    const circle = createShape('circle', 'layer-1', CANVAS);
+    const group = {
+      id: 'group-1',
+      childIds: [circle.id],
+      transform: { x: 200, y: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+    };
+    expect(hitTestTopmostShapeAt([circle], 600, 300, [group])?.id).toBe(circle.id);
+    expect(hitTestTopmostShapeAt([circle], 400, 300, [group])).toBeNull();
   });
 });
 

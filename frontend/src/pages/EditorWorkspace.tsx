@@ -1741,7 +1741,7 @@ function EditorWorkspace() {
       if (drag.kind === 'move' && (snap.gridEnabled || snap.guidesEnabled)) {
         const siblingBounds = sceneEditorRef.current.shapes
           .filter((s) => s.id !== drag.startShape.id)
-          .map((s) => shapeBounds(s));
+          .map((s) => shapeBounds(s, sceneEditorRef.current.groups));
         const result = applyMoveSnap(updated, siblingBounds, {
           gridEnabled: snap.gridEnabled,
           guidesEnabled: snap.guidesEnabled,
@@ -2416,7 +2416,7 @@ function EditorWorkspace() {
   function handleCanvasClick(event: ReactMouseEvent<HTMLDivElement>) {
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
-    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y);
+    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
     sceneEditor.selectShape(hit ? hit.id : null);
   }
 
@@ -2427,7 +2427,7 @@ function EditorWorkspace() {
   function handleCanvasPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
-    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y);
+    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
     setHoveredShapeId((current) => {
       const nextId = hit ? hit.id : null;
       return current === nextId ? current : nextId;
@@ -2474,7 +2474,7 @@ function EditorWorkspace() {
   // does today").
   const groupSelection =
     sceneEditor.multiSelectedShapes.length >= 2 ? sceneEditor.multiSelectedShapes : null;
-  const groupBounds = groupSelection ? getCombinedBounds(groupSelection) : null;
+  const groupBounds = groupSelection ? getCombinedBounds(groupSelection, sceneEditor.groups) : null;
   // Task 80 (issue #80): "no handles at all" for an effectively-locked
   // shape/selection (see this issue's "Handle visibility" acceptance
   // criterion) — precomputed here so both the render below and the
@@ -2504,7 +2504,7 @@ function EditorWorkspace() {
     if (event.button !== 0) return;
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
-    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y);
+    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
     if (!hit) {
       // Issue #156: reuses this exact hit-test-then-branch structure
       // (rather than a second, separate hit-test) to distinguish "no shape
@@ -3386,8 +3386,8 @@ function EditorWorkspace() {
                       isHovered &&
                       !!sceneEditor.workingCopy &&
                       isEffectivelyLocked(sceneEditor.workingCopy, shape.id);
-                    const bounds = isSelected ? shapeBounds(shape) : null;
-                    const hoverBounds = isHovered ? shapeBounds(shape) : null;
+                    const bounds = isSelected ? shapeBounds(shape, sceneEditor.groups) : null;
+                    const hoverBounds = isHovered ? shapeBounds(shape, sceneEditor.groups) : null;
                     const shapeClassName = [
                       'editor-scene-shape',
                       isSelected ? 'editor-scene-shape-selected' : '',
@@ -3505,23 +3505,25 @@ function EditorWorkspace() {
                 {sceneEditor.vertexEditActive &&
                 sceneEditor.selectedShape?.type === 'path' &&
                 !isSelectedShapeLocked
-                  ? getPathPointHandles(sceneEditor.selectedShape).map((point, index) => (
-                      <div
-                        key={`vertex-handle-${sceneEditor.selectedShape!.id}-${index}`}
-                        data-testid={`path-vertex-handle-${index}`}
-                        role="button"
-                        tabIndex={-1}
-                        aria-pressed={sceneEditor.selectedVertexIndex === index}
-                        aria-label={`Point ${index + 1}`}
-                        className={
-                          sceneEditor.selectedVertexIndex === index
-                            ? 'editor-shape-handle editor-vertex-handle editor-vertex-handle-selected'
-                            : 'editor-shape-handle editor-vertex-handle'
-                        }
-                        style={handleStyle(point)}
-                        onPointerDown={handleVertexPointerDown(index)}
-                      />
-                    ))
+                  ? getPathPointHandles(sceneEditor.selectedShape, sceneEditor.groups).map(
+                      (point, index) => (
+                        <div
+                          key={`vertex-handle-${sceneEditor.selectedShape!.id}-${index}`}
+                          data-testid={`path-vertex-handle-${index}`}
+                          role="button"
+                          tabIndex={-1}
+                          aria-pressed={sceneEditor.selectedVertexIndex === index}
+                          aria-label={`Point ${index + 1}`}
+                          className={
+                            sceneEditor.selectedVertexIndex === index
+                              ? 'editor-shape-handle editor-vertex-handle editor-vertex-handle-selected'
+                              : 'editor-shape-handle editor-vertex-handle'
+                          }
+                          style={handleStyle(point)}
+                          onPointerDown={handleVertexPointerDown(index)}
+                        />
+                      ),
+                    )
                   : groupSelection && groupBounds && !isGroupSelectionLocked
                     ? (() => {
                         const handles = getGroupHandles(groupBounds);
@@ -3554,7 +3556,10 @@ function EditorWorkspace() {
                     : sceneEditor.selectedShape &&
                       !isSelectedShapeLocked &&
                       (() => {
-                        const handles = getShapeHandles(sceneEditor.selectedShape);
+                        const handles = getShapeHandles(
+                          sceneEditor.selectedShape,
+                          sceneEditor.groups,
+                        );
                         return (
                           <>
                             <div

@@ -920,9 +920,6 @@ function LayersPanel({
   // every row unchanged.
   onRowSelect?: () => void;
 }) {
-  const canGroup = sceneEditor.multiSelectedIds.length >= 2;
-  const hasGroupSelected = sceneEditor.selectedGroup !== null;
-
   const [dragId, setDragId] = useState<string | null>(null);
   const [hover, setHover] = useState<HoverState | null>(null);
   // Task 129 (issue #161): which pointer (if any) is mid touch-drag — a ref,
@@ -1077,35 +1074,9 @@ function LayersPanel({
         </p>
       )}
 
-      {/* Issue #172 (task 140): shape creation moved out of this panel into
-          `EditorWorkspace.tsx`'s always-visible top toolbar, as icon
-          buttons — see that file's `editorToolbar`'s "Add shape" group and
-          its own doc comment for the full placement rationale. This
-          explicitly reverses task 112/#143's prior decision to keep these
-          buttons here (per new, later user direction); "Add layer" below
-          was NOT part of that request and stays exactly where it was. */}
-
+      {/* Issue #182: layer/group mutations live in the always-visible editor
+          toolbar. The outline keeps only its selection-specific action. */}
       <div role="group" aria-label="Outline actions" className="editor-tool-group">
-        <button type="button" onClick={() => sceneEditor.addLayer()}>
-          Add layer
-        </button>
-        <button type="button" disabled={!canGroup} onClick={() => sceneEditor.groupSelected()}>
-          Combine into group
-        </button>
-        <button
-          type="button"
-          disabled={!hasGroupSelected}
-          onClick={() => sceneEditor.ungroupSelected()}
-        >
-          Ungroup selected
-        </button>
-        <button
-          type="button"
-          disabled={!hasGroupSelected}
-          onClick={() => sceneEditor.deleteGroupSelected()}
-        >
-          Delete selected group
-        </button>
         {sceneEditor.multiSelectedIds.length > 0 && (
           <button type="button" onClick={() => sceneEditor.clearMultiSelect()}>
             Clear group selection

@@ -660,7 +660,8 @@ code {
   border-radius: 8px;
   background: var(--code-bg);
   box-shadow: var(--shadow);
-  overflow-x: auto;
+  min-width: 0;
+  overflow: visible;
 }
 
 /* Issue #157: below 1024px the toolbar renders nested inside the Preview
@@ -705,6 +706,11 @@ code {
   cursor: not-allowed;
 }
 
+.editor-toolbar-button:focus-visible {
+  outline: 3px solid var(--focus, #2563eb);
+  outline-offset: 2px;
+}
+
 /* A CSS-only tooltip: visually hidden until the button is hovered or
    keyboard-focused, so the label is visible on both interaction paths per
    this issue's acceptance criteria, while `aria-label` on the button
@@ -721,11 +727,24 @@ code {
   background: var(--text);
   color: var(--bg);
   font-size: 12px;
-  white-space: nowrap;
+  max-width: min(240px, calc(100vw - 24px));
+  white-space: normal;
+  text-align: center;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.1s ease;
   z-index: 1;
+}
+
+.editor-toolbar-button:first-child .editor-toolbar-tooltip {
+  left: 0;
+  transform: none;
+}
+
+.editor-toolbar-button:last-child .editor-toolbar-tooltip {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 .editor-toolbar-button:hover .editor-toolbar-tooltip,

@@ -16,9 +16,8 @@ import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSect
  * via the toolbar's existing `ToolbarButton` glyph+tooltip+`aria-label`
  * convention (matching Undo/Redo/Duplicate/Delete). This explicitly
  * reverses task 112/#143's prior decision to keep these buttons in the
- * Layers panel. "Add layer" was NOT part of this request and stays in the
- * Layers panel sidebar, grouped with "Combine into group"/"Ungroup
- * selected"/"Delete selected group" as before.
+ * Layers panel. Issue #182 extends this same relocation pattern to the four
+ * layer/group actions while preserving their existing scene mutations.
  *
  * These tests assert the NEW location (toolbar, not Layers panel) and
  * that the underlying `sceneEditor.addShape` mutation and keyboard
@@ -146,14 +145,52 @@ describe('Add-shape buttons relocated to the top toolbar (issue #172)', () => {
     });
   });
 
-  it('keeps "Add layer" in the Layers panel sidebar, not moved to the toolbar', async () => {
+  it('moves the four layer/group actions into one toolbar group with no duplicates', async () => {
     await loadReadyWorkspace();
 
     const layersRegion = screen.getByRole('region', { name: 'Layers' });
-    expect(within(layersRegion).getByRole('button', { name: 'Add layer' })).toBeInTheDocument();
+    const toolbar = screen.getByRole('toolbar', { name: 'Editor actions' });
+    const actionGroup = within(toolbar).getByRole('group', { name: 'Layer and group actions' });
+    const labels = ['Add layer', 'Combine into group', 'Ungroup selected', 'Delete selected group'];
+
+    labels.forEach((label) => {
+      expect(within(actionGroup).getByRole('button', { name: label })).toHaveAccessibleName(label);
+      expect(within(actionGroup).getByRole('button', { name: label })).toContainElement(
+        within(actionGroup).getByRole('tooltip', { name: label }),
+      );
+      expect(within(layersRegion).queryByRole('button', { name: label })).not.toBeInTheDocument();
+    });
+    expect(
+      within(layersRegion).queryByRole('button', { name: 'Clear group selection' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps group actions disabled until their existing selection predicates are met', async () => {
+    await loadReadyWorkspace();
 
     const toolbar = screen.getByRole('toolbar', { name: 'Editor actions' });
-    expect(within(toolbar).queryByRole('button', { name: 'Add layer' })).not.toBeInTheDocument();
+    expect(within(toolbar).getByRole('button', { name: 'Combine into group' })).toBeDisabled();
+    expect(within(toolbar).getByRole('button', { name: 'Ungroup selected' })).toBeDisabled();
+    expect(within(toolbar).getByRole('button', { name: 'Delete selected group' })).toBeDisabled();
+  });
+
+  it('activates Add layer from the toolbar with Enter and Space and preserves one-step undo', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    const addLayer = screen.getByRole('button', { name: 'Add layer' });
+
+    addLayer.focus();
+    await user.keyboard('{Enter}');
+    expect(
+      within(screen.getByRole('list', { name: 'Scene outline' })).getAllByRole('listitem'),
+    ).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
+
+    addLayer.focus();
+    await user.keyboard(' ');
+    expect(
+      within(screen.getByRole('list', { name: 'Scene outline' })).getAllByRole('listitem'),
+    ).toHaveLength(3);
   });
 
   it('clicking a toolbar Add-shape button still calls the same addShape mutation', async () => {

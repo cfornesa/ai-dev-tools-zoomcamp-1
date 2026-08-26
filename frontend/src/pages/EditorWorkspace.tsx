@@ -2420,6 +2420,31 @@ function EditorWorkspace() {
           disabled={!sceneEditor.selectedShape}
         />
       </span>
+      <span
+        role="group"
+        aria-label="Layer and group actions"
+        className="editor-tool-group editor-layer-action-group"
+      >
+        <ToolbarButton label="Add layer" glyph="▤" onClick={() => sceneEditor.addLayer()} />
+        <ToolbarButton
+          label="Combine into group"
+          glyph="⊞"
+          onClick={() => sceneEditor.groupSelected()}
+          disabled={sceneEditor.multiSelectedIds.length < 2}
+        />
+        <ToolbarButton
+          label="Ungroup selected"
+          glyph="⊟"
+          onClick={() => sceneEditor.ungroupSelected()}
+          disabled={!sceneEditor.selectedGroup}
+        />
+        <ToolbarButton
+          label="Delete selected group"
+          glyph="✕"
+          onClick={() => sceneEditor.deleteGroupSelected()}
+          disabled={!sceneEditor.selectedGroup}
+        />
+      </span>
       <EditorToolbarColorControl sceneEditor={sceneEditor} />
       {sceneEditor.lockError && (
         <p role="alert" aria-live="assertive" className="editor-toolbar-lock-error">

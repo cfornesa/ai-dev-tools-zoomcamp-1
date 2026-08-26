@@ -92,9 +92,12 @@ beforeEach(() => {
   );
 });
 
-async function openDialog(project = baseProject()) {
+async function openDialog(
+  project = baseProject(),
+  props: Pick<React.ComponentProps<typeof ExportConfigDialog>, 'getCameraExport'> = {},
+) {
   const user = userEvent.setup();
-  render(<ExportConfigDialog projectId="p1" project={project} />);
+  render(<ExportConfigDialog projectId="p1" project={project} {...props} />);
   await user.click(screen.getByRole('button', { name: /export…/i }));
   const dialog = await screen.findByRole('dialog', { name: /export project/i });
   // Let the default-version-selection and scene-detail-fetch effects settle.
@@ -376,6 +379,23 @@ describe('ExportConfigDialog terminal export action', () => {
     expect(errorRegion).toHaveTextContent(/simulated failure/i);
     expect(createObjectURL).not.toHaveBeenCalled();
 
+    vi.unstubAllGlobals();
+  });
+
+  it('surfaces camera still-frame capture failures from config assembly accessibly', async () => {
+    const createObjectURL = vi.fn(() => 'blob:camera-failure');
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL: vi.fn() });
+    const getCameraExport = vi.fn(() => {
+      throw new Error('Camera frame is not ready. Keep the camera active and try exporting again.');
+    });
+
+    const { user, dialog } = await openDialog(baseProject(), { getCameraExport });
+    await user.click(within(dialog).getByRole('button', { name: /^export$/i }));
+
+    const errorRegion = await within(dialog).findByTestId('export-generation-errors');
+    expect(errorRegion).toHaveAttribute('role', 'alert');
+    expect(errorRegion).toHaveTextContent(/camera frame is not ready/i);
+    expect(createObjectURL).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 });

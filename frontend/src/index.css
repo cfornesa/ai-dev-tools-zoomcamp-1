@@ -2357,3 +2357,27 @@ textarea:disabled {
     padding: 0 16px 16px;
   }
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.editor-outline-row-camera {
+  border-left: 3px solid var(--accent, #5b5bd6);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.editor-outline-camera-order {
+  color: var(--muted-text, #666);
+  font-size: 0.8rem;
+  margin-left: auto;
+}

@@ -296,29 +296,36 @@ function ExportConfigDialog({
     const version = sortedVersions.find((candidate) => candidate.id === selectedVersionId);
     if (!version) return;
 
-    const config: ExportConfig = {
-      projectId,
-      versionId: version.id,
-      versionSequence: version.sequence,
-      renderer: 'p5js',
-      dependencyMode: 'cdn-html',
-      includeAttribution,
-      includeSocialThumbnailZip,
-      interactionMode,
-      title: project.title,
-      description: project.description,
-      scene: sceneDetail,
-      cameraOverlay: getCameraExport?.() ?? null,
-    };
     setGenerationErrors([]);
     try {
+      // Capture belongs inside this boundary: a camera can be active when
+      // the stream becomes unavailable between opening the dialog and export.
+      const config: ExportConfig = {
+        projectId,
+        versionId: version.id,
+        versionSequence: version.sequence,
+        renderer: 'p5js',
+        dependencyMode: 'cdn-html',
+        includeAttribution,
+        includeSocialThumbnailZip,
+        interactionMode,
+        title: project.title,
+        description: project.description,
+        scene: sceneDetail,
+        cameraOverlay: getCameraExport?.() ?? null,
+      };
       await onExport(config);
     } catch (error) {
-      if (error instanceof ExportGenerationBlockedError) {
-        setGenerationErrors(error.reasons);
-        return;
-      }
-      throw error;
+      setGenerationErrors(
+        error instanceof ExportGenerationBlockedError
+          ? error.reasons
+          : [
+              error instanceof Error
+                ? error.message
+                : 'Camera still-frame capture failed. Keep the camera active and try again.',
+            ],
+      );
+      return;
     }
   }
 

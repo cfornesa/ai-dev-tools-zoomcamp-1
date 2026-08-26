@@ -180,6 +180,34 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     expect(screen.queryByLabelText('Camera overlay opacity')).toBeNull();
   });
 
+  it('exposes the active camera as a reorderable Layers entry synchronized with canvas stacking', async () => {
+    await loadWorkspace(
+      baseScene({
+        layers: [
+          { id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false },
+          { id: 'layer-2', name: 'Layer 2', order: 1, visible: true, locked: false },
+        ],
+      }),
+    );
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+
+    const cameraRows = await screen.findAllByTestId('camera-overlay-layer');
+    const cameraRow = cameraRows[cameraRows.length - 1];
+    expect(cameraRow).toHaveTextContent('Camera overlay');
+    expect(
+      within(cameraRow).getByRole('button', { name: /move camera overlay up/i }),
+    ).toBeEnabled();
+    expect(screen.getByTestId('camera-overlay')).toHaveStyle({ zIndex: '3' });
+
+    await act(async () => {
+      fireEvent.click(within(cameraRow).getByRole('button', { name: /move camera overlay up/i }));
+    });
+
+    expect(window.localStorage.getItem('gesture-studio:camera-overlay-layer-order')).toBe('1.5');
+    expect(screen.getByTestId('camera-overlay')).toHaveStyle({ zIndex: '2.5' });
+  });
+
   it('renders the overlay and slider once active with a stream, defaulting to 50% opacity', async () => {
     const stream = fakeStream();
     await loadWorkspace();

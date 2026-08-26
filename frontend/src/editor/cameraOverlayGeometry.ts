@@ -77,6 +77,7 @@ export function clampCameraOverlayGeometry(geometry: CameraOverlayGeometry): Cam
 }
 
 export const CAMERA_OVERLAY_GEOMETRY_STORAGE_KEY = 'gesture-studio:camera-overlay-geometry';
+export const CAMERA_OVERLAY_LAYER_ORDER_STORAGE_KEY = 'gesture-studio:camera-overlay-layer-order';
 let state: CameraOverlayGeometry = readStoredGeometry();
 const listeners = new Set<() => void>();
 
@@ -88,6 +89,26 @@ function readStoredGeometry(): CameraOverlayGeometry {
     return isCameraOverlayGeometry(parsed) ? parsed : DEFAULT_CAMERA_OVERLAY_GEOMETRY;
   } catch {
     return DEFAULT_CAMERA_OVERLAY_GEOMETRY;
+  }
+}
+
+export function getCameraOverlayLayerOrder(defaultOrder = 0): number {
+  try {
+    const stored = window.localStorage.getItem(CAMERA_OVERLAY_LAYER_ORDER_STORAGE_KEY);
+    if (stored === null) return defaultOrder;
+    const value = Number(stored);
+    return Number.isFinite(value) ? value : defaultOrder;
+  } catch {
+    return defaultOrder;
+  }
+}
+
+export function setCameraOverlayLayerOrder(order: number): void {
+  if (!Number.isFinite(order)) return;
+  try {
+    window.localStorage.setItem(CAMERA_OVERLAY_LAYER_ORDER_STORAGE_KEY, String(order));
+  } catch {
+    // The live value remains usable when storage is unavailable.
   }
 }
 

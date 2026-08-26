@@ -87,7 +87,7 @@ export async function generateSocialThumbnailZip(
     // Deliberately does not forward `input.interactionMode` -- thumbnail
     // capture is always stable demo mode, regardless of the export's own
     // interaction mode. See `captureSocialThumbnail.ts`'s doc comment.
-    pngBlob = await captureSocialThumbnail(input.scene);
+    pngBlob = await captureSocialThumbnail(input.scene, input.cameraOverlay);
   } catch (error) {
     throw new SocialThumbnailZipError(error instanceof Error ? error.message : String(error), {
       cause: error,

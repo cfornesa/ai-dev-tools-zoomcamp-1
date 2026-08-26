@@ -90,13 +90,11 @@ describe('generateSocialThumbnailZip', () => {
       expect(result.ok).toBe(true);
       if (!result.ok) throw new Error('unreachable');
 
-      // The capture function is called with exactly one argument -- the
-      // scene document -- never `interactionMode`, a tracking frame, or
-      // any camera-related state, regardless of what interaction mode the
-      // surrounding HTML export itself uses.
+      // Capture receives the scene and optional still-frame overlay, never
+      // interactionMode or a tracking frame.
       expect(captureSpy).toHaveBeenCalledTimes(1);
-      expect(captureSpy).toHaveBeenCalledWith(input.scene);
-      expect(captureSpy.mock.calls[0]).toHaveLength(1);
+      expect(captureSpy).toHaveBeenCalledWith(input.scene, undefined);
+      expect(captureSpy.mock.calls[0]).toHaveLength(2);
 
       // The produced thumbnail is still a real, correctly-sized artwork-only
       // PNG -- camera mode changes the bundled HTML's runtime script, never
@@ -106,6 +104,24 @@ describe('generateSocialThumbnailZip', () => {
       const dims = await pngDimensions(new Blob([pngBuffer]));
       expect(dims).toEqual({ width: 1200, height: 630 });
     }
+  });
+
+  it('forwards the captured camera still to thumbnail capture', async () => {
+    const overlay = {
+      frameDataUrl: 'data:image/png;base64,AAAA',
+      geometry: { x: 0.1, y: 0.1, width: 0.25, height: 0.14 },
+      opacity: 0.8,
+      mirrored: false,
+      layerOrder: 1,
+    };
+    const captureSpy = vi.spyOn(captureModule, 'captureSocialThumbnail');
+    captureSpy.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
+
+    const input = { ...baseInput(), cameraOverlay: overlay };
+    const result = await generateSocialThumbnailZip(input);
+
+    expect(result.ok).toBe(true);
+    expect(captureSpy).toHaveBeenCalledWith(input.scene, overlay);
   });
 
   it('returns { ok: false, reasons } for an incompatible scene without attempting capture', async () => {

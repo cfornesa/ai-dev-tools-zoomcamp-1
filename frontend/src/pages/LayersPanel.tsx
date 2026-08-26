@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useRef,
   useState,
   type DragEvent as ReactDragEvent,
@@ -1021,15 +1022,86 @@ function CanvasSettingsRow({ sceneEditor }: { sceneEditor: SceneEditor }) {
   );
 }
 
+function CameraOverlayRow({
+  sceneEditor,
+  layerOrder,
+  onLayerOrderChange,
+}: {
+  sceneEditor: SceneEditor;
+  layerOrder: number;
+  onLayerOrderChange: (order: number) => void;
+}) {
+  const layers = sceneEditor.workingCopy
+    ? (Array.isArray(sceneEditor.workingCopy.layers) ? sceneEditor.workingCopy.layers : [])
+        .map((layer) => layer as { order?: unknown })
+        .filter((layer): layer is { order: number } => typeof layer.order === 'number')
+        .sort((a, b) => a.order - b.order)
+    : [];
+  const below = layers.filter((layer) => layer.order < layerOrder).at(-1);
+  const above = layers.find((layer) => layer.order > layerOrder);
+  return (
+    <li
+      data-testid="camera-overlay-layer"
+      data-outline-kind="camera-overlay"
+      className="editor-outline-row editor-outline-row-camera"
+      tabIndex={0}
+      aria-label="Camera overlay layer"
+    >
+      <span className="editor-outline-kind-icon" aria-hidden="true">
+        ◉
+      </span>
+      <span>Camera overlay</span>
+      <span className="editor-outline-camera-order" aria-live="polite">
+        Z-order {layerOrder}
+      </span>
+      <button
+        type="button"
+        aria-label="Move camera overlay up"
+        disabled={!below}
+        onClick={() => below && onLayerOrderChange((below.order + layerOrder) / 2)}
+      >
+        Move up
+      </button>
+      <button
+        type="button"
+        aria-label="Move camera overlay down"
+        disabled={!above}
+        onClick={() => above && onLayerOrderChange((above.order + layerOrder) / 2)}
+      >
+        Move down
+      </button>
+      <span className="sr-only">
+        Camera overlay position and stacking follow the canvas and artwork layer order.
+      </span>
+    </li>
+  );
+}
+
+function rowOrder(row: OutlineRow, sceneEditor: SceneEditor): number {
+  if (row.kind !== 'layer') return Number.NEGATIVE_INFINITY;
+  const layers = sceneEditor.workingCopy?.layers;
+  const layer = Array.isArray(layers)
+    ? layers.find((candidate) => (candidate as { id?: unknown }).id === row.id)
+    : undefined;
+  const order = (layer as { order?: unknown } | undefined)?.order;
+  return typeof order === 'number' ? order : Number.NEGATIVE_INFINITY;
+}
+
 function LayersPanel({
   sceneEditor,
   onRowSelect,
+  cameraOverlayActive = false,
+  cameraLayerOrder,
+  onCameraLayerOrderChange,
 }: {
   sceneEditor: SceneEditor;
   // Issue #171 (task 139): see `OutlineRowItem`'s identically-named prop
   // doc comment for the full rationale — threaded straight through to
   // every row unchanged.
   onRowSelect?: () => void;
+  cameraOverlayActive?: boolean;
+  cameraLayerOrder?: number;
+  onCameraLayerOrderChange?: (order: number) => void;
 }) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -1199,15 +1271,47 @@ function LayersPanel({
         <p>No layers yet.</p>
       ) : (
         <ul aria-label="Scene outline" className="editor-outline-list">
-          {sceneEditor.outline.map((row) => (
-            <OutlineRowItem
-              key={row.id}
-              row={row}
-              sceneEditor={sceneEditor}
-              drag={drag}
-              onRowSelect={onRowSelect}
-            />
-          ))}
+          {(() => {
+            let cameraInserted = false;
+            return sceneEditor.outline.map((row) => {
+              const cameraBeforeLayer =
+                cameraOverlayActive &&
+                row.kind === 'layer' &&
+                cameraLayerOrder !== undefined &&
+                !cameraInserted &&
+                rowOrder(row, sceneEditor) >= cameraLayerOrder;
+              if (cameraBeforeLayer) cameraInserted = true;
+              return (
+                <Fragment key={row.id}>
+                  {cameraBeforeLayer && onCameraLayerOrderChange && (
+                    <CameraOverlayRow
+                      sceneEditor={sceneEditor}
+                      layerOrder={cameraLayerOrder!}
+                      onLayerOrderChange={onCameraLayerOrderChange}
+                    />
+                  )}
+                  <OutlineRowItem
+                    row={row}
+                    sceneEditor={sceneEditor}
+                    drag={drag}
+                    onRowSelect={onRowSelect}
+                  />
+                </Fragment>
+              );
+            });
+          })()}
+          {cameraOverlayActive &&
+            cameraLayerOrder !== undefined &&
+            onCameraLayerOrderChange &&
+            !sceneEditor.outline.some(
+              (row) => row.kind === 'layer' && rowOrder(row, sceneEditor) >= cameraLayerOrder,
+            ) && (
+              <CameraOverlayRow
+                sceneEditor={sceneEditor}
+                layerOrder={cameraLayerOrder}
+                onLayerOrderChange={onCameraLayerOrderChange}
+              />
+            )}
         </ul>
       )}
 

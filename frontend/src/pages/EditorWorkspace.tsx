@@ -60,9 +60,11 @@ import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import {
   captureCameraStill,
   clampCameraOverlayGeometry,
+  getCameraOverlayLayerOrder,
   moveCameraOverlay,
   resizeCameraOverlay,
   useCameraOverlayGeometry,
+  setCameraOverlayLayerOrder,
   type CameraOverlayExport,
   type CameraOverlayGeometry,
 } from '../editor/cameraOverlayGeometry';
@@ -1180,6 +1182,21 @@ function EditorWorkspace() {
   cameraGeometryRef.current = cameraGeometry;
   const cameraGestureRef = useRef<'move' | 'resize' | null>(null);
   const cameraGestureStartRef = useRef({ x: 0, y: 0, geometry: cameraGeometry });
+  const [cameraLayerOrder, setCameraLayerOrder] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (cameraLayerOrder !== null || !workingCopy) return;
+    const orders = (Array.isArray(workingCopy.layers) ? workingCopy.layers : [])
+      .map((layer) => (layer as { order?: unknown }).order)
+      .filter((order): order is number => typeof order === 'number');
+    const defaultOrder = Math.max(-1, ...orders) + 1;
+    setCameraLayerOrder(getCameraOverlayLayerOrder(defaultOrder));
+  }, [cameraLayerOrder, workingCopy]);
+
+  const updateCameraLayerOrder = (order: number) => {
+    setCameraLayerOrder(order);
+    setCameraOverlayLayerOrder(order);
+  };
 
   useEffect(() => {
     const videoEl = cameraVideoRef.current;
@@ -2155,12 +2172,14 @@ function EditorWorkspace() {
     updateCameraGeometry(next);
   };
 
-  const cameraLayerOrder = Math.max(
-    0,
-    ...(Array.isArray(workingCopy?.layers)
-      ? workingCopy.layers.map((layer) => Number((layer as { order?: number }).order) || 0)
-      : [0]),
-  );
+  const effectiveCameraLayerOrder =
+    cameraLayerOrder ??
+    Math.max(
+      0,
+      ...(Array.isArray(workingCopy?.layers)
+        ? workingCopy.layers.map((layer) => Number((layer as { order?: number }).order) || 0)
+        : [0]),
+    ) + 1;
 
   const getCameraExport = (): CameraOverlayExport | null => {
     if (cameraStatus !== 'active' || !cameraStream || !cameraVideoRef.current) return null;
@@ -2170,7 +2189,7 @@ function EditorWorkspace() {
         geometry: cameraGeometryRef.current,
         opacity: cameraOverlayOpacity,
         mirrored: cameraOverlayMirrored,
-        layerOrder: cameraLayerOrder,
+        layerOrder: effectiveCameraLayerOrder,
       };
     } catch (captureError) {
       throw new Error(
@@ -3087,7 +3106,7 @@ function EditorWorkspace() {
                       top: `${cameraGeometry.y * 100}%`,
                       width: `${cameraGeometry.width * 100}%`,
                       height: `${cameraGeometry.height * 100}%`,
-                      zIndex: cameraLayerOrder + 1,
+                      zIndex: effectiveCameraLayerOrder + 1,
                       transition: reducedMotion.effective ? 'none' : 'box-shadow 120ms ease',
                       touchAction: 'none',
                     }}
@@ -3102,7 +3121,7 @@ function EditorWorkspace() {
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        zIndex: cameraLayerOrder + 2,
+                        zIndex: effectiveCameraLayerOrder + 2,
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
@@ -3115,7 +3134,7 @@ function EditorWorkspace() {
                       type="button"
                       className="camera-overlay-resize"
                       aria-label="Resize camera overlay"
-                      style={{ position: 'absolute', zIndex: cameraLayerOrder + 1 }}
+                      style={{ position: 'absolute', zIndex: effectiveCameraLayerOrder + 1 }}
                       onPointerDown={(event) => beginCameraGesture(event, 'resize')}
                     >
                       ↘
@@ -3595,7 +3614,13 @@ function EditorWorkspace() {
           hidden={panelHidden('layers')}
         >
           <h3>Layers</h3>
-          <LayersPanel sceneEditor={sceneEditor} onRowSelect={handleLayerRowSelect} />
+          <LayersPanel
+            sceneEditor={sceneEditor}
+            onRowSelect={handleLayerRowSelect}
+            cameraOverlayActive={cameraStatus === 'active' && cameraLayerOrder !== null}
+            cameraLayerOrder={effectiveCameraLayerOrder}
+            onCameraLayerOrderChange={updateCameraLayerOrder}
+          />
         </section>
 
         <section

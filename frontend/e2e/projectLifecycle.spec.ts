@@ -150,6 +150,56 @@ test.describe('Project lifecycle', () => {
     await expect(page.locator('#shape-style-fill')).toHaveValue('#ff00aa');
   });
 
+  test('keeps the rendered selection center and move handle aligned at desktop and narrow fit', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+
+      const geometry = await page.evaluate(() => {
+        const canvas = document.querySelector<HTMLElement>('[data-testid="scene-canvas"]');
+        const outline = document.querySelector<SVGRectElement>(
+          '.editor-scene-shape-selection-outline',
+        );
+        const moveHandle = document.querySelector<HTMLElement>('[data-testid="shape-handle-move"]');
+        if (!canvas || !outline || !moveHandle)
+          throw new Error('Selection geometry is not rendered.');
+        const canvasRect = canvas.getBoundingClientRect();
+        const outlineRect = outline.getBoundingClientRect();
+        const handleRect = moveHandle.getBoundingClientRect();
+        return {
+          canvasCenter: {
+            x: canvasRect.left + canvasRect.width / 2,
+            y: canvasRect.top + canvasRect.height / 2,
+          },
+          outlineCenter: {
+            x: outlineRect.left + outlineRect.width / 2,
+            y: outlineRect.top + outlineRect.height / 2,
+          },
+          handleCenter: {
+            x: handleRect.left + handleRect.width / 2,
+            y: handleRect.top + handleRect.height / 2,
+          },
+          pageScrollWidth: document.documentElement.scrollWidth,
+          pageClientWidth: document.documentElement.clientWidth,
+        };
+      });
+
+      expect(Math.abs(geometry.outlineCenter.x - geometry.canvasCenter.x)).toBeLessThan(1);
+      expect(Math.abs(geometry.outlineCenter.y - geometry.canvasCenter.y)).toBeLessThan(1);
+      expect(Math.abs(geometry.handleCenter.x - geometry.canvasCenter.x)).toBeLessThan(1);
+      expect(Math.abs(geometry.handleCenter.y - geometry.canvasCenter.y)).toBeLessThan(1);
+      expect(geometry.pageScrollWidth).toBeLessThanOrEqual(geometry.pageClientWidth);
+      await page.goto('/');
+    }
+  });
+
   test('cloning a built-in template keeps the source and the clone independent', async ({
     page,
   }) => {

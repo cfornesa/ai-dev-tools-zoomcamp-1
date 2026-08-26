@@ -158,6 +158,11 @@ test.describe('Project lifecycle', () => {
       { width: 390, height: 844 },
     ]) {
       await page.setViewportSize(viewport);
+      // Each viewport is an independent fit check. Clear the prior browser
+      // session so loginViaUI reaches the real login form again instead of
+      // being redirected from /accounts/login/ as an already-authenticated
+      // user after the desktop iteration.
+      await page.context().clearCookies();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
       await createBlankProjectViaUI(page);
       await page.getByRole('button', { name: 'Add circle' }).click();

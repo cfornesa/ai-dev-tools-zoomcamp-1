@@ -1344,6 +1344,8 @@ textarea:disabled {
    belt-and-suspenders for them, load-bearing only for the p5 `<canvas>`.) */
 .editor-scene-canvas canvas,
 .editor-scene-canvas svg {
+  width: 100%;
+  height: 100%;
   max-width: 100%;
 }
 

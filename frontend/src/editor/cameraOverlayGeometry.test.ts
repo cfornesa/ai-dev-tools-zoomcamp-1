@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CAMERA_OVERLAY_ASPECT_RATIO,
   DEFAULT_CAMERA_OVERLAY_GEOMETRY,
+  captureCameraStill,
   clampCameraOverlayGeometry,
   moveCameraOverlay,
   resizeCameraOverlay,
@@ -45,9 +46,45 @@ describe('camera overlay geometry (issue #151)', () => {
 
   it('resizes from the corner while preserving the camera ratio and bounds', () => {
     const start = { x: 0.7, y: 0.1, width: 0.2, height: 0.2 / CAMERA_OVERLAY_ASPECT_RATIO };
-    const resized = resizeCameraOverlay(start, 500, 800);
+    const resized = resizeCameraOverlay(start, 500, 800, 600);
     expect(resized.x + resized.width).toBeLessThanOrEqual(1);
-    expect(resized.width / resized.height).toBeCloseTo(CAMERA_OVERLAY_ASPECT_RATIO);
+    expect((resized.width * 800) / (resized.height * 600)).toBeCloseTo(CAMERA_OVERLAY_ASPECT_RATIO);
     expect(resized.width).toBeCloseTo(0.3);
+  });
+
+  it('keeps the rendered pixel ratio at 16:9 on a non-square canvas', () => {
+    const geometry = clampCameraOverlayGeometry(
+      { x: 0.1, y: 0.1, width: 0.4, height: 0.4 },
+      800,
+      600,
+    );
+    expect((geometry.width * 800) / (geometry.height * 600)).toBeCloseTo(
+      CAMERA_OVERLAY_ASPECT_RATIO,
+    );
+  });
+
+  it('captures raw video pixels and leaves mirror application to the compositor', () => {
+    const video = document.createElement('video');
+    Object.defineProperties(video, {
+      readyState: { configurable: true, value: 4 },
+      videoWidth: { configurable: true, value: 2 },
+      videoHeight: { configurable: true, value: 1 },
+    });
+    video.style.transform = 'scaleX(-1)';
+    const canvas = document.createElement('canvas');
+    const context = {
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const originalCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+      if (tagName === 'canvas') return canvas;
+      return originalCreateElement(tagName);
+    });
+    vi.spyOn(canvas, 'getContext').mockReturnValue(context);
+    vi.spyOn(canvas, 'toDataURL').mockReturnValue('data:image/png;base64,AAAA');
+
+    expect(captureCameraStill(video)).toBe('data:image/png;base64,AAAA');
+    expect(context.drawImage).toHaveBeenCalledWith(video, 0, 0, 2, 1);
+    expect((context as unknown as { translate?: unknown }).translate).toBeUndefined();
   });
 });

@@ -112,6 +112,11 @@ describe('generateHtmlExport: happy path', () => {
     expect(result.html).toContain('left:10%;top:20%;width:30%;height:16.875%');
     expect(result.html).toContain('opacity:0.75');
     expect(result.html).toContain('transform:scaleX(-1)');
+    const config = JSON.parse(
+      new DOMParser().parseFromString(result.html, 'text/html').getElementById('export-config')
+        ?.textContent ?? 'null',
+    ) as { cameraOverlay?: { layerOrder?: number } };
+    expect(config.cameraOverlay?.layerOrder).toBe(4);
   });
 });
 

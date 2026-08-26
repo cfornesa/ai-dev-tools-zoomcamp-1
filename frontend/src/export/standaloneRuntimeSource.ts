@@ -175,6 +175,7 @@ export function buildStandaloneRuntimeScript(): string {
     return {
       canvas: scene.canvas,
       randomness: scene.randomness || { seed: 0, enabled: false },
+      layers: layers,
       nodes: nodes,
     };
   }
@@ -246,6 +247,30 @@ export function buildStandaloneRuntimeScript(): string {
     sk.push();
     applyTransform(sk, node.group.transform);
     node.children.forEach(function (child) { drawNode(sk, child, gOpacity); });
+    sk.pop();
+  }
+
+  function layerOrderForNode(plan, node) {
+    var layerId = node.kind === "shape" ? node.shape.layerId : node.group.layerId;
+    var layer = (plan.layers || []).find(function (candidate) { return candidate.id === layerId; });
+    return layer ? layer.order : Infinity;
+  }
+
+  function drawCameraOverlay(sk, overlay, image) {
+    if (!image) return;
+    var x = overlay.geometry.x * sk.width;
+    var y = overlay.geometry.y * sk.height;
+    var width = overlay.geometry.width * sk.width;
+    var height = overlay.geometry.height * sk.height;
+    sk.push();
+    sk.tint(255, 255, 255, overlay.opacity * 255);
+    if (overlay.mirrored) {
+      sk.translate(x + width, y);
+      sk.scale(-1, 1);
+      sk.image(image, 0, 0, width, height);
+    } else {
+      sk.image(image, x, y, width, height);
+    }
     sk.pop();
   }
 
@@ -847,6 +872,7 @@ export function buildStandaloneRuntimeScript(): string {
       }
 
       new window.p5(function (p) {
+        var cameraImage = null;
         p.setup = function () {
           var canvasDef = SCENE.canvas || { width: 800, height: 600, backgroundColor: "#ffffff" };
           var c = p.createCanvas(canvasDef.width, canvasDef.height);
@@ -854,6 +880,9 @@ export function buildStandaloneRuntimeScript(): string {
           p.pixelDensity(1);
           p.noSmooth();
           p.frameRate(30);
+          if (CONFIG.cameraOverlay && CONFIG.cameraOverlay.frameDataUrl) {
+            cameraImage = p.loadImage(CONFIG.cameraOverlay.frameDataUrl);
+          }
         };
         p.draw = function () {
           if (startTime === null) startTime = p.millis();
@@ -880,7 +909,21 @@ export function buildStandaloneRuntimeScript(): string {
             target.noiseSeed(plan.randomness.seed);
           }
           target.background(plan.canvas.backgroundColor);
-          plan.nodes.forEach(function (node) { drawNode(target, node, 1); });
+          var cameraDrawn = false;
+          plan.nodes.forEach(function (node) {
+            if (
+              CONFIG.cameraOverlay &&
+              !cameraDrawn &&
+              layerOrderForNode(plan, node) >= CONFIG.cameraOverlay.layerOrder
+            ) {
+              drawCameraOverlay(target, CONFIG.cameraOverlay, cameraImage);
+              cameraDrawn = true;
+            }
+            drawNode(target, node, 1);
+          });
+          if (CONFIG.cameraOverlay && !cameraDrawn) {
+            drawCameraOverlay(target, CONFIG.cameraOverlay, cameraImage);
+          }
           target.pop();
 
           if (useBuffer) {

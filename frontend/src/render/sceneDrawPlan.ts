@@ -137,6 +137,7 @@ export type ScenePlan = {
     opacity: number;
   };
   randomness: { seed: number; enabled: boolean };
+  layers: LayerInfo[];
   nodes: DrawNode[];
 };
 
@@ -448,5 +449,5 @@ export function buildScenePlan(scene: unknown): ScenePlan {
     for (const shape of topShapes) nodes.push({ kind: 'shape', shape });
   }
 
-  return { canvas, randomness, nodes };
+  return { canvas, randomness, layers, nodes };
 }

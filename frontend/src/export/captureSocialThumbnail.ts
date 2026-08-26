@@ -17,19 +17,14 @@
  *
  * ## Why this is always "stable demo mode," never the camera
  *
- * `createP5ScenePreview` (`p5Adapter.ts`) has no camera/MediaPipe code
- * path at all -- it only ever reads `scene.randomness` (Task 40's seeded
- * PRNG: `sk.randomSeed`/`sk.noiseSeed` from `scene.randomness.seed` when
- * `scene.randomness.enabled`) and the static shape/layer/group tree, then
- * draws exactly once (`noLoop()`). This function's own signature takes
- * only a `SceneDocument` -- no `interactionMode`, no tracking frame, no
- * camera stream -- so a capture can structurally never read a live camera
- * frame regardless of what interaction mode the surrounding export
- * chose (see `generateSocialThumbnailZip.ts`, which never forwards
- * `interactionMode` to this module). This is also why the capture is
- * reproducible: the same scene document (same static tree, same
- * `randomness.seed`) always seeds and draws identically, matching Task
- * 54's own determinism guarantee for its (server-side) rasterizer.
+ * `createP5ScenePreview` (`p5Adapter.ts`) reads `scene.randomness` (Task
+ * 40's seeded PRNG: `sk.randomSeed`/`sk.noiseSeed` from
+ * `scene.randomness.seed` when `scene.randomness.enabled`) and the static
+ * shape/layer/group tree. A supplied still-frame overlay is passed to that
+ * same renderer, so it participates in the artwork layer order before the
+ * cover crop. This function never reads a live camera stream or a tracking
+ * frame; `generateSocialThumbnailZip.ts` supplies only an already-captured
+ * `CameraOverlayExport`.
  *
  * ## Why the result contains only artwork
  *
@@ -171,9 +166,33 @@ export async function captureSocialThumbnail(
 
   let preview: ReturnType<typeof createP5ScenePreview> | null = null;
   try {
+    let cameraImage: HTMLImageElement | undefined;
+    if (cameraOverlay) {
+      cameraImage = new Image();
+      cameraImage.src = cameraOverlay.frameDataUrl;
+      await new Promise<void>((resolve, reject) => {
+        cameraImage!.onload = () => resolve();
+        cameraImage!.onerror = () => reject(new Error('Camera still frame could not be decoded.'));
+      });
+    }
+
     preview = createP5ScenePreview(container);
     try {
-      preview.render(scene);
+      preview.render(
+        scene,
+        [],
+        [],
+        false,
+        cameraOverlay && cameraImage
+          ? {
+              source: cameraImage,
+              geometry: cameraOverlay.geometry,
+              opacity: cameraOverlay.opacity,
+              mirrored: cameraOverlay.mirrored,
+              layerOrder: cameraOverlay.layerOrder,
+            }
+          : undefined,
+      );
     } catch (error) {
       throw new ThumbnailCaptureError(
         `Thumbnail capture failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -211,34 +230,6 @@ export async function captureSocialThumbnail(
       SOCIAL_THUMBNAIL_WIDTH,
       SOCIAL_THUMBNAIL_HEIGHT,
     );
-
-    if (cameraOverlay) {
-      const image = new Image();
-      image.src = cameraOverlay.frameDataUrl;
-      await new Promise<void>((resolve, reject) => {
-        image.onload = () => resolve();
-        image.onerror = () => reject(new Error('Camera still frame could not be decoded.'));
-      });
-      ctx.save();
-      ctx.globalAlpha = cameraOverlay.opacity;
-      if (cameraOverlay.mirrored) {
-        ctx.translate(SOCIAL_THUMBNAIL_WIDTH, 0);
-        ctx.scale(-1, 1);
-      }
-      ctx.drawImage(
-        image,
-        cameraOverlay.mirrored
-          ? (((1 - cameraOverlay.geometry.x - cameraOverlay.geometry.width) * sourceCanvas.width -
-              sx) /
-              sw) *
-              SOCIAL_THUMBNAIL_WIDTH
-          : ((cameraOverlay.geometry.x * sourceCanvas.width - sx) / sw) * SOCIAL_THUMBNAIL_WIDTH,
-        ((cameraOverlay.geometry.y * sourceCanvas.height - sy) / sh) * SOCIAL_THUMBNAIL_HEIGHT,
-        ((cameraOverlay.geometry.width * sourceCanvas.width) / sw) * SOCIAL_THUMBNAIL_WIDTH,
-        ((cameraOverlay.geometry.height * sourceCanvas.height) / sh) * SOCIAL_THUMBNAIL_HEIGHT,
-      );
-      ctx.restore();
-    }
 
     return await canvasToPngBlob(outputCanvas);
   } catch (error) {

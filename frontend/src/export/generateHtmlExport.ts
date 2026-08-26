@@ -230,7 +230,7 @@ function renderCameraOverlay(input: CameraOverlayExport | null | undefined): str
   if (!input) return '';
   const { x, y, width, height } = input.geometry;
   const style = `position:absolute;left:${x * 100}%;top:${y * 100}%;width:${width * 100}%;height:${height * 100}%;z-index:${input.layerOrder};opacity:${input.opacity};object-fit:cover;${input.mirrored ? 'transform:scaleX(-1);' : ''}`;
-  return `<img id="export-camera-overlay" src="${input.frameDataUrl}" alt="Camera overlay still frame" style="${style}" />`;
+  return `<img id="export-camera-overlay" src="${input.frameDataUrl}" alt="Camera overlay still frame" style="${style}display:none;" />`;
 }
 
 function renderMotionControl(): string {
@@ -304,7 +304,12 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
 
   <script src="${P5_CDN_URL}"></script>
   ${embedJsonScript('scene-data', strippedScene)}
-  ${embedJsonScript('export-config', { interactionMode: input.interactionMode })}
+  ${embedJsonScript(
+    'export-config',
+    input.cameraOverlay
+      ? { interactionMode: input.interactionMode, cameraOverlay: input.cameraOverlay }
+      : { interactionMode: input.interactionMode },
+  )}
   <script>${buildStandaloneRuntimeScript()}</script>
   ${includesCamera ? `<script>${buildStandaloneCameraScript()}</script>` : ''}
   ${includeAttribution ? renderAttributionFooter() : ''}

@@ -18,6 +18,9 @@ export type CameraOverlayExport = {
   layerOrder: number;
 };
 
+export type CameraOverlayAction =
+  { type: 'move'; delta: Point } | { type: 'resize'; deltaX: number };
+
 export function captureCameraStill(video: HTMLVideoElement): string {
   if (video.readyState < 2 || video.videoWidth <= 0 || video.videoHeight <= 0) {
     throw new Error('Camera frame is not ready. Keep the camera active and try exporting again.');
@@ -27,13 +30,7 @@ export function captureCameraStill(video: HTMLVideoElement): string {
   canvas.height = video.videoHeight;
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Camera frame capture is unavailable in this browser.');
-  context.save();
-  if (video.style.transform.includes('scaleX(-1)')) {
-    context.translate(canvas.width, 0);
-    context.scale(-1, 1);
-  }
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  context.restore();
   try {
     return canvas.toDataURL('image/png');
   } catch {
@@ -45,7 +42,7 @@ export const DEFAULT_CAMERA_OVERLAY_GEOMETRY: CameraOverlayGeometry = {
   x: 0.04,
   y: 0.04,
   width: 0.32,
-  height: 0.32 / CAMERA_OVERLAY_ASPECT_RATIO,
+  height: (0.32 * 800) / (CAMERA_OVERLAY_ASPECT_RATIO * 600),
 };
 
 function finite(value: unknown): value is number {
@@ -58,16 +55,24 @@ export function isCameraOverlayGeometry(value: unknown): value is CameraOverlayG
   return ['x', 'y', 'width', 'height'].every((key) => finite(candidate[key]));
 }
 
-export function clampCameraOverlayGeometry(geometry: CameraOverlayGeometry): CameraOverlayGeometry {
-  const width = Math.min(1, Math.max(Number.EPSILON, geometry.width));
-  const height = Math.min(1, Math.max(Number.EPSILON, geometry.height));
-  let nextWidth = width;
-  let nextHeight = height;
-  if (nextWidth / nextHeight > CAMERA_OVERLAY_ASPECT_RATIO)
-    nextWidth = nextHeight * CAMERA_OVERLAY_ASPECT_RATIO;
-  else nextHeight = nextWidth / CAMERA_OVERLAY_ASPECT_RATIO;
-  nextWidth = Math.min(1, nextWidth);
-  nextHeight = Math.min(1, nextHeight);
+export function clampCameraOverlayGeometry(
+  geometry: CameraOverlayGeometry,
+  canvasWidth = 1,
+  canvasHeight = 1,
+): CameraOverlayGeometry {
+  const safeCanvasWidth = Math.max(Number.EPSILON, canvasWidth);
+  const safeCanvasHeight = Math.max(Number.EPSILON, canvasHeight);
+  const requestedWidth = Math.min(1, Math.max(Number.EPSILON, geometry.width));
+  const requestedHeight = Math.min(1, Math.max(Number.EPSILON, geometry.height));
+  const requestedPixelWidth = Math.min(
+    requestedWidth * safeCanvasWidth,
+    requestedHeight * safeCanvasHeight * CAMERA_OVERLAY_ASPECT_RATIO,
+  );
+  const maxPixelWidth = Math.min(safeCanvasWidth, safeCanvasHeight * CAMERA_OVERLAY_ASPECT_RATIO);
+  const pixelWidth = Math.min(maxPixelWidth, Math.max(Number.EPSILON, requestedPixelWidth));
+  const pixelHeight = pixelWidth / CAMERA_OVERLAY_ASPECT_RATIO;
+  const nextWidth = pixelWidth / safeCanvasWidth;
+  const nextHeight = pixelHeight / safeCanvasHeight;
   return {
     x: Math.min(1 - nextWidth, Math.max(0, geometry.x)),
     y: Math.min(1 - nextHeight, Math.max(0, geometry.y)),
@@ -154,25 +159,47 @@ export function moveCameraOverlay(
   const gridY = gridEnabled ? 20 / canvasHeight : 0;
   const x = geometry.x + delta.x / canvasWidth;
   const y = geometry.y + delta.y / canvasHeight;
-  return clampCameraOverlayGeometry({
-    ...geometry,
-    x: gridEnabled ? Math.round(x / gridX) * gridX : x,
-    y: gridEnabled ? Math.round(y / gridY) * gridY : y,
-  });
+  return clampCameraOverlayGeometry(
+    {
+      ...geometry,
+      x: gridEnabled ? Math.round(x / gridX) * gridX : x,
+      y: gridEnabled ? Math.round(y / gridY) * gridY : y,
+    },
+    canvasWidth,
+    canvasHeight,
+  );
 }
 
 export function resizeCameraOverlay(
   geometry: CameraOverlayGeometry,
   deltaX: number,
   canvasWidth: number,
+  canvasHeight = 1,
 ): CameraOverlayGeometry {
   const width = Math.min(
     1 - geometry.x,
     Math.max(Number.EPSILON, geometry.width + deltaX / canvasWidth),
   );
-  return clampCameraOverlayGeometry({
-    ...geometry,
-    width,
-    height: width / CAMERA_OVERLAY_ASPECT_RATIO,
-  });
+  return clampCameraOverlayGeometry(
+    {
+      ...geometry,
+      width,
+      height: (width * canvasWidth) / (CAMERA_OVERLAY_ASPECT_RATIO * canvasHeight),
+    },
+    canvasWidth,
+    canvasHeight,
+  );
+}
+
+export function applyCameraOverlayAction(
+  geometry: CameraOverlayGeometry,
+  action: CameraOverlayAction,
+  canvasWidth: number,
+  canvasHeight: number,
+  gridEnabled = false,
+): CameraOverlayGeometry {
+  if (action.type === 'move') {
+    return moveCameraOverlay(geometry, action.delta, canvasWidth, canvasHeight, gridEnabled);
+  }
+  return resizeCameraOverlay(geometry, action.deltaX, canvasWidth, canvasHeight);
 }

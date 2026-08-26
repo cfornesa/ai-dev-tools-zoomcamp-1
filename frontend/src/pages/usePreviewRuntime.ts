@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import type { SceneDocument } from '../api/projects';
-import type { P5ScenePreview, RenderableTrail } from '../render/p5Adapter';
+import type { P5ScenePreview, RenderableCameraOverlay, RenderableTrail } from '../render/p5Adapter';
 import {
   applyRuntimeOutputsToScene,
   createBehaviorRuntime,
@@ -181,6 +181,8 @@ export type UsePreviewRuntimeOptions = {
    * bindings/graph nodes and this runtime loop -- not the plain render
    * effect -- owns rendering. Defaults to `false`. */
   transparentBackground?: boolean;
+  /** Supplies the current camera image for the same ordered compositor. */
+  getCameraOverlay?: () => RenderableCameraOverlay | undefined;
 };
 
 /**
@@ -199,6 +201,7 @@ export function usePreviewRuntime(options: UsePreviewRuntimeOptions): void {
     reducedMotion,
     onRenderError,
     transparentBackground = false,
+    getCameraOverlay,
   } = options;
 
   // "Latest value" refs (the same pattern `EditorWorkspace.tsx`'s own drag
@@ -216,6 +219,8 @@ export function usePreviewRuntime(options: UsePreviewRuntimeOptions): void {
   onRenderErrorRef.current = onRenderError;
   const transparentBackgroundRef = useRef(transparentBackground);
   transparentBackgroundRef.current = transparentBackground;
+  const getCameraOverlayRef = useRef(getCameraOverlay);
+  getCameraOverlayRef.current = getCameraOverlay;
 
   const active = sceneHasActiveBehaviors(scene);
   const key = active ? structuralKey(scene) : 'inactive';
@@ -277,6 +282,7 @@ export function usePreviewRuntime(options: UsePreviewRuntimeOptions): void {
             particles,
             buildRenderableTrails(evaluatedScene, trails),
             transparentBackgroundRef.current,
+            getCameraOverlayRef.current?.(),
           );
           onRenderErrorRef.current(null);
         } catch (err) {

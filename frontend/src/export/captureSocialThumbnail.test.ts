@@ -96,6 +96,46 @@ describe('captureSocialThumbnail', () => {
     expect(typeof preview.render).toBe('function');
   });
 
+  it('passes a camera still through the shared compositor with its artwork layer order', async () => {
+    const sourceCanvas = document.createElement('canvas');
+    sourceCanvas.width = 64;
+    sourceCanvas.height = 64;
+    const render = vi.fn();
+    const preview = {
+      render,
+      getCanvasElement: () => sourceCanvas,
+      destroy: vi.fn(),
+    } as unknown as ReturnType<typeof p5Adapter.createP5ScenePreview>;
+    vi.spyOn(p5Adapter, 'createP5ScenePreview').mockReturnValue(preview);
+
+    const image = document.createElement('canvas') as unknown as HTMLImageElement;
+    Object.defineProperty(image, 'src', {
+      configurable: true,
+      set: () => queueMicrotask(() => image.onload?.(new Event('load'))),
+    });
+    function FakeImage() {
+      return image;
+    }
+    vi.stubGlobal('Image', FakeImage);
+
+    const overlay = {
+      frameDataUrl: 'data:image/png;base64,AAAA',
+      geometry: { x: 0.1, y: 0.1, width: 0.25, height: 0.14 },
+      opacity: 0.8,
+      mirrored: true,
+      layerOrder: 7,
+    };
+    await captureSocialThumbnail(sceneWithSeed(3), overlay);
+
+    expect(render).toHaveBeenCalledWith(
+      sceneWithSeed(3),
+      [],
+      [],
+      false,
+      expect.objectContaining({ source: image, layerOrder: 7, mirrored: true }),
+    );
+  });
+
   it('rejects with a specific ThumbnailCaptureError and leaves no dangling DOM for a malformed scene', async () => {
     const bodyChildrenBefore = document.body.children.length;
     const malformed = { ...sceneWithSeed(1), shapes: [{ id: 's1', type: 'not-a-real-type' }] };

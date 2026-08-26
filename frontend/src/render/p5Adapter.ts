@@ -52,6 +52,7 @@
 import p5 from 'p5';
 
 import type { SceneDocument } from '../api/projects';
+import type { CameraOverlayGeometry } from '../editor/cameraOverlayGeometry';
 import {
   buildScenePlan,
   type AnyShape,
@@ -76,6 +77,14 @@ export type RenderableParticle = { x: number; y: number; size: number; color: st
 export type RenderableTrail = {
   color: string;
   points: readonly { x: number; y: number }[];
+};
+
+export type RenderableCameraOverlay = {
+  source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement;
+  geometry: CameraOverlayGeometry;
+  opacity: number;
+  mirrored: boolean;
+  layerOrder: number;
 };
 
 export type P5ScenePreview = {
@@ -109,6 +118,7 @@ export type P5ScenePreview = {
      * legitimately appear to sit "in front of" the live camera feed
      * within a single flat 2D canvas. */
     transparentBackground?: boolean,
+    cameraOverlay?: RenderableCameraOverlay,
   ): void;
   /** Tears down the underlying p5 instance and removes its `<canvas>`. */
   destroy(): void;
@@ -266,11 +276,43 @@ function drawTrail(sk: p5, trail: RenderableTrail): void {
   sk.pop();
 }
 
+function layerOrderForNode(plan: ScenePlan, node: DrawNode): number {
+  const layerId = node.kind === 'shape' ? node.shape.layerId : node.group.layerId;
+  return plan.layers.find((layer) => layer.id === layerId)?.order ?? Number.POSITIVE_INFINITY;
+}
+
+function drawCameraOverlay(sk: p5, overlay: RenderableCameraOverlay): void {
+  if (
+    overlay.source instanceof HTMLVideoElement &&
+    (overlay.source.readyState < 2 ||
+      overlay.source.videoWidth <= 0 ||
+      overlay.source.videoHeight <= 0)
+  ) {
+    return;
+  }
+  const x = overlay.geometry.x * sk.width;
+  const y = overlay.geometry.y * sk.height;
+  const width = overlay.geometry.width * sk.width;
+  const height = overlay.geometry.height * sk.height;
+  const context = sk.drawingContext;
+  context.save();
+  context.globalAlpha = overlay.opacity;
+  if (overlay.mirrored) {
+    context.translate(x + width, y);
+    context.scale(-1, 1);
+    context.drawImage(overlay.source, 0, 0, width, height);
+  } else {
+    context.drawImage(overlay.source, x, y, width, height);
+  }
+  context.restore();
+}
+
 export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
   let instance: p5 | null = null;
   let currentPlan: ScenePlan | null = null;
   let currentParticles: readonly RenderableParticle[] = [];
   let currentTrails: readonly RenderableTrail[] = [];
+  let currentCameraOverlay: RenderableCameraOverlay | undefined;
   let currentTransparentBackground = false;
   // Task 138 (issue #170): an offscreen buffer used only when
   // `canvas.opacity < 1` -- see `sk.draw`'s doc comment below for why
@@ -351,7 +393,19 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
         // own geometry (drawn next) sits on top of its position history —
         // see the module doc comment.
         for (const trail of currentTrails) drawTrail(target, trail);
-        for (const node of currentPlan.nodes) drawNode(target, node, 1);
+        let cameraDrawn = false;
+        for (const node of currentPlan.nodes) {
+          if (
+            currentCameraOverlay &&
+            !cameraDrawn &&
+            layerOrderForNode(currentPlan, node) >= currentCameraOverlay.layerOrder
+          ) {
+            drawCameraOverlay(target, currentCameraOverlay);
+            cameraDrawn = true;
+          }
+          drawNode(target, node, 1);
+        }
+        if (currentCameraOverlay && !cameraDrawn) drawCameraOverlay(target, currentCameraOverlay);
         // Task 39: live particles draw last, on top of everything else —
         // see the module doc comment.
         for (const particle of currentParticles) drawParticle(target, particle);
@@ -373,6 +427,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
     particles: readonly RenderableParticle[] = [],
     trails: readonly RenderableTrail[] = [],
     transparentBackground = false,
+    cameraOverlay?: RenderableCameraOverlay,
   ): void {
     // Acceptance criteria 10/11: buildScenePlan throws before this
     // function touches the p5 instance or canvas at all, so an invalid
@@ -383,6 +438,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
     currentParticles = particles;
     currentTrails = trails;
     currentTransparentBackground = transparentBackground;
+    currentCameraOverlay = cameraOverlay;
 
     if (!instance) {
       ensureInstance(plan.canvas.width, plan.canvas.height);
@@ -404,6 +460,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
     currentPlan = null;
     currentParticles = [];
     currentTrails = [];
+    currentCameraOverlay = undefined;
     currentTransparentBackground = false;
   }
 

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import type { CameraStatus } from '../components/CameraControl';
+import type { TrackingFrame } from '../tracking/types';
 import {
   DEFAULT_CAMERA_OVERLAY_SETTINGS,
   setCameraOverlayMirrored,
@@ -24,21 +25,25 @@ import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSect
  * `EditorWorkspace.cameraPreview.test.tsx` uses.
  */
 
-const { onStatusChangeRef, onStreamChangeRef } = vi.hoisted(() => ({
+const { onStatusChangeRef, onStreamChangeRef, onFrameRef } = vi.hoisted(() => ({
   onStatusChangeRef: { current: null as ((status: CameraStatus) => void) | null },
   onStreamChangeRef: { current: null as ((stream: MediaStream | null) => void) | null },
+  onFrameRef: { current: null as ((frame: TrackingFrame) => void) | null },
 }));
 
 vi.mock('../components/CameraControl', () => ({
   default: ({
     onStatusChange,
     onStreamChange,
+    onFrame,
   }: {
     onStatusChange?: (status: CameraStatus) => void;
     onStreamChange?: (stream: MediaStream | null) => void;
+    onFrame?: (frame: TrackingFrame) => void;
   }) => {
     onStatusChangeRef.current = onStatusChange ?? null;
     onStreamChangeRef.current = onStreamChange ?? null;
+    onFrameRef.current = onFrame ?? null;
     return <div data-testid="fake-camera-control">Camera stub</div>;
   },
 }));
@@ -139,6 +144,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   onStatusChangeRef.current = null;
   onStreamChangeRef.current = null;
+  onFrameRef.current = null;
   // Task 118 (issue #147): the opacity/mirror store is a module singleton
   // that now persists across activations (and, in this static-import test
   // file, across tests too) — reset both localStorage and the in-memory
@@ -426,7 +432,8 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     fireEvent.pointerUp(overlay, { clientX: 80, clientY: 20, pointerId: 2 });
     expect(overlay.style.width).not.toBe(initialWidth);
     expect(
-      Number(overlay.style.width.replace('%', '')) / Number(overlay.style.height.replace('%', '')),
+      (Number(overlay.style.width.replace('%', '')) * 800) /
+        (Number(overlay.style.height.replace('%', '')) * 600),
     ).toBeCloseTo(16 / 9);
   });
 
@@ -440,6 +447,36 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     expect(overlay.style.top).not.toBe(initialTop);
     fireEvent.keyDown(overlay, { key: '+', shiftKey: true });
     expect(screen.getByTestId('camera-overlay-status')).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByTestId('camera-overlay-status')).toHaveTextContent(/camera overlay/i);
+  });
+
+  it('routes a MediaPipe pinch drag through the same move action as pointer/keyboard input', async () => {
+    await loadWorkspace();
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+    const hand = (x: number, y: number) => ({
+      id: 'hand-1',
+      handedness: 'right' as const,
+      confidence: 1,
+      landmarks: Array.from({ length: 21 }, (_, index) => ({
+        x: index === 8 ? x : 0.5,
+        y: index === 8 ? y : 0.5,
+        z: 0,
+      })),
+    });
+    const overlay = screen.getByTestId('camera-overlay');
+    const initialLeft = overlay.style.left;
+
+    await act(async () => {
+      onFrameRef.current?.({
+        timestamp: 1,
+        hands: [hand(0.5, 0.5)],
+        events: [{ type: 'pinchStart', handId: 'hand-1', timestamp: 1 }],
+      });
+      onFrameRef.current?.({ timestamp: 2, hands: [hand(0.6, 0.55)], events: [] });
+    });
+
+    expect(overlay.style.left).not.toBe(initialLeft);
     expect(screen.getByTestId('camera-overlay-status')).toHaveTextContent(/camera overlay/i);
   });
 });

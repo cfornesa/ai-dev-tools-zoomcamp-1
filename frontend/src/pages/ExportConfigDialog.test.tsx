@@ -382,11 +382,13 @@ describe('ExportConfigDialog terminal export action', () => {
     vi.unstubAllGlobals();
   });
 
-  it('surfaces camera still-frame capture failures from config assembly accessibly', async () => {
+  it('surfaces an unavailable active camera frame instead of silently omitting the overlay', async () => {
     const createObjectURL = vi.fn(() => 'blob:camera-failure');
     vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL: vi.fn() });
     const getCameraExport = vi.fn(() => {
-      throw new Error('Camera frame is not ready. Keep the camera active and try exporting again.');
+      throw new Error(
+        'Camera frame is unavailable. Keep the camera active and try exporting again.',
+      );
     });
 
     const { user, dialog } = await openDialog(baseProject(), { getCameraExport });
@@ -394,7 +396,7 @@ describe('ExportConfigDialog terminal export action', () => {
 
     const errorRegion = await within(dialog).findByTestId('export-generation-errors');
     expect(errorRegion).toHaveAttribute('role', 'alert');
-    expect(errorRegion).toHaveTextContent(/camera frame is not ready/i);
+    expect(errorRegion).toHaveTextContent(/camera frame is unavailable/i);
     expect(createObjectURL).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });

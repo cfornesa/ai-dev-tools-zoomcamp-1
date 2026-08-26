@@ -995,7 +995,7 @@ code {
 .editor-workspace {
   width: calc(100% - 48px);
   display: grid;
-  grid-template-columns: minmax(420px, 1fr) minmax(280px, 320px);
+  grid-template-columns: minmax(420px, 1fr) minmax(300px, 360px);
   align-items: start;
   gap: 16px;
   margin: 0 24px 24px;
@@ -1631,7 +1631,7 @@ textarea:disabled {
   border-left-color: var(--accent-border);
   font-weight: 600;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
@@ -1643,7 +1643,7 @@ textarea:disabled {
    same line. `min-width: 0` lets it actually shrink inside the row's flex
    layout rather than enforcing its intrinsic content width as a floor. */
 .editor-outline-layer-name {
-  flex: 1 1 5rem;
+  flex: 1 1 3rem;
   min-width: 0;
   width: 5rem;
 }
@@ -1656,7 +1656,7 @@ textarea:disabled {
 .editor-outline-layer-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   font-size: 0.7em;
   white-space: nowrap;
   flex: 0 0 auto;
@@ -1674,7 +1674,7 @@ textarea:disabled {
 }
 
 .editor-outline-row-layer > button {
-  padding: 3px 5px;
+  padding: 3px 3px;
 }
 
 .editor-outline-row-layer > button[aria-label^='Delete layer'] {
@@ -1825,11 +1825,20 @@ textarea:disabled {
   opacity: 0.75;
 }
 
+.editor-outline-row-more > button {
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+}
+
 .editor-outline-row-more[open] {
   display: block;
   flex-basis: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   margin-top: 4px;
-  padding-left: 1.5rem;
+  padding-left: 0.75rem;
 }
 
 /* Issue #131: the inline fill-color swatch/editor on a shape row — see

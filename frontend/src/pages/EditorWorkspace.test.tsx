@@ -256,7 +256,7 @@ describe('EditorWorkspace responsive layout', () => {
     // Preview keeps its own generous floor, while the sidebar keeps enough
     // room for all layer-row controls even at the narrow end of desktop.
     expect(sidebarMinPx).toBeGreaterThanOrEqual(280);
-    expect(sidebarMaxPx).toBeLessThanOrEqual(320);
+    expect(sidebarMaxPx).toBeLessThanOrEqual(360);
     expect(previewMinPx).toBeGreaterThanOrEqual(400);
     expect(css).toMatch(/\.editor-panel\[data-panel='preview'\]\s*\{\s*grid-column:\s*1;/);
   });

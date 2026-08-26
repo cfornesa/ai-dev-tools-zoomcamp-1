@@ -186,7 +186,13 @@ test.describe('Layers panel', () => {
         row.querySelectorAll<HTMLElement>('.editor-outline-drag-handle, input, button, summary'),
       ).map((control) => {
         const box = control.getBoundingClientRect();
-        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+        return {
+          label: control.getAttribute('aria-label') ?? control.tagName,
+          left: box.left,
+          right: box.right,
+          top: box.top,
+          bottom: box.bottom,
+        };
       });
       return {
         panel: {
@@ -204,10 +210,11 @@ test.describe('Layers panel', () => {
     expect(geometry.row.left).toBeGreaterThanOrEqual(geometry.panel.left);
     expect(geometry.row.right).toBeLessThanOrEqual(geometry.panel.right);
     for (const control of geometry.controls) {
-      expect(control.left).toBeGreaterThanOrEqual(geometry.row.left);
-      expect(control.right).toBeLessThanOrEqual(geometry.row.right);
-      expect(control.left).toBeGreaterThanOrEqual(geometry.panel.left);
-      expect(control.right).toBeLessThanOrEqual(geometry.panel.right);
+      const bounds = JSON.stringify({ panel: geometry.panel, row: geometry.row, control });
+      expect(control.left, bounds).toBeGreaterThanOrEqual(geometry.row.left);
+      expect(control.right, bounds).toBeLessThanOrEqual(geometry.row.right);
+      expect(control.left, bounds).toBeGreaterThanOrEqual(geometry.panel.left);
+      expect(control.right, bounds).toBeLessThanOrEqual(geometry.panel.right);
     }
   });
 
@@ -276,15 +283,15 @@ test.describe('Layers panel', () => {
     expect(zAfterDrag.slice(-2)).toEqual(zBefore.slice(-2).reverse());
     await assertNoDuplicateOutlineRows(page);
 
-    // Keyboard-only reorder: the existing "Move up" button swaps the same
-    // pair straight back -- the exact position a drag could also reach,
-    // reachable with no pointer at all. Issue #131 moved this button behind
-    // a per-row <details>/<summary> disclosure, so it must be opened first --
-    // a bare <summary> computes to accessibility role "generic" (not
-    // "button") in Chromium, so this targets it by its text instead.
+    // Keyboard-only reorder: the existing Selection HUD "Move down" button
+    // swaps the same pair straight back -- the exact position a drag could
+    // also reach, reachable with no pointer at all. Shape move controls moved
+    // out of the row disclosure into the HUD, so select the shape first.
     const thirdCircleRowAfterDrag = await shapeRow(page, thirdCircleLabel!);
-    await thirdCircleRowAfterDrag.getByText('More', { exact: true }).click();
-    await thirdCircleRowAfterDrag.getByRole('button', { name: /^Move .* down$/ }).click();
+    await thirdCircleRowAfterDrag
+      .getByRole('button', { name: thirdCircleLabel, exact: true })
+      .click();
+    await page.getByRole('button', { name: `Move ${thirdCircleLabel} down`, exact: true }).click();
 
     const zAfterKeyboard = await canvasZOrder(page);
     expect(zAfterKeyboard).toEqual(zBefore);
@@ -310,8 +317,9 @@ test.describe('Layers panel', () => {
 
     await page.getByRole('button', { name: 'Add layer' }).click(); // Layer 2
     const layer2Row = await layerRow(page, 'Layer 2');
-    await layer2Row.getByRole('button', { name: 'Unlocked' }).click();
-    await expect(layer2Row.getByRole('button', { name: 'Locked' })).toBeVisible();
+    const layer2Lock = layer2Row.getByRole('checkbox', { name: 'Layer Layer 2 locked' });
+    await layer2Lock.check();
+    await expect(layer2Lock).toBeChecked();
 
     await page.getByRole('button', { name: 'Add circle' }).click(); // Circle 1, on Layer 1
     const rowIdsBefore = await outlineRowIds(page);

@@ -1,8 +1,9 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
+import * as p5Adapter from '../render/p5Adapter';
 import type { Project, SceneVersion } from '../api/projects';
 import type { CameraStatus } from '../components/CameraControl';
 import type { TrackingFrame } from '../tracking/types';
@@ -204,14 +205,52 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     expect(
       within(cameraRow).getByRole('button', { name: /move camera overlay up/i }),
     ).toBeEnabled();
-    expect(screen.getByTestId('camera-overlay')).toHaveStyle({ zIndex: '3' });
+    // The DOM node is a transparent interaction surface, not a visual
+    // artwork layer. Its control-plane z-index stays above the canvas while
+    // the p5 compositor places the camera pixels at the selected artwork
+    // layer order.
+    expect(screen.getByTestId('camera-overlay')).toHaveStyle({ zIndex: '1' });
 
     await act(async () => {
       fireEvent.click(within(cameraRow).getByRole('button', { name: /move camera overlay up/i }));
     });
 
     expect(window.localStorage.getItem('gesture-studio:camera-overlay-layer-order')).toBe('1.5');
-    expect(screen.getByTestId('camera-overlay')).toHaveStyle({ zIndex: '2.5' });
+    expect(screen.getByTestId('camera-overlay')).toHaveStyle({ zIndex: '1' });
+  });
+
+  it('redraws the live compositor when the camera moves to a different Layers position', async () => {
+    const renderMock = vi.fn();
+    vi.spyOn(p5Adapter, 'createP5ScenePreview').mockReturnValue({
+      render: renderMock,
+      destroy: vi.fn(),
+      getCanvasElement: vi.fn(() => null),
+    });
+    await loadWorkspace(
+      baseScene({
+        layers: [
+          { id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false },
+          { id: 'layer-2', name: 'Layer 2', order: 1, visible: true, locked: false },
+        ],
+      }),
+    );
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+
+    await waitFor(() => {
+      expect(renderMock).toHaveBeenCalled();
+      expect(renderMock.mock.calls.at(-1)?.[4]).toEqual(expect.objectContaining({ layerOrder: 2 }));
+    });
+    const cameraRow = (await screen.findAllByTestId('camera-overlay-layer')).at(-1)!;
+    await act(async () => {
+      fireEvent.click(within(cameraRow).getByRole('button', { name: /move camera overlay up/i }));
+    });
+
+    await waitFor(() => {
+      expect(renderMock.mock.calls.at(-1)?.[4]).toEqual(
+        expect.objectContaining({ layerOrder: 1.5 }),
+      );
+    });
   });
 
   it('renders the overlay and slider once active with a stream, defaulting to 50% opacity', async () => {
@@ -370,7 +409,7 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     expect(screen.getByText('1 shape(s) in the working copy.')).toBeInTheDocument();
   });
 
-  it('stacks the video above the p5 mount div so opaque shape fill no longer fully hides it (task 137, issue #169)', async () => {
+  it('keeps the hidden video source out of CSS stacking while the p5 compositor owns camera pixels', async () => {
     await loadWorkspace(
       baseScene({
         shapes: [
@@ -393,23 +432,19 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     const video = within(preview).getByTestId('camera-overlay-video') as HTMLVideoElement;
     // The p5 preview mounts its <canvas> into this aria-hidden sibling div
     // (see `previewMountCallbackRef` in EditorWorkspace.tsx); it has no
-    // other identifying attribute, so it's found as the video's next
-    // sibling in DOM order, matching the JSX order in EditorWorkspace.tsx.
-    const p5MountDiv = video.nextElementSibling as HTMLElement;
+    // other identifying attribute, so find it after the overlay wrapper in
+    // the JSX order used by EditorWorkspace.tsx.
+    const overlay = screen.getByTestId('camera-overlay');
+    const p5MountDiv = overlay.nextElementSibling as HTMLElement;
     expect(p5MountDiv).toBeInTheDocument();
     expect(p5MountDiv.style.position).toBe('absolute');
 
-    const videoZIndex = Number(video.style.zIndex);
-    const mountZIndex = Number(p5MountDiv.style.zIndex);
-    expect(Number.isNaN(videoZIndex)).toBe(false);
-    expect(Number.isNaN(mountZIndex)).toBe(false);
-    // Regression check for task 137 (issue #169): before this fix the
-    // video sat at zIndex -2 vs. the mount div's -1, so the p5 canvas
-    // (and any opaque shape fill it drew) always painted over the camera
-    // feed, defeating the overlay's entire purpose. It must now stack
-    // strictly above the p5 canvas so the live feed is visible on-screen
-    // regardless of shape fill.
-    expect(videoZIndex).toBeGreaterThan(mountZIndex);
+    expect(video.style.visibility).toBe('hidden');
+    expect(Number(p5MountDiv.style.zIndex)).toBe(-2);
+    // The p5 compositor is the only visual camera layer. The DOM wrapper
+    // still supplies the draggable/focusable controls, but it does not place
+    // a second video above the entire flattened artwork canvas.
+    expect(Number(overlay.style.zIndex)).toBe(1);
   });
 
   it('moves and resizes the independent overlay without selecting artwork', async () => {

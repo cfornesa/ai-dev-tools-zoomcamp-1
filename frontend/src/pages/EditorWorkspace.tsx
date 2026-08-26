@@ -1897,7 +1897,16 @@ function EditorWorkspace() {
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
     }
-  }, [workingCopy, hasActiveBehaviors, previewMounted, cameraStatus]);
+  }, [
+    workingCopy,
+    hasActiveBehaviors,
+    previewMounted,
+    cameraStatus,
+    cameraLayerOrder,
+    cameraGeometry,
+    cameraOverlayOpacity,
+    cameraOverlayMirrored,
+  ]);
 
   // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes — the standard
   // shortcuts for this editor's in-session undo/redo policy (see
@@ -3196,23 +3205,18 @@ function EditorWorkspace() {
                 onPointerLeave={handleCanvasPointerLeave}
                 onDoubleClick={handleCanvasDoubleClick}
               >
-                {/* Task 110 (issue #141), restacked by task 137 (issue #169):
-                the live camera feed, composited via CSS above the p5 canvas
-                (zIndex -1 vs. the mount div's -2 below) so it's actually
-                visible on-screen instead of hidden behind opaque shape
-                fills — the entire point of a "camera overlay". This is safe
-                for thumbnail/export capture because that path
-                (`captureSocialThumbnail.ts`, driving `createP5ScenePreview`
-                from `p5Adapter.ts`) never touches this live DOM at all: it
-                builds a wholly separate off-screen `<div>`/p5 instance from
-                the saved scene document and has no camera code path
-                whatsoever, so this element's on-screen stacking has zero
-                effect on what gets captured. Mirrored (selfie view) by
-                default; `pointerEvents: 'none'` keeps shape click/drag
-                unaffected. Task 118 (issue #147): the mirror toggle flips
-                the `transform` live via the `cameraOverlayMirrored` state —
-                the `<video>` element itself never re-mounts, so the live
-                feed is uninterrupted. */}
+                {/* Task 110 (issue #141), restacked by task 137 (issue #169)
+                and made artwork-relative by issue #151: the camera pixels
+                are drawn by the p5 compositor, which inserts them into the
+                canonical artwork draw order using `layerOrder`. This DOM
+                element is only the transparent interaction/control surface;
+                its z-index must never pretend to be an artwork layer because
+                the p5 canvas is one flattened surface. Keeping the source
+                video hidden avoids drawing a second camera image above the
+                entire artwork canvas while still letting p5 read its current
+                frame. This is safe for thumbnail/export capture because
+                those paths use the same compositor with a captured still
+                frame and never depend on this live DOM. */}
                 {cameraStatus === 'active' && cameraStream && (
                   <div
                     data-testid="camera-overlay"
@@ -3231,7 +3235,10 @@ function EditorWorkspace() {
                       top: `${renderedCameraGeometry.y * 100}%`,
                       width: `${renderedCameraGeometry.width * 100}%`,
                       height: `${renderedCameraGeometry.height * 100}%`,
-                      zIndex: effectiveCameraLayerOrder + 1,
+                      // This surface contains only controls. The visible
+                      // camera image is drawn inside the p5 canvas at the
+                      // artwork-relative `effectiveCameraLayerOrder`.
+                      zIndex: 1,
                       transition: reducedMotion.effective ? 'none' : 'box-shadow 120ms ease',
                       touchAction: 'none',
                     }}
@@ -3246,7 +3253,7 @@ function EditorWorkspace() {
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        zIndex: effectiveCameraLayerOrder + 2,
+                        zIndex: 0,
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',

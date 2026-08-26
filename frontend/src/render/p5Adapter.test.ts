@@ -85,6 +85,56 @@ describe('p5 scene preview', () => {
     expect(pixel(preview.getCanvasElement()!, 20, 20)).toEqual([0, 255, 0, 255]);
   });
 
+  it('recomposes the live camera at its new artwork-relative layer after a layer-order change', () => {
+    const { preview } = tracked();
+    const cameraSource = document.createElement('canvas');
+    cameraSource.width = 40;
+    cameraSource.height = 40;
+    const cameraContext = cameraSource.getContext('2d')!;
+    cameraContext.fillStyle = '#00ff00';
+    cameraContext.fillRect(0, 0, 40, 40);
+    const scene = baseScene({
+      canvas: { width: 40, height: 40, backgroundColor: '#000000' },
+      layers: [layer({ id: 'bottom', order: 0 }), layer({ id: 'top', order: 2 })],
+      shapes: [
+        rectShape({
+          id: 'bottom-shape',
+          layerId: 'bottom',
+          transform: transform({ x: 0, y: 0 }),
+          width: 40,
+          height: 40,
+          style: style({ fill: '#ff0000' }),
+        }),
+        rectShape({
+          id: 'top-shape',
+          layerId: 'top',
+          transform: transform({ x: 20, y: 20 }),
+          width: 10,
+          height: 10,
+          style: style({ fill: '#0000ff' }),
+        }),
+      ],
+    });
+    const overlay = {
+      source: cameraSource,
+      geometry: { x: 0, y: 0, width: 1, height: 1 },
+      opacity: 1,
+      mirrored: false,
+      layerOrder: 1,
+    };
+
+    preview.render(scene, [], [], false, overlay);
+    // The top artwork layer is above the camera at its initial position.
+    expect(pixel(preview.getCanvasElement()!, 20, 20)).toEqual([0, 0, 255, 255]);
+
+    preview.render(scene, [], [], false, { ...overlay, layerOrder: 3 });
+    // The camera now paints above the top artwork layer, proving that a
+    // subsequent live-editor render applies the changed Layers position to
+    // the same compositor rather than leaving the camera at its old order.
+    expect(pixel(preview.getCanvasElement()!, 5, 5)).toEqual([0, 255, 0, 255]);
+    expect(pixel(preview.getCanvasElement()!, 20, 20)).toEqual([0, 255, 0, 255]);
+  });
+
   // Acceptance criterion 1
   it('draws a canvas sized canvas.width x canvas.height filled with backgroundColor', () => {
     const { preview } = tracked();

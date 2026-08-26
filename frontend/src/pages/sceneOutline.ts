@@ -235,6 +235,29 @@ export function renameLayer(scene: SceneDocument, layerId: string, name: string)
   return { ok: true, scene: withLayers(scene, nextLayers) };
 }
 
+export function renameShape(scene: SceneDocument, shapeId: string, name: string): Outcome {
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: 'A shape name cannot be empty.' };
+  if (trimmed.length > 200) {
+    return { ok: false, error: 'A shape name cannot be longer than 200 characters.' };
+  }
+  const shapes = rawShapes(scene);
+  if (!shapes.some((raw) => (raw as { id?: unknown }).id === shapeId)) {
+    return { ok: false, error: 'That shape no longer exists.' };
+  }
+  return {
+    ok: true,
+    scene: withShapes(
+      scene,
+      shapes.map((raw) =>
+        (raw as { id?: unknown }).id === shapeId
+          ? { ...(raw as Record<string, unknown>), name: trimmed }
+          : raw,
+      ),
+    ),
+  };
+}
+
 export function deleteLayer(scene: SceneDocument, layerId: string): Outcome {
   const layers = getLayers(scene);
   if (!layers.some((l) => l.id === layerId)) {

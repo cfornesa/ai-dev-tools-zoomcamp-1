@@ -208,6 +208,7 @@
         "groupId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
         "transform": { "$ref": "#/$defs/transform2D" },
         "style": { "$ref": "#/$defs/style" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
         "trail": { "$ref": "#/$defs/trail" },
         "visible": {
           "description": "Task 111 (issue #142): a shape's own visibility, independent of any ancestor group/layer's visible flag -- the effective (rendered) visibility combines this with inherited ancestor state (see sceneOutline.ts's isEffectivelyLocked/visibility precedence). Optional for backward compatibility with documents saved before this field existed; treated as true when absent.",

@@ -76,7 +76,7 @@ function HudCollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onTogg
 }
 
 function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
-  const { selectedShape, selectedGroup, outline } = sceneEditor;
+  const { selectedShape, selectedGroup, selectedLayerId, layers, outline } = sceneEditor;
 
   // Issue #173 (task 141): a collapse/expand toggle for this HUD's body,
   // independent of the underlying selection — collapsing must never touch
@@ -125,6 +125,33 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
     setOpacityError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedShape?.id, opacityValue]);
+
+  if (selectedLayerId) {
+    const layer = layers.find((candidate) => candidate.id === selectedLayerId);
+    if (layer) {
+      const count = outline.filter(
+        (row) => row.kind === 'shape' && row.layerId === layer.id && row.inheritedVisible,
+      ).length;
+      return (
+        <div
+          className="editor-selection-hud"
+          role="group"
+          aria-label={`Selected: ${layer.name}`}
+          data-testid="selection-hud"
+        >
+          <div className="editor-selection-hud-header">
+            <p className="editor-selection-hud-title">{layer.name}</p>
+            <HudCollapseToggle collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+          </div>
+          {!collapsed && (
+            <p role="status">
+              Layer selected · {count} visible shape{count === 1 ? '' : 's'}
+            </p>
+          )}
+        </div>
+      );
+    }
+  }
 
   if (selectedGroup) {
     const row = outline.find((r) => r.kind === 'group' && r.id === selectedGroup.id);

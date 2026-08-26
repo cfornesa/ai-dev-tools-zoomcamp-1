@@ -142,6 +142,39 @@ function LayerNameField({ layerId, name, onRename, className }: LayerNameFieldPr
   );
 }
 
+function ShapeNameField({
+  shapeId,
+  name,
+  onRename,
+}: {
+  shapeId: string;
+  name: string;
+  onRename: (shapeId: string, name: string) => void;
+}) {
+  return (
+    <input
+      key={name}
+      type="text"
+      className="editor-outline-shape-name"
+      defaultValue={name}
+      aria-label={`Shape name for ${name}`}
+      onBlur={(event) => {
+        const value = event.target.value.trim();
+        if (value && value !== name) onRename(shapeId, value);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.currentTarget.value = name;
+          event.currentTarget.blur();
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 export type MoveControlsProps = {
   itemId: string;
   itemLabel: string;
@@ -606,6 +639,21 @@ function OutlineRowItem({
         data-dragging={dragAttrs['data-dragging']}
         data-drop-zone={dragAttrs['data-drop-zone']}
         data-drop-valid={dragAttrs['data-drop-valid']}
+        data-selected={row.id === sceneEditor.selectedLayerId ? 'true' : undefined}
+        tabIndex={0}
+        onClick={(event) => {
+          if ((event.target as HTMLElement).closest('input,button,select,summary')) return;
+          sceneEditor.selectLayer(row.id);
+        }}
+        onKeyDown={(event) => {
+          if (
+            (event.key === 'Enter' || event.key === ' ') &&
+            event.target === event.currentTarget
+          ) {
+            event.preventDefault();
+            sceneEditor.selectLayer(row.id);
+          }
+        }}
       >
         <span className="editor-outline-drag-handle" aria-hidden="true" {...handleProps}>
           ⠿
@@ -802,6 +850,7 @@ function OutlineRowItem({
         />
         Select for grouping
       </label>
+      <ShapeNameField shapeId={row.id} name={label} onRename={sceneEditor.renameShape} />
       <button
         type="button"
         aria-pressed={row.id === sceneEditor.selectedShapeId}

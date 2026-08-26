@@ -18,6 +18,7 @@ import {
   pruneEmptyGroups,
   removeShapeFromScene,
   renameLayer,
+  renameShape,
   toggleGroupFlag,
   toggleLayerFlag,
   toggleShapeFlag,
@@ -187,6 +188,25 @@ describe('sceneOutline layers', () => {
     expect(lockOutcome.ok).toBe(true);
     if (!lockOutcome.ok) return;
     expect(getLayers(lockOutcome.scene)[0]).toMatchObject({ visible: false, locked: true });
+  });
+});
+
+describe('sceneOutline shape names', () => {
+  it('persists a trimmed shape name without changing other shape fields', () => {
+    const shape = shapeIn('layer-1');
+    const scene = baseScene({ shapes: [shape] });
+    const outcome = renameShape(scene, shape.id, '  Hero  ');
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.scene.shapes).toEqual([{ ...shape, name: 'Hero' }]);
+  });
+
+  it('rejects empty or overlong names without mutation', () => {
+    const shape = shapeIn('layer-1');
+    const scene = baseScene({ shapes: [shape] });
+    expect(renameShape(scene, shape.id, '   ')).toMatchObject({ ok: false });
+    expect(renameShape(scene, shape.id, 'x'.repeat(201))).toMatchObject({ ok: false });
+    expect(scene.shapes).toEqual([shape]);
   });
 });
 

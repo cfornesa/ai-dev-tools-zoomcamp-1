@@ -49,6 +49,7 @@ type BaseShape = {
   groupId: string | null;
   transform: Transform;
   style: Style;
+  name?: string;
   // Task 111 (issue #142): a shape's own visibility/lock state,
   // independent of any ancestor group/layer's flag (see
   // schema/scene.schema.json's `shape.visible`/`shape.locked` doc
@@ -269,6 +270,8 @@ export function shapeTypeDisplayName(type: ShapeType): string {
  * discover is gone.
  */
 export function shapeLabel(shape: Shape, allShapes: Shape[]): string {
+  const customName = typeof shape.name === 'string' ? shape.name.trim() : '';
+  if (customName.length > 0 && customName.length <= 200) return customName;
   const sameType = allShapes.filter((s) => s.type === shape.type);
   const index = sameType.findIndex((s) => s.id === shape.id);
   const ordinal = index >= 0 ? index + 1 : sameType.length + 1;

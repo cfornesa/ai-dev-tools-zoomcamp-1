@@ -2969,6 +2969,8 @@ function EditorWorkspace() {
                 >
                   {shapesInDrawOrder.map((shape) => {
                     const isSelected = shape.id === sceneEditor.selectedShapeId;
+                    const isLayerSelected =
+                      sceneEditor.selectedLayerId === shape.layerId && (shape.visible ?? true);
                     // Issue #111: a hovered-but-not-selected shape gets its own
                     // distinct affordance from the selected outline; a shape
                     // that's effectively locked (via its own/layer's/group's
@@ -2986,6 +2988,7 @@ function EditorWorkspace() {
                     const shapeClassName = [
                       'editor-scene-shape',
                       isSelected ? 'editor-scene-shape-selected' : '',
+                      isLayerSelected ? 'editor-scene-shape-layer-selected' : '',
                       isHovered && !isHoveredLocked ? 'editor-scene-shape-hovered' : '',
                       isHoveredLocked ? 'editor-scene-shape-hovered-locked' : '',
                     ]

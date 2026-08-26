@@ -262,4 +262,11 @@ describe('shapeLabel', () => {
     const shape = createShape('path', 'layer-1', CANVAS);
     expect(shapeLabel(shape, [shape])).not.toContain(shape.id);
   });
+
+  it('prefers a valid custom name and falls back for malformed names', () => {
+    const shape = { ...createShape('circle', 'layer-1', CANVAS), name: '  Hero  ' };
+    expect(shapeLabel(shape, [shape])).toBe('Hero');
+    expect(shapeLabel({ ...shape, name: '   ' }, [shape])).toBe('Circle 1');
+    expect(shapeLabel({ ...shape, name: 'x'.repeat(201) }, [shape])).toBe('Circle 1');
+  });
 });

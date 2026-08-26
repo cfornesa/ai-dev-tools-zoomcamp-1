@@ -45,6 +45,7 @@ import {
   outlineBreadcrumb,
   removeShapeFromScene,
   renameLayer as renameLayerOp,
+  renameShape as renameShapeOp,
   toggleGroupFlag,
   toggleShapeFlag as toggleShapeFlagOp,
   toggleLayerFlag,
@@ -216,6 +217,7 @@ export function useSceneEditor(
   // is a separate, additive outline-only pick used only to gather items to
   // combine into a group — it never overwrites the single active selection.
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [outlineError, setOutlineError] = useState<string | null>(null);
   const [past, setPast] = useState<SceneDocument[]>([]);
@@ -447,6 +449,7 @@ export function useSceneEditor(
     (id: string | null) => {
       if (id === null) {
         setSelectedShapeId(null);
+        setSelectedLayerId(null);
         return;
       }
       // Ignore selecting an id that doesn't resolve to a current shape or
@@ -457,7 +460,23 @@ export function useSceneEditor(
       if (!workingCopy) return;
       const isShape = getEditableShapes(rawShapes(workingCopy)).some((s) => s.id === id);
       const isGroup = getGroups(workingCopy).some((g) => g.id === id);
-      if (isShape || isGroup) setSelectedShapeId(id);
+      if (isShape || isGroup) {
+        setSelectedShapeId(id);
+        setSelectedLayerId(null);
+      }
+    },
+    [workingCopy],
+  );
+
+  const selectLayer = useCallback(
+    (id: string | null) => {
+      if (id === null) {
+        setSelectedLayerId(null);
+        return;
+      }
+      if (!workingCopy || !getLayers(workingCopy).some((layer) => layer.id === id)) return;
+      setSelectedLayerId(id);
+      setSelectedShapeId(null);
     },
     [workingCopy],
   );
@@ -878,6 +897,8 @@ export function useSceneEditor(
       if (current === null) return null;
       return shapeIds.has(current) || groupIds.has(current) ? current : null;
     });
+    const layerIds = new Set(getLayers(scene).map((layer) => layer.id));
+    setSelectedLayerId((current) => (current && layerIds.has(current) ? current : null));
     setMultiSelectedIds((current) => current.filter((id) => shapeIds.has(id) || groupIds.has(id)));
   }, []);
 
@@ -913,6 +934,14 @@ export function useSceneEditor(
     (layerId: string, name: string) => {
       if (!workingCopy) return;
       applyOutcome(renameLayerOp(workingCopy, layerId, name));
+    },
+    [workingCopy, applyOutcome],
+  );
+
+  const renameShape = useCallback(
+    (shapeId: string, name: string) => {
+      if (!workingCopy) return;
+      applyOutcome(renameShapeOp(workingCopy, shapeId, name));
     },
     [workingCopy, applyOutcome],
   );
@@ -1321,8 +1350,10 @@ export function useSceneEditor(
     workingCopy,
     shapes,
     selectedShapeId,
+    selectedLayerId,
     selectedShape,
     selectShape,
+    selectLayer,
     addShape,
     duplicateSelected,
     deleteSelected,
@@ -1373,6 +1404,7 @@ export function useSceneEditor(
     outlineError,
     addLayer,
     renameLayer,
+    renameShape,
     deleteLayer,
     moveLayer,
     toggleLayerVisible,

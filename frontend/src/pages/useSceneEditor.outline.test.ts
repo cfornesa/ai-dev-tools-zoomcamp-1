@@ -59,6 +59,27 @@ describe('useSceneEditor layers', () => {
     expect(result.current.layers.find((l) => l.id === 'layer-1')?.name).toBe('Background');
   });
 
+  it('synchronizes layer selection and shape selection, including undoable rename', () => {
+    const { result } = renderSceneEditor();
+    act(() => result.current.addShape('circle'));
+    const shape = result.current.shapes[0];
+
+    act(() => result.current.selectLayer(shape.layerId));
+    expect(result.current.selectedLayerId).toBe(shape.layerId);
+    expect(result.current.selectedShapeId).toBeNull();
+
+    act(() => result.current.selectShape(shape.id));
+    expect(result.current.selectedShapeId).toBe(shape.id);
+    expect(result.current.selectedLayerId).toBeNull();
+
+    act(() => result.current.renameShape(shape.id, '  Hero  '));
+    expect(result.current.shapes[0].name).toBe('Hero');
+    act(() => result.current.undo());
+    expect(result.current.shapes[0].name).toBeUndefined();
+    act(() => result.current.redo());
+    expect(result.current.shapes[0].name).toBe('Hero');
+  });
+
   it('surfaces a textual error and does not mutate scene state when deleting the last layer', () => {
     const single: SceneDocument = structuredClone(TWO_LAYER_SCENE);
     single.layers = [(single.layers as unknown[])[0]];

@@ -1638,9 +1638,22 @@ textarea:disabled {
    its own id, so canvas <-> Layers-panel selection reads as one obviously
    shared state in both directions, not just correct underlying data. */
 .editor-outline-row-group[data-selected='true'],
-.editor-outline-row-shape[data-selected='true'] {
+.editor-outline-row-shape[data-selected='true'],
+.editor-outline-row-layer[data-selected='true'] {
   border-left-color: var(--accent);
   background: var(--accent-bg);
+}
+
+.editor-outline-shape-name {
+  min-width: 0;
+  width: min(14rem, 100%);
+  max-width: 100%;
+}
+
+.editor-scene-shape-layer-selected {
+  stroke: var(--accent);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 4px var(--accent));
 }
 
 .editor-outline-kind-icon {

@@ -1667,7 +1667,7 @@ blank state is permanent or recoverable — still pointing toward a
 render-time exception or a mount-order race between the p5 canvas
 lifecycle and `CameraControl`'s `onStatusChange` callback as the leading
 hypothesis, pending that live reproduction.
-Status: ACTIVE
+Status: COMPLETE
 GitHub issue: [#140](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/140)
 Discovery gate: Searched `_docs/tasks.md` and existing GitHub issues for
 a duplicate. Issue #132 ("Enable camera does nothing in production",
@@ -4869,11 +4869,386 @@ GitHub issue: [#181](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/
 Dependencies: #180
 Evidence (2026-08-25): `1828a3c`; focused Code-tab tests 11/11, including line/column diagnostics; exact `make check` passed.
 
-## 150. Groom and demand-gate independent camera-overlay positioning
+## 150. Add a responsive, persistent picture-in-picture camera overlay
 
-Goal: Decide whether the existing editor camera overlay needs independent drag, resize, and reposition controls with persisted position/size.
-Description: The overlay currently fills the Preview canvas and already supports persisted opacity and mirror preferences. Independent picture-in-picture positioning would introduce new pointer interaction, coordinate/clamping rules, responsive behavior, and persistence decisions.
-Status: DEPENDENCY-BLOCKED
+### Goal
+
+Whenever the editor camera is enabled, show the camera as an independently
+movable and resizable picture-in-picture overlay inside the Preview canvas.
+Keep the overlay usable at every supported screen size, synchronized with the
+artwork layer order, and visible in thumbnails and exports.
+
+### Acceptance criteria
+
+- [x] Enabling the camera always renders one camera overlay in the editor
+  Preview; disabling the camera removes it without changing the scene.
+- [x] The overlay can be dragged freely within the canvas by pointer input;
+  it cannot escape the canvas bounds. It snaps only when grid view is enabled,
+  using the existing grid/snap behavior.
+- [x] The overlay can be resized in both dimensions while preserving its fixed
+  camera aspect ratio. It has no artificial minimum or maximum size; every
+  positive size that fits within the current canvas is allowed, and resizing
+  always clamps it inside the canvas without overflow.
+- [x] The canvas fills its allocated editor workspace without page-level
+  overflow. On mobile, sidebar, canvas, and editor elements use 100% width and
+  the canvas uses a 16:9 aspect ratio.
+- [x] Overlay position and size persist after reload and are restored safely
+  when stored data is absent, malformed, or unavailable. Persisted geometry is
+  canvas-relative/normalized so it adapts to the current screen size rather
+  than creating browser-specific layouts.
+- [x] Exactly one shape or group can be selected and directly manipulated at a
+  time. Overlay drag and resize gestures do not select, move, resize, or rotate
+  artwork.
+- [x] Overlay stacking follows the artwork layer order: the overlay's visual
+  z-order matches its position in Layers, and changing the order in either the
+  Layers UI or canvas updates the other representation.
+- [x] Keyboard controls are the default accessible path for moving and
+  resizing the overlay, with an accessible name, instructions, and live status
+  feedback for position/size changes. MediaPipe gestures may invoke the same
+  actions without creating a separate interaction model.
+- [x] When reduced motion is preferred, drag and resize feedback uses simplified
+  transitions without changing the resulting geometry or interaction outcome.
+- [x] The positioned/resized camera overlay appears in generated thumbnails and
+  exports with the artwork. When the camera is active at generation time,
+  thumbnail/export generation captures the current video frame as a still image
+  and embeds that image using the overlay's position, size, opacity, mirror
+  state, and layer order; it must never substitute a placeholder or silently
+  omit the active overlay. If a required frame cannot be captured, generation
+  reports an actionable error rather than producing an incomplete artifact.
+- [x] Existing camera opacity/mirror controls, shape selection and transforms,
+  layer ordering, responsive layouts, thumbnails, exports, and save/reload
+  behavior remain functional; focused regression coverage, the relevant full
+  frontend suite, build, typecheck, lint, formatting, and `make check` pass.
+
+### Out of scope
+
+- Public viewer or standalone-export camera-overlay behavior beyond making the
+  existing editor thumbnail/export capture include the overlay; track separate
+  surface requirements in [#145](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1),
+  [#146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1), or a new issue if
+  those scopes change.
+- Multiple simultaneous shape/group selection, bulk manipulation, or a second
+  selection model; the existing single-selection invariant remains required.
+- Numeric input fields for geometry; keyboard controls and accessible status
+  feedback are sufficient.
+- New camera capture, MediaPipe recognition, permissions, or transport/data
+  handling; this task consumes the existing camera/gesture capabilities only.
+- Server-side collaboration or per-project geometry synchronization; persistence
+  is client-side and responsive to the current canvas/screen size.
+
+### Evidence and pending items
+
+- **Status:** COMPLETE
+- **Evidence so far:** Product owner confirmed the use case and interaction,
+  responsive, persistence, accessibility, layering, motion, and export rules.
+  PM reconciled the prior demand-gated placeholder with the issue and the
+  existing camera work in #147, layer/selection work in #183/#186, and stacking
+  work in #169.
+- **Pending verification:** None. Final authenticated QA passed every
+  acceptance criterion on commit `bf052c7` and closed GitHub issue #151 with
+  completed state.
+- **Next action:** None for this task.
+- **Verification evidence:** Engineer commit `bf052c7`; focused camera
+  acceptance tests passed (182 tests across 12 files), including the live
+  compositor subset (58 tests across 2 files); the requested camera Playwright
+  scenario passed (1 Chromium test); `UV_CACHE_DIR=/tmp/codex-backlog-uv-cache
+  make check` passed with backend 629 passed/22 skipped and frontend 1,864
+  passed; explicit `npm run build`, typecheck, lint, and formatting passed.
+  Final QA PASS comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/151#issuecomment-5420853940.
+- **Remaining assumption:** Persisted geometry is one normalized,
+  canvas-relative preference that adapts to the current screen size; it is not
+  a set of browser-specific or per-project layouts. For an active camera,
+  thumbnail/export generation captures the current `<video>` frame at
+  generation time and embeds it as the overlay image; an unavailable frame is
+  an explicit generation error, never an omission or placeholder.
+- **Durable memory link:** None required; existing camera/export and responsive
+  constraints are documented in the linked issue history and project guidance.
+
+### Discovery gate
+
+- [x] Searched `_docs/tasks.md`, `.local/tasks/`, and existing GitHub issues for
+  duplicates; #151 is the existing camera-overlay positioning task.
+- [x] Matching GitHub issue link is retained above.
+- [x] No new actionable out-of-scope work was discovered; existing related
+  surface issues are linked above.
+
+### Criterion-by-criterion implementation plan
+
+1. Model the overlay geometry as normalized canvas-relative position and size,
+   restore it defensively from client-side storage, and clamp it whenever the
+   canvas or screen-size presentation changes.
+2. Add pointer drag and fixed-ratio resize interactions that stay inside the
+   canvas, use free movement by default, and reuse the existing grid snapping
+   only while grid view is enabled.
+3. Keep the responsive editor layout full-width on mobile with a mobile-only
+   16:9 canvas, while keeping the overlay and all canvas coordinates aligned
+   after resize and avoiding page-level overflow.
+4. Preserve the single-shape/group interaction invariant, route overlay
+   keyboard movement/resizing through the same geometry actions, expose an
+   accessible name/instructions/live status, and allow existing MediaPipe
+   gestures to invoke those actions without a second state model.
+5. Derive overlay stacking from the canonical Layers order and synchronize
+   layer changes in both directions without allowing overlay gestures to
+   mutate artwork selection or transforms.
+6. Apply reduced-motion behavior to drag/resize feedback without changing
+   geometry results, and preserve existing opacity, mirror, save/reload, camera,
+   shape, layer, and responsive behavior.
+7. Extend thumbnail/export generation so an active camera captures the current
+   video frame at generation time and composites that still image with the
+   saved artwork using the overlay geometry, opacity, mirror state, and layer
+   order. Surface a blocking, actionable error if capture is unavailable; do
+   not emit a placeholder or incomplete artifact.
+8. Add focused geometry, interaction, responsive, accessibility, persistence,
+   and capture regression coverage, then run the relevant frontend suite,
+   build, typecheck, lint, formatting, and `make check` gates.
+
+### Constraints
+
+- Keep implementation within the existing editor camera overlay, canvas,
+  Layers, persistence, accessibility, and capture paths.
+- Reuse the repository's existing local-storage preference conventions,
+  responsive layout system, grid/snap behavior, reduced-motion handling, and
+  MediaPipe action plumbing where applicable.
+- Do not add dependencies. Follow `_docs/process.md`, the design system, and
+  the testing guidelines.
+
 GitHub issue: [#151](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/151)
-Dependency: product-owner confirmation of a concrete use case plus decisions on snapping, minimum/maximum size, aspect ratio, persistence scope, and reduced-motion behavior.
-Next action: product owner updates #151 with demand and checkable acceptance criteria; then PM grooming resumes before implementation.
+Dependencies: #147/#141 camera overlay foundation (complete), #169 stacking fix
+(complete), #180 editor layout (complete), #183/#186 selection and naming
+(complete)
+Next action: none; final QA PASS and issue closure are recorded above.
+
+## 151. Move layer and group actions to top toolbar as icon buttons with WCAG-compliant tooltips
+
+Goal: Relocate exactly four existing scene-outline actions — "Add layer", "Combine into group", "Ungroup selected", and "Delete selected group" — from the Layers sidebar to the existing editor toolbar without changing their mutation semantics.
+Description: Use the toolbar's established icon-button and tooltip pattern from #172/#180. The toolbar must remain usable at desktop and narrow/mobile widths, and the Layers panel must retain its outline, row controls, and "Clear group selection" action.
+Status: COMPLETE
+GitHub issue: [#182](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/182)
+Dependencies: #179 (COMPLETE), #180 (COMPLETE)
+Acceptance matrix: four actions appear once in the `Editor actions` toolbar; the Layers panel no longer contains those four buttons; each action preserves its current enabled/disabled conditions, locked-state handling, selection behavior, and one-step undo semantics; each toolbar button has a distinct glyph, stable accessible name, hover/focus tooltip, and visible unclipped rendering in light/dark themes; keyboard and responsive/a11y regression tests plus `make check` pass.
+Evidence (2026-08-26): PM grooming comment posted; engineer commit `9f52007f2a5d78eda2b78f57256047bdb54077c2`; QA PASS comment posted; focused tests 86 passed; `make check` passed with backend 629 tests and frontend 1,831 tests; frontend build/typecheck/lint/format passed. GitHub issue closed as completed.
+Next action: none; retain the QA comment and commit as the handoff evidence.
+
+## 152. Enable bidirectional layer selection and seamless layer/shape renaming
+
+Goal: Enable full bidirectional selection between the Layers panel outline and the visual canvas (clicking a layer row selects and highlights its elements on canvas and in HUD; clicking on canvas highlights both shape and parent layer), and ensure intuitive, responsive renaming for layers and shapes.
+Description: Add an explicit layer-selection state alongside the existing single shape/group selection. Clicking a layer row selects that layer and highlights its contained shapes; clicking a shape/group in the canvas or outline clears layer selection, selects the item, and highlights its parent layer row. Add persistent optional custom shape names with derived-label fallback, exposed through the outline and Selection HUD and reflected across editor labels.
+Status: COMPLETE
+GitHub issue: [#183](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/183)
+Dependencies: #179 (COMPLETE), #180 (COMPLETE)
+Acceptance matrix: layer-row activation selects exactly that layer, highlights all of its visible shapes in the canvas, marks the layer row selected, and shows a layer-level HUD with the layer name and contained-shape count; canvas/shape/group selection clears layer selection, selects the item, and marks both its row and parent layer row; layer and shape rename fields commit once on Enter or blur, trim whitespace, reject empty/over-200-character values without mutation, and preserve focus/selection; custom shape names persist in the scene JSON, use the existing type/ordinal label when absent, and are consistent in the outline, HUD, breadcrumb, and target pickers; visibility, lock, grouping, transforms, undo/redo, deletion, hidden/locked layers, nested groups, empty layers, stale selection, narrow layouts, keyboard access, and click-vs-drag behavior remain correct; focused tests, a11y coverage, frontend build/typecheck/lint/format, and `make check` pass.
+Out of scope: group renaming is tracked separately in [#186](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/186); multi-layer/multi-shape selection semantics beyond the existing grouping pick, bulk rename, export/thumbnail naming changes, and server-side collaboration are not part of this task.
+Evidence (2026-08-26): PM grooming comment posted; follow-up #186 created for out-of-scope group renaming; engineer commits `28394b58a697580df496a2257aadd76bfeaa4ade` and `509292fff60af5bf2bf6f4dc2dc51b880a29b785`; initial QA FAIL was fixed and reverified PASS; focused tests 180 passed; `make check` and frontend build/typecheck/lint/format passed. GitHub issue closed as completed.
+Next action: none; retain the QA comments and commits as the handoff evidence.
+
+## 153. Fit canvas to preview workspace viewport and maximize art creation real estate
+
+## Goal
+Ensure the artwork viewport uses the available Preview workspace on desktop, fitting the canonical scene rectangle as large as possible without distortion while preserving precise pointer, transform, and pan/zoom behavior.
+
+## Acceptance criteria
+- [ ] At desktop widths (>=1024px), the Preview canvas viewport expands to the full space allocated to it by the editor workspace; it is not capped by the logical scene width (currently commonly 800px), and it introduces no page-level horizontal scrollbar.
+- [ ] The rendered scene keeps the canonical `canvas.width / canvas.height` aspect ratio at every supported viewport size. When the workspace ratio differs from the scene ratio, remaining space is intentional framing/letterboxing rather than stretching or cropping the artwork.
+- [ ] On initial load and after a workspace resize, the canvas fit uses the largest scale that stays within the available viewport, accounting for the toolbar/panel layout and existing dark canvas framing; the scene remains fully visible.
+- [ ] A clearly labeled, keyboard-accessible `Fit to viewport` control fits the scene to the current viewport without changing scene JSON, saved versions, drafts, exports, thumbnails, or camera data.
+- [ ] `Zoom in`, `Zoom out`, and `Reset zoom` remain predictable after responsive fitting: zoom changes are relative to the current fit baseline, reset returns to the centered fit view, and pan is cleared or clamped whenever effective zoom changes.
+- [ ] Clicking or dragging a shape, moving/resizing/rotating with transform handles, and editing path vertices maps client coordinates to canonical scene coordinates correctly at the fit scale, at non-default zoom, and after a resize; no visible coordinate drift or offset is introduced.
+- [ ] Panning remains bounded to the visible viewport at zoom levels that create overflow, never exposes unintended dead space, and does not move the scene at or below the fit baseline when no overflow exists.
+- [ ] The canvas, overlays, selection outlines, grid/guides, camera overlay, and p5 rendering remain aligned while fitting, zooming, panning, and resizing; editor-local view state remains isolated from scene persistence and export/thumbnail output.
+- [ ] Narrow/mobile behavior remains usable: the existing responsive layout does not overflow horizontally, the scene remains aspect-correct and interactable, and desktop-only fitting changes do not hide Preview or regress existing panel behavior.
+- [ ] Existing canvas, zoom/pan, transform, vertex-edit, camera, accessibility, and responsive tests are updated or extended for the new geometry, and the focused frontend suite, frontend build/typecheck/lint/format checks, and `make check` pass.
+
+## Criterion-by-criterion implementation plan
+1. Measure the rendered Preview canvas allocation with a resize-aware mechanism and derive a fit scale from available width/height, toolbar/padding, and the scene's canonical dimensions.
+2. Make the viewport fill its editor allocation while keeping the scene box aspect-correct, centered, fully visible, and free of page-level overflow at desktop and narrow widths.
+3. Separate layout fit scale from user zoom, define the effective zoom baseline, and route Fit to viewport, Zoom in/out, Reset, wheel, keyboard, and pan clamping through one view-state path.
+4. Keep the rendered canvas and every SVG/camera/selection/grid overlay in the same geometry; verify p5's internal logical resolution remains unchanged.
+5. Reuse the rendered element's `getBoundingClientRect()` in `clientToCanvasPoint` and exercise selection, shape transforms, and vertex editing at fit, zoomed, panned, and resized states.
+6. Add focused unit/component coverage for fit calculations and control semantics, plus responsive and interaction regression coverage; run the required build, type, lint, format, and `make check` gates.
+
+## Out of scope
+- [ ] Changing the canonical scene coordinate system, scene schema, p5 rendering algorithms, or export/thumbnail rendering.
+- [ ] Redesigning the editor workspace, root width, panel allocation, or toolbar ergonomics; #178 and #180 are completed prerequisites.
+- [ ] Persisting zoom, pan, or fit preference across sessions, or adding multi-canvas/document tabs; create a separate follow-up if product demand requires these.
+
+## Evidence and pending items
+- **Status:** COMPLETE
+- **Evidence so far:** #178 (full-width desktop shell) and #180 (studio/canvas framing and toolbar) are closed/completed. `EditorWorkspace.tsx` currently uses a logical-width, `maxWidth: 100%`, aspect-ratio viewport; zoom/pan is local CSS transform state; `clientToCanvasPoint` is the shared client-to-scene conversion path; existing zoom tests are in `EditorWorkspace.zoomPan.test.tsx`.
+- **Pending verification:** None; QA re-verification passed after #187.
+- **Next action:** None; retain the QA comment and commit as the handoff evidence.
+- **Durable memory link:** None required; existing canvas coordinate and browser-test guidance is sufficient.
+
+## Discovery gate
+- [x] Searched `_docs/tasks.md`, `.local/tasks/`, and existing GitHub issues for a duplicate
+- [x] Added the matching GitHub issue link, or recorded why issue creation is still pending
+- [x] Reconciled newly discovered out-of-scope work before closing this task
+
+## Constraints
+- **Files in scope:** `frontend/src/pages/EditorWorkspace.tsx`, editor canvas/layout styles in `frontend/src/index.css`, existing zoom/pan and canvas interaction tests, and narrowly related editor tests needed to prove alignment.
+- **Related references:** #178, #180, existing issue #156 zoom/pan behavior, and issue #109 responsive canvas sizing.
+- **Implementation boundary:** Keep view state client-local and canonical scene dimensions unchanged. Reuse `clientToCanvasPoint` and DOM geometry rather than introducing a second coordinate system.
+- **Dependencies:** #178 and #180 — both COMPLETE.
+- **Libraries:** Use existing dependencies and browser APIs; do not add a dependency without approval.
+
+Status: COMPLETE
+GitHub issue: [#184](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/184)
+Dependencies: #178 (COMPLETE), #180 (COMPLETE)
+Evidence (2026-08-26): PM grooming comment posted; engineer commit `91056e48912ce1ba98c5a54da1c85c585780ee37`; focused tests, frontend build/typecheck/lint/format passed; initial QA FAIL was attributable to #187 and re-verification posted QA PASS after #187 fixed the draft-autosave test isolation; GitHub issue closed as completed.
+Next action: none; retain the QA comments and commit as the handoff evidence.
+
+## 154. Disambiguate shape property editing and Move-to-Layer controls in Selection HUD
+
+## Goal
+
+Make the selected shape's primitive identity and editable properties obvious, while clearly separating layer/group organization actions in the Selection HUD and Inspector. Moving an item must either produce a visible, verifiable result or a visible explanation of why no mutation occurred.
+
+## Acceptance criteria
+
+- [ ] The Selection HUD presents layer/group reparenting in a clearly headed organization section with distinct, descriptive labels such as `Target layer`, `Move to layer`, `Target group`, and `Move to group`; the destination controls are not presented or styled as shape-type selectors.
+- [ ] For a single selected shape, the Inspector and Selection HUD each show a clearly labeled, read-only primitive indicator using the existing shape types and display names (`Circle`, `Rectangle`, `Line`, or `Path`). No unsupported type conversion or morphing control is shown; path-only point controls remain visibly scoped to `Path`.
+- [ ] Shape property controls remain visibly grouped separately from organization controls and retain unambiguous labels for the properties they edit (position, scale, rotation, opacity, fill, stroke, stroke width, and path points where applicable); selecting a group or multi-selection does not show misleading single-shape property controls.
+- [ ] A Move-to-Layer or Move-to-Group action is disabled or otherwise prevented when its selected destination is the item's current layer/group (including current `Top level`), and activating it cannot create an undo entry or silently change scene JSON.
+- [ ] Invalid or stale destinations and existing lock/cycle/validation rejections remain non-mutating and produce visible status/error feedback in the HUD or Inspector; the feedback identifies the rejected organization action and remains accessible to assistive technology.
+- [ ] A successful layer/group move produces visible live status feedback naming the moved item and destination, updates the breadcrumb/outline/target state to the new hierarchy, preserves selection, and creates exactly one undoable scene mutation.
+- [ ] Existing layer/group controls, shape property edits, lock handling, grouping, undo/redo, keyboard operation, narrow layouts, and selection behavior remain functional; focused Selection HUD/Inspector/reparenting and accessibility tests, frontend build/typecheck/lint/format, and `make check` pass.
+
+## Out of scope
+
+- Shape type conversion, morphing, or changing a shape's primitive-specific schema fields; the current editor has no supported conversion mutation, so this task exposes identity only. File a separate product issue if conversion/morphing is requested.
+- Redesigning the scene schema, adding new primitive types, changing layer/group mutation semantics, or changing export/thumbnail behavior.
+- Group renaming, which is tracked separately in [#186](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/186).
+
+## Evidence and pending items
+
+- **Status:** ACTIVE
+- **Evidence so far:** Dependency [#180](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/180) is closed as completed. `SelectionHud.tsx` currently renders shared `MoveControls` beside shape properties; `ShapeInspectorPanel.tsx` renders style fields and path-only point editing but no primitive indicator; `useSceneEditor.ts` routes reparenting through `outlineError`, skips commits for legitimate no-ops, and rejects invalid/locked destinations without changing scene state. Existing reparenting and Selection HUD tests cover the current mutation paths.
+- **Pending verification:** Engineering must add the disambiguated headings/labels, read-only primitive indicators, no-op prevention, and success/rejection feedback, then run the criterion-focused tests and required full checks.
+- **Next action:** Engineering implements the scoped HUD/Inspector presentation and no-op feedback using the existing `sceneEditor` mutation/error channels; QA rechecks every criterion and the full verification command.
+- **Durable memory link:** None required; the existing scene-outline and accessibility conventions are sufficient.
+
+## Discovery gate
+
+- [x] Searched `_docs/tasks.md`, `.local/tasks/`, and open GitHub issues for duplicates; no equivalent issue found.
+- [x] Added and reconciled the matching GitHub issue link.
+- [x] No distinct actionable follow-up was discovered. Unsupported shape conversion/morphing is a product possibility, not an implementation defect or currently actionable scope.
+
+## Criterion-by-criterion implementation plan
+
+1. Update `SelectionHud.tsx` and `ShapeInspectorPanel.tsx` with separate organization and shape-property sections, accessible headings, and a read-only primitive label derived from the existing shape type display-name helper.
+2. Update the shared `MoveControls` in `LayersPanel.tsx` to identify destinations unambiguously, derive whether each selected destination is already current, and disable/prevent legitimate no-op submissions without duplicating scene mutation rules.
+3. Reuse `useSceneEditor.ts`'s existing `outlineError` path for rejected moves and add a success-status path at the presentation boundary that clears stale errors and confirms the resulting hierarchy without changing mutation semantics.
+4. Add focused component and accessibility regression coverage for each supported primitive, path-only properties, group/multi-selection states, current-destination no-ops, rejected moves, successful moves, selection/breadcrumb updates, and undo behavior; run the required frontend checks and `make check`.
+
+## Constraints
+
+- **Files in scope:** `frontend/src/pages/SelectionHud.tsx`, `frontend/src/pages/ShapeInspectorPanel.tsx`, shared `MoveControls` in `frontend/src/pages/LayersPanel.tsx`, narrowly related `useSceneEditor.ts`/styles, and focused tests for these surfaces.
+- **Mutation boundary:** Reuse `sceneOutline.ts` and `useSceneEditor.ts` as the single source of truth for move validation, lock/cycle rules, scene commits, and undo history; do not implement a second reparenting path in the UI.
+- **Libraries:** Use existing dependencies and browser APIs; do not add a dependency without approval.
+- **Accessibility:** Keep controls keyboard reachable, headings/labels programmatically associated, and status/error feedback exposed with appropriate live/status semantics.
+
+Status: COMPLETE
+GitHub issue: [#185](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/185)
+Dependencies: #180 (COMPLETE)
+Evidence (2026-08-26): PM grooming comment posted; engineer commit `6891b13`; QA PASS comment posted; focused tests 158 passed; full frontend 1,841 passed; backend 629 passed/22 skipped; `make check`, build, typecheck, lint, and format passed. GitHub issue closed as completed.
+Next action: none; retain the QA comment and commit as the handoff evidence.
+
+## 155. Make draftAutosave tests deterministic in the full frontend suite
+
+## Goal
+
+Make the frontend test gate deterministic by eliminating the order-dependent failure observed in `frontend/src/storage/draftAutosave.test.ts` during QA of #184 and #186. The fix is test/workflow isolation work; draft-autosave production behavior remains unchanged.
+
+## Acceptance criteria
+
+- [ ] `frontend/src/storage/draftAutosave.test.ts` passes repeatedly in isolation and when run as part of the full Vitest suite, with no dependence on file or test execution order.
+- [ ] Each test has isolated timer state, IndexedDB state, browser-storage globals, and any module-level/shared state it touches; pending timers, asynchronous database work, open database handles, and temporary global replacements are cleaned up or deterministically controlled before the next test.
+- [ ] The regression is exercised by a focused test or harness that demonstrates the previously failing full-suite context, and the chosen isolation boundary explains why fake-indexeddb/real timers and async IndexedDB operations cannot leak across tests.
+- [ ] The test remains behaviorally meaningful: debounce timing, stale-write prevention, clear/save races, storage failures, project scoping, clean-baseline gating, and schema validation continue to be asserted rather than bypassed with broad sleeps or skipped cases.
+- [ ] The focused draft-autosave test command, the full frontend `npm test` suite, frontend build/typecheck/lint/format checks, and `make check` all pass; any unrelated failure is separately reproduced, classified, and linked rather than hidden by this task.
+- [ ] No production behavior changes are introduced; if a narrowly related shared test setup/configuration change is required, it is covered by regression evidence and remains limited to test infrastructure.
+
+## Out of scope
+
+- [ ] Changing `frontend/src/storage/draftAutosave.ts`, React draft-autosave hooks, IndexedDB schema, debounce semantics, or user-visible recovery behavior; file a separate product issue if production behavior is found to be defective.
+- [ ] Refactoring unrelated frontend tests or masking failures by changing suite inclusion, reducing coverage, increasing global timeouts, or adding retries without an isolation rationale.
+- [ ] Re-verifying or closing #184/#186; those issues consume this task's completed full-suite evidence in their follow-up QA passes.
+
+## Evidence and pending items
+
+- **Status:** COMPLETE
+- **Evidence so far:** Engineer commit `e49948dada69cf340e43db7862c567f2f3b6e362` changed only `draftAutosave.test.ts`, adding timer/IndexedDB cleanup and bounded waiting. Focused tests passed 22/22 across 5 runs; full frontend passed 1,847/1,847 twice; frontend quality/build checks and `make check` passed with remaining macOS sandbox socket/startup limitations classified separately. QA PASS comment posted.
+- **Pending verification:** None.
+- **Next action:** Use this evidence to re-verify dependent issues #184 and #186.
+- **Durable memory link:** None required; this is a task-specific test-isolation defect and no reusable platform constraint was discovered during grooming.
+
+## Discovery gate
+
+- [x] Searched `_docs/tasks.md`, `.local/tasks/` (directory absent), and existing GitHub issues for a duplicate; #187 is the existing workflow/test-isolation issue linked from #184 and #186.
+- [x] Added the matching GitHub issue link.
+- [x] Reconciled the discovered follow-up with #184 and #186; no additional actionable issue was found.
+
+## Constraints
+
+- **Files in scope:** `frontend/src/storage/draftAutosave.test.ts`, narrowly related Vitest/test setup or configuration files only if required to isolate the failure, and focused test-support code.
+- **Implementation boundary:** Preserve the production draft-autosave module and its public behavior; isolate test resources explicitly and do not rely on execution order or arbitrary suite delays.
+- **Libraries:** Use the existing Vitest and fake-indexeddb dependencies; do not add dependencies without approval.
+- **Verification:** Run the focused draft-autosave command, full frontend suite, frontend build/typecheck/lint/format, and `make check`; record environment and classify any unavailable or unrelated failures.
+
+GitHub issue: [#187](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/187)
+Dependencies: None; unblocks QA re-verification for #184 and #186.
+Evidence (2026-08-26): GitHub issue closed as completed.
+
+## 156. Support renaming groups in the Layers outline and Selection HUD
+
+## Goal
+
+Allow users to assign and edit a persistent custom name for a selected group from either the Layers outline or Selection HUD, with the same name used everywhere the editor presents that group.
+
+## Acceptance criteria
+
+- [ ] A group row in the Layers outline exposes an inline, keyboard-focusable group-name field, and the Selection HUD for the selected group exposes the same rename affordance; either surface can start, edit, and commit a rename without changing the selected group.
+- [ ] A rename commits exactly once on Enter or blur, trims leading/trailing whitespace, accepts a trimmed name of 1–200 characters, and rejects whitespace-only or over-200-character input without changing the scene, displayed name, selection, or focus state unexpectedly; the prior valid name remains visible after rejection and any rejection is exposed as accessible feedback.
+- [ ] A successful custom name is stored on the matching group in the scene JSON and is reflected consistently in the Layers outline row, Selection HUD title/accessible name, selection breadcrumb, and all existing group destination/target labels that use group names.
+- [ ] A group with no usable legacy/custom name continues to render a deterministic derived fallback using the existing group-label convention (for example, `Group 1`); loading or displaying such a legacy group must not crash or make the group unselectable, and the fallback remains in use until a valid custom name is committed.
+- [ ] A successful rename creates exactly one undoable scene mutation; one Undo restores the prior name and one Redo restores the new name. Rename does not change group id, membership/childIds, parent/layer placement, transforms, visibility, lock state, or current selection.
+- [ ] Renaming works for top-level, nested, empty, hidden, and locked groups according to existing selection/editing conventions; it does not bypass lock rules for scene mutations or alter grouping/reparenting behavior.
+- [ ] The rename controls have stable accessible names tied to the group, are keyboard reachable, expose their validation/status feedback to assistive technology, and preserve the existing narrow-layout behavior without clipping or horizontal overflow.
+- [ ] Focused scene-outline, Layers outline, Selection HUD, persistence, undo/redo, legacy-fallback, keyboard, and accessibility tests pass, as do the frontend build/typecheck/lint/format checks and `make check`.
+
+## Criterion-by-criterion implementation plan
+
+1. Add a pure `renameGroup` scene-outline operation and the corresponding `useSceneEditor` callback, reusing the existing `Outcome`/`applyOutcome` path so successful edits create one history entry and invalid/stale requests are non-mutating.
+2. Centralize group display-label resolution so valid custom names are preferred while missing, blank, or malformed legacy names receive the existing deterministic `Group N`-style fallback without changing group identity or membership.
+3. Add a reusable accessible inline group-name field to the group row in `LayersPanel.tsx` and the selected-group branch in `SelectionHud.tsx`; commit on Enter/blur once, trim and validate at the UI and mutation boundaries, and surface rejection without losing the prior name.
+4. Thread the resolved group label through `buildOutline`, `outlineBreadcrumb`, HUD accessible labels, and existing move/target controls, while preserving selection, lock, visibility, nesting, and responsive behavior.
+5. Add focused pure-function and component/a11y regression tests for both rename surfaces, validation and stale/legacy inputs, all label consumers, one-step undo/redo, and unaffected group state; run the full required verification gates.
+
+## Out of scope
+
+- Layer or shape renaming; completed in [#183](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1).
+- Bulk/multi-group rename, group creation naming policy changes, or a broader scene naming/schema redesign; file a separate product issue if requested.
+- Renaming in exports, thumbnails, generated HTML, server-side collaboration, or other non-editor artifacts; this task covers editor-local scene JSON and its existing group-label consumers only.
+- Changes to group membership, hierarchy, transforms, visibility/lock semantics, selection semantics, reparenting, or grouping/ungrouping behavior.
+
+## Evidence and pending items
+
+- **Status:** COMPLETE
+- **Evidence so far:** #183 is closed as completed. Engineering commit `93553b8` implements #186; focused tests (164 at final QA), frontend build/typecheck/lint/format, backend checks, and `make check` passed after #187 fixed the draft-autosave isolation defect. QA re-verification PASS comment posted; GitHub issue closed as completed.
+- **Pending verification:** None.
+- **Next action:** None; retain the QA comments and commit as the handoff evidence.
+- **Durable memory link:** None required; existing scene-outline, undo, schema, and accessibility guidance covers this boundary.
+
+## Discovery gate
+
+- [x] Searched `_docs/tasks.md`, `.local/tasks/` (directory absent), and existing GitHub issues for a duplicate; #186 is the only open group-naming match.
+- [x] Added the matching GitHub issue link.
+- [x] Reconciled the prior out-of-scope group-renaming item from #183 into this task.
+
+## Constraints
+
+- **Files in scope:** `frontend/src/pages/sceneOutline.ts`, `frontend/src/pages/useSceneEditor.ts`, `frontend/src/pages/LayersPanel.tsx`, `frontend/src/pages/SelectionHud.tsx`, shared editor styles, schema/type fixtures only if required by the existing persisted-name contract, and focused tests for these surfaces.
+- **Mutation boundary:** Reuse `sceneOutline.ts` and `useSceneEditor.ts` as the single source of truth for validation, scene commits, and undo history; do not create a parallel UI-only rename path.
+- **Libraries:** Use existing dependencies and browser APIs; do not add a dependency without approval.
+- **Accessibility:** Keep both rename entry points keyboard reachable, associate labels with their fields, and expose validation/status changes through appropriate live/status semantics.
+- **Dependencies:** #183 (COMPLETE), with #179 and #180 already complete prerequisites for the current outline/HUD layout.

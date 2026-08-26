@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
 import { IDBFactory } from 'fake-indexeddb';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SceneDocument } from '../api/projects';
 import {
@@ -72,11 +72,40 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const testControllers = new Set<DraftAutosaveController>();
+const testDatabases = new Set<IDBDatabase>();
+
+function createTestController(
+  options: ConstructorParameters<typeof DraftAutosaveController>[0] = {},
+): DraftAutosaveController {
+  const controller = new DraftAutosaveController({
+    ...options,
+    openDb:
+      options.openDb ??
+      (() =>
+        openDraftDatabase().then((db) => {
+          testDatabases.add(db);
+          return db;
+        })),
+  });
+  testControllers.add(controller);
+  return controller;
+}
+
 beforeEach(() => {
   // Fresh in-memory IndexedDB per test so writes from one test never leak
   // into another.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any).indexedDB = new IDBFactory();
+});
+
+afterEach(() => {
+  // Keep real debounce timers and fake IndexedDB meaningful while ensuring
+  // resources cannot outlive the test that created them.
+  for (const controller of testControllers) controller.cancelPending();
+  testControllers.clear();
+  for (const db of testDatabases) db.close();
+  testDatabases.clear();
 });
 
 describe('DEFAULT_DEBOUNCE_MS', () => {
@@ -182,7 +211,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
   const DEBOUNCE_MS = 40;
 
   it('collapses a rapid burst of edits into a single write, timed from the last edit', async () => {
-    const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+    const controller = createTestController({ debounceMs: DEBOUNCE_MS });
     const identity = { projectId: 'proj-burst', userKey: 'alice', sessionId: 'sess-1' };
     const baseline = scene();
 
@@ -207,7 +236,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
   });
 
   it('records project/session identity, scene data, a timestamp, and a deterministic summary', async () => {
-    const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+    const controller = createTestController({ debounceMs: DEBOUNCE_MS });
     const identity = { projectId: 'proj-shape', userKey: 'alice', sessionId: 'sess-1' };
     const before = new Date();
     controller.schedule(identity, scene(), scene({ shapes: [testShape('s1', 'circle')] }));
@@ -225,7 +254,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
   });
 
   it('never lets an older delayed write overwrite a newer one', async () => {
-    const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+    const controller = createTestController({ debounceMs: DEBOUNCE_MS });
     const identity = { projectId: 'proj-race', userKey: 'alice', sessionId: 'sess-1' };
     const baseline = scene();
 
@@ -235,7 +264,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
     // at all.
     await wait(DEBOUNCE_MS / 2);
     controller.schedule(identity, baseline, scene({ shapes: [testShape('new', 'rect')] }));
-    await wait(DEBOUNCE_MS + 40);
+    await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+      timeout: 1000,
+      interval: 10,
+    });
 
     const write = controller.getLastWrite();
     expect(write).not.toBeNull();
@@ -332,7 +364,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
   });
 
   it('clearDraft cancels any pending write and removes the persisted record', async () => {
-    const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+    const controller = createTestController({ debounceMs: DEBOUNCE_MS });
     const identity = { projectId: 'proj-clear', userKey: 'alice', sessionId: 'sess-1' };
     controller.schedule(identity, scene(), scene({ shapes: [testShape('s1', 'circle')] }));
 
@@ -377,7 +409,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
   });
 
   it('scopes writes per project so switching projects cannot leak or overwrite another project draft', async () => {
-    const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+    const controller = createTestController({ debounceMs: DEBOUNCE_MS });
     controller.schedule(
       { projectId: 'proj-a', userKey: 'alice', sessionId: 'sess-1' },
       scene(),
@@ -418,7 +450,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
   // captures. These cover `markClean()`/`resetCleanBaseline()` directly.
   describe('markClean/resetCleanBaseline gating', () => {
     it('prevents scheduling a write for a snapshot matching the clean baseline, cancelling any already-pending one', async () => {
-      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const controller = createTestController({ debounceMs: DEBOUNCE_MS });
       const identity = { projectId: 'proj-clean', userKey: 'alice', sessionId: 'sess-1' };
       const clean = scene({ shapes: [testShape('saved', 'circle')] });
 
@@ -436,7 +468,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     });
 
     it('resumes scheduling once a genuine edit differs from the clean baseline', async () => {
-      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const controller = createTestController({ debounceMs: DEBOUNCE_MS });
       const identity = { projectId: 'proj-resume', userKey: 'alice', sessionId: 'sess-1' };
       const clean = scene();
 
@@ -450,7 +482,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     });
 
     it('resetCleanBaseline restores normal scheduling', async () => {
-      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const controller = createTestController({ debounceMs: DEBOUNCE_MS });
       const identity = { projectId: 'proj-reset', userKey: 'alice', sessionId: 'sess-1' };
       const snapshot = scene({ shapes: [testShape('s1', 'circle')] });
 
@@ -474,7 +506,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
   // dedicated pass/fail tests for that gate.
   describe('issue #126: duplicateId validation gate on the local write path', () => {
     it('drops a scene with duplicate shape ids and reports it via getLastFailure, without persisting anything', async () => {
-      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const controller = createTestController({ debounceMs: DEBOUNCE_MS });
       const identity = { projectId: 'proj-dup-id', userKey: 'alice', sessionId: 'sess-1' };
       const duplicateScene = scene({
         shapes: [testShape('dup', 'circle'), testShape('dup', 'rect')],
@@ -489,7 +521,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     });
 
     it('a valid (no duplicate ids) scene still writes normally through the same gate', async () => {
-      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const controller = createTestController({ debounceMs: DEBOUNCE_MS });
       const identity = { projectId: 'proj-valid', userKey: 'alice', sessionId: 'sess-1' };
       const validScene = scene({
         layers: [
@@ -511,7 +543,7 @@ describe('DraftAutosaveController debounce and race safety', () => {
     });
 
     it('a rejected write is superseded normally: a subsequent valid edit still writes and clears the failure', async () => {
-      const controller = new DraftAutosaveController({ debounceMs: DEBOUNCE_MS });
+      const controller = createTestController({ debounceMs: DEBOUNCE_MS });
       const identity = {
         projectId: 'proj-recover-after-dup',
         userKey: 'alice',

@@ -4833,3 +4833,47 @@ Resolution follow-up (2026-08-25, #177 fixed):
   diff` showing no residual change.
 - Issue #177 left open per instructions (implementation done, not closed
   by the engineer).
+
+## 146. Expand app container and editor workspace to full viewport width on desktop
+
+Goal: Remove the fixed 1126px width restriction on `#root` and provide a responsive full-width layout for desktop viewports (>=1024px, 1440px, 1920px+) so the creative studio maximizes available screen real estate.
+Description: `#root` is currently constrained to `width: 1126px` in `frontend/src/index.css`, preventing the editor workspace from utilizing wider desktop displays and constraining side panels. Non-editor routes should maintain centered readable bounds while the editor route expands full-width.
+Status: COMPLETE
+GitHub issue: [#178](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/178)
+Evidence (2026-08-25): `b8a5a50`; focused responsive tests 32/32; exact `make check` passed with backend 629 passed/22 skipped and frontend 126 files/1,829 tests.
+
+## 147. Allocate robust Layers panel width and prevent layer-row control overflow
+
+Goal: Ensure the Layers sidebar panel has an adequate width allocation (minimum ~280px–320px) and that layer rows contain all interactive controls strictly within the panel's bounding box with zero horizontal overflow.
+Description: With `fit-content(20%)` in a narrow container, layer rows set to `flex-wrap: nowrap` overflow on the right side of `.editor-panel[data-panel='layers']`. The column track width and row flex styling must be adjusted so all controls ("Delete layer", "► More", checkboxes, name) remain completely inside the panel container across all screen sizes.
+Status: COMPLETE
+GitHub issue: [#179](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/179)
+Dependencies: #178
+Evidence (2026-08-25): `4c45e18`; focused layout/layers tests 68/68; exact `make check` passed with no new lint warnings.
+
+## 148. Modernize studio workspace layout with photo-editor ergonomics and dark-theme canvas framing
+
+Goal: Transform the editor workspace from a collection of document-style bordered boxes into an integrated photo-editor / vector studio interface with compact toolbars, clear visual hierarchy, and an immersive canvas viewport.
+Description: Rebalance the workspace UI to feel closer to a dedicated creative suite: dark neutral canvas framing mat, streamlined unified top toolbar with tooltips, compact panel headers with high information density, and reduced page-header padding in the editor view.
+Status: COMPLETE
+GitHub issue: [#180](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/180)
+Dependencies: #178, #179
+Evidence (2026-08-25): `48b7730`; focused editor/layout/a11y tests 50/50; exact `make check` passed.
+
+## 149. Harden Visual<->Code bidirectional sync, error localization, and state persistence
+
+Goal: Ensure seamless, error-free synchronization between Visual canvas actions and the four Code sub-tabs (JSON, HTML, CSS, JS), providing granular diagnostics that pinpoint exact validation errors without discarding edits or causing state desynchronization.
+Description: Harden bidirectional sync across Code sub-tabs, ensure undo/redo updates Code text and Visual canvas in lockstep without staleness, and enhance diagnostic error reporting with precise line and field indicators.
+Status: COMPLETE
+GitHub issue: [#181](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/181)
+Dependencies: #180
+Evidence (2026-08-25): `1828a3c`; focused Code-tab tests 11/11, including line/column diagnostics; exact `make check` passed.
+
+## 150. Groom and demand-gate independent camera-overlay positioning
+
+Goal: Decide whether the existing editor camera overlay needs independent drag, resize, and reposition controls with persisted position/size.
+Description: The overlay currently fills the Preview canvas and already supports persisted opacity and mirror preferences. Independent picture-in-picture positioning would introduce new pointer interaction, coordinate/clamping rules, responsive behavior, and persistence decisions.
+Status: DEPENDENCY-BLOCKED
+GitHub issue: [#151](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/151)
+Dependency: product-owner confirmation of a concrete use case plus decisions on snapping, minimum/maximum size, aspect ratio, persistence scope, and reduced-motion behavior.
+Next action: product owner updates #151 with demand and checkable acceptance criteria; then PM grooming resumes before implementation.

@@ -19,6 +19,7 @@ import {
 } from '../export/generateSocialThumbnailZip';
 import { validateProjectMetadataForPublish } from '../validation/projectMetadata';
 import { normalizeSceneLayers } from '../validation/scene';
+import type { CameraOverlayExport } from '../editor/cameraOverlayGeometry';
 import { useVersionHistory } from './useVersionHistory';
 
 /**
@@ -96,6 +97,7 @@ export type ExportConfig = {
    * Task 55's original config shape; added here rather than re-fetched
    * downstream since the dialog already holds it in `sceneDetail`. */
   scene: SceneDocument;
+  cameraOverlay?: CameraOverlayExport | null;
 };
 
 export type ExportConfigDialogProps = {
@@ -109,6 +111,7 @@ export type ExportConfigDialogProps = {
    * own spy instead to observe the assembled config without touching the
    * DOM/Blob APIs. */
   onExport?: (config: ExportConfig) => void | Promise<void>;
+  getCameraExport?: () => CameraOverlayExport | null;
 };
 
 /** Default `onExport`: when `config.includeSocialThumbnailZip` is off (the
@@ -135,6 +138,7 @@ async function defaultOnExport(config: ExportConfig): Promise<void> {
         description: config.description,
         interactionMode: config.interactionMode,
         includeAttribution: config.includeAttribution,
+        cameraOverlay: config.cameraOverlay,
       });
     } catch (error) {
       throw new ExportGenerationBlockedError([
@@ -154,6 +158,7 @@ async function defaultOnExport(config: ExportConfig): Promise<void> {
     description: config.description,
     interactionMode: config.interactionMode,
     includeAttribution: config.includeAttribution,
+    cameraOverlay: config.cameraOverlay,
   });
   if (!result.ok) {
     throw new ExportGenerationBlockedError(result.reasons);
@@ -165,6 +170,7 @@ function ExportConfigDialog({
   projectId,
   project,
   onExport = defaultOnExport,
+  getCameraExport,
 }: ExportConfigDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { historyLoadState, historyError, versions, reloadHistory } = useVersionHistory(
@@ -302,6 +308,7 @@ function ExportConfigDialog({
       title: project.title,
       description: project.description,
       scene: sceneDetail,
+      cameraOverlay: getCameraExport?.() ?? null,
     };
     setGenerationErrors([]);
     try {

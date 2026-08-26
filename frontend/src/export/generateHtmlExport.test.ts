@@ -93,6 +93,26 @@ describe('generateHtmlExport: happy path', () => {
     if (!result.ok) return;
     expect(result.filename).toBe('my-cool-scene.html');
   });
+
+  it('embeds the captured camera still with normalized geometry and display settings', () => {
+    const result = generateHtmlExport(
+      baseInput({
+        cameraOverlay: {
+          frameDataUrl: 'data:image/png;base64,ZmFrZQ==',
+          geometry: { x: 0.1, y: 0.2, width: 0.3, height: 0.16875 },
+          opacity: 0.75,
+          mirrored: true,
+          layerOrder: 4,
+        },
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.html).toContain('id="export-camera-overlay"');
+    expect(result.html).toContain('left:10%;top:20%;width:30%;height:16.875%');
+    expect(result.html).toContain('opacity:0.75');
+    expect(result.html).toContain('transform:scaleX(-1)');
+  });
 });
 
 describe('generateHtmlExport: embedded runtime script validity', () => {

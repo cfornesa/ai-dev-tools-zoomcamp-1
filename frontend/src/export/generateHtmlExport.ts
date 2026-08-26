@@ -32,6 +32,7 @@
 import { buildScenePlan, SceneRenderError } from '../render/sceneDrawPlan';
 import type { SceneDocument } from '../api/projects';
 import { checkRendererCompatibility, type InteractionMode } from './exportCompatibility';
+import type { CameraOverlayExport } from '../editor/cameraOverlayGeometry';
 import { embedJsonScript, escapeHtml } from './safeEmbed';
 import { stripSceneForExport } from './sceneExportStripping';
 import { buildStandaloneCameraScript } from './standaloneCameraSource';
@@ -126,6 +127,7 @@ export type GenerateHtmlExportInput = {
    * section. Defaults to `false` (attribution off) when omitted, matching
    * the dialog's own documented default. */
   includeAttribution?: boolean;
+  cameraOverlay?: CameraOverlayExport | null;
 };
 
 export type GenerateHtmlExportResult =
@@ -224,6 +226,13 @@ function renderCameraControlsSection(): string {
     <section id="camera-controls-host" role="group" aria-label="Live camera"></section>`;
 }
 
+function renderCameraOverlay(input: CameraOverlayExport | null | undefined): string {
+  if (!input) return '';
+  const { x, y, width, height } = input.geometry;
+  const style = `position:absolute;left:${x * 100}%;top:${y * 100}%;width:${width * 100}%;height:${height * 100}%;z-index:${input.layerOrder};opacity:${input.opacity};object-fit:cover;${input.mirrored ? 'transform:scaleX(-1);' : ''}`;
+  return `<img id="export-camera-overlay" src="${input.frameDataUrl}" alt="Camera overlay still frame" style="${style}" />`;
+}
+
 function renderMotionControl(): string {
   return `
     <div id="motion-control">
@@ -239,7 +248,9 @@ function renderMotionControl(): string {
 const EXPORT_STYLE = `
     body { font-family: system-ui, sans-serif; margin: 0; padding: 1.5rem; max-width: 960px; }
     h1 { margin-top: 0; }
+    #scene-canvas-host { position: relative; max-width: 100%; }
     #scene-canvas-host canvas { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
+    #export-camera-overlay { pointer-events: none; }
     #demo-controls-host { margin-top: 1.5rem; }
     #demo-controls-host [role="radiogroup"] { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
     #demo-controls-host div { margin-bottom: 0.5rem; }
@@ -286,7 +297,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   ${includeAttribution ? renderAttributionComment() : ''}
   <h1>${safeTitle}</h1>
   ${hasDescription ? `<p id="project-description">${safeDescription}</p>` : ''}
-  <div id="scene-canvas-host"></div>
+  <div id="scene-canvas-host">${renderCameraOverlay(input.cameraOverlay)}</div>
   ${renderMotionControl()}
   ${renderDemoControlsSection()}
   ${includesCamera ? renderCameraControlsSection() : ''}

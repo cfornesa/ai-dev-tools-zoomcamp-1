@@ -57,6 +57,15 @@ import {
 } from './sceneShapes';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
+import {
+  captureCameraStill,
+  clampCameraOverlayGeometry,
+  moveCameraOverlay,
+  resizeCameraOverlay,
+  useCameraOverlayGeometry,
+  type CameraOverlayExport,
+  type CameraOverlayGeometry,
+} from '../editor/cameraOverlayGeometry';
 import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
 import { normalizeSceneLayers, validateScene } from '../validation/scene';
@@ -1165,6 +1174,12 @@ function EditorWorkspace() {
   } = useCameraOverlaySettings();
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraGeometryState = useCameraOverlayGeometry();
+  const { setGeometry: setCameraGeometry, ...cameraGeometry } = cameraGeometryState;
+  const cameraGeometryRef = useRef<CameraOverlayGeometry>(cameraGeometry);
+  cameraGeometryRef.current = cameraGeometry;
+  const cameraGestureRef = useRef<'move' | 'resize' | null>(null);
+  const cameraGestureStartRef = useRef({ x: 0, y: 0, geometry: cameraGeometry });
 
   useEffect(() => {
     const videoEl = cameraVideoRef.current;
@@ -1536,6 +1551,7 @@ function EditorWorkspace() {
   // would just leave a stale highlight behind once the gesture ends).
   const [hoveredShapeId, setHoveredShapeId] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [cameraOverlayStatus, setCameraOverlayStatus] = useState<string | null>(null);
 
   // Issue #159: Visual/Code is a sub-toggle inside the Preview panel
   // (implementer's-call option from the issue) rather than a new entry in
@@ -2074,6 +2090,96 @@ function EditorWorkspace() {
   const canvasWidth = canvas.width ?? 800;
   const canvasHeight = canvas.height ?? 600;
   canvasSizeRef.current = { width: canvasWidth, height: canvasHeight };
+
+  const updateCameraGeometry = (next: CameraOverlayGeometry, status = true) => {
+    const clamped = clampCameraOverlayGeometry(next);
+    cameraGeometryRef.current = clamped;
+    setCameraGeometry(clamped);
+    if (status)
+      setCameraOverlayStatus(
+        `Camera overlay: ${Math.round(clamped.width * canvasWidth)} by ${Math.round(clamped.height * canvasHeight)} pixels.`,
+      );
+  };
+
+  const beginCameraGesture = (event: ReactPointerEvent, kind: 'move' | 'resize') => {
+    event.stopPropagation();
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    cameraGestureRef.current = kind;
+    cameraGestureStartRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      geometry: cameraGeometryRef.current,
+    };
+  };
+
+  const moveCameraGesture = (event: ReactPointerEvent) => {
+    const kind = cameraGestureRef.current;
+    if (!kind) return;
+    event.stopPropagation();
+    const start = cameraGestureStartRef.current;
+    const next =
+      kind === 'move'
+        ? moveCameraOverlay(
+            start.geometry,
+            { x: event.clientX - start.x, y: event.clientY - start.y },
+            canvasWidth,
+            canvasHeight,
+            snapSettings.gridEnabled,
+          )
+        : resizeCameraOverlay(start.geometry, event.clientX - start.x, canvasWidth);
+    updateCameraGeometry(next);
+  };
+
+  const endCameraGesture = (event: ReactPointerEvent) => {
+    if (!cameraGestureRef.current) return;
+    event.stopPropagation();
+    cameraGestureRef.current = null;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  };
+
+  const handleCameraKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 0.05 : 0.02;
+    let next = cameraGeometryRef.current;
+    if (event.key === 'ArrowLeft') next = { ...next, x: next.x - step };
+    else if (event.key === 'ArrowRight') next = { ...next, x: next.x + step };
+    else if (event.key === 'ArrowUp') next = { ...next, y: next.y - step };
+    else if (event.key === 'ArrowDown') next = { ...next, y: next.y + step };
+    else if (event.key === '+' || event.key === '=')
+      next = resizeCameraOverlay(next, canvasWidth * step, canvasWidth);
+    else if (event.key === '-' || event.key === '_')
+      next = resizeCameraOverlay(next, -canvasWidth * step, canvasWidth);
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+    updateCameraGeometry(next);
+  };
+
+  const cameraLayerOrder = Math.max(
+    0,
+    ...(Array.isArray(workingCopy?.layers)
+      ? workingCopy.layers.map((layer) => Number((layer as { order?: number }).order) || 0)
+      : [0]),
+  );
+
+  const getCameraExport = (): CameraOverlayExport | null => {
+    if (cameraStatus !== 'active' || !cameraStream || !cameraVideoRef.current) return null;
+    try {
+      return {
+        frameDataUrl: captureCameraStill(cameraVideoRef.current),
+        geometry: cameraGeometryRef.current,
+        opacity: cameraOverlayOpacity,
+        mirrored: cameraOverlayMirrored,
+        layerOrder: cameraLayerOrder,
+      };
+    } catch (captureError) {
+      throw new Error(
+        captureError instanceof Error
+          ? captureError.message
+          : 'Camera frame capture failed. Keep the camera active and try again.',
+      );
+    }
+  };
 
   // Task 111 (issue #142): the selection/hover outline overlay below draws
   // in the scene's real draw order, matching `render/sceneDrawPlan.ts`'s
@@ -2802,6 +2908,12 @@ function EditorWorkspace() {
                 </label>
               </div>
             )}
+            {cameraStatus === 'active' && (
+              <p role="status" aria-live="polite" data-testid="camera-overlay-status">
+                {cameraOverlayStatus ??
+                  'Camera overlay. Use arrow keys to move; Shift+arrow changes the movement step. Use + or − to resize.'}
+              </p>
+            )}
             {/* Issue #156: zoom in/out buttons, a live percentage readout,
               and a reset-to-100% action. Reuses `ToolbarButton` (issue
               #143's existing icon-button pattern — visible `aria-hidden`
@@ -2958,26 +3070,57 @@ function EditorWorkspace() {
                 the `<video>` element itself never re-mounts, so the live
                 feed is uninterrupted. */}
                 {cameraStatus === 'active' && cameraStream && (
-                  <video
-                    ref={cameraVideoRef}
-                    data-testid="camera-overlay-video"
-                    aria-hidden="true"
-                    muted
-                    playsInline
-                    autoPlay
+                  <div
+                    data-testid="camera-overlay"
+                    role="group"
+                    aria-label="Camera overlay"
+                    tabIndex={0}
+                    onKeyDown={handleCameraKeyDown}
+                    onPointerDown={(event) => beginCameraGesture(event, 'move')}
+                    onPointerMove={moveCameraGesture}
+                    onPointerUp={endCameraGesture}
+                    onPointerCancel={endCameraGesture}
                     className="editor-camera-overlay"
                     style={{
                       position: 'absolute',
-                      inset: 0,
-                      zIndex: -1,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
-                      opacity: cameraOverlayOpacity,
-                      pointerEvents: 'none',
+                      left: `${cameraGeometry.x * 100}%`,
+                      top: `${cameraGeometry.y * 100}%`,
+                      width: `${cameraGeometry.width * 100}%`,
+                      height: `${cameraGeometry.height * 100}%`,
+                      zIndex: cameraLayerOrder + 1,
+                      transition: reducedMotion.effective ? 'none' : 'box-shadow 120ms ease',
+                      touchAction: 'none',
                     }}
-                  />
+                  >
+                    <video
+                      ref={cameraVideoRef}
+                      data-testid="camera-overlay-video"
+                      aria-hidden="true"
+                      muted
+                      playsInline
+                      autoPlay
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        zIndex: cameraLayerOrder + 2,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
+                        opacity: cameraOverlayOpacity,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="camera-overlay-resize"
+                      aria-label="Resize camera overlay"
+                      style={{ position: 'absolute', zIndex: cameraLayerOrder + 1 }}
+                      onPointerDown={(event) => beginCameraGesture(event, 'resize')}
+                    >
+                      ↘
+                    </button>
+                  </div>
                 )}
                 {/* Task 25: the p5.js preview mounts its <canvas> into this div.
                 React is never given any children to reconcile here (no JSX
@@ -3535,7 +3678,13 @@ function EditorWorkspace() {
                 assembled config) until Task 56+ builds real artifact
                 generation. See `ExportConfigDialog.tsx`'s module doc
                 comment. */}
-            {id && <ExportConfigDialog projectId={id} project={project} />}
+            {id && (
+              <ExportConfigDialog
+                projectId={id}
+                project={project}
+                getCameraExport={getCameraExport}
+              />
+            )}
           </CollapsibleSection>
 
           <CollapsibleSection heading="AI proposals" icon="✨">

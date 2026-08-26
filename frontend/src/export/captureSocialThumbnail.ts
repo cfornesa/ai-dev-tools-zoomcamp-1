@@ -61,6 +61,7 @@
  */
 import type { SceneDocument } from '../api/projects';
 import { createP5ScenePreview } from '../render/p5Adapter';
+import type { CameraOverlayExport } from '../editor/cameraOverlayGeometry';
 
 export const SOCIAL_THUMBNAIL_WIDTH = 1200;
 export const SOCIAL_THUMBNAIL_HEIGHT = 630;
@@ -151,7 +152,10 @@ function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
  * never partially resolves -- on any capture/encoding failure, and always
  * removes its off-screen container/canvas before returning or rejecting.
  */
-export async function captureSocialThumbnail(scene: SceneDocument): Promise<Blob> {
+export async function captureSocialThumbnail(
+  scene: SceneDocument,
+  cameraOverlay?: CameraOverlayExport | null,
+): Promise<Blob> {
   const container = document.createElement('div');
   // Off-screen, not `display: none` (some renderers skip layout for
   // display:none elements) -- positioned far outside the viewport instead,
@@ -207,6 +211,34 @@ export async function captureSocialThumbnail(scene: SceneDocument): Promise<Blob
       SOCIAL_THUMBNAIL_WIDTH,
       SOCIAL_THUMBNAIL_HEIGHT,
     );
+
+    if (cameraOverlay) {
+      const image = new Image();
+      image.src = cameraOverlay.frameDataUrl;
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error('Camera still frame could not be decoded.'));
+      });
+      ctx.save();
+      ctx.globalAlpha = cameraOverlay.opacity;
+      if (cameraOverlay.mirrored) {
+        ctx.translate(SOCIAL_THUMBNAIL_WIDTH, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(
+        image,
+        cameraOverlay.mirrored
+          ? (((1 - cameraOverlay.geometry.x - cameraOverlay.geometry.width) * sourceCanvas.width -
+              sx) /
+              sw) *
+              SOCIAL_THUMBNAIL_WIDTH
+          : ((cameraOverlay.geometry.x * sourceCanvas.width - sx) / sw) * SOCIAL_THUMBNAIL_WIDTH,
+        ((cameraOverlay.geometry.y * sourceCanvas.height - sy) / sh) * SOCIAL_THUMBNAIL_HEIGHT,
+        ((cameraOverlay.geometry.width * sourceCanvas.width) / sw) * SOCIAL_THUMBNAIL_WIDTH,
+        ((cameraOverlay.geometry.height * sourceCanvas.height) / sh) * SOCIAL_THUMBNAIL_HEIGHT,
+      );
+      ctx.restore();
+    }
 
     return await canvasToPngBlob(outputCanvas);
   } catch (error) {

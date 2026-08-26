@@ -377,4 +377,41 @@ describe('camera video overlay + opacity slider (Task 110, issue #141)', () => {
     // regardless of shape fill.
     expect(videoZIndex).toBeGreaterThan(mountZIndex);
   });
+
+  it('moves and resizes the independent overlay without selecting artwork', async () => {
+    await loadWorkspace();
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+    const overlay = screen.getByTestId('camera-overlay');
+    const initialLeft = overlay.style.left;
+
+    fireEvent.pointerDown(overlay, { clientX: 20, clientY: 20, pointerId: 1 });
+    fireEvent.pointerMove(overlay, { clientX: 120, clientY: 80, pointerId: 1 });
+    fireEvent.pointerUp(overlay, { clientX: 120, clientY: 80, pointerId: 1 });
+    expect(overlay.style.left).not.toBe(initialLeft);
+    expect(screen.queryByText('1 shape(s) in the working copy.')).toBeNull();
+
+    const resize = screen.getByRole('button', { name: 'Resize camera overlay' });
+    const initialWidth = overlay.style.width;
+    fireEvent.pointerDown(resize, { clientX: 20, clientY: 20, pointerId: 2 });
+    fireEvent.pointerMove(overlay, { clientX: 80, clientY: 20, pointerId: 2 });
+    fireEvent.pointerUp(overlay, { clientX: 80, clientY: 20, pointerId: 2 });
+    expect(overlay.style.width).not.toBe(initialWidth);
+    expect(
+      Number(overlay.style.width.replace('%', '')) / Number(overlay.style.height.replace('%', '')),
+    ).toBeCloseTo(16 / 9);
+  });
+
+  it('supports keyboard movement and resize with live status feedback', async () => {
+    await loadWorkspace();
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+    const overlay = screen.getByTestId('camera-overlay');
+    const initialTop = overlay.style.top;
+    fireEvent.keyDown(overlay, { key: 'ArrowDown' });
+    expect(overlay.style.top).not.toBe(initialTop);
+    fireEvent.keyDown(overlay, { key: '+', shiftKey: true });
+    expect(screen.getByTestId('camera-overlay-status')).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByTestId('camera-overlay-status')).toHaveTextContent(/camera overlay/i);
+  });
 });

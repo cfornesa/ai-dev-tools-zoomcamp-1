@@ -1049,6 +1049,37 @@ code {
   box-shadow: var(--shadow);
 }
 
+.editor-camera-overlay {
+  overflow: visible;
+  box-sizing: border-box;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 35%);
+  cursor: move;
+}
+
+.editor-camera-overlay:focus-visible {
+  outline: 3px solid #60a5fa;
+  outline-offset: 3px;
+}
+
+.camera-overlay-resize {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-camera-overlay {
+    transition: none !important;
+  }
+}
+
 /* Issue #173 (task 141): the header row pairs the title with the collapse/
    expand toggle so both stay visible even when the body below is hidden —
    the "persistent pill" a collapsed HUD keeps, per this task's acceptance
@@ -1172,6 +1203,20 @@ code {
 
   .editor-panel > h3 {
     margin: -12px -12px 12px;
+  }
+
+  .editor-workspace,
+  .editor-panel,
+  .editor-scene-canvas-viewport,
+  .editor-scene-canvas {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .editor-scene-canvas-viewport,
+  .editor-scene-canvas {
+    aspect-ratio: 16 / 9;
   }
 }
 

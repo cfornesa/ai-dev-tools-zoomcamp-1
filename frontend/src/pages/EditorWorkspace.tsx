@@ -388,6 +388,31 @@ function EditorToolbarColorControl({ sceneEditor }: { sceneEditor: SceneEditor }
 
 type CodeSubTab = 'json' | 'html' | 'css' | 'js';
 
+function codeDiagnostic(source: string, message: string): string {
+  const positionMatch = message.match(/position\s+(\d+)/i);
+  let offset = positionMatch ? Number(positionMatch[1]) : -1;
+  if (offset < 0) {
+    const fieldMatch = message.match(
+      /(\$\.[^:; ]+)|(?:shape|layer|group|binding|node|connection)\s+"([^"]+)"/i,
+    );
+    const field =
+      fieldMatch?.[2] ??
+      fieldMatch?.[1]
+        ?.split('.')
+        .pop()
+        ?.replaceAll('[', '')
+        .replaceAll(']', '')
+        .replace(/[0-9]/g, '');
+    offset = field ? source.indexOf(field) : -1;
+  }
+  if (offset < 0) offset = 0;
+  const before = source.slice(0, offset);
+  const line = before.split('\n').length;
+  const lastNewline = before.lastIndexOf('\n');
+  const column = offset - lastNewline;
+  return `Line ${line}, column ${column}: ${message}`;
+}
+
 /**
  * Issue #177 (task 145's audit finding): every Code sub-tab's sync strategy,
  * shared by the three `use*CodeSync` hooks just below.
@@ -469,13 +494,20 @@ function useJsonCodeSync(
       parsed = JSON.parse(textRef.current);
     } catch (err) {
       setError(
-        `Invalid JSON: ${err instanceof Error ? err.message : 'could not parse this text.'}`,
+        codeDiagnostic(
+          textRef.current,
+          `Invalid JSON: ${err instanceof Error ? err.message : 'could not parse this text.'}`,
+        ),
       );
       return;
     }
     const result = validateScene(parsed);
     if (!result.valid) {
-      setError(result.errors.map((e) => `${e.path}: ${e.message}`).join('; '));
+      setError(
+        result.errors
+          .map((e) => codeDiagnostic(textRef.current, `${e.path}: ${e.message}`))
+          .join('; '),
+      );
       return;
     }
     setError(null);
@@ -733,7 +765,9 @@ function HtmlCssCodeEditor({
           className="editor-scene-code-errors"
         >
           {errors.map((message, index) => (
-            <li key={index}>{message}</li>
+            <li key={index}>
+              {codeDiagnostic(activeSubTab === 'html' ? htmlText : cssText, message)}
+            </li>
           ))}
         </ul>
       )}
@@ -878,7 +912,7 @@ function JsCodeEditor({ sync }: { sync: JsCodeSync }) {
           className="editor-scene-code-errors"
         >
           {errors.map((message, index) => (
-            <li key={index}>{message}</li>
+            <li key={index}>{codeDiagnostic(text, message)}</li>
           ))}
         </ul>
       )}

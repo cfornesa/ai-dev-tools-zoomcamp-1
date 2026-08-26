@@ -191,6 +191,7 @@ describe('Code tab: shows and round-trips workingCopy', () => {
     fireEvent.blur(codeTextarea());
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/invalid scene json/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/line \d+, column \d+/i);
 
     await openVisualTab(user);
     // The last-known-good scene (still 0 shapes) rendered, unaffected by
@@ -222,6 +223,7 @@ describe('Code tab: shows and round-trips workingCopy', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/invalid scene json/i);
+    expect(alert).toHaveTextContent(/line \d+, column \d+/i);
     expect(alert).toHaveTextContent(/does not match any layer/i);
 
     await openVisualTab(user);

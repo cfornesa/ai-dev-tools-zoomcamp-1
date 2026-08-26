@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { MoveControls, ShapeNameField } from './LayersPanel';
+import { shapeTypeDisplayName } from './sceneShapes';
 import { getColorFieldValue, getNumericFieldValue } from './shapeStyleFields';
 import type { SceneEditor } from './useSceneEditor';
 
@@ -213,13 +214,25 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
               Move down
             </button>
             {layerId !== null && (
-              <MoveControls
-                itemId={selectedGroup.id}
-                itemLabel={selectedGroup.name}
-                itemLayerId={layerId}
-                currentGroupId={currentGroupId}
-                sceneEditor={sceneEditor}
-              />
+              <section aria-label="Organization controls">
+                <MoveControls
+                  itemId={selectedGroup.id}
+                  itemLabel={selectedGroup.name}
+                  itemLayerId={layerId}
+                  currentGroupId={currentGroupId}
+                  sceneEditor={sceneEditor}
+                />
+              </section>
+            )}
+            {sceneEditor.outlineError && (
+              <p role="status" aria-live="assertive">
+                Organization action rejected: {sceneEditor.outlineError}
+              </p>
+            )}
+            {sceneEditor.outlineStatus && (
+              <p role="status" aria-live="polite">
+                {sceneEditor.outlineStatus}
+              </p>
             )}
           </div>
         )}
@@ -252,12 +265,18 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
       </div>
       {!collapsed && (
         <div className="editor-selection-hud-controls">
-          <ShapeNameField
-            shapeId={selectedShape.id}
-            name={label}
-            onRename={sceneEditor.renameShape}
-            className="editor-selection-hud-shape-name"
-          />
+          <section aria-labelledby="selection-hud-properties-heading">
+            <h4 id="selection-hud-properties-heading">Shape properties</h4>
+            <p className="editor-selection-hud-primitive" aria-label="Shape primitive">
+              Primitive: <strong>{shapeTypeDisplayName(selectedShape.type)}</strong>
+            </p>
+            <ShapeNameField
+              shapeId={selectedShape.id}
+              name={label}
+              onRename={sceneEditor.renameShape}
+              className="editor-selection-hud-shape-name"
+            />
+          </section>
           <button
             type="button"
             aria-pressed={visible}
@@ -351,13 +370,25 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
             Move down
           </button>
           {layerId !== null && (
-            <MoveControls
-              itemId={selectedShape.id}
-              itemLabel={label}
-              itemLayerId={layerId}
-              currentGroupId={currentGroupId}
-              sceneEditor={sceneEditor}
-            />
+            <section aria-label="Organization controls">
+              <MoveControls
+                itemId={selectedShape.id}
+                itemLabel={label}
+                itemLayerId={layerId}
+                currentGroupId={currentGroupId}
+                sceneEditor={sceneEditor}
+              />
+            </section>
+          )}
+          {sceneEditor.outlineError && (
+            <p role="status" aria-live="assertive">
+              Organization action rejected: {sceneEditor.outlineError}
+            </p>
+          )}
+          {sceneEditor.outlineStatus && (
+            <p role="status" aria-live="polite">
+              {sceneEditor.outlineStatus}
+            </p>
           )}
         </div>
       )}

@@ -140,6 +140,30 @@ describe('SelectionHud: visibility (issue #163)', () => {
     expect(within(hud()!).getByText('Circle 1')).toBeInTheDocument();
   });
 
+  it('separates organization controls and exposes the read-only primitive identity', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    expect(within(hud()!).getByRole('heading', { name: 'Shape properties' })).toBeInTheDocument();
+    expect(
+      within(hud()!).getByRole('region', { name: 'Organization controls' }),
+    ).toBeInTheDocument();
+    expect(within(hud()!).getByLabelText('Shape primitive')).toHaveTextContent('Circle');
+    expect(screen.getAllByLabelText('Shape primitive')).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: /convert|morph/i })).not.toBeInTheDocument();
+  });
+
+  it('disables current layer and top-level destinations to prevent no-op moves', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const panel = within(hud()!);
+    expect(panel.getByRole('button', { name: /Move .* to layer/ })).toBeDisabled();
+    expect(panel.getByRole('button', { name: /Move .* to group/ })).toBeDisabled();
+  });
+
   it('appears for a selected group, with color/opacity fields omitted', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();

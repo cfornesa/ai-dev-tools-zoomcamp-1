@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { POSITION_LIMIT } from './sceneShapes';
+import { POSITION_LIMIT, shapeTypeDisplayName } from './sceneShapes';
 import type { BreadcrumbSegment } from './sceneOutline';
 import {
   COLOR_FIELD_LABELS,
@@ -296,8 +296,11 @@ function ShapeInspectorPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
 
   return (
     <div className="shape-inspector" role="group" aria-label="Shape style">
-      <h4>Shape style</h4>
+      <h4>Shape properties</h4>
       <SelectionBreadcrumb segments={sceneEditor.selectedBreadcrumb} />
+      <p className="shape-inspector-primitive" aria-label="Shape primitive">
+        Primitive: <strong>{shapeTypeDisplayName(selectedShape.type)}</strong> (read-only)
+      </p>
       {isHidden && (
         <p role="status" aria-live="polite">
           This shape is currently hidden (its layer or group visibility is off). Editing its style
@@ -336,6 +339,16 @@ function ShapeInspectorPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
           the pointer gesture. */}
       {selectedShape.type === 'path' && (
         <PathPointsSection sceneEditor={sceneEditor} shape={selectedShape} />
+      )}
+      {sceneEditor.outlineError && (
+        <p role="status" aria-live="assertive">
+          Organization action rejected: {sceneEditor.outlineError}
+        </p>
+      )}
+      {sceneEditor.outlineStatus && (
+        <p role="status" aria-live="polite">
+          {sceneEditor.outlineStatus}
+        </p>
       )}
     </div>
   );

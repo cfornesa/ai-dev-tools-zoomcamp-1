@@ -222,9 +222,12 @@ function MoveControls({
   // `itemLayerId`, to stay in sync with what the underlying mutation
   // actually allows.
   const groupOptions = sceneEditor.groups.filter((g) => g.id !== itemId);
+  const layerIsCurrentNoOp = layerTarget === itemLayerId && currentGroupId === null;
+  const groupIsCurrentNoOp = (groupTarget || null) === currentGroupId;
 
   return (
-    <span className="editor-outline-move-controls">
+    <fieldset className="editor-outline-move-controls">
+      <legend>Organization</legend>
       <select
         aria-label={`Target layer for ${itemLabel}`}
         value={layerTarget}
@@ -239,6 +242,7 @@ function MoveControls({
       <button
         type="button"
         aria-label={`Move ${itemLabel} to layer`}
+        disabled={layerIsCurrentNoOp}
         onClick={() => sceneEditor.moveItemToLayer(itemId, layerTarget)}
       >
         Move to layer
@@ -259,11 +263,12 @@ function MoveControls({
       <button
         type="button"
         aria-label={`Move ${itemLabel} to group`}
+        disabled={groupIsCurrentNoOp}
         onClick={() => sceneEditor.moveItemToGroup(itemId, groupTarget || null)}
       >
         Move to group
       </button>
-    </span>
+    </fieldset>
   );
 }
 

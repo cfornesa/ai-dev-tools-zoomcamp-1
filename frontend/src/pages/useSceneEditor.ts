@@ -63,6 +63,7 @@ import {
   getEditableShapes,
   insertPathPoint,
   POSITION_LIMIT,
+  shapeLabel,
   type PathShape,
   type Point,
   type Shape,
@@ -220,6 +221,7 @@ export function useSceneEditor(
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [outlineError, setOutlineError] = useState<string | null>(null);
+  const [outlineStatus, setOutlineStatus] = useState<string | null>(null);
   const [past, setPast] = useState<SceneDocument[]>([]);
   const [future, setFuture] = useState<SceneDocument[]>([]);
   // Task 34: behavior cards. `cardConflict` holds the pending draft plus
@@ -1095,6 +1097,8 @@ export function useSceneEditor(
   const moveItemToLayer = useCallback(
     (itemId: string, targetLayerId: string) => {
       if (!workingCopy) return;
+      setOutlineError(null);
+      setOutlineStatus(null);
       const itemGuard = guardUnlocked(
         workingCopy,
         [itemId],
@@ -1113,7 +1117,27 @@ export function useSceneEditor(
         setOutlineError(destGuard.error);
         return;
       }
-      applyOutcome(moveItemToLayerOp(workingCopy, itemId, targetLayerId));
+      const outcome = moveItemToLayerOp(workingCopy, itemId, targetLayerId);
+      if (!outcome.ok) {
+        applyOutcome(outcome);
+        return;
+      }
+      if (outcome.scene === workingCopy) {
+        setOutlineError(
+          'Move to layer had no effect because the item is already at that layer top level.',
+        );
+        return;
+      }
+      applyOutcome(outcome);
+      const item = getEditableShapes(rawShapes(workingCopy)).find(
+        (candidate) => candidate.id === itemId,
+      );
+      const group = getGroups(workingCopy).find((candidate) => candidate.id === itemId);
+      const itemName = item
+        ? shapeLabel(item, getEditableShapes(rawShapes(workingCopy)))
+        : (group?.name ?? itemId);
+      const layer = getLayers(workingCopy).find((candidate) => candidate.id === targetLayerId);
+      setOutlineStatus(`Moved ${itemName} to layer ${layer?.name ?? targetLayerId}.`);
     },
     [workingCopy, applyOutcome],
   );
@@ -1121,6 +1145,8 @@ export function useSceneEditor(
   const moveItemToGroup = useCallback(
     (itemId: string, targetGroupId: string | null) => {
       if (!workingCopy) return;
+      setOutlineError(null);
+      setOutlineStatus(null);
       const itemGuard = guardUnlocked(
         workingCopy,
         [itemId],
@@ -1141,7 +1167,30 @@ export function useSceneEditor(
           return;
         }
       }
-      applyOutcome(moveItemToGroupOp(workingCopy, itemId, targetGroupId));
+      const outcome = moveItemToGroupOp(workingCopy, itemId, targetGroupId);
+      if (!outcome.ok) {
+        applyOutcome(outcome);
+        return;
+      }
+      if (outcome.scene === workingCopy) {
+        setOutlineError(
+          `Move to group had no effect because the item is already at ${targetGroupId ? 'that group' : 'Top level'}.`,
+        );
+        return;
+      }
+      applyOutcome(outcome);
+      const item = getEditableShapes(rawShapes(workingCopy)).find(
+        (candidate) => candidate.id === itemId,
+      );
+      const group = getGroups(workingCopy).find((candidate) => candidate.id === itemId);
+      const itemName = item
+        ? shapeLabel(item, getEditableShapes(rawShapes(workingCopy)))
+        : (group?.name ?? itemId);
+      const targetName = targetGroupId
+        ? (getGroups(workingCopy).find((candidate) => candidate.id === targetGroupId)?.name ??
+          targetGroupId)
+        : 'Top level';
+      setOutlineStatus(`Moved ${itemName} to ${targetName}.`);
     },
     [workingCopy, applyOutcome],
   );
@@ -1402,6 +1451,7 @@ export function useSceneEditor(
     toggleMultiSelect,
     clearMultiSelect,
     outlineError,
+    outlineStatus,
     addLayer,
     renameLayer,
     renameShape,

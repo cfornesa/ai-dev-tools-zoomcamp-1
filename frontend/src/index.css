@@ -1996,10 +1996,19 @@ textarea:disabled {
    touch-operable fallback; see task 129/#161 for the tracked follow-up
    proposing real touch-drag support. */
 .editor-outline-move-controls {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.editor-outline-move-controls legend {
+  padding: 0 4px;
+  font-weight: 600;
 }
 
 @media (max-width: 767px) {
@@ -2017,6 +2026,12 @@ textarea:disabled {
    layout beyond default inline flow. */
 .shape-inspector {
   text-align: left;
+}
+
+.shape-inspector-primitive,
+.editor-selection-hud-primitive {
+  margin: 8px 0;
+  color: var(--text);
 }
 
 .shape-style-field {

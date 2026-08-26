@@ -625,6 +625,7 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     moveButton.focus();
     expect(moveButton).toHaveFocus();
     await user.keyboard('{Enter}');
+    expect(within(hud).getByRole('status')).toHaveTextContent(/Moved Circle 1 to layer Layer 2/);
 
     const rowsAfter = within(outlineList()).getAllByRole('listitem');
     const layer2Index = rowsAfter.findIndex(

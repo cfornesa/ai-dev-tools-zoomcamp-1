@@ -280,6 +280,8 @@ describe('EditorWorkspace responsive layout', () => {
     );
     expect(css).toMatch(/\.editor-outline-layer-name\s*\{[^}]*min-width:\s*0/);
     expect(css).toMatch(/\.editor-outline-row-more summary\s*\{[^}]*white-space:\s*nowrap/);
+    expect(css).toMatch(/\.editor-outline-row-layer\s*\{[^}]*box-sizing:\s*border-box/);
+    expect(css).toMatch(/\.editor-outline-row-layer > button\[aria-label\^='Delete layer'\]/);
   });
 
   it('defines the studio frame and compact panel chrome without removing focusable controls', () => {

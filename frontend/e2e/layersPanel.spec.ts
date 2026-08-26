@@ -168,6 +168,49 @@ test.describe('Layers panel', () => {
     ).toHaveCount(0);
   });
 
+  test('keeps the panel and every layer-row control inside one bounded width', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await createBlankProjectViaUI(page);
+
+    const layersRegion = page.getByRole('region', { name: 'Layers' });
+    const row = layersRegion.locator('.editor-outline-row-layer').first();
+    await expect(row).toBeVisible();
+
+    const geometry = await layersRegion.evaluate((panel) => {
+      const row = panel.querySelector<HTMLElement>('.editor-outline-row-layer');
+      if (!row) throw new Error('Layer row not found.');
+      const panelBox = panel.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      const controls = Array.from(
+        row.querySelectorAll<HTMLElement>('.editor-outline-drag-handle, input, button, summary'),
+      ).map((control) => {
+        const box = control.getBoundingClientRect();
+        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+      });
+      return {
+        panel: {
+          left: panelBox.left,
+          right: panelBox.right,
+          scrollWidth: panel.scrollWidth,
+          clientWidth: panel.clientWidth,
+        },
+        row: { left: rowBox.left, right: rowBox.right },
+        controls,
+      };
+    });
+
+    expect(geometry.panel.scrollWidth).toBeLessThanOrEqual(geometry.panel.clientWidth);
+    expect(geometry.row.left).toBeGreaterThanOrEqual(geometry.panel.left);
+    expect(geometry.row.right).toBeLessThanOrEqual(geometry.panel.right);
+    for (const control of geometry.controls) {
+      expect(control.left).toBeGreaterThanOrEqual(geometry.row.left);
+      expect(control.right).toBeLessThanOrEqual(geometry.row.right);
+      expect(control.left).toBeGreaterThanOrEqual(geometry.panel.left);
+      expect(control.right).toBeLessThanOrEqual(geometry.panel.right);
+    }
+  });
+
   test('pointer drag-and-drop and keyboard reorder both land in the same canonical scene order, verified on the canvas and after reload', async ({
     page,
   }) => {

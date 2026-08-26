@@ -752,8 +752,9 @@ function OutlineRowItem({
             checked={row.visible}
             onChange={() => sceneEditor.toggleLayerVisible(row.id)}
             aria-label={`Layer ${row.name} visible`}
+            title={`Layer ${row.name} visible`}
           />
-          Visible
+          <span aria-hidden="true">Vis</span>
         </label>
         <label className="editor-outline-layer-toggle">
           <input
@@ -761,15 +762,17 @@ function OutlineRowItem({
             checked={row.locked}
             onChange={() => sceneEditor.toggleLayerLocked(row.id)}
             aria-label={`Layer ${row.name} locked`}
+            title={`Layer ${row.name} locked`}
           />
-          Locked
+          <span aria-hidden="true">Lock</span>
         </label>
         <button
           type="button"
           aria-label={`Delete layer ${row.name}`}
+          title={`Delete layer ${row.name}`}
           onClick={() => sceneEditor.deleteLayer(row.id)}
         >
-          Delete layer
+          <span aria-hidden="true">×</span>
         </button>
         <RowMoreDisclosure>
           <button

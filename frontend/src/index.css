@@ -1411,15 +1411,19 @@ textarea:disabled {
   cursor: not-allowed;
 }
 
-/* Issue #156: the fixed-size clipping viewport panning happens inside —
-   `overflow` itself is toggled inline (EditorWorkspace.tsx) between
-   `visible` (at 100% zoom, matching this box's pre-issue-#156 behavior
-   exactly) and `hidden` (once zoomed, so panned content never spills past
-   this box into the rest of the Preview panel). */
+/* Issue #184: the Preview framing box fills the available editor column
+   without allowing the page itself to grow horizontally. Its height is a
+   bounded workspace-sized area; the canonical scene is measured into the
+   resulting content box by EditorWorkspace.tsx, leaving intentional
+   letterboxing whenever the two aspect ratios differ. */
 .editor-scene-canvas-viewport {
   touch-action: none;
   padding: 14px;
   box-sizing: border-box;
+  width: 100%;
+  height: min(65vh, calc(100vw - 64px), 680px);
+  min-height: 220px;
+  max-width: 100%;
   border: 1px solid #3d424c;
   border-radius: 10px;
   background: #242830;

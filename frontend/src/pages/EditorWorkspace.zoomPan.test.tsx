@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
-import EditorWorkspace from './EditorWorkspace';
+import EditorWorkspace, { getCanvasFitScale } from './EditorWorkspace';
 import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 
 /**
@@ -204,6 +204,27 @@ describe('EditorWorkspace zoom controls (issue #156)', () => {
 
     expect(screen.getByRole('button', { name: 'Zoom in' })).toHaveAccessibleName('Zoom in');
     expect(screen.getByRole('button', { name: 'Zoom out' })).toHaveAccessibleName('Zoom out');
+  });
+});
+
+describe('EditorWorkspace responsive canvas fit (issue #184)', () => {
+  it('uses the largest uniform scale for a canonical scene inside the usable viewport', () => {
+    expect(getCanvasFitScale(1200, 700, 800, 600)).toBeCloseTo(7 / 6);
+    expect(getCanvasFitScale(500, 500, 800, 600)).toBeCloseTo(0.625);
+    expect(getCanvasFitScale(0, 500, 800, 600)).toBe(1);
+  });
+
+  it('exposes an accessible fit action and keeps it separate from scene state', async () => {
+    await loadReadyWorkspace();
+    const canvas = screen.getByTestId('scene-canvas');
+    mockViewportRect();
+
+    expect(screen.getByRole('button', { name: 'Fit to viewport' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to viewport' }));
+
+    expect(screen.getByTestId('editor-zoom-readout').textContent).toBe('100%');
+    expect(canvas.style.transform).toContain('translate(0px, 0px) scale(1)');
+    expect(mockedGetSceneVersion).toHaveBeenCalledTimes(1);
   });
 });
 

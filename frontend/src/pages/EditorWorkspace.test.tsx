@@ -428,12 +428,9 @@ describe('EditorWorkspace responsive layout', () => {
     expect(toolbars[0].closest('[data-panel]')).toBeNull();
   });
 
-  // Issue #157: the canvas viewport's aspect-ratio-preserving sizing
-  // (`aspectRatio` + `maxWidth: 100%`, shipped in issue #109) must survive
-  // unchanged at mobile width — verified by reading the actual inline
-  // style this component computes from the scene's own
-  // `canvas.width`/`canvas.height` (800x600 here, a 4:3 ratio), rather
-  // than a fixed/different ratio forced to fill the viewport.
+  // Issue #184: the viewport fills its responsive framing box at mobile
+  // width; the canonical aspect ratio now belongs to the measured scene
+  // child, rather than being imposed on the outer viewport itself.
   it('preserves the scene canvas aspect ratio at mobile width', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
@@ -442,8 +439,8 @@ describe('EditorWorkspace responsive layout', () => {
     renderWorkspace();
 
     const canvasViewport = await screen.findByTestId('scene-canvas-viewport');
-    expect(canvasViewport.style.aspectRatio).toBe('800 / 600');
-    expect(canvasViewport.style.maxWidth).toBe('100%');
+    expect(canvasViewport.style.width).toBe('100%');
+    expect(canvasViewport.style.aspectRatio).toBe('');
   });
 
   // Issue #157: "canvas is the widest element" was the original (owner-

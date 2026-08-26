@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { MoveControls } from './LayersPanel';
+import { MoveControls, ShapeNameField } from './LayersPanel';
 import { getColorFieldValue, getNumericFieldValue } from './shapeStyleFields';
 import type { SceneEditor } from './useSceneEditor';
 
@@ -252,6 +252,12 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
       </div>
       {!collapsed && (
         <div className="editor-selection-hud-controls">
+          <ShapeNameField
+            shapeId={selectedShape.id}
+            name={label}
+            onRename={sceneEditor.renameShape}
+            className="editor-selection-hud-shape-name"
+          />
           <button
             type="button"
             aria-pressed={visible}

@@ -142,20 +142,22 @@ function LayerNameField({ layerId, name, onRename, className }: LayerNameFieldPr
   );
 }
 
-function ShapeNameField({
+export function ShapeNameField({
   shapeId,
   name,
   onRename,
+  className = 'editor-outline-shape-name',
 }: {
   shapeId: string;
   name: string;
   onRename: (shapeId: string, name: string) => void;
+  className?: string;
 }) {
   return (
     <input
       key={name}
       type="text"
-      className="editor-outline-shape-name"
+      className={className}
       defaultValue={name}
       aria-label={`Shape name for ${name}`}
       onBlur={(event) => {

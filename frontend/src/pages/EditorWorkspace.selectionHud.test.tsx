@@ -287,6 +287,39 @@ describe('SelectionHud: shape controls reuse the exact LayersPanel mutations (is
     expect(within(hud()!).queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('renames the selected shape from the HUD and keeps the rename undoable', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const nameInput = within(hud()!).getByRole('textbox', { name: 'Shape name for Circle 1' });
+    await user.clear(nameInput);
+    await user.type(nameInput, '  Hero  ');
+    await user.keyboard('{Enter}');
+
+    expect(within(hud()!).getByText('Hero')).toBeInTheDocument();
+    expect(within(outlineList()).getByRole('button', { name: 'Hero' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(within(hud()!).getByText('Circle 1')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Redo' }));
+    expect(within(hud()!).getByText('Hero')).toBeInTheDocument();
+  });
+
+  it('cancels a HUD shape rename draft with Escape', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const nameInput = within(hud()!).getByRole('textbox', { name: 'Shape name for Circle 1' });
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Discarded');
+    await user.keyboard('{Escape}');
+
+    expect(within(hud()!).getByText('Circle 1')).toBeInTheDocument();
+    expect(within(outlineList()).getByRole('button', { name: 'Circle 1' })).toBeInTheDocument();
+  });
+
   it('deletes the selected shape via deleteSelected', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();

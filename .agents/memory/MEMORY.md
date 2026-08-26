@@ -1,6 +1,7 @@
 - [PostgreSQL migration SQL](postgresql-migration-sql.md) — Raw PL/pgSQL in Django migrations must escape literal percent signs for Psycopg 3.
 - [Vitest shell file paths](vitest-shell-file-paths.md) — Read static shell files from the frontend process root because transformed import.meta URLs are not file URLs.
 - [Playwright runtime prerequisites](playwright-runtime-prerequisites.md) — Browser E2E needs Chromium system libraries and the project fixture environment.
+- [E2E wrong Docker project](e2e-wrong-docker-project.md) — A healthy unrelated Compose stack can serve the expected port while health/API probes return the wrong app.
 - [Replit publish verification](replit-publish-verification.md) — Use deployment-status events for checks that must run after publishing; deployment commands run too early.
 - [Mistral credential rotation](mistral-credential-rotation.md) — Retain prior Fernet roots during controlled credential re-encryption before retiring them.
 - [Allauth JWT runtime dependency](allauth-jwt-runtime-dependency.md) — Pin PyJWT explicitly because the installed allauth release imports jwt during OAuth callback validation without declaring it.

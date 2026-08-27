@@ -5264,7 +5264,8 @@ Evidence: Deployment screenshots show each shape with a name input such as `Circ
 Acceptance criteria: each shape row has one obvious primary selection affordance; renaming remains available through one clearly labeled keyboard-accessible control; selection and rename semantics remain distinct; existing visibility, lock, grouping, reorder, undo/redo, accessibility, and narrow-layout behavior remain correct; focused browser/a11y tests plus `make check` pass.
 Acceptance matrix: one primary shape-selection affordance per row; one clearly labeled keyboard-accessible rename control; selection and rename semantics are distinct; visibility, lock, grouping, reorder, undo/redo, accessibility, narrow-layout, frontend quality, and full make check gates remain green.
 Out of scope: persisted shape identity semantics, group-row redesign, scene naming policy, and export/thumbnail naming.
-Next action: Engineering audits the row DOM and interaction contract, removes the redundant presentation, then QA verifies pointer and keyboard selection/rename behavior at desktop and narrow widths.
+Evidence (2026-08-27): Commits `7bcc978` and `1a564ee` replace the duplicate visible shape-name button with a distinct icon-only selection control and update the stable-identity regression. Focused Layers/shape tests passed 64; build/typecheck/lint/format passed. QA FAIL comment posted because final full-suite rerun and browser verification remain pending.
+Next action: Rerun the final full frontend suite and Layers browser scenarios against the PostgreSQL-backed services, then rerun make check in an approved environment.
 
 ## 158. Move canvas settings into a dedicated Canvas editor tab
 
@@ -5275,7 +5276,8 @@ Dependencies: #170 (COMPLETE); #179 and #180 are complete; #183 is ACTIVE and re
 Evidence: #170 added Canvas background color and Canvas opacity below the Layers outline. Deployment review identifies these as canvas-level settings and requests a same-level Canvas tab.
 Acceptance criteria: a same-level Canvas tab exists in desktop and responsive navigation; the controls move out of Layers without becoming draggable layer rows; scene defaults, validation, undo/redo, autosave, persistence, export, accessibility, and responsive overflow behavior remain correct; no canvas visibility/lock control is added; focused tests plus `make check` pass.
 Acceptance matrix: Canvas is a same-level switcher panel; background color and opacity are removed from Layers without becoming draggable rows; existing validation, history, autosave, persistence, export, accessibility, responsive overflow, and no visibility/lock boundary remain correct; focused tests and required checks pass.
-Next action: Engineering designs the Canvas panel in the existing responsive switcher and relocates the controls without changing mutation semantics; QA verifies navigation, persistence, accessibility, and responsive layout.
+Evidence (2026-08-27): Commits `f6e1750` and `1d4b629` add the Canvas switcher panel, move the existing settings group out of Layers, and update landmark/tab-order regressions. Focused workspace/layers tests passed 74; build/typecheck/lint/format passed. QA FAIL comment posted because final full-suite rerun, browser verification, and make check remain pending.
+Next action: Rerun the final full frontend suite and browser verification at desktop/tablet/narrow widths, then rerun make check in an approved environment.
 
 ## 159. Make the Details panel form controls full-width and responsive
 
@@ -5285,4 +5287,5 @@ GitHub issue: [#190](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/
 Evidence: Deployment screenshot shows Description and Tags controls arranged beside labels with unused space and a small Save changes button at the lower-left. The user requests stacked full-width controls and a lower-right Save action, with appropriate narrow-screen stacking.
 Acceptance criteria: all Details controls are stacked below their labels at full available width; labels remain associated; Save changes is lower-right at comfortable widths and appropriately full-width/stacked when narrow; validation, dirty state, persistence, keyboard order, accessibility, and overflow behavior remain correct; focused tests plus `make check` pass.
 Acceptance matrix: all Details controls stack beneath labels and fill available width; labels stay associated; Save changes is right-aligned at comfortable widths and full-width/stacked when narrow; existing validation, dirty state, feedback, persistence, keyboard order, focus, and overflow remain correct; focused tests and required checks pass.
-Next action: Engineering audits `EditorDetailsPanel.tsx` and its styles, implements the responsive form layout, and QA verifies rendered form and keyboard/a11y behavior at representative widths.
+Evidence (2026-08-27): Commits `f6e1750` and `5f72817` add responsive Details form styling and a form/label regression. Focused Details tests passed 11; build/typecheck/lint/format passed. QA FAIL comment posted because full-suite and browser responsive verification remain pending.
+Next action: Rerun the final full frontend suite and browser verification at representative widths, then rerun make check in an approved environment.

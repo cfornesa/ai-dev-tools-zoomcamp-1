@@ -5099,6 +5099,98 @@ Dependencies: #178 (COMPLETE), #180 (COMPLETE)
 Evidence (2026-08-26): Reopened from production screenshots showing the selection outline/handles offset downward from rendered geometry. Commit `d85961e` fixed the root cause: the SVG overlay retained a 600px intrinsic height while the fitted scene was 557px, creating the measured 21.5px vertical offset. The responsive E2E helper now skips hidden toggles, and the narrow workspace width accounts for its 16px side margins. Focused geometry, Layers, and responsive browser regressions passed 15/15 at the local PostgreSQL-backed Django/Vite stack; frontend tests passed 1,869/1,869; build/typecheck/format and `make check` passed (629 backend passed/22 skipped). QA PASS comment posted and GitHub issue closed as completed.
 Next action: None; retain the QA comment and commits as handoff evidence.
 
+## 160. Make top-level editor sidebar panels collapsible with Layers open by default
+
+## Goal
+
+Allow users to collapse the editor's Details, Tools, Layers, and Inspector sidebar panels while keeping Layers expanded on a fresh editor load.
+
+## Acceptance criteria
+
+- [ ] Details, Tools, Layers, and Inspector each expose one clearly labeled, keyboard-accessible top-level collapse/expand control.
+- [ ] Layers starts expanded on a fresh editor load; the other panels retain their current default content visibility unless an existing product default says otherwise.
+- [ ] Collapsing a panel hides its content without unmounting or mutating scene data, selection, drafts, camera state, unsaved edits, or panel-local form state.
+- [ ] Reopening a panel restores its content and focus behavior, with correct `aria-expanded` and `aria-controls` state.
+- [ ] Layers is collapsible despite being the default-open panel; its outline selection, controls, and keyboard navigation remain correct after reopening.
+- [ ] Desktop, tablet, and narrow panel-switcher layouts remain usable without horizontal overflow, duplicate landmarks, or inaccessible controls.
+- [ ] Existing nested Tools/Inspector disclosures remain independent from top-level panel collapse.
+- [ ] Focused component/accessibility tests, real-browser desktop/narrow regressions, frontend quality checks, and `make check` pass.
+
+## Out of scope
+
+- Redesigning the existing nested Tools/Inspector `CollapsibleSection`; this task adds top-level panel collapse around the existing panels.
+- Persisting collapse state across browser sessions or projects; file a separate issue if that behavior is wanted.
+
+## Evidence and pending items
+
+- **Status:** PROPOSED
+- **Evidence so far:** User screenshot shows Details, Tools, and Inspector as large always-open top-level sections while their inner sections are collapsible. Layers is requested to be open by default but collapsible too.
+- **Pending verification:** Implement the top-level disclosure state and verify desktop, tablet, and narrow panel-switcher behavior.
+- **Next action:** PM/engineering groom [#191](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/191), then implement the scoped panel disclosure and regression coverage.
+- **Durable memory link:** None required; existing `CollapsibleSection` and responsive panel-switcher conventions cover the boundary.
+
+## Discovery gate
+
+- [x] Searched `_docs/tasks.md`, `.local/tasks/`, durable memory, and open GitHub issues for duplicates; #95/#113 cover nested section behavior and E2E fallout, not top-level sidebar collapse.
+- [x] Created and linked [#191](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/191).
+- [x] No distinct out-of-scope actionable follow-up discovered.
+
+## Constraints
+
+- **Files likely in scope:** `frontend/src/pages/EditorWorkspace.tsx`, `frontend/src/components/EditorPanelSwitcher.tsx` only if required, shared editor styles, and focused/browser tests.
+- **Mutation boundary:** Collapse state is editor UI state only; it must not enter scene JSON, drafts, versions, exports, or camera data.
+- **Accessibility:** Use native/button disclosure semantics with stable panel IDs, visible focus, and correct ARIA state.
+- **Libraries:** Use existing dependencies; do not add dependencies.
+
+GitHub issue: [#191](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/191)
+
+## 161. Reduce live camera tracking latency and resource usage
+
+## Goal
+
+Make live camera tracking responsive and usable by reducing camera and MediaPipe resource consumption while preserving local-only processing and interaction fidelity.
+
+## Acceptance criteria
+
+- [ ] Profile the current capture, playback, MediaPipe inference, frame normalization, runtime evaluation, p5 rendering, and camera-overlay path; record a reproducible baseline and selected performance budget.
+- [ ] Camera capture uses bounded video constraints with no audio, and enabling camera never creates a duplicate stream, recognizer, render loop, or frame listener.
+- [ ] Tracking uses latest-frame/backpressure behavior: inference calls never overlap, stale frames are dropped rather than queued, and stop/restart releases streams, video, recognizer, callbacks, and listeners.
+- [ ] Inference and downstream delivery are rate-limited or scheduled to keep the main thread responsive, avoiding unnecessary React state updates and repeated full-scene work for unchanged camera frames.
+- [ ] The visible overlay remains smooth and aligned with the scene, gesture signals remain timely for existing behaviors, and reduced-motion/demo fallback behavior is preserved.
+- [ ] Permission, denial, unsupported-browser, missing-device, model-load, retry, and stop states remain correct; camera frames remain local and never reach the server, logs, or exports.
+- [ ] Deterministic tests cover scheduling, throttling, dropped frames, cleanup, stream constraints, error paths, and duplicate-resource prevention.
+- [ ] Real-browser desktop and narrow diagnostics record tracking behavior against the agreed budget without a physical camera or external MediaPipe download; environment boundaries are documented.
+- [ ] Frontend focused/full tests, build, typecheck, lint, format, and `make check` pass.
+
+## Out of scope
+
+- Changing the canonical tracking schema, gesture vocabulary, scene behavior semantics, or adding server-side video processing.
+- Replacing MediaPipe or requiring a paid/cloud inference service.
+- Broad redesign of camera-overlay controls beyond responsiveness changes; file a separate UX issue if needed.
+
+## Evidence and pending items
+
+- **Status:** PROPOSED
+- **Evidence so far:** User reports that enabling the camera produces a visible feed but it is extremely laggy and unusable. Current code already caps MediaPipe inference at 30 FPS and prevents overlapping calls, so profiling is required before selecting the next bottleneck fix; the editor also composites camera pixels through the p5 path and forwards frames into the live runtime.
+- **Pending verification:** Measure the current latency/resource profile, choose a defensible budget, and verify the optimized path in deterministic tests and real-browser diagnostics.
+- **Next action:** PM/engineering groom [#192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192), then profile and optimize the shared camera pipeline without changing tracking semantics.
+- **Durable memory link:** Existing camera privacy, MediaPipe lifecycle, and Playwright runtime topics remain applicable; no new durable constraint is required yet.
+
+## Discovery gate
+
+- [x] Searched `_docs/tasks.md`, `.local/tasks/`, durable memory, and open GitHub issues for duplicates; existing camera tasks cover lifecycle, overlay, public viewer, and test seams, not runtime performance.
+- [x] Created and linked [#192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192).
+- [x] No distinct out-of-scope actionable follow-up discovered.
+
+## Constraints
+
+- **Files likely in scope:** `frontend/src/tracking/mediapipeProvider.ts`, `frontend/src/components/CameraControl.tsx`, `frontend/src/pages/EditorWorkspace.tsx`, `frontend/src/pages/previewTrackingSource.ts`, p5 camera compositor code, and focused/browser tests.
+- **Privacy boundary:** Keep all camera processing in the browser; do not add uploads, server inference, logging of frames, or export retention.
+- **Behavior boundary:** Preserve existing `TrackingProvider` frames, gestures, reduced-motion behavior, permission UX, overlay alignment, and demo fallback.
+- **Libraries:** Use existing dependencies and the existing MediaPipe test seam; do not add dependencies without approval.
+
+GitHub issue: [#192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192)
+
 ## 154. Disambiguate shape property editing and Move-to-Layer controls in Selection HUD
 
 ## Goal

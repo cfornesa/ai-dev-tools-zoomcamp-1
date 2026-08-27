@@ -35,7 +35,12 @@ import type { FullConfig } from '@playwright/test';
 import { writeE2EState } from './state.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
-const ENV_FILE_ARGS = fs.existsSync(path.join(REPO_ROOT, '.env')) ? ['--env-file', '.env'] : [];
+const configuredEnvFile = process.env.E2E_ENV_FILE;
+const ENV_FILE_ARGS = configuredEnvFile
+  ? ['--env-file', configuredEnvFile]
+  : fs.existsSync(path.join(REPO_ROOT, '.env'))
+    ? ['--env-file', '.env']
+    : [];
 
 const PREREQUISITES_HINT =
   'This suite requires, in order: (1) a real reachable PostgreSQL server ' +

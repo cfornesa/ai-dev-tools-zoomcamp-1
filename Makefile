@@ -2,7 +2,7 @@
 	lint format format-check typecheck test \
 	backend-lint backend-format backend-format-check backend-typecheck backend-test \
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
-git-safe-push \
+git-safe-push browser-qa \
 e2e dev deploy-check migrate smoke-local smoke-hosted-git
 
 # Run every backend and frontend check (same checks CI runs).
@@ -57,6 +57,13 @@ frontend-test:
 # running this.
 e2e:
 	cd frontend && npm run test:e2e
+
+# Provision a disposable PostgreSQL-backed Django/Vite stack, verify the
+# origin is this repository, run the Layers browser suite, and clean up.
+# Set BROWSER_QA_FULL_E2E=1 for all Playwright suites or
+# BROWSER_QA_RUNTIME_BENCH=1 for the standalone runtime benchmark.
+browser-qa:
+	bash scripts/browser-qa.sh
 
 # Task 89 (issue #91): start Postgres (if needed), the backend, and the
 # frontend together from one terminal. Ctrl+C stops all of them cleanly.

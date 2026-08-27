@@ -157,6 +157,23 @@ interaction runtime, and AI/draft-recovery flows against a real
 Postgres-backed stack. See AGENTS.md's "End-to-end tests (Playwright)"
 section for the full setup sequence and `make e2e` to run it.
 
+For repeatable browser acceptance checks without manually coordinating
+services, run:
+
+```bash
+make browser-qa
+```
+
+This creates an isolated disposable PostgreSQL container and temporary
+environment, applies migrations, starts Django and Vite, verifies that
+`/health/` and anonymous `/api/whoami/` identify this repository, runs the
+Layers desktop/narrow Chromium suite, and removes every process/container on
+exit. It never reads or writes the developer `.env` database. Use
+`BROWSER_QA_FULL_E2E=1 make browser-qa` for the complete Playwright suite or
+`BROWSER_QA_RUNTIME_BENCH=1 make browser-qa` for the runtime benchmark. Failed
+runs retain temporary logs and print their paths so a browser or service
+failure is actionable.
+
 ## License
 
 MIT License — see [LICENSE](./LICENSE).

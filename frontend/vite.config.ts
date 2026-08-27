@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
+const backendProxyTarget = process.env.BROWSER_QA_BACKEND_URL ?? 'http://localhost:8000';
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -35,9 +37,9 @@ export default defineConfig({
       // localhost:8000, which Google was never told about -- producing
       // redirect_uri_mismatch even though the browser is correctly on
       // port 5000 the whole time.
-      '/api': { target: 'http://localhost:8000', changeOrigin: false },
-      '/accounts': { target: 'http://localhost:8000', changeOrigin: false },
-      '/health': { target: 'http://localhost:8000', changeOrigin: false },
+      '/api': { target: backendProxyTarget, changeOrigin: false },
+      '/accounts': { target: backendProxyTarget, changeOrigin: false },
+      '/health': { target: backendProxyTarget, changeOrigin: false },
     },
   },
   test: {

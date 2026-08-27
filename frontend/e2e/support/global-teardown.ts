@@ -20,7 +20,12 @@ import path from 'node:path';
 import { clearE2EState, readE2EState } from './state.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
-const ENV_FILE_ARGS = fs.existsSync(path.join(REPO_ROOT, '.env')) ? ['--env-file', '.env'] : [];
+const configuredEnvFile = process.env.E2E_ENV_FILE;
+const ENV_FILE_ARGS = configuredEnvFile
+  ? ['--env-file', configuredEnvFile]
+  : fs.existsSync(path.join(REPO_ROOT, '.env'))
+    ? ['--env-file', '.env']
+    : [];
 
 export default async function globalTeardown(): Promise<void> {
   const state = readE2EState();

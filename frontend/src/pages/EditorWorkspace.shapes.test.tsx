@@ -151,7 +151,11 @@ describe('EditorWorkspace shape creation', () => {
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
 
-    const labels = shapeOutlineSelectButtons().map((btn) => btn.textContent);
+    const labels = shapeOutlineRows().map((row) =>
+      within(row)
+        .getByRole('textbox', { name: /Shape name for/ })
+        .getAttribute('value'),
+    );
     expect(new Set(labels).size).toBe(2);
   });
 });

@@ -415,6 +415,26 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     expect(layerRow).toHaveAttribute('data-selected', 'true');
   });
 
+  it('selects the layer from the visible-label region as well as the checkbox', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const layerRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find(
+        (row) => row.dataset.outlineKind === 'layer' && within(row).queryByDisplayValue('Layer 2'),
+      )!;
+    const visibleLabel = within(layerRow).getByText('Vis', { selector: 'span' });
+    const visible = within(layerRow).getByRole('checkbox', { name: 'Layer Layer 2 visible' });
+
+    await user.click(visibleLabel);
+
+    expect(layerRow).toHaveAttribute('data-selected', 'true');
+    expect(visible).not.toBeChecked();
+    expect(screen.getByTestId('selection-hud')).toHaveTextContent('Layer 2');
+  });
+
   it('keeps layer selection synchronized with visible canvas highlights and shape selection', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();

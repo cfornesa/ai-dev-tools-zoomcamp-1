@@ -705,11 +705,13 @@ function OutlineRowItem({
         aria-current={row.id === sceneEditor.selectedLayerId ? 'true' : undefined}
         tabIndex={0}
         onClick={(event) => {
-          // Buttons/selects own a separate action (delete, More, etc.), but
-          // the row's editable name and Visible/Locked controls are part of
-          // the layer's activation surface. Their click/keyboard events
-          // must both keep their local behavior and select this layer.
-          if ((event.target as HTMLElement).closest('button,select,summary')) return;
+          // Buttons and the More disclosure own separate actions (delete,
+          // reorder, etc.). Every other descendant is part of the contiguous
+          // layer activation surface, including the name field and both
+          // checkbox labels. Selecting here after the control's own click
+          // preserves its local behavior while making the whole row
+          // bidirectional with the canvas.
+          if ((event.target as HTMLElement).closest('button,summary')) return;
           sceneEditor.selectLayer(row.id);
         }}
         onKeyDown={(event) => {

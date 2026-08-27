@@ -33,6 +33,7 @@ import {
   createMediaPipeTrackingProvider,
   GESTURE_RECOGNIZER_MODEL_URL,
   MEDIAPIPE_WASM_BASE_URL,
+  CAMERA_CAPTURE_CONSTRAINTS,
   type MediaPipeTrackingProviderDeps,
 } from './mediapipeProvider';
 
@@ -193,7 +194,7 @@ describe('createMediaPipeTrackingProvider lazy loading', () => {
     provider.start();
     await flushMicrotasks();
 
-    expect(getUserMedia).toHaveBeenCalledWith({ video: { facingMode: 'user' }, audio: false });
+    expect(getUserMedia).toHaveBeenCalledWith(CAMERA_CAPTURE_CONSTRAINTS);
     expect(loadVisionTasksModule).toHaveBeenCalledTimes(1);
     expect(forVisionTasks).toHaveBeenCalledWith(MEDIAPIPE_WASM_BASE_URL);
     expect(createFromOptions).toHaveBeenCalledWith(
@@ -393,6 +394,38 @@ describe('createMediaPipeTrackingProvider cleanup', () => {
 
     for (const track of harness.tracks) expect(track.stop).toHaveBeenCalled();
     expect(harness.close).not.toHaveBeenCalled(); // recognizer was never reached/created
+  });
+
+  it('stop() during MediaPipe loading releases the acquired stream and video', async () => {
+    const harness = createHarness();
+    let resolveModule!: (module: Awaited<MediaPipeTrackingProviderDeps['loadVisionTasksModule']>) => void;
+    const modulePromise = new Promise<Awaited<MediaPipeTrackingProviderDeps['loadVisionTasksModule']>>(
+      (resolve) => {
+        resolveModule = resolve;
+      },
+    );
+    const provider = createMediaPipeTrackingProvider({
+      getUserMedia: harness.getUserMedia as MediaPipeTrackingProviderDeps['getUserMedia'],
+      createVideoElement: () => harness.video,
+      now: () => 0,
+      requestFrame: harness.requestFrame,
+      cancelFrame: harness.cancelFrame,
+      isSupported: () => true,
+      loadVisionTasksModule: () => modulePromise,
+    });
+
+    provider.start();
+    for (let i = 0; i < 4; i += 1) await Promise.resolve();
+    provider.stop();
+    resolveModule({
+      FilesetResolver: { forVisionTasks: vi.fn() },
+      GestureRecognizer: { createFromOptions: vi.fn() },
+    });
+    await Promise.resolve();
+
+    expect(harness.tracks[0].stop).toHaveBeenCalled();
+    expect(harness.video.pause).toHaveBeenCalled();
+    expect(harness.video.srcObject).toBeNull();
   });
 
   it('stop() then start() again resumes from a clean slate: no stale hand id carries over', async () => {

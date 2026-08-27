@@ -54,32 +54,54 @@ export type PreviewTrackingSource = {
    * and drains that source's pending event queue so each event reaches the
    * runtime loop exactly once. Safe to call from any per-frame loop. */
   consumeFrame(): TrackingFrame;
+  /** Non-sensitive counters used by deterministic performance diagnostics. */
+  getDiagnostics(): PreviewTrackingDiagnostics;
+};
+
+export type PreviewTrackingDiagnostics = {
+  receivedFrames: number;
+  droppedFrames: number;
+  deliveredFrames: number;
 };
 
 type SourceState = {
   hands: Hand[];
   timestamp: number;
   pendingEvents: GestureEvent[];
+  pendingFrame: boolean;
 };
 
 function emptySourceState(): SourceState {
-  return { hands: [], timestamp: 0, pendingEvents: [] };
+  return { hands: [], timestamp: 0, pendingEvents: [], pendingFrame: false };
 }
 
 export function createPreviewTrackingSource(): PreviewTrackingSource {
   let cameraActive = false;
   const demo = emptySourceState();
   const camera = emptySourceState();
+  let receivedFrames = 0;
+  let droppedFrames = 0;
+  let deliveredFrames = 0;
 
   function report(target: SourceState, frame: TrackingFrame): void {
+    receivedFrames += 1;
+    // A pending frame has not reached the runtime yet. Replace it in place;
+    // retaining a queue here would make the runtime process stale camera
+    // state after a slow render and would grow without a bound.
+    if (target.pendingFrame) droppedFrames += 1;
     target.hands = frame.hands;
     target.timestamp = frame.timestamp;
-    if (frame.events.length > 0) target.pendingEvents = target.pendingEvents.concat(frame.events);
+    target.pendingEvents = frame.events;
+    target.pendingFrame = true;
   }
 
   function drain(target: SourceState): TrackingFrame {
     const events = target.pendingEvents;
     target.pendingEvents = [];
+    if (target.pendingFrame) {
+      target.pendingFrame = false;
+      deliveredFrames += 1;
+    }
     return { timestamp: target.timestamp, hands: target.hands, events };
   }
 
@@ -95,6 +117,9 @@ export function createPreviewTrackingSource(): PreviewTrackingSource {
     },
     consumeFrame() {
       return drain(cameraActive ? camera : demo);
+    },
+    getDiagnostics() {
+      return { receivedFrames, droppedFrames, deliveredFrames };
     },
   };
 }

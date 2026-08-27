@@ -98,6 +98,22 @@ export const GESTURE_RECOGNIZER_MODEL_URL =
  * arrive before this interval elapses. */
 export const MAX_INFERENCE_FPS = 30;
 
+/**
+ * Upper bounds for the camera capture path. Keeping these constraints in
+ * one exported value makes the privacy/performance contract observable in
+ * tests and prevents a high-resolution device from doing unnecessary work
+ * before MediaPipe's own 30 Hz throttle gets a chance to run.
+ */
+export const CAMERA_CAPTURE_CONSTRAINTS: MediaStreamConstraints = {
+  video: {
+    facingMode: 'user',
+    width: { ideal: 640, max: 640 },
+    height: { ideal: 480, max: 480 },
+    frameRate: { ideal: MAX_INFERENCE_FPS, max: MAX_INFERENCE_FPS },
+  },
+  audio: false,
+};
+
 const MIN_INFERENCE_INTERVAL_MS = 1000 / MAX_INFERENCE_FPS;
 
 /** MediaPipe's canned gesture category names, mapped to the Task 27
@@ -302,7 +318,7 @@ export function createMediaPipeTrackingProvider(
   async function runStartPipeline(myGeneration: number): Promise<void> {
     let acquiredStream: MediaStream;
     try {
-      acquiredStream = await getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      acquiredStream = await getUserMedia(CAMERA_CAPTURE_CONSTRAINTS);
     } catch (cause) {
       if (myGeneration !== generation) return;
       emitError('Camera access was denied or no camera is available.', cause);
@@ -323,38 +339,56 @@ export function createMediaPipeTrackingProvider(
     try {
       await videoElement.play();
     } catch (cause) {
-      if (myGeneration !== generation) return;
+      if (myGeneration !== generation) {
+        releaseResources();
+        return;
+      }
       emitError('Unable to start camera video playback.', cause);
       releaseResources();
       status = 'stopped';
       return;
     }
-    if (myGeneration !== generation) return;
+    if (myGeneration !== generation) {
+      releaseResources();
+      return;
+    }
     video = videoElement;
 
     let visionModule: MediaPipeVisionModule;
     try {
       visionModule = await loadVisionTasksModule();
     } catch (cause) {
-      if (myGeneration !== generation) return;
+      if (myGeneration !== generation) {
+        releaseResources();
+        return;
+      }
       emitError('Failed to load the MediaPipe Tasks Vision module.', cause);
       releaseResources();
       status = 'stopped';
       return;
     }
-    if (myGeneration !== generation) return;
+    if (myGeneration !== generation) {
+      releaseResources();
+      return;
+    }
 
     let createdRecognizer: GestureRecognizerType;
     try {
       const fileset = await visionModule.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_BASE_URL);
-      if (myGeneration !== generation) return;
+      if (myGeneration !== generation) {
+        releaseResources();
+        return;
+      }
       createdRecognizer = await visionModule.GestureRecognizer.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL, delegate: 'GPU' },
         runningMode: 'VIDEO',
         numHands: MAX_HANDS_PER_FRAME,
       });
     } catch (cause) {
-      if (myGeneration !== generation) return;
+      if (myGeneration !== generation) {
+        releaseResources();
+        return;
+      }
       emitError('Failed to load the gesture recognizer model.', cause);
       releaseResources();
       status = 'stopped';
@@ -366,6 +400,7 @@ export function createMediaPipeTrackingProvider(
       } catch {
         // See closeRecognizer's comment — nothing left to report to.
       }
+      releaseResources();
       return;
     }
     recognizer = createdRecognizer;

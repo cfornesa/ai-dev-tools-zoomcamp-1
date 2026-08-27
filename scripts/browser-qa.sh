@@ -11,6 +11,7 @@ BACKEND_PORT="${BROWSER_QA_BACKEND_PORT:-}"
 POSTGRES_IMAGE="${BROWSER_QA_POSTGRES_IMAGE:-postgres:16}"
 RUN_FULL_E2E="${BROWSER_QA_FULL_E2E:-0}"
 RUN_RUNTIME_BENCH="${BROWSER_QA_RUNTIME_BENCH:-0}"
+E2E_SPEC="${BROWSER_QA_E2E_SPEC:-}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/creatrweb-browser-qa.XXXXXX")"
 ENV_FILE="$WORK_DIR/.env"
 POSTGRES_CONTAINER="creatrweb-browser-qa-$$"
@@ -57,6 +58,9 @@ command -v lsof >/dev/null || fail "lsof is required"
 [[ -x frontend/node_modules/.bin/playwright ]] || fail "run 'npm --prefix frontend ci' first"
 [[ "$RUN_FULL_E2E" == 0 || "$RUN_FULL_E2E" == 1 ]] || fail "BROWSER_QA_FULL_E2E must be 0 or 1"
 [[ "$RUN_RUNTIME_BENCH" == 0 || "$RUN_RUNTIME_BENCH" == 1 ]] || fail "BROWSER_QA_RUNTIME_BENCH must be 0 or 1"
+if [[ -n "$E2E_SPEC" && "$E2E_SPEC" == -* ]]; then
+  fail "BROWSER_QA_E2E_SPEC must be a Playwright spec path, not an option"
+fi
 
 if [[ -z "$FRONTEND_PORT" ]]; then
   for candidate in {5000..5099}; do
@@ -136,7 +140,12 @@ export E2E_BASE_URL="http://127.0.0.1:$FRONTEND_PORT"
 export E2E_ENV_FILE="$ENV_FILE"
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$WORK_DIR/uv-cache}"
 log "Running Layers browser acceptance suite against $E2E_BASE_URL"
-(cd frontend && npx playwright test e2e/layersPanel.spec.ts)
+if [[ -n "$E2E_SPEC" ]]; then
+  log "Running selected browser acceptance spec: $E2E_SPEC"
+  (cd frontend && npx playwright test "$E2E_SPEC")
+else
+  (cd frontend && npx playwright test e2e/layersPanel.spec.ts)
+fi
 if [[ "$RUN_FULL_E2E" == 1 ]]; then
   log "Running full browser acceptance suite"
   (cd frontend && npm run test:e2e)

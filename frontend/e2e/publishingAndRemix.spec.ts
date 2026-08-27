@@ -464,6 +464,19 @@ async function installMediaPipeTestSeam(context: BrowserContext): Promise<void> 
       get: () => 4,
     });
 
+    // Chromium prefers requestVideoFrameCallback when it is available. The
+    // synthetic stream has no decoder to produce native video callbacks, so
+    // remove that optional API from the seam and exercise the provider's
+    // existing requestAnimationFrame fallback instead.
+    Object.defineProperty(HTMLVideoElement.prototype, 'requestVideoFrameCallback', {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(HTMLVideoElement.prototype, 'cancelVideoFrameCallback', {
+      configurable: true,
+      value: undefined,
+    });
+
     Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
       configurable: true,
       value: () =>

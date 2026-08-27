@@ -30,6 +30,10 @@ Project: `cfornesa/ai-dev-tools-zoomcamp-1`
 
 No criterion-ready new issue was created. Issue creation was not authorized, and the duplicate audit found no distinct actionable item requiring a pending-authorization handoff.
 
+## Final update — automated closure
+
+The earlier blocked status above was superseded after automation was completed. GitHub #191 and #192 are both closed with `state_reason: completed`. #191 passed 7/7 isolated Layers browser scenarios and the root quality gate. #192 passed 24/24 targeted camera/publishing browser scenarios, including automated 10-second desktop/narrow diagnostics, the runtime benchmark, and the root quality gate. No local manual action remains; Replit deployment verification is the only manual class.
+
 ## Verification boundary
 
 The user supplied a real symptom for camera performance, so it is classified as an implementation defect rather than a verification-only blocker. The prior Docker/browser setup remains a host-specific verification boundary documented in durable memory; it does not replace profiling the reported slow path.

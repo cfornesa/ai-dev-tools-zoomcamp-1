@@ -18,3 +18,4 @@
 - [Local port 8000 Docker conflict](local-port-8000-docker-conflict.md) — On this dev machine, Docker's backend proxy squats :8000, producing misleading 404s that look like a Django bug.
 - [Code tab mount-once staleness](code-tab-mount-once-staleness.md) — The editor's Code tab only resyncs on mount, so Undo/Redo and a bare Visual<->Code toggle can show stale content or silently discard unsaved edits (#177).
 - [Local sandbox verification boundaries](local-sandbox-verification-boundaries.md) — Managed macOS runs may block uv cache writes, launcher subprocesses, and loopback socket binds; rerun full gates in an approved environment.
+- [Layer/visual selection contract](layer-visual-selection-contract.md) — Layer and canvas selection must be bidirectional, and the owning layer's entire block must receive selected treatment.

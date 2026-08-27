@@ -20,6 +20,10 @@ export async function expandAllCollapsibleSections(page: Page): Promise<void> {
   const count = await toggles.count();
   for (let i = 0; i < count; i += 1) {
     const toggle = toggles.nth(i);
+    // The desktop editor mounts all panel regions at once, while the narrow
+    // editor keeps inactive regions mounted but hidden. Only visible toggles
+    // can be expanded in the current viewport.
+    if (!(await toggle.isVisible())) continue;
     if ((await toggle.getAttribute('aria-expanded')) === 'false') {
       await toggle.click();
     }

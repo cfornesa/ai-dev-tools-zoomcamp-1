@@ -1209,9 +1209,12 @@ code {
   .editor-panel,
   .editor-scene-canvas-viewport,
   .editor-scene-canvas {
-    width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+  }
+
+  .editor-workspace {
+    width: calc(100% - 32px);
   }
 
   .editor-scene-canvas-viewport,

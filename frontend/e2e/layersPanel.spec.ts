@@ -176,7 +176,10 @@ test.describe('Layers panel', () => {
     await createBlankProjectViaUI(page);
 
     const layersRegion = page.getByRole('region', { name: 'Layers' });
-    const collapse = layersRegion.getByRole('button', { name: 'Collapse Layers panel' });
+    // The accessible name changes from Collapse to Expand after activation;
+    // use the stable disclosure hook so the same locator remains valid for
+    // both states.
+    const collapse = layersRegion.locator('.editor-panel-disclosure-toggle');
     await expect(collapse).toHaveAttribute('aria-expanded', 'true');
     await expect(layersRegion.getByRole('list', { name: 'Scene outline' })).toBeVisible();
     await collapse.press('Enter');
@@ -193,7 +196,7 @@ test.describe('Layers panel', () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.getByRole('tab', { name: 'Layers' }).click();
     const narrowLayers = page.getByRole('region', { name: 'Layers' });
-    const narrowCollapse = narrowLayers.getByRole('button', { name: 'Collapse Layers panel' });
+    const narrowCollapse = narrowLayers.locator('.editor-panel-disclosure-toggle');
     await narrowCollapse.click();
     await expect(narrowCollapse).toHaveAttribute('aria-expanded', 'false');
     await expect(narrowLayers.locator('#editor-panel-layers-content')).toHaveAttribute(

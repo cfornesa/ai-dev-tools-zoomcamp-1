@@ -238,7 +238,27 @@ test.describe('Layers panel', () => {
 
     const circle = await shapeRow(page, 'Circle 1');
     await circle.getByRole('button', { name: 'Circle 1', exact: true }).click();
-    await expect(layer).not.toHaveAttribute('data-selected', 'true');
+    await expect(layer).toHaveAttribute('data-selected', 'true');
+    await expect(circle).toHaveAttribute('data-selected', 'true');
+    await expect(page.getByTestId('selection-hud')).toContainText('Circle 1');
+  });
+
+  test('keeps bidirectional selection usable in the narrow panel layout', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await createBlankProjectViaUI(page);
+    await page.getByRole('button', { name: 'Add circle' }).click();
+    await page.getByRole('tab', { name: 'Layers' }).click();
+
+    const layer = await layerRow(page, 'Layer 2');
+    const circle = await shapeRow(page, 'Circle 1');
+    await layer.getByRole('textbox', { name: 'Layer name for Layer 2' }).click();
+    await expect(layer).toHaveAttribute('data-selected', 'true');
+    await expect(circle).toHaveAttribute('data-selected', 'true');
+    await expect(page.getByTestId('selection-hud')).toContainText('Layer 2');
+
+    await circle.getByRole('button', { name: 'Circle 1', exact: true }).click();
+    await expect(layer).toHaveAttribute('data-selected', 'true');
     await expect(circle).toHaveAttribute('data-selected', 'true');
     await expect(page.getByTestId('selection-hud')).toContainText('Circle 1');
   });

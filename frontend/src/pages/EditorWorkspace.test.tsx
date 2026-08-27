@@ -117,8 +117,8 @@ describe('EditorWorkspace load states', () => {
   });
 
   // Issue #94 (extended by issue #127): Preview leads the layout, in DOM
-  // order — not just visually — followed by Details/Tools/Layers/Inspector.
-  it('renders the five landmark regions, in DOM order with Preview first, once the working copy loads', async () => {
+  // order — not just visually — followed by Details/Tools/Layers/Canvas/Inspector.
+  it('renders the six landmark regions, in DOM order with Preview first, once the working copy loads', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
 
@@ -131,6 +131,7 @@ describe('EditorWorkspace load states', () => {
       'details',
       'tools',
       'layers',
+      'canvas',
       'inspector',
     ]);
     expect(screen.getByRole('region', { name: 'Preview' })).toHaveAttribute(
@@ -343,7 +344,7 @@ describe('EditorWorkspace responsive layout', () => {
 
     const tablist = await screen.findByRole('tablist');
     const tabs = within(tablist).getAllByRole('tab');
-    expect(tabs).toHaveLength(4);
+    expect(tabs).toHaveLength(5);
     tabs.forEach((tab) => expect(tab).toBeVisible());
   });
 
@@ -510,6 +511,9 @@ describe('EditorWorkspace keyboard accessibility', () => {
     // reordered `PANELS` array.
     await user.tab();
     expect(screen.getByRole('tab', { name: 'Layers' })).toHaveFocus();
+
+    await user.tab();
+    expect(screen.getByRole('tab', { name: 'Canvas' })).toHaveFocus();
 
     await user.tab();
     expect(screen.getByRole('tab', { name: 'Details' })).toHaveFocus();

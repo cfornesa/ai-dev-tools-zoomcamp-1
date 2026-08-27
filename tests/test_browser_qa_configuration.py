@@ -41,3 +41,10 @@ def test_playwright_fixture_hooks_accept_the_disposable_environment_file():
         hook = (ROOT / "frontend" / "e2e" / "support" / name).read_text()
         assert "process.env.E2E_ENV_FILE" in hook
         assert "['--env-file', configuredEnvFile]" in hook
+
+
+def test_browser_qa_is_available_from_the_frontend_working_directory():
+    makefile = (ROOT / "frontend" / "Makefile").read_text()
+
+    assert "browser-qa:" in makefile
+    assert "$(MAKE) -C .. browser-qa" in makefile

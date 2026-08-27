@@ -177,7 +177,7 @@ const EditorDetailsPanel = forwardRef<
   );
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} noValidate>
+    <form className="editor-details-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
       <div>
         <label htmlFor="project-description">Description</label>
         <textarea

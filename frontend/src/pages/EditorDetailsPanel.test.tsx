@@ -96,6 +96,15 @@ describe('EditorDetailsPanel', () => {
     expect(screen.queryByLabelText(/thumbnail/i)).not.toBeInTheDocument();
   });
 
+  it('uses the responsive form hook and keeps every label associated', () => {
+    render(<Harness initialProject={baseProject()} />);
+
+    expect(document.querySelector('form')).toHaveClass('editor-details-form');
+    expect(screen.getByLabelText(/description/i)).toHaveAttribute('id', 'project-description');
+    expect(screen.getByLabelText(/tags/i)).toHaveAttribute('id', 'project-tags');
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+  });
+
   it('saves valid changes without touching scene versions or title', async () => {
     mockedUpdateProjectMetadata.mockResolvedValue(baseProject({ description: 'Updated' }));
     const user = userEvent.setup();

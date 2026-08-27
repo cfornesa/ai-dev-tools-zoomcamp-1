@@ -44,6 +44,15 @@ def test_playwright_fixture_hooks_accept_the_disposable_environment_file():
         assert "['--env-file', configuredEnvFile]" in hook
 
 
+def test_playwright_disclosure_helper_handles_nested_closed_panels():
+    helper = (ROOT / "frontend" / "e2e" / "support" / "expandCollapsibleSections.ts").read_text()
+
+    assert "editor-panel-disclosure-toggle:visible" in helper
+    assert "editor-collapsible-section-toggle:visible" in helper
+    assert "panelContent" in helper
+    assert "contentId" in helper
+
+
 def test_browser_qa_is_available_from_the_frontend_working_directory():
     makefile = (ROOT / "frontend" / "Makefile").read_text()
 

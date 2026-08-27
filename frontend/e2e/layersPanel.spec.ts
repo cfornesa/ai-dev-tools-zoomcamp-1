@@ -168,6 +168,43 @@ test.describe('Layers panel', () => {
     ).toHaveCount(0);
   });
 
+  test('collapses and reopens the mounted Layers panel at desktop and narrow widths', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await createBlankProjectViaUI(page);
+
+    const layersRegion = page.getByRole('region', { name: 'Layers' });
+    const collapse = layersRegion.getByRole('button', { name: 'Collapse Layers panel' });
+    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
+    await expect(layersRegion.getByRole('list', { name: 'Scene outline' })).toBeVisible();
+    await collapse.press('Enter');
+    await expect(collapse).toHaveAttribute('aria-expanded', 'false');
+    await expect(collapse).toBeFocused();
+    await expect(layersRegion.locator('#editor-panel-layers-content')).toHaveAttribute(
+      'hidden',
+      '',
+    );
+    await collapse.press(' ');
+    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
+    await expect(layersRegion.getByRole('list', { name: 'Scene outline' })).toBeVisible();
+
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.getByRole('tab', { name: 'Layers' }).click();
+    const narrowLayers = page.getByRole('region', { name: 'Layers' });
+    const narrowCollapse = narrowLayers.getByRole('button', { name: 'Collapse Layers panel' });
+    await narrowCollapse.click();
+    await expect(narrowCollapse).toHaveAttribute('aria-expanded', 'false');
+    await expect(narrowLayers.locator('#editor-panel-layers-content')).toHaveAttribute(
+      'hidden',
+      '',
+    );
+    await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 375);
+    await narrowCollapse.click();
+    await expect(narrowLayers.getByRole('list', { name: 'Scene outline' })).toBeVisible();
+  });
+
   test('keeps the panel and every layer-row control inside one bounded width', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 900 });
     await loginViaUI(page, fixtures.owner.email, fixtures.password);

@@ -620,6 +620,28 @@ code {
   letter-spacing: 0.02em;
 }
 
+/* Issue #191: keep the panel landmark and invoking control available while
+   hiding only the mounted body, preserving panel-local state. */
+.editor-panel-disclosure-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.editor-panel-disclosure-toggle > span:first-child {
+  width: 1em;
+  text-align: center;
+}
+
 .editor-collapsible-section {
   margin: 8px 0;
 }

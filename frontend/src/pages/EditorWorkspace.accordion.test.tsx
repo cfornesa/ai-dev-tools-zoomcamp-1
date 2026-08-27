@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -163,5 +163,47 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
     expect(versionHistoryToggle).toHaveAttribute('aria-expanded', 'true');
     expect(await screen.findByText(/Version 1/)).toBeInTheDocument();
     expect(shapeInspectorToggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('collapses top-level panels without unmounting content or coupling nested disclosures', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    const layers = await screen.findByRole('region', { name: 'Layers' });
+    const tools = await screen.findByRole('region', { name: 'Tools' });
+    const layersToggle = within(layers).getByRole('button', { name: 'Collapse Layers panel' });
+    const toolsToggle = within(tools).getByRole('button', { name: 'Collapse Tools panel' });
+    const layersContent = document.getElementById('editor-panel-layers-content');
+    const toolsContent = document.getElementById('editor-panel-tools-content');
+    const nestedToggle = within(tools).getByRole('button', { name: /Editing preferences/ });
+
+    expect(layersToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(layersToggle).toHaveAttribute('aria-controls', 'editor-panel-layers-content');
+    expect(layersContent).not.toHaveAttribute('hidden');
+    expect(toolsContent).not.toHaveAttribute('hidden');
+
+    await user.click(nestedToggle);
+    expect(nestedToggle).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(toolsToggle);
+    expect(toolsToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toolsToggle).toHaveFocus();
+    expect(toolsContent).toHaveAttribute('hidden');
+    // The nested control remains mounted and its state is not reset.
+    expect(nestedToggle).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Enter}');
+    expect(toolsToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toolsContent).not.toHaveAttribute('hidden');
+    expect(nestedToggle).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(layersToggle);
+    expect(layersToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(layersContent).toHaveAttribute('hidden');
+    await user.keyboard(' ');
+    expect(layersToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(layersContent).not.toHaveAttribute('hidden');
   });
 });

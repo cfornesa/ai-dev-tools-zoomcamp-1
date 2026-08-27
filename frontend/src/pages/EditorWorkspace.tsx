@@ -11,6 +11,7 @@ import {
   type FormEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
   type SetStateAction,
 } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -250,6 +251,41 @@ function EditableProjectTitle({
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+}
+
+/** Issue #191: collapse a panel body without unmounting its local state. */
+function TopLevelPanel({
+  name,
+  children,
+  defaultOpen = true,
+}: {
+  name: 'Details' | 'Tools' | 'Layers' | 'Inspector';
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const contentId = `editor-panel-${name.toLowerCase()}-content`;
+
+  return (
+    <>
+      <h3>
+        <button
+          type="button"
+          className="editor-panel-disclosure-toggle"
+          aria-expanded={open}
+          aria-controls={contentId}
+          aria-label={`${open ? 'Collapse' : 'Expand'} ${name} panel`}
+          onClick={() => setOpen((current) => !current)}
+        >
+          <span aria-hidden="true">{open ? '▾' : '▸'}</span>
+          <span>{name}</span>
+        </button>
+      </h3>
+      <div id={contentId} className="editor-panel-content" hidden={!open}>
+        {children}
+      </div>
+    </>
+  );
 }
 
 /**
@@ -3668,15 +3704,16 @@ function EditorWorkspace() {
           className="editor-panel"
           hidden={panelHidden('details')}
         >
-          <h3>Details</h3>
-          {id && (
-            <EditorDetailsPanel
-              ref={detailsPanelRef}
-              projectId={id}
-              project={project}
-              setProject={setProject}
-            />
-          )}
+          <TopLevelPanel name="Details">
+            {id && (
+              <EditorDetailsPanel
+                ref={detailsPanelRef}
+                projectId={id}
+                project={project}
+                setProject={setProject}
+              />
+            )}
+          </TopLevelPanel>
         </section>
 
         <section
@@ -3687,14 +3724,13 @@ function EditorWorkspace() {
           className="editor-panel"
           hidden={panelHidden('tools')}
         >
-          <h3>Tools</h3>
-
-          {/* Task 94 (issue #94), point 3: independently collapsible
+          <TopLevelPanel name="Tools">
+            {/* Task 94 (issue #94), point 3: independently collapsible
               sections — each `CollapsibleSection` owns its own open/closed
               state, so expanding/collapsing one never affects another (not
               a single-open-at-a-time accordion). See
               `EditorWorkspace.accordion.test.tsx`. */}
-          {/* Task 129 (issue #154): every `CollapsibleSection` below (and
+            {/* Task 129 (issue #154): every `CollapsibleSection` below (and
               in the Inspector panel further down) now passes a decorative
               `icon` glyph — one distinct Unicode symbol per section
               (⚙ Editing preferences, 📷 Camera, ✋ Demo signal controls,
@@ -3708,7 +3744,7 @@ function EditorWorkspace() {
               contract and every consumer's accessible name are unchanged
               (see that file's own comment, and
               `EditorWorkspace.a11y.test.tsx`). */}
-          {/* Issue #131: this section used to own shape creation (the four
+            {/* Issue #131: this section used to own shape creation (the four
               "Add circle/rectangle/line/polygon" buttons) and a duplicate
               `<ul aria-label="Shape list">` shape listing. Both moved into
               `LayersPanel.tsx` (its outline is now the single place shapes
@@ -3717,8 +3753,8 @@ function EditorWorkspace() {
               genuinely just shape *actions* (duplicate/delete the current
               selection, undo/redo) plus the snap preference and lock-error
               channel, hence the renamed heading. */}
-          <CollapsibleSection heading="Editing preferences" icon="⚙">
-            {/* Issue #78: the client-only snap-to-grid / alignment-guide
+            <CollapsibleSection heading="Editing preferences" icon="⚙">
+              {/* Issue #78: the client-only snap-to-grid / alignment-guide
                 toggle — editor-specific, so it lives here in the Tools
                 panel (not the global header, unlike Reduce motion).
                 Task 112 (issue #143): this section used to also hold
@@ -3727,17 +3763,17 @@ function EditorWorkspace() {
                 switcher (see `<div role="toolbar">` near the top of this
                 component's return), so the section was renamed to
                 describe what actually remains. */}
-            <SnapPreferenceControl />
-          </CollapsibleSection>
+              <SnapPreferenceControl />
+            </CollapsibleSection>
 
-          {/* Issue #95, point 7: what was one "Camera & demo controls"
+            {/* Issue #95, point 7: what was one "Camera & demo controls"
               section (too large once its content is visible, bundling
               CameraControl and the much larger DemoControlsPanel under one
               disclosure) is now two independent CollapsibleSections, each
               with its own open/closed state — consistent with this file's
               existing "opening one must not close another" rule. */}
-          <CollapsibleSection heading="Camera" icon="📷">
-            {/* Task 31: the camera permission/privacy control.
+            <CollapsibleSection heading="Camera" icon="📷">
+              {/* Task 31: the camera permission/privacy control.
                 Self-contained (owns its own lazily-created MediaPipe
                 tracking-provider instance; see CameraControl.tsx) and
                 rendered unconditionally alongside — never in place of —
@@ -3745,37 +3781,38 @@ function EditorWorkspace() {
                 available before camera activation, during any camera
                 failure, and after Stop camera is pressed (acceptance
                 criterion). */}
-            <CameraControl
-              onStatusChange={(status) => {
-                setCameraStatus(status);
-                if (status !== 'active') cameraTrackingGestureRef.current = null;
-                // Task 83: the live preview runtime loop prefers camera
-                // frames over demo frames exactly while the camera is
-                // actually producing them — see
-                // `previewTrackingSource.ts`'s own doc comment.
-                trackingSourceRef.current.setCameraActive(status === 'active');
-              }}
-              onFrame={(frame) => {
-                trackingSourceRef.current.reportCameraFrame(frame);
-                handleCameraTrackingFrame(frame);
-              }}
-              onStreamChange={setCameraStream}
-            />
-          </CollapsibleSection>
+              <CameraControl
+                onStatusChange={(status) => {
+                  setCameraStatus(status);
+                  if (status !== 'active') cameraTrackingGestureRef.current = null;
+                  // Task 83: the live preview runtime loop prefers camera
+                  // frames over demo frames exactly while the camera is
+                  // actually producing them — see
+                  // `previewTrackingSource.ts`'s own doc comment.
+                  trackingSourceRef.current.setCameraActive(status === 'active');
+                }}
+                onFrame={(frame) => {
+                  trackingSourceRef.current.reportCameraFrame(frame);
+                  handleCameraTrackingFrame(frame);
+                }}
+                onStreamChange={setCameraStream}
+              />
+            </CollapsibleSection>
 
-          <CollapsibleSection heading="Demo signal controls" icon="✋">
-            {/* Task 28: local demo signal controls — sliders/toggles/event
+            <CollapsibleSection heading="Demo signal controls" icon="✋">
+              {/* Task 28: local demo signal controls — sliders/toggles/event
                 buttons plus deterministic synthetic playback, so every
                 normalized gesture signal can be exercised without a
                 camera. Self-contained (owns its own tracking-provider
                 controller; see DemoControlsPanel.tsx), so it lives here as
                 an independent section rather than threading through
                 useSceneEditor/workingCopy. */}
-            <DemoControlsPanel
-              onPinchStart={() => setPinchEventCount((count) => count + 1)}
-              onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
-            />
-          </CollapsibleSection>
+              <DemoControlsPanel
+                onPinchStart={() => setPinchEventCount((count) => count + 1)}
+                onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
+              />
+            </CollapsibleSection>
+          </TopLevelPanel>
         </section>
 
         {/* Issue #127: the former "Scene outline" `CollapsibleSection`
@@ -3796,14 +3833,15 @@ function EditorWorkspace() {
           className="editor-panel"
           hidden={panelHidden('layers')}
         >
-          <h3>Layers</h3>
-          <LayersPanel
-            sceneEditor={sceneEditor}
-            onRowSelect={handleLayerRowSelect}
-            cameraOverlayActive={cameraStatus === 'active' && cameraLayerOrder !== null}
-            cameraLayerOrder={effectiveCameraLayerOrder}
-            onCameraLayerOrderChange={updateCameraLayerOrder}
-          />
+          <TopLevelPanel name="Layers">
+            <LayersPanel
+              sceneEditor={sceneEditor}
+              onRowSelect={handleLayerRowSelect}
+              cameraOverlayActive={cameraStatus === 'active' && cameraLayerOrder !== null}
+              cameraLayerOrder={effectiveCameraLayerOrder}
+              onCameraLayerOrderChange={updateCameraLayerOrder}
+            />
+          </TopLevelPanel>
         </section>
 
         <section
@@ -3826,23 +3864,22 @@ function EditorWorkspace() {
           className="editor-panel"
           hidden={panelHidden('inspector')}
         >
-          <h3>Inspector</h3>
-
-          {/* Task 94 (issue #94), point 3: same independently collapsible
+          <TopLevelPanel name="Inspector">
+            {/* Task 94 (issue #94), point 3: same independently collapsible
               section pattern as the Tools panel above — see that panel's
               own comment. */}
-          <CollapsibleSection heading="Shape inspector" icon="📐">
-            {/* Task 60 (issue #58): position/scale/rotation/opacity/fill/
+            <CollapsibleSection heading="Shape inspector" icon="📐">
+              {/* Task 60 (issue #58): position/scale/rotation/opacity/fill/
                 stroke/stroke-width fields for the actively selected shape —
                 see ShapeInspectorPanel.tsx's own doc comment for the
                 out-of-range (clamp) policy and how it handles no
                 selection/multi-selection/a hidden selection/selection
                 deletion without ever showing a stale value. */}
-            <ShapeInspectorPanel sceneEditor={sceneEditor} />
-          </CollapsibleSection>
+              <ShapeInspectorPanel sceneEditor={sceneEditor} />
+            </CollapsibleSection>
 
-          <CollapsibleSection heading="Version history" icon="🕒">
-            {/* Task 41: the immutable version-history view
+            <CollapsibleSection heading="Version history" icon="🕒">
+              {/* Task 41: the immutable version-history view
                 (list/restore/soft-delete) — explicit Save itself now lives
                 in the header (`SaveControl`, above); see
                 `VersionHistoryPanel.tsx`'s own doc comment. `onRestored`
@@ -3852,63 +3889,63 @@ function EditorWorkspace() {
                 and also replaces `workingCopy` with the restored snapshot,
                 since restoring is meant to load that historical scene back
                 into the editor. */}
-            {id && (
-              <VersionHistoryPanel
-                projectId={id}
-                project={project}
-                persistedVersion={persistedVersion}
-                isDirty={isDirty}
-                onRestored={(version) => {
-                  // Task 111 (issue #142): the restored historical version
-                  // may predate the shared-layerId invariant -- see
-                  // `useEditorWorkspaceState.ts`'s identical normalization
-                  // on initial load.
-                  const { scene: normalizedScene } = normalizeSceneLayers(version.scene_json);
-                  const normalizedVersion = { ...version, scene_json: normalizedScene };
-                  setPersistedVersion(normalizedVersion);
-                  setWorkingCopy(structuredClone(normalizedScene));
-                  setProject((current) =>
-                    current ? { ...current, current_version: version.id } : current,
-                  );
-                  // Issue #125: restoring a historical version already
-                  // persists a new authoritative version server-side, the
-                  // same as an explicit Save — so, like Save, it must clear
-                  // both drafts rather than the old behavior of calling
-                  // `syncAfterMeaningfulAction`, which re-wrote a server
-                  // draft duplicating the content this restore just
-                  // persisted (and never cleared the local one at all).
-                  // Passes `version.scene_json` explicitly (see
-                  // `useDraftAutosave`/`useDraftServerSync`'s comments on
-                  // `snapshotOverride`) rather than relying on
-                  // `workingCopy`, which hasn't re-rendered into either
-                  // hook's tracking yet.
-                  const restoredScene = structuredClone(normalizedScene);
-                  void draftAutosave.clearDraft(restoredScene);
-                  void draftServerSync.deleteServerDraft(restoredScene);
-                }}
-              />
-            )}
-          </CollapsibleSection>
+              {id && (
+                <VersionHistoryPanel
+                  projectId={id}
+                  project={project}
+                  persistedVersion={persistedVersion}
+                  isDirty={isDirty}
+                  onRestored={(version) => {
+                    // Task 111 (issue #142): the restored historical version
+                    // may predate the shared-layerId invariant -- see
+                    // `useEditorWorkspaceState.ts`'s identical normalization
+                    // on initial load.
+                    const { scene: normalizedScene } = normalizeSceneLayers(version.scene_json);
+                    const normalizedVersion = { ...version, scene_json: normalizedScene };
+                    setPersistedVersion(normalizedVersion);
+                    setWorkingCopy(structuredClone(normalizedScene));
+                    setProject((current) =>
+                      current ? { ...current, current_version: version.id } : current,
+                    );
+                    // Issue #125: restoring a historical version already
+                    // persists a new authoritative version server-side, the
+                    // same as an explicit Save — so, like Save, it must clear
+                    // both drafts rather than the old behavior of calling
+                    // `syncAfterMeaningfulAction`, which re-wrote a server
+                    // draft duplicating the content this restore just
+                    // persisted (and never cleared the local one at all).
+                    // Passes `version.scene_json` explicitly (see
+                    // `useDraftAutosave`/`useDraftServerSync`'s comments on
+                    // `snapshotOverride`) rather than relying on
+                    // `workingCopy`, which hasn't re-rendered into either
+                    // hook's tracking yet.
+                    const restoredScene = structuredClone(normalizedScene);
+                    void draftAutosave.clearDraft(restoredScene);
+                    void draftServerSync.deleteServerDraft(restoredScene);
+                  }}
+                />
+              )}
+            </CollapsibleSection>
 
-          <CollapsibleSection heading="Export" icon="⇪">
-            {/* Task 55: export configuration dialog. Read-only against
+            <CollapsibleSection heading="Export" icon="⇪">
+              {/* Task 55: export configuration dialog. Read-only against
                 version history/project metadata — it never restores a
                 version or changes `project.current_version`, and its
                 terminal "Export" action is an intentional stub (logs the
                 assembled config) until Task 56+ builds real artifact
                 generation. See `ExportConfigDialog.tsx`'s module doc
                 comment. */}
-            {id && (
-              <ExportConfigDialog
-                projectId={id}
-                project={project}
-                getCameraExport={getCameraExport}
-              />
-            )}
-          </CollapsibleSection>
+              {id && (
+                <ExportConfigDialog
+                  projectId={id}
+                  project={project}
+                  getCameraExport={getCameraExport}
+                />
+              )}
+            </CollapsibleSection>
 
-          <CollapsibleSection heading="AI proposals" icon="✨">
-            {/* Task 48: AI create/edit proposal preview and acceptance.
+            <CollapsibleSection heading="AI proposals" icon="✨">
+              {/* Task 48: AI create/edit proposal preview and acceptance.
                 The proposal itself is a third state entirely inside
                 AIProposalPanel/useAIProposal — nothing here is touched
                 until `onAccepted` fires, which only ever happens after
@@ -3917,53 +3954,54 @@ function EditorWorkspace() {
                 above (a new scene replaces the working copy wholesale),
                 plus the same draft-clearing/meaningful-action-sync Task
                 42/43 already do for save/restore. */}
-            {id && (
-              <AIProposalPanel
-                projectId={id}
-                workingCopy={workingCopy}
-                currentVersionId={project?.current_version ?? null}
-                onAccepted={handleAIProposalAccepted}
-              />
-            )}
-          </CollapsibleSection>
+              {id && (
+                <AIProposalPanel
+                  projectId={id}
+                  workingCopy={workingCopy}
+                  currentVersionId={project?.current_version ?? null}
+                  onAccepted={handleAIProposalAccepted}
+                />
+              )}
+            </CollapsibleSection>
 
-          <CollapsibleSection heading="Behaviors" icon="🔗">
-            {/* Task 40: read-only "Randomness enabled" indicator — renders
+            <CollapsibleSection heading="Behaviors" icon="🔗">
+              {/* Task 40: read-only "Randomness enabled" indicator — renders
                 nothing when the scene doesn't use seeded randomness. */}
-            <RandomnessIndicator scene={sceneEditor.workingCopy} />
+              <RandomnessIndicator scene={sceneEditor.workingCopy} />
 
-            {/* Task 34: behavior cards ("Follow hand," "React to pinch,"
+              {/* Task 34: behavior cards ("Follow hand," "React to pinch,"
                 "Pulse," "Emit particles") — reads/writes `workingCopy`
                 through `sceneEditor`, so it participates in the same
                 undo/redo history as every other scene edit. */}
-            <BehaviorCardsPanel sceneEditor={sceneEditor} />
+              <BehaviorCardsPanel sceneEditor={sceneEditor} />
 
-            {/* Task 36: the advanced typed behavior graph — React Flow
+              {/* Task 36: the advanced typed behavior graph — React Flow
                 canvas plus its accessible keyboard-operable list-view
                 alternative, both driven by the exact same `sceneEditor`
                 graph actions (see GraphView.tsx/GraphListView.tsx). */}
-            <button
-              type="button"
-              aria-expanded={showLogic}
-              aria-controls="editor-graph-section"
-              onClick={() => setShowLogic((current) => !current)}
-            >
-              {showLogic ? 'Hide logic' : 'Show logic'}
-            </button>
-            {showLogic && (
-              <div id="editor-graph-section">
-                <h4>Advanced graph</h4>
-                <p>
-                  Inspect and edit the constrained typed behavior graph directly. Only
-                  type-compatible, directionally valid connections can be created.
-                </p>
-                <Suspense fallback={<p>Loading graph editor…</p>}>
-                  <GraphView sceneEditor={sceneEditor} />
-                </Suspense>
-                <GraphListView sceneEditor={sceneEditor} />
-              </div>
-            )}
-          </CollapsibleSection>
+              <button
+                type="button"
+                aria-expanded={showLogic}
+                aria-controls="editor-graph-section"
+                onClick={() => setShowLogic((current) => !current)}
+              >
+                {showLogic ? 'Hide logic' : 'Show logic'}
+              </button>
+              {showLogic && (
+                <div id="editor-graph-section">
+                  <h4>Advanced graph</h4>
+                  <p>
+                    Inspect and edit the constrained typed behavior graph directly. Only
+                    type-compatible, directionally valid connections can be created.
+                  </p>
+                  <Suspense fallback={<p>Loading graph editor…</p>}>
+                    <GraphView sceneEditor={sceneEditor} />
+                  </Suspense>
+                  <GraphListView sceneEditor={sceneEditor} />
+                </div>
+              )}
+            </CollapsibleSection>
+          </TopLevelPanel>
         </section>
       </div>
     </div>

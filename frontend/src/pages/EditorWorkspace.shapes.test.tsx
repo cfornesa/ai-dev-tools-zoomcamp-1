@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
-import { expandAllCollapsibleSections } from '../testUtils/expandCollapsibleSections';
 import {
   shapeOutlineRows,
   shapeOutlineSelectButtons,
@@ -88,8 +87,18 @@ async function loadReadyWorkspace() {
   mockedGetProject.mockResolvedValue(baseProject());
   mockedGetSceneVersion.mockResolvedValue(baseVersion());
   renderWorkspace();
-  await screen.findByRole('region', { name: 'Tools' });
-  expandAllCollapsibleSections();
+  // Issue #191: shape creation is in the always-visible toolbar, and the
+  // Layers panel (which owns the outline rows) is the only top-level panel
+  // needed by this suite. Do not expand unrelated panels here: their
+  // mounted content is intentionally collapsed by default and opening all
+  // of it makes these interaction tests depend on unrelated panel work.
+  await screen.findByRole('region', { name: 'Layers' });
+}
+
+function addShapeButton(label: string) {
+  return within(screen.getByRole('group', { name: 'Add shape' })).getByRole('button', {
+    name: label,
+  });
 }
 
 beforeEach(() => {
@@ -119,10 +128,10 @@ describe('EditorWorkspace shape creation', () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
-    await user.click(screen.getByRole('button', { name: 'Add line' }));
-    await user.click(screen.getByRole('button', { name: 'Add polygon' }));
+    await user.click(addShapeButton('Add circle'));
+    await user.click(addShapeButton('Add rectangle'));
+    await user.click(addShapeButton('Add line'));
+    await user.click(addShapeButton('Add polygon'));
 
     expect(shapeOutlineRows()).toHaveLength(4);
     expect(screen.getByText(/4 shape\(s\) in the working copy/)).toBeInTheDocument();
@@ -132,7 +141,7 @@ describe('EditorWorkspace shape creation', () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
 
-    const addCircleButton = screen.getByRole('button', { name: 'Add circle' });
+    const addCircleButton = addShapeButton('Add circle');
     addCircleButton.focus();
     expect(addCircleButton).toHaveFocus();
     await user.keyboard('{Enter}');
@@ -148,8 +157,8 @@ describe('EditorWorkspace shape creation', () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
+    await user.click(addShapeButton('Add circle'));
 
     const labels = shapeOutlineRows().map((row) =>
       within(row)
@@ -175,7 +184,7 @@ describe('EditorWorkspace shape canvas rendering (issue #93 / #130)', () => {
   it('paints no circle body in the SVG layer for a circle shape — the p5 canvas is the sole body layer', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
 
     const canvas = screen.getByTestId('scene-canvas');
     const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
@@ -185,7 +194,7 @@ describe('EditorWorkspace shape canvas rendering (issue #93 / #130)', () => {
   it('paints no rect body in the SVG layer for a rectangle shape', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    await user.click(addShapeButton('Add rectangle'));
 
     const canvas = screen.getByTestId('scene-canvas');
     const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
@@ -198,7 +207,7 @@ describe('EditorWorkspace shape canvas rendering (issue #93 / #130)', () => {
   it('paints no line body in the SVG layer for a line shape', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add line' }));
+    await user.click(addShapeButton('Add line'));
 
     const canvas = screen.getByTestId('scene-canvas');
     const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
@@ -208,7 +217,7 @@ describe('EditorWorkspace shape canvas rendering (issue #93 / #130)', () => {
   it('paints no path body in the SVG layer for a closed polygon shape', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add polygon' }));
+    await user.click(addShapeButton('Add polygon'));
 
     const canvas = screen.getByTestId('scene-canvas');
     const shapeGroup = within(canvas).getByTestId(/^scene-shape-/);
@@ -218,8 +227,8 @@ describe('EditorWorkspace shape canvas rendering (issue #93 / #130)', () => {
   it('gives the selected shape a visible highlight outline distinct from its own fill/stroke', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    await user.click(addShapeButton('Add circle'));
+    await user.click(addShapeButton('Add rectangle'));
 
     const canvas = screen.getByTestId('scene-canvas');
     const groups = within(canvas).getAllByTestId(/^scene-shape-/);
@@ -239,7 +248,7 @@ describe('EditorWorkspace shape selection', () => {
   it('selects a shape by clicking its entry in the shape list', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
 
     const shapeButton = shapeSelectButton(shapeOutlineRows()[0]);
     await user.click(shapeButton);
@@ -251,7 +260,7 @@ describe('EditorWorkspace shape selection', () => {
   it('selects a shape via keyboard-only navigation to its list entry', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    await user.click(addShapeButton('Add rectangle'));
 
     const shapeButton = shapeSelectButton(shapeOutlineRows()[0]);
     // Deselect first (add auto-selects), to prove selection can be driven
@@ -267,8 +276,8 @@ describe('EditorWorkspace shape selection', () => {
     const user = userEvent.setup();
 
     // Both shapes are created centered on the same canvas, so they overlap.
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    await user.click(addShapeButton('Add circle'));
+    await user.click(addShapeButton('Add rectangle'));
 
     const canvas = screen.getByTestId('scene-canvas');
     canvas.getBoundingClientRect = () =>
@@ -284,7 +293,7 @@ describe('EditorWorkspace shape selection', () => {
   it('clicking empty canvas space clears the selection', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
 
     const canvas = screen.getByTestId('scene-canvas');
     canvas.getBoundingClientRect = () =>
@@ -302,7 +311,7 @@ describe('EditorWorkspace duplicate', () => {
   it('duplicates the selected shape into a new, independent shape', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
 
     await user.click(screen.getByRole('button', { name: 'Duplicate selected shape' }));
 
@@ -320,8 +329,8 @@ describe('EditorWorkspace delete', () => {
   it('deletes only the selected shape via pointer click', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Add rectangle' }));
+    await user.click(addShapeButton('Add circle'));
+    await user.click(addShapeButton('Add rectangle'));
 
     const [circleButton, rectButton] = shapeOutlineSelectButtons();
     await user.click(circleButton); // select the circle (rect was auto-selected by add)
@@ -337,7 +346,7 @@ describe('EditorWorkspace delete', () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
 
-    const addCircleButton = screen.getByRole('button', { name: 'Add circle' });
+    const addCircleButton = addShapeButton('Add circle');
     addCircleButton.focus();
     await user.keyboard('{Enter}'); // adds and selects a circle, no pointer used
 
@@ -352,7 +361,7 @@ describe('EditorWorkspace delete', () => {
   it('is a no-op with no selection and does not corrupt scene state', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
 
     const shapeButton = shapeSelectButton(shapeOutlineRows()[0]);
     await user.click(shapeButton); // toggling selection off by re-clicking is not supported;
@@ -372,7 +381,7 @@ describe('EditorWorkspace undo/redo', () => {
   it('undoes an add via the Undo button', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
 
     await user.click(screen.getByRole('button', { name: 'Undo' }));
 
@@ -382,7 +391,7 @@ describe('EditorWorkspace undo/redo', () => {
   it('redoes via the Redo button after an undo', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
     await user.click(screen.getByRole('button', { name: 'Undo' }));
 
     await user.click(screen.getByRole('button', { name: 'Redo' }));
@@ -393,7 +402,7 @@ describe('EditorWorkspace undo/redo', () => {
   it('undoes via Ctrl+Z and redoes via Ctrl+Shift+Z keyboard shortcuts', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+    await user.click(addShapeButton('Add circle'));
 
     await user.keyboard('{Control>}z{/Control}');
     expect(shapeOutlineRows()).toHaveLength(0);

@@ -4,7 +4,7 @@ Project: `cfornesa/ai-dev-tools-zoomcamp-1`
 
 | Issue | URL | Backlog entry | Dependencies | Scope | Status | Blocker / follow-up | Owner / next action |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| #191 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/191 | Task 160 | None | Top-level Details/Tools/Layers/Inspector collapse | blocked | Verification boundary: focused/full frontend passed; real-browser and unrestricted `make check` unavailable in managed macOS environment; no follow-up issue warranted | Project owner: run browser regressions and `make check` in approved environment, then rerun QA |
+| #191 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/191 | Task 160 | None | Top-level Details/Tools/Layers/Inspector collapse | blocked | Verification boundary: user-provided `make check` passed; browser run was blocked before editor setup because port 8000 served an unrelated FastAPI Docker stack; no follow-up issue warranted | Project owner: stop/reconfigure the unrelated stack or start this repo's Django backend, rerun Layers browser regressions, then rerun QA |
 | #192 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192 | Task 161 | None | Camera capture/inference backpressure and performance diagnostics | blocked | Implementation defect fixed in `943ad25`; full frontend terminal result, profiling, browser diagnostics, and unrestricted `make check` remain unavailable | Project owner: run full suite and synthetic desktop/narrow diagnostics in approved environment, then rerun QA |
 
 Ordering: #191 then #192 by backlog order; no dependency-blocked issues.

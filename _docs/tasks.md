@@ -5131,9 +5131,9 @@ Allow users to collapse the editor's Details, Tools, Layers, and Inspector sideb
 ## Evidence and pending items
 
 - **Status:** BLOCKED (verification boundary)
-- **Evidence so far:** User screenshot shows Details, Tools, and Inspector as large always-open top-level sections while their inner sections are collapsible. Layers is requested to be open by default but collapsible too. Duplicate review confirms #95/#113 cover nested disclosures and #127 covers Layers behavior, not this top-level interaction.
-- **Pending verification:** Real-browser desktop/narrow regression and an unrestricted `make check` run; the managed macOS sandbox blocked Django/Vite startup and uv cache access after focused and full frontend tests passed.
-- **Next action:** Run the documented browser checks and `make check` in an approved environment, then rerun QA on open issue #191.
+- **Evidence so far:** User-provided `make check` output passes the complete repository gate (629 backend passed/22 skipped; 1,879 frontend passed; lint, format, typecheck, and build passed). Focused #191 tests pass, and the implementation preserves mounted panel bodies and nested disclosure state. Duplicate review confirms #95/#113 cover nested disclosures and #127 covers Layers behavior, not this top-level interaction.
+- **Pending verification:** Real-browser desktop/narrow regression only. The first live attempt reached port 5000, but port 8000 was an unrelated FastAPI Docker stack (`ai-dev-tools-zoomcamp-backend-1`), so `/accounts/login/` returned JSON 404 and all seven scenarios failed before editor setup.
+- **Next action:** Stop/reconfigure the unrelated port-8000 stack or start this repository's Django backend on the expected port, then rerun `E2E_BASE_URL=http://localhost:5000 npx playwright test e2e/layersPanel.spec.ts` and post the final QA verdict on #191.
 - **Durable memory link:** None required; existing `CollapsibleSection` and responsive panel-switcher conventions cover the boundary.
 
 ## Discovery gate

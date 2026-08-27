@@ -1763,7 +1763,9 @@ textarea:disabled {
    shared state in both directions, not just correct underlying data. */
 .editor-outline-row-group[data-selected='true'],
 .editor-outline-row-shape[data-selected='true'],
-.editor-outline-row-layer[data-selected='true'] {
+.editor-outline-row-layer[data-selected='true'],
+.editor-outline-row-group[data-layer-selected='true'],
+.editor-outline-row-shape[data-layer-selected='true'] {
   border-left-color: var(--accent);
   background: var(--accent-bg);
   /* Keep the selected treatment on the row itself so the name and

@@ -474,14 +474,14 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     await user.click(within(layerRow).getByRole('textbox', { name: 'Layer name for Layer 2' }));
 
     expect(layerRow).toHaveAttribute('data-selected', 'true');
-    expect(shapeRow).not.toHaveAttribute('data-selected', 'true');
+    expect(shapeRow).toHaveAttribute('data-selected', 'true');
     expect(document.querySelector('[data-testid^="scene-shape-"]')).toHaveClass(
       'editor-scene-shape-layer-selected',
     );
     expect(screen.getByTestId('selection-hud')).toHaveTextContent(/1 visible shape/);
 
     await user.click(within(shapeRow).getByRole('button', { name: 'Circle 1' }));
-    expect(layerRow).not.toHaveAttribute('data-selected', 'true');
+    expect(layerRow).toHaveAttribute('data-selected', 'true');
     expect(shapeRow).toHaveAttribute('data-selected', 'true');
     expect(screen.getByTestId('selection-hud')).toHaveTextContent('Circle 1');
   });

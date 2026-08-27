@@ -77,7 +77,8 @@ function HudCollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onTogg
 }
 
 function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
-  const { selectedShape, selectedGroup, selectedLayerId, layers, outline } = sceneEditor;
+  const { selectedShape, selectedGroup, selectedLayerId, isLayerSelection, layers, outline } =
+    sceneEditor;
 
   // Issue #173 (task 141): a collapse/expand toggle for this HUD's body,
   // independent of the underlying selection — collapsing must never touch
@@ -127,7 +128,7 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedShape?.id, opacityValue]);
 
-  if (selectedLayerId) {
+  if (isLayerSelection && selectedLayerId) {
     const layer = layers.find((candidate) => candidate.id === selectedLayerId);
     if (layer) {
       const count = outline.filter(

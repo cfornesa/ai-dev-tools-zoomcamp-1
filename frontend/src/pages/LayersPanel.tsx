@@ -4,7 +4,6 @@ import {
   useState,
   type DragEvent as ReactDragEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from 'react';
 
 import type { SceneDocument } from '../api/projects';
@@ -324,25 +323,6 @@ function MoveControls({
         Move to group
       </button>
     </fieldset>
-  );
-}
-
-/** Issue #131: every row's *secondary* controls (move up/down, the
- * `MoveControls` reparent select+button pair) live behind this one
- * `<details>`/`<summary>` disclosure, so a row's always-visible primary view
- * stays to name/visibility/lock/color/delete — the small, frequently-used
- * set — while the keyboard-reachable reparenting/reordering controls
- * `MoveControls`' own doc comment describes are still fully present, just
- * one extra `<summary>` activation away. `<summary>` itself is a real,
- * natively focusable/keyboard-operable disclosure widget (Enter/Space
- * toggles it), so nothing here is any less keyboard-operable than before —
- * it's simply not *always* in the tab order. */
-function RowMoreDisclosure({ children }: { children: ReactNode }) {
-  return (
-    <details className="editor-outline-row-more">
-      <summary>More</summary>
-      {children}
-    </details>
   );
 }
 
@@ -757,6 +737,7 @@ function OutlineRowItem({
           <input
             type="checkbox"
             checked={row.visible}
+            onClick={() => sceneEditor.selectLayer(row.id)}
             onChange={() => sceneEditor.toggleLayerVisible(row.id)}
             aria-label={`Layer ${row.name} visible`}
             title={`Layer ${row.name} visible`}
@@ -767,6 +748,7 @@ function OutlineRowItem({
           <input
             type="checkbox"
             checked={row.locked}
+            onClick={() => sceneEditor.selectLayer(row.id)}
             onChange={() => sceneEditor.toggleLayerLocked(row.id)}
             aria-label={`Layer ${row.name} locked`}
             title={`Layer ${row.name} locked`}
@@ -777,11 +759,18 @@ function OutlineRowItem({
           type="button"
           aria-label={`Delete layer ${row.name}`}
           title={`Delete layer ${row.name}`}
-          onClick={() => sceneEditor.deleteLayer(row.id)}
+          onClick={() => {
+            sceneEditor.selectLayer(row.id);
+            sceneEditor.deleteLayer(row.id);
+          }}
         >
           <span aria-hidden="true">×</span>
         </button>
-        <RowMoreDisclosure>
+        <details
+          className="editor-outline-row-more"
+          onClick={() => sceneEditor.selectLayer(row.id)}
+        >
+          <summary>More</summary>
           <button
             type="button"
             aria-label={`Move layer ${row.name} up`}
@@ -798,7 +787,7 @@ function OutlineRowItem({
           >
             Move down
           </button>
-        </RowMoreDisclosure>
+        </details>
       </li>
     );
   }
@@ -833,6 +822,7 @@ function OutlineRowItem({
         data-outline-kind="group"
         data-outline-id={row.id}
         data-selected={row.id === sceneEditor.selectedShapeId ? 'true' : undefined}
+        data-layer-selected={row.layerId === sceneEditor.selectedLayerId ? 'true' : undefined}
         className={`editor-outline-row editor-outline-row-group ${dragAttrs.extraClassName}`.trim()}
         draggable={dragAttrs.draggable}
         onDragStart={dragAttrs.onDragStart}
@@ -897,6 +887,7 @@ function OutlineRowItem({
       data-outline-kind="shape"
       data-outline-id={row.id}
       data-selected={row.id === sceneEditor.selectedShapeId ? 'true' : undefined}
+      data-layer-selected={row.layerId === sceneEditor.selectedLayerId ? 'true' : undefined}
       className={`editor-outline-row editor-outline-row-shape ${dragAttrs.extraClassName}`.trim()}
       draggable={dragAttrs.draggable}
       onDragStart={dragAttrs.onDragStart}

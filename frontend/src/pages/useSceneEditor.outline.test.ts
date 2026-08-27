@@ -66,11 +66,11 @@ describe('useSceneEditor layers', () => {
 
     act(() => result.current.selectLayer(shape.layerId));
     expect(result.current.selectedLayerId).toBe(shape.layerId);
-    expect(result.current.selectedShapeId).toBeNull();
+    expect(result.current.selectedShapeId).toBe(shape.id);
 
     act(() => result.current.selectShape(shape.id));
     expect(result.current.selectedShapeId).toBe(shape.id);
-    expect(result.current.selectedLayerId).toBeNull();
+    expect(result.current.selectedLayerId).toBe(shape.layerId);
 
     act(() => result.current.renameShape(shape.id, '  Hero  '));
     expect(result.current.shapes[0].name).toBe('Hero');
@@ -78,6 +78,13 @@ describe('useSceneEditor layers', () => {
     expect(result.current.shapes[0].name).toBeUndefined();
     act(() => result.current.redo());
     expect(result.current.shapes[0].name).toBe('Hero');
+  });
+
+  it('keeps an empty layer selected without inventing a shape selection', () => {
+    const { result } = renderSceneEditor();
+    act(() => result.current.selectLayer('layer-2'));
+    expect(result.current.selectedLayerId).toBe('layer-2');
+    expect(result.current.selectedShapeId).toBeNull();
   });
 
   it('surfaces a textual error and does not mutate scene state when deleting the last layer', () => {
@@ -133,6 +140,7 @@ describe('useSceneEditor selection shared between canvas and outline', () => {
     act(() => result.current.selectShape(groupId));
     expect(result.current.selectedShapeId).toBe(groupId);
     expect(result.current.selectedGroup?.id).toBe(groupId);
+    expect(result.current.selectedLayerId).toBe(result.current.groups[0].layerId);
   });
 
   it('ignores selecting a layer id (layers are not a selectable target)', () => {

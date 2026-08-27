@@ -221,6 +221,7 @@ export function useSceneEditor(
   // combine into a group — it never overwrites the single active selection.
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [isLayerSelection, setIsLayerSelection] = useState(false);
   const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [outlineError, setOutlineError] = useState<string | null>(null);
   const [outlineStatus, setOutlineStatus] = useState<string | null>(null);
@@ -454,6 +455,7 @@ export function useSceneEditor(
       if (id === null) {
         setSelectedShapeId(null);
         setSelectedLayerId(null);
+        setIsLayerSelection(false);
         return;
       }
       // Ignore selecting an id that doesn't resolve to a current shape or
@@ -463,10 +465,17 @@ export function useSceneEditor(
       // state.
       if (!workingCopy) return;
       const isShape = getEditableShapes(rawShapes(workingCopy)).some((s) => s.id === id);
-      const isGroup = getGroups(workingCopy).some((g) => g.id === id);
+      const groups = getGroups(workingCopy);
+      const group = groups.find((g) => g.id === id);
+      const isGroup = !!group;
       if (isShape || isGroup) {
         setSelectedShapeId(id);
-        setSelectedLayerId(null);
+        // Keep the owning layer selected with the item. This is intentionally
+        // additive: the item remains the single canvas/HUD selection while
+        // the layer row gets the complete selected-block treatment.
+        const shape = getEditableShapes(rawShapes(workingCopy)).find((s) => s.id === id);
+        setSelectedLayerId(shape?.layerId ?? group?.layerId ?? null);
+        setIsLayerSelection(false);
       }
     },
     [workingCopy],
@@ -476,11 +485,19 @@ export function useSceneEditor(
     (id: string | null) => {
       if (id === null) {
         setSelectedLayerId(null);
+        setIsLayerSelection(false);
         return;
       }
       if (!workingCopy || !getLayers(workingCopy).some((layer) => layer.id === id)) return;
       setSelectedLayerId(id);
-      setSelectedShapeId(null);
+      setIsLayerSelection(true);
+      // A layer selection also exposes its first selectable shape to the
+      // canvas. Keeping both ids lets the layer HUD describe the layer while
+      // the selected shape receives the normal canvas handles.
+      const firstShape = getEditableShapes(rawShapes(workingCopy)).find(
+        (shape) => shape.layerId === id,
+      );
+      setSelectedShapeId(firstShape?.id ?? null);
     },
     [workingCopy],
   );
@@ -894,17 +911,30 @@ export function useSceneEditor(
     [selectedShape, workingCopy, commitPathShapeReplacement],
   );
 
-  const reconcileSelectionAgainst = useCallback((scene: SceneDocument) => {
-    const shapeIds = new Set(getEditableShapes(rawShapes(scene)).map((s) => s.id));
-    const groupIds = new Set(getGroups(scene).map((g) => g.id));
-    setSelectedShapeId((current) => {
-      if (current === null) return null;
-      return shapeIds.has(current) || groupIds.has(current) ? current : null;
-    });
-    const layerIds = new Set(getLayers(scene).map((layer) => layer.id));
-    setSelectedLayerId((current) => (current && layerIds.has(current) ? current : null));
-    setMultiSelectedIds((current) => current.filter((id) => shapeIds.has(id) || groupIds.has(id)));
-  }, []);
+  const reconcileSelectionAgainst = useCallback(
+    (scene: SceneDocument) => {
+      const shapeIds = new Set(getEditableShapes(rawShapes(scene)).map((s) => s.id));
+      const groupIds = new Set(getGroups(scene).map((g) => g.id));
+      setSelectedShapeId((current) => {
+        if (current === null) return null;
+        return shapeIds.has(current) || groupIds.has(current) ? current : null;
+      });
+      const layerIds = new Set(getLayers(scene).map((layer) => layer.id));
+      const nextShapeIds = new Set([...shapeIds, ...groupIds]);
+      setSelectedLayerId((current) => {
+        if (current && layerIds.has(current)) return current;
+        if (!current) return null;
+        const shape = getEditableShapes(rawShapes(scene)).find((s) => s.id === current);
+        const group = getGroups(scene).find((g) => g.id === current);
+        return shape?.layerId ?? group?.layerId ?? null;
+      });
+      setIsLayerSelection(
+        (current) => current && !!getLayers(scene).some((l) => l.id === selectedLayerId),
+      );
+      setMultiSelectedIds((current) => current.filter((id) => nextShapeIds.has(id)));
+    },
+    [selectedLayerId],
+  );
 
   const undo = useCallback(() => {
     if (!workingCopy || past.length === 0) return;
@@ -1423,6 +1453,7 @@ export function useSceneEditor(
     shapes,
     selectedShapeId,
     selectedLayerId,
+    isLayerSelection,
     selectedShape,
     selectShape,
     selectLayer,

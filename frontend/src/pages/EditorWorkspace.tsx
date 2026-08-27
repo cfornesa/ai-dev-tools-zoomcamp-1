@@ -3412,6 +3412,7 @@ function EditorWorkspace() {
                   {shapesInDrawOrder.map((shape) => {
                     const isSelected = shape.id === sceneEditor.selectedShapeId;
                     const isLayerSelected =
+                      sceneEditor.isLayerSelection &&
                       sceneEditor.selectedLayerId === shape.layerId &&
                       visibleShapeIds.has(shape.id);
                     // Issue #111: a hovered-but-not-selected shape gets its own

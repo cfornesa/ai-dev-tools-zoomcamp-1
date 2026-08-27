@@ -5035,13 +5035,13 @@ Next action: none; retain the QA comment and commit as the handoff evidence.
 
 Goal: Enable full bidirectional selection between the Layers panel outline and the visual canvas (clicking a layer row selects and highlights its elements on canvas and in HUD; clicking on canvas highlights both shape and parent layer), and ensure intuitive, responsive renaming for layers and shapes.
 Description: Add an explicit layer-selection state alongside the existing single shape/group selection. Clicking a layer row selects that layer and highlights its contained shapes; clicking a shape/group in the canvas or outline clears layer selection, selects the item, and highlights its parent layer row. Add persistent optional custom shape names with derived-label fallback, exposed through the outline and Selection HUD and reflected across editor labels.
-Status: COMPLETE
+Status: ACTIVE
 GitHub issue: [#183](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/183)
 Dependencies: #179 (COMPLETE), #180 (COMPLETE)
 Acceptance matrix: layer-row activation selects exactly that layer, highlights all of its visible shapes in the canvas, marks the layer row selected, and shows a layer-level HUD with the layer name and contained-shape count; canvas/shape/group selection clears layer selection, selects the item, and marks both its row and parent layer row; layer and shape rename fields commit once on Enter or blur, trim whitespace, reject empty/over-200-character values without mutation, and preserve focus/selection; custom shape names persist in the scene JSON, use the existing type/ordinal label when absent, and are consistent in the outline, HUD, breadcrumb, and target pickers; visibility, lock, grouping, transforms, undo/redo, deletion, hidden/locked layers, nested groups, empty layers, stale selection, narrow layouts, keyboard access, and click-vs-drag behavior remain correct; focused tests, a11y coverage, frontend build/typecheck/lint/format, and `make check` pass.
 Out of scope: group renaming is tracked separately in [#186](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/186); multi-layer/multi-shape selection semantics beyond the existing grouping pick, bulk rename, export/thumbnail naming changes, and server-side collaboration are not part of this task.
-Evidence (2026-08-26): Reopened from production screenshots; commit `2af802b` makes the complete Visual-mode layer row—including the Visible-control region—activate layer selection while preserving visibility toggling, adds contiguous styling and inherited visibility-aware canvas highlighting, and adds focused/a11y/browser regressions. Real-browser layer/responsive suite passed 14/14; frontend passed 1,869/1,869; `make check` passed with backend 629 passed/22 skipped. QA PASS comment posted and GitHub issue closed as completed.
-Next action: none; retain the QA comment and commit as the handoff evidence.
+Evidence (2026-08-26): The prior implementation passed local regressions, but deployment review still reports unreliable reverse selection and visually separated row hit regions. GitHub issue #183 was reopened on 2026-08-27; new deployment evidence and the exact next engineering action are recorded in its latest comment.
+Next action: Reproduce the deployed Visual-mode row interactions, then rework the selection contract and add browser regressions before QA re-verification.
 
 ## 153. Fit canvas to preview workspace viewport and maximize art creation real estate
 
@@ -5253,3 +5253,31 @@ Allow users to assign and edit a persistent custom name for a selected group fro
 - **Libraries:** Use existing dependencies and browser APIs; do not add a dependency without approval.
 - **Accessibility:** Keep both rename entry points keyboard reachable, associate labels with their fields, and expose validation/status changes through appropriate live/status semantics.
 - **Dependencies:** #183 (COMPLETE), with #179 and #180 already complete prerequisites for the current outline/HUD layout.
+
+## 157. Simplify Layers outline shape rows and remove redundant name controls
+
+Goal: Make each Layers outline shape row understandable and efficient: one clear shape identity, one clear selection affordance, and no duplicated controls that appear to edit or select the same shape.
+Status: PROPOSED
+GitHub issue: [#188](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/188)
+Evidence: Deployment screenshots show each shape with a name input such as `Circle 1` and a second `Circle 1` button. The user reports that the duplicate field/button combination is confusing.
+Acceptance criteria: each shape row has one obvious primary selection affordance; renaming remains available through one clearly labeled keyboard-accessible control; selection and rename semantics remain distinct; existing visibility, lock, grouping, reorder, undo/redo, accessibility, and narrow-layout behavior remain correct; focused browser/a11y tests plus `make check` pass.
+Next action: Engineering audits the row DOM and interaction contract, removes the redundant presentation, then QA verifies pointer and keyboard selection/rename behavior at desktop and narrow widths.
+
+## 158. Move canvas settings into a dedicated Canvas editor tab
+
+Goal: Give scene-level background color and canvas opacity their own first-class Canvas editor tab, separate from the Layers outline.
+Status: PROPOSED
+GitHub issue: [#189](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/189)
+Dependencies: #170 (COMPLETE); #179 and #180 are complete; #183 is ACTIVE and remains a relevant selection prerequisite.
+Evidence: #170 added Canvas background color and Canvas opacity below the Layers outline. Deployment review identifies these as canvas-level settings and requests a same-level Canvas tab.
+Acceptance criteria: a same-level Canvas tab exists in desktop and responsive navigation; the controls move out of Layers without becoming draggable layer rows; scene defaults, validation, undo/redo, autosave, persistence, export, accessibility, and responsive overflow behavior remain correct; no canvas visibility/lock control is added; focused tests plus `make check` pass.
+Next action: Engineering designs the Canvas panel in the existing responsive switcher and relocates the controls without changing mutation semantics; QA verifies navigation, persistence, accessibility, and responsive layout.
+
+## 159. Make the Details panel form controls full-width and responsive
+
+Goal: Make the editor Details panel read naturally as a form: each input sits below its label at full available width, and Save changes is aligned appropriately for the available space.
+Status: PROPOSED
+GitHub issue: [#190](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/190)
+Evidence: Deployment screenshot shows Description and Tags controls arranged beside labels with unused space and a small Save changes button at the lower-left. The user requests stacked full-width controls and a lower-right Save action, with appropriate narrow-screen stacking.
+Acceptance criteria: all Details controls are stacked below their labels at full available width; labels remain associated; Save changes is lower-right at comfortable widths and appropriately full-width/stacked when narrow; validation, dirty state, persistence, keyboard order, accessibility, and overflow behavior remain correct; focused tests plus `make check` pass.
+Next action: Engineering audits `EditorDetailsPanel.tsx` and its styles, implements the responsive form layout, and QA verifies rendered form and keyboard/a11y behavior at representative widths.

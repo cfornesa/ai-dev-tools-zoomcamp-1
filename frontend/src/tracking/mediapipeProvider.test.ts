@@ -398,12 +398,13 @@ describe('createMediaPipeTrackingProvider cleanup', () => {
 
   it('stop() during MediaPipe loading releases the acquired stream and video', async () => {
     const harness = createHarness();
-    let resolveModule!: (module: Awaited<MediaPipeTrackingProviderDeps['loadVisionTasksModule']>) => void;
-    const modulePromise = new Promise<Awaited<MediaPipeTrackingProviderDeps['loadVisionTasksModule']>>(
-      (resolve) => {
-        resolveModule = resolve;
-      },
-    );
+    type VisionModule = Awaited<
+      ReturnType<NonNullable<MediaPipeTrackingProviderDeps['loadVisionTasksModule']>>
+    >;
+    let resolveModule!: (module: VisionModule) => void;
+    const modulePromise = new Promise<VisionModule>((resolve) => {
+      resolveModule = resolve;
+    });
     const provider = createMediaPipeTrackingProvider({
       getUserMedia: harness.getUserMedia as MediaPipeTrackingProviderDeps['getUserMedia'],
       createVideoElement: () => harness.video,
@@ -418,8 +419,10 @@ describe('createMediaPipeTrackingProvider cleanup', () => {
     for (let i = 0; i < 4; i += 1) await Promise.resolve();
     provider.stop();
     resolveModule({
-      FilesetResolver: { forVisionTasks: vi.fn() },
-      GestureRecognizer: { createFromOptions: vi.fn() },
+      FilesetResolver: { forVisionTasks: vi.fn() } as unknown as VisionModule['FilesetResolver'],
+      GestureRecognizer: {
+        createFromOptions: vi.fn(),
+      } as unknown as VisionModule['GestureRecognizer'],
     });
     await Promise.resolve();
 

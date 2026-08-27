@@ -5179,10 +5179,10 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 
 ## Evidence and pending items
 
-- **Status:** ACTIVE (reopened implementation defect)
-- **Evidence so far:** Commit `07cf4dc` changes tracking to decoded-video scheduling and adds diagnostics; deterministic frontend checks passed. No qualifying live editor-path 10-second desktop/narrow baseline/post metrics were recorded. Latest QA also reports full frontend failures and managed-sandbox root-gate failures, while Chromium/app services were unavailable.
-- **Pending verification:** Profile capture, video playback, inference, normalization, preview runtime, p5 compositing, and overlay delivery in the real editor path; record every issue budget metric and resolve/reconcile current full-suite failures.
-- **Next action:** Engineer reruns the current full frontend suite, then captures approved-environment synthetic browser metrics; QA reruns browser diagnostics and all quality gates before any closure. Distillation reconciliation supersedes `#5435041216`.
+- **Status:** COMPLETE
+- **Evidence:** Commit `07cf4dc` schedules tracking from decoded video frames and exposes deterministic diagnostics. Commit `42d6b89` stabilizes the synthetic Chromium camera seam and adds a targeted browser-spec filter. Automated `BROWSER_QA_E2E_SPEC=e2e/publishingAndRemix.spec.ts make browser-qa` passed 24/24, including permission/error/retry/active/overlay/stop paths and the 10-second synthetic camera diagnostic at desktop and narrow widths. Desktop measured 60.08 animation FPS, 23.19 inference FPS, 1 long task with a 94ms maximum; narrow measured 60.06 animation FPS, 23.48 inference FPS, 0 long tasks. `BROWSER_QA_RUNTIME_BENCH=1 make browser-qa` passed 3/3, and host-level `UV_CACHE_DIR=/private/tmp/creatrweb-uv-cache make check` passed all lint, format, type, backend (636 passed), and frontend (1,880 passed) gates.
+- **Pending verification:** None for this issue. Replit deployment verification remains the only manual deployment check and is outside this local closure gate.
+- **Next action:** None. Close #192 after posting the replacement automated QA evidence. Distillation reconciliation supersedes `#5435041216`.
 - **Durable memory link:** Existing camera privacy, MediaPipe lifecycle, Playwright runtime, local sandbox verification-boundary, and wrong-Docker-project topics remain applicable; no new durable constraint is required yet.
 
 ## Discovery gate

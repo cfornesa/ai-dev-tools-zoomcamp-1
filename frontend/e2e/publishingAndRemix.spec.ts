@@ -485,8 +485,14 @@ async function installMediaPipeTestSeam(context: BrowserContext): Promise<void> 
         }),
     });
 
+    const cameraQaStats = { inferenceCalls: 0 };
+    // @ts-expect-error -- test-only diagnostic global.
+    window.__cameraQaStats = cameraQaStats;
     const fakeRecognizer = {
-      recognizeForVideo: () => ({ landmarks: [], gestures: [], handedness: [] }),
+      recognizeForVideo: () => {
+        cameraQaStats.inferenceCalls += 1;
+        return { landmarks: [], gestures: [], handedness: [] };
+      },
       close: () => {},
     };
     // @ts-expect-error -- test-only global shape, matching the seam
@@ -1013,6 +1019,90 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     assertNoMediaPipeCdnRequests(observedRequests);
 
     await anonContext.close();
+  });
+
+  test('10-second synthetic camera diagnostics stay within desktop and narrow budgets', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext();
+    await installMediaPipeTestSeam(context);
+    const anonPage = await context.newPage();
+    const results: Array<{
+      viewport: string;
+      elapsedMs: number;
+      animationFrames: number;
+      animationFps: number;
+      inferenceCalls: number;
+      inferenceFps: number;
+      longTasks: number;
+      maxLongTaskMs: number;
+    }> = [];
+
+    for (const viewport of [
+      { name: 'desktop', width: 1280, height: 800 },
+      { name: 'narrow', width: 375, height: 800 },
+    ]) {
+      await anonPage.setViewportSize({ width: viewport.width, height: viewport.height });
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+      await expect(anonPage.getByTestId('camera-status')).toContainText(/camera is active/i);
+
+      const metrics = await anonPage.evaluate(async () => {
+        const startedAt = performance.now();
+        let animationFrames = 0;
+        const longTasks: number[] = [];
+        const observer =
+          typeof PerformanceObserver === 'function'
+            ? new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) longTasks.push(entry.duration);
+              })
+            : null;
+        observer?.observe({ type: 'longtask', buffered: true });
+        await new Promise<void>((resolve) => {
+          const sample = () => {
+            animationFrames += 1;
+            if (performance.now() - startedAt >= 10_000) resolve();
+            else requestAnimationFrame(sample);
+          };
+          requestAnimationFrame(sample);
+        });
+        observer?.disconnect();
+        const elapsedMs = performance.now() - startedAt;
+        const stats = (window as unknown as { __cameraQaStats: { inferenceCalls: number } })
+          .__cameraQaStats;
+        return {
+          elapsedMs,
+          animationFrames,
+          inferenceCalls: stats.inferenceCalls,
+          longTasks,
+        };
+      });
+
+      const maxLongTaskMs = Math.max(0, ...metrics.longTasks);
+      const result = {
+        viewport: viewport.name,
+        elapsedMs: metrics.elapsedMs,
+        animationFrames: metrics.animationFrames,
+        animationFps: metrics.animationFrames / (metrics.elapsedMs / 1000),
+        inferenceCalls: metrics.inferenceCalls,
+        inferenceFps: metrics.inferenceCalls / (metrics.elapsedMs / 1000),
+        longTasks: metrics.longTasks.length,
+        maxLongTaskMs,
+      };
+      // eslint-disable-next-line no-console
+      console.log(`[camera-bench] ${JSON.stringify(result)}`);
+      results.push(result);
+      expect(result.inferenceFps).toBeLessThanOrEqual(30.5);
+      expect(result.inferenceFps).toBeGreaterThan(20);
+      expect(result.animationFps).toBeGreaterThanOrEqual(30);
+      expect(result.maxLongTaskMs).toBeLessThanOrEqual(100);
+
+      await anonPage.getByRole('button', { name: 'Stop camera' }).click();
+      await expect(anonPage.getByTestId('camera-status')).toContainText(/camera stopped/i);
+    }
+
+    expect(results).toHaveLength(2);
+    await context.close();
   });
 });
 

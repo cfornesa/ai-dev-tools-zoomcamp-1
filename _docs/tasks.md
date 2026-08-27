@@ -5103,12 +5103,12 @@ Next action: None; retain the QA comment and commits as handoff evidence.
 
 ## Goal
 
-Allow users to collapse the editor's Details, Tools, Layers, and Inspector sidebar panels while keeping Layers expanded on a fresh editor load.
+Allow users to collapse the editor's Canvas, Details, Tools, Layers, and Inspector sidebar panels while keeping Layers expanded and the other top-level panels collapsed on a fresh editor load.
 
 ## Acceptance criteria
 
-- [ ] On desktop and tablet, each top-level Details, Tools, Layers, and Inspector panel has exactly one visible collapse/expand button with an accessible name identifying the panel and action; each button is operable with keyboard Enter and Space.
-- [ ] On a fresh editor load, Layers is expanded. The other panels preserve their existing expanded/default content visibility, and the responsive narrow panel-switcher continues to show only its selected panel as before.
+- [ ] On desktop and tablet, each top-level Canvas, Details, Tools, Layers, and Inspector panel has exactly one visible collapse/expand button with an accessible name identifying the panel and action; each button is operable with keyboard Enter and Space.
+- [ ] On a fresh editor load, Layers is expanded and Canvas, Details, Tools, and Inspector are collapsed. The responsive narrow panel-switcher continues to show only its selected panel as before.
 - [ ] Activating a panel's collapse button hides only that panel's content while leaving its top-level landmark/control available; scene data, selection, drafts, camera state, unsaved edits, and panel-local form values are unchanged.
 - [ ] Reopening the panel restores its content without resetting its local state; the control's `aria-expanded` matches the visible state and its `aria-controls` references the controlled content element. Focus remains on the invoking control after toggling and does not enter hidden content.
 - [ ] Layers can be collapsed and reopened even though it is expanded by default; its outline rows, selection, controls, and keyboard navigation remain usable and unchanged after reopening.
@@ -5118,8 +5118,8 @@ Allow users to collapse the editor's Details, Tools, Layers, and Inspector sideb
 
 ## Implementation plan
 
-1. Add top-level disclosure state and accessible controls around the four existing editor panel regions, keeping panel content mounted and preserving the current responsive `EditorPanelSwitcher` behavior.
-2. Keep Layers expanded on fresh editor mount and leave nested Tools/Inspector `CollapsibleSection` state independent from the new parent state.
+1. Add top-level disclosure state and accessible controls around all five editor panel regions, keeping panel content mounted and preserving the current responsive `EditorPanelSwitcher` behavior.
+2. Keep Layers expanded on fresh editor mount and Canvas, Details, Tools, and Inspector collapsed; leave nested Tools/Inspector `CollapsibleSection` state independent from the new parent state.
 3. Add focused state/ARIA/accessibility regression coverage, then real-browser desktop and narrow-layout coverage for toggling, Layers interactions, and overflow/landmarks.
 4. Run focused tests, relevant Playwright specs, frontend quality gates, and `make check`; record any verification boundary explicitly.
 
@@ -5131,9 +5131,9 @@ Allow users to collapse the editor's Details, Tools, Layers, and Inspector sideb
 ## Evidence and pending items
 
 - **Status:** ACTIVE (reopened implementation defect)
-- **Evidence so far:** Follow-up user evidence shows Canvas remains a non-collapsible top-level section and the prior implementation defaults every wrapped panel open. The required behavior is every top-level section collapsible, with Layers open on fresh load and Details, Tools, Inspector, and Canvas closed. Prior responsive browser evidence and commit `5163895` remain valid but incomplete for this requirement.
-- **Pending verification:** Add the Canvas disclosure and corrected initial states, then rerun focused component/accessibility tests and real-browser desktop/narrow regressions.
-- **Next action:** Engineer implements the corrected disclosure contract; QA rechecks the reopened issue. Distillation comment `#5435039924`.
+- **Evidence so far:** Engineering commits `0643318` and `56a96da` implement the corrected five-panel contract and stabilize shape-test fixtures. Focused tests and frontend quality gates passed on repeat, but the required real-browser Layers suite skipped all 7 tests because the app health endpoint was unavailable; managed-sandbox `make check` still had four launcher timeouts and one loopback-bind error.
+- **Pending verification:** Run the real-browser desktop/tablet/narrow Layers regressions against the exact PostgreSQL-backed Django/Vite stack and rerun `make check` where subprocesses and loopback binding are permitted.
+- **Next action:** Engineer/QA perform the approved-environment reruns and post replacement QA evidence; do not close #191 until both required gates pass. Distillation reconciliation supersedes `#5435039924`.
 - **Durable memory link:** None required; existing `CollapsibleSection` and responsive panel-switcher conventions cover the boundary.
 
 ## Discovery gate
@@ -5180,10 +5180,10 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 ## Evidence and pending items
 
 - **Status:** ACTIVE (reopened implementation defect)
-- **Evidence so far:** The bounded provider implementation and deterministic tests passed, and the existing synthetic browser seam passed 14/14. However, the user reports the live feed remains extremely slow and unusable, so the prior seam did not validate the dominant editor-path latency/resource cost.
-- **Pending verification:** Profile and optimize capture, video playback, inference, normalization, preview runtime, p5 compositing, and overlay delivery in the real editor path; record desktop/narrow measurements and rerun the issue budget checks.
-- **Next action:** Engineer investigates and fixes the observed editor-path performance defect, then QA reruns the full acceptance criteria. Distillation comment `#5435041216`.
-- **Durable memory link:** Existing camera privacy, MediaPipe lifecycle, and Playwright runtime topics remain applicable; no new durable constraint is required yet.
+- **Evidence so far:** Commit `07cf4dc` changes tracking to decoded-video scheduling and adds diagnostics; deterministic frontend checks passed. No qualifying live editor-path 10-second desktop/narrow baseline/post metrics were recorded. Latest QA also reports full frontend failures and managed-sandbox root-gate failures, while Chromium/app services were unavailable.
+- **Pending verification:** Profile capture, video playback, inference, normalization, preview runtime, p5 compositing, and overlay delivery in the real editor path; record every issue budget metric and resolve/reconcile current full-suite failures.
+- **Next action:** Engineer reruns the current full frontend suite, then captures approved-environment synthetic browser metrics; QA reruns browser diagnostics and all quality gates before any closure. Distillation reconciliation supersedes `#5435041216`.
+- **Durable memory link:** Existing camera privacy, MediaPipe lifecycle, Playwright runtime, local sandbox verification-boundary, and wrong-Docker-project topics remain applicable; no new durable constraint is required yet.
 
 ## Discovery gate
 

@@ -975,7 +975,7 @@ function OutlineRowItem({
  * either (the canvas has no lock concept; nothing here can be blocked by
  * a locked layer/group the way shape edits can).
  */
-function CanvasSettingsRow({ sceneEditor }: { sceneEditor: SceneEditor }) {
+export function CanvasSettingsPanel({ sceneEditor }: { sceneEditor: SceneEditor }) {
   const scene = sceneEditor.workingCopy;
   const [colorError, setColorError] = useState<string | null>(null);
   const [opacityError, setOpacityError] = useState<string | null>(null);
@@ -986,11 +986,7 @@ function CanvasSettingsRow({ sceneEditor }: { sceneEditor: SceneEditor }) {
   const opacity = getCanvasOpacity(scene);
 
   return (
-    <div
-      role="group"
-      aria-label="Canvas settings"
-      className="editor-outline-row editor-outline-row-canvas"
-    >
+    <div role="group" aria-label="Canvas settings" className="editor-canvas-settings">
       <span className="editor-outline-kind-icon" aria-hidden="true">
         ▦
       </span>
@@ -1331,12 +1327,6 @@ function LayersPanel({
             )}
         </ul>
       )}
-
-      {/* Task 138 (issue #170): the canvas/background settings row —
-          intentionally rendered outside (below) the outline `<ul>` above,
-          not as one of its `<li>` rows — see `CanvasSettingsRow`'s own
-          doc comment for the full placement rationale. */}
-      <CanvasSettingsRow sceneEditor={sceneEditor} />
     </div>
   );
 }

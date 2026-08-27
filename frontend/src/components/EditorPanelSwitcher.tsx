@@ -1,4 +1,4 @@
-export type EditorPanelName = 'details' | 'tools' | 'preview' | 'inspector' | 'layers';
+export type EditorPanelName = 'details' | 'tools' | 'preview' | 'inspector' | 'layers' | 'canvas';
 
 // Issue #93: Preview is never a switchable tab — the workspace always keeps
 // it rendered (see EditorWorkspace.tsx's `panelHidden`), since the hard
@@ -19,6 +19,7 @@ export type EditorPanelName = 'details' | 'tools' | 'preview' | 'inspector' | 'l
 // every other non-default tab already required before this change.
 const PANELS: Array<{ name: Exclude<EditorPanelName, 'preview'>; label: string }> = [
   { name: 'layers', label: 'Layers' },
+  { name: 'canvas', label: 'Canvas' },
   { name: 'details', label: 'Details' },
   { name: 'tools', label: 'Tools' },
   { name: 'inspector', label: 'Inspector' },

@@ -104,7 +104,7 @@ import GraphListView from './GraphListView';
  * opens "Show logic" -- lazy-loading it keeps that weight out of the
  * editor's own initial chunk. */
 const GraphView = lazy(() => import('./GraphView'));
-import LayersPanel from './LayersPanel';
+import LayersPanel, { CanvasSettingsPanel } from './LayersPanel';
 import OnboardingHints from './OnboardingHints';
 import PublishControl from './PublishControl';
 import RandomnessIndicator from './RandomnessIndicator';
@@ -3803,6 +3803,18 @@ function EditorWorkspace() {
             cameraLayerOrder={effectiveCameraLayerOrder}
             onCameraLayerOrderChange={updateCameraLayerOrder}
           />
+        </section>
+
+        <section
+          role="region"
+          aria-label="Canvas"
+          data-panel="canvas"
+          id="editor-panel-canvas"
+          className="editor-panel"
+          hidden={panelHidden('canvas')}
+        >
+          <h3>Canvas</h3>
+          <CanvasSettingsPanel sceneEditor={sceneEditor} />
         </section>
 
         <section

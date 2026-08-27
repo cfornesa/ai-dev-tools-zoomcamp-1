@@ -5268,18 +5268,20 @@ Next action: Engineering audits the row DOM and interaction contract, removes th
 ## 158. Move canvas settings into a dedicated Canvas editor tab
 
 Goal: Give scene-level background color and canvas opacity their own first-class Canvas editor tab, separate from the Layers outline.
-Status: PROPOSED
+Status: ACTIVE
 GitHub issue: [#189](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/189)
 Dependencies: #170 (COMPLETE); #179 and #180 are complete; #183 is ACTIVE and remains a relevant selection prerequisite.
 Evidence: #170 added Canvas background color and Canvas opacity below the Layers outline. Deployment review identifies these as canvas-level settings and requests a same-level Canvas tab.
 Acceptance criteria: a same-level Canvas tab exists in desktop and responsive navigation; the controls move out of Layers without becoming draggable layer rows; scene defaults, validation, undo/redo, autosave, persistence, export, accessibility, and responsive overflow behavior remain correct; no canvas visibility/lock control is added; focused tests plus `make check` pass.
+Acceptance matrix: Canvas is a same-level switcher panel; background color and opacity are removed from Layers without becoming draggable rows; existing validation, history, autosave, persistence, export, accessibility, responsive overflow, and no visibility/lock boundary remain correct; focused tests and required checks pass.
 Next action: Engineering designs the Canvas panel in the existing responsive switcher and relocates the controls without changing mutation semantics; QA verifies navigation, persistence, accessibility, and responsive layout.
 
 ## 159. Make the Details panel form controls full-width and responsive
 
 Goal: Make the editor Details panel read naturally as a form: each input sits below its label at full available width, and Save changes is aligned appropriately for the available space.
-Status: PROPOSED
+Status: ACTIVE
 GitHub issue: [#190](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/190)
 Evidence: Deployment screenshot shows Description and Tags controls arranged beside labels with unused space and a small Save changes button at the lower-left. The user requests stacked full-width controls and a lower-right Save action, with appropriate narrow-screen stacking.
 Acceptance criteria: all Details controls are stacked below their labels at full available width; labels remain associated; Save changes is lower-right at comfortable widths and appropriately full-width/stacked when narrow; validation, dirty state, persistence, keyboard order, accessibility, and overflow behavior remain correct; focused tests plus `make check` pass.
+Acceptance matrix: all Details controls stack beneath labels and fill available width; labels stay associated; Save changes is right-aligned at comfortable widths and full-width/stacked when narrow; existing validation, dirty state, feedback, persistence, keyboard order, focus, and overflow remain correct; focused tests and required checks pass.
 Next action: Engineering audits `EditorDetailsPanel.tsx` and its styles, implements the responsive form layout, and QA verifies rendered form and keyboard/a11y behavior at representative widths.

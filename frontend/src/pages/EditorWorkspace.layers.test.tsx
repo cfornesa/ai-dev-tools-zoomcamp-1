@@ -449,6 +449,17 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     expect(screen.getByTestId('selection-hud')).toHaveTextContent('Layer 2');
   });
 
+  it('keeps canvas settings in their dedicated panel instead of the Layers outline', async () => {
+    await loadReadyWorkspace();
+
+    const canvasPanel = screen.getByRole('region', { name: 'Canvas' });
+    expect(within(canvasPanel).getByRole('group', { name: 'Canvas settings' })).toBeInTheDocument();
+    expect(
+      within(canvasPanel).getByRole('spinbutton', { name: 'Canvas opacity' }),
+    ).toBeInTheDocument();
+    expect(within(outlineList()).queryByRole('group', { name: 'Canvas settings' })).toBeNull();
+  });
+
   it('keeps layer selection synchronized with visible canvas highlights and shape selection', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();

@@ -191,8 +191,8 @@ jobs:
           staging_host="${staging_host%%/*}"
           STAGING_HOST="$staging_host" scripts/smoke-local.sh
 
-  e2e-responsive:
-    name: Responsive shell E2E
+  e2e-browser:
+    name: Browser acceptance E2E
     if: ${{ github.event_name != 'deployment_status' }}
     runs-on: ubuntu-latest
     # The Playwright global setup creates disposable fixture users in this
@@ -280,8 +280,19 @@ jobs:
             done
           '
 
-      - name: Run responsive shell checks at 375px
+      - name: Run full browser acceptance suite
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:5000
-        run: npx playwright test e2e/responsiveShell.spec.ts
+        run: npm run test:e2e
+
+      - name: Upload browser diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-e2e-diagnostics
+          if-no-files-found: ignore
+          path: |
+            frontend/test-results/
+            /tmp/django-e2e.log
+            /tmp/vite-e2e.log

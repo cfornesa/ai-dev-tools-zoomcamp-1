@@ -58,3 +58,12 @@ def test_browser_qa_is_available_from_the_frontend_working_directory():
 
     assert "browser-qa:" in makefile
     assert "$(MAKE) -C .. browser-qa" in makefile
+
+
+def test_ci_runs_the_full_browser_acceptance_suite_and_uploads_diagnostics():
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+
+    assert "e2e-browser:" in workflow
+    assert "name: Browser acceptance E2E" in workflow
+    assert "run: npm run test:e2e" in workflow
+    assert "browser-e2e-diagnostics" in workflow

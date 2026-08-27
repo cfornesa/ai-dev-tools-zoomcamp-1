@@ -4849,7 +4849,8 @@ Description: With `fit-content(20%)` in a narrow container, layer rows set to `f
 Status: COMPLETE
 GitHub issue: [#179](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/179)
 Dependencies: #178
-Evidence (2026-08-25): `4c45e18`; focused layout/layers tests 68/68; exact `make check` passed with no new lint warnings.
+Evidence (2026-08-26): Initial browser QA exposed a 12px disclosure-button overflow and stale E2E selectors for controls moved by #164/#168. Commit `646276d` widened the Layers grid allocation, constrained disclosure/button geometry, and updated the browser assertions to current checkbox/HUD controls. Elevated real-browser verification passed 13/13 layer/responsive scenarios; frontend passed 1,867/1,867 tests; `make check` passed with backend 629 passed/22 skipped.
+Next action: none; retain the QA PASS comment and commit as handoff evidence.
 
 ## 148. Modernize studio workspace layout with photo-editor ergonomics and dark-theme canvas framing
 
@@ -5039,8 +5040,8 @@ GitHub issue: [#183](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/
 Dependencies: #179 (COMPLETE), #180 (COMPLETE)
 Acceptance matrix: layer-row activation selects exactly that layer, highlights all of its visible shapes in the canvas, marks the layer row selected, and shows a layer-level HUD with the layer name and contained-shape count; canvas/shape/group selection clears layer selection, selects the item, and marks both its row and parent layer row; layer and shape rename fields commit once on Enter or blur, trim whitespace, reject empty/over-200-character values without mutation, and preserve focus/selection; custom shape names persist in the scene JSON, use the existing type/ordinal label when absent, and are consistent in the outline, HUD, breadcrumb, and target pickers; visibility, lock, grouping, transforms, undo/redo, deletion, hidden/locked layers, nested groups, empty layers, stale selection, narrow layouts, keyboard access, and click-vs-drag behavior remain correct; focused tests, a11y coverage, frontend build/typecheck/lint/format, and `make check` pass.
 Out of scope: group renaming is tracked separately in [#186](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/186); multi-layer/multi-shape selection semantics beyond the existing grouping pick, bulk rename, export/thumbnail naming changes, and server-side collaboration are not part of this task.
-Evidence (2026-08-26): PM grooming comment posted; follow-up #186 created for out-of-scope group renaming; engineer commits `28394b58a697580df496a2257aadd76bfeaa4ade` and `509292fff60af5bf2bf6f4dc2dc51b880a29b785`; initial QA FAIL was fixed and reverified PASS; focused tests 180 passed; `make check` and frontend build/typecheck/lint/format passed. GitHub issue closed as completed.
-Next action: none; retain the QA comments and commits as the handoff evidence.
+Evidence (2026-08-26): Reopened from production screenshots; commit `2af802b` makes the complete Visual-mode layer row—including the Visible-control region—activate layer selection while preserving visibility toggling, adds contiguous styling and inherited visibility-aware canvas highlighting, and adds focused/a11y/browser regressions. Real-browser layer/responsive suite passed 14/14; frontend passed 1,869/1,869; `make check` passed with backend 629 passed/22 skipped. QA PASS comment posted and GitHub issue closed as completed.
+Next action: none; retain the QA comment and commit as the handoff evidence.
 
 ## 153. Fit canvas to preview workspace viewport and maximize art creation real estate
 
@@ -5094,8 +5095,8 @@ Ensure the artwork viewport uses the available Preview workspace on desktop, fit
 Status: COMPLETE
 GitHub issue: [#184](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/184)
 Dependencies: #178 (COMPLETE), #180 (COMPLETE)
-Evidence (2026-08-26): PM grooming comment posted; engineer commit `91056e48912ce1ba98c5a54da1c85c585780ee37`; focused tests, frontend build/typecheck/lint/format passed; initial QA FAIL was attributable to #187 and re-verification posted QA PASS after #187 fixed the draft-autosave test isolation; GitHub issue closed as completed.
-Next action: none; retain the QA comments and commit as the handoff evidence.
+Evidence (2026-08-26): Reopened from production screenshots showing the selection outline/handles offset downward from rendered geometry. Commit `d85961e` fixed the root cause: the SVG overlay retained a 600px intrinsic height while the fitted scene was 557px, creating the measured 21.5px vertical offset. The responsive E2E helper now skips hidden toggles, and the narrow workspace width accounts for its 16px side margins. Focused geometry, Layers, and responsive browser regressions passed 15/15 at the local PostgreSQL-backed Django/Vite stack; frontend tests passed 1,869/1,869; build/typecheck/format and `make check` passed (629 backend passed/22 skipped). QA PASS comment posted and GitHub issue closed as completed.
+Next action: None; retain the QA comment and commits as handoff evidence.
 
 ## 154. Disambiguate shape property editing and Move-to-Layer controls in Selection HUD
 

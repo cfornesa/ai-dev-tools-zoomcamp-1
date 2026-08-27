@@ -219,6 +219,38 @@ describe('createMediaPipeTrackingProvider lazy loading', () => {
   });
 });
 
+describe('createMediaPipeTrackingProvider video-frame scheduling (issue #192)', () => {
+  it('uses camera frame callbacks when available instead of polling display frames', async () => {
+    const harness = createHarness();
+    let videoFrameCallback: (() => void) | null = null;
+    const requestVideoFrameCallback = vi.fn((callback: () => void) => {
+      videoFrameCallback = callback;
+      return 42;
+    });
+    const cancelVideoFrameCallback = vi.fn();
+    Object.assign(harness.video, { requestVideoFrameCallback, cancelVideoFrameCallback });
+
+    harness.provider.start();
+    await harness.flushMicrotasks();
+
+    expect(harness.requestFrame).not.toHaveBeenCalled();
+    expect(requestVideoFrameCallback).toHaveBeenCalledTimes(1);
+
+    expect(videoFrameCallback).not.toBeNull();
+    videoFrameCallback!();
+
+    expect(harness.recognizeForVideo).toHaveBeenCalledTimes(1);
+    expect(harness.provider.getDiagnostics()).toMatchObject({
+      inferenceCalls: 1,
+      emittedFrames: 1,
+      maxConcurrentInferences: 1,
+    });
+
+    harness.provider.stop();
+    expect(cancelVideoFrameCallback).toHaveBeenCalledWith(42);
+  });
+});
+
 describe('createMediaPipeTrackingProvider contract conversion', () => {
   it('converts a recognizer result into a TrackingFrame without exposing MediaPipe types, including a handAppear event on first sight', async () => {
     const harness = createHarness();

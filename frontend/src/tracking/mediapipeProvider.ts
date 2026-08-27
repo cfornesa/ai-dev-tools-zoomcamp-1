@@ -175,6 +175,14 @@ export type MediaPipeTrackingProviderDeps = {
   isSupported?: () => boolean;
 };
 
+export type MediaPipeTrackingDiagnostics = {
+  inferenceCalls: number;
+  emittedFrames: number;
+  maxConcurrentInferences: number;
+  scheduledTicks: number;
+  skippedTicks: number;
+};
+
 function defaultIsSupported(): boolean {
   return (
     typeof navigator !== 'undefined' &&
@@ -214,7 +222,7 @@ type ProviderStatus = 'idle' | 'starting' | 'running' | 'stopped';
  */
 export function createMediaPipeTrackingProvider(
   deps: MediaPipeTrackingProviderDeps = {},
-): TrackingProvider {
+): TrackingProvider & { getDiagnostics: () => MediaPipeTrackingDiagnostics } {
   const {
     loadVisionTasksModule,
     getUserMedia,
@@ -228,6 +236,7 @@ export function createMediaPipeTrackingProvider(
   let status: ProviderStatus = 'idle';
   let generation = 0;
   let rafHandle: number | null = null;
+  let cancelScheduledFrame: ((handle: number) => void) | null = null;
   let inFlight = false;
   let stream: MediaStream | null = null;
   let video: HTMLVideoElement | null = null;
@@ -235,6 +244,11 @@ export function createMediaPipeTrackingProvider(
   let lastInferenceTime = -Infinity;
   let lastVideoTimestamp = 0;
   let handCounter = 0;
+  let inferenceCalls = 0;
+  let emittedFrames = 0;
+  let maxConcurrentInferences = 0;
+  let scheduledTicks = 0;
+  let skippedTicks = 0;
   const handSlots = new Map<'left' | 'right', HandSlot>();
 
   const frameListeners = new Set<(frame: TrackingFrame) => void>();
@@ -248,6 +262,7 @@ export function createMediaPipeTrackingProvider(
 
   function emitFrame(frame: TrackingFrame): void {
     const sanitized = sanitizeFrame(frame);
+    emittedFrames += 1;
     for (const listener of frameListeners) listener(sanitized);
   }
 
@@ -282,8 +297,9 @@ export function createMediaPipeTrackingProvider(
 
   function cancelPendingFrame(): void {
     if (rafHandle === null) return;
-    cancelFrame(rafHandle);
+    cancelScheduledFrame?.(rafHandle);
     rafHandle = null;
+    cancelScheduledFrame = null;
   }
 
   /** Tears down every acquired resource. Safe to call from any state,
@@ -412,7 +428,23 @@ export function createMediaPipeTrackingProvider(
   }
 
   function scheduleNextTick(myGeneration: number): void {
-    rafHandle = requestFrame(() => onAnimationFrame(myGeneration));
+    scheduledTicks += 1;
+    const videoElement = video;
+    if (videoElement?.requestVideoFrameCallback) {
+      rafHandle = videoElement.requestVideoFrameCallback(() => {
+        rafHandle = null;
+        cancelScheduledFrame = null;
+        onAnimationFrame(myGeneration);
+      });
+      cancelScheduledFrame = (handle) => videoElement.cancelVideoFrameCallback(handle);
+      return;
+    }
+    rafHandle = requestFrame(() => {
+      rafHandle = null;
+      cancelScheduledFrame = null;
+      onAnimationFrame(myGeneration);
+    });
+    cancelScheduledFrame = cancelFrame;
   }
 
   function onAnimationFrame(myGeneration: number): void {
@@ -429,6 +461,8 @@ export function createMediaPipeTrackingProvider(
       videoElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
     ) {
       inFlight = true;
+      maxConcurrentInferences = Math.max(maxConcurrentInferences, 1);
+      inferenceCalls += 1;
       try {
         const videoTimestamp = Math.max(Math.round(nowMs), lastVideoTimestamp + 1);
         lastVideoTimestamp = videoTimestamp;
@@ -444,6 +478,8 @@ export function createMediaPipeTrackingProvider(
       } finally {
         inFlight = false;
       }
+    } else {
+      skippedTicks += 1;
     }
 
     if (myGeneration === generation && status === 'running') {
@@ -546,5 +582,20 @@ export function createMediaPipeTrackingProvider(
     return () => streamListeners.delete(listener);
   }
 
-  return { start, stop, onFrame, onError, onStream };
+  return {
+    start,
+    stop,
+    onFrame,
+    onError,
+    onStream,
+    getDiagnostics(): MediaPipeTrackingDiagnostics {
+      return {
+        inferenceCalls,
+        emittedFrames,
+        maxConcurrentInferences,
+        scheduledTicks,
+        skippedTicks,
+      };
+    },
+  };
 }

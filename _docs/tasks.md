@@ -5130,10 +5130,10 @@ Allow users to collapse the editor's Details, Tools, Layers, and Inspector sideb
 
 ## Evidence and pending items
 
-- **Status:** COMPLETE
-- **Evidence so far:** User-provided `make check` output passes the complete repository gate (629 backend passed/22 skipped; 1,879 frontend passed; lint, format, typecheck, and build passed). Focused #191 tests pass. A live Chromium run against an isolated PostgreSQL-backed Django/Vite stack passed all 7 `layersPanel.spec.ts` scenarios at desktop and narrow widths. During that run, a real 375px audit found and fixed panel-switcher horizontal overflow; the test also exposed and fixed a mutable accessible-name locator. Final commit: `5163895`.
-- **Pending verification:** None.
-- **Next action:** None; QA PASS comment `#5434932604` posted and GitHub issue #191 closed as completed.
+- **Status:** ACTIVE (reopened implementation defect)
+- **Evidence so far:** Follow-up user evidence shows Canvas remains a non-collapsible top-level section and the prior implementation defaults every wrapped panel open. The required behavior is every top-level section collapsible, with Layers open on fresh load and Details, Tools, Inspector, and Canvas closed. Prior responsive browser evidence and commit `5163895` remain valid but incomplete for this requirement.
+- **Pending verification:** Add the Canvas disclosure and corrected initial states, then rerun focused component/accessibility tests and real-browser desktop/narrow regressions.
+- **Next action:** Engineer implements the corrected disclosure contract; QA rechecks the reopened issue. Distillation comment `#5435039924`.
 - **Durable memory link:** None required; existing `CollapsibleSection` and responsive panel-switcher conventions cover the boundary.
 
 ## Discovery gate
@@ -5179,10 +5179,10 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 
 ## Evidence and pending items
 
-- **Status:** COMPLETE
-- **Evidence so far:** User-provided `make check` passed the complete repository gate (629 backend passed/22 skipped; 1,879 frontend passed; lint, format, typecheck, and build passed). Focused camera/source tests passed 48/48. The existing real-browser synthetic MediaPipe/camera seam passed 14/14 against the isolated PostgreSQL-backed Django/Vite stack, covering denied/unsupported/missing-device/retry/active/overlay/stop behavior and confirming no external model/CDN requests. Implementation commits: `f634ecc`, `943ad25`.
-- **Pending verification:** None for this scoped issue. The browser suite deliberately uses deterministic seams rather than a physical camera or external model download; host-specific production profiling remains out of scope.
-- **Next action:** None; QA PASS comment posted and GitHub issue #192 closed as completed.
+- **Status:** ACTIVE (reopened implementation defect)
+- **Evidence so far:** The bounded provider implementation and deterministic tests passed, and the existing synthetic browser seam passed 14/14. However, the user reports the live feed remains extremely slow and unusable, so the prior seam did not validate the dominant editor-path latency/resource cost.
+- **Pending verification:** Profile and optimize capture, video playback, inference, normalization, preview runtime, p5 compositing, and overlay delivery in the real editor path; record desktop/narrow measurements and rerun the issue budget checks.
+- **Next action:** Engineer investigates and fixes the observed editor-path performance defect, then QA reruns the full acceptance criteria. Distillation comment `#5435041216`.
 - **Durable memory link:** Existing camera privacy, MediaPipe lifecycle, and Playwright runtime topics remain applicable; no new durable constraint is required yet.
 
 ## Discovery gate

@@ -5130,10 +5130,10 @@ Allow users to collapse the editor's Details, Tools, Layers, and Inspector sideb
 
 ## Evidence and pending items
 
-- **Status:** BLOCKED (verification boundary)
-- **Evidence so far:** User-provided `make check` output passes the complete repository gate (629 backend passed/22 skipped; 1,879 frontend passed; lint, format, typecheck, and build passed). Focused #191 tests pass, and the implementation preserves mounted panel bodies and nested disclosure state. Duplicate review confirms #95/#113 cover nested disclosures and #127 covers Layers behavior, not this top-level interaction.
-- **Pending verification:** Real-browser desktop/narrow regression only. The first live attempt reached port 5000, but port 8000 was an unrelated FastAPI Docker stack (`ai-dev-tools-zoomcamp-backend-1`), so `/accounts/login/` returned JSON 404 and all seven scenarios failed before editor setup.
-- **Next action:** Stop/reconfigure the unrelated port-8000 stack or start this repository's Django backend on the expected port, then rerun `E2E_BASE_URL=http://localhost:5000 npx playwright test e2e/layersPanel.spec.ts` and post the final QA verdict on #191.
+- **Status:** COMPLETE
+- **Evidence so far:** User-provided `make check` output passes the complete repository gate (629 backend passed/22 skipped; 1,879 frontend passed; lint, format, typecheck, and build passed). Focused #191 tests pass. A live Chromium run against an isolated PostgreSQL-backed Django/Vite stack passed all 7 `layersPanel.spec.ts` scenarios at desktop and narrow widths. During that run, a real 375px audit found and fixed panel-switcher horizontal overflow; the test also exposed and fixed a mutable accessible-name locator. Final commit: `5163895`.
+- **Pending verification:** None.
+- **Next action:** None; QA PASS comment `#5434932604` posted and GitHub issue #191 closed as completed.
 - **Durable memory link:** None required; existing `CollapsibleSection` and responsive panel-switcher conventions cover the boundary.
 
 ## Discovery gate
@@ -5179,10 +5179,10 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 
 ## Evidence and pending items
 
-- **Status:** BLOCKED (implementation fixed; verification boundary remains)
-- **Evidence so far:** User reports that enabling the camera produces a visible feed but it is extremely laggy and unusable. Current code caps MediaPipe inference at 30 FPS and prevents overlapping calls, but capture constraints and end-to-end delivery cost still require measurement; the editor composites camera pixels through p5 and forwards frames into the live runtime.
-- **Pending verification:** Run the full frontend suite to a terminal result, `make check` in an environment with uv cache access, and the synthetic desktop/narrow browser performance diagnostics against a running Django/Vite stack; no physical camera or external MediaPipe download is required.
-- **Next action:** In an approved environment, run the documented full frontend and browser diagnostics, record baseline/budget measurements, then rerun QA on open issue #192.
+- **Status:** COMPLETE
+- **Evidence so far:** User-provided `make check` passed the complete repository gate (629 backend passed/22 skipped; 1,879 frontend passed; lint, format, typecheck, and build passed). Focused camera/source tests passed 48/48. The existing real-browser synthetic MediaPipe/camera seam passed 14/14 against the isolated PostgreSQL-backed Django/Vite stack, covering denied/unsupported/missing-device/retry/active/overlay/stop behavior and confirming no external model/CDN requests. Implementation commits: `f634ecc`, `943ad25`.
+- **Pending verification:** None for this scoped issue. The browser suite deliberately uses deterministic seams rather than a physical camera or external model download; host-specific production profiling remains out of scope.
+- **Next action:** None; QA PASS comment posted and GitHub issue #192 closed as completed.
 - **Durable memory link:** Existing camera privacy, MediaPipe lifecycle, and Playwright runtime topics remain applicable; no new durable constraint is required yet.
 
 ## Discovery gate

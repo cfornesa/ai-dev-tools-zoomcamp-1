@@ -5155,31 +5155,33 @@ GitHub issue: [#191](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/
 
 ## Goal
 
-Make live camera tracking responsive and usable by reducing camera and MediaPipe resource consumption while preserving local-only processing and interaction fidelity.
+Make live camera tracking responsive and usable by reducing camera and MediaPipe resource consumption while preserving local-only processing and interaction fidelity. The implementation must meet the performance budget below in deterministic diagnostics, with the baseline and post-change measurements recorded in the issue.
 
 ## Acceptance criteria
 
-- [ ] Profile the current capture, playback, MediaPipe inference, frame normalization, runtime evaluation, p5 rendering, and camera-overlay path; record a reproducible baseline and selected performance budget.
-- [ ] Camera capture uses bounded video constraints with no audio, and enabling camera never creates a duplicate stream, recognizer, render loop, or frame listener.
-- [ ] Tracking uses latest-frame/backpressure behavior: inference calls never overlap, stale frames are dropped rather than queued, and stop/restart releases streams, video, recognizer, callbacks, and listeners.
-- [ ] Inference and downstream delivery are rate-limited or scheduled to keep the main thread responsive, avoiding unnecessary React state updates and repeated full-scene work for unchanged camera frames.
-- [ ] The visible overlay remains smooth and aligned with the scene, gesture signals remain timely for existing behaviors, and reduced-motion/demo fallback behavior is preserved.
-- [ ] Permission, denial, unsupported-browser, missing-device, model-load, retry, and stop states remain correct; camera frames remain local and never reach the server, logs, or exports.
-- [ ] Deterministic tests cover scheduling, throttling, dropped frames, cleanup, stream constraints, error paths, and duplicate-resource prevention.
-- [ ] Real-browser desktop and narrow diagnostics record tracking behavior against the agreed budget without a physical camera or external MediaPipe download; environment boundaries are documented.
+- [ ] Profile capture, video playback, inference, normalization, runtime evaluation, p5 rendering, and overlay delivery in a reproducible 10-second warm run; record desktop and narrow baseline values and the post-change values in the issue.
+- [ ] Use this default budget unless profiling documents a justified, issue-commented revision: video constraints have no audio and upper bounds of 640×480 and 30 FPS; inference is at most 30 calls/second with one call in flight and at most one pending/latest frame; p95 frame-to-tracking delivery is ≤100 ms and no sample exceeds 200 ms; no tracking run has a main-thread long task over 100 ms.
+- [ ] Enabling or retrying camera is idempotent: one active stream, recognizer, render loop, and frame listener maximum; repeated start calls do not increase resource counts.
+- [ ] Latest-frame/backpressure behavior is observable in deterministic tests: inference calls never overlap, stale frames are dropped rather than queued, and stop/restart releases tracks, video, recognizer, animation callbacks, and listeners.
+- [ ] Downstream delivery is scheduled/rate-limited so unchanged frames do not cause repeated full-scene work or React state updates; the diagnostics show overlay/runtime delivery at or above 30 FPS during the warm run.
+- [ ] Overlay geometry remains aligned at desktop and narrow widths, gesture signals remain timely for existing behaviors, and reduced-motion plus demo fallback behavior is unchanged.
+- [ ] Permission, denial, unsupported-browser, missing-device, model-load, retry, and stop states remain correct and actionable; network inspection and artifacts show no camera-frame upload, logging, or export retention.
+- [ ] Deterministic unit/component tests cover the budget counters, scheduling/throttling, dropped frames, cleanup, constraints, error paths, and duplicate-resource prevention.
+- [ ] Real-browser desktop and narrow diagnostics use synthetic camera/MediaPipe seams (no physical camera or external model download), record the budget metrics, and document browser/host verification boundaries.
 - [ ] Frontend focused/full tests, build, typecheck, lint, format, and `make check` pass.
 
 ## Out of scope
 
 - Changing the canonical tracking schema, gesture vocabulary, scene behavior semantics, or adding server-side video processing.
 - Replacing MediaPipe or requiring a paid/cloud inference service.
-- Broad redesign of camera-overlay controls beyond responsiveness changes; file a separate UX issue if needed.
+- Broad redesign of camera-overlay controls beyond responsiveness changes; file a separate UX issue if needed (none discovered during grooming).
+- Cross-device benchmarking, camera-quality tuning beyond the stated bounds, and production deployment verification; these are follow-up work only if the diagnostics reveal a separate actionable need.
 
 ## Evidence and pending items
 
 - **Status:** PROPOSED
-- **Evidence so far:** User reports that enabling the camera produces a visible feed but it is extremely laggy and unusable. Current code already caps MediaPipe inference at 30 FPS and prevents overlapping calls, so profiling is required before selecting the next bottleneck fix; the editor also composites camera pixels through the p5 path and forwards frames into the live runtime.
-- **Pending verification:** Measure the current latency/resource profile, choose a defensible budget, and verify the optimized path in deterministic tests and real-browser diagnostics.
+- **Evidence so far:** User reports that enabling the camera produces a visible feed but it is extremely laggy and unusable. Current code caps MediaPipe inference at 30 FPS and prevents overlapping calls, but capture constraints and end-to-end delivery cost still require measurement; the editor composites camera pixels through p5 and forwards frames into the live runtime.
+- **Pending verification:** Measure the baseline, implement against the stated budget, and verify deterministic and synthetic-browser diagnostics at desktop and narrow widths.
 - **Next action:** PM/engineering groom [#192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192), then profile and optimize the shared camera pipeline without changing tracking semantics.
 - **Durable memory link:** Existing camera privacy, MediaPipe lifecycle, and Playwright runtime topics remain applicable; no new durable constraint is required yet.
 
@@ -5191,7 +5193,8 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 
 ## Constraints
 
-- **Files likely in scope:** `frontend/src/tracking/mediapipeProvider.ts`, `frontend/src/components/CameraControl.tsx`, `frontend/src/pages/EditorWorkspace.tsx`, `frontend/src/pages/previewTrackingSource.ts`, p5 camera compositor code, and focused/browser tests.
+- **Files likely in scope:** `frontend/src/tracking/mediapipeProvider.ts`, `frontend/src/components/CameraControl.tsx`, `frontend/src/pages/EditorWorkspace.tsx`, `frontend/src/pages/previewTrackingSource.ts`, the p5 camera compositor, existing camera test seams, and the relevant browser diagnostic.
+- **Dependencies:** Existing tracking provider contract, camera stream handoff, overlay geometry, preview source, and MediaPipe test seams; no unresolved prerequisite issue identified.
 - **Privacy boundary:** Keep all camera processing in the browser; do not add uploads, server inference, logging of frames, or export retention.
 - **Behavior boundary:** Preserve existing `TrackingProvider` frames, gestures, reduced-motion behavior, permission UX, overlay alignment, and demo fallback.
 - **Libraries:** Use existing dependencies and the existing MediaPipe test seam; do not add dependencies without approval.

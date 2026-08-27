@@ -926,14 +926,21 @@ function OutlineRowItem({
       <ShapeNameField shapeId={row.id} name={label} onRename={sceneEditor.renameShape} />
       <button
         type="button"
+        className="editor-outline-shape-select"
         aria-pressed={row.id === sceneEditor.selectedShapeId}
+        aria-label={label}
+        title={`Select shape ${label}`}
+        aria-describedby={`${row.id}-selection-help`}
         onClick={() => {
           sceneEditor.selectShape(row.id);
           onRowSelect?.();
         }}
       >
-        {label}
+        <span aria-hidden="true">◆</span>
       </button>
+      <span id={`${row.id}-selection-help`} className="sr-only">
+        Select shape {label}
+      </span>
     </li>
   );
 }

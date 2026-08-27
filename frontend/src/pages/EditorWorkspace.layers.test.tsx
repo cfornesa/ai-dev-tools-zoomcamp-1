@@ -389,6 +389,20 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     expect(rectangleRow).not.toHaveAttribute('data-selected');
   });
 
+  it('keeps shape selection and renaming distinct in the outline row', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const row = within(outlineList()).getByRole('button', { name: 'Circle 1' }).closest('li')!;
+    const renameField = within(row).getByRole('textbox', { name: 'Shape name for Circle 1' });
+    const selectButton = within(row).getByRole('button', { name: 'Circle 1' });
+
+    expect(renameField).toBeInTheDocument();
+    expect(selectButton).toHaveAttribute('title', 'Select shape Circle 1');
+    expect(selectButton).not.toHaveTextContent('Circle 1');
+  });
+
   it('selects a layer from its name and Visible checkbox while preserving the toggle', async () => {
     await loadReadyWorkspace();
     const user = userEvent.setup();

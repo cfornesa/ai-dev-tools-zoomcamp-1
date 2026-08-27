@@ -5257,10 +5257,12 @@ Allow users to assign and edit a persistent custom name for a selected group fro
 ## 157. Simplify Layers outline shape rows and remove redundant name controls
 
 Goal: Make each Layers outline shape row understandable and efficient: one clear shape identity, one clear selection affordance, and no duplicated controls that appear to edit or select the same shape.
-Status: PROPOSED
+Status: ACTIVE
 GitHub issue: [#188](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/188)
 Evidence: Deployment screenshots show each shape with a name input such as `Circle 1` and a second `Circle 1` button. The user reports that the duplicate field/button combination is confusing.
 Acceptance criteria: each shape row has one obvious primary selection affordance; renaming remains available through one clearly labeled keyboard-accessible control; selection and rename semantics remain distinct; existing visibility, lock, grouping, reorder, undo/redo, accessibility, and narrow-layout behavior remain correct; focused browser/a11y tests plus `make check` pass.
+Acceptance matrix: one primary shape-selection affordance per row; one clearly labeled keyboard-accessible rename control; selection and rename semantics are distinct; visibility, lock, grouping, reorder, undo/redo, accessibility, narrow-layout, frontend quality, and full make check gates remain green.
+Out of scope: persisted shape identity semantics, group-row redesign, scene naming policy, and export/thumbnail naming.
 Next action: Engineering audits the row DOM and interaction contract, removes the redundant presentation, then QA verifies pointer and keyboard selection/rename behavior at desktop and narrow widths.
 
 ## 158. Move canvas settings into a dedicated Canvas editor tab

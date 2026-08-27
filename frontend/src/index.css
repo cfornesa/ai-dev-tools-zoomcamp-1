@@ -1721,6 +1721,13 @@ textarea:disabled {
   max-width: 100%;
 }
 
+.editor-outline-shape-select {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  min-width: 0;
+  padding-inline: 0;
+}
+
 .editor-outline-name-field {
   display: inline-flex;
   flex: 1 1 8rem;

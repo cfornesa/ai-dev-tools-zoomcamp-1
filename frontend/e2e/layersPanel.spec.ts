@@ -176,6 +176,14 @@ test.describe('Layers panel', () => {
     await createBlankProjectViaUI(page);
 
     const layersRegion = page.getByRole('region', { name: 'Layers' });
+    for (const panelName of ['Canvas', 'Details', 'Tools', 'Layers', 'Inspector']) {
+      const panel = page.getByRole('region', { name: panelName });
+      await expect(panel.locator('.editor-panel-disclosure-toggle')).toHaveCount(1);
+      await expect(panel.locator('.editor-panel-disclosure-toggle')).toHaveAttribute(
+        'aria-expanded',
+        panelName === 'Layers' ? 'true' : 'false',
+      );
+    }
     // The accessible name changes from Collapse to Expand after activation;
     // use the stable disclosure hook so the same locator remains valid for
     // both states.

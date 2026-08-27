@@ -257,9 +257,9 @@ function isTypingTarget(target: EventTarget | null): boolean {
 function TopLevelPanel({
   name,
   children,
-  defaultOpen = true,
+  defaultOpen = false,
 }: {
-  name: 'Details' | 'Tools' | 'Layers' | 'Inspector';
+  name: 'Canvas' | 'Details' | 'Tools' | 'Layers' | 'Inspector';
   children: ReactNode;
   defaultOpen?: boolean;
 }) {
@@ -3833,7 +3833,7 @@ function EditorWorkspace() {
           className="editor-panel"
           hidden={panelHidden('layers')}
         >
-          <TopLevelPanel name="Layers">
+          <TopLevelPanel name="Layers" defaultOpen>
             <LayersPanel
               sceneEditor={sceneEditor}
               onRowSelect={handleLayerRowSelect}
@@ -3852,8 +3852,9 @@ function EditorWorkspace() {
           className="editor-panel"
           hidden={panelHidden('canvas')}
         >
-          <h3>Canvas</h3>
-          <CanvasSettingsPanel sceneEditor={sceneEditor} />
+          <TopLevelPanel name="Canvas">
+            <CanvasSettingsPanel sceneEditor={sceneEditor} />
+          </TopLevelPanel>
         </section>
 
         <section

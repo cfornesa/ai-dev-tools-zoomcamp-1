@@ -102,14 +102,15 @@ beforeEach(() => {
   ]);
 });
 
-describe('EditorWorkspace Tools/Inspector accordion sections', () => {
+describe('EditorWorkspace top-level and nested disclosures', () => {
   it('every section starts collapsed', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
 
     renderWorkspace();
 
-    await screen.findByRole('region', { name: 'Tools' });
+    const tools = await screen.findByRole('region', { name: 'Tools' });
+    await userEvent.click(within(tools).getByRole('button', { name: 'Expand Tools panel' }));
     const toggles = screen.getAllByRole('button', { name: /Editing preferences|Camera/ });
     toggles.forEach((toggle) => expect(toggle).toHaveAttribute('aria-expanded', 'false'));
   });
@@ -125,7 +126,8 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
     const user = userEvent.setup();
 
     renderWorkspace();
-    await screen.findByRole('region', { name: 'Tools' });
+    const tools = await screen.findByRole('region', { name: 'Tools' });
+    await user.click(within(tools).getByRole('button', { name: 'Expand Tools panel' }));
 
     const cameraToggle = screen.getByRole('button', { name: /Camera/ });
     const addEditToggle = screen.getByRole('button', { name: /Editing preferences/ });
@@ -151,7 +153,8 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
     const user = userEvent.setup();
 
     renderWorkspace();
-    await screen.findByRole('region', { name: 'Inspector' });
+    const inspector = await screen.findByRole('region', { name: 'Inspector' });
+    await user.click(within(inspector).getByRole('button', { name: 'Expand Inspector panel' }));
 
     const shapeInspectorToggle = screen.getByRole('button', { name: /Shape inspector/ });
     const versionHistoryToggle = screen.getByRole('button', { name: /Version history/ });
@@ -165,7 +168,7 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
     expect(shapeInspectorToggle).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('collapses top-level panels without unmounting content or coupling nested disclosures', async () => {
+  it('starts with only Layers open and collapses top-level panels without unmounting content', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     const user = userEvent.setup();
@@ -174,16 +177,31 @@ describe('EditorWorkspace Tools/Inspector accordion sections', () => {
     const layers = await screen.findByRole('region', { name: 'Layers' });
     const tools = await screen.findByRole('region', { name: 'Tools' });
     const layersToggle = within(layers).getByRole('button', { name: 'Collapse Layers panel' });
-    const toolsToggle = within(tools).getByRole('button', { name: 'Collapse Tools panel' });
+    const toolsToggle = within(tools).getByRole('button', { name: 'Expand Tools panel' });
     const layersContent = document.getElementById('editor-panel-layers-content');
     const toolsContent = document.getElementById('editor-panel-tools-content');
-    const nestedToggle = within(tools).getByRole('button', { name: /Editing preferences/ });
+    const canvas = await screen.findByRole('region', { name: 'Canvas' });
+    const details = await screen.findByRole('region', { name: 'Details' });
+    const inspector = await screen.findByRole('region', { name: 'Inspector' });
 
     expect(layersToggle).toHaveAttribute('aria-expanded', 'true');
     expect(layersToggle).toHaveAttribute('aria-controls', 'editor-panel-layers-content');
     expect(layersContent).not.toHaveAttribute('hidden');
-    expect(toolsContent).not.toHaveAttribute('hidden');
+    expect(toolsContent).toHaveAttribute('hidden', '');
+    expect(within(canvas).getByRole('button', { name: 'Expand Canvas panel' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(within(details).getByRole('button', { name: 'Expand Details panel' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(
+      within(inspector).getByRole('button', { name: 'Expand Inspector panel' }),
+    ).toHaveAttribute('aria-expanded', 'false');
 
+    await user.click(toolsToggle);
+    const nestedToggle = within(tools).getByRole('button', { name: /Editing preferences/ });
     await user.click(nestedToggle);
     expect(nestedToggle).toHaveAttribute('aria-expanded', 'true');
 

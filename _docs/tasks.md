@@ -5130,10 +5130,10 @@ Allow users to collapse the editor's Canvas, Details, Tools, Layers, and Inspect
 
 ## Evidence and pending items
 
-- **Status:** ACTIVE (reopened implementation defect)
-- **Evidence so far:** Engineering commits `0643318` and `56a96da` implement the corrected five-panel contract and stabilize shape-test fixtures. Focused tests and frontend quality gates passed on repeat, but the required real-browser Layers suite skipped all 7 tests because the app health endpoint was unavailable; managed-sandbox `make check` still had four launcher timeouts and one loopback-bind error.
-- **Pending verification:** Run the real-browser desktop/tablet/narrow Layers regressions against the exact PostgreSQL-backed Django/Vite stack and rerun `make check` where subprocesses and loopback binding are permitted.
-- **Next action:** Engineer/QA perform the approved-environment reruns and post replacement QA evidence; do not close #191 until both required gates pass. Distillation reconciliation supersedes `#5435039924`.
+- **Status:** COMPLETE
+- **Evidence:** Engineering commits `0643318` and `56a96da` implement the corrected five-panel contract and stabilize shape-test fixtures. Automated PostgreSQL-backed browser QA passed all 7 Layers scenarios across desktop and narrow responsive paths. Host-level `UV_CACHE_DIR=/private/tmp/creatrweb-uv-cache make check` passed all lint, format, type, backend (636 passed, 22 skipped), and frontend (1,880 passed) gates. The browser helper and CI automation are covered by `cd68e4e`, `04c5249`, `fd7c6b5`, and `8e87db1`.
+- **Pending verification:** None for this issue; Replit deployment behavior remains the only manual deployment check and is outside this local closure gate.
+- **Next action:** None. Close #191 after posting the replacement automated QA evidence. Distillation reconciliation supersedes `#5435039924`.
 - **Durable memory link:** None required; existing `CollapsibleSection` and responsive panel-switcher conventions cover the boundary.
 
 ## Discovery gate

@@ -5107,26 +5107,33 @@ Allow users to collapse the editor's Details, Tools, Layers, and Inspector sideb
 
 ## Acceptance criteria
 
-- [ ] Details, Tools, Layers, and Inspector each expose one clearly labeled, keyboard-accessible top-level collapse/expand control.
-- [ ] Layers starts expanded on a fresh editor load; the other panels retain their current default content visibility unless an existing product default says otherwise.
-- [ ] Collapsing a panel hides its content without unmounting or mutating scene data, selection, drafts, camera state, unsaved edits, or panel-local form state.
-- [ ] Reopening a panel restores its content and focus behavior, with correct `aria-expanded` and `aria-controls` state.
-- [ ] Layers is collapsible despite being the default-open panel; its outline selection, controls, and keyboard navigation remain correct after reopening.
-- [ ] Desktop, tablet, and narrow panel-switcher layouts remain usable without horizontal overflow, duplicate landmarks, or inaccessible controls.
-- [ ] Existing nested Tools/Inspector disclosures remain independent from top-level panel collapse.
-- [ ] Focused component/accessibility tests, real-browser desktop/narrow regressions, frontend quality checks, and `make check` pass.
+- [ ] On desktop and tablet, each top-level Details, Tools, Layers, and Inspector panel has exactly one visible collapse/expand button with an accessible name identifying the panel and action; each button is operable with keyboard Enter and Space.
+- [ ] On a fresh editor load, Layers is expanded. The other panels preserve their existing expanded/default content visibility, and the responsive narrow panel-switcher continues to show only its selected panel as before.
+- [ ] Activating a panel's collapse button hides only that panel's content while leaving its top-level landmark/control available; scene data, selection, drafts, camera state, unsaved edits, and panel-local form values are unchanged.
+- [ ] Reopening the panel restores its content without resetting its local state; the control's `aria-expanded` matches the visible state and its `aria-controls` references the controlled content element. Focus remains on the invoking control after toggling and does not enter hidden content.
+- [ ] Layers can be collapsed and reopened even though it is expanded by default; its outline rows, selection, controls, and keyboard navigation remain usable and unchanged after reopening.
+- [ ] Desktop, tablet, and narrow panel-switcher layouts have no horizontal overflow, duplicate panel landmarks, or keyboard-inaccessible collapse controls; narrow layouts retain their existing panel-switching behavior.
+- [ ] Existing nested Tools and Inspector `CollapsibleSection` disclosures can be opened/closed independently before and after their parent top-level panel is collapsed/reopened.
+- [ ] Focused component/accessibility tests and real-browser desktop/narrow regressions cover the criteria; frontend lint, format check, typecheck, build, tests, and `make check` pass.
+
+## Implementation plan
+
+1. Add top-level disclosure state and accessible controls around the four existing editor panel regions, keeping panel content mounted and preserving the current responsive `EditorPanelSwitcher` behavior.
+2. Keep Layers expanded on fresh editor mount and leave nested Tools/Inspector `CollapsibleSection` state independent from the new parent state.
+3. Add focused state/ARIA/accessibility regression coverage, then real-browser desktop and narrow-layout coverage for toggling, Layers interactions, and overflow/landmarks.
+4. Run focused tests, relevant Playwright specs, frontend quality gates, and `make check`; record any verification boundary explicitly.
 
 ## Out of scope
 
 - Redesigning the existing nested Tools/Inspector `CollapsibleSection`; this task adds top-level panel collapse around the existing panels.
-- Persisting collapse state across browser sessions or projects; file a separate issue if that behavior is wanted.
+- Persisting collapse state across browser sessions or projects; this remains an optional future product decision and is not required for this task.
 
 ## Evidence and pending items
 
-- **Status:** PROPOSED
-- **Evidence so far:** User screenshot shows Details, Tools, and Inspector as large always-open top-level sections while their inner sections are collapsible. Layers is requested to be open by default but collapsible too.
-- **Pending verification:** Implement the top-level disclosure state and verify desktop, tablet, and narrow panel-switcher behavior.
-- **Next action:** PM/engineering groom [#191](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/191), then implement the scoped panel disclosure and regression coverage.
+- **Status:** BLOCKED (verification boundary)
+- **Evidence so far:** User screenshot shows Details, Tools, and Inspector as large always-open top-level sections while their inner sections are collapsible. Layers is requested to be open by default but collapsible too. Duplicate review confirms #95/#113 cover nested disclosures and #127 covers Layers behavior, not this top-level interaction.
+- **Pending verification:** Real-browser desktop/narrow regression and an unrestricted `make check` run; the managed macOS sandbox blocked Django/Vite startup and uv cache access after focused and full frontend tests passed.
+- **Next action:** Run the documented browser checks and `make check` in an approved environment, then rerun QA on open issue #191.
 - **Durable memory link:** None required; existing `CollapsibleSection` and responsive panel-switcher conventions cover the boundary.
 
 ## Discovery gate
@@ -5137,7 +5144,7 @@ Allow users to collapse the editor's Details, Tools, Layers, and Inspector sideb
 
 ## Constraints
 
-- **Files likely in scope:** `frontend/src/pages/EditorWorkspace.tsx`, `frontend/src/components/EditorPanelSwitcher.tsx` only if required, shared editor styles, and focused/browser tests.
+- **Files likely in scope:** `frontend/src/pages/EditorWorkspace.tsx`; `frontend/src/components/EditorPanelSwitcher.tsx` only if narrow-layout integration requires it; the existing shared editor stylesheet; focused component/accessibility tests and the relevant desktop/narrow Playwright spec. Reuse existing React/browser APIs and accessibility patterns; no dependency additions.
 - **Mutation boundary:** Collapse state is editor UI state only; it must not enter scene JSON, drafts, versions, exports, or camera data.
 - **Accessibility:** Use native/button disclosure semantics with stable panel IDs, visible focus, and correct ARIA state.
 - **Libraries:** Use existing dependencies; do not add dependencies.

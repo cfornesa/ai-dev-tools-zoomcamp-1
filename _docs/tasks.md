@@ -5179,10 +5179,10 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 
 ## Evidence and pending items
 
-- **Status:** PROPOSED
+- **Status:** BLOCKED (implementation fixed; verification boundary remains)
 - **Evidence so far:** User reports that enabling the camera produces a visible feed but it is extremely laggy and unusable. Current code caps MediaPipe inference at 30 FPS and prevents overlapping calls, but capture constraints and end-to-end delivery cost still require measurement; the editor composites camera pixels through p5 and forwards frames into the live runtime.
-- **Pending verification:** Measure the baseline, implement against the stated budget, and verify deterministic and synthetic-browser diagnostics at desktop and narrow widths.
-- **Next action:** PM/engineering groom [#192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192), then profile and optimize the shared camera pipeline without changing tracking semantics.
+- **Pending verification:** Run the full frontend suite to a terminal result, `make check` in an environment with uv cache access, and the synthetic desktop/narrow browser performance diagnostics against a running Django/Vite stack; no physical camera or external MediaPipe download is required.
+- **Next action:** In an approved environment, run the documented full frontend and browser diagnostics, record baseline/budget measurements, then rerun QA on open issue #192.
 - **Durable memory link:** Existing camera privacy, MediaPipe lifecycle, and Playwright runtime topics remain applicable; no new durable constraint is required yet.
 
 ## Discovery gate

@@ -16,6 +16,7 @@ def test_browser_qa_owns_disposable_stack_and_identity_probes():
     assert '"status"[[:space:]]*:[[:space:]]*"ok"' in script
     assert "whoami_status" in script
     assert 'E2E_ENV_FILE="$ENV_FILE"' in script
+    assert 'for candidate in {5000..5099}' in script
     assert "npx playwright test e2e/layersPanel.spec.ts" in script
     assert "trap cleanup EXIT INT TERM" in script
 

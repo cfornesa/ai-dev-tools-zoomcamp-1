@@ -100,8 +100,10 @@ const PALETTE_8 = [
  * with a real (non-redundant) wiring.
  */
 export function maxScene(): SceneDocument {
-  // --- Layers: maxLayers = 20 --------------------------------------------
-  const layers = Array.from({ length: 20 }, (_, i) => ({
+  // --- Layers: maxLayers = 200 -------------------------------------------
+  // Task 111 requires every shape to own a distinct layer. Keep one layer
+  // per shape so this maximum-shape fixture remains schema-valid.
+  const layers = Array.from({ length: 200 }, (_, i) => ({
     id: `layer-${i}`,
     name: `Layer ${i}`,
     order: i,
@@ -119,7 +121,7 @@ export function maxScene(): SceneDocument {
     shapes.push({
       id: `emitter-${i}`,
       type: 'particleEmitter',
-      layerId: `layer-${i % 20}`,
+      layerId: `layer-${i}`,
       groupId: null,
       transform: transform2D({ x: 200 + i * 300, y: 300 }),
       style: style('#ffffff'),
@@ -142,7 +144,7 @@ export function maxScene(): SceneDocument {
     shapes.push({
       id: `path-max-${i}`,
       type: 'path',
-      layerId: `layer-${i}`,
+      layerId: `layer-${i + 4}`,
       groupId: null,
       transform: transform2D({ x: 600 + i * 200, y: 700 }),
       style: style(null as unknown as string, '#22aaff', 2),
@@ -161,7 +163,7 @@ export function maxScene(): SceneDocument {
     const shape: Record<string, unknown> = {
       id: `shape-${i}`,
       type: 'circle',
-      layerId: `layer-${i % 20}`,
+      layerId: `layer-${i + 6}`,
       groupId: null,
       transform: transform2D({
         x: 40 + (i % 40) * 45,
@@ -377,17 +379,20 @@ export function maxScene(): SceneDocument {
  * meets budget on realistic content, not just the pathological maximum.
  */
 export function withinLimitsScene(): SceneDocument {
-  const layers = [
-    { id: 'layer-0', name: 'Background', order: 0, visible: true, locked: false },
-    { id: 'layer-1', name: 'Foreground', order: 1, visible: true, locked: false },
-  ];
+  const layers = Array.from({ length: 24 }, (_, i) => ({
+    id: `layer-${i}`,
+    name: i === 0 ? 'Background' : i === 1 ? 'Foreground' : `Layer ${i}`,
+    order: i,
+    visible: true,
+    locked: false,
+  }));
 
   const shapes: Record<string, unknown>[] = [];
   for (let i = 0; i < 20; i++) {
     const shape: Record<string, unknown> = {
       id: `shape-${i}`,
       type: 'circle',
-      layerId: i % 2 === 0 ? 'layer-0' : 'layer-1',
+      layerId: `layer-${i}`,
       groupId: i < 6 ? 'group-0' : null,
       transform: transform2D({ x: 60 + (i % 10) * 60, y: 60 + Math.floor(i / 10) * 60 }),
       style: style('#4f46e5', null, 0),
@@ -399,7 +404,7 @@ export function withinLimitsScene(): SceneDocument {
   shapes.push({
     id: 'emitter-0',
     type: 'particleEmitter',
-    layerId: 'layer-1',
+    layerId: 'layer-20',
     groupId: null,
     transform: transform2D({ x: 400, y: 300 }),
     style: style('#ffffff'),
@@ -413,7 +418,7 @@ export function withinLimitsScene(): SceneDocument {
   shapes.push({
     id: 'rect-0',
     type: 'rect',
-    layerId: 'layer-0',
+    layerId: 'layer-21',
     groupId: null,
     transform: transform2D({ x: 900, y: 500 }),
     style: style('#22aaff', null, 0),
@@ -424,7 +429,7 @@ export function withinLimitsScene(): SceneDocument {
   shapes.push({
     id: 'line-0',
     type: 'line',
-    layerId: 'layer-0',
+    layerId: 'layer-22',
     groupId: null,
     transform: transform2D({ x: 100, y: 900 }),
     style: style(null as unknown as string, '#ffffff', 2),
@@ -434,7 +439,7 @@ export function withinLimitsScene(): SceneDocument {
   shapes.push({
     id: 'path-0',
     type: 'path',
-    layerId: 'layer-0',
+    layerId: 'layer-23',
     groupId: null,
     transform: transform2D({ x: 1200, y: 200 }),
     style: style(null as unknown as string, '#33ff00', 3),

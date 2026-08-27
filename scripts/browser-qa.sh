@@ -6,7 +6,7 @@ set -Eeuo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-FRONTEND_PORT="${BROWSER_QA_FRONTEND_PORT:-5000}"
+FRONTEND_PORT="${BROWSER_QA_FRONTEND_PORT:-}"
 BACKEND_PORT="${BROWSER_QA_BACKEND_PORT:-}"
 POSTGRES_IMAGE="${BROWSER_QA_POSTGRES_IMAGE:-postgres:16}"
 RUN_FULL_E2E="${BROWSER_QA_FULL_E2E:-0}"
@@ -58,8 +58,17 @@ command -v lsof >/dev/null || fail "lsof is required"
 [[ "$RUN_FULL_E2E" == 0 || "$RUN_FULL_E2E" == 1 ]] || fail "BROWSER_QA_FULL_E2E must be 0 or 1"
 [[ "$RUN_RUNTIME_BENCH" == 0 || "$RUN_RUNTIME_BENCH" == 1 ]] || fail "BROWSER_QA_RUNTIME_BENCH must be 0 or 1"
 
+if [[ -z "$FRONTEND_PORT" ]]; then
+  for candidate in {5000..5099}; do
+    if ! lsof -nP -iTCP:"$candidate" -sTCP:LISTEN >/dev/null 2>&1; then
+      FRONTEND_PORT="$candidate"
+      break
+    fi
+  done
+fi
+[[ -n "$FRONTEND_PORT" ]] || fail "could not find a free frontend port in 5000-5099"
 if lsof -nP -iTCP:"$FRONTEND_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
-  fail "frontend port $FRONTEND_PORT is already in use; stop it or choose another Vite port"
+  fail "requested frontend port $FRONTEND_PORT is already in use"
 fi
 if [[ -z "$BACKEND_PORT" ]]; then
   for candidate in {8000..8099}; do

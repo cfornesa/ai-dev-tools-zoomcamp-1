@@ -47,3 +47,28 @@ deliberate, informed waiver by the one person with the authority to accept
 that risk, not a determination that synthetic evidence is sufficient by
 default. Continue requiring real-camera/production evidence unless a human
 explicitly waives it again.
+
+**2026-08-28 second recurrence — root cause of the evidence gap itself
+identified:** with #195's compositing fix live, the user reported the feed is
+now visibly live but still laggy/"practically unusable" — the original #192
+symptom, never actually fixed. Inspecting `installMediaPipeTestSeam`
+(`frontend/e2e/publishingAndRemix.spec.ts`) explains why every prior #192
+"10-second warm-run" closure was structurally incapable of catching this: the
+seam replaces `GestureRecognizer` with a stub whose `recognizeForVideo`
+returns instantly, so none of #192's three passing closures ever loaded the
+real `@mediapipe/tasks-vision` Wasm runtime, the real model, or exercised the
+hardcoded `delegate: 'GPU'` option in
+`frontend/src/tracking/mediapipeProvider.ts:399` (no CPU fallback, not
+configurable). Every FPS/long-task number measured the scheduling/compositing
+code *around* inference, never inference's own real cost — a synthetic seam
+that stubs out the exact subsystem under test isn't merely "less realistic"
+than a real camera, it is mathematically guaranteed to show zero cost for
+whatever it stubs, regardless of how slow the real thing is. #192 reopened;
+see its 2026-08-28 comment for the full finding and recommended next step
+(a real MediaPipe/model/GPU-delegate diagnostic against a synthetic *video
+track* a real recognizer can actually run inference on, then a CPU-vs-GPU
+delegate comparison). **How to apply, updated:** for this issue class, also
+check whether an existing "synthetic" test seam stubs out the very component
+whose performance is in question — if so, its passing measurements are not
+evidence of anything about that component, no matter how many times they
+pass.

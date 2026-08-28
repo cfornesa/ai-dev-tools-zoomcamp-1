@@ -5401,15 +5401,18 @@ Status: ACTIVE
 
 GitHub issue: [#193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/193)
 
-Evidence (2026-08-27): The automated command
-`UV_CACHE_DIR=/private/tmp/creatrweb-uv-cache BROWSER_QA_FULL_E2E=1 make browser-qa`
-completed with 122 passed, 10 failed, and 2 skipped on commit `489ea51`.
-Failures cover AI Reject state, three draft/session-recovery cases, three
-interaction-runtime Behaviors-panel cases, Mistral credential status copy,
-selection-center navigation/alignment, and narrow empty-gallery geometry.
-Related completed issues #113, #117, #160, #184, and #187 are retained as
-coverage history; this task is the single release-gate follow-up and must not
-weaken their acceptance contracts.
+Evidence (2026-08-27): Commit `03b146a` restores the gate's determinism: the
+complete disposable PostgreSQL + Django + Vite + Chromium run passed 133/134
+tests with 1 intentional PostgreSQL-concurrency skip; focused interaction,
+credential, project-lifecycle, and responsive runs also passed. `make check`
+passed with backend 636 passed/22 skipped and frontend 1,880 passed; the
+frontend production build passed. Fixes cover provider-probe rate-limit
+isolation, draft-session readiness, nested panel expansion, deterministic
+historical restore targets, a dedicated empty-gallery fixture, responsive
+empty-state sizing, persistent credential status, and the browser-QA Fernet
+fixture. Related completed issues #113, #117, #160, #184, and #187 are
+retained as coverage history; this task is the single release-gate follow-up
+and did not weaken their acceptance contracts.
 
 Acceptance criteria:
 
@@ -5429,9 +5432,8 @@ Dependencies/order: Fix fixture/session and panel-helper determinism first;
 then AI/credential/editor flows; then responsive geometry; finally rerun the
 complete browser suite, root gates, and CI.
 
-Next action: Engineering reproduces and fixes or explicitly classifies each
-failure under #193; QA reruns the complete browser suite and root gates before
-closure. Replit publication checks remain a separate manual verification
-boundary after the automated gate is green.
+Next action: CI must run against `03b146a` after the commit is pushed; the
+GitHub connector currently reports no workflow run for this local-only SHA.
+Replit publication checks remain a separate manual verification boundary.
 
 Durable memory: [full browser readiness gate](../.agents/memory/full-browser-readiness-gate.md).

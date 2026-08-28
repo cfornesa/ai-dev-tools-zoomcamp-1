@@ -85,6 +85,23 @@ _VALID_SVG_SNIPPET = (
     "</svg>"
 )
 
+_VALID_THREEJS_SNIPPET = (
+    "const container = document.getElementById('art-piece-container');"
+    "const renderer = new THREE.WebGLRenderer();"
+    "renderer.setSize(container.clientWidth, container.clientHeight);"
+    "container.appendChild(renderer.domElement);"
+    "const scene = new THREE.Scene();"
+    "const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);"
+    "renderer.render(scene, camera);"
+)
+
+_VALID_AFRAME_SNIPPET = (
+    '<a-scene id="art-piece-scene" embedded>'
+    '<a-box position="0 1 -3" color="teal"></a-box>'
+    '<a-camera position="0 1 0"></a-camera>'
+    "</a-scene>"
+)
+
 
 @pytest.mark.django_db
 def test_success_returns_the_generated_snippet_and_usage(owner_client, monkeypatch):
@@ -188,10 +205,83 @@ def test_svg_output_missing_svg_tag_is_rejected_with_422(owner_client, monkeypat
 
 
 @pytest.mark.django_db
+def test_threejs_success_returns_the_generated_snippet(owner_client, monkeypatch):
+    _use_provider(monkeypatch, _mistral_provider_returning(_VALID_THREEJS_SNIPPET))
+
+    response = owner_client.post(
+        URL, {"library": "threejs", "prompt": "a rotating teal cube"}, format="json"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["library"] == "threejs"
+    assert body["code"] == _VALID_THREEJS_SNIPPET
+
+
+@pytest.mark.django_db
+def test_threejs_output_wrapped_in_a_script_tag_is_rejected_with_422(owner_client, monkeypatch):
+    """Issue #199 (Three.js extension): the sandboxed document supplies the
+    <script> tag and the THREE global itself -- a model that wraps its own
+    <script> tag around the code didn't follow the plain-JavaScript-only
+    rule, so this is rejected rather than double-wrapped."""
+    wrapped = f"<script>{_VALID_THREEJS_SNIPPET}</script>"
+    _use_provider(monkeypatch, _mistral_provider_returning(wrapped))
+
+    response = owner_client.post(URL, {"library": "threejs", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 422
+    assert response.json()["error"] == "invalid_structured_output"
+
+
+@pytest.mark.django_db
+def test_threejs_output_not_referencing_three_is_rejected_with_422(owner_client, monkeypatch):
+    _use_provider(monkeypatch, _mistral_provider_returning("console.log('no three here');"))
+
+    response = owner_client.post(URL, {"library": "threejs", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 422
+
+
+@pytest.mark.django_db
+def test_aframe_success_returns_the_generated_snippet(owner_client, monkeypatch):
+    _use_provider(monkeypatch, _mistral_provider_returning(_VALID_AFRAME_SNIPPET))
+
+    response = owner_client.post(
+        URL, {"library": "aframe", "prompt": "a teal box floating in space"}, format="json"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["library"] == "aframe"
+    assert body["code"] == _VALID_AFRAME_SNIPPET
+
+
+@pytest.mark.django_db
+def test_aframe_output_containing_a_script_tag_is_rejected_with_422(owner_client, monkeypatch):
+    scripted = '<a-scene id="art-piece-scene"><script>alert(1)</script></a-scene>'
+    _use_provider(monkeypatch, _mistral_provider_returning(scripted))
+
+    response = owner_client.post(URL, {"library": "aframe", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 422
+
+
+@pytest.mark.django_db
+def test_aframe_output_missing_a_scene_tag_is_rejected_with_422(owner_client, monkeypatch):
+    _use_provider(monkeypatch, _mistral_provider_returning("<div>not a-frame</div>"))
+
+    response = owner_client.post(URL, {"library": "aframe", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 422
+
+
+@pytest.mark.django_db
 def test_unsupported_library_is_rejected_with_400(owner_client, monkeypatch):
     _use_provider(monkeypatch, _mistral_provider_returning(_VALID_SNIPPET))
 
-    response = owner_client.post(URL, {"library": "threejs", "prompt": "anything"}, format="json")
+    response = owner_client.post(
+        URL, {"library": "unreal-engine", "prompt": "anything"}, format="json"
+    )
 
     assert response.status_code == 400
 

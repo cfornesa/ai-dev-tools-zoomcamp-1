@@ -43,6 +43,43 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).not.toMatch(/\/api\//);
     expect(doc).not.toMatch(/document\.cookie/);
   });
+
+  it('canvas2d/svg get the strict CSP with no external script host', () => {
+    const canvasDoc = buildArtPieceSandboxDocument(SNIPPET, 'canvas2d');
+    const svgDoc = buildArtPieceSandboxDocument('<svg id="art-piece-svg"></svg>', 'svg');
+    for (const doc of [canvasDoc, svgDoc]) {
+      expect(doc).toMatch(/script-src 'unsafe-inline';/);
+      expect(doc).not.toContain('cdn.jsdelivr.net');
+    }
+  });
+
+  it('threejs loads the pinned CDN script, allows only that origin in the CSP, and wraps the snippet in a provided container + <script>', () => {
+    const jsSnippet = "THREE.foo(); document.getElementById('art-piece-container');";
+    const doc = buildArtPieceSandboxDocument(jsSnippet, 'threejs');
+    expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/three@0.160.0');
+    expect(doc).toMatch(/script-src 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net;/);
+    expect(doc).toContain('id="art-piece-container"');
+    expect(doc).toContain(`<script>${jsSnippet}</script>`);
+  });
+
+  it('aframe loads the pinned CDN script, allows only that origin in the CSP, and places the snippet directly', () => {
+    const scene = '<a-scene id="art-piece-scene" embedded><a-box></a-box></a-scene>';
+    const doc = buildArtPieceSandboxDocument(scene, 'aframe');
+    expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0');
+    expect(doc).toMatch(/script-src 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net;/);
+    expect(doc).toContain(scene);
+  });
+
+  it('the CDN script loads before the listener script, which loads before the snippet, for every library', () => {
+    const jsSnippet = 'THREE.foo();';
+    const doc = buildArtPieceSandboxDocument(jsSnippet, 'threejs');
+    const cdnIndex = doc.indexOf('cdn.jsdelivr.net');
+    const listenerIndex = doc.indexOf('addEventListener');
+    const snippetIndex = doc.indexOf(jsSnippet);
+    expect(cdnIndex).toBeGreaterThan(-1);
+    expect(listenerIndex).toBeGreaterThan(cdnIndex);
+    expect(snippetIndex).toBeGreaterThan(listenerIndex);
+  });
 });
 
 describe('parseArtPieceSandboxMessage', () => {

@@ -82,6 +82,51 @@ describe('ArtPieceStudio (issue #199)', () => {
     expect(iframe.srcdoc).toContain('<svg id="art-piece-svg">');
   });
 
+  it('selecting Three.js sends library: "threejs" and renders the wrapped snippet in a provided container', async () => {
+    mockedGenerateArtPiece.mockResolvedValue({
+      library: 'threejs',
+      code: "THREE.foo(); document.getElementById('art-piece-container');",
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    render(<ArtPieceStudio />);
+
+    await userEvent.selectOptions(screen.getByLabelText(/library/i), 'threejs');
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'a rotating cube');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(mockedGenerateArtPiece).toHaveBeenCalledWith(
+      'threejs',
+      'a rotating cube',
+      expect.anything(),
+      undefined,
+    );
+    const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+    expect(iframe.srcdoc).toContain('cdn.jsdelivr.net/npm/three@');
+    expect(iframe.srcdoc).toContain('id="art-piece-container"');
+  });
+
+  it('a library switch after a result arrives does not mismatch the previewed code with the new selection', async () => {
+    mockedGenerateArtPiece.mockResolvedValue({
+      library: 'svg',
+      code: '<svg id="art-piece-svg"></svg>',
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    render(<ArtPieceStudio />);
+
+    await userEvent.selectOptions(screen.getByLabelText(/library/i), 'svg');
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'a circle');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+    const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+    expect(iframe.srcdoc).toContain('<svg id="art-piece-svg">');
+
+    // Changing the dropdown after a result exists must not retroactively
+    // rebuild the sandbox for the new (unrelated) library against the
+    // old code -- the previewed SVG markup must not gain a CDN script.
+    await userEvent.selectOptions(screen.getByLabelText(/library/i), 'threejs');
+    expect(iframe.srcdoc).toContain('<svg id="art-piece-svg">');
+    expect(iframe.srcdoc).not.toContain('cdn.jsdelivr.net');
+  });
+
   it('sends a typed model id and persists it across a fresh mount', async () => {
     mockedGenerateArtPiece.mockResolvedValue({
       library: 'canvas2d',

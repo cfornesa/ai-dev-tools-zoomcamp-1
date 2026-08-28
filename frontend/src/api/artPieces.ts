@@ -12,12 +12,14 @@
  */
 import { apiFetch } from './client';
 
-/** The libraries this slice supports -- mirrors
+/** The libraries this endpoint supports -- mirrors
  * `ai_provider/art_piece_provider.py`'s `SUPPORTED_LIBRARIES`. Kept as a
  * union of exactly the supported members (rather than a wider
  * aspirational union) so adding a library is a deliberate, visible
- * change at every call site that switches on it. */
-export type ArtPieceLibrary = 'canvas2d' | 'svg';
+ * change at every call site that switches on it. Also imported by
+ * `../generative/artPieceSandbox.ts`, which needs to know which
+ * libraries require a pinned CDN script/relaxed CSP. */
+export type ArtPieceLibrary = 'canvas2d' | 'svg' | 'threejs' | 'aframe';
 
 export type ArtPieceUsage = {
   prompt_tokens: number;

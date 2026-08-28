@@ -49,17 +49,20 @@ function errorMessage(err: unknown): string {
 
 /**
  * Issue #199 (epic #196): the creation flow for multi-library AI art
- * generation -- Canvas2D and SVG so far (see this issue's grooming
- * comment for the Three.js/A-Frame follow-up path). Deliberately a new,
+ * generation -- Canvas2D, SVG, Three.js, and A-Frame. Deliberately a new,
  * separate, and much simpler flow than `EditorWorkspace.tsx`: no Layers
  * panel, no undo/redo, no direct manipulation, no AI edit-patch -- per
  * issue #197's decision, a generated piece here has no structured
  * scene-JSON backing for any of that to operate on. Pick a library,
- * prompt in, sandboxed preview out, download when ready. The sandboxing
- * (`../generative/artPieceSandbox.ts`) is identical for every library --
- * it wraps whatever markup the library selection tells the backend to
- * generate the same way, whether that's a `<canvas>` + `<script>` pair
- * or inert `<svg>` markup.
+ * prompt in, sandboxed preview out, download when ready.
+ *
+ * `../generative/artPieceSandbox.ts` handles each library's different
+ * document shape (self-contained markup for Canvas2D/SVG/A-Frame, plain
+ * JavaScript wrapped in a provided `<script>`+container for Three.js) --
+ * this component only needs to track which library a given `code` result
+ * was actually generated for (`resultLibrary`, kept separate from the
+ * live `library` dropdown selection, which isn't locked once a result
+ * arrives).
  */
 function ArtPieceStudio() {
   const auth = useAuth();
@@ -69,6 +72,13 @@ function ArtPieceStudio() {
   const [phase, setPhase] = useState<GenerationPhase>('idle');
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
+  // The library `code` was actually generated for -- tracked separately
+  // from `library` (the live dropdown value) because the dropdown isn't
+  // disabled once a result arrives, so a user could change it while
+  // still viewing a previous result. Using `library` directly here would
+  // then build the sandbox for the *new* selection against the *old*
+  // code (e.g. wrapping Three.js JS in a Canvas2D-shaped document).
+  const [resultLibrary, setResultLibrary] = useState<ArtPieceLibrary>('canvas2d');
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -119,6 +129,7 @@ function ArtPieceStudio() {
       );
       if (abortControllerRef.current !== controller) return;
       setCode(result.code);
+      setResultLibrary(library);
       setPhase('previewing');
     } catch (err) {
       if (abortControllerRef.current !== controller) return;
@@ -138,7 +149,7 @@ function ArtPieceStudio() {
   }
 
   const pending = phase === 'pending';
-  const sandboxDoc = code ? buildArtPieceSandboxDocument(code) : null;
+  const sandboxDoc = code ? buildArtPieceSandboxDocument(code, resultLibrary) : null;
 
   function handleDownload() {
     if (!sandboxDoc) return;
@@ -173,8 +184,9 @@ function ArtPieceStudio() {
           >
             <option value="canvas2d">Canvas2D</option>
             <option value="svg">SVG</option>
+            <option value="threejs">Three.js</option>
+            <option value="aframe">A-Frame</option>
           </select>
-          <p>Three.js and A-Frame are coming soon.</p>
         </div>
 
         <div className="behavior-card-field">

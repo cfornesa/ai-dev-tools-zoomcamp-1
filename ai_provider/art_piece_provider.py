@@ -1,5 +1,6 @@
 """Issue #199 (epic #196): generates a raw, self-contained art-piece snippet
-(Canvas2D or SVG so far) from a prompt, per #197's architecture decision.
+(Canvas2D, SVG, Three.js, or A-Frame) from a prompt, per #197's architecture
+decision.
 
 ## Why this is a separate module, not `MistralSceneProvider`
 
@@ -43,11 +44,21 @@ from ai_provider.errors import (
 )
 from ai_provider.interface import AIUsageMetadata
 
-# The libraries this slice supports -- see #199's grooming comment for the
-# remaining follow-up path (three.js, a-frame). Kept as a real constant
-# (not inlined) so `ArtPieceGenerateRequestSerializer` and any future
-# library addition both read from the one place.
-SUPPORTED_LIBRARIES = ("canvas2d", "svg")
+# Every library this endpoint supports. Kept as a real constant (not
+# inlined) so `ArtPieceGenerateRequestSerializer` and any future library
+# addition both read from the one place.
+SUPPORTED_LIBRARIES = ("canvas2d", "svg", "threejs", "aframe")
+
+# Issue #199 (Three.js/A-Frame extension): unlike Canvas2D/SVG, these two
+# libraries need their own runtime loaded via a pinned CDN `<script>` the
+# frontend injects into the sandboxed document
+# (`frontend/src/generative/artPieceSandbox.ts`) -- never a URL the AI
+# supplies. Exposed here so the frontend and this module agree on exactly
+# one version per library without duplicating the string.
+THREEJS_VERSION = "0.160.0"
+THREEJS_CDN_URL = f"https://cdn.jsdelivr.net/npm/three@{THREEJS_VERSION}/build/three.min.js"
+AFRAME_VERSION = "1.5.0"
+AFRAME_CDN_URL = f"https://cdn.jsdelivr.net/npm/aframe@{AFRAME_VERSION}/dist/aframe.min.js"
 
 DEFAULT_MODEL = "mistral-large-latest"
 REQUEST_TIMEOUT_MS = 20_000
@@ -106,6 +117,54 @@ a <script> element of any kind.
 src, no @import, no url(...) pointing outside the document. Every color/gradient/pattern must \
 be defined inline within the <svg> itself."""
 
+# Issue #199 (Three.js extension): the AI writes plain JavaScript, not
+# markup -- the sandboxed document (`artPieceSandbox.ts`) loads Three.js
+# itself from a pinned CDN URL this module names above and provides the
+# container div; the AI's script never declares its own <script>/<canvas>
+# tags or chooses its own Three.js version/source.
+_THREEJS_SYSTEM_PROMPT = """You generate plain JavaScript (no HTML, no markup) for a single \
+generative-art piece using the Three.js library. The Three.js library is already loaded as \
+the global `THREE` object -- do not import it, do not reference a version, do not write a \
+<script> tag. Follow these rules exactly:
+
+- Respond with ONLY the raw JavaScript -- no prose, no explanation, no markdown code fences, \
+no <script> tags, no HTML of any kind.
+- A `<div id="art-piece-container">` already exists in the page; create a `THREE.WebGLRenderer` \
+sized to that container's clientWidth/clientHeight and append its `.domElement` to it. Do not \
+create or reference any other container.
+- Build a `THREE.Scene`, a camera, and whatever meshes/lights the prompt calls for, then render \
+immediately without user interaction.
+- The script must be fully self-contained and network-free: never fetch/XMLHttpRequest/ \
+WebSocket/EventSource, never load a texture or asset from a URL, never access \
+window.top/window.parent/document.cookie/localStorage/sessionStorage, never define or call \
+eval()/Function()/setTimeout with a string argument, never create another <script> element.
+- Prefer requestAnimationFrame for any animation, and make sure the loop is self-terminating or \
+bounded -- never an infinitely recursive synchronous call that could hang the page."""
+
+# Issue #199 (A-Frame extension): like SVG, this is declarative markup
+# only -- A-Frame's own built-in geometry/material/animation components
+# cover most generative-art use cases without any custom JavaScript, and
+# skipping script execution entirely keeps this library's trust surface
+# as small as SVG's.
+_AFRAME_SYSTEM_PROMPT = """You generate the markup for a single generative-art piece using ONLY \
+A-Frame's declarative HTML (no custom JavaScript, no <script> tags). The A-Frame library is \
+already loaded -- do not reference a version or write a <script src="..."> for it. Follow \
+these rules exactly:
+
+- Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences before \
+or after it.
+- Output exactly one <a-scene id="art-piece-scene" embedded> element and its children (entities, \
+primitives like <a-box>/<a-sphere>/<a-cylinder>/<a-plane>, lights, camera) and nothing else: no \
+<html>, <head>, <body>, <!DOCTYPE>, or <script> element of any kind.
+- Include an <a-camera> (or a camera-carrying <a-entity>) positioned to frame the scene, and any \
+lighting needed to see the geometry -- do not rely on A-Frame's default lighting alone if the \
+scene has custom materials.
+- Any animation must use A-Frame's built-in `animation` component (e.g. \
+animation="property: rotation; to: 0 360 0; loop: true; dur: 4000") -- never JavaScript.
+- Never reference an external resource: no `src` pointing at a URL for any asset, texture, or \
+model, no <a-assets> item loaded from a remote path. Every color/material must be defined \
+inline via A-Frame's own material/color attributes."""
+
 
 @dataclass(frozen=True)
 class ArtPieceResult:
@@ -161,7 +220,12 @@ class ArtPieceProvider:
             # rather than fold into `ArtPieceResult.error`.
             raise ValueError(f"Unsupported library: {library!r}")
 
-        system_prompt = _CANVAS2D_SYSTEM_PROMPT if library == "canvas2d" else _SVG_SYSTEM_PROMPT
+        system_prompt = {
+            "canvas2d": _CANVAS2D_SYSTEM_PROMPT,
+            "svg": _SVG_SYSTEM_PROMPT,
+            "threejs": _THREEJS_SYSTEM_PROMPT,
+            "aframe": _AFRAME_SYSTEM_PROMPT,
+        }[library]
 
         try:
             response = self.client.chat.complete(
@@ -277,8 +341,20 @@ def _looks_like_snippet(snippet: str, library: str) -> bool:
     lowered = snippet.lower()
     if library == "canvas2d":
         return "<canvas" in lowered and "<script" in lowered
-    # SVG: per the system prompt, this is inert markup only -- a "<script"
-    # anywhere means the model didn't follow the no-JavaScript rule, so
-    # this is rejected the same as a missing "<svg" rather than passed
-    # through to the (still-safe, but not what was asked for) sandbox.
-    return "<svg" in lowered and "<script" not in lowered
+    if library == "svg":
+        # Per the system prompt, this is inert markup only -- a "<script"
+        # anywhere means the model didn't follow the no-JavaScript rule,
+        # rejected the same as a missing "<svg" rather than passed through
+        # to the (still-safe, but not what was asked for) sandbox.
+        return "<svg" in lowered and "<script" not in lowered
+    if library == "threejs":
+        # Plain JavaScript expected -- reject anything that looks like the
+        # model wrapped its own markup/script tag around the code (the
+        # sandboxed document supplies the <script> tag and the THREE
+        # global itself; see `artPieceSandbox.ts`), or referenced a THREE
+        # CDN/version of its own rather than using the one already loaded.
+        has_markup = "<script" in lowered or "<html" in lowered or "<canvas" in lowered
+        return "three." in lowered and not has_markup
+    # aframe: declarative markup only, matching SVG's inert-markup
+    # rejection of any "<script" tag.
+    return "<a-scene" in lowered and "<script" not in lowered

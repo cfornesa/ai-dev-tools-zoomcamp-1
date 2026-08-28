@@ -12,6 +12,32 @@ import type { SceneDocument, SceneVersion } from '../api/projects';
 
 export type ProposalMode = 'create' | 'edit';
 
+// Issue #198: the last Mistral model id the user typed, remembered across
+// projects/reloads the same way `cameraOverlaySettings.ts` remembers
+// opacity/mirrored -- a plain `localStorage` read/write is enough here
+// (unlike that module, nothing else in the app needs to react live to
+// this value changing in another tab). Blank means "use the server
+// default", matching `createAIScene`/`editAIScene`'s own `model?: string`
+// contract.
+const AI_MODEL_STORAGE_KEY = 'gesture-studio:ai-model-preference';
+
+function readStoredModel(): string {
+  try {
+    return window.localStorage.getItem(AI_MODEL_STORAGE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function persistModel(value: string): void {
+  try {
+    window.localStorage.setItem(AI_MODEL_STORAGE_KEY, value);
+  } catch {
+    // Best-effort only -- a full/blocked localStorage just means the
+    // preference resets next load, not a broken generation flow.
+  }
+}
+
 /** Task 48's six required, distinct UI states for the AI panel. `prompt` is
  * the resting/entry state (also returned to after Accept/Reject/cancel). */
 export type GenerationPhase =
@@ -71,6 +97,7 @@ const QUOTA_CODES = new Set<AIErrorCode>([
 ]);
 const VALIDATION_CODES = new Set<AIErrorCode>([
   'prompt_invalid',
+  'model_invalid',
   'current_scene_invalid',
   'request_invalid',
   // Issue #158: the proposed patch touched a shape/group/binding/layer/
@@ -200,6 +227,11 @@ function isAbortError(err: unknown): boolean {
 export function useAIProposal(projectId: string | undefined) {
   const [mode, setModeState] = useState<ProposalMode>('create');
   const [prompt, setPrompt] = useState('');
+  const [model, setModelState] = useState(readStoredModel);
+  const setModel = useCallback((next: string) => {
+    setModelState(next);
+    persistModel(next);
+  }, []);
   const [phase, setPhase] = useState<GenerationPhase>('prompt');
   const [genError, setGenError] = useState<GenerationError | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
@@ -262,9 +294,10 @@ export function useAIProposal(projectId: string | undefined) {
       setGenError(null);
       setProposal(null);
 
+      const trimmedModel = model.trim() || undefined;
       try {
         if (mode === 'create') {
-          const result = await createAIScene(projectId, trimmed, controller.signal);
+          const result = await createAIScene(projectId, trimmed, controller.signal, trimmedModel);
           if (!mountedRef.current || abortControllerRef.current !== controller) return;
           setProposal({
             mode: 'create',
@@ -282,6 +315,7 @@ export function useAIProposal(projectId: string | undefined) {
             currentScene as SceneDocument,
             baseVersionId,
             controller.signal,
+            trimmedModel,
           );
           if (!mountedRef.current || abortControllerRef.current !== controller) return;
           setProposal({
@@ -302,7 +336,7 @@ export function useAIProposal(projectId: string | undefined) {
         setGenError(classified.error);
       }
     },
-    [projectId, prompt, mode],
+    [projectId, prompt, mode, model],
   );
 
   /** Discards the current proposal client-side only — never calls the
@@ -366,6 +400,8 @@ export function useAIProposal(projectId: string | undefined) {
     setMode,
     prompt,
     setPrompt,
+    model,
+    setModel,
     phase,
     genError,
     proposal,

@@ -44,6 +44,7 @@ function makeVersion(overrides: Partial<SceneVersion> = {}): SceneVersion {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
 });
 
 function renderPanel(onAccepted = vi.fn()) {
@@ -109,6 +110,68 @@ describe('AIProposalPanel prompt/pending/success states', () => {
     // Nothing has been saved: no call to the accept endpoint yet.
     expect(mockedAcceptAIProposal).not.toHaveBeenCalled();
   });
+
+  // Issue #198.
+  it('leaves the model argument undefined when the model field is left blank', async () => {
+    mockedCreateAIScene.mockResolvedValue({
+      draft: true,
+      operation: 'create_scene',
+      scene: VALID_SCENE,
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red circle');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    await screen.findByTestId('ai-proposal-success');
+    expect(mockedCreateAIScene).toHaveBeenCalledWith(
+      'p1',
+      'a red circle',
+      expect.anything(),
+      undefined,
+    );
+  });
+
+  it('sends a typed model id and remembers it in localStorage across a fresh mount', async () => {
+    mockedCreateAIScene.mockResolvedValue({
+      draft: true,
+      operation: 'create_scene',
+      scene: VALID_SCENE,
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    const { unmount } = render(
+      <AIProposalPanel
+        projectId="p1"
+        workingCopy={VALID_SCENE}
+        currentVersionId={1}
+        onAccepted={vi.fn()}
+      />,
+    );
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red circle');
+    await userEvent.type(screen.getByLabelText(/mistral model/i), 'codestral-2405');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    await screen.findByTestId('ai-proposal-success');
+    expect(mockedCreateAIScene).toHaveBeenCalledWith(
+      'p1',
+      'a red circle',
+      expect.anything(),
+      'codestral-2405',
+    );
+
+    unmount();
+    render(
+      <AIProposalPanel
+        projectId="p1"
+        workingCopy={VALID_SCENE}
+        currentVersionId={1}
+        onAccepted={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText(/mistral model/i)).toHaveValue('codestral-2405');
+  });
 });
 
 describe('AIProposalPanel error states', () => {
@@ -124,6 +187,20 @@ describe('AIProposalPanel error states', () => {
     const alert = await screen.findByTestId('ai-error-validation-error');
     expect(alert).toHaveAttribute('aria-live', 'assertive');
     expect(alert).toHaveTextContent(/prompt is required/i);
+  });
+
+  it('shows model_invalid as a validation-error, distinct from prompt_invalid (issue #198)', async () => {
+    mockedCreateAIScene.mockRejectedValue(
+      new ApiError(400, { error: 'model_invalid', detail: 'Model id must be lowercase.' }),
+    );
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'x');
+    await userEvent.type(screen.getByLabelText(/mistral model/i), 'Not Valid!');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    const alert = await screen.findByTestId('ai-error-validation-error');
+    expect(alert).toHaveTextContent(/model id must be lowercase/i);
   });
 
   it('shows a distinct, accessible quota-error state', async () => {
@@ -245,6 +322,7 @@ describe('AIProposalPanel edit mode', () => {
       VALID_SCENE,
       1,
       expect.anything(),
+      undefined,
     );
     expect(screen.getByTestId('ai-proposal-summary')).toHaveTextContent(
       '1 change: canvas updated.',

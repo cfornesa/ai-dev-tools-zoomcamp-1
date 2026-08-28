@@ -34,6 +34,7 @@ explicit mapping this view produces:
 | Not authenticated                             | 404   | (no body -- see below)       |
 | Not the project's owner                       | 404   | (no body -- see below)       |
 | Prompt missing / blank / over `MAX_PROMPT_CHARS` | 400 | `"prompt_invalid"`            |
+| `model` present but not a well-formed model id (issue #198) | 400 | `"model_invalid"` |
 | Per-user request-rate limit exceeded          | 429   | `"rate_limited"`              |
 | Per-user daily creation quota exhausted       | 429   | `"quota_exceeded"`            |
 | Mistral reported its own quota/rate limit     | 429   | `"provider_quota_exceeded"`   |
@@ -72,6 +73,7 @@ exist" from "not yours", matching every other project-scoped endpoint in
 
 from __future__ import annotations
 
+import re
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, cast
 
@@ -123,6 +125,26 @@ if TYPE_CHECKING:
 # Prompt size. Generous enough for a detailed scene description, small
 # enough to bound provider cost and this server's own request body size.
 MAX_PROMPT_CHARS = 4000
+
+# Issue #198: an optional caller-supplied Mistral model id, replacing
+# `MistralSceneProvider`'s own `DEFAULT_MODEL` fallback for this request
+# only. Every AI request already requires the caller's own personal
+# Mistral credential (`get_ai_provider` below) -- there is no shared
+# server credential a caller could run up someone else's bill on -- so
+# letting a caller pick any model their own key can reach is a
+# self-contained cost/quota choice for their own account, not a
+# shared-resource risk. This pattern only sanity-checks the *shape* of a
+# model id (Mistral's own published ids all look like
+# `mistral-large-latest`, `open-mixtral-8x22b`, `codestral-2405`: a
+# lowercase-alnum start, then lowercase alnum/hyphen/dot/underscore) --
+# it is not an allowlist of specific models, so a new Mistral release
+# never needs a code change here. An id that passes this check but names
+# a model Mistral doesn't actually have, or one the caller's key can't
+# reach, surfaces as the existing generic `"provider_failure"` response
+# (`MistralSceneProvider._invoke`'s catch-all `AIProviderRejectionError`
+# branch) -- already-handled, not a new failure mode.
+MAX_MODEL_ID_CHARS = 100
+_MODEL_ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9._-]{0,99})$")
 
 # Request rate: at most this many create-scene attempts (success or
 # failure) per user per rolling window. Guards against retry storms and
@@ -201,10 +223,32 @@ def _current_count(cache_key: str) -> int:
     return cache.get(cache_key, 0)
 
 
+def _validate_model_id(value: str) -> str:
+    """Shared `model` field validator for both AI request serializers --
+    issue #198. Blank means "use the server default" (today's unchanged
+    behavior); a non-blank value must at least look like a real model id
+    before this view ever spends a network call on it."""
+    if value and not _MODEL_ID_PATTERN.match(value):
+        raise serializers.ValidationError(
+            "Model id must be lowercase alphanumeric, optionally with '.', '_', or '-'."
+        )
+    return value
+
+
 class AICreateSceneRequestSerializer(serializers.Serializer):
     prompt = serializers.CharField(
         max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
     )
+    model = serializers.CharField(
+        max_length=MAX_MODEL_ID_CHARS,
+        allow_blank=True,
+        trim_whitespace=True,
+        required=False,
+        default="",
+    )
+
+    def validate_model(self, value: str) -> str:
+        return _validate_model_id(value)
 
 
 class AIEditSceneRequestSerializer(serializers.Serializer):
@@ -217,7 +261,9 @@ class AIEditSceneRequestSerializer(serializers.Serializer):
     caller believes is still `project.current_version` -- required
     (nullable, for a project with no saved version yet) so the view can
     detect a stale base (see `AIEditSceneView`'s docstring) before ever
-    calling the provider.
+    calling the provider. `model` is issue #198's optional caller-chosen
+    Mistral model id -- see `_validate_model_id`/`MAX_MODEL_ID_CHARS`
+    above.
     """
 
     prompt = serializers.CharField(
@@ -225,6 +271,16 @@ class AIEditSceneRequestSerializer(serializers.Serializer):
     )
     current_scene = serializers.JSONField()
     base_version_id = serializers.IntegerField(allow_null=True)
+    model = serializers.CharField(
+        max_length=MAX_MODEL_ID_CHARS,
+        allow_blank=True,
+        trim_whitespace=True,
+        required=False,
+        default="",
+    )
+
+    def validate_model(self, value: str) -> str:
+        return _validate_model_id(value)
 
 
 # category -> (http status, error code). PROVIDER_REJECTION is handled
@@ -383,6 +439,12 @@ def _invalid_current_scene_response(validation: SceneValidationResult) -> Respon
 
 
 _current_ai_user: ContextVar[object | None] = ContextVar("current_ai_user", default=None)
+# Issue #198: the caller-chosen Mistral model id for this request, or
+# `None` for "use `MistralSceneProvider`'s own `DEFAULT_MODEL`" (today's
+# unchanged behavior). A second contextvar, not a `get_ai_provider`
+# parameter, for the exact same reason `_current_ai_user` is one -- see
+# `get_ai_provider`'s own docstring.
+_current_ai_model: ContextVar[str | None] = ContextVar("current_ai_model", default=None)
 
 
 class MissingPersonalMistralCredential(Exception):
@@ -428,15 +490,35 @@ def get_ai_provider() -> AISceneProvider:
         key = credential.get_key()
     except MistralCredentialDecryptionError as exc:
         raise MissingPersonalMistralCredential from exc
-    return MistralSceneProvider(api_key=key)
+    return MistralSceneProvider(api_key=key, model=_current_ai_model.get() or None)
 
 
-def _provider_for_user(user):
-    token = _current_ai_user.set(user)
+def _provider_for_user(user, model: str | None = None):
+    """Issue #198: `model` is the caller's validated, optional request-body
+    value (blank/`None` means "server default", see `get_ai_provider`).
+    Threaded through the same contextvar pattern as `user` so
+    `get_ai_provider`'s zero-argument signature -- and every existing
+    `monkeypatch.setattr(ai_api, "get_ai_provider", ...)` test -- keeps
+    working unchanged.
+    """
+    user_token = _current_ai_user.set(user)
+    model_token = _current_ai_model.set(model or None)
     try:
         return get_ai_provider()
     finally:
-        _current_ai_user.reset(token)
+        _current_ai_user.reset(user_token)
+        _current_ai_model.reset(model_token)
+
+
+def _request_invalid_response(errors: dict) -> Response:
+    """Issue #198: `AICreateSceneRequestSerializer`/`AIEditSceneRequestSerializer`
+    validation failures used to always report `"prompt_invalid"`, which was
+    accurate before `model` existed (the only field that could fail) but
+    would mislabel a bad `model` id as a bad prompt. Reports `"model_invalid"`
+    only when `model` failed and `prompt` didn't, so an existing bad-prompt
+    response is completely unchanged."""
+    error = "model_invalid" if "model" in errors and "prompt" not in errors else "prompt_invalid"
+    return Response({"error": error, "detail": errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 def _missing_key_response() -> Response:
@@ -467,11 +549,9 @@ class AICreateSceneView(APIView):
 
         input_serializer = AICreateSceneRequestSerializer(data=request.data)
         if not input_serializer.is_valid():
-            return Response(
-                {"error": "prompt_invalid", "detail": input_serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return _request_invalid_response(input_serializer.errors)
         prompt = input_serializer.validated_data["prompt"]
+        model = input_serializer.validated_data.get("model") or None
 
         user_id = request.user.id
         if not _increment_and_check(
@@ -485,7 +565,7 @@ class AICreateSceneView(APIView):
             return _quota_exceeded_response()
 
         try:
-            provider = _provider_for_user(request.user)
+            provider = _provider_for_user(request.user, model)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
         result = provider.create_scene(AICreateSceneRequest(prompt=prompt))
@@ -577,13 +657,11 @@ class AIEditSceneView(APIView):
 
         input_serializer = AIEditSceneRequestSerializer(data=request.data)
         if not input_serializer.is_valid():
-            return Response(
-                {"error": "prompt_invalid", "detail": input_serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return _request_invalid_response(input_serializer.errors)
         prompt = input_serializer.validated_data["prompt"]
         current_scene = input_serializer.validated_data["current_scene"]
         base_version_id = input_serializer.validated_data["base_version_id"]
+        model = input_serializer.validated_data.get("model") or None
 
         if not isinstance(current_scene, dict):
             return Response(
@@ -614,7 +692,7 @@ class AIEditSceneView(APIView):
             return _edit_quota_exceeded_response()
 
         try:
-            provider = _provider_for_user(request.user)
+            provider = _provider_for_user(request.user, model)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
         outcome = provider.edit_scene_with_patch(
@@ -879,6 +957,7 @@ __all__ = [
     "EDIT_DAILY_QUOTA_MAX_SUCCESSES",
     "EDIT_RATE_LIMIT_MAX_ATTEMPTS",
     "EDIT_RATE_LIMIT_WINDOW_SECONDS",
+    "MAX_MODEL_ID_CHARS",
     "MAX_PROMPT_CHARS",
     "RATE_LIMIT_MAX_ATTEMPTS",
     "RATE_LIMIT_WINDOW_SECONDS",

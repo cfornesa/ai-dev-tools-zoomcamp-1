@@ -57,6 +57,8 @@ function AIProposalPanel({
     setMode,
     prompt,
     setPrompt,
+    model,
+    setModel,
     phase,
     genError,
     proposal,
@@ -168,6 +170,23 @@ function AIProposalPanel({
             value={prompt}
             disabled={pending}
             onChange={(event) => setPrompt(event.target.value)}
+          />
+        </div>
+        {/* Issue #198: optional, defaults to the server's own model.
+            Remembered per browser via `useAIProposal`'s own localStorage
+            key, the same convention `cameraOverlaySettings.ts` uses for
+            opacity/mirrored. A malformed id is caught by the server's
+            existing `model_invalid` validation error, surfaced through
+            the same error UI as every other validation error below. */}
+        <div className="behavior-card-field">
+          <label htmlFor="ai-proposal-model">Mistral model (optional)</label>
+          <input
+            id="ai-proposal-model"
+            type="text"
+            value={model}
+            disabled={pending}
+            placeholder="Uses the account default when blank"
+            onChange={(event) => setModel(event.target.value)}
           />
         </div>
         <button type="submit" disabled={pending || prompt.trim().length === 0}>

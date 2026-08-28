@@ -501,6 +501,33 @@ def test_blank_prompt_is_rejected_with_400(owner_client, project, monkeypatch):
 
 
 @pytest.mark.django_db
+def test_malformed_model_id_is_rejected_with_400_and_model_invalid(
+    owner_client, project, monkeypatch
+):
+    """Issue #198: same validation as the create-scene endpoint, distinct
+    from `prompt_invalid` so the frontend can tell the two apart."""
+    _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(_BG_BLACK_PATCH)))
+    payload = _payload()
+    payload["model"] = "Not A Valid Model!"
+
+    response = owner_client.post(_url(project), payload, format="json")
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "model_invalid"
+
+
+@pytest.mark.django_db
+def test_blank_model_is_accepted_as_use_the_default(owner_client, project, monkeypatch):
+    _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(_BG_BLACK_PATCH)))
+    payload = _payload()
+    payload["model"] = ""
+
+    response = owner_client.post(_url(project), payload, format="json")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
 def test_prompt_too_long_is_rejected_with_400(owner_client, project, monkeypatch):
     _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(_BG_BLACK_PATCH)))
     too_long = "x" * (ai_api.MAX_PROMPT_CHARS + 1)

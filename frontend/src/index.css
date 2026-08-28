@@ -396,6 +396,16 @@ code {
     margin-right: 0;
   }
 
+  /* Issue #193: the gallery panel is a column flex container. Its empty
+     state must remain content-sized on a phone; `flex: 1` otherwise grows
+     it to consume the main-content flex track, pushing the message below
+     the viewport when the shell is taller than the screen. */
+  .gallery-empty-state {
+    flex: 0 0 auto;
+    min-height: 200px;
+    padding: 24px 16px;
+  }
+
   .project-grid {
     grid-template-columns: 1fr;
     padding: 20px;

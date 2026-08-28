@@ -488,6 +488,7 @@ test.describe('Interaction runtime', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await page.getByRole('button', { name: 'Add circle' }).click();
     await openLogicPanel(page);
 
     // `handDistance` is a documented `$defs.signal` name
@@ -534,6 +535,7 @@ test.describe('Interaction runtime', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await page.getByRole('button', { name: 'Add circle' }).click();
 
     // A freshly created blank project carries `randomness: { seed: 0,
     // enabled: false }` (schema/fixtures/valid/blank.json) -- no

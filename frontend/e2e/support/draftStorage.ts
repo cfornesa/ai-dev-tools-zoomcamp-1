@@ -123,6 +123,10 @@ export async function readLocalDraft(page: Page, projectId: string): Promise<unk
  * (`DraftDetailView`) under the exact session id the running page will
  * itself look up when `useDraftRecovery`'s server-candidate check runs. */
 export async function readSessionId(page: Page, projectId: string): Promise<string | null> {
+  await page.waitForFunction(
+    (pid) => Boolean(window.sessionStorage.getItem(`motion-editor-draft-session:${pid}`)),
+    projectId,
+  );
   return page.evaluate(
     (pid) => window.sessionStorage.getItem(`motion-editor-draft-session:${pid}`),
     projectId,

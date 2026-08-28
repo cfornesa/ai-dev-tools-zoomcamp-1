@@ -92,6 +92,7 @@ function AccountSettings() {
             Remove key
           </button>
         )}
+        {configured && !message && <p>Your Mistral key is securely configured.</p>}
         {message && <p role="status">{message}</p>}
         {error && <p role="alert">{error}</p>}
       </div>

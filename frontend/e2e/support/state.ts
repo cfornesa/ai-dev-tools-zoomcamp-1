@@ -26,6 +26,7 @@ export type E2EState =
       password: string;
       owner: FixtureUser;
       other: FixtureUser;
+      empty: FixtureUser;
     }
   | {
       available: false;

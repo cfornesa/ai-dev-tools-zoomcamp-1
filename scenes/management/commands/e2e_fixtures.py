@@ -10,7 +10,7 @@ one place that creates and removes them, invoked from
 `frontend/e2e/global-setup.ts`/`global-teardown.ts` via `uv run --env-file
 .env python manage.py e2e_fixtures <create|cleanup>`.
 
-Both users get a verified, primary `allauth.account.models.EmailAddress`
+All fixture users get a verified, primary `allauth.account.models.EmailAddress`
 record in addition to `User.email` — `ACCOUNT_LOGIN_METHODS = {'email'}`
 (`config/settings.py`) makes allauth's own login form authenticate by
 email, and its backend looks users up through `EmailAddress` first,
@@ -41,10 +41,12 @@ from django.db import connection, transaction
 E2E_PASSWORD = "e2e-playwright-fixture-pw-1!"  # noqa: S105 - not a real secret
 
 # (username, email) pairs. "other" is used for the non-owner/authorization
-# scenario; it must never be the owner of any fixture project.
+# scenario; "empty" is reserved for tests that require a project-free gallery
+# even after earlier specs have created projects for the other fixture users.
 E2E_USERS = {
     "owner": ("e2e_owner", "e2e-owner@example.test"),
     "other": ("e2e_other", "e2e-other@example.test"),
+    "empty": ("e2e_empty", "e2e-empty@example.test"),
 }
 
 
@@ -69,7 +71,7 @@ def _get_or_create_user(username: str, email: str):
 
 class Command(BaseCommand):
     help = (
-        "Creates or removes the deterministic 'e2e_owner'/'e2e_other' users "
+        "Creates or removes the deterministic Playwright fixture users "
         "the Playwright project-lifecycle suite (frontend/e2e/) signs in as. "
         "Never run against a real deployment's database."
     )
@@ -107,12 +109,14 @@ class Command(BaseCommand):
         with transaction.atomic():
             owner = _get_or_create_user(*E2E_USERS["owner"])
             other = _get_or_create_user(*E2E_USERS["other"])
+            empty = _get_or_create_user(*E2E_USERS["empty"])
 
         payload = {
             "available": True,
             "password": E2E_PASSWORD,
             "owner": {"username": owner.username, "email": owner.email},
             "other": {"username": other.username, "email": other.email},
+            "empty": {"username": empty.username, "email": empty.email},
         }
 
         if as_json:
@@ -122,7 +126,8 @@ class Command(BaseCommand):
         else:
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Created/reset E2E fixture users: {owner.username}, {other.username}"
+                    "Created/reset E2E fixture users: "
+                    f"{owner.username}, {other.username}, {empty.username}"
                 )
             )
 

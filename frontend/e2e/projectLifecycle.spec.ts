@@ -483,6 +483,7 @@ test.describe('Project lifecycle', () => {
       await apiGet(contextA, `/api/projects/${projectId}/`)
     ).json()) as { current_version: number };
     const higherSaved = savedA.sequence > savedB.sequence ? savedA : savedB;
+    const lowerSaved = savedA.sequence > savedB.sequence ? savedB : savedA;
     expect(projectAfterSaves.current_version).toBe(higherSaved.id);
 
     // Overlapping restores: target two *different* historical (non-
@@ -492,7 +493,7 @@ test.describe('Project lifecycle', () => {
     // proving no restore silently overwrote or corrupted the other.
     const [restoreA, restoreB] = await Promise.all([
       apiPost(contextA, `/api/projects/${projectId}/versions/${firstVersionId}/restore/`, {}),
-      apiPost(contextB, `/api/projects/${projectId}/versions/${savedA.id}/restore/`, {}),
+      apiPost(contextB, `/api/projects/${projectId}/versions/${lowerSaved.id}/restore/`, {}),
     ]);
     expect(restoreA.status()).toBe(201);
     expect(restoreB.status()).toBe(201);

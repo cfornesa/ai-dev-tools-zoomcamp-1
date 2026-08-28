@@ -179,7 +179,7 @@ test.describe('Responsive app shell', () => {
       page,
     }) => {
       await page.setViewportSize(NARROW_VIEWPORT);
-      await loginViaUI(page, fixtures.other.email, fixtures.password);
+      await loginViaUI(page, fixtures.empty.email, fixtures.password);
 
       const panel = page.locator('.gallery-panel');
       const galleryHeader = page.locator('.gallery-header');

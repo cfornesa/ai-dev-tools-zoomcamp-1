@@ -189,7 +189,10 @@ test.describe('AI create/edit proposals', () => {
     fixtures = requireE2EFixtures();
     const context = await browser.newContext();
     const page = await context.newPage();
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    // Use the other fixture for the provider probe so its one create-scene
+    // request cannot consume the owner's five-request rate-limit allowance
+    // before the actual AI scenarios run.
+    await loginViaUI(page, fixtures.other.email, fixtures.password);
     aiProviderFakeModeActive = await probeFakeAIProviderMode(context, page);
     await context.close();
   });

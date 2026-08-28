@@ -107,7 +107,7 @@ DJANGO_SECRET_KEY=browser-qa-only-secret-key
 DATABASE_URL=postgres://postgres:postgres@127.0.0.1:$DB_PORT/creatrweb_browser_qa
 GOOGLE_OAUTH_CLIENT_ID=browser-qa.apps.googleusercontent.com
 GOOGLE_OAUTH_CLIENT_SECRET=browser-qa-only-oauth-secret
-MISTRAL_CREDENTIAL_ENCRYPTION_KEY=hDmcNCp7WCvpOjI3tmEd-foRjnnjh_-OgVogBK30V4=
+MISTRAL_CREDENTIAL_ENCRYPTION_KEY=hDmcNCp7WCvpOjI3tmEd0-foRjnnjh_-OgVogBK30V4=
 AI_PROVIDER=fake
 DJANGO_DEBUG=True
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1

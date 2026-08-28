@@ -54,6 +54,43 @@ export async function expandSection(page: Page, heading: string): Promise<void> 
   const open = page.getByRole('button', { name: new RegExp(`^▾ ${heading}$`) });
   if ((await open.count()) > 0 && (await open.first().isVisible())) return; // already open -- no-op
 
+  // Behaviors is nested in Inspector. On a fresh editor load that panel can
+  // still be closed even though its nested disclosure is mounted in the DOM.
+  // Open the known owner explicitly so the nested button becomes visible.
+  if (heading === 'Behaviors') {
+    const inspectorSection = page.locator('section[data-panel="inspector"]');
+    const inspectorTab = page.getByRole('tab', { name: 'Inspector', exact: true });
+    if ((await inspectorTab.count()) > 0 && (await inspectorTab.isVisible())) {
+      await inspectorTab.click();
+    }
+    const inspectorToggle = inspectorSection.locator('.editor-panel-disclosure-toggle').first();
+    if (
+      (await inspectorToggle.count()) > 0 &&
+      (await inspectorToggle.getAttribute('aria-expanded')) === 'false'
+    ) {
+      await inspectorToggle.click({ force: true });
+    }
+    await closed.first().waitFor({ state: 'visible' });
+    await closed.first().click();
+    return;
+  }
+
+  // The section may live in a closed top-level panel. Resolve that panel
+  // directly from the named section instead of relying on a hidden nested
+  // locator filter, which is brittle when the panel content is mounted with
+  // `hidden` and the nested disclosure has not yet become visible.
+  const ownerPanel = page
+    .locator('section.editor-panel')
+    .filter({ has: closed.or(open) })
+    .first();
+  const ownerPanelToggle = ownerPanel.locator('.editor-panel-disclosure-toggle').first();
+  if (
+    (await ownerPanelToggle.count()) > 0 &&
+    (await ownerPanelToggle.getAttribute('aria-expanded')) === 'false'
+  ) {
+    await ownerPanelToggle.click();
+  }
+
   // A named nested section can be mounted inside a closed top-level panel.
   // Reveal that parent using the nested section's panel-content container,
   // then wait for the requested toggle itself to become actionable.

@@ -103,3 +103,12 @@ but non-stubbed* input (here: a canvas-captured video track, not a fake
 MediaStream) can exercise the real component anyway — the missing physical
 camera and the stubbed test seam are two different limitations, and only
 one of them was actually unavoidable here.
+
+**2026-08-28 closed on explicit waiver:** the repository owner was asked
+directly whether to waive the remaining real-camera/production confirmation
+given the strength of the measured root cause, and chose to waive it and
+close #192 now. This is a second instance of the same kind of deliberate,
+informed human waiver #195 recorded above -- not a determination this agent
+made on its own, and not a change to the standing rule: still require
+real-camera/production evidence, or an explicit waiver like this one, before
+closing this issue class.

@@ -1056,10 +1056,23 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
         const startedAt = performance.now();
         let animationFrames = 0;
         const longTasks: number[] = [];
+        // `buffered: true` also delivers any longtask entries already
+        // recorded before this observer existed -- page navigation,
+        // initial render, and "Enable camera"/MediaPipe-seam setup can
+        // easily produce a startup-only long task on a loaded CI runner
+        // that has nothing to do with this benchmark's actual target
+        // (steady-state per-frame cost during the 10-second animation
+        // loop below). Filtering to `entry.startTime >= startedAt`
+        // keeps `buffered: true` (so a long task that starts a few ms
+        // before this line executes is still counted) while excluding
+        // one-time setup cost that predates the window this benchmark
+        // claims to measure.
         const observer =
           typeof PerformanceObserver === 'function'
             ? new PerformanceObserver((list) => {
-                for (const entry of list.getEntries()) longTasks.push(entry.duration);
+                for (const entry of list.getEntries()) {
+                  if (entry.startTime >= startedAt) longTasks.push(entry.duration);
+                }
               })
             : null;
         observer?.observe({ type: 'longtask', buffered: true });

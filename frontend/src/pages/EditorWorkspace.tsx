@@ -2389,21 +2389,42 @@ function EditorWorkspace() {
 
   // Task 111 (issue #142): the selection/hover outline overlay below draws
   // in the scene's real draw order, matching `render/sceneDrawPlan.ts`'s
-  // `buildScenePlan` (layers first, sorted by `order`, then each layer's
-  // own top-level items) -- `sceneEditor.shapes`' raw array order stopped
-  // being equivalent to that once every shape got its own independent
-  // layer (previously most shapes shared one layer, where array order and
-  // draw order coincided). Recomputed from `buildOutline`, the same
-  // source of truth the outline panel itself uses, rather than a second,
-  // possibly-diverging draw-order implementation. A plain computed value
-  // (not `useMemo`) since this section of the component already runs
-  // after several conditional early returns above (`loadState` guards),
+  // `buildScenePlan` (issue #194: layers in *descending* `order`, then
+  // each layer's own top-level items in `buildOutline`'s existing order)
+  // -- `sceneEditor.shapes`' raw array order stopped being equivalent to
+  // that once every shape got its own independent layer (previously most
+  // shapes shared one layer, where array order and draw order
+  // coincided). Recomputed from `buildOutline`, the same source of truth
+  // the outline panel itself uses (with its per-layer chunks reversed to
+  // match #194's render-order flip), rather than a second, possibly-
+  // diverging draw-order implementation. A plain computed value (not
+  // `useMemo`) since this section of the component already runs after
+  // several conditional early returns above (`loadState` guards),
   // matching `canvasWidth`/`canvasHeight` just above.
   const shapesInDrawOrder = (() => {
     if (!workingCopy) return sceneEditor.shapes;
-    const orderedIds = buildOutline(workingCopy)
-      .filter((row) => row.kind === 'shape')
-      .map((row) => row.id);
+    // Issue #194: `sceneDrawPlan.ts` now draws layers in *descending*
+    // `order`, while `buildOutline()` still lists them ascending
+    // top-to-bottom (matching the panel). Chunk the flat row list back
+    // into per-layer groups at each 'layer' row boundary, then reverse
+    // the order of those *chunks* only -- each chunk's own internal
+    // group/shape ordering (unaffected by #194) stays exactly as
+    // `buildOutline` produced it.
+    const rows = buildOutline(workingCopy);
+    const layerChunks: (typeof rows)[] = [];
+    let current: typeof rows = [];
+    for (const row of rows) {
+      if (row.kind === 'layer') {
+        if (current.length > 0) layerChunks.push(current);
+        current = [];
+      } else {
+        current.push(row);
+      }
+    }
+    if (current.length > 0) layerChunks.push(current);
+    const orderedIds = layerChunks
+      .reverse()
+      .flatMap((chunk) => chunk.filter((row) => row.kind === 'shape').map((row) => row.id));
     const byId = new Map(sceneEditor.shapes.map((shape) => [shape.id, shape]));
     return orderedIds
       .map((id) => byId.get(id))

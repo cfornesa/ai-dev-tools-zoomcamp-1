@@ -1121,19 +1121,21 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
     // to `moveLayer` on that shape's own layer (see its doc comment for
     // why -- every shape is effectively alone on its layer, so the
     // layer's position among ALL layers is what "move up/down" actually
-    // changes). `isFirst`/`isLast` here must agree with that: the old
-    // "first/last among this layer's topShapes" was always both true for
-    // a layer with exactly one shape, permanently disabling the Move up/
-    // down buttons. Using the layer's own position keeps them enabled/
-    // disabled exactly when a `moveLayer` call would actually be a no-op.
-    topShapes.forEach((shape, i) => {
-      emitShape(
-        shape,
-        1,
-        i === 0 && layerIndex === 0,
-        i === topShapes.length - 1 && layerIndex === layers.length - 1,
-        layer.visible,
-      );
+    // changes). `isFirst`/`isLast` here must agree with that for EVERY
+    // shape sharing this layer, not just the one at the tail of
+    // `topShapes` -- issue #194: a layer can end up with more than one
+    // top-level shape (e.g. via "Move to layer"), and `moveItem` on any
+    // of them delegates to the exact same `moveLayer(layer.id, ...)`
+    // call. Gating `isLast`/`isFirst` on this shape's own position `i`
+    // within `topShapes` left every shape but the last one in that list
+    // with a stale `isLast: false` (or `isFirst: false`) even though its
+    // "Move down"/"Move up" click was already a no-op at the layer
+    // boundary -- the button looked enabled but silently did nothing.
+    // Using only the layer's own position keeps every shape on that
+    // layer's buttons enabled/disabled exactly when a `moveLayer` call
+    // would actually be a no-op, regardless of `topShapes` position.
+    topShapes.forEach((shape) => {
+      emitShape(shape, 1, layerIndex === 0, layerIndex === layers.length - 1, layer.visible);
     });
   });
 

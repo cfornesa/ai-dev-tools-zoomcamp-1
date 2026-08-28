@@ -156,6 +156,7 @@ describe('useAIProposal generation phases', () => {
       VALID_SCENE,
       3,
       expect.anything(),
+      undefined,
     );
     expect(result.current.phase).toBe('success');
     expect(result.current.proposal?.summary).toBe('1 change: 1 canvas property updated.');

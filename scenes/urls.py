@@ -20,6 +20,7 @@ from scenes.api import (
     TemplateCloneView,
     TemplateListView,
 )
+from scenes.art_piece_api import ArtPieceGenerateView
 from scenes.credentials_api import MistralCredentialView
 
 urlpatterns = [
@@ -107,5 +108,12 @@ urlpatterns = [
         "projects/<uuid:public_id>/ai/accept-proposal/",
         AIAcceptProposalView.as_view(),
         name="ai-accept-proposal",
+    ),
+    # Issue #199: deliberately not project-scoped -- see art_piece_api.py's
+    # module docstring for why.
+    path(
+        "ai/art-pieces/generate/",
+        ArtPieceGenerateView.as_view(),
+        name="art-piece-generate",
     ),
 ]

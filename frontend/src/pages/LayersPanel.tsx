@@ -1246,11 +1246,16 @@ function LayersPanel({
     <div>
       {/* Issue #127: draw-order convention, stated explicitly per this
           task's acceptance criterion — the top of this list is the item
-          drawn *last*, i.e. visually frontmost/on top, matching
-          `sceneOutline.ts`'s existing draw-order rule (ascending layer
-          `order`, then top-level groups before top-level shapes within a
-          layer, then a group's own `childIds` order) and the canvas's own
-          z-order (later in `sceneEditor.shapes` paints on top). */}
+          drawn *last*, i.e. visually frontmost/on top. This panel still
+          lists layers in ascending `order` top-to-bottom
+          (`sceneOutline.ts`'s `buildOutline()`); issue #194 found that
+          `sceneDrawPlan.ts`'s renderer previously *also* drew ascending,
+          which actually made the lowest-`order` layer (this panel's top
+          row) draw first/backmost — the opposite of this hint's claim.
+          `sceneDrawPlan.ts` now draws layers in **descending** `order` so
+          the panel's top row is genuinely frontmost, as stated here.
+          Within a layer, top-level groups before top-level shapes, then a
+          group's own `childIds` order, is unchanged. */}
       <p className="editor-outline-order-hint">
         Top of the list = drawn last = on top of everything below it.
       </p>

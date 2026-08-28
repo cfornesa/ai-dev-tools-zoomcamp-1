@@ -100,12 +100,41 @@ def test_owner_key_is_selected_for_real_provider(owner, monkeypatch):
     captured = {}
 
     class CapturingProvider:
-        def __init__(self, *, api_key):
+        def __init__(self, *, api_key, model=None):
             captured["api_key"] = api_key
+            captured["model"] = model
 
     monkeypatch.setattr(ai_api, "MistralSceneProvider", CapturingProvider)
     ai_api._provider_for_user(owner)
-    assert captured == {"api_key": "sk-owner-only-key-12345"}
+    assert captured == {"api_key": "sk-owner-only-key-12345", "model": None}
+
+
+@pytest.mark.django_db
+def test_caller_supplied_model_reaches_the_real_provider(owner, monkeypatch):
+    """Issue #198: a caller-supplied model id, threaded through
+    `_provider_for_user`'s second (optional) argument, replaces
+    `MistralSceneProvider`'s own `DEFAULT_MODEL` fallback for this call
+    only -- the same contextvar plumbing as `owner` above, so
+    `get_ai_provider`'s zero-argument signature stays test-compatible."""
+    credential = MistralCredential(user=owner)
+    credential.set_key("sk-owner-only-key-12345")
+    credential.save()
+    captured = {}
+
+    class CapturingProvider:
+        def __init__(self, *, api_key, model=None):
+            captured["api_key"] = api_key
+            captured["model"] = model
+
+    monkeypatch.setattr(ai_api, "MistralSceneProvider", CapturingProvider)
+    ai_api._provider_for_user(owner, "codestral-2405")
+    assert captured == {"api_key": "sk-owner-only-key-12345", "model": "codestral-2405"}
+
+    # A blank/falsy model means "use the provider's own default", not the
+    # literal string -- confirmed by omission from `captured`'s expected
+    # value above, and re-confirmed explicitly here for `""`.
+    ai_api._provider_for_user(owner, "")
+    assert captured["model"] is None
 
 
 @pytest.mark.django_db

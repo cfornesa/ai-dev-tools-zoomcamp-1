@@ -252,7 +252,12 @@ describe('EditorWorkspace snap preference: alignment guides on move', () => {
     const guideLine = screen.getByTestId('snap-guide-x');
     expect(guideLine).toHaveAttribute('x1', '650');
 
-    const liveSummary = canvas.querySelector('.editor-scene-shape') as HTMLElement;
+    // Issue #194: two shapes are on canvas here (A, being dragged, and
+    // B) -- the generic `.editor-scene-shape` selector this file's
+    // single-shape tests use would silently pick whichever renders first
+    // in z-order (now A or B depending on their relative layer `order`,
+    // not always A). Target A specifically via its selected-state class.
+    const liveSummary = canvas.querySelector('.editor-scene-shape-selected') as HTMLElement;
     expect(liveSummary.textContent).toContain('x=550, y=260'); // snapped so maxX (x+100) = 650
 
     fireEvent.pointerUp(window, { clientX: 596, clientY: 300 });

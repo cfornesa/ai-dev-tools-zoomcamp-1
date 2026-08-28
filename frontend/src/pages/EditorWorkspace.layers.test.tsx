@@ -976,10 +976,14 @@ describe('EditorWorkspace scene outline: pointer drag-and-drop (issue #127)', ()
     const circleId = circleRow.dataset.outlineId;
     const rectangleId = rectangleRow.dataset.outlineId;
 
+    // Issue #194: the top of the Layers panel is frontmost (drawn last) —
+    // Circle is added first (panel top, lower `order`), Rectangle second
+    // (panel bottom, higher `order`), so Rectangle (backmost) draws
+    // *before* Circle (frontmost) in DOM/z-order.
     const zOrderBefore = Array.from(document.querySelectorAll('[data-testid^="scene-shape-"]')).map(
       (el) => el.getAttribute('data-testid'),
     );
-    expect(zOrderBefore).toEqual([`scene-shape-${circleId}`, `scene-shape-${rectangleId}`]);
+    expect(zOrderBefore).toEqual([`scene-shape-${rectangleId}`, `scene-shape-${circleId}`]);
 
     // Drag Rectangle above Circle (clientY 5, a shape row's "before" zone —
     // see the stubbed 40px-tall rect in `beforeEach`).
@@ -988,13 +992,13 @@ describe('EditorWorkspace scene outline: pointer drag-and-drop (issue #127)', ()
     const shapeRowsAfter = outlineRows().filter((r) => r.dataset.outlineKind === 'shape');
     expect(shapeRowsAfter.map((r) => r.dataset.outlineId)).toEqual([rectangleId, circleId]);
 
-    // The canvas SVG overlay renders `sceneEditor.shapes` in array order —
-    // the same array `moveItemBySteps` reordered — so the drop's new
-    // Layers-panel order must be reflected 1:1 in the rendered z-order.
+    // Rectangle is now at the top of the panel (frontmost), Circle at the
+    // bottom (backmost) -- the rendered z-order flips to match: Circle
+    // draws first/back, Rectangle draws last/front.
     const zOrderAfter = Array.from(document.querySelectorAll('[data-testid^="scene-shape-"]')).map(
       (el) => el.getAttribute('data-testid'),
     );
-    expect(zOrderAfter).toEqual([`scene-shape-${rectangleId}`, `scene-shape-${circleId}`]);
+    expect(zOrderAfter).toEqual([`scene-shape-${circleId}`, `scene-shape-${rectangleId}`]);
   });
 
   it('undoes a pointer drag reorder in a single step', async () => {

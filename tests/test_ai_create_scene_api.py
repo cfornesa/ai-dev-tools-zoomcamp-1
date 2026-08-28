@@ -211,6 +211,42 @@ def test_blank_prompt_is_rejected_with_400(owner_client, project, monkeypatch):
 
 
 @pytest.mark.django_db
+def test_malformed_model_id_is_rejected_with_400_and_model_invalid(
+    owner_client, project, monkeypatch
+):
+    """Issue #198: a syntactically-invalid `model` id is rejected before
+    any provider call, with its own `model_invalid` error code -- distinct
+    from `prompt_invalid` even though both come from the same request
+    serializer, so the frontend can tell the two apart."""
+    _use_provider(monkeypatch, FakeAISceneProvider(FakeAIProviderScenario.SUCCESS))
+
+    response = owner_client.post(
+        _url(project), {"prompt": "a circle", "model": "Not A Valid Model!"}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "model_invalid"
+
+
+@pytest.mark.django_db
+def test_blank_model_is_accepted_as_use_the_default(owner_client, project, monkeypatch):
+    _use_provider(monkeypatch, FakeAISceneProvider(FakeAIProviderScenario.SUCCESS))
+
+    response = owner_client.post(_url(project), {"prompt": "a circle", "model": ""}, format="json")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_omitted_model_is_accepted_as_use_the_default(owner_client, project, monkeypatch):
+    _use_provider(monkeypatch, FakeAISceneProvider(FakeAIProviderScenario.SUCCESS))
+
+    response = owner_client.post(_url(project), {"prompt": "a circle"}, format="json")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
 def test_timeout_is_rejected_with_504(owner_client, project, monkeypatch):
     _use_provider(monkeypatch, FakeAISceneProvider(FakeAIProviderScenario.TIMEOUT))
 

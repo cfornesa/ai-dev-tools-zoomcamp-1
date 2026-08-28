@@ -48,6 +48,7 @@ export type AIEditSceneResponse = {
  * three response shapes through the same logic. */
 export type AIErrorCode =
   | 'prompt_invalid'
+  | 'model_invalid'
   | 'rate_limited'
   | 'quota_exceeded'
   | 'provider_quota_exceeded'
@@ -73,14 +74,18 @@ export type AIErrorBody = {
   detail: unknown;
 };
 
+/** Issue #198: an optional caller-chosen Mistral model id, replacing the
+ * server's own default for this request only. Blank/omitted means "use
+ * the server default" — every existing call site is unaffected. */
 export function createAIScene(
   projectId: string,
   prompt: string,
   signal?: AbortSignal,
+  model?: string,
 ): Promise<AICreateSceneResponse> {
   return apiFetch<AICreateSceneResponse>(`/api/projects/${projectId}/ai/create-scene/`, {
     method: 'POST',
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(model ? { prompt, model } : { prompt }),
     signal,
   });
 }
@@ -91,6 +96,7 @@ export function editAIScene(
   currentScene: SceneDocument,
   baseVersionId: number | null,
   signal?: AbortSignal,
+  model?: string,
 ): Promise<AIEditSceneResponse> {
   return apiFetch<AIEditSceneResponse>(`/api/projects/${projectId}/ai/edit-scene/`, {
     method: 'POST',
@@ -98,6 +104,7 @@ export function editAIScene(
       prompt,
       current_scene: currentScene,
       base_version_id: baseVersionId,
+      ...(model ? { model } : {}),
     }),
     signal,
   });

@@ -5401,7 +5401,7 @@ Status: ACTIVE
 
 GitHub issue: [#193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/193)
 
-Evidence (2026-08-27): Commit `03b146a` restores the gate's determinism: the
+Evidence (2026-08-27): Commit `03b146a` restores the gate's determinism locally: the
 complete disposable PostgreSQL + Django + Vite + Chromium run passed 133/134
 tests with 1 intentional PostgreSQL-concurrency skip; focused interaction,
 credential, project-lifecycle, and responsive runs also passed. `make check`
@@ -5432,8 +5432,16 @@ Dependencies/order: Fix fixture/session and panel-helper determinism first;
 then AI/credential/editor flows; then responsive geometry; finally rerun the
 complete browser suite, root gates, and CI.
 
-Next action: CI must run against `03b146a` after the commit is pushed; the
-GitHub connector currently reports no workflow run for this local-only SHA.
-Replit publication checks remain a separate manual verification boundary.
+CI evidence (2026-08-28): the push-triggered run [33136131069](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/33136131069)
+and two failed browser-job reruns did not pass. The final browser rerun
+98739689672 reported 131 passed, 1 skipped, and two failures: the server-newer
+draft-conflict recovery assertion received the local scene id instead of
+`scene-server-newer`, and synthetic camera diagnostics measured
+`maxLongTaskMs=174` against the `<=100` budget. Backend and frontend CI checks
+were green, but the browser acceptance gate remains unsatisfied.
+
+Next action: investigate and fix the remaining CI browser failures, push the
+follow-up, and rerun the full CI gate. Issue #193 remains open; Replit
+publication checks remain a separate manual verification boundary.
 
 Durable memory: [full browser readiness gate](../.agents/memory/full-browser-readiness-gate.md).

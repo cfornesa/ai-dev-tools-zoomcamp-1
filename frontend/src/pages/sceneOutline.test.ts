@@ -783,16 +783,56 @@ describe('buildOutline', () => {
     expect(shapeRow.inheritedLocked).toBe(false);
   });
 
-  it('marks first/last rows per their reorder scope', () => {
-    const s1 = shapeIn('layer-1');
-    const s2 = shapeIn('layer-1');
-    const scene = baseScene({ shapes: [s1, s2] });
+  it("marks first/last rows per their reorder scope (each shape's own layer position)", () => {
+    const { shape: s1, layerDef: l1 } = shapeOnFreshLayer();
+    const { shape: s2, layerDef: l2 } = shapeOnFreshLayer();
+    const scene = baseScene({ shapes: [s1, s2], layers: [l1, l2] });
     const rows = buildOutline(scene);
     const shapeRows = rows.filter((r) => r.kind === 'shape');
     expect(shapeRows[0].isFirst).toBe(true);
     expect(shapeRows[0].isLast).toBe(false);
     expect(shapeRows[1].isFirst).toBe(false);
     expect(shapeRows[1].isLast).toBe(true);
+  });
+
+  // Issue #194: `moveItem` on any top-level shape delegates entirely to
+  // `moveLayer` on that shape's own `layerId` (see the doc comment above
+  // this file's `moveItem` in `sceneOutline.ts`) -- so what matters for
+  // `isFirst`/`isLast` is the shape's LAYER's position among all layers,
+  // never the shape's own position within `topShapes`. Two top-level
+  // shapes can share one layer (e.g. via "Move to layer"); previously,
+  // only the shape at the tail of `topShapes` got a correct `isLast`,
+  // leaving any other shape sharing that same (already boundary) layer
+  // with a stale flag -- its "Move down"/"Move up" button stayed enabled
+  // but silently no-opped, since `moveLayer` already can't move a
+  // first/last layer any further.
+  it("gives every shape sharing one layer that layer's own isFirst/isLast, not a topShapes-position value", () => {
+    const s1 = shapeIn('layer-1');
+    const s2 = shapeIn('layer-1');
+    const scene = baseScene({ shapes: [s1, s2] });
+    const rows = buildOutline(scene);
+    const shapeRows = rows.filter((r) => r.kind === 'shape');
+    expect(shapeRows).toHaveLength(2);
+    for (const row of shapeRows) {
+      expect(row.isFirst).toBe(true);
+      expect(row.isLast).toBe(true);
+    }
+  });
+
+  it("gives every shape sharing a non-boundary layer that layer's own (non-boundary) isFirst/isLast", () => {
+    const s1 = shapeIn('layer-mid');
+    const s2 = shapeIn('layer-mid');
+    const scene = baseScene({
+      shapes: [s1, s2],
+      layers: [layer('layer-first', 0), layer('layer-mid', 1), layer('layer-last', 2)],
+    });
+    const rows = buildOutline(scene);
+    const shapeRows = rows.filter((r) => r.kind === 'shape');
+    expect(shapeRows).toHaveLength(2);
+    for (const row of shapeRows) {
+      expect(row.isFirst).toBe(false);
+      expect(row.isLast).toBe(false);
+    }
   });
 });
 

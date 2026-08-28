@@ -5,14 +5,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as artPiecesApi from '../api/artPieces';
 import { ApiError } from '../api/client';
 import * as authModule from '../auth/useAuth';
+import * as artPieceBundleModule from '../generative/artPieceBundle';
 import { ART_PIECE_SANDBOX_MESSAGE_SOURCE } from '../generative/artPieceSandbox';
 import ArtPieceStudio from './ArtPieceStudio';
 
 vi.mock('../api/artPieces');
 vi.mock('../auth/useAuth');
+vi.mock('../generative/artPieceBundle');
 
 const mockedGenerateArtPiece = vi.mocked(artPiecesApi.generateArtPiece);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
+const mockedGenerateArtPieceBundle = vi.mocked(artPieceBundleModule.generateArtPieceBundle);
+const mockedTriggerArtPieceBundleDownload = vi.mocked(
+  artPieceBundleModule.triggerArtPieceBundleDownload,
+);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -169,6 +175,51 @@ describe('ArtPieceStudio (issue #199)', () => {
 
     dispatchSandboxMessage(iframe, { source: ART_PIECE_SANDBOX_MESSAGE_SOURCE, status: 'ready' });
     expect(await screen.findByTestId('art-piece-download')).toBeInTheDocument();
+  });
+
+  it("Download builds the portable bundle for the result's own library and triggers a .zip download (issue #200)", async () => {
+    mockedGenerateArtPiece.mockResolvedValue({
+      library: 'canvas2d',
+      code: '<canvas id="art-piece-canvas"></canvas><script></script>',
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    const fakeZip = new Blob(['fake zip bytes']);
+    mockedGenerateArtPieceBundle.mockResolvedValue(fakeZip);
+    render(<ArtPieceStudio />);
+
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'a circle');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+    const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+    dispatchSandboxMessage(iframe, { source: ART_PIECE_SANDBOX_MESSAGE_SOURCE, status: 'ready' });
+
+    await userEvent.click(await screen.findByTestId('art-piece-download'));
+
+    expect(mockedGenerateArtPieceBundle).toHaveBeenCalledWith(
+      'canvas2d',
+      '<canvas id="art-piece-canvas"></canvas><script></script>',
+    );
+    expect(mockedTriggerArtPieceBundleDownload).toHaveBeenCalledWith(fakeZip, 'art-piece.zip');
+  });
+
+  it('shows an actionable error, and never calls triggerArtPieceBundleDownload, if building the bundle fails', async () => {
+    mockedGenerateArtPiece.mockResolvedValue({
+      library: 'threejs',
+      code: 'THREE.foo();',
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    mockedGenerateArtPieceBundle.mockRejectedValue(new Error('network down'));
+    render(<ArtPieceStudio />);
+
+    await userEvent.selectOptions(screen.getByLabelText(/library/i), 'threejs');
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'a cube');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+    const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+    dispatchSandboxMessage(iframe, { source: ART_PIECE_SANDBOX_MESSAGE_SOURCE, status: 'ready' });
+
+    await userEvent.click(await screen.findByTestId('art-piece-download'));
+
+    expect(await screen.findByTestId('art-piece-download-error')).toHaveTextContent('network down');
+    expect(mockedTriggerArtPieceBundleDownload).not.toHaveBeenCalled();
   });
 
   it('shows a crashed state (and no Download) when the sandbox reports an error', async () => {

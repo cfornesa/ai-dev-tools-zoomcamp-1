@@ -4,6 +4,10 @@ import { ApiError } from '../api/client';
 import { generateArtPiece, type ArtPieceErrorBody, type ArtPieceLibrary } from '../api/artPieces';
 import { useAuth } from '../auth/useAuth';
 import {
+  generateArtPieceBundle,
+  triggerArtPieceBundleDownload,
+} from '../generative/artPieceBundle';
+import {
   buildArtPieceSandboxDocument,
   parseArtPieceSandboxMessage,
   ART_PIECE_IFRAME_SANDBOX,
@@ -79,6 +83,8 @@ function ArtPieceStudio() {
   // then build the sandbox for the *new* selection against the *old*
   // code (e.g. wrapping Three.js JS in a Canvas2D-shaped document).
   const [resultLibrary, setResultLibrary] = useState<ArtPieceLibrary>('canvas2d');
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -151,17 +157,24 @@ function ArtPieceStudio() {
   const pending = phase === 'pending';
   const sandboxDoc = code ? buildArtPieceSandboxDocument(code, resultLibrary) : null;
 
-  function handleDownload() {
-    if (!sandboxDoc) return;
-    const blob = new Blob([sandboxDoc], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'art-piece.html';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  // Issue #200: a portable multi-file bundle (index.html + styles/ +
+  // scripts/ for Three.js + runtime/ vendoring the CDN library so a
+  // Three.js/A-Frame piece works completely offline after downloading) --
+  // not the live-preview sandbox document, which still carries the
+  // postMessage listener and (for Three.js/A-Frame) a live CDN reference
+  // that only make sense while this page is showing the preview.
+  async function handleDownload() {
+    if (!code) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const blob = await generateArtPieceBundle(resultLibrary, code);
+      triggerArtPieceBundleDownload(blob, 'art-piece.zip');
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : 'Could not build the download.');
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -246,9 +259,19 @@ function ArtPieceStudio() {
             style={{ width: '100%', height: 480, border: '1px solid #ccc' }}
           />
           {phase === 'ready' && (
-            <button type="button" onClick={handleDownload} data-testid="art-piece-download">
-              Download
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={downloading}
+              data-testid="art-piece-download"
+            >
+              {downloading ? 'Preparing download…' : 'Download'}
             </button>
+          )}
+          {downloadError && (
+            <p role="alert" aria-live="assertive" data-testid="art-piece-download-error">
+              {downloadError}
+            </p>
           )}
         </div>
       )}

@@ -5783,7 +5783,7 @@ QA:PASS comment posted; GitHub issue closed as completed.
 Goal: Given a user-chosen library and Mistral model, generate a viable art
 piece in that library with a way to confirm it renders before download.
 
-Status: ACTIVE (Canvas2D slice complete; Three.js/A-Frame/SVG remain)
+Status: ACTIVE (Canvas2D + SVG complete; Three.js/A-Frame remain)
 
 GitHub issue: [#199](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/199)
 
@@ -5792,9 +5792,11 @@ Parent: task 165/#196. Unblocked (task 166/#197 completed).
 Acceptance criteria:
 
 - [x] A prompt strategy per supported library reliably produces runnable
-  output, per #197's chosen architecture. **DONE for Canvas2D** —
-  `ai_provider/art_piece_provider.py`'s system prompt asks for exactly one
-  `<canvas>` + `<script>` pair; **NOT DONE for Three.js/A-Frame/SVG**.
+  output, per #197's chosen architecture. **DONE for Canvas2D and SVG** —
+  `ai_provider/art_piece_provider.py` has a dedicated system prompt per
+  library (Canvas2D: exactly one `<canvas>` + `<script>` pair; SVG: inert
+  markup only, native `<animate>`/CSS animation, no JavaScript at all)
+  and a per-library snippet validator; **NOT DONE for Three.js/A-Frame**.
 - [x] Pre-download sandboxed render/validation check surfaces runtime
   errors (crash, blank output, exceptions) before a piece is downloadable.
   **DONE** — `frontend/src/generative/artPieceSandbox.ts`'s injected
@@ -5814,19 +5816,22 @@ Acceptance criteria:
   `frontend/e2e/injectionArtifacts.spec.ts`'s schema-constrained-output
   assumptions, per the decision recorded in [multi-library generation architecture fork](../.agents/memory/multi-library-generation-architecture-fork.md)
   — not an extension of it.
-- [x] Focused tests: **DONE for Canvas2D** — 14 backend tests (including
-  an `AI_PROVIDER=fake` seam test) + 16 frontend tests (9 sandbox-module,
-  7 component). `make check` full pass: backend 656/22 skipped, frontend
-  1901/130 files.
+- [x] Focused tests: **DONE for Canvas2D and SVG** — 17 backend tests
+  (including an `AI_PROVIDER=fake` seam test and SVG script-tag
+  rejection) + 17 frontend tests (9 sandbox-module, 8 component). `make
+  check` full pass: backend 659/22 skipped, frontend 1902/130 files.
 - [x] Security review: **DONE** — `/security-review` run against the full
-  diff; no high-confidence findings. Sandbox attribute, CSP, srcDoc usage,
-  postMessage trust check, endpoint auth/quota, and `model` field
-  validation all verified clean.
+  diff (Canvas2D slice); no high-confidence findings. Sandbox attribute,
+  CSP, srcDoc usage, postMessage trust check, endpoint auth/quota, and
+  `model` field validation all verified clean. The SVG extension reused
+  the exact same sandboxing path unmodified, so no separate re-review was
+  required — worth a follow-up review once Three.js/A-Frame change the
+  CSP (see next action).
 
 Out of scope: the download/export bundle packaging itself (task 169/#200,
 this slice downloads a single HTML file directly, not a multi-file
 bundle); reproducing the reference bundle's hand-tracking/theremin/audio
-features; Three.js, A-Frame, and SVG (this task's remaining scope).
+features; Three.js and A-Frame (this task's remaining scope).
 
 Evidence (2026-08-28): commits `71b178a` (backend: `ai_provider/art_piece_
 provider.py`, `scenes/art_piece_api.py`, `POST /api/ai/art-pieces/
@@ -5838,12 +5843,22 @@ cleanly; the full authenticated generate/preview/download flow needs a
 running Django backend + personal Mistral credential, this session's
 established verification boundary. QA:PASS comment posted on #199.
 
-Next action: extend `SUPPORTED_LIBRARIES` one library at a time (SVG
-first — simplest, no sandboxed-script execution needed; then Three.js/
-A-Frame, which need pinned CDN script tags inside the sandboxed document
-following `generateHtmlExport.ts`'s p5.js version-pinning precedent), and
-get an authenticated live run (real Mistral credential) before production
-to confirm generation quality beyond what the fake-provider seam proves.
+Evidence (2026-08-28, SVG extension): commit `e135658` adds SVG to
+`SUPPORTED_LIBRARIES` with its own system prompt (inert markup only, no
+JavaScript) and a per-library snippet validator. `artPieceSandbox.ts`
+needed zero changes — confirming the sandboxing design is genuinely
+library-agnostic. 3 new backend tests, 1 new frontend test, `make check`
+full pass (backend 659/22 skipped, frontend 1902/130 files). QA comment
+posted on #199.
+
+Next action: Three.js next — needs a pinned CDN `<script>` inside the
+sandboxed `srcdoc` document (following `generateHtmlExport.ts`'s p5.js
+version-pinning precedent), which is a real change to
+`artPieceSandbox.ts`'s CSP (`script-src` will need to allow that specific
+pinned URL, not only `'unsafe-inline'`) — unlike the SVG extension, this
+warrants a follow-up security review. Then A-Frame. Also still recommend
+an authenticated live run (real Mistral credential) before production to
+confirm generation quality beyond what the fake-provider seam proves.
 
 Dependencies: None blocking. Feeds task 169/#200.
 

@@ -170,8 +170,11 @@ describe('buildScenePlan', () => {
     expect(b.style).toEqual({ fill: '#ffffff', stroke: null, strokeWidth: 64 });
   });
 
-  // Acceptance criterion 5
-  it('orders layers ascending by order, then top-level groups before top-level shapes', () => {
+  // Acceptance criterion 5; issue #194: descending, not ascending, so the
+  // Layers panel's lowest-`order` (topmost-listed) layer draws last/
+  // frontmost, matching that panel's own documented "top of list = on
+  // top" contract -- see this module's "Draw order" doc comment.
+  it('orders layers descending by order, then top-level groups before top-level shapes', () => {
     const scene = baseScene({
       layers: [layer({ id: 'l2', order: 1 }), layer({ id: 'l1', order: 0 })],
       shapes: [
@@ -181,9 +184,9 @@ describe('buildScenePlan', () => {
       groups: [group({ id: 'group-a', layerId: 'l1', childIds: [] })],
     });
     const plan = buildScenePlan(scene);
-    // l1 (order 0) first: its top-level group before its top-level shape;
-    // then l2 (order 1)'s shape.
-    expect(nodeIds(plan.nodes)).toEqual(['group-a', 'shape-a', 'shape-b']);
+    // l2 (order 1) first: its top-level shape; then l1 (order 0)'s top-
+    // level group before its top-level shape.
+    expect(nodeIds(plan.nodes)).toEqual(['shape-b', 'group-a', 'shape-a']);
   });
 
   it('orders top-level groups/shapes by their array order, and group children by childIds order', () => {

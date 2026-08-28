@@ -35,13 +35,18 @@
  *
  * ## Draw order (acceptance criterion 5)
  *
- * Follows the exact rule documented in `../pages/sceneOutline.ts`'s
- * `buildOutline()`: layers in ascending `order`; within a layer,
- * top-level `groups` in array order, then top-level shapes
- * (`groupId === null`) in `shapes` array order; a grouped shape/group
- * draws at its position in the parent's `childIds`. This module
- * reimplements that rule rather than calling `buildOutline` directly
- * because `buildOutline` (via `getEditableShapes`) deliberately excludes
+ * Layers draw in **descending** `order` (issue #194 — the inverse of
+ * `../pages/sceneOutline.ts`'s `buildOutline()`, which lists layers in
+ * ascending `order` top-to-bottom in the panel): the lowest `order`,
+ * shown at the *top* of the Layers panel, must be drawn *last* to be
+ * frontmost, matching that panel's own documented "top of list = drawn
+ * last = on top" contract. Within a layer: top-level `groups` in array
+ * order, then top-level shapes (`groupId === null`) in `shapes` array
+ * order; a grouped shape/group draws at its position in the parent's
+ * `childIds` (this narrower ordering is unchanged by #194 — only the
+ * top-level layer order flipped). This module reimplements
+ * `buildOutline`'s rule rather than calling it directly because
+ * `buildOutline` (via `getEditableShapes`) deliberately excludes
  * `particleEmitter` shapes (out of scope for Task 24) — this renderer
  * must draw all five shape types (acceptance criterion 2).
  */
@@ -433,7 +438,19 @@ export function buildScenePlan(scene: unknown): ScenePlan {
     return { kind: 'group', group, children };
   }
 
-  const sortedLayers = [...layers].sort((a, b) => a.order - b.order);
+  // Issue #194: descending, not ascending, by `order` -- the lowest
+  // `order` (the layer at the *top* of the Layers panel, per
+  // `buildOutline()`'s own ascending iteration) must be drawn *last* to
+  // actually be frontmost, matching the panel's own documented contract
+  // ("top of list = drawn last = on top of everything below it",
+  // `LayersPanel.tsx`). Drawing ascending (the pre-#194 behavior) put the
+  // panel's top layer *behind* everything instead -- moving a layer to
+  // the panel's bottom sent it to the front, the opposite of "send to
+  // back." This is a one-time, deliberate visual-stacking change for any
+  // already-published multi-layer scene (see #194's decision record) --
+  // there is no way to flip the actual bug without changing which end of
+  // the stack a given `order` value renders at.
+  const sortedLayers = [...layers].sort((a, b) => b.order - a.order);
   const nodes: DrawNode[] = [];
   for (const layer of sortedLayers) {
     // Acceptance criterion 6: an invisible layer renders none of its

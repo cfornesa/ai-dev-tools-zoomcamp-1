@@ -371,9 +371,15 @@ test.describe('Layers panel', () => {
     const thirdCircleRow = await shapeRow(page, thirdCircleLabel!);
     await fireLayerDrag(page, thirdCircleRow, rectangle2Row, 0.1); // top zone: "before"
 
+    // Issue #194: the panel-to-z-order mapping inverted (top of panel is
+    // now frontmost, not backmost), which also changes where in the
+    // z-order array this same-container swap's two affected shapes land
+    // -- verified empirically (not re-derived by hand here) that they
+    // still occupy the array's last two slots, now in the *same* relative
+    // order as `zBefore`'s last two rather than the reverse.
     const zAfterDrag = await canvasZOrder(page);
     expect(zAfterDrag).not.toEqual(zBefore);
-    expect(zAfterDrag.slice(-2)).toEqual(zBefore.slice(-2).reverse());
+    expect(zAfterDrag.slice(-2)).toEqual(zBefore.slice(-2));
     await assertNoDuplicateOutlineRows(page);
 
     // Keyboard-only reorder: the existing Selection HUD "Move down" button

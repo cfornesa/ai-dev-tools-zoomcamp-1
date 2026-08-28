@@ -393,19 +393,39 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
         // own geometry (drawn next) sits on top of its position history —
         // see the module doc comment.
         for (const trail of currentTrails) drawTrail(target, trail);
-        let cameraDrawn = false;
-        for (const node of currentPlan.nodes) {
-          if (
-            currentCameraOverlay &&
-            !cameraDrawn &&
-            layerOrderForNode(currentPlan, node) >= currentCameraOverlay.layerOrder
-          ) {
-            drawCameraOverlay(target, currentCameraOverlay);
-            cameraDrawn = true;
+        // Issue #194: `currentPlan.nodes` is now sorted *descending* by
+        // layer `order` (highest first/backmost -- see `sceneDrawPlan.ts`'s
+        // "Draw order" doc comment), the reverse of before. The camera's
+        // own `layerOrder` contract is unchanged and must stay unchanged:
+        // a layer with `order < camera.layerOrder` renders behind the
+        // camera, one with `order >= camera.layerOrder` renders in front
+        // of it. Under the old ascending traversal that boundary was a
+        // single insertion point reached once while walking forward, but
+        // under descending traversal the "in front" group (higher order)
+        // is now visited *first*, before the "behind" group -- the
+        // opposite of the paint order needed. Partition into the two
+        // groups (each preserving its own internal relative order, since
+        // a filtered subsequence of a sorted array stays sorted the same
+        // way) and paint behind-group, then camera, then front-group,
+        // rather than trying to find one insertion point in a single
+        // forward pass.
+        if (currentCameraOverlay) {
+          const overlay = currentCameraOverlay;
+          const behindNodes: DrawNode[] = [];
+          const frontNodes: DrawNode[] = [];
+          for (const node of currentPlan.nodes) {
+            if (layerOrderForNode(currentPlan, node) >= overlay.layerOrder) {
+              frontNodes.push(node);
+            } else {
+              behindNodes.push(node);
+            }
           }
-          drawNode(target, node, 1);
+          for (const node of behindNodes) drawNode(target, node, 1);
+          drawCameraOverlay(target, overlay);
+          for (const node of frontNodes) drawNode(target, node, 1);
+        } else {
+          for (const node of currentPlan.nodes) drawNode(target, node, 1);
         }
-        if (currentCameraOverlay && !cameraDrawn) drawCameraOverlay(target, currentCameraOverlay);
         // Task 39: live particles draw last, on top of everything else —
         // see the module doc comment.
         for (const particle of currentParticles) drawParticle(target, particle);

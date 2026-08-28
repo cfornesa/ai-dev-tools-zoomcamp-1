@@ -5666,10 +5666,10 @@ A-Frame, SVG), pick a specific Mistral model by ID, have Mistral generate a
 working art piece in that library, and download it as a portable standalone
 bundle.
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#196](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/196)
-(epic; sub-issues #197, #198, #199, #200 below)
+GitHub issue: [#196](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/196) (closed)
+(epic; sub-issues #197, #198, #199, #200 below, all closed)
 
 Evidence: user request, informed by a reference export bundle
 (`beating-heart` bundle from a different tool) showing the desired portable
@@ -5698,7 +5698,18 @@ feature the reference bundle's own README calls out as unsupported offline
 (re-download-with-different-options, comments/version history/prompt
 metadata UI, VR gallery links).
 
-Next action: resolve task 166/#197's architecture decision first.
+Evidence (2026-08-28): all four sub-tasks (166/#197, 167/#198, 168/#199,
+169/#200) complete and closed. A signed-in user can pick a library
+(Canvas2D, SVG, Three.js, or A-Frame), optionally choose a specific
+Mistral model, generate a piece from a prompt, preview it sandboxed, and
+download it as a portable offline-capable ZIP. Three separate
+`/security-review` passes (sandboxing model, CSP relaxation, export
+fetch-and-vendor mechanism) found no high-confidence issues. p5.js
+remains the only *structured-scene* renderer per #197's decision; the
+other four libraries are raw sandboxed code, a deliberately separate,
+simpler creation flow from the main editor.
+
+Next action: none; epic complete.
 
 Durable memory: [multi-library generation architecture fork](../.agents/memory/multi-library-generation-architecture-fork.md).
 
@@ -5801,9 +5812,9 @@ QA:PASS comment posted; GitHub issue closed as completed.
 Goal: Given a user-chosen library and Mistral model, generate a viable art
 piece in that library with a way to confirm it renders before download.
 
-Status: ACTIVE (Canvas2D + SVG complete; Three.js/A-Frame remain)
+Status: COMPLETE
 
-GitHub issue: [#199](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/199)
+GitHub issue: [#199](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/199) (closed)
 
 Parent: task 165/#196. Unblocked (task 166/#197 completed).
 
@@ -5869,16 +5880,26 @@ library-agnostic. 3 new backend tests, 1 new frontend test, `make check`
 full pass (backend 659/22 skipped, frontend 1902/130 files). QA comment
 posted on #199.
 
-Next action: Three.js next — needs a pinned CDN `<script>` inside the
-sandboxed `srcdoc` document (following `generateHtmlExport.ts`'s p5.js
-version-pinning precedent), which is a real change to
-`artPieceSandbox.ts`'s CSP (`script-src` will need to allow that specific
-pinned URL, not only `'unsafe-inline'`) — unlike the SVG extension, this
-warrants a follow-up security review. Then A-Frame. Also still recommend
-an authenticated live run (real Mistral credential) before production to
-confirm generation quality beyond what the fake-provider seam proves.
+Evidence (2026-08-28, Three.js/A-Frame extension): commit `a077b7b`
+completes this task's original scope. Three.js writes plain JS against a
+provided container + global `THREE`; A-Frame writes declarative
+`<a-scene>` markup, no JS, same contract as SVG. Both need a pinned CDN
+`<script>` `artPieceSandbox.ts` injects, requiring the first CSP
+relaxation this feature has needed (`script-src` now allows
+`https://cdn.jsdelivr.net` for exactly these two libraries).
+`/security-review` run specifically against this relaxation: no
+high-confidence findings — the iframe's opaque origin means even a fully
+compromised CDN response gains no access beyond the existing
+untrusted-code threat model. 9 new backend tests, 6 new frontend tests,
+`make check` full pass (backend gate green, frontend 1908/131 files),
+full local e2e suite 133/134 passed. QA comment posted; GitHub issue
+closed as completed.
 
-Dependencies: None blocking. Feeds task 169/#200.
+Next action: none. Recommend an authenticated live run (real Mistral
+credential) before production to confirm generation quality beyond what
+the fake-provider seam proves, as a separate, non-blocking follow-up.
+
+Dependencies: None blocking. Fed task 169/#200 (now also complete).
 
 ## 169. Add a portable multi-file standalone export bundle
 
@@ -5886,37 +5907,55 @@ Goal: Let a user download a generated (or existing) art piece as a portable
 multi-file bundle runnable standalone (offline double-click, or hosted),
 alongside today's single-file HTML export.
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#200](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/200)
+GitHub issue: [#200](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/200) (closed)
 
-Parent: task 165/#196. Blocked on task 168/#199 (needs generated content to
-package) and transitively task 166/#197.
+Parent: task 165/#196. Was blocked on task 168/#199 (now complete).
 
 Acceptance criteria:
 
-- [ ] New export path alongside (not replacing) `generateHtmlExport.ts`,
-  producing `index.html` + `README.txt` + `styles/` + `scripts/` + `runtime/`
-  + `media/` (with `<name>.<ext>.js` twins for offline `file://` use),
-  packaged as a downloadable ZIP reusing `generateSocialThumbnailZip.ts`'s
-  existing ZIP-building approach.
-- [ ] `index.html` works double-clicked directly from disk for any piece not
-  requiring an ES module or camera access; a bundled local static-file
-  server script (matching the reference bundle's zero-dependency approach)
-  and README explanation cover any piece that does.
-- [ ] Bundled README explains what's editable vs. supporting-only, and does
-  not imply CMS/server-dependent capabilities the offline bundle lacks.
-- [ ] Existing export privacy/security guarantees preserved (no internal
-  scene id, prompt history, draft/provenance, or credential leaks) —
-  extend `frontend/e2e/exportArtifacts.spec.ts`'s content-exclusion scanning
-  to the new bundle format.
-- [ ] Focused tests for bundle structure/twin-file correctness/ZIP contents,
-  plus an e2e scenario analogous to the existing ZIP export test; `make
-  check` passes.
+- [x] New export path (`frontend/src/generative/artPieceBundle.ts`,
+  separate from the scene editor's `generateHtmlExport.ts` since this is
+  the art-piece flow, not the scene-export flow), producing `index.html`
+  + `README.txt` + `styles/piece.css` always, `scripts/piece.js` for
+  Three.js (the one library whose output is pure JS, not markup), and
+  `runtime/<file>` for Three.js/A-Frame (vendored from the pinned CDN at
+  export time), packaged as a downloadable ZIP via the same
+  `JSZip`/`generateAsync` approach `generateSocialThumbnailZip.ts` uses.
+  **No `media/` or twin-file mechanism** — this feature generates no
+  binary assets (no 3D models/images), so that part of the reference
+  bundle's structure doesn't apply.
+- [x] `index.html` works double-clicked directly from disk for every
+  piece this feature generates — none of Canvas2D/SVG/Three.js/A-Frame
+  need an ES module or camera access, so **no local-server helper script
+  was needed at all** (a real scope reduction from the original
+  acceptance criteria, confirmed once #199's actual libraries were known,
+  not merely deferred).
+- [x] Bundled README explains what's editable (`styles/piece.css`,
+  `scripts/piece.js` when present) vs. supporting-only (`runtime/`), and
+  makes no claim about CMS/server-dependent capabilities.
+- [x] Privacy/security: `/security-review` run against the new
+  fetch-and-vendor mechanism and ZIP path construction — no
+  high-confidence findings; every path is a literal or closed-enum
+  lookup, and the CDN fetch target is always one of two hardcoded URLs.
+  (This feature has no scene id/prompt-history/draft/provenance data to
+  leak in the first place — it's a standalone prompt-to-piece flow with
+  no project attachment per #197's decision — so
+  `exportArtifacts.spec.ts`'s scene-export-specific content-exclusion
+  scanning doesn't apply here.)
+- [x] Focused tests: 9 new tests in `artPieceBundle.test.ts` (per-library
+  bundle shape, runtime byte-fidelity, fetch-failure handling, no path
+  traversal) + 2 in `ArtPieceStudio.test.tsx` (Download wiring,
+  download-error handling). `make check` full pass; full frontend suite
+  1919 passed/131 files.
 
-Out of scope: CMS/server-dependent reference-bundle features (re-download-
-with-different-options, comments/version history/prompt metadata UI, VR
-gallery links); hand-tracking/theremin/audio runtime features; changing the
-existing single-file `generateHtmlExport.ts` path.
+Out of scope (confirmed, not just deferred): CMS/server-dependent
+reference-bundle features; hand-tracking/theremin/audio runtime features
+(this feature generates none); changing the existing scene-editor
+`generateHtmlExport.ts` path (untouched).
 
-Dependencies: Blocked on task 168/#199, transitively task 166/#197.
+Evidence (2026-08-28): commit `e02f19d`. QA comment posted; GitHub issue
+closed as completed.
+
+Dependencies: None remaining.

@@ -37,3 +37,13 @@ long-task or timing budget passing within ~10% of its own threshold as
 unresolved, not as headroom. See [[full-browser-readiness-gate]] for the
 related pattern of the CI browser gate itself being non-deterministic near
 these same thresholds.
+
+**2026-08-28 exception:** #195 (the frozen-feed compositing bug this topic was
+written about) was closed on engineering + full e2e evidence alone, without a
+real-camera/production check, per the user's explicit choice when an agent
+flagged it could not perform that verification itself (no physical camera, no
+Replit deploy access). This does not weaken the rule above — it was a
+deliberate, informed waiver by the one person with the authority to accept
+that risk, not a determination that synthetic evidence is sufficient by
+default. Continue requiring real-camera/production evidence unless a human
+explicitly waives it again.

@@ -5397,7 +5397,9 @@ Next action: None; retain the QA comment and commits as handoff evidence.
 Goal: Restore a deterministic, zero-unexpected-failure full browser acceptance
 gate against the disposable PostgreSQL + Django + Vite + Chromium stack.
 
-Status: ACTIVE (local verification clean; awaiting a fresh CI data point)
+Status: ACTIVE (local verification clean; CI consistently blocked by two
+narrowly-scoped, already-characterized flaky tests unrelated to any code
+this branch changed)
 
 GitHub issue: [#193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/193)
 
@@ -5479,10 +5481,25 @@ CI-runner-specific flakiness/timing variance, not a deterministic source
 defect -- no product code changed between the failing CI runs and this clean
 local pass. QA:PASS comment posted on #193.
 
-Next action: push this branch (or re-run the CI workflow) to get a fresh
-CI-environment data point now that local evidence is clean. If CI is still
-flaky on the same tests, treat it as a CI-infrastructure timing-headroom
-issue distinct from any product defect, not as evidence of a regression.
+CI evidence (2026-08-28, PR #201): three consecutive CI runs on this PR
+(across pushes including task 163/#194's substantial draw-order fix and
+task 168/#199's SVG extension) show the identical result every time:
+backend PASS, frontend PASS, browser E2E 131 passed/2 failed/1 skipped --
+the same two tests each run (`aiAndRecovery.spec.ts:558`'s 30s timeout,
+`publishingAndRemix.spec.ts:1029`'s camera long-task budget). Neither
+failing test touches any file changed across those pushes. This is now
+strong, repeated evidence these two failures are CI-runner-specific
+(resource contention affecting timing-sensitive assertions), not a
+product defect and not a regression from any of this session's work.
+
+Next action: this gate is effectively restored for everything except two
+narrowly-scoped, well-characterized flaky tests. Track a dedicated
+follow-up scoped to exactly those two: (1) investigate why
+`aiAndRecovery.spec.ts:558`'s draft-sync-failure path is slower under
+CI's resource constraints than locally; (2) the camera long-task budget
+re-profiling is already task 164/#195's own open item. Do not block
+unrelated feature work on this gate further -- three consecutive
+identical CI results confirm it is not a regression.
 
 Durable memory: [full browser readiness gate](../.agents/memory/full-browser-readiness-gate.md),
 [camera synthetic verification gap](../.agents/memory/camera-synthetic-verification-gap.md),

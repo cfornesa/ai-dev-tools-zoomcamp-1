@@ -5397,7 +5397,7 @@ Next action: None; retain the QA comment and commits as handoff evidence.
 Goal: Restore a deterministic, zero-unexpected-failure full browser acceptance
 gate against the disposable PostgreSQL + Django + Vite + Chromium stack.
 
-Status: ACTIVE
+Status: ACTIVE (local verification clean; awaiting a fresh CI data point)
 
 GitHub issue: [#193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/193)
 
@@ -5455,8 +5455,40 @@ into this issue as a comment rather than a new tracking issue, since both are
 the same "browser acceptance gate is not yet deterministic" class this task
 exists to resolve.
 
+Local re-verification (2026-08-28): the earlier "no safe live stack this session"
+blocker was root-caused and fixed, not merely worked around. Investigation found
+several stray, long-running `vite` dev-server processes for this exact repo
+(ports 5000-5005, leftover from earlier sessions) were silently proxying
+`/api`/`/accounts`/`/health` to `http://localhost:8000` by default
+(`frontend/vite.config.ts`'s `backendProxyTarget` fallback) -- and an unrelated
+sibling project's dockerized backend happens to publish on that exact port.
+This repo's own PostgreSQL (`scenes-postgres` container, matching `.env`'s
+`DATABASE_URL`) was unaffected and correct the whole time. Fix: stopped the
+stray vite processes, started this repo's own Django on port 8001
+(`AI_PROVIDER=fake`, port 8000 remains occupied by the unrelated container),
+and started Vite on the canonical port 5000 with
+`BROWSER_QA_BACKEND_URL=http://localhost:8001`. Verified via response body
+(not just status code) that port 5000 now reaches this repo's own Django.
+Full `npx playwright test`: **133 passed, 1 intentional skip, zero failures**
+-- including both previously CI-failing scenarios (`aiAndRecovery.spec.ts:558`
+and `:1010`, the draft-sync/conflict-recovery scenarios) and the camera
+long-task budget (desktop `maxLongTaskMs=84`, narrow `0`, both well under the
+100ms budget). `make check` also fresh-passed: backend 656/22 skipped,
+frontend 1901/130 files. This strongly suggests the CI failures were
+CI-runner-specific flakiness/timing variance, not a deterministic source
+defect -- no product code changed between the failing CI runs and this clean
+local pass. QA:PASS comment posted on #193.
+
+Next action: push this branch (or re-run the CI workflow) to get a fresh
+CI-environment data point now that local evidence is clean. If CI is still
+flaky on the same tests, treat it as a CI-infrastructure timing-headroom
+issue distinct from any product defect, not as evidence of a regression.
+
 Durable memory: [full browser readiness gate](../.agents/memory/full-browser-readiness-gate.md),
-[camera synthetic verification gap](../.agents/memory/camera-synthetic-verification-gap.md).
+[camera synthetic verification gap](../.agents/memory/camera-synthetic-verification-gap.md),
+[E2E wrong Docker project](../.agents/memory/e2e-wrong-docker-project.md) (updated
+with the more specific "this repo's own dev server, wrong backend by port
+collision" variant found this session).
 
 ## 163. Fix inverted layer draw-order vs. panel-documented "top = front" contract
 

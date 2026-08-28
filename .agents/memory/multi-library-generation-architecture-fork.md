@@ -1,6 +1,6 @@
 ---
 name: multi-library-generation-architecture-fork
-description: Multi-library AI art generation (Canvas2D/Three.js/A-Frame/SVG beyond p5.js) forces a choice between extending the structured scene-JSON model or generating raw sandboxed code; this choice gates issues #199 and #200.
+description: DECIDED (issue #197) — non-p5.js libraries (Canvas2D/Three.js/A-Frame/SVG) generate raw sandboxed code via a separate, simpler creation flow; p5.js's structured editor is unchanged. Gates issues #199 and #200.
 metadata:
   type: project
 ---
@@ -28,7 +28,24 @@ downloadable bundle format) depends entirely on which path is chosen — the
 validation and security work for a schema-constrained path and a raw-code
 path are not interchangeable.
 
-**How to apply:** Do not start #199 or #200 until #197's decision is recorded.
-If a raw-code path is chosen, treat it as a new trust boundary requiring its
-own security review before shipping, not an extension of the existing
-schema-validated AI-edit trust model.
+**Decision (2026-08-28, issue #197):** Hybrid. p5.js keeps its existing
+structured scene-JSON model, editor UX (Layers, undo/redo, direct
+manipulation, AI edit-patch), and injection-safety model exactly as today —
+no regression risk. Canvas2D (native browser API, not a third-party
+library — this resolves the original request's ambiguous "C2.js" wording),
+Three.js, A-Frame, and SVG are raw AI-generated code with **no** structured
+scene-JSON backing, reached through a new, separate, deliberately
+non-parity creation flow (pick library + Mistral model, prompt, sandboxed
+preview, download) — not an attempt to extend the existing editor to those
+libraries.
+
+**How to apply:** #199's generation/validation pipeline and #200's export
+bundle must treat every non-p5.js generated piece as a new, fully untrusted
+trust boundary: render it only inside a sandboxed iframe with a
+restrictive CSP, with no access to this app's own cookies/session/`/api`
+surface, both in the live preview and in the final downloaded bundle. Do
+not reuse or extend `frontend/e2e/injectionArtifacts.spec.ts`'s
+schema-constrained-output assumptions for this path — write a new,
+sandboxing-focused threat model instead. Do not add Layers-panel/undo-redo/
+direct-manipulation/AI-edit-patch scope to the new creation flow without a
+separate issue; it is intentionally simpler than the p5.js editor.

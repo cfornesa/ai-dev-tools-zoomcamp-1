@@ -5658,28 +5658,41 @@ Goal: Make an explicit, documented decision for how this app supports
 Canvas2D/Three.js/A-Frame/SVG beyond p5.js, before any generation or export
 work depends on it.
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#197](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/197)
+GitHub issue: [#197](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/197) (closed)
 
-Parent: task 165/#196. Blocks task 168/#199 and task 169/#200.
+Parent: task 165/#196. Blocks task 168/#199 and task 169/#200 — now unblocked.
 
 Acceptance criteria:
 
-- [ ] Written decision choosing (a) extend the structured scene-JSON model
-  per library with new adapters, (b) generate raw sandboxed code per library
-  with no structured backing, or (c) a hybrid (p5.js keeps the structured
-  editor UX; every other library is a separate raw-code creation flow) — with
-  rationale and security implications for any raw-code path made explicit.
-- [ ] Resolve the "C2.js" ambiguity from the original request (a specific
-  third-party Canvas2D library, or shorthand for the native Canvas2D API).
-- [ ] Explicit statement of what changes in the existing editor UX (Layers
-  panel, undo/redo, direct manipulation, AI edit-patch flow) for non-p5.js
-  pieces.
-- [ ] Decision recorded as a durable memory topic (see below) since it gates
-  two dependent issues.
+- [x] Written decision: **(c) hybrid**. p5.js keeps its existing structured
+  scene-JSON model, editor UX, and injection-safety model unchanged.
+  Canvas2D, Three.js, A-Frame, and SVG generate raw code with no structured
+  scene-JSON backing, through a new, separate, deliberately non-parity
+  creation flow. Rationale: per-library structured adapters for four
+  incompatible authoring models (DOM entity-component, imperative scene
+  graph, declarative markup, immediate-mode canvas) would be effort
+  disproportionate to the actual ask, and a schema would unnecessarily
+  constrain AI-generated creativity. Security implication: every generated
+  non-p5.js piece is a new, fully untrusted trust boundary — sandboxed
+  iframe, restrictive CSP, no access to this app's cookies/session/`/api`
+  surface, in both live preview and the downloaded bundle; this app's
+  existing schema-constrained injection-safety model does not extend to
+  this path and a new sandboxing-focused threat model is required instead.
+- [x] "C2.js" resolved as shorthand for the native browser Canvas2D API
+  (`CanvasRenderingContext2D`), not a third-party library — keeps
+  AGENTS.md's "no new dependency without asking" rule satisfied by
+  construction for this library.
+- [x] Editor UX impact stated: no change to the p5.js editor. Non-p5.js
+  libraries get no Layers panel, undo/redo, direct manipulation, or AI
+  edit-patch flow — only fresh generation/regeneration in the new flow.
+- [x] Decision recorded in the durable memory topic below.
 
 Dependencies: None blocking; independent of task 167/#198.
+
+Evidence (2026-08-28): Decision posted as a PM comment on #197 and recorded
+in the linked memory topic; issue closed as completed.
 
 Durable memory: [multi-library generation architecture fork](../.agents/memory/multi-library-generation-architecture-fork.md).
 

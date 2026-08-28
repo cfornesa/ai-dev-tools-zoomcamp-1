@@ -5607,16 +5607,21 @@ Acceptance criteria:
   `getCameraOverlay()` mirrors the editor's, reading the same shared
   geometry/opacity/mirrored/layer-order stores; `<video>` is now
   `visibility: hidden` and used only as the frame source.
-- [ ] Verify the public viewer's overlay is genuinely live (frame-over-frame
-  updates), with both a real camera and the existing synthetic seam.
-  **BLOCKED (verification boundary)** — the real e2e run of
-  `e2e/publishingAndRemix.spec.ts` needs this repo's own disposable
-  PostgreSQL + Django + Vite stack; this session's local Docker inventory
-  only had a same-named *sibling* project's unrelated Compose stack
-  running (see `.agents/memory/e2e-wrong-docker-project.md`), so the run
-  was not attempted rather than risk testing the wrong app. All
-  locally-available gates (unit tests, typecheck, lint, format, build,
-  `playwright test --list`) pass — see #195's QA comment.
+- [x] Verify the public viewer's overlay is genuinely live (frame-over-frame
+  updates), with the existing synthetic seam. **DONE for the synthetic
+  seam** — task 162/#193's session root-caused and fixed the earlier
+  "no safe live stack" block (stray dev servers proxying to an unrelated
+  sibling project's backend by port coincidence) and ran the full
+  `npx playwright test` against this repo's own correctly-configured
+  stack: `publishingAndRemix.spec.ts:951` (camera overlay video/opacity/
+  mirror) and `:1029` (10-second synthetic camera diagnostics) both
+  passed cleanly, the latter with real margin (desktop
+  `maxLongTaskMs=84`, narrow `0`). **Still open**: a real camera against
+  the actual production deployment, per this task's own "real-camera or
+  production-path verification" requirement below and
+  [camera synthetic verification gap](../.agents/memory/camera-synthetic-verification-gap.md)'s
+  standing rule not to close this class of issue on synthetic evidence
+  alone, however clean.
 - [ ] Re-profile and fix the long-task budget so it passes with real
   headroom, not a ~94-100ms margin; do not close on synthetic-seam evidence
   alone — record real-camera or production-path verification. **NOT
@@ -5635,11 +5640,10 @@ Acceptance criteria:
 
 Dependencies: None; related to task 162/#193 (shared CI long-task evidence).
 
-Next action: run the full `e2e/publishingAndRemix.spec.ts` suite against
-this repo's own disposable stack (not a same-named sibling project's
-containers) to confirm the compositing fix holds under real Chromium, then
-re-profile and fix the long-task budget before considering this task
-closeable.
+Next action: re-profile and fix the long-task budget so it passes with
+real headroom (still not started — the recent 84ms/0ms margin is a good
+sign but not itself a fix), and get a real-camera or production-path
+verification before considering this task closeable.
 
 ## 165. Epic: multi-library AI art generation with user-selectable Mistral model and downloadable standalone export
 

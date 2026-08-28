@@ -139,6 +139,7 @@ beforeEach(() => {
     clearDraft: vi.fn(() => Promise.resolve()),
     readDraft: vi.fn().mockResolvedValue(null),
     getLastFailure: vi.fn().mockReturnValue(null),
+    onFailureChange: vi.fn(() => () => {}),
   });
   discard = vi.fn(() => Promise.resolve());
   recover = vi.fn(() => RECOVERED_SCENE);

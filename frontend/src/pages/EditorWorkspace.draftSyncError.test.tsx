@@ -117,6 +117,7 @@ beforeEach(() => {
     clearDraft: vi.fn(() => Promise.resolve()),
     readDraft: vi.fn().mockResolvedValue(null),
     getLastFailure: getAutosaveFailure,
+    onFailureChange: vi.fn(() => () => {}),
   });
 
   getSyncFailure = vi.fn().mockReturnValue(null);
@@ -125,6 +126,7 @@ beforeEach(() => {
     deleteServerDraft: vi.fn(() => Promise.resolve()),
     getLastFailure: getSyncFailure,
     getLastSyncedAt: vi.fn().mockReturnValue(null),
+    onFailureChange: vi.fn(() => () => {}),
   });
 });
 

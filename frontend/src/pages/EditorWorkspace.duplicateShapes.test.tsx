@@ -241,6 +241,7 @@ beforeEach(() => {
     clearDraft: vi.fn(() => Promise.resolve()),
     readDraft: vi.fn().mockResolvedValue(null),
     getLastFailure: vi.fn().mockReturnValue(null),
+    onFailureChange: vi.fn(() => () => {}),
   });
   mockedUseDraftRecovery.mockReturnValue({
     status: 'none',

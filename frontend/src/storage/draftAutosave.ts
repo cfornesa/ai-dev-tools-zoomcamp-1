@@ -314,6 +314,7 @@ export class DraftAutosaveController {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private lastFailure: DraftAutosaveFailure | null = null;
   private lastWrite: DraftRecord | null = null;
+  private readonly failureListeners = new Set<() => void>();
   // Issue #125: mirrors `DraftServerSyncController`'s "no unsaved changes"
   // baseline — see `markClean()`'s own doc comment below.
   private cleanBaselineSet = false;
@@ -401,10 +402,10 @@ export class DraftAutosaveController {
     // superseded), and the failure is reported through the same
     // `getLastFailure()` channel every other rejection here already uses.
     if (!validateScene(current).valid) {
-      this.lastFailure = {
+      this.setLastFailure({
         kind: 'corrupt-data',
         message: 'This scene failed validation and was not saved locally.',
-      };
+      });
       return;
     }
     try {
@@ -419,11 +420,26 @@ export class DraftAutosaveController {
       };
       await putDraftRecord(db, record);
       if (localSeq !== this.seq) return; // a newer write already won; don't report this as the latest
-      this.lastFailure = null;
+      this.setLastFailure(null);
       this.lastWrite = record;
     } catch (err) {
-      this.lastFailure = classifyFailure(err);
+      this.setLastFailure(classifyFailure(err));
     }
+  }
+
+  /** Mirrors `DraftServerSyncController.setLastFailure`'s doc comment: lets
+   * `EditorWorkspace.tsx`'s failure notice react immediately instead of
+   * polling on a real timer that could race a fake-clock-driven e2e test. */
+  private setLastFailure(value: DraftAutosaveFailure | null): void {
+    this.lastFailure = value;
+    for (const listener of this.failureListeners) listener();
+  }
+
+  /** Subscribes to every `lastFailure` change; returns an unsubscribe
+   * function. */
+  onFailureChange(listener: () => void): () => void {
+    this.failureListeners.add(listener);
+    return () => this.failureListeners.delete(listener);
   }
 
   /** Cancels any pending debounced write without touching persisted data.
@@ -445,7 +461,7 @@ export class DraftAutosaveController {
       await deleteDraftRecord(db, projectId);
       if (this.lastWrite?.projectId === projectId) this.lastWrite = null;
     } catch (err) {
-      this.lastFailure = classifyFailure(err);
+      this.setLastFailure(classifyFailure(err));
     }
   }
 
@@ -454,7 +470,7 @@ export class DraftAutosaveController {
       const db = await this.getDb();
       return await getDraftRecord(db, projectId);
     } catch (err) {
-      this.lastFailure = classifyFailure(err);
+      this.setLastFailure(classifyFailure(err));
       return null;
     }
   }

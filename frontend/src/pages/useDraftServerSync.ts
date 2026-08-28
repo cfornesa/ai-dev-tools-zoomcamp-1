@@ -125,5 +125,7 @@ export function useDraftServerSync(
     },
     getLastFailure: () => controllerRef.current?.getLastFailure() ?? null,
     getLastSyncedAt: () => controllerRef.current?.getLastSyncedAt() ?? null,
+    onFailureChange: (listener: () => void): (() => void) =>
+      controllerRef.current?.onFailureChange(listener) ?? (() => {}),
   };
 }

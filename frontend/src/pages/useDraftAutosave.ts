@@ -145,5 +145,7 @@ export function useDraftAutosave(
         ? (controllerRef.current?.readDraft(projectId) ?? Promise.resolve(null))
         : Promise.resolve(null),
     getLastFailure: () => controllerRef.current?.getLastFailure() ?? null,
+    onFailureChange: (listener: () => void): (() => void) =>
+      controllerRef.current?.onFailureChange(listener) ?? (() => {}),
   };
 }

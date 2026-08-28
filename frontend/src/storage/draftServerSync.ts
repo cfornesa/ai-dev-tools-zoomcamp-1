@@ -119,6 +119,7 @@ export class DraftServerSyncController {
   private highestSeenSeq = 0;
   private lastFailure: DraftServerSyncFailure | null = null;
   private lastSyncedAt: string | null = null;
+  private readonly failureListeners = new Set<() => void>();
   private syncAttempts = 0;
   // Issue #125: "no unsaved changes" baseline set by `markClean()` — see
   // that method's own doc comment for the full rationale. `cleanBaselineSet`
@@ -292,7 +293,7 @@ export class DraftServerSyncController {
     this.highestSeenSeq = localSeq;
     if (response.applied) {
       this.lastSyncedAt = response.last_autosaved_at;
-      this.lastFailure = null;
+      this.setLastFailure(null);
     }
     // response.applied === false: the server already had a newer draft
     // (e.g. this request lost a race with another sync for the same
@@ -302,7 +303,27 @@ export class DraftServerSyncController {
   private applyFailure(localSeq: number, err: unknown): void {
     if (this.isStale(localSeq)) return;
     this.highestSeenSeq = localSeq;
-    this.lastFailure = classifyFailure(err);
+    this.setLastFailure(classifyFailure(err));
+  }
+
+  /** Issue #112 follow-up: `EditorWorkspace.tsx`'s failure notice originally
+   * read `getLastFailure()` on a 3s `setInterval` poll — a real timer
+   * established at component mount, which made the notice's e2e coverage
+   * race against real wall-clock time (see
+   * `frontend/e2e/aiAndRecovery.spec.ts`'s "a failing server draft sync"
+   * test, which still flaked under CI load even with a 30s budget). This
+   * setter notifies subscribers synchronously whenever the failure state
+   * actually changes, so callers can react immediately instead of polling. */
+  private setLastFailure(value: DraftServerSyncFailure | null): void {
+    this.lastFailure = value;
+    for (const listener of this.failureListeners) listener();
+  }
+
+  /** Subscribes to every `lastFailure` change (including clearing back to
+   * `null` on a subsequent success); returns an unsubscribe function. */
+  onFailureChange(listener: () => void): () => void {
+    this.failureListeners.add(listener);
+    return () => this.failureListeners.delete(listener);
   }
 
   /**
@@ -319,7 +340,7 @@ export class DraftServerSyncController {
    * command reclaims it, per this controller's periodic-sync gate.
    */
   reportDeleteFailure(err: unknown): void {
-    this.lastFailure = classifyFailure(err);
+    this.setLastFailure(classifyFailure(err));
   }
 
   getLastFailure(): DraftServerSyncFailure | null {

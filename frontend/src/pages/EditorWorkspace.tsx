@@ -1345,11 +1345,21 @@ function EditorWorkspace() {
   // and record autosave/sync failures via `getLastFailure()`, but nothing
   // read that back into the UI — a failed local or server draft write
   // failed completely silently, which is indistinguishable from "nothing
-  // happened yet" to the person editing. Poll both controllers' recorded
-  // failure (cheap in-memory reads, no network) while a project is loaded
-  // and surface the most recent one as a non-blocking, actionable status
-  // message next to the save status — the editor stays on the same route
-  // and the working copy is untouched either way.
+  // happened yet" to the person editing. Surface the most recent failure
+  // as a non-blocking, actionable status message next to the save status —
+  // the editor stays on the same route and the working copy is untouched
+  // either way.
+  //
+  // This previously re-read both controllers on a 3s `setInterval`, which
+  // made the notice's own e2e coverage race real wall-clock time against
+  // a fake-clock-driven test (a timer established at mount, before the
+  // test's `page.clock.install()`, never gets virtualized — see
+  // `frontend/e2e/aiAndRecovery.spec.ts`'s "a failing server draft sync"
+  // test, which still flaked under CI load even with a 30s budget).
+  // `onFailureChange` (`draftServerSync.ts`/`draftAutosave.ts`) notifies
+  // synchronously the moment a failure is recorded or cleared, so this
+  // reacts immediately instead of polling — no timer to race, and real
+  // users see the notice without a several-second lag.
   const [draftFailureNotice, setDraftFailureNotice] = useState<string | null>(null);
   useEffect(() => {
     if (!id) {
@@ -1367,8 +1377,12 @@ function EditorWorkspace() {
       );
     }
     pollFailures();
-    const intervalId = window.setInterval(pollFailures, 3000);
-    return () => window.clearInterval(intervalId);
+    const unsubscribeAutosave = draftAutosave.onFailureChange(pollFailures);
+    const unsubscribeSync = draftServerSync.onFailureChange(pollFailures);
+    return () => {
+      unsubscribeAutosave();
+      unsubscribeSync();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

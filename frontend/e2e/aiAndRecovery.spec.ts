@@ -581,21 +581,11 @@ test.describe('Local and server draft autosave', () => {
     ]);
     expect(syncResponse.status()).toBe(503);
 
-    // The notice is on a 3s poll (`EditorWorkspace.tsx`'s `pollFailures`
-    // interval) -- and that interval is a real `window.setInterval`
-    // established at component mount, *before* this test's
-    // `page.clock.install()` call earlier ran. Playwright's Clock API
-    // (like the sinon fake-timers it's built on) only virtualizes timers
-    // scheduled *after* installation; a real timer already running keeps
-    // ticking on real wall-clock time regardless of `fastForward`, which
-    // is therefore a no-op for this specific interval (kept below only
-    // because it doesn't hurt, not because it does anything). The notice
-    // becomes visible whenever that real interval's own cadence next
-    // fires -- up to a real 3s away depending on its current phase, plus
-    // whatever margin a loaded CI runner needs on top. Give this a
-    // generous real-time budget instead of relying on the default 5s.
-    await page.clock.fastForward(3_000);
-    await expect(page.getByTestId('draft-sync-error')).toBeVisible({ timeout: 10_000 });
+    // `EditorWorkspace.tsx`'s failure notice reacts to
+    // `DraftServerSyncController.onFailureChange` synchronously (no polling
+    // interval to race against a fake clock) -- the notice should already
+    // be visible as soon as the 503 response above resolves.
+    await expect(page.getByTestId('draft-sync-error')).toBeVisible();
 
     // Still the same editor route, and the unsaved shape is still there —
     // a failed background sync never navigates away or drops working state.

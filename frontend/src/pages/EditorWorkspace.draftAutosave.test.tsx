@@ -111,6 +111,7 @@ beforeEach(() => {
     clearDraft,
     readDraft: vi.fn().mockResolvedValue(null),
     getLastFailure: vi.fn().mockReturnValue(null),
+    onFailureChange: vi.fn(() => () => {}),
   });
 });
 

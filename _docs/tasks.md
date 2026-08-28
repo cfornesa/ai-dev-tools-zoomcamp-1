@@ -5751,35 +5751,69 @@ QA:PASS comment posted; GitHub issue closed as completed.
 Goal: Given a user-chosen library and Mistral model, generate a viable art
 piece in that library with a way to confirm it renders before download.
 
-Status: PROPOSED
+Status: ACTIVE (Canvas2D slice complete; Three.js/A-Frame/SVG remain)
 
 GitHub issue: [#199](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/199)
 
-Parent: task 165/#196. Blocked on task 166/#197.
+Parent: task 165/#196. Unblocked (task 166/#197 completed).
 
-Acceptance criteria (to be finalized once #197 lands; drafted for scoping):
+Acceptance criteria:
 
-- [ ] A prompt strategy per supported library reliably produces runnable
-  output, per #197's chosen architecture.
-- [ ] Pre-download sandboxed render/validation check surfaces runtime
-  errors (crash, blank output, exceptions) before a piece is downloadable,
-  analogous to the public viewer's existing `previewError` handling but
-  applied pre-download.
-- [ ] A failed validation surfaces a clear error and produces no downloadable
-  artifact; retry is available, consistent with existing AI proposal
-  accept/reject/retry conventions.
-- [ ] If a raw-code path is chosen by #197: an explicit sandboxing boundary
-  (restrictive-CSP sandboxed iframe, no access to this app's own session/API
-  surface) extending this app's existing injection-audit threat model
-  (`frontend/e2e/injectionArtifacts.spec.ts`).
-- [ ] Focused tests per library via a deterministic fake/seam provider,
-  consistent with `ai_provider/e2e_provider.py`'s convention; `make check`
-  and relevant e2e suites pass.
+- [x] A prompt strategy per supported library reliably produces runnable
+  output, per #197's chosen architecture. **DONE for Canvas2D** —
+  `ai_provider/art_piece_provider.py`'s system prompt asks for exactly one
+  `<canvas>` + `<script>` pair; **NOT DONE for Three.js/A-Frame/SVG**.
+- [x] Pre-download sandboxed render/validation check surfaces runtime
+  errors (crash, blank output, exceptions) before a piece is downloadable.
+  **DONE** — `frontend/src/generative/artPieceSandbox.ts`'s injected
+  ready/error listener reports via `postMessage`; Download is gated on a
+  `ready` message in `ArtPieceStudio.tsx`.
+- [x] A failed validation surfaces a clear error and produces no downloadable
+  artifact; retry is available. **DONE** — a `crashed` phase shows the
+  sandbox's reported error with no Download button; the form remains
+  usable to retry.
+- [x] An explicit sandboxing boundary: **DONE** — `<iframe
+  sandbox="allow-scripts">` (never `allow-same-origin`, pinned by a test),
+  a `default-src 'none'` CSP injected by this app's own code (never
+  derived from AI output), and a `postMessage` trust check on
+  `event.source === iframe.contentWindow` (object identity, since
+  `event.origin` is always `"null"` for this opaque-origin iframe). This
+  is a genuinely new, separate threat model from
+  `frontend/e2e/injectionArtifacts.spec.ts`'s schema-constrained-output
+  assumptions, per the decision recorded in [multi-library generation architecture fork](../.agents/memory/multi-library-generation-architecture-fork.md)
+  — not an extension of it.
+- [x] Focused tests: **DONE for Canvas2D** — 14 backend tests (including
+  an `AI_PROVIDER=fake` seam test) + 16 frontend tests (9 sandbox-module,
+  7 component). `make check` full pass: backend 656/22 skipped, frontend
+  1901/130 files.
+- [x] Security review: **DONE** — `/security-review` run against the full
+  diff; no high-confidence findings. Sandbox attribute, CSP, srcDoc usage,
+  postMessage trust check, endpoint auth/quota, and `model` field
+  validation all verified clean.
 
-Out of scope: the download/export bundle packaging itself (task 169/#200);
-reproducing the reference bundle's hand-tracking/theremin/audio features.
+Out of scope: the download/export bundle packaging itself (task 169/#200,
+this slice downloads a single HTML file directly, not a multi-file
+bundle); reproducing the reference bundle's hand-tracking/theremin/audio
+features; Three.js, A-Frame, and SVG (this task's remaining scope).
 
-Dependencies: Blocked on task 166/#197. Feeds task 169/#200.
+Evidence (2026-08-28): commits `71b178a` (backend: `ai_provider/art_piece_
+provider.py`, `scenes/art_piece_api.py`, `POST /api/ai/art-pieces/
+generate/`) and `6fea086` (frontend: `frontend/src/generative/
+artPieceSandbox.ts`, `frontend/src/pages/ArtPieceStudio.tsx`, new
+`/art-pieces` route, not yet linked from nav). Live browser smoke check
+(Vite dev server only) confirmed the route resolves and lazy-loads
+cleanly; the full authenticated generate/preview/download flow needs a
+running Django backend + personal Mistral credential, this session's
+established verification boundary. QA:PASS comment posted on #199.
+
+Next action: extend `SUPPORTED_LIBRARIES` one library at a time (SVG
+first — simplest, no sandboxed-script execution needed; then Three.js/
+A-Frame, which need pinned CDN script tags inside the sandboxed document
+following `generateHtmlExport.ts`'s p5.js version-pinning precedent), and
+get an authenticated live run (real Mistral credential) before production
+to confirm generation quality beyond what the fake-provider seam proves.
+
+Dependencies: None blocking. Feeds task 169/#200.
 
 ## 169. Add a portable multi-file standalone export bundle
 

@@ -5496,7 +5496,7 @@ Goal: Moving a layer/shape to the bottom of the Layers panel must make it
 render behind every other layer, and moving it to the top must make it render
 in front — matching the panel's own documented contract, not the opposite.
 
-Status: ACTIVE (split; isLast edge case COMPLETE, front/back semantics BLOCKED)
+Status: COMPLETE
 
 GitHub issue: [#194](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/194)
 
@@ -5519,51 +5519,48 @@ enabled but a no-op.
 
 Acceptance criteria:
 
-- [ ] Reverse either the render iteration order or the outline row order (not
-  both) so draw order actually matches the panel's documented top/bottom-to-
-  front/back contract; document whichever direction is chosen and confirm it
-  doesn't require a data migration for existing published scenes' `order`
-  values, or perform that migration if it does.
-- [ ] Verify with a real multi-layer scene that moving to the literal top/
+- [x] Reverse the render iteration order so draw order actually matches the
+  panel's documented top/bottom-to-front/back contract. **DONE** — commit
+  `f58b043`: `sceneDrawPlan.ts` now draws layers descending by `order`
+  (was ascending). User's explicit decision (of three options groomed):
+  accept this as a one-time, deliberate visual-stacking change for
+  already-published multi-layer scenes, no migration — there is no way
+  to fix the panel/render mismatch without changing which end of the
+  stack a given `order` value renders at.
+- [x] Verify with a real multi-layer scene that moving to the literal top/
   bottom of the panel produces the correct front/back visual result.
+  **DONE** — full local `npx playwright test`, 133 passed/1 skipped/zero
+  failures, including `e2e/layersPanel.spec.ts`'s drag-and-drop/keyboard-
+  reorder/canvas-z-order/reload-persistence test end to end.
 - [x] Fix the `isLast`/`isFirst` edge case for multiple top-level shapes
   sharing one layer in the same pass. **DONE** — commit `b4b9382`:
   `buildOutline()` now derives a top-level shape's `isFirst`/`isLast` from
   its layer's own position among all layers, never the shape's position
   within `topShapes`. Regression tests added in `sceneOutline.test.ts`
-  (shared-boundary-layer and shared-non-boundary-layer cases). Verified:
-  focused suite 82/82, full frontend suite 128 files/1882 tests, `make
-  check` full pass (backend 636/22 skipped, frontend 1882, lint/format/
-  typecheck/build green). QA comment posted on #194.
-- [ ] Add a regression test asserting panel order matches draw order end to
-  end. **BLOCKED** — see below.
-- [ ] `make check` and the frontend focused Layers/outline/render suites
-  pass. **DONE for the isLast fix above**; still required once the
-  front/back item below is resolved and implemented.
+  (shared-boundary-layer and shared-non-boundary-layer cases).
+- [x] Add a regression test asserting panel order matches draw order end to
+  end. **DONE** — `e2e/layersPanel.spec.ts`'s existing canvas-z-order
+  assertions now correctly verify the fixed panel/render relationship
+  (updated with evidence, not just re-asserted to whatever now passes);
+  `sceneDrawPlan.test.ts` asserts the descending draw order directly.
+- [x] `make check` and the frontend focused Layers/outline/render suites
+  pass. **DONE** — full frontend suite 130 files/1902 tests, `make check`
+  full pass, plus the full local e2e suite (133/134, 1 intentional skip).
 
-Front/back semantic-inversion item is now split out and blocked pending a
-product decision: `buildOutline()`'s row order is also consumed as the
-authoritative draw order by `EditorWorkspace.tsx`'s `shapesInDrawOrder`
-(selection/hover overlay) and by `sceneDrawPlan.ts`'s `buildScenePlan()`
-(the doc comment there states it "follows the exact rule documented in
-`buildOutline()`"). Reversing render order to fix the panel's stated
-contract would invert visual front/back stacking for every existing
-published multi-layer/multi-shape scene with no migration path; reversing
-only the panel's display order requires coordinated changes to
-`moveLayer`/`moveItem` direction semantics and all of `LayersPanel.tsx`'s
-drag-and-drop position math (`computeSteps`, `planDrop`,
-`isFirst`/`isLast` button-disable mapping) to stay internally consistent.
-Full analysis posted as a QA/grooming comment on #194. Decide between:
-(a) accept the render-order flip as a one-time visual change (and decide
-whether existing scenes need an `order`-preserving migration), (b) keep
-render order unchanged and correct only the panel's display order +
-button/drag semantics (larger, self-contained frontend change, no effect
-on already-rendered art), or (c) the "bug" is only the documented hint
-text being wrong, and no behavior change is needed at all.
+Cascading fixes required to preserve existing external contracts under the
+new render order (see commit `f58b043` and its QA comment on #194 for full
+detail): `p5Adapter.ts`'s camera-overlay compositing (partitions nodes into
+behind/front groups instead of a single forward-pass insertion point,
+preserving the camera's `layerOrder` contract with zero UI/default-position
+changes — all 41 existing camera-compositing tests passed unmodified) and
+`EditorWorkspace.tsx`'s `shapesInDrawOrder` (reverses `buildOutline`'s
+per-layer chunks, not the whole row list, since intra-layer group/shape
+ordering is unchanged).
 
-Dependencies: None for the completed isLast fix. The front/back item
-depends on an explicit product decision before implementation, the same
-pattern as task 166/#197.
+Dependencies: None.
+
+Evidence (2026-08-28): commit `f58b043`. Pushed to draft PR #201 for a CI
+data point (task 162/#193's shared verification).
 
 Next action: implement the draw-order fix and the isLast fix together, then
 verify against a real multi-layer scene before closing.

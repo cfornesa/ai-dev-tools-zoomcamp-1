@@ -72,3 +72,14 @@ check whether an existing "synthetic" test seam stubs out the very component
 whose performance is in question — if so, its passing measurements are not
 evidence of anything about that component, no matter how many times they
 pass.
+
+**2026-08-28 partial fix, issue kept open:** commit `47ec6b2` added a
+GPU→CPU delegate fallback (`frontend/src/tracking/mediapipeProvider.ts`) for
+the case where GPU delegate *creation* throws outright — the only part of
+the identified root cause fixable without the real (non-seam) profiling
+harness described above. The seam's `make browser-qa` run stayed green
+(24/24, no regression), but per this topic's rule that evidence does not
+prove anything about real inference cost, since the seam still stubs
+`recognizeForVideo`. #192 was **not** closed on this evidence — see its
+2026-08-28 engineering comment. A GPU delegate that creates successfully but
+runs inference slowly is still unaddressed and unmeasured.

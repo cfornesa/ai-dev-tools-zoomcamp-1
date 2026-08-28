@@ -55,7 +55,17 @@ cleanup() {
   if [[ -n "$django_pid" ]] && kill -0 "$django_pid" 2>/dev/null; then
     kill "$django_pid" 2>/dev/null || true
   fi
-  wait 2>/dev/null || true
+  # Deliberately no unconditional `wait` here. This trap can also fire
+  # mid-loop on an incoming INT/TERM signal (e.g. an autoscale instance
+  # being stopped) -- the main flow below has its own explicit
+  # `wait "$django_pid"`/`wait "$frontend_pid"` calls to collect exit
+  # status, and a bare `wait` here would race those: reaping a pid here
+  # first makes the main flow's own explicit `wait` on the same pid fail
+  # with "not a child of this shell" (bash returns 127 for that), which
+  # was observed in production as a spurious "Startup process exited with
+  # status 127" on ordinary autoscale stop/restart, not a real crash. The
+  # process is exiting either way; the kernel reaps any remaining zombie
+  # children once this shell exits, without needing an explicit wait here.
 }
 trap cleanup EXIT INT TERM
 

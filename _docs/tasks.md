@@ -5542,7 +5542,7 @@ Goal: The camera overlay on the public `/p/<id>` viewer must render a
 genuinely live, low-latency feed with a real camera, using the same
 p5-integrated compositing model already implemented in the editor.
 
-Status: PROPOSED
+Status: ACTIVE (compositing fix implemented; long-task budget still open)
 
 GitHub issue: [#195](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/195)
 (cross-referenced: #192, closed; #193, task 162, open)
@@ -5568,23 +5568,46 @@ for why closing on synthetic-only evidence let this regress unnoticed.
 
 Acceptance criteria:
 
-- [ ] Port the editor's camera-compositing model to `PublicProjectViewer.tsx`:
+- [x] Port the editor's camera-compositing model to `PublicProjectViewer.tsx`:
   hide the raw `<video>` element, draw the live camera frame inside the p5
   canvas at the correct layer order, and pass `transparentBackground: true`
-  plus a live `cameraOverlay` into `render()`.
+  plus a live `cameraOverlay` into `render()`. **DONE** — commit `2bbbb69`.
+  `getCameraOverlay()` mirrors the editor's, reading the same shared
+  geometry/opacity/mirrored/layer-order stores; `<video>` is now
+  `visibility: hidden` and used only as the frame source.
 - [ ] Verify the public viewer's overlay is genuinely live (frame-over-frame
   updates), with both a real camera and the existing synthetic seam.
+  **BLOCKED (verification boundary)** — the real e2e run of
+  `e2e/publishingAndRemix.spec.ts` needs this repo's own disposable
+  PostgreSQL + Django + Vite stack; this session's local Docker inventory
+  only had a same-named *sibling* project's unrelated Compose stack
+  running (see `.agents/memory/e2e-wrong-docker-project.md`), so the run
+  was not attempted rather than risk testing the wrong app. All
+  locally-available gates (unit tests, typecheck, lint, format, build,
+  `playwright test --list`) pass — see #195's QA comment.
 - [ ] Re-profile and fix the long-task budget so it passes with real
   headroom, not a ~94-100ms margin; do not close on synthetic-seam evidence
-  alone — record real-camera or production-path verification.
-- [ ] Add a regression test asserting the public viewer's `render()` call
+  alone — record real-camera or production-path verification. **NOT
+  STARTED** — unrelated to the compositing fix; needs live browser
+  profiling of the actual capture/inference pipeline.
+- [x] Add a regression test asserting the public viewer's `render()` call
   includes `transparentBackground: true` and a live `cameraOverlay`.
-- [ ] `make check` and the frontend focused camera/preview suites pass.
+  Existing `PublicProjectViewer.cameraOverlay.test.tsx` (9 tests) already
+  exercises this end-to-end via `video.style.opacity`/`.transform`
+  assertions and continues to pass unmodified; one `e2e/publishingAndRemix.spec.ts`
+  assertion (`toBeVisible()` → `toBeAttached()` + `visibility: hidden`)
+  was updated to match the new hidden-`<video>` architecture.
+- [x] `make check` and the frontend focused camera/preview suites pass.
+  Full frontend suite 128 files/1882 tests PASS; typecheck/lint/format/
+  build PASS; backend 636 passed/22 skipped PASS (untouched by this fix).
 
 Dependencies: None; related to task 162/#193 (shared CI long-task evidence).
 
-Next action: implement the compositing fix, re-profile the long-task
-regression, and verify against a real camera before closing.
+Next action: run the full `e2e/publishingAndRemix.spec.ts` suite against
+this repo's own disposable stack (not a same-named sibling project's
+containers) to confirm the compositing fix holds under real Chromium, then
+re-profile and fix the long-task budget before considering this task
+closeable.
 
 ## 165. Epic: multi-library AI art generation with user-selectable Mistral model and downloadable standalone export
 

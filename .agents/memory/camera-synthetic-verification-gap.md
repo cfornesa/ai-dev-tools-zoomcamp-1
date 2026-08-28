@@ -83,3 +83,23 @@ prove anything about real inference cost, since the seam still stubs
 `recognizeForVideo`. #192 was **not** closed on this evidence — see its
 2026-08-28 engineering comment. A GPU delegate that creates successfully but
 runs inference slowly is still unaddressed and unmeasured.
+
+**2026-08-28 root cause actually measured, same session:** built the real
+(non-seam) diagnostic this topic's own prior entry called for —
+`frontend/e2e/benchmark/cameraInference.bench.ts` loads the real
+`@mediapipe/tasks-vision` module/Wasm/model against a real
+`canvas.captureStream()`-sourced `MediaStreamTrack` (no physical camera, but
+also no stubbed `recognizeForVideo`). Reproduced across 3 runs: the GPU
+delegate creates successfully (no exception — a creation-failure catch
+structurally cannot detect this) but a single inference call took ~5.1-5.8
+*seconds*, ~200x slower than CPU's ~24.6-24.8ms average on identical input.
+Commit `0866fc6` flips the default delegate to CPU. This is the strongest
+evidence any #192 closure has had — a real measured number, not a stub, not
+a theory — but it is still not real-camera/production evidence, so the
+issue stays open per this topic's standing rule pending that confirmation
+or an explicit human waiver. **Reusable lesson:** when a "cannot measure X
+without a real browser/camera" boundary is hit, check whether a *synthetic
+but non-stubbed* input (here: a canvas-captured video track, not a fake
+MediaStream) can exercise the real component anyway — the missing physical
+camera and the stubbed test seam are two different limitations, and only
+one of them was actually unavoidable here.

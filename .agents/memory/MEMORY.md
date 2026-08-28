@@ -20,3 +20,4 @@
 - [Local sandbox verification boundaries](local-sandbox-verification-boundaries.md) — Managed macOS runs may block uv cache writes, launcher subprocesses, and loopback socket binds; rerun full gates in an approved environment.
 - [Full browser readiness gate](full-browser-readiness-gate.md) — Targeted browser suites do not establish project readiness; the complete disposable-stack browser command must pass before release.
 - [Layer/visual selection contract](layer-visual-selection-contract.md) — Layer and canvas selection must be bidirectional, and the owning layer's entire block must receive selected treatment.
+- [Camera synthetic verification gap](camera-synthetic-verification-gap.md) — A camera-performance issue was closed QA:PASS 3x on synthetic mocked-frame evidence while production stayed broken; require real-camera evidence before closing this class.

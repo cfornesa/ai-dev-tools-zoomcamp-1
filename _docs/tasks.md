@@ -5444,4 +5444,114 @@ Next action: investigate and fix the remaining CI browser failures, push the
 follow-up, and rerun the full CI gate. Issue #193 remains open; Replit
 publication checks remain a separate manual verification boundary.
 
-Durable memory: [full browser readiness gate](../.agents/memory/full-browser-readiness-gate.md).
+CI evidence (2026-08-28, later run): push-triggered run
+[33137712058](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/33137712058)
+reproduced the same failure class: `publishingAndRemix.spec.ts:1024`'s
+synthetic camera diagnostics measured `maxLongTaskMs=151` against the `<=100`
+budget (a repeat miss, not a one-off — see task 164/issue #195), and
+`aiAndRecovery.spec.ts:558` (the issue #112 draft-sync-failure regression)
+hit its 30000ms timeout. 129/134 passed with the 1 intentional skip. Folded
+into this issue as a comment rather than a new tracking issue, since both are
+the same "browser acceptance gate is not yet deterministic" class this task
+exists to resolve.
+
+Durable memory: [full browser readiness gate](../.agents/memory/full-browser-readiness-gate.md),
+[camera synthetic verification gap](../.agents/memory/camera-synthetic-verification-gap.md).
+
+## 163. Fix inverted layer draw-order vs. panel-documented "top = front" contract
+
+Goal: Moving a layer/shape to the bottom of the Layers panel must make it
+render behind every other layer, and moving it to the top must make it render
+in front — matching the panel's own documented contract, not the opposite.
+
+Status: PROPOSED
+
+GitHub issue: [#194](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/194)
+
+Evidence: user reported being unable to move a layer to the lowest
+(back-most) stacking position in production. Investigation found the panel's
+documented invariant ("Top of the list = drawn last = on top of everything
+below it", `LayersPanel.tsx` ~line 1254) is inverted from what
+`sceneOutline.ts`'s `buildOutline()` and `sceneDrawPlan.ts`'s
+`buildScenePlan()` actually do: both iterate layers **ascending** by `order`,
+so the lowest `order` (top of panel) draws first (backmost) and the highest
+`order` (bottom of panel, `isLast`) draws last (frontmost) — the reverse of
+the stated contract. Moving a layer to the panel's "lowest position"
+mechanically succeeds but sends it to the front, not the back. A narrower,
+independently real edge case was also found: `buildOutline`'s `isLast`
+computation for top-level shapes assumes each shape is alone on its own
+layer (true after Task 111 in the normal case) and can leave a stale
+`isLast: false` on a shape sharing an already-bottom-most layer with another
+shape (reachable via "Move to layer"), leaving its "Move down" control
+enabled but a no-op.
+
+Acceptance criteria:
+
+- [ ] Reverse either the render iteration order or the outline row order (not
+  both) so draw order actually matches the panel's documented top/bottom-to-
+  front/back contract; document whichever direction is chosen and confirm it
+  doesn't require a data migration for existing published scenes' `order`
+  values, or perform that migration if it does.
+- [ ] Verify with a real multi-layer scene that moving to the literal top/
+  bottom of the panel produces the correct front/back visual result.
+- [ ] Fix the `isLast`/`isFirst` edge case for multiple top-level shapes
+  sharing one layer in the same pass.
+- [ ] Add a regression test asserting panel order matches draw order end to
+  end, plus the shared-layer `isLast` edge case.
+- [ ] `make check` and the frontend focused Layers/outline/render suites
+  pass.
+
+Dependencies: None.
+
+Next action: implement the draw-order fix and the isLast fix together, then
+verify against a real multi-layer scene before closing.
+
+## 164. Fix public viewer's camera overlay compositing and its long-task budget regression
+
+Goal: The camera overlay on the public `/p/<id>` viewer must render a
+genuinely live, low-latency feed with a real camera, using the same
+p5-integrated compositing model already implemented in the editor.
+
+Status: PROPOSED
+
+GitHub issue: [#195](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/195)
+(cross-referenced: #192, closed; #193, task 162, open)
+
+Evidence: user observed at
+`https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` that
+the camera overlay showed a single frozen/stale frame rather than a live
+feed. Investigation found `PublicProjectViewer.tsx` was never migrated to
+the compositing model issues #169/#151 built into `EditorWorkspace.tsx`: it
+still renders a plain `<video>` behind the p5 canvas (`zIndex: -2` vs `-1`)
+and calls `render()` without `transparentBackground: true` or a
+`cameraOverlay` object, so the canvas's own opaque per-frame background fill
+hides the video almost completely regardless of CSS stacking (see
+`p5Adapter.ts`'s `render()` doc comment). Issue #169 explicitly flagged the
+public viewer as an unresolved follow-up ("scope this to the editor Preview
+first; file separately if the same stacking bug is confirmed there too")
+that was never opened until now. Separately, issue #192's closure history
+shows the camera long-task budget (`maxLongTaskMs <= 100ms`) has repeatedly
+failed just outside its margin (94ms pass, then 151ms and 174ms failures in
+immediately subsequent CI runs) — see
+[camera synthetic verification gap](../.agents/memory/camera-synthetic-verification-gap.md)
+for why closing on synthetic-only evidence let this regress unnoticed.
+
+Acceptance criteria:
+
+- [ ] Port the editor's camera-compositing model to `PublicProjectViewer.tsx`:
+  hide the raw `<video>` element, draw the live camera frame inside the p5
+  canvas at the correct layer order, and pass `transparentBackground: true`
+  plus a live `cameraOverlay` into `render()`.
+- [ ] Verify the public viewer's overlay is genuinely live (frame-over-frame
+  updates), with both a real camera and the existing synthetic seam.
+- [ ] Re-profile and fix the long-task budget so it passes with real
+  headroom, not a ~94-100ms margin; do not close on synthetic-seam evidence
+  alone — record real-camera or production-path verification.
+- [ ] Add a regression test asserting the public viewer's `render()` call
+  includes `transparentBackground: true` and a live `cameraOverlay`.
+- [ ] `make check` and the frontend focused camera/preview suites pass.
+
+Dependencies: None; related to task 162/#193 (shared CI long-task evidence).
+
+Next action: implement the compositing fix, re-profile the long-task
+regression, and verify against a real camera before closing.

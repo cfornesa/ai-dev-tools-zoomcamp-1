@@ -5,8 +5,17 @@ import { ApiError } from '../api/client';
 import { forkProject, getPublicProject, type PublicProject } from '../api/projects';
 import { useAuth } from '../auth/useAuth';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
+import {
+  clampCameraOverlayGeometry,
+  getCameraOverlayLayerOrder,
+  useCameraOverlayGeometry,
+} from '../editor/cameraOverlayGeometry';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
-import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
+import {
+  createP5ScenePreview,
+  type P5ScenePreview,
+  type RenderableCameraOverlay,
+} from '../render/p5Adapter';
 import { normalizeSceneLayers } from '../validation/scene';
 import DemoControlsPanel from './DemoControlsPanel';
 
@@ -38,7 +47,7 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * mode and never requests camera permission on mount (acceptance
  * criterion).
  *
- * ## Camera video overlay (Task 119, issue #152)
+ * ## Camera video overlay (Task 119, issue #152; compositing fixed by #195)
  *
  * Ports `EditorWorkspace.tsx`'s Task 110/118 (issues #141, #147) live
  * camera video overlay + opacity slider + mirror toggle to this page,
@@ -48,7 +57,16 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * (`../editor/cameraOverlaySettings.ts`), not a second instance: it is
  * `localStorage`-persisted under one generic, page-agnostic key, so a
  * visitor who adjusts it here also sees it applied in the editor (and vice
- * versa) in the same browser, after reload.
+ * versa) in the same browser, after reload. Issue #195: this page's
+ * original port predated the editor's own Task 137/#169 compositing fix
+ * and was never updated to match, so the camera image is now drawn inside
+ * the p5 canvas via `getCameraOverlay`/`render()`'s `cameraOverlay`
+ * argument — the same as the editor — rather than as a separately
+ * CSS-stacked, always-behind-the-opaque-canvas `<video>` element. The
+ * camera z-order/geometry read the same shared, editor-persisted stores
+ * (`cameraOverlayGeometry.ts`) too, though this page still has no
+ * drag/resize/reorder UI of its own (unchanged from #152's original
+ * scope decision).
  *
  * "Unavailable" (never-existed, not-yet-published, unpublished mid-session,
  * or deleted) is a single, deliberately undifferentiated state:
@@ -109,6 +127,13 @@ function PublicProjectViewer() {
   } = useCameraOverlaySettings();
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  // Issue #195: the same shared, localStorage-persisted geometry store the
+  // editor's drag/resize controls write to (`cameraOverlayGeometry.ts`) --
+  // this page has no drag/resize UI of its own (#151/#152 excluded it from
+  // scope), but reads the same store so a visitor sees whatever position/
+  // size the editor last set, consistent with how opacity/mirrored are
+  // already shared above.
+  const { setGeometry: _setCameraGeometry, ...cameraGeometry } = useCameraOverlayGeometry();
 
   useEffect(() => {
     const videoEl = cameraVideoRef.current;
@@ -122,6 +147,43 @@ function PublicProjectViewer() {
       });
     }
   }, [cameraStream, cameraStatus]);
+
+  // Issue #195: the actual visible camera image is drawn *inside* the p5
+  // canvas (see the render effect below), exactly like
+  // `EditorWorkspace.tsx`'s `getCameraOverlay` -- this component's own
+  // `<video>` element (below, in the JSX) is `visibility: hidden` and
+  // exists only as the live `HTMLVideoElement` frame source `render()`
+  // reads from every frame. Previously this page drew the raw `<video>` as
+  // a CSS-stacked DOM overlay *behind* the p5 canvas, which the canvas's
+  // own opaque per-frame background fill hid almost entirely regardless of
+  // the video's own CSS opacity or z-index -- see `p5Adapter.ts`'s
+  // `render()` doc comment for why only a transparent canvas plus an
+  // in-canvas draw can make a shape legitimately appear "in front of" a
+  // live camera feed. This mirrors the editor's fix (Task 137, issue
+  // #169) that this page never received.
+  const getCameraOverlay = useCallback((): RenderableCameraOverlay | undefined => {
+    if (cameraStatus !== 'active' || !cameraStream || !cameraVideoRef.current) return undefined;
+    const rawLayers = project?.current_version?.scene_json.layers;
+    const layers = Array.isArray(rawLayers) ? (rawLayers as { order?: unknown }[]) : [];
+    const orders = layers
+      .map((layer) => layer.order)
+      .filter((order): order is number => typeof order === 'number');
+    const defaultOrder = Math.max(-1, ...orders) + 1;
+    return {
+      source: cameraVideoRef.current,
+      geometry: clampCameraOverlayGeometry(cameraGeometry, 800, 600),
+      opacity: cameraOverlayOpacity,
+      mirrored: cameraOverlayMirrored,
+      layerOrder: getCameraOverlayLayerOrder(defaultOrder),
+    };
+  }, [
+    cameraStatus,
+    cameraStream,
+    cameraGeometry,
+    cameraOverlayOpacity,
+    cameraOverlayMirrored,
+    project,
+  ]);
 
   const previewRef = useRef<P5ScenePreview | null>(null);
   // Task 113 (issue #144): a *callback* ref, not a plain `useRef` +
@@ -186,7 +248,19 @@ function PublicProjectViewer() {
       // public scene still renders, matching `useEditorWorkspaceState.ts`'s
       // identical normalization on the editor's load path.
       const { scene: normalizedScene } = normalizeSceneLayers(project.current_version.scene_json);
-      previewRef.current.render(normalizedScene);
+      // Issue #195: a transparent canvas background while the camera is
+      // active, plus the live camera frame itself, exactly like
+      // `EditorWorkspace.tsx`'s identical render call -- see
+      // `getCameraOverlay`'s doc comment above for why this page's own
+      // opaque-background render previously hid the camera feed almost
+      // entirely regardless of the video's CSS opacity/z-index.
+      previewRef.current.render(
+        normalizedScene,
+        [],
+        [],
+        cameraStatus === 'active',
+        getCameraOverlay(),
+      );
       setPreviewError(null);
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
@@ -194,8 +268,13 @@ function PublicProjectViewer() {
     // `previewMounted` is a real, effect-dependency-visible signal for
     // "does previewRef.current exist yet" -- see the callback ref's own
     // doc comment above for why an untracked ref read in the dependency
-    // array (the old bug) isn't enough.
-  }, [project, previewMounted]);
+    // array (the old bug) isn't enough. `cameraStatus`/`getCameraOverlay`
+    // (itself already memoized on every value it reads) are new deps so
+    // the canvas actually redraws when the camera activates/deactivates or
+    // its opacity/mirror/geometry changes -- previously unnecessary
+    // because those only ever affected the separately CSS-stacked
+    // `<video>` element's own style, never the canvas.
+  }, [project, previewMounted, cameraStatus, getCameraOverlay]);
 
   async function handleFork() {
     if (!id) return;
@@ -337,12 +416,20 @@ function PublicProjectViewer() {
             className="editor-scene-canvas"
             style={{ position: 'relative', width: 800, height: 600, maxWidth: '100%' }}
           >
-            {/* Task 119 (issue #152): the live camera feed, composited via
-                CSS behind the p5 canvas (zIndex -2 vs. the mount div's -1
-                below) — never drawn into the p5 canvas itself. Mirrored
-                (selfie view) by default; `pointerEvents: 'none'` keeps this
-                purely decorative. Ports EditorWorkspace.tsx's identical
-                overlay <video> verbatim. */}
+            {/* Issue #195 (fixing #169's un-ported public-viewer gap): the
+                live camera image is drawn *inside* the p5 canvas by
+                `getCameraOverlay`/the render effect above, exactly like
+                `EditorWorkspace.tsx`. This `<video>` is `visibility:
+                hidden` and exists only as the live frame source that
+                render effect reads every frame -- it is never itself the
+                visible overlay (a DOM-stacked, CSS-visible `<video>`
+                behind the p5 canvas was this page's previous approach,
+                and the canvas's own opaque per-frame background fill hid
+                it almost entirely regardless of its CSS opacity/z-index;
+                see `p5Adapter.ts`'s `render()` doc comment). `opacity`/
+                `transform` stay set here (unused visually, but read by
+                existing unit tests and kept consistent with the editor's
+                identical hidden `<video>`). */}
             {cameraStatus === 'active' && cameraStream && (
               <video
                 ref={cameraVideoRef}
@@ -359,6 +446,7 @@ function PublicProjectViewer() {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
+                  visibility: 'hidden',
                   transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
                   opacity: cameraOverlayOpacity,
                   pointerEvents: 'none',

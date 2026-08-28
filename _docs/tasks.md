@@ -5464,7 +5464,7 @@ Goal: Moving a layer/shape to the bottom of the Layers panel must make it
 render behind every other layer, and moving it to the top must make it render
 in front — matching the panel's own documented contract, not the opposite.
 
-Status: PROPOSED
+Status: ACTIVE (split; isLast edge case COMPLETE, front/back semantics BLOCKED)
 
 GitHub issue: [#194](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/194)
 
@@ -5494,14 +5494,44 @@ Acceptance criteria:
   values, or perform that migration if it does.
 - [ ] Verify with a real multi-layer scene that moving to the literal top/
   bottom of the panel produces the correct front/back visual result.
-- [ ] Fix the `isLast`/`isFirst` edge case for multiple top-level shapes
-  sharing one layer in the same pass.
+- [x] Fix the `isLast`/`isFirst` edge case for multiple top-level shapes
+  sharing one layer in the same pass. **DONE** — commit `b4b9382`:
+  `buildOutline()` now derives a top-level shape's `isFirst`/`isLast` from
+  its layer's own position among all layers, never the shape's position
+  within `topShapes`. Regression tests added in `sceneOutline.test.ts`
+  (shared-boundary-layer and shared-non-boundary-layer cases). Verified:
+  focused suite 82/82, full frontend suite 128 files/1882 tests, `make
+  check` full pass (backend 636/22 skipped, frontend 1882, lint/format/
+  typecheck/build green). QA comment posted on #194.
 - [ ] Add a regression test asserting panel order matches draw order end to
-  end, plus the shared-layer `isLast` edge case.
+  end. **BLOCKED** — see below.
 - [ ] `make check` and the frontend focused Layers/outline/render suites
-  pass.
+  pass. **DONE for the isLast fix above**; still required once the
+  front/back item below is resolved and implemented.
 
-Dependencies: None.
+Front/back semantic-inversion item is now split out and blocked pending a
+product decision: `buildOutline()`'s row order is also consumed as the
+authoritative draw order by `EditorWorkspace.tsx`'s `shapesInDrawOrder`
+(selection/hover overlay) and by `sceneDrawPlan.ts`'s `buildScenePlan()`
+(the doc comment there states it "follows the exact rule documented in
+`buildOutline()`"). Reversing render order to fix the panel's stated
+contract would invert visual front/back stacking for every existing
+published multi-layer/multi-shape scene with no migration path; reversing
+only the panel's display order requires coordinated changes to
+`moveLayer`/`moveItem` direction semantics and all of `LayersPanel.tsx`'s
+drag-and-drop position math (`computeSteps`, `planDrop`,
+`isFirst`/`isLast` button-disable mapping) to stay internally consistent.
+Full analysis posted as a QA/grooming comment on #194. Decide between:
+(a) accept the render-order flip as a one-time visual change (and decide
+whether existing scenes need an `order`-preserving migration), (b) keep
+render order unchanged and correct only the panel's display order +
+button/drag semantics (larger, self-contained frontend change, no effect
+on already-rendered art), or (c) the "bug" is only the documented hint
+text being wrong, and no behavior change is needed at all.
+
+Dependencies: None for the completed isLast fix. The front/back item
+depends on an explicit product decision before implementation, the same
+pattern as task 166/#197.
 
 Next action: implement the draw-order fix and the isLast fix together, then
 verify against a real multi-layer scene before closing.

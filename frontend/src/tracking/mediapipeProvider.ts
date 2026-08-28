@@ -56,18 +56,24 @@
  * never lets an exception escape `start()`/the animation-frame loop.
  *
  * GPU delegate fallback (issue #192): `GestureRecognizer.createFromOptions`
- * is first attempted with `delegate: 'GPU'`. GPU delegate support/
- * performance varies widely across end users' actual GPU/WebGL(2)/ANGLE
- * driver stacks — since this adapter runs on each user's own machine, not
- * a controlled server, GPU delegate creation can fail outright on some
- * hardware. If it throws, this module retries once with `delegate: 'CPU'`
- * before routing the failure through `onError`, so a browser that cannot
- * create the GPU delegate still gets a working (if slower) recognizer
- * instead of an unrecoverable error. `getDiagnostics().activeDelegate`
- * reports which delegate is actually in use. This does not by itself
- * address a GPU delegate that creates successfully but performs poorly at
- * inference time — no code path here can currently detect that; see the
- * issue for the follow-up profiling work needed to measure that case.
+ * defaults to `delegate: 'CPU'`, not `'GPU'`. This was originally `'GPU'`
+ * with a catch-and-retry-on-CPU fallback for GPU delegate *creation*
+ * failing outright; a real (non-seam) benchmark added in the same change
+ * (`frontend/e2e/benchmark/cameraInference.bench.ts`) measured that a GPU
+ * delegate can create *successfully* and still be catastrophically slow at
+ * actual inference — ~5.3-5.8 SECONDS per call in this benchmark's
+ * environment, against ~25ms average for the CPU delegate on the same
+ * hardware. A creation-failure catch cannot detect that case at all, since
+ * nothing throws. CPU is therefore the safe default; if CPU delegate
+ * creation itself throws (not the risk this fallback was written for), this
+ * module retries once with `delegate: 'GPU'` rather than routing a
+ * CPU-only failure through `onError` when a working fallback might exist.
+ * `getDiagnostics().activeDelegate` reports which delegate is actually in
+ * use. GPU delegate performance is fundamentally hardware/driver-dependent
+ * — a future revision could re-introduce GPU as an opt-in optimization
+ * once a live-probing strategy exists that doesn't pay the catastrophic
+ * first-call cost itself; see the benchmark file and issue #192 for
+ * details.
  */
 import { sanitizeFrame } from './sanitizeFrame';
 import { HAND_LANDMARK_COUNT, MAX_HANDS_PER_FRAME } from './types';
@@ -417,31 +423,35 @@ export function createMediaPipeTrackingProvider(
         return;
       }
       try {
-        createdRecognizer = await visionModule.GestureRecognizer.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL, delegate: 'GPU' },
-          runningMode: 'VIDEO',
-          numHands: MAX_HANDS_PER_FRAME,
-        });
-        createdDelegate = 'GPU';
-      } catch {
-        // GPU delegate creation varies widely with the end user's actual
-        // GPU/WebGL(2)/ANGLE driver stack and can fail outright on some
-        // hardware (unlike a slow-but-successful GPU delegate, which this
-        // adapter cannot distinguish from a fast one without a live
-        // profiling harness — see the module doc comment's "GPU delegate
-        // fallback" section). Retry once on the CPU delegate rather than
-        // routing a GPU-only failure through onError when a working
-        // fallback exists.
-        if (myGeneration !== generation) {
-          releaseResources();
-          return;
-        }
+        // CPU is the default delegate (see the module doc comment's "GPU
+        // delegate fallback" section) — issue #192's real (non-seam)
+        // benchmark measured this environment's GPU delegate at ~5.3-5.8
+        // SECONDS per inference call, against ~25ms average for CPU, on a
+        // GPU delegate that *created successfully* (no exception to catch).
+        // GPU delegate performance depends entirely on the end user's real
+        // GPU/WebGL(2)/ANGLE driver stack, which this adapter cannot probe
+        // without paying that catastrophic first-call cost itself.
         createdRecognizer = await visionModule.GestureRecognizer.createFromOptions(fileset, {
           baseOptions: { modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL, delegate: 'CPU' },
           runningMode: 'VIDEO',
           numHands: MAX_HANDS_PER_FRAME,
         });
         createdDelegate = 'CPU';
+      } catch {
+        // CPU delegate creation failing is not the risk this fallback was
+        // originally written for, but retry once on GPU rather than
+        // routing a CPU-only failure through onError when a working
+        // fallback might exist.
+        if (myGeneration !== generation) {
+          releaseResources();
+          return;
+        }
+        createdRecognizer = await visionModule.GestureRecognizer.createFromOptions(fileset, {
+          baseOptions: { modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL, delegate: 'GPU' },
+          runningMode: 'VIDEO',
+          numHands: MAX_HANDS_PER_FRAME,
+        });
+        createdDelegate = 'GPU';
       }
     } catch (cause) {
       if (myGeneration !== generation) {

@@ -366,7 +366,13 @@ export function buildStandaloneCameraScript(): string {
             function (fileset) {
               if (myGeneration !== generation) return;
               visionModule.GestureRecognizer.createFromOptions(fileset, {
-                baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
+                // CPU is the default delegate here too, matching
+                // mediapipeProvider.ts (issue #192): a real, non-seam
+                // benchmark measured a GPU delegate that creates
+                // successfully but runs inference ~200x slower than CPU
+                // on at least one real environment. See that module's
+                // "GPU delegate fallback" doc comment section.
+                baseOptions: { modelAssetPath: MODEL_URL, delegate: "CPU" },
                 runningMode: "VIDEO",
                 numHands: 2
               }).then(

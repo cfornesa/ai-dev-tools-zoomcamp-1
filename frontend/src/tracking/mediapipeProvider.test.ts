@@ -663,8 +663,8 @@ describe('createMediaPipeTrackingProvider failure routing', () => {
   });
 });
 
-describe('createMediaPipeTrackingProvider GPU delegate fallback (issue #192)', () => {
-  it('creates the recognizer with the GPU delegate by default and reports it in diagnostics', async () => {
+describe('createMediaPipeTrackingProvider delegate selection (issue #192)', () => {
+  it('creates the recognizer with the CPU delegate by default and reports it in diagnostics', async () => {
     const harness = createHarness();
     harness.provider.start();
     await harness.flushMicrotasks();
@@ -672,16 +672,16 @@ describe('createMediaPipeTrackingProvider GPU delegate fallback (issue #192)', (
     expect(harness.createFromOptions).toHaveBeenCalledTimes(1);
     expect(harness.createFromOptions).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'GPU' }) }),
+      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'CPU' }) }),
     );
     expect(harness.errors).toHaveLength(0);
-    expect(harness.provider.getDiagnostics().activeDelegate).toBe('GPU');
+    expect(harness.provider.getDiagnostics().activeDelegate).toBe('CPU');
   });
 
-  it('retries once with the CPU delegate when GPU delegate creation throws, and does not emit an error', async () => {
+  it('retries once with the GPU delegate when CPU delegate creation throws, and does not emit an error', async () => {
     const harness = createHarness();
-    const gpuFailure = new Error('WebGL context creation failed');
-    harness.createFromOptions.mockRejectedValueOnce(gpuFailure).mockResolvedValueOnce({
+    const cpuFailure = new Error('Wasm allocation failed');
+    harness.createFromOptions.mockRejectedValueOnce(cpuFailure).mockResolvedValueOnce({
       recognizeForVideo: harness.recognizeForVideo,
       close: harness.close,
     });
@@ -693,34 +693,34 @@ describe('createMediaPipeTrackingProvider GPU delegate fallback (issue #192)', (
     expect(harness.createFromOptions).toHaveBeenNthCalledWith(
       1,
       expect.anything(),
-      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'GPU' }) }),
+      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'CPU' }) }),
     );
     expect(harness.createFromOptions).toHaveBeenNthCalledWith(
       2,
       expect.anything(),
-      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'CPU' }) }),
+      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'GPU' }) }),
     );
     expect(harness.errors).toHaveLength(0);
-    expect(harness.provider.getDiagnostics().activeDelegate).toBe('CPU');
+    expect(harness.provider.getDiagnostics().activeDelegate).toBe('GPU');
 
-    // The CPU-delegate recognizer is fully wired up — a tick still emits
+    // The GPU-delegate recognizer is fully wired up — a tick still emits
     // frames normally.
     harness.tick();
     expect(harness.frames).toHaveLength(1);
   });
 
-  it('routes to onError when both the GPU and CPU delegate attempts fail', async () => {
+  it('routes to onError when both the CPU and GPU delegate attempts fail', async () => {
     const harness = createHarness();
-    const gpuFailure = new Error('WebGL context creation failed');
     const cpuFailure = new Error('Wasm allocation failed');
-    harness.createFromOptions.mockRejectedValueOnce(gpuFailure).mockRejectedValueOnce(cpuFailure);
+    const gpuFailure = new Error('WebGL context creation failed');
+    harness.createFromOptions.mockRejectedValueOnce(cpuFailure).mockRejectedValueOnce(gpuFailure);
 
     harness.provider.start();
     await harness.flushMicrotasks();
 
     expect(harness.createFromOptions).toHaveBeenCalledTimes(2);
     expect(harness.errors).toHaveLength(1);
-    expect(harness.errors[0].cause).toBe(cpuFailure);
+    expect(harness.errors[0].cause).toBe(gpuFailure);
     expect(harness.errors[0].message).toMatch(/model/i);
     expect(harness.provider.getDiagnostics().activeDelegate).toBeNull();
   });

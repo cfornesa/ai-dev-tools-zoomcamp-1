@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "bench:runtime": "playwright test --config=playwright.bench.config.ts"
+    "bench:runtime": "playwright test --config=playwright.bench.config.ts runtimeLimits.bench.ts",
+    "bench:camera-inference": "playwright test --config=playwright.bench.config.ts cameraInference.bench.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.0.1",

@@ -22,3 +22,4 @@
 - [Layer/visual selection contract](layer-visual-selection-contract.md) — Layer and canvas selection must be bidirectional, and the owning layer's entire block must receive selected treatment.
 - [Camera synthetic verification gap](camera-synthetic-verification-gap.md) — A camera-performance issue was closed QA:PASS 3x on synthetic mocked-frame evidence while production stayed broken; require real-camera evidence before closing this class.
 - [Multi-library generation architecture fork](multi-library-generation-architecture-fork.md) — Multi-library AI art generation forces a schema-vs-raw-code architecture choice that gates issues #199/#200; decide in #197 first.
+- [Replit autoscale startup wait race](replit-autoscale-startup-wait-race.md) — A trap/wait race in scripts/start.sh could log a false "exited with status 127" on an ordinary autoscale stop; fixed in #202.

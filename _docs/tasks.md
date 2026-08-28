@@ -5179,13 +5179,15 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 
 ## Evidence and pending items
 
-- **Status:** COMPLETE (closed 2026-08-28, on explicit user waiver of remaining real-camera/production verification)
+- **Status:** ACTIVE (reopened 2026-08-28, second time — fresh production report of a nonfunctional camera view postdates the CPU-delegate fix's close)
 - **Evidence (prior closure, now known insufficient):** Commit `07cf4dc` schedules tracking from decoded video frames and exposes deterministic diagnostics. Commit `42d6b89` stabilizes the synthetic Chromium camera seam and adds a targeted browser-spec filter. Automated `BROWSER_QA_E2E_SPEC=e2e/publishingAndRemix.spec.ts make browser-qa` passed 24/24, including permission/error/retry/active/overlay/stop paths and the 10-second synthetic camera diagnostic at desktop and narrow widths. Desktop measured 60.08 animation FPS, 23.19 inference FPS, 1 long task with a 94ms maximum; narrow measured 60.06 animation FPS, 23.48 inference FPS, 0 long tasks. `BROWSER_QA_RUNTIME_BENCH=1 make browser-qa` passed 3/3, and host-level `UV_CACHE_DIR=/private/tmp/creatrweb-uv-cache make check` passed all lint, format, type, backend (636 passed), and frontend (1,880 passed) gates.
 - **2026-08-28 reopening finding:** a fresh user report ("latency of the camera feed... practically unusable") after #195's frozen-frame fix made the feed genuinely live again exposed that the above evidence never actually measured MediaPipe inference cost. `installMediaPipeTestSeam` (`frontend/e2e/publishingAndRemix.spec.ts`) replaces `GestureRecognizer` with a stub whose `recognizeForVideo` returns instantly — every prior closure's FPS/long-task numbers measured only the scheduling/compositing code around inference, never the real `@mediapipe/tasks-vision` Wasm runtime, model, or the hardcoded `delegate: 'GPU'` option (`frontend/src/tracking/mediapipeProvider.ts:399`, no CPU fallback, not configurable). See [#192's 2026-08-28 comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192) for the full finding.
 - **Pending verification:** A real (non-seam) desktop diagnostic that loads the actual MediaPipe module/model/GPU delegate against a synthetic video track a real recognizer can run inference on, measuring inference cost itself for the first time; a CPU-vs-GPU delegate comparison; real production/live-camera confirmation on `animate.creatrweb.com` (same structural gap as #195 — no Replit deploy tool, no physical camera, from this agent).
 - **Evidence (2026-08-28, GPU delegate fallback):** Commit `47ec6b2` implements the concrete candidate root cause: `createFromOptions` retries once on the other delegate if the first attempt throws (see below for which delegate is primary). 3 new deterministic tests. `make check` full pass (backend 665/22 skipped, frontend 1,922/131 files). Real Chromium, isolated PostgreSQL-backed stack: `BROWSER_QA_E2E_SPEC=e2e/publishingAndRemix.spec.ts make browser-qa` 24/24 passed, no regression, camera diagnostics still well within budget (0 long tasks at both viewports this run). QA comment posted on #192.
 - **Evidence (2026-08-28, real non-seam benchmark — the actual root cause measured):** Commit `0866fc6` adds `frontend/e2e/benchmark/cameraInference.bench.ts`, the first #192 measurement that doesn't stub `GestureRecognizer.recognizeForVideo` — it loads the real `@mediapipe/tasks-vision` module/Wasm/model against a real, canvas-`captureStream()`-sourced `MediaStreamTrack` (no physical camera). Reproduced across 3 runs: the GPU delegate **creates successfully** (no exception) but a single inference call took ~5.1-5.8 **seconds**, versus ~24.6-24.8ms average for CPU on identical input — ~200x slower, with nothing to catch since creation never throws. `mediapipeProvider.ts` and its standalone-export port (`standaloneCameraSource.ts`) now default to `delegate: 'CPU'`, falling back to `'GPU'` only if CPU creation itself throws. All gates re-verified green after the flip: `make check`, full frontend suite, and a second real-Chromium `browser-qa` run (24/24, no regression). QA comment posted on #192.
 - **Closure (2026-08-28):** Asked the repository owner explicitly whether to waive the remaining real-camera/`animate.creatrweb.com` production confirmation (this agent has no physical camera and no Replit deployment access) given how directly the measured root cause explains the reported symptom. The owner chose "waive and close now" — the same kind of deliberate, informed waiver already recorded for #195, not an agent's own determination that this evidence is sufficient by default. Closing QA:PASS comment posted; issue closed.
+- **Reopened (2026-08-28, same day):** the repository owner reported the live public viewer's camera still nonfunctional, with production access logs and a `scripts/start.sh` startup error pasted as evidence. Investigation: (1) fetched and byte-diffed the live production JS assets against this session's local post-fix build — **identical**, confirming the CPU-delegate fix is genuinely deployed; (2) visited the live public viewer directly via browser tooling — page and demo controls render correctly, "Enable camera" correctly reaches the existing permission-denied/Retry state when this tooling's own sandbox blocks device capture (same standing "no real camera" boundary as before, revealed nothing new); (3) the pasted `scripts/start.sh` "wait: pid ... not a child of this shell" / "exited with status 127" log lines are a real, **distinct, now-fixed** bug (filed and fixed as [#202](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/202), commit `8df580d`) — a trap/wait race on ordinary Replit autoscale stop cycles, not tied to this deploy specifically, and very likely unrelated to the camera symptom (the camera is client-side JS with no dependency on the API calls the logs show all succeeding). No further camera-specific code defect was found. Reopened rather than re-asserting resolution, per [[camera-synthetic-verification-gap]]'s standing rule — a fresh contradicting production report outweighs an agent's own confidence in supporting (but indirect) evidence.
+- **Next action:** the repository owner should retest the live camera now that the fix is confirmed deployed, and if still broken, capture the browser DevTools Console output during "Enable camera" — the one piece of evidence this investigation could not obtain (no real camera access available to this agent). If it now works, close with that confirmation as evidence.
 - **Durable memory link:** [[camera-synthetic-verification-gap]] updated 2026-08-28 with this as a second confirmed recurrence and the specific root cause of why the synthetic seam could never have caught it (it stubs out the exact component under test).
 
 ## Discovery gate
@@ -5202,7 +5204,7 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 - **Behavior boundary:** Preserve existing `TrackingProvider` frames, gestures, reduced-motion behavior, permission UX, overlay alignment, and demo fallback.
 - **Libraries:** Use existing dependencies and the existing MediaPipe test seam; do not add dependencies without approval.
 
-GitHub issue: [#192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192) (closed)
+GitHub issue: [#192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/192) (reopened)
 
 ## 154. Disambiguate shape property editing and Move-to-Layer controls in Selection HUD
 
@@ -5962,3 +5964,62 @@ Evidence (2026-08-28): commit `e02f19d`. QA comment posted; GitHub issue
 closed as completed.
 
 Dependencies: None remaining.
+
+## 170. Fix scripts/start.sh's spurious "exited with status 127" on autoscale stop
+
+Goal: Eliminate the false "Startup process exited with status 127" log line
+that appears on an ordinary Replit autoscale stop cycle, which is not a real
+crash but noise that can make routine operation look like a failure when
+investigating other reports.
+
+Status: COMPLETE
+
+GitHub issue: [#202](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/202)
+
+Discovery: found while investigating a 2026-08-28 production camera
+regression report (task 161/#192) — the user pasted these log lines from
+around their report time:
+
+```
+scripts/start.sh: line 117: wait: pid 24 is not a child of this shell
+Startup process exited with status 127
+```
+
+Root cause: `cleanup()` (the script's `EXIT INT TERM` trap) called an
+unconditional `wait` after killing the companion process. The script's main
+flow separately calls `wait "$django_pid"`/`wait "$frontend_pid"` explicitly
+to collect exit status once `ps` shows a process gone. If SIGTERM arrives
+(e.g. an autoscale instance being stopped) while the main loop is between
+its `ps` check and its own explicit `wait`, the trap fires first, reaping
+the pid via its own bare `wait`; the interrupted loop iteration then finds
+that pid already forgotten by bash and gets `127`/"not a child of this
+shell" instead of a real exit status. This is shaped like an ordinary
+autoscale scale-to-zero stop cycle, not tied to any particular code deploy.
+
+Acceptance criteria:
+
+- [x] `cleanup()`'s unconditional `wait` is removed; the main flow's own
+  explicit `wait "$pid"` calls remain the only source of collected exit
+  status. **DONE** — commit `8df580d`.
+- [x] `tests/test_startup_configuration.py::test_launcher_has_publish_and_cleanup_contract`
+  (and the full startup-configuration suite) still passes unchanged.
+  **DONE** — 13/13 passed.
+- [x] Full backend suite passes. **DONE** — 665 passed/22 skipped.
+
+Out of scope: reproducing the exact mid-loop-SIGTERM race in an automated
+test (would need precise signal timing against the real `uv run`/`npm run`
+child processes) — verified by code reasoning plus the existing test suite
+instead; a future production autoscale stop cycle logging cleanly (no "not a
+child of this shell") is the live confirmation.
+
+Evidence (2026-08-28): commit `8df580d`. `bash -n scripts/start.sh` syntax
+check passed. `uv run pytest tests/test_startup_configuration.py` 13/13
+passed; full `uv run pytest` 665 passed/22 skipped. No frontend files
+touched by this fix.
+
+Next action: none required; watch subsequent Replit autoscale stop-cycle
+logs for absence of the "not a child of this shell" message as passive
+confirmation.
+
+Dependencies: None. Unrelated to task 161/#192's camera investigation
+beyond having been discovered during it.

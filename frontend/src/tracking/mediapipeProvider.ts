@@ -54,6 +54,20 @@
  * unsupported, camera permission/hardware, model/module load, per-frame
  * inference) is caught and delivered through `onError` — this module
  * never lets an exception escape `start()`/the animation-frame loop.
+ *
+ * GPU delegate fallback (issue #192): `GestureRecognizer.createFromOptions`
+ * is first attempted with `delegate: 'GPU'`. GPU delegate support/
+ * performance varies widely across end users' actual GPU/WebGL(2)/ANGLE
+ * driver stacks — since this adapter runs on each user's own machine, not
+ * a controlled server, GPU delegate creation can fail outright on some
+ * hardware. If it throws, this module retries once with `delegate: 'CPU'`
+ * before routing the failure through `onError`, so a browser that cannot
+ * create the GPU delegate still gets a working (if slower) recognizer
+ * instead of an unrecoverable error. `getDiagnostics().activeDelegate`
+ * reports which delegate is actually in use. This does not by itself
+ * address a GPU delegate that creates successfully but performs poorly at
+ * inference time — no code path here can currently detect that; see the
+ * issue for the follow-up profiling work needed to measure that case.
  */
 import { sanitizeFrame } from './sanitizeFrame';
 import { HAND_LANDMARK_COUNT, MAX_HANDS_PER_FRAME } from './types';
@@ -181,6 +195,10 @@ export type MediaPipeTrackingDiagnostics = {
   maxConcurrentInferences: number;
   scheduledTicks: number;
   skippedTicks: number;
+  /** Which `GestureRecognizer` delegate is actually in use, or `null`
+   * before a recognizer has been created. See the "GPU delegate fallback"
+   * section of the module doc comment. */
+  activeDelegate: 'GPU' | 'CPU' | null;
 };
 
 function defaultIsSupported(): boolean {
@@ -249,6 +267,7 @@ export function createMediaPipeTrackingProvider(
   let maxConcurrentInferences = 0;
   let scheduledTicks = 0;
   let skippedTicks = 0;
+  let activeDelegate: 'GPU' | 'CPU' | null = null;
   const handSlots = new Map<'left' | 'right', HandSlot>();
 
   const frameListeners = new Set<(frame: TrackingFrame) => void>();
@@ -313,6 +332,7 @@ export function createMediaPipeTrackingProvider(
     handSlots.clear();
     lastInferenceTime = -Infinity;
     lastVideoTimestamp = 0;
+    activeDelegate = null;
   }
 
   function start(): void {
@@ -389,17 +409,40 @@ export function createMediaPipeTrackingProvider(
     }
 
     let createdRecognizer: GestureRecognizerType;
+    let createdDelegate: 'GPU' | 'CPU';
     try {
       const fileset = await visionModule.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_BASE_URL);
       if (myGeneration !== generation) {
         releaseResources();
         return;
       }
-      createdRecognizer = await visionModule.GestureRecognizer.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL, delegate: 'GPU' },
-        runningMode: 'VIDEO',
-        numHands: MAX_HANDS_PER_FRAME,
-      });
+      try {
+        createdRecognizer = await visionModule.GestureRecognizer.createFromOptions(fileset, {
+          baseOptions: { modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL, delegate: 'GPU' },
+          runningMode: 'VIDEO',
+          numHands: MAX_HANDS_PER_FRAME,
+        });
+        createdDelegate = 'GPU';
+      } catch {
+        // GPU delegate creation varies widely with the end user's actual
+        // GPU/WebGL(2)/ANGLE driver stack and can fail outright on some
+        // hardware (unlike a slow-but-successful GPU delegate, which this
+        // adapter cannot distinguish from a fast one without a live
+        // profiling harness — see the module doc comment's "GPU delegate
+        // fallback" section). Retry once on the CPU delegate rather than
+        // routing a GPU-only failure through onError when a working
+        // fallback exists.
+        if (myGeneration !== generation) {
+          releaseResources();
+          return;
+        }
+        createdRecognizer = await visionModule.GestureRecognizer.createFromOptions(fileset, {
+          baseOptions: { modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL, delegate: 'CPU' },
+          runningMode: 'VIDEO',
+          numHands: MAX_HANDS_PER_FRAME,
+        });
+        createdDelegate = 'CPU';
+      }
     } catch (cause) {
       if (myGeneration !== generation) {
         releaseResources();
@@ -420,6 +463,7 @@ export function createMediaPipeTrackingProvider(
       return;
     }
     recognizer = createdRecognizer;
+    activeDelegate = createdDelegate;
 
     status = 'running';
     lastInferenceTime = -Infinity;
@@ -595,6 +639,7 @@ export function createMediaPipeTrackingProvider(
         maxConcurrentInferences,
         scheduledTicks,
         skippedTicks,
+        activeDelegate,
       };
     },
   };

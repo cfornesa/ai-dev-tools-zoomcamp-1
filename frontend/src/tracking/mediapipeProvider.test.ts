@@ -663,6 +663,69 @@ describe('createMediaPipeTrackingProvider failure routing', () => {
   });
 });
 
+describe('createMediaPipeTrackingProvider GPU delegate fallback (issue #192)', () => {
+  it('creates the recognizer with the GPU delegate by default and reports it in diagnostics', async () => {
+    const harness = createHarness();
+    harness.provider.start();
+    await harness.flushMicrotasks();
+
+    expect(harness.createFromOptions).toHaveBeenCalledTimes(1);
+    expect(harness.createFromOptions).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'GPU' }) }),
+    );
+    expect(harness.errors).toHaveLength(0);
+    expect(harness.provider.getDiagnostics().activeDelegate).toBe('GPU');
+  });
+
+  it('retries once with the CPU delegate when GPU delegate creation throws, and does not emit an error', async () => {
+    const harness = createHarness();
+    const gpuFailure = new Error('WebGL context creation failed');
+    harness.createFromOptions.mockRejectedValueOnce(gpuFailure).mockResolvedValueOnce({
+      recognizeForVideo: harness.recognizeForVideo,
+      close: harness.close,
+    });
+
+    harness.provider.start();
+    await harness.flushMicrotasks();
+
+    expect(harness.createFromOptions).toHaveBeenCalledTimes(2);
+    expect(harness.createFromOptions).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'GPU' }) }),
+    );
+    expect(harness.createFromOptions).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({ baseOptions: expect.objectContaining({ delegate: 'CPU' }) }),
+    );
+    expect(harness.errors).toHaveLength(0);
+    expect(harness.provider.getDiagnostics().activeDelegate).toBe('CPU');
+
+    // The CPU-delegate recognizer is fully wired up — a tick still emits
+    // frames normally.
+    harness.tick();
+    expect(harness.frames).toHaveLength(1);
+  });
+
+  it('routes to onError when both the GPU and CPU delegate attempts fail', async () => {
+    const harness = createHarness();
+    const gpuFailure = new Error('WebGL context creation failed');
+    const cpuFailure = new Error('Wasm allocation failed');
+    harness.createFromOptions.mockRejectedValueOnce(gpuFailure).mockRejectedValueOnce(cpuFailure);
+
+    harness.provider.start();
+    await harness.flushMicrotasks();
+
+    expect(harness.createFromOptions).toHaveBeenCalledTimes(2);
+    expect(harness.errors).toHaveLength(1);
+    expect(harness.errors[0].cause).toBe(cpuFailure);
+    expect(harness.errors[0].message).toMatch(/model/i);
+    expect(harness.provider.getDiagnostics().activeDelegate).toBeNull();
+  });
+});
+
 describe('createMediaPipeTrackingProvider window test seam (Task 115, issue #150)', () => {
   afterEach(() => {
     delete (window as { __mediapipeLoadVisionTasksModule?: unknown })

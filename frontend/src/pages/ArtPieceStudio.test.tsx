@@ -60,6 +60,28 @@ describe('ArtPieceStudio (issue #199)', () => {
     expect(screen.getByTestId('art-piece-pending-status')).toBeInTheDocument();
   });
 
+  it('selecting SVG sends library: "svg" to the API', async () => {
+    mockedGenerateArtPiece.mockResolvedValue({
+      library: 'svg',
+      code: '<svg id="art-piece-svg"></svg>',
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    render(<ArtPieceStudio />);
+
+    await userEvent.selectOptions(screen.getByLabelText(/library/i), 'svg');
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'a pulsing circle');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(mockedGenerateArtPiece).toHaveBeenCalledWith(
+      'svg',
+      'a pulsing circle',
+      expect.anything(),
+      undefined,
+    );
+    const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+    expect(iframe.srcdoc).toContain('<svg id="art-piece-svg">');
+  });
+
   it('sends a typed model id and persists it across a fresh mount', async () => {
     mockedGenerateArtPiece.mockResolvedValue({
       library: 'canvas2d',

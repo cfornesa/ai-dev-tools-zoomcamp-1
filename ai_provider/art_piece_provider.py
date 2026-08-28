@@ -1,6 +1,5 @@
-"""Issue #199 (epic #196): generates a raw, self-contained Canvas2D art
-piece snippet from a prompt -- the first library slice of the multi-library
-generation epic, per #197's architecture decision.
+"""Issue #199 (epic #196): generates a raw, self-contained art-piece snippet
+(Canvas2D or SVG so far) from a prompt, per #197's architecture decision.
 
 ## Why this is a separate module, not `MistralSceneProvider`
 
@@ -44,11 +43,11 @@ from ai_provider.errors import (
 )
 from ai_provider.interface import AIUsageMetadata
 
-# The only library this slice supports -- see #199's grooming comment for
-# the follow-up path (three.js, a-frame, svg). Kept as a real constant
+# The libraries this slice supports -- see #199's grooming comment for the
+# remaining follow-up path (three.js, a-frame). Kept as a real constant
 # (not inlined) so `ArtPieceGenerateRequestSerializer` and any future
 # library addition both read from the one place.
-SUPPORTED_LIBRARIES = ("canvas2d",)
+SUPPORTED_LIBRARIES = ("canvas2d", "svg")
 
 DEFAULT_MODEL = "mistral-large-latest"
 REQUEST_TIMEOUT_MS = 20_000
@@ -69,8 +68,9 @@ _ESTIMATED_COMPLETION_COST_PER_1K = 0.006
 RESPONSE_TOO_LARGE_PREFIX = "response_too_large:"
 EMPTY_OR_MALFORMED_PREFIX = "empty_or_malformed:"
 
-_SYSTEM_PROMPT = """You generate the inner markup for a single generative-art piece using \
-ONLY the browser's native Canvas2D API (CanvasRenderingContext2D). Follow these rules exactly:
+_CANVAS2D_SYSTEM_PROMPT = """You generate the inner markup for a single generative-art piece \
+using ONLY the browser's native Canvas2D API (CanvasRenderingContext2D). Follow these rules \
+exactly:
 
 - Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences \
 before or after it.
@@ -85,6 +85,26 @@ eval()/Function()/setTimeout with a string argument.
 fixed reasonable size like 800x600) and begin drawing immediately without user interaction.
 - Prefer requestAnimationFrame for any animation, and make sure the loop is self-terminating \
 or bounded -- never an infinitely recursive synchronous call that could hang the page."""
+
+# Issue #199 (SVG extension): unlike Canvas2D, SVG output is inert, declarative
+# markup -- no script execution is needed (or wanted) at all for a purely
+# SVG-driven piece. Animation, when the prompt calls for it, is expressed
+# with SVG's own native animation elements or CSS, never JavaScript.
+_SVG_SYSTEM_PROMPT = """You generate the markup for a single generative-art piece using ONLY \
+inert SVG markup -- no JavaScript at all. Follow these rules exactly:
+
+- Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences \
+before or after it.
+- Output exactly one <svg id="art-piece-svg" ...> root element and nothing else: no <html>, \
+<head>, <body>, <!DOCTYPE>, <script>, <foreignObject>, or any other top-level element.
+- The <svg> must declare a viewBox (e.g. viewBox="0 0 800 600") so it scales to its container, \
+and must render its content immediately with no user interaction required.
+- Any animation must use SVG's own native animation elements (<animate>, <animateTransform>, \
+<animateMotion>) or a <style> block with CSS @keyframes/animation -- never JavaScript, never \
+a <script> element of any kind.
+- Never reference an external resource: no xlink:href/href to a URL, no <image> with a remote \
+src, no @import, no url(...) pointing outside the document. Every color/gradient/pattern must \
+be defined inline within the <svg> itself."""
 
 
 @dataclass(frozen=True)
@@ -141,11 +161,13 @@ class ArtPieceProvider:
             # rather than fold into `ArtPieceResult.error`.
             raise ValueError(f"Unsupported library: {library!r}")
 
+        system_prompt = _CANVAS2D_SYSTEM_PROMPT if library == "canvas2d" else _SVG_SYSTEM_PROMPT
+
         try:
             response = self.client.chat.complete(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.7,
@@ -219,12 +241,12 @@ class ArtPieceProvider:
             )
 
         snippet = _strip_markdown_fence(text).strip()
-        if not _looks_like_canvas_snippet(snippet) or len(snippet) > MAX_SNIPPET_CHARS:
+        if not _looks_like_snippet(snippet, library) or len(snippet) > MAX_SNIPPET_CHARS:
             return ArtPieceResult(
                 usage=usage,
                 error=(
                     f"{EMPTY_OR_MALFORMED_PREFIX}The generated output was empty or did not "
-                    "look like a canvas/script snippet. Try rephrasing the prompt."
+                    f"look like a valid {library} snippet. Try rephrasing the prompt."
                 ),
             )
 
@@ -249,6 +271,14 @@ def _strip_markdown_fence(text: str) -> str:
     return stripped.strip()
 
 
-def _looks_like_canvas_snippet(snippet: str) -> bool:
+def _looks_like_snippet(snippet: str, library: str) -> bool:
+    if not snippet:
+        return False
     lowered = snippet.lower()
-    return bool(snippet) and "<canvas" in lowered and "<script" in lowered
+    if library == "canvas2d":
+        return "<canvas" in lowered and "<script" in lowered
+    # SVG: per the system prompt, this is inert markup only -- a "<script"
+    # anywhere means the model didn't follow the no-JavaScript rule, so
+    # this is rejected the same as a missing "<svg" rather than passed
+    # through to the (still-safe, but not what was asked for) sandbox.
+    return "<svg" in lowered and "<script" not in lowered

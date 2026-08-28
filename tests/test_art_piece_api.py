@@ -77,6 +77,14 @@ _VALID_SNIPPET = (
     "const ctx=c.getContext('2d');ctx.fillRect(0,0,10,10);</script>"
 )
 
+_VALID_SVG_SNIPPET = (
+    '<svg id="art-piece-svg" viewBox="0 0 100 100">'
+    '<circle cx="50" cy="50" r="40" fill="teal">'
+    '<animate attributeName="r" values="40;20;40" dur="2s" repeatCount="indefinite" />'
+    "</circle>"
+    "</svg>"
+)
+
 
 @pytest.mark.django_db
 def test_success_returns_the_generated_snippet_and_usage(owner_client, monkeypatch):
@@ -139,6 +147,44 @@ def test_oversized_raw_response_is_rejected_with_413(owner_client, monkeypatch):
 
     assert response.status_code == 413
     assert response.json()["error"] == "response_too_large"
+
+
+@pytest.mark.django_db
+def test_svg_success_returns_the_generated_snippet(owner_client, monkeypatch):
+    _use_provider(monkeypatch, _mistral_provider_returning(_VALID_SVG_SNIPPET))
+
+    response = owner_client.post(
+        URL, {"library": "svg", "prompt": "a pulsing teal circle"}, format="json"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["library"] == "svg"
+    assert body["code"] == _VALID_SVG_SNIPPET
+
+
+@pytest.mark.django_db
+def test_svg_output_containing_a_script_tag_is_rejected_with_422(owner_client, monkeypatch):
+    """Issue #199 (SVG extension): SVG is meant to be inert markup only --
+    a <script> tag anywhere means the model didn't follow the no-JavaScript
+    rule, so this is rejected the same as missing <svg> entirely, even
+    though the sandboxed iframe would still isolate any script safely."""
+    scripted = '<svg id="art-piece-svg"><script>alert(1)</script></svg>'
+    _use_provider(monkeypatch, _mistral_provider_returning(scripted))
+
+    response = owner_client.post(URL, {"library": "svg", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 422
+    assert response.json()["error"] == "invalid_structured_output"
+
+
+@pytest.mark.django_db
+def test_svg_output_missing_svg_tag_is_rejected_with_422(owner_client, monkeypatch):
+    _use_provider(monkeypatch, _mistral_provider_returning("<p>not svg</p>"))
+
+    response = owner_client.post(URL, {"library": "svg", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 422
 
 
 @pytest.mark.django_db

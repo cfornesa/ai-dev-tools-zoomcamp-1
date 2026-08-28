@@ -48,18 +48,22 @@ function errorMessage(err: unknown): string {
 }
 
 /**
- * Issue #199 (epic #196): the first-slice creation flow for multi-library
- * AI art generation -- Canvas2D only for now (see this issue's grooming
- * comment for the Three.js/A-Frame/SVG follow-up path). Deliberately a
- * new, separate, and much simpler flow than `EditorWorkspace.tsx`: no
- * Layers panel, no undo/redo, no direct manipulation, no AI edit-patch --
- * per issue #197's decision, a generated piece here has no structured
- * scene-JSON backing for any of that to operate on. Prompt in, sandboxed
- * preview out, download when ready.
+ * Issue #199 (epic #196): the creation flow for multi-library AI art
+ * generation -- Canvas2D and SVG so far (see this issue's grooming
+ * comment for the Three.js/A-Frame follow-up path). Deliberately a new,
+ * separate, and much simpler flow than `EditorWorkspace.tsx`: no Layers
+ * panel, no undo/redo, no direct manipulation, no AI edit-patch -- per
+ * issue #197's decision, a generated piece here has no structured
+ * scene-JSON backing for any of that to operate on. Pick a library,
+ * prompt in, sandboxed preview out, download when ready. The sandboxing
+ * (`../generative/artPieceSandbox.ts`) is identical for every library --
+ * it wraps whatever markup the library selection tells the backend to
+ * generate the same way, whether that's a `<canvas>` + `<script>` pair
+ * or inert `<svg>` markup.
  */
 function ArtPieceStudio() {
   const auth = useAuth();
-  const [library] = useState<ArtPieceLibrary>('canvas2d');
+  const [library, setLibrary] = useState<ArtPieceLibrary>('canvas2d');
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState(readStoredModel);
   const [phase, setPhase] = useState<GenerationPhase>('idle');
@@ -161,10 +165,16 @@ function ArtPieceStudio() {
       <form onSubmit={handleGenerate}>
         <div className="behavior-card-field">
           <label htmlFor="art-piece-library">Library</label>
-          <select id="art-piece-library" value={library} disabled>
+          <select
+            id="art-piece-library"
+            value={library}
+            disabled={pending}
+            onChange={(event) => setLibrary(event.target.value as ArtPieceLibrary)}
+          >
             <option value="canvas2d">Canvas2D</option>
+            <option value="svg">SVG</option>
           </select>
-          <p>Three.js, A-Frame, and SVG are coming soon.</p>
+          <p>Three.js and A-Frame are coming soon.</p>
         </div>
 
         <div className="behavior-card-field">

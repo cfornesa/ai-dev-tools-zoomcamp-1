@@ -51,3 +51,13 @@ Existing `mediapipe` lifecycle, p5 getUserMedia, Playwright prerequisite, local 
 - Memory: existing topics reused; no topic created or changed.
 - Issue creation: 0 created, 0 reused as new follow-ups, 0 pending authorization.
 - Failed full-suite gates: all are classified above; no failed gate remains unclassified.
+
+## Final update — production-readiness failure reconciliation
+
+The subsequent full automated browser run exposed 10 failures (122 passed,
+2 skipped). These are now captured in the single criterion-ready GitHub
+follow-up [#193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/193)
+and `_docs/tasks.md` task 162. Existing issues #113, #117, #160, #184, and
+#187 were checked and retained as related coverage/history; no duplicate
+issues were reopened. The project remains not ready until #193 and the Replit
+deployment verification boundary are resolved.

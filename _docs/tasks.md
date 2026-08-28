@@ -5391,3 +5391,47 @@ Acceptance criteria: all Details controls are stacked below their labels at full
 Acceptance matrix: all Details controls stack beneath labels and fill available width; labels stay associated; Save changes is right-aligned at comfortable widths and full-width/stacked when narrow; existing validation, dirty state, feedback, persistence, keyboard order, focus, and overflow remain correct; focused tests and required checks pass.
 Evidence (2026-08-27): Commits `f6e1750` and `5f72817` add responsive Details form styling and a form/label regression. Focused Details tests passed 11; final frontend suite passed 1,873/1,873; Docker-backed Chromium responsive scenarios passed 14/14; build/typecheck/lint/format and `make check` passed. GitHub QA PASS comment posted and issue #190 closed completed.
 Next action: None; retain the QA comment and commits as handoff evidence.
+
+## 162. Restore the full browser acceptance gate after production-readiness failures
+
+Goal: Restore a deterministic, zero-unexpected-failure full browser acceptance
+gate against the disposable PostgreSQL + Django + Vite + Chromium stack.
+
+Status: ACTIVE
+
+GitHub issue: [#193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/193)
+
+Evidence (2026-08-27): The automated command
+`UV_CACHE_DIR=/private/tmp/creatrweb-uv-cache BROWSER_QA_FULL_E2E=1 make browser-qa`
+completed with 122 passed, 10 failed, and 2 skipped on commit `489ea51`.
+Failures cover AI Reject state, three draft/session-recovery cases, three
+interaction-runtime Behaviors-panel cases, Mistral credential status copy,
+selection-center navigation/alignment, and narrow empty-gallery geometry.
+Related completed issues #113, #117, #160, #184, and #187 are retained as
+coverage history; this task is the single release-gate follow-up and must not
+weaken their acceptance contracts.
+
+Acceptance criteria:
+
+- [ ] The full `make browser-qa` command passes with zero unexpected failures
+  against disposable PostgreSQL.
+- [ ] AI Reject, draft/session recovery, and interaction-runtime scenarios are
+  deterministic and preserve their existing product guarantees.
+- [ ] Mistral credential status, selection alignment/navigation, and narrow
+  empty-gallery layout assertions pass without exposing secrets or weakening
+  viewport/accessibility contracts.
+- [ ] Focused tests, frontend build/typecheck/lint/format, `make check`, and
+  the CI browser job pass.
+- [ ] Any environment-only exception is quarantined with issue-linked durable
+  evidence and an explicit supported-environment boundary.
+
+Dependencies/order: Fix fixture/session and panel-helper determinism first;
+then AI/credential/editor flows; then responsive geometry; finally rerun the
+complete browser suite, root gates, and CI.
+
+Next action: Engineering reproduces and fixes or explicitly classifies each
+failure under #193; QA reruns the complete browser suite and root gates before
+closure. Replit publication checks remain a separate manual verification
+boundary after the automated gate is green.
+
+Durable memory: [full browser readiness gate](../.agents/memory/full-browser-readiness-gate.md).

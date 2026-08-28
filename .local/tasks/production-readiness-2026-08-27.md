@@ -15,9 +15,11 @@ production-safe. Replit deployment verification remains outstanding.
   `state_reason: completed`.
 - The working tree was clean at `489ea51` (`origin/main`), aside from ignored
   generated test/build artifacts.
-- No new issue was created: the browser failures map to existing draft,
-  collapsible-panel, graph-authoring, credential, selection-alignment, and
-  responsive-shell backlog areas rather than a distinct uncovered defect.
+- The browser failures map to existing draft, collapsible-panel,
+  graph-authoring, credential, selection-alignment, and responsive-shell
+  backlog areas. Distillation created the deduplicated release-blocking
+  follow-up [#193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/193)
+  to track their shared full-gate recovery.
 
 ## Evidence
 
@@ -83,3 +85,9 @@ camera and Layers evidence does not override the full-suite failure.
    viewer, and camera fallback/active behavior.
 5. Re-run production checks with production-safe Replit settings and record
    the deployment evidence before changing the verdict.
+
+## Distillation update
+
+The ten failures were reconciled into [#193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/193),
+with existing issue links #113, #117, #160, #184, and #187 retained as
+related coverage rather than duplicated or reopened tickets.

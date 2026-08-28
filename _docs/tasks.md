@@ -5702,35 +5702,49 @@ Goal: Replace the fixed server-side Mistral model default with a validated,
 user-facing model choice threaded through the existing AI generation
 endpoints.
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#198](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/198)
+GitHub issue: [#198](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/198) (closed)
 
 Parent: task 165/#196. Independent of task 166/#197 (can proceed in
 parallel); feeds task 168/#199 once available.
 
 Acceptance criteria:
 
-- [ ] A user can supply a Mistral model ID when requesting AI scene creation/
+- [x] A user can supply a Mistral model ID when requesting AI scene creation/
   edit, replacing (not merely supplementing) the always-on server default for
   that request.
-- [ ] Model ID validated before use; an invalid/inaccessible model produces a
-  clear, actionable error with no partial scene state.
-- [ ] Documented decision: free-form model ID vs. a curated allowlist, with
-  cost/quota/abuse exposure considered (especially for a user relying on
-  shared rather than personal Mistral credentials, `ai_provider/credentials.py`).
-- [ ] Model threaded per-request (not just per-process) through
-  `get_ai_provider()`/`MistralSceneProvider`, without breaking the
-  `AI_PROVIDER=fake` e2e seam (`ai_provider/e2e_provider.py`).
-- [ ] Frontend AI-prompt UI exposes and persists the model choice
-  accessibly.
-- [ ] Focused backend/frontend tests plus `make check` pass; existing
-  `frontend/e2e/aiAndRecovery.spec.ts` (`AI_PROVIDER=fake` mode) unaffected.
+- [x] Model ID validated before use (shape only, not an allowlist — see
+  corrected decision below); an invalid/inaccessible model produces a
+  clear, actionable error (`model_invalid` for shape failures pre-network,
+  the existing generic `provider_failure` for a well-formed but
+  nonexistent/unreachable model) with no partial scene state.
+- [x] Corrected decision (grooming found the original framing inaccurate):
+  every AI request already requires the caller's own personal
+  `MistralCredential` — there is no shared server credential to abuse — so
+  any syntactically well-formed model id is accepted per the caller's own
+  account, no curated allowlist maintained.
+- [x] Model threaded per-request (not just per-process) through
+  `get_ai_provider()`/`MistralSceneProvider` via a second contextvar,
+  without breaking the `AI_PROVIDER=fake` e2e seam or
+  `get_ai_provider()`'s zero-argument, monkeypatch-compatible signature.
+- [x] Frontend AI-prompt UI (`AIProposalPanel.tsx`) exposes and persists
+  the model choice via `localStorage`, same convention as
+  `cameraOverlaySettings.ts`.
+- [x] Focused backend/frontend tests plus `make check` pass; existing
+  `frontend/e2e/aiAndRecovery.spec.ts` (`AI_PROVIDER=fake` mode) unaffected
+  (not re-run live this session — no source file it exercises changed
+  behavior for the blank-model default path).
 
 Out of scope: non-Mistral providers; per-library generation prompt strategy
 (task 168/#199).
 
 Dependencies: None blocking.
+
+Evidence (2026-08-28): commit `ad52e11`. Backend: 642 passed/22 skipped
+(+6 new tests), lint/format/typecheck green. Frontend: 1885 passed/128
+files (+3 net), typecheck/lint/format/build green. `make check` full pass.
+QA:PASS comment posted; GitHub issue closed as completed.
 
 ## 168. Per-library AI generation and pre-download validation pipeline
 

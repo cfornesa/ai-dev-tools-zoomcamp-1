@@ -10,6 +10,7 @@ import Home from './pages/Home';
  * lazy-loading them keeps that weight out of the initial bundle so a
  * first-time visitor to `/` only pays for `Home` + routing. `Home` stays a
  * static import since it's the landing page most visits hit first. */
+const ArtPieceStudio = lazy(() => import('./pages/ArtPieceStudio'));
 const EditorWorkspace = lazy(() => import('./pages/EditorWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
@@ -45,6 +46,12 @@ function App() {
                   (`/api/public/projects/<public_id>/`). */}
               <Route path="p/:id" element={<PublicProjectViewer />} />
               <Route path="templates" element={<Templates />} />
+              {/* Issue #199 (epic #196): the first-slice multi-library AI
+                  art generation flow (Canvas2D only). Deliberately not
+                  yet linked from the header/gallery nav -- see this
+                  issue's grooming for why the direct route is enough for
+                  this slice. */}
+              <Route path="art-pieces" element={<ArtPieceStudio />} />
               <Route path="account/settings" element={<AccountSettings />} />
               <Route path="projects/:id" element={<EditorWorkspace />} />
               {/* Task 94 (issue #94): project-metadata editing folded into

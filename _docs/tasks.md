@@ -5555,3 +5555,189 @@ Dependencies: None; related to task 162/#193 (shared CI long-task evidence).
 
 Next action: implement the compositing fix, re-profile the long-task
 regression, and verify against a real camera before closing.
+
+## 165. Epic: multi-library AI art generation with user-selectable Mistral model and downloadable standalone export
+
+Goal: Let a user pick a target rendering library (p5.js, Canvas2D, Three.js,
+A-Frame, SVG), pick a specific Mistral model by ID, have Mistral generate a
+working art piece in that library, and download it as a portable standalone
+bundle.
+
+Status: PROPOSED
+
+GitHub issue: [#196](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/196)
+(epic; sub-issues #197, #198, #199, #200 below)
+
+Evidence: user request, informed by a reference export bundle
+(`beating-heart` bundle from a different tool) showing the desired portable
+output shape: `index.html` + `README.txt` + `styles/piece.css` +
+`scripts/piece.js` + `runtime/` (vendored library runtime) + `media/` (binary
+assets with file.js twins for offline `file://` use) + a local-server helper
+script for any ES-module/camera-dependent feature.
+
+Current state investigated this session: this app supports exactly one
+renderer (p5.js, `frontend/src/export/exportCompatibility.ts` — "intentionally
+narrow rather than aspirational"), one fixed server-configured Mistral model
+(`ai_provider/mistral_provider.py`'s `DEFAULT_MODEL`), and one single-file
+HTML export (`generateHtmlExport.ts`, no multi-file bundle). All of this is
+net-new work; no prior issue or task covers renderer abstraction, per-request
+model selection, or a portable multi-file export bundle.
+
+Sub-tasks (dependency order): task 166/#197 (architecture decision, blocks
+168/169) and task 167/#198 (model selection, independent) can start in
+parallel; task 168/#199 (generation/validation pipeline) is blocked on #197;
+task 169/#200 (bundle exporter) is blocked on #199.
+
+Out of scope (first pass): reproducing the reference bundle's hand-
+tracking/theremin/audio features (a separate, much larger existing capability
+of this app's own camera/MediaPipe pipeline); any CMS/server-dependent
+feature the reference bundle's own README calls out as unsupported offline
+(re-download-with-different-options, comments/version history/prompt
+metadata UI, VR gallery links).
+
+Next action: resolve task 166/#197's architecture decision first.
+
+Durable memory: [multi-library generation architecture fork](../.agents/memory/multi-library-generation-architecture-fork.md).
+
+## 166. Decide renderer/generation architecture for multi-library art pieces
+
+Goal: Make an explicit, documented decision for how this app supports
+Canvas2D/Three.js/A-Frame/SVG beyond p5.js, before any generation or export
+work depends on it.
+
+Status: PROPOSED
+
+GitHub issue: [#197](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/197)
+
+Parent: task 165/#196. Blocks task 168/#199 and task 169/#200.
+
+Acceptance criteria:
+
+- [ ] Written decision choosing (a) extend the structured scene-JSON model
+  per library with new adapters, (b) generate raw sandboxed code per library
+  with no structured backing, or (c) a hybrid (p5.js keeps the structured
+  editor UX; every other library is a separate raw-code creation flow) — with
+  rationale and security implications for any raw-code path made explicit.
+- [ ] Resolve the "C2.js" ambiguity from the original request (a specific
+  third-party Canvas2D library, or shorthand for the native Canvas2D API).
+- [ ] Explicit statement of what changes in the existing editor UX (Layers
+  panel, undo/redo, direct manipulation, AI edit-patch flow) for non-p5.js
+  pieces.
+- [ ] Decision recorded as a durable memory topic (see below) since it gates
+  two dependent issues.
+
+Dependencies: None blocking; independent of task 167/#198.
+
+Durable memory: [multi-library generation architecture fork](../.agents/memory/multi-library-generation-architecture-fork.md).
+
+## 167. Let a user select a specific Mistral model ID for AI generation
+
+Goal: Replace the fixed server-side Mistral model default with a validated,
+user-facing model choice threaded through the existing AI generation
+endpoints.
+
+Status: PROPOSED
+
+GitHub issue: [#198](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/198)
+
+Parent: task 165/#196. Independent of task 166/#197 (can proceed in
+parallel); feeds task 168/#199 once available.
+
+Acceptance criteria:
+
+- [ ] A user can supply a Mistral model ID when requesting AI scene creation/
+  edit, replacing (not merely supplementing) the always-on server default for
+  that request.
+- [ ] Model ID validated before use; an invalid/inaccessible model produces a
+  clear, actionable error with no partial scene state.
+- [ ] Documented decision: free-form model ID vs. a curated allowlist, with
+  cost/quota/abuse exposure considered (especially for a user relying on
+  shared rather than personal Mistral credentials, `ai_provider/credentials.py`).
+- [ ] Model threaded per-request (not just per-process) through
+  `get_ai_provider()`/`MistralSceneProvider`, without breaking the
+  `AI_PROVIDER=fake` e2e seam (`ai_provider/e2e_provider.py`).
+- [ ] Frontend AI-prompt UI exposes and persists the model choice
+  accessibly.
+- [ ] Focused backend/frontend tests plus `make check` pass; existing
+  `frontend/e2e/aiAndRecovery.spec.ts` (`AI_PROVIDER=fake` mode) unaffected.
+
+Out of scope: non-Mistral providers; per-library generation prompt strategy
+(task 168/#199).
+
+Dependencies: None blocking.
+
+## 168. Per-library AI generation and pre-download validation pipeline
+
+Goal: Given a user-chosen library and Mistral model, generate a viable art
+piece in that library with a way to confirm it renders before download.
+
+Status: PROPOSED
+
+GitHub issue: [#199](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/199)
+
+Parent: task 165/#196. Blocked on task 166/#197.
+
+Acceptance criteria (to be finalized once #197 lands; drafted for scoping):
+
+- [ ] A prompt strategy per supported library reliably produces runnable
+  output, per #197's chosen architecture.
+- [ ] Pre-download sandboxed render/validation check surfaces runtime
+  errors (crash, blank output, exceptions) before a piece is downloadable,
+  analogous to the public viewer's existing `previewError` handling but
+  applied pre-download.
+- [ ] A failed validation surfaces a clear error and produces no downloadable
+  artifact; retry is available, consistent with existing AI proposal
+  accept/reject/retry conventions.
+- [ ] If a raw-code path is chosen by #197: an explicit sandboxing boundary
+  (restrictive-CSP sandboxed iframe, no access to this app's own session/API
+  surface) extending this app's existing injection-audit threat model
+  (`frontend/e2e/injectionArtifacts.spec.ts`).
+- [ ] Focused tests per library via a deterministic fake/seam provider,
+  consistent with `ai_provider/e2e_provider.py`'s convention; `make check`
+  and relevant e2e suites pass.
+
+Out of scope: the download/export bundle packaging itself (task 169/#200);
+reproducing the reference bundle's hand-tracking/theremin/audio features.
+
+Dependencies: Blocked on task 166/#197. Feeds task 169/#200.
+
+## 169. Add a portable multi-file standalone export bundle
+
+Goal: Let a user download a generated (or existing) art piece as a portable
+multi-file bundle runnable standalone (offline double-click, or hosted),
+alongside today's single-file HTML export.
+
+Status: PROPOSED
+
+GitHub issue: [#200](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/200)
+
+Parent: task 165/#196. Blocked on task 168/#199 (needs generated content to
+package) and transitively task 166/#197.
+
+Acceptance criteria:
+
+- [ ] New export path alongside (not replacing) `generateHtmlExport.ts`,
+  producing `index.html` + `README.txt` + `styles/` + `scripts/` + `runtime/`
+  + `media/` (with `<name>.<ext>.js` twins for offline `file://` use),
+  packaged as a downloadable ZIP reusing `generateSocialThumbnailZip.ts`'s
+  existing ZIP-building approach.
+- [ ] `index.html` works double-clicked directly from disk for any piece not
+  requiring an ES module or camera access; a bundled local static-file
+  server script (matching the reference bundle's zero-dependency approach)
+  and README explanation cover any piece that does.
+- [ ] Bundled README explains what's editable vs. supporting-only, and does
+  not imply CMS/server-dependent capabilities the offline bundle lacks.
+- [ ] Existing export privacy/security guarantees preserved (no internal
+  scene id, prompt history, draft/provenance, or credential leaks) —
+  extend `frontend/e2e/exportArtifacts.spec.ts`'s content-exclusion scanning
+  to the new bundle format.
+- [ ] Focused tests for bundle structure/twin-file correctness/ZIP contents,
+  plus an e2e scenario analogous to the existing ZIP export test; `make
+  check` passes.
+
+Out of scope: CMS/server-dependent reference-bundle features (re-download-
+with-different-options, comments/version history/prompt metadata UI, VR
+gallery links); hand-tracking/theremin/audio runtime features; changing the
+existing single-file `generateHtmlExport.ts` path.
+
+Dependencies: Blocked on task 168/#199, transitively task 166/#197.

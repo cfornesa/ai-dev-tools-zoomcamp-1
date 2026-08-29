@@ -7324,11 +7324,11 @@ Dependencies: task 200/#232 (complete).
 
 ## 204. A-Frame art pieces render blank: camera faces away from origin-positioned content
 
-Status: ACTIVE (three fixes now pushed to `main` — `1cb949f` (camera
-facing), `76856e0` (flat-shape edge-on orientation), and `1cb420b`
-(pinned A-Frame CDN version 404, the actual remaining blocker after
-both prompt fixes); live production retest of `1cb420b` pending a
-Replit publish — see next action)
+Status: ACTIVE (four fixes now pushed to `main` — `1cb949f` (camera
+facing), `76856e0` (flat-shape edge-on orientation), `1cb420b` (pinned
+A-Frame CDN version 404), and `62d010b` (CSP `'unsafe-eval'`, found
+live after `1cb420b` published — see next action); live production
+retest of `62d010b` pending a Replit publish)
 
 GitHub issue: [#236](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/236)
 
@@ -7430,10 +7430,36 @@ Delivered (commit `1cb420b`): pinned all three hand-synced copies
 `artPieceSandbox.test.ts`'s matching assertion. `make check` passes end
 to end (794 backend / 2087 frontend).
 
-Next action: repository owner publishes commit `1cb420b` (includes
-`76856e0`/`1cb949f`) to production via Replit, then retests a few
-A-Frame prompts (not just "a red circle," to build confidence beyond a
-single case) at `https://animate.creatrweb.com/art-pieces`. Close #236
-once that live retest passes.
+Live production retest (2026-08-29, continued, after the user published
+commit `1cb420b`): confirmed via the live `srcdoc` that production was
+now correctly serving `aframe@1.4.2` (the CDN 404 fix took effect), but
+generating "A red circle" now surfaced a new, different failure: "The
+generated piece could not render: Script error." with no further
+detail. Reproducing the app's exact `<script src>` tag standalone with
+`crossorigin="anonymous"` added unmasked the browser's generic
+cross-origin error message and revealed the real error: `Uncaught
+TypeError: a[e] is not a constructor` thrown deep inside
+`aframe.min.js`'s `initSystem`, during `v.doConnectedCallback`.
+Bisecting the sandboxed document's CSP directives (same production
+markup, policy present vs. absent, then individual directives added
+back one at a time) isolated the cause to `'unsafe-eval'`: A-Frame's
+own system-initialization code calls a dynamic eval/`Function`
+constructor internally, silently blocked by the sandbox's CSP with no
+`'unsafe-eval'` in `script-src` — reproduced 3/3 failures without it,
+0/3 with it, using the exact production markup. Three.js needed no such
+allowance. See
+`.agents/memory/csp-blocked-eval-masquerades-as-library-bug.md`.
+
+Delivered (commit `62d010b`): `artPieceSandbox.ts`'s `buildCsp()` now
+grants `'unsafe-eval'` scoped to the `aframe` branch only, plus a
+regression test for the new CSP string and a companion test asserting
+Three.js's CSP does *not* get the same allowance. `make check` passes
+end to end (794 backend / 2088 frontend).
+
+Next action: repository owner publishes commit `62d010b` (includes
+`1cb420b`/`76856e0`/`1cb949f`) to production via Replit, then retests a
+few A-Frame prompts (not just "a red circle," to build confidence
+beyond a single case) at `https://animate.creatrweb.com/art-pieces`.
+Close #236 once that live retest passes.
 
 Dependencies: None.

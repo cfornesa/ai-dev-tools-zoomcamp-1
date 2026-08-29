@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import type { SceneDocument, SceneVersion } from '../api/projects';
-import { createP5ScenePreview, type P5ScenePreview } from '../render/p5Adapter';
+import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
+import type { ScenePreview, SceneRendererId } from '../render/scenePreview';
 import { useAIProposal, type ProposalMode } from './useAIProposal';
 
 type AIProposalPanelProps = {
@@ -83,25 +84,39 @@ function AIProposalPanel({
   }, [seed?.nonce]);
 
   const previewMountRef = useRef<HTMLDivElement>(null);
-  const previewRef = useRef<P5ScenePreview | null>(null);
+  const previewRef = useRef<ScenePreview | null>(null);
+  // Issue #206: which renderer adapter `previewRef.current` currently is,
+  // so the render effect below can tell it apart from the renderer the
+  // incoming `proposal.scene` actually wants and recreate the preview
+  // instance when they differ (e.g. a create-proposal for a canvas2d scene
+  // arriving while this panel still has the default p5 instance mounted).
+  const previewRendererRef = useRef<SceneRendererId | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!previewMountRef.current) return;
-    const preview = createP5ScenePreview(previewMountRef.current);
+    const preview = createScenePreview(previewMountRef.current, 'p5');
     previewRef.current = preview;
+    previewRendererRef.current = 'p5';
     return () => {
       preview.destroy();
       previewRef.current = null;
+      previewRendererRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!previewRef.current) return;
     if (!proposal) {
       setPreviewError(null);
       return;
     }
+    const rendererId = resolveSceneRendererId(proposal.scene);
+    if (previewMountRef.current && previewRendererRef.current !== rendererId) {
+      previewRef.current?.destroy();
+      previewRef.current = createScenePreview(previewMountRef.current, rendererId);
+      previewRendererRef.current = rendererId;
+    }
+    if (!previewRef.current) return;
     try {
       previewRef.current.render(proposal.scene);
       setPreviewError(null);

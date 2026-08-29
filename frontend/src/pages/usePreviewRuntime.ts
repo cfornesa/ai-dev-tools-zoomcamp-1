@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 
 import type { SceneDocument } from '../api/projects';
-import type { P5ScenePreview, RenderableCameraOverlay, RenderableTrail } from '../render/p5Adapter';
+import type {
+  RenderableCameraOverlay,
+  RenderableTrail,
+  ScenePreview,
+} from '../render/scenePreview';
 import {
   applyRuntimeOutputsToScene,
   createBehaviorRuntime,
@@ -170,7 +174,7 @@ function buildRenderableTrails(
 }
 
 export type UsePreviewRuntimeOptions = {
-  previewRef: React.RefObject<P5ScenePreview | null>;
+  previewRef: React.RefObject<ScenePreview | null>;
   scene: SceneDocument | null;
   getTrackingFrame: () => TrackingFrame;
   reducedMotion: boolean;

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-unsupported-renderer",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#ffffff" },
+  "renderer": { "preferred": "webgl" },
+  "layers": [],
+  "shapes": [],
+  "groups": [],
+  "bindings": [],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "randomness": { "seed": 0, "enabled": false }
+}

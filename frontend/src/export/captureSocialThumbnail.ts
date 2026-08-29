@@ -4,36 +4,35 @@
  *
  * ## Reuse, not reimplementation
  *
- * This module drives the app's own p5.js rendering adapter
- * (`../render/p5Adapter.ts`, Task 25) exactly the way the editor preview
- * and `generateHtmlExport.ts`'s exported page both do: it builds one
- * off-screen `<div>` container, hands it to `createP5ScenePreview`, and
- * calls `render(scene)` -- no particles argument (Task 39's live particle
- * snapshot is ephemeral runtime state, not part of the saved scene
- * document, and this module never has one to pass). Nothing here
- * reimplements scene drawing, seeding, or validation; every one of those
- * concerns already lives in `p5Adapter.ts`/`sceneDrawPlan.ts` and is
- * exercised identically here.
+ * This module drives whichever scene renderer adapter the scene itself
+ * selects (`../render/createScenePreview.ts`, Task 25/issue #206 --
+ * `p5Adapter.ts`'s p5.js adapter or `canvas2dAdapter.ts`'s native Canvas2D
+ * adapter) exactly the way the editor preview and `generateHtmlExport.ts`'s
+ * exported page both do: it builds one off-screen `<div>` container, hands
+ * it to `createScenePreview`, and calls `render(scene)` -- no particles
+ * argument (Task 39's live particle snapshot is ephemeral runtime state,
+ * not part of the saved scene document, and this module never has one to
+ * pass). Nothing here reimplements scene drawing, seeding, or validation;
+ * every one of those concerns already lives in the chosen adapter/
+ * `sceneDrawPlan.ts` and is exercised identically here.
  *
  * ## Why this is always "stable demo mode," never the camera
  *
- * `createP5ScenePreview` (`p5Adapter.ts`) reads `scene.randomness` (Task
- * 40's seeded PRNG: `sk.randomSeed`/`sk.noiseSeed` from
- * `scene.randomness.seed` when `scene.randomness.enabled`) and the static
- * shape/layer/group tree. A supplied still-frame overlay is passed to that
- * same renderer, so it participates in the artwork layer order before the
- * cover crop. This function never reads a live camera stream or a tracking
- * frame; `generateSocialThumbnailZip.ts` supplies only an already-captured
- * `CameraOverlayExport`.
+ * The chosen adapter reads `scene.randomness` (Task 40's seeded PRNG) and
+ * the static shape/layer/group tree. A supplied still-frame overlay is
+ * passed to that same renderer, so it participates in the artwork layer
+ * order before the cover crop. This function never reads a live camera
+ * stream or a tracking frame; `generateSocialThumbnailZip.ts` supplies
+ * only an already-captured `CameraOverlayExport`.
  *
  * ## Why the result contains only artwork
  *
  * The off-screen container this module creates is never populated with
- * anything but the p5-created `<canvas>` -- no title/description text, no
- * demo-controls panel, no camera-controls section, no attribution footer,
- * none of `generateHtmlExport.ts`'s DOM. It is a structurally separate
- * capture path from that module's full export document, not a stripped-
- * down copy of it.
+ * anything but the renderer-created `<canvas>` -- no title/description
+ * text, no demo-controls panel, no camera-controls section, no attribution
+ * footer, none of `generateHtmlExport.ts`'s DOM. It is a structurally
+ * separate capture path from that module's full export document, not a
+ * stripped-down copy of it.
  *
  * ## Cropping to exactly 1200x630
  *
@@ -55,7 +54,7 @@
  * revoke here either way.
  */
 import type { SceneDocument } from '../api/projects';
-import { createP5ScenePreview } from '../render/p5Adapter';
+import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { CameraOverlayExport } from '../editor/cameraOverlayGeometry';
 
 export const SOCIAL_THUMBNAIL_WIDTH = 1200;
@@ -164,7 +163,7 @@ export async function captureSocialThumbnail(
   container.setAttribute('aria-hidden', 'true');
   document.body.appendChild(container);
 
-  let preview: ReturnType<typeof createP5ScenePreview> | null = null;
+  let preview: ReturnType<typeof createScenePreview> | null = null;
   try {
     let cameraImage: HTMLImageElement | undefined;
     if (cameraOverlay) {
@@ -176,7 +175,7 @@ export async function captureSocialThumbnail(
       });
     }
 
-    preview = createP5ScenePreview(container);
+    preview = createScenePreview(container, resolveSceneRendererId(scene));
     try {
       preview.render(
         scene,

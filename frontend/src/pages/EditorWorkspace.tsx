@@ -25,11 +25,8 @@ import {
 import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
-import {
-  createP5ScenePreview,
-  type P5ScenePreview,
-  type RenderableCameraOverlay,
-} from '../render/p5Adapter';
+import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
+import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
 import {
   generateEditableCss,
   generateEditableHtml,
@@ -1481,7 +1478,14 @@ function EditorWorkspace() {
   }
 
   const canvasRef = useRef<HTMLDivElement>(null);
-  const previewRef = useRef<P5ScenePreview | null>(null);
+  const previewRef = useRef<ScenePreview | null>(null);
+  // Issue #206: "latest value" ref (same pattern as `sceneEditorRef`/
+  // `snapSettingsRef` below) so `previewMountCallbackRef` -- memoized with
+  // `[]` deps, so it never re-closes over a fresh `workingCopy` on its
+  // own -- still reads whichever scene is current at the moment the mount
+  // div actually attaches, to pick the right renderer adapter.
+  const workingCopyRef = useRef(workingCopy);
+  workingCopyRef.current = workingCopy;
 
   // Issue #156: the Preview canvas's zoom/pan view state. Purely local —
   // never derived from or written into `workingCopy` — and reset to
@@ -1909,7 +1913,7 @@ function EditorWorkspace() {
   const [previewMounted, setPreviewMounted] = useState(false);
   const previewMountCallbackRef = useCallback((node: HTMLDivElement | null) => {
     if (node) {
-      previewRef.current = createP5ScenePreview(node);
+      previewRef.current = createScenePreview(node, resolveSceneRendererId(workingCopyRef.current));
       setPreviewMounted(true);
     } else {
       previewRef.current?.destroy();

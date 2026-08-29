@@ -52,7 +52,6 @@
 import p5 from 'p5';
 
 import type { SceneDocument } from '../api/projects';
-import type { CameraOverlayGeometry } from '../editor/cameraOverlayGeometry';
 import {
   buildScenePlan,
   type AnyShape,
@@ -60,72 +59,25 @@ import {
   type ScenePlan,
   type Transform2D,
 } from './sceneDrawPlan';
+import type {
+  RenderableCameraOverlay,
+  RenderableParticle,
+  RenderableTrail,
+  ScenePreview,
+} from './scenePreview';
 
 export { SceneRenderError } from './sceneDrawPlan';
+// Issue #206: these three types moved to `scenePreview.ts` so a second
+// (Canvas2D) adapter can share them without importing this p5-specific
+// module. Re-exported here so every pre-existing `from './p5Adapter'`
+// import keeps working unchanged.
+export type { RenderableCameraOverlay, RenderableParticle, RenderableTrail } from './scenePreview';
 
-/** The minimal shape this adapter needs from a Task 39 particle — see
- * `runtime/particleSystem.ts`'s `Particle` type, which structurally
- * satisfies this (a full `Particle` carries extra runtime-only fields
- * like `vx`/`vy`/`spawnedAt` this adapter never reads). */
-export type RenderableParticle = { x: number; y: number; size: number; color: string };
-
-/** One shape's live trail (Task 61, `runtime/trailSystem.ts`) reduced to
- * exactly what this adapter needs to draw it: a color (the shape's own
- * `style.stroke` or `style.fill`, resolved by the caller — this adapter
- * never re-reads scene styling for a trail) and its ordered sample
- * points, oldest first. */
-export type RenderableTrail = {
-  color: string;
-  points: readonly { x: number; y: number }[];
-};
-
-export type RenderableCameraOverlay = {
-  source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement;
-  geometry: CameraOverlayGeometry;
-  opacity: number;
-  mirrored: boolean;
-  layerOrder: number;
-};
-
-export type P5ScenePreview = {
-  /** Validates and draws `scene`, then draws `trails` (Task 61,
-   * `runtime/trailSystem.ts`'s live trail snapshot) beneath the static
-   * tree's shapes, then draws `particles` (Task 39,
-   * `runtime/particleSystem.ts`'s live particle snapshot) on top of
-   * everything — see the module doc comment. Both default to empty, so
-   * every existing call site is unaffected. Throws `SceneRenderError` —
-   * before any p5 draw call, and with zero canvas mutation — if `scene`
-   * isn't something `validateScene` accepts, or fails the adapter's own
-   * structural/referential pre-pass (see `sceneDrawPlan.ts`); a render
-   * error is always about `scene`, never about `particles`/`trails`
-   * (neither needs schema validation — neither is scene JSON). */
-  render(
-    scene: SceneDocument,
-    particles?: readonly RenderableParticle[],
-    trails?: readonly RenderableTrail[],
-    /** Task 110 (issue #141): when `true`, skips painting the scene's
-     * opaque `canvas.backgroundColor` and clears to fully transparent
-     * instead, so a DOM element stacked behind this `<canvas>` (the
-     * camera overlay `<video>` in `EditorWorkspace.tsx`) shows through
-     * wherever the scene doesn't paint over it. Shapes still draw
-     * normally on top -- only the background fill is skipped. Defaults to
-     * `false` (paint the configured background, today's behavior), so
-     * every existing call site is unaffected. Live-verified: without
-     * this, the canvas's own opaque background fill (painted every frame,
-     * `zIndex` above the video's) fully hides the overlay regardless of
-     * the overlay's own CSS opacity, no matter how the two elements are
-     * stacked -- a transparent canvas is the only way a shape can
-     * legitimately appear to sit "in front of" the live camera feed
-     * within a single flat 2D canvas. */
-    transparentBackground?: boolean,
-    cameraOverlay?: RenderableCameraOverlay,
-  ): void;
-  /** Tears down the underlying p5 instance and removes its `<canvas>`. */
-  destroy(): void;
-  /** The p5-created `<canvas>` element, once one exists (after the first
-   * successful `render`), or `null` before that. */
-  getCanvasElement(): HTMLCanvasElement | null;
-};
+/** Issue #206: `P5ScenePreview` is now an alias of the shared
+ * `ScenePreview` interface (`scenePreview.ts`) — kept as its own exported
+ * name so no existing `import type { P5ScenePreview } from './p5Adapter'`
+ * needs to change. */
+export type P5ScenePreview = ScenePreview;
 
 function parseColor(hex: string): { r: number; g: number; b: number; a: number } {
   let h = hex.slice(1);

@@ -11,11 +11,8 @@ import {
   useCameraOverlayGeometry,
 } from '../editor/cameraOverlayGeometry';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
-import {
-  createP5ScenePreview,
-  type P5ScenePreview,
-  type RenderableCameraOverlay,
-} from '../render/p5Adapter';
+import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
+import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
 import { normalizeSceneLayers } from '../validation/scene';
 import DemoControlsPanel from './DemoControlsPanel';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
@@ -186,7 +183,13 @@ function PublicProjectViewer() {
     project,
   ]);
 
-  const previewRef = useRef<P5ScenePreview | null>(null);
+  const previewRef = useRef<ScenePreview | null>(null);
+  // Issue #206: "latest value" ref (same rationale as `EditorWorkspace.tsx`'s
+  // `workingCopyRef`) so `previewMountCallbackRef` below -- memoized with
+  // `[]` deps -- still reads whichever project is current at the moment the
+  // mount div actually attaches, to pick the right renderer adapter.
+  const projectRef = useRef(project);
+  projectRef.current = project;
   // Task 113 (issue #144): a *callback* ref, not a plain `useRef` +
   // `useEffect(fn, [])` pair -- porting `EditorWorkspace.tsx`'s issue #83
   // fix here too. The mount div below only exists in the DOM once
@@ -205,7 +208,10 @@ function PublicProjectViewer() {
   const [previewMounted, setPreviewMounted] = useState(false);
   const previewMountCallbackRef = useCallback((node: HTMLDivElement | null) => {
     if (node) {
-      previewRef.current = createP5ScenePreview(node);
+      previewRef.current = createScenePreview(
+        node,
+        resolveSceneRendererId(projectRef.current?.current_version?.scene_json),
+      );
       setPreviewMounted(true);
     } else {
       previewRef.current?.destroy();

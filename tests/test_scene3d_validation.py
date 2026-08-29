@@ -117,3 +117,50 @@ def test_errors_never_include_a_traceback_or_python_internals():
     for error in result.errors:
         assert "Traceback" not in error.message
         assert "jsonschema" not in error.message.lower()
+
+
+def test_named_object_is_accepted_for_every_object_type():
+    """Regression for #230: a name on baseObjectFields must not be shadowed
+    by any object3d type-specific allOf branch, mirroring #214's fix for
+    the 2D shape schema."""
+    data = json.loads((FIXTURES_DIR / "valid/minimal.json").read_text())
+    base = {
+        "groupId": None,
+        "transform": {
+            "position": {"x": 0, "y": 0, "z": 0},
+            "rotation": {"x": 0, "y": 0, "z": 0},
+            "scale": {"x": 1, "y": 1, "z": 1},
+            "opacity": 1,
+        },
+        "material": {"color": "#ffffff"},
+        "visible": True,
+    }
+    data["objects"] = [
+        {
+            "id": "b1",
+            "name": "Named Box",
+            "type": "box",
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            **base,
+        },
+        {"id": "s1", "name": "Named Sphere", "type": "sphere", "radius": 1, **base},
+        {
+            "id": "c1",
+            "name": "Named Cylinder",
+            "type": "cylinder",
+            "radiusTop": 1,
+            "radiusBottom": 1,
+            "height": 1,
+            **base,
+        },
+        {"id": "p1", "name": "Named Plane", "type": "plane", "width": 1, "height": 1, **base},
+    ]
+    data["lights"] = [
+        {"id": "sun", "name": "Named Light", "type": "ambient", "color": "#ffffff", "intensity": 1}
+    ]
+
+    result = validate_scene3d(data)
+
+    assert result.valid, [e.message for e in result.errors]

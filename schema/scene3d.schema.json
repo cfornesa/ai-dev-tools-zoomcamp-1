@@ -166,6 +166,12 @@
       "required": ["id", "type", "color", "intensity"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
+        "name": {
+          "description": "Optional user-facing display/addressing name, mirroring the 2D schema's shape.name (post-#214).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
         "type": { "enum": ["directional", "point", "ambient"] },
         "color": { "$ref": "#/$defs/color" },
         "intensity": { "type": "number", "minimum": 0, "maximum": 100 },
@@ -194,6 +200,12 @@
       "required": ["id", "type", "groupId", "transform", "material", "visible"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
+        "name": {
+          "description": "Optional user-facing display/addressing name, mirroring the 2D schema's shape.name (post-#214). Declared once here (not per-type) since object3d's per-type branches use unevaluatedProperties composition, not per-branch additionalProperties allowlists -- see .agents/memory/scene-schema-allof-branch-property-shadowing.md for why that distinction matters.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
         "type": { "enum": ["box", "sphere", "cylinder", "plane"] },
         "groupId": {
           "description": "The containing group's id, or null for a top-level object -- mirrors the 2D schema's identical groupId convention.",

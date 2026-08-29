@@ -2,6 +2,7 @@
   "$comment": "Expected outcomes for schema/fixtures3d against schema/scene3d.schema.json alone (raw JSON Schema Draft 2020-12 validation, e.g. jsonschema.Draft202012Validator in Python or ajv in TypeScript). This file predates the #211 Python/TypeScript validators and only covers what JSON Schema structure can express. See schema/README3d.md's 'Fixtures and the schema/validator split' section for why three malicious/ fixtures are schema-valid here on purpose.",
   "valid/minimal.json": { "valid": true },
   "valid/feature_rich.json": { "valid": true },
+  "valid/named_object_and_light.json": { "valid": true },
   "invalid/unsupported_document_type.json": { "valid": false, "rule": "invalidValue" },
   "invalid/unknown_field.json": { "valid": false, "rule": "unknownField" },
   "invalid/missing_required.json": { "valid": false, "rule": "missingRequired" },

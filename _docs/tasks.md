@@ -7008,9 +7008,9 @@ task 195/#227 and task 199/#231.
 
 ## 195. 3D manual editor: outline/inspector (layers-equivalent panel)
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#227](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/227)
+GitHub issue: [#227](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/227) (closed)
 
 Parent: task 184/#216, refines task 186/#218. The 3D-manual equivalent
 of the 2D editor's Layers panel + shape inspector — a flat list (the 3D
@@ -7018,7 +7018,18 @@ schema's `groups` don't nest, per `schema/README3d.md`) of
 objects/groups/lights plus a camera summary, with transform/material/
 type-specific property editing on selection.
 
-Dependencies: task 194/#226.
+Delivered (commit `789d152`): `Outline3DInspector.tsx` + `scene3dTypes.ts`
+(document-shape types mirroring `sceneShapes.ts`'s convention), wired
+into `Project3DWorkspace.tsx` against an in-memory copy of the current
+version's scene, exactly as scoped -- no server save wiring. `make
+check` passes end to end (744 backend / 2068 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #227 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/227#issuecomment-5462309496).
+Discovered gap filed as [#234](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/234)
+(wire these edits to the #228 save endpoint) -- see task 202/#234 below.
+
+Dependencies: task 194/#226 (complete).
 
 ## 196. 3D manual editor: save-a-new-version API
 
@@ -7132,3 +7143,27 @@ Parent: task 184/#216, refines task 187/#219. Mirrors task 197/#229's
 scope.
 
 Dependencies: task 199/#231. Task 196/#228 for edits to persist.
+
+## 202. Wire the 3D manual editor's outline/inspector edits to the save-version API
+
+Status: PROPOSED
+
+GitHub issue: [#234](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/234)
+
+Parent: task 184/#216, refines task 186/#218. Discovered while
+implementing task 195/#227: task 195/#227 explicitly scoped itself to
+in-memory-only editing ("wiring to a real save endpoint is #228's job"),
+and task 196/#228's save endpoint exists and is closed, but nothing in
+the frontend calls it yet -- edits made in the 3D manual editor's
+outline/inspector are lost on navigation/reload, with no Save action
+anywhere in that editor.
+
+Scope: a Save action in `Project3DWorkspace.tsx` (or wherever the
+eventual editor chrome lands) that POSTs the working scene via
+`saveSceneVersion3D` (already added to `frontend/src/api/projects3d.ts`)
+and updates local state from the response, mirroring the 2D manual
+editor's `SaveControl`/`handleVersionSaved` pattern. Dirty-state
+indication is a reasonable minimum; full version history/restore parity
+is out of scope unless a future issue asks for it.
+
+Dependencies: task 194/#226, task 195/#227, task 196/#228 (all complete).

@@ -1030,10 +1030,30 @@ test.describe('Draft recovery', () => {
     });
     // The server draft's own recency is server-assigned (last_autosaved_at
     // is set to "now" by the upsert, scenes/api.py's _upsert_draft), so a
-    // PUT issued after the local seed above is unambiguously newer.
+    // PUT issued after the local seed above is unambiguously newer in time.
+    //
+    // Issue #193 root cause (confirmed by live reproduction, not just
+    // static analysis): `createBlankProjectViaUI` above already mounts a
+    // real editor for this project, whose `useDraftServerSync` periodic
+    // timer (`DEFAULT_SYNC_INTERVAL_MS`, storage/draftServerSync.ts) syncs
+    // the pristine, untouched blank scene to the server the moment
+    // `resetCleanBaseline()` leaves it with no clean baseline to compare
+    // against -- true for every brand-new, never-explicitly-saved project.
+    // If enough real wall-clock time elapses between project creation and
+    // this seed (routine under CI/sandbox load, never guaranteed fast),
+    // that periodic tick's own client_seq:1 write can land here first,
+    // making a hardcoded `client_seq: 1` seed lose the
+    // `scenes/api.py::_upsert_draft` `client_seq <=` tie-break and get
+    // silently rejected (`applied: false`) -- exactly reproduced live
+    // against a real dev stack: the seed PUT returned the app's own
+    // already-written draft, not the one this test just sent. A client_seq
+    // no ordinary app-driven sync could plausibly reach in a single test's
+    // runtime (the periodic timer alone would need ~40 ticks/~1000s to get
+    // this high) makes this test's own seed unconditionally win regardless
+    // of what the app itself already wrote.
     await apiPut(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`, {
       draft_json: { ...SCENE_TEMPLATE, id: 'scene-server-newer' },
-      client_seq: 1,
+      client_seq: 1_000_000,
     });
 
     await page.reload();

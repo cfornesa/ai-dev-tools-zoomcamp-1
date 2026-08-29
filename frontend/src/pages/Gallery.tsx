@@ -88,6 +88,20 @@ function Gallery() {
     }
   }
 
+  // Issue #231: same Project3D creation endpoint as the 3D manual editor
+  // above -- only the destination route differs.
+  async function handleCreate3DAiAssisted() {
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const project = await createProject3D();
+      navigate(`/ai-projects3d/${project.id}`);
+    } catch {
+      setCreateError('Could not create a new project. Please try again.');
+      setCreating(false);
+    }
+  }
+
   if (loadState === 'loading') {
     return (
       <p role="status" aria-live="polite">
@@ -136,6 +150,14 @@ function Gallery() {
         </button>
         <button className="shell-action" type="button" onClick={handleCreate3D} disabled={creating}>
           {creating ? 'Creating…' : 'Create new 3D project'}
+        </button>
+        <button
+          className="shell-action"
+          type="button"
+          onClick={handleCreate3DAiAssisted}
+          disabled={creating}
+        >
+          {creating ? 'Creating…' : 'Create AI-assisted 3D project'}
         </button>
         <Link className="shell-action" to="/templates">
           Browse templates

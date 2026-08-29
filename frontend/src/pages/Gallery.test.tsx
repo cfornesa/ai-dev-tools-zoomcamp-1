@@ -44,6 +44,7 @@ function renderGallery() {
         <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
         <Route path="/ai-projects/:id" element={<p>AI editor placeholder</p>} />
         <Route path="/projects3d/:id" element={<p>3D editor placeholder</p>} />
+        <Route path="/ai-projects3d/:id" element={<p>3D AI editor placeholder</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -142,6 +143,9 @@ describe('Gallery keyboard accessibility', () => {
 
     await user.tab();
     expect(screen.getByRole('button', { name: /create new 3d project/i })).toHaveFocus();
+
+    await user.tab();
+    expect(screen.getByRole('button', { name: /create ai-assisted 3d project/i })).toHaveFocus();
 
     await user.tab();
     expect(screen.getByRole('link', { name: /browse templates/i })).toHaveFocus();
@@ -252,6 +256,29 @@ describe('Gallery create action', () => {
     await user.click(screen.getByRole('button', { name: /create new 3d project/i }));
 
     await waitFor(() => expect(screen.getByText('3D editor placeholder')).toBeInTheDocument());
+    expect(mockedCreateProject3D).toHaveBeenCalled();
+  });
+
+  // Issue #231: a distinct creation entry point routing to the 3D
+  // AI-assisted editor instead of the 3D manual editor.
+  it('navigates to the 3D AI-assisted editor on success', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedCreateProject3D.mockResolvedValue({
+      id: 'new-3d-ai-id',
+      owner: 'alice',
+      title: 'Untitled 3D scene',
+      current_version: null,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    });
+    const user = userEvent.setup();
+
+    renderGallery();
+    await screen.findByRole('button', { name: /create ai-assisted 3d project/i });
+
+    await user.click(screen.getByRole('button', { name: /create ai-assisted 3d project/i }));
+
+    await waitFor(() => expect(screen.getByText('3D AI editor placeholder')).toBeInTheDocument());
     expect(mockedCreateProject3D).toHaveBeenCalled();
   });
 });

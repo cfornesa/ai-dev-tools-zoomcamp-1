@@ -11,6 +11,7 @@ import Home from './pages/Home';
  * first-time visitor to `/` only pays for `Home` + routing. `Home` stays a
  * static import since it's the landing page most visits hit first. */
 const AiEditorWorkspace = lazy(() => import('./pages/AiEditorWorkspace'));
+const AiProject3DWorkspace = lazy(() => import('./pages/AiProject3DWorkspace'));
 const ArtPieceStudio = lazy(() => import('./pages/ArtPieceStudio'));
 const EditorWorkspace = lazy(() => import('./pages/EditorWorkspace'));
 const Project3DWorkspace = lazy(() => import('./pages/Project3DWorkspace'));
@@ -67,6 +68,10 @@ function App() {
                   document family (Project3D/SceneVersion3D, #208's
                   decision), not a variant of the 2D routes above. */}
               <Route path="projects3d/:id" element={<Project3DWorkspace />} />
+              {/* Issue #231: the 3D AI-assisted editor -- sibling route to
+                  the 3D manual editor above, reusing the same Project3D/
+                  SceneVersion3D document family. */}
+              <Route path="ai-projects3d/:id" element={<AiProject3DWorkspace />} />
               {/* Task 94 (issue #94): project-metadata editing folded into
                   the editor itself as a "Details" panel (EditorWorkspace.tsx)
                   — the old standalone `ProjectMetadataForm.tsx` page is

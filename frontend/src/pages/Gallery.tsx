@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { createBlankProject, listProjects, type Project } from '../api/projects';
-import { createProject3D } from '../api/projects3d';
+import { createProject3D, listProjects3D, type Project3D } from '../api/projects3d';
 import { useAuth } from '../auth/useAuth';
+import Project3DCard from '../components/Project3DCard';
 import ProjectCard from '../components/ProjectCard';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -13,6 +14,12 @@ function Gallery() {
   const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [projects, setProjects] = useState<Project[]>([]);
+  // Gap found live in production while verifying #238's fix: 3D projects
+  // could be created but never appeared anywhere afterward, because this
+  // page only ever fetched the 2D `Project` list. `listProjects3D()`
+  // already existed in `api/projects3d.ts` -- it was just never called
+  // here.
+  const [projects3D, setProjects3D] = useState<Project3D[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   // Issue #206/#207: the only point in the app where a new project's
@@ -23,10 +30,11 @@ function Gallery() {
   useEffect(() => {
     let cancelled = false;
     setLoadState('loading');
-    listProjects()
-      .then((data) => {
+    Promise.all([listProjects(), listProjects3D()])
+      .then(([data, data3D]) => {
         if (cancelled) return;
         setProjects(data);
+        setProjects3D(data3D);
         setLoadState('ready');
       })
       .catch(() => {
@@ -43,6 +51,8 @@ function Gallery() {
   // (or a compromised response) put one in the list.
   const ownProjects =
     auth.status === 'signed-in' ? projects.filter((p) => p.owner === auth.user.username) : [];
+  const ownProjects3D =
+    auth.status === 'signed-in' ? projects3D.filter((p) => p.owner === auth.user.username) : [];
 
   async function handleCreate() {
     setCreating(true);
@@ -185,19 +195,35 @@ function Gallery() {
         </p>
       )}
 
-      {ownProjects.length === 0 ? (
+      {ownProjects.length === 0 && ownProjects3D.length === 0 ? (
         <div className="centered-state gallery-empty-state">
           <p>You have not created any projects.</p>
           <p>Create your first animation to get started.</p>
         </div>
       ) : (
-        <ul className="project-grid">
-          {ownProjects.map((project) => (
-            <li key={project.id}>
-              <ProjectCard project={project} />
-            </li>
-          ))}
-        </ul>
+        <>
+          {ownProjects.length > 0 && (
+            <ul className="project-grid">
+              {ownProjects.map((project) => (
+                <li key={project.id}>
+                  <ProjectCard project={project} />
+                </li>
+              ))}
+            </ul>
+          )}
+          {ownProjects3D.length > 0 && (
+            <>
+              <h3>Your 3D projects</h3>
+              <ul className="project-grid">
+                {ownProjects3D.map((project) => (
+                  <li key={project.id}>
+                    <Project3DCard project={project} />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </>
       )}
     </section>
   );

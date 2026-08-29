@@ -88,7 +88,13 @@ class ProjectListCreateView(APIView):
     def get(self, request):
         if not request.user.is_authenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-        projects = Project.objects.filter(owner=request.user).select_related("owner")
+        # current_version is joined too: ProjectSerializer's
+        # current_version_origin field dereferences it per project, and
+        # without this the list view would issue one extra query per
+        # project instead of a single join.
+        projects = Project.objects.filter(owner=request.user).select_related(
+            "owner", "current_version"
+        )
         return Response(ProjectSerializer(projects, many=True).data)
 
     def post(self, request):

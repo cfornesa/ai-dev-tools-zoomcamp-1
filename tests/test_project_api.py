@@ -84,6 +84,38 @@ def test_list_requires_authentication(anon_client):
 
 
 @pytest.mark.django_db
+def test_list_exposes_current_version_origin_for_the_gallery_manual_ai_badge(owner_client, owner):
+    import json
+    from pathlib import Path
+
+    from scenes.models import SceneVersion
+
+    blank = json.loads(
+        (
+            Path(__file__).resolve().parent.parent / "schema" / "fixtures" / "valid" / "blank.json"
+        ).read_text()
+    )
+    Project.objects.create(owner=owner, title="No version yet")
+    with_version = Project.objects.create(owner=owner, title="Has a version")
+    version = SceneVersion.objects.create(
+        project=with_version,
+        sequence=1,
+        scene_json=blank,
+        origin=SceneVersion.Origin.AI_CREATE,
+        created_by=owner,
+    )
+    with_version.current_version = version
+    with_version.save(update_fields=["current_version"])
+
+    response = owner_client.get("/api/projects/")
+
+    assert response.status_code == 200
+    by_title = {p["title"]: p["current_version_origin"] for p in response.json()}
+    assert by_title["No version yet"] is None
+    assert by_title["Has a version"] == "ai_create"
+
+
+@pytest.mark.django_db
 def test_owner_can_read_own_private_project(owner_client, private_project):
     response = owner_client.get(f"/api/projects/{private_project.public_id}/")
 

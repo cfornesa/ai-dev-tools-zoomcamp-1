@@ -62,3 +62,25 @@ describe('ProjectCard: thumbnail (issue #135)', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('ProjectCard: "Manual"/"AI" origin badge', () => {
+  it('shows "AI" next to the visibility badge when the current version was AI-produced', () => {
+    renderCard(baseProject({ current_version_origin: 'ai_create' }));
+
+    expect(screen.getByText('Private')).toBeInTheDocument();
+    expect(screen.getByText('AI')).toBeInTheDocument();
+  });
+
+  it('shows "Manual" when the current version was a manual save', () => {
+    renderCard(baseProject({ current_version_origin: 'manual' }));
+
+    expect(screen.getByText('Manual')).toBeInTheDocument();
+  });
+
+  it('shows no origin badge when there is no current version yet', () => {
+    renderCard(baseProject({ current_version_origin: null }));
+
+    expect(screen.queryByText('AI')).not.toBeInTheDocument();
+    expect(screen.queryByText('Manual')).not.toBeInTheDocument();
+  });
+});

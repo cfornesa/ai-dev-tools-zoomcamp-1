@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { Project } from '../api/projects';
+import { originLabel } from './originLabel';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -21,6 +22,7 @@ function ProjectCard({ project }: { project: Project }) {
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const titleId = `project-${project.id}-title`;
   const showFallback = !project.thumbnail_url || thumbnailFailed;
+  const originBadge = originLabel(project.current_version_origin);
 
   return (
     <article aria-labelledby={titleId} className="project-card">
@@ -45,6 +47,7 @@ function ProjectCard({ project }: { project: Project }) {
         <span className="visibility-badge">
           {project.visibility === 'public' ? 'Public' : 'Private'}
         </span>
+        {originBadge && <span className="origin-badge">{originBadge}</span>}
       </p>
       <p>Last updated {formatDate(project.updated_at)}</p>
       <p>

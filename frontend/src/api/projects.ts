@@ -13,6 +13,14 @@ export type Project = {
   export_attribution: boolean;
   thumbnail_url: string | null;
   current_version: number | null;
+  // How the current version was produced -- a SceneVersion.Origin value
+  // ('manual' | 'ai_create' | 'ai_edit' | 'restore' | 'fork'), or null
+  // when there is no current version yet. Powers the gallery's
+  // "Manual"/"AI" badge. Optional (not just nullable) so the dozens of
+  // pre-existing test fixtures across the app that build a `Project`
+  // without this field don't all need updating for what's purely
+  // additive display metadata.
+  current_version_origin?: string | null;
   created_at: string;
   updated_at: string;
 };

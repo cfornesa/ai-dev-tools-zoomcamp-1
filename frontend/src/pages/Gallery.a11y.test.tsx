@@ -4,6 +4,7 @@ import { axe } from 'jest-axe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
+import * as projects3dApi from '../api/projects3d';
 import * as authModule from '../auth/useAuth';
 import Layout from '../components/Layout';
 import Gallery from './Gallery';
@@ -15,9 +16,11 @@ import Gallery from './Gallery';
  */
 
 vi.mock('../api/projects');
+vi.mock('../api/projects3d');
 vi.mock('../auth/useAuth');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
+const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
 
 function baseProject(overrides: Partial<projectsApi.Project> = {}): projectsApi.Project {
@@ -57,6 +60,7 @@ beforeEach(() => {
     status: 'signed-in',
     user: { username: 'alice', email: 'alice@example.com' },
   });
+  mockedListProjects3D.mockResolvedValue([]);
 });
 
 describe('Gallery accessibility', () => {

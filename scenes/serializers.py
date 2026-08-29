@@ -136,6 +136,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.CharField(source="owner.username", read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
+    current_version_origin = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -150,6 +151,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "export_attribution",
             "thumbnail_url",
             "current_version",
+            "current_version_origin",
             "created_at",
             "updated_at",
         ]
@@ -163,6 +165,17 @@ class ProjectSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_current_version_origin(self, project: Project) -> str | None:
+        # Gallery "Manual"/"AI" badge: `current_version` above is only the
+        # bare FK id (unlike Project3DSerializer's fully-nested one, which
+        # already carries `origin`), so the gallery list needs its own way
+        # to know how the current version was produced without a second
+        # round trip per project.
+        current_version = project.current_version
+        if current_version is None:
+            return None
+        return current_version.origin
 
 
 class PublicSceneVersionSerializer(serializers.ModelSerializer):

@@ -15,8 +15,21 @@ vi.mock('../auth/useAuth');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
 const mockedCreateBlankProject = vi.mocked(projectsApi.createBlankProject);
+const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
 const mockedCreateProject3D = vi.mocked(projects3dApi.createProject3D);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
+
+function baseProject3D(overrides: Partial<projects3dApi.Project3D> = {}): projects3dApi.Project3D {
+  return {
+    id: 'p3d-1',
+    owner: 'alice',
+    title: 'Untitled 3D scene',
+    current_version: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-02T00:00:00Z',
+    ...overrides,
+  };
+}
 
 function baseProject(overrides: Partial<projectsApi.Project> = {}): projectsApi.Project {
   return {
@@ -56,6 +69,9 @@ beforeEach(() => {
     status: 'signed-in',
     user: { username: 'alice', email: 'alice@example.com' },
   });
+  // Default to no 3D projects; individual tests override when they need
+  // to assert 3D-specific rendering.
+  mockedListProjects3D.mockResolvedValue([]);
 });
 
 describe('Gallery loading/error/empty/populated states', () => {
@@ -104,6 +120,34 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(screen.getAllByRole('link', { name: /^edit$/i })).toHaveLength(2);
     expect(screen.getByRole('list')).toHaveClass('project-grid');
     expect(screen.getByRole('list').closest('.content-panel')).not.toBeNull();
+  });
+
+  // Gap found live in production while verifying #238's fix: 3D projects
+  // could be created but never appeared in the gallery afterward --
+  // Gallery.tsx only ever fetched the 2D Project list.
+  it('renders 3D projects alongside 2D projects, each linking to the 3D editor', async () => {
+    mockedListProjects.mockResolvedValue([baseProject({ id: 'p1', title: 'Hand Follower' })]);
+    mockedListProjects3D.mockResolvedValue([
+      baseProject3D({ id: 'p3d-1', title: 'Untitled 3D scene' }),
+    ]);
+
+    renderGallery();
+
+    expect(await screen.findByRole('heading', { name: 'Hand Follower' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Untitled 3D scene' })).toBeInTheDocument();
+    const editLinks = screen.getAllByRole('link', { name: /^edit$/i });
+    expect(editLinks).toHaveLength(2);
+    expect(editLinks.some((link) => link.getAttribute('href') === '/projects3d/p3d-1')).toBe(true);
+  });
+
+  it('does not show the empty state when only 3D projects exist', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedListProjects3D.mockResolvedValue([baseProject3D({ id: 'p3d-1' })]);
+
+    renderGallery();
+
+    expect(await screen.findByRole('heading', { name: 'Untitled 3D scene' })).toBeInTheDocument();
+    expect(screen.queryByText('You have not created any projects.')).not.toBeInTheDocument();
   });
 });
 

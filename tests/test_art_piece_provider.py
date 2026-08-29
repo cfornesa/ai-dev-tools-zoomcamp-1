@@ -63,6 +63,27 @@ def test_aframe_system_prompt_gives_concrete_camera_placement_guidance():
     assert "-Z" in content or "negative Z" in content or "negative z" in content.lower()
 
 
+def test_aframe_system_prompt_warns_flat_shapes_can_be_edge_on_to_the_camera():
+    """Regression for #236's second live-production retest: fixing camera
+    placement alone was not enough. Mistral consistently laid a plain "a
+    red circle" flat as a floor (rotation="-90 0 0", face pointing +Y)
+    while placing the camera on the positive-Z axis looking horizontally
+    back toward the origin -- correct per the first fix, but the flat
+    shape's visible face now points straight up, so it is edge-on (and
+    thus effectively invisible) to that camera regardless of
+    `material: side: double`. Reproduced twice in a row live against
+    production before this prompt guidance was added."""
+    client = _CapturingClient()
+    provider = ArtPieceProvider(client=client)
+
+    provider.generate("a red circle", "aframe")
+
+    system_message = next(m for m in client.chat.last_kwargs["messages"] if m["role"] == "system")
+    content = system_message["content"].lower()
+    assert "edge-on" in content
+    assert "floor" in content or "ground" in content
+
+
 def test_client_property_builds_a_real_client_from_the_real_sdk_import_path():
     """Exercises the actual `from mistralai.client import Mistral` import
     -- no mock, no injected client. This is the exact statement that used

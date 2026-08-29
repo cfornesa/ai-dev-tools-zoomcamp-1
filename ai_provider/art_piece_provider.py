@@ -167,6 +167,16 @@ back toward the origin -- e.g. <a-entity position="0 1.6 4" rotation="0 0 0"><a-
 origin-centered content and will render nothing visible -- never do this. If you rotate the \
 camera to look in a different direction, or move the geometry away from the origin, you must \
 adjust the camera's position/rotation together so it still points at the geometry.
+- A flat shape (<a-circle>, <a-plane>) rotated to lie flat as a floor -- e.g. rotation="-90 0 0" \
+-- has its visible face pointing straight up, not toward a horizontally-placed camera: from a \
+camera at the same height looking horizontally, a flat floor-facing shape is edge-on and \
+effectively invisible even though `material: side: double` is set. For a simple shape described \
+without any scene/room context (e.g. "a red circle", "a blue square"), leave it at its default \
+rotation="0 0 0" so its face points down the +Z axis, directly at a camera positioned on the \
+positive-Z axis looking back toward the origin -- do not rotate it to lie flat unless the prompt \
+actually describes a floor, ground, or table the shape sits on, and if it does, tilt the camera \
+downward (e.g. rotation="-45 0 0" on the camera entity) so it looks down at the flat shape \
+instead of across it.
 - Any animation must use A-Frame's built-in `animation` component (e.g. \
 animation="property: rotation; to: 0 360 0; loop: true; dur: 4000") -- never JavaScript.
 - Never reference an external resource: no `src` pointing at a URL for any asset, texture, or \

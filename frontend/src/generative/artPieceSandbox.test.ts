@@ -62,12 +62,23 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain(`<script>${jsSnippet}</script>`);
   });
 
-  it('aframe loads the pinned CDN script, allows only that origin in the CSP, and places the snippet directly', () => {
+  it("aframe loads the pinned CDN script, allows only that origin plus 'unsafe-eval' in the CSP, and places the snippet directly", () => {
+    // 'unsafe-eval' regression for #236: A-Frame's own system
+    // initialization calls a dynamic eval/Function-constructor
+    // internally -- without this, every scene threw "a[e] is not a
+    // constructor" from deep inside aframe.min.js, a CSP-blocked-eval
+    // failure that looked like a library bug. Confirmed live in
+    // production (3/3 failures without, 0/3 with).
     const scene = '<a-scene id="art-piece-scene" embedded><a-box></a-box></a-scene>';
     const doc = buildArtPieceSandboxDocument(scene, 'aframe');
     expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2');
-    expect(doc).toMatch(/script-src 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net;/);
+    expect(doc).toMatch(/script-src 'unsafe-inline' 'unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/);
     expect(doc).toContain(scene);
+  });
+
+  it("threejs's CSP does not grant 'unsafe-eval' -- only A-Frame needs it", () => {
+    const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
+    expect(doc).not.toMatch(/'unsafe-eval'/);
   });
 
   it('the CDN script loads before the listener script, which loads before the snippet, for every library', () => {

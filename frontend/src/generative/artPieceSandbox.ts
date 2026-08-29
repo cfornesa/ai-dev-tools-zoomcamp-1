@@ -87,8 +87,18 @@ function buildCsp(library: ArtPieceLibrary): string {
   if (cdnUrl && !cdnUrl.startsWith(`${ALLOWED_CDN_ORIGIN}/`)) {
     throw new Error(`Refusing to build a CSP for an unexpected CDN origin: ${cdnUrl}`);
   }
+  // A-Frame's own system-initialization code calls a dynamic
+  // eval/Function-constructor internally (confirmed live in production
+  // while investigating #236: with 'unsafe-eval' absent, every scene
+  // threw "Uncaught TypeError: a[e] is not a constructor" from deep
+  // inside aframe.min.js's initSystem, a CSP-blocked-eval failure
+  // masquerading as a library bug -- reproduced 3/3 with the policy
+  // below, 0/3 once 'unsafe-eval' was added). Three.js's own script
+  // needs no such allowance, so this stays scoped to A-Frame only
+  // rather than widening the CSP for every library.
+  const unsafeEval = library === 'aframe' ? " 'unsafe-eval'" : '';
   const scriptSrc = cdnUrl
-    ? `script-src 'unsafe-inline' ${ALLOWED_CDN_ORIGIN};`
+    ? `script-src 'unsafe-inline'${unsafeEval} ${ALLOWED_CDN_ORIGIN};`
     : "script-src 'unsafe-inline';";
   return `default-src 'none'; ${scriptSrc} style-src 'unsafe-inline';`;
 }

@@ -137,28 +137,43 @@ function Gallery() {
           <option value="canvas2d">Canvas2D</option>
           <option value="svg">SVG</option>
         </select>
-        <button className="shell-action" type="button" onClick={handleCreate} disabled={creating}>
-          {creating ? 'Creating…' : 'Create new animation'}
-        </button>
-        <button
-          className="shell-action"
-          type="button"
-          onClick={handleCreateAiAssisted}
-          disabled={creating}
-        >
-          {creating ? 'Creating…' : 'Create AI-assisted animation'}
-        </button>
-        <button className="shell-action" type="button" onClick={handleCreate3D} disabled={creating}>
-          {creating ? 'Creating…' : 'Create new 3D project'}
-        </button>
-        <button
-          className="shell-action"
-          type="button"
-          onClick={handleCreate3DAiAssisted}
-          disabled={creating}
-        >
-          {creating ? 'Creating…' : 'Create AI-assisted 3D project'}
-        </button>
+        {/* Issue: at narrow widths, four separate full-width "Create X"
+            buttons (up from the original two) pushed the gallery content
+            well past a single-screen-height's worth of header, discovered
+            by the responsive-shell e2e suite's populated-gallery viewport
+            check. Grouping them in their own two-column-at-narrow-width
+            container keeps each button's own DOM position (so tab order
+            is unaffected) while roughly halving this block's vertical
+            footprint on a phone. */}
+        <div className="gallery-create-actions">
+          <button className="shell-action" type="button" onClick={handleCreate} disabled={creating}>
+            {creating ? 'Creating…' : 'Create new animation'}
+          </button>
+          <button
+            className="shell-action"
+            type="button"
+            onClick={handleCreateAiAssisted}
+            disabled={creating}
+          >
+            {creating ? 'Creating…' : 'Create AI-assisted animation'}
+          </button>
+          <button
+            className="shell-action"
+            type="button"
+            onClick={handleCreate3D}
+            disabled={creating}
+          >
+            {creating ? 'Creating…' : 'Create new 3D project'}
+          </button>
+          <button
+            className="shell-action"
+            type="button"
+            onClick={handleCreate3DAiAssisted}
+            disabled={creating}
+          >
+            {creating ? 'Creating…' : 'Create AI-assisted 3D project'}
+          </button>
+        </div>
         <Link className="shell-action" to="/templates">
           Browse templates
         </Link>

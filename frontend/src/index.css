@@ -329,6 +329,14 @@ code {
   margin: 0 auto 0 0;
 }
 
+/* Wraps the four "Create X" buttons so they can go two-per-row at narrow
+   widths (see the narrow-width override below) without disturbing their
+   DOM order/tab order, which stays flat siblings of the renderer select
+   and "Browse templates" link either way. */
+.gallery-create-actions {
+  display: contents;
+}
+
 .gallery-error {
   margin: 24px 32px 0;
 }
@@ -389,11 +397,27 @@ code {
 
   .gallery-header {
     align-items: stretch;
-    padding: 24px 20px;
+    padding: 16px 20px;
+    gap: 8px;
   }
 
   .gallery-header h2 {
     margin-right: 0;
+  }
+
+  .gallery-create-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .gallery-create-actions .shell-action {
+    min-height: 0;
+    padding: 6px;
+    font-size: 0.8em;
+    line-height: 1.15;
+    text-align: center;
   }
 
   /* Issue #193: the gallery panel is a column flex container. Its empty

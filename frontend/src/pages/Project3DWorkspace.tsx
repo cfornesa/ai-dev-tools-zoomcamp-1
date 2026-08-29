@@ -2,27 +2,43 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
-import { getProject3D, type Project3D, type SceneVersion3D } from '../api/projects3d';
+import {
+  getProject3D,
+  saveSceneVersion3D,
+  type Project3D,
+  type SceneVersion3D,
+} from '../api/projects3d';
+import { validateScene3D } from '../validation/scene3d';
 import Outline3DInspector from './Outline3DInspector';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import type { Scene3DDocument } from './scene3dTypes';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
 type PreviewView = 'visual' | 'code';
+type SaveState = { pending: boolean; error: string | null };
+
+const IDLE_SAVE_STATE: SaveState = { pending: false, error: null };
 
 /**
- * Issue #226/#227/#229: makes a `scene3d` project openable, with the
- * outline/inspector panel (#227, in-memory only -- see #234 for wiring
- * its edits to persistence) and the embedded Code tab (#229, which DOES
- * save through #228's endpoint per that issue's own explicit
- * requirement). No real Three.js/A-Frame rendering yet.
+ * Issue #226/#227/#229/#234: makes a `scene3d` project openable, with the
+ * outline/inspector panel (#227) and the embedded Code tab (#229, saves
+ * through #228's endpoint directly on blur). #234 adds the outline/
+ * inspector's own explicit Save action -- until now its edits were only
+ * ever held in memory. No real Three.js/A-Frame rendering yet.
  */
 function Project3DWorkspace() {
   const { id } = useParams<{ id: string }>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<Project3D | null>(null);
   const [workingScene, setWorkingScene] = useState<Scene3DDocument | null>(null);
+  // Issue #234: the last-saved scene, tracked separately from
+  // `workingScene` so a dirty check (`workingScene !== persistedScene`,
+  // by reference -- every mutation path replaces the object wholesale,
+  // matching the 2D editor's `workingCopy`/`persistedVersion` convention)
+  // can tell the user whether there's anything to save.
+  const [persistedScene, setPersistedScene] = useState<Scene3DDocument | null>(null);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
+  const [saveState, setSaveState] = useState<SaveState>(IDLE_SAVE_STATE);
 
   useEffect(() => {
     if (!id) return;
@@ -34,7 +50,9 @@ function Project3DWorkspace() {
         if (cancelled) return;
         setProject(loadedProject);
         if (loadedProject.current_version) {
-          setWorkingScene(loadedProject.current_version.scene_json as unknown as Scene3DDocument);
+          const scene = loadedProject.current_version.scene_json as unknown as Scene3DDocument;
+          setWorkingScene(scene);
+          setPersistedScene(scene);
           setLoadState('ready');
         } else {
           setLoadState('no-scene');
@@ -88,18 +106,70 @@ function Project3DWorkspace() {
 
   if (!workingScene || !id) return null; // unreachable once loadState === 'ready'
 
-  // Issue #229: a save through the Code tab is the one path in this
-  // editor that actually persists -- sync both the working scene (so the
-  // Visual/outline views reflect it) and project.current_version.
-  function handleCodeSaved(version: SceneVersion3D) {
-    setWorkingScene(version.scene_json as unknown as Scene3DDocument);
+  // Shared by both save paths in this editor (the Code tab's on-blur save,
+  // and #234's explicit outline/inspector Save button) -- syncs
+  // workingScene/persistedScene/project.current_version from the server's
+  // exact response, matching the 2D editor's handleVersionSaved pattern.
+  function handleVersionSaved(version: SceneVersion3D) {
+    const scene = version.scene_json as unknown as Scene3DDocument;
+    setWorkingScene(scene);
+    setPersistedScene(scene);
     setProject((current) => (current ? { ...current, current_version: version } : current));
   }
+
+  // Issue #234: validates client-side (the server's validate_scene3d
+  // remains authoritative) before ever posting, mirroring the 2D manual
+  // editor's pre-save validation.
+  async function handleSave() {
+    if (!id || !workingScene) return;
+    const validation = validateScene3D(workingScene);
+    if (!validation.valid) {
+      const detail = validation.errors
+        .slice(0, 3)
+        .map((e) => `${e.path}: ${e.message}`)
+        .join('; ');
+      setSaveState({ pending: false, error: detail || 'This scene failed validation.' });
+      return;
+    }
+    setSaveState({ pending: true, error: null });
+    try {
+      const version = await saveSceneVersion3D(id, workingScene);
+      setSaveState(IDLE_SAVE_STATE);
+      handleVersionSaved(version);
+    } catch {
+      setSaveState({ pending: false, error: 'Something went wrong saving. Please try again.' });
+    }
+  }
+
+  const isDirty = workingScene !== persistedScene;
 
   return (
     <div>
       <header className="editor-workspace-header">
         <h2>{project?.title}</h2>
+        <p
+          role="status"
+          aria-live="polite"
+          data-testid="project3d-save-status"
+          className="editor-save-status"
+        >
+          {isDirty
+            ? 'Unsaved changes'
+            : `Saved${project?.current_version ? ` as version ${project.current_version.sequence}` : ''}`}
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={!isDirty || saveState.pending}
+          data-testid="project3d-save-button"
+        >
+          {saveState.pending ? 'Saving…' : 'Save'}
+        </button>
+        {saveState.error && (
+          <p role="alert" aria-live="assertive" data-testid="project3d-save-error">
+            {saveState.error}
+          </p>
+        )}
       </header>
       <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
         <button
@@ -141,7 +211,7 @@ function Project3DWorkspace() {
       )}
       {previewView === 'code' && (
         <section aria-label="Code" role="region" data-panel="code">
-          <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleCodeSaved} />
+          <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleVersionSaved} />
         </section>
       )}
     </div>

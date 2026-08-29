@@ -6422,10 +6422,16 @@ Dependencies: None blocking; informed by but does not block tasks 174/175.
 
 ## 177. Epic: a genuine 3D scene editor (new schema, new editor, Three.js/A-Frame renderers)
 
-Status: PROPOSED (epic filed; not yet groomed into implementation-ready
-sub-issues)
+Status: COMPLETE (this phase). Closed once its four scoped sub-issues
+(#210-#213) delivered a working, tested, end-to-end backend slice —
+mirroring how task 173/#205 closed once #206/#207/#208 resolved, even
+though #208 itself spun off this epic as further work. Remaining future
+phases (editor UI, renderer adapters, gesture bindings, AI generation,
+export/publish/gallery, version-history/editing) are intentionally not
+pre-scoped; each gets its own criterion-ready issue when work on it
+begins, the same way #210-#213 each did.
 
-GitHub issue: [#209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/209)
+GitHub issue: [#209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/209) (closed)
 
 Follow-up to task 176/#208's decision. A new, separate 3D scene document
 type and editor — genuine 3D geometry/transform/camera/lighting support —
@@ -6452,3 +6458,275 @@ its scope.
 Dependencies: None blocking. Informed by, but independent of, tasks
 174-175/#206/#207's 2D renderer work and tasks 165-169/#196-200's raw-code
 art-piece flow.
+
+Sub-issues:
+
+- Task 178/[#210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/210) —
+  the canonical 3D scene document schema. **COMPLETE.**
+- Task 179/[#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211) —
+  independent Python + TypeScript validators for the 3D schema.
+  **COMPLETE.**
+- Task 180/[#212](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/212) —
+  Django persistence models for the 3D scene document. **COMPLETE.**
+- Task 181/[#213](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/213) —
+  minimal creation/retrieval API for `Project3D`/`SceneVersion3D`.
+  **COMPLETE.**
+- Next: not yet filed. Candidates for the next groomed sub-issue: a
+  version-history surface beyond the single initial version (list/save
+  additional versions), or the editor route/UI itself now that a full
+  create → persist → retrieve round trip exists end to end.
+
+## 178. Define the canonical 3D scene document schema
+
+Status: COMPLETE
+
+GitHub issue: [#210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/210) (closed)
+
+Parent: task 177/#209. First, foundational sub-issue of the 3D editor
+epic — every other #209 sub-issue depends on this.
+
+Delivered on the `3d-scene-editor-epic` branch (commits `6a7a1b3`,
+`7d53d64`):
+
+- `schema/scene3d.schema.json`: a genuinely separate document family from
+  the 2D canonical scene (`documentType: "scene3d"` discriminator, per
+  #208's decision) — camera (position/target/fov/near/far), lights
+  (directional/point/ambient, each with type-conditional required
+  fields), hierarchical groups mirroring the 2D schema's groups/groupId
+  convention, and box/sphere/cylinder/plane objects with bounded
+  `transform3D` (position/rotation/scale in x/y/z, degrees-based Euler
+  rotation) and materials (color/opacity/emissive). `$defs` for
+  id/color/unitInterval copied verbatim from `scene.schema.json`'s own
+  conventions.
+- `schema/limits3d.json`: scene-wide complexity/payload limits
+  (maxObjects, maxGroups, maxGroupNestingDepth, maxLights,
+  maxScenePayloadBytes), enforced by a future validator rather than the
+  schema itself — mirrors `schema/limits.json`'s identical split for the
+  2D schema.
+- `schema/fixtures3d/` (2 valid, 6 invalid, 5 malicious) +
+  `expectations3d.json`, mirroring `schema/fixtures/`'s structure. Three
+  malicious fixtures (duplicate ids, dangling group reference, oversized
+  document) are intentionally schema-valid — cross-field/complexity
+  checks are out of scope for a schema-only issue and are #211's job, the
+  same gap the 2D schema has between `scene.schema.json` and
+  `scenes/validation.py`.
+- `schema/README3d.md` documenting the versioning policy, the
+  "not an extension of the 2D schema" boundary, and the schema/validator
+  limit split.
+- `tests/test_scene3d_schema.py`: 14 tests validating the schema itself
+  (`Draft202012Validator.check_schema`) and every fixture against
+  `expectations3d.json`. All pass.
+
+No changes to `schema/scene.schema.json`, `scenes/validation.py`, or
+`frontend/src/validation/scene.ts` (verified via `git diff --stat`,
+additive-only per the issue's acceptance criteria).
+
+QA: PASS, full criterion matrix in the
+[issue #210 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/210#issuecomment-5460497545).
+
+Dependencies: None blocking (first sub-issue of #209). Unblocks
+[#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211).
+
+## 179. Independent Python + TypeScript validators for the 3D scene schema
+
+Status: COMPLETE
+
+GitHub issue: [#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211) (closed)
+
+Parent: task 177/#209. Depended on task 178/#210 (the schema itself).
+
+Delivered on the `3d-scene-editor-epic` branch (commit `5c580b8`):
+
+- `scenes/validation3d.py`: mirrors `scenes/validation.py`'s three-stage
+  pipeline (schema version + `documentType` discriminator, then JSON
+  Schema structure via `jsonschema`, then referential integrity —
+  duplicate ids within `lights`/`groups`/`objects`, dangling
+  `objects[].groupId` references — then `schema/limits3d.json`'s
+  complexity/payload caps).
+- `frontend/src/validation/scene3d.ts`: the Ajv-based TypeScript mirror,
+  following `scene.ts`'s own pattern exactly.
+- `tests/test_scene3d_validation.py` (13 tests) and
+  `frontend/src/validation/scene3d.test.ts` (18 tests), both parametrized
+  against the shared `schema/fixtures3d/expectations3d.json`. Three
+  `malicious/` fixtures that are schema-valid (duplicate ids, dangling
+  group reference, oversized document) are asserted as validator-rejected
+  in both languages, closing the gap #210 documented as deferred.
+
+While writing the validators, corrected two inconsistencies introduced in
+task 178/#210: `limits3d.json`'s `maxGroupNestingDepth` was meaningless
+(V1 `group3d` has no `childIds`/`parentGroupId` — groups are flat) and was
+removed; `expectations3d.json`'s two boundary-violation malicious
+fixtures' `rule` was corrected from a pre-verification guess (`"invalid"`)
+to what `jsonschema`/`ajv` actually report (`"invalidValue"`, since both
+libraries surface the error against the `object3d` `oneOf` discriminator,
+not the nested `exclusiveMinimum`/`maximum` keyword directly).
+
+Neither validator is wired into any API endpoint or persistence model yet
+— correctly out of scope; that is the next #209 sub-issue.
+
+QA: PASS, full criterion matrix (including a full `make check` run — 710
+backend tests passed/22 skipped, 138 frontend files/2040 tests passed) in
+the
+[issue #211 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211#issuecomment-5460530667).
+
+Dependencies: task 178/#210 (complete). Unblocked task 180/#212
+(persistence models).
+
+## 180. Django persistence models for the 3D scene document
+
+Status: COMPLETE
+
+GitHub issue: [#212](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/212) (closed)
+
+Parent: task 177/#209. Depended on task 178/#210 (schema) and task
+179/#211 (validators), both complete.
+
+Delivered on the `3d-scene-editor-epic` branch (commit `c2457ed`):
+
+- `Project3D`/`SceneVersion3D` added to `scenes/models.py` — deliberately
+  separate models from `Project`/`SceneVersion` per #208's decision
+  (a genuinely separate document family), not an existing-model extension
+  with a document-type discriminator. Mirrors `Project`/`SceneVersion`'s
+  shape at the minimum scope #212 asks for: owner, title,
+  `current_version` pointer, sequence-numbered versions,
+  `scene_json` validated by `validate_scene3d`
+  (`scenes/validation3d.py`) on save. Intentionally omits fields that only
+  make sense once their owning feature exists (`visibility`/
+  `published_at` before publish/gallery integration, soft-delete before a
+  delete flow, `creation_request_id` before a real creation endpoint) —
+  deferred rather than spuriously added now.
+- Migration `0018_project3d_sceneversion3d_project3d_current_version_and_more`,
+  verified to apply cleanly against a real local PostgreSQL server.
+- `tests/test_project_scene_version_3d_models.py` (9 tests): creation,
+  setting `current_version`, multi-version retrieval, cross-project
+  sequence independence, and — mirroring #211's cross-document-family
+  guarantee at the persistence layer — that a 2D scene document is
+  rejected by the 3D model's validator.
+- No API endpoints/views yet — correctly out of scope; tests exercise the
+  models directly.
+
+Corrected one inaccurate acceptance criterion during implementation: the
+issue's "basic admin registration, matching the existing Project/
+SceneVersion admin" assumed admin registration existed for the 2D
+models — it doesn't (no `scenes/admin.py` exists at all). Dropped rather
+than invent unprecedented scope; recorded as a comment on #212 before
+implementation, matching how #210/#211's own small corrections were
+handled.
+
+No changes to `Project`/`SceneVersion`/`Template` or their migrations.
+Full backend suite: 719 passed/22 skipped (up from 710 pre-#212). `make
+check` passes end to end.
+
+QA: PASS, full criterion matrix in the
+[issue #212 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/212#issuecomment-5460554316).
+
+Dependencies: task 178/#210 and task 179/#211 (both complete). Unblocked
+task 181/#213 (creation/retrieval API).
+
+## 181. Minimal creation/retrieval API for Project3D/SceneVersion3D
+
+Status: COMPLETE
+
+GitHub issue: [#213](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/213) (closed)
+
+Parent: task 177/#209. Depended on task 180/#212 (persistence models,
+complete).
+
+Delivered on the `3d-scene-editor-epic` branch (commit `ad2ca3f`):
+
+- `scenes/permissions.py`: `PROJECT3D_CREATE`/`PROJECT3D_READ` added to
+  the single `Action` enum and `can()`'s single authorization service —
+  not a parallel module. `Project3D` has no `visibility` field yet (task
+  180/#212 deferred it), so `PROJECT3D_READ` is unconditionally
+  owner-only.
+- `scenes/serializers.py`: `Project3DSerializer`/
+  `SceneVersion3DSerializer`, mirroring `ProjectSerializer`/
+  `SceneVersionDetailSerializer`'s shape at this issue's smaller scope
+  (no description/tags/visibility/thumbnail yet — those don't exist on
+  the model).
+- `scenes/api.py`: `Project3DListCreateView` (`POST`/`GET
+  /api/projects3d/`) and `Project3DDetailView` (`GET
+  /api/projects3d/<public_id>/`, owner-only, 404 for anyone else — never
+  403, matching the existing "not found and found-but-not-yours are
+  indistinguishable" convention). No `client_request_id` idempotency key
+  and no `renderer` field — both explicitly deferred (`scene3d.schema.json`
+  has no renderer concept; renderer selection is a later #209 phase).
+- `scenes/urls.py`: `projects3d/` as its own namespace, matching #208's
+  separate-document-family decision.
+- `tests/test_project3d_api.py` (9 tests): creation returns a
+  schema-valid scene (verified via `validate_scene3d`), auth required for
+  create/list, list scoped to the caller, owner-only retrieval, 404 (not
+  403) for anonymous/non-owner/nonexistent.
+
+No changes to any existing 2D route, `Action`, or serializer —
+purely additive (`git diff` confirms only new blocks in each touched
+file). Full backend suite: 728 passed/22 skipped (up from 719
+pre-#213). `make check` passes end to end.
+
+QA: PASS, full criterion matrix in the
+[issue #213 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/213#issuecomment-5460575977).
+
+Dependencies: task 180/#212 (complete). A full create → persist →
+retrieve round trip for the 3D document family now exists end to end.
+
+## 182. Fix shape.name schema shadowing bug (AI create-scene 422s)
+
+Status: PROPOSED
+
+GitHub issue: [#214](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/214)
+
+Discovered investigating a user report: the AI create-scene prompt flow
+fails 100% of the time it names a shape, with `$.shapes[N]: Additional
+properties are not allowed ('name' was unexpected)`.
+
+Root cause: `schema/scene.schema.json`'s `shape` `$defs` entry declares an
+optional base `name` property, but every one of its 5 type-specific
+`allOf` branches (circle/rect/line/path/particleEmitter) closes with
+`additionalProperties: false` and its own allowlist that omits `name` —
+so a named shape can never validate, for any shape type, on either the
+Python or TypeScript side. `ai_provider/mistral_provider.py` passes this
+same schema to Mistral's structured-output mode, which honors the base
+declaration and routinely names shapes, so every such response is
+rejected. Confirmed (via a script walking every `allOf`/`properties` pair
+in the schema) that `shape.name` is the *only* instance of this pattern
+in the whole schema — no other latent shadowing bugs.
+
+See [durable memory: scene schema allOf branch property
+shadowing](../.agents/memory/scene-schema-allof-branch-property-shadowing.md).
+
+Scope: add `"name": true` to all 5 per-type allowlists; fixtures/tests
+proving a named shape now round-trips through `validate_scene`/
+`validateScene` and the AI create-scene path; update
+`frontend/src/pages/sceneShapes.ts`'s now-stale `shapeLabel()` doc
+comment. Full criteria on the issue.
+
+Dependencies: None. Independent of task 183/#215 below.
+
+## 183. Decision: AI-driven addressing/editing by layer/shape name
+
+Status: PROPOSED (decision needed from the repository owner before any
+implementation)
+
+GitHub issue: [#215](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/215)
+
+Follow-up to the same user report as task 182/#214. The user wants AI
+create/edit prompts to reference a specific layer/shape by name, have the
+AI infer existing layers/shapes, generate new ones when none exist, and
+leave everything unmentioned untouched — and is unsure whether this fits
+the existing 2D structured editor at all, floating a
+2D-manual/2D-AI/3D-AI editor-product split where the AI-facing editors'
+addressable/protectable unit is "named details" rather than raw JSON
+Patch paths.
+
+This is a genuine, unresolved product/architecture decision comparable in
+weight to task 176/#208's 2D-vs-3D schema split — not something to
+implement speculatively. The issue lays out what already exists
+(`scenes/patch.py`'s allowlisted-path + unreferenced-element check,
+Task 111's shape-is-its-own-layer 1:1 relationship, task 182/#214's fix
+unblocking a real persistable shape name) and two options (extend the
+existing patch mechanism to resolve names vs. a genuinely separate
+AI-editor product), with a recommendation (start with the smaller
+extension) for the owner's consideration.
+
+Dependencies: Informed by (not blocked by) task 182/#214 and the
+completed task 177/#209 epic.

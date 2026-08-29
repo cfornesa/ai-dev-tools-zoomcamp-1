@@ -6983,9 +6983,9 @@ Dependencies: task 191/#223.
 
 ## 194. 3D manual editor: route/UI shell + creation entry point
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#226](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/226)
+GitHub issue: [#226](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/226) (closed)
 
 Parent: task 184/#216, refines task 186/#218. Makes a `scene3d` project
 openable for the first time — fetches via the existing `GET
@@ -6993,7 +6993,18 @@ openable for the first time — fetches via the existing `GET
 preview is acceptable (real rendering is a later follow-on), and a
 creation entry point calling the existing `POST /api/projects3d/`.
 
-Dependencies: task 180/#212, task 181/#213 (both complete).
+Delivered (commit `8d37c88`): new `frontend/src/api/projects3d.ts` (no
+frontend client existed for this document family before this issue),
+`Project3DWorkspace.tsx` at `/projects3d/:id` -- title display + a
+placeholder preview showing object/light/group counts. Gallery gets a
+third "Create new 3D project" button. `make check` passes end to end
+(744 backend / 2061 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #226 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/226#issuecomment-5462285669).
+
+Dependencies: task 180/#212, task 181/#213 (both complete). Unblocks
+task 195/#227 and task 199/#231.
 
 ## 195. 3D manual editor: outline/inspector (layers-equivalent panel)
 

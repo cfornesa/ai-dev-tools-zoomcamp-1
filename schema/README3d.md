@@ -58,9 +58,12 @@ uses for its own `transform2D`.
 ## Complexity/payload limits
 
 `schema/limits3d.json` mirrors `schema/limits.json`'s role for the 2D
-schema: scene-wide counts (`maxObjects`, `maxGroups`,
-`maxGroupNestingDepth`, `maxLights`) and `maxScenePayloadBytes`, none of
-which plain JSON Schema can express. It is not enforced by
+schema: scene-wide counts (`maxObjects`, `maxGroups`, `maxLights`) and
+`maxScenePayloadBytes`, none of which plain JSON Schema can express.
+Unlike the 2D schema, there is no `maxGroupNestingDepth`: V1 `group3d` has
+no `childIds`/`parentGroupId` — groups are flat, only objects reference a
+group via their own `groupId` — so there is no group-of-groups nesting to
+cap. It is not enforced by
 `scene3d.schema.json` itself — #211's validators are expected to load it
 and enforce it the same way `scenes/validation.py` and
 `frontend/src/validation/scene.ts` already do for `schema/limits.json`.

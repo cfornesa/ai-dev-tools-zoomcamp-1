@@ -12,6 +12,6 @@
   "malicious/duplicate_ids.json": { "valid": true, "note": "schema-valid; rejected by #211's validator as duplicateId" },
   "malicious/dangling_group_reference.json": { "valid": true, "note": "schema-valid; rejected by #211's validator as danglingReference" },
   "malicious/oversized_document.json": { "valid": true, "note": "schema-valid; rejected by #211's validator as limitExceeded (6000 objects)" },
-  "malicious/negative_forbidden_dimensions.json": { "valid": false, "rule": "invalid" },
-  "malicious/boundary_bypass_opacity.json": { "valid": false, "rule": "invalid" }
+  "malicious/negative_forbidden_dimensions.json": { "valid": false, "rule": "invalidValue" },
+  "malicious/boundary_bypass_opacity.json": { "valid": false, "rule": "invalidValue" }
 }

@@ -7602,3 +7602,50 @@ passes locally, confirm `make check` still passes end to end.
 Dependencies: None — implementable independently of task 206/#238's
 actual root-cause fix, though the new test should also serve as the
 regression check once #238 is resolved.
+
+## 208. Unhandled production exceptions are invisible: no LOGGING config, no ADMINS
+
+Status: ACTIVE (fix implemented and pushed; live production
+verification pending a Replit publish)
+
+GitHub issue: [#240](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/240)
+
+Parent: task 206/#238 (discovered while investigating that incident —
+the repository owner shared Replit's live logs, which showed the
+request-summary line for every `/api/projects3d/` 500 but never a
+traceback anywhere nearby).
+
+Root cause: `config/settings.py` defined no `LOGGING` setting and no
+`ADMINS`/`MANAGERS`, so Django fell back to its built-in default
+logging config. That config's `django.request` logger (which logs the
+full traceback for every unhandled 500) inherits the `django` logger's
+handlers: `console` (filtered by `RequireDebugTrue`, so silent once
+`DEBUG=False`) and `mail_admins` (a no-op with `ADMINS` unset). Net
+effect: every unhandled production exception was completely invisible
+— no console output, no email, nothing — confirmed by the fact that
+Replit's logs showed `"POST /api/projects3d/ HTTP/1.1" 500 145"` (from
+the separate, never-filtered `django.server` logger) but nothing else
+nearby.
+
+Delivered (commit `d97778e`): added an explicit `LOGGING` setting to
+`config/settings.py` with a dedicated, unfiltered console handler for
+`django.request`, `propagate: True` so the pre-existing (still no-op)
+`mail_admins` behavior is unchanged. Does not touch `DEBUG`, `ADMINS`,
+or any other production-safety setting. Verified via Django's test
+`Client` that a deliberately-raised exception now prints its full
+traceback regardless of `DEBUG`. Added
+`tests/test_logging_config.py` (2 new tests: the handler is attached
+and unfiltered, and an unhandled exception actually reaches it).
+`uv run pytest -q` 796 passed/22 skipped (up from 794);
+`make backend-lint`/`backend-format-check`/`backend-typecheck` clean;
+`manage.py check --deploy` unchanged (same 5 local-`.env`-only
+warnings as before, per `.agents/memory/replit-userenv-scope.md`).
+
+Next action: repository owner publishes commit `d97778e` (or later) to
+production via Replit, then re-triggers task 206/#238's
+`/api/projects3d/` 500 (or checks the next time it naturally occurs)
+and reads the now-visible traceback in Replit's logs to confirm #238's
+actual root cause.
+
+Dependencies: None, though this issue exists specifically to unblock
+diagnosing task 206/#238.

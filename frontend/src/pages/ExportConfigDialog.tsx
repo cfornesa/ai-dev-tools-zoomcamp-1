@@ -7,9 +7,11 @@ import {
   INTERACTION_MODE_LABELS,
   RENDERER_LABELS,
   type InteractionMode,
+  type RendererId,
 } from '../export/exportCompatibility';
 import {
   ExportGenerationBlockedError,
+  exportRendererIdFor,
   generateHtmlExport,
   triggerHtmlDownload,
 } from '../export/generateHtmlExport';
@@ -49,17 +51,22 @@ import { useVersionHistory } from './useVersionHistory';
  *
  * ## What's actually configurable today
  *
- * `_docs/plan.md`'s "Renderer selection" section and the canonical scene
- * schema (`schema/scene.schema.json`'s `renderer.preferred: "p5"`, a
- * `const`, not an enum) both say V1 ships exactly one renderer. So
- * "Renderer" and "Dependency mode" below are real, keyboard-operable
- * `<select>` controls (not hardcoded text) — future renderer/output-format
- * options (Task 56+) can be added as more `<option>`s with no structural
- * change here — but each currently has exactly one value, and is rendered
- * `disabled` with a note explaining why. The actually-configurable surface
- * in V1 is: which saved version, attribution (now wired end-to-end), the
- * social-thumbnail-ZIP preference (now wired end-to-end, Task 59), and
- * interaction mode.
+ * Issue #206 widened `schema/scene.schema.json`'s `renderer.preferred`
+ * from `const: "p5"` to an enum (`p5`/`canvas2d`), so a scene's renderer
+ * is no longer fixed -- but it's still a property of the scene document
+ * itself, set once (today, only by direct scene-document construction; no
+ * editor UI yet lets a user choose or change it -- see #206's own
+ * remaining-scope notes), not an independent choice made in this export
+ * dialog. "Renderer" below is therefore a real, keyboard-operable
+ * `<select>` (not hardcoded text) that *displays* the selected version's
+ * actual renderer, but stays `disabled` -- there is nothing for a user to
+ * choose here yet, since changing it would mean re-rendering the scene
+ * with a different adapter, not just relabeling the export. "Dependency
+ * mode" remains fixed/disabled for the same "nothing to choose yet"
+ * reason (SVG/other export formats are still future work). The
+ * actually-configurable surface in V1 is: which saved version, attribution
+ * (now wired end-to-end), the social-thumbnail-ZIP preference (now wired
+ * end-to-end, Task 59), and interaction mode.
  *
  * ## Version selection never touches the project
  *
@@ -85,7 +92,7 @@ export type ExportConfig = {
   projectId: string;
   versionId: number;
   versionSequence: number;
-  renderer: 'p5js';
+  renderer: RendererId;
   dependencyMode: 'cdn-html';
   includeAttribution: boolean;
   includeSocialThumbnailZip: boolean;
@@ -254,9 +261,16 @@ function ExportConfigDialog({
     }
   }, [isOpen]);
 
+  // Issue #206: the export's renderer is whatever the selected version's
+  // scene document itself declares (`scene.renderer.preferred`) -- there
+  // is no independent renderer choice made in this dialog, and no editor
+  // UI yet lets a scene's renderer be changed after creation, so this
+  // reflects reality rather than assuming p5js.
+  const sceneRendererId: RendererId = sceneDetail ? exportRendererIdFor(sceneDetail) : 'p5js';
+
   const compatibilityErrors = useMemo(
-    () => (sceneDetail ? checkRendererCompatibility(sceneDetail, 'p5js') : []),
-    [sceneDetail],
+    () => (sceneDetail ? checkRendererCompatibility(sceneDetail, sceneRendererId) : []),
+    [sceneDetail, sceneRendererId],
   );
 
   const metadataErrors = validateProjectMetadataForPublish({
@@ -304,7 +318,7 @@ function ExportConfigDialog({
         projectId,
         versionId: version.id,
         versionSequence: version.sequence,
-        renderer: 'p5js',
+        renderer: sceneRendererId,
         dependencyMode: 'cdn-html',
         includeAttribution,
         includeSocialThumbnailZip,
@@ -399,7 +413,7 @@ function ExportConfigDialog({
             <label htmlFor="export-renderer">Renderer</label>
             <select
               id="export-renderer"
-              value="p5js"
+              value={sceneRendererId}
               disabled
               aria-describedby="export-renderer-note"
               onChange={() => {
@@ -407,10 +421,11 @@ function ExportConfigDialog({
               }}
             >
               <option value="p5js">{RENDERER_LABELS.p5js}</option>
+              <option value="canvas2d">{RENDERER_LABELS.canvas2d}</option>
             </select>
             <p id="export-renderer-note">
-              p5.js is the only renderer built so far. More options may be added here later without
-              changing this control.
+              This scene was created with the {RENDERER_LABELS[sceneRendererId]} renderer. The
+              renderer is set when a scene is created and can't be changed here.
             </p>
           </div>
 
@@ -489,7 +504,9 @@ function ExportConfigDialog({
 
           {compatibilityErrors.length > 0 && (
             <div role="alert" aria-live="assertive" data-testid="export-compatibility-errors">
-              <p>This version can't be exported with the {RENDERER_LABELS.p5js} renderer:</p>
+              <p>
+                This version can't be exported with the {RENDERER_LABELS[sceneRendererId]} renderer:
+              </p>
               <ul>
                 {compatibilityErrors.map((message) => (
                   <li key={message}>{message}</li>

@@ -159,7 +159,7 @@ export class ExportGenerationBlockedError extends Error {
  * two id spaces have always been distinct (the export module's ids are
  * its own export-target labels, not a mirror of the schema field), so
  * this is the one place that translates between them. */
-function exportRendererIdFor(scene: SceneDocument): RendererId {
+export function exportRendererIdFor(scene: SceneDocument): RendererId {
   return resolveSceneRendererId(scene) === 'canvas2d' ? 'canvas2d' : 'p5js';
 }
 

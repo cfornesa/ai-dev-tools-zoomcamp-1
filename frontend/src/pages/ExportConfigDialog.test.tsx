@@ -145,6 +145,43 @@ describe('ExportConfigDialog version selection', () => {
   });
 });
 
+describe('ExportConfigDialog renderer display (issue #206)', () => {
+  it('reflects a canvas2d-renderer scene, not a hardcoded p5js display', async () => {
+    mockedGetSceneVersion.mockResolvedValue(
+      versionDetail({}, { ...BASE_SCENE, renderer: { preferred: 'canvas2d' } }),
+    );
+
+    const { dialog } = await openDialog();
+
+    const rendererSelect = await within(dialog).findByLabelText<HTMLSelectElement>('Renderer');
+    await waitFor(() => expect(rendererSelect.value).toBe('canvas2d'));
+    expect(rendererSelect).toBeDisabled();
+    expect(
+      within(dialog).getByText(/this scene was created with the canvas2d renderer/i),
+    ).toBeInTheDocument();
+  });
+
+  it("unsupported-feature errors name the scene's own renderer, not always p5.js", async () => {
+    mockedGetSceneVersion.mockResolvedValue(
+      versionDetail(
+        {},
+        {
+          ...BASE_SCENE,
+          renderer: { preferred: 'canvas2d' },
+          shapes: [{ id: 's1', type: 'sprite3d', layerId: 'layer-1' } as never],
+        },
+      ),
+    );
+
+    const { dialog } = await openDialog();
+
+    const errorRegion = await within(dialog).findByTestId('export-compatibility-errors');
+    expect(errorRegion).toHaveTextContent(
+      'Shape type "sprite3d" is not supported by the Canvas2D renderer.',
+    );
+  });
+});
+
 describe('ExportConfigDialog renderer compatibility', () => {
   it('blocks export and names each exact unsupported feature', async () => {
     mockedGetSceneVersion.mockResolvedValue(

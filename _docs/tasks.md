@@ -6090,11 +6090,9 @@ beyond having been discovered during it.
 Goal: `POST /api/ai/art-pieces/generate/` must not fail with an unhandled
 500 for a user with a valid, configured personal Mistral credential.
 
-Status: ACTIVE (root cause found and fixed locally, pushed to `main` at
-commit `decd339`; live production retest still pending a Replit publish,
-which is outside this agent's access — see next action)
+Status: COMPLETE
 
-GitHub issue: [#203](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/203)
+GitHub issue: [#203](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/203) (closed)
 
 Discovery: found while testing "the other piece types" (task 165-169's
 art-piece studio) per the repository owner's own untested-territory note
@@ -6138,19 +6136,28 @@ Acceptance criteria:
   (not the `AI_PROVIDER=fake` seam, which bypasses this code entirely).
   **DONE** — `tests/test_art_piece_provider.py` (new); confirmed it fails
   against the pre-fix import and passes after.
-- [ ] Focused tests, `make check`, and a live production retest all pass.
-  Focused tests and `make check` **DONE** (670 backend passed/22 skipped,
-  1928 frontend passed, all lint/format/typecheck clean). Live production
-  retest **PENDING** — requires a Replit publish, a separate owner-driven
-  flow this agent cannot trigger (see
-  `.agents/memory/replit-publish-verification.md`).
+- [x] Focused tests, `make check`, and a live production retest all pass.
+  **DONE** — focused tests/`make check` passed 2026-08-28 (670 backend
+  passed/22 skipped, 1928 frontend passed, all lint/format/typecheck
+  clean). Live production retest passed 2026-08-29: repository owner
+  published to Replit and confirmed via production access logs (four
+  `POST /api/ai/art-pieces/generate/ HTTP/1.1" 200` entries, no 500s);
+  this agent independently confirmed the same result live via Claude in
+  Chrome, signed in, all four libraries (Canvas2D, SVG, Three.js,
+  A-Frame) generating successfully with no error.
 
 Evidence (2026-08-28): commit `decd339`, pushed to `main`. QA comment:
 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/203#issuecomment-5459651897
+Live retest evidence (2026-08-29):
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/203#issuecomment-5462543239
 
-Next action: repository owner publishes to production via Replit, then
-retests all four libraries at `https://animate.creatrweb.com/art-pieces`
-(the issue's exact repro steps). Close #203 once that live retest passes.
+Discovered during the live retest: despite the successful 200 response,
+the sandboxed preview only renders visible content for SVG —
+Canvas2D/Three.js/A-Frame generate successfully but show a blank
+preview. This is a distinct bug from the 500 this issue tracked; filed
+as task 204/#236 below, under active investigation.
+
+Next action: none required for this issue.
 
 Dependencies: None. Unrelated to task 161/#192's camera investigation
 beyond having been discovered during the same testing session, per the
@@ -7301,3 +7308,43 @@ QA: PASS, full criterion matrix in the
 [issue #235 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/235#issuecomment-5462497639).
 
 Dependencies: task 200/#232 (complete).
+
+## 204. A-Frame art pieces render blank: camera faces away from origin-positioned content
+
+Status: PROPOSED
+
+GitHub issue: [#236](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/236)
+
+Parent: task 168/#198 (per-library AI generation pipeline). Discovered
+during the live production retest for task 171/#203, then corrected and
+root-caused via direct inspection of the live sandboxed iframe's
+`srcdoc` (readable from the parent frame despite the sandbox — a normal
+DOM attribute).
+
+Root cause: `ai_provider/art_piece_provider.py`'s `_AFRAME_SYSTEM_PROMPT`
+only says to position the camera "to frame the scene" — no concrete
+coordinate guidance. For "A red circle", Mistral produced a camera at
+`position="0 1.6 -3" rotation="0 0 0"` and a circle with no `position`
+(defaults to the origin). A-Frame's default camera look direction at
+`rotation="0 0 0"` is down the -Z axis, so a camera at negative Z with
+no rotation looks *away* from origin-centered content, not toward it —
+the circle generates successfully (200, `ready` postMessage fires) but
+is never visible. Same class of problem as task 172/#204's binding-enum
+fix (see `.agents/memory/mistral-non-strict-schema-mode.md`): vague
+natural-language guidance isn't enough, needs concrete reinforcement.
+See `.agents/memory/aframe-default-camera-facing-convention.md`.
+
+Also discovered and corrected during this investigation: an initial,
+broader report that Canvas2D/Three.js/A-Frame all rendered blank was a
+false alarm for Canvas2D/Three.js — both were confirmed rendering
+correctly on retest with a longer wait (the original screenshots were
+taken before the async generation+render had actually completed). Only
+A-Frame is a genuine, reproducible bug.
+
+Scope: strengthen `_AFRAME_SYSTEM_PROMPT` with concrete camera-placement
+guidance (a worked example and/or an explicit positive-Z rule), a
+regression test asserting the prompt contains it (mirroring task
+172/#204's own regression test pattern), and manual/live verification
+across a few representative prompts.
+
+Dependencies: None.

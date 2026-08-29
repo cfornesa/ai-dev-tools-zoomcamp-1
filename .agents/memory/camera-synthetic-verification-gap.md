@@ -134,3 +134,14 @@ unreachable. Also: driving such a tab while it is OS-backgrounded makes
 `requestAnimationFrame` appear to stop after a couple of ticks
 (`document.visibilityState === 'hidden'` throttling) -- that is normal
 browser behavior, not a bug in code being tested that way.
+
+**2026-08-28 confirmed resolved on production, real camera:** after the
+repository owner published the deploy, retested the exact reported URL
+(`https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`)
+with a real Chrome browser and physical webcam. The camera overlay showed
+genuine live content, and three independent forced redraws sampled
+different canvas pixel brightness each time -- confirming the fix works
+on production, not just in local/synthetic evidence. This closes out the
+#192 saga (three reopenings across one session) with the strongest
+evidence tier this topic calls for: a real camera, on the real reported
+URL, on the real deployed build.

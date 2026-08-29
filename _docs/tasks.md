@@ -6422,8 +6422,8 @@ Dependencies: None blocking; informed by but does not block tasks 174/175.
 
 ## 177. Epic: a genuine 3D scene editor (new schema, new editor, Three.js/A-Frame renderers)
 
-Status: PROPOSED (epic filed; not yet groomed into implementation-ready
-sub-issues)
+Status: IN PROGRESS (epic open, tracking sub-issues — same pattern as
+task 173/#205 across #206/#207/#208; not expected to close in one pass)
 
 GitHub issue: [#209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/209)
 
@@ -6452,3 +6452,62 @@ its scope.
 Dependencies: None blocking. Informed by, but independent of, tasks
 174-175/#206/#207's 2D renderer work and tasks 165-169/#196-200's raw-code
 art-piece flow.
+
+Sub-issues:
+
+- Task 178/[#210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/210) —
+  the canonical 3D scene document schema. **COMPLETE.**
+- [#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211) —
+  independent Python + TypeScript validators for the 3D schema. Depends on
+  #210 (now unblocked). Not started.
+
+## 178. Define the canonical 3D scene document schema
+
+Status: COMPLETE
+
+GitHub issue: [#210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/210) (closed)
+
+Parent: task 177/#209. First, foundational sub-issue of the 3D editor
+epic — every other #209 sub-issue depends on this.
+
+Delivered on the `3d-scene-editor-epic` branch (commits `6a7a1b3`,
+`7d53d64`):
+
+- `schema/scene3d.schema.json`: a genuinely separate document family from
+  the 2D canonical scene (`documentType: "scene3d"` discriminator, per
+  #208's decision) — camera (position/target/fov/near/far), lights
+  (directional/point/ambient, each with type-conditional required
+  fields), hierarchical groups mirroring the 2D schema's groups/groupId
+  convention, and box/sphere/cylinder/plane objects with bounded
+  `transform3D` (position/rotation/scale in x/y/z, degrees-based Euler
+  rotation) and materials (color/opacity/emissive). `$defs` for
+  id/color/unitInterval copied verbatim from `scene.schema.json`'s own
+  conventions.
+- `schema/limits3d.json`: scene-wide complexity/payload limits
+  (maxObjects, maxGroups, maxGroupNestingDepth, maxLights,
+  maxScenePayloadBytes), enforced by a future validator rather than the
+  schema itself — mirrors `schema/limits.json`'s identical split for the
+  2D schema.
+- `schema/fixtures3d/` (2 valid, 6 invalid, 5 malicious) +
+  `expectations3d.json`, mirroring `schema/fixtures/`'s structure. Three
+  malicious fixtures (duplicate ids, dangling group reference, oversized
+  document) are intentionally schema-valid — cross-field/complexity
+  checks are out of scope for a schema-only issue and are #211's job, the
+  same gap the 2D schema has between `scene.schema.json` and
+  `scenes/validation.py`.
+- `schema/README3d.md` documenting the versioning policy, the
+  "not an extension of the 2D schema" boundary, and the schema/validator
+  limit split.
+- `tests/test_scene3d_schema.py`: 14 tests validating the schema itself
+  (`Draft202012Validator.check_schema`) and every fixture against
+  `expectations3d.json`. All pass.
+
+No changes to `schema/scene.schema.json`, `scenes/validation.py`, or
+`frontend/src/validation/scene.ts` (verified via `git diff --stat`,
+additive-only per the issue's acceptance criteria).
+
+QA: PASS, full criterion matrix in the
+[issue #210 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/210#issuecomment-5460497545).
+
+Dependencies: None blocking (first sub-issue of #209). Unblocks
+[#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211).

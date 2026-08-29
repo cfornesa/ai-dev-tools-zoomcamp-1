@@ -7573,15 +7573,43 @@ at all (not a ledger/table mismatch — genuinely never applied). This
 fully confirms the schema-diff-gap hypothesis in
 `.agents/memory/replit-schema-diff-gap-for-new-tables.md`.
 
-Next action: per `.agents/memory/replit-production-schema-publishing.md`,
-do not run migrations directly against production — the fix is for the
-repository owner to trigger a fresh Republish through Replit's own UI,
-review the schema diff it presents (should now show
-`scenes_project3d`/`scenes_sceneversion3d` as pending additions), apply
-it, then retest `POST /api/projects3d/` live. If Republish still
-doesn't offer that diff, escalate to Replit support — development's own
-migration ledger already includes 0018/0019, confirmed via local
-reproduction against a correctly-migrated database.
+Plain Republish attempted twice (repository owner): both times
+completed (fresh deployment instance confirmed in logs) but did not
+apply the missing schema diff — identical `UndefinedTable` error
+persisted, and no manual "sync schema" action exists in the Database
+Settings panel.
+
+`RUN_MIGRATIONS_ON_START=true` attempted (2026-08-29, repository
+owner's explicit choice after being offered the tradeoffs): set via
+Replit's Configurations panel, Republish triggered. Result: the entire
+app failed to start — `psycopg.errors.DuplicateTable: relation
+"scenes_mistralcredential" already exists` on migration
+`0016_mistralcredential` (added 2026-08-21, over a week before this
+incident). `scripts/start.sh` treats a failed migration as fatal, so
+the deployment candidate crash-looped. **Not a regression for real
+users** — Replit never promoted the failing candidate, so the previous
+working revision kept serving live traffic throughout (confirmed via
+`/health/` returning 200 and the "issue publishing" banner clearing).
+Reverted: deleted the `RUN_MIGRATIONS_ON_START` configuration via
+Replit's dashboard.
+
+This reveals the schema/ledger drift is **not limited to 0018/0019** —
+`scenes_mistralcredential`'s table exists in production without a
+matching `django_migrations` ledger entry either, meaning `migrate`
+can never even reach 0018/0019 in sequence. See the expanded guidance
+in `.agents/memory/replit-production-schema-publishing.md`.
+
+Next action: `RUN_MIGRATIONS_ON_START` is ruled out as a safe blanket
+fix while this ledger/schema mismatch exists earlier in the migration
+sequence. Remaining paths: (a) the repository owner manually
+reconciles the migration ledger against actual production schema
+(`manage.py migrate --fake <app> <migration>` for each table that
+already exists, in order, done carefully/directly rather than at
+container startup) — needs direct production database access this
+session doesn't have — or (b) escalate to Replit support with the full
+evidence trail (a Django migration ledger genuinely out of sync with
+the schema Replit's own tooling created, and Republish not offering to
+reconcile it).
 
 Dependencies: None — live production incident, independent of other
 backlog ordering.

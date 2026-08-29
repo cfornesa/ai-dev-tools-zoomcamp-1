@@ -6868,9 +6868,9 @@ Dependencies: Informed by task 183/#215 (resolved) and task 185/#217.
 
 ## 190. Name-based element resolution for AI create/edit prompts (shared 2D/3D foundation)
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#222](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/222)
+GitHub issue: [#222](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/222) (closed)
 
 Parent: task 184/#216, refines task 185/#217. Backend-only: extends
 `scenes/patch.py`'s existing unreferenced-element check (issue #158) to
@@ -6880,7 +6880,20 @@ resolve a textual reference ("the shape named Sun") against `shape.name`
 Feeds task 192/#224 (2D) and, later, task 197/#232 (3D, once task
 193/#230 adds a 3D `name` field).
 
-Dependencies: task 182/#214 (complete).
+Delivered (commit `c55e9f0`): `scenes/patch.py`'s `_reference_candidates`
+already read `item.get("name")` generically for every element type -- it
+just couldn't matter for shapes until task 182/#214 fixed the persistence
+bug. Fixed the stale "layers/groups only" docstring and added explicit
+regression tests. Extended `_SYSTEM_PROMPT`/`_EDIT_SYSTEM_PROMPT` to tell
+the model it may address existing shapes by name and should name newly
+created ones the prompt implies a name for. `make check` passes end to
+end (744 backend / 2045 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #222 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/222#issuecomment-5462152082).
+
+Dependencies: task 182/#214 (complete). Unblocks task 192/#224 and,
+later, task 197/#232 (now that task 198/#230 has landed a 3D name field).
 
 ## 191. 2D AI-assisted editor: route/UI shell + creation entry point
 

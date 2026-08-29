@@ -13,6 +13,7 @@ expertMode = true
 DJANGO_ALLOWED_HOSTS = "*"
 DJANGO_DEBUG = "true"
 CSRF_TRUSTED_ORIGINS = "https://animate.creatrweb.com,https://creatrweb.replit.app"
+RUN_MIGRATIONS_ON_START = "true"
 
 [userenv.production]
 DJANGO_ALLOWED_HOSTS = "animate.creatrweb.com,creatrweb.replit.app,localhost,127.0.0.1"

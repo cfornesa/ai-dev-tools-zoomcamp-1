@@ -6765,6 +6765,20 @@ first, informing #218 (3D manual, needs its own editor-route groundwork)
 and finally #219 (3D AI-assisted, explicitly depends on both #217's
 name-resolution mechanism and #218's 3D editor-route groundwork).
 
+Each of #217/#218/#219 was itself further refined into granular,
+independently-implementable sub-issues (repository owner feedback: the
+original "one bundled first slice" scope per product was still too
+large) — see tasks 190-201 below. Also surfaced during that refinement:
+the existing 2D manual editor isn't untouched by this decision either —
+task 189/#221 tracks whether its existing embedded AI-assist panel
+(`AIProposalPanel`) stays, is deprecated, or is reframed now that a
+dedicated 2D AI-assisted editor product will exist.
+
+Full sub-issue manifest: task 189/#221 (2D manual editor decision), task
+190/#222 (shared name-resolution backend), tasks 191-193/#223-#225 (2D
+AI editor), tasks 194-197/#226-#229 (3D manual editor), tasks
+198-201/#230-#233 (3D AI editor).
+
 Dependencies: task 183/#215 (decision, resolved). Tasks 178-181/#210-#213
 (3D backend slice, complete) for the two 3D sub-issues.
 
@@ -6819,3 +6833,185 @@ export dialog show it). All the pieces needed already exist
 label/badge addition only, no new renderer logic.
 
 Dependencies: None.
+
+## 189. Decision: does the 2D manual editor keep its embedded AI-assist panel?
+
+Status: PROPOSED (decision needed from the repository owner)
+
+GitHub issue: [#221](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/221)
+
+Parent: task 184/#216. Surfaced investigating task 185/#217's scope: the
+existing 2D manual editor is not purely manual today — it already has a
+first-class embedded "AI proposals" panel (`AIProposalPanel.tsx`,
+Tasks 46-50), which now overlaps with the purpose of the new dedicated
+2D AI-assisted editor (task 185/#217). Presents three options (keep
+as-is, deprecate/remove, reframe as narrower "quick fix" scope) with a
+recommendation to keep as-is, for the owner's consideration. Does not
+block any of tasks 190-198 below.
+
+Dependencies: Informed by task 183/#215 (resolved) and task 185/#217.
+
+## 190. Name-based element resolution for AI create/edit prompts (shared 2D/3D foundation)
+
+Status: PROPOSED
+
+GitHub issue: [#222](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/222)
+
+Parent: task 184/#216, refines task 185/#217. Backend-only: extends
+`scenes/patch.py`'s existing unreferenced-element check (issue #158) to
+resolve a textual reference ("the shape named Sun") against `shape.name`
+(task 182/#214), and extends the AI system prompts
+(`ai_provider/mistral_provider.py`) to address/name elements this way.
+Feeds task 192/#224 (2D) and, later, task 197/#232 (3D, once task
+193/#230 adds a 3D `name` field).
+
+Dependencies: task 182/#214 (complete).
+
+## 191. 2D AI-assisted editor: route/UI shell + creation entry point
+
+Status: PROPOSED
+
+GitHub issue: [#223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/223)
+
+Parent: task 184/#216, refines task 185/#217. Smallest slice: a new
+route sibling to the existing `/projects/:id` manual editor, reusing the
+existing 2D renderer/preview work, no layers panel, no AI logic yet — just
+the shell and a creation entry point.
+
+Dependencies: None blocking.
+
+## 192. 2D AI-assisted editor: prompt-driven create/edit flow
+
+Status: PROPOSED
+
+GitHub issue: [#224](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/224)
+
+Parent: task 184/#216, refines task 185/#217. The actual AI-assisted
+authoring experience: a prompt-first panel (not a supplementary one,
+unlike the manual editor's AI proposals panel — see task 189/#221),
+reusing `AIProposalPanel`/`useAIProposal`'s existing create/edit-scene
+machinery and task 190/#222's name-based resolution, with a continuous
+session model (each accepted prompt's result is addressable by name in
+the next prompt).
+
+Dependencies: task 191/#223 and task 190/#222, both should land first.
+
+## 193. 2D AI-assisted editor: embedded code editor
+
+Status: PROPOSED
+
+GitHub issue: [#225](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/225)
+
+Parent: task 184/#216, refines task 185/#217. Mirrors the manual
+editor's Code tab (JSON at minimum, code-grammar view as a stretch goal)
+for this editor's route.
+
+Dependencies: task 191/#223.
+
+## 194. 3D manual editor: route/UI shell + creation entry point
+
+Status: PROPOSED
+
+GitHub issue: [#226](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/226)
+
+Parent: task 184/#216, refines task 186/#218. Makes a `scene3d` project
+openable for the first time — fetches via the existing `GET
+/api/projects3d/<public_id>/` (task 181/#213), a minimal/placeholder 3D
+preview is acceptable (real rendering is a later follow-on), and a
+creation entry point calling the existing `POST /api/projects3d/`.
+
+Dependencies: task 180/#212, task 181/#213 (both complete).
+
+## 195. 3D manual editor: outline/inspector (layers-equivalent panel)
+
+Status: PROPOSED
+
+GitHub issue: [#227](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/227)
+
+Parent: task 184/#216, refines task 186/#218. The 3D-manual equivalent
+of the 2D editor's Layers panel + shape inspector — a flat list (the 3D
+schema's `groups` don't nest, per `schema/README3d.md`) of
+objects/groups/lights plus a camera summary, with transform/material/
+type-specific property editing on selection.
+
+Dependencies: task 194/#226.
+
+## 196. 3D manual editor: save-a-new-version API
+
+Status: PROPOSED
+
+GitHub issue: [#228](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/228)
+
+Parent: task 184/#216, refines task 186/#218. Task 181/#213 only covers
+creation (the single initial version) — this adds `POST
+/api/projects3d/<public_id>/versions/` mirroring `SceneVersionListCreateView`'s
+pattern, so both task 195/#227's manual edits and task 197/#232's
+AI-proposed edits can actually persist.
+
+Dependencies: task 180/#212, task 181/#213 (both complete). Feeds task
+195/#227 and task 197/#232.
+
+## 197. 3D manual editor: embedded code editor
+
+Status: PROPOSED
+
+GitHub issue: [#229](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/229)
+
+Parent: task 184/#216, refines task 186/#218. Mirrors task 193/#225's
+scope for the `scene3d` document (JSON view at minimum).
+
+Dependencies: task 194/#226. Task 196/#228 for edits to persist.
+
+## 198. Add name field to scene3d schema (object3d/light)
+
+Status: PROPOSED
+
+GitHub issue: [#230](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/230)
+
+Parent: task 184/#216, refines task 187/#219. Mirrors task 182/#214's
+fix exactly, for the 3D schema: add an optional `name` to `object3d`/
+`light`, verified not shadowed by any per-type `allOf` branch (reuse
+#214's shadowing-check script and durable memory
+`scene-schema-allof-branch-property-shadowing.md`), plus fixtures and
+regression tests.
+
+Dependencies: None blocking.
+
+## 199. 3D AI-assisted editor: route/UI shell
+
+Status: PROPOSED
+
+GitHub issue: [#231](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/231)
+
+Parent: task 184/#216, refines task 187/#219. Reuses task 194/#226's
+route/preview groundwork rather than reimplementing independently, with
+no outline/inspector panel (that's the manual editor's concept).
+
+Dependencies: task 194/#226.
+
+## 200. 3D AI-assisted editor: prompt-driven create/edit flow
+
+Status: PROPOSED
+
+GitHub issue: [#232](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/232)
+
+Parent: task 184/#216, refines task 187/#219. Generalizes task 190/#222's
+2D name-resolution mechanism to `scene3d` documents using task 198/#230's
+name field; adds a `create_scene3d`/`edit_scene3d`-equivalent AI provider
+capability (none exists yet — `ai_provider/mistral_provider.py` today
+only targets the 2D schema); saves via task 196/#228. Last of the four
+editor products in the epic's natural build order.
+
+Dependencies: task 190/#222, task 198/#230, task 196/#228, task
+199/#231 — all should land first.
+
+## 201. 3D AI-assisted editor: embedded code editor
+
+Status: PROPOSED
+
+GitHub issue: [#233](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/233)
+
+Parent: task 184/#216, refines task 187/#219. Mirrors task 197/#229's
+scope.
+
+Dependencies: task 199/#231. Task 196/#228 for edits to persist.

@@ -7228,9 +7228,9 @@ Dependencies: task 199/#231 (complete). Task 196/#228 (complete).
 
 ## 202. Wire the 3D manual editor's outline/inspector edits to the save-version API
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#234](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/234)
+GitHub issue: [#234](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/234) (closed)
 
 Parent: task 184/#216, refines task 186/#218. Discovered while
 implementing task 195/#227: task 195/#227 explicitly scoped itself to
@@ -7247,6 +7247,18 @@ and updates local state from the response, mirroring the 2D manual
 editor's `SaveControl`/`handleVersionSaved` pattern. Dirty-state
 indication is a reasonable minimum; full version history/restore parity
 is out of scope unless a future issue asks for it.
+
+Delivered (commit `6811da9`): a Save button + dirty-state status text
+("Saved as version N"/"Unsaved changes", tracked via a `persistedScene`
+reference alongside `workingScene`), client-side `validateScene3D`
+before posting, shared `handleVersionSaved` sync used by both this
+button and the Code tab's own save path. `make check` passes end to end
+(782 backend / 2087 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #234 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/234#issuecomment-5462482158).
+
+Dependencies: task 194/#226, task 195/#227, task 196/#228 (all complete).
 
 Dependencies: task 194/#226, task 195/#227, task 196/#228 (all complete).
 

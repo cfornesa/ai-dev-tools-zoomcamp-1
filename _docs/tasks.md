@@ -6174,7 +6174,9 @@ than one library — starting with native Canvas2D and SVG alongside today's
 p5.js — with the same shapes/bindings/graph/camera-tracking behavior
 regardless of renderer.
 
-Status: PROPOSED (scoping complete; no implementation yet)
+Status: ACTIVE (task 174/#206's Canvas2D adapter partially landed; task
+176/#208 decided and closed, spinning off task 177/#209 as a separate
+epic; task 175/#207 still proposed)
 
 GitHub issue: [#205](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/205) (epic)
 
@@ -6237,13 +6239,17 @@ Proposed phasing (sub-issues, dependency order):
 3. Task 176/[#208](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/208) —
    decision issue (not implementation): whether/how Three.js/A-Frame fit
    the structured editor, or stay exclusive to the existing raw-code
-   art-piece flow.
+   art-piece flow. **DECIDED AND CLOSED** — genuine 3D support wanted, but
+   as a new, separate 3D scene document/editor, not an extension of this
+   epic's 2D schema. Spun off as task 177/[#209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/209),
+   a new top-level epic on its own `3d-scene-editor-epic` branch.
 
 Out of scope: changing the existing raw-code art-piece-studio flow (tasks
 165-169) or revisiting #197's decision for that separate feature.
 
-Next action: PM grooming pass on task 174/#206 (the first phase) to turn
-its draft acceptance criteria into an implementation-ready plan.
+Next action: continue task 174/#206's remaining scope (export-bundle
+Canvas2D runtime source, `exportCompatibility.ts`, UI picker, e2e), then
+groom task 175/#207 (SVG adapter) now that #206's shared plumbing exists.
 
 Dependencies: None blocking. Builds on the existing `P5ScenePreview`
 interface, `RENDERER_CAPABILITIES`/`checkRendererCompatibility`, and
@@ -6303,14 +6309,57 @@ Dependencies: task 174/#206.
 
 ## 176. Decide whether/how Three.js and A-Frame fit the structured scene editor
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#208](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/208)
+GitHub issue: [#208](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/208) (closed)
 
 Parent: task 173/#205. A decision issue, not an implementation task —
-mirrors task 166/#197's own format. See issue #208 for the three options
-(2D-flattened-into-3D, genuine 3D schema support, or stay exclusive to the
-existing raw-code art-piece flow) and why this isn't a natural extension of
-tasks 174-175's 2D adapter work.
+mirrors task 166/#197's own format.
+
+Decision (repository owner, 2026-08-28): genuine 3D schema support is
+wanted, but as a **new, separate 3D scene document and editor** — its own
+schema file, own validators, own editor route, Three.js/A-Frame as its
+renderers — rather than retrofitting 3D fields into `scene.schema.json`
+(the document tasks 174-175/#206/#207's 2D renderers extend) or flattening
+2D content into a 3D engine. Reused across the 2D and 3D editors: the
+tracking-provider interface, the bindings/graph-as-data philosophy, the
+AI-provider abstraction pattern. Not reused: the 2D shape vocabulary or
+renderer adapter interface. Full rationale in issue #208's closing
+comment. Filed as a new top-level epic — task 177/#209 — rather than a
+#205 sub-issue, with its own dedicated working branch
+(`3d-scene-editor-epic`) rather than direct `main` work, given its scope.
 
 Dependencies: None blocking; informed by but does not block tasks 174/175.
+
+## 177. Epic: a genuine 3D scene editor (new schema, new editor, Three.js/A-Frame renderers)
+
+Status: PROPOSED (epic filed; not yet groomed into implementation-ready
+sub-issues)
+
+GitHub issue: [#209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/209)
+
+Follow-up to task 176/#208's decision. A new, separate 3D scene document
+type and editor — genuine 3D geometry/transform/camera/lighting support —
+distinct from both the existing 2D structured editor
+(tasks 5-48+/#206/#207) and the existing raw-code AI art-piece flow
+(tasks 165-169/#196-200, which already supports Three.js/A-Frame today via
+an unstructured generation path).
+
+Scope (see issue #209 for the full list, to be groomed into
+implementation-ready sub-issues before work starts): a new 3D scene
+schema (geometry, 3D transforms, camera, lighting, materials — likely its
+own document family, not a V1 scene variant); independent Python +
+TypeScript validators; a persistence-model grooming pass (new models vs.
+reusing the existing project/version shape for a new document type); a
+new editor route/UI; Three.js and A-Frame renderer adapters; whether/how
+gesture-tracking bindings apply to 3D scenes; a new structured-output
+AI-generation provider if AI generation is in scope for V1; export/
+publish/gallery integration.
+
+Working branch: `3d-scene-editor-epic` (pushed to origin), per the
+repository owner's direction — this epic's work happens off `main` given
+its scope.
+
+Dependencies: None blocking. Informed by, but independent of, tasks
+174-175/#206/#207's 2D renderer work and tasks 165-169/#196-200's raw-code
+art-piece flow.

@@ -88,6 +88,39 @@ def test_create_scene_requests_json_schema_response_format_and_forbids_prose():
     assert "JavaScript" in system_message["content"]
 
 
+def test_create_scene_system_prompt_lists_every_binding_targetproperty_and_signal():
+    """Issue #204: `response_format`'s `strict: False` mode is documented as
+    "a strong hint, not a guarantee" -- a real Mistral call for a common
+    prompt ("a happy face") produced bindings with `targetProperty: 'width'`
+    and `'height'`, neither a valid enum value, rejected by
+    `scenes.validation.validate_scene` with a raw schema-path error surfaced
+    to the user. Reinforcing the schema's constrained enums in the
+    natural-language system prompt too (redundant with, not a replacement
+    for, the JSON Schema response_format) is a standard mitigation for
+    non-strict structured output. This test fails if the schema's
+    `targetProperty`/`signal` enums and the system prompt's own restated
+    list ever drift apart, so a future schema change can't silently
+    reintroduce this gap."""
+    from scenes.validation import SCENE_SCHEMA
+
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    provider = _provider_with(handler)
+    provider.create_scene(AICreateSceneRequest(prompt="a scene"))
+
+    system_message = next(m for m in captured["messages"] if m["role"] == "system")
+    content = system_message["content"]
+
+    for value in SCENE_SCHEMA["$defs"]["binding"]["properties"]["targetProperty"]["enum"]:
+        assert f'"{value}"' in content, f"targetProperty {value!r} missing from system prompt"
+    for value in SCENE_SCHEMA["$defs"]["signal"]["enum"]:
+        assert f'"{value}"' in content, f"signal {value!r} missing from system prompt"
+
+
 def test_create_scene_passes_the_bounded_timeout():
     captured = {}
 

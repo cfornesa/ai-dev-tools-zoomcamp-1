@@ -211,6 +211,22 @@ and randomness are the top-level fields).
 would eval() -- node "params" accept only number/string/boolean/null leaf \
 values.
 - schemaVersion must be exactly 1.
+- Every binding's "targetProperty" must be exactly one of: "positionX", \
+"positionY", "scaleX", "scaleY", "rotation", "opacity", "fill", "stroke", \
+"backgroundColor", "palette", "globalForce", "triggerPreset", \
+"toggleLayer", "emitParticles", "resetScene" -- there is no "width" or \
+"height" target; to make a shape appear larger or smaller, bind \
+"scaleX"/"scaleY" instead.
+- Every binding's "signal" must be exactly one of: "indexTipX", \
+"indexTipY", "palmX", "palmY", "handDepth", "handSpeed", "pinchStrength", \
+"pinchDistance", "gestureConfidence", "handPresence", "handDistance", \
+"handsClose", "handsFar", "gestureState:openPalm", \
+"gestureState:closedFist", "gestureState:pointingUp", \
+"gestureState:thumbsUp", "gestureState:victory", "gestureState:none", \
+"event:pinchStart", "event:pinchEnd", "event:gestureEnter", \
+"event:gestureExit", "event:handAppear", "event:handDisappear", \
+"event:handsBecameClose", or "event:handsBecameFar" -- never invent a new \
+signal name.
 - Keep the scene well within these limits: at most 200 shapes, 50 groups, \
 20 layers, 100 graph nodes, 150 graph connections, 3 conditional nodes, \
 100 bindings, and 4 particle emitters.

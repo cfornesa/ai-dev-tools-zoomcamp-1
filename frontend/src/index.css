@@ -1628,6 +1628,16 @@ textarea:disabled {
   font-weight: 600;
 }
 
+/* Issue #220: which renderer (p5.js/Canvas2D/SVG) the open project uses. */
+.editor-renderer-badge {
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--muted-text, #666);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
 /* Issue #112: non-blocking draft-sync failure notice, distinct from the
    dirty/saved status it sits next to. */
 .editor-draft-sync-error {

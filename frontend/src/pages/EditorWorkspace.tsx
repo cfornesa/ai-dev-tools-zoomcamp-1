@@ -26,6 +26,8 @@ import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
+import { exportRendererIdFor } from '../export/generateHtmlExport';
+import { RENDERER_LABELS } from '../export/exportCompatibility';
 import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
 import {
   generateEditableCss,
@@ -2929,6 +2931,12 @@ function EditorWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <EditableProjectTitle id={id} project={project} setProject={setProject} />
+        <span className="editor-header-break" aria-hidden="true" />
+        {workingCopy && (
+          <span className="editor-renderer-badge" data-testid="editor-renderer-badge">
+            {RENDERER_LABELS[exportRendererIdFor(workingCopy)]}
+          </span>
+        )}
         <span className="editor-header-break" aria-hidden="true" />
         <p
           role="status"

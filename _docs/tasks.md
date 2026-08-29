@@ -6460,10 +6460,13 @@ Sub-issues:
 - Task 179/[#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211) —
   independent Python + TypeScript validators for the 3D schema.
   **COMPLETE.**
-- Next: a persistence-model grooming pass (new Django models vs. reusing
-  the existing project/version shape for a `scene3d` document) — not yet
-  filed as its own issue; the natural next #209 sub-issue once grooming
-  authorizes its scope.
+- Task 180/[#212](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/212) —
+  Django persistence models for the 3D scene document. **COMPLETE.**
+- Next: a real creation/retrieval API surface (endpoints/views for
+  `Project3D`/`SceneVersion3D`) — not yet filed as its own issue; the
+  natural next #209 sub-issue once its scope (auth/permissions reuse,
+  idempotent creation, response shape) is groomed with real acceptance
+  criteria.
 
 ## 179. Independent Python + TypeScript validators for the 3D scene schema
 
@@ -6507,8 +6510,59 @@ backend tests passed/22 skipped, 138 frontend files/2040 tests passed) in
 the
 [issue #211 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211#issuecomment-5460530667).
 
-Dependencies: task 178/#210 (complete). Unblocks the next #209 sub-issue
-(persistence-model grooming).
+Dependencies: task 178/#210 (complete). Unblocked task 180/#212
+(persistence models).
+
+## 180. Django persistence models for the 3D scene document
+
+Status: COMPLETE
+
+GitHub issue: [#212](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/212) (closed)
+
+Parent: task 177/#209. Depended on task 178/#210 (schema) and task
+179/#211 (validators), both complete.
+
+Delivered on the `3d-scene-editor-epic` branch (commit `c2457ed`):
+
+- `Project3D`/`SceneVersion3D` added to `scenes/models.py` — deliberately
+  separate models from `Project`/`SceneVersion` per #208's decision
+  (a genuinely separate document family), not an existing-model extension
+  with a document-type discriminator. Mirrors `Project`/`SceneVersion`'s
+  shape at the minimum scope #212 asks for: owner, title,
+  `current_version` pointer, sequence-numbered versions,
+  `scene_json` validated by `validate_scene3d`
+  (`scenes/validation3d.py`) on save. Intentionally omits fields that only
+  make sense once their owning feature exists (`visibility`/
+  `published_at` before publish/gallery integration, soft-delete before a
+  delete flow, `creation_request_id` before a real creation endpoint) —
+  deferred rather than spuriously added now.
+- Migration `0018_project3d_sceneversion3d_project3d_current_version_and_more`,
+  verified to apply cleanly against a real local PostgreSQL server.
+- `tests/test_project_scene_version_3d_models.py` (9 tests): creation,
+  setting `current_version`, multi-version retrieval, cross-project
+  sequence independence, and — mirroring #211's cross-document-family
+  guarantee at the persistence layer — that a 2D scene document is
+  rejected by the 3D model's validator.
+- No API endpoints/views yet — correctly out of scope; tests exercise the
+  models directly.
+
+Corrected one inaccurate acceptance criterion during implementation: the
+issue's "basic admin registration, matching the existing Project/
+SceneVersion admin" assumed admin registration existed for the 2D
+models — it doesn't (no `scenes/admin.py` exists at all). Dropped rather
+than invent unprecedented scope; recorded as a comment on #212 before
+implementation, matching how #210/#211's own small corrections were
+handled.
+
+No changes to `Project`/`SceneVersion`/`Template` or their migrations.
+Full backend suite: 719 passed/22 skipped (up from 710 pre-#212). `make
+check` passes end to end.
+
+QA: PASS, full criterion matrix in the
+[issue #212 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/212#issuecomment-5460554316).
+
+Dependencies: task 178/#210 and task 179/#211 (both complete). Unblocks
+the next #209 sub-issue (a real creation/retrieval API surface).
 
 ## 178. Define the canonical 3D scene document schema
 

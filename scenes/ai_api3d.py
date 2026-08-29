@@ -67,12 +67,8 @@ RATE_LIMIT_MAX_ATTEMPTS_3D = 5
 RATE_LIMIT_WINDOW_SECONDS_3D = 60
 EDIT_RATE_LIMIT_MAX_ATTEMPTS_3D = 10
 EDIT_RATE_LIMIT_WINDOW_SECONDS_3D = 60
-# TEMPORARY (2026-08-29, repository owner request): raised from 50/50
-# for the same reason as scenes/ai_api.py's/scenes/art_piece_api.py's
-# equivalents -- the *_ATTEMPTS_3D per-minute limits above are left
-# untouched. Tracked for revert -- see backlog task 205/#237.
-DAILY_QUOTA_MAX_SUCCESSES_3D = 10_000
-EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D = 10_000
+DAILY_QUOTA_MAX_SUCCESSES_3D = 50
+EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D = 50
 DAILY_QUOTA_RESET_TIMEOUT_SECONDS = 25 * 60 * 60
 
 _ACCEPTABLE_AI_ORIGINS_3D = (SceneVersion3D.Origin.AI_CREATE, SceneVersion3D.Origin.AI_EDIT)

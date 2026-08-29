@@ -58,15 +58,7 @@ _MODEL_ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9._-]{0,99})$")
 # distinct feature with its own cost profile.
 RATE_LIMIT_MAX_ATTEMPTS = 5
 RATE_LIMIT_WINDOW_SECONDS = 60
-
-# TEMPORARY (2026-08-29, repository owner request): raised from 20 to
-# effectively unlimited while the owner is the only user and needs to
-# repeatedly retest the #236 A-Frame fix without hitting the daily
-# quota. RATE_LIMIT_MAX_ATTEMPTS above is left untouched -- it wasn't
-# the constraint being hit, and several tests loop that many times per
-# request, so raising it would make the suite drastically slower for no
-# benefit. Tracked for revert back to 20 -- see backlog task 205/#237.
-DAILY_QUOTA_MAX_SUCCESSES = 10_000
+DAILY_QUOTA_MAX_SUCCESSES = 20
 
 
 def _rate_limit_cache_key(user_id: int) -> str:

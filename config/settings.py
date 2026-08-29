@@ -378,3 +378,35 @@ if not DEBUG and EMAIL_BACKEND in {
         "Production EMAIL_BACKEND must deliver mail; console, locmem, and "
         "dummy backends are development/test-only."
     )
+
+
+# Logging. Django's own default LOGGING config only sends the
+# 'django.request' logger's unhandled-exception tracebacks to console
+# when DEBUG=True (its 'console' handler is filtered by
+# RequireDebugTrue) -- in production the traceback's only other
+# destination is emailing ADMINS, which this project doesn't set, so it
+# silently goes nowhere. Issue #240: this made an unhandled 500 in
+# production (#238) completely invisible in Replit's own log capture,
+# even though the request-summary line (from the separate
+# 'django.server' logger, never filtered by DEBUG) was visible.
+# Adding a dedicated, unfiltered handler for 'django.request' fixes
+# that without touching DEBUG, ADMINS, or any other production-safety
+# setting -- 'propagate: True' keeps the existing mail_admins behavior
+# (still a no-op with no ADMINS configured, unchanged from before)
+# alongside this new console output.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "django_request_console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["django_request_console"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+    },
+}

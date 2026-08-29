@@ -7324,11 +7324,11 @@ Dependencies: task 200/#232 (complete).
 
 ## 204. A-Frame art pieces render blank: camera faces away from origin-positioned content
 
-Status: ACTIVE (four fixes now pushed to `main` — `1cb949f` (camera
+Status: COMPLETE. Four fixes pushed to `main` — `1cb949f` (camera
 facing), `76856e0` (flat-shape edge-on orientation), `1cb420b` (pinned
-A-Frame CDN version 404), and `62d010b` (CSP `'unsafe-eval'`, found
-live after `1cb420b` published — see next action); live production
-retest of `62d010b` pending a Replit publish)
+A-Frame CDN version 404), `62d010b` (CSP `'unsafe-eval'`) — all
+confirmed live in production after the repository owner published
+commit `6d49361`. #236 closed with a QA-pass comment.
 
 GitHub issue: [#236](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/236)
 
@@ -7456,11 +7456,16 @@ regression test for the new CSP string and a companion test asserting
 Three.js's CSP does *not* get the same allowance. `make check` passes
 end to end (794 backend / 2088 frontend).
 
-Next action: repository owner publishes commit `62d010b` (includes
-`1cb420b`/`76856e0`/`1cb949f`) to production via Replit, then retests a
-few A-Frame prompts (not just "a red circle," to build confidence
-beyond a single case) at `https://animate.creatrweb.com/art-pieces`.
-Close #236 once that live retest passes.
+Final live production retest (2026-08-29, after the repository owner
+published commit `6d49361`): confirmed the deployed `ArtPieceStudio-*.js`
+chunk contains `unsafe-eval` and `1.4.2`, and does not contain `1.5.0`.
+Two live generations both rendered correctly — "A red circle" (a
+visible red circle) and "A blue cube floating above a green ground
+plane" (a visible blue cube on a green ground plane, correctly lit and
+positioned — a more complex composition than the original bug report,
+per this issue's own recommendation to test beyond a single prompt).
+Posted a `## QA: PASS` comment with the full criterion matrix and
+closed #236.
 
 Dependencies: None.
 

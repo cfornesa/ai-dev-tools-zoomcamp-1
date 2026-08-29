@@ -6730,3 +6730,92 @@ extension) for the owner's consideration.
 
 Dependencies: Informed by (not blocked by) task 182/#214 and the
 completed task 177/#209 epic.
+
+Status: RESOLVED. Repository owner decided directly (mid-session
+feedback, not the AskUserQuestion form this issue anticipated): four
+distinct editor products (2D/3D × manual/AI-assisted), manual editors
+have layers, AI-assisted editors address/protect by named detail instead,
+every editor has a fully functional embedded code editor. See task 184/
+#216 below.
+
+## 184. Epic: four-editor product line (2D/3D × manual/AI-assisted)
+
+Status: PROPOSED (epic filed; sub-issues filed and scoped, not yet
+implemented)
+
+GitHub issue: [#216](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/216)
+
+Implements task 183/#215's decision. Four editor products:
+
+|            | Manual                                  | AI-assisted |
+| ---        | ---                                      | --- |
+| **2D**     | Exists — `EditorWorkspace.tsx`, layers, embedded Code tab | New — task 185/#217 |
+| **3D**     | New — task 186/#218                     | New — task 187/#219 |
+
+Every editor gets a fully functional embedded code editor (the existing
+2D manual editor's Code tab is the reference capability, not shared code).
+Only manual editors have layers; AI-assisted editors address/protect
+content by named detail (reusing `scenes/patch.py`'s allowlisted-path +
+unreferenced-element mechanism, generalized, per #215's recommendation).
+
+Sub-issues filed one at a time, criterion-ready, mirroring #210-#213's
+sequencing rather than one large undifferentiated issue. Natural build
+order: #217 (2D AI-assisted, smallest — reuses the existing 2D schema)
+first, informing #218 (3D manual, needs its own editor-route groundwork)
+and finally #219 (3D AI-assisted, explicitly depends on both #217's
+name-resolution mechanism and #218's 3D editor-route groundwork).
+
+Dependencies: task 183/#215 (decision, resolved). Tasks 178-181/#210-#213
+(3D backend slice, complete) for the two 3D sub-issues.
+
+## 185. 2D AI-assisted editor (no layers; embedded code editor)
+
+Status: PROPOSED
+
+GitHub issue: [#217](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/217)
+
+Parent: task 184/#216. First of the three missing editor products —
+reuses the existing 2D schema (`schema/scene.schema.json`); task 182/#214
+(shape.name fix) is what makes name-based addressing possible at all.
+
+Dependencies: task 183/#215 (resolved), task 182/#214 (complete).
+
+## 186. 3D manual editor (layers-equivalent, embedded code editor)
+
+Status: PROPOSED
+
+GitHub issue: [#218](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/218)
+
+Parent: task 184/#216. The first 3D editor UI to actually exist — makes a
+`scene3d` project openable for the first time, on top of the already-built
+backend slice (tasks 178-181/#210-#213). Explicitly does not require
+Three.js/A-Frame rendering to be complete for its first slice.
+
+Dependencies: tasks 178-181/#210-#213 (complete), task 183/#215 (resolved).
+
+## 187. 3D AI-assisted editor (no layers; embedded code editor)
+
+Status: PROPOSED
+
+GitHub issue: [#219](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/219)
+
+Parent: task 184/#216. Last of the four editor products in the epic's
+natural build order — depends on task 185/#217's name-resolution
+mechanism (to generalize) and task 186/#218's 3D editor-route groundwork.
+
+Dependencies: task 185/#217, task 186/#218 (both should land first).
+
+## 188. Show the active renderer (p5.js/Canvas2D/SVG) inside the 2D manual editor
+
+Status: PROPOSED
+
+GitHub issue: [#220](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/220)
+
+Small, independent UI gap found investigating task 185/#217's scope: the
+2D manual editor never displays which renderer an open project uses
+anywhere in its header/toolbar (only the project-creation picker and the
+export dialog show it). All the pieces needed already exist
+(`resolveSceneRendererId`, `exportRendererIdFor`, `RENDERER_LABELS`) — a
+label/badge addition only, no new renderer logic.
+
+Dependencies: None.

@@ -5515,6 +5515,27 @@ Durable memory: [full browser readiness gate](../.agents/memory/full-browser-rea
 with the more specific "this repo's own dev server, wrong backend by port
 collision" variant found this session).
 
+Evidence (2026-08-28, task 174/#206 session): reopened after `UV_CACHE_DIR=/private/tmp/creatrweb-uv-cache
+BROWSER_QA_FULL_E2E=1 make browser-qa` at commit `18d1244` (issue #206's own
+work) reproduced 2 of the same failure class: `aiAndRecovery.spec.ts:1012`
+("local/server conflict: the genuinely newer candidate wins, by timestamp,
+never a merge" — received a fresh-UUID scene id instead of either
+candidate's) and `projectLifecycle.spec.ts:153` (fails during `loginViaUI`
+setup, before its own selection-alignment assertions run). Reproduced a
+second time in an isolated single-spec rerun of `aiAndRecovery.spec.ts`
+alone (21 passed, 1 failed, 1 skipped — same failure). Confirmed by
+`git diff e05e7c8 HEAD --stat` that none of #206's changed files touch
+`draftAutosave.ts`, the recovery dialog, or any draft-conflict backend
+endpoint — consistent with this task's own established "CI/environment
+timing variance, not a product defect" classification. 129 of the other 132
+tests passed clean, including every test that actually exercises #206's
+Canvas2D/export/renderer-picker changes. GitHub issue #193 reopened with
+this evidence rather than filing a duplicate.
+
+Next action: unchanged from the prior entry — this remains a dedicated,
+narrowly-scoped flaky-test follow-up, not a blocker for unrelated feature
+work.
+
 ## 163. Fix inverted layer draw-order vs. panel-documented "top = front" contract
 
 Goal: Moving a layer/shape to the bottom of the Layers panel must make it

@@ -6024,3 +6024,57 @@ confirmation.
 
 Dependencies: None. Unrelated to task 161/#192's camera investigation
 beyond having been discovered during it.
+
+## 171. Fix art piece generation 500 in production (all libraries)
+
+Goal: `POST /api/ai/art-pieces/generate/` must not fail with an unhandled
+500 for a user with a valid, configured personal Mistral credential.
+
+Status: PROPOSED (root cause not yet identified — no server traceback
+access from this agent)
+
+GitHub issue: [#203](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/203)
+
+Discovery: found while testing "the other piece types" (task 165-169's
+art-piece studio) per the repository owner's own untested-territory note
+alongside the camera investigation (task 161/#192). Every library
+(Canvas2D, SVG, Three.js) reproduced a 500 on
+`https://animate.creatrweb.com/art-pieces`, tested both via the UI and
+directly via `fetch()` from an authenticated session with a confirmed
+(`GET /api/account/mistral-credential/` -> `{"configured": true}`)
+personal credential.
+
+Evidence: the existing, already-shipped scene AI endpoint
+(`POST /api/projects/<id>/ai/create-scene/`) on the same account/credential
+returns a clean `504 {"error":"timeout",...}` after the real 20-second
+Mistral timeout — proving Mistral connectivity and credential decryption
+both work from this environment. The art-piece endpoint instead fails in
+under a second (~736ms) with an **unhandled** 500, not a clean error
+response. That timing/behavior mismatch, plus
+`ai_provider/art_piece_provider.py`'s own documented "genuine bug" escape
+hatch (`except Exception as exc: ... if not isinstance(exc, MistralError):
+raise`), is the strongest lead — but code inspection alone could not
+identify which exception type is actually escaping that check; local
+`mistralai` SDK inspection found no obvious gap (`SDKError` does inherit
+from `MistralError`).
+
+Acceptance criteria:
+
+- [ ] Root cause identified from a real server-side traceback (Replit
+  deployment logs — this agent has no access).
+- [ ] `ArtPieceProvider.generate()` returns a clean, documented error
+  response (not an unhandled 500) for whatever condition is actually
+  occurring, for every supported library.
+- [ ] A regression test exercises the real `mistralai` SDK's error path
+  (not the `AI_PROVIDER=fake` seam, which bypasses this code entirely) so
+  this class of gap is caught before reaching production again.
+- [ ] Focused tests, `make check`, and a live production retest all pass.
+
+Next action: repository owner (or an agent with deployment log access)
+retrieves the actual traceback for one of these 500s, which should make
+the fix straightforward once the real exception type is known.
+
+Dependencies: None. Unrelated to task 161/#192's camera investigation
+beyond having been discovered during the same testing session, per the
+repository owner's own note about not yet having tested other piece
+types.

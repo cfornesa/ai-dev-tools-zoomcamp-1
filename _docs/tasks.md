@@ -6196,9 +6196,10 @@ than one library — starting with native Canvas2D and SVG alongside today's
 p5.js — with the same shapes/bindings/graph/camera-tracking behavior
 regardless of renderer.
 
-Status: ACTIVE (task 174/#206's Canvas2D adapter partially landed; task
-176/#208 decided and closed, spinning off task 177/#209 as a separate
-epic; task 175/#207 still proposed)
+Status: ACTIVE (task 174/#206's Canvas2D adapter COMPLETE; task 176/#208
+decided and closed, spinning off task 177/#209 as a separate epic; task
+175/#207's SVG adapter still proposed — now unblocked by #206's shared
+plumbing)
 
 GitHub issue: [#205](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/205) (epic)
 
@@ -6279,39 +6280,41 @@ interface, `RENDERER_CAPABILITIES`/`checkRendererCompatibility`, and
 
 ## 174. Add a native Canvas2D renderer adapter for the structured scene editor
 
-Status: ACTIVE (schema + adapter + 5 call sites landed at commit
-`6dd3572`, pushed to `main`; export bundle, `exportCompatibility.ts`/UI
-picker, and e2e coverage remain — see issue #206's progress-update comment
-for the itemized handoff)
+Status: COMPLETE
 
-GitHub issue: [#206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/206)
+GitHub issue: [#206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/206) (closed)
 
 Parent: task 173/#205.
 
 Done: `schema/scene.schema.json`'s `renderer.preferred` widened to
 `enum: ["p5", "canvas2d"]` (backward compatible, no schemaVersion bump);
-new `frontend/src/render/canvas2dAdapter.ts` (native Canvas2D port of
+`frontend/src/render/canvas2dAdapter.ts` (native Canvas2D port of
 `p5Adapter.ts`'s full draw contract, pixel-identical per
-`canvas2dAdapter.test.ts`'s 40-case mirror of `p5Adapter.test.ts` plus a
-cross-adapter parity test); `scenePreview.ts` (shared types, pulled out of
-`p5Adapter.ts`) and `createScenePreview.ts` (renderer-selecting factory);
-wired into `EditorWorkspace.tsx`, `PublicProjectViewer.tsx`,
-`usePreviewRuntime.ts`, `AIProposalPanel.tsx`, and
-`captureSocialThumbnail.ts`. `scenes/thumbnails.py` confirmed unchanged
-(already renderer-agnostic, as the issue predicted). Full `make check`
-passes (672 backend passed/22 skipped; 1976 frontend passed; typecheck/
-lint/format clean).
+`canvas2dAdapter.test.ts`'s 40-case mirror plus a cross-adapter parity
+test); `scenePreview.ts` (shared types) and `createScenePreview.ts`
+(renderer-selecting factory); wired into `EditorWorkspace.tsx`,
+`PublicProjectViewer.tsx`, `usePreviewRuntime.ts`, `AIProposalPanel.tsx`,
+and `captureSocialThumbnail.ts`; `exportCompatibility.ts`'s
+`RENDERER_CAPABILITIES`/`RendererId` gained a `canvas2d` entry (full
+parity with p5js); `standaloneCanvas2DRuntimeSource.ts` +
+`generateHtmlExport.ts` produce a CDN-free canvas2d export, verified by a
+real jsdom+canvas functional smoke test; `ExportConfigDialog.tsx`'s
+"Renderer" select now reflects the scene's actual renderer instead of a
+hardcoded p5js display; `scenes/api.py`'s `BlankProjectCreateView` +
+`Gallery.tsx`'s new "Renderer" select let a new project actually choose
+canvas2d at creation time (the last functional gap — previously nothing
+in the product could author a canvas2d scene at all). `scenes/thumbnails.py`
+confirmed unchanged (already renderer-agnostic).
 
-Remaining: `exportCompatibility.ts`'s `RENDERER_CAPABILITIES`/`RendererId`
-needs a `canvas2d` entry; the export bundle needs a parallel standalone
-Canvas2D runtime source (the largest remaining piece — a compact port of
-the draw-plan logic analogous to the existing ~950-line
-`standaloneRuntimeSource.ts`, but genuinely simpler in one way: no CDN
-dependency at all); `ExportConfigDialog.tsx`'s "Renderer" picker is still
-hardcoded/disabled to p5js; e2e coverage and `make e2e` passing per the
-issue's acceptance criteria.
+Verification: full `make check` clean (675 backend passed/22 skipped;
+1988 frontend passed). Full disposable-stack `make browser-qa` (full
+local e2e): 131 passed, 2 failed, 1 intentional skip — both failures
+confirmed unrelated by diff inspection and already tracked under
+task 162/#193's long-established CI/environment-timing-variance history
+(reopened with fresh evidence rather than filed as new). Every test
+exercising this task's own changes passed.
 
-Dependencies: None blocking. Unblocks task 175/#207's shared plumbing
+Dependencies: None blocking. Unblocked task 175/#207's shared plumbing
 dependency (the `ScenePreview`/`createScenePreview.ts` abstraction this
 task added), though #207 also needs its own SVG-specific camera-overlay
 and thumbnail-capture work on top.

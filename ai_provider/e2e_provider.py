@@ -62,11 +62,30 @@ below therefore composes both:
 Unrecognized/missing scenario values default to `success` — a client
 that doesn't opt in to a scenario always gets the deterministic happy
 path, never a hidden failure.
+
+## Issue #235: 3D document family support
+
+`E2ETestProvider` also implements `AIScene3DProvider`
+(`ai_provider/interface3d.py`) so `AI_PROVIDER=fake` works for the 3D
+AI-assisted editor's endpoints (`scenes/ai_api3d.py`) too -- discovered
+missing while building #232, which only exercised the 3D endpoints via
+direct `get_ai_provider` monkeypatching in pytest, not through this
+factory. Both `create_scene3d` and `edit_scene3d_with_patch` route
+through one more `MistralSceneProvider(client=_E2EFakeClient3D(...))`
+instance -- unlike 2D create-scene, there's no separate
+`FakeAISceneProvider`-equivalent needed for 3D create: routing both
+create and edit through a fake-client `MistralSceneProvider` already
+exercises the real `create_scene3d`/`edit_scene3d_with_patch`
+implementations, exactly like `edit_scene`'s existing 2D approach.
+Scenario mapping mirrors the 2D table above, targeting
+`schema/scene3d.schema.json` fixtures/paths instead.
 """
 
 from __future__ import annotations
 
+import copy
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -80,7 +99,17 @@ from ai_provider.interface import (
     AIOperationResult,
     AISceneProvider,
 )
-from ai_provider.mistral_provider import AIEditScenePatchResult, MistralSceneProvider
+from ai_provider.interface3d import (
+    AICreateScene3DRequest,
+    AIEditScene3DRequest,
+    AIOperationResult3D,
+    AIScene3DProvider,
+)
+from ai_provider.mistral_provider import (
+    AIEditScene3DPatchResult,
+    AIEditScenePatchResult,
+    MistralSceneProvider,
+)
 
 _CREATE_SCENARIO_MAP: dict[str, FakeAIProviderScenario] = {
     "success": FakeAIProviderScenario.SUCCESS,
@@ -106,6 +135,74 @@ _EDIT_PATCH_BY_SCENARIO: dict[str, list[dict[str, Any]]] = {
     "invalid_structured_output": _EDIT_PATCH_INVALID_STRUCTURED_OUTPUT,
     "forbidden_patch": _EDIT_PATCH_FORBIDDEN,
 }
+
+
+# --- Issue #235: 3D document family scenario fixtures --------------------
+
+_SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schema"
+with (_SCHEMA_DIR / "fixtures3d" / "valid" / "minimal.json").open() as _f:
+    _MINIMAL_SCENE_3D: dict[str, Any] = json.load(_f)
+
+# Mirrors _EDIT_PATCH_INVALID_STRUCTURED_OUTPUT's approach: an
+# allowlisted-looking value that's still schema-invalid (fov out of the
+# schema's 1-170 range).
+_CREATE_SCENE_3D_INVALID: dict[str, Any] = {
+    **copy.deepcopy(_MINIMAL_SCENE_3D),
+    "camera": {**_MINIMAL_SCENE_3D["camera"], "fov": 999},
+}
+
+_CREATE_SCENE_3D_BY_SCENARIO: dict[str, dict[str, Any]] = {
+    "success": _MINIMAL_SCENE_3D,
+    "invalid_structured_output": _CREATE_SCENE_3D_INVALID,
+}
+
+_EDIT_PATCH_3D_SUCCESS: list[dict[str, Any]] = [
+    {"op": "replace", "path": "/camera/fov", "value": 65}
+]
+_EDIT_PATCH_3D_INVALID_STRUCTURED_OUTPUT: list[dict[str, Any]] = [
+    {"op": "replace", "path": "/camera/fov", "value": 999}
+]
+_EDIT_PATCH_3D_FORBIDDEN: list[dict[str, Any]] = [
+    {"op": "replace", "path": "/schemaVersion", "value": 2}
+]
+
+_EDIT_PATCH_3D_BY_SCENARIO: dict[str, list[dict[str, Any]]] = {
+    "success": _EDIT_PATCH_3D_SUCCESS,
+    "invalid_structured_output": _EDIT_PATCH_3D_INVALID_STRUCTURED_OUTPUT,
+    "forbidden_patch": _EDIT_PATCH_3D_FORBIDDEN,
+}
+
+
+class _E2EFakeChat3D:
+    """The 3D counterpart of `_E2EFakeChat`, targeting
+    `create_scene3d`/`edit_scene3d_with_patch`'s response_format names."""
+
+    def __init__(self, scenario: str):
+        self.scenario = scenario
+
+    def complete(self, **kwargs: Any) -> Any:
+        if self.scenario == "timeout":
+            raise httpx.TimeoutException("E2E fake provider: simulated timeout (AI_PROVIDER=fake).")
+        if self.scenario == "quota_exceeded":
+            raise _e2e_mistral_error(429, "E2E fake provider: simulated quota exhaustion.")
+
+        schema_name = kwargs.get("response_format", {}).get("json_schema", {}).get("name")
+        if schema_name == "scene3d_json_patch":
+            content = json.dumps(
+                _EDIT_PATCH_3D_BY_SCENARIO.get(self.scenario, _EDIT_PATCH_3D_SUCCESS)
+            )
+        else:
+            content = json.dumps(_CREATE_SCENE_3D_BY_SCENARIO.get(self.scenario, _MINIMAL_SCENE_3D))
+
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=42, completion_tokens=64),
+            choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
+        )
+
+
+class _E2EFakeClient3D:
+    def __init__(self, scenario: str):
+        self.chat = _E2EFakeChat3D(scenario)
 
 
 def _e2e_mistral_error(status_code: int, message: str) -> Exception:
@@ -159,11 +256,13 @@ class _E2EFakeClient:
         self.chat = _E2EFakeChat(scenario)
 
 
-class E2ETestProvider(AISceneProvider):
+class E2ETestProvider(AISceneProvider, AIScene3DProvider):
     """The single provider `scenes.ai_api.get_ai_provider()` returns for
     every AI endpoint when `AI_PROVIDER=fake` is set -- see this module's
-    docstring for why it composes a `FakeAISceneProvider` (create-scene)
-    with a `MistralSceneProvider(client=_E2EFakeClient(...))` (edit-scene).
+    docstring for why it composes a `FakeAISceneProvider` (2D create-scene)
+    with `MistralSceneProvider(client=_E2EFakeClient(...))` (2D edit-scene)
+    and, per issue #235, a second `MistralSceneProvider(client=
+    _E2EFakeClient3D(...))` for both 3D methods.
     """
 
     def __init__(self, scenario: str):
@@ -172,6 +271,7 @@ class E2ETestProvider(AISceneProvider):
             _CREATE_SCENARIO_MAP.get(scenario, FakeAIProviderScenario.SUCCESS)
         )
         self._edit_provider = MistralSceneProvider(client=_E2EFakeClient(scenario))
+        self._provider_3d = MistralSceneProvider(client=_E2EFakeClient3D(scenario))
 
     def create_scene(self, request: AICreateSceneRequest) -> AIOperationResult:
         return self._create_provider.create_scene(request)
@@ -182,8 +282,17 @@ class E2ETestProvider(AISceneProvider):
     def edit_scene_with_patch(self, request: AIEditSceneRequest) -> AIEditScenePatchResult:
         return self._edit_provider.edit_scene_with_patch(request)
 
+    def create_scene3d(self, request: AICreateScene3DRequest) -> AIOperationResult3D:
+        return self._provider_3d.create_scene3d(request)
 
-def build_e2e_provider(scenario: str) -> AISceneProvider:
+    def edit_scene3d(self, request: AIEditScene3DRequest) -> AIOperationResult3D:
+        return self.edit_scene3d_with_patch(request).result
+
+    def edit_scene3d_with_patch(self, request: AIEditScene3DRequest) -> AIEditScene3DPatchResult:
+        return self._provider_3d.edit_scene3d_with_patch(request)
+
+
+def build_e2e_provider(scenario: str) -> E2ETestProvider:
     return E2ETestProvider(scenario)
 
 

@@ -156,7 +156,14 @@ RATE_LIMIT_WINDOW_SECONDS = 60
 # day. Deliberately generous relative to the rate limit -- it exists to
 # bound provider cost over a day, not to police short bursts (the rate
 # limit already does that).
-DAILY_QUOTA_MAX_SUCCESSES = 50
+#
+# TEMPORARY (2026-08-29, repository owner request): raised from 50 while
+# the owner is the only user and needs to repeatedly retest fixes
+# without hitting quota. RATE_LIMIT_MAX_ATTEMPTS above is left
+# untouched -- several tests loop that many times per request, so
+# raising it would make the suite drastically slower for no benefit.
+# Tracked for revert back to 50 -- see backlog task 205/#237.
+DAILY_QUOTA_MAX_SUCCESSES = 10_000
 
 # Seconds until midnight UTC is recomputed per-request (see
 # _quota_cache_key's date-stamped key); this timeout just bounds how long
@@ -180,7 +187,12 @@ DAILY_QUOTA_RESET_TIMEOUT_SECONDS = 25 * 60 * 60
 # spend per day.
 EDIT_RATE_LIMIT_MAX_ATTEMPTS = 10
 EDIT_RATE_LIMIT_WINDOW_SECONDS = 60
-EDIT_DAILY_QUOTA_MAX_SUCCESSES = 50
+# TEMPORARY (2026-08-29, repository owner request): raised from 50 for
+# the same reason as DAILY_QUOTA_MAX_SUCCESSES above.
+# EDIT_RATE_LIMIT_MAX_ATTEMPTS is left untouched -- a test loops that
+# many times per request. Tracked for revert -- see backlog task
+# 205/#237.
+EDIT_DAILY_QUOTA_MAX_SUCCESSES = 10_000
 
 
 def _rate_limit_cache_key(user_id: int, *, operation: str = "create") -> str:

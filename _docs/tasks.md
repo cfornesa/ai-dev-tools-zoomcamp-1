@@ -7463,3 +7463,50 @@ beyond a single case) at `https://animate.creatrweb.com/art-pieces`.
 Close #236 once that live retest passes.
 
 Dependencies: None.
+
+## 205. Revert temporarily-raised AI daily generation quotas
+
+Status: ACTIVE (guardrail intentionally loosened at the repository
+owner's explicit request; revert not yet done)
+
+GitHub issue: [#237](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/237)
+
+Parent: none (standalone guardrail task, discovered while verifying
+task 204/#236).
+
+Context: repeated live-retesting of #236's A-Frame fix against
+production exhausted the art-piece daily quota
+(`DAILY_QUOTA_MAX_SUCCESSES = 20` in `scenes/art_piece_api.py`),
+blocking further verification until UTC midnight — see
+`.agents/memory/ai-feature-daily-quota-exhaustible-by-retesting.md`.
+The repository owner explicitly asked to remove the limit for testing
+("I believe that I am the only user, so I doubt that abuse can or will
+happen at this specific point"), with an explicit instruction to track
+putting it back as a guardrail task.
+
+Delivered: raised the five `DAILY_QUOTA_MAX_SUCCESSES`-family constants
+to `10_000` (effectively unlimited) — `scenes/art_piece_api.py`'s
+`DAILY_QUOTA_MAX_SUCCESSES` (was 20), `scenes/ai_api.py`'s
+`DAILY_QUOTA_MAX_SUCCESSES`/`EDIT_DAILY_QUOTA_MAX_SUCCESSES` (were 50
+each), `scenes/ai_api3d.py`'s
+`DAILY_QUOTA_MAX_SUCCESSES_3D`/`EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D`
+(were 50 each). Deliberately left the per-minute burst rate limits
+(`RATE_LIMIT_MAX_ATTEMPTS` and its `EDIT_`/`_3D` siblings) untouched —
+several tests loop that many times per request (confirmed via `grep`
+across `tests/test_art_piece_api.py`,
+`tests/test_ai_create_scene_api.py`, `tests/test_ai_edit_scene_api.py`,
+`tests/test_authorization_and_rate_limit_boundaries.py`), so raising
+those would make the suite drastically slower for no benefit — they
+weren't the constraint actually hit. `uv run pytest -q` 794 passed/22
+skipped (no change in count, only faster since the affected daily-quota
+tests set the cache counter directly rather than looping);
+lint/format/mypy clean.
+
+Next action: repository owner (or a future session, once the owner
+confirms testing is done and the app has or will soon have more than
+one active user) reverts all five constants to their original values
+(20/50/50/50/50) per #237's acceptance criteria, and removes the
+"TEMPORARY" comments introduced alongside each. Do not revert
+prematurely while live #236 verification is still in progress.
+
+Dependencies: None.

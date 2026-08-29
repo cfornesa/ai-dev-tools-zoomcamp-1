@@ -6740,10 +6740,22 @@ every editor has a fully functional embedded code editor. See task 184/
 
 ## 184. Epic: four-editor product line (2D/3D × manual/AI-assisted)
 
-Status: PROPOSED (epic filed; sub-issues filed and scoped, not yet
-implemented)
+Status: COMPLETE
 
-GitHub issue: [#216](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/216)
+GitHub issue: [#216](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/216) (closed)
+
+All 13 sub-issues (task 189/#221 through task 201/#233) implemented,
+QA-passed, and closed. `make check` passes end to end (782 backend /
+2083 frontend at the epic's completion). Two follow-ups discovered
+during implementation, not blocking this epic's scope: task 202/#234
+(wire the 3D manual editor's outline/inspector to the save-version API)
+and task 203/#235 (extend the E2E fake AI provider to the 3D document
+family). Also discovered and fixed along the way: the entire 3D backend
+(tasks 178-181/#210-213) had been marked complete/closed but its code
+had never been merged into `main` (only existed on an orphaned
+`3d-scene-editor-epic` branch) -- merged in commit `7a1a014` before any
+of this epic's work could build on it; see `.agents/memory/
+feature-branches-completed-work-not-merged-to-main.md`.
 
 Implements task 183/#215's decision. Four editor products:
 
@@ -7179,14 +7191,30 @@ Dependencies: task 190/#222, task 198/#230, task 196/#228, task
 
 ## 201. 3D AI-assisted editor: embedded code editor
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#233](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/233)
+GitHub issue: [#233](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/233) (closed)
 
 Parent: task 184/#216, refines task 187/#219. Mirrors task 197/#229's
 scope.
 
-Dependencies: task 199/#231. Task 196/#228 for edits to persist.
+Delivered (commit `fdcb2d2`): reuses `Scene3DCodeEditor.tsx` unchanged
+from task 197/#229 -- it has no dependency on the outline/inspector, so
+the same validate-via-`validate_scene3d`-then-save-via-task 196/#228
+component works for both the 3D manual and 3D AI-assisted editors. Wired
+into `AiProject3DWorkspace.tsx` with a Visual/Code toggle; an accepted
+AI proposal and a saved Code-tab edit both converge on the same local
+sync. `make check` passes end to end (782 backend / 2083 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #233 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/233#issuecomment-5462443213).
+
+This completes task 184/#216's four-editor product line: 2D manual
+(pre-existing), 2D AI-assisted (task 185/#217, tasks 191-193/#223-225),
+3D manual (task 186/#218, tasks 194-197/#226-229), 3D AI-assisted (task
+187/#219, tasks 199-201/#231-233).
+
+Dependencies: task 199/#231 (complete). Task 196/#228 (complete).
 
 ## 202. Wire the 3D manual editor's outline/inspector edits to the save-version API
 

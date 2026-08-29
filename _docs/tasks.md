@@ -6078,3 +6078,71 @@ Dependencies: None. Unrelated to task 161/#192's camera investigation
 beyond having been discovered during the same testing session, per the
 repository owner's own note about not yet having tested other piece
 types.
+
+## 172. Restate binding targetProperty/signal enums in the AI create-scene system prompt
+
+Goal: Reduce how often Mistral's schema-constrained scene generation
+produces an invalid `targetProperty`/`signal` value that gets rejected with
+a raw schema-path error the user has no path to recover from themselves.
+
+Status: COMPLETE
+
+GitHub issue: [#204](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/204)
+
+Discovery: repository owner reported the main editor's AI assistant
+("Render the scene of a happy face.") failed with
+`$.bindings[4].targetProperty: 'width' is not one of [...]` — a real
+Mistral call producing `targetProperty: 'width'/'height'`, neither a valid
+enum value (the schema models size via `scaleX`/`scaleY`, not
+`width`/`height`). Root cause: `ai_provider/mistral_provider.py`'s
+`response_format` uses Mistral's `json_schema` mode with `"strict": False`
+— already documented in that module's own doc comment as "a strong hint,
+not a guarantee" — and `_SYSTEM_PROMPT`'s natural-language instructions
+never restated the constrained enums, relying entirely on the (non-strict)
+schema-mode constraint.
+
+The repository owner's accompanying observation ("there is no specification
+as to which library to use") was investigated and found to be expected,
+not a defect: the canonical scene schema's `renderer.preferred` is a fixed
+`const: "p5"` ("V1 ships only the p5.js adapter; the enum is intentionally
+narrow rather than aspirational") — there is no library to choose in this
+feature. The multi-library choice the owner was thinking of belongs to the
+separate art-piece-studio feature (tasks 165-169/#196-200), which is a
+different, raw-code generation flow, not the canonical-scene AI assistant.
+No action taken on this point beyond this clarifying note.
+
+Acceptance criteria:
+
+- [x] `_SYSTEM_PROMPT` explicitly restates the full `targetProperty` and
+  `signal` enums in natural language, as reinforcement alongside (not a
+  replacement for) the JSON Schema `response_format` constraint. **DONE**
+  — commit `7117d14`.
+- [x] A regression test asserts the prompt's restated lists never drift
+  from `scenes.validation.SCENE_SCHEMA`'s actual enums. **DONE** —
+  `test_create_scene_system_prompt_lists_every_binding_targetproperty_and_signal`,
+  18/18 `test_mistral_provider.py` tests pass.
+- [x] Full backend suite, lint, format, and typecheck pass. **DONE** — 666
+  passed/22 skipped; ruff/format/mypy all clean.
+
+Out of scope (flagged in #204, not attempted here): a retry-with-feedback
+loop for the rare case the model still produces invalid output despite the
+reinforced prompt; translating raw schema-path error messages into
+friendlier UI copy; reconsidering `strict: False` itself (a plausible,
+unverified reason it's set that way is `_RESPONSE_JSON_SCHEMA`'s `$ref`
+usage, which many providers' strict modes don't support).
+
+Evidence (2026-08-28): commit `7117d14`. `uv run pytest
+tests/test_mistral_provider.py -q` 18/18 passed; full `uv run pytest` 666
+passed/22 skipped; `uv run ruff check .` / `uv run ruff format --check .` /
+`uv run mypy ai_provider/mistral_provider.py` all clean.
+
+Next action: none required for this fix. A real (non-`AI_PROVIDER=fake`)
+Mistral call to confirm the reinforced prompt actually reduces the
+real-world violation rate is a natural follow-up verification, not
+performed here (this agent has no personal Mistral credential; the
+repository owner could retest the exact "a happy face" prompt against
+production once this deploys).
+
+Dependencies: None. Discovered in the same session as task 171/#203 (art
+piece 500s), both surfaced while investigating a fresh /goal report; the
+two are unrelated defects in different AI-generation code paths.

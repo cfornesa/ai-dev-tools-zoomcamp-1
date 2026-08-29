@@ -7120,15 +7120,25 @@ editor prompt-driven flow).
 
 ## 199. 3D AI-assisted editor: route/UI shell
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#231](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/231)
+GitHub issue: [#231](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/231) (closed)
 
 Parent: task 184/#216, refines task 187/#219. Reuses task 194/#226's
 route/preview groundwork rather than reimplementing independently, with
 no outline/inspector panel (that's the manual editor's concept).
 
-Dependencies: task 194/#226.
+Delivered (commit `c0328e4`): `/ai-projects3d/:id`
+(`AiProject3DWorkspace.tsx`), reusing task 194/#226's fetch pattern and
+preview placeholder. Gallery gets a fourth "Create AI-assisted 3D
+project" button. `make check` passes end to end (744 backend / 2079
+frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #231 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/231#issuecomment-5462350219).
+
+Dependencies: task 194/#226 (complete). Unblocks task 200/#232 and task
+201/#233.
 
 ## 200. 3D AI-assisted editor: prompt-driven create/edit flow
 

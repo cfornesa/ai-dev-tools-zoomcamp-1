@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "documentType": "scene3d",
+  "id": "scene3d-missing-required",
+  "scene": { "backgroundColor": "#000000" },
+  "lights": [],
+  "groups": [],
+  "objects": [],
+  "randomness": { "seed": 0, "enabled": false }
+}

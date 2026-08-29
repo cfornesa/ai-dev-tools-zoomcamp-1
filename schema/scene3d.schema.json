@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gesture-reactive-studio/schema/scene3d.schema.json",
+  "title": "Scene3D",
+  "description": "Canonical, renderer-neutral 3D scene document. Per issue #208's decision, this is a genuinely separate document family from the 2D canonical scene (schema/scene.schema.json) -- not an extension of it, and never valid input to the 2D validators/renderers. `documentType: \"scene3d\"` is a required literal marker specifically so no code path that only checks `schemaVersion` (a plain integer both schemas happen to start at 1) can ever mistake a 3D document for a 2D one or vice versa. See schema/README3d.md for the versioning policy and validation model, which mirrors schema/README.md's for the 2D schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "documentType",
+    "id",
+    "scene",
+    "camera",
+    "lights",
+    "groups",
+    "objects",
+    "randomness"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "description": "Document format version. V1 validators only accept the value 1; any other value is an unsupported schema version and is rejected before any other validation runs.",
+      "const": 1
+    },
+    "documentType": {
+      "description": "Literal discriminator distinguishing this document family from the 2D canonical scene. Always \"scene3d\" for this schema.",
+      "const": "scene3d"
+    },
+    "id": { "$ref": "#/$defs/id" },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backgroundColor"],
+      "properties": {
+        "backgroundColor": { "$ref": "#/$defs/color" }
+      }
+    },
+    "camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["position", "target", "fov", "near", "far"],
+      "properties": {
+        "position": { "$ref": "#/$defs/vec3" },
+        "target": {
+          "description": "The point the camera looks at (a look-at target, not a direction vector).",
+          "$ref": "#/$defs/vec3"
+        },
+        "fov": {
+          "description": "Vertical field of view, in degrees.",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 170
+        },
+        "near": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 },
+        "far": { "type": "number", "exclusiveMinimum": 0, "maximum": 100000 }
+      }
+    },
+    "lights": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/light" }
+    },
+    "groups": {
+      "description": "Optional hierarchical grouping of objects, mirroring the 2D schema's groups/groupId nesting convention for scene-outline organization. Purely structural -- carries its own transform, composed with each member object's own transform, exactly like the 2D schema's group transform.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/group3d" }
+    },
+    "objects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/object3d" }
+    },
+    "randomness": {
+      "description": "Deterministic-randomness declaration, mirroring the 2D schema's identical field (Task 40) -- reserved for future seeded-placement/material-variation features; carries no effect on its own in this initial schema.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "enabled"],
+      "properties": {
+        "seed": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "enabled": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Stable identifier for any object with identity in the scene (object, group, light).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+    },
+    "unitInterval": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number", "minimum": -100000, "maximum": 100000 },
+        "y": { "type": "number", "minimum": -100000, "maximum": 100000 },
+        "z": { "type": "number", "minimum": -100000, "maximum": 100000 }
+      }
+    },
+    "eulerRotation": {
+      "description": "Rotation in degrees around each axis (Euler angles, applied in a fixed X-then-Y-then-Z order by every renderer -- not a general-purpose rotation representation).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number", "minimum": -360, "maximum": 360 },
+        "y": { "type": "number", "minimum": -360, "maximum": 360 },
+        "z": { "type": "number", "minimum": -360, "maximum": 360 }
+      }
+    },
+    "scale3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1000 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1000 },
+        "z": { "type": "number", "minimum": 0, "maximum": 1000 }
+      }
+    },
+    "transform3D": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["position", "rotation", "scale", "opacity"],
+      "properties": {
+        "position": { "$ref": "#/$defs/vec3" },
+        "rotation": { "$ref": "#/$defs/eulerRotation" },
+        "scale": { "$ref": "#/$defs/scale3" },
+        "opacity": { "$ref": "#/$defs/unitInterval" }
+      }
+    },
+    "material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color"],
+      "properties": {
+        "color": { "$ref": "#/$defs/color" },
+        "opacity": { "$ref": "#/$defs/unitInterval" },
+        "emissive": {
+          "description": "Optional self-illumination color; a renderer that doesn't support emissive materials treats this as absent.",
+          "$ref": "#/$defs/color"
+        }
+      }
+    },
+    "group3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "transform", "visible", "locked"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "transform": { "$ref": "#/$defs/transform3D" },
+        "visible": { "type": "boolean" },
+        "locked": { "type": "boolean" }
+      }
+    },
+    "light": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "color", "intensity"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["directional", "point", "ambient"] },
+        "color": { "$ref": "#/$defs/color" },
+        "intensity": { "type": "number", "minimum": 0, "maximum": 100 },
+        "position": {
+          "description": "Required for \"point\" lights; ignored for \"directional\"/\"ambient\".",
+          "$ref": "#/$defs/vec3"
+        },
+        "direction": {
+          "description": "Required for \"directional\" lights; ignored for \"point\"/\"ambient\".",
+          "$ref": "#/$defs/vec3"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "point" } } },
+          "then": { "required": ["position"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "directional" } } },
+          "then": { "required": ["direction"] }
+        }
+      ]
+    },
+    "baseObjectFields": {
+      "type": "object",
+      "required": ["id", "type", "groupId", "transform", "material", "visible"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["box", "sphere", "cylinder", "plane"] },
+        "groupId": {
+          "description": "The containing group's id, or null for a top-level object -- mirrors the 2D schema's identical groupId convention.",
+          "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
+        },
+        "transform": { "$ref": "#/$defs/transform3D" },
+        "material": { "$ref": "#/$defs/material" },
+        "visible": { "type": "boolean" }
+      }
+    },
+    "boxObject": {
+      "allOf": [
+        { "$ref": "#/$defs/baseObjectFields" },
+        {
+          "type": "object",
+          "required": ["width", "height", "depth"],
+          "properties": {
+            "type": { "const": "box" },
+            "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 10000 },
+            "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 10000 },
+            "depth": { "type": "number", "exclusiveMinimum": 0, "maximum": 10000 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "sphereObject": {
+      "allOf": [
+        { "$ref": "#/$defs/baseObjectFields" },
+        {
+          "type": "object",
+          "required": ["radius"],
+          "properties": {
+            "type": { "const": "sphere" },
+            "radius": { "type": "number", "exclusiveMinimum": 0, "maximum": 5000 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "cylinderObject": {
+      "allOf": [
+        { "$ref": "#/$defs/baseObjectFields" },
+        {
+          "type": "object",
+          "required": ["radiusTop", "radiusBottom", "height"],
+          "properties": {
+            "type": { "const": "cylinder" },
+            "radiusTop": { "type": "number", "minimum": 0, "maximum": 5000 },
+            "radiusBottom": { "type": "number", "minimum": 0, "maximum": 5000 },
+            "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 10000 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "planeObject": {
+      "allOf": [
+        { "$ref": "#/$defs/baseObjectFields" },
+        {
+          "type": "object",
+          "required": ["width", "height"],
+          "properties": {
+            "type": { "const": "plane" },
+            "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 10000 },
+            "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 10000 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "object3d": {
+      "oneOf": [
+        { "$ref": "#/$defs/boxObject" },
+        { "$ref": "#/$defs/sphereObject" },
+        { "$ref": "#/$defs/cylinderObject" },
+        { "$ref": "#/$defs/planeObject" }
+      ]
+    }
+  }
+}

@@ -226,11 +226,18 @@ describe('DraftAutosaveController debounce and race safety', () => {
     // edit in the burst.
     expect(controller.getLastWrite()).toBeNull();
 
-    // Advance past the debounce window measured from the last edit.
-    await wait(DEBOUNCE_MS + 40);
+    // Advance past the debounce window measured from the last edit. Polls
+    // rather than a fixed sleep -- under full-suite CPU contention, a fixed
+    // `wait(DEBOUNCE_MS + 40)` is not always enough real wall-clock time for
+    // the debounce timer to fire *and* the async IndexedDB write to
+    // complete (issue #187's flakiness), even though both are real
+    // setTimeout/IndexedDB operations that always eventually complete.
+    await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+      timeout: 2000,
+      interval: 10,
+    });
 
     const write = controller.getLastWrite();
-    expect(write).not.toBeNull();
     expect(write?.writeSeq).toBe(5); // only the last scheduled write ever fired
     expect((write?.sceneJson.shapes as unknown[])?.[0]).toMatchObject({ id: 's5' });
   });
@@ -240,7 +247,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
     const identity = { projectId: 'proj-shape', userKey: 'alice', sessionId: 'sess-1' };
     const before = new Date();
     controller.schedule(identity, scene(), scene({ shapes: [testShape('s1', 'circle')] }));
-    await wait(DEBOUNCE_MS + 40);
+    await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+      timeout: 2000,
+      interval: 10,
+    });
 
     const write = controller.getLastWrite();
     expect(write).toMatchObject({
@@ -300,21 +310,31 @@ describe('DraftAutosaveController debounce and race safety', () => {
     });
 
     controller.schedule(identity, baseline, scene({ shapes: [testShape('stale', 'circle')] }));
-    await wait(DEBOUNCE_MS + 20);
+    // A generous margin (well beyond DEBOUNCE_MS), not just a bare polling
+    // wait: `schedule()`'s cancel-and-reschedule semantics mean the second
+    // `schedule()` below must run *after* this first debounce timer has
+    // actually fired (moving it into "awaiting the DB open" state, which a
+    // later `schedule()` no longer cancels) -- an under-margin wait here
+    // would change what this test exercises, not just make an assertion
+    // late, so this can't be fixed by polling for a result the way the
+    // "must have written" assertions below are.
+    await wait(DEBOUNCE_MS + 200);
     // The first write's DB open is now pending (never resolved yet), so
     // its continuation is blocked before ever reaching the seq check. A
     // newer edit is scheduled and reaches the exact same point, blocked on
     // the same (cached, still-pending) DB handle.
     controller.schedule(identity, baseline, scene({ shapes: [testShape('fresh', 'rect')] }));
-    await wait(DEBOUNCE_MS + 40);
+    await wait(DEBOUNCE_MS + 200);
     expect(controller.getLastWrite()).toBeNull(); // neither has persisted yet
 
     // Now unblock the DB handle both writes are awaiting. The stale
     // (first) write's post-open seq check must find itself superseded and
     // abort; only the fresh (second, latest) write may persist.
     resolveFirstOpen(realDb);
-    await wait(20);
-    expect(controller.getLastWrite()).not.toBeNull();
+    await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+      timeout: 2000,
+      interval: 10,
+    });
     expect((controller.getLastWrite()?.sceneJson.shapes as unknown[])?.[0]).toMatchObject({
       id: 'fresh',
     });
@@ -340,7 +360,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
       baseline,
       scene({ shapes: [testShape('about-to-be-superseded', 'circle')] }),
     );
-    await wait(DEBOUNCE_MS + 20);
+    // Generous margin, same rationale as the previous test's identical
+    // comment: this must let the timer actually fire, not just poll for a
+    // result.
+    await wait(DEBOUNCE_MS + 200);
     // The debounced write's timer has fired and it's now blocked awaiting
     // the (still-pending, shared) DB handle -- exactly the "mid-flight"
     // moment this criterion is about. Save fires clearDraft() for the same
@@ -387,7 +410,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
       scene(),
       scene({ shapes: [testShape('s1', 'circle')] }),
     );
-    await wait(DEBOUNCE_MS + 40);
+    await vi.waitFor(() => expect(unavailable.getLastFailure()).not.toBeNull(), {
+      timeout: 2000,
+      interval: 10,
+    });
     expect(unavailable.getLastWrite()).toBeNull();
     expect(unavailable.getLastFailure()?.kind).toBe('unavailable');
     // clearDraft/readDraft must resolve safely rather than reject/throw.
@@ -403,7 +429,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
       scene(),
       scene({ shapes: [testShape('s1', 'circle')] }),
     );
-    await wait(DEBOUNCE_MS + 40);
+    await vi.waitFor(() => expect(quotaFull.getLastFailure()).not.toBeNull(), {
+      timeout: 2000,
+      interval: 10,
+    });
     expect(quotaFull.getLastFailure()?.kind).toBe('quota-exceeded');
     expect(quotaFull.getLastWrite()).toBeNull();
   });
@@ -415,7 +444,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
       scene(),
       scene({ shapes: [testShape('a1', 'circle')] }),
     );
-    await wait(DEBOUNCE_MS + 40);
+    await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+      timeout: 2000,
+      interval: 10,
+    });
     expect(controller.getLastWrite()?.projectId).toBe('proj-a');
 
     // A pending write scheduled for project A is cancelled (not redirected)
@@ -431,9 +463,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
       scene(),
       scene({ shapes: [testShape('b1', 'rect')] }),
     );
-    await wait(DEBOUNCE_MS + 40);
-
-    expect(controller.getLastWrite()?.projectId).toBe('proj-b');
+    await vi.waitFor(() => expect(controller.getLastWrite()?.projectId).toBe('proj-b'), {
+      timeout: 2000,
+      interval: 10,
+    });
     // Project A's earlier persisted draft is untouched — still readable,
     // still has its own (older) content, not project B's.
     const draftA = await controller.readDraft('proj-a');
@@ -475,9 +508,11 @@ describe('DraftAutosaveController debounce and race safety', () => {
       controller.markClean(clean);
       controller.schedule(identity, clean, scene({ shapes: [testShape('new-edit', 'circle')] }));
 
-      await wait(DEBOUNCE_MS + 40);
+      await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+        timeout: 2000,
+        interval: 10,
+      });
       const write = controller.getLastWrite();
-      expect(write).not.toBeNull();
       expect((write?.sceneJson.shapes as unknown[])?.[0]).toMatchObject({ id: 'new-edit' });
     });
 
@@ -490,8 +525,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
       controller.resetCleanBaseline();
       controller.schedule(identity, null, snapshot);
 
-      await wait(DEBOUNCE_MS + 40);
-      expect(controller.getLastWrite()).not.toBeNull();
+      await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+        timeout: 2000,
+        interval: 10,
+      });
     });
   });
 
@@ -513,7 +550,10 @@ describe('DraftAutosaveController debounce and race safety', () => {
       });
 
       controller.schedule(identity, scene(), duplicateScene);
-      await wait(DEBOUNCE_MS + 40);
+      await vi.waitFor(() => expect(controller.getLastFailure()).not.toBeNull(), {
+        timeout: 2000,
+        interval: 10,
+      });
 
       expect(controller.getLastWrite()).toBeNull();
       expect(controller.getLastFailure()?.kind).toBe('corrupt-data');
@@ -532,11 +572,13 @@ describe('DraftAutosaveController debounce and race safety', () => {
       });
 
       controller.schedule(identity, scene(), validScene);
-      await wait(DEBOUNCE_MS + 40);
+      await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+        timeout: 2000,
+        interval: 10,
+      });
 
       expect(controller.getLastFailure()).toBeNull();
       const write = controller.getLastWrite();
-      expect(write).not.toBeNull();
       expect(
         ((write as DraftRecord).sceneJson.shapes as unknown[]).map((s) => (s as { id: string }).id),
       ).toEqual(['a', 'b']);
@@ -555,14 +597,19 @@ describe('DraftAutosaveController debounce and race safety', () => {
       const fixedScene = scene({ shapes: [testShape('dup', 'circle')] });
 
       controller.schedule(identity, scene(), duplicateScene);
-      await wait(DEBOUNCE_MS + 40);
+      await vi.waitFor(() => expect(controller.getLastFailure()).not.toBeNull(), {
+        timeout: 2000,
+        interval: 10,
+      });
       expect(controller.getLastFailure()?.kind).toBe('corrupt-data');
 
       controller.schedule(identity, duplicateScene, fixedScene);
-      await wait(DEBOUNCE_MS + 40);
+      await vi.waitFor(() => expect(controller.getLastWrite()).not.toBeNull(), {
+        timeout: 2000,
+        interval: 10,
+      });
 
       expect(controller.getLastFailure()).toBeNull();
-      expect(controller.getLastWrite()).not.toBeNull();
       expect(await controller.readDraft('proj-recover-after-dup')).not.toBeNull();
     });
   });

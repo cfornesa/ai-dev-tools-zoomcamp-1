@@ -8,9 +8,11 @@ import {
   updateProjectMetadata,
   type Project,
   type SceneDocument,
+  type SceneVersion,
 } from '../api/projects';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview } from '../render/scenePreview';
+import AIProposalPanel from './AIProposalPanel';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
 
@@ -80,6 +82,19 @@ function AiEditorWorkspace() {
     };
   }, [loadState, scene]);
 
+  // Issue #224: applies an accepted AI proposal exactly like
+  // EditorWorkspace.tsx's `handleAIProposalAccepted` -- the server has
+  // already persisted `version` as the project's new current version, so
+  // this just syncs local state from it (no separate save step). The
+  // scene this leaves in `scene` is what the *next* prompt (in "Edit"
+  // mode) is generated against, and #222's name-based resolution lets
+  // that next prompt reference anything just created by name -- this is
+  // the continuous-session behavior the issue asks for.
+  function handleAccepted(version: SceneVersion) {
+    setScene(version.scene_json);
+    setProject((current) => (current ? { ...current, current_version: version.id } : current));
+  }
+
   async function handleTitleBlur() {
     if (!id || !project || title === project.title) return;
     setTitleSaving(true);
@@ -139,6 +154,21 @@ function AiEditorWorkspace() {
       </header>
       <section aria-label="Preview" role="region" data-panel="preview">
         <div ref={previewContainerRef} className="ai-editor-preview" />
+      </section>
+      {/* Issue #224: the prompt panel is this editor's primary, default
+          interaction surface -- not tucked into a collapsible section
+          like the manual editor's AI proposals panel (#221's decision
+          keeps that one as a supplementary feature; this editor's whole
+          purpose is prompt-first authoring). */}
+      <section aria-label="AI assistant" role="region" data-panel="ai-assistant">
+        {id && (
+          <AIProposalPanel
+            projectId={id}
+            workingCopy={scene}
+            currentVersionId={project?.current_version ?? null}
+            onAccepted={handleAccepted}
+          />
+        )}
       </section>
     </div>
   );

@@ -7311,7 +7311,9 @@ Dependencies: task 200/#232 (complete).
 
 ## 204. A-Frame art pieces render blank: camera faces away from origin-positioned content
 
-Status: PROPOSED
+Status: ACTIVE (fix implemented, pushed to `main` at commit `1cb949f`;
+live production retest pending a Replit publish, same external
+dependency as task 171/#203 — see next action)
 
 GitHub issue: [#236](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/236)
 
@@ -7346,5 +7348,18 @@ guidance (a worked example and/or an explicit positive-Z rule), a
 regression test asserting the prompt contains it (mirroring task
 172/#204's own regression test pattern), and manual/live verification
 across a few representative prompts.
+
+Delivered (commit `1cb949f`): `_AFRAME_SYSTEM_PROMPT` now states the
+camera-facing convention explicitly (positive-Z-with-no-rotation for
+origin-centered geometry, a worked example, an explicit "never negative
+Z" rule), plus `test_aframe_system_prompt_gives_concrete_camera_placement_guidance`
+asserting the prompt actually sent to Mistral contains it. `uv run
+pytest -q` 793 passed/22 skipped (up from 792); lint/format/mypy clean.
+
+Next action: repository owner publishes to production via Replit, then
+retests a few A-Frame prompts (not just "a red circle," to build
+confidence beyond a single case) at
+`https://animate.creatrweb.com/art-pieces`. Close #236 once that live
+retest passes.
 
 Dependencies: None.

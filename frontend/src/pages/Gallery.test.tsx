@@ -127,6 +127,9 @@ describe('Gallery keyboard accessibility', () => {
     await screen.findByRole('heading', { name: 'First' });
 
     await user.tab();
+    expect(screen.getByLabelText('Renderer')).toHaveFocus();
+
+    await user.tab();
     expect(screen.getByRole('button', { name: /create new animation/i })).toHaveFocus();
 
     await user.tab();
@@ -152,7 +155,24 @@ describe('Gallery create action', () => {
     await user.click(screen.getByRole('button', { name: /create new animation/i }));
 
     await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
-    expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String));
+    // Issue #206: defaults to the p5 renderer unless the picker is changed.
+    expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
+  });
+
+  it('passes the selected renderer through to createBlankProject (issue #206)', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-id' }));
+    const user = userEvent.setup();
+
+    renderGallery();
+    const rendererSelect = await screen.findByLabelText<HTMLSelectElement>('Renderer');
+    await user.selectOptions(rendererSelect, 'canvas2d');
+
+    await user.click(screen.getByRole('button', { name: /create new animation/i }));
+
+    await waitFor(() =>
+      expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'canvas2d'),
+    );
   });
 
   it('shows an accessible error and re-enables the button on failure', async () => {

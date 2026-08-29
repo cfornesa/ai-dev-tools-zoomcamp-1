@@ -803,6 +803,18 @@ class BlankProjectCreateView(APIView):
         if not can(request.user, Action.PROJECT_CREATE):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+        # Issue #206: the only place a project's initial renderer is ever
+        # chosen -- there is no later "change this scene's renderer" flow,
+        # so this is the one write path that needs to validate it. Defaults
+        # to "p5" (the pre-#206 fixed value) when omitted, so every
+        # existing caller/client is unaffected.
+        renderer = request.data.get("renderer", "p5")
+        if renderer not in ("p5", "canvas2d"):
+            return Response(
+                {"renderer": ["Must be one of: p5, canvas2d."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         raw_request_id = request.data.get("client_request_id")
         request_id = None
         if raw_request_id is not None:
@@ -822,6 +834,7 @@ class BlankProjectCreateView(APIView):
 
         blank_scene = copy.deepcopy(_BLANK_SCENE_FIXTURE)
         blank_scene["id"] = f"scene-{uuid.uuid4()}"
+        blank_scene["renderer"] = {"preferred": renderer}
 
         result = validate_scene(blank_scene)
         if not result.valid:  # pragma: no cover — would mean the fixture itself is broken

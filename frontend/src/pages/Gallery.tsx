@@ -14,6 +14,9 @@ function Gallery() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  // Issue #206: the only point in the app where a new project's renderer
+  // is chosen -- there is no later "change this scene's renderer" flow.
+  const [newProjectRenderer, setNewProjectRenderer] = useState<'p5' | 'canvas2d'>('p5');
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +47,7 @@ function Gallery() {
     setCreateError(null);
     try {
       const requestId = crypto.randomUUID();
-      const project = await createBlankProject(requestId);
+      const project = await createBlankProject(requestId, newProjectRenderer);
       navigate(`/projects/${project.id}`);
     } catch {
       setCreateError('Could not create a new project. Please try again.');
@@ -72,6 +75,18 @@ function Gallery() {
     <section className="content-panel gallery-panel" aria-labelledby="gallery-heading">
       <div className="gallery-header">
         <h2 id="gallery-heading">Your projects</h2>
+        <label htmlFor="new-project-renderer" className="gallery-renderer-label">
+          Renderer
+        </label>
+        <select
+          id="new-project-renderer"
+          value={newProjectRenderer}
+          disabled={creating}
+          onChange={(event) => setNewProjectRenderer(event.target.value as 'p5' | 'canvas2d')}
+        >
+          <option value="p5">p5.js</option>
+          <option value="canvas2d">Canvas2D</option>
+        </select>
         <button className="shell-action" type="button" onClick={handleCreate} disabled={creating}>
           {creating ? 'Creating…' : 'Create new animation'}
         </button>

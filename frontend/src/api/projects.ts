@@ -270,10 +270,22 @@ export function forkProject(id: string, clientRequestId?: string): Promise<Proje
 
 /** Task 18: atomically create a private project with one blank-canvas version.
  * Pass the same `clientRequestId` again to safely retry a failed/uncertain
- * submission without risking a duplicate project. */
-export function createBlankProject(clientRequestId?: string): Promise<Project> {
+ * submission without risking a duplicate project.
+ *
+ * Issue #206: `renderer` chooses the new project's initial scene renderer
+ * (`schema/scene.schema.json`'s `renderer.preferred`) -- the only point in
+ * this app where a scene's renderer is ever chosen; there is no later
+ * "change this scene's renderer" flow. Defaults to `'p5'` when omitted,
+ * matching the backend's own default and every pre-#206 caller. */
+export function createBlankProject(
+  clientRequestId?: string,
+  renderer?: 'p5' | 'canvas2d',
+): Promise<Project> {
+  const body: Record<string, string> = {};
+  if (clientRequestId) body.client_request_id = clientRequestId;
+  if (renderer) body.renderer = renderer;
   return apiFetch<Project>('/api/projects/blank/', {
     method: 'POST',
-    body: JSON.stringify(clientRequestId ? { client_request_id: clientRequestId } : {}),
+    body: JSON.stringify(body),
   });
 }

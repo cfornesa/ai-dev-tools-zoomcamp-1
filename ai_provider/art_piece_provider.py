@@ -205,7 +205,7 @@ class ArtPieceProvider:
     @property
     def client(self):
         if self._client is None:
-            from mistralai import Mistral
+            from mistralai.client import Mistral
 
             self._client = Mistral(api_key=self._api_key)
         return self._client

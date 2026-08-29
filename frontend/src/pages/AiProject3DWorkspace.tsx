@@ -4,23 +4,29 @@ import { useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { getProject3D, type Project3D, type SceneVersion3D } from '../api/projects3d';
 import AIProposalPanel3D from './AIProposalPanel3D';
+import Scene3DCodeEditor from './Scene3DCodeEditor';
 import type { Scene3DDocument } from './scene3dTypes';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
+type PreviewView = 'visual' | 'code';
 
 /**
- * Issue #231/#232: the 3D counterpart of #223/#224 -- a real, navigable
- * route for the 3D AI-assisted editor product, reusing #226's groundwork
- * (fetch pattern, preview placeholder) rather than reimplementing
- * independently, per #215's "not four independent implementations." No
- * outline/inspector (that's the 3D manual editor's concept, #227), no
- * embedded code editor yet (#233).
+ * Issue #231/#232/#233: the 3D counterpart of #223/#224/#225 -- a real,
+ * navigable route for the 3D AI-assisted editor product, reusing #226's
+ * groundwork (fetch pattern, preview placeholder) rather than
+ * reimplementing independently, per #215's "not four independent
+ * implementations." No outline/inspector (that's the 3D manual editor's
+ * concept, #227). The Code tab (#233) reuses Scene3DCodeEditor.tsx
+ * unchanged from #229 -- it takes no dependency on the outline/inspector,
+ * so the same validate-via-validate_scene3d-then-save-via-#228 component
+ * works for both the manual and AI-assisted 3D editors.
  */
 function AiProject3DWorkspace() {
   const { id } = useParams<{ id: string }>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<Project3D | null>(null);
   const [scene, setScene] = useState<Scene3DDocument | null>(null);
+  const [previewView, setPreviewView] = useState<PreviewView>('visual');
 
   useEffect(() => {
     if (!id) return;
@@ -86,10 +92,12 @@ function AiProject3DWorkspace() {
 
   if (!scene || !id) return null; // unreachable once loadState === 'ready'
 
-  // Issue #232: applies an accepted AI proposal exactly like
-  // AiEditorWorkspace.tsx's handleAccepted -- the server has already
-  // persisted `version`, so this just syncs local state from it.
-  function handleAccepted(version: SceneVersion3D) {
+  // Issue #232/#233: applies an accepted AI proposal or a saved Code-tab
+  // edit exactly like AiEditorWorkspace.tsx's handleAccepted -- the
+  // server has already persisted `version`, so this just syncs local
+  // state from it. Both paths converge here since both hand back the
+  // same SceneVersion3D shape.
+  function handleVersionPersisted(version: SceneVersion3D) {
     setScene(version.scene_json as unknown as Scene3DDocument);
     setProject((current) => (current ? { ...current, current_version: version } : current));
   }
@@ -99,29 +107,60 @@ function AiProject3DWorkspace() {
       <header className="editor-workspace-header">
         <h2>{project?.title}</h2>
       </header>
-      <section aria-label="Preview" role="region" data-panel="preview">
-        {/* Issue #226/#231: a placeholder -- real Three.js/A-Frame
-            rendering is a future follow-on, filed once this UI's shape
-            is concrete. */}
-        <div className="project3d-preview-placeholder" data-testid="project3d-preview-placeholder">
-          <p>3D preview is not yet available.</p>
-          <p>
-            {scene.objects.length} object(s), {scene.lights.length} light(s), {scene.groups.length}{' '}
-            group(s) in this scene.
-          </p>
-        </div>
-      </section>
-      {/* Issue #232: the prompt panel is this editor's primary interaction
-          surface, not tucked into a collapsible section -- same
-          "prompt-first" convention as #224's 2D AiEditorWorkspace.tsx. */}
-      <section aria-label="AI assistant" role="region" data-panel="ai-assistant">
-        <AIProposalPanel3D
-          projectId={id}
-          workingCopy={scene}
-          currentVersionId={project?.current_version?.id ?? null}
-          onAccepted={handleAccepted}
-        />
-      </section>
+      <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={previewView === 'visual'}
+          onClick={() => setPreviewView('visual')}
+        >
+          Visual
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={previewView === 'code'}
+          onClick={() => setPreviewView('code')}
+        >
+          Code
+        </button>
+      </div>
+      {previewView === 'visual' && (
+        <>
+          <section aria-label="Preview" role="region" data-panel="preview">
+            {/* Issue #226/#231: a placeholder -- real Three.js/A-Frame
+                rendering is a future follow-on, filed once this UI's
+                shape is concrete. */}
+            <div
+              className="project3d-preview-placeholder"
+              data-testid="project3d-preview-placeholder"
+            >
+              <p>3D preview is not yet available.</p>
+              <p>
+                {scene.objects.length} object(s), {scene.lights.length} light(s),{' '}
+                {scene.groups.length} group(s) in this scene.
+              </p>
+            </div>
+          </section>
+          {/* Issue #232: the prompt panel is this editor's primary
+              interaction surface, not tucked into a collapsible section
+              -- same "prompt-first" convention as #224's 2D
+              AiEditorWorkspace.tsx. */}
+          <section aria-label="AI assistant" role="region" data-panel="ai-assistant">
+            <AIProposalPanel3D
+              projectId={id}
+              workingCopy={scene}
+              currentVersionId={project?.current_version?.id ?? null}
+              onAccepted={handleVersionPersisted}
+            />
+          </section>
+        </>
+      )}
+      {previewView === 'code' && (
+        <section aria-label="Code" role="region" data-panel="code">
+          <Scene3DCodeEditor projectId={id} scene={scene} onSaved={handleVersionPersisted} />
+        </section>
+      )}
     </div>
   );
 }

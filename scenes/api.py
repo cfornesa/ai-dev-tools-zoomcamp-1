@@ -33,8 +33,10 @@ from scenes.models import (
     EditSessionDraft,
     ForkProvenance,
     Project,
+    Project3D,
     ProjectActivity,
     SceneVersion,
+    SceneVersion3D,
     Template,
     Thumbnail,
     default_draft_expiry,
@@ -44,6 +46,7 @@ from scenes.publishing import validate_meaningful_metadata
 from scenes.serializers import (
     DraftSerializer,
     DraftUpsertSerializer,
+    Project3DSerializer,
     ProjectMetadataSerializer,
     ProjectSerializer,
     PublicProjectListItemSerializer,
@@ -59,6 +62,7 @@ from scenes.thumbnail_generation import (
     maybe_schedule_thumbnail_generation,
 )
 from scenes.validation import SCHEMA_DIR, normalize_scene_layers, validate_scene
+from scenes.validation3d import validate_scene3d
 
 with (SCHEMA_DIR / "fixtures" / "valid" / "blank.json").open() as _f:
     _BLANK_SCENE_FIXTURE: dict = json.load(_f)
@@ -1123,3 +1127,79 @@ class DraftDetailView(APIView):
             project=project, user=request.user, session_id=session_id
         ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# --- #213: minimal creation/retrieval API for Project3D/SceneVersion3D ---
+#
+# Deliberately not routed through _get_project_or_404/_require_or_404
+# above -- those are typed to the 2D Project model and its
+# Action.PROJECT_READ/PROJECT_WRITE actions. A genuinely separate helper
+# pair for the 3D resource family keeps that distinction visible at every
+# call site rather than silently overloading the 2D helpers' `resource`
+# argument with a different model.
+
+with (SCHEMA_DIR / "fixtures3d" / "valid" / "minimal.json").open() as _f:
+    _MINIMAL_SCENE_3D_FIXTURE: dict = json.load(_f)
+
+
+def _get_project3d_or_404(public_id) -> Project3D:
+    try:
+        return Project3D.objects.select_related("owner").get(public_id=public_id)
+    except (Project3D.DoesNotExist, ValueError, TypeError) as exc:
+        raise Http404 from exc
+
+
+class Project3DListCreateView(APIView):
+    """#213: minimal creation/list surface for the 3D scene document family.
+
+    No `client_request_id` idempotency key yet (unlike
+    `BlankProjectCreateView`) -- deferred until a real client needs
+    duplicate-submission protection, matching #212's own deferred-scope
+    note. No `renderer` field either: #210's `scene3d.schema.json` has no
+    `renderer.preferred` concept (three.js/A-Frame renderer selection is a
+    later #209 phase, not part of the document itself).
+    """
+
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        projects = Project3D.objects.filter(owner=request.user).select_related(
+            "owner", "current_version"
+        )
+        return Response(Project3DSerializer(projects, many=True).data)
+
+    def post(self, request):
+        if not can(request.user, Action.PROJECT3D_CREATE):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        scene = copy.deepcopy(_MINIMAL_SCENE_3D_FIXTURE)
+        scene["id"] = f"scene3d-{uuid.uuid4()}"
+
+        result = validate_scene3d(scene)
+        if not result.valid:  # pragma: no cover — would mean the fixture itself is broken
+            return Response(
+                {"detail": "Internal error creating the blank 3D scene."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        with transaction.atomic():
+            project = Project3D.objects.create(owner=request.user)
+            version = SceneVersion3D.objects.create(
+                project=project,
+                sequence=1,
+                scene_json=scene,
+                created_by=request.user,
+                origin=SceneVersion3D.Origin.MANUAL,
+            )
+            project.current_version = version
+            project.save(update_fields=["current_version", "updated_at"])
+
+        return Response(Project3DSerializer(project).data, status=status.HTTP_201_CREATED)
+
+
+class Project3DDetailView(APIView):
+    def get(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_READ, project):
+            raise Http404
+        return Response(Project3DSerializer(project).data)

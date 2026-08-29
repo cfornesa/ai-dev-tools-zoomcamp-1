@@ -3,7 +3,14 @@
 from django.urls import reverse
 from rest_framework import serializers
 
-from scenes.models import EditSessionDraft, Project, SceneVersion, Template
+from scenes.models import (
+    EditSessionDraft,
+    Project,
+    Project3D,
+    SceneVersion,
+    SceneVersion3D,
+    Template,
+)
 
 MAX_TAGS = 10
 MAX_TAG_LENGTH = 30
@@ -367,3 +374,31 @@ class DraftUpsertSerializer(serializers.Serializer):
 
     draft_json = serializers.JSONField()
     client_seq = serializers.IntegerField(min_value=0)
+
+
+# --- #213: minimal creation/retrieval API for Project3D/SceneVersion3D ---
+
+
+class SceneVersion3DSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(source="created_by.username", default=None, read_only=True)
+
+    class Meta:
+        model = SceneVersion3D
+        fields = ["id", "sequence", "origin", "scene_json", "created_by", "created_at"]
+        read_only_fields = fields
+
+
+class Project3DSerializer(serializers.ModelSerializer):
+    """Mirrors ProjectSerializer's shape at #213's scope: Project3D has no
+    `visibility`/`description`/`tags` fields yet (#212 deferred them), so
+    this serializer is deliberately smaller, not a partial view of a
+    larger shape."""
+
+    id = serializers.UUIDField(source="public_id", read_only=True)
+    owner = serializers.CharField(source="owner.username", read_only=True)
+    current_version = SceneVersion3DSerializer(read_only=True)
+
+    class Meta:
+        model = Project3D
+        fields = ["id", "owner", "title", "current_version", "created_at", "updated_at"]
+        read_only_fields = fields

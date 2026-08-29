@@ -14,7 +14,7 @@ flags allow.
 
 from enum import StrEnum
 
-from scenes.models import EditSessionDraft, Project, Template
+from scenes.models import EditSessionDraft, Project, Project3D, Template
 
 
 class Action(StrEnum):
@@ -35,6 +35,12 @@ class Action(StrEnum):
     TEMPLATE_CREATE = "template.create"
     AI_CREATE_SCENE = "ai.create_scene"
     AI_EDIT_SCENE = "ai.edit_scene"
+    # #213: the 3D document family (Project3D/SceneVersion3D, #212) has no
+    # `visibility` field yet -- unlike PROJECT_READ above, PROJECT3D_READ is
+    # unconditionally owner-only until a publish/gallery feature gives it
+    # one, same shape as _OWNER_ONLY_PROJECT_ACTIONS' 2D actions.
+    PROJECT3D_CREATE = "project3d.create"
+    PROJECT3D_READ = "project3d.read"
 
 
 class PermissionDenied(Exception):
@@ -46,6 +52,10 @@ def _is_authenticated(user) -> bool:
 
 
 def _is_owner(user, project: Project | None) -> bool:
+    return _is_authenticated(user) and project is not None and project.owner_id == user.id
+
+
+def _is_owner_3d(user, project: Project3D | None) -> bool:
     return _is_authenticated(user) and project is not None and project.owner_id == user.id
 
 
@@ -115,6 +125,14 @@ def can(user, action: Action, resource=None) -> bool:
 
     if action == Action.TEMPLATE_CREATE:
         return _is_authenticated(user)
+
+    if action == Action.PROJECT3D_CREATE:
+        return _is_authenticated(user)
+
+    if action == Action.PROJECT3D_READ:
+        if not isinstance(resource, Project3D):
+            return False
+        return _is_owner_3d(user, resource)
 
     return False
 

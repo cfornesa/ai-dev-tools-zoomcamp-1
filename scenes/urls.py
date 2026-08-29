@@ -4,6 +4,8 @@ from scenes.ai_api import AIAcceptProposalView, AICreateSceneView, AIEditSceneVi
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
+    Project3DDetailView,
+    Project3DListCreateView,
     ProjectDetailView,
     ProjectForkView,
     ProjectListCreateView,
@@ -115,5 +117,15 @@ urlpatterns = [
         "ai/art-pieces/generate/",
         ArtPieceGenerateView.as_view(),
         name="art-piece-generate",
+    ),
+    # #213: the 3D scene document family (Project3D/SceneVersion3D, #212) --
+    # a genuinely separate URL namespace from "projects/" above, matching
+    # #208's decision that this is a separate document family, not a 2D
+    # project variant.
+    path("projects3d/", Project3DListCreateView.as_view(), name="project3d-list-create"),
+    path(
+        "projects3d/<uuid:public_id>/",
+        Project3DDetailView.as_view(),
+        name="project3d-detail",
     ),
 ]

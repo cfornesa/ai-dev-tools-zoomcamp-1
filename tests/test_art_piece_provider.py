@@ -12,10 +12,55 @@ Mirrors `test_mistral_provider.py`'s
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import httpx
 import pytest
 
 from ai_provider.art_piece_provider import ArtPieceProvider
+
+
+class _CapturingChat:
+    def __init__(self):
+        self.last_kwargs: dict | None = None
+
+    def complete(self, **kwargs):
+        self.last_kwargs = kwargs
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content='<a-scene id="art-piece-scene" embedded></a-scene>'
+                    )
+                )
+            ],
+        )
+
+
+class _CapturingClient:
+    def __init__(self):
+        self.chat = _CapturingChat()
+
+
+def test_aframe_system_prompt_gives_concrete_camera_placement_guidance():
+    """Regression for #236: the A-Frame system prompt only said to
+    position the camera "to frame the scene" -- vague guidance Mistral
+    didn't reliably follow (it placed the camera at a negative Z offset
+    with no rotation, which A-Frame's default orientation convention
+    means looks *away* from origin-centered content, not toward it,
+    rendering nothing visible). The prompt must state the actual
+    positive-Z convention explicitly, mirroring #204's "restate the
+    constraint concretely" mitigation for vague AI guidance."""
+    client = _CapturingClient()
+    provider = ArtPieceProvider(client=client)
+
+    provider.generate("a red circle", "aframe")
+
+    system_message = next(m for m in client.chat.last_kwargs["messages"] if m["role"] == "system")
+    content = system_message["content"]
+    assert "positive" in content.lower()
+    assert "-Z" in content or "negative Z" in content or "negative z" in content.lower()
 
 
 def test_client_property_builds_a_real_client_from_the_real_sdk_import_path():

@@ -156,9 +156,17 @@ or after it.
 - Output exactly one <a-scene id="art-piece-scene" embedded> element and its children (entities, \
 primitives like <a-box>/<a-sphere>/<a-cylinder>/<a-plane>, lights, camera) and nothing else: no \
 <html>, <head>, <body>, <!DOCTYPE>, or <script> element of any kind.
-- Include an <a-camera> (or a camera-carrying <a-entity>) positioned to frame the scene, and any \
-lighting needed to see the geometry -- do not rely on A-Frame's default lighting alone if the \
-scene has custom materials.
+- Include an <a-camera> (or a camera-carrying <a-entity>) positioned so the generated geometry is \
+actually visible, and any lighting needed to see the geometry -- do not rely on A-Frame's default \
+lighting alone if the scene has custom materials.
+- Camera placement is the most common mistake -- follow this rule exactly: A-Frame's default \
+camera orientation (rotation="0 0 0") looks down the -Z axis. If your geometry is centered near \
+the origin (0 0 0), the camera must sit at a POSITIVE Z offset with rotation="0 0 0" so it looks \
+back toward the origin -- e.g. <a-entity position="0 1.6 4" rotation="0 0 0"><a-camera></a-camera>\
+</a-entity>. A camera at a NEGATIVE Z position with rotation="0 0 0" looks away from \
+origin-centered content and will render nothing visible -- never do this. If you rotate the \
+camera to look in a different direction, or move the geometry away from the origin, you must \
+adjust the camera's position/rotation together so it still points at the geometry.
 - Any animation must use A-Frame's built-in `animation` component (e.g. \
 animation="property: rotation; to: 0 360 0; loop: true; dur: 4000") -- never JavaScript.
 - Never reference an external resource: no `src` pointing at a URL for any asset, texture, or \

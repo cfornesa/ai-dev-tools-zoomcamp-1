@@ -1,4 +1,4 @@
-- [Stop goal loop when blocked on Replit publish](stop-goal-loop-when-blocked-on-replit-publish.md) — when progress depends on the user explicitly publishing to Replit, stop the active goal/loop entirely and wait for their confirmation instead of repeatedly polling.
+- [Stop goal loop when blocked on Replit publish](stop-goal-loop-when-blocked-on-replit-publish.md) — standing policy: needing a Replit publish IS the goal stopper for every /goal in this repo; treat that blocker as completion, don't poll past it.
 - [PostgreSQL migration SQL](postgresql-migration-sql.md) — Raw PL/pgSQL in Django migrations must escape literal percent signs for Psycopg 3.
 - [Vitest shell file paths](vitest-shell-file-paths.md) — Read static shell files from the frontend process root because transformed import.meta URLs are not file URLs.
 - [Playwright runtime prerequisites](playwright-runtime-prerequisites.md) — Browser E2E needs Chromium system libraries and the project fixture environment.

@@ -1,9 +1,20 @@
 ---
 name: stop-goal-loop-when-blocked-on-replit-publish
-description: When a task/goal is blocked on the user explicitly publishing to Replit, stop the active goal/loop entirely rather than repeatedly polling or retesting — wait for the user's explicit confirmation before resuming.
+description: For every /goal in this repo, reaching the point where progress requires the user to explicitly publish to Replit IS the goal stopper — treat that blocked state as the goal's completion/exit point, not something to keep polling past.
 metadata:
   type: feedback
 ---
+
+**Standing policy (repository owner's direct instruction, given after
+clearing the goal below): "For all goals, consider Replit deployment
+as a goal stopper to indicate successful completion of a goal."** This
+applies to every future `/goal` in this repo, not just #236 — the
+moment a goal's remaining work reduces to "the user needs to publish to
+Replit," that is the correct stopping point. Report the blocker clearly
+(what's ready, what's pending, exactly what the user needs to do) and
+treat the goal as done from the agent's side — do not keep polling
+deployment state or treat the goal as still "in progress" waiting for
+a publish that only the user can trigger.
 
 During #236 verification, an automated stop-hook kept re-firing the
 same "publish to Replit and retest" goal condition dozens of times in a

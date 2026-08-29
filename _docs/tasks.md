@@ -6953,9 +6953,9 @@ Dependencies: task 194/#226.
 
 ## 196. 3D manual editor: save-a-new-version API
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#228](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/228)
+GitHub issue: [#228](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/228) (closed)
 
 Parent: task 184/#216, refines task 186/#218. Task 181/#213 only covers
 creation (the single initial version) — this adds `POST
@@ -6963,8 +6963,20 @@ creation (the single initial version) — this adds `POST
 pattern, so both task 195/#227's manual edits and task 197/#232's
 AI-proposed edits can actually persist.
 
-Dependencies: task 180/#212, task 181/#213 (both complete). Feeds task
-195/#227 and task 197/#232.
+Delivered (commit `ecfd953`): `SceneVersion3DListCreateView` mirrors
+`SceneVersionListCreateView`'s `select_for_update` transaction pattern
+(lock, next sequence, create, advance `current_version`). New owner-only
+`Action.PROJECT3D_WRITE` (same shape as `PROJECT3D_READ`). No `origin`
+accepted from the client -- `SceneVersion3D.Origin` only has `MANUAL`
+until task 200/#232 adds an AI-origin choice. Version listing/restore
+stayed explicitly out of scope. `tests/test_project3d_version_api.py`
+(7 tests). `make check` passes end to end (740 backend / 2045 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #228 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/228#issuecomment-5462121539).
+
+Dependencies: task 180/#212, task 181/#213 (both complete). Unblocks
+task 195/#227 and task 200/#232.
 
 ## 197. 3D manual editor: embedded code editor
 

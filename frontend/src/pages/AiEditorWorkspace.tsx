@@ -13,15 +13,17 @@ import {
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview } from '../render/scenePreview';
 import AIProposalPanel from './AIProposalPanel';
+import { SceneCodeEditor, useJsonCodeSync } from './jsonCodeSync';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
+type PreviewView = 'visual' | 'code';
 
 /**
  * Issue #223: the smallest possible slice that makes the 2D AI-assisted
  * editor exist as a real, navigable, distinct route -- shell + preview +
  * title editing only. No layers panel, no shape-by-shape manual editing
  * (that's EditorWorkspace.tsx's concept, not this one's), no AI prompt
- * panel yet (#224), no embedded code editor yet (#225). Reuses the same
+ * panel yet (#224, now delivered). Reuses the same
  * 2D Project/SceneVersion document family and creation endpoint as the
  * manual editor -- this is a different editor UI over the same data, not
  * a separate document family (contrast with the 3D document family,
@@ -34,8 +36,16 @@ function AiEditorWorkspace() {
   const [scene, setScene] = useState<SceneDocument | null>(null);
   const [title, setTitle] = useState('');
   const [titleSaving, setTitleSaving] = useState(false);
+  const [previewView, setPreviewView] = useState<PreviewView>('visual');
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<ScenePreview | null>(null);
+  // Issue #225: the same JSON Code tab the manual editor has, going
+  // through the same client-side validateScene mirror of
+  // scenes.validation.validate_scene as every other write (see
+  // jsonCodeSync.tsx). Called unconditionally, before the loading/error
+  // early returns below, so its state survives them the same way it
+  // survives Visual<->Code toggling in EditorWorkspace.tsx.
+  const jsonCodeSync = useJsonCodeSync(scene, setScene);
 
   useEffect(() => {
     if (!id) return;
@@ -152,9 +162,37 @@ function AiEditorWorkspace() {
           onBlur={handleTitleBlur}
         />
       </header>
-      <section aria-label="Preview" role="region" data-panel="preview">
+      <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={previewView === 'visual'}
+          onClick={() => setPreviewView('visual')}
+        >
+          Visual
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={previewView === 'code'}
+          onClick={() => setPreviewView('code')}
+        >
+          Code
+        </button>
+      </div>
+      <section
+        aria-label="Preview"
+        role="region"
+        data-panel="preview"
+        hidden={previewView !== 'visual'}
+      >
         <div ref={previewContainerRef} className="ai-editor-preview" />
       </section>
+      {previewView === 'code' && (
+        <section aria-label="Code" role="region" data-panel="code">
+          <SceneCodeEditor sync={jsonCodeSync} />
+        </section>
+      )}
       {/* Issue #224: the prompt panel is this editor's primary, default
           interaction surface -- not tucked into a collapsible section
           like the manual editor's AI proposals panel (#221's decision

@@ -74,7 +74,7 @@ import {
 } from '../editor/cameraOverlayGeometry';
 import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
-import { normalizeSceneLayers, validateScene } from '../validation/scene';
+import { normalizeSceneLayers } from '../validation/scene';
 import { buildOutline, isEffectivelyLocked } from './sceneOutline';
 import type { TrackingFrame } from '../tracking/types';
 import SnapPreferenceControl from './SnapPreferenceControl';
@@ -84,6 +84,12 @@ import { useDraftRecovery } from './useDraftRecovery';
 import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
+import {
+  codeDiagnostic,
+  SceneCodeEditor,
+  useJsonCodeSync,
+  type JsonCodeSync,
+} from './jsonCodeSync';
 import { createPreviewTrackingSource } from './previewTrackingSource';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime';
@@ -457,31 +463,6 @@ function EditorToolbarColorControl({ sceneEditor }: { sceneEditor: SceneEditor }
 
 type CodeSubTab = 'json' | 'html' | 'css' | 'js';
 
-function codeDiagnostic(source: string, message: string): string {
-  const positionMatch = message.match(/position\s+(\d+)/i);
-  let offset = positionMatch ? Number(positionMatch[1]) : -1;
-  if (offset < 0) {
-    const fieldMatch = message.match(
-      /(\$\.[^:; ]+)|(?:shape|layer|group|binding|node|connection)\s+"([^"]+)"/i,
-    );
-    const field =
-      fieldMatch?.[2] ??
-      fieldMatch?.[1]
-        ?.split('.')
-        .pop()
-        ?.replaceAll('[', '')
-        .replaceAll(']', '')
-        .replace(/[0-9]/g, '');
-    offset = field ? source.indexOf(field) : -1;
-  }
-  if (offset < 0) offset = 0;
-  const before = source.slice(0, offset);
-  const line = before.split('\n').length;
-  const lastNewline = before.lastIndexOf('\n');
-  const column = offset - lastNewline;
-  return `Line ${line}, column ${column}: ${message}`;
-}
-
 /**
  * Issue #177 (task 145's audit finding): every Code sub-tab's sync strategy,
  * shared by the three `use*CodeSync` hooks just below.
@@ -518,86 +499,6 @@ function codeDiagnostic(source: string, message: string): string {
  *   with an explicit "discard and reload" action -- never silently
  *   overwritten.
  */
-function useJsonCodeSync(
-  workingCopy: SceneDocument | null,
-  onCommit: (scene: SceneDocument) => void,
-) {
-  const [text, setText] = useState(() => JSON.stringify(workingCopy, null, 2));
-  const [error, setError] = useState<string | null>(null);
-  const [externalChangePending, setExternalChangePending] = useState(false);
-  const textRef = useRef(text);
-  const lastSyncedTextRef = useRef(text);
-  const lastSyncedWorkingCopyRef = useRef(workingCopy);
-
-  useEffect(() => {
-    if (workingCopy === lastSyncedWorkingCopyRef.current) return;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    if (textRef.current !== lastSyncedTextRef.current) {
-      setExternalChangePending(true);
-      return;
-    }
-    const generated = JSON.stringify(workingCopy, null, 2);
-    lastSyncedTextRef.current = generated;
-    textRef.current = generated;
-    setText(generated);
-  }, [workingCopy]);
-
-  function onChange(value: string) {
-    textRef.current = value;
-    setText(value);
-  }
-
-  function onReload() {
-    const generated = JSON.stringify(workingCopy, null, 2);
-    lastSyncedTextRef.current = generated;
-    textRef.current = generated;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    setText(generated);
-    setError(null);
-    setExternalChangePending(false);
-  }
-
-  function onBlur() {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(textRef.current);
-    } catch (err) {
-      setError(
-        codeDiagnostic(
-          textRef.current,
-          `Invalid JSON: ${err instanceof Error ? err.message : 'could not parse this text.'}`,
-        ),
-      );
-      return;
-    }
-    const result = validateScene(parsed);
-    if (!result.valid) {
-      setError(
-        result.errors
-          .map((e) => codeDiagnostic(textRef.current, `${e.path}: ${e.message}`))
-          .join('; '),
-      );
-      return;
-    }
-    setError(null);
-    onCommit(parsed as SceneDocument);
-    // Re-canonicalize from the just-committed document (matching the
-    // HTML/CSS/JS sub-tabs' own convention) and mark it as already synced,
-    // so the `workingCopy` change this commit causes doesn't turn around and
-    // flag itself as an external change on the next render.
-    const canonical = JSON.stringify(parsed, null, 2);
-    lastSyncedTextRef.current = canonical;
-    textRef.current = canonical;
-    lastSyncedWorkingCopyRef.current = parsed as SceneDocument;
-    setText(canonical);
-    setExternalChangePending(false);
-  }
-
-  return { text, error, externalChangePending, onChange, onBlur, onReload };
-}
-
-type JsonCodeSync = ReturnType<typeof useJsonCodeSync>;
-
 /**
  * Issue #159: the Code tab's JSON sub-tab -- an editable, pretty-printed
  * view of the live `workingCopy`, validated with the exact same
@@ -609,48 +510,6 @@ type JsonCodeSync = ReturnType<typeof useJsonCodeSync>;
  * called from `EditorWorkspace`'s top level so it survives this
  * component's own conditional mounting.
  */
-function SceneCodeEditor({ sync }: { sync: JsonCodeSync }) {
-  const { text, error, externalChangePending, onChange, onBlur, onReload } = sync;
-
-  return (
-    <div className="editor-code-tab">
-      <label htmlFor="editor-scene-code-textarea">Scene JSON</label>
-      <textarea
-        id="editor-scene-code-textarea"
-        data-testid="editor-scene-code-textarea"
-        className="editor-scene-code-textarea"
-        spellCheck={false}
-        rows={24}
-        style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85em' }}
-        value={text}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? 'editor-scene-code-error' : undefined}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
-      />
-      {error && (
-        <p id="editor-scene-code-error" role="alert" aria-live="assertive">
-          Invalid scene JSON — not applied: {error}
-        </p>
-      )}
-      {externalChangePending && (
-        <p
-          id="editor-scene-code-external-change"
-          role="alert"
-          aria-live="assertive"
-          className="editor-code-external-change-notice"
-        >
-          This tab&apos;s content changed elsewhere (e.g. Undo/Redo) while you had an unsaved edit
-          here — your edit was kept.{' '}
-          <button type="button" data-testid="editor-scene-code-reload" onClick={onReload}>
-            Discard my edit and reload
-          </button>
-        </p>
-      )}
-    </div>
-  );
-}
-
 /**
  * Issue #177: the HTML/CSS sub-tabs' shared sync hook -- see
  * `useJsonCodeSync`'s doc comment for the general strategy. Here "dirty"

@@ -56,6 +56,22 @@ function Gallery() {
     }
   }
 
+  // Issue #223: the 2D AI-assisted editor is a distinct route over the
+  // same Project/SceneVersion document family and creation endpoint as
+  // the manual editor above -- only the destination route differs.
+  async function handleCreateAiAssisted() {
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const requestId = crypto.randomUUID();
+      const project = await createBlankProject(requestId, newProjectRenderer);
+      navigate(`/ai-projects/${project.id}`);
+    } catch {
+      setCreateError('Could not create a new project. Please try again.');
+      setCreating(false);
+    }
+  }
+
   if (loadState === 'loading') {
     return (
       <p role="status" aria-live="polite">
@@ -93,6 +109,14 @@ function Gallery() {
         </select>
         <button className="shell-action" type="button" onClick={handleCreate} disabled={creating}>
           {creating ? 'Creating…' : 'Create new animation'}
+        </button>
+        <button
+          className="shell-action"
+          type="button"
+          onClick={handleCreateAiAssisted}
+          disabled={creating}
+        >
+          {creating ? 'Creating…' : 'Create AI-assisted animation'}
         </button>
         <Link className="shell-action" to="/templates">
           Browse templates

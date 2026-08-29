@@ -1628,6 +1628,28 @@ textarea:disabled {
   font-weight: 600;
 }
 
+/* Issue #223: the 2D AI-assisted editor's minimal shell -- title input and
+   preview container. */
+.ai-editor-title-input {
+  font-size: 1.1em;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: transparent;
+}
+
+.ai-editor-title-input:hover,
+.ai-editor-title-input:focus {
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.ai-editor-preview {
+  width: 100%;
+  min-height: 400px;
+}
+
 /* Issue #220: which renderer (p5.js/Canvas2D/SVG) the open project uses. */
 .editor-renderer-badge {
   font-size: 0.85em;

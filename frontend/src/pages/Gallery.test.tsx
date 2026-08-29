@@ -39,6 +39,7 @@ function renderGallery() {
       <Routes>
         <Route path="/" element={<Gallery />} />
         <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
+        <Route path="/ai-projects/:id" element={<p>AI editor placeholder</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -133,6 +134,9 @@ describe('Gallery keyboard accessibility', () => {
     expect(screen.getByRole('button', { name: /create new animation/i })).toHaveFocus();
 
     await user.tab();
+    expect(screen.getByRole('button', { name: /create ai-assisted animation/i })).toHaveFocus();
+
+    await user.tab();
     expect(screen.getByRole('link', { name: /browse templates/i })).toHaveFocus();
 
     await user.tab();
@@ -203,5 +207,21 @@ describe('Gallery create action', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not create/i);
     expect(screen.getByRole('button', { name: /create new animation/i })).toBeEnabled();
+  });
+
+  // Issue #223: a distinct creation entry point routing to the 2D
+  // AI-assisted editor instead of the manual editor.
+  it('navigates to the AI-assisted editor on success', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-ai-id' }));
+    const user = userEvent.setup();
+
+    renderGallery();
+    await screen.findByRole('button', { name: /create ai-assisted animation/i });
+
+    await user.click(screen.getByRole('button', { name: /create ai-assisted animation/i }));
+
+    await waitFor(() => expect(screen.getByText('AI editor placeholder')).toBeInTheDocument());
+    expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
   });
 });

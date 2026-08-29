@@ -112,3 +112,25 @@ informed human waiver #195 recorded above -- not a determination this agent
 made on its own, and not a change to the standing rule: still require
 real-camera/production evidence, or an explicit waiver like this one, before
 closing this issue class.
+
+**2026-08-28 second real defect found via a genuine live-camera reproduction:**
+using a connected real Chrome browser with a physical webcam (not this
+sandbox's blocked device-capture), reproduced the "nonfunctional camera
+view" report directly against production: the `<video>` element was
+confirmed live, but the rendered `<canvas>` stayed byte-identical across
+five one-second samples -- a frozen/sometimes-permanently-empty overlay,
+distinct from the earlier-fixed GPU-delegate slowness. Root cause:
+`EditorWorkspace.tsx`/`PublicProjectViewer.tsx` only redrew the camera
+overlay reactively (on discrete state changes), never continuously, for
+any scene with no active behavior bindings -- so it rendered exactly once
+and then froze, racing the video's first decoded frame. Fixed in
+`frontend/src/pages/useCameraOverlayRedrawLoop.ts` (commit `66cf699`), a
+`requestAnimationFrame` loop that keeps redrawing while the camera is
+active. **Reusable lesson:** a connected real Chrome browser (when
+available, via `claude-in-chrome`-style tooling) can grant genuine camera
+access this session's own sandboxed preview pane cannot -- check for that
+capability before declaring a live-camera verification boundary
+unreachable. Also: driving such a tab while it is OS-backgrounded makes
+`requestAnimationFrame` appear to stop after a couple of ticks
+(`document.visibilityState === 'hidden'` throttling) -- that is normal
+browser behavior, not a bug in code being tested that way.

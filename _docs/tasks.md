@@ -6904,16 +6904,28 @@ later, task 197/#232 (now that task 198/#230 has landed a 3D name field).
 
 ## 191. 2D AI-assisted editor: route/UI shell + creation entry point
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/223)
+GitHub issue: [#223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/223) (closed)
 
 Parent: task 184/#216, refines task 185/#217. Smallest slice: a new
 route sibling to the existing `/projects/:id` manual editor, reusing the
 existing 2D renderer/preview work, no layers panel, no AI logic yet — just
 the shell and a creation entry point.
 
-Dependencies: None blocking.
+Delivered (commit `c69242b`): `/ai-projects/:id` (`AiEditorWorkspace.tsx`),
+reusing the same `Project`/`SceneVersion` document family and
+`createBlankProject` endpoint as the manual editor -- a different editor
+UI over the same data, not a separate document family. Renders the
+existing `createScenePreview`/`resolveSceneRendererId` pipeline plus
+title editing; no layers/manual-editing UI. Gallery gets a second
+"Create AI-assisted animation" button. `make check` passes end to end
+(744 backend / 2051 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #223 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/223#issuecomment-5462200584).
+
+Dependencies: None blocking. Unblocks task 192/#224 and task 193/#225.
 
 ## 192. 2D AI-assisted editor: prompt-driven create/edit flow
 

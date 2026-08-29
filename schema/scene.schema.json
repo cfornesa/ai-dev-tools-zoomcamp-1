@@ -226,7 +226,7 @@
             "required": ["radius"],
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
-              "transform": true, "style": true, "trail": true,
+              "transform": true, "style": true, "name": true, "trail": true,
               "visible": true, "locked": true,
               "radius": { "type": "number", "minimum": 0.1, "maximum": 5000 }
             },
@@ -239,7 +239,7 @@
             "required": ["width", "height", "cornerRadius"],
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
-              "transform": true, "style": true, "trail": true,
+              "transform": true, "style": true, "name": true, "trail": true,
               "visible": true, "locked": true,
               "width": { "type": "number", "minimum": 0.1, "maximum": 5000 },
               "height": { "type": "number", "minimum": 0.1, "maximum": 5000 },
@@ -254,7 +254,7 @@
             "required": ["x2", "y2"],
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
-              "transform": true, "style": true, "trail": true,
+              "transform": true, "style": true, "name": true, "trail": true,
               "visible": true, "locked": true,
               "x2": { "type": "number", "minimum": -100000, "maximum": 100000 },
               "y2": { "type": "number", "minimum": -100000, "maximum": 100000 }
@@ -268,7 +268,7 @@
             "required": ["points", "closed"],
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
-              "transform": true, "style": true, "trail": true,
+              "transform": true, "style": true, "name": true, "trail": true,
               "visible": true, "locked": true,
               "points": {
                 "type": "array",
@@ -286,7 +286,7 @@
             "required": ["rate", "size", "lifespan", "speed", "palette"],
             "properties": {
               "id": true, "type": true, "layerId": true, "groupId": true,
-              "transform": true, "style": true, "trail": true,
+              "transform": true, "style": true, "name": true, "trail": true,
               "visible": true, "locked": true,
               "rate": { "type": "number", "minimum": 0, "maximum": 500 },
               "size": { "type": "number", "minimum": 0.1, "maximum": 500 },

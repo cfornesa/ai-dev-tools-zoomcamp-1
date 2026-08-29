@@ -68,6 +68,35 @@ def test_create_scene_success_returns_validated_scene_and_real_usage():
     assert result.usage.estimated_cost_usd > 0
 
 
+def test_create_scene_accepts_a_named_shape():
+    """Regression test for issue #214: schema/scene.schema.json's shape
+    $defs previously declared a base `name` property but every type-
+    specific `allOf` branch's closed `additionalProperties: false`
+    silently rejected it -- so any Mistral response naming a shape
+    (a routine, schema-legal thing for the model to do, since
+    response_format is built from this exact schema) 100% failed
+    scenes.validation.validate_scene with an `unknownField` error on
+    `name`. This must succeed now that every branch allows it.
+    """
+    named_shape = {
+        "id": "shape-sun",
+        "type": "circle",
+        "layerId": "layer-1",
+        "groupId": None,
+        "transform": {"x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1},
+        "style": {"fill": "#14b8a6", "stroke": None, "strokeWidth": 0},
+        "name": "Sun",
+        "radius": 10,
+    }
+    scene = {**BLANK_SCENE, "shapes": [named_shape]}
+    provider = _provider_with(lambda **kw: _fake_response(json.dumps(scene)))
+
+    result = provider.create_scene(AICreateSceneRequest(prompt="add a sun named 'Sun'"))
+
+    assert result.success
+    assert result.scene["shapes"][0]["name"] == "Sun"
+
+
 def test_create_scene_requests_json_schema_response_format_and_forbids_prose():
     captured = {}
 

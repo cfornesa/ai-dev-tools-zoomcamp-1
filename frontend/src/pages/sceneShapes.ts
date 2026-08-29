@@ -340,10 +340,13 @@ export function shapeTypeDisplayName(type: ShapeType): string {
 /** Task 80 (issue #110): a stable, readable label for `shape` — e.g.
  * "Circle 2" — derived from its type plus its 1-based position among
  * same-type shapes in `allShapes`' array order (creation order), rather
- * than a truncated UUID. Shapes carry no user-facing `name` field of their
- * own in the schema (unlike layers/groups — see `schema/scene.schema.json`),
- * so this label is always derived, never persisted; it stays stable across
- * renders of the same scene state, but is not a permanent identity — e.g.
+ * than a truncated UUID, when `shape.name` isn't set. `shape.name` is a
+ * real, persistable optional field (issue #214 fixed a schema bug that
+ * previously made it unusable on every code path — see that issue and
+ * `schema/scene.schema.json`), but no manual-editor UI sets it yet; today
+ * it's only ever populated by AI-generated scenes. This derived label is
+ * always used as a fallback and stays stable across renders of the same
+ * scene state, but is not a permanent identity — e.g.
  * deleting "Circle 1" renumbers a later "Circle 2" down to "Circle 1", the
  * same way a plain ordinal position would. Callers that need every shape in
  * a scene labeled (the outline, the Shapes list, behavior-card target

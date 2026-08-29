@@ -4,6 +4,7 @@
   "valid/feature_rich.json": { "valid": true },
   "valid/canvas2d_renderer.json": { "valid": true },
   "valid/svg_renderer.json": { "valid": true },
+  "valid/named_shape.json": { "valid": true },
   "invalid/unsupported_renderer.json": { "valid": false, "rule": "invalidValue" },
   "invalid/unknown_field.json": { "valid": false, "rule": "unknownField" },
   "invalid/missing_required.json": { "valid": false, "rule": "missingRequired" },

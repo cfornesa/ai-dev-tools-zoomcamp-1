@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-named-shape",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#ffffff" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-sun",
+      "type": "circle",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 400, "y": 300, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#ffcc00", "stroke": null, "strokeWidth": 0 },
+      "name": "Sun",
+      "radius": 60
+    }
+  ],
+  "groups": [],
+  "bindings": [],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "randomness": { "seed": 0, "enabled": false }
+}

@@ -33,3 +33,23 @@ resuming verification. This applies even under an active `/goal` or
 stop-hook loop that keeps re-firing the same unmet condition — the
 loop's own repeated firing is not itself new information and is not a
 reason to keep re-testing.
+
+**Second correction, same session:** calling `ScheduleWakeup(stop:
+true)` only cancels a dynamic-loop wakeup this agent itself scheduled —
+it does **not** clear an active `/goal` command, which is a separate
+mechanism the user set and which keeps re-invoking the agent via
+"Stop hook feedback" on every turn as long as its condition is unmet.
+The repository owner's exact words: "You did not stop the loop despite
+the instruction. The loop means both the goal AND the current task. Do
+NOT proceed with a task when Replit publishing is necessary on my end
+as you will be misusing tokens." **How to apply:** when told to "stop
+the loop" while an active `/goal` is what's driving repeated
+re-invocation, do not perform any further task-related tool calls
+(checks, retests, edits) in response to that goal's stop-hook feedback
+at all — not even a cheap/zero-cost one. State plainly that clearing
+the `/goal` itself is the user's action (`/goal clear`, a slash command
+this agent cannot invoke), and that no further work will happen on this
+task until either that happens or the user explicitly says to resume.
+A single acknowledgement reply is appropriate; repeated identical
+"holding" replies to every stop-hook re-fire is itself still "not
+stopping" from the user's perspective and burns their tokens.

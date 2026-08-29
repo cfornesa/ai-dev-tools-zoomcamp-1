@@ -13,6 +13,7 @@ import Home from './pages/Home';
 const AiEditorWorkspace = lazy(() => import('./pages/AiEditorWorkspace'));
 const ArtPieceStudio = lazy(() => import('./pages/ArtPieceStudio'));
 const EditorWorkspace = lazy(() => import('./pages/EditorWorkspace'));
+const Project3DWorkspace = lazy(() => import('./pages/Project3DWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const Templates = lazy(() => import('./pages/Templates'));
@@ -62,6 +63,10 @@ function App() {
                   family). No layers/manual-editing UI; that's the manual
                   editor's concept. */}
               <Route path="ai-projects/:id" element={<AiEditorWorkspace />} />
+              {/* Issue #226: the 3D manual editor -- a genuinely separate
+                  document family (Project3D/SceneVersion3D, #208's
+                  decision), not a variant of the 2D routes above. */}
+              <Route path="projects3d/:id" element={<Project3DWorkspace />} />
               {/* Task 94 (issue #94): project-metadata editing folded into
                   the editor itself as a "Details" panel (EditorWorkspace.tsx)
                   — the old standalone `ProjectMetadataForm.tsx` page is

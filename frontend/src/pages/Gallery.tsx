@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { createBlankProject, listProjects, type Project } from '../api/projects';
+import { createProject3D } from '../api/projects3d';
 import { useAuth } from '../auth/useAuth';
 import ProjectCard from '../components/ProjectCard';
 
@@ -72,6 +73,21 @@ function Gallery() {
     }
   }
 
+  // Issue #226: creates a Project3D (a genuinely separate document family,
+  // #208's decision) via the #213 creation endpoint and opens the new 3D
+  // manual editor route.
+  async function handleCreate3D() {
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const project = await createProject3D();
+      navigate(`/projects3d/${project.id}`);
+    } catch {
+      setCreateError('Could not create a new project. Please try again.');
+      setCreating(false);
+    }
+  }
+
   if (loadState === 'loading') {
     return (
       <p role="status" aria-live="polite">
@@ -117,6 +133,9 @@ function Gallery() {
           disabled={creating}
         >
           {creating ? 'Creating…' : 'Create AI-assisted animation'}
+        </button>
+        <button className="shell-action" type="button" onClick={handleCreate3D} disabled={creating}>
+          {creating ? 'Creating…' : 'Create new 3D project'}
         </button>
         <Link className="shell-action" to="/templates">
           Browse templates

@@ -5,14 +5,17 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
+import * as projects3dApi from '../api/projects3d';
 import * as authModule from '../auth/useAuth';
 import Gallery from './Gallery';
 
 vi.mock('../api/projects');
+vi.mock('../api/projects3d');
 vi.mock('../auth/useAuth');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
 const mockedCreateBlankProject = vi.mocked(projectsApi.createBlankProject);
+const mockedCreateProject3D = vi.mocked(projects3dApi.createProject3D);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
 
 function baseProject(overrides: Partial<projectsApi.Project> = {}): projectsApi.Project {
@@ -40,6 +43,7 @@ function renderGallery() {
         <Route path="/" element={<Gallery />} />
         <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
         <Route path="/ai-projects/:id" element={<p>AI editor placeholder</p>} />
+        <Route path="/projects3d/:id" element={<p>3D editor placeholder</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -137,6 +141,9 @@ describe('Gallery keyboard accessibility', () => {
     expect(screen.getByRole('button', { name: /create ai-assisted animation/i })).toHaveFocus();
 
     await user.tab();
+    expect(screen.getByRole('button', { name: /create new 3d project/i })).toHaveFocus();
+
+    await user.tab();
     expect(screen.getByRole('link', { name: /browse templates/i })).toHaveFocus();
 
     await user.tab();
@@ -223,5 +230,28 @@ describe('Gallery create action', () => {
 
     await waitFor(() => expect(screen.getByText('AI editor placeholder')).toBeInTheDocument());
     expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
+  });
+
+  // Issue #226: a distinct creation entry point routing to the 3D manual
+  // editor, backed by the genuinely separate Project3D document family.
+  it('navigates to the 3D editor on success', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedCreateProject3D.mockResolvedValue({
+      id: 'new-3d-id',
+      owner: 'alice',
+      title: 'Untitled 3D scene',
+      current_version: null,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    });
+    const user = userEvent.setup();
+
+    renderGallery();
+    await screen.findByRole('button', { name: /create new 3d project/i });
+
+    await user.click(screen.getByRole('button', { name: /create new 3d project/i }));
+
+    await waitFor(() => expect(screen.getByText('3D editor placeholder')).toBeInTheDocument());
+    expect(mockedCreateProject3D).toHaveBeenCalled();
   });
 });

@@ -7324,9 +7324,10 @@ Dependencies: task 200/#232 (complete).
 
 ## 204. A-Frame art pieces render blank: camera faces away from origin-positioned content
 
-Status: ACTIVE (fix implemented, pushed to `main` at commit `1cb949f`;
-live production retest pending a Replit publish, same external
-dependency as task 171/#203 — see next action)
+Status: ACTIVE (two fixes now pushed to `main` — `1cb949f` (camera
+facing) and `76856e0` (flat-shape edge-on orientation, found during
+live retest of the first fix); live production retest of the second
+fix pending a Replit publish — see next action)
 
 GitHub issue: [#236](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/236)
 
@@ -7369,9 +7370,33 @@ Z" rule), plus `test_aframe_system_prompt_gives_concrete_camera_placement_guidan
 asserting the prompt actually sent to Mistral contains it. `uv run
 pytest -q` 793 passed/22 skipped (up from 792); lint/format/mypy clean.
 
-Next action: repository owner publishes to production via Replit, then
-retests a few A-Frame prompts (not just "a red circle," to build
-confidence beyond a single case) at
+Live production retest (2026-08-29, via Claude in Chrome against
+`https://animate.creatrweb.com/art-pieces`, the user's own authenticated
+session, after the user published commit `1cb949f`): confirmed the
+camera-facing fix itself works — two consecutive generations for "A red
+circle" both produced a camera at a positive-Z offset with
+`rotation="0 0 0"` looking back toward the origin, exactly per the
+strengthened prompt. But the preview was still blank in both cases.
+Reading the sandboxed iframe's `srcdoc` directly (same technique as the
+original root-cause investigation) showed why: Mistral laid the circle
+flat as a floor (`rotation="-90 0 0"`, visible face pointing +Y) while
+the camera looks horizontally along Z at the same height — the flat
+face is edge-on to that camera and invisible regardless of
+`material: side: double`. Reproduced identically on both attempts (once
+as `<a-circle>`, once as `<a-plane>`), so this is a distinct, additional
+guidance gap in the same system prompt rather than a flaky one-off.
+
+Delivered (commit `76856e0`): extended `_AFRAME_SYSTEM_PROMPT` to warn
+against this edge-on failure mode and instruct simple shapes without
+scene/room context to keep their default facing (or tilt the camera
+downward if a floor/ground/table is actually intended), plus
+`test_aframe_system_prompt_warns_flat_shapes_can_be_edge_on_to_the_camera`.
+`uv run pytest` 794 passed/22 skipped; lint/format/mypy clean
+(`make backend-lint backend-format-check backend-typecheck backend-test`).
+
+Next action: repository owner publishes commit `76856e0` to production
+via Replit, then retests a few A-Frame prompts (not just "a red
+circle," to build confidence beyond a single case) at
 `https://animate.creatrweb.com/art-pieces`. Close #236 once that live
 retest passes.
 

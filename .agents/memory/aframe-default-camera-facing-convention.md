@@ -1,6 +1,6 @@
 ---
 name: aframe-default-camera-facing-convention
-description: A-Frame's default camera (rotation "0 0 0") looks down -Z; a camera placed at negative Z with no rotation faces away from origin-centered content, not toward it — vague "position the camera to frame the scene" prompt guidance isn't enough for Mistral to get this right reliably.
+description: A-Frame's default camera (rotation "0 0 0") looks down -Z; a camera placed at negative Z with no rotation faces away from origin-centered content, not toward it. Fixing that alone isn't sufficient either — a flat shape laid down as a floor (rotation "-90 0 0") is edge-on and invisible to a horizontally-aimed camera even when the camera itself is correctly placed. Vague qualitative prompt guidance isn't enough for Mistral to get either right reliably.
 metadata:
   type: project
 ---
@@ -48,3 +48,28 @@ free-form generation, or the 3D canonical-scene AI provider in
 which currently only says objects/camera should "frame" a scene without
 a concrete coordinate template either — worth auditing if similar
 invisible-content reports surface there).
+
+**Second-order bug found on live retest of the above fix (2026-08-29,
+commit `76856e0`):** fixing camera placement alone was not sufficient.
+With the camera now correctly positioned, Mistral still rendered "a red
+circle" blank twice in a row live in production — this time because it
+laid the shape flat as a floor (`rotation="-90 0 0"`, visible face
+pointing +Y) while the camera looks horizontally along Z at the same
+height (`y=0`). A flat shape's face pointing straight up is edge-on to a
+camera looking sideways, and reduces to an invisible sliver regardless
+of `material: side: double` — that attribute only controls whether both
+faces of a polygon render when facing the camera, it does not make an
+edge-on polygon visible. Two independent generations reproduced the
+identical pattern (`<a-circle rotation="-90 0 0">` then
+`<a-plane rotation="-90 0 0">`), so this is systematic, not one bad
+sample. Fix: extended the same `_AFRAME_SYSTEM_PROMPT` to say a simple
+shape described without scene/room context should keep its default
+facing (`rotation="0 0 0"`, facing +Z, straight at a positive-Z camera)
+unless the prompt actually describes a floor/ground/table, in which case
+the *camera* should tilt downward instead of leaving it aimed
+horizontally at a shape lying flat. **General lesson:** when validating
+a spatial-reasoning prompt fix, don't stop at confirming the specific
+symptom named in the bug report (camera direction) is fixed — re-derive
+whether the *visible outcome* the user actually cares about (something
+appears in the preview) now holds, since a different geometric mistake
+can reproduce the identical user-visible symptom for a different reason.

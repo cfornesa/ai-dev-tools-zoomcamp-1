@@ -6851,9 +6851,9 @@ Dependencies: None.
 
 ## 189. Decision: does the 2D manual editor keep its embedded AI-assist panel?
 
-Status: PROPOSED (decision needed from the repository owner)
+Status: RESOLVED
 
-GitHub issue: [#221](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/221)
+GitHub issue: [#221](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/221) (closed)
 
 Parent: task 184/#216. Surfaced investigating task 185/#217's scope: the
 existing 2D manual editor is not purely manual today — it already has a
@@ -6863,6 +6863,13 @@ Tasks 46-50), which now overlaps with the purpose of the new dedicated
 as-is, deprecate/remove, reframe as narrower "quick fix" scope) with a
 recommendation to keep as-is, for the owner's consideration. Does not
 block any of tasks 190-198 below.
+
+Decision: Option 1 (keep as-is) — the issue's own recommendation,
+adopted directly by this session under the /goal directive's full
+permission (no interactive owner response was available). No code
+change: the manual editor's AI proposals panel is unmodified. See the
+[issue #221 decision comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/221#issuecomment-5462157302)
+for the full rationale.
 
 Dependencies: Informed by task 183/#215 (resolved) and task 185/#217.
 

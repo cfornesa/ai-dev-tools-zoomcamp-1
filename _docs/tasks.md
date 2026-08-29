@@ -6462,11 +6462,13 @@ Sub-issues:
   **COMPLETE.**
 - Task 180/[#212](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/212) —
   Django persistence models for the 3D scene document. **COMPLETE.**
-- Next: a real creation/retrieval API surface (endpoints/views for
-  `Project3D`/`SceneVersion3D`) — not yet filed as its own issue; the
-  natural next #209 sub-issue once its scope (auth/permissions reuse,
-  idempotent creation, response shape) is groomed with real acceptance
-  criteria.
+- Task 181/[#213](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/213) —
+  minimal creation/retrieval API for `Project3D`/`SceneVersion3D`.
+  **COMPLETE.**
+- Next: not yet filed. Candidates for the next groomed sub-issue: a
+  version-history surface beyond the single initial version (list/save
+  additional versions), or the editor route/UI itself now that a full
+  create → persist → retrieve round trip exists end to end.
 
 ## 179. Independent Python + TypeScript validators for the 3D scene schema
 
@@ -6561,8 +6563,54 @@ check` passes end to end.
 QA: PASS, full criterion matrix in the
 [issue #212 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/212#issuecomment-5460554316).
 
-Dependencies: task 178/#210 and task 179/#211 (both complete). Unblocks
-the next #209 sub-issue (a real creation/retrieval API surface).
+Dependencies: task 178/#210 and task 179/#211 (both complete). Unblocked
+task 181/#213 (creation/retrieval API).
+
+## 181. Minimal creation/retrieval API for Project3D/SceneVersion3D
+
+Status: COMPLETE
+
+GitHub issue: [#213](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/213) (closed)
+
+Parent: task 177/#209. Depended on task 180/#212 (persistence models,
+complete).
+
+Delivered on the `3d-scene-editor-epic` branch (commit `ad2ca3f`):
+
+- `scenes/permissions.py`: `PROJECT3D_CREATE`/`PROJECT3D_READ` added to
+  the single `Action` enum and `can()`'s single authorization service —
+  not a parallel module. `Project3D` has no `visibility` field yet (task
+  180/#212 deferred it), so `PROJECT3D_READ` is unconditionally
+  owner-only.
+- `scenes/serializers.py`: `Project3DSerializer`/
+  `SceneVersion3DSerializer`, mirroring `ProjectSerializer`/
+  `SceneVersionDetailSerializer`'s shape at this issue's smaller scope
+  (no description/tags/visibility/thumbnail yet — those don't exist on
+  the model).
+- `scenes/api.py`: `Project3DListCreateView` (`POST`/`GET
+  /api/projects3d/`) and `Project3DDetailView` (`GET
+  /api/projects3d/<public_id>/`, owner-only, 404 for anyone else — never
+  403, matching the existing "not found and found-but-not-yours are
+  indistinguishable" convention). No `client_request_id` idempotency key
+  and no `renderer` field — both explicitly deferred (`scene3d.schema.json`
+  has no renderer concept; renderer selection is a later #209 phase).
+- `scenes/urls.py`: `projects3d/` as its own namespace, matching #208's
+  separate-document-family decision.
+- `tests/test_project3d_api.py` (9 tests): creation returns a
+  schema-valid scene (verified via `validate_scene3d`), auth required for
+  create/list, list scoped to the caller, owner-only retrieval, 404 (not
+  403) for anonymous/non-owner/nonexistent.
+
+No changes to any existing 2D route, `Action`, or serializer —
+purely additive (`git diff` confirms only new blocks in each touched
+file). Full backend suite: 728 passed/22 skipped (up from 719
+pre-#213). `make check` passes end to end.
+
+QA: PASS, full criterion matrix in the
+[issue #213 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/213#issuecomment-5460575977).
+
+Dependencies: task 180/#212 (complete). A full create → persist →
+retrieve round trip for the 3D document family now exists end to end.
 
 ## 178. Define the canonical 3D scene document schema
 

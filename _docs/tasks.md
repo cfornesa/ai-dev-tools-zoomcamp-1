@@ -7522,3 +7522,83 @@ value and the absence of any remaining "TEMPORARY" marker via `grep`;
 posted `## QA: PASS` and closed #237.
 
 Dependencies: None.
+
+## 206. Production incident: POST /api/projects3d/ returns 500, blocking all 3D project creation
+
+Status: ACTIVE
+
+GitHub issue: [#238](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/238)
+
+Parent: task 168/#198's broader per-library AI generation/product-line
+work; discovered via a live production-readiness pass immediately after
+the repository owner republished following task 204/#236 and task
+205/#237's resolution.
+
+Discovered live via Claude in Chrome against
+`https://animate.creatrweb.com` in a real authenticated session:
+clicking "Create new 3D project" on the gallery shows "Could not create
+a new project. Please try again." The underlying `POST
+/api/projects3d/` returns a bare `500` (no traceback, `DEBUG=False`),
+reproduced 3× via authenticated `fetch()` calls in the live session —
+consistent, not intermittent. Isolation evidence: `POST /api/projects/`
+(2D) and `GET /api/templates/` both succeed (`201`/`200`) in the same
+session at the same time, and reproducing the identical `POST
+/api/projects3d/` call locally via Django's test `Client` against a
+real local PostgreSQL database on the current `main`-branch code
+succeeds (`201`) — so this is not a code bug reproducible locally, and
+is specific to whatever state the production environment is actually
+in. Leading hypothesis (not confirmed — no production DB/log access
+available this session): production's PostgreSQL schema may be out of
+sync with `scenes/migrations/0018_project3d_sceneversion3d_project3d_current_version_and_more.py`
+and `0019_sceneversion3d_ai_request_id_and_more.py` (both added within
+the last day), possibly the first Replit Publish since those
+migrations existed, and Replit's publish-time schema-diff-and-apply
+step may not have correctly picked up the brand-new `Project3D`/
+`SceneVersion3D` tables (new tables with FKs, not a simple column
+add). See `.agents/memory/replit-schema-diff-gap-for-new-tables.md`.
+
+Next action: repository owner investigates via Replit's own
+dashboard/deployment logs (not available to this session) to confirm
+the actual production traceback and/or inspect the production
+PostgreSQL schema directly for the `scenes_project3d`/
+`scenes_sceneversion3d` tables. If the schema-diff-gap hypothesis is
+confirmed, apply whatever remediation Replit's platform requires (e.g.
+a manual schema sync, or a fresh publish that correctly picks up the
+diff) and retest live. Do not attempt to run migrations directly
+against production outside Replit's own Publish flow — see
+`.agents/memory/replit-production-schema-publishing.md` for why.
+
+Dependencies: None — live production incident, independent of other
+backlog ordering.
+
+## 207. E2E coverage gap: no test exercises 3D project creation
+
+Status: ACTIVE
+
+GitHub issue: [#239](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/239)
+
+Parent: task 206/#238 (discovered while investigating that incident).
+
+`grep -rln "projects3d\|Project3D\|createProject3D" frontend/e2e/`
+returns nothing — no Playwright scenario exercises 3D project creation
+at all. This is why task 206/#238's regression reached production
+undetected: the full local `make e2e` (133 passed/1 intentional
+skip/0 failed) and backend `pytest` (794 passed) were both green
+immediately before the publish that introduced the incident, yet the
+3D creation path was still broken live.
+
+Scope: extend `frontend/e2e/projectLifecycle.spec.ts` (or a new
+`project3dLifecycle.spec.ts`, matching the repo's per-feature spec-file
+convention) with at least one scenario that signs in as the e2e
+fixture owner, clicks "Create new 3D project" on the gallery, and
+asserts the resulting `Project3D` persists and its manual editor route
+(`/projects3d/:id`) loads. A companion "Create AI-assisted 3D project"
+scenario (using the existing `AI_PROVIDER=fake` convention) is in
+scope but not required for a minimal fix.
+
+Next action: implement the new E2E scenario(s), confirm `make e2e`
+passes locally, confirm `make check` still passes end to end.
+
+Dependencies: None — implementable independently of task 206/#238's
+actual root-cause fix, though the new test should also serve as the
+regression check once #238 is resolved.

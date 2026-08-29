@@ -51,6 +51,8 @@ from scenes.serializers import (
     ProjectSerializer,
     PublicProjectListItemSerializer,
     PublicProjectSerializer,
+    SceneVersion3DCreateSerializer,
+    SceneVersion3DSerializer,
     SceneVersionCreateSerializer,
     SceneVersionDetailSerializer,
     SceneVersionListSerializer,
@@ -1203,3 +1205,51 @@ class Project3DDetailView(APIView):
         if not can(request.user, Action.PROJECT3D_READ, project):
             raise Http404
         return Response(Project3DSerializer(project).data)
+
+
+class SceneVersion3DListCreateView(APIView):
+    """#228: save a new SceneVersion3D. Mirrors SceneVersionListCreateView's
+    transaction pattern at this issue's smaller scope -- no listing/restore
+    yet (explicitly out of scope; a later follow-on once #227/#232 reveal
+    what's actually needed)."""
+
+    def post(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_WRITE, project):
+            raise Http404
+
+        input_serializer = SceneVersion3DCreateSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        scene_json = input_serializer.validated_data["scene_json"]
+
+        result = validate_scene3d(scene_json)
+        if not result.valid:
+            return Response(
+                {
+                    "errors": [
+                        {"path": e.path, "rule": e.rule, "message": e.message}
+                        for e in result.errors
+                    ]
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            with transaction.atomic():
+                locked_project = Project3D.objects.select_for_update().get(pk=project.pk)
+                next_sequence = (
+                    locked_project.versions.aggregate(Max("sequence"))["sequence__max"] or 0
+                ) + 1
+                version = SceneVersion3D.objects.create(
+                    project=locked_project,
+                    sequence=next_sequence,
+                    scene_json=scene_json,
+                    created_by=request.user,
+                    origin=SceneVersion3D.Origin.MANUAL,
+                )
+                locked_project.current_version = version
+                locked_project.save(update_fields=["current_version", "updated_at"])
+        except Project3D.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(SceneVersion3DSerializer(version).data, status=status.HTTP_201_CREATED)

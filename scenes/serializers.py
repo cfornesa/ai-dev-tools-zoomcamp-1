@@ -402,3 +402,15 @@ class Project3DSerializer(serializers.ModelSerializer):
         model = Project3D
         fields = ["id", "owner", "title", "current_version", "created_at", "updated_at"]
         read_only_fields = fields
+
+
+class SceneVersion3DCreateSerializer(serializers.Serializer):
+    """Request body for #228's `POST /api/projects3d/<public_id>/versions/`.
+
+    Mirrors `SceneVersionCreateSerializer`'s shape at this issue's smaller
+    scope: `SceneVersion3D.Origin` only has `MANUAL` today (no AI-origin
+    choice exists yet -- #232 is expected to add one), so `origin` is not
+    accepted from the client and always defaults to `MANUAL` server-side.
+    """
+
+    scene_json = serializers.JSONField()

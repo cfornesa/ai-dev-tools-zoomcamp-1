@@ -16,6 +16,7 @@ from scenes.api import (
     PublicProjectListView,
     PublicProjectThumbnailView,
     SaveVersionAsTemplateView,
+    SceneVersion3DListCreateView,
     SceneVersionDetailView,
     SceneVersionListCreateView,
     SceneVersionRestoreView,
@@ -127,5 +128,11 @@ urlpatterns = [
         "projects3d/<uuid:public_id>/",
         Project3DDetailView.as_view(),
         name="project3d-detail",
+    ),
+    # #228: save a new SceneVersion3D.
+    path(
+        "projects3d/<uuid:public_id>/versions/",
+        SceneVersion3DListCreateView.as_view(),
+        name="project3d-version-list-create",
     ),
 ]

@@ -41,6 +41,9 @@ class Action(StrEnum):
     # one, same shape as _OWNER_ONLY_PROJECT_ACTIONS' 2D actions.
     PROJECT3D_CREATE = "project3d.create"
     PROJECT3D_READ = "project3d.read"
+    # #228: saving a new SceneVersion3D is owner-only, same shape as
+    # PROJECT3D_READ above (no visibility field yet to allow anyone else).
+    PROJECT3D_WRITE = "project3d.write"
 
 
 class PermissionDenied(Exception):
@@ -129,7 +132,7 @@ def can(user, action: Action, resource=None) -> bool:
     if action == Action.PROJECT3D_CREATE:
         return _is_authenticated(user)
 
-    if action == Action.PROJECT3D_READ:
+    if action in (Action.PROJECT3D_READ, Action.PROJECT3D_WRITE):
         if not isinstance(resource, Project3D):
             return False
         return _is_owner_3d(user, resource)

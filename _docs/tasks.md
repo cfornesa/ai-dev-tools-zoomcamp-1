@@ -7060,14 +7060,27 @@ task 195/#227 and task 200/#232.
 
 ## 197. 3D manual editor: embedded code editor
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#229](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/229)
+GitHub issue: [#229](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/229) (closed)
 
 Parent: task 184/#216, refines task 186/#218. Mirrors task 193/#225's
 scope for the `scene3d` document (JSON view at minimum).
 
-Dependencies: task 194/#226. Task 196/#228 for edits to persist.
+Delivered (commit `dd180eb`): `Scene3DCodeEditor.tsx` -- unlike task
+193/#225's 2D Code tab (memory-only), an edit here validates via the
+client `validateScene3D` mirror AND saves through task 196/#228's
+endpoint on blur, per this issue's own explicit requirement. Wired into
+`Project3DWorkspace.tsx` with a Visual/Code toggle. `make check` passes
+end to end (744 backend / 2074 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #229 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/229#issuecomment-5462332596).
+This is currently the only path in the 3D manual editor that persists
+edits -- task 195/#227's outline/inspector remains in-memory only,
+tracked by task 202/#234.
+
+Dependencies: task 194/#226 (complete). Task 196/#228 (complete).
 
 ## 198. Add name field to scene3d schema (object3d/light)
 

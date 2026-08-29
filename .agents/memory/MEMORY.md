@@ -13,6 +13,7 @@
 - [Local e2e baseURL default](e2e-baseurl-port-default.md) — RESOLVED: Playwright's default baseURL now matches Vite's pinned :5000; historical note on issue #123.
 - [jsdom drag-event clientY](jsdom-drag-event-clientY.md) — `fireEvent.drag*` silently drops `clientY`/`clientX` in jsdom; build the event by hand and fire it with `fireEvent(el, event)` instead.
 - [Replit userenv scope](replit-userenv-scope.md) — `[userenv]` is workspace-scoped, not deployment-authoritative; `[userenv.production]` now pins production-safe values as defense-in-depth.
+- [AI feature daily quota exhaustible by retesting](ai-feature-daily-quota-exhaustible-by-retesting.md) — repeatedly live-retesting an AI generation feature can itself exhaust the account's daily quota; space checks out, don't poll on every tick.
 - [Replit production frontend serving](replit-production-frontend-serving.md) — The published deployment ran Vite's dev server (live HMR) in production until issue #133; verify live, not just from source.
 - [PostgreSQL multi-db test pitfalls](postgres-multi-db-test-pitfalls.md) — RunPython migrations need `.using(alias)`; threaded postgres_test tests need `default` aliased onto the same DB; plain `RAISE EXCEPTION` maps to `ProgrammingError`.
 - [Local port 8000 Docker conflict](local-port-8000-docker-conflict.md) — On this dev machine, Docker's backend proxy squats :8000, producing misleading 404s that look like a Django bug.

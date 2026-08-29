@@ -6457,9 +6457,58 @@ Sub-issues:
 
 - Task 178/[#210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/210) —
   the canonical 3D scene document schema. **COMPLETE.**
-- [#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211) —
-  independent Python + TypeScript validators for the 3D schema. Depends on
-  #210 (now unblocked). Not started.
+- Task 179/[#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211) —
+  independent Python + TypeScript validators for the 3D schema.
+  **COMPLETE.**
+- Next: a persistence-model grooming pass (new Django models vs. reusing
+  the existing project/version shape for a `scene3d` document) — not yet
+  filed as its own issue; the natural next #209 sub-issue once grooming
+  authorizes its scope.
+
+## 179. Independent Python + TypeScript validators for the 3D scene schema
+
+Status: COMPLETE
+
+GitHub issue: [#211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211) (closed)
+
+Parent: task 177/#209. Depended on task 178/#210 (the schema itself).
+
+Delivered on the `3d-scene-editor-epic` branch (commit `5c580b8`):
+
+- `scenes/validation3d.py`: mirrors `scenes/validation.py`'s three-stage
+  pipeline (schema version + `documentType` discriminator, then JSON
+  Schema structure via `jsonschema`, then referential integrity —
+  duplicate ids within `lights`/`groups`/`objects`, dangling
+  `objects[].groupId` references — then `schema/limits3d.json`'s
+  complexity/payload caps).
+- `frontend/src/validation/scene3d.ts`: the Ajv-based TypeScript mirror,
+  following `scene.ts`'s own pattern exactly.
+- `tests/test_scene3d_validation.py` (13 tests) and
+  `frontend/src/validation/scene3d.test.ts` (18 tests), both parametrized
+  against the shared `schema/fixtures3d/expectations3d.json`. Three
+  `malicious/` fixtures that are schema-valid (duplicate ids, dangling
+  group reference, oversized document) are asserted as validator-rejected
+  in both languages, closing the gap #210 documented as deferred.
+
+While writing the validators, corrected two inconsistencies introduced in
+task 178/#210: `limits3d.json`'s `maxGroupNestingDepth` was meaningless
+(V1 `group3d` has no `childIds`/`parentGroupId` — groups are flat) and was
+removed; `expectations3d.json`'s two boundary-violation malicious
+fixtures' `rule` was corrected from a pre-verification guess (`"invalid"`)
+to what `jsonschema`/`ajv` actually report (`"invalidValue"`, since both
+libraries surface the error against the `object3d` `oneOf` discriminator,
+not the nested `exclusiveMinimum`/`maximum` keyword directly).
+
+Neither validator is wired into any API endpoint or persistence model yet
+— correctly out of scope; that is the next #209 sub-issue.
+
+QA: PASS, full criterion matrix (including a full `make check` run — 710
+backend tests passed/22 skipped, 138 frontend files/2040 tests passed) in
+the
+[issue #211 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/211#issuecomment-5460530667).
+
+Dependencies: task 178/#210 (complete). Unblocks the next #209 sub-issue
+(persistence-model grooming).
 
 ## 178. Define the canonical 3D scene document schema
 

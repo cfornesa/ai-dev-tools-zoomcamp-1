@@ -6146,3 +6146,126 @@ production once this deploys).
 Dependencies: None. Discovered in the same session as task 171/#203 (art
 piece 500s), both surfaced while investigating a fresh /goal report; the
 two are unrelated defects in different AI-generation code paths.
+
+## 173. Epic: support multiple rendering libraries in the canonical scene editor
+
+Goal: Let the main structured scene editor (not just the separate AI
+art-piece-studio flow) render its canonical scene-JSON model through more
+than one library — starting with native Canvas2D and SVG alongside today's
+p5.js — with the same shapes/bindings/graph/camera-tracking behavior
+regardless of renderer.
+
+Status: PROPOSED (scoping complete; no implementation yet)
+
+GitHub issue: [#205](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/205) (epic)
+
+Discovery: the repository owner clarified, after task 172/#204's
+investigation noted the main editor has no library choice by design
+(`renderer.preferred: const "p5"`), that they *do* want the editor itself
+to be library-specific: "That is the point of having different libraries."
+This is not new/invented scope — `_docs/plan.md`'s "Renderer selection"
+section and "V2 roadmap candidates" have always documented "SVG and C2.js
+parity/expanded renderer support" as planned, and
+`frontend/src/export/exportCompatibility.ts`'s `RENDERER_CAPABILITIES`/
+`checkRendererCompatibility` were deliberately built data-driven
+specifically to anticipate this, per that file's own doc comment.
+
+This is distinct from task 166/[#197](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/197)'s
+decision, which was scoped only to the separate, simpler, raw-code AI
+art-piece flow (tasks 165-169) and explicitly kept the *structured editor*
+p5.js-only "with no regression risk." This epic takes on, deliberately and
+for the core editor, the harder option #197 declined for the art-piece
+epic: extending the structured scene model with a per-library
+adapter.
+
+Investigation findings (this session, full detail in issue #205):
+
+- `behaviorRuntime.ts`/`particleSystem.ts`/`trailSystem.ts` are already
+  renderer-agnostic (plain-data computation, no p5 dependency).
+  `scenes/thumbnails.py` (backend PNG thumbnails) already renders shapes
+  directly via Pillow, independent of the live-editor renderer — no
+  backend work needed for this epic.
+- The live-render interface (`P5ScenePreview` in `p5Adapter.ts`) is
+  already narrow (`render`/`destroy`/`getCanvasElement`), so a per-renderer
+  adapter swap is structurally plausible without rewriting
+  `EditorWorkspace.tsx`/`PublicProjectViewer.tsx`.
+- Camera overlay compositing difficulty varies sharply: native Canvas2D
+  can reuse p5's existing `context.drawImage` call almost verbatim; SVG has
+  no native equivalent and realistically needs a `<foreignObject>` hosting
+  the real `<video>` element inline in the SVG DOM.
+- `getCanvasElement()`'s `HTMLCanvasElement` return type is consumed
+  directly by `captureSocialThumbnail.ts` for the export ZIP's social
+  thumbnail — trivial for Canvas2D, needs a new snapshot mechanism for SVG.
+- Export bundles need a per-renderer runtime source file
+  (`generateHtmlExport.ts`/`standaloneRuntimeSource.ts` pattern); native
+  Canvas2D and SVG need **no external CDN dependency** at all, unlike p5.js
+  (a real simplification for those two specifically).
+- Three.js/A-Frame are a materially different, harder question: the
+  canonical schema's shape model is fundamentally 2D (no Z-depth, no 3D
+  transforms, no camera/lighting) — not a natural extension of the
+  Canvas2D/SVG work, and deserves its own explicit decision (issue #208)
+  rather than silent inclusion or silent omission.
+
+Proposed phasing (sub-issues, dependency order):
+
+1. Task 174/[#206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/206) —
+   native Canvas2D renderer adapter (lowest-risk second renderer;
+   establishes shared schema/capability-table/UI-picker/export-abstraction
+   plumbing).
+2. Task 175/[#207](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/207) —
+   SVG renderer adapter (depends on #206's plumbing; needs its own
+   camera-overlay and thumbnail-capture solutions).
+3. Task 176/[#208](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/208) —
+   decision issue (not implementation): whether/how Three.js/A-Frame fit
+   the structured editor, or stay exclusive to the existing raw-code
+   art-piece flow.
+
+Out of scope: changing the existing raw-code art-piece-studio flow (tasks
+165-169) or revisiting #197's decision for that separate feature.
+
+Next action: PM grooming pass on task 174/#206 (the first phase) to turn
+its draft acceptance criteria into an implementation-ready plan.
+
+Dependencies: None blocking. Builds on the existing `P5ScenePreview`
+interface, `RENDERER_CAPABILITIES`/`checkRendererCompatibility`, and
+`scenes/thumbnails.py`'s already-renderer-agnostic backend thumbnail path.
+
+## 174. Add a native Canvas2D renderer adapter for the structured scene editor
+
+Status: PROPOSED
+
+GitHub issue: [#206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/206)
+
+Parent: task 173/#205. See issue #206 for full draft acceptance criteria
+(schema widening, `canvas2dAdapter.ts`, camera-overlay port, export bundle
+with no CDN dependency, social-thumbnail capture, UI picker, test
+coverage). Not yet groomed to an implementation-ready plan.
+
+Dependencies: None blocking.
+
+## 175. Add an SVG renderer adapter for the structured scene editor
+
+Status: PROPOSED
+
+GitHub issue: [#207](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/207)
+
+Parent: task 173/#205. Depends on task 174/#206 landing first (shared
+plumbing). See issue #207 for full draft acceptance criteria, including
+the camera-overlay `<foreignObject>` approach and the thumbnail-capture
+snapshot mechanism this renderer needs that Canvas2D does not.
+
+Dependencies: task 174/#206.
+
+## 176. Decide whether/how Three.js and A-Frame fit the structured scene editor
+
+Status: PROPOSED
+
+GitHub issue: [#208](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/208)
+
+Parent: task 173/#205. A decision issue, not an implementation task —
+mirrors task 166/#197's own format. See issue #208 for the three options
+(2D-flattened-into-3D, genuine 3D schema support, or stay exclusive to the
+existing raw-code art-piece flow) and why this isn't a natural extension of
+tasks 174-175's 2D adapter work.
+
+Dependencies: None blocking; informed by but does not block tasks 174/175.

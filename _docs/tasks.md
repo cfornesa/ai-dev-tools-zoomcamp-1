@@ -6964,9 +6964,9 @@ Dependencies: task 194/#226. Task 196/#228 for edits to persist.
 
 ## 198. Add name field to scene3d schema (object3d/light)
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#230](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/230)
+GitHub issue: [#230](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/230) (closed)
 
 Parent: task 184/#216, refines task 187/#219. Mirrors task 182/#214's
 fix exactly, for the 3D schema: add an optional `name` to `object3d`/
@@ -6975,7 +6975,28 @@ fix exactly, for the 3D schema: add an optional `name` to `object3d`/
 `scene-schema-allof-branch-property-shadowing.md`), plus fixtures and
 regression tests.
 
-Dependencies: None blocking.
+Delivered (commit `1c56691`): added an optional `name` to `light`'s
+properties and once to `object3d`'s shared `baseObjectFields` (the 3D
+schema's per-type branches use `unevaluatedProperties: false` composition
+rather than the 2D schema's per-branch closed `additionalProperties`
+allowlists, so there was no shadowing to fix here -- confirmed live via
+`validate_scene3d` against all 4 object types plus a named light, 0
+errors). Added `schema/fixtures3d/valid/named_object_and_light.json`
+(auto-covered by both fixture-driven suites) and an explicit
+`test_named_object_is_accepted_for_every_object_type` regression test.
+`make check` passes end to end (730 backend / 2042 frontend).
+
+Discovered while starting this issue: the entire 3D backend (tasks
+178-181/#210-213) had been marked COMPLETE/closed but its code only
+existed on the never-merged `3d-scene-editor-epic` branch. Merged it into
+`main` first (commit `7a1a014`) -- see
+`.agents/memory/feature-branches-completed-work-not-merged-to-main.md`.
+
+QA: PASS, full criterion matrix in the
+[issue #230 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/230#issuecomment-5462063477).
+
+Dependencies: None blocking. Unblocks task 200/#232 (3D AI-assisted
+editor prompt-driven flow).
 
 ## 199. 3D AI-assisted editor: route/UI shell
 

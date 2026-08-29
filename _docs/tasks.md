@@ -7324,10 +7324,11 @@ Dependencies: task 200/#232 (complete).
 
 ## 204. A-Frame art pieces render blank: camera faces away from origin-positioned content
 
-Status: ACTIVE (two fixes now pushed to `main` — `1cb949f` (camera
-facing) and `76856e0` (flat-shape edge-on orientation, found during
-live retest of the first fix); live production retest of the second
-fix pending a Replit publish — see next action)
+Status: ACTIVE (three fixes now pushed to `main` — `1cb949f` (camera
+facing), `76856e0` (flat-shape edge-on orientation), and `1cb420b`
+(pinned A-Frame CDN version 404, the actual remaining blocker after
+both prompt fixes); live production retest of `1cb420b` pending a
+Replit publish — see next action)
 
 GitHub issue: [#236](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/236)
 
@@ -7394,10 +7395,45 @@ downward if a floor/ground/table is actually intended), plus
 `uv run pytest` 794 passed/22 skipped; lint/format/mypy clean
 (`make backend-lint backend-format-check backend-typecheck backend-test`).
 
-Next action: repository owner publishes commit `76856e0` to production
-via Replit, then retests a few A-Frame prompts (not just "a red
-circle," to build confidence beyond a single case) at
-`https://animate.creatrweb.com/art-pieces`. Close #236 once that live
-retest passes.
+Live production retest (2026-08-29, continued, after the user published
+commit `1cb949f` only — `76856e0` and later were not yet live): both
+`<a-circle>` and, on a re-generation, `<a-sphere>` with a fully correct
+camera position, correct default facing, and explicit lighting *still*
+rendered blank. Escalated past content-level debugging: confirmed
+top-level WebGL works fine in this browser
+(`canvas.getContext('webgl')` succeeds) and that WebGL works fine even
+inside a matching sandboxed opaque-origin iframe, ruling out a
+sandbox/WebGL environment problem. Injected the app's exact
+`<script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js">`
+tag into a standalone matching iframe and captured the script's own
+`onerror` firing (no `securitypolicyviolation`, so CSP wasn't the
+cause) — then confirmed directly via `fetch(url, {method: 'HEAD'})`
+that the pinned URL returns **404**. jsdelivr's `aframe@1.5.0` npm
+package does not publish a `dist/aframe.min.js` file at all (only
+`dist/aframe-master.min.js` for that version); `aframe@1.4.2` still
+uses the expected filename (200, confirmed real `application/javascript`
+content). Three.js's independently-pinned URL
+(`three@0.160.0/build/three.min.js`) was confirmed still 200 at the
+same time, so this was library/version-specific, not a general CDN
+outage. See `.agents/memory/pinned-cdn-version-can-silently-404.md`.
+
+This means the first two fixes (`1cb949f`, `76856e0`) were both correct
+diagnoses of real bugs in the AI-generated markup, but neither was
+actually the thing keeping the preview blank in production — the
+A-Frame runtime script itself never loaded, so `AFRAME` was `undefined`
+regardless of what Mistral generated.
+
+Delivered (commit `1cb420b`): pinned all three hand-synced copies
+(`ai_provider/art_piece_provider.py`'s `AFRAME_VERSION`,
+`frontend/src/generative/artPieceSandbox.ts`,
+`frontend/src/generative/artPieceBundle.ts`) to `aframe@1.4.2`, updated
+`artPieceSandbox.test.ts`'s matching assertion. `make check` passes end
+to end (794 backend / 2087 frontend).
+
+Next action: repository owner publishes commit `1cb420b` (includes
+`76856e0`/`1cb949f`) to production via Replit, then retests a few
+A-Frame prompts (not just "a red circle," to build confidence beyond a
+single case) at `https://animate.creatrweb.com/art-pieces`. Close #236
+once that live retest passes.
 
 Dependencies: None.

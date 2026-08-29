@@ -6796,40 +6796,50 @@ Dependencies: task 183/#215 (decision, resolved). Tasks 178-181/#210-#213
 
 ## 185. 2D AI-assisted editor (no layers; embedded code editor)
 
-Status: PROPOSED
+Status: COMPLETE (delivered via sub-issues)
 
-GitHub issue: [#217](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/217)
+GitHub issue: [#217](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/217) (closed)
 
 Parent: task 184/#216. First of the three missing editor products —
 reuses the existing 2D schema (`schema/scene.schema.json`); task 182/#214
 (shape.name fix) is what makes name-based addressing possible at all.
 
+Refined into granular sub-issues (task 191-193/#223-#225) before
+implementation, per repository owner feedback that this bundled scope
+was still too large. See those tasks for delivery detail.
+
 Dependencies: task 183/#215 (resolved), task 182/#214 (complete).
 
 ## 186. 3D manual editor (layers-equivalent, embedded code editor)
 
-Status: PROPOSED
+Status: COMPLETE (delivered via sub-issues)
 
-GitHub issue: [#218](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/218)
+GitHub issue: [#218](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/218) (closed)
 
 Parent: task 184/#216. The first 3D editor UI to actually exist — makes a
 `scene3d` project openable for the first time, on top of the already-built
 backend slice (tasks 178-181/#210-#213). Explicitly does not require
 Three.js/A-Frame rendering to be complete for its first slice.
 
+Refined into granular sub-issues (tasks 194-197/#226-#229) before
+implementation. See those tasks for delivery detail.
+
 Dependencies: tasks 178-181/#210-#213 (complete), task 183/#215 (resolved).
 
 ## 187. 3D AI-assisted editor (no layers; embedded code editor)
 
-Status: PROPOSED
+Status: COMPLETE (delivered via sub-issues)
 
-GitHub issue: [#219](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/219)
+GitHub issue: [#219](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/219) (closed)
 
 Parent: task 184/#216. Last of the four editor products in the epic's
 natural build order — depends on task 185/#217's name-resolution
 mechanism (to generalize) and task 186/#218's 3D editor-route groundwork.
 
-Dependencies: task 185/#217, task 186/#218 (both should land first).
+Refined into granular sub-issues (tasks 198-201/#230-#233) before
+implementation. See those tasks for delivery detail.
+
+Dependencies: task 185/#217, task 186/#218 (both complete).
 
 ## 188. Show the active renderer (p5.js/Canvas2D/SVG) inside the 2D manual editor
 

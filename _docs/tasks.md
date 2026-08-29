@@ -7142,9 +7142,9 @@ Dependencies: task 194/#226 (complete). Unblocks task 200/#232 and task
 
 ## 200. 3D AI-assisted editor: prompt-driven create/edit flow
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#232](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/232)
+GitHub issue: [#232](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/232) (closed)
 
 Parent: task 184/#216, refines task 187/#219. Generalizes task 190/#222's
 2D name-resolution mechanism to `scene3d` documents using task 198/#230's
@@ -7153,8 +7153,29 @@ capability (none exists yet — `ai_provider/mistral_provider.py` today
 only targets the 2D schema); saves via task 196/#228. Last of the four
 editor products in the epic's natural build order.
 
+Delivered (commit `339a41f`): `ai_provider/interface3d.py` (parallel
+request/result types + `execute3d`, validating via `validate_scene3d`),
+`scenes/patch3d.py` (the 3D allowlist + name-based unreferenced-element
+check, reusing `patch.py`'s generic JSON-pointer/apply machinery
+unmodified), `MistralSceneProvider.create_scene3d`/
+`edit_scene3d_with_patch` (same provider instance now implements both
+`AISceneProvider` and `AIScene3DProvider`), `scenes/ai_api3d.py`'s three
+views (separate rate-limit/quota buckets from the 2D endpoints, reusing
+task 196/#228's transaction shape for accept), and frontend
+`api/ai3d.ts`/`useAIProposal3D.ts`/`AIProposalPanel3D.tsx` mirroring
+task 192/#224's wiring (no live preview canvas -- no 3D renderer exists
+yet). `SceneVersion3D` gained `AI_CREATE`/`AI_EDIT` origins and an
+`ai_request_id` idempotency field (migration 0019). `make check` passes
+end to end (782 backend / 2081 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #232 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/232#issuecomment-5462423988).
+Discovered gap filed as [#235](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/235)
+(the E2E fake AI provider doesn't yet support the 3D document family) --
+see task 203/#235 below.
+
 Dependencies: task 190/#222, task 198/#230, task 196/#228, task
-199/#231 — all should land first.
+199/#231 (all complete).
 
 ## 201. 3D AI-assisted editor: embedded code editor
 
@@ -7190,3 +7211,30 @@ indication is a reasonable minimum; full version history/restore parity
 is out of scope unless a future issue asks for it.
 
 Dependencies: task 194/#226, task 195/#227, task 196/#228 (all complete).
+
+## 203. Extend the E2E fake AI provider to support the 3D AI-assisted editor
+
+Status: PROPOSED
+
+GitHub issue: [#235](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/235)
+
+Parent: task 184/#216, refines task 187/#219. Discovered while
+implementing task 200/#232: `ai_provider/e2e_provider.py`'s
+`E2ETestProvider` (selected when `AI_PROVIDER=fake`, letting
+`frontend/e2e/aiAndRecovery.spec.ts` drive the 2D AI flow without a real
+Mistral account) only implements the 2D `AISceneProvider` ABC. Calling
+task 200/#232's new 3D endpoints with `AI_PROVIDER=fake` set raises
+`AttributeError` rather than returning a deterministic scenario response
+-- this session's own backend tests aren't blocked (they monkeypatch
+`get_ai_provider` directly), but a future Playwright E2E suite for the
+3D AI-assisted editor would be.
+
+Scope: extend `E2ETestProvider` to also implement `AIScene3DProvider`
+(`ai_provider/interface3d.py`) with deterministic 3D scenario responses
+mirroring its existing 2D scenario set as closely as the 3D schema
+allows; `build_e2e_provider` stays a single factory returning one object
+implementing both ABCs (matching `MistralSceneProvider`'s own shape). A
+follow-on Playwright suite itself is out of scope -- this only unblocks
+it.
+
+Dependencies: task 200/#232 (complete).

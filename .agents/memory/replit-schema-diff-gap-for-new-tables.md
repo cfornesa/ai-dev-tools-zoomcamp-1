@@ -1,6 +1,6 @@
 ---
 name: replit-schema-diff-gap-for-new-tables
-description: Suspected gap in Replit Publish's dev/production schema-diff step for brand-new tables with foreign keys — POST /api/projects3d/ returned 500 in production right after the first publish following the Project3D/SceneVersion3D migrations, while the identical code succeeded locally against a correctly-migrated PostgreSQL. Not yet confirmed, but reproducible and isolated.
+description: CONFIRMED — Replit Publish's dev/production schema-diff step skipped the brand-new Project3D/SceneVersion3D tables (with FKs). Production's scenes_project3d/scenes_sceneversion3d tables never existed; django_migrations shows those migrations were never applied there at all. Fix is a Republish through Replit's own UI, not a direct migration.
 metadata:
   type: project
 ---
@@ -19,22 +19,30 @@ database is correctly migrated. See
 [#238](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/238)
 for the full incident report.
 
-**Leading hypothesis, not confirmed:** `scenes/migrations/0018_project3d_sceneversion3d_project3d_current_version_and_more.py`
-and `0019_sceneversion3d_ai_request_id_and_more.py` were both added
-within the day before this incident, as part of the 3D editor epic.
-This was plausibly the first Replit Publish since those two migrations
-existed. Per `AGENTS.md`'s "Deployment tracks and preflight" section,
-Django migrations never run in the deployment build or startup —
-Replit's Publish flow separately compares development and production
-schemas and applies the diff. It's plausible that diff-and-apply step
-did not correctly pick up **brand-new tables with foreign keys** (as
-opposed to a simple column addition to an existing table), leaving
-production's schema out of sync and causing every insert into the new
-tables to fail. This session had no production database credentials or
-Replit deployment log access to directly confirm the schema state or
-read the real traceback (`DEBUG=False` in production suppresses it) —
-this remains a hypothesis pending the repository owner's own
-investigation via Replit's dashboard/logs.
+**Confirmed (2026-08-29), after issue #240's logging fix went live:**
+the real traceback appeared in Replit's logs —
+`psycopg.errors.UndefinedTable: relation "scenes_project3d" does not
+exist` on `INSERT INTO "scenes_project3d" ...`. Directly inspected the
+production database via Replit's own Database panel (accessible
+through the Replit workspace UI at `replit.com/@<owner>/<project>`,
+navigable via Claude in Chrome when the user's Chrome session is signed
+into Replit): `scenes_project3d`/`scenes_sceneversion3d` are entirely
+absent from the production table list, while every other `scenes_*`
+table is present. `django_migrations` shows only 50 applied rows in
+production, consistent with `scenes/migrations/0018_project3d_sceneversion3d_project3d_current_version_and_more.py`
+and `0019_sceneversion3d_ai_request_id_and_more.py` (both added within
+the day before this incident, as part of the 3D editor epic) never
+having been applied there at all — not a ledger/table mismatch,
+genuinely never applied. This was plausibly the first Replit Publish
+since those two migrations existed, and Replit's schema-diff-and-apply
+step did not pick up these **brand-new tables with foreign keys** (as
+opposed to a simple column addition to an existing table).
+
+**Remediation, per `.agents/memory/replit-production-schema-publishing.md`:**
+do not run migrations directly against production. The fix is for the
+repository owner to trigger a fresh Republish through Replit's own UI
+and confirm the schema diff it presents this time includes
+`scenes_project3d`/`scenes_sceneversion3d`.
 
 **Why this matters even if the specific hypothesis turns out wrong:**
 regardless of the exact mechanism, this incident demonstrates that

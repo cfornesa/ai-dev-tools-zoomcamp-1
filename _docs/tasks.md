@@ -7525,7 +7525,8 @@ Dependencies: None.
 
 ## 206. Production incident: POST /api/projects3d/ returns 500, blocking all 3D project creation
 
-Status: ACTIVE
+Status: ACTIVE (root cause confirmed; remediation needs the repository
+owner's own Replit Republish action)
 
 GitHub issue: [#238](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/238)
 
@@ -7557,16 +7558,30 @@ step may not have correctly picked up the brand-new `Project3D`/
 `SceneVersion3D` tables (new tables with FKs, not a simple column
 add). See `.agents/memory/replit-schema-diff-gap-for-new-tables.md`.
 
-Next action: repository owner investigates via Replit's own
-dashboard/deployment logs (not available to this session) to confirm
-the actual production traceback and/or inspect the production
-PostgreSQL schema directly for the `scenes_project3d`/
-`scenes_sceneversion3d` tables. If the schema-diff-gap hypothesis is
-confirmed, apply whatever remediation Replit's platform requires (e.g.
-a manual schema sync, or a fresh publish that correctly picks up the
-diff) and retest live. Do not attempt to run migrations directly
-against production outside Replit's own Publish flow — see
-`.agents/memory/replit-production-schema-publishing.md` for why.
+Root cause confirmed (2026-08-29, after task 208/#240's logging fix
+went live): the real traceback appeared in Replit's logs —
+`psycopg.errors.UndefinedTable: relation "scenes_project3d" does not
+exist` on `INSERT INTO "scenes_project3d" ...`. Directly inspected the
+production database via Replit's own Database panel (Claude in
+Chrome, signed into the repository owner's Replit account): confirmed
+`scenes_project3d`/`scenes_sceneversion3d` are entirely absent from the
+production table list — every other `scenes_*` table (`scenes_project`,
+`scenes_sceneversion`, `scenes_template`, etc.) is present.
+`django_migrations` shows only 50 applied rows in production,
+consistent with migrations 0018/0019 never having been applied there
+at all (not a ledger/table mismatch — genuinely never applied). This
+fully confirms the schema-diff-gap hypothesis in
+`.agents/memory/replit-schema-diff-gap-for-new-tables.md`.
+
+Next action: per `.agents/memory/replit-production-schema-publishing.md`,
+do not run migrations directly against production — the fix is for the
+repository owner to trigger a fresh Republish through Replit's own UI,
+review the schema diff it presents (should now show
+`scenes_project3d`/`scenes_sceneversion3d` as pending additions), apply
+it, then retest `POST /api/projects3d/` live. If Republish still
+doesn't offer that diff, escalate to Replit support — development's own
+migration ledger already includes 0018/0019, confirmed via local
+reproduction against a correctly-migrated database.
 
 Dependencies: None — live production incident, independent of other
 backlog ordering.
@@ -7605,8 +7620,10 @@ regression check once #238 is resolved.
 
 ## 208. Unhandled production exceptions are invisible: no LOGGING config, no ADMINS
 
-Status: ACTIVE (fix implemented and pushed; live production
-verification pending a Replit publish)
+Status: COMPLETE. Fix confirmed live in production: the very next
+`/api/projects3d/` 500 after the owner's republish produced a full
+traceback in Replit's logs, which directly confirmed task 206/#238's
+root cause. Closing #240 with this evidence.
 
 GitHub issue: [#240](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/240)
 

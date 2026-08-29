@@ -85,6 +85,32 @@ describe('checkRendererCompatibility', () => {
       'Behavior node type "quantumEntangle" is not supported by the p5.js renderer.',
     ]);
   });
+
+  // Issue #206: canvas2d has full parity with p5js (both implement the
+  // full 2D shape/node vocabulary), so it must behave identically for
+  // both a fully-compatible scene and one with unsupported types.
+  it('canvas2d is compatible with every shape/node type the schema and runtime currently allow', () => {
+    const scene = {
+      ...BASE_SCENE,
+      shapes: [
+        { id: 's1', type: 'circle', layerId: 'layer-1' },
+        { id: 's2', type: 'rect', layerId: 'layer-1' },
+        { id: 's3', type: 'line', layerId: 'layer-1' },
+        { id: 's4', type: 'path', layerId: 'layer-1' },
+        { id: 's5', type: 'particleEmitter', layerId: 'layer-1' },
+      ],
+    };
+
+    expect(checkRendererCompatibility(scene, 'canvas2d')).toEqual([]);
+  });
+
+  it('canvas2d names each exact unsupported shape type, using its own label', () => {
+    const scene = sceneWithShapes('circle', 'sprite3d');
+
+    const errors = checkRendererCompatibility(scene, 'canvas2d');
+
+    expect(errors).toEqual(['Shape type "sprite3d" is not supported by the Canvas2D renderer.']);
+  });
 });
 
 describe('sceneUsesCameraInput / getAvailableInteractionModes', () => {

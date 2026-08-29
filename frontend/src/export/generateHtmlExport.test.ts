@@ -120,6 +120,67 @@ describe('generateHtmlExport: happy path', () => {
   });
 });
 
+// Issue #206: a canvas2d-renderer scene generates a CDN-free export using
+// the Canvas2D runtime instead of the p5 one.
+describe('generateHtmlExport: canvas2d renderer (issue #206)', () => {
+  it('omits the p5 CDN script tag entirely for a canvas2d scene', () => {
+    const result = generateHtmlExport(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'canvas2d' } }) }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.html).not.toContain(P5_CDN_URL);
+    expect(result.html).not.toMatch(/cdn\.jsdelivr\.net\/npm\/p5/);
+  });
+
+  it('still includes the p5 CDN script tag for a p5-renderer scene (unaffected)', () => {
+    const result = generateHtmlExport(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'p5' } }) }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.html).toContain(P5_CDN_URL);
+  });
+
+  it('embeds exactly one runtime <script>, matching the chosen renderer', () => {
+    const p5Result = generateHtmlExport(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'p5' } }) }),
+    );
+    const canvas2dResult = generateHtmlExport(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'canvas2d' } }) }),
+    );
+    expect(p5Result.ok).toBe(true);
+    expect(canvas2dResult.ok).toBe(true);
+    if (!p5Result.ok || !canvas2dResult.ok) return;
+
+    const p5Scripts = scriptElements(p5Result.html).filter((s) => !s.id && !s.hasAttribute('src'));
+    const canvas2dScripts = scriptElements(canvas2dResult.html).filter(
+      (s) => !s.id && !s.hasAttribute('src'),
+    );
+    expect(p5Scripts).toHaveLength(1);
+    expect(canvas2dScripts).toHaveLength(1);
+    // The two runtimes are genuinely different source -- not the same
+    // script accidentally embedded twice or the wrong one picked.
+    expect(p5Scripts[0].textContent).not.toEqual(canvas2dScripts[0].textContent);
+    expect(p5Scripts[0].textContent).toContain('window.p5');
+    expect(canvas2dScripts[0].textContent).not.toContain('window.p5');
+  });
+
+  it('applies canvas2d renderer compatibility checking, not a hardcoded p5js check', () => {
+    // checkExportBlockingReasons must read the scene's own renderer, not
+    // always check against 'p5js' -- both currently have identical
+    // capability sets, so this asserts the canvas2d scene is still
+    // reported compatible (would fail identically either way if the
+    // check silently ignored the scene's renderer and always checked
+    // 'p5js', so this alone doesn't fully prove renderer-awareness, but
+    // the CDN-tag/script-selection tests above do).
+    const reasons = checkExportBlockingReasons(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'canvas2d' } }) }),
+    );
+    expect(reasons).toEqual([]);
+  });
+});
+
 describe('generateHtmlExport: embedded runtime script validity', () => {
   it('embeds a syntactically valid runtime script', () => {
     const result = generateHtmlExport(baseInput());

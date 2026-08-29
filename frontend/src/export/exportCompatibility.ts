@@ -3,28 +3,33 @@
  *
  * ## Why there's a real (if currently unreachable) renderer check
  *
- * `_docs/plan.md`'s "Renderer selection" section documents V1 as shipping
- * exactly one renderer — p5.js — and the canonical scene schema
- * (`schema/scene.schema.json`'s `renderer.preferred`) encodes that as a
- * `const: "p5"`, "intentionally narrow rather than aspirational." Every
- * scene that ever reaches this dialog has therefore already been
- * server-validated against a schema that only allows shape/node types
- * p5.js is built to render (see `frontend/src/render/p5Adapter.ts` and
+ * `_docs/plan.md`'s "Renderer selection" section originally documented V1
+ * as shipping exactly one renderer — p5.js — with the canonical scene
+ * schema (`schema/scene.schema.json`'s `renderer.preferred`) encoding that
+ * as a `const: "p5"`. Issue #206 widened that to an `enum` (`p5`,
+ * `canvas2d`), adding a second renderer with an identical capability
+ * set — see below. Every scene that ever reaches this dialog has already
+ * been server-validated against a schema that only allows shape/node
+ * types both renderers are built to render (see
+ * `frontend/src/render/p5Adapter.ts`/`canvas2dAdapter.ts` and
  * `frontend/src/runtime/behaviorRuntime.ts`'s `ALLOWED_NODE_TYPES_BY_FAMILY`).
- * In practice, `checkRendererCompatibility` below can never find a real
- * scene incompatible with `p5js` today.
+ * In practice, `checkRendererCompatibility` below still can never find a
+ * real scene incompatible with either renderer today, for the same reason
+ * it couldn't before #206: the 2D shape/node vocabulary is inherently
+ * renderer-agnostic, so any renderer that implements the full vocabulary
+ * (as both do) has full capability parity.
  *
  * It still exists, as a genuine data-driven check rather than a hardcoded
  * "always compatible" shortcut, because:
  *  - Issue #55's acceptance criteria require a real, testable blocking
  *    mechanism that "names each exact unsupported feature" — not a promise
  *    that one exists once more renderers ship.
- *  - `_docs/plan.md` explicitly plans SVG/C2.js adapters later ("SVG and
- *    C2.js export options appear only when the selected scene uses
- *    features supported by that renderer... Validate selected renderer
- *    compatibility before export"). Adding a new entry to
- *    `RENDERER_CAPABILITIES` is all a future task needs to do to make this
- *    check meaningful — no dialog/validation logic changes.
+ *  - `_docs/plan.md` explicitly plans SVG parity later ("SVG... export
+ *    options appear only when the selected scene uses features supported
+ *    by that renderer... Validate selected renderer compatibility before
+ *    export"). Adding a new entry to `RENDERER_CAPABILITIES` is all a
+ *    future task needs to do to make this check meaningful for a renderer
+ *    that *doesn't* have full parity — no dialog/validation logic changes.
  *  - Tests exercise the blocking path directly against a scene shaped with
  *    a feature outside a renderer's declared capability set (see
  *    `exportCompatibility.test.ts`), proving the mechanism works now,
@@ -33,48 +38,54 @@
 
 import type { SceneDocument } from '../api/projects';
 
-export type RendererId = 'p5js';
+export type RendererId = 'p5js' | 'canvas2d';
 
 export const RENDERER_LABELS: Record<RendererId, string> = {
   p5js: 'p5.js',
+  canvas2d: 'Canvas2D',
 };
 
 /** Every shape/node type the canonical schema (`schema/scene.schema.json`)
  * and runtime (`frontend/src/runtime/behaviorRuntime.ts`'s
- * `ALLOWED_NODE_TYPES_BY_FAMILY`) allow today. p5.js is documented as
- * "fully supported in V1" (`_docs/plan.md`), so its capability set is the
- * full known vocabulary — see module doc comment above. */
+ * `ALLOWED_NODE_TYPES_BY_FAMILY`) allow today. Both p5.js and Canvas2D
+ * implement the full known 2D vocabulary (`frontend/src/render/p5Adapter.ts`/
+ * `canvas2dAdapter.ts` both draw every shape type and are driven by the
+ * same renderer-agnostic runtime for every node type), so their capability
+ * sets are identical — see module doc comment above. */
+const FULL_2D_CAPABILITIES = {
+  shapeTypes: new Set(['circle', 'rect', 'line', 'path', 'particleEmitter']),
+  nodeTypes: new Set([
+    'handSignal',
+    'gestureEvent',
+    'timer',
+    'oscillator',
+    'randomRange',
+    'randomChoice',
+    'mapRange',
+    'clamp',
+    'smooth',
+    'invert',
+    'add',
+    'multiply',
+    'lerp',
+    'noise',
+    'ifElse',
+    'shapeProperty',
+    'groupProperty',
+    'particleEmitter',
+    'trigger',
+    'delay',
+    'cooldown',
+    'randomEvent',
+  ]),
+};
+
 const RENDERER_CAPABILITIES: Record<
   RendererId,
   { shapeTypes: Set<string>; nodeTypes: Set<string> }
 > = {
-  p5js: {
-    shapeTypes: new Set(['circle', 'rect', 'line', 'path', 'particleEmitter']),
-    nodeTypes: new Set([
-      'handSignal',
-      'gestureEvent',
-      'timer',
-      'oscillator',
-      'randomRange',
-      'randomChoice',
-      'mapRange',
-      'clamp',
-      'smooth',
-      'invert',
-      'add',
-      'multiply',
-      'lerp',
-      'noise',
-      'ifElse',
-      'shapeProperty',
-      'groupProperty',
-      'particleEmitter',
-      'trigger',
-      'delay',
-      'cooldown',
-      'randomEvent',
-    ]),
-  },
+  p5js: FULL_2D_CAPABILITIES,
+  canvas2d: FULL_2D_CAPABILITIES,
 };
 
 type SceneShapeLike = { type?: unknown };

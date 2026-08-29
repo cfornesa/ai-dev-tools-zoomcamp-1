@@ -30,13 +30,19 @@
  * into an HTML tag.
  */
 import { buildScenePlan, SceneRenderError } from '../render/sceneDrawPlan';
+import { resolveSceneRendererId } from '../render/createScenePreview';
 import type { SceneDocument } from '../api/projects';
-import { checkRendererCompatibility, type InteractionMode } from './exportCompatibility';
+import {
+  checkRendererCompatibility,
+  type InteractionMode,
+  type RendererId,
+} from './exportCompatibility';
 import type { CameraOverlayExport } from '../editor/cameraOverlayGeometry';
 import { embedJsonScript, escapeHtml } from './safeEmbed';
 import { stripSceneForExport } from './sceneExportStripping';
 import { buildStandaloneCameraScript } from './standaloneCameraSource';
 import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
+import { buildStandaloneCanvas2DRuntimeScript } from './standaloneCanvas2DRuntimeSource';
 
 /** Exact p5.js version pinned for the export's CDN `<script>` tag --
  * matches `frontend/package.json`'s own pinned `p5` dependency
@@ -147,6 +153,16 @@ export class ExportGenerationBlockedError extends Error {
   }
 }
 
+/** Issue #206: maps a scene's `renderer.preferred`
+ * (`schema/scene.schema.json`'s `"p5" | "canvas2d"`) to
+ * `exportCompatibility.ts`'s `RendererId` (`"p5js" | "canvas2d"`) -- the
+ * two id spaces have always been distinct (the export module's ids are
+ * its own export-target labels, not a mirror of the schema field), so
+ * this is the one place that translates between them. */
+function exportRendererIdFor(scene: SceneDocument): RendererId {
+  return resolveSceneRendererId(scene) === 'canvas2d' ? 'canvas2d' : 'p5js';
+}
+
 /** Turns `title` into a filesystem-safe, lowercase, hyphenated basename.
  * Falls back to `export` if nothing alphanumeric survives (e.g. a title
  * that's entirely emoji/punctuation) -- `ExportConfigDialog` already
@@ -189,7 +205,7 @@ function slugifyFilename(title: string): string {
 export function checkExportBlockingReasons(input: GenerateHtmlExportInput): string[] {
   const reasons: string[] = [];
 
-  reasons.push(...checkRendererCompatibility(input.scene, 'p5js'));
+  reasons.push(...checkRendererCompatibility(input.scene, exportRendererIdFor(input.scene)));
 
   try {
     buildScenePlan(input.scene);
@@ -281,6 +297,11 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   const includesCamera =
     input.interactionMode === 'camera' || input.interactionMode === 'demo-camera';
   const includeAttribution = input.includeAttribution === true;
+  // Issue #206: native Canvas2D needs no external library at all, unlike
+  // p5.js's pinned CDN dependency -- a real simplification for this
+  // renderer specifically. See standaloneCanvas2DRuntimeSource.ts's module
+  // doc comment.
+  const usesCanvas2D = resolveSceneRendererId(input.scene) === 'canvas2d';
 
   const html = `<!doctype html>
 <html lang="en">
@@ -302,7 +323,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   ${renderDemoControlsSection()}
   ${includesCamera ? renderCameraControlsSection() : ''}
 
-  <script src="${P5_CDN_URL}"></script>
+  ${usesCanvas2D ? '' : `<script src="${P5_CDN_URL}"></script>`}
   ${embedJsonScript('scene-data', strippedScene)}
   ${embedJsonScript(
     'export-config',
@@ -310,7 +331,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
       ? { interactionMode: input.interactionMode, cameraOverlay: input.cameraOverlay }
       : { interactionMode: input.interactionMode },
   )}
-  <script>${buildStandaloneRuntimeScript()}</script>
+  <script>${usesCanvas2D ? buildStandaloneCanvas2DRuntimeScript() : buildStandaloneRuntimeScript()}</script>
   ${includesCamera ? `<script>${buildStandaloneCameraScript()}</script>` : ''}
   ${includeAttribution ? renderAttributionFooter() : ''}
   ${includeAttribution ? renderExportVersionMarker() : ''}

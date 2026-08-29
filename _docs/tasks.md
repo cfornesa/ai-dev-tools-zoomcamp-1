@@ -7264,9 +7264,9 @@ Dependencies: task 194/#226, task 195/#227, task 196/#228 (all complete).
 
 ## 203. Extend the E2E fake AI provider to support the 3D AI-assisted editor
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#235](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/235)
+GitHub issue: [#235](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/235) (closed)
 
 Parent: task 184/#216, refines task 187/#219. Discovered while
 implementing task 200/#232: `ai_provider/e2e_provider.py`'s
@@ -7286,5 +7286,18 @@ allows; `build_e2e_provider` stays a single factory returning one object
 implementing both ABCs (matching `MistralSceneProvider`'s own shape). A
 follow-on Playwright suite itself is out of scope -- this only unblocks
 it.
+
+Delivered (commit `f65137a`): both `create_scene3d` and
+`edit_scene3d_with_patch` route through a `MistralSceneProvider(client=
+_E2EFakeClient3D(...))` instance, mirroring `edit_scene`'s existing 2D
+approach rather than needing a separate `FakeAISceneProvider`-equivalent
+for 3D create. Same scenario matrix as 2D. Added the first backend unit
+tests for `ai_provider/e2e_provider.py` at all (`tests/
+test_e2e_provider_3d.py`, 10 tests) -- it was previously only reachable
+through the Playwright suite. `uv run pytest -q` 792 passed/22 skipped
+(up from 782); ruff/mypy clean.
+
+QA: PASS, full criterion matrix in the
+[issue #235 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/235#issuecomment-5462497639).
 
 Dependencies: task 200/#232 (complete).

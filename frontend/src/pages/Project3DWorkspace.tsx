@@ -3,21 +3,24 @@ import { useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { getProject3D, type Project3D } from '../api/projects3d';
+import Outline3DInspector from './Outline3DInspector';
+import type { Scene3DDocument } from './scene3dTypes';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
 
 /**
- * Issue #226: the smallest slice that makes a `scene3d` project openable
- * for the first time -- route, fetch, title display, and a placeholder
- * preview. No outline/inspector (#227), no embedded code editor (#229),
- * no way to save edits back (#228 exists at the API level but nothing
- * here writes to it yet), and no real Three.js/A-Frame rendering -- all
- * explicitly out of scope per the issue, filed as their own follow-ons.
+ * Issue #226/#227: makes a `scene3d` project openable, with the outline/
+ * inspector panel (#227) editing a local in-memory copy of the current
+ * version's scene -- no server save wiring here (that's a follow-on once
+ * this UI's shape is concrete, tracked outside this issue's scope; see
+ * the #227 QA notes). No embedded code editor yet (#229), no real
+ * Three.js/A-Frame rendering.
  */
 function Project3DWorkspace() {
   const { id } = useParams<{ id: string }>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<Project3D | null>(null);
+  const [workingScene, setWorkingScene] = useState<Scene3DDocument | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -28,7 +31,12 @@ function Project3DWorkspace() {
       .then((loadedProject) => {
         if (cancelled) return;
         setProject(loadedProject);
-        setLoadState(loadedProject.current_version ? 'ready' : 'no-scene');
+        if (loadedProject.current_version) {
+          setWorkingScene(loadedProject.current_version.scene_json as unknown as Scene3DDocument);
+          setLoadState('ready');
+        } else {
+          setLoadState('no-scene');
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -76,8 +84,7 @@ function Project3DWorkspace() {
     );
   }
 
-  const scene = project?.current_version?.scene_json as
-    { objects?: unknown[]; lights?: unknown[]; groups?: unknown[] } | undefined;
+  if (!workingScene) return null; // unreachable once loadState === 'ready'
 
   return (
     <div>
@@ -90,11 +97,12 @@ function Project3DWorkspace() {
         <div className="project3d-preview-placeholder" data-testid="project3d-preview-placeholder">
           <p>3D preview is not yet available.</p>
           <p>
-            {scene?.objects?.length ?? 0} object(s), {scene?.lights?.length ?? 0} light(s),{' '}
-            {scene?.groups?.length ?? 0} group(s) in this scene.
+            {workingScene.objects.length} object(s), {workingScene.lights.length} light(s),{' '}
+            {workingScene.groups.length} group(s) in this scene.
           </p>
         </div>
       </section>
+      <Outline3DInspector scene={workingScene} onChange={setWorkingScene} />
     </div>
   );
 }

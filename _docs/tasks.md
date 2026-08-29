@@ -5286,10 +5286,11 @@ Make the frontend test gate deterministic by eliminating the order-dependent fai
 
 ## Evidence and pending items
 
-- **Status:** COMPLETE
+- **Status:** ACTIVE (reopened — see below)
 - **Evidence so far:** Engineer commit `e49948dada69cf340e43db7862c567f2f3b6e362` changed only `draftAutosave.test.ts`, adding timer/IndexedDB cleanup and bounded waiting. Focused tests passed 22/22 across 5 runs; full frontend passed 1,847/1,847 twice; frontend quality/build checks and `make check` passed with remaining macOS sandbox socket/startup limitations classified separately. QA PASS comment posted.
-- **Pending verification:** None.
-- **Next action:** Use this evidence to re-verify dependent issues #184 and #186.
+- **Regression (2026-08-28):** Discovered incidentally during unrelated work on #206. Two consecutive full-suite runs on `main` at commit `6dd3572`: run 1 failed the exact same test (`collapses a rapid burst of edits into a single write, timed from the last edit`, order-dependent, passes 22/22 in isolation); run 2 (no code changes) passed clean. Issue #187 reopened with full evidence rather than filing a duplicate.
+- **Pending verification:** Re-run the original engineer pass's reproduction with repeat/shuffled test order to find the remaining full-suite-only leak.
+- **Next action:** A future session re-investigates #187's reopened regression before treating #184/#186 as re-verified against a truly deterministic suite.
 - **Durable memory link:** None required; this is a task-specific test-isolation defect and no reusable platform constraint was discovered during grooming.
 
 ## Discovery gate
@@ -6250,16 +6251,42 @@ interface, `RENDERER_CAPABILITIES`/`checkRendererCompatibility`, and
 
 ## 174. Add a native Canvas2D renderer adapter for the structured scene editor
 
-Status: PROPOSED
+Status: ACTIVE (schema + adapter + 5 call sites landed at commit
+`6dd3572`, pushed to `main`; export bundle, `exportCompatibility.ts`/UI
+picker, and e2e coverage remain — see issue #206's progress-update comment
+for the itemized handoff)
 
 GitHub issue: [#206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/206)
 
-Parent: task 173/#205. See issue #206 for full draft acceptance criteria
-(schema widening, `canvas2dAdapter.ts`, camera-overlay port, export bundle
-with no CDN dependency, social-thumbnail capture, UI picker, test
-coverage). Not yet groomed to an implementation-ready plan.
+Parent: task 173/#205.
 
-Dependencies: None blocking.
+Done: `schema/scene.schema.json`'s `renderer.preferred` widened to
+`enum: ["p5", "canvas2d"]` (backward compatible, no schemaVersion bump);
+new `frontend/src/render/canvas2dAdapter.ts` (native Canvas2D port of
+`p5Adapter.ts`'s full draw contract, pixel-identical per
+`canvas2dAdapter.test.ts`'s 40-case mirror of `p5Adapter.test.ts` plus a
+cross-adapter parity test); `scenePreview.ts` (shared types, pulled out of
+`p5Adapter.ts`) and `createScenePreview.ts` (renderer-selecting factory);
+wired into `EditorWorkspace.tsx`, `PublicProjectViewer.tsx`,
+`usePreviewRuntime.ts`, `AIProposalPanel.tsx`, and
+`captureSocialThumbnail.ts`. `scenes/thumbnails.py` confirmed unchanged
+(already renderer-agnostic, as the issue predicted). Full `make check`
+passes (672 backend passed/22 skipped; 1976 frontend passed; typecheck/
+lint/format clean).
+
+Remaining: `exportCompatibility.ts`'s `RENDERER_CAPABILITIES`/`RendererId`
+needs a `canvas2d` entry; the export bundle needs a parallel standalone
+Canvas2D runtime source (the largest remaining piece — a compact port of
+the draw-plan logic analogous to the existing ~950-line
+`standaloneRuntimeSource.ts`, but genuinely simpler in one way: no CDN
+dependency at all); `ExportConfigDialog.tsx`'s "Renderer" picker is still
+hardcoded/disabled to p5js; e2e coverage and `make e2e` passing per the
+issue's acceptance criteria.
+
+Dependencies: None blocking. Unblocks task 175/#207's shared plumbing
+dependency (the `ScenePreview`/`createScenePreview.ts` abstraction this
+task added), though #207 also needs its own SVG-specific camera-overlay
+and thumbnail-capture work on top.
 
 ## 175. Add an SVG renderer adapter for the structured scene editor
 

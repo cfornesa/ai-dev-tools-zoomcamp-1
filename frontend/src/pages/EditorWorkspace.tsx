@@ -86,6 +86,7 @@ import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { createPreviewTrackingSource } from './previewTrackingSource';
+import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime';
 import { useSceneEditor, type SceneEditor } from './useSceneEditor';
 import { getColorFieldValue } from './shapeStyleFields';
@@ -1946,7 +1947,17 @@ function EditorWorkspace() {
   // once a scene gains a binding or graph node, that hook's own rAF loop
   // takes over rendering entirely, so the two never fight over the same
   // canvas in the same frame.
-  useEffect(() => {
+  //
+  // Issue #192 follow-up: a plain callback, not inlined into the effect
+  // below, so `useCameraOverlayRedrawLoop` can call the exact same render
+  // logic every animation frame while the camera is active and no behavior
+  // runtime is already doing that job. Without this, a behaviorless scene's
+  // camera overlay only ever redrew reactively (once per relevant state
+  // change) and froze at whatever single frame happened to be available at
+  // that moment for the rest of the session -- reproduced live against
+  // production with a real camera; see that hook's doc comment for the full
+  // finding.
+  const redrawPreview = useCallback(() => {
     if (!previewRef.current || !workingCopy || hasActiveBehaviors) return;
     try {
       // Task 110 (issue #141): a transparent background while the camera
@@ -1964,16 +1975,21 @@ function EditorWorkspace() {
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
     }
+  }, [workingCopy, hasActiveBehaviors, cameraStatus]);
+
+  useEffect(() => {
+    if (!previewMounted) return;
+    redrawPreview();
   }, [
-    workingCopy,
-    hasActiveBehaviors,
     previewMounted,
-    cameraStatus,
+    redrawPreview,
     cameraLayerOrder,
     cameraGeometry,
     cameraOverlayOpacity,
     cameraOverlayMirrored,
   ]);
+
+  useCameraOverlayRedrawLoop(!hasActiveBehaviors && cameraStatus === 'active', redrawPreview);
 
   // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes — the standard
   // shortcuts for this editor's in-session undo/redo policy (see

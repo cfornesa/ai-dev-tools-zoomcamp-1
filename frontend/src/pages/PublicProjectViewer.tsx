@@ -18,6 +18,7 @@ import {
 } from '../render/p5Adapter';
 import { normalizeSceneLayers } from '../validation/scene';
 import DemoControlsPanel from './DemoControlsPanel';
+import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -239,7 +240,13 @@ function PublicProjectViewer() {
     };
   }, [id]);
 
-  useEffect(() => {
+  // Issue #192 follow-up: a plain useCallback, not inlined into the effect
+  // below, so `useCameraOverlayRedrawLoop` can call the exact same render
+  // logic every animation frame while the camera is active -- see that
+  // hook's own doc comment for why a single reactive render left the camera
+  // overlay a frozen (or, if it raced the video's first decoded frame,
+  // permanently empty) snapshot instead of a live feed.
+  const redrawPreview = useCallback(() => {
     if (!previewRef.current || !project?.current_version) return;
     try {
       // Task 111 (issue #142): a published project's current version may
@@ -265,16 +272,25 @@ function PublicProjectViewer() {
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
     }
+  }, [project, cameraStatus, getCameraOverlay]);
+
+  useEffect(() => {
+    if (!previewMounted) return;
+    redrawPreview();
     // `previewMounted` is a real, effect-dependency-visible signal for
     // "does previewRef.current exist yet" -- see the callback ref's own
     // doc comment above for why an untracked ref read in the dependency
-    // array (the old bug) isn't enough. `cameraStatus`/`getCameraOverlay`
-    // (itself already memoized on every value it reads) are new deps so
-    // the canvas actually redraws when the camera activates/deactivates or
-    // its opacity/mirror/geometry changes -- previously unnecessary
-    // because those only ever affected the separately CSS-stacked
-    // `<video>` element's own style, never the canvas.
-  }, [project, previewMounted, cameraStatus, getCameraOverlay]);
+    // array (the old bug) isn't enough. `redrawPreview` itself already
+    // depends on `cameraStatus`/`getCameraOverlay`/`project`, so this
+    // effect re-fires whenever any of those change too.
+  }, [previewMounted, redrawPreview]);
+
+  // Issue #192 follow-up: keeps the camera overlay genuinely live -- see
+  // `useCameraOverlayRedrawLoop`'s doc comment. Without this, the effect
+  // above only ever redraws reactively (once per relevant state change),
+  // and the camera overlay freezes at whatever single frame happened to be
+  // available at that moment for the rest of the session.
+  useCameraOverlayRedrawLoop(cameraStatus === 'active', redrawPreview);
 
   async function handleFork() {
     if (!id) return;

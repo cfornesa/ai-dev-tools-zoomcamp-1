@@ -1962,8 +1962,8 @@ a follow-up to evaluate collapsing `Layer` and `Shape` into a single
 schema entity (a larger, riskier alternative reading of "as its own
 layer") — kept out of this task's scope so this task stays additive and
 backward-compatible; #148 depends on this task landing first.
-Status: PROPOSED
-GitHub issue: [#142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/142)
+Status: COMPLETE
+GitHub issue: [#142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/142) (closed)
 Discovery gate: Searched `_docs/tasks.md` and GitHub issues (including
 `gh issue list --search "layer"` and `--search "migration schema"`) for an
 existing "per-shape layer independence"/migration task; #131 (task 100)
@@ -1980,7 +1980,6 @@ first, then changes `schema/scene.schema.json`, `scenes/validation.py`,
 `buildOutline`), and `LayersPanel.tsx`'s per-shape toggle, in that order,
 with fixtures/tests added alongside each. See issue #142 for the full
 groomed acceptance criteria.
-Status: COMPLETE
 Resolution (2026-08-23): `schemaVersion` stayed at 1 (read-time
 normalization, per the default recommendation) — additive/structural, not
 a new document shape.
@@ -5654,10 +5653,10 @@ Goal: The camera overlay on the public `/p/<id>` viewer must render a
 genuinely live, low-latency feed with a real camera, using the same
 p5-integrated compositing model already implemented in the editor.
 
-Status: ACTIVE (compositing fix implemented; long-task budget still open)
+Status: COMPLETE
 
-GitHub issue: [#195](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/195)
-(cross-referenced: #192, closed; #193, task 162, open)
+GitHub issue: [#195](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/195) (closed)
+(cross-referenced: #192, closed; #193/task 162, closed)
 
 Evidence: user observed at
 `https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` that
@@ -5696,17 +5695,20 @@ Acceptance criteria:
   stack: `publishingAndRemix.spec.ts:951` (camera overlay video/opacity/
   mirror) and `:1029` (10-second synthetic camera diagnostics) both
   passed cleanly, the latter with real margin (desktop
-  `maxLongTaskMs=84`, narrow `0`). **Still open**: a real camera against
-  the actual production deployment, per this task's own "real-camera or
-  production-path verification" requirement below and
-  [camera synthetic verification gap](../.agents/memory/camera-synthetic-verification-gap.md)'s
-  standing rule not to close this class of issue on synthetic evidence
-  alone, however clean.
-- [ ] Re-profile and fix the long-task budget so it passes with real
+  `maxLongTaskMs=84`, narrow `0`). **DONE** — real-camera/production
+  verification completed as part of task 161/#192's saga (below).
+- [x] Re-profile and fix the long-task budget so it passes with real
   headroom, not a ~94-100ms margin; do not close on synthetic-seam evidence
-  alone — record real-camera or production-path verification. **NOT
-  STARTED** — unrelated to the compositing fix; needs live browser
-  profiling of the actual capture/inference pipeline.
+  alone — record real-camera or production-path verification. **DONE** —
+  the long-task budget was a proxy for real inference/liveness cost; task
+  161/#192's own investigation (see `.agents/memory/
+  camera-synthetic-verification-gap.md`) found the synthetic seam stubbed
+  out the very component (`recognizeForVideo`) the budget was measuring,
+  built a non-stubbed diagnostic (`frontend/e2e/benchmark/
+  cameraInference.bench.ts`), measured the GPU delegate at ~200x slower
+  than CPU (commit `0866fc6` flips the default to CPU), separately fixed a
+  redraw-loop freeze bug (commit `66cf699`), and confirmed the fix on the
+  real production URL with a real camera and physical webcam (2026-08-28).
 - [x] Add a regression test asserting the public viewer's `render()` call
   includes `transparentBackground: true` and a live `cameraOverlay`.
   Existing `PublicProjectViewer.cameraOverlay.test.tsx` (9 tests) already
@@ -5718,12 +5720,17 @@ Acceptance criteria:
   Full frontend suite 128 files/1882 tests PASS; typecheck/lint/format/
   build PASS; backend 636 passed/22 skipped PASS (untouched by this fix).
 
-Dependencies: None; related to task 162/#193 (shared CI long-task evidence).
+Dependencies: None; related to task 162/#193 (shared CI long-task
+evidence, closed) and task 161/#192 (closed — see its own saga for the
+long-task/real-camera resolution this task's remaining criteria depended
+on).
 
-Next action: re-profile and fix the long-task budget so it passes with
-real headroom (still not started — the recent 84ms/0ms margin is a good
-sign but not itself a fix), and get a real-camera or production-path
-verification before considering this task closeable.
+Next action: none required. This tasks.md entry was stale (GitHub #195
+was closed 2026-08-28 by the repository owner's explicit waiver of the
+real-camera check at that time; the deeper long-task-budget root cause
+was then independently found and fixed under task 161/#192, and
+confirmed on real production with a real camera the same day) — updated
+during a 2026-08-29 production-readiness pass to match reality.
 
 ## 165. Epic: multi-library AI art generation with user-selectable Mistral model and downloadable standalone export
 
@@ -6678,9 +6685,9 @@ retrieve round trip for the 3D document family now exists end to end.
 
 ## 182. Fix shape.name schema shadowing bug (AI create-scene 422s)
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#214](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/214)
+GitHub issue: [#214](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/214) (closed)
 
 Discovered investigating a user report: the AI create-scene prompt flow
 fails 100% of the time it names a shape, with `$.shapes[N]: Additional
@@ -6707,14 +6714,20 @@ proving a named shape now round-trips through `validate_scene`/
 `frontend/src/pages/sceneShapes.ts`'s now-stale `shapeLabel()` doc
 comment. Full criteria on the issue.
 
+Delivered (commit `1803196`): `"name": true` added to all 5 per-type
+allowlists in `schema/scene.schema.json`;
+`schema/fixtures/valid/named_shape.json` +
+`test_create_scene_accepts_a_named_shape` regression coverage;
+`sceneShapes.ts`'s stale doc comment updated. This is what unblocked
+task 190/#222's name-based element resolution.
+
 Dependencies: None. Independent of task 183/#215 below.
 
 ## 183. Decision: AI-driven addressing/editing by layer/shape name
 
-Status: PROPOSED (decision needed from the repository owner before any
-implementation)
+Status: RESOLVED
 
-GitHub issue: [#215](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/215)
+GitHub issue: [#215](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/215) (closed)
 
 Follow-up to the same user report as task 182/#214. The user wants AI
 create/edit prompts to reference a specific layer/shape by name, have the
@@ -6735,15 +6748,15 @@ existing patch mechanism to resolve names vs. a genuinely separate
 AI-editor product), with a recommendation (start with the smaller
 extension) for the owner's consideration.
 
+Resolution: Repository owner decided directly (mid-session feedback, not
+the AskUserQuestion form this issue anticipated): four distinct editor
+products (2D/3D × manual/AI-assisted), manual editors have layers,
+AI-assisted editors address/protect by named detail instead, every
+editor has a fully functional embedded code editor. See task 184/#216,
+now also complete.
+
 Dependencies: Informed by (not blocked by) task 182/#214 and the
 completed task 177/#209 epic.
-
-Status: RESOLVED. Repository owner decided directly (mid-session
-feedback, not the AskUserQuestion form this issue anticipated): four
-distinct editor products (2D/3D × manual/AI-assisted), manual editors
-have layers, AI-assisted editors address/protect by named detail instead,
-every editor has a fully functional embedded code editor. See task 184/
-#216 below.
 
 ## 184. Epic: four-editor product line (2D/3D × manual/AI-assisted)
 

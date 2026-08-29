@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -97,5 +98,20 @@ describe('Project3DWorkspace', () => {
     renderWorkspace();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no saved scene/i);
+  });
+
+  // Issue #229: the Visual/Code toggle.
+  it('toggles between Visual and Code views', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('region', { name: 'Preview' });
+    expect(screen.queryByRole('region', { name: 'Code' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Code' }));
+
+    expect(await screen.findByRole('region', { name: 'Code' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Preview' })).not.toBeInTheDocument();
   });
 });

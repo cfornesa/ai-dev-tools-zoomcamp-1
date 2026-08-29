@@ -5405,7 +5405,8 @@ Next action: None; retain the QA comment and commits as handoff evidence.
 Goal: Restore a deterministic, zero-unexpected-failure full browser acceptance
 gate against the disposable PostgreSQL + Django + Vite + Chromium stack.
 
-Status: ACTIVE (local verification clean; CI consistently blocked by two
+Status: COMPLETE (root-caused and fixed 2026-08-29 — see below; previously
+ACTIVE with CI consistently blocked by two
 narrowly-scoped, already-characterized flaky tests unrelated to any code
 this branch changed)
 
@@ -5547,9 +5548,30 @@ confirm or rule out. If confirmed, the fix is likely test-side (seed
 drafts before the editor ever mounts, not while a previous mount's
 pagehide listener is still live) rather than product-side.
 
-Next action: live-confirm the pagehide-sync-race hypothesis with network
-tracing, then fix on whichever side (test or product) the confirmation
-points to.
+Evidence (2026-08-29, root-caused and fixed): live-reproduced against a
+real local dev stack (Django + Vite + this repo's PostgreSQL) rather than
+static analysis alone. Actual mechanism (a refinement of the earlier
+pagehide hypothesis): `useDraftServerSync`'s periodic timer treats a
+never-explicitly-saved blank project as always dirty
+(`resetCleanBaseline()` leaves no clean baseline), so it syncs the
+pristine blank scene to the server on its own 25s schedule regardless of
+edits. Manually reproduced: seeding a server draft with the test's exact
+`client_seq: 1` payload returned `applied: false` and the app's own
+already-written draft — confirming the app's own tick had already landed
+first and won the `scenes/api.py::_upsert_draft` tie-break. This is
+deterministic given enough elapsed wall-clock time (routine under CI/
+sandbox load), not a true random race. Fix (commit `ed9c082`):
+`frontend/e2e/aiAndRecovery.spec.ts`'s "local/server conflict" test now
+seeds with `client_seq: 1_000_000` instead of `1`, guaranteeing its own
+write always wins. Verified: 3/3 repeated runs of the specific test,
+1 full-spec run (22/22), and 1 full 134-test disposable-stack run — 133
+passed, 1 intentional skip, **zero failures**. `make check` clean (677
+backend passed/22 skipped; 2022 frontend passed). GitHub issue closed.
+
+Next action: none required. If a similar symptom recurs elsewhere, check
+for any e2e test seeding a server draft with a small hardcoded
+`client_seq` for a project whose editor has already been mounted for any
+length of time before the seed.
 
 ## 163. Fix inverted layer draw-order vs. panel-documented "top = front" contract
 

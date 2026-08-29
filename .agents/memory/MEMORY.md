@@ -26,3 +26,4 @@
 - [Mistral non-strict schema mode](mistral-non-strict-schema-mode.md) — response_format uses strict:False, so AI output can still violate enums; restate constrained enums in the system prompt too, and keep the two in sync.
 - [Structured editor multi-renderer scoping](structured-editor-multi-renderer-scoping.md) — Scoping for extending the main editor (not just AI art-pieces) to Canvas2D/SVG renderers; #206/#207/#208 phased under epic #205.
 - [Mistral SDK import path](mistralai-sdk-import-path.md) — `mistralai` has no top-level `Mistral`/`MistralError`; import from `mistralai.client`. Caused #203's production 500.
+- [E2E draft-seed client_seq race](e2e-draft-seed-client-seq-race.md) — an e2e test seeding a server draft with a small hardcoded `client_seq` can lose a race against the app's own periodic autosave; use a very large value instead. Caused #193's recurring flake.

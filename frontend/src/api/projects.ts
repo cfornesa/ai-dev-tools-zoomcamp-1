@@ -279,7 +279,7 @@ export function forkProject(id: string, clientRequestId?: string): Promise<Proje
  * matching the backend's own default and every pre-#206 caller. */
 export function createBlankProject(
   clientRequestId?: string,
-  renderer?: 'p5' | 'canvas2d',
+  renderer?: 'p5' | 'canvas2d' | 'svg',
 ): Promise<Project> {
   const body: Record<string, string> = {};
   if (clientRequestId) body.client_request_id = clientRequestId;

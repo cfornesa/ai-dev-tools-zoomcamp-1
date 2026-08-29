@@ -809,9 +809,9 @@ class BlankProjectCreateView(APIView):
         # to "p5" (the pre-#206 fixed value) when omitted, so every
         # existing caller/client is unaffected.
         renderer = request.data.get("renderer", "p5")
-        if renderer not in ("p5", "canvas2d"):
+        if renderer not in ("p5", "canvas2d", "svg"):
             return Response(
-                {"renderer": ["Must be one of: p5, canvas2d."]},
+                {"renderer": ["Must be one of: p5, canvas2d, svg."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

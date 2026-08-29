@@ -422,6 +422,7 @@ function ExportConfigDialog({
             >
               <option value="p5js">{RENDERER_LABELS.p5js}</option>
               <option value="canvas2d">{RENDERER_LABELS.canvas2d}</option>
+              <option value="svg">{RENDERER_LABELS.svg}</option>
             </select>
             <p id="export-renderer-note">
               This scene was created with the {RENDERER_LABELS[sceneRendererId]} renderer. The

@@ -181,6 +181,55 @@ describe('generateHtmlExport: canvas2d renderer (issue #206)', () => {
   });
 });
 
+// Issue #207: an svg-renderer scene generates a CDN-free export using the
+// SVG runtime instead of the p5/canvas2d ones.
+describe('generateHtmlExport: svg renderer (issue #207)', () => {
+  it('omits the p5 CDN script tag entirely for an svg scene', () => {
+    const result = generateHtmlExport(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'svg' } }) }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.html).not.toContain(P5_CDN_URL);
+    expect(result.html).not.toMatch(/cdn\.jsdelivr\.net/);
+  });
+
+  it('embeds exactly one runtime <script>, distinct from the p5 and canvas2d ones', () => {
+    const p5Result = generateHtmlExport(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'p5' } }) }),
+    );
+    const canvas2dResult = generateHtmlExport(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'canvas2d' } }) }),
+    );
+    const svgResult = generateHtmlExport(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'svg' } }) }),
+    );
+    expect(p5Result.ok).toBe(true);
+    expect(canvas2dResult.ok).toBe(true);
+    expect(svgResult.ok).toBe(true);
+    if (!p5Result.ok || !canvas2dResult.ok || !svgResult.ok) return;
+
+    const svgScripts = scriptElements(svgResult.html).filter(
+      (s) => !s.id && !s.hasAttribute('src'),
+    );
+    expect(svgScripts).toHaveLength(1);
+    expect(svgScripts[0].textContent).not.toContain('window.p5');
+    expect(svgScripts[0].textContent).toContain('createElementNS');
+
+    const canvas2dScripts = scriptElements(canvas2dResult.html).filter(
+      (s) => !s.id && !s.hasAttribute('src'),
+    );
+    expect(svgScripts[0].textContent).not.toEqual(canvas2dScripts[0].textContent);
+  });
+
+  it('applies svg renderer compatibility checking, not a hardcoded p5js check', () => {
+    const reasons = checkExportBlockingReasons(
+      baseInput({ scene: baseScene({ renderer: { preferred: 'svg' } }) }),
+    );
+    expect(reasons).toEqual([]);
+  });
+});
+
 describe('generateHtmlExport: embedded runtime script validity', () => {
   it('embeds a syntactically valid runtime script', () => {
     const result = generateHtmlExport(baseInput());

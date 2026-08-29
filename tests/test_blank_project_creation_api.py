@@ -76,6 +76,20 @@ def test_creates_a_canvas2d_renderer_project_when_requested(owner_client):
 
 
 @pytest.mark.django_db
+def test_creates_an_svg_renderer_project_when_requested(owner_client):
+    response = owner_client.post("/api/projects/blank/", {"renderer": "svg"})
+
+    assert response.status_code == 201
+    project = Project.objects.get(public_id=response.json()["id"])
+    version = SceneVersion.objects.get(project=project)
+    assert version.scene_json["renderer"]["preferred"] == "svg"
+
+    from scenes.validation import validate_scene
+
+    assert validate_scene(version.scene_json).valid is True
+
+
+@pytest.mark.django_db
 def test_rejects_an_unsupported_renderer_value(owner_client):
     response = owner_client.post("/api/projects/blank/", {"renderer": "webgl"})
 

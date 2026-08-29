@@ -43,6 +43,7 @@ import { stripSceneForExport } from './sceneExportStripping';
 import { buildStandaloneCameraScript } from './standaloneCameraSource';
 import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
 import { buildStandaloneCanvas2DRuntimeScript } from './standaloneCanvas2DRuntimeSource';
+import { buildStandaloneSvgRuntimeScript } from './standaloneSvgRuntimeSource';
 
 /** Exact p5.js version pinned for the export's CDN `<script>` tag --
  * matches `frontend/package.json`'s own pinned `p5` dependency
@@ -154,13 +155,14 @@ export class ExportGenerationBlockedError extends Error {
 }
 
 /** Issue #206: maps a scene's `renderer.preferred`
- * (`schema/scene.schema.json`'s `"p5" | "canvas2d"`) to
- * `exportCompatibility.ts`'s `RendererId` (`"p5js" | "canvas2d"`) -- the
- * two id spaces have always been distinct (the export module's ids are
+ * (`schema/scene.schema.json`'s `"p5" | "canvas2d" | "svg"`) to
+ * `exportCompatibility.ts`'s `RendererId` (`"p5js" | "canvas2d" | "svg"`) --
+ * the two id spaces have always been distinct (the export module's ids are
  * its own export-target labels, not a mirror of the schema field), so
  * this is the one place that translates between them. */
 export function exportRendererIdFor(scene: SceneDocument): RendererId {
-  return resolveSceneRendererId(scene) === 'canvas2d' ? 'canvas2d' : 'p5js';
+  const resolved = resolveSceneRendererId(scene);
+  return resolved === 'p5' ? 'p5js' : resolved;
 }
 
 /** Turns `title` into a filesystem-safe, lowercase, hyphenated basename.
@@ -297,11 +299,12 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   const includesCamera =
     input.interactionMode === 'camera' || input.interactionMode === 'demo-camera';
   const includeAttribution = input.includeAttribution === true;
-  // Issue #206: native Canvas2D needs no external library at all, unlike
-  // p5.js's pinned CDN dependency -- a real simplification for this
-  // renderer specifically. See standaloneCanvas2DRuntimeSource.ts's module
-  // doc comment.
-  const usesCanvas2D = resolveSceneRendererId(input.scene) === 'canvas2d';
+  // Issue #206/#207: native Canvas2D and SVG both need no external library
+  // at all, unlike p5.js's pinned CDN dependency -- a real simplification
+  // for these renderers specifically. See standaloneCanvas2DRuntimeSource.ts/
+  // standaloneSvgRuntimeSource.ts's module doc comments.
+  const sceneRendererId = resolveSceneRendererId(input.scene);
+  const usesCdnFreeRenderer = sceneRendererId === 'canvas2d' || sceneRendererId === 'svg';
 
   const html = `<!doctype html>
 <html lang="en">
@@ -323,7 +326,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   ${renderDemoControlsSection()}
   ${includesCamera ? renderCameraControlsSection() : ''}
 
-  ${usesCanvas2D ? '' : `<script src="${P5_CDN_URL}"></script>`}
+  ${usesCdnFreeRenderer ? '' : `<script src="${P5_CDN_URL}"></script>`}
   ${embedJsonScript('scene-data', strippedScene)}
   ${embedJsonScript(
     'export-config',
@@ -331,7 +334,13 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
       ? { interactionMode: input.interactionMode, cameraOverlay: input.cameraOverlay }
       : { interactionMode: input.interactionMode },
   )}
-  <script>${usesCanvas2D ? buildStandaloneCanvas2DRuntimeScript() : buildStandaloneRuntimeScript()}</script>
+  <script>${
+    sceneRendererId === 'canvas2d'
+      ? buildStandaloneCanvas2DRuntimeScript()
+      : sceneRendererId === 'svg'
+        ? buildStandaloneSvgRuntimeScript()
+        : buildStandaloneRuntimeScript()
+  }</script>
   ${includesCamera ? `<script>${buildStandaloneCameraScript()}</script>` : ''}
   ${includeAttribution ? renderAttributionFooter() : ''}
   ${includeAttribution ? renderExportVersionMarker() : ''}

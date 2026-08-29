@@ -175,6 +175,22 @@ describe('Gallery create action', () => {
     );
   });
 
+  it('passes the svg renderer through to createBlankProject (issue #207)', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-id' }));
+    const user = userEvent.setup();
+
+    renderGallery();
+    const rendererSelect = await screen.findByLabelText<HTMLSelectElement>('Renderer');
+    await user.selectOptions(rendererSelect, 'svg');
+
+    await user.click(screen.getByRole('button', { name: /create new animation/i }));
+
+    await waitFor(() =>
+      expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'svg'),
+    );
+  });
+
   it('shows an accessible error and re-enables the button on failure', async () => {
     mockedListProjects.mockResolvedValue([]);
     mockedCreateBlankProject.mockRejectedValue(new Error('boom'));

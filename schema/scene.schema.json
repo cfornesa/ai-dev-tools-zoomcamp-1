@@ -44,8 +44,8 @@
       "required": ["preferred"],
       "properties": {
         "preferred": {
-          "description": "Which renderer adapter draws this scene. V1 shipped only p5.js; issue #206 added the native Canvas2D adapter (frontend/src/render/canvas2dAdapter.ts) as a fully backward-compatible enum widening (every pre-existing document already carries 'p5' and stays valid unchanged) rather than a schemaVersion bump -- see schema/README.md's versioning policy.",
-          "enum": ["p5", "canvas2d"]
+          "description": "Which renderer adapter draws this scene. V1 shipped only p5.js; issue #206 added the native Canvas2D adapter (frontend/src/render/canvas2dAdapter.ts), and issue #207 added the SVG adapter (frontend/src/render/svgAdapter.ts), each as a fully backward-compatible enum widening (every pre-existing document already carries 'p5' and stays valid unchanged) rather than a schemaVersion bump -- see schema/README.md's versioning policy.",
+          "enum": ["p5", "canvas2d", "svg"]
         }
       }
     },

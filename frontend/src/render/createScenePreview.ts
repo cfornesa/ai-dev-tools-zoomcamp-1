@@ -12,6 +12,9 @@
 import { createCanvas2DScenePreview } from './canvas2dAdapter';
 import { createP5ScenePreview } from './p5Adapter';
 import type { ScenePreview, SceneRendererId } from './scenePreview';
+import { createSVGScenePreview } from './svgAdapter';
+
+const RECOGNIZED_RENDERER_IDS: readonly SceneRendererId[] = ['p5', 'canvas2d', 'svg'];
 
 /** Reads `scene.renderer.preferred`, tolerating a scene that hasn't been
  * schema-validated yet (this runs before `render()`'s own validation) --
@@ -23,7 +26,9 @@ export function resolveSceneRendererId(scene: unknown): SceneRendererId {
     const renderer = (scene as Record<string, unknown>).renderer;
     if (renderer && typeof renderer === 'object') {
       const preferred = (renderer as Record<string, unknown>).preferred;
-      if (preferred === 'canvas2d') return 'canvas2d';
+      if (RECOGNIZED_RENDERER_IDS.includes(preferred as SceneRendererId)) {
+        return preferred as SceneRendererId;
+      }
     }
   }
   return 'p5';
@@ -36,6 +41,8 @@ export function createScenePreview(
   switch (rendererId) {
     case 'canvas2d':
       return createCanvas2DScenePreview(container);
+    case 'svg':
+      return createSVGScenePreview(container);
     case 'p5':
       return createP5ScenePreview(container);
   }

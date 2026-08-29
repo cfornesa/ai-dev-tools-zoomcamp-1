@@ -14,9 +14,10 @@ function Gallery() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  // Issue #206: the only point in the app where a new project's renderer
-  // is chosen -- there is no later "change this scene's renderer" flow.
-  const [newProjectRenderer, setNewProjectRenderer] = useState<'p5' | 'canvas2d'>('p5');
+  // Issue #206/#207: the only point in the app where a new project's
+  // renderer is chosen -- there is no later "change this scene's renderer"
+  // flow.
+  const [newProjectRenderer, setNewProjectRenderer] = useState<'p5' | 'canvas2d' | 'svg'>('p5');
 
   useEffect(() => {
     let cancelled = false;
@@ -82,10 +83,13 @@ function Gallery() {
           id="new-project-renderer"
           value={newProjectRenderer}
           disabled={creating}
-          onChange={(event) => setNewProjectRenderer(event.target.value as 'p5' | 'canvas2d')}
+          onChange={(event) =>
+            setNewProjectRenderer(event.target.value as 'p5' | 'canvas2d' | 'svg')
+          }
         >
           <option value="p5">p5.js</option>
           <option value="canvas2d">Canvas2D</option>
+          <option value="svg">SVG</option>
         </select>
         <button className="shell-action" type="button" onClick={handleCreate} disabled={creating}>
           {creating ? 'Creating…' : 'Create new animation'}

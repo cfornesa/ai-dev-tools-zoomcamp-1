@@ -111,6 +111,30 @@ describe('checkRendererCompatibility', () => {
 
     expect(errors).toEqual(['Shape type "sprite3d" is not supported by the Canvas2D renderer.']);
   });
+
+  // Issue #207: svg has full parity with p5js/canvas2d too.
+  it('svg is compatible with every shape/node type the schema and runtime currently allow', () => {
+    const scene = {
+      ...BASE_SCENE,
+      shapes: [
+        { id: 's1', type: 'circle', layerId: 'layer-1' },
+        { id: 's2', type: 'rect', layerId: 'layer-1' },
+        { id: 's3', type: 'line', layerId: 'layer-1' },
+        { id: 's4', type: 'path', layerId: 'layer-1' },
+        { id: 's5', type: 'particleEmitter', layerId: 'layer-1' },
+      ],
+    };
+
+    expect(checkRendererCompatibility(scene, 'svg')).toEqual([]);
+  });
+
+  it('svg names each exact unsupported shape type, using its own label', () => {
+    const scene = sceneWithShapes('circle', 'sprite3d');
+
+    const errors = checkRendererCompatibility(scene, 'svg');
+
+    expect(errors).toEqual(['Shape type "sprite3d" is not supported by the SVG renderer.']);
+  });
 });
 
 describe('sceneUsesCameraInput / getAvailableInteractionModes', () => {

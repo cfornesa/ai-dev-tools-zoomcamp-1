@@ -6030,8 +6030,9 @@ beyond having been discovered during it.
 Goal: `POST /api/ai/art-pieces/generate/` must not fail with an unhandled
 500 for a user with a valid, configured personal Mistral credential.
 
-Status: PROPOSED (root cause not yet identified — no server traceback
-access from this agent)
+Status: ACTIVE (root cause found and fixed locally, pushed to `main` at
+commit `decd339`; live production retest still pending a Replit publish,
+which is outside this agent's access — see next action)
 
 GitHub issue: [#203](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/203)
 
@@ -6060,19 +6061,36 @@ from `MistralError`).
 
 Acceptance criteria:
 
-- [ ] Root cause identified from a real server-side traceback (Replit
-  deployment logs — this agent has no access).
-- [ ] `ArtPieceProvider.generate()` returns a clean, documented error
+- [x] Root cause identified. **DONE** — no server traceback needed:
+  `ArtPieceProvider.client` imported `from mistralai import Mistral`,
+  which does not exist as a top-level export in the installed
+  `mistralai==2.9.3` SDK (`ImportError: cannot import name 'Mistral' from
+  'mistralai'`, reproduced locally). That `ImportError`, raised inside
+  `generate()`'s `try` block, was caught by the broad `except Exception`,
+  failed `isinstance(exc, MistralError)`, and re-raised — the fast,
+  unhandled 500. `mistral_provider.py` already used the correct
+  `from mistralai.client import Mistral`.
+- [x] `ArtPieceProvider.generate()` returns a clean, documented error
   response (not an unhandled 500) for whatever condition is actually
-  occurring, for every supported library.
-- [ ] A regression test exercises the real `mistralai` SDK's error path
-  (not the `AI_PROVIDER=fake` seam, which bypasses this code entirely) so
-  this class of gap is caught before reaching production again.
+  occurring, for every supported library. **DONE** — fixed the shared
+  `client` property's import; applies uniformly to all 4 libraries.
+- [x] A regression test exercises the real `mistralai` SDK's error path
+  (not the `AI_PROVIDER=fake` seam, which bypasses this code entirely).
+  **DONE** — `tests/test_art_piece_provider.py` (new); confirmed it fails
+  against the pre-fix import and passes after.
 - [ ] Focused tests, `make check`, and a live production retest all pass.
+  Focused tests and `make check` **DONE** (670 backend passed/22 skipped,
+  1928 frontend passed, all lint/format/typecheck clean). Live production
+  retest **PENDING** — requires a Replit publish, a separate owner-driven
+  flow this agent cannot trigger (see
+  `.agents/memory/replit-publish-verification.md`).
 
-Next action: repository owner (or an agent with deployment log access)
-retrieves the actual traceback for one of these 500s, which should make
-the fix straightforward once the real exception type is known.
+Evidence (2026-08-28): commit `decd339`, pushed to `main`. QA comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/203#issuecomment-5459651897
+
+Next action: repository owner publishes to production via Replit, then
+retests all four libraries at `https://animate.creatrweb.com/art-pieces`
+(the issue's exact repro steps). Close #203 once that live retest passes.
 
 Dependencies: None. Unrelated to task 161/#192's camera investigation
 beyond having been discovered during the same testing session, per the

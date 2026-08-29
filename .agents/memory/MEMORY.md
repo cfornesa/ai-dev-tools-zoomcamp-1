@@ -25,3 +25,4 @@
 - [Replit autoscale startup wait race](replit-autoscale-startup-wait-race.md) — A trap/wait race in scripts/start.sh could log a false "exited with status 127" on an ordinary autoscale stop; fixed in #202.
 - [Mistral non-strict schema mode](mistral-non-strict-schema-mode.md) — response_format uses strict:False, so AI output can still violate enums; restate constrained enums in the system prompt too, and keep the two in sync.
 - [Structured editor multi-renderer scoping](structured-editor-multi-renderer-scoping.md) — Scoping for extending the main editor (not just AI art-pieces) to Canvas2D/SVG renderers; #206/#207/#208 phased under epic #205.
+- [Mistral SDK import path](mistralai-sdk-import-path.md) — `mistralai` has no top-level `Mistral`/`MistralError`; import from `mistralai.client`. Caused #203's production 500.

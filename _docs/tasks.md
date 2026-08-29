@@ -6957,13 +6957,27 @@ Dependencies: task 191/#223 and task 190/#222 (both complete).
 
 ## 193. 2D AI-assisted editor: embedded code editor
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#225](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/225)
+GitHub issue: [#225](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/225) (closed)
 
 Parent: task 184/#216, refines task 185/#217. Mirrors the manual
 editor's Code tab (JSON at minimum, code-grammar view as a stretch goal)
 for this editor's route.
+
+Delivered (commit `1598afa`): extracted `EditorWorkspace.tsx`'s JSON
+sub-tab machinery (`useJsonCodeSync`/`SceneCodeEditor`/`codeDiagnostic`,
+issue #159/#177) into a shared `jsonCodeSync.tsx` module, unchanged
+behavior (confirmed via the manual editor's existing 11/11
+`EditorWorkspace.codeTab.test.tsx` passing untouched), and reused it in
+`AiEditorWorkspace.tsx` with a Visual/Code toggle. Edits go through the
+client `validateScene` mirror on blur -- no direct-to-server bypass.
+Code-grammar (non-JSON) view deferred as a known follow-on per the
+issue's own "JSON-only is an acceptable first slice" allowance. `make
+check` passes end to end (744 backend / 2056 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #225 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/225#issuecomment-5462265966).
 
 Dependencies: task 191/#223.
 

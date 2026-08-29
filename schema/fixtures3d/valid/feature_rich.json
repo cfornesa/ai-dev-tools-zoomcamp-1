@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "documentType": "scene3d",
+  "id": "scene3d-feature-rich",
+  "scene": { "backgroundColor": "#101018" },
+  "camera": {
+    "position": { "x": 4, "y": 6, "z": 12 },
+    "target": { "x": 0, "y": 1, "z": 0 },
+    "fov": 60,
+    "near": 0.1,
+    "far": 2000
+  },
+  "lights": [
+    {
+      "id": "sun",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 1.2,
+      "direction": { "x": -1, "y": -2, "z": -1 }
+    },
+    {
+      "id": "bulb",
+      "type": "point",
+      "color": "#ffddaa",
+      "intensity": 3,
+      "position": { "x": 2, "y": 3, "z": 2 }
+    },
+    {
+      "id": "fill",
+      "type": "ambient",
+      "color": "#405060",
+      "intensity": 0.4
+    }
+  ],
+  "groups": [
+    {
+      "id": "group-1",
+      "name": "Furniture",
+      "transform": {
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "objects": [
+    {
+      "id": "table-top",
+      "type": "box",
+      "groupId": "group-1",
+      "transform": {
+        "position": { "x": 0, "y": 1, "z": 0 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "opacity": 1
+      },
+      "material": { "color": "#8b5a2b", "opacity": 1 },
+      "visible": true,
+      "width": 4,
+      "height": 0.2,
+      "depth": 2
+    },
+    {
+      "id": "ball",
+      "type": "sphere",
+      "groupId": null,
+      "transform": {
+        "position": { "x": 0, "y": 2, "z": 0 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "opacity": 1
+      },
+      "material": { "color": "#ff3355", "opacity": 0.9, "emissive": "#440011" },
+      "visible": true,
+      "radius": 0.5
+    },
+    {
+      "id": "post",
+      "type": "cylinder",
+      "groupId": null,
+      "transform": {
+        "position": { "x": -2, "y": 0, "z": 0 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "opacity": 1
+      },
+      "material": { "color": "#333333" },
+      "visible": true,
+      "radiusTop": 0.1,
+      "radiusBottom": 0.2,
+      "height": 1.5
+    },
+    {
+      "id": "floor",
+      "type": "plane",
+      "groupId": null,
+      "transform": {
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "rotation": { "x": -90, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "opacity": 1
+      },
+      "material": { "color": "#222222" },
+      "visible": true,
+      "width": 20,
+      "height": 20
+    }
+  ],
+  "randomness": { "seed": 42, "enabled": true }
+}

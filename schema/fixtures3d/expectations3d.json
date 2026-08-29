@@ -1,0 +1,17 @@
+{
+  "$comment": "Expected outcomes for schema/fixtures3d against schema/scene3d.schema.json alone (raw JSON Schema Draft 2020-12 validation, e.g. jsonschema.Draft202012Validator in Python or ajv in TypeScript). This file predates the #211 Python/TypeScript validators and only covers what JSON Schema structure can express. See schema/README3d.md's 'Fixtures and the schema/validator split' section for why three malicious/ fixtures are schema-valid here on purpose.",
+  "valid/minimal.json": { "valid": true },
+  "valid/feature_rich.json": { "valid": true },
+  "invalid/unsupported_document_type.json": { "valid": false, "rule": "invalidValue" },
+  "invalid/unknown_field.json": { "valid": false, "rule": "unknownField" },
+  "invalid/missing_required.json": { "valid": false, "rule": "missingRequired" },
+  "invalid/wrong_type.json": { "valid": false, "rule": "wrongType" },
+  "invalid/unsupported_schema_version.json": { "valid": false, "rule": "unsupportedSchemaVersion" },
+  "invalid/unsupported_object_type.json": { "valid": false, "rule": "invalidValue" },
+  "$maliciousComment": "These three are deliberately schema-valid: JSON Schema alone cannot express cross-array id uniqueness, dangling groupId references, or a total-payload/object-count limit. #211's validators (mirroring scenes/validation.py's duplicateId/danglingReference/limitExceeded rules for the 2D schema) are expected to reject all three at the validator layer even though the raw schema accepts them.",
+  "malicious/duplicate_ids.json": { "valid": true, "note": "schema-valid; rejected by #211's validator as duplicateId" },
+  "malicious/dangling_group_reference.json": { "valid": true, "note": "schema-valid; rejected by #211's validator as danglingReference" },
+  "malicious/oversized_document.json": { "valid": true, "note": "schema-valid; rejected by #211's validator as limitExceeded (6000 objects)" },
+  "malicious/negative_forbidden_dimensions.json": { "valid": false, "rule": "invalidValue" },
+  "malicious/boundary_bypass_opacity.json": { "valid": false, "rule": "invalidValue" }
+}

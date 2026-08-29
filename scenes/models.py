@@ -27,6 +27,7 @@ from django.db import models
 from django.utils import timezone
 
 from scenes.validation import validate_scene
+from scenes.validation3d import validate_scene3d
 
 
 class MistralCredentialDecryptionError(Exception):
@@ -567,3 +568,84 @@ class Thumbnail(models.Model):
     def __str__(self) -> str:
         kind = "fallback" if self.is_fallback else "generated"
         return f"thumbnail({self.scene_version_id}, {kind})"
+
+
+# --- Task 180/#212: minimal persistence models for the 3D scene document family ---
+#
+# Per #208's decision (a genuinely separate document family, not an
+# extension of the 2D one), these are deliberately separate models from
+# Project/SceneVersion above, not the existing models with a document-type
+# discriminator bolted on -- that would re-couple exactly what #208 decided
+# to keep apart. Mirrors Project/SceneVersion's shape at the minimum scope
+# #212 asks for (creation, versioning, retrieval); intentionally omits
+# fields that only make sense once their owning feature exists here (no
+# `visibility`/`published_at` before publish/gallery integration exists for
+# 3D scenes, no soft-delete before a 3D delete flow exists, no
+# `creation_request_id`/idempotency key before a real creation endpoint
+# exists) -- adding them now would be speculative scope, not what #212's
+# acceptance criteria asks for. `scene_json` is validated by
+# `validate_scene3d` (scenes/validation3d.py), never `validate_scene`.
+
+
+class Project3D(models.Model):
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="projects_3d"
+    )
+    title = models.CharField(max_length=200, default="Untitled 3D scene")
+    current_version = models.ForeignKey(
+        "scenes.SceneVersion3D",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="current_for_projects_3d",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class SceneVersion3D(models.Model):
+    class Origin(models.TextChoices):
+        MANUAL = "manual", "Manual"
+
+    project = models.ForeignKey(Project3D, on_delete=models.CASCADE, related_name="versions")
+    sequence = models.PositiveIntegerField()
+    scene_json = models.JSONField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="created_scene_versions_3d",
+    )
+    origin = models.CharField(max_length=20, choices=Origin.choices, default=Origin.MANUAL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["project", "sequence"], name="unique_sequence_per_project_3d"
+            ),
+            models.CheckConstraint(condition=models.Q(sequence__gte=1), name="sequence_3d_gte_1"),
+        ]
+        ordering = ["project", "sequence"]
+
+    def __str__(self) -> str:
+        return f"3d:{self.project_id} v{self.sequence}"
+
+    def save(self, *args, **kwargs):
+        result = validate_scene3d(self.scene_json)
+        if not result.valid:
+            raise ValidationError(
+                {
+                    "scene_json": [
+                        f"{error.path}: {error.rule} — {error.message}" for error in result.errors
+                    ]
+                }
+            )
+        super().save(*args, **kwargs)

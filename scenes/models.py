@@ -613,6 +613,9 @@ class Project3D(models.Model):
 class SceneVersion3D(models.Model):
     class Origin(models.TextChoices):
         MANUAL = "manual", "Manual"
+        # Issue #232: the 3D counterpart of SceneVersion's AI_CREATE/AI_EDIT.
+        AI_CREATE = "ai_create", "AI create"
+        AI_EDIT = "ai_edit", "AI edit"
 
     project = models.ForeignKey(Project3D, on_delete=models.CASCADE, related_name="versions")
     sequence = models.PositiveIntegerField()
@@ -624,6 +627,10 @@ class SceneVersion3D(models.Model):
         related_name="created_scene_versions_3d",
     )
     origin = models.CharField(max_length=20, choices=Origin.choices, default=Origin.MANUAL)
+    # Issue #232: the 3D counterpart of SceneVersion.ai_request_id -- same
+    # idempotency-key purpose for AIAcceptProposal3DView, same per-project
+    # uniqueness scoping.
+    ai_request_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -632,6 +639,11 @@ class SceneVersion3D(models.Model):
                 fields=["project", "sequence"], name="unique_sequence_per_project_3d"
             ),
             models.CheckConstraint(condition=models.Q(sequence__gte=1), name="sequence_3d_gte_1"),
+            models.UniqueConstraint(
+                fields=["project", "ai_request_id"],
+                condition=models.Q(ai_request_id__isnull=False),
+                name="unique_ai_request_id_per_project_3d",
+            ),
         ]
         ordering = ["project", "sequence"]
 

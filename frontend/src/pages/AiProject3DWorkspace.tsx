@@ -2,18 +2,19 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
-import { getProject3D, type Project3D } from '../api/projects3d';
+import { getProject3D, type Project3D, type SceneVersion3D } from '../api/projects3d';
+import AIProposalPanel3D from './AIProposalPanel3D';
 import type { Scene3DDocument } from './scene3dTypes';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
 
 /**
- * Issue #231: the 3D counterpart of #223 -- a real, navigable route for
- * the 3D AI-assisted editor product, reusing #226's groundwork (fetch
- * pattern, preview placeholder) rather than reimplementing independently,
- * per #215's "not four independent implementations." No outline/
- * inspector (that's the 3D manual editor's concept, #227), no AI prompt
- * panel yet (#232), no embedded code editor yet (#233).
+ * Issue #231/#232: the 3D counterpart of #223/#224 -- a real, navigable
+ * route for the 3D AI-assisted editor product, reusing #226's groundwork
+ * (fetch pattern, preview placeholder) rather than reimplementing
+ * independently, per #215's "not four independent implementations." No
+ * outline/inspector (that's the 3D manual editor's concept, #227), no
+ * embedded code editor yet (#233).
  */
 function AiProject3DWorkspace() {
   const { id } = useParams<{ id: string }>();
@@ -83,7 +84,15 @@ function AiProject3DWorkspace() {
     );
   }
 
-  if (!scene) return null; // unreachable once loadState === 'ready'
+  if (!scene || !id) return null; // unreachable once loadState === 'ready'
+
+  // Issue #232: applies an accepted AI proposal exactly like
+  // AiEditorWorkspace.tsx's handleAccepted -- the server has already
+  // persisted `version`, so this just syncs local state from it.
+  function handleAccepted(version: SceneVersion3D) {
+    setScene(version.scene_json as unknown as Scene3DDocument);
+    setProject((current) => (current ? { ...current, current_version: version } : current));
+  }
 
   return (
     <div>
@@ -101,6 +110,17 @@ function AiProject3DWorkspace() {
             group(s) in this scene.
           </p>
         </div>
+      </section>
+      {/* Issue #232: the prompt panel is this editor's primary interaction
+          surface, not tucked into a collapsible section -- same
+          "prompt-first" convention as #224's 2D AiEditorWorkspace.tsx. */}
+      <section aria-label="AI assistant" role="region" data-panel="ai-assistant">
+        <AIProposalPanel3D
+          projectId={id}
+          workingCopy={scene}
+          currentVersionId={project?.current_version?.id ?? null}
+          onAccepted={handleAccepted}
+        />
       </section>
     </div>
   );

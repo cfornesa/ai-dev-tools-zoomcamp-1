@@ -20,6 +20,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from ai_provider import config as ai_config
 from ai_provider import interface as ai_interface
+from ai_provider import interface3d as ai_interface3d
 from ai_provider import logging as ai_logging
 from ai_provider.fake_provider import FakeAIProviderScenario, FakeAISceneProvider
 from ai_provider.interface import AICreateSceneRequest
@@ -40,6 +41,30 @@ def test_no_public_data_type_has_a_key_shaped_field():
                     f"(contains '{forbidden}') -- provider keys must never be "
                     "representable in a request or response type."
                 )
+
+
+def test_no_public_data_type_3d_has_a_key_shaped_field():
+    """Issue #232: same guarantee as above, for interface3d.py's types."""
+    for data_type in ai_interface3d.PUBLIC_DATA_TYPES:
+        assert dataclasses.is_dataclass(data_type), f"{data_type} is not a dataclass"
+        for f in dataclasses.fields(data_type):
+            lowered = f.name.lower()
+            for forbidden in _FORBIDDEN_FIELD_SUBSTRINGS:
+                assert forbidden not in lowered, (
+                    f"{data_type.__name__}.{f.name} looks key-shaped "
+                    f"(contains '{forbidden}') -- provider keys must never be "
+                    "representable in a request or response type."
+                )
+
+
+def test_ai_scene3d_provider_abc_methods_take_no_key_parameter():
+    for name in ("create_scene3d", "edit_scene3d"):
+        method = getattr(ai_interface3d.AIScene3DProvider, name)
+        params = inspect.signature(method).parameters
+        for param_name in params:
+            if param_name == "self":
+                continue
+            assert "key" not in param_name.lower()
 
 
 def test_ai_scene_provider_abc_methods_take_no_key_parameter():

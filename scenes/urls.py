@@ -1,6 +1,7 @@
 from django.urls import path
 
 from scenes.ai_api import AIAcceptProposalView, AICreateSceneView, AIEditSceneView
+from scenes.ai_api3d import AIAcceptProposal3DView, AICreateScene3DView, AIEditScene3DView
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
@@ -134,5 +135,21 @@ urlpatterns = [
         "projects3d/<uuid:public_id>/versions/",
         SceneVersion3DListCreateView.as_view(),
         name="project3d-version-list-create",
+    ),
+    # #232: the 3D AI-assisted editor's create/edit/accept endpoints.
+    path(
+        "projects3d/<uuid:public_id>/ai/create-scene/",
+        AICreateScene3DView.as_view(),
+        name="ai-create-scene3d",
+    ),
+    path(
+        "projects3d/<uuid:public_id>/ai/edit-scene/",
+        AIEditScene3DView.as_view(),
+        name="ai-edit-scene3d",
+    ),
+    path(
+        "projects3d/<uuid:public_id>/ai/accept-proposal/",
+        AIAcceptProposal3DView.as_view(),
+        name="ai-accept-proposal3d",
     ),
 ]

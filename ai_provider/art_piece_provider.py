@@ -57,7 +57,14 @@ SUPPORTED_LIBRARIES = ("canvas2d", "svg", "threejs", "aframe")
 # one version per library without duplicating the string.
 THREEJS_VERSION = "0.160.0"
 THREEJS_CDN_URL = f"https://cdn.jsdelivr.net/npm/three@{THREEJS_VERSION}/build/three.min.js"
-AFRAME_VERSION = "1.5.0"
+# Pinned to 1.4.2, not the latest 1.5.x: jsdelivr's aframe@1.5.0 npm
+# package does not publish a `dist/aframe.min.js` file at all (confirmed
+# 404 live in production while investigating #236 -- its minified build
+# is only available as `dist/aframe-master.min.js` under that version),
+# so every 1.5.0 art piece failed to load the A-Frame runtime and
+# rendered blank regardless of what the AI generated. 1.4.2 is the
+# newest release confirmed to still publish the expected filename.
+AFRAME_VERSION = "1.4.2"
 AFRAME_CDN_URL = f"https://cdn.jsdelivr.net/npm/aframe@{AFRAME_VERSION}/dist/aframe.min.js"
 
 DEFAULT_MODEL = "mistral-large-latest"

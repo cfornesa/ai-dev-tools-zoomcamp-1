@@ -83,7 +83,10 @@ const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, { url: string; filename: stri
     filename: 'three.min.js',
   },
   aframe: {
-    url: 'https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js',
+    // Pinned to 1.4.2, not 1.5.0: jsdelivr's aframe@1.5.0 package has no
+    // `dist/aframe.min.js` (404 in production, #236) -- see
+    // `ai_provider/art_piece_provider.py`'s `AFRAME_VERSION` comment.
+    url: 'https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js',
     filename: 'aframe.min.js',
   },
 };

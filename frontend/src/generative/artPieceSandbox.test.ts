@@ -65,7 +65,7 @@ describe('buildArtPieceSandboxDocument', () => {
   it('aframe loads the pinned CDN script, allows only that origin in the CSP, and places the snippet directly', () => {
     const scene = '<a-scene id="art-piece-scene" embedded><a-box></a-box></a-scene>';
     const doc = buildArtPieceSandboxDocument(scene, 'aframe');
-    expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0');
+    expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2');
     expect(doc).toMatch(/script-src 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net;/);
     expect(doc).toContain(scene);
   });

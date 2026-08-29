@@ -71,7 +71,10 @@ export const ART_PIECE_IFRAME_SANDBOX = 'allow-scripts';
  * already pins a CDN library version. */
 const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, string>> = {
   threejs: 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
-  aframe: 'https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js',
+  // Pinned to 1.4.2, not 1.5.0: jsdelivr's aframe@1.5.0 package has no
+  // `dist/aframe.min.js` (404 in production, #236) -- see
+  // `ai_provider/art_piece_provider.py`'s `AFRAME_VERSION` comment.
+  aframe: 'https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js',
 };
 // The one external host any pinned CDN URL above may ever point at --
 // checked at the call site (`cdnScriptTag`) so an accidental future

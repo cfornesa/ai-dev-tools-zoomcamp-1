@@ -28,3 +28,4 @@
 - [Mistral SDK import path](mistralai-sdk-import-path.md) — `mistralai` has no top-level `Mistral`/`MistralError`; import from `mistralai.client`. Caused #203's production 500.
 - [E2E draft-seed client_seq race](e2e-draft-seed-client-seq-race.md) — an e2e test seeding a server draft with a small hardcoded `client_seq` can lose a race against the app's own periodic autosave; use a very large value instead. Caused #193's recurring flake.
 - [Scene schema allOf branch property shadowing](scene-schema-allof-branch-property-shadowing.md) — a base `shape` property not re-listed in every type-specific `allOf` branch's closed allowlist is silently rejected for every shape. Caused #214's AI create-scene 422s.
+- [Feature branches with completed work not merged to main](feature-branches-completed-work-not-merged-to-main.md) — tasks.md/GitHub can say COMPLETE/closed while the code only exists on an unmerged branch; verify before building on it. Found for #210-213.

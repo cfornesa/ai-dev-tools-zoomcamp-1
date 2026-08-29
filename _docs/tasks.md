@@ -7471,8 +7471,9 @@ Dependencies: None.
 
 ## 205. Revert temporarily-raised AI daily generation quotas
 
-Status: ACTIVE (guardrail intentionally loosened at the repository
-owner's explicit request; revert not yet done)
+Status: COMPLETE. Guardrail restored — all five constants reverted to
+their original values, "TEMPORARY" comments removed, `make check`
+passes. #237 closed with a QA-pass comment.
 
 GitHub issue: [#237](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/237)
 
@@ -7507,11 +7508,17 @@ skipped (no change in count, only faster since the affected daily-quota
 tests set the cache counter directly rather than looping);
 lint/format/mypy clean.
 
-Next action: repository owner (or a future session, once the owner
-confirms testing is done and the app has or will soon have more than
-one active user) reverts all five constants to their original values
-(20/50/50/50/50) per #237's acceptance criteria, and removes the
-"TEMPORARY" comments introduced alongside each. Do not revert
-prematurely while live #236 verification is still in progress.
+Reverted (commit `123c95e`, 2026-08-29): repository owner explicitly
+authorized proceeding once #236's live verification concluded and the
+issue was closed. All five constants restored to their original values
+— `scenes/art_piece_api.py`'s `DAILY_QUOTA_MAX_SUCCESSES` (20),
+`scenes/ai_api.py`'s
+`DAILY_QUOTA_MAX_SUCCESSES`/`EDIT_DAILY_QUOTA_MAX_SUCCESSES` (50 each),
+`scenes/ai_api3d.py`'s
+`DAILY_QUOTA_MAX_SUCCESSES_3D`/`EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D` (50
+each) — and every "TEMPORARY" comment removed. `make check` passes end
+to end (794 backend / 2088 frontend). QA verified each constant's exact
+value and the absence of any remaining "TEMPORARY" marker via `grep`;
+posted `## QA: PASS` and closed #237.
 
 Dependencies: None.

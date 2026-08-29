@@ -6196,10 +6196,9 @@ than one library — starting with native Canvas2D and SVG alongside today's
 p5.js — with the same shapes/bindings/graph/camera-tracking behavior
 regardless of renderer.
 
-Status: ACTIVE (task 174/#206's Canvas2D adapter COMPLETE; task 176/#208
-decided and closed, spinning off task 177/#209 as a separate epic; task
-175/#207's SVG adapter still proposed — now unblocked by #206's shared
-plumbing)
+Status: COMPLETE — all three sub-issues resolved: task 174/#206 (Canvas2D
+adapter), task 175/#207 (SVG adapter), and task 176/#208 (3D decision,
+spun off as its own epic, task 177/#209)
 
 GitHub issue: [#205](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/205) (epic)
 
@@ -6321,16 +6320,44 @@ and thumbnail-capture work on top.
 
 ## 175. Add an SVG renderer adapter for the structured scene editor
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#207](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/207)
+GitHub issue: [#207](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/207) (closed)
 
-Parent: task 173/#205. Depends on task 174/#206 landing first (shared
-plumbing). See issue #207 for full draft acceptance criteria, including
-the camera-overlay `<foreignObject>` approach and the thumbnail-capture
-snapshot mechanism this renderer needs that Canvas2D does not.
+Parent: task 173/#205. Depended on task 174/#206's shared plumbing.
 
-Dependencies: task 174/#206.
+Done: `schema/scene.schema.json`'s `renderer.preferred` enum gained
+`"svg"`; `frontend/src/render/svgAdapter.ts` builds real SVG DOM elements
+(`<circle>`/`<rect>`/`<line>`/`<path>`/`<g>`) via `createElementNS`/
+`setAttribute` only (never `innerHTML`/`outerHTML`, since unlike
+Canvas2D, SVG markup can execute embedded script content if built from
+interpolated strings); camera overlay uses a `<foreignObject>` containing
+an internal `<canvas>` `drawImage`'d every frame; `canvas.opacity` uses
+SVG's own native `opacity` attribute (no offscreen-buffer trick needed,
+unlike the raster adapters). `getCanvasElement()` delegates to a private,
+never-mounted `canvas2dAdapter.ts` instance kept in sync on every
+`render()` call, resolving the thumbnail-capture design question by
+reusing the already-tested Canvas2D engine rather than hand-porting its
+opacity-buffer/camera-compositing logic a third time — this also made
+`svgAdapter.test.ts`'s 24-case pixel-parity coverage possible at all
+(jsdom has no SVG rasterizer). `exportCompatibility.ts` gained an `svg`
+entry (full parity); `standaloneSvgRuntimeSource.ts` +
+`generateHtmlExport.ts` produce a CDN-free svg export, verified by a
+jsdom smoke test asserting on the real SVG DOM tree. `ExportConfigDialog.tsx`/
+`Gallery.tsx`'s renderer selects and `scenes/api.py`'s
+`BlankProjectCreateView` all gained the `svg` option.
+
+Verification: full `make check` clean (677 backend passed/22 skipped;
+2022 frontend passed). Full disposable-stack `make browser-qa`: 132
+passed, 1 failed, 1 intentional skip — the 1 failure is the same
+pre-existing task 162/#193 flaky test reproduced identically on the
+previous commit (#206), confirmed unrelated by diff inspection.
+`projectLifecycle.spec.ts:153` (the other #193 test) passed this run,
+confirming #193's own "intermittent CI/environment timing variance, not
+a deterministic defect" characterization. Every test exercising this
+task's own changes passed.
+
+Dependencies: task 174/#206 (satisfied).
 
 ## 176. Decide whether/how Three.js and A-Frame fit the structured scene editor
 

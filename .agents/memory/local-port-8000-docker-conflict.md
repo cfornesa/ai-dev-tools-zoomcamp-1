@@ -53,3 +53,26 @@ workaround, not a real fix, and must not ship. The Browser tool's own
 network path is independently subject to the same `localhost` ambiguity,
 so this applies whether verifying via plain `curl` or through the Browser
 tool's preview pane.
+
+**Cleanest workaround, no file edit (2026-08-29, production-readiness
+pass):** `vite.config.ts` now reads its backend proxy target from
+`BROWSER_QA_BACKEND_URL` (defaulting to `http://localhost:8000` when
+unset) — the "not configurable via env" claim above is stale as of
+whenever that env var was added for `scripts/browser-qa.sh`'s own use.
+Start Vite with `BROWSER_QA_BACKEND_URL=http://127.0.0.1:8000 npm run
+dev` instead of editing `vite.config.ts` and remembering to revert it —
+zero risk of an accidental workaround edit surviving into a commit. Hit
+this again while running `make e2e`: the first full run failed on
+essentially every server-dependent test (30s timeouts / 404s from
+`{"detail":"Not Found"}`, `server: uvicorn`), which looked exactly like
+a mass regression but was this same port conflict — confirmed via
+`curl http://localhost:5000/api/whoami/` (404, wrong backend) vs.
+`curl http://127.0.0.1:8000/api/whoami/` (401, correct backend) with
+Django and Vite both already running. Restarting only Vite with the env
+var above (no Django restart needed) fixed it: full suite went from
+"everything server-dependent times out" to 133 passed/1 skipped/0
+failed. **Always suspect this conflict first** when a from-scratch local
+`make e2e`/browser-verification run fails broadly and uniformly (many
+different specs, same timeout/404 shape) rather than in one specific
+scenario — that pattern is much more consistent with "wrong backend
+entirely" than with a real product regression.

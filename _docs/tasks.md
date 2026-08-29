@@ -5532,9 +5532,24 @@ tests passed clean, including every test that actually exercises #206's
 Canvas2D/export/renderer-picker changes. GitHub issue #193 reopened with
 this evidence rather than filing a duplicate.
 
-Next action: unchanged from the prior entry — this remains a dedicated,
-narrowly-scoped flaky-test follow-up, not a blocker for unrelated feature
-work.
+Evidence (2026-08-29, task 175/#207 session): investigated the exact
+mechanism rather than re-labeling as timing variance. Strong hypothesis
+(documented in a detailed issue comment, not yet live-confirmed):
+`useDraftServerSync.ts`'s `pagehide` listener fires during
+`aiAndRecovery.spec.ts:1012`'s `page.reload()`, racing the test's own
+`apiPut`-seeded server draft with the *original* page's stale
+`workingCopyRef` snapshot (the blank scene, not either seeded candidate)
+via `syncOnPageHide`. Traced `_upsert_draft`'s `client_seq <=` guard and
+found no call site that would let this race through as analyzed, so the
+exact ordering that lets it slip past the guard remains unconfirmed —
+needs live network-request tracing against a running dev stack to
+confirm or rule out. If confirmed, the fix is likely test-side (seed
+drafts before the editor ever mounts, not while a previous mount's
+pagehide listener is still live) rather than product-side.
+
+Next action: live-confirm the pagehide-sync-race hypothesis with network
+tracing, then fix on whichever side (test or product) the confirmation
+points to.
 
 ## 163. Fix inverted layer draw-order vs. panel-documented "top = front" contract
 

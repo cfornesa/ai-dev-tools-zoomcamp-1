@@ -55,6 +55,16 @@ explicit numeric ranges (never unbounded numbers), following the same
 "every numeric field has an explicit min/max" discipline the 2D schema
 uses for its own `transform2D`.
 
+## Complexity/payload limits
+
+`schema/limits3d.json` mirrors `schema/limits.json`'s role for the 2D
+schema: scene-wide counts (`maxObjects`, `maxGroups`,
+`maxGroupNestingDepth`, `maxLights`) and `maxScenePayloadBytes`, none of
+which plain JSON Schema can express. It is not enforced by
+`scene3d.schema.json` itself — #211's validators are expected to load it
+and enforce it the same way `scenes/validation.py` and
+`frontend/src/validation/scene.ts` already do for `schema/limits.json`.
+
 ## Fixtures and the schema/validator split
 
 `schema/fixtures3d/` mirrors `schema/fixtures/`'s `valid/`, `invalid/`, and

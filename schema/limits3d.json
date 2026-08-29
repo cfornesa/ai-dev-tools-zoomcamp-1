@@ -1,0 +1,8 @@
+{
+  "$comment": "Centralized V1 3D-scene complexity/payload limits, mirroring schema/limits.json's role for the 2D schema (see issue #210). #211's Python/TypeScript validators are expected to load this file and enforce it identically after schema/scene3d.schema.json structural validation passes. Per-field numeric ranges (opacity, fov, dimensions, etc.) live in scene3d.schema.json itself; this file governs scene-wide counts and total payload size, which plain JSON Schema cannot express -- see schema/README3d.md's 'Fixtures and the schema/validator split' section.",
+  "maxObjects": 500,
+  "maxGroups": 50,
+  "maxGroupNestingDepth": 6,
+  "maxLights": 16,
+  "maxScenePayloadBytes": 307200
+}

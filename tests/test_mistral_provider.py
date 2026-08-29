@@ -150,6 +150,22 @@ def test_create_scene_system_prompt_lists_every_binding_targetproperty_and_signa
         assert f'"{value}"' in content, f"signal {value!r} missing from system prompt"
 
 
+def test_create_scene_system_prompt_instructs_naming_implied_shapes():
+    """#222: the model should set shape.name when the prompt implies one
+    (e.g. "add a sun"), so a later edit prompt can address it back by name."""
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    provider = _provider_with(handler)
+    provider.create_scene(AICreateSceneRequest(prompt="a scene"))
+
+    system_message = next(m for m in captured["messages"] if m["role"] == "system")
+    assert "name" in system_message["content"]
+
+
 def test_create_scene_passes_the_bounded_timeout():
     captured = {}
 

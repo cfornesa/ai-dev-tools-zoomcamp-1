@@ -231,7 +231,11 @@ signal name.
 20 layers, 100 graph nodes, 150 graph connections, 3 conditional nodes, \
 100 bindings, and 4 particle emitters.
 - Every id referenced by a binding, group, or connection must exist \
-elsewhere in the document."""
+elsewhere in the document.
+- When the user's prompt implies a name for a shape (e.g. "add a sun" \
+implies naming that shape "Sun"), set that shape's optional "name" \
+field accordingly, so a later prompt in the same session can address it \
+back by that name. Leave "name" unset when no name is implied."""
 
 _EDIT_SYSTEM_PROMPT = """You propose a minimal JSON Patch editing an existing gesture-reactive \
 animation scene document. Follow these rules exactly:
@@ -257,7 +261,13 @@ own): "/shapes/...", "/groups/...", "/bindings/...", "/layers/...", \
 "/demoSignals" (or under it), "/canvas/backgroundColor" exactly, and \
 "/randomness/enabled" exactly.
 - If the requested edit cannot be expressed within these constraints, \
-respond with an empty JSON array: []."""
+respond with an empty JSON array: [].
+- You may address an existing shape by its "name" field when the scene \
+document shows one set (e.g. "the shape named Sun" or "rename Sun to \
+Moon" both refer to whichever shape currently has "name": "Sun") -- you \
+do not need to already know its id. When you add a new shape the prompt \
+implies a name for, set that shape's "name" field so a later prompt can \
+address it back the same way."""
 
 
 # A response_format-compatible JSON Schema constraining Mistral's output to

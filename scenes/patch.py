@@ -371,9 +371,11 @@ def _shape_label(item: dict[str, Any], scene: dict[str, Any]) -> str | None:
 def _reference_candidates(root: str, item: dict[str, Any], scene: dict[str, Any]) -> list[str]:
     """The strings a prompt could plausibly use to refer to `item` (an
     existing element at top-level section `root`, e.g. "shapes" or
-    "graph.nodes"): its own id, its `name` field when it has one
-    (layers/groups only), and -- for shapes specifically, which carry no
-    `name` of their own -- its derived display label."""
+    "graph.nodes"): its own id, its `name` field when it has one (any
+    element type that carries one -- since #214 fixed `shape.name`'s
+    schema-shadowing bug, this includes shapes, not just layers/groups),
+    and -- for shapes specifically -- its derived display label as a
+    fallback for the common case a shape has no name set."""
     candidates: list[str] = []
     item_id = item.get("id")
     if isinstance(item_id, str) and item_id:

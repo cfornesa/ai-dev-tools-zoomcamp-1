@@ -110,6 +110,23 @@ def test_requests_json_schema_response_format_for_a_patch_array():
     assert '"schemaVersion"' in user_message["content"]  # current scene embedded
 
 
+def test_edit_scene_system_prompt_instructs_addressing_elements_by_name():
+    """#222: the model should be able to address an existing shape by its
+    `name` field (e.g. "the shape named Sun"), not just its raw id."""
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        patch = [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#000000"}]
+        return _fake_response(json.dumps(patch))
+
+    provider = _provider_with(handler)
+    provider.edit_scene_with_patch(_request())
+
+    system_message = next(m for m in captured["messages"] if m["role"] == "system")
+    assert '"name"' in system_message["content"]
+
+
 def test_edit_scene_abc_method_returns_only_the_operation_result():
     patch = [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#000000"}]
     provider = _provider_with(lambda **kw: _fake_response(json.dumps(patch)))

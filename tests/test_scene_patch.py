@@ -518,6 +518,34 @@ def test_referencing_a_shape_by_its_raw_id_is_allowed():
     assert validate_patch_operations(patch, scene=scene, prompt="delete shape-star please") == []
 
 
+def test_patch_touching_a_shape_referenced_by_its_name_field_is_allowed():
+    """#222: shape.name (fixed by #214) is a valid reference candidate,
+    same as a layer's name -- "the shape named Sun" should resolve."""
+    scene = _scene_with_named_layers_and_shapes()
+    scene["shapes"][0]["name"] = "Sun"
+    patch = [{"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"}]
+
+    assert validate_patch_operations(patch, scene=scene, prompt="rename Sun to Moon") == []
+
+
+def test_patch_touching_an_unmentioned_named_shape_is_still_rejected():
+    # A named-but-unmentioned shape must stay protected exactly like an
+    # unnamed one -- naming a shape must never widen what a patch may touch.
+    scene = _scene_with_named_layers_and_shapes()
+    scene["shapes"][0]["name"] = "Sun"
+    scene["shapes"][2]["name"] = "Star"
+    patch = [
+        {"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"},
+        {"op": "remove", "path": "/shapes/2"},  # named "Star", never mentioned
+    ]
+
+    errs = validate_patch_operations(patch, scene=scene, prompt="rename Sun to Moon")
+
+    assert len(errs) == 1
+    assert errs[0].index == 1
+    assert errs[0].reason == PatchErrorReason.UNREFERENCED_ELEMENT
+
+
 def test_worst_reason_prioritizes_unreferenced_element_over_invalid_path():
     scene = _scene_with_named_layers_and_shapes()
     errs = validate_patch_operations(

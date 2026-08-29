@@ -6929,9 +6929,9 @@ Dependencies: None blocking. Unblocks task 192/#224 and task 193/#225.
 
 ## 192. 2D AI-assisted editor: prompt-driven create/edit flow
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#224](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/224)
+GitHub issue: [#224](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/224) (closed)
 
 Parent: task 184/#216, refines task 185/#217. The actual AI-assisted
 authoring experience: a prompt-first panel (not a supplementary one,
@@ -6941,7 +6941,19 @@ machinery and task 190/#222's name-based resolution, with a continuous
 session model (each accepted prompt's result is addressable by name in
 the next prompt).
 
-Dependencies: task 191/#223 and task 190/#222, both should land first.
+Delivered (commit `f1f046c`): `AIProposalPanel` mounted directly into
+`AiEditorWorkspace.tsx` as the primary, always-visible surface -- no
+changes to `AIProposalPanel.tsx`/`useAIProposal.ts` themselves. Accept
+syncs local `scene`/`project.current_version` from the server-persisted
+version, so a follow-up Edit-mode prompt generates against whatever was
+just accepted (verified by a test asserting `editAIScene`'s `currentScene`
+argument is the just-accepted scene, not the stale original). `make
+check` passes end to end (744 backend / 2053 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #224 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/224#issuecomment-5462235072).
+
+Dependencies: task 191/#223 and task 190/#222 (both complete).
 
 ## 193. 2D AI-assisted editor: embedded code editor
 

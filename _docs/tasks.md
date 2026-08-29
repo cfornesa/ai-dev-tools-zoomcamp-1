@@ -6821,9 +6821,9 @@ Dependencies: task 185/#217, task 186/#218 (both should land first).
 
 ## 188. Show the active renderer (p5.js/Canvas2D/SVG) inside the 2D manual editor
 
-Status: PROPOSED
+Status: COMPLETE
 
-GitHub issue: [#220](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/220)
+GitHub issue: [#220](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/220) (closed)
 
 Small, independent UI gap found investigating task 185/#217's scope: the
 2D manual editor never displays which renderer an open project uses
@@ -6831,6 +6831,21 @@ anywhere in its header/toolbar (only the project-creation picker and the
 export dialog show it). All the pieces needed already exist
 (`resolveSceneRendererId`, `exportRendererIdFor`, `RENDERER_LABELS`) — a
 label/badge addition only, no new renderer logic.
+
+Delivered (commit `d592659`): a read-only `.editor-renderer-badge` span
+next to `EditableProjectTitle` in `EditorWorkspace.tsx`'s header, wired
+through the existing `resolveSceneRendererId` -> `exportRendererIdFor` ->
+`RENDERER_LABELS` pipeline. New `EditorWorkspace.rendererBadge.test.tsx`
+covers all three renderer types. `make check` passes end to end (733
+backend / 2045 frontend).
+
+QA: PASS, full criterion matrix in the
+[issue #220 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/220#issuecomment-5462095524).
+Live-browser verification of the authenticated editor route was not
+performed (this environment's Google OAuth uses placeholder credentials
+per issue #75); verified instead via React Testing Library against the
+full component tree, matching this repo's existing `EditorWorkspace.*`
+test convention.
 
 Dependencies: None.
 

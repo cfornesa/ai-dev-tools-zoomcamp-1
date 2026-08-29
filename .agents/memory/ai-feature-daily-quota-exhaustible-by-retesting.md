@@ -36,3 +36,18 @@ consecutive live-generation checks out significantly (many minutes to
 tens of minutes apart) rather than on every poll tick, so a long
 back-and-forth loop doesn't silently consume the account's entire daily
 budget before the actual fix has even been deployed.
+
+**Zero-cost verification alternative found for #236's CSP check
+(2026-08-29, after the quota was already exhausted):** when the change
+being verified lives in client-side code (like `artPieceSandbox.ts`'s
+`buildCsp()` — a frontend, not backend, change), the deployed frontend
+JS bundle can be fetched and grepped directly for the expected string,
+with zero impact on any AI quota: `fetch(scriptSrc).then(r =>
+r.text())` on every `<script src>` under `/assets/` on the page, then
+check `.includes('unsafe-eval')` (or whatever string proves the fix).
+This confirmed the fix was still absent from production without
+generating a single art piece. Always check whether a fix under
+verification is deployable this way (client-bundle string presence)
+before reaching for a quota-consuming live-generation retest — it is
+strictly cheaper and gives the same yes/no answer for any change that
+doesn't require exercising server-side/AI behavior specifically.

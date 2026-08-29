@@ -5286,11 +5286,12 @@ Make the frontend test gate deterministic by eliminating the order-dependent fai
 
 ## Evidence and pending items
 
-- **Status:** ACTIVE (reopened — see below)
+- **Status:** COMPLETE (re-closed)
 - **Evidence so far:** Engineer commit `e49948dada69cf340e43db7862c567f2f3b6e362` changed only `draftAutosave.test.ts`, adding timer/IndexedDB cleanup and bounded waiting. Focused tests passed 22/22 across 5 runs; full frontend passed 1,847/1,847 twice; frontend quality/build checks and `make check` passed with remaining macOS sandbox socket/startup limitations classified separately. QA PASS comment posted.
 - **Regression (2026-08-28):** Discovered incidentally during unrelated work on #206. Two consecutive full-suite runs on `main` at commit `6dd3572`: run 1 failed the exact same test (`collapses a rapid burst of edits into a single write, timed from the last edit`, order-dependent, passes 22/22 in isolation); run 2 (no code changes) passed clean. Issue #187 reopened with full evidence rather than filing a duplicate.
-- **Pending verification:** Re-run the original engineer pass's reproduction with repeat/shuffled test order to find the remaining full-suite-only leak.
-- **Next action:** A future session re-investigates #187's reopened regression before treating #184/#186 as re-verified against a truly deterministic suite.
+- **Re-fix (2026-08-28):** Root cause: several "the write must have landed" assertions used a fixed-duration wait (`DEBOUNCE_MS + 40` = 80ms) sized for an idle runner, not enough real wall-clock time under full-suite CPU contention. Commit `4888ff8` replaced those with `vi.waitFor` polling (mirroring the one test in the file that already did this correctly), and widened two DB-open-race tests' pre-`schedule()` margins to 200ms (a fixed wait, deliberately not polling, since correctness there depends on the first debounce timer having actually fired before the next `schedule()` call). Verified 5/5 isolated + 4/4 full-suite runs clean (previously ~50% full-suite failure rate). Full `make check` passed. QA PASS comment posted; issue re-closed.
+- **Pending verification:** None.
+- **Next action:** None required. If this recurs, the two fixed-margin DB-open-race tests are the most likely remaining source — see the QA comment's suggestion to instrument `DraftAutosaveController` with a "timer fired" test hook.
 - **Durable memory link:** None required; this is a task-specific test-isolation defect and no reusable platform constraint was discovered during grooming.
 
 ## Discovery gate

@@ -6422,10 +6422,16 @@ Dependencies: None blocking; informed by but does not block tasks 174/175.
 
 ## 177. Epic: a genuine 3D scene editor (new schema, new editor, Three.js/A-Frame renderers)
 
-Status: IN PROGRESS (epic open, tracking sub-issues — same pattern as
-task 173/#205 across #206/#207/#208; not expected to close in one pass)
+Status: COMPLETE (this phase). Closed once its four scoped sub-issues
+(#210-#213) delivered a working, tested, end-to-end backend slice —
+mirroring how task 173/#205 closed once #206/#207/#208 resolved, even
+though #208 itself spun off this epic as further work. Remaining future
+phases (editor UI, renderer adapters, gesture bindings, AI generation,
+export/publish/gallery, version-history/editing) are intentionally not
+pre-scoped; each gets its own criterion-ready issue when work on it
+begins, the same way #210-#213 each did.
 
-GitHub issue: [#209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/209)
+GitHub issue: [#209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/209) (closed)
 
 Follow-up to task 176/#208's decision. A new, separate 3D scene document
 type and editor — genuine 3D geometry/transform/camera/lighting support —

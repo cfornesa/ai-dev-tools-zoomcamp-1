@@ -8453,3 +8453,86 @@ no code change was needed.
 
 Dependencies: Should follow task 217/#249 so paths are stable first —
 satisfied.
+
+## 220. Add delete capability for 2D projects (mirroring #242's 3D pattern)
+
+Status: PROPOSED
+
+GitHub issue: [#252](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/252)
+
+Parent: none — distilled from a live investigation of two broken-looking
+gallery entries on the production app, requested via `/goal` on
+2026-08-30.
+
+Discovered live against the production app
+(https://animate.creatrweb.com) via the signed-in owner's account:
+project id `9494ae05-1c0c-4de5-9bcd-f3b33d1c2105` ("Untitled animation",
+private) has `current_version: null` (confirmed via
+`GET /api/projects/9494ae05.../`) — created via a bare
+`POST /api/projects/` call that never got a first `SceneVersion` saved,
+unlike the app's own creation flows. No frontend `api/*.ts` function
+calls that bare endpoint, so this was almost certainly direct API
+testing, not a UI-reachable state. Opening it in the editor correctly
+shows "This project has no valid scene to load."
+(`EditorWorkspace.tsx`'s `loadState === 'no-scene'` — deliberate,
+correct defensive handling, not a bug) but there is no way to remove
+it: `frontend/src/api/projects.ts` never wraps the backend's existing
+`DELETE /api/projects/{id}/` endpoint, and `ProjectCard.tsx` has no
+Delete button at all. Confirmed via `Project3DCard.tsx`'s own code
+comment (issue #242 gave 3D projects delete but explicitly left 2D
+as-is): "there is no pre-existing 2D project-level delete UI to mirror
+instead." Any 2D project that ends up in this broken/versionless state
+is permanently stuck with no in-app recovery path.
+
+Scope: add `deleteProject` to `frontend/src/api/projects.ts` wrapping
+the existing `DELETE /api/projects/{id}/` endpoint, and a Delete
+button + `window.confirm` on `ProjectCard.tsx`, mirroring
+`Project3DCard.tsx`'s pattern exactly. Full scope and acceptance
+criteria in #252.
+
+Explicitly out of scope: actually deleting the specific orphaned
+production project (`9494ae05-1c0c-4de5-9bcd-f3b33d1c2105`) — that is
+a separate follow-up requiring the repository owner's direct
+confirmation before any production data is touched; not scheduled as
+unattended agent work.
+
+Dependencies: None.
+
+## 221. Every new 3D project's empty default scene reads as broken (black-on-black)
+
+Status: PROPOSED
+
+GitHub issue: [#253](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/253)
+
+Parent: none — distilled from the same live investigation as task
+220/#252, same session.
+
+Discovered live: project id `c27a457f-aebe-4f85-a637-2c387595327f`
+("Untitled 3D scene") renders as a solid black canvas in both the live
+Three.js editor preview and its gallery thumbnail. Confirmed this is
+**not a rendering bug** — its `scene_json` genuinely has zero objects,
+zero lights, `groups: []`, and `scene.backgroundColor: "#000000"`,
+exactly the literal content of `schema/fixtures3d/valid/minimal.json`,
+the fixture every new manual 3D project is deep-copied from at
+creation. Compare `schema/fixtures/valid/blank.json` (2D's equivalent),
+which uses `canvas.backgroundColor: "#ffffff"` — a white empty canvas
+against this app's dark UI theme reads clearly as "loaded, just
+empty," while an empty *black* 3D scene against the same dark UI theme
+is visually indistinguishable from "nothing rendered." This affects
+every single new 3D project's first impression, not just this one
+instance — both the live Three.js preview (`Scene3DPreview.tsx`) and
+the server-side thumbnail rasterizer
+(`thumbnails3d.py`'s `render_scene3d_thumbnail`) faithfully reproduce
+the same black-on-black problem, so a fix needs the shared root cause
+(the default fixture and/or empty-scene presentation), not per-renderer
+patches.
+
+Scope: evaluate and choose one or a combination of (a) a non-black
+default `backgroundColor` in the minimal fixture, (b) a visible
+grid/ground-plane/axes helper rendered when a scene has zero objects,
+(c) an explicit empty-state overlay/message. Check whether anything
+else assumes the fixture's exact `#000000` content (tests,
+camera-diagnostic code) before committing to option (a) alone. Full
+scope and acceptance criteria in #253.
+
+Dependencies: None.

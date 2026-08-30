@@ -8131,3 +8131,170 @@ Verification:
 Out of scope: anything about the unrelated sibling project itself.
 
 Dependencies: None.
+
+## 214. Centralize frontend API calls into a services layer with a swappable mock backend
+
+Status: PROPOSED
+
+GitHub issue: [#246](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/246)
+
+Parent: none — distilled from the repository owner's request to restructure
+toward a backend/frontend/docs layout with a database-agnostic backend and
+mockable frontend, investigated and scoped down via `/plan` +
+`task-distillation` on 2026-08-30 (see #249's linked decision record for
+the full investigation and the three architectural questions put to the
+owner before any of this was scoped).
+
+`frontend/src/api/*.ts` calls `client.ts`'s `apiFetch` directly from ~9
+files with no interface/DI point; the only existing mocking is ad hoc
+per-test-file `vi.mock(...)` across ~65 test files. Goal: one typed
+services interface, a real pass-through implementation and an in-memory
+mock implementation, selected via `VITE_USE_MOCK_BACKEND=true`, so
+`npm run dev` can start with zero backend running.
+
+Scope, acceptance criteria, and explicit out-of-scope items (migrating
+existing test mocks; mocking `/accounts/login/`/Google OAuth) are in
+#246.
+
+Dependencies: None.
+
+## 215. Add openapi.yaml documenting the current backend API surface
+
+Status: PROPOSED
+
+GitHub issue: [#247](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/247)
+
+Parent: none — distilled alongside task 214/#246, same session.
+
+No OpenAPI spec exists anywhere in the repo today (confirmed via
+repo-wide search). Goal: `openapi.yaml` at the repository root, derived
+from the frontend's real `api/*.ts` call sites and cross-checked against
+the real Django view behavior, covering all 28 `/api/*` endpoints plus
+`/health/`/`/api/whoami/`, with auth requirement stated per endpoint.
+References `schema/scene.schema.json`/`scene3d.schema.json` rather than
+duplicating them.
+
+Dependencies: None — independent of and parallel to task 214/#246.
+
+## 216. Add uv add and commit-regularly guidance to AGENTS.md
+
+Status: PROPOSED
+
+GitHub issue: [#248](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/248)
+
+Parent: none — distilled alongside tasks 214-215, same session.
+
+`AGENTS.md` already documents `uv sync`/`uv run ...` extensively; it's
+missing a `uv add <PACKAGE-NAME>` example and explicit "commit regularly"
+guidance. Additive only — no removal/reorganization of existing content,
+and no path-reference updates for the task 217/#249 restructure (those
+land with that task instead, to keep this one independently mergeable
+first).
+
+Dependencies: None.
+
+## 217. Restructure repository into /backend, /frontend, /docs (Django kept, PostgreSQL kept)
+
+Status: PROPOSED
+
+GitHub issue: [#249](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/249)
+
+Parent: none — the centerpiece of the repository owner's restructuring
+request, scoped down from a literal FastAPI-style rewrite after
+investigation.
+
+The repository owner asked to centralize backend calls behind a mockable
+services layer, move to a top-level `/backend`/`/frontend`/`/docs` layout
+runnable via `cd frontend && npm i && npm run dev` and
+`cd backend && uv run uvicorn backend.main:app --reload --port 8091`,
+split the backend into "routers/models/store/auth" modules, and make the
+app database-agnostic. Investigation (three parallel Explore passes
+across the backend API surface, the frontend API client, and the
+docs/deployment/database coupling) found this is a mature,
+production-deployed Django + DRF + django-allauth + PostgreSQL app — 28
+endpoints, 21 migrations including raw PostgreSQL trigger functions
+enforcing two invariants the ORM can't express, and dozens of tests that
+only run against real PostgreSQL because they test genuine concurrent-
+transaction locking. `AGENTS.md` states outright: "no SQLite fallback
+outside the test suite." The requested shape (`backend.main:app` under
+uvicorn, a `routers/store` split, "database agnostic") is the shape of a
+hand-rolled FastAPI+SQLAlchemy app, notably matching an unrelated sibling
+repo on the same machine (`~/Code/ai-dev-tools-zoomcamp`), not something
+derived from this app's own needs.
+
+Three questions were put to the repository owner directly before scoping
+further:
+1. Rewrite to FastAPI, or keep Django and add a uvicorn entrypoint on top
+   of its existing (unused) ASGI app? **Chose: keep Django, add uvicorn.**
+2. Full literal `/backend` move (breaking deployment-script and
+   `schema/`-sharing assumptions), or keep the current root layout? The
+   owner asked whether the two directory "schemas" (current vs.
+   requested) could be merged, adapted for a properly organized Django
+   app. **Chose: do the move, but shape `/backend` as a proper Django
+   project** (Django's own `startproject` convention — a top-level
+   project directory containing a same-named inner settings package,
+   i.e. `backend/backend/` replacing `config/`) rather than forcing the
+   current, well-reasoned domain module split into an ill-fitting
+   4-bucket shape.
+3. Full database-agnosticism (weakening the two trigger-enforced
+   invariants), or keep PostgreSQL required? **Chose: keep PostgreSQL
+   required, avoid gratuitous Postgres-only code where a portable pattern
+   works identically** — tracked separately as task 219/#251, since it's
+   independent, low-priority code-quality work, not part of this
+   restructure.
+
+Full target layout, scope, and acceptance criteria are in #249. `schema/`
+stays at the repository root (shared source of truth for both sides,
+unaffected on the frontend side since `frontend/` itself doesn't move;
+`scenes/validation.py`'s `SCHEMA_DIR` gains one `.parent`). Every
+path-sensitive script, `.replit`, `.github/workflows/ci.yml`, and the
+root `Makefile` need updating in the same change — a half-moved state is
+worse than either endpoint, so this is planned as one deliberately
+atomic, carefully verified change, not an incremental one.
+
+Next action: PM groom against `_docs/task-template.md`, then implement
+per #249's acceptance criteria. Verification must include a live Replit
+publish and post-publish smoke pass — local `make check`/`make e2e`
+passing is necessary but not sufficient, since this task's real risk is
+entirely in the deployment path.
+
+Dependencies: Should land after task 214/#246 and task 215/#247 so their
+work isn't disrupted mid-move (ordering preference, not a hard technical
+dependency).
+
+## 218. Backend module organization pass (not a forced routers/store split)
+
+Status: PROPOSED
+
+GitHub issue: [#250](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/250)
+
+Parent: task 217/#249 (its own decision record explicitly declines to
+force `scenes/`'s module split into "routers/models/store/auth" — this
+task is the bounded, optional alternative: look for genuine data-access
+clarity improvements without disturbing the existing, well-documented
+separation of concerns validation/thumbnails/patch/gallery/publishing
+don't map onto that 4-bucket shape and shouldn't be forced to).
+
+Low priority — defer entirely if task 217/#249 alone satisfies the
+practical goal; do not start without confirming it's still wanted. Full
+scope in #250.
+
+Dependencies: Should follow task 217/#249 so paths are stable first.
+
+## 219. Database-portability code review (Postgres stays required)
+
+Status: PROPOSED
+
+GitHub issue: [#251](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/251)
+
+Parent: task 217/#249's decision record (question 3: keep PostgreSQL
+required, avoid gratuitous Postgres-only code where a portable pattern
+works identically — this task is that bounded review, split out as its
+own low-priority item rather than bundled into the restructure).
+
+Explicitly must not touch `scenes/migrations/0002_postgres_invariants.py`'s
+trigger functions or any test gated on `POSTGRES_TEST_DATABASE_URL`. A
+code-quality review, not a multi-database support project. Full scope in
+#251.
+
+Dependencies: Should follow task 217/#249 so paths are stable first.

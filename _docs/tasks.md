@@ -7849,3 +7849,84 @@ Out of scope (per the issue): hard delete/permanent purge tooling — not
 requested, matches `Project`'s existing scope.
 
 Dependencies: None.
+
+## 211. Project3D has no thumbnail generation
+
+Status: PROPOSED
+
+GitHub issue: [#243](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/243)
+
+Parent: none — found live by the repository owner while checking the
+Gallery's "Your 3D projects" section after task 210/#242 shipped delete
+support; every 3D card shows the static "No preview available"
+fallback (`Project3DCard.tsx`), unlike 2D cards, which show a real
+Task 54 thumbnail once a version exists.
+
+`Project3D`/`SceneVersion3D` have no thumbnail field or generation
+pipeline at all — `Project3DSerializer` exposes nothing thumbnail-shaped
+(unlike `ProjectSerializer.thumbnail_url`), and `scenes/thumbnail_generation.py`
+only ever accepts the 2D `Project`/`SceneVersion`. This was deferred
+implicitly at #212/#241 (both note "no thumbnail_url field yet") but
+never had its own tracking issue until now.
+
+Scope: extend thumbnail rendering/storage to `SceneVersion3D`
+(mirroring `SceneVersion.thumbnail`'s OneToOne shape and Task 54's
+generation-trigger timing), add `thumbnail_url` to
+`Project3DSerializer`, and render it in `Project3DCard.tsx` in place
+of the permanent fallback.
+
+Next action: PM groom against `_docs/task-template.md`, then implement
+per #243's acceptance criteria.
+
+Dependencies: None. Related to #212 (first deferred this) and #241
+(surfaced the gap in the gallery).
+
+## 212. 3D editor preview is a static placeholder, never real Three.js/A-Frame rendering
+
+Status: PROPOSED
+
+GitHub issue: [#244](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/244)
+
+Parent: none — found live by the repository owner: opening a 3D
+project's manual editor renders the full UI shell (Save status,
+Visual/Code tabs, Scene outline, Inspector) correctly, but the
+"Visual" tab itself only ever shows `Project3DWorkspace.tsx`/
+`AiProject3DWorkspace.tsx`'s hardcoded `project3d-preview-placeholder`
+("3D preview is not yet available." plus object/light/group counts).
+
+Both files' own comments flagged this as "a placeholder -- real
+Three.js/A-Frame rendering is a future follow-on, filed once this
+UI's shape is concrete" (#226/#231), but that follow-on issue was
+never actually filed — confirmed via `gh issue list --state all
+--search "renderer 3D OR Three.js OR thumbnail 3D"` and a review of
+every #205-#233 3D-editor issue (all closed, none cover the preview
+itself). #209's own epic title ("...new editor, Three.js/A-Frame
+renderers") named this as in-scope for the epic overall.
+
+Also explains, as a likely UX-completion gap rather than a separate
+bug, why no `Project3D` has ever shown an "AI" origin badge in
+practice: `originLabel()` and `AIAcceptProposal3DView` were both
+verified correct this session (properly read/write `ai_create`/
+`ai_edit`), so the missing badge is consistent with users never
+completing an actual AI generate-then-accept cycle in an editor that
+gives no visual feedback that anything happened. No separate issue
+filed for the badge itself.
+
+Scope: render the current `scene3d` document with a real Three.js or
+A-Frame canvas in both editors' Visual tab, reflecting objects/
+lights/groups/camera, updating live as the scene changes (manual
+edit, Code-tab save, or accepted AI proposal). See
+`.agents/memory/aframe-default-camera-facing-convention.md`,
+`.agents/memory/pinned-cdn-version-can-silently-404.md`, and
+`.agents/memory/csp-blocked-eval-masquerades-as-library-bug.md` (all
+from #236's blank-A-Frame-rendering fix) before implementing — this
+issue adds a second A-Frame-or-Three.js rendering surface to the app
+and is exactly the kind of gap those lessons warn about.
+
+Next action: PM groom against `_docs/task-template.md`, decide
+Three.js vs. A-Frame for the editor's own preview (#208 decided the
+structured editor generally supports both; this issue's own
+implementation still needs to pick one for this surface), then
+implement per #244's acceptance criteria.
+
+Dependencies: None blocking.

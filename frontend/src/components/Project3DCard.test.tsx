@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +19,7 @@ function baseProject3D(overrides: Partial<Project3D> = {}): Project3D {
     id: 'p3d-1',
     owner: 'alice',
     title: 'Untitled 3D scene',
+    thumbnail_url: null,
     current_version: null,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -34,15 +35,36 @@ function renderCard(project: Project3D, onDeleted: (id: string) => void = vi.fn(
   );
 }
 
-describe('Project3DCard', () => {
-  it('always shows the no-preview-available fallback (Project3D has no thumbnail yet)', () => {
-    renderCard(baseProject3D());
+describe('Project3DCard: thumbnail (issue #243)', () => {
+  it('renders the thumbnail image when thumbnail_url is present', () => {
+    renderCard(baseProject3D({ thumbnail_url: '/api/projects3d/p3d-1/thumbnail/' }));
 
+    const image = screen.getByRole('img', { name: 'Preview of Untitled 3D scene' });
+    expect(image).toHaveAttribute('src', '/api/projects3d/p3d-1/thumbnail/');
+  });
+
+  it('shows the no-preview-available fallback when thumbnail_url is null', () => {
+    renderCard(baseProject3D({ thumbnail_url: null }));
+
+    expect(screen.queryByRole('img', { name: /Preview of/i })).not.toBeInTheDocument();
     expect(
       screen.getByRole('img', { name: 'No preview available for Untitled 3D scene' }),
     ).toBeInTheDocument();
   });
 
+  it('falls back to the placeholder if the thumbnail image itself fails to load', () => {
+    renderCard(baseProject3D({ thumbnail_url: '/api/projects3d/p3d-1/thumbnail/' }));
+
+    const image = screen.getByRole('img', { name: 'Preview of Untitled 3D scene' });
+    fireEvent.error(image);
+
+    expect(
+      screen.getByRole('img', { name: 'No preview available for Untitled 3D scene' }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('Project3DCard', () => {
   it('links Edit to the 3D manual editor route', () => {
     renderCard(baseProject3D({ id: 'abc-123' }));
 

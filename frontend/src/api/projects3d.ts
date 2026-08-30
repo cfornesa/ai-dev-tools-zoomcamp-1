@@ -26,6 +26,8 @@ export type Project3D = {
   id: string;
   owner: string;
   title: string;
+  /** Issue #243: gallery-card thumbnail URL, mirroring 2D `Project.thumbnail_url`. */
+  thumbnail_url: string | null;
   current_version: SceneVersion3D | null;
   created_at: string;
   updated_at: string;

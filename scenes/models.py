@@ -681,3 +681,26 @@ class SceneVersion3D(models.Model):
                 }
             )
         super().save(*args, **kwargs)
+
+
+class Thumbnail3D(models.Model):
+    """Issue #243: the 3D counterpart of `Thumbnail`, mirroring its shape
+    exactly (OneToOne on the immutable version, same fallback semantics).
+    A separate model rather than a shared one, matching #208's decision
+    to keep the 2D and 3D document families' persistence genuinely
+    separate rather than bolting a discriminator onto shared tables."""
+
+    scene_version = models.OneToOneField(
+        SceneVersion3D, on_delete=models.CASCADE, related_name="thumbnail"
+    )
+    image_data = models.BinaryField()
+    content_type = models.CharField(max_length=50, default="image/png")
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    is_fallback = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    generated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        kind = "fallback" if self.is_fallback else "generated"
+        return f"thumbnail3d({self.scene_version_id}, {kind})"

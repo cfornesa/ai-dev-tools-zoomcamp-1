@@ -410,11 +410,28 @@ class Project3DSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.CharField(source="owner.username", read_only=True)
     current_version = SceneVersion3DSerializer(read_only=True)
+    # Issue #243: mirrors ProjectSerializer.thumbnail_url, via the
+    # owner-gated `project3d-thumbnail` route (there is no public 3D route
+    # to mirror yet -- see scenes/thumbnail_generation3d.py).
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Project3D
-        fields = ["id", "owner", "title", "current_version", "created_at", "updated_at"]
+        fields = [
+            "id",
+            "owner",
+            "title",
+            "thumbnail_url",
+            "current_version",
+            "created_at",
+            "updated_at",
+        ]
         read_only_fields = fields
+
+    def get_thumbnail_url(self, project: Project3D) -> str | None:
+        if project.current_version_id is None:
+            return None
+        return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
 
 
 class SceneVersion3DCreateSerializer(serializers.Serializer):

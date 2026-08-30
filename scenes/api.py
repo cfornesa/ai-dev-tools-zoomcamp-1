@@ -39,6 +39,7 @@ from scenes.models import (
     SceneVersion3D,
     Template,
     Thumbnail,
+    Thumbnail3D,
     default_draft_expiry,
 )
 from scenes.permissions import Action, can, require
@@ -62,6 +63,10 @@ from scenes.serializers import (
 from scenes.thumbnail_generation import (
     ensure_thumbnail_for_version,
     maybe_schedule_thumbnail_generation,
+)
+from scenes.thumbnail_generation3d import (
+    ensure_thumbnail_for_version3d,
+    maybe_schedule_thumbnail_generation3d,
 )
 from scenes.validation import SCHEMA_DIR, normalize_scene_layers, validate_scene
 from scenes.validation3d import validate_scene3d
@@ -1201,6 +1206,9 @@ class Project3DListCreateView(APIView):
             )
             project.current_version = version
             project.save(update_fields=["current_version", "updated_at"])
+            # Issue #243: the blank scene's own first version is still a
+            # "SceneVersion3D save" for thumbnail-scheduling purposes.
+            maybe_schedule_thumbnail_generation3d(project)
 
         return Response(Project3DSerializer(project).data, status=status.HTTP_201_CREATED)
 
@@ -1266,7 +1274,40 @@ class SceneVersion3DListCreateView(APIView):
                 )
                 locked_project.current_version = version
                 locked_project.save(update_fields=["current_version", "updated_at"])
+                # Issue #243: schedule (as a post-commit follow-up, mirroring
+                # the 2D `maybe_schedule_thumbnail_generation` placement)
+                # generating a thumbnail for the version that just became
+                # current.
+                maybe_schedule_thumbnail_generation3d(locked_project)
         except Project3D.DoesNotExist as exc:
             raise Http404 from exc
 
         return Response(SceneVersion3DSerializer(version).data, status=status.HTTP_201_CREATED)
+
+
+class Project3DThumbnailView(APIView):
+    """Issue #243: the 3D counterpart of `ProjectThumbnailView` -- serves
+    the gallery-card thumbnail (PNG) for a `Project3D`'s current version,
+    owner-gated the same way (`Action.PROJECT3D_READ`, 404 for anyone
+    else, mirroring `_get_project3d_or_404`'s not-403 convention). There
+    is no public-facing 3D route to mirror `PublicProjectThumbnailView`
+    yet -- `Project3D` has no `visibility` field (see
+    `scenes/thumbnail_generation3d.py`'s module docstring). Lazily
+    generates on first request if the current version has no stored
+    `Thumbnail3D` yet, identical to the 2D lazy-fallback behavior.
+    """
+
+    def get(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_READ, project):
+            raise Http404
+        if project.current_version_id is None:
+            raise Http404
+
+        thumbnail = Thumbnail3D.objects.filter(scene_version_id=project.current_version_id).first()
+        if thumbnail is None:
+            thumbnail = ensure_thumbnail_for_version3d(project.current_version_id)
+        if thumbnail is None:
+            raise Http404
+
+        return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)

@@ -17,10 +17,10 @@ function formatDate(iso: string): string {
  * projects could be created but never appeared anywhere in the gallery
  * afterward (Gallery.tsx only ever fetched the 2D Project list). This is
  * the 3D counterpart to `ProjectCard.tsx` -- not a reuse of it directly,
- * since `Project3D` has no `thumbnail_url`/`visibility` fields yet (issue
- * #212 deferred that metadata), so it always shows the same
- * no-preview-available fallback `ProjectCard` uses when a 2D project has
- * no thumbnail.
+ * since `Project3D` has no `visibility` field yet (issue #212 deferred
+ * that metadata). Issue #243 added `thumbnail_url`, so this card now
+ * mirrors `ProjectCard.tsx`'s image/fallback-on-null-or-error pattern
+ * instead of always showing the static fallback.
  */
 function Project3DCard({
   project,
@@ -37,6 +37,8 @@ function Project3DCard({
   const originBadge = originLabel(project.current_version?.origin);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const showFallback = !project.thumbnail_url || thumbnailFailed;
 
   // Issue #242: Project3D had no delete capability at all (API or UI) --
   // window.confirm is this codebase's existing destructive-action
@@ -60,13 +62,22 @@ function Project3DCard({
 
   return (
     <article aria-labelledby={titleId} className="project-card">
-      <div
-        className="project-card-thumbnail-fallback"
-        role="img"
-        aria-label={`No preview available for ${project.title}`}
-      >
-        No preview available
-      </div>
+      {showFallback ? (
+        <div
+          className="project-card-thumbnail-fallback"
+          role="img"
+          aria-label={`No preview available for ${project.title}`}
+        >
+          No preview available
+        </div>
+      ) : (
+        <img
+          src={project.thumbnail_url ?? undefined}
+          alt={`Preview of ${project.title}`}
+          className="project-card-thumbnail"
+          onError={() => setThumbnailFailed(true)}
+        />
+      )}
       <h3 id={titleId}>{project.title}</h3>
       {originBadge && (
         <p>

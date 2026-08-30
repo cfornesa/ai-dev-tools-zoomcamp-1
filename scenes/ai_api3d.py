@@ -60,6 +60,7 @@ from scenes.models import Project3D, SceneVersion3D
 from scenes.patch import PatchErrorReason
 from scenes.permissions import Action, can
 from scenes.serializers import SceneVersion3DSerializer
+from scenes.thumbnail_generation3d import maybe_schedule_thumbnail_generation3d
 from scenes.validation3d import validate_scene3d
 
 # Separate buckets from the 2D endpoints -- see module docstring.
@@ -464,6 +465,7 @@ class AIAcceptProposal3DView(APIView):
                 )
                 locked_project.current_version = version
                 locked_project.save(update_fields=["current_version", "updated_at"])
+                maybe_schedule_thumbnail_generation3d(locked_project)
         except _StaleBase3D:
             return _stale_base_response(project.current_version_id)
         except IntegrityError:

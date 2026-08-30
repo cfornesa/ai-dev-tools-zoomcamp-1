@@ -7,6 +7,7 @@ from scenes.api import (
     DraftDetailView,
     Project3DDetailView,
     Project3DListCreateView,
+    Project3DThumbnailView,
     ProjectDetailView,
     ProjectForkView,
     ProjectListCreateView,
@@ -135,6 +136,12 @@ urlpatterns = [
         "projects3d/<uuid:public_id>/versions/",
         SceneVersion3DListCreateView.as_view(),
         name="project3d-version-list-create",
+    ),
+    # #243: owner-facing gallery-card thumbnail.
+    path(
+        "projects3d/<uuid:public_id>/thumbnail/",
+        Project3DThumbnailView.as_view(),
+        name="project3d-thumbnail",
     ),
     # #232: the 3D AI-assisted editor's create/edit/accept endpoints.
     path(

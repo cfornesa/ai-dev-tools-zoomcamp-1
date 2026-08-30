@@ -8061,3 +8061,73 @@ origin badge in practice (a UX-completion consequence of this gap, not
 a separate bug — no separate issue filed).
 
 Dependencies: None blocking.
+
+## 213. Vite dev-server proxy silently hits the wrong backend when an unrelated Docker project also uses port 8000
+
+Status: COMPLETE
+
+GitHub issue: [#245](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/245)
+
+Parent: none — found live by the repository owner while checking on
+task 212/#244's work: after turning on Docker Desktop containers for
+an entirely unrelated sibling project
+(`/Users/Fornesus/Code/ai-dev-tools-zoomcamp`, no `-1` — a different
+repo, confirmed via `docker inspect`'s
+`com.docker.compose.project.working_dir` label), newly created
+AI-generated and manual 3D pieces appeared to have no shapes, and
+gallery thumbnails were missing.
+
+`frontend/vite.config.ts`'s dev-server proxy (`/api`, `/accounts`,
+`/health`) defaulted its target to `http://localhost:8000`. On a
+machine where `localhost` resolves to `::1` (IPv6) before `127.0.0.1`
+— the default on macOS — and the unrelated project's Docker container
+also has a port-forward bound to the IPv6 wildcard on port 8000, every
+proxied request silently reached that unrelated backend instead of
+Django, with no bind error and no visible error in the app. This is a
+recurrence of a previously-documented collision
+(`.agents/memory/local-port-8000-docker-conflict.md`, first hit
+2026-08-24, again 2026-08-25/#169, again 2026-08-29); every prior time
+the fix was deliberately kept as a temporary
+`BROWSER_QA_BACKEND_URL=http://127.0.0.1:8000` env-var override for
+verification tooling only, explicitly not shipped as a `vite.config.ts`
+default change. This session showed the same collision silently breaks
+the *entire running app* for an ordinary user, not just verification
+scripts — the repository owner explicitly chose to override the prior
+"don't ship a permanent fix" decision given that impact (confirmed via
+`AskUserQuestion` before making the change).
+
+Delivered (commit `6acce51`):
+- `frontend/vite.config.ts`: `backendProxyTarget` now defaults to
+  `http://127.0.0.1:8000`. `BROWSER_QA_BACKEND_URL` still overrides it
+  for any environment that genuinely needs something else.
+- `.agents/memory/local-port-8000-docker-conflict.md`: rewritten with
+  a RESOLVED header pointing at this fix, historical diagnosis context
+  preserved for future sessions in case the collision resurfaces for a
+  different reason.
+- Also fixed in the same commit: a stray root-level
+  `node_modules/.vite/vitest/.../results.json` cache file (traced to
+  an accidental `npx vitest` invocation from the repo root instead of
+  `frontend/` earlier in the session) was deleted, and the root
+  `.gitignore` gained a defensive `node_modules/` entry so this class
+  of accident can't resurface as an untracked-file prompt again.
+
+Verification:
+- `make check`: 824 backend / 2120 frontend passed, lint/format/
+  typecheck clean.
+- Live verification with Claude in Chrome, real browser, unrelated
+  Docker containers still running: `curl`/browser comparisons before
+  vs. after confirmed the wrong-backend responses
+  (`{"ok":true}`/`{"detail":"Not Found"}`) became correct Django ones;
+  logged in as the `e2e_owner` fixture user; created a new manual 3D
+  project (real rendered gallery thumbnail, correctly-empty live
+  Three.js preview for a brand-new blank scene); created a new
+  AI-assisted 3D project and submitted a generation prompt without a
+  personal Mistral key configured, confirming the correct `424
+  personal_key_required` response and its matching UI error message
+  (not a silent failure) — no separate product defect found in #243's
+  thumbnails, #244's Three.js preview, or AI generation once the real
+  backend was reachable.
+
+Out of scope: anything about the unrelated sibling project itself.
+
+Dependencies: None.

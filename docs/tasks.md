@@ -8509,7 +8509,16 @@ Dependencies: None.
 
 ## 221. Every new 3D project's empty default scene reads as broken (black-on-black)
 
-Status: PROPOSED
+Status: COMPLETE. Chose option (a): changed
+`schema/fixtures3d/valid/minimal.json`'s `scene.backgroundColor` from
+`#000000` to a neutral mid-gray `#808080`. Both `threeSceneBuilder.ts`
+and `thumbnails3d.py` read `backgroundColor` straight from the document
+with no hardcoded fallback, so this single fixture edit fixes both the
+live preview and the thumbnail at their shared root cause. Confirmed no
+existing test asserts on the fixture's literal `#000000` value.
+`make check` passes: 824 backend passed/22 skipped, 155 frontend files
+/ 2155 tests passed. Commit `f9f0a55107be564037add4bad563a6b1f7f22b7f`.
+QA: PASS (see issue comment). Issue closed.
 
 GitHub issue: [#253](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/253)
 

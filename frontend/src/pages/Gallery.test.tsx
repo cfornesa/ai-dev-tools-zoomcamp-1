@@ -17,6 +17,7 @@ const mockedListProjects = vi.mocked(projectsApi.listProjects);
 const mockedCreateBlankProject = vi.mocked(projectsApi.createBlankProject);
 const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
 const mockedCreateProject3D = vi.mocked(projects3dApi.createProject3D);
+const mockedDeleteProject3D = vi.mocked(projects3dApi.deleteProject3D);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
 
 function baseProject3D(overrides: Partial<projects3dApi.Project3D> = {}): projects3dApi.Project3D {
@@ -148,6 +149,26 @@ describe('Gallery loading/error/empty/populated states', () => {
 
     expect(await screen.findByRole('heading', { name: 'Untitled 3D scene' })).toBeInTheDocument();
     expect(screen.queryByText('You have not created any projects.')).not.toBeInTheDocument();
+  });
+
+  // Issue #242: deleting a 3D project's card should remove it from this
+  // section without a full page reload/refetch.
+  it('removes a 3D project from the gallery once its card is deleted', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockedListProjects.mockResolvedValue([]);
+    mockedListProjects3D.mockResolvedValue([baseProject3D({ id: 'p3d-1' })]);
+    mockedDeleteProject3D.mockResolvedValue(undefined);
+
+    renderGallery();
+
+    expect(await screen.findByRole('heading', { name: 'Untitled 3D scene' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Untitled 3D scene' })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText('You have not created any projects.')).toBeInTheDocument();
   });
 });
 

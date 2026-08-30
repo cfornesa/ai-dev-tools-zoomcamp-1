@@ -192,12 +192,14 @@ class Command(BaseCommand):
             # Issue #239: Project3D.current_version is PROTECT (scenes/models.py)
             # just like Project.current_version above -- once a fixture owner has
             # any Project3D, deleting the user without nulling this first raises
-            # ProtectedError during the User cascade below. Project3D has no
-            # `all_objects`/soft-delete manager yet (issue #242), and
-            # SceneVersion3D has no parent/fork_source_version/immutable-snapshot
-            # trigger (3D has no fork feature), so this is a plain update with
-            # none of Project's surrounding trigger complexity.
-            Project3D.objects.filter(owner__username__in=usernames).update(current_version=None)
+            # ProtectedError during the User cascade below. Uses `all_objects`
+            # (issue #242 added Project3D's soft-delete manager pair, mirroring
+            # `Project.all_objects` above) so a soft-deleted fixture project still
+            # gets its current_version nulled. SceneVersion3D has no
+            # parent/fork_source_version/immutable-snapshot trigger (3D has no
+            # fork feature), so this is a plain update with none of Project's
+            # surrounding trigger complexity.
+            Project3D.all_objects.filter(owner__username__in=usernames).update(current_version=None)
             if connection.vendor == "postgresql":
                 with connection.cursor() as cursor:
                     cursor.execute(

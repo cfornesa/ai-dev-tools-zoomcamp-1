@@ -114,3 +114,91 @@ def test_retrieving_a_nonexistent_project_is_404(owner_client):
     response = owner_client.get("/api/projects3d/00000000-0000-0000-0000-000000000000/")
 
     assert response.status_code == 404
+
+
+# --- #242: owner-only soft-delete, mirroring test_project_api.py's
+# Task 13 delete tests at Project3D's scope. ---
+
+
+@pytest.mark.django_db
+def test_owner_can_soft_delete_project3d(owner_client):
+    create_response = owner_client.post("/api/projects3d/")
+    public_id = create_response.json()["id"]
+
+    response = owner_client.delete(f"/api/projects3d/{public_id}/")
+
+    assert response.status_code == 204
+    assert not Project3D.objects.filter(public_id=public_id).exists()  # hidden by default manager
+    assert Project3D.all_objects.filter(public_id=public_id).exists()  # still there
+    reloaded = Project3D.all_objects.get(public_id=public_id)
+    assert reloaded.is_deleted is True
+    assert reloaded.deleted_at is not None
+
+
+@pytest.mark.django_db
+def test_soft_deleted_project3d_excluded_from_owner_listing(owner_client):
+    create_response = owner_client.post("/api/projects3d/")
+    public_id = create_response.json()["id"]
+
+    owner_client.delete(f"/api/projects3d/{public_id}/")
+
+    response = owner_client.get("/api/projects3d/")
+
+    assert response.json() == []
+
+
+@pytest.mark.django_db
+def test_soft_deleted_project3d_still_404s_not_500s_afterward(owner_client):
+    create_response = owner_client.post("/api/projects3d/")
+    public_id = create_response.json()["id"]
+
+    owner_client.delete(f"/api/projects3d/{public_id}/")
+
+    response = owner_client.get(f"/api/projects3d/{public_id}/")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_non_owner_cannot_delete_project3d_and_gets_404(owner_client):
+    create_response = owner_client.post("/api/projects3d/")
+    public_id = create_response.json()["id"]
+
+    other = get_user_model().objects.create_user(username="dave3d-api")
+    other_client = APIClient()
+    other_client.force_authenticate(other)
+
+    response = other_client.delete(f"/api/projects3d/{public_id}/")
+
+    assert response.status_code == 404
+    assert Project3D.objects.filter(public_id=public_id, is_deleted=False).exists()
+
+
+@pytest.mark.django_db
+def test_anonymous_cannot_delete_project3d_and_gets_404(owner_client):
+    create_response = owner_client.post("/api/projects3d/")
+    public_id = create_response.json()["id"]
+
+    response = APIClient().delete(f"/api/projects3d/{public_id}/")
+
+    assert response.status_code == 404
+    assert Project3D.objects.filter(public_id=public_id, is_deleted=False).exists()
+
+
+@pytest.mark.django_db
+def test_deleting_a_nonexistent_project3d_is_404(owner_client):
+    response = owner_client.delete("/api/projects3d/00000000-0000-0000-0000-000000000000/")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_version_history_is_not_hard_deleted_with_project3d(owner_client):
+    create_response = owner_client.post("/api/projects3d/")
+    public_id = create_response.json()["id"]
+    project = Project3D.objects.get(public_id=public_id)
+    version_id = project.current_version_id
+
+    owner_client.delete(f"/api/projects3d/{public_id}/")
+
+    assert SceneVersion3D.objects.filter(pk=version_id).exists()

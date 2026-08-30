@@ -44,6 +44,8 @@ class Action(StrEnum):
     # #228: saving a new SceneVersion3D is owner-only, same shape as
     # PROJECT3D_READ above (no visibility field yet to allow anyone else).
     PROJECT3D_WRITE = "project3d.write"
+    # #242: delete parity with PROJECT_DELETE -- owner-only, same shape.
+    PROJECT3D_DELETE = "project3d.delete"
 
 
 class PermissionDenied(Exception):
@@ -132,7 +134,7 @@ def can(user, action: Action, resource=None) -> bool:
     if action == Action.PROJECT3D_CREATE:
         return _is_authenticated(user)
 
-    if action in (Action.PROJECT3D_READ, Action.PROJECT3D_WRITE):
+    if action in (Action.PROJECT3D_READ, Action.PROJECT3D_WRITE, Action.PROJECT3D_DELETE):
         if not isinstance(resource, Project3D):
             return False
         return _is_owner_3d(user, resource)

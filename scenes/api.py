@@ -1212,6 +1212,17 @@ class Project3DDetailView(APIView):
             raise Http404
         return Response(Project3DSerializer(project).data)
 
+    def delete(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_DELETE, project):
+            raise Http404
+
+        project.is_deleted = True
+        project.deleted_at = timezone.now()
+        project.save(update_fields=["is_deleted", "deleted_at"])
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class SceneVersion3DListCreateView(APIView):
     """#228: save a new SceneVersion3D. Mirrors SceneVersionListCreateView's

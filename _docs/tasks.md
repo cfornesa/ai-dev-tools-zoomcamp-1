@@ -7785,3 +7785,67 @@ clean. #241 closed with this evidence — live production verification
 pending the next Replit publish, same as every other fix this session.
 
 Dependencies: None.
+
+## 210. Add delete/soft-delete API and UI for Project3D
+
+Status: COMPLETE
+
+GitHub issue: [#242](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/242)
+
+Parent: none listed; found while live-verifying task 209/#241's Gallery
+3D-listing fix in production — a leftover test `Project3D` could not be
+removed through any available path.
+
+`Project3D` had no delete capability at all — neither API nor UI — unlike
+the 2D `Project`, which has owner-only soft-delete
+(`is_deleted`/`deleted_at`, `DELETE /api/projects/{id}/`, Task 13).
+Grooming note: the issue's "consistent with how 2D projects expose
+delete" premise assumed a 2D frontend delete UI exists; it does not (only
+the backend endpoint does — nothing in `frontend/src/` ever calls it).
+The new `Project3DCard.tsx` delete button is therefore new UI, not a
+mirror of an existing one; it reuses `window.confirm` for its destructive
+confirmation, this codebase's one existing precedent (`GraphView.tsx`'s
+"Remove this connection?"), rather than inventing a new dialog.
+
+Delivered:
+- `scenes/models.py`: `Project3D` gained `is_deleted`/`deleted_at` plus a
+  `Project3DManager`/`all_objects`+`objects` manager pair, exactly
+  mirroring `Project`/`ProjectManager` (migration `0020`).
+- `scenes/permissions.py`: new `Action.PROJECT3D_DELETE`, owner-only
+  (added to the same 3D ownership check as `PROJECT3D_READ`/`_WRITE`).
+- `scenes/api.py`: `Project3DDetailView.delete` — owner-only 204,
+  soft-delete, 404 for non-owner/anonymous/missing (matching `Project`'s
+  indistinguishable-404 behavior), mirroring `ProjectDetailView.delete`
+  exactly.
+- `scenes/management/commands/e2e_fixtures.py`: cleanup now uses
+  `Project3D.all_objects` (was `.objects`, added under task 207/#239)
+  so a soft-deleted fixture project's `current_version` still gets
+  nulled before the owning user is deleted.
+- Frontend: `api/projects3d.ts` gained `deleteProject3D`;
+  `Project3DCard.tsx` gained a confirm-then-delete "Delete" button
+  (owner-only by construction — only ever rendered for the signed-in
+  owner's own gallery cards) with an `onDeleted(id)` callback;
+  `Gallery.tsx` wires that callback to remove the project from
+  `projects3D` state, so the card disappears from "Your 3D projects"
+  immediately without a refetch.
+
+Verification:
+- `uv run pytest tests/test_project3d_api.py -q` 16 passed (7 new:
+  owner soft-delete persists `is_deleted`/`deleted_at`, excluded from
+  listing, 404 after delete, non-owner/anonymous 404 with the row
+  intact, deleting a nonexistent project is 404, `SceneVersion3D`
+  history survives the soft-delete).
+- `make check`: 804 backend / 2104 frontend passed (up from 797/2100),
+  lint/format/typecheck clean.
+- `make e2e`: 135 passed / 1 intentional skip / 0 failed — unchanged
+  from task 207/#239's verification, confirming the new manager/delete
+  path introduced no regression in the full real-browser suite.
+- New frontend tests: `Project3DCard.test.tsx` (confirm-then-delete
+  success, declined confirmation is a no-op, failure shows an error and
+  re-enables the button) and `Gallery.test.tsx` (deleting a card removes
+  it from the gallery and restores the empty state).
+
+Out of scope (per the issue): hard delete/permanent purge tooling — not
+requested, matches `Project`'s existing scope.
+
+Dependencies: None.

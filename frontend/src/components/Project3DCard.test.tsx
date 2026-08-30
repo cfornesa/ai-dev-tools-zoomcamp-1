@@ -1,9 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as projects3dApi from '../api/projects3d';
 import type { Project3D } from '../api/projects3d';
 import Project3DCard from './Project3DCard';
+
+vi.mock('../api/projects3d', async () => {
+  const actual = await vi.importActual<typeof import('../api/projects3d')>('../api/projects3d');
+  return { ...actual, deleteProject3D: vi.fn() };
+});
+
+const mockedDeleteProject3D = vi.mocked(projects3dApi.deleteProject3D);
 
 function baseProject3D(overrides: Partial<Project3D> = {}): Project3D {
   return {
@@ -17,10 +26,10 @@ function baseProject3D(overrides: Partial<Project3D> = {}): Project3D {
   };
 }
 
-function renderCard(project: Project3D) {
+function renderCard(project: Project3D, onDeleted: (id: string) => void = vi.fn()) {
   return render(
     <MemoryRouter>
-      <Project3DCard project={project} />
+      <Project3DCard project={project} onDeleted={onDeleted} />
     </MemoryRouter>,
   );
 }
@@ -65,5 +74,53 @@ describe('Project3DCard', () => {
 
     expect(screen.queryByText('AI')).not.toBeInTheDocument();
     expect(screen.queryByText('Manual')).not.toBeInTheDocument();
+  });
+
+  describe('delete', () => {
+    beforeEach(() => {
+      mockedDeleteProject3D.mockReset();
+    });
+
+    it('confirms, deletes, and notifies the parent on success', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      mockedDeleteProject3D.mockResolvedValue(undefined);
+      const onDeleted = vi.fn();
+      renderCard(baseProject3D({ id: 'abc-123' }), onDeleted);
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+      expect(window.confirm).toHaveBeenCalled();
+      await waitFor(() => expect(mockedDeleteProject3D).toHaveBeenCalledWith('abc-123'));
+      await waitFor(() => expect(onDeleted).toHaveBeenCalledWith('abc-123'));
+    });
+
+    it('does nothing when the confirmation is declined', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const onDeleted = vi.fn();
+      renderCard(baseProject3D(), onDeleted);
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+      expect(mockedDeleteProject3D).not.toHaveBeenCalled();
+      expect(onDeleted).not.toHaveBeenCalled();
+    });
+
+    it('shows an error and re-enables the button when the request fails', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      mockedDeleteProject3D.mockRejectedValue(new Error('boom'));
+      const onDeleted = vi.fn();
+      renderCard(baseProject3D(), onDeleted);
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Could not delete this project. Please try again.',
+      );
+      expect(onDeleted).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
+    });
   });
 });

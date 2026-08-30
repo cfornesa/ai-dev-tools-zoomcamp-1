@@ -46,6 +46,13 @@ export function getProject3D(id: string): Promise<Project3D> {
   return apiFetch<Project3D>(`/api/projects3d/${id}/`);
 }
 
+/** Issue #242: owner-only soft-delete, mirroring the 2D
+ * `Project.is_deleted`/`deleted_at` behavior (`scenes/api.py`'s
+ * `ProjectDetailView.delete`) -- 204 on success. */
+export function deleteProject3D(id: string): Promise<void> {
+  return apiFetch<void>(`/api/projects3d/${id}/`, { method: 'DELETE' });
+}
+
 /** Issue #228: save a new current version. */
 export function saveSceneVersion3D(
   projectId: string,

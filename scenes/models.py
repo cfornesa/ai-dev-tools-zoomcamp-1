@@ -587,6 +587,13 @@ class Thumbnail(models.Model):
 # `validate_scene3d` (scenes/validation3d.py), never `validate_scene`.
 
 
+class Project3DManager(models.Manager):
+    """Default manager excludes soft-deleted projects (#242, mirrors ProjectManager)."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
 class Project3D(models.Model):
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     owner = models.ForeignKey(
@@ -600,10 +607,23 @@ class Project3D(models.Model):
         on_delete=models.PROTECT,
         related_name="current_for_projects_3d",
     )
+    # #242: delete parity with the 2D Project (is_deleted/deleted_at,
+    # Task 13) -- SceneVersion3D history is preserved (CASCADE would
+    # hard-delete it, but nothing ever hard-deletes a Project3D itself).
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    all_objects = models.Manager()
+    objects = Project3DManager()
+
     class Meta:
+        # Same reasoning as Project.Meta above: cascades/internal FK lookups
+        # stay on the unfiltered manager; only explicit `Project3D.objects`
+        # queries hide soft-deleted rows.
+        base_manager_name = "all_objects"
+        default_manager_name = "objects"
         ordering = ["-created_at"]
 
     def __str__(self) -> str:

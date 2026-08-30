@@ -260,15 +260,10 @@ transaction/concurrency guarantees SQLite doesn't provide.
   Vite, and runs `responsiveShell.spec.ts` at its 375px viewport. Its
   disposable `DATABASE_URL` and test-only OAuth values are written to
   `backend/.env` because Playwright global setup loads that file before
-  creating fixtures. Task 217/issue #249 moved the backend (including
-  `manage.py` and `.env`) into `backend/` without touching
-  `frontend/e2e/support/global-setup.ts`'s internals, so that hook's
-  hardcoded repo-root `cwd`/`.env` lookup for its `manage.py
-  e2e_fixtures` shell-out is now stale — see
-  `.agents/memory/backend-restructure-frontend-e2e-gap.md`. Playwright
-  discovery (`--list`) and every other suite are unaffected; only the
-  fixture-seeding step of a real `make e2e`/CI E2E run needs that
-  follow-up fix.
+  creating fixtures (`frontend/e2e/support/global-setup.ts`/
+  `global-teardown.ts` shell out to `manage.py e2e_fixtures` with `cwd`
+  set to `backend/` and look for `backend/.env`, updated for task
+  217/issue #249's move of the backend into `backend/`).
 - `cd frontend && npx playwright test --list` - list every scenario
   without running a browser; useful to confirm the suite is syntactically
   valid and every test is discoverable with no server running at all

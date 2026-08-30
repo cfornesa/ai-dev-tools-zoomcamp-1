@@ -7935,7 +7935,7 @@ Dependencies: None. Related to #212 (first deferred this) and #241
 
 ## 212. 3D editor preview is a static placeholder, never real Three.js/A-Frame rendering
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#244](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/244)
 
@@ -7975,10 +7975,89 @@ from #236's blank-A-Frame-rendering fix) before implementing — this
 issue adds a second A-Frame-or-Three.js rendering surface to the app
 and is exactly the kind of gap those lessons warn about.
 
-Next action: PM groom against `_docs/task-template.md`, decide
-Three.js vs. A-Frame for the editor's own preview (#208 decided the
-structured editor generally supports both; this issue's own
-implementation still needs to pick one for this surface), then
-implement per #244's acceptance criteria.
+Renderer choice: Three.js, not A-Frame — asked the repository owner
+directly (A-Frame's existing lessons in this repo, linked above, are
+all from the untrusted-AI-generated-code sandbox in
+`generative/artPieceSandbox.ts`, which loads A-Frame/Three.js from a
+pinned CDN `<script>` specifically *because* the rendered code isn't
+trusted; this issue's surface is the opposite — a schema-validated
+`scene3d` document the app itself controls, so a normal first-party
+npm dependency is the right shape, matching how `p5` is already a real
+npm dependency for the 2D editor's own preview, not a CDN script).
+
+Delivered (commit pending):
+- `frontend/package.json`: added `three@^0.160.0` (runtime) and
+  `@types/three@^0.160.0` (dev) — approved by the repository owner
+  before adding, per this repo's "no new dependency without asking"
+  rule.
+- `frontend/src/render/threeSceneBuilder.ts`: a new pure module —
+  `buildThreeSceneGraph(scene3d, aspect)` constructs a real
+  `THREE.Scene`/`THREE.PerspectiveCamera` from a validated `scene3d`
+  document (camera look-at + fov/near/far, directional/point/ambient
+  lights, groups as `THREE.Group` parents, box/sphere/cylinder/plane
+  objects as `THREE.Mesh` with `MeshStandardMaterial` so the schema's
+  lights actually illuminate something — deliberately different from
+  #243's `scenes/thumbnails3d.py`, which stays lighting-free for a
+  static "artwork only" card image). Never touches a canvas/renderer —
+  kept separate specifically so scene-graph construction is unit
+  testable without a WebGL context, which jsdom (this repo's frontend
+  test environment) never provides.
+- `frontend/src/pages/Scene3DPreview.tsx`: mounts a `<canvas>`, creates
+  one `THREE.WebGLRenderer` for the component's lifetime, and rebuilds
+  the scene graph from scratch (via `buildThreeSceneGraph`) on every
+  `scene` prop change, running a `requestAnimationFrame` loop.
+  `ResizeObserver`-driven camera aspect/renderer size sync. If
+  `WebGLRenderer`'s constructor throws (confirmed this always happens
+  under jsdom; also a real possibility for an actual user without
+  WebGL support), falls back to a friendly, non-crashing message
+  mirroring Task 31's existing camera-permission-UX convention for
+  environment limitations, rather than surfacing a crash.
+- `Project3DWorkspace.tsx`/`AiProject3DWorkspace.tsx`: both editors'
+  "Visual" tab now render `<Scene3DPreview scene={...} />` in place of
+  the `project3d-preview-placeholder` div.
+- `frontend/src/index.css`: `.scene3d-preview`/`.scene3d-preview
+  canvas`/`.scene3d-preview-unavailable` — a fixed 360px preview
+  height (no scene-defined aspect ratio to derive one from, unlike the
+  2D editor's canvas, which is this component's own documented choice).
+- `frontend/e2e/project3dLifecycle.spec.ts`: its AI-assisted-editor
+  creation scenario asserted on `project3d-preview-placeholder` purely
+  as a "the project actually loaded" proof; now asserts on
+  `scene3d-preview-canvas` instead — a stronger proof, since Playwright's
+  headless Chromium has real (SwiftShader-backed) WebGL, unlike jsdom.
+
+Verification:
+- `npx vitest run src/render/threeSceneBuilder.test.ts` — 11 passed:
+  real `THREE.Object3D`/`THREE.Mesh`/`THREE.Light`/`THREE.PerspectiveCamera`
+  instances asserted directly (geometry type/parameters, material
+  color/opacity/emissive, camera position/fov/near/far/aim direction,
+  group-parented world position, light type/color/intensity,
+  visible:false, geometry/material disposal) — proves the scene graph
+  itself is correct independent of any renderer/canvas.
+- `npx vitest run src/pages/Scene3DPreview.test.tsx` — 3 passed: the
+  WebGL-unavailable fallback (jsdom's only reachable path) renders a
+  clear message reflecting the scene's object/light/group counts,
+  including for an empty scene and across a scene-prop change.
+- `make check`: 824 backend / 2120 frontend passed, lint/format/
+  typecheck clean.
+- `make e2e`: 135 passed / 1 intentional skip / 0 failed — unchanged
+  from the pre-existing baseline, confirming no regression; both
+  `project3dLifecycle.spec.ts` 3D-creation scenarios pass with the new
+  `scene3d-preview-canvas` assertion, proving Playwright's real
+  (SwiftShader) WebGL renders the canvas successfully in both editors.
+- Live manual verification against a real local PostgreSQL-backed
+  Django dev server + Vite dev server, in the actual Browser pane (real
+  Chromium, not jsdom): saved a scene with a directional+ambient light,
+  a red sphere, and a floor plane via the manual editor's Code tab
+  (saved server-side via a direct API call after the browser's own
+  text-editing tools proved unreliable for this particular textarea);
+  reloading both `/projects3d/:id` and `/ai-projects3d/:id` showed the
+  real lit sphere-on-floor scene rendered inside the canvas — camera
+  position, lighting, and object placement all visibly reflect the
+  scene document, not a placeholder or a blank frame.
+
+Out of scope (per the issue): the public/anonymous 3D viewer route
+(`Project3D` has no `visibility`/publish concept yet); the missing "AI"
+origin badge in practice (a UX-completion consequence of this gap, not
+a separate bug — no separate issue filed).
 
 Dependencies: None blocking.

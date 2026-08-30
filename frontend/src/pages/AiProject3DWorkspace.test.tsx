@@ -76,7 +76,7 @@ describe('AiProject3DWorkspace', () => {
     renderWorkspace();
 
     expect(await screen.findByRole('heading', { name: 'My AI 3D scene' })).toBeInTheDocument();
-    expect(screen.getByTestId('project3d-preview-placeholder')).toHaveTextContent(
+    expect(await screen.findByTestId('scene3d-preview-unavailable')).toHaveTextContent(
       '1 object(s), 1 light(s), 0 group(s)',
     );
     expect(screen.queryByRole('region', { name: 'Outline' })).not.toBeInTheDocument();

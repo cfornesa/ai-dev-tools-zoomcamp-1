@@ -132,7 +132,7 @@ describe('AiProject3DWorkspace Code tab', () => {
     await vi.waitFor(() => expect(mockedSaveSceneVersion3D).toHaveBeenCalled());
 
     await user.click(screen.getByRole('radio', { name: 'Visual' }));
-    expect(screen.getByTestId('project3d-preview-placeholder')).toHaveTextContent(
+    expect(await screen.findByTestId('scene3d-preview-unavailable')).toHaveTextContent(
       '1 object(s), 0 light(s), 0 group(s)',
     );
   });

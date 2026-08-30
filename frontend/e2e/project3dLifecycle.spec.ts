@@ -61,13 +61,16 @@ test.describe('3D project creation', () => {
     const match = /\/ai-projects3d\/([^/]+)$/.exec(page.url());
     expect(match).not.toBeNull();
 
-    // AiProject3DWorkspace.tsx renders this placeholder once it has
-    // fetched the newly-created project and its current version
+    // AiProject3DWorkspace.tsx mounts Scene3DPreview.tsx (issue #244) once
+    // it has fetched the newly-created project and its current version
     // successfully -- same persistence proof as the manual scenario above,
-    // via the AI-assisted route's own load path instead.
-    await expect(page.getByTestId('project3d-preview-placeholder')).toBeVisible();
+    // via the AI-assisted route's own load path instead. A real browser
+    // (unlike this repo's jsdom-based component tests) has WebGL, so the
+    // live canvas -- not the WebGL-unavailable fallback -- is what proves
+    // the preview actually mounted and rendered.
+    await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
 
     await page.reload();
-    await expect(page.getByTestId('project3d-preview-placeholder')).toBeVisible();
+    await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
   });
 });

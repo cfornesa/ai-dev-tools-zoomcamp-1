@@ -80,7 +80,7 @@ describe('Project3DWorkspace', () => {
     renderWorkspace();
 
     expect(await screen.findByRole('heading', { name: 'My 3D scene' })).toBeInTheDocument();
-    expect(screen.getByTestId('project3d-preview-placeholder')).toHaveTextContent(
+    expect(await screen.findByTestId('scene3d-preview-unavailable')).toHaveTextContent(
       '2 object(s), 1 light(s), 0 group(s)',
     );
   });

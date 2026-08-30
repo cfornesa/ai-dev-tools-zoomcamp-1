@@ -5,6 +5,7 @@ import { ApiError } from '../api/client';
 import { getProject3D, type Project3D, type SceneVersion3D } from '../api/projects3d';
 import AIProposalPanel3D from './AIProposalPanel3D';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
+import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
@@ -128,19 +129,9 @@ function AiProject3DWorkspace() {
       {previewView === 'visual' && (
         <>
           <section aria-label="Preview" role="region" data-panel="preview">
-            {/* Issue #226/#231: a placeholder -- real Three.js/A-Frame
-                rendering is a future follow-on, filed once this UI's
-                shape is concrete. */}
-            <div
-              className="project3d-preview-placeholder"
-              data-testid="project3d-preview-placeholder"
-            >
-              <p>3D preview is not yet available.</p>
-              <p>
-                {scene.objects.length} object(s), {scene.lights.length} light(s),{' '}
-                {scene.groups.length} group(s) in this scene.
-              </p>
-            </div>
+            {/* Issue #244: real Three.js rendering, replacing the
+                #226/#231 placeholder. */}
+            <Scene3DPreview scene={scene} />
           </section>
           {/* Issue #232: the prompt panel is this editor's primary
               interaction surface, not tucked into a collapsible section

@@ -11,6 +11,7 @@ import {
 import { validateScene3D } from '../validation/scene3d';
 import Outline3DInspector from './Outline3DInspector';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
+import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
@@ -192,19 +193,9 @@ function Project3DWorkspace() {
       {previewView === 'visual' && (
         <>
           <section aria-label="Preview" role="region" data-panel="preview">
-            {/* Issue #226: a placeholder -- real Three.js/A-Frame rendering
-                is a future follow-on, filed once this UI's shape is
-                concrete. */}
-            <div
-              className="project3d-preview-placeholder"
-              data-testid="project3d-preview-placeholder"
-            >
-              <p>3D preview is not yet available.</p>
-              <p>
-                {workingScene.objects.length} object(s), {workingScene.lights.length} light(s),{' '}
-                {workingScene.groups.length} group(s) in this scene.
-              </p>
-            </div>
+            {/* Issue #244: real Three.js rendering, replacing the
+                #226 placeholder. */}
+            <Scene3DPreview scene={workingScene} />
           </section>
           <Outline3DInspector scene={workingScene} onChange={setWorkingScene} />
         </>

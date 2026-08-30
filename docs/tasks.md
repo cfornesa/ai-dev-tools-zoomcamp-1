@@ -8456,7 +8456,16 @@ satisfied.
 
 ## 220. Add delete capability for 2D projects (mirroring #242's 3D pattern)
 
-Status: PROPOSED
+Status: COMPLETE. `deleteProject` added to `frontend/src/api/projects.ts`
+wrapping `DELETE /api/projects/{id}/`; `ProjectCard.tsx` gained a Delete
+button with a `window.confirm` guard, mirroring `Project3DCard.tsx`
+exactly; `Gallery.tsx` wires removal into gallery state on success.
+`ProjectCard.test.tsx` covers confirm/delete/notify, decline, and error
+paths, matching `Project3DCard.test.tsx`'s coverage; a stale tab-order
+assertion in `Gallery.test.tsx` was updated for the new Delete buttons.
+`make frontend-check` passes: 155 files / 2155 tests. Commit
+`5d2c34df1864df141ceab914e87c50ee2737489e`. QA: PASS (see issue
+comment). Issue closed.
 
 GitHub issue: [#252](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/252)
 

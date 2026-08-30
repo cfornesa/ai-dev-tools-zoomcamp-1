@@ -73,7 +73,7 @@ concise index rather than an implementation changelog.
   implementation, QA, or review must be duplicate-checked, recorded as a
   proposed backlog task, and linked to a GitHub issue before it is continued
   or deferred. Ordinary pending work stays out of long-term memory.
-  See the [pending-item capture loop](../../_docs/process.md).
+  See the [pending-item capture loop](../../docs/process.md).
 
 ## Maintenance rule
 

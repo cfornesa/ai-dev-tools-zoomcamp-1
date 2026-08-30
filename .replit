@@ -70,4 +70,4 @@ deploymentTarget = "autoscale"
 # ([workflows.workflow] above) is unaffected: it still runs
 # scripts/start.sh directly, defaulting to "dev" mode.
 run = ["bash", "scripts/start-production.sh"]
-build = ["bash", "-c", "uv sync --locked && npm --prefix frontend ci && uv run python manage.py check --deploy && npm --prefix frontend run build"]
+build = ["bash", "-c", "cd backend && uv sync --locked && cd .. && npm --prefix frontend ci && uv run --directory backend python manage.py check --deploy && npm --prefix frontend run build"]

@@ -4,6 +4,7 @@
 set -Eeuo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BACKEND_DIR="$REPO_ROOT/backend"
 cd "$REPO_ROOT"
 
 FRONTEND_PORT="${BROWSER_QA_FRONTEND_PORT:-}"
@@ -115,9 +116,9 @@ CSRF_TRUSTED_ORIGINS=http://localhost:$FRONTEND_PORT,http://127.0.0.1:$FRONTEND_
 EOF
 
 log "Applying migrations"
-uv run --env-file "$ENV_FILE" python manage.py migrate --noinput
+(cd "$BACKEND_DIR" && uv run --env-file "$ENV_FILE" python manage.py migrate --noinput)
 log "Starting Django and Vite"
-uv run --env-file "$ENV_FILE" python manage.py runserver 0.0.0.0:"$BACKEND_PORT" >"$BACKEND_LOG" 2>&1 &
+(cd "$BACKEND_DIR" && uv run --env-file "$ENV_FILE" python manage.py runserver 0.0.0.0:"$BACKEND_PORT") >"$BACKEND_LOG" 2>&1 &
 BACKEND_PID=$!
 (cd frontend && BROWSER_QA_BACKEND_URL="http://127.0.0.1:$BACKEND_PORT" \
   npm run dev -- --host 0.0.0.0 --port "$FRONTEND_PORT") >"$FRONTEND_LOG" 2>&1 &

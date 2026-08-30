@@ -7,6 +7,7 @@ set -m
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BACKEND_DIR="$REPO_ROOT/backend"
 cd "$REPO_ROOT"
 
 MANAGED_CONTAINER="scenes-postgres-dev"
@@ -31,7 +32,7 @@ free_port() {
 }
 
 db_reachable() {
-  DEV_DB_URL="$1" uv run python -c "
+  DEV_DB_URL="$1" uv run --directory "$BACKEND_DIR" python -c "
 import os, socket, sys
 from urllib.parse import urlparse
 u = urlparse(os.environ['DEV_DB_URL'])
@@ -84,12 +85,12 @@ if [[ ! -f frontend/.env ]]; then
   cp frontend/.env.example frontend/.env
 fi
 
-# --- .env: create once, never overwrite an existing one ---
-if [[ ! -f .env ]]; then
-  log "No .env found -- creating one from .env.example."
-  cp .env.example .env
-  SECRET_KEY="$(uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")"
-  DEV_SECRET_KEY="$SECRET_KEY" uv run python -c "
+# --- backend/.env: create once, never overwrite an existing one ---
+if [[ ! -f "$BACKEND_DIR/.env" ]]; then
+  log "No backend/.env found -- creating one from backend/.env.example."
+  cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
+  SECRET_KEY="$(uv run --directory "$BACKEND_DIR" python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")"
+  DEV_SECRET_KEY="$SECRET_KEY" uv run --directory "$BACKEND_DIR" python -c "
 import os, pathlib
 p = pathlib.Path('.env')
 text = p.read_text()
@@ -107,7 +108,7 @@ p.write_text(text)
 fi
 
 # --- Postgres: reuse whatever is already reachable, else manage our own ---
-DB_URL="$(grep -E '^DATABASE_URL=' .env | head -1 | cut -d= -f2-)"
+DB_URL="$(grep -E '^DATABASE_URL=' "$BACKEND_DIR/.env" | head -1 | cut -d= -f2-)"
 if db_reachable "$DB_URL"; then
   log "Postgres already reachable at the DATABASE_URL in .env -- using it as-is."
 elif [[ "$DB_URL" == "$DEFAULT_DATABASE_URL" ]]; then
@@ -117,7 +118,7 @@ elif [[ "$DB_URL" == "$DEFAULT_DATABASE_URL" ]]; then
   log "Waiting for Postgres to accept connections..."
   until db_reachable "$DB_URL"; do sleep 1; done
 else
-  log "ERROR: DATABASE_URL in .env is not reachable, and it isn't the managed"
+  log "ERROR: DATABASE_URL in backend/.env is not reachable, and it isn't the managed"
   log "default, so this script won't start a container for it. Either start"
   log "your own PostgreSQL server, or clear DATABASE_URL back to the default"
   log "to use the built-in managed container: $DEFAULT_DATABASE_URL"
@@ -134,7 +135,7 @@ fi
 # once during first-time init, so the first connection attempt or two
 # failing right after container startup is normal, not an error) ---
 log "Applying migrations..."
-until uv run --env-file .env python manage.py migrate; do sleep 1; done
+until uv run --directory "$BACKEND_DIR" --env-file .env python manage.py migrate; do sleep 1; done
 
 # --- Make sure nothing leftover from a previous run is squatting on our
 # ports (e.g. an interrupted prior run that didn't clean up) ---
@@ -142,7 +143,7 @@ free_port "$BACKEND_PORT"
 free_port "$FRONTEND_PORT"
 
 log "Starting backend on http://localhost:$BACKEND_PORT ..."
-(uv run --env-file .env python manage.py runserver "$BACKEND_PORT" </dev/null 2>&1 | prefix backend) &
+(uv run --directory "$BACKEND_DIR" --env-file .env python manage.py runserver "$BACKEND_PORT" </dev/null 2>&1 | prefix backend) &
 BACKEND_PID=$!
 
 # Vite detects a TTY on stdin and enables an interactive keypress listener

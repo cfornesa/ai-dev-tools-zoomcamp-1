@@ -6,7 +6,7 @@ metadata:
 ---
 
 Issues #210-213 (the 3D scene editor backend: schema, validators, Django
-models, creation/retrieval API) were documented in `_docs/tasks.md` as
+models, creation/retrieval API) were documented in `docs/tasks.md` as
 `Status: COMPLETE` with closed GitHub issues, each entry saying "Delivered
 on the `3d-scene-editor-epic` branch (commit ...)". No PR was ever opened
 for that branch and it was never merged into `main` -- `git log

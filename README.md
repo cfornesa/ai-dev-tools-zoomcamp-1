@@ -5,7 +5,7 @@ I created this project as part of the Week 1 project for the AI Dev Tools Zoomca
 This project is a Django + React/TypeScript app for building and editing "scenes", instantiated as JavaScript library animations. Each scene contains a
 canonical JSON-schema-backed scene domain with projects, versions,
 drafts, templates, and an AI-assisted editing workflow. The backend is
-a Django project at the repo root; the frontend is a Vite-based
+a Django project in `backend/`; the frontend is a Vite-based
 React/TypeScript app in `frontend/`. This project is hosted at Replit and the live site can be found <a href="https://animate.creatrweb.com">here</a>.
 
 **[AGENTS.md](./AGENTS.md) is the authoritative reference** for exact
@@ -19,10 +19,10 @@ AGENTS.md does.
 make dev
 ```
 
-One command, one terminal. It creates `.env`/`frontend/.env` from their
-`.env.example` files the first time only (never overwrites one that
+One command, one terminal. It creates `backend/.env`/`frontend/.env` from
+their `.env.example` files the first time only (never overwrites one that
 already exists), starts a managed local Postgres container if nothing
-is already reachable at `.env`'s `DATABASE_URL`, installs frontend
+is already reachable at `backend/.env`'s `DATABASE_URL`, installs frontend
 dependencies if `frontend/node_modules` is missing, applies migrations,
 then runs the Django backend (port 8000) and the Vite frontend (port
 5000) together, with each server's output prefixed `[backend]`/
@@ -36,7 +36,7 @@ it does step by step.
 
 Google sign-in will not work against real Google accounts with the
 placeholder `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`
-values from `.env.example` — everything else, including the full test
+values from `backend/.env.example` — everything else, including the full test
 suite, works fine without real values. Replit-deployed environments
 already have real OAuth credentials provisioned, so this only affects
 a fresh local checkout. **On macOS, port 5000 is very likely already
@@ -54,11 +54,11 @@ The two blocks below are exact, complete, copy-pasteable command
 sequences for two separate terminals — everything `make dev` above
 does automatically, spelled out by hand. They assume you don't already
 have PostgreSQL running locally: Terminal 1 starts a disposable Docker
-Postgres container on the default port (5432) and sets `.env`'s
+Postgres container on the default port (5432) and sets `backend/.env`'s
 `DATABASE_URL`/`DJANGO_SECRET_KEY` to match it automatically. If you
 already run PostgreSQL some other way (a different port, Homebrew,
 Postgres.app, an existing container), delete the `docker run` line and
-edit `DATABASE_URL` in `.env` to match your setup instead before
+edit `DATABASE_URL` in `backend/.env` to match your setup instead before
 running the rest of the block.
 
 **Terminal 1 (backend):**
@@ -66,6 +66,7 @@ running the rest of the block.
 ```bash
 docker rm -f scenes-postgres 2>/dev/null
 docker run --name scenes-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+cd backend
 uv sync
 cp .env.example .env
 export SECRET_KEY=$(uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
@@ -107,8 +108,8 @@ separate database. That connection string is scoped to Replit's
 internal network and is not reachable from outside Replit.
 
 Inside a Replit workspace, start the backend and frontend dev servers
-the same way as locally: `uv run --env-file .env python manage.py
-runserver` and, in a second shell, `cd frontend && npm run dev`.
+the same way as locally: `cd backend && uv run --env-file .env python
+manage.py runserver` and, in a second shell, `cd frontend && npm run dev`.
 
 ## Checks
 
@@ -168,7 +169,7 @@ This creates an isolated disposable PostgreSQL container and temporary
 environment, applies migrations, starts Django and Vite, verifies that
 `/health/` and anonymous `/api/whoami/` identify this repository, runs the
 Layers desktop/narrow Chromium suite, and removes every process/container on
-exit. It never reads or writes the developer `.env` database. Use
+exit. It never reads or writes the developer `backend/.env` database. Use
 `BROWSER_QA_FULL_E2E=1 make browser-qa` for the complete Playwright suite or
 `BROWSER_QA_RUNTIME_BENCH=1 make browser-qa` for the runtime benchmark. Failed
 runs retain temporary logs and print their paths so a browser or service

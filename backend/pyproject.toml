@@ -1,0 +1,74 @@
+[project]
+name = "gesture-reactive-studio"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "cryptography>=50.0.0",
+    "django>=6.1",
+    "cryptography>=46.0.0",
+    "django-allauth>=65.19.1",
+    "djangorestframework>=3.18.0",
+    "jsonschema>=4.26.0",
+    "mistralai>=2.9.3",
+    "pillow>=12.3.0",
+    "psycopg[binary]>=3.3.4",
+    "requests>=2.34.2",
+    "pyjwt>=2.13.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=6.1.0",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+    "ruff>=0.16.3",
+    "types-jsonschema>=4.26.0.20260518",
+]
+
+[tool.pytest.ini_options]
+# backend.test_settings supplies safe, non-secret default values for the
+# required environment variables backend.settings needs (see
+# backend/test_settings.py for why this can't just be a conftest.py), then
+# defers to backend.settings for everything else.
+DJANGO_SETTINGS_MODULE = "backend.test_settings"
+python_files = ["test_*.py", "*_test.py"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main"]
+mypy_path = "."
+exclude = ["frontend/", "\\.venv/"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+# django-allauth ships no type stubs / py.typed marker.
+module = "allauth.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# djangorestframework ships no type stubs / py.typed marker.
+module = "rest_framework.*"
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "backend.test_settings"

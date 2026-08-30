@@ -8134,7 +8134,7 @@ Dependencies: None.
 
 ## 214. Centralize frontend API calls into a services layer with a swappable mock backend
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#246](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/246)
 
@@ -8155,6 +8155,34 @@ mock implementation, selected via `VITE_USE_MOCK_BACKEND=true`, so
 Scope, acceptance criteria, and explicit out-of-scope items (migrating
 existing test mocks; mocking `/accounts/login/`/Google OAuth) are in
 #246.
+
+Delivered (commit `14bae63`): `frontend/src/services/` exposes one
+`BackendServices` interface (`types.ts`, one namespace per existing
+`api/*.ts` file), satisfied by `real.ts` (a thin pass-through, no
+behavior change) and `mock/` (in-memory fixtures with representative
+success and error paths — `ApiError` with correct status codes for
+401/403/404/424 etc.). `services/index.ts` is the single composition
+point selecting between them via `VITE_USE_MOCK_BACKEND=true`, now
+documented in `frontend/.env.example`. Existing pages still import
+`api/*.ts` directly and the ~65 existing tests still `vi.mock(...)`
+those modules ad hoc (both untouched, per scope), so mock mode is
+wired via a global `fetch` shim (`mocks/installMockFetch.ts`, installed
+once from `main.tsx` only when the flag is set) that routes `/api/*`
+and `/accounts/logout/` requests to the mock services. Mock sign-in
+uses a fixed always-signed-in mock user, documented inline.
+
+Verification: `services/mock/index.test.ts` (32 cases, success +
+representative error per resource area) and
+`app.mockBackend.test.tsx` (renders real `App`, spies on `fetch`,
+asserts it's never called while gallery content renders).
+`make frontend-check` — lint/format-check/typecheck clean, full suite
+155/155 files, 2152/2152 tests passed. Independently re-verified during
+QA (not just taken on the implementer's word): confirmed nothing
+listening on port 8000, started `VITE_USE_MOCK_BACKEND=true npm run dev`
+myself, loaded `http://localhost:5000/` in the browser pane, confirmed
+the gallery renders real fixture content (Bouncing Ball Study,
+Generative Flowers, Rotating Cube) with zero `/api/*`/`/accounts/*`
+network requests (only Vite module-transpilation and `blob:` requests).
 
 Dependencies: None.
 

@@ -74,13 +74,13 @@ trap cleanup EXIT INT TERM
 
 if [[ "${RUN_MIGRATIONS_ON_START:-false}" == "true" ]]; then
   printf 'Applying database migrations before starting Django\n'
-  if ! uv run --directory "$backend_dir" python manage.py migrate --noinput; then
+  if ! (cd "$backend_dir" && uv run python manage.py migrate --noinput); then
     printf 'Database migrations failed; refusing to start the application\n' >&2
     exit 1
   fi
 fi
 
-uv run --directory "$backend_dir" python manage.py runserver 0.0.0.0:8000 &
+(cd "$backend_dir" && exec uv run python manage.py runserver 0.0.0.0:8000) &
 django_pid=$!
 
 # Do not start Vite until Django can serve the same health endpoint that the

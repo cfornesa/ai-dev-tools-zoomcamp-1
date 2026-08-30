@@ -32,7 +32,7 @@ free_port() {
 }
 
 db_reachable() {
-  DEV_DB_URL="$1" uv run --directory "$BACKEND_DIR" python -c "
+  (cd "$BACKEND_DIR" && DEV_DB_URL="$1" uv run python -c "
 import os, socket, sys
 from urllib.parse import urlparse
 u = urlparse(os.environ['DEV_DB_URL'])
@@ -45,7 +45,7 @@ except OSError:
     sys.exit(1)
 finally:
     s.close()
-" 2>/dev/null
+") 2>/dev/null
 }
 
 prefix() {
@@ -89,8 +89,8 @@ fi
 if [[ ! -f "$BACKEND_DIR/.env" ]]; then
   log "No backend/.env found -- creating one from backend/.env.example."
   cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
-  SECRET_KEY="$(uv run --directory "$BACKEND_DIR" python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")"
-  DEV_SECRET_KEY="$SECRET_KEY" uv run --directory "$BACKEND_DIR" python -c "
+  SECRET_KEY="$(cd "$BACKEND_DIR" && uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")"
+  (cd "$BACKEND_DIR" && DEV_SECRET_KEY="$SECRET_KEY" uv run python -c "
 import os, pathlib
 p = pathlib.Path('.env')
 text = p.read_text()
@@ -103,7 +103,7 @@ text = text.replace(
     'DATABASE_URL=$DEFAULT_DATABASE_URL',
 )
 p.write_text(text)
-"
+")
   log "Generated a real DJANGO_SECRET_KEY and set DATABASE_URL to the managed local Postgres container."
 fi
 
@@ -135,7 +135,7 @@ fi
 # once during first-time init, so the first connection attempt or two
 # failing right after container startup is normal, not an error) ---
 log "Applying migrations..."
-until uv run --directory "$BACKEND_DIR" --env-file .env python manage.py migrate; do sleep 1; done
+until (cd "$BACKEND_DIR" && uv run --env-file .env python manage.py migrate); do sleep 1; done
 
 # --- Make sure nothing leftover from a previous run is squatting on our
 # ports (e.g. an interrupted prior run that didn't clean up) ---
@@ -143,7 +143,7 @@ free_port "$BACKEND_PORT"
 free_port "$FRONTEND_PORT"
 
 log "Starting backend on http://localhost:$BACKEND_PORT ..."
-(uv run --directory "$BACKEND_DIR" --env-file .env python manage.py runserver "$BACKEND_PORT" </dev/null 2>&1 | prefix backend) &
+(cd "$BACKEND_DIR" && exec uv run --env-file .env python manage.py runserver "$BACKEND_PORT" </dev/null 2>&1 | prefix backend) &
 BACKEND_PID=$!
 
 # Vite detects a TTY on stdin and enables an interactive keypress listener

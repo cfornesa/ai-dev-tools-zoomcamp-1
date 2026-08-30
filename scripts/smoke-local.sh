@@ -47,7 +47,7 @@ fi
 # Install cleanup only after all target-safety checks have passed. In
 # particular, rejecting a production/shared URL must never run a management
 # command against that database.
-trap 'rm -f "$cookie_jar" "$fixture_json"; uv run --directory "$backend_dir" --env-file .env python manage.py e2e_fixtures cleanup --json >/dev/null 2>&1 || true' EXIT
+trap 'rm -f "$cookie_jar" "$fixture_json"; (cd "$backend_dir" && uv run --env-file .env python manage.py e2e_fixtures cleanup --json) >/dev/null 2>&1 || true' EXIT
 
 get() {
   local path="$1" expected="$2"
@@ -67,12 +67,12 @@ get /api/whoami/ 401
 get /accounts/login/ 200
 
 if [[ "$staging_smoke" == "1" ]]; then
-  E2E_FIXTURE_ENVIRONMENT=disposable-staging uv run --directory "$backend_dir" --env-file .env python manage.py e2e_fixtures create --json >"$fixture_json"
+  (cd "$backend_dir" && E2E_FIXTURE_ENVIRONMENT=disposable-staging uv run --env-file .env python manage.py e2e_fixtures create --json) >"$fixture_json"
 else
-  uv run --directory "$backend_dir" --env-file .env python manage.py e2e_fixtures create --json >"$fixture_json"
+  (cd "$backend_dir" && uv run --env-file .env python manage.py e2e_fixtures create --json) >"$fixture_json"
 fi
-email="$(uv run --directory "$backend_dir" python -c 'import json,sys; print(json.load(open(sys.argv[1]))["owner"]["email"])' "$fixture_json")"
-password="$(uv run --directory "$backend_dir" python -c 'import json,sys; print(json.load(open(sys.argv[1]))["password"])' "$fixture_json")"
+email="$(cd "$backend_dir" && uv run python -c 'import json,sys; print(json.load(open(sys.argv[1]))["owner"]["email"])' "$fixture_json")"
+password="$(cd "$backend_dir" && uv run python -c 'import json,sys; print(json.load(open(sys.argv[1]))["password"])' "$fixture_json")"
 csrf="$(sed -n 's/.*name="csrfmiddlewaretoken" value="\([^"]*\)".*/\1/p' /tmp/smoke-body | head -1)"
 [[ -n "$csrf" ]] || { echo "FAIL: login form did not provide a CSRF token" >&2; exit 1; }
 status="$(curl --silent --show-error --location --max-time "$timeout_seconds" \

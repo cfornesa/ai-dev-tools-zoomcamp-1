@@ -10,3 +10,8 @@ db.sqlite3
 
 # Editors / OS
 .DS_Store
+
+# The frontend app lives entirely in frontend/ (its own node_modules/,
+# gitignored there) -- a node_modules/ at the repo root only ever means an
+# npm/npx command accidentally ran from the wrong working directory.
+node_modules/

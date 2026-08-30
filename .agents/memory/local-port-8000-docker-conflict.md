@@ -1,78 +1,67 @@
 ---
 name: local-port-8000-docker-conflict
-description: On this machine, Docker's backend proxy squats localhost:8000, breaking manual Django dev-server verification on that port.
+description: RESOLVED — vite.config.ts's proxy target now defaults to 127.0.0.1:8000; historical note on the localhost/Docker IPv6 collision this fixes.
 metadata:
   type: project
 ---
 
-Running `manage.py runserver 8000` on this development machine can appear
-to succeed (no bind error, "Watching for file changes" logs normally) but
-requests to it are actually answered by an unrelated `com.docker.backend`
-process already listening on `:8000` (visible via `lsof -i :8000`) —
-responses carry `server: uvicorn` and 307-redirect `/health/` to `/health`,
-not Django's own dev-server signature. This produced misleading 404s
-across every endpoint (`/health/`, `/api/whoami/`, `/admin/`) during a
-2026-08-24 production-readiness verification pass, even though the app
-itself was correct — confirmed by rerunning Django on a free port (8010)
-and getting the expected `{"status": "ok", "database": "ok"}`.
+**RESOLVED (2026-08-30, issue filed via task-distillation during a /goal
+session):** `frontend/vite.config.ts`'s `backendProxyTarget` now defaults
+to `http://127.0.0.1:8000`, not `http://localhost:8000`. The repository
+owner explicitly chose this over the env-var-workaround approach below
+after this exact collision silently broke every API call the running app
+made (`/api/whoami/`, project/version saves, AI generation) with zero
+error surfaced anywhere — reported as "no thumbnails, no shapes in the
+editor," which looked like a product bug but was entirely this
+environment collision. `BROWSER_QA_BACKEND_URL` still overrides the
+target for any environment that genuinely needs something other than
+127.0.0.1. See [[vite-proxy-localhost-ipv6-port-collision]] if that
+topic exists, or the git history of `frontend/vite.config.ts` for the
+fix commit.
 
-**Why:** `frontend/vite.config.ts`'s dev-server proxy target is
-intentionally hardcoded to `http://localhost:8000` (not configurable via
-env) because Google OAuth's registered redirect URI depends on the
-frontend's own fixed port 5000 talking to Django on a fixed port too — see
-`AGENTS.md`'s "Frontend dev server port" section. So a real end-to-end
-browser check through the Vite proxy needs Django on exactly `:8000`, not
-an arbitrary free port.
+**If this resurfaces despite the fix:** something other than this
+repo's own `vite.config.ts` default is providing `localhost:8000` again
+(a stale build, an env var override left set in the shell, etc.) — re-run
+`git blame`/`git log -p frontend/vite.config.ts` on the
+`backendProxyTarget` line before assuming the underlying IPv6 collision
+mechanism (below) has changed.
 
-**How to apply:** Before trusting a "Django is broken" signal while
-verifying locally on this machine, run `lsof -i :8000` first. If
-`com.docker.backend` (or another unrelated process) already holds it, that
-is the actual cause, not application code — do not chase it as a
-code-level bug. Free the port properly (stop the offending Docker
-container/proxy) before relying on the Vite-proxied dev flow for
-verification, or fall back to a direct Django-only check on a free port
-(bypassing the Vite proxy, so `/accounts/*` login flows can't be exercised
-that way, but `/health/`, `/api/whoami/`, and plain Django views can).
+---
 
-**Lower-friction workaround (2026-08-25, task 137/#169):** `manage.py
-runserver`'s default IPv4-only `127.0.0.1:8000` and Docker's proxy
-(bound on the IPv6 wildcard, `*:8000`/`irdmi`) can coexist on the same
-port simultaneously — a client's "localhost" resolution just has to pick
-IPv6 first to reach Docker's proxy instead of Django. Confirmed with
-`curl http://localhost:8000/health/` (JSON `{"detail":"Not Found"}`,
-`server: uvicorn`) vs. `curl http://127.0.0.1:8000/health/` (the real
-`{"status": "ok", "database": "ok"}`, `server: WSGIServer/...`) against
-the exact same running `manage.py runserver`, no process changes between
-the two calls. This means a full Vite-proxied browser verification is
-possible **without stopping Docker**: temporarily point
-`frontend/vite.config.ts`'s three proxy targets at `http://127.0.0.1:8000`
-instead of `http://localhost:8000`, restart the Vite dev server, do the
-live verification (including `/accounts/*` login), then revert the
-`vite.config.ts` edit before finishing — it is a sandbox/host-specific
-workaround, not a real fix, and must not ship. The Browser tool's own
-network path is independently subject to the same `localhost` ambiguity,
-so this applies whether verifying via plain `curl` or through the Browser
-tool's preview pane.
+## Historical context (why this happened, kept for future diagnosis)
 
-**Cleanest workaround, no file edit (2026-08-29, production-readiness
-pass):** `vite.config.ts` now reads its backend proxy target from
-`BROWSER_QA_BACKEND_URL` (defaulting to `http://localhost:8000` when
-unset) — the "not configurable via env" claim above is stale as of
-whenever that env var was added for `scripts/browser-qa.sh`'s own use.
-Start Vite with `BROWSER_QA_BACKEND_URL=http://127.0.0.1:8000 npm run
-dev` instead of editing `vite.config.ts` and remembering to revert it —
-zero risk of an accidental workaround edit surviving into a commit. Hit
-this again while running `make e2e`: the first full run failed on
-essentially every server-dependent test (30s timeouts / 404s from
-`{"detail":"Not Found"}`, `server: uvicorn`), which looked exactly like
-a mass regression but was this same port conflict — confirmed via
-`curl http://localhost:5000/api/whoami/` (404, wrong backend) vs.
-`curl http://127.0.0.1:8000/api/whoami/` (401, correct backend) with
-Django and Vite both already running. Restarting only Vite with the env
-var above (no Django restart needed) fixed it: full suite went from
-"everything server-dependent times out" to 133 passed/1 skipped/0
-failed. **Always suspect this conflict first** when a from-scratch local
-`make e2e`/browser-verification run fails broadly and uniformly (many
-different specs, same timeout/404 shape) rather than in one specific
-scenario — that pattern is much more consistent with "wrong backend
-entirely" than with a real product regression.
+Running `manage.py runserver` on a machine that also has Docker Desktop
+containers from an *entirely unrelated* project bound to port 8000 (their
+container's port-forward listens on the IPv6 wildcard, `*:8000`) creates
+a silent collision: Django's dev server binds IPv4-only
+(`127.0.0.1:8000`), so both processes can listen on port 8000
+simultaneously with no bind error. Whichever one `localhost` resolves to
+first wins per-request — on this machine (and most macOS setups),
+`localhost` resolves to `::1` (IPv6) before `127.0.0.1`, so requests
+silently reach the *other* project's backend instead of Django. Responses
+carry `server: uvicorn`/`{"detail":"Not Found"}` (or whatever the other
+project's server signature is) instead of Django's
+`server: WSGIServer/...`/real JSON — easy to mistake for an application
+bug (misleading 404s across `/health/`, `/api/whoami/`, `/admin/`, and,
+worse, through the Vite dev-server proxy, silently breaking the entire
+running app with zero visible error).
+
+**Diagnosis:** `curl http://127.0.0.1:8000/health/` (forces IPv4, reaches
+the real Django) vs. `curl http://localhost:8000/health/` (may resolve
+IPv6 first, reaching the wrong service) — a mismatch between the two
+confirms this collision, and `lsof -i :8000` shows what else is bound.
+**Always suspect this first** when a from-scratch local `make
+e2e`/browser-verification run (or manual testing) fails broadly and
+uniformly (many different endpoints/specs, same 404/timeout shape, no
+application-level error) rather than in one specific scenario.
+
+**Prior workaround history (superseded by the fix above, kept for
+context on why three separate sessions treated this as "not a real
+fix"):** for a long stretch this collision was worked around per-session
+via `BROWSER_QA_BACKEND_URL=http://127.0.0.1:8000 npm run dev` rather
+than changing `vite.config.ts`'s own default, on the reasoning that the
+Docker collision was a personal/local-machine quirk not worth a
+permanent code change. That reasoning was revisited and explicitly
+overridden once the same collision was shown to silently break the
+*entire app* for an ordinary user (not just verification tooling) with
+no error at all — see the RESOLVED note above.

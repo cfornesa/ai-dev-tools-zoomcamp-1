@@ -2,7 +2,18 @@ import { defineConfig } from 'vite';
 import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
-const backendProxyTarget = process.env.BROWSER_QA_BACKEND_URL ?? 'http://localhost:8000';
+// Deliberately '127.0.0.1', not 'localhost': Django's runserver only ever
+// binds IPv4 (127.0.0.1:8000). On a machine where 'localhost' resolves to
+// '::1' (IPv6) first -- the default on macOS -- and something else (e.g. an
+// unrelated project's Docker Desktop container port-forward, which listens
+// on the IPv6 wildcard) is *also* using port 8000, 'localhost:8000' silently
+// resolves to that other service instead of Django, and every proxied
+// request (/api, /accounts, /health) gets a response from the wrong
+// backend with no error at all -- see
+// .agents/memory/local-port-8000-docker-conflict.md. Pinning to
+// 127.0.0.1 makes this proxy target unambiguous regardless of what else is
+// listening on ::1 on this machine.
+const backendProxyTarget = process.env.BROWSER_QA_BACKEND_URL ?? 'http://127.0.0.1:8000';
 
 // https://vite.dev/config/
 export default defineConfig({

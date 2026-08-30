@@ -22,7 +22,7 @@
 - [AI feature daily quota exhaustible by retesting](ai-feature-daily-quota-exhaustible-by-retesting.md) — repeatedly live-retesting an AI generation feature can itself exhaust the account's daily quota; space checks out, don't poll on every tick.
 - [Replit production frontend serving](replit-production-frontend-serving.md) — The published deployment ran Vite's dev server (live HMR) in production until issue #133; verify live, not just from source.
 - [PostgreSQL multi-db test pitfalls](postgres-multi-db-test-pitfalls.md) — RunPython migrations need `.using(alias)`; threaded postgres_test tests need `default` aliased onto the same DB; plain `RAISE EXCEPTION` maps to `ProgrammingError`.
-- [Local port 8000 Docker conflict](local-port-8000-docker-conflict.md) — On this dev machine, Docker's backend proxy squats :8000, producing misleading 404s that look like a Django bug.
+- [Local port 8000 Docker conflict](local-port-8000-docker-conflict.md) — RESOLVED: vite.config.ts now defaults its proxy target to 127.0.0.1:8000, not localhost:8000, fixing the silent IPv6/Docker collision for good.
 - [Code tab mount-once staleness](code-tab-mount-once-staleness.md) — The editor's Code tab only resyncs on mount, so Undo/Redo and a bare Visual<->Code toggle can show stale content or silently discard unsaved edits (#177).
 - [Local sandbox verification boundaries](local-sandbox-verification-boundaries.md) — Managed macOS runs may block uv cache writes, launcher subprocesses, and loopback socket binds; rerun full gates in an approved environment.
 - [Full browser readiness gate](full-browser-readiness-gate.md) — Targeted browser suites do not establish project readiness; the complete disposable-stack browser command must pass before release.

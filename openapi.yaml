@@ -1,0 +1,1930 @@
+openapi: 3.1.0
+jsonSchemaDialect: "https://json-schema.org/draft/2020-12/schema"
+info:
+  title: Gesture-Reactive Studio API
+  version: "1.0.0"
+  description: |
+    The Django/DRF JSON API for the gesture-reactive scene studio backend
+    (repo root `config/urls.py`, `scenes/urls.py`). This spec documents the
+    real behavior implemented by `scenes/api.py`, `scenes/ai_api.py`,
+    `scenes/ai_api3d.py`, `scenes/art_piece_api.py`, `scenes/credentials_api.py`,
+    and `config/views.py`, and is the server-side counterpart to every
+    function exported from `frontend/src/api/*.ts`.
+
+    ## Authentication
+
+    There is no token/API-key auth. The browser authenticates with the
+    Django session cookie (`sessionid`), set by signing in through
+    `/accounts/login/` (django-allauth, including Google OAuth). Every
+    unsafe request (`POST`/`PUT`/`PATCH`/`DELETE`) must also carry Django's
+    CSRF token as the `X-CSRFToken` header, read from the `csrftoken`
+    cookie — see `frontend/src/api/client.ts`'s `apiFetch`. Both cookies
+    are set/refreshed automatically by the browser once signed in and by
+    `ensure_csrf_cookie` on `GET /api/whoami/`; this spec does not model
+    them as a bearer/API-key security scheme beyond the `sessionCookie`
+    scheme declared below, which exists only to mark which operations
+    require a signed-in session.
+
+    ## Authorization model
+
+    Every project/version/draft/template/fork decision is centralized in
+    `scenes/permissions.py`'s `can()`/`require()` service (never a
+    hand-rolled per-view check). Three access levels appear throughout this
+    spec, recorded per operation via the `x-access` extension field *and*
+    in each operation's description:
+
+    - **anonymous** — no session required.
+    - **session** — any signed-in user may call it (no ownership check
+      beyond being authenticated).
+    - **owner** — only the resource's owner may call it. Per Task 13's
+      explicit policy, a denied owner-scoped request returns `404 Not
+      Found`, never `403 Forbidden` — this makes "resource doesn't exist"
+      and "resource exists but isn't yours" indistinguishable to anyone
+      but the owner, so a private resource's existence is never confirmed
+      to an unauthorized caller. The one documented exception is
+      `POST /api/public/projects/{publicId}/fork/`, which returns a
+      distinct `401` for "not signed in" (the source project is already
+      public, so there is no hidden-data concern) and folds every other
+      denial into `404`.
+
+    ## `/accounts/*` (django-allauth) is out of scope
+
+    `/accounts/login/`, `/accounts/logout/`, `/accounts/signup/`,
+    `/accounts/google/login/`, and `/accounts/google/login/callback/` are
+    server-rendered HTML views (and one OAuth redirect target), not a JSON
+    API — see `config/urls.py` and `AGENTS.md`. They are intentionally not
+    fully specified here. `POST /accounts/logout/` is listed below only
+    because `frontend/src/api/auth.ts`'s `logout()` calls it through the
+    same CSRF-protected JSON fetch wrapper as every other mutating request;
+    its request/response bodies are allauth internals and are not modeled.
+
+    ## Scene document bodies
+
+    Every `scene_json`/`current_scene`/`draft_json` field for the 2D
+    document family is validated server-side against
+    `schema/scene.schema.json` (`scenes/validation.py`); the 3D family
+    (`Project3D`/`SceneVersion3D`) is validated against
+    `schema/scene3d.schema.json` (`scenes/validation3d.py`). Both are
+    referenced by `$ref` below rather than inlined, so this spec and
+    `schema/` never drift into two copies of the same contract — see
+    `schema/README.md`.
+  contact:
+    name: See AGENTS.md
+servers:
+  - url: /
+    description: Same-origin — the frontend dev server proxies /api, /accounts, and /health to Django (see vite.config.ts), and a deployment serves both from one host.
+
+tags:
+  - name: Health
+    description: Unauthenticated liveness/readiness check.
+  - name: Auth
+    description: Who is signed in, and signing out.
+  - name: Credentials
+    description: The signed-in user's personal Mistral API key.
+  - name: Projects
+    description: 2D project CRUD, publish/unpublish, thumbnails.
+  - name: Versions
+    description: 2D scene version history (save/list/get/restore/delete).
+  - name: Templates
+    description: Built-in and private scene templates.
+  - name: Drafts
+    description: Per-(project, user, browser-tab) recovery draft sync.
+  - name: Public
+    description: Anonymous-reachable public gallery and public project detail/fork.
+  - name: AI
+    description: AI-assisted 2D scene create/edit/accept (Mistral-backed).
+  - name: Art Pieces
+    description: Standalone (non-project-scoped) AI art-piece generation.
+  - name: Projects3D
+    description: 3D project/version CRUD (scene3d document family).
+  - name: AI3D
+    description: AI-assisted 3D scene create/edit/accept.
+
+security:
+  - sessionCookie: []
+
+paths:
+  /health/:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Application and database liveness check
+      description: |
+        Anonymous. Returns `200` with `{"status":"ok","database":"ok"}` when
+        the database is reachable, or `503` with `{"status":"error",
+        "database":"unavailable"}` otherwise. Never includes connection
+        details (`config/views.py`'s `database_is_available`).
+      x-access: anonymous
+      security: []
+      responses:
+        "200":
+          description: Application and database are both healthy.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+        "503":
+          description: Database is unreachable.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  /api/whoami/:
+    get:
+      tags: [Auth]
+      operationId: getWhoami
+      summary: The currently signed-in user, if any
+      description: |
+        Session-authenticated. Returns `401` JSON (not a redirect) when no
+        one is signed in — `frontend/src/api/auth.ts`'s `fetchCurrentUser`
+        treats a `401` as "signed out" and resolves `null` rather than
+        throwing. Decorated with `@ensure_csrf_cookie`, so calling this is
+        also how the frontend ensures the `csrftoken` cookie exists before
+        any mutating request.
+      x-access: session
+      responses:
+        "200":
+          description: Signed in.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "401":
+          description: Not signed in.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Detail" }
+
+  /accounts/logout/:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Sign out (django-allauth, not a JSON API)
+      description: |
+        Out of scope per this spec's top-level note: this is a
+        django-allauth view, not part of the `/api/*` JSON surface. Listed
+        here only because `frontend/src/api/auth.ts`'s `logout()` calls it
+        through the same CSRF-protected fetch wrapper as every `/api/*`
+        mutation. Request/response bodies are allauth internals and are
+        deliberately not modeled.
+      x-access: session
+      responses:
+        "200":
+          description: Session invalidated (allauth's own response shape; not modeled).
+        "302":
+          description: Allauth may respond with a redirect depending on configuration; the frontend's fetch wrapper follows it transparently.
+
+  /api/account/mistral-credential/:
+    get:
+      tags: [Credentials]
+      operationId: getMistralCredential
+      summary: Whether the caller has a usable personal Mistral key configured
+      x-access: session
+      responses:
+        "200":
+          description: Credential status.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MistralCredentialStatus" }
+        "401":
+          description: Not signed in.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Detail" }
+    put:
+      tags: [Credentials]
+      operationId: saveMistralCredential
+      summary: Set (create or replace) the caller's personal Mistral key
+      description: |
+        The key is encrypted at rest (`MistralCredential.set_key`) and never
+        echoed back — the response only ever confirms `configured: true`.
+      x-access: session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MistralKeyInput" }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MistralCredentialStatus" }
+        "400":
+          description: Key failed validation (too short/long, or contains whitespace).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrors" }
+        "401":
+          description: Not signed in.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Detail" }
+    delete:
+      tags: [Credentials]
+      operationId: removeMistralCredential
+      summary: Remove the caller's personal Mistral key
+      description: Succeeds (204) even if no credential existed.
+      x-access: session
+      responses:
+        "204":
+          description: Removed (or none existed).
+        "401":
+          description: Not signed in.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Detail" }
+
+  /api/templates/:
+    get:
+      tags: [Templates]
+      operationId: listTemplates
+      summary: List built-in templates, plus the caller's own private templates
+      description: |
+        Anonymous callers see only built-in templates
+        (`Action.TEMPLATE_READ`). Signed-in callers additionally see their
+        own private templates.
+      x-access: anonymous
+      security: []
+      responses:
+        "200":
+          description: Templates the caller may see.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Template" }
+
+  /api/templates/{templateId}/clone/:
+    post:
+      tags: [Templates]
+      operationId: cloneTemplate
+      summary: Atomically clone a template's scene into a new private project
+      description: |
+        Session-authenticated (`Action.PROJECT_CREATE`). Reading the
+        template itself follows `Action.TEMPLATE_READ` (built-in: anyone;
+        private: owner only, 404 for anyone else). The new project's first
+        version is an independent deep copy — no mutable link back to the
+        source template.
+      x-access: session
+      parameters:
+        - $ref: "#/components/parameters/TemplateId"
+      responses:
+        "201":
+          description: New private project created from the template.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "401":
+          description: Not signed in.
+        "404":
+          description: Template does not exist, or is private and not owned by the caller.
+
+  /api/projects/:
+    get:
+      tags: [Projects]
+      operationId: listProjects
+      summary: List the caller's own projects
+      x-access: session
+      responses:
+        "200":
+          description: The caller's own projects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Project" }
+        "401":
+          description: Not signed in.
+    post:
+      tags: [Projects]
+      operationId: createProject
+      summary: Create a bare project (no initial scene version)
+      description: |
+        Not called by the frontend today (`createBlankProject` /
+        `POST /api/projects/blank/` below is the one every real client uses
+        instead, since it seeds a first version atomically). Documented for
+        completeness — `ProjectListCreateView.post` in `scenes/api.py`.
+        Note: a project created this way has `current_version: null` and
+        cannot be published until a version is saved.
+      x-access: session
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "401":
+          description: Not signed in.
+
+  /api/projects/blank/:
+    post:
+      tags: [Projects]
+      operationId: createBlankProject
+      summary: Atomically create a private project with one blank-canvas version
+      description: |
+        Idempotent via optional `client_request_id`: a repeated submission
+        with the same id for the same user returns the original project
+        (`200`) instead of creating a duplicate (enforced by a database
+        uniqueness constraint, not just an application-level check).
+        Omitting `client_request_id` disables deduplication.
+      x-access: session
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateBlankProjectInput" }
+      responses:
+        "200":
+          description: An existing project with the same `client_request_id` was returned instead of creating a duplicate.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400":
+          description: Invalid `renderer` or malformed `client_request_id`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrors" }
+        "401":
+          description: Not signed in.
+
+  /api/projects/{projectId}/:
+    get:
+      tags: [Projects]
+      operationId: getProject
+      summary: Fetch one project
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: The project.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+    patch:
+      tags: [Projects]
+      operationId: updateProjectMetadata
+      summary: Update mutable project metadata
+      description: |
+        `visibility` is deliberately not settable here — a `visibility` key
+        in the body is silently ignored (every other field still applies).
+        Use `publish`/`unpublish` instead.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectMetadataInput" }
+      responses:
+        "200":
+          description: Updated project.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400":
+          description: Metadata failed validation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrors" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+    delete:
+      tags: [Projects]
+      operationId: deleteProject
+      summary: Soft-delete a project
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "204":
+          description: Soft-deleted.
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+
+  /api/projects/{projectId}/thumbnail.png:
+    get:
+      tags: [Projects]
+      operationId: getProjectThumbnail
+      summary: Owner-facing gallery-card thumbnail (PNG) for the current version
+      description: |
+        Not currently called from `frontend/src/api/*.ts` (the gallery
+        references this URL directly as an `<img src>`, not through the
+        typed fetch wrapper). Lazily generates a thumbnail on first request
+        if none is stored yet.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: PNG image bytes.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404":
+          description: Project doesn't exist/isn't the caller's, has no current version, or no thumbnail could be produced.
+
+  /api/projects/{projectId}/publish/:
+    post:
+      tags: [Projects]
+      operationId: publishProject
+      summary: Switch a project from private to public
+      description: |
+        Requires meaningful title/description content
+        (`scenes/publishing.py`) and at least one saved version; both are
+        checked atomically under a row lock immediately before flipping
+        `visibility`.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Now public.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400":
+          description: Content isn't meaningful yet, or there is no saved version.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublishValidationErrorBody" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+
+  /api/projects/{projectId}/unpublish/:
+    post:
+      tags: [Projects]
+      operationId: unpublishProject
+      summary: Switch a project back to private, immediately
+      description: No content validation is required to go private; version history is untouched.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Now private.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+
+  /api/projects/{projectId}/versions/:
+    get:
+      tags: [Versions]
+      operationId: listSceneVersions
+      summary: List a project's version history (metadata only, newest last)
+      description: Excludes soft-deleted versions and omits `scene_json` — use the version-detail endpoint for the full document.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Version history summaries, ordered by `sequence` ascending.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SceneVersionSummary" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+    post:
+      tags: [Versions]
+      operationId: saveSceneVersion
+      summary: Explicit manual save — create the next immutable version
+      description: |
+        Server-side schema/limits validation is authoritative regardless of
+        client-side validation. Only `manual`, `ai_create`, or `ai_edit`
+        may be submitted as `origin` here — `restore` and `fork` are only
+        ever produced by their own dedicated endpoints.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveSceneVersionInput" }
+      responses:
+        "201":
+          description: New current version created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneVersion" }
+        "400":
+          description: The scene document failed schema/limits validation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneValidationErrorBody" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+
+  /api/projects/{projectId}/versions/{versionId}/:
+    get:
+      tags: [Versions]
+      operationId: getSceneVersion
+      summary: Fetch one version, including its full scene_json
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - $ref: "#/components/parameters/VersionId"
+      responses:
+        "200":
+          description: The version.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneVersion" }
+        "404":
+          description: Project or version does not exist, or isn't the caller's. A version id from a different project 404s identically to a nonexistent one.
+    delete:
+      tags: [Versions]
+      operationId: deleteSceneVersion
+      summary: Soft-delete a single eligible (non-current) historical version
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - $ref: "#/components/parameters/VersionId"
+      responses:
+        "204":
+          description: Soft-deleted.
+        "400":
+          description: The version is the project's current version and cannot be soft-deleted.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Detail" }
+        "404":
+          description: Project or version does not exist, or isn't the caller's.
+
+  /api/projects/{projectId}/versions/{versionId}/restore/:
+    post:
+      tags: [Versions]
+      operationId: restoreSceneVersion
+      summary: Restore a historical version by creating a new current version copied from it
+      description: |
+        Restoring from a source version that is itself soft-deleted IS
+        allowed and does not un-delete the source; only a brand-new,
+        non-deleted version is created.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - $ref: "#/components/parameters/VersionId"
+      responses:
+        "201":
+          description: New current version created from the restored snapshot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneVersion" }
+        "400":
+          description: The requested version is already the current version.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Detail" }
+        "404":
+          description: Project or version does not exist, or isn't the caller's.
+
+  /api/projects/{projectId}/versions/{versionId}/save-as-template/:
+    post:
+      tags: [Templates]
+      operationId: saveVersionAsTemplate
+      summary: Snapshot a version into a new private template
+      description: |
+        Not currently called from `frontend/src/api/*.ts`. Gated by
+        `Action.VERSION_READ` (owner-only). The resulting template's
+        `scene_json` is an independent deep copy of the version snapshot.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - $ref: "#/components/parameters/VersionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TemplateCreateInput" }
+      responses:
+        "201":
+          description: New private template created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Template" }
+        "400":
+          description: Name/category/description failed validation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrors" }
+        "404":
+          description: Project or version does not exist, or isn't the caller's.
+
+  /api/projects/{projectId}/draft/{sessionId}/:
+    get:
+      tags: [Drafts]
+      operationId: readDraftSync
+      summary: Read the caller's own active server draft for one project/browser-tab session
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: The active draft.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DraftSyncResponse" }
+        "404":
+          description: Project doesn't exist/isn't the caller's, or no active (non-expired) draft exists for this session.
+    put:
+      tags: [Drafts]
+      operationId: upsertDraftSync
+      summary: Upsert the caller's own draft for one project/session
+      description: |
+        Never creates, mutates, or advances a `SceneVersion` — a draft is a
+        temporary, non-history record. `client_seq` implements
+        compare-and-set: a write whose `client_seq` is not strictly greater
+        than the currently stored value is silently ignored
+        (`applied: false`) rather than clobbering a newer write, so an
+        out-of-order/stale sync can never win a race with a fresher one.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DraftSyncPayload" }
+      responses:
+        "200":
+          description: Upsert result. Check `applied` — `false` means this write was stale and was ignored; the rest of the body reflects the currently-stored (newer) draft either way.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DraftUpsertResponse" }
+        "400":
+          description: The draft scene document failed schema/limits validation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneValidationErrorBody" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+    delete:
+      tags: [Drafts]
+      operationId: deleteDraftSync
+      summary: Delete the caller's own draft for one project/session
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "204":
+          description: Deleted (or none existed).
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+
+  /api/public/projects/:
+    get:
+      tags: [Public]
+      operationId: listPublicGallery
+      summary: One cursor-paginated page of the public gallery, newest-published-first
+      description: |
+        Anonymous. Identical fields for anonymous and signed-in callers —
+        this view never branches on the caller's identity.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: An opaque token from a previous response's `next_cursor`.
+          schema: { type: string }
+        - name: page_size
+          in: query
+          required: false
+          description: Defaults to the server's `DEFAULT_PAGE_SIZE`, clamped to `[1, MAX_PAGE_SIZE]`.
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: One page of public gallery cards.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicGalleryPage" }
+        "400":
+          description: Malformed `cursor` or non-positive `page_size`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrors" }
+
+  /api/public/projects/{projectId}/:
+    get:
+      tags: [Public]
+      operationId: getPublicProject
+      summary: Fetch a single published project by its id, for the public viewer
+      description: |
+        Anonymous. 404s identically whether the id never existed or belongs
+        to a project that is not currently public — even for the project's
+        own owner, who should use the owner-scoped
+        `GET /api/projects/{projectId}/` instead.
+      x-access: anonymous
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: The public project, including its current version's full scene snapshot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicProject" }
+        "404":
+          description: Does not exist, or is not currently public.
+
+  /api/public/projects/{projectId}/thumbnail.png:
+    get:
+      tags: [Public]
+      operationId: getPublicProjectThumbnail
+      summary: Public gallery-card thumbnail (PNG) for a published project's current version
+      description: Not currently called from `frontend/src/api/*.ts` — referenced directly as an `<img src>`. Gated identically to `getPublicProject`.
+      x-access: anonymous
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: PNG image bytes.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404":
+          description: Does not exist, is not currently public, has no current version, or no thumbnail could be produced.
+
+  /api/public/projects/{projectId}/fork/:
+    post:
+      tags: [Public]
+      operationId: forkProject
+      summary: Atomically fork a public, remix-enabled project's current version into a new private project owned by the caller
+      description: |
+        Authentication is checked distinctly from every other denial here:
+        an anonymous caller gets `401` (the source is already public, so
+        there's no hidden-data concern in saying so); an authenticated
+        caller who still can't fork it (private, or remixing disabled)
+        gets `404`. Idempotent via optional `client_request_id`, reusing
+        `Project.creation_request_id`'s uniqueness constraint — a repeated
+        submission with the same id returns the original fork (`200`)
+        instead of creating a duplicate.
+      x-access: session
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ForkProjectInput" }
+      responses:
+        "200":
+          description: An existing fork with the same `client_request_id` was returned instead of creating a duplicate.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "201":
+          description: Forked.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400":
+          description: Malformed `client_request_id`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrors" }
+        "401":
+          description: Not signed in.
+        "404":
+          description: Source project does not exist, is not public, or does not allow remixing.
+
+  /api/projects/{projectId}/ai/create-scene/:
+    post:
+      tags: [AI]
+      operationId: createAIScene
+      summary: Generate a brand-new scene proposal from a text prompt (draft only)
+      description: |
+        Never creates a `SceneVersion` or touches `Project.current_version`
+        in any branch, success or failure — the response is always an
+        unsaved draft proposal for the frontend to preview and separately
+        submit to accept-proposal. Requires the caller's own personal
+        Mistral credential (`424` if none is configured). Subject to a
+        per-user request-rate limit (`429 rate_limited`) and a per-user
+        daily creation quota (`429 quota_exceeded`), independent of each
+        other.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AICreateSceneInput" }
+      responses:
+        "200":
+          description: Draft proposal generated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AICreateSceneResponse" }
+        "400":
+          description: "Invalid prompt/model, `cancelled` operation."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+        "413":
+          description: Raw provider response exceeded the size safety net.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "422":
+          description: Output failed schema/limits validation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "424":
+          description: No personal Mistral credential is configured for the caller.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "429":
+          description: Request-rate limit or daily creation quota exceeded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "502":
+          description: Any other provider/SDK/network failure.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "504":
+          description: Mistral did not respond in time.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+
+  /api/projects/{projectId}/ai/edit-scene/:
+    post:
+      tags: [AI]
+      operationId: editAIScene
+      summary: Propose an edit to the caller's current in-progress scene (draft only)
+      description: |
+        Sends the prompt and the caller's own working scene through a
+        JSON-Patch-producing edit flow; the patch is applied to a copy and
+        both the patch and the resulting scene are validated. Never creates
+        a `SceneVersion`. `base_version_id` must equal the project's actual
+        `current_version` id (both may be `null`) or the request is
+        rejected with `409 stale_base` before any provider call — this
+        detects a concurrent save/accept that moved the project's current
+        version out from under the caller's working copy. Separate
+        rate-limit/quota buckets from create-scene.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AIEditSceneInput" }
+      responses:
+        "200":
+          description: Draft proposal generated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIEditSceneResponse" }
+        "400":
+          description: "Invalid prompt/model, invalid current_scene, or cancelled operation."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+        "409":
+          description: "`base_version_id` no longer matches the project's current version."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "413":
+          description: Raw provider response or patch exceeded the size safety net.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "422":
+          description: "Empty/protected/unreferenced/invalid/malformed patch, patch failed to apply, or the resulting scene failed validation."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "424":
+          description: No personal Mistral credential is configured for the caller.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "429":
+          description: Request-rate limit or daily edit quota exceeded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "502":
+          description: Any other provider/SDK/network failure.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "504":
+          description: Mistral did not respond in time.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+
+  /api/projects/{projectId}/ai/accept-proposal/:
+    post:
+      tags: [AI]
+      operationId: acceptAIProposal
+      summary: Persist an already-generated AI create/edit proposal as the next immutable version
+      description: |
+        The only endpoint in the AI create/edit/accept trio that writes:
+        creates exactly one new `SceneVersion` (`origin` `ai_create` or
+        `ai_edit`) and advances `Project.current_version`. `scene_json` is
+        re-validated from scratch here regardless of the fact that a
+        provider produced it earlier. `base_version_id` is checked for
+        staleness under the same row lock used to create the version.
+        Idempotent via optional `client_request_id`: a replayed accept for
+        the same proposal returns the already-created version (`200`)
+        rather than creating a second one.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AcceptAIProposalInput" }
+      responses:
+        "200":
+          description: A version already existing for this `client_request_id` was returned instead of creating a duplicate.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneVersion" }
+        "201":
+          description: New current version created from the accepted proposal.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneVersion" }
+        "400":
+          description: Request body failed validation, or `scene_json` is not an object.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+        "409":
+          description: "`base_version_id` no longer matches the project's current version."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+        "422":
+          description: "`scene_json` failed schema/limits validation."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody" }
+
+  /api/ai/art-pieces/generate/:
+    post:
+      tags: [Art Pieces]
+      operationId: generateArtPiece
+      summary: Generate a standalone, non-project-scoped art piece snippet from a prompt
+      description: |
+        Deliberately not project-scoped — no structured-output contract,
+        no schema validation of the result. `code` is a raw, unvalidated
+        string; it is only safe to render inside a sandboxed iframe the
+        frontend itself controls (`frontend/src/generative/artPieceSandbox.ts`).
+        Requires the caller's own personal Mistral credential. Its own
+        isolated rate-limit/quota buckets, separate from the scene AI
+        endpoints.
+      x-access: session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ArtPieceGenerateInput" }
+      responses:
+        "200":
+          description: Generated snippet.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenerateArtPieceResponse" }
+        "400":
+          description: Invalid prompt/model/library.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtPieceErrorBody" }
+        "401":
+          description: Not signed in.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Detail" }
+        "413":
+          description: Raw provider response exceeded the size safety net.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtPieceErrorBody" }
+        "422":
+          description: Provider response was empty or malformed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtPieceErrorBody" }
+        "424":
+          description: No personal Mistral credential is configured for the caller.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtPieceErrorBody" }
+        "429":
+          description: Request-rate limit or daily quota exceeded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtPieceErrorBody" }
+        "502":
+          description: Any other provider/SDK/network failure.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtPieceErrorBody" }
+        "504":
+          description: Provider did not respond in time.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtPieceErrorBody" }
+
+  /api/projects3d/:
+    get:
+      tags: [Projects3D]
+      operationId: listProjects3D
+      summary: List the caller's own 3D projects
+      x-access: session
+      responses:
+        "200":
+          description: The caller's own 3D projects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Project3D" }
+        "401":
+          description: Not signed in.
+    post:
+      tags: [Projects3D]
+      operationId: createProject3D
+      summary: Atomically create a private 3D project with one initial minimal scene version
+      description: No request body, no `client_request_id` idempotency key yet, and no `renderer` choice — `scene3d.schema.json` has no `renderer.preferred` concept.
+      x-access: session
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project3D" }
+        "401":
+          description: Not signed in.
+
+  /api/projects3d/{projectId}/:
+    get:
+      tags: [Projects3D]
+      operationId: getProject3D
+      summary: Fetch one 3D project
+      description: Project3D has no `visibility` field yet, so this is unconditionally owner-only.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: The 3D project.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project3D" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+    delete:
+      tags: [Projects3D]
+      operationId: deleteProject3D
+      summary: Soft-delete a 3D project
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "204":
+          description: Soft-deleted.
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+
+  /api/projects3d/{projectId}/versions/:
+    post:
+      tags: [Projects3D]
+      operationId: saveSceneVersion3D
+      summary: Save a new current 3D scene version
+      description: No listing/restore endpoint exists yet for 3D version history (a later follow-on).
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveSceneVersion3DInput" }
+      responses:
+        "201":
+          description: New current 3D version created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneVersion3D" }
+        "400":
+          description: The scene document failed schema/limits validation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneValidationErrorBody" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+
+  /api/projects3d/{projectId}/thumbnail/:
+    get:
+      tags: [Projects3D]
+      operationId: getProject3DThumbnail
+      summary: Owner-facing gallery-card thumbnail (PNG) for a 3D project's current version
+      description: Not currently called from `frontend/src/api/*.ts`. There is no public-facing 3D thumbnail route yet — `Project3D` has no `visibility` field.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: PNG image bytes.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404":
+          description: Does not exist/isn't the caller's, has no current version, or no thumbnail could be produced.
+
+  /api/projects3d/{projectId}/ai/create-scene/:
+    post:
+      tags: [AI3D]
+      operationId: createAIScene3D
+      summary: Generate a brand-new 3D scene proposal from a text prompt (draft only)
+      description: |
+        The 3D counterpart of `createAIScene`, identical semantics against
+        `scene3d.schema.json` and `Project3D`. Owner-only via
+        `Action.PROJECT3D_WRITE` (Project3D has no separate AI-scoped
+        action). Own, separate rate-limit/quota buckets from the 2D
+        endpoint.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AICreateScene3DInput" }
+      responses:
+        "200":
+          description: Draft proposal generated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AICreateScene3DResponse" }
+        "400":
+          description: "Invalid prompt/model, cancelled operation."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+        "413":
+          description: Raw provider response exceeded the size safety net.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "422":
+          description: Output failed schema/limits validation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "424":
+          description: No personal Mistral credential is configured for the caller.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "429":
+          description: Request-rate limit or daily creation quota exceeded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "502":
+          description: Any other provider/SDK/network failure.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "504":
+          description: Mistral did not respond in time.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+
+  /api/projects3d/{projectId}/ai/edit-scene/:
+    post:
+      tags: [AI3D]
+      operationId: editAIScene3D
+      summary: Propose an edit to the caller's current in-progress 3D scene (draft only)
+      description: The 3D counterpart of `editAIScene` — identical stale-base detection and failure taxonomy, scoped to `Project3D`/`scene3d`.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AIEditScene3DInput" }
+      responses:
+        "200":
+          description: Draft proposal generated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIEditScene3DResponse" }
+        "400":
+          description: "Invalid prompt/model, invalid current_scene, or cancelled operation."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+        "409":
+          description: "`base_version_id` no longer matches the project's current version."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "413":
+          description: Raw provider response or patch exceeded the size safety net.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "422":
+          description: "Empty/protected/unreferenced/invalid/malformed patch, patch failed to apply, or the resulting scene failed validation."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "424":
+          description: No personal Mistral credential is configured for the caller.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "429":
+          description: Request-rate limit or daily edit quota exceeded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "502":
+          description: Any other provider/SDK/network failure.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "504":
+          description: Mistral did not respond in time.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+
+  /api/projects3d/{projectId}/ai/accept-proposal/:
+    post:
+      tags: [AI3D]
+      operationId: acceptAIProposal3D
+      summary: Persist an already-generated 3D AI create/edit proposal as the next immutable version
+      description: The 3D counterpart of `acceptAIProposal`, reusing `saveSceneVersion3D`'s exact transaction shape. Same idempotency semantics via optional `client_request_id`.
+      x-access: owner
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AcceptAIProposal3DInput" }
+      responses:
+        "200":
+          description: A version already existing for this `client_request_id` was returned instead of creating a duplicate.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneVersion3D" }
+        "201":
+          description: New current version created from the accepted proposal.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneVersion3D" }
+        "400":
+          description: Request body failed validation, or `scene_json` is not an object.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "404":
+          description: Does not exist, or exists but isn't the caller's.
+        "409":
+          description: "`base_version_id` no longer matches the project's current version."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+        "422":
+          description: "`scene_json` failed schema/limits validation."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIErrorBody3D" }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sessionid
+      description: |
+        Django session cookie, established by signing in through
+        `/accounts/login/` (django-allauth). Unsafe methods additionally
+        require the `X-CSRFToken` header, read from the `csrftoken` cookie
+        — see `frontend/src/api/client.ts`. Operations reachable without a
+        session set `security: []` and are marked `x-access: anonymous`.
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      description: A project's `public_id` (UUID).
+      schema: { type: string, format: uuid }
+    VersionId:
+      name: versionId
+      in: path
+      required: true
+      description: A `SceneVersion`/`SceneVersion3D` database id (integer, not the version's `sequence`).
+      schema: { type: integer }
+    TemplateId:
+      name: templateId
+      in: path
+      required: true
+      description: A template's `public_id` (UUID).
+      schema: { type: string, format: uuid }
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      description: A per-browser-tab session id generated client-side (`sessionIdFor` in `frontend/src/pages/useDraftAutosave.ts`).
+      schema: { type: string }
+
+  schemas:
+    Detail:
+      type: object
+      properties:
+        detail: { type: string }
+
+    ValidationErrors:
+      type: object
+      description: DRF's default per-field validation error shape.
+      additionalProperties:
+        type: array
+        items: { type: string }
+
+    HealthResponse:
+      type: object
+      required: [status, database]
+      properties:
+        status: { type: string, enum: [ok, error] }
+        database: { type: string, enum: [ok, unavailable] }
+
+    CurrentUser:
+      type: object
+      required: [username, email]
+      properties:
+        username: { type: string }
+        email: { type: string, format: email }
+
+    MistralCredentialStatus:
+      type: object
+      required: [configured]
+      properties:
+        configured: { type: boolean }
+
+    MistralKeyInput:
+      type: object
+      required: [key]
+      properties:
+        key:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Must not contain any whitespace.
+
+    Template:
+      type: object
+      required: [id, source_type, owner, name, category, description, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        source_type: { type: string, enum: [built_in, private] }
+        owner:
+          type: string
+          nullable: true
+          description: Username, or `null` for a built-in template.
+        name: { type: string }
+        category: { type: string }
+        description: { type: string }
+        created_at: { type: string, format: date-time }
+
+    TemplateCreateInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 200 }
+        category: { type: string, maxLength: 100, default: "" }
+        description: { type: string, default: "" }
+
+    Visibility:
+      type: string
+      enum: [private, public]
+
+    Project:
+      type: object
+      required:
+        - id
+        - owner
+        - title
+        - description
+        - tags
+        - visibility
+        - allow_public_remix
+        - export_attribution
+        - thumbnail_url
+        - current_version
+        - created_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        owner: { type: string, description: Owner's username. }
+        title: { type: string }
+        description: { type: string }
+        tags: { type: array, items: { type: string } }
+        visibility: { $ref: "#/components/schemas/Visibility" }
+        allow_public_remix: { type: boolean }
+        export_attribution: { type: boolean }
+        thumbnail_url:
+          type: string
+          nullable: true
+          description: "URL of the owner-facing thumbnail endpoint (GET .../thumbnail.png), or null if no current version exists."
+        current_version:
+          type: integer
+          nullable: true
+          description: The current `SceneVersion`'s database id, or null if no version has been saved yet.
+        current_version_origin:
+          type: string
+          nullable: true
+          description: "The current version's origin (manual/ai_create/ai_edit/restore/fork), or null when there is no current version. Optional field — may be absent on older clients/fixtures."
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ProjectMetadataInput:
+      type: object
+      description: All fields optional (partial update). `visibility` is deliberately not a field here.
+      properties:
+        title: { type: string }
+        description: { type: string }
+        tags: { type: array, items: { type: string } }
+        allow_public_remix: { type: boolean }
+        export_attribution: { type: boolean }
+
+    CreateBlankProjectInput:
+      type: object
+      properties:
+        client_request_id:
+          type: string
+          format: uuid
+          description: Idempotency key. Omit to disable deduplication.
+        renderer:
+          type: string
+          enum: [p5, canvas2d, svg]
+          default: p5
+
+    ForkProjectInput:
+      type: object
+      properties:
+        client_request_id:
+          type: string
+          format: uuid
+          description: Idempotency key. Omit to disable deduplication.
+
+    SceneDocument:
+      description: A canonical 2D scene document. See schema/README.md for the versioning/validation model.
+      $ref: "./schema/scene.schema.json"
+
+    SceneDocument3D:
+      description: A canonical 3D (scene3d) document. See schema/README3d.md.
+      $ref: "./schema/scene3d.schema.json"
+
+    SceneVersion:
+      type: object
+      required:
+        - id
+        - sequence
+        - origin
+        - change_label
+        - created_by
+        - parent
+        - fork_source_version
+        - created_at
+        - scene_json
+      properties:
+        id: { type: integer }
+        sequence: { type: integer }
+        origin: { type: string, enum: [manual, ai_create, ai_edit, restore, fork] }
+        change_label: { type: string, nullable: true }
+        created_by: { type: string, nullable: true, description: Username, or null for a system/anonymous write. }
+        parent: { type: integer, nullable: true, description: The previous version's id this one was based on. }
+        fork_source_version: { type: integer, nullable: true, description: Set only when origin is fork. }
+        created_at: { type: string, format: date-time }
+        scene_json: { $ref: "#/components/schemas/SceneDocument" }
+
+    SceneVersionSummary:
+      description: Every SceneVersion field except scene_json — the history list response deliberately omits the full document.
+      type: object
+      required:
+        - id
+        - sequence
+        - origin
+        - change_label
+        - created_by
+        - parent
+        - fork_source_version
+        - created_at
+      properties:
+        id: { type: integer }
+        sequence: { type: integer }
+        origin: { type: string, enum: [manual, ai_create, ai_edit, restore, fork] }
+        change_label: { type: string, nullable: true }
+        created_by: { type: string, nullable: true }
+        parent: { type: integer, nullable: true }
+        fork_source_version: { type: integer, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    SaveSceneVersionInput:
+      type: object
+      required: [scene_json, origin]
+      properties:
+        scene_json: { $ref: "#/components/schemas/SceneDocument" }
+        origin:
+          type: string
+          enum: [manual, ai_create, ai_edit]
+          description: "restore and fork are rejected here — they're only ever produced by their own dedicated endpoints."
+        change_label: { type: string }
+
+    SceneValidationErrorBody:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [path, rule, message]
+            properties:
+              path: { type: string }
+              rule: { type: string }
+              message: { type: string }
+
+    PublishValidationErrorBody:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+    RemixProvenance:
+      type: object
+      required: [source_creator, source_public_id]
+      properties:
+        source_creator:
+          type: string
+          description: The source project's current owner username. Always present even if the source has since gone private.
+        source_public_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The source's id only when it is currently public/published/not deleted; null otherwise (durable attribution with no link).
+
+    PublicGalleryProject:
+      type: object
+      required: [id, title, owner, thumbnail_url, remix_provenance, published_at]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        owner: { type: string }
+        thumbnail_url: { type: string, nullable: true }
+        remix_provenance:
+          allOf: [{ $ref: "#/components/schemas/RemixProvenance" }]
+          nullable: true
+        published_at: { type: string, format: date-time }
+
+    PublicGalleryPage:
+      type: object
+      required: [results, next_cursor, has_more]
+      properties:
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/PublicGalleryProject" }
+        next_cursor:
+          type: string
+          nullable: true
+          description: "Null exactly when has_more is false."
+        has_more: { type: boolean }
+
+    PublicSceneVersion:
+      type: object
+      required: [sequence, scene_json, created_at]
+      properties:
+        sequence: { type: integer }
+        scene_json: { $ref: "#/components/schemas/SceneDocument" }
+        created_at: { type: string, format: date-time }
+
+    PublicProject:
+      type: object
+      required:
+        - id
+        - owner
+        - title
+        - description
+        - tags
+        - allow_public_remix
+        - thumbnail_url
+        - remix_provenance
+        - current_version
+        - created_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        owner: { type: string }
+        title: { type: string }
+        description: { type: string }
+        tags: { type: array, items: { type: string } }
+        allow_public_remix: { type: boolean }
+        thumbnail_url: { type: string, nullable: true }
+        remix_provenance:
+          allOf: [{ $ref: "#/components/schemas/RemixProvenance" }]
+          nullable: true
+        current_version:
+          allOf: [{ $ref: "#/components/schemas/PublicSceneVersion" }]
+          nullable: true
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    DraftSyncPayload:
+      type: object
+      required: [draft_json, client_seq]
+      properties:
+        draft_json: { $ref: "#/components/schemas/SceneDocument" }
+        client_seq:
+          type: integer
+          minimum: 0
+          description: Monotonic per-(project, caller, session) write counter.
+
+    DraftSyncResponse:
+      type: object
+      required: [draft_json, client_seq, last_autosaved_at, expires_at]
+      properties:
+        draft_json: { $ref: "#/components/schemas/SceneDocument" }
+        client_seq: { type: integer }
+        last_autosaved_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+
+    DraftUpsertResponse:
+      allOf:
+        - $ref: "#/components/schemas/DraftSyncResponse"
+        - type: object
+          required: [applied]
+          properties:
+            applied:
+              type: boolean
+              description: False when this write was not newer than the already-stored draft and was therefore ignored.
+
+    AIUsage:
+      type: object
+      required: [prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd]
+      properties:
+        prompt_tokens: { type: integer }
+        completion_tokens: { type: integer }
+        total_tokens: { type: integer }
+        estimated_cost_usd: { type: number }
+
+    AICreateSceneInput:
+      type: object
+      required: [prompt]
+      properties:
+        prompt: { type: string, maxLength: 4000 }
+        model:
+          type: string
+          maxLength: 100
+          description: "Optional caller-chosen Mistral model id. Blank/omitted means \"use the account default\"."
+
+    AICreateSceneResponse:
+      type: object
+      required: [draft, operation, scene, usage]
+      properties:
+        draft: { type: boolean, enum: [true] }
+        operation: { type: string }
+        scene: { $ref: "#/components/schemas/SceneDocument" }
+        usage: { $ref: "#/components/schemas/AIUsage" }
+
+    AIEditSceneInput:
+      type: object
+      required: [prompt, current_scene, base_version_id]
+      properties:
+        prompt: { type: string, maxLength: 4000 }
+        current_scene: { $ref: "#/components/schemas/SceneDocument" }
+        base_version_id:
+          type: integer
+          nullable: true
+          description: The SceneVersion id the caller believes is still current; null for a project with no saved version yet.
+        model: { type: string, maxLength: 100 }
+
+    AIEditSceneResponse:
+      type: object
+      required: [draft, operation, patch, scene, change_summary, usage]
+      properties:
+        draft: { type: boolean, enum: [true] }
+        operation: { type: string }
+        patch:
+          description: An RFC 6902 JSON Patch describing what changed. Already applied server-side to produce scene — never applied client-side.
+        scene: { $ref: "#/components/schemas/SceneDocument" }
+        change_summary: { type: string }
+        usage: { $ref: "#/components/schemas/AIUsage" }
+
+    AIErrorCode:
+      type: string
+      enum:
+        - prompt_invalid
+        - model_invalid
+        - rate_limited
+        - quota_exceeded
+        - provider_quota_exceeded
+        - timeout
+        - cancelled
+        - response_too_large
+        - provider_failure
+        - invalid_structured_output
+        - current_scene_invalid
+        - stale_base
+        - empty_patch
+        - protected_field
+        - unreferenced_element
+        - invalid_patch_path
+        - malformed_patch
+        - oversized_patch
+        - patch_apply_failed
+        - request_invalid
+        - personal_key_required
+
+    AIErrorBody:
+      type: object
+      required: [error, detail]
+      properties:
+        error: { $ref: "#/components/schemas/AIErrorCode" }
+        detail: {}
+
+    AcceptAIProposalInput:
+      type: object
+      required: [operation, scene_json, base_version_id]
+      properties:
+        operation: { type: string, enum: [ai_create, ai_edit] }
+        scene_json: { $ref: "#/components/schemas/SceneDocument" }
+        base_version_id: { type: integer, nullable: true }
+        change_label: { type: string }
+        client_request_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: A UUID generated once per proposal (not per Accept click) so a retried/replayed Accept resolves to exactly one version.
+
+    Project3D:
+      type: object
+      required: [id, owner, title, thumbnail_url, current_version, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        owner: { type: string }
+        title: { type: string }
+        thumbnail_url: { type: string, nullable: true }
+        current_version:
+          allOf: [{ $ref: "#/components/schemas/SceneVersion3D" }]
+          nullable: true
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    SceneVersion3D:
+      type: object
+      required: [id, sequence, origin, scene_json, created_by, created_at]
+      properties:
+        id: { type: integer }
+        sequence: { type: integer }
+        origin: { type: string, enum: [manual, ai_create, ai_edit] }
+        scene_json: { $ref: "#/components/schemas/SceneDocument3D" }
+        created_by: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    SaveSceneVersion3DInput:
+      type: object
+      required: [scene_json]
+      properties:
+        scene_json: { $ref: "#/components/schemas/SceneDocument3D" }
+
+    AICreateScene3DInput:
+      type: object
+      required: [prompt]
+      properties:
+        prompt: { type: string, maxLength: 4000 }
+        model: { type: string, maxLength: 100 }
+
+    AICreateScene3DResponse:
+      type: object
+      required: [draft, operation, scene, usage]
+      properties:
+        draft: { type: boolean, enum: [true] }
+        operation: { type: string }
+        scene: { $ref: "#/components/schemas/SceneDocument3D" }
+        usage: { $ref: "#/components/schemas/AIUsage" }
+
+    AIEditScene3DInput:
+      type: object
+      required: [prompt, current_scene, base_version_id]
+      properties:
+        prompt: { type: string, maxLength: 4000 }
+        current_scene: { $ref: "#/components/schemas/SceneDocument3D" }
+        base_version_id: { type: integer, nullable: true }
+        model: { type: string, maxLength: 100 }
+
+    AIEditScene3DResponse:
+      type: object
+      required: [draft, operation, patch, scene, change_summary, usage]
+      properties:
+        draft: { type: boolean, enum: [true] }
+        operation: { type: string }
+        patch: {}
+        scene: { $ref: "#/components/schemas/SceneDocument3D" }
+        change_summary: { type: string }
+        usage: { $ref: "#/components/schemas/AIUsage" }
+
+    AIErrorBody3D:
+      type: object
+      required: [error, detail]
+      properties:
+        error: { $ref: "#/components/schemas/AIErrorCode" }
+        detail: {}
+
+    AcceptAIProposal3DInput:
+      type: object
+      required: [operation, scene_json, base_version_id]
+      properties:
+        operation: { type: string, enum: [ai_create, ai_edit] }
+        scene_json: { $ref: "#/components/schemas/SceneDocument3D" }
+        base_version_id: { type: integer, nullable: true }
+        client_request_id: { type: string, format: uuid, nullable: true }
+
+    ArtPieceLibrary:
+      type: string
+      enum: [canvas2d, svg, threejs, aframe]
+
+    ArtPieceGenerateInput:
+      type: object
+      required: [library, prompt]
+      properties:
+        library: { $ref: "#/components/schemas/ArtPieceLibrary" }
+        prompt: { type: string, maxLength: 4000 }
+        model: { type: string, maxLength: 100 }
+
+    GenerateArtPieceResponse:
+      type: object
+      required: [library, code, usage]
+      properties:
+        library: { $ref: "#/components/schemas/ArtPieceLibrary" }
+        code:
+          type: string
+          description: Raw, unvalidated generated markup/script — never executed server-side; only safe to render inside a sandboxed iframe.
+        usage: { $ref: "#/components/schemas/AIUsage" }
+
+    ArtPieceErrorCode:
+      type: string
+      enum:
+        - prompt_invalid
+        - model_invalid
+        - rate_limited
+        - quota_exceeded
+        - provider_quota_exceeded
+        - timeout
+        - response_too_large
+        - provider_failure
+        - invalid_structured_output
+        - personal_key_required
+
+    ArtPieceErrorBody:
+      type: object
+      required: [error, detail]
+      properties:
+        error: { $ref: "#/components/schemas/ArtPieceErrorCode" }
+        detail: {}

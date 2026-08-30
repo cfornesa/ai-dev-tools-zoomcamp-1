@@ -1,0 +1,14 @@
+apis:
+  main:
+    root: openapi.yaml
+rules:
+  # Every real Django URL in this project ends with a trailing slash
+  # (APPEND_SLASH convention, see scenes/urls.py and config/urls.py) --
+  # stripping it here would misrepresent the actual API surface.
+  no-path-trailing-slash: off
+  # schema/scene.schema.json and schema/scene3d.schema.json intentionally
+  # pair a $ref with a sibling `description` in several places (Task 138,
+  # issue #170, etc.) -- that's valid under the 2020-12 dialect this spec
+  # declares (jsonSchemaDialect) and is schema/'s own established style;
+  # not something this spec should fight.
+  spec-ref-siblings: off

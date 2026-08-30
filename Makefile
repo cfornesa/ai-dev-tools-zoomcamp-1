@@ -3,7 +3,7 @@
 	backend-lint backend-format backend-format-check backend-typecheck backend-test \
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
 git-safe-push browser-qa \
-e2e dev deploy-check migrate smoke-local smoke-hosted-git
+e2e dev run deploy-check migrate smoke-local smoke-hosted-git
 
 # Run every backend and frontend check (same checks CI runs).
 check: backend-check frontend-check
@@ -20,19 +20,19 @@ typecheck: backend-typecheck frontend-typecheck
 test: backend-test frontend-test
 
 backend-lint:
-	uv run ruff check .
+	cd backend && uv run ruff check .
 
 backend-format:
-	uv run ruff format .
+	cd backend && uv run ruff format .
 
 backend-format-check:
-	uv run ruff format --check .
+	cd backend && uv run ruff format --check .
 
 backend-typecheck:
-	uv run mypy .
+	cd backend && uv run mypy .
 
 backend-test:
-	uv run pytest
+	cd backend && uv run pytest
 
 frontend-lint:
 	cd frontend && npm run lint
@@ -67,19 +67,44 @@ browser-qa:
 
 # Task 89 (issue #91): start Postgres (if needed), the backend, and the
 # frontend together from one terminal. Ctrl+C stops all of them cleanly.
+# This is the primary/proven local dev workflow -- it runs the backend via
+# `manage.py runserver` (autoreload behavior this whole codebase's docs and
+# history are built around) and owns Postgres/`.env` bootstrapping.
 dev:
 	@bash scripts/dev.sh
 
+# Task 217 (issue #249): an additional, explicitly opt-in dev entry point
+# that serves the backend through uvicorn against the new ASGI entry point
+# (`backend/backend/main.py`, i.e. `backend.main:app`) instead of
+# `manage.py runserver`. Decision: `dev`/scripts/dev.sh above stays the
+# primary workflow -- it is the proven, autoreload-tested path referenced
+# throughout AGENTS.md -- while `run` exists to exercise the uvicorn/ASGI
+# path directly (e.g. to mirror how a production ASGI server would serve
+# the app). `run` does not manage Postgres or generate `backend/.env` --
+# run `make dev` once first, or create `backend/.env` by hand, before using
+# it. Ctrl+C stops both processes. `uvicorn` is not a declared project
+# dependency (AGENTS.md's Rules: don't add one without asking) -- `--with
+# uvicorn` installs it into uv's ephemeral run environment on demand
+# instead of touching pyproject.toml.
+run:
+	@( \
+	  set -m; \
+	  trap 'kill 0' EXIT INT TERM; \
+	  (cd backend && uv run --with uvicorn --env-file .env uvicorn backend.main:app --reload --port 8091) & \
+	  (cd frontend && npm run dev) & \
+	  wait \
+	)
+
 # Production-like checks are intentionally separate from local development.
-# Supply a non-production .env with explicit production settings.
+# Supply a non-production backend/.env with explicit production settings.
 deploy-check:
-	uv run --env-file .env python manage.py check --deploy
+	cd backend && uv run --env-file .env python manage.py check --deploy
 
 migrate:
-	uv run --env-file .env python manage.py migrate --noinput
+	cd backend && uv run --env-file .env python manage.py migrate --noinput
 
 smoke-local:
-	BASE_URL=$${BASE_URL:-http://localhost:5000}; export BASE_URL; uv run --env-file .env python manage.py check --deploy && scripts/smoke-local.sh
+	BASE_URL=$${BASE_URL:-http://localhost:5000}; export BASE_URL; cd backend && uv run --env-file .env python manage.py check --deploy && cd .. && scripts/smoke-local.sh
 
 smoke-hosted-git:
 	HOSTED_GIT_SMOKE=$${HOSTED_GIT_SMOKE:-0} scripts/smoke-hosted-git.sh

@@ -9,7 +9,7 @@ metadata:
 used to fall back to `http://localhost:5173` when `E2E_BASE_URL` was unset,
 even though the Vite dev server has been permanently pinned to port `5000`
 (`strictPort: true`) since the OAuth-redirect port stabilization work. Fixed
-2026-08-23 (backlog task 92 / [[../../_docs/tasks.md]] / GitHub issue #123):
+2026-08-23 (backlog task 92 / [[../../docs/tasks.md]] / GitHub issue #123):
 both fallback literals now read `http://localhost:5000`. Verified against a
 real local PostgreSQL-backed Django + Vite stack: bare `npx playwright test`
 with no `E2E_BASE_URL` override no longer hits `ERR_CONNECTION_REFUSED` or

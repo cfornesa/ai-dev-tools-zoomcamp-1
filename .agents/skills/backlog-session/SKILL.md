@@ -39,7 +39,7 @@ Run these passes for every manifest issue, labeling artifacts with the issue num
 
 ### PM pass — groom
 
-Read the issue, relevant `tasks.md`, `_docs/process.md`, `_docs/team/pm.md`, and any required project guidance. Confirm or update:
+Read the issue, relevant `tasks.md`, `docs/process.md`, `docs/team/pm.md`, and any required project guidance. Confirm or update:
 
 - goal and checkable acceptance criteria;
 - constraints, dependencies, files in scope, and out-of-scope follow-ups;
@@ -57,7 +57,7 @@ If grooming discovers distinct actionable work outside the current issue, reuse 
 
 ### Engineer pass — implement
 
-Read `_docs/team/software-engineer.md`. Before writing tests, read `_docs/testing-guidelines.md`; for UI work, also read `_docs/design-system.md` when those files exist. Implement only the current issue, add focused regression coverage, and run its documented checks through the repository's automated runner or CI-equivalent environment. If a required local check is manual or cannot be repeated, automate it in the repository or classify the missing automation as a workflow/infrastructure defect before advancing; never ask the user to perform it. Commit coherent issue-scoped changes before advancing. Do not close the issue.
+Read `docs/team/software-engineer.md`. Before writing tests, read `docs/testing-guidelines.md`; for UI work, also read `docs/design-system.md` when those files exist. Implement only the current issue, add focused regression coverage, and run its documented checks through the repository's automated runner or CI-equivalent environment. If a required local check is manual or cannot be repeated, automate it in the repository or classify the missing automation as a workflow/infrastructure defect before advancing; never ask the user to perform it. Commit coherent issue-scoped changes before advancing. Do not close the issue.
 
 If implementation is blocked, do not modify unrelated code. Record the attempted command or tool, exact failure, impact, and next action, then mark the issue `blocked` or `handed-off` and continue with independent issues.
 
@@ -65,7 +65,7 @@ When engineering discovers a new defect, decide whether it belongs to the curren
 
 ### QA pass — verify
 
-Read `_docs/team/qa-engineer.md` and the issue acceptance criteria again. Do not modify code during QA. Exercise every criterion against the running result using automated tests, browser automation, fixtures, and the exact commands/environment specified by the issue where possible. The agent owns local execution: provision disposable services, resolve ports, start/stop servers, install or reuse test browsers, and retain logs/traces through repository scripts or CI. Run focused tests and the full relevant suite, plus required builds/checks. Separate local automated, CI, and Replit deployment evidence; use manual verification only for Replit deployment acceptance that automation cannot faithfully establish.
+Read `docs/team/qa-engineer.md` and the issue acceptance criteria again. Do not modify code during QA. Exercise every criterion against the running result using automated tests, browser automation, fixtures, and the exact commands/environment specified by the issue where possible. The agent owns local execution: provision disposable services, resolve ports, start/stop servers, install or reuse test browsers, and retain logs/traces through repository scripts or CI. Run focused tests and the full relevant suite, plus required builds/checks. Separate local automated, CI, and Replit deployment evidence; use manual verification only for Replit deployment acceptance that automation cannot faithfully establish.
 
 Post a GitHub comment for the issue beginning with `## QA: PASS` or `## QA: FAIL`, including a criterion matrix, commands, results, environment, and exact next action. A focused test never substitutes for the full relevant suite. A failed issue does not prevent QA of later independent issues.
 

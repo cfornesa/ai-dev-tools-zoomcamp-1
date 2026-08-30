@@ -15,7 +15,7 @@ support only in a separate, simpler, raw-code generation flow (tasks
 165-169) — this new epic (issue #205) takes on the harder option #197
 declined, deliberately, for the core editor.
 
-**Why this is legitimate planned scope, not invented:** `_docs/plan.md`'s
+**Why this is legitimate planned scope, not invented:** `docs/plan.md`'s
 "Renderer selection" section and "V2 roadmap candidates" have always
 documented "SVG and C2.js parity/expanded renderer support" as the plan.
 `frontend/src/export/exportCompatibility.ts`'s `RENDERER_CAPABILITIES`/

@@ -11,6 +11,9 @@ jobs:
     name: Backend checks
     if: ${{ github.event_name != 'deployment_status' }}
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v5
 
@@ -147,6 +150,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install backend dependencies
+        working-directory: backend
         run: uv sync --locked
 
       - name: Write disposable staging environment
@@ -172,7 +176,7 @@ jobs:
           staging_host="${BASE_URL#*://}"
           staging_host="${staging_host%%/*}"
           staging_origin="${BASE_URL%/}"
-          cat > .env <<EOF
+          cat > backend/.env <<EOF
           DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
           DATABASE_URL=${DATABASE_URL}
           GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
@@ -230,6 +234,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install backend dependencies
+        working-directory: backend
         run: uv sync --locked
 
       - name: Install Node
@@ -250,9 +255,12 @@ jobs:
       - name: Write CI environment file
         # globalSetup deliberately uses uv's --env-file behavior, matching
         # the documented local workflow; keep CI's disposable values in sync
-        # with the job environment.
+        # with the job environment. Written to backend/.env now that the
+        # backend package lives under backend/ (Task 217/issue #249);
+        # E2E_ENV_FILE (below) points frontend/e2e's globalSetup at the same
+        # absolute path since it no longer sits at the repo root.
         run: |
-          cat > .env <<'EOF'
+          cat > backend/.env <<'EOF'
           DJANGO_SECRET_KEY=ci-only-e2e-secret-key
           DATABASE_URL=postgres://postgres:postgres@localhost:5432/creatrweb_e2e
           GOOGLE_OAUTH_CLIENT_ID=ci-e2e-client.apps.googleusercontent.com
@@ -264,11 +272,12 @@ jobs:
           EOF
 
       - name: Apply migrations
+        working-directory: backend
         run: uv run --env-file .env python manage.py migrate --noinput
 
       - name: Start Django and Vite
         run: |
-          uv run --env-file .env python manage.py runserver 0.0.0.0:8000 > /tmp/django-e2e.log 2>&1 &
+          (cd backend && uv run --env-file .env python manage.py runserver 0.0.0.0:8000) > /tmp/django-e2e.log 2>&1 &
           (cd frontend && npm run dev -- --host 0.0.0.0 --port 5000) > /tmp/vite-e2e.log 2>&1 &
 
       - name: Wait for both servers

@@ -25,6 +25,9 @@
 # proxying to Django on 8000 is unchanged in either mode.
 set -Eeuo pipefail
 
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+backend_dir="$repo_root/backend"
+
 frontend_serve_mode="${FRONTEND_SERVE_MODE:-dev}"
 if [[ "$frontend_serve_mode" != "dev" && "$frontend_serve_mode" != "preview" ]]; then
   printf 'Invalid FRONTEND_SERVE_MODE: %s (must be "dev" or "preview")\n' \
@@ -71,13 +74,13 @@ trap cleanup EXIT INT TERM
 
 if [[ "${RUN_MIGRATIONS_ON_START:-false}" == "true" ]]; then
   printf 'Applying database migrations before starting Django\n'
-  if ! uv run python manage.py migrate --noinput; then
+  if ! uv run --directory "$backend_dir" python manage.py migrate --noinput; then
     printf 'Database migrations failed; refusing to start the application\n' >&2
     exit 1
   fi
 fi
 
-uv run python manage.py runserver 0.0.0.0:8000 &
+uv run --directory "$backend_dir" python manage.py runserver 0.0.0.0:8000 &
 django_pid=$!
 
 # Do not start Vite until Django can serve the same health endpoint that the

@@ -20,10 +20,11 @@ import path from 'node:path';
 import { clearE2EState, readE2EState } from './state.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
+const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
 const configuredEnvFile = process.env.E2E_ENV_FILE;
 const ENV_FILE_ARGS = configuredEnvFile
   ? ['--env-file', configuredEnvFile]
-  : fs.existsSync(path.join(REPO_ROOT, '.env'))
+  : fs.existsSync(path.join(BACKEND_DIR, '.env'))
     ? ['--env-file', '.env']
     : [];
 
@@ -35,7 +36,7 @@ export default async function globalTeardown(): Promise<void> {
       execFileSync(
         'uv',
         ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'cleanup', '--json'],
-        { cwd: REPO_ROOT, stdio: 'ignore' },
+        { cwd: BACKEND_DIR, stdio: 'ignore' },
       );
     } catch (err) {
       // Best-effort: teardown must not mask the suite's actual pass/fail

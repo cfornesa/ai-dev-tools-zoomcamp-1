@@ -1,13 +1,15 @@
 Layout
 
-- Backend: Django project at the repo root (`manage.py`, `config/`, `tests/`)
+- Backend: Django project in `backend/` (`backend/manage.py`,
+  `backend/backend/` — the Django settings package, renamed from the
+  former `config/` — `backend/tests/`)
 - Frontend: React/TypeScript/Vite app in `frontend/`
-- `scenes/`: Django app for the canonical scene domain — `validation.py`
+- `backend/scenes/`: Django app for the canonical scene domain — `validation.py`
   (Tasks 5-7), `models.py` (Tasks 8-10), `permissions.py` (Task 11), the
   single authorization service every project/version/draft/template
   endpoint must go through.
 - `schema/`: the canonical scene JSON Schema, complexity/payload limits,
-  and shared fixtures — the single contract both `scenes/validation.py`
+  and shared fixtures — the single contract both `backend/scenes/validation.py`
   and `frontend/src/validation/scene.ts` validate against. See
   `schema/README.md`.
 - `frontend/src/api/`: typed fetch wrappers for the Django API
@@ -36,12 +38,12 @@ topic page and one concise index entry before finishing. Do not use memory as
 a changelog, and never store credentials, tokens, connection strings, or
 other sensitive values there.
 
-Pending implementation and verification work belongs in `_docs/tasks.md`,
-using `_docs/task-template.md` and, when needed, a `.local/tasks/<slug>.md`
+Pending implementation and verification work belongs in `docs/tasks.md`,
+using `docs/task-template.md` and, when needed, a `.local/tasks/<slug>.md`
 execution plan. Do not put ordinary TODOs or task status in memory. Use
 `.agents/memory/` only for durable unresolved constraints, platform behavior,
 decisions, or lessons that future agents would otherwise lose. The complete
-capture and reconciliation loop is documented in `_docs/process.md`.
+capture and reconciliation loop is documented in `docs/process.md`.
 
 **Discovery gate:** whenever exploration, implementation, QA, or review finds
 an actionable issue outside the current scope, stop and check for duplicates
@@ -55,8 +57,8 @@ Environment setup (clean checkout)
 
 Django reads required settings (secret key, PostgreSQL `DATABASE_URL`)
 from environment variables and fails fast, naming the missing or
-malformed variable, if any are unset — see `config/settings.py`.
-`.env.example` (repo root) and `frontend/.env.example` document every
+malformed variable, if any are unset — see `backend/backend/settings.py`.
+`backend/.env.example` and `frontend/.env.example` document every
 variable Django, PostgreSQL, and the frontend use; neither example file
 contains real credentials. `.env` files are gitignored and must never be
 committed.
@@ -70,9 +72,9 @@ environments Replit's managed PostgreSQL integration supplies
 getting their own separate database; for local development outside
 Replit, point it at your own PostgreSQL server (see `.env.example`).
 
-1. Install backend dependencies: `uv sync`
-2. Create your local backend env file: `cp .env.example .env`, then edit
-   `.env`:
+1. Install backend dependencies: `cd backend && uv sync`
+2. Create your local backend env file (from `backend/`):
+   `cp .env.example .env`, then edit `backend/.env`:
    - Set `DJANGO_SECRET_KEY` to a real generated value:
      `uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`
    - Set `DATABASE_URL` to a real PostgreSQL connection URL.
@@ -80,14 +82,16 @@ Replit, point it at your own PostgreSQL server (see `.env.example`).
      origins used locally or by the Replit preview/deployment (for example
      `https://animate.creatrweb.com`); do not use a wildcard or path.
    - Set `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` to a real
-     Google OAuth client (see `.env.example`); Google sign-in doesn't work
-     against real accounts with the placeholder values, but everything
-     else — including the whole test suite — works fine without them
-     until [issue #75](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/75) provisions real ones.
+     Google OAuth client (see `backend/.env.example`); Google sign-in
+     doesn't work against real accounts with the placeholder values, but
+     everything else — including the whole test suite — works fine
+     without them until [issue #75](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/75) provisions real ones.
 3. Install frontend dependencies: `cd frontend && npm install`
 4. Create your local frontend env file: `cp frontend/.env.example frontend/.env`
-5. Apply database migrations: `uv run --env-file .env python manage.py migrate`
-6. Start the backend dev server: `uv run --env-file .env python manage.py runserver`
+5. Apply database migrations (from `backend/`):
+   `uv run --env-file .env python manage.py migrate`
+6. Start the backend dev server (from `backend/`):
+   `uv run --env-file .env python manage.py runserver`
 7. In a second terminal, start the frontend dev server: `cd frontend && npm run dev`
 8. Check application and database availability at any time:
    `GET /health/` (no connection details are exposed in the response).
@@ -95,9 +99,9 @@ Replit, point it at your own PostgreSQL server (see `.env.example`).
    minimal example of a login-required route.
 
 `--env-file .env` (a built-in `uv run` flag, not an extra dependency)
-loads `.env` into the process environment for that command. Vite loads
-`frontend/.env` on its own, so `npm run dev`/`npm test`/`npm run build`
-need no extra flag.
+loads `backend/.env` into the process environment for that command when run
+from `backend/`. Vite loads `frontend/.env` on its own, so `npm run
+dev`/`npm test`/`npm run build` need no extra flag.
 
 Frontend dev server port, `CSRF_TRUSTED_ORIGINS`, and Google OAuth must
 stay in sync: `frontend/vite.config.ts` fixes the Vite dev server
@@ -111,7 +115,7 @@ name the exact same port together, and changing the port means updating
 all three:
 
 1. `frontend/vite.config.ts`'s `server.port`.
-2. `.env`'s `CSRF_TRUSTED_ORIGINS`, which must include
+2. `backend/.env`'s `CSRF_TRUSTED_ORIGINS`, which must include
    `http://localhost:5000`.
 3. The Google OAuth client's registered "Authorized redirect URI"
    (`http://localhost:5000/accounts/google/login/callback/`) and
@@ -123,8 +127,8 @@ listens on port 5000 by default, which is what most often occupies it
 before `npm run dev` ever runs. Fix it by disabling AirPlay Receiver
 (System Settings → General → AirDrop & Handoff → AirPlay Receiver), or,
 if you'd rather keep it enabled, change the fixed port everywhere it's
-referenced (`vite.config.ts`, `.env`'s `CSRF_TRUSTED_ORIGINS`, and the
-Google OAuth client) — see "Out of scope" in
+referenced (`vite.config.ts`, `backend/.env`'s `CSRF_TRUSTED_ORIGINS`, and
+the Google OAuth client) — see "Out of scope" in
 [issue #86](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/86)
 for why the port isn't made configurable via an environment variable
 instead.
@@ -134,10 +138,10 @@ Deployment tracks and preflight
 Keep deployment environments isolated: Replit development and Replit
 published production receive different `DATABASE_URL` values from their
 respective environment configuration. An external local deployment must use
-its own non-production PostgreSQL URL in `.env`; never copy a published
-database URL or production secret into that file. `POSTGRES_TEST_DATABASE_URL`
-is optional and only used by PostgreSQL health tests; if set, it must point
-at a separate disposable test database.
+its own non-production PostgreSQL URL in `backend/.env`; never copy a
+published database URL or production secret into that file.
+`POSTGRES_TEST_DATABASE_URL` is optional and only used by PostgreSQL health
+tests; if set, it must point at a separate disposable test database.
 
 For a Replit publish, the deployment build (`.replit`'s `[deployment].build`)
 runs dependency installation, `manage.py check --deploy`, and the frontend
@@ -157,11 +161,13 @@ production-safe `DJANGO_DEBUG`/`DJANGO_ALLOWED_HOSTS` values as
 defense-in-depth regardless of that precedence. See
 `.agents/memory/replit-userenv-scope.md`.
 
-For an external non-production deployment, create `.env` from
-`.env.example`, set its own PostgreSQL `DATABASE_URL`, then run:
+For an external non-production deployment, create `backend/.env` from
+`backend/.env.example`, set its own PostgreSQL `DATABASE_URL`, then run
+(from the repo root; the `make` targets below `cd` into `backend/` or
+`frontend/` as each command needs):
 
 ```bash
-uv sync --locked
+cd backend && uv sync --locked && cd ..
 npm --prefix frontend ci
 make deploy-check
 make migrate
@@ -203,23 +209,23 @@ Quality checks (run from the repo root):
 - `make frontend-lint` / `make frontend-format` / `make frontend-format-check`
   / `make frontend-typecheck` / `make frontend-test` - one frontend check
 
-Backend (run from the repo root):
+Backend (run from `backend/`):
 
 - `uv sync` - install dependencies
 - `uv run ruff check .` - lint
 - `uv run ruff format .` - format (add `--check` to only verify)
-- `uv run mypy .` - type-check (uses `config/test_settings.py`'s safe
-  defaults; no real `.env` needed)
+- `uv run mypy .` - type-check (uses `backend.test_settings`'s
+  (`backend/backend/test_settings.py`) safe defaults; no real `.env` needed)
 - `uv run pytest` - the whole suite (runs offline, without a real `.env`,
-  using safe test-only defaults from `config/test_settings.py`; SQLite
+  using safe test-only defaults from `backend.test_settings`; SQLite
   backs `default`, and the small number of tests in `tests/test_health.py`
   that need real PostgreSQL semantics skip themselves unless
   `POSTGRES_TEST_DATABASE_URL` is set — see `.env.example`)
 - `uv run pytest tests/test_home.py` - one test file
 - `uv run --env-file .env python manage.py migrate` - apply DB migrations
 - `uv run --env-file .env python manage.py runserver` - start the backend dev server
-- `GIT_URL=... make git-safe-push` - refresh and safely push `main` without
-  force-pushing or persisting the credential
+- `GIT_URL=... make git-safe-push` (from the repo root) - refresh and
+  safely push `main` without force-pushing or persisting the credential
 
 Frontend (run from `frontend/`):
 
@@ -252,8 +258,12 @@ transaction/concurrency guarantees SQLite doesn't provide.
 - CI's `Responsive shell E2E` job provisions PostgreSQL, installs Chromium
   with Linux browser dependencies, applies migrations, starts Django and
   Vite, and runs `responsiveShell.spec.ts` at its 375px viewport. Its
-  disposable `DATABASE_URL` and test-only OAuth values are written to `.env`
-  because Playwright global setup loads that file before creating fixtures.
+  disposable `DATABASE_URL` and test-only OAuth values are written to
+  `backend/.env` because Playwright global setup loads that file before
+  creating fixtures (`frontend/e2e/support/global-setup.ts`/
+  `global-teardown.ts` shell out to `manage.py e2e_fixtures` with `cwd`
+  set to `backend/` and look for `backend/.env`, updated for task
+  217/issue #249's move of the backend into `backend/`).
 - `cd frontend && npx playwright test --list` - list every scenario
   without running a browser; useful to confirm the suite is syntactically
   valid and every test is discoverable with no server running at all
@@ -265,12 +275,12 @@ Before running `make e2e`, in order:
 
 1. A real, reachable PostgreSQL server (see "Environment setup" above —
    this suite does not work against SQLite).
-2. `uv run --env-file .env python manage.py migrate`
+2. `cd backend && uv run --env-file .env python manage.py migrate`
 3. `AI_PROVIDER=fake uv run --env-file .env python manage.py runserver`
-   (leave running) — `AI_PROVIDER=fake` swaps every AI endpoint
-   (`scenes/ai_api.py`'s `get_ai_provider`) to a deterministic, network-free
-   fake provider (`ai_provider/e2e_provider.py`) instead of the real
-   Mistral client, so `frontend/e2e/aiAndRecovery.spec.ts` (Task 66,
+   (from `backend/`, leave running) — `AI_PROVIDER=fake` swaps every AI
+   endpoint (`scenes/ai_api.py`'s `get_ai_provider`) to a deterministic,
+   network-free fake provider (`ai_provider/e2e_provider.py`) instead of the
+   real Mistral client, so `frontend/e2e/aiAndRecovery.spec.ts` (Task 66,
    issue #66) never needs a real `MISTRAL_API_KEY`. Every other suite
    (`projectLifecycle.spec.ts`, `interactionRuntime.spec.ts`) runs the
    same either way — this only affects the three AI endpoints. Omitting
@@ -283,13 +293,14 @@ email/password form (not Google OAuth, which needs real third-party
 credentials — see issue #75 above) as two deterministic fixture users a
 Playwright `globalSetup` hook creates via `uv run --env-file .env python
 manage.py e2e_fixtures create --json`
-(`scenes/management/commands/e2e_fixtures.py`) before the suite runs, and
-removes via `e2e_fixtures cleanup` after it finishes, along with every
-project/version they created — no fixture data or browser storage
-(cookies/localStorage/IndexedDB) survives past one run. If the dev
-server's `/health/` check isn't reachable when the suite starts, every
-scenario self-skips with an actionable message instead of failing, the
-same convention `config/test_settings.py`'s `POSTGRES_TEST_DATABASE_URL`
+(`backend/scenes/management/commands/e2e_fixtures.py`) before the suite
+runs, and removes via `e2e_fixtures cleanup` after it finishes, along with
+every project/version they created — no fixture data or browser storage
+(cookies/localStorage/IndexedDB) survives past one run (subject to the
+known backend/-restructure gap in that `globalSetup` hook noted above). If
+the dev server's `/health/` check isn't reachable when the suite starts,
+every scenario self-skips with an actionable message instead of failing,
+the same convention `backend.test_settings`'s `POSTGRES_TEST_DATABASE_URL`
 gate already uses for backend-only PostgreSQL tests. Set `E2E_BASE_URL`
 to point the suite at a different origin than the default
 `http://localhost:5173`.
@@ -306,4 +317,4 @@ Rules
 
 Documents
 
-- `_docs/process.md` - how work is organized
+- `docs/process.md` - how work is organized

@@ -23,7 +23,7 @@ certainty, at "workspace-only, not deployment-authoritative":
 - Issue #97's closing evidence (`manage.py check --deploy` passing, and
   `scripts/smoke-published.sh` passing against the real published URL) is
   consistent with `DEBUG=False` and a real `ALLOWED_HOSTS` in effect in
-  production today — `config/settings.py` defaults `DJANGO_ALLOWED_HOSTS` to
+  production today — `backend/backend/settings.py` defaults `DJANGO_ALLOWED_HOSTS` to
   `localhost,127.0.0.1` when unset, so the published domain responding at
   all means something (not `[userenv.shared]`'s `*`) is supplying the real
   hostname in production.
@@ -32,7 +32,7 @@ certainty, at "workspace-only, not deployment-authoritative":
   live-process inspection would be the only fully conclusive check.
 
 **Why this still matters:** if `[userenv]` ever does reach the deployment
-process, `config/settings.py`'s hard production-safety block (HSTS, secure
+process, `backend/backend/settings.py`'s hard production-safety block (HSTS, secure
 cookies, HTTPS redirect, non-console email — all gated on `DEBUG=False`)
 would be silently skipped. See [[critical-actions]] for the broader index.
 

@@ -9,7 +9,7 @@ Use this skill to turn a user request, review feedback, failures, or readiness f
 
 ## Discovery and reconciliation
 
-1. Identify exactly one project and read its `tasks.md`, relevant plan, `_docs/process.md`, and applicable acceptance criteria and constraints.
+1. Identify exactly one project and read its `tasks.md`, relevant plan, `docs/process.md`, and applicable acceptance criteria and constraints.
 2. Inspect the current worktree and relevant repository history without overwriting user changes.
 3. Use the authenticated GitHub connector to enumerate open issues associated with the project. Compare GitHub issues, `tasks.md`, existing memory topics, related PRs, and the user's evidence.
 4. Build or update an issue manifest containing issue number, URL, goal, dependencies, priority/order, duplicate links, scope, and status.

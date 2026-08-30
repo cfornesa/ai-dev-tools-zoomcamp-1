@@ -8160,7 +8160,7 @@ Dependencies: None.
 
 ## 215. Add openapi.yaml documenting the current backend API surface
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#247](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/247)
 
@@ -8173,6 +8173,25 @@ the real Django view behavior, covering all 28 `/api/*` endpoints plus
 `/health/`/`/api/whoami/`, with auth requirement stated per endpoint.
 References `schema/scene.schema.json`/`scene3d.schema.json` rather than
 duplicating them.
+
+Delivered (commit `c00062b`): `openapi.yaml` (OpenAPI 3.1, since
+`schema/scene.schema.json`/`scene3d.schema.json`'s draft-2020-12
+keywords only lint cleanly under 3.1's `jsonSchemaDialect`) covering 43
+operations across 32 paths — every function exported from
+`frontend/src/api/*.ts` plus `/health/`, `/api/whoami/`, and a handful
+of real backend endpoints not yet wrapped by a typed frontend function
+(each flagged as such in its description). Every operation carries an
+`x-access` field (anonymous/session/owner) cross-checked against
+`scenes/permissions.py`. A small `redocly.yaml` disables two purely
+stylistic lint rules (`no-path-trailing-slash`, since Django's
+`APPEND_SLASH` means every real route ends in `/`; `spec-ref-siblings`,
+since `schema/`'s own established style pairs `$ref` with a sibling
+`description`), each with an inline comment explaining why.
+
+Verification: `npx --yes @redocly/cli lint openapi.yaml` — clean;
+independently re-run during QA, not just taken on the implementer's
+word. A small Python/PyYAML spot-check during QA confirmed 43
+operations across 32 paths and `x-access` present on every one.
 
 Dependencies: None — independent of and parallel to task 214/#246.
 

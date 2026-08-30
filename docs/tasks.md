@@ -8249,7 +8249,9 @@ Dependencies: None.
 
 ## 217. Restructure repository into /backend, /frontend, /docs (Django kept, PostgreSQL kept)
 
-Status: PROPOSED
+Status: ACTIVE — local restructure complete and fully verified; blocked
+only on a live Replit publish + post-publish smoke pass, which needs the
+repository owner's authenticated Replit session to trigger.
 
 GitHub issue: [#249](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/249)
 
@@ -8306,15 +8308,57 @@ root `Makefile` need updating in the same change — a half-moved state is
 worse than either endpoint, so this is planned as one deliberately
 atomic, carefully verified change, not an incremental one.
 
-Next action: PM groom against `docs/task-template.md`, then implement
-per #249's acceptance criteria. Verification must include a live Replit
-publish and post-publish smoke pass — local `make check`/`make e2e`
-passing is necessary but not sufficient, since this task's real risk is
-entirely in the deployment path.
+Delivered so far: `manage.py`, `pyproject.toml`, `uv.lock`,
+`.env.example`, `scenes/`, `ai_provider/`, `templates/`, `tests/` moved
+under `backend/` via `git mv` (history preserved); `config/` renamed to
+`backend/backend/` (`config.settings`/`config.test_settings` →
+`backend.settings`/`backend.test_settings` everywhere); new
+`backend/backend/main.py` exposes `app` for uvicorn
+(`from backend.asgi import application as app`, confirmed importable
+and servable as `backend.main:app` when run from `backend/`); `_docs/`
+renamed to `docs/`; `scenes/validation.py`'s `SCHEMA_DIR` given the
+extra `.parent` the new nesting depth needs; every path-sensitive
+script (`scripts/dev.sh`, `start.sh`, `post-merge.sh`, `smoke-local.sh`,
+`browser-qa.sh`), `.replit`'s `[deployment].build`, `.github/workflows/
+ci.yml`'s backend job (`defaults.run.working-directory: backend`), and
+the root `Makefile` (`backend-*` targets gain `cd backend &&`, new
+`run` target) updated; `AGENTS.md`, `README.md`, `replit.md`, `docs/`,
+`.claude/skills/*.md`, and `.agents/memory/*.md` cross-references
+updated. `manage.py runserver` stays the primary local dev workflow;
+`make run`/`backend.main:app` under uvicorn is an explicit additional
+opt-in, not a replacement (decision recorded per #249's own request not
+to make this silently).
+
+During this task's own verification a real gap surfaced and was fixed
+in the same change (not deferred): `frontend/e2e/support/global-setup.ts`
+and `global-teardown.ts` hardcoded the repo root as both the `cwd` for
+their `manage.py e2e_fixtures` shell-out and the `.env` fallback lookup
+— both now point at `backend/`. A full `make e2e` run against a real
+local PostgreSQL-backed Django + Vite stack confirmed 135 passed / 1
+skipped, matching the pre-move baseline exactly (one run's single
+intermittent failure was reproduced and confirmed as pre-existing
+full-suite-ordering flakiness unrelated to this change, not a
+regression, by rerunning both the full suite and the failing test in
+isolation).
+
+`make check`: 824 backend / 2152 frontend passed, lint/format/typecheck
+clean on both stacks.
+
+Remaining: a live Replit publish and post-publish smoke pass
+(`scripts/smoke-published.sh`) against the published URL — this task's
+real risk is entirely in the deployment path, and local checks passing
+is necessary but not sufficient to close it. Triggering a Replit
+publish needs the repository owner's own authenticated Replit session;
+it cannot be done from this agent session. Next action: repository
+owner reviews the restructure (currently on branch
+`worktree-agent-ae990635571a47b51`, not yet merged to `main`), merges
+it, and publishes from Replit; then re-run
+`scripts/smoke-published.sh` against the published URL to close this
+task.
 
 Dependencies: Should land after task 214/#246 and task 215/#247 so their
 work isn't disrupted mid-move (ordering preference, not a hard technical
-dependency).
+dependency) — satisfied; both landed first in this same session.
 
 ## 218. Backend module organization pass (not a forced routers/store split)
 

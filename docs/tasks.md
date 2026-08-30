@@ -8377,7 +8377,7 @@ dependency) — satisfied; both landed first in this same session.
 
 ## 218. Backend module organization pass (not a forced routers/store split)
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#250](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/250)
 
@@ -8389,10 +8389,30 @@ separation of concerns validation/thumbnails/patch/gallery/publishing
 don't map onto that 4-bucket shape and shouldn't be forced to).
 
 Low priority — defer entirely if task 217/#249 alone satisfies the
-practical goal; do not start without confirming it's still wanted. Full
+practical goal; do not start without confirming it's still wanted (the
+repository owner confirmed it was still wanted this session). Full
 scope in #250.
 
-Dependencies: Should follow task 217/#249 so paths are stable first.
+Delivered (commit `ec9ad95`): `backend/scenes/api.py` was the one
+remaining domain module still mixing the 2D and 3D resource families
+in one file — every other module in the domain was already split this
+way (`ai_api.py`/`ai_api3d.py`, `thumbnails.py`/`thumbnails3d.py`,
+`validation.py`/`validation3d.py`, `patch.py`/`patch3d.py`). Moved
+`Project3DListCreateView`, `Project3DDetailView`,
+`SceneVersion3DListCreateView`, `Project3DThumbnailView`, and
+`_get_project3d_or_404` into a new `backend/scenes/api3d.py`, matching
+that established convention exactly — a pure move, no behavior change.
+`api.py` drops from 1313 to ~1140 lines; `scenes/urls.py` and
+`scenes/ai_api3d.py` updated to import from the new location.
+
+Verification: full `uv run --env-file .env pytest` (846, including
+`POSTGRES_TEST_DATABASE_URL`-gated tests) passes unchanged; `make
+check` clean; a live manual check against a local dev server confirmed
+both `/api/projects/` and `/api/projects3d/` still route and respond
+correctly.
+
+Dependencies: Should follow task 217/#249 so paths are stable first —
+satisfied.
 
 ## 219. Database-portability code review (Postgres stays required)
 

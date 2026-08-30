@@ -8178,7 +8178,7 @@ Dependencies: None — independent of and parallel to task 214/#246.
 
 ## 216. Add uv add and commit-regularly guidance to AGENTS.md
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#248](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/248)
 
@@ -8190,6 +8190,13 @@ guidance. Additive only — no removal/reorganization of existing content,
 and no path-reference updates for the task 217/#249 restructure (those
 land with that task instead, to keep this one independently mergeable
 first).
+
+Delivered (commit `2c6e09d`): added a `uv add <PACKAGE-NAME>` example and
+a "commit regularly" bullet under `AGENTS.md`'s existing Rules section —
+a pure 7-line insertion, no existing content removed or reorganized.
+
+Verification: `git diff AGENTS.md` reviewed manually (docs-only change,
+no server/build/test needed); both acceptance criteria confirmed met.
 
 Dependencies: None.
 

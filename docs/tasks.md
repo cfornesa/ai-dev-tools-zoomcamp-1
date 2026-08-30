@@ -8249,9 +8249,7 @@ Dependencies: None.
 
 ## 217. Restructure repository into /backend, /frontend, /docs (Django kept, PostgreSQL kept)
 
-Status: ACTIVE — local restructure complete and fully verified; blocked
-only on a live Replit publish + post-publish smoke pass, which needs the
-repository owner's authenticated Replit session to trigger.
+Status: COMPLETE
 
 GitHub issue: [#249](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/249)
 
@@ -8344,17 +8342,34 @@ isolation).
 `make check`: 824 backend / 2152 frontend passed, lint/format/typecheck
 clean on both stacks.
 
-Remaining: a live Replit publish and post-publish smoke pass
-(`scripts/smoke-published.sh`) against the published URL — this task's
-real risk is entirely in the deployment path, and local checks passing
-is necessary but not sufficient to close it. Triggering a Replit
-publish needs the repository owner's own authenticated Replit session;
-it cannot be done from this agent session. Next action: repository
-owner reviews the restructure (currently on branch
-`worktree-agent-ae990635571a47b51`, not yet merged to `main`), merges
-it, and publishes from Replit; then re-run
-`scripts/smoke-published.sh` against the published URL to close this
-task.
+The first Replit publish attempt after this restructure landed
+(`d4a5e801`) failed at startup with `can't open file
+'/home/runner/workspace/manage.py'`. Investigated live in the Replit
+dashboard (Build logs and the interactive workspace's Console, via
+browser automation): every backend shell invocation used `uv run
+--directory "$backend_dir" python manage.py ...`, which proved
+intermittently unreliable at resolving the subprocess's actual working
+directory on Replit's runtime specifically (confirmed: an identical
+rerun of the same script succeeded moments later in the Console). The
+failing invocation's python3 binary path pointed at the *old*
+pre-restructure root-level `.venv` — gitignored, so `git pull` never
+removed it, the same class of issue as `.env` not following the
+`git mv`. Fixed (commit `d99dea6`) by converting every backend
+invocation across `scripts/start.sh`, `dev.sh`, `post-merge.sh`,
+`smoke-local.sh`, and `.replit`'s deployment build from `uv run
+--directory X ...` to an explicit `(cd "$X" && uv run ...)` subshell,
+which unambiguously sets the process cwd regardless of `uv`'s own flag
+semantics. This also caught a real latent bug in `dev.sh`: a python
+heredoc writing to a relative `.env` path would have silently targeted
+the wrong file had `--directory` ever worked as advertised there. Root
+cause and fix recorded in
+`.agents/memory/uv-run-directory-flag-unreliable-on-replit.md`.
+
+The repository owner republished after this fix. Verified:
+`PUBLISHED_APP_URL=https://animate.creatrweb.com bash
+scripts/smoke-published.sh` — `/health/`, `/`, anonymous
+`/api/whoami/` (401), and `/accounts/login/` all passed against the
+live published deployment.
 
 Dependencies: Should land after task 214/#246 and task 215/#247 so their
 work isn't disrupted mid-move (ordering preference, not a hard technical

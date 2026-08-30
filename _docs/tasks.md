@@ -7852,7 +7852,7 @@ Dependencies: None.
 
 ## 211. Project3D has no thumbnail generation
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#243](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/243)
 
@@ -7875,8 +7875,60 @@ generation-trigger timing), add `thumbnail_url` to
 `Project3DSerializer`, and render it in `Project3DCard.tsx` in place
 of the permanent fallback.
 
-Next action: PM groom against `_docs/task-template.md`, then implement
-per #243's acceptance criteria.
+Delivered (commit `0cbe677`):
+- `scenes/thumbnails3d.py`: a new Pillow-based `scene3d` rasterizer.
+  Same dependency-light constraint as the 2D `scenes/thumbnails.py`
+  (no headless-browser/Three.js/A-Frame runtime exists in this project —
+  that gap is #244). Projects scene geometry through the document's own
+  `camera` (look-at + perspective projection), draws each object's faces
+  (box: 6 quads; cylinder: N-gon caps + N side quads; plane: 1
+  non-culled quad; sphere: a camera-facing billboard disc, since it has
+  no faces in the schema) as flat-shaded polygons, backface-culled and
+  depth-sorted back-to-front (a whole-scene painter's algorithm, not a
+  per-pixel z-buffer). No lighting model — `lights` is read by nothing
+  here, matching the 2D renderer's "artwork only" guarantee. Reuses
+  `scenes.thumbnails.CARD_WIDTH`/`CARD_HEIGHT`/`FALLBACK_PNG_BYTES` (one
+  card size and one fallback image for both document families) rather
+  than duplicating them.
+- `scenes/models.py`: new `Thumbnail3D` model, mirroring `Thumbnail`
+  exactly (OneToOne on `SceneVersion3D`, same fallback semantics;
+  migration `0021`).
+- `scenes/thumbnail_generation3d.py`: `ensure_thumbnail_for_version3d`/
+  `maybe_schedule_thumbnail_generation3d`, mirroring
+  `scenes/thumbnail_generation.py`'s `transaction.on_commit`
+  scheduling and idempotent-`update_or_create` contract. One documented
+  difference: generation is unconditional (not gated on `visibility`,
+  since `Project3D` has none yet) — the only serving route is the
+  owner-gated `Project3DThumbnailView`, never a public-facing one.
+- `scenes/api.py`/`scenes/ai_api3d.py`: `maybe_schedule_thumbnail_generation3d`
+  called after `current_version` advances in
+  `Project3DListCreateView.post` (the blank scene's own first version),
+  `SceneVersion3DListCreateView.post`, and `AIAcceptProposal3DView.post`.
+  New `Project3DThumbnailView` (owner-gated, lazy-generates on miss,
+  mirrors `ProjectThumbnailView`), routed at
+  `projects3d/<uuid:public_id>/thumbnail/`.
+- `scenes/serializers.py`: `Project3DSerializer` gained `thumbnail_url`
+  (`SerializerMethodField`, mirrors `ProjectSerializer`).
+- Frontend: `Project3D` type gained `thumbnail_url`; `Project3DCard.tsx`
+  now mirrors `ProjectCard.tsx`'s image/fallback-on-null-or-error
+  pattern instead of always rendering the static fallback.
+
+Verification:
+- `uv run pytest tests/test_thumbnails3d.py tests/test_project3d_thumbnail_api.py -q`
+  20 passed (renderer determinism/dimensions/culling/visibility/error
+  handling; generation-trigger/lazy-fallback/ownership-gating API tests).
+- `make check`: 824 backend / 2106 frontend passed (up from 804/2104),
+  lint/format/typecheck clean.
+- Live verification against a real local PostgreSQL-backed Django dev
+  server + Vite dev server: signed in as the `e2e_owner` Playwright
+  fixture user, created a 3D project, confirmed the gallery card renders
+  a real `image "Preview of Untitled 3D scene"` (not the fallback), and
+  fetched `GET /api/projects3d/<id>/thumbnail/` directly — `200
+  image/png`, exactly 320x240. Fixture data cleaned up afterward.
+
+Out of scope (per the issue): real Three.js/A-Frame rendering in the 3D
+editor's own live preview (#244); retroactive thumbnail backfill for
+pre-existing `Project3D` rows (none exist in any real environment yet).
 
 Dependencies: None. Related to #212 (first deferred this) and #241
 (surfaced the gap in the gallery).

@@ -7641,35 +7641,58 @@ backlog ordering.
 
 ## 207. E2E coverage gap: no test exercises 3D project creation
 
-Status: ACTIVE
+Status: COMPLETE
 
 GitHub issue: [#239](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/239)
 
 Parent: task 206/#238 (discovered while investigating that incident).
 
 `grep -rln "projects3d\|Project3D\|createProject3D" frontend/e2e/`
-returns nothing — no Playwright scenario exercises 3D project creation
+returned nothing — no Playwright scenario exercised 3D project creation
 at all. This is why task 206/#238's regression reached production
 undetected: the full local `make e2e` (133 passed/1 intentional
 skip/0 failed) and backend `pytest` (794 passed) were both green
 immediately before the publish that introduced the incident, yet the
 3D creation path was still broken live.
 
-Scope: extend `frontend/e2e/projectLifecycle.spec.ts` (or a new
-`project3dLifecycle.spec.ts`, matching the repo's per-feature spec-file
-convention) with at least one scenario that signs in as the e2e
-fixture owner, clicks "Create new 3D project" on the gallery, and
-asserts the resulting `Project3D` persists and its manual editor route
-(`/projects3d/:id`) loads. A companion "Create AI-assisted 3D project"
-scenario (using the existing `AI_PROVIDER=fake` convention) is in
-scope but not required for a minimal fix.
+Delivered: new `frontend/e2e/project3dLifecycle.spec.ts` with two
+scenarios — signs in as the e2e fixture owner, clicks "Create new 3D
+project" (asserts the manual editor route `/projects3d/:id` loads and
+the created `Project3D` survives a reload via
+`project3d-save-status`), plus the companion "Create AI-assisted 3D
+project" scenario asserting `/ai-projects3d/:id` loads and persists
+(via `project3d-preview-placeholder`), matching the issue's optional
+extra scope.
 
-Next action: implement the new E2E scenario(s), confirm `make e2e`
-passes locally, confirm `make check` still passes end to end.
+Two pre-existing defects surfaced while making the new suite pass
+end-to-end, both fixed within this issue since they directly blocked
+its own "`make e2e` passes locally" acceptance criterion:
+
+- `scenes/management/commands/e2e_fixtures.py`'s `_cleanup` never
+  nulled `Project3D.current_version` (`on_delete=PROTECT`, same shape
+  as `Project.current_version`) before deleting the fixture users —
+  harmless until a spec actually created a `Project3D` for a fixture
+  owner (nothing had, until this issue), at which point teardown would
+  raise `ProtectedError`. Fixed by nulling it the same way `Project`
+  already was, before the `User` delete.
+- `frontend/e2e/responsiveShell.spec.ts`'s "populated gallery" test used
+  a bare `.project-grid` locator, written before task 209/#241 added a
+  second `.project-grid` for "Your 3D projects" — a leftover `Project3D`
+  from an earlier spec file (now this issue's own) made the locator
+  ambiguous (Playwright strict-mode violation). Fixed by scoping to
+  `.first()` (2D's grid renders first in DOM order whenever the owner
+  has any 2D project); `.project-card` doesn't disambiguate since both
+  `ProjectCard` and `Project3DCard` use that class.
+
+Verification: `cd frontend && npx playwright test --list` showed both
+new scenarios discovered (136 total, up from 134);
+`npx playwright test project3dLifecycle.spec.ts` 2 passed; full
+`make e2e` 135 passed/1 intentional skip/0 failed (up from 133/1/0);
+full `make check` 797 backend / 2100 frontend passed (unchanged counts
+— no unit-test-visible regression), lint/format/typecheck clean.
 
 Dependencies: None — implementable independently of task 206/#238's
-actual root-cause fix, though the new test should also serve as the
-regression check once #238 is resolved.
+actual root-cause fix, and now serves as the regression check for it.
 
 ## 208. Unhandled production exceptions are invisible: no LOGGING config, no ADMINS
 

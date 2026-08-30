@@ -318,7 +318,14 @@ test.describe('Responsive app shell', () => {
       await page.setViewportSize(NARROW_VIEWPORT);
       await page.goto('/');
 
-      const grid = page.locator('.project-grid');
+      // Issue #239: Gallery.tsx (task 209/#241) can render a second
+      // `.project-grid` for "Your 3D projects" once the owner fixture has
+      // any Project3D from another spec file's run -- `.project-card` is
+      // shared by both `ProjectCard` and `Project3DCard`, so `.first()`
+      // (2D's grid renders first in DOM order, unconditionally, whenever
+      // `ownProjects` is non-empty) is what actually disambiguates here,
+      // not the card class.
+      const grid = page.locator('.project-grid').first();
       await expect(grid).toBeVisible();
       const card = grid.locator('.project-card').first();
       await expectVisibleAndInViewport(card);

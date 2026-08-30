@@ -134,7 +134,7 @@ class Command(BaseCommand):
     def _cleanup(self, as_json: bool):
         from django.db.models import Q
 
-        from scenes.models import ForkProvenance, Project
+        from scenes.models import ForkProvenance, Project, Project3D
 
         User = get_user_model()
         usernames = [username for username, _email in E2E_USERS.values()]
@@ -189,6 +189,15 @@ class Command(BaseCommand):
                 | Q(source_version__project__owner__username__in=usernames)
             ).delete()
             Project.all_objects.filter(owner__username__in=usernames).update(current_version=None)
+            # Issue #239: Project3D.current_version is PROTECT (scenes/models.py)
+            # just like Project.current_version above -- once a fixture owner has
+            # any Project3D, deleting the user without nulling this first raises
+            # ProtectedError during the User cascade below. Project3D has no
+            # `all_objects`/soft-delete manager yet (issue #242), and
+            # SceneVersion3D has no parent/fork_source_version/immutable-snapshot
+            # trigger (3D has no fork feature), so this is a plain update with
+            # none of Project's surrounding trigger complexity.
+            Project3D.objects.filter(owner__username__in=usernames).update(current_version=None)
             if connection.vendor == "postgresql":
                 with connection.cursor() as cursor:
                     cursor.execute(

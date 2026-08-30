@@ -296,7 +296,13 @@ to point the suite at a different origin than the default
 
 Rules
 
-- Dependencies are added in `pyproject.toml`. Do not add one without asking
+- Dependencies are added in `pyproject.toml`. Do not add one without asking.
+  Once a dependency is authorized, add it with `uv add <PACKAGE-NAME>`
+  (this updates `pyproject.toml` and `uv.lock` together) rather than
+  editing `pyproject.toml` by hand.
+- Commit regularly. Agents doing multi-step work in this repo should
+  commit coherent, working increments as they go rather than
+  accumulating a single large uncommitted change.
 
 Documents
 

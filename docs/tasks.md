@@ -8396,7 +8396,7 @@ Dependencies: Should follow task 217/#249 so paths are stable first.
 
 ## 219. Database-portability code review (Postgres stays required)
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#251](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/251)
 
@@ -8410,4 +8410,26 @@ trigger functions or any test gated on `POSTGRES_TEST_DATABASE_URL`. A
 code-quality review, not a multi-database support project. Full scope in
 #251.
 
-Dependencies: Should follow task 217/#249 so paths are stable first.
+Reviewed `backend/scenes/models.py`/`api.py`/`ai_api.py`/`ai_api3d.py`
+for Postgres-specific ORM usage with a portable equivalent. Finding:
+nothing to change — none of `django.contrib.postgres`,
+`ArrayField`/`HStoreField`, `SearchVector`/`TrigramSimilarity`,
+`connection.vendor` branching, raw Postgres SQL, or `ILIKE` appear
+anywhere in the four in-scope files. `select_for_update()` (used
+throughout for the concurrent-restore/fork/publish locking) and
+`models.JSONField` are both core, portable Django ORM, not Postgres
+shortcuts. The only genuinely Postgres-specific code in the app is
+exactly where it belongs: the two trigger migrations
+(`0002_postgres_invariants.py`, out of scope; and
+`0005_forkprovenance_postgres_trigger.py`, also outside this issue's
+four-file scope) — both untouched.
+
+Verification: `make backend-check` clean (ruff lint/format, mypy);
+`uv run --env-file .env pytest` against real local PostgreSQL with
+`POSTGRES_TEST_DATABASE_URL` set — 846 passed (the 824-test baseline
+plus all 22 previously-gated concurrency tests, now actually exercised
+against real PostgreSQL, none skipped/weakened/touched). No commit —
+no code change was needed.
+
+Dependencies: Should follow task 217/#249 so paths are stable first —
+satisfied.

@@ -5,9 +5,6 @@ from scenes.ai_api3d import AIAcceptProposal3DView, AICreateScene3DView, AIEditS
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
-    Project3DDetailView,
-    Project3DListCreateView,
-    Project3DThumbnailView,
     ProjectDetailView,
     ProjectForkView,
     ProjectListCreateView,
@@ -18,12 +15,17 @@ from scenes.api import (
     PublicProjectListView,
     PublicProjectThumbnailView,
     SaveVersionAsTemplateView,
-    SceneVersion3DListCreateView,
     SceneVersionDetailView,
     SceneVersionListCreateView,
     SceneVersionRestoreView,
     TemplateCloneView,
     TemplateListView,
+)
+from scenes.api3d import (
+    Project3DDetailView,
+    Project3DListCreateView,
+    Project3DThumbnailView,
+    SceneVersion3DListCreateView,
 )
 from scenes.art_piece_api import ArtPieceGenerateView
 from scenes.credentials_api import MistralCredentialView

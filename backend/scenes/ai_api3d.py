@@ -55,7 +55,7 @@ from scenes.ai_api import (
     _stale_base_response,
     _validate_model_id,
 )
-from scenes.api import _get_project3d_or_404
+from scenes.api3d import _get_project3d_or_404
 from scenes.models import Project3D, SceneVersion3D
 from scenes.patch import PatchErrorReason
 from scenes.permissions import Action, can

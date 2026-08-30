@@ -276,6 +276,14 @@ export function forkProject(id: string, clientRequestId?: string): Promise<Proje
   });
 }
 
+/** Issue #252: delete a 2D project, mirroring `deleteProject3D`
+ * (`api/projects3d.ts`) — soft-delete via the existing `DELETE
+ * /api/projects/{id}/` endpoint (`scenes/api.py`'s `ProjectDetailView.delete`).
+ * Resolves with no value on success (204 No Content). */
+export function deleteProject(id: string): Promise<void> {
+  return apiFetch<void>(`/api/projects/${id}/`, { method: 'DELETE' });
+}
+
 /** Task 18: atomically create a private project with one blank-canvas version.
  * Pass the same `clientRequestId` again to safely retry a failed/uncertain
  * submission without risking a duplicate project.

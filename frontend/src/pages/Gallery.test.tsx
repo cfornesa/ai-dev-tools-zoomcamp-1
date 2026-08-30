@@ -220,7 +220,13 @@ describe('Gallery keyboard accessibility', () => {
     expect(screen.getAllByRole('link', { name: /^edit$/i })[0]).toHaveFocus();
 
     await user.tab();
+    expect(screen.getAllByRole('button', { name: /^delete$/i })[0]).toHaveFocus();
+
+    await user.tab();
     expect(screen.getAllByRole('link', { name: /^edit$/i })[1]).toHaveFocus();
+
+    await user.tab();
+    expect(screen.getAllByRole('button', { name: /^delete$/i })[1]).toHaveFocus();
   });
 });
 

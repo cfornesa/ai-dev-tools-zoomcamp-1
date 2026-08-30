@@ -206,7 +206,10 @@ function Gallery() {
             <ul className="project-grid">
               {ownProjects.map((project) => (
                 <li key={project.id}>
-                  <ProjectCard project={project} />
+                  <ProjectCard
+                    project={project}
+                    onDeleted={(id) => setProjects((current) => current.filter((p) => p.id !== id))}
+                  />
                 </li>
               ))}
             </ul>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import type { Project } from '../api/projects';
+import { deleteProject, type Project } from '../api/projects';
 import { originLabel } from './originLabel';
 
 function formatDate(iso: string): string {
@@ -18,11 +18,37 @@ function formatDate(iso: string): string {
  * the same image/fallback pattern under issue #54 but this card was never
  * updated to match. Reuses that same fallback-on-null-or-error approach.
  */
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({
+  project,
+  onDeleted,
+}: {
+  project: Project;
+  onDeleted: (id: string) => void;
+}) {
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const titleId = `project-${project.id}-title`;
   const showFallback = !project.thumbnail_url || thumbnailFailed;
   const originBadge = originLabel(project.current_version_origin);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Issue #252: mirrors Project3DCard.tsx's delete pattern (added for
+  // #242) exactly -- window.confirm is this codebase's existing
+  // destructive-action confirmation pattern.
+  async function handleDelete() {
+    if (!window.confirm(`Delete "${project.title}"? This cannot be undone from the gallery.`)) {
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteProject(project.id);
+      onDeleted(project.id);
+    } catch {
+      setDeleteError('Could not delete this project. Please try again.');
+      setDeleting(false);
+    }
+  }
 
   return (
     <article aria-labelledby={titleId} className="project-card">
@@ -60,8 +86,16 @@ function ProjectCard({ project }: { project: Project }) {
             text link, since it's the card's primary action. */}
         <Link className="shell-action" to={`/projects/${project.id}`}>
           Edit
-        </Link>
+        </Link>{' '}
+        <button type="button" className="shell-action" onClick={handleDelete} disabled={deleting}>
+          {deleting ? 'Deleting…' : 'Delete'}
+        </button>
       </p>
+      {deleteError && (
+        <p role="alert" aria-live="assertive">
+          {deleteError}
+        </p>
+      )}
     </article>
   );
 }

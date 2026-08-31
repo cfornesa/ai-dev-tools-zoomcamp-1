@@ -9764,7 +9764,7 @@ confirmed Preview stays mounted while Code is active.
 
 ## 246. Project3DWorkspace.tsx: add panel/grid containment + responsive panel switcher
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#304](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/304)
 
@@ -9782,6 +9782,28 @@ broader structural follow-up.
 
 Dependencies: None functionally; part of task 242/#300. Related to task
 241/#299 (already shipped, a first concrete symptom of this same gap).
+
+Status update (2026-08-31): COMPLETE. Found the same drift #303 found in
+`AiEditorWorkspace.tsx`: this file's Visual/Code toggle hid the *entire*
+Preview section plus `Outline3DInspector` and the Ask-AI-improve Tools
+group whenever Code was active, not just an internal sub-view --
+contradicting the reference's own issue #159 rule. Corrected: Code now
+renders inside the Preview panel only; Outline and a new "Tools" panel
+(Ask-AI-improve button + its conditional panel) stay mounted/visible
+regardless of Visual/Code state, each wrapped as a real `.editor-panel`
+in a scoped `.project3d-workspace` grid (Preview spans both sidebar
+rows). `Outline3DInspector.tsx`'s own outer wrapper gained
+`editor-panel`/`data-panel="outline"` without touching its two existing
+internal regions (Outline, Inspector) -- #280's decision stays
+untouched. No `EditorPanelSwitcher` rendered -- a plain CSS stack
+(`.editor-workspace`'s existing <1024px collapse) already gives a
+2-panel sidebar (Outline + Tools) adequate narrow-viewport behavior
+without a JS-driven switcher. New regression tests; one existing test
+updated for the corrected Preview-never-hidden behavior. `make check`
+green (876 backend / 2293 frontend). Verified live via
+`getBoundingClientRect()`: Preview/Outline/Tools occupy distinct,
+non-overlapping grid cells; confirmed all four panels (Preview, Code,
+Outline, Tools) coexist when Code is active.
 
 ## 247. AiProject3DWorkspace.tsx: add panel/grid containment + responsive panel switcher
 

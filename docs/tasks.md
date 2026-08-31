@@ -9318,7 +9318,7 @@ Sub-issue progress:
 - [#289](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/289) (3D export core generator) -- CLOSED. Added `generateScene3DBundle()` (`frontend/src/export/generateHtmlExport3D.ts`), the 3D counterpart of task 200/#200's multi-file bundle format (index.html + styles/ + scripts/ + vendored runtime/ + README.txt), following `../generative/artPieceBundle.ts`'s existing precedent rather than a new format. New `standaloneThreeRuntimeSource.ts` re-implements `threeSceneBuilder.ts`'s scene-graph logic as a self-contained JS string (no ESM import, since `file://` can't resolve bare specifiers) against a vendored global `THREE`. No OrbitControls -- static camera, out of scope. Core generator only; #290/#291 wire it into the UI. `make check` green.
 - [#290](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/290) (wire export: manual 3D editor) -- CLOSED. "Download standalone bundle" button in `Project3DWorkspace.tsx`, a single button (not a full `ExportConfigDialog.tsx`-style dialog, documented decision: scene3d has no interaction-mode/camera-overlay config to offer). Verified live: real CDN fetch + ZIP + download, no error.
 - [#291](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/291) (wire export: AI-assisted 3D editor) -- CLOSED. Same wiring in `AiProject3DWorkspace.tsx`; verified an accepted AI proposal is reflected in the export, not the original persisted scene. Verified live, no error.
-- [#293](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/293) (embed-snippet UI, 2D+3D) -- PARTIAL/OPEN. 2D half done: an "Embed" toggle on `PublicProjectViewer.tsx` reveals a copyable `<iframe>` snippet targeting #292's chrome-less `/embed/p/:id`, with Clipboard API copy + manual-copy fallback. Verified live. 3D half discovered impossible today: `Project3D` has no publish/visibility/public-viewer concept at all (only 2D `Project` does) -- filed and linked [#296](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/296) ("Add publish/public-viewer capability for 3D projects") to close that gap; #293 stays open, dependency-blocked on #296 for its 3D criterion.
+- [#293](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/293) (embed-snippet UI, 2D+3D) -- CLOSED. 2D half: an "Embed" toggle on `PublicProjectViewer.tsx` reveals a copyable `<iframe>` snippet targeting #292's chrome-less `/embed/p/:id`, with Clipboard API copy + manual-copy fallback. 3D half was dependency-blocked on task 238/#296 (`Project3D` had no publish/visibility/public-viewer concept at all) -- once #296 landed, its `PublicProject3DViewer.tsx` already included the identical embed-snippet affordance (built together with #296), closing this issue's 3D criterion too. Verified live for both.
 - [#294](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/294) (gesture-driven 3D camera control) -- CLOSED. "Steer the piece" toggle (off by default) on shared `Scene3DPreview.tsx`, reusing the exact same `CameraControl`/MediaPipe pipeline 2D gesture bindings use. `palmX`/`palmY` deltas drive orbit, `pinchStrength` drives zoom; pan/move explicitly out of scope. Verified live twice: once in this session's sandboxed pane (camera denied, expected boundary), and again via Claude for Chrome with the repository owner's real camera -- "Camera is active. Hand tracking is running locally" confirmed end-to-end, no crash. `make check` green. Unblocks #295.
   - Discovered live (via Claude for Chrome) right after shipping: no camera-feed overlay/opacity/mirror controls exist for this 3D surface, unlike the 2D editor's equivalent feature -- filed as [#297](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/297). Also found the "Preview actions" button row (Take screenshot/Expand fullscreen/Steer the piece) has no spacing at all -- `.editor-tool-group` is only styled when nested under `.editor-toolbar`, which this row never is -- filed as [#298](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/298). A repository-owner screenshot then surfaced a third gap: the Scene outline list (#281) visually overlaps/obscures the Live camera panel's own text -- filed as [#299](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/299). All three distilled via task-distillation per the repository owner's request; none block #294's own closure.
 - [#292](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/292) (embeddable public viewer) -- CLOSED. New chrome-less `/embed/p/:id` sibling route reusing `PublicProjectViewer.tsx` unchanged. Investigated framing/CORS: the frontend is Vite-served (never Django), neither layer sets any `X-Frame-Options`/CSP restriction today, so nothing needed loosening; privacy boundary already holds structurally via the existing public-detail 404 contract. Verified live: published then unpublished a real test project, confirming chrome-less rendering and the identical unavailable-state privacy boundary at both routes. **Also flagged**: this session hit several isolated 5s test-timeout flakes on unrelated frontend test files during full-suite `make check` runs (each passes alone) -- worth a dedicated look at test-infrastructure/parallel-worker contention, noted for session completion.
@@ -9418,6 +9418,47 @@ pieces (may warrant its own follow-up if scope grows too large).
 
 Dependencies: None directly, though it unblocks #293's 3D half.
 
+Status update (2026-08-31): COMPLETE. Implemented in full: `Project3D`
+gained `visibility`/`published_at` (migration
+`0024_project3d_published_at_project3d_visibility_and_more`, with the
+same `(visibility, -published_at, -id)` gallery index `Project` has);
+`Project3DPublishView`/`Project3DUnpublishView`/`PublicProject3DDetailView`
+(`backend/scenes/api3d.py`) at `/api/projects3d/<id>/publish/`,
+`/unpublish/`, and `/api/public/projects3d/<id>/`; `Action.PROJECT3D_READ`
+widened to allow public OR owner (was unconditionally owner-only) and a
+new owner-only `Action.PROJECT3D_PUBLISH`; `PublishControl3D.tsx` (a
+scoped-down `PublishControl.tsx` -- no `persistPendingDetails`/client-side
+field validation, since there's nothing to pre-validate); a fully-built
+`PublicProject3DViewer.tsx` (no fork -- Project3D has no remix capability
+-- no camera/demo controls, renders via `Scene3DPreview.tsx`) which
+already includes the same copyable embed-snippet affordance #293 needed,
+closing that issue's 3D half too; `/p3d/:id` (chrome-wrapped) and
+`/embed/p3d/:id` (chrome-less) routes in `App.tsx`.
+
+Documented, deliberate deviation from 2D parity: `validate_meaningful_metadata_3d`
+(`backend/scenes/publishing.py`) never blocks publishing on an unchanged
+default title, unlike 2D's identical-shaped check -- `Project3D` has no
+title-rename UI anywhere in this app today (confirmed by grepping
+`Project3DDetailView`/both 3D workspace components), so requiring a
+changed title would be an unsatisfiable dead end. The only
+meaningful-content rule enforced is "has a saved version." Filed and
+linked task 243/[#301](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/301)
+to add 3D title-rename capability, after which this gate can be
+revisited for full parity.
+
+New coverage: `backend/tests/test_project3d_publish_api.py` (13 tests),
+`frontend/src/pages/PublishControl3D.test.tsx` (6),
+`frontend/src/pages/PublicProject3DViewer.test.tsx` (6), plus 3
+`App.embedRoute.test.tsx` additions for the new routes. `make check`
+green (871 backend / 2275 frontend). Verified live end-to-end in a real
+browser: published a real 3D project via the new Publish button +
+confirm dialog, confirmed `/p3d/:id` renders it live (real Three.js
+box), confirmed the embed snippet reads
+`http://localhost:5000/embed/p3d/<id>` and that route renders the same
+scene with zero app-shell chrome, unpublished it, and confirmed
+`/p3d/:id` immediately shows the identical "not available" state again
+-- no data leak.
+
 ## 239. 3D "Steer the piece" has no camera-feed overlay or opacity/mirror controls
 
 Status: PROPOSED
@@ -9509,3 +9550,28 @@ implementation sub-issues once groomed, starting from #299.
 Dependencies: None to start (grooming/audit only). Directly related to
 task 241/#299 (a first concrete instance of the gap this epic addresses
 system-wide).
+
+## 243. 3D projects have no title-rename capability anywhere in the UI
+
+Status: PROPOSED
+
+GitHub issue: [#301](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/301)
+
+Parent: none -- discovered while implementing task 238/#296 (2026-08-31):
+`Project3D` has a `title` field but no UI anywhere (manual or
+AI-assisted 3D editor) to change it after creation, and no
+metadata-PATCH endpoint (`Project3DDetailView` only supports GET/DELETE).
+As a direct consequence, #296's `validate_meaningful_metadata_3d`
+deliberately never blocks publishing on an unchanged default title,
+unlike 2D's equivalent check -- a user could never satisfy that rule
+with no way to rename the project at all.
+
+Scope: a title-only metadata-update endpoint (mirror
+`ProjectMetadataSerializer`/`ProjectDetailView.patch`) plus an
+editable-title UI in both 3D workspace headers (mirror
+`EditableProjectTitle` from `EditorDetailsPanel.tsx`, adapted for the
+simpler single-field case). Once this lands, reconsider whether
+`validate_meaningful_metadata_3d` should be strengthened to require a
+non-default title too, for full 2D parity.
+
+Dependencies: None.

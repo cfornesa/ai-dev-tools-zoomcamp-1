@@ -2,6 +2,12 @@ from django.urls import path
 
 from scenes.ai_api import AIAcceptProposalView, AICreateSceneView, AIEditSceneView
 from scenes.ai_api3d import AIAcceptProposal3DView, AICreateScene3DView, AIEditScene3DView
+from scenes.ai_preferences_api import (
+    AIPersonaDetailView,
+    AIPersonaListCreateView,
+    MistralModelPreferenceDetailView,
+    MistralModelPreferenceListCreateView,
+)
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
@@ -32,6 +38,26 @@ from scenes.credentials_api import MistralCredentialView
 
 urlpatterns = [
     path("account/mistral-credential/", MistralCredentialView.as_view(), name="mistral-credential"),
+    path(
+        "account/mistral-model-preferences/",
+        MistralModelPreferenceListCreateView.as_view(),
+        name="mistral-model-preference-list-create",
+    ),
+    path(
+        "account/mistral-model-preferences/<int:pk>/",
+        MistralModelPreferenceDetailView.as_view(),
+        name="mistral-model-preference-detail",
+    ),
+    path(
+        "account/ai-personas/",
+        AIPersonaListCreateView.as_view(),
+        name="ai-persona-list-create",
+    ),
+    path(
+        "account/ai-personas/<int:pk>/",
+        AIPersonaDetailView.as_view(),
+        name="ai-persona-detail",
+    ),
     path("projects/", ProjectListCreateView.as_view(), name="project-list-create"),
     path("projects/blank/", BlankProjectCreateView.as_view(), name="project-create-blank"),
     path("templates/", TemplateListView.as_view(), name="template-list"),

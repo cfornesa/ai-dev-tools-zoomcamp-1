@@ -70,6 +70,46 @@ class MistralCredential(models.Model):
             ) from exc
 
 
+class MistralModelPreference(models.Model):
+    """A user's own self-declared Mistral model slug (issue #259), looked up
+    from Mistral's own model documentation -- never a live models-list API
+    call. Strictly per-user, like `MistralCredential`."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mistral_model_preferences"
+    )
+    slug = models.CharField(max_length=200)
+    label = models.CharField(max_length=200, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.slug} (owner {self.owner_id})"
+
+
+class AIPersona(models.Model):
+    """A user's named, additive system-prompt add-on (issue #259/#257).
+    Personas only ever layer extra style/tone/content guidance on top of
+    the app's mandatory technical system prompts -- they are appended
+    after, and never replace, `_SYSTEM_PROMPT`/`_SYSTEM_PROMPT_3D` (see
+    `ai_provider/mistral_provider.py`, wired by issue #260)."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ai_personas"
+    )
+    name = models.CharField(max_length=200)
+    prompt_text = models.TextField(max_length=4000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.name} (owner {self.owner_id})"
+
+
 class Project(models.Model):
     class Visibility(models.TextChoices):
         PRIVATE = "private", "Private"

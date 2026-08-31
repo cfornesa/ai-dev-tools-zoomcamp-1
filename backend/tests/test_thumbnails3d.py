@@ -65,9 +65,58 @@ def test_background_color_is_visible_in_a_corner_with_no_geometry():
     # Move the only object far away so it can't possibly cover the corner.
     if scene["objects"]:
         scene["objects"][0]["transform"]["position"] = {"x": 5000, "y": 5000, "z": 5000}
+    else:
+        # MINIMAL_SCENE3D is itself zero-content; #254's zero-content
+        # override would otherwise mask the backgroundColor this test
+        # exists to check, so add a harmless light (no geometry drawn).
+        scene["lights"] = [{"id": "fill", "type": "ambient", "color": "#405060", "intensity": 0.4}]
     image = render_scene3d_thumbnail(scene)
     corner = image.getpixel((2, 2))
     assert corner[:3] == (0x12, 0x34, 0x56)
+
+
+def test_zero_content_scene_overrides_stored_black_background():
+    """Issue #254: a scene with zero objects/lights/groups reads as "loaded,
+    empty" (a visible gray, not black) regardless of its persisted
+    backgroundColor -- covers both newly-created and pre-existing
+    zero-content documents without any data migration."""
+    scene = copy.deepcopy(MINIMAL_SCENE3D)
+    scene["scene"]["backgroundColor"] = "#000000"
+    scene["objects"] = []
+    scene["lights"] = []
+    scene["groups"] = []
+    image = render_scene3d_thumbnail(scene)
+    corner = image.getpixel((2, 2))
+    assert corner[:3] == (0x80, 0x80, 0x80)
+
+
+def test_scene_with_only_invisible_content_keeps_its_stored_background():
+    """The zero-content override only applies when objects/lights/groups are
+    literally empty arrays -- a scene with an invisible object still uses
+    its own stored backgroundColor, matching #254's scope."""
+    scene = copy.deepcopy(MINIMAL_SCENE3D)
+    scene["scene"]["backgroundColor"] = "#000000"
+    scene["groups"] = []
+    scene["lights"] = []
+    scene["objects"] = [
+        {
+            "id": "obj-1",
+            "type": "sphere",
+            "groupId": None,
+            "transform": {
+                "position": {"x": 0, "y": 0, "z": 0},
+                "rotation": {"x": 0, "y": 0, "z": 0},
+                "scale": {"x": 1, "y": 1, "z": 1},
+                "opacity": 1,
+            },
+            "material": {"color": "#ff0000", "opacity": 1},
+            "visible": False,
+            "radius": 2,
+        }
+    ]
+    image = render_scene3d_thumbnail(scene)
+    corner = image.getpixel((2, 2))
+    assert corner[:3] == (0x00, 0x00, 0x00)
 
 
 def test_different_scenes_render_different_thumbnails():

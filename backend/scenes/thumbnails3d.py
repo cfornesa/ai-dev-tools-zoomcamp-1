@@ -80,6 +80,15 @@ __all__ = [
 _CYLINDER_SEGMENTS = 10
 Vec3 = tuple[float, float, float]
 
+# Issue #254: a zero-content scene (no objects, lights, or groups) reads as
+# "loaded, empty" rather than "broken" regardless of its persisted
+# backgroundColor -- matches threeSceneBuilder.ts's
+# ZERO_CONTENT_BACKGROUND_COLOR so the live preview and this thumbnail
+# agree. Render-time override only; the stored document is never touched,
+# so this applies uniformly to scenes created before and after #253's
+# creation-time default changed.
+_ZERO_CONTENT_BACKGROUND_COLOR = (0x80, 0x80, 0x80, 255)
+
 
 class Thumbnail3DRenderError(Exception):
     """Raised when a `scene3d` document cannot be rasterized. Covers both
@@ -403,12 +412,18 @@ def render_scene3d_thumbnail(scene: dict) -> Image.Image:
         raise Thumbnail3DRenderError(f"cannot render an invalid scene3d: {detail}")
 
     try:
-        background = _hex_to_rgba(scene["scene"]["backgroundColor"], 1.0) or (
-            255,
-            255,
-            255,
-            255,
+        is_zero_content = (
+            not scene.get("objects") and not scene.get("lights") and not scene.get("groups")
         )
+        if is_zero_content:
+            background = _ZERO_CONTENT_BACKGROUND_COLOR
+        else:
+            background = _hex_to_rgba(scene["scene"]["backgroundColor"], 1.0) or (
+                255,
+                255,
+                255,
+                255,
+            )
         camera = _Camera.from_dict(scene["camera"])
         commands = _draw_faces(scene, camera)
     except Thumbnail3DRenderError:

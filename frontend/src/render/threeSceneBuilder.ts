@@ -59,6 +59,19 @@ export type ThreeSceneGraph = {
   camera: THREE.PerspectiveCamera;
 };
 
+/** Issue #254: a zero-content scene (no objects, lights, or groups) reads as
+ * "loaded, empty" rather than "broken" regardless of its persisted
+ * `backgroundColor` -- matches `scenes/thumbnails3d.py`'s
+ * `_ZERO_CONTENT_BACKGROUND_COLOR` so the live preview and the gallery
+ * thumbnail agree. This is a render-time override, not a data migration: it
+ * never touches the stored document, so it applies uniformly to scenes
+ * created before and after #253's creation-time default changed. */
+const ZERO_CONTENT_BACKGROUND_COLOR = '#808080';
+
+function isZeroContentScene(scene3d: Scene3DDocument): boolean {
+  return scene3d.objects.length === 0 && scene3d.lights.length === 0 && scene3d.groups.length === 0;
+}
+
 function applyTransform(
   target: THREE.Object3D,
   transform: {
@@ -165,7 +178,9 @@ function buildCamera(camera: Camera3D, aspect: number): THREE.PerspectiveCamera 
  * aspect from the fixed card size rather than the document). */
 export function buildThreeSceneGraph(scene3d: Scene3DDocument, aspect: number): ThreeSceneGraph {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(scene3d.scene.backgroundColor);
+  scene.background = new THREE.Color(
+    isZeroContentScene(scene3d) ? ZERO_CONTENT_BACKGROUND_COLOR : scene3d.scene.backgroundColor,
+  );
 
   for (const light of scene3d.lights) {
     const built = buildLight(light);

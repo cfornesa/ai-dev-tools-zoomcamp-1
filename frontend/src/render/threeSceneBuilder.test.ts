@@ -65,9 +65,32 @@ describe('buildThreeSceneGraph: camera', () => {
 
 describe('buildThreeSceneGraph: background', () => {
   it('sets the scene background to the document backgroundColor', () => {
-    const scene = baseScene({ scene: { backgroundColor: '#ff00ff' } });
+    const scene = baseScene({
+      scene: { backgroundColor: '#ff00ff' },
+      lights: [{ id: 'fill', type: 'ambient', color: '#405060', intensity: 0.4 }],
+    });
     const { scene: threeScene } = buildThreeSceneGraph(scene, 1);
     expect((threeScene.background as THREE.Color).getHexString()).toBe('ff00ff');
+  });
+
+  it("issue #254: overrides a zero-content scene's background regardless of its stored backgroundColor", () => {
+    const scene = baseScene({
+      scene: { backgroundColor: '#000000' },
+      objects: [],
+      lights: [],
+      groups: [],
+    });
+    const { scene: threeScene } = buildThreeSceneGraph(scene, 1);
+    expect((threeScene.background as THREE.Color).getHexString()).toBe('808080');
+  });
+
+  it('issue #254: does not override the background when the scene has any content', () => {
+    const scene = baseScene({
+      scene: { backgroundColor: '#000000' },
+      lights: [{ id: 'fill', type: 'ambient', color: '#405060', intensity: 0.4 }],
+    });
+    const { scene: threeScene } = buildThreeSceneGraph(scene, 1);
+    expect((threeScene.background as THREE.Color).getHexString()).toBe('000000');
   });
 });
 

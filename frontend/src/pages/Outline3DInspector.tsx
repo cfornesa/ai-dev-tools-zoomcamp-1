@@ -22,6 +22,13 @@ type Selection =
 type Props = {
   scene: Scene3DDocument;
   onChange: (next: Scene3DDocument) => void;
+  // Issue #284: called with a group/object/light row's own display
+  // name/label when its "Ask AI to change this" button is clicked --
+  // mirrors LayersPanel.tsx's identically-named prop (#282) exactly.
+  // Never invokes any AI call itself -- purely a prompt-seeding hook.
+  // Omitted for the camera row: the schema gives cameras no name field to
+  // reference.
+  onAskAiChange?: (label: string) => void;
 };
 
 function NumberField({
@@ -129,7 +136,7 @@ const OBJECT_TYPE_DIMENSION_FIELDS: Record<Object3DType, (keyof Object3D)[]> = {
  * prop in memory -- no server save wiring here (that's a separate follow-
  * on once this UI's shape is concrete, filed alongside this issue).
  */
-function Outline3DInspector({ scene, onChange }: Props) {
+function Outline3DInspector({ scene, onChange, onAskAiChange }: Props) {
   const [selection, setSelection] = useState<Selection>(null);
 
   function updateObject(id: string, patch: Partial<Object3D>) {
@@ -217,6 +224,17 @@ function Outline3DInspector({ scene, onChange }: Props) {
               >
                 Group: {group.name}
               </button>
+              {onAskAiChange && (
+                <button
+                  type="button"
+                  className="editor-outline-ask-ai"
+                  aria-label={`Ask AI to change ${group.name}`}
+                  title={`Ask AI to change ${group.name}`}
+                  onClick={() => onAskAiChange(group.name)}
+                >
+                  <span aria-hidden="true">✨</span>
+                </button>
+              )}
             </li>
           ))}
           {scene.objects.map((object) => {
@@ -245,6 +263,17 @@ function Outline3DInspector({ scene, onChange }: Props) {
                 >
                   {object3DLabel(object, scene.objects)}
                 </button>
+                {onAskAiChange && (
+                  <button
+                    type="button"
+                    className="editor-outline-ask-ai"
+                    aria-label={`Ask AI to change ${object3DLabel(object, scene.objects)}`}
+                    title={`Ask AI to change ${object3DLabel(object, scene.objects)}`}
+                    onClick={() => onAskAiChange(object3DLabel(object, scene.objects))}
+                  >
+                    <span aria-hidden="true">✨</span>
+                  </button>
+                )}
               </li>
             );
           })}
@@ -270,6 +299,17 @@ function Outline3DInspector({ scene, onChange }: Props) {
               >
                 {light3DLabel(light, scene.lights)}
               </button>
+              {onAskAiChange && (
+                <button
+                  type="button"
+                  className="editor-outline-ask-ai"
+                  aria-label={`Ask AI to change ${light3DLabel(light, scene.lights)}`}
+                  title={`Ask AI to change ${light3DLabel(light, scene.lights)}`}
+                  onClick={() => onAskAiChange(light3DLabel(light, scene.lights))}
+                >
+                  <span aria-hidden="true">✨</span>
+                </button>
+              )}
             </li>
           ))}
         </ul>

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import Outline3DInspector from './Outline3DInspector';
 import type { Scene3DDocument } from './scene3dTypes';
@@ -201,6 +201,44 @@ describe('Outline3DInspector', () => {
     await user.keyboard('{Enter}');
 
     expect(screen.getByTestId('object-inspector')).toBeInTheDocument();
+  });
+
+  // Issue #284: "Ask AI to change this" on each group/object/light row.
+  describe('"Ask AI to change this" (issue #284)', () => {
+    it('is absent from every row when onAskAiChange is not provided', () => {
+      render(<Outline3DInspector scene={baseScene()} onChange={() => {}} />);
+      expect(screen.queryByRole('button', { name: /ask ai to change/i })).not.toBeInTheDocument();
+    });
+
+    it("offers the action on group, object, and light rows, seeded with each one's own name/label", async () => {
+      const onAskAiChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <Outline3DInspector
+          scene={baseScene()}
+          onChange={() => {}}
+          onAskAiChange={onAskAiChange}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Ask AI to change Furniture' }));
+      expect(onAskAiChange).toHaveBeenLastCalledWith('Furniture');
+
+      await user.click(screen.getByRole('button', { name: 'Ask AI to change Box 1' }));
+      expect(onAskAiChange).toHaveBeenLastCalledWith('Box 1');
+
+      await user.click(screen.getByRole('button', { name: 'Ask AI to change Ambient light 1' }));
+      expect(onAskAiChange).toHaveBeenLastCalledWith('Ambient light 1');
+    });
+
+    it('offers no such action on the camera row (no name field to reference)', () => {
+      render(
+        <Outline3DInspector scene={baseScene()} onChange={() => {}} onAskAiChange={vi.fn()} />,
+      );
+      expect(
+        screen.queryByRole('button', { name: /ask ai to change camera/i }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('reassigns an object to a different group via the group select', async () => {

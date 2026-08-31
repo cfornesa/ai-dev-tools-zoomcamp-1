@@ -81,6 +81,13 @@ function Project3DWorkspace() {
     setAiSeed({ prompt: 'Improve this scene: ', nonce: Date.now() });
     setShowAiPanel(true);
   };
+  // Issue #284: per-item counterpart of the whole-scene action above,
+  // seeded from a specific outline row (post-#281's redesign) rather than
+  // a generic prompt -- mirrors #282's 2D `handleAskAiChangeLayer` exactly.
+  const handleAskAiChangeItem = (label: string) => {
+    setAiSeed({ prompt: `Change ${label}: `, nonce: Date.now() });
+    setShowAiPanel(true);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -256,7 +263,11 @@ function Project3DWorkspace() {
                 #226 placeholder. */}
             <Scene3DPreview scene={workingScene} screenshotBaseName={project?.title} />
           </section>
-          <Outline3DInspector scene={workingScene} onChange={setWorkingScene} />
+          <Outline3DInspector
+            scene={workingScene}
+            onChange={setWorkingScene}
+            onAskAiChange={handleAskAiChangeItem}
+          />
           <div role="group" aria-label="Whole-scene AI actions" className="editor-tool-group">
             <button type="button" onClick={handleAskAiImproveScene}>
               Ask AI to improve this scene

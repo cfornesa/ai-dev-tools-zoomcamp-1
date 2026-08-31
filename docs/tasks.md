@@ -9595,9 +9595,8 @@ warranted anywhere: `AiEditorWorkspace.tsx`/`AiProject3DWorkspace.tsx`
 each have only one non-Preview panel (nothing to switch between), and
 `Project3DWorkspace.tsx`'s 2-panel sidebar (Outline + Tools) gets
 adequate narrow-viewport behavior from `.editor-workspace`'s existing
-plain-CSS stacking, matching #299's own precedent. This epic's filed
-scope is done; it stays open only pending #300's own closure decision
-(no further sub-issues currently identified).
+plain-CSS stacking, matching #299's own precedent. Epic #300 CLOSED
+(2026-08-31) -- no further sub-issues identified from this audit.
 
 GitHub issue: [#300](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/300)
 

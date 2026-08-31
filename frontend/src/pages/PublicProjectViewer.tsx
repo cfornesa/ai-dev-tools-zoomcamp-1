@@ -110,6 +110,15 @@ function PublicProjectViewer() {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [forkState, setForkState] = useState<'idle' | 'forking'>('idle');
   const [forkError, setForkError] = useState<string | null>(null);
+  // Issue #293: a copyable <iframe> embed snippet, offered on every
+  // reachable render of this page -- reaching this component's "ready"
+  // state at all already implies the project is published (a private/
+  // unpublished/deleted/nonexistent id 404s in `loadState === 'unavailable'`
+  // before ever getting here), so no separate visibility check is needed:
+  // the existing load-state gate *is* the "only published projects offer
+  // this" guarantee.
+  const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
+  const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const forkRequestIdRef = useRef<string | null>(null);
 
   // Task 119 (issue #152): mirrors `EditorWorkspace.tsx`'s identical
@@ -298,6 +307,24 @@ function PublicProjectViewer() {
   // available at that moment for the rest of the session.
   useCameraOverlayRedrawLoop(cameraStatus === 'active', redrawPreview);
 
+  // Issue #293: targets #292's chrome-less /embed/p/:id route, not this
+  // page's own /p/:id -- an iframe embedding the full-chrome page would
+  // duplicate the embedding site's own nav/header inside the embed.
+  function embedSnippetFor(projectId: string): string {
+    const src = `${window.location.origin}/embed/p/${projectId}`;
+    return `<iframe src="${src}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
+  }
+
+  async function handleCopyEmbedSnippet() {
+    if (!id) return;
+    try {
+      await navigator.clipboard.writeText(embedSnippetFor(id));
+      setEmbedCopyStatus('copied');
+    } catch {
+      setEmbedCopyStatus('failed');
+    }
+  }
+
   async function handleFork() {
     if (!id) return;
     // One client_request_id per fork attempt, reused across retries of the
@@ -391,6 +418,44 @@ function PublicProjectViewer() {
           <p role="alert" aria-live="assertive">
             {forkError}
           </p>
+        )}
+
+        <p>
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmbedSnippet((current) => !current);
+              setEmbedCopyStatus('idle');
+            }}
+            aria-expanded={showEmbedSnippet}
+            data-testid="toggle-embed-snippet"
+          >
+            {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
+          </button>
+        </p>
+        {showEmbedSnippet && id && (
+          <div className="public-project-embed-snippet" data-testid="embed-snippet-panel">
+            <label htmlFor="embed-snippet-textarea">Embed this piece on another site</label>
+            <textarea
+              id="embed-snippet-textarea"
+              readOnly
+              value={embedSnippetFor(id)}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
+              Copy
+            </button>
+            {embedCopyStatus === 'copied' && (
+              <p role="status" aria-live="polite">
+                Copied!
+              </p>
+            )}
+            {embedCopyStatus === 'failed' && (
+              <p role="alert" aria-live="assertive">
+                Couldn't copy automatically -- select the text above and copy manually.
+              </p>
+            )}
+          </div>
         )}
       </header>
 

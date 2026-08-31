@@ -393,3 +393,78 @@ describe('PublicProjectViewer Fork action (Task 51)', () => {
     );
   });
 });
+
+describe('PublicProjectViewer embed snippet (issue #293)', () => {
+  // `userEvent.setup()` installs its own Clipboard API emulation on
+  // `navigator.clipboard` (@testing-library/user-event v14) -- defining a
+  // mock *before* calling `setup()` gets clobbered by that. Spying on the
+  // method after `setup()` (once `navigator.clipboard` already exists,
+  // real or emulated) is the reliable order.
+  function spyOnClipboardWriteText() {
+    if (!navigator.clipboard) {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: vi.fn() },
+      });
+    }
+    return vi.spyOn(navigator.clipboard, 'writeText');
+  }
+
+  it('offers a copyable embed snippet targeting the chrome-less /embed/p/:id route', async () => {
+    mockedGetPublicProject.mockResolvedValue(basePublicProject());
+    const user = userEvent.setup();
+    const writeText = spyOnClipboardWriteText().mockResolvedValue(undefined);
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    expect(screen.queryByTestId('embed-snippet-panel')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('toggle-embed-snippet'));
+
+    const panel = screen.getByTestId('embed-snippet-panel');
+    const textarea = within(panel).getByLabelText(/embed this piece/i) as HTMLTextAreaElement;
+    expect(textarea.value).toContain('/embed/p/p1');
+    expect(textarea.value).toMatch(/^<iframe /);
+    expect(textarea).toHaveAttribute('readonly');
+
+    await user.click(within(panel).getByRole('button', { name: 'Copy' }));
+    expect(writeText).toHaveBeenCalledWith(textarea.value);
+    expect(await within(panel).findByText('Copied!')).toBeInTheDocument();
+  });
+
+  it('toggles the panel closed again', async () => {
+    mockedGetPublicProject.mockResolvedValue(basePublicProject());
+    const user = userEvent.setup();
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+
+    await user.click(screen.getByTestId('toggle-embed-snippet'));
+    expect(screen.getByTestId('embed-snippet-panel')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('toggle-embed-snippet'));
+    expect(screen.queryByTestId('embed-snippet-panel')).not.toBeInTheDocument();
+  });
+
+  it('shows a manual-copy fallback message if the clipboard API fails', async () => {
+    mockedGetPublicProject.mockResolvedValue(basePublicProject());
+    const user = userEvent.setup();
+    spyOnClipboardWriteText().mockRejectedValue(new Error('denied'));
+
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+    await user.click(screen.getByTestId('toggle-embed-snippet'));
+    await user.click(screen.getByRole('button', { name: 'Copy' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't copy automatically/i);
+  });
+
+  it('never offers the affordance for an unavailable (private/unpublished/nonexistent) project', async () => {
+    mockedGetPublicProject.mockRejectedValue(new ApiError(404, null));
+
+    renderViewer();
+
+    await screen.findByText(/isn't available/i);
+    expect(screen.queryByTestId('toggle-embed-snippet')).not.toBeInTheDocument();
+  });
+});

@@ -21,6 +21,8 @@ const {
   setVolumeSpy,
   reportMovementSpy,
   triggerMelodicNoteSpy,
+  connectMicSpy,
+  disconnectMicSpy,
 } = vi.hoisted(() => ({
   engineStatusRef: { current: 'idle' as SonicEngineStatus },
   enableSpy: vi.fn(),
@@ -28,6 +30,8 @@ const {
   setVolumeSpy: vi.fn(),
   reportMovementSpy: vi.fn(),
   triggerMelodicNoteSpy: vi.fn(),
+  connectMicSpy: vi.fn().mockResolvedValue(undefined),
+  disconnectMicSpy: vi.fn(),
 }));
 
 vi.mock('../audio/sonicEngine', () => ({
@@ -46,6 +50,8 @@ vi.mock('../audio/sonicEngine', () => ({
     setVolume: setVolumeSpy,
     reportMovement: reportMovementSpy,
     triggerMelodicNote: triggerMelodicNoteSpy,
+    connectMic: connectMicSpy,
+    disconnectMic: disconnectMicSpy,
     dispose: vi.fn(),
   }),
 }));
@@ -113,6 +119,13 @@ function baseScene(overrides: Partial<Scene3DDocument> = {}): Scene3DDocument {
 beforeEach(() => {
   engineStatusRef.current = 'idle';
   vi.clearAllMocks();
+  // jsdom's `window.isSecureContext` does not implement the browser rule
+  // that `http://localhost` counts secure -- it defaults to `false`,
+  // which would otherwise route every "Live mic" click into the
+  // insecure-context error path before ever calling `connectMic`.
+  // Matches `Scene3DPreview.gestureControl.test.tsx`'s own documented
+  // workaround for the identical jsdom gap.
+  Object.defineProperty(window, 'isSecureContext', { configurable: true, value: true });
 });
 
 describe('Scene3DPreview sound control (issue #306)', () => {
@@ -240,5 +253,70 @@ describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
 
     expect(triggerMelodicNoteSpy).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /keyboard notes/i, pressed: true })).toBeNull();
+  });
+});
+
+describe('Scene3DPreview live mic (issue #308)', () => {
+  it('shows no "Live mic" toggle until sound is enabled', () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    expect(screen.queryByRole('button', { name: /live mic/i })).not.toBeInTheDocument();
+  });
+
+  it('enabling the mic calls engine.connectMic() and shows the privacy notice', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    await user.click(screen.getByRole('button', { name: 'Live mic' }));
+
+    expect(connectMicSpy).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('button', { name: 'Stop live mic' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByTestId('mic-privacy-notice')).toBeInTheDocument();
+  });
+
+  it('shows a friendly error message when the mic permission is denied', async () => {
+    connectMicSpy.mockRejectedValueOnce(
+      Object.assign(new Error('denied'), { name: 'NotAllowedError' }),
+    );
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    await user.click(screen.getByRole('button', { name: 'Live mic' }));
+
+    expect(await screen.findByTestId('mic-error')).toHaveTextContent(/denied/i);
+    expect(screen.getByRole('button', { name: 'Live mic' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('stopping the mic calls engine.disconnectMic() and hides the privacy notice', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Live mic' }));
+    await screen.findByRole('button', { name: 'Stop live mic' });
+
+    await user.click(screen.getByRole('button', { name: 'Stop live mic' }));
+
+    expect(disconnectMicSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Live mic' })).toBeInTheDocument();
+    expect(screen.queryByTestId('mic-privacy-notice')).not.toBeInTheDocument();
+  });
+
+  it('muting sound also releases an active mic state', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Live mic' }));
+    await screen.findByRole('button', { name: 'Stop live mic' });
+
+    await user.click(screen.getByRole('button', { name: 'Mute sound' }));
+
+    expect(screen.queryByRole('button', { name: /live mic/i })).not.toBeInTheDocument();
   });
 });

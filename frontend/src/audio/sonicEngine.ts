@@ -67,6 +67,19 @@ export interface SonicEngine {
   /** Triggers a discrete note on the melodic voice (issue #307's keyboard
    * input calls this). */
   triggerMelodicNote(note: string): void;
+  /** Issue #308: opens the microphone (`Tone.UserMedia` -- Tone.js's own
+   * `getUserMedia({audio:true})` wrapper, reused rather than wiring a raw
+   * `MediaStreamAudioSourceNode` by hand) and mixes it into the shared
+   * bus, exactly like the reference implementation's own raw-mic-in
+   * layer (not analyzed/used to modulate anything else -- that's the
+   * separate camera-theremin feature, issue #309). Must be called after
+   * `enable()` -- rejects otherwise. Rejects with the underlying
+   * `getUserMedia` failure (a `DOMException` in a real browser) for the
+   * caller to categorize via `micFailure.ts`. */
+  connectMic(): Promise<void>;
+  /** Closes and releases the microphone stream. Safe to call even if
+   * never connected. */
+  disconnectMic(): void;
   /** Releases every resource. Safe to call multiple times. */
   dispose(): void;
 }
@@ -82,6 +95,7 @@ export function createSonicEngine(
   let movementSynth: InstanceType<ToneModule['Synth']> | null = null;
   let melodicSynth: InstanceType<ToneModule['Synth']> | null = null;
   let ambientLoop: InstanceType<ToneModule['Loop']> | null = null;
+  let userMedia: InstanceType<ToneModule['UserMedia']> | null = null;
   let lastMovementTriggerAt = 0;
 
   async function enable(): Promise<void> {
@@ -115,6 +129,7 @@ export function createSonicEngine(
   }
 
   function disposeResources() {
+    disconnectMic();
     ambientLoop?.dispose();
     ambientSynth?.dispose();
     movementSynth?.dispose();
@@ -165,6 +180,30 @@ export function createSonicEngine(
     melodicSynth?.triggerAttackRelease(note, '8n');
   }
 
+  async function connectMic(): Promise<void> {
+    if (!tone || !bus || status !== 'active') {
+      throw new Error('Sound must be enabled before enabling the microphone.');
+    }
+    if (userMedia) return; // already connected -- idempotent, like enable()
+    const mic = new tone.UserMedia();
+    try {
+      await mic.open();
+    } catch (error) {
+      mic.dispose();
+      throw error;
+    }
+    mic.connect(bus);
+    userMedia = mic;
+  }
+
+  function disconnectMic() {
+    if (!userMedia) return;
+    userMedia.close();
+    userMedia.disconnect();
+    userMedia.dispose();
+    userMedia = null;
+  }
+
   function dispose() {
     disable();
   }
@@ -178,6 +217,8 @@ export function createSonicEngine(
     setVolume,
     reportMovement,
     triggerMelodicNote,
+    connectMic,
+    disconnectMic,
     dispose,
   };
 }

@@ -6,6 +6,12 @@ import CameraControl, {
   type CameraControlProps,
   type CameraStatus,
 } from '../components/CameraControl';
+import {
+  categorizeMicError,
+  isMicSupported,
+  micRecoveryMessageFor,
+  type MicFailureCategory,
+} from '../audio/micFailure';
 import { isEditableElement, PIANO_KEY_MAP } from '../audio/pianoKeyMap';
 import { createSonicEngine, type SonicEngine } from '../audio/sonicEngine';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
@@ -224,6 +230,8 @@ function Scene3DPreview({
       engine.disable();
       setSoundEnabled(false);
       setKeyboardEnabled(false);
+      setMicState('idle');
+      setMicFailure(null);
       return;
     }
     await engine.enable();
@@ -254,6 +262,44 @@ function Scene3DPreview({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [soundEnabled, keyboardEnabled]);
+
+  // Issue #308: "Live mic" -- raw microphone input mixed into the shared
+  // bus, reusing `CameraControl.tsx`'s own friendly-failure/privacy-notice
+  // conventions for the audio equivalent of a `getUserMedia` permission
+  // flow (see `../audio/micFailure.ts`). A genuinely separate permission
+  // request from this app's existing camera `getUserMedia({video:true})`
+  // flow -- audio-only, never touches the camera.
+  const [micState, setMicState] = useState<'idle' | 'requesting' | 'active' | 'error'>('idle');
+  const [micFailure, setMicFailure] = useState<MicFailureCategory | null>(null);
+  async function handleToggleMic() {
+    const engine = sonicEngineRef.current;
+    if (!engine) return;
+    if (micState === 'active') {
+      engine.disconnectMic();
+      setMicState('idle');
+      setMicFailure(null);
+      return;
+    }
+    if (!isMicSupported()) {
+      setMicFailure('unsupported-browser');
+      setMicState('error');
+      return;
+    }
+    if (!window.isSecureContext) {
+      setMicFailure('insecure-context');
+      setMicState('error');
+      return;
+    }
+    setMicState('requesting');
+    setMicFailure(null);
+    try {
+      await engine.connectMic();
+      setMicState('active');
+    } catch (error) {
+      setMicFailure(categorizeMicError(error));
+      setMicState('error');
+    }
+  }
 
   // Issue #294: "Steer the piece" -- gesture-driven camera control.
   const [gestureControlEnabled, setGestureControlEnabled] = useState(false);
@@ -573,7 +619,32 @@ function Scene3DPreview({
             {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
           </button>
         )}
+        {showSoundControl && soundEnabled && (
+          <button
+            type="button"
+            aria-pressed={micState === 'active'}
+            disabled={micState === 'requesting'}
+            onClick={() => void handleToggleMic()}
+          >
+            {micState === 'requesting'
+              ? 'Requesting mic…'
+              : micState === 'active'
+                ? 'Stop live mic'
+                : 'Live mic'}
+          </button>
+        )}
       </div>
+      {showSoundControl && soundEnabled && (micState === 'requesting' || micState === 'active') && (
+        <p role="status" aria-live="polite" data-testid="mic-privacy-notice">
+          Audio from your microphone is processed locally in your browser. It is never recorded,
+          stored, or uploaded.
+        </p>
+      )}
+      {showSoundControl && micState === 'error' && micFailure && (
+        <p role="alert" aria-live="assertive" data-testid="mic-error">
+          {micRecoveryMessageFor(micFailure)}
+        </p>
+      )}
       {showSoundControl && soundEnabled && (
         <div className="editor-camera-overlay-control">
           <label htmlFor="scene3d-sound-volume">Sound volume</label>

@@ -79,11 +79,28 @@ function createFakeToneModule() {
   const transportStopCalls = vi.fn();
   const startCalls = vi.fn().mockResolvedValue(undefined);
 
+  let userMediaOpenBehavior: 'resolve' | 'reject' = 'resolve';
+  let userMediaRejectError: unknown = new Error('mic denied');
+  const userMediaConnectCalls: unknown[] = [];
+  class FakeUserMedia {
+    open = vi.fn().mockImplementation(() => {
+      if (userMediaOpenBehavior === 'reject') return Promise.reject(userMediaRejectError);
+      return Promise.resolve();
+    });
+    close = vi.fn();
+    connect = vi.fn((destination: unknown) => {
+      userMediaConnectCalls.push(destination);
+    });
+    disconnect = vi.fn();
+    dispose = vi.fn(() => disposeCalls.push('userMedia'));
+  }
+
   const fakeModule = {
     Synth: FakeSynth,
     Volume: FakeVolume,
     Filter: FakeFilter,
     Loop: FakeLoop,
+    UserMedia: FakeUserMedia,
     Transport: { start: transportStartCalls, stop: transportStopCalls },
     start: startCalls,
   } as unknown as ToneModule;
@@ -96,6 +113,11 @@ function createFakeToneModule() {
     transportStartCalls,
     transportStopCalls,
     startCalls,
+    userMediaConnectCalls,
+    setUserMediaOpenToReject: (error: unknown) => {
+      userMediaOpenBehavior = 'reject';
+      userMediaRejectError = error;
+    },
     fireAmbientLoopTick: (time = 0) => loopCallback?.(time),
   };
 }
@@ -227,5 +249,67 @@ describe('createSonicEngine', () => {
 
     expect(engine.status).toBe('idle');
     expect(fake.disposeCalls.length).toBeGreaterThan(0);
+  });
+});
+
+describe('createSonicEngine mic input (issue #308)', () => {
+  it('rejects connectMic() before enable() has succeeded', async () => {
+    const engine = createSonicEngine(vi.fn());
+    await expect(engine.connectMic()).rejects.toThrow();
+  });
+
+  it('connectMic() opens Tone.UserMedia and connects it into the shared bus', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    await engine.connectMic();
+
+    expect(fake.userMediaConnectCalls).toHaveLength(1);
+  });
+
+  it('connectMic() propagates the underlying getUserMedia rejection', async () => {
+    const fake = createFakeToneModule();
+    const deniedError = Object.assign(new Error('denied'), { name: 'NotAllowedError' });
+    fake.setUserMediaOpenToReject(deniedError);
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    await expect(engine.connectMic()).rejects.toBe(deniedError);
+  });
+
+  it('connectMic() is idempotent -- a second call is a no-op while already connected', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    await engine.connectMic();
+    await engine.connectMic();
+
+    expect(fake.userMediaConnectCalls).toHaveLength(1);
+  });
+
+  it('disconnectMic() releases the microphone and is a safe no-op if never connected', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+    await engine.connectMic();
+
+    engine.disconnectMic();
+    expect(fake.disposeCalls).toContain('userMedia');
+
+    expect(() => engine.disconnectMic()).not.toThrow();
+  });
+
+  it('disable() also releases an open microphone', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+    await engine.connectMic();
+    fake.disposeCalls.length = 0;
+
+    engine.disable();
+
+    expect(fake.disposeCalls).toContain('userMedia');
   });
 });

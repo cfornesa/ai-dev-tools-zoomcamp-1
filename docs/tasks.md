@@ -9280,3 +9280,63 @@ sub-issue and in #269.
 
 Dependencies: None for #270/#271. #272 depends on one resolved PM
 question before implementation. #273's 3D half depends on #272.
+
+## 237. Epic: per-piece screenshot, fullscreen, download/export, embed, gesture camera control, sound, and immersive VR view (parity with augmenthumankind.com)
+
+Status: PROPOSED
+
+GitHub issue: [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274)
+
+Parent: none -- the repository owner asked for parity with their other
+project, augmenthumankind.com (which they also own), same session
+(2026-08-31). Investigated live via Claude in Chrome
+(https://augmenthumankind.com/pieces/123 and its
+`/immersive/pieces/123` route) plus cross-referenced the actual
+implementation in the owner's `augment-humankind` PHP repo (a sibling
+directory) before filing anything.
+
+Findings (exact toolbar/control inventory captured from the live
+accessibility tree): "Take screenshot", "Open download menu"
+(checkboxes for which interaction layers to include, then
+Full/Non-Camera ZIP), "View in Immersive / VR Mode" (a separate
+route), sound mute toggle, "Piece controls" (a settings popover:
+Tone.js-driven ambient/movement/melodic synth layers, keyboard-
+triggered notes, microphone input, webcam "camera theremin" audio,
+webcam "steer the piece" camera control, reset view, camera-overlay
+opacity), "Show hand gesture guide" (a real `role="dialog"` 5-step
+tutorial: Look/Move/Orbit/Zoom/Stop safely), and fullscreen. The
+immersive route is confirmed (via `vr-mode-ui: enabled: false` in the
+reference's own JS) to be a first-person free-fly Three.js/A-Frame
+camera, not real WebXR headset entry.
+
+Cross-checked against this project's actual code to scope accurately:
+camera overlay opacity already exists for 2D only
+(`cameraOverlaySettings.ts`); standalone export/download (task
+200/#200) already exists for 2D only, not wired into either 3D
+editor; fullscreen, screenshot capture, and embed codes exist nowhere
+yet; Tone.js is not a dependency anywhere (needs explicit owner
+approval before any sub-issue touching it, per `AGENTS.md`'s
+"no dependency without asking" rule); this project's existing
+MediaPipe hand-tracking (already powering 2D's gesture bindings) is
+directly reusable for gesture-driven camera control rather than
+needing new tracking infrastructure.
+
+Sub-issues filed (dependency order): [#275](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/275)
+(screenshot capture, independent), [#276](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/276)
+(fullscreen, independent), [#277](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/277)
+(3D export/download bundle, independent), [#278](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/278)
+(embed code generation, independent), [#279](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/279)
+(gesture-driven camera control + guide dialog, depends on task
+236/#271). Two items intentionally have no numbered sub-issue yet --
+the Tone.js sound/audio system (dependency approval + its own design
+pass needed) and the immersive first-person free-fly view (depends on
+#271, needs a 2D-scope decision) -- next action is the repository
+owner scheduling dedicated design sessions for those when ready to
+prioritize them.
+
+Scope: this epic runs alongside, not blocked by, epic 236/#269 --
+#279 is the only sub-issue here with a cross-epic dependency (on
+#271). Full scope and acceptance criteria in each sub-issue and in
+#274.
+
+Dependencies: None for #275-278. #279 depends on task 236/#271.

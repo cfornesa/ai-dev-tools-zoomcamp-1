@@ -9013,7 +9013,35 @@ task 231/#264.
 
 ## 233. Add configurable automated retry for failed AI generations, with transparent attempt count
 
-Status: PROPOSED
+Status: COMPLETE. Added `AIRetryPreference` (owner OneToOne,
+`auto_retry_enabled` default False, `max_retries` default 3, bounded
+1-10 via validators) and migration
+`0023_airetrypreference` (`backend/scenes/models.py`), plus
+`backend/scenes/ai_retry_preference_api.py`'s `AIRetryPreferenceView`
+(GET/PUT, get-or-create, owner-scoped) wired at
+`/api/account/ai-retry-preference/`. Frontend:
+`frontend/src/api/aiRetryPreference.ts`; a new "Automatic retry"
+Account settings section (`AccountSettings.tsx`) with the toggle +
+retry-count field; a shared `isRetryableAIErrorCode` helper
+(`frontend/src/pages/aiRetry.ts`) recognizing exactly
+`invalid_structured_output`/`timeout`/`provider_failure` (never
+quota/rate-limit/auth/validation codes); and retry orchestration added
+to both `useAIProposal`/`useAIProposal3D` — an attempt counter visible
+in both the pending and error states, an auto-retry loop bounded by
+`max_retries` when the preference is on (each iteration a fresh,
+independent request still counted by the server's existing rate
+limit/quota, never a retry the server performs on its own), and an
+explicit "Retry" button in both `AIProposalPanel`/`AIProposalPanel3D`
+for the off case (never a silent retry) that continues the same
+attempt count. New/updated tests: `backend/tests/
+test_ai_retry_preference.py` (5), `frontend/src/pages/
+useAIProposal.test.ts`/`useAIProposal3D.test.ts` (4 each, new),
+`AIProposalPanel.test.tsx`/`AIProposalPanel3D.test.tsx` (2 each, new),
+`AccountSettings.test.tsx` (1, new). `make check` passes (853 backend
+tests, frontend lint/format/typecheck/test all green). Verification
+boundary: no live browser check possible in this sandbox (same
+boundary as tasks 224/#256, 229/#261, 230/#262) — the retry loop's
+actual effect on a real, flaky Mistral response is unverified here.
 
 GitHub issue: [#266](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/266)
 

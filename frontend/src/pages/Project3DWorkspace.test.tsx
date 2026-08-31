@@ -114,7 +114,11 @@ describe('Project3DWorkspace', () => {
     await user.click(screen.getByRole('radio', { name: 'Code' }));
 
     expect(await screen.findByRole('region', { name: 'Code' })).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Preview' })).not.toBeInTheDocument();
+    // Issue #304: Preview is never hidden -- matches EditorWorkspace.tsx's
+    // own documented issue #159 convention (also just corrected for the 2D
+    // AI-assisted editor in #303); only its internal Visual sub-view
+    // toggles, not the Preview panel/section itself.
+    expect(screen.getByRole('region', { name: 'Preview' })).toBeInTheDocument();
   });
 });
 
@@ -185,5 +189,33 @@ describe('Project3DWorkspace inline title editing (issue #301)', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/cannot be blank/i);
     expect(mockedUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('Project3DWorkspace panel/grid containment (issue #304)', () => {
+  it('gives Preview, Outline, and Tools each a contained .editor-panel region', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+
+    renderWorkspace();
+
+    expect(await screen.findByRole('region', { name: 'Preview' })).toHaveClass('editor-panel');
+    expect(screen.getByRole('region', { name: 'Outline' }).closest('.editor-panel')).not.toBeNull();
+    expect(screen.getByRole('region', { name: 'Tools' })).toHaveClass('editor-panel');
+  });
+
+  it('keeps the Outline and Tools panels visible while Code is active', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('region', { name: 'Preview' });
+
+    await user.click(screen.getByRole('radio', { name: 'Code' }));
+    await screen.findByRole('region', { name: 'Code' });
+
+    expect(screen.getByRole('region', { name: 'Outline' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Ask AI to improve this scene' }),
+    ).toBeInTheDocument();
   });
 });

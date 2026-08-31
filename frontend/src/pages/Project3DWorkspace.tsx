@@ -336,36 +336,53 @@ function Project3DWorkspace() {
           </p>
         )}
       </header>
-      <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={previewView === 'visual'}
-          onClick={() => setPreviewView('visual')}
-        >
-          Visual
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={previewView === 'code'}
-          onClick={() => setPreviewView('code')}
-        >
-          Code
-        </button>
-      </div>
-      {previewView === 'visual' && (
-        <>
-          <section aria-label="Preview" role="region" data-panel="preview">
+      <div className="project3d-workspace editor-workspace">
+        {/* Task 246 (issue #304): a real `.editor-panel` region, scoped
+            under `.project3d-workspace` so its grid-row/column rules don't
+            inherit the 2D manual editor's unscoped 5-row rules -- same
+            approach as #303's `.ai-editor-workspace`. Visual/Code is a
+            sub-toggle inside this panel (issue #159's convention, also
+            just corrected for the 2D AI-assisted editor in #303): Preview
+            itself is never hidden, so Code lives alongside it rather than
+            replacing the whole panel. Previously this file hid Preview
+            *and* Outline/Tools entirely while Code was active -- corrected
+            here too. */}
+        <section aria-label="Preview" role="region" data-panel="preview" className="editor-panel">
+          <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewView === 'visual'}
+              onClick={() => setPreviewView('visual')}
+            >
+              Visual
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewView === 'code'}
+              onClick={() => setPreviewView('code')}
+            >
+              Code
+            </button>
+          </div>
+          {previewView === 'code' && (
+            <section aria-label="Code" role="region" data-panel="code">
+              <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleVersionSaved} />
+            </section>
+          )}
+          <div hidden={previewView !== 'visual'}>
             {/* Issue #244: real Three.js rendering, replacing the
                 #226 placeholder. */}
             <Scene3DPreview scene={workingScene} screenshotBaseName={project?.title} />
-          </section>
-          <Outline3DInspector
-            scene={workingScene}
-            onChange={setWorkingScene}
-            onAskAiChange={handleAskAiChangeItem}
-          />
+          </div>
+        </section>
+        <Outline3DInspector
+          scene={workingScene}
+          onChange={setWorkingScene}
+          onAskAiChange={handleAskAiChangeItem}
+        />
+        <section aria-label="Tools" role="region" data-panel="tools" className="editor-panel">
           <div role="group" aria-label="Whole-scene AI actions" className="editor-tool-group">
             <button type="button" onClick={handleAskAiImproveScene}>
               Ask AI to improve this scene
@@ -389,13 +406,8 @@ function Project3DWorkspace() {
               />
             </section>
           )}
-        </>
-      )}
-      {previewView === 'code' && (
-        <section aria-label="Code" role="region" data-panel="code">
-          <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleVersionSaved} />
         </section>
-      )}
+      </div>
     </div>
   );
 }

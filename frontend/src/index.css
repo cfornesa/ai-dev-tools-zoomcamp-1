@@ -1782,6 +1782,26 @@ textarea:disabled {
   grid-row: 1;
 }
 
+/* Task 246 (issue #304): the 3D manual editor's own 3-panel grid
+   (Preview, Outline, Tools) -- same scoping approach as `.ai-editor-
+   workspace` above, avoiding the 2D manual editor's unscoped 5-row rules.
+   Preview spans both sidebar rows, matching the reference editor's own
+   Preview-spans-the-sidebar convention. */
+.project3d-workspace .editor-panel[data-panel='preview'] {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.project3d-workspace .editor-panel[data-panel='outline'] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.project3d-workspace .editor-panel[data-panel='tools'] {
+  grid-column: 2;
+  grid-row: 2;
+}
+
 /* Issue #220: which renderer (p5.js/Canvas2D/SVG) the open project uses. */
 .editor-renderer-badge {
   font-size: 0.85em;

@@ -168,7 +168,13 @@ function Outline3DInspector({ scene, onChange, onAskAiChange }: Props) {
     selection?.kind === 'light' ? scene.lights.find((l) => l.id === selection.id) : undefined;
 
   return (
-    <div className="outline3d-panel">
+    // Task 246 (issue #304): `editor-panel` + `data-panel="outline"` so
+    // `Project3DWorkspace.tsx`'s new `.editor-workspace` grid can contain
+    // this as one sidebar cell -- the two `role="region"` sections below
+    // (Outline, Inspector) stay as one cohesive unit here, matching #280's
+    // resolved "inline inspector, not a separate dialog/panel" decision;
+    // this issue doesn't relitigate that split.
+    <div className="outline3d-panel editor-panel" data-panel="outline">
       <section aria-label="Outline" role="region" data-panel="outline3d">
         <h4>Scene outline</h4>
         {/* Issue #281: restyled to read as a Layers-panel-style list --

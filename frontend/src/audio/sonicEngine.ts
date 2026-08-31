@@ -80,6 +80,18 @@ export interface SonicEngine {
   /** Closes and releases the microphone stream. Safe to call even if
    * never connected. */
   disconnectMic(): void;
+  /** Issue #309: starts a continuous, sustained tone on the melodic voice
+   * for the camera theremin -- matches the reference's own continuous
+   * pitch-glide behavior (a real theremin feel), not discrete note
+   * triggers like `triggerMelodicNote`. Idempotent -- calling this while
+   * already sounding is a no-op. */
+  startCameraTheremin(): void;
+  /** Ramps the theremin's sustained tone to a new pitch/volume -- called
+   * every tracked-hand frame while the camera theremin is on. Safe to
+   * call even if `startCameraTheremin` was never called (a no-op). */
+  updateCameraTheremin(pitchHz: number, volumeDb: number): void;
+  /** Releases the sustained tone. Safe to call even if never started. */
+  stopCameraTheremin(): void;
   /** Releases every resource. Safe to call multiple times. */
   dispose(): void;
 }
@@ -96,6 +108,7 @@ export function createSonicEngine(
   let melodicSynth: InstanceType<ToneModule['Synth']> | null = null;
   let ambientLoop: InstanceType<ToneModule['Loop']> | null = null;
   let userMedia: InstanceType<ToneModule['UserMedia']> | null = null;
+  let thereminSounding = false;
   let lastMovementTriggerAt = 0;
 
   async function enable(): Promise<void> {
@@ -130,6 +143,7 @@ export function createSonicEngine(
 
   function disposeResources() {
     disconnectMic();
+    stopCameraTheremin();
     ambientLoop?.dispose();
     ambientSynth?.dispose();
     movementSynth?.dispose();
@@ -204,6 +218,29 @@ export function createSonicEngine(
     userMedia = null;
   }
 
+  function startCameraTheremin() {
+    if (!melodicSynth || thereminSounding) return;
+    // An arbitrary starting pitch -- immediately overridden by the first
+    // `updateCameraTheremin` call once a hand is tracked.
+    melodicSynth.triggerAttack('C4');
+    thereminSounding = true;
+  }
+
+  function updateCameraTheremin(pitchHz: number, volumeDb: number) {
+    if (!melodicSynth || !thereminSounding) return;
+    // A short ramp (not an instant jump) is what makes this read as a
+    // continuous glide rather than a stutter of discrete pitch jumps,
+    // matching the reference's own theremin feel.
+    melodicSynth.frequency.rampTo(pitchHz, 0.05);
+    melodicSynth.volume.value = volumeDb;
+  }
+
+  function stopCameraTheremin() {
+    if (!melodicSynth || !thereminSounding) return;
+    melodicSynth.triggerRelease();
+    thereminSounding = false;
+  }
+
   function dispose() {
     disable();
   }
@@ -219,6 +256,9 @@ export function createSonicEngine(
     triggerMelodicNote,
     connectMic,
     disconnectMic,
+    startCameraTheremin,
+    updateCameraTheremin,
+    stopCameraTheremin,
     dispose,
   };
 }

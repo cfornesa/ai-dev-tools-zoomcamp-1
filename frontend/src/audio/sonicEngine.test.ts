@@ -13,11 +13,15 @@ import { createSonicEngine, type ToneModule } from './sonicEngine';
 function createFakeToneModule() {
   const disposeCalls: string[] = [];
   const triggerCalls: Array<{ kind: string; note: string }> = [];
+  const attackCalls: Array<{ kind: string; note: string }> = [];
+  const releaseCalls: string[] = [];
+  const rampToCalls: Array<{ kind: string; value: number }> = [];
   let synthCount = 0;
 
   class FakeSynth {
     kind: string;
     volume = { value: 0 };
+    frequency = { rampTo: (value: number) => rampToCalls.push({ kind: this.kind, value }) };
     constructor() {
       synthCount += 1;
       this.kind = `synth-${synthCount}`;
@@ -27,6 +31,12 @@ function createFakeToneModule() {
     }
     triggerAttackRelease(note: string) {
       triggerCalls.push({ kind: this.kind, note });
+    }
+    triggerAttack(note: string) {
+      attackCalls.push({ kind: this.kind, note });
+    }
+    triggerRelease() {
+      releaseCalls.push(this.kind);
     }
     dispose() {
       disposeCalls.push(this.kind);
@@ -109,6 +119,9 @@ function createFakeToneModule() {
     fakeModule,
     disposeCalls,
     triggerCalls,
+    attackCalls,
+    releaseCalls,
+    rampToCalls,
     loopStartCalls,
     transportStartCalls,
     transportStopCalls,
@@ -311,5 +324,67 @@ describe('createSonicEngine mic input (issue #308)', () => {
     engine.disable();
 
     expect(fake.disposeCalls).toContain('userMedia');
+  });
+});
+
+describe('createSonicEngine camera theremin (issue #309)', () => {
+  it('startCameraTheremin() begins a sustained tone on the melodic voice', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    engine.startCameraTheremin();
+
+    expect(fake.attackCalls).toHaveLength(1);
+    expect(fake.attackCalls[0].kind).toBe('synth-3'); // melodicSynth
+  });
+
+  it('startCameraTheremin() is idempotent -- a second call while already sounding is a no-op', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    engine.startCameraTheremin();
+    engine.startCameraTheremin();
+
+    expect(fake.attackCalls).toHaveLength(1);
+  });
+
+  it('updateCameraTheremin() ramps pitch and sets volume, only while sounding', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    // Before starting -- a safe no-op, not an error.
+    engine.updateCameraTheremin(440, -10);
+    expect(fake.rampToCalls).toHaveLength(0);
+
+    engine.startCameraTheremin();
+    engine.updateCameraTheremin(440, -10);
+
+    expect(fake.rampToCalls).toEqual([{ kind: 'synth-3', value: 440 }]);
+  });
+
+  it('stopCameraTheremin() releases the tone and is a safe no-op if never started', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+    engine.startCameraTheremin();
+
+    engine.stopCameraTheremin();
+    expect(fake.releaseCalls).toEqual(['synth-3']);
+
+    expect(() => engine.stopCameraTheremin()).not.toThrow();
+  });
+
+  it('disable() also releases a sounding theremin', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+    engine.startCameraTheremin();
+
+    engine.disable();
+
+    expect(fake.releaseCalls).toEqual(['synth-3']);
   });
 });

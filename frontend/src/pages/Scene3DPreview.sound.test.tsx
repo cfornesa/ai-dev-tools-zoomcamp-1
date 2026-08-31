@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SonicEngine, SonicEngineStatus } from '../audio/sonicEngine';
+import { hand, landmarks } from '../tracking/testFixtures';
+import type { TrackingFrame, TrackingProvider, TrackingProviderError } from '../tracking/types';
 import type { Scene3DDocument } from './scene3dTypes';
 
 /**
@@ -23,6 +25,9 @@ const {
   triggerMelodicNoteSpy,
   connectMicSpy,
   disconnectMicSpy,
+  startCameraThereminSpy,
+  updateCameraThereminSpy,
+  stopCameraThereminSpy,
 } = vi.hoisted(() => ({
   engineStatusRef: { current: 'idle' as SonicEngineStatus },
   enableSpy: vi.fn(),
@@ -32,6 +37,9 @@ const {
   triggerMelodicNoteSpy: vi.fn(),
   connectMicSpy: vi.fn().mockResolvedValue(undefined),
   disconnectMicSpy: vi.fn(),
+  startCameraThereminSpy: vi.fn(),
+  updateCameraThereminSpy: vi.fn(),
+  stopCameraThereminSpy: vi.fn(),
 }));
 
 vi.mock('../audio/sonicEngine', () => ({
@@ -52,6 +60,9 @@ vi.mock('../audio/sonicEngine', () => ({
     triggerMelodicNote: triggerMelodicNoteSpy,
     connectMic: connectMicSpy,
     disconnectMic: disconnectMicSpy,
+    startCameraTheremin: startCameraThereminSpy,
+    updateCameraTheremin: updateCameraThereminSpy,
+    stopCameraTheremin: stopCameraThereminSpy,
     dispose: vi.fn(),
   }),
 }));
@@ -94,6 +105,30 @@ vi.mock('three', async (importOriginal) => {
 });
 
 const Scene3DPreview = (await import('./Scene3DPreview')).default;
+
+function createFakeProvider() {
+  const frameListeners: Array<(frame: TrackingFrame) => void> = [];
+  const start = vi.fn();
+  const stop = vi.fn();
+  const onFrame = vi.fn((listener: (frame: TrackingFrame) => void) => {
+    frameListeners.push(listener);
+    return () => {
+      const index = frameListeners.indexOf(listener);
+      if (index >= 0) frameListeners.splice(index, 1);
+    };
+  });
+  const onError = vi.fn((_listener: (error: TrackingProviderError) => void) => () => {});
+  const provider: TrackingProvider = { start, stop, onFrame, onError };
+  return {
+    provider,
+    start,
+    emitFrame: (frame: TrackingFrame) => {
+      act(() => {
+        for (const listener of [...frameListeners]) listener(frame);
+      });
+    },
+  };
+}
 
 function baseScene(overrides: Partial<Scene3DDocument> = {}): Scene3DDocument {
   return {
@@ -318,5 +353,95 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     await user.click(screen.getByRole('button', { name: 'Mute sound' }));
 
     expect(screen.queryByRole('button', { name: /live mic/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('Scene3DPreview camera theremin (issue #309)', () => {
+  it('shows no "Camera theremin" toggle until sound is enabled', () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    expect(screen.queryByRole('button', { name: /camera theremin/i })).not.toBeInTheDocument();
+  });
+
+  it('enabling the theremin calls engine.startCameraTheremin() and mounts the shared camera pipeline', async () => {
+    const fake = createFakeProvider();
+    render(
+      <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => fake.provider} />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
+
+    expect(startCameraThereminSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Stop camera theremin' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByTestId('gesture-camera-control')).toBeInTheDocument();
+  });
+
+  it('a tracked hand frame updates the theremin pitch/volume', async () => {
+    const fake = createFakeProvider();
+    render(
+      <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => fake.provider} />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
+    await user.click(screen.getByRole('button', { name: /enable camera/i }));
+
+    fake.emitFrame({ timestamp: 0, hands: [hand({ landmarks: landmarks(0.3) })], events: [] });
+
+    expect(updateCameraThereminSpy).toHaveBeenCalled();
+    const [frequencyHz, volumeDb] = updateCameraThereminSpy.mock.calls[0];
+    expect(frequencyHz).toBeGreaterThan(0);
+    expect(volumeDb).toBeLessThanOrEqual(0);
+  });
+
+  it('sharing the pipeline with "Steer the piece" never mounts a second CameraControl', async () => {
+    const fake = createFakeProvider();
+    render(
+      <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => fake.provider} />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
+
+    expect(screen.getAllByTestId('gesture-camera-control')).toHaveLength(1);
+
+    // Turning off "Steer the piece" alone must leave the still-enabled
+    // theremin's camera pipeline running.
+    await user.click(screen.getByRole('button', { name: 'Stop steering with gestures' }));
+    expect(screen.getByTestId('gesture-camera-control')).toBeInTheDocument();
+  });
+
+  it('disabling the toggle calls engine.stopCameraTheremin()', async () => {
+    const fake = createFakeProvider();
+    render(
+      <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => fake.provider} />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
+
+    await user.click(screen.getByRole('button', { name: 'Stop camera theremin' }));
+
+    expect(stopCameraThereminSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Camera theremin' })).toBeInTheDocument();
+  });
+
+  it('muting sound also resets the theremin toggle', async () => {
+    const fake = createFakeProvider();
+    render(
+      <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => fake.provider} />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
+
+    await user.click(screen.getByRole('button', { name: 'Mute sound' }));
+
+    expect(screen.queryByRole('button', { name: /camera theremin/i })).not.toBeInTheDocument();
   });
 });

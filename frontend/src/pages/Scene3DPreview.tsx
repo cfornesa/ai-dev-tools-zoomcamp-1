@@ -232,6 +232,7 @@ function Scene3DPreview({
       setKeyboardEnabled(false);
       setMicState('idle');
       setMicFailure(null);
+      setThereminEnabled(false);
       return;
     }
     await engine.enable();
@@ -316,6 +317,25 @@ function Scene3DPreview({
   const previousHandSignalsRef = useRef<HandSignals | null>(null);
   const gestureStartRef = useRef<number | null>(null);
 
+  // Issue #309: "camera theremin" -- independently toggleable alongside
+  // "Steer the piece", sharing this same `CameraControl`/hand-tracking
+  // pipeline (see the combined mount condition below and
+  // `handleGestureFrame`'s own doc comment) rather than a second camera
+  // stream/model instance.
+  const [thereminEnabled, setThereminEnabled] = useState(false);
+  const thereminEnabledRef = useRef(thereminEnabled);
+  thereminEnabledRef.current = thereminEnabled;
+  function handleToggleTheremin() {
+    const engine = sonicEngineRef.current;
+    if (thereminEnabled) {
+      engine?.stopCameraTheremin();
+      setThereminEnabled(false);
+      return;
+    }
+    engine?.startCameraTheremin();
+    setThereminEnabled(true);
+  }
+
   // Issue #297: camera-feed overlay + opacity/mirror controls, shown only
   // while gesture control is active and the camera itself is live.
   const [gestureCameraStatus, setGestureCameraStatus] = useState<CameraStatus>('idle');
@@ -353,6 +373,25 @@ function Scene3DPreview({
     const { signals } = handSignalExtractorRef.current.processFrame({ ...frame, timestamp });
     previousHandSignalsRef.current = latestHandSignalsRef.current;
     latestHandSignalsRef.current = signals;
+
+    // Issue #309: "camera theremin" -- runs off the exact same tracked-hand
+    // frame "Steer the piece" already processes above, rather than a
+    // second detection pipeline. Wrist/palm Y drives a continuous pitch
+    // glide (matching the reference's own theremin feel: near the top of
+    // frame is a higher hand, so a higher pitch); this codebase's existing
+    // `pinchStrength` signal (fingers together = 1, already normalized
+    // [0, 1] by `handSignals.ts`) stands in for the reference's own
+    // wrist-to-fingertip "hand spread" metric as the volume control --
+    // an open hand (pinchStrength near 0) is louder, a closed pinch is
+    // quieter, the same open/louder relationship the reference uses,
+    // without adding a second landmark-distance signal just for this.
+    if (thereminEnabledRef.current && signals.handPresence && signals.palmY !== null) {
+      const midiNote = 36 + (1 - signals.palmY) * 24; // ~C2-C4, two octaves
+      const frequencyHz = 440 * Math.pow(2, (midiNote - 69) / 12);
+      const openness = signals.pinchStrength === null ? 0.5 : 1 - signals.pinchStrength;
+      const volumeDb = -30 + openness * 30;
+      sonicEngineRef.current?.updateCameraTheremin(frequencyHz, volumeDb);
+    }
   }
 
   async function handleTakeScreenshot() {
@@ -633,6 +672,11 @@ function Scene3DPreview({
                 : 'Live mic'}
           </button>
         )}
+        {showSoundControl && soundEnabled && (
+          <button type="button" aria-pressed={thereminEnabled} onClick={handleToggleTheremin}>
+            {thereminEnabled ? 'Stop camera theremin' : 'Camera theremin'}
+          </button>
+        )}
       </div>
       {showSoundControl && soundEnabled && (micState === 'requesting' || micState === 'active') && (
         <p role="status" aria-live="polite" data-testid="mic-privacy-notice">
@@ -669,7 +713,7 @@ function Scene3DPreview({
           {screenshotError}
         </p>
       )}
-      {showGestureControl && gestureControlEnabled && (
+      {((showGestureControl && gestureControlEnabled) || (showSoundControl && thereminEnabled)) && (
         <div role="region" aria-label="Gesture camera control" data-testid="gesture-camera-control">
           <CameraControl
             onFrame={handleGestureFrame}

@@ -164,43 +164,108 @@ function Outline3DInspector({ scene, onChange }: Props) {
     <div className="outline3d-panel">
       <section aria-label="Outline" role="region" data-panel="outline3d">
         <h4>Scene outline</h4>
-        <ul className="outline3d-list" data-testid="outline3d-list">
-          <li>
+        {/* Issue #281: restyled to read as a Layers-panel-style list --
+            reuses `LayersPanel.tsx`'s own `.editor-outline-list`/
+            `.editor-outline-row`/`.editor-outline-kind-icon` CSS classes
+            (per the issue's own "reuse existing Layers-panel CSS classes
+            where the visual language transfers directly" scope note)
+            rather than inventing a parallel visual language. Objects
+            belonging to a group are indented beneath it, matching 2D's
+            shape-under-group nesting -- purely a visual grouping cue; the
+            3D schema's `groups` still don't nest (out of scope per this
+            issue), and no reorder/reparent drag interaction is added. The
+            per-item detail surface stays the existing inline Inspector
+            section below, per #280's resolved decision (inline, not a new
+            dialog) -- this redesign only touches the outline half. */}
+        <ul className="outline3d-list editor-outline-list" data-testid="outline3d-list">
+          <li
+            className="editor-outline-row"
+            data-outline-kind="camera"
+            data-selected={selection?.kind === 'camera' ? 'true' : undefined}
+          >
+            <span className="editor-outline-kind-icon" aria-hidden="true">
+              ⟐
+            </span>
             <button
               type="button"
               aria-pressed={selection?.kind === 'camera'}
+              aria-current={selection?.kind === 'camera' ? 'true' : undefined}
               onClick={() => setSelection({ kind: 'camera' })}
             >
               Camera
             </button>
           </li>
           {scene.groups.map((group) => (
-            <li key={group.id}>
+            <li
+              key={group.id}
+              className="editor-outline-row editor-outline-row-group"
+              data-outline-kind="group"
+              data-selected={
+                selection?.kind === 'group' && selection.id === group.id ? 'true' : undefined
+              }
+            >
+              <span className="editor-outline-kind-icon" aria-hidden="true">
+                ▤
+              </span>
               <button
                 type="button"
                 aria-pressed={selection?.kind === 'group' && selection.id === group.id}
+                aria-current={
+                  selection?.kind === 'group' && selection.id === group.id ? 'true' : undefined
+                }
                 onClick={() => setSelection({ kind: 'group', id: group.id })}
               >
                 Group: {group.name}
               </button>
             </li>
           ))}
-          {scene.objects.map((object) => (
-            <li key={object.id}>
-              <button
-                type="button"
-                aria-pressed={selection?.kind === 'object' && selection.id === object.id}
-                onClick={() => setSelection({ kind: 'object', id: object.id })}
+          {scene.objects.map((object) => {
+            const nested = object.groupId !== null;
+            return (
+              <li
+                key={object.id}
+                className="editor-outline-row editor-outline-row-shape"
+                style={nested ? { paddingLeft: '1.25rem' } : undefined}
+                data-outline-kind="object"
+                data-nested={nested ? 'true' : undefined}
+                data-selected={
+                  selection?.kind === 'object' && selection.id === object.id ? 'true' : undefined
+                }
               >
-                {object3DLabel(object, scene.objects)}
-              </button>
-            </li>
-          ))}
+                <span className="editor-outline-kind-icon" aria-hidden="true">
+                  ◆
+                </span>
+                <button
+                  type="button"
+                  aria-pressed={selection?.kind === 'object' && selection.id === object.id}
+                  aria-current={
+                    selection?.kind === 'object' && selection.id === object.id ? 'true' : undefined
+                  }
+                  onClick={() => setSelection({ kind: 'object', id: object.id })}
+                >
+                  {object3DLabel(object, scene.objects)}
+                </button>
+              </li>
+            );
+          })}
           {scene.lights.map((light) => (
-            <li key={light.id}>
+            <li
+              key={light.id}
+              className="editor-outline-row editor-outline-row-shape"
+              data-outline-kind="light"
+              data-selected={
+                selection?.kind === 'light' && selection.id === light.id ? 'true' : undefined
+              }
+            >
+              <span className="editor-outline-kind-icon" aria-hidden="true">
+                ✺
+              </span>
               <button
                 type="button"
                 aria-pressed={selection?.kind === 'light' && selection.id === light.id}
+                aria-current={
+                  selection?.kind === 'light' && selection.id === light.id ? 'true' : undefined
+                }
                 onClick={() => setSelection({ kind: 'light', id: light.id })}
               >
                 {light3DLabel(light, scene.lights)}

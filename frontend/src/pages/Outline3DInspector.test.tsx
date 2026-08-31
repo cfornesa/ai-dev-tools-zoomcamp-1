@@ -154,6 +154,55 @@ describe('Outline3DInspector', () => {
     expect(screen.getByLabelText('Position X')).toHaveValue(1);
   });
 
+  // Issue #281: the outline reads as a Layers-panel-style list -- reuses
+  // `LayersPanel.tsx`'s own row/list CSS classes and visually nests a
+  // grouped object beneath its group.
+  it('reuses the Layers-panel CSS classes on every outline row', () => {
+    render(<Outline3DInspector scene={baseScene()} onChange={() => {}} />);
+
+    const rows = screen.getAllByRole('listitem');
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row).toHaveClass('editor-outline-row');
+    }
+  });
+
+  it('indents an object that belongs to a group beneath it, and does not indent a top-level object', () => {
+    render(<Outline3DInspector scene={baseScene()} onChange={() => {}} />);
+
+    const groupedRow = screen.getByRole('button', { name: 'Box 1' }).closest('li')!;
+    const topLevelRow = screen.getByRole('button', { name: 'Sphere 1' }).closest('li')!;
+    expect(groupedRow).toHaveAttribute('data-nested', 'true');
+    expect(groupedRow.style.paddingLeft).not.toBe('');
+    expect(topLevelRow).not.toHaveAttribute('data-nested');
+  });
+
+  it('marks the selected row with data-selected and aria-current for both directions of selection state', async () => {
+    const user = userEvent.setup();
+    render(<Outline3DInspector scene={baseScene()} onChange={() => {}} />);
+
+    const groupButton = screen.getByRole('button', { name: 'Group: Furniture' });
+    await user.click(groupButton);
+
+    expect(groupButton).toHaveAttribute('aria-current', 'true');
+    expect(groupButton.closest('li')).toHaveAttribute('data-selected', 'true');
+    expect(screen.getByRole('button', { name: 'Camera' }).closest('li')).not.toHaveAttribute(
+      'data-selected',
+    );
+  });
+
+  it('every row stays keyboard-operable (a native <button>, reachable and activatable via keyboard alone)', async () => {
+    const user = userEvent.setup();
+    render(<Outline3DInspector scene={baseScene()} onChange={() => {}} />);
+
+    const sphereButton = screen.getByRole('button', { name: 'Sphere 1' });
+    sphereButton.focus();
+    expect(sphereButton).toHaveFocus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByTestId('object-inspector')).toBeInTheDocument();
+  });
+
   it('reassigns an object to a different group via the group select', async () => {
     const user = userEvent.setup();
     render(<ControlledOutline initial={baseScene()} />);

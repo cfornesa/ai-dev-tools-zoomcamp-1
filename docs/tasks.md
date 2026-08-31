@@ -8611,7 +8611,15 @@ reopening it.
 
 ## 223. Decide/execute deletion of the orphaned production project 9494ae05...
 
-Status: PROPOSED
+Status: HANDED-OFF. Repository owner confirmed (2026-08-30/2026-08-31
+backlog session) the project should be deleted. No code change is
+needed (#252 already shipped the Delete capability); the actual click
+is a permanent production-data deletion the agent cannot perform on
+the owner's behalf under its own operating rules, even with explicit
+authorization. Next action: the owner (or someone they designate) signs
+in to production, opens the Gallery, and clicks Delete on the
+"Untitled animation" card for project
+`9494ae05-1c0c-4de5-9bcd-f3b33d1c2105`. Decision recorded on the issue.
 
 GitHub issue: [#255](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/255)
 

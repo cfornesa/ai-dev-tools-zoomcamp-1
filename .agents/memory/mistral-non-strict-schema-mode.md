@@ -50,3 +50,21 @@ generates raw code strings, validated by a different per-library snippet
 validator) — this specific lesson does not apply there, but the general
 principle (LLM structured-output constraints are hints, not guarantees;
 reinforce redundantly where it matters) does.
+
+**Second confirmed instance:** the same class of gap existed for 2D
+shape *required fields*, not just enums — `_SYSTEM_PROMPT_3D` restates
+each object type's required geometry (`box: width/height/depth; sphere:
+radius; ...`) but the 2D `_SYSTEM_PROMPT` never restated the equivalent
+per-`shapes[]`-type requirements (`circle` -> `radius`; `rect` ->
+`width`/`height`/`cornerRadius`; `line` -> `x2`/`y2`; `path` ->
+`points`/`closed`; `particleEmitter` -> `rate`/`size`/`lifespan`/`speed`/
+`palette`). Confirmed live against production on 2026-08-31: three
+separate real `mistral-small-latest` calls for simple prompts ("a red
+circle and a blue square", "one blue square") each produced a
+schema-invalid shape missing its type's required fields, reproducibly.
+Filed as task 224/[#256](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/256)
+(not yet fixed as of this writing — implementation was intentionally
+paused mid-session at the owner's direction). When auditing this class of
+gap, check *every* AI-facing structural constraint the schema encodes
+(enums, required-field sets, conditional `if`/`then` branches) — not just
+enums — for each `response_format`/`strict: False` code path.

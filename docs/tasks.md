@@ -8645,3 +8645,126 @@ owner deletes it themselves. Full scope and acceptance criteria in
 Dependencies: depends on #252 (closed, already satisfied) for the
 Delete capability to exist; blocked only on the owner's explicit
 go-ahead.
+
+## 224. 2D AI create-scene system prompt never restates per-shape-type required geometry fields
+
+Status: PROPOSED
+
+GitHub issue: [#256](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/256)
+
+Parent: none — distilled from a live demonstration of the manual and
+AI-assisted 2D editors in production, requested via `/goal` on
+2026-08-31.
+
+Discovered live against production (https://animate.creatrweb.com), via
+the signed-in owner's account, while demonstrating that AI-assisted
+scene creation works: the prompt "A red circle and a blue square side
+by side on a white background" made a real `mistral-small-latest` call
+that generated a `circle` shape missing `radius`
+(`$.shapes[0]: 'radius' is a required property`). Retried identically
+with the same failure. A second, isolated prompt ("One blue square")
+generated a `rect` shape missing `width`, `height`, and `cornerRadius`.
+Each failure was confirmed as a fresh network request (via the UI's
+transient "Contacting the AI assistant..." state before each result),
+not a cached/stale error — reproducible across three separate live
+calls.
+
+Root cause: `backend/ai_provider/mistral_provider.py`'s `_SYSTEM_PROMPT`
+(2D create-scene) lists the top-level schema fields and fully restates
+the `targetProperty`/`signal` enums (added by task 172/#204) but never
+restates each `shapes[]` entry's own per-type required geometry fields.
+`_SYSTEM_PROMPT_3D` already does this for 3D ("box: width/height/depth;
+sphere: radius; ..."). `schema/scene.schema.json`'s conditional
+`if`/`then` blocks require: `circle` -> `radius`; `rect` -> `width`,
+`height`, `cornerRadius`; `line` -> `x2`, `y2`; `path` -> `points`,
+`closed`; `particleEmitter` -> `rate`, `size`, `lifespan`, `speed`,
+`palette`. Same class of gap `.agents/memory/mistral-non-strict-schema-mode.md`
+already documents generally (Mistral's `response_format` `strict: False`
+is a hint, not a guarantee — the natural-language prompt is the real
+reinforcement) — just never applied to 2D shape geometry.
+
+Scope: restate each `shapes[]` type's required fields in `_SYSTEM_PROMPT`
+(mirroring `_SYSTEM_PROMPT_3D`'s style), plus a regression test asserting
+the restated fields never drift from the schema's actual per-type
+`required` arrays (mirroring #204's enum-drift test). Full scope and
+acceptance criteria in #256.
+
+Dependencies: None. Investigation-only for this session per explicit
+`/goal` instruction (2026-08-31) — implementation intentionally deferred,
+not started.
+
+## 225. Epic: per-user saved Mistral models and additive Personas across all AI editors
+
+Status: PROPOSED
+
+GitHub issue: [#257](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/257)
+
+Parent: none — requested directly by the repository owner while
+observing task 224/#256's failure live, same session (2026-08-31).
+
+Discovered while demonstrating the AI-assisted 2D editor: the owner
+noticed the "Mistral model (optional)" free-text field renders too
+narrow, and asked for (1) a per-user saved list of Mistral model slugs
+selectable via dropdown instead of retyping one each time, (2) full-width
+form fields in the AI assistant panel, and (3) named "Persona" system
+prompts the user can define and pick from a dropdown in AI editors.
+Clarified via follow-up questions before any code was written:
+
+- Saved models are a personal, self-declared list of model-ID strings
+  (the user types a slug after checking Mistral's own model
+  documentation themselves) — not a live call to a Mistral
+  models-list API.
+- Personas are **additive only**: they layer extra style/tone/content
+  guidance on top of the app's existing mandatory technical system
+  prompt (schema shape, required fields, enums) and can never replace
+  or drop those technical constraints — directly motivated by task
+  224/#256 showing what happens when required-field guidance is
+  missing from the prompt.
+- Applies uniformly across all four AI editors (2D Create, 2D Edit, 3D
+  Create, 3D Edit), consistent with this project's established 2D/3D
+  feature-parity pattern.
+
+Scope: per-user `MistralModelPreference` (slug + label) and `AIPersona`
+(name + additive prompt text) models/migrations/CRUD API mirroring the
+existing per-user `MistralCredential` pattern
+(`backend/scenes/models.py`, `backend/scenes/credentials_api.py`);
+wiring an optional persona's text into `mistral_provider.py`'s
+create/edit flows as an additional system message appended after (never
+replacing) `_SYSTEM_PROMPT`/`_SYSTEM_PROMPT_3D`; Account settings UI to
+manage both; and updating all four AI editor panels with model/persona
+dropdowns and full-width fields. Full scope and acceptance criteria in
+#257 (sub-issues to follow during grooming).
+
+Dependencies: None, though sequencing task 224/#256 first is recommended
+to avoid merge friction on the same file (`mistral_provider.py`'s system
+prompts). Implementation explicitly paused mid-session at the owner's
+direct instruction (2026-08-31) — not started beyond epic filing.
+
+## 226. Decide/execute deletion of two test projects created in production during a live feature demo
+
+Status: PROPOSED
+
+GitHub issue: [#258](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/258)
+
+Parent: none — distilled from the same live demonstration session as
+tasks 224-225/#256-257, same session (2026-08-31).
+
+While demonstrating manual and AI-assisted 2D creation at the owner's
+request, two projects were created directly in production and now exist
+in the owner's real gallery: `78f7b004-87cc-4a2a-8a19-d450831c874f`
+("Untitled animation", Manual, has a working circle+rectangle version 2
+with a correctly-rendered thumbnail) and
+`84ec48e2-d4ca-4767-8998-d796a45ddbe3` ("Untitled animation", Manual,
+still its initial blank scene since every AI generation attempt failed
+per task 224/#256 — its "Manual" badge is accurate, not a separate bug,
+since no AI-origin version was ever saved). Neither is broken/orphaned
+like #252/#255's case (both have a valid `current_version`) — this is
+purely "should test/demo data stay in the owner's real account."
+
+Scope: purely a decision + execution issue, no code change — the owner
+decides keep/delete for each project; if delete, the owner (or an
+explicitly designated person) performs the click themselves, following
+#255's established precedent for who executes production deletions.
+Full scope and acceptance criteria in #258.
+
+Dependencies: None.

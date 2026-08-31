@@ -9582,7 +9582,7 @@ the camera panel's visual bounds.
 
 ## 242. Epic: unify all 4 editor layouts (2D/3D x manual/AI) on the 2D manual editor's panel structure
 
-Status: PROPOSED
+Status: IN PROGRESS -- grooming complete, 3 atomic sub-issues filed
 
 GitHub issue: [#300](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/300)
 
@@ -9612,6 +9612,32 @@ to fullscreen`) using the same `.editor-tool-group` class outside any
 #298 fixed for `Scene3DPreview.tsx` -- not fixed there (out of scope for
 that issue), left here as a concrete audit item rather than a third
 duplicate issue.
+
+PM grooming pass (2026-08-31): audited all 3 non-reference editors
+against `EditorWorkspace.tsx`'s actual structure (`.editor-workspace`
+grid, `.editor-panel`/`data-panel` regions, `EditorPanelSwitcher` at the
+1024px breakpoint, `editorToolbar`'s two-mount-point placement).
+Confirmed `EditorPanelSwitcher.tsx` is 2D-manual-editor-only today --
+none of the other three workspaces import or render it. Filed 3 atomic
+sub-issues, one per non-reference editor (each bundling panel/grid
+containment + responsive switcher reuse together, since a switcher needs
+contained panels to switch between -- splitting those two further would
+produce meaningless intermediate PRs):
+
+- [#303](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/303) -- `AiEditorWorkspace.tsx` (2D AI-assisted)
+- [#304](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/304) -- `Project3DWorkspace.tsx` (3D manual) -- related to the already-shipped task 241/#299 (a first concrete symptom of this same structural gap)
+- [#305](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/305) -- `AiProject3DWorkspace.tsx` (3D AI-assisted) -- suggested to sequence after #303 so the same approach can be reused
+
+Explicitly **not** filed as gaps (deliberate, already-documented
+differences, confirmed via each file's own doc comments): neither
+AI-assisted editor gets a Layers/Tools panel (by design, per
+`AiEditorWorkspace.tsx`'s own comment); neither 3D editor gets anything
+requiring a real Three.js/A-Frame interaction runtime (per
+`Project3DWorkspace.tsx`'s own comment); the unstyled "Preview actions"
+row in `AiEditorWorkspace.tsx`/`EditorWorkspace.tsx` stays with #298 (not
+re-filed); the outline/camera-panel overlap stays fixed by #299 (#304 is
+about broader containment, not re-litigating that fix). This epic stays
+open while #303/#304/#305 are implemented.
 
 ## 243. 3D projects have no title-rename capability anywhere in the UI
 
@@ -9697,3 +9723,61 @@ own code needed changing. Verified via 3 consecutive full `npm test`
 runs plus one full `make check`, all green (181/181 files, 2290/2290
 tests each time) -- not a guarantee against a non-deterministic issue,
 but strong evidence alongside a sound root-cause fix.
+
+## 245. AiEditorWorkspace.tsx: add panel/grid containment + responsive panel switcher
+
+Status: PROPOSED
+
+GitHub issue: [#303](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/303)
+
+Parent: task 242/#300 (epic: unify all 4 editor layouts). Filed via that
+epic's grooming/audit pass (2026-08-31).
+
+Scope: wrap this editor's Preview/Code/AI-assistant sections as
+`.editor-panel`/`data-panel`-tagged regions inside an `.editor-workspace`
+grid, mirroring `EditorWorkspace.tsx`'s structure; reuse
+`EditorPanelSwitcher.tsx` (currently 2D-manual-editor-only) for
+narrow-viewport panel switching. No new Layers/Tools panel -- this
+editor's own doc comment already documents why neither exists here.
+
+Dependencies: None functionally; part of task 242/#300.
+
+## 246. Project3DWorkspace.tsx: add panel/grid containment + responsive panel switcher
+
+Status: PROPOSED
+
+GitHub issue: [#304](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/304)
+
+Parent: task 242/#300 (epic: unify all 4 editor layouts). Filed via that
+epic's grooming/audit pass (2026-08-31).
+
+Scope: wrap this editor's Preview/Outline-Inspector/AI-improve/Code
+sections as `.editor-panel`/`data-panel`-tagged regions inside an
+`.editor-workspace` grid; reuse `EditorPanelSwitcher.tsx` for
+narrow-viewport panel switching; consider whether `Outline3DInspector`
+should be presented as this editor's Layers-equivalent panel. Task
+241/#299's fix (Scene outline overlapping the Live camera panel) was a
+targeted CSS fix, not real panel containment -- this issue is the
+broader structural follow-up.
+
+Dependencies: None functionally; part of task 242/#300. Related to task
+241/#299 (already shipped, a first concrete symptom of this same gap).
+
+## 247. AiProject3DWorkspace.tsx: add panel/grid containment + responsive panel switcher
+
+Status: PROPOSED
+
+GitHub issue: [#305](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/305)
+
+Parent: task 242/#300 (epic: unify all 4 editor layouts). Filed via that
+epic's grooming/audit pass (2026-08-31).
+
+Scope: wrap this editor's Preview/AI-assistant/Code sections as
+`.editor-panel`/`data-panel`-tagged regions inside an `.editor-workspace`
+grid; reuse `EditorPanelSwitcher.tsx` for narrow-viewport panel
+switching. No new Layers/Tools panel -- mirrors `AiEditorWorkspace.tsx`'s
+own already-documented omission of both.
+
+Dependencies: None functionally; part of task 242/#300. Suggested to
+sequence after task 245/#303 (2D AI-assisted counterpart) so the same
+panel-containment approach can be reused rather than designed twice.

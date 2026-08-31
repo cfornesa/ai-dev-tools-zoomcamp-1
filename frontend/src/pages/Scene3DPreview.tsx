@@ -2,9 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+import CameraControl, { type CameraControlProps } from '../components/CameraControl';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
 import { buildThreeSceneGraph, disposeThreeSceneGraph } from '../render/threeSceneBuilder';
+import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
+import type { TrackingFrame } from '../tracking/types';
 import type { Scene3DDocument } from './scene3dTypes';
 import { useFullscreenToggle } from './useFullscreenToggle';
 
@@ -66,14 +69,45 @@ import { useFullscreenToggle } from './useFullscreenToggle';
  * (confirmed by a dedicated regression test simulating a
  * `ResizeObserver` callback firing with the browser's fullscreen
  * dimensions).
+ *
+ * ## Gesture-driven camera control (issue #294)
+ *
+ * "Steer the piece", off by default, mounts the exact same
+ * `CameraControl`/MediaPipe hand-tracking pipeline the 2D gesture-binding
+ * system already uses (never a second webcam integration) -- only one of
+ * the two can be using the camera in a given browser tab at a time
+ * anyway (one `getUserMedia` stream), and this toggle starting off means
+ * enabling it here can never silently compete with the 2D system's own
+ * use elsewhere in the same session. Frames are run through the existing
+ * `createHandSignalExtractor()` (the same extractor
+ * `usePreviewRuntime.ts` uses for 2D bindings) to get smoothed
+ * `HandSignals`, then mapped every render frame to camera orbit/zoom:
+ * `palmX`/`palmY` deltas (open-hand move) drive azimuth/polar rotation
+ * ("look"/orbit), and `pinchStrength` (already normalized `[0, 1]`,
+ * fingers-together = 1) maps directly to dolly distance ("zoom") -- a
+ * closed pinch reads as "pull the camera in," an open hand as "push it
+ * out." Pan/move is out of scope for this issue (documented choice: the
+ * existing gesture primitives have no clean third independent axis to
+ * spend on translation without overloading the same one-hand signals
+ * orbit/zoom already use). Shown only when `showGestureControl` is true
+ * (default; `AIProposalPanel3D.tsx` passes `false`, matching
+ * `showScreenshotButton`'s existing precedent for that proposal-preview
+ * surface).
  */
 function Scene3DPreview({
   scene,
   showScreenshotButton = true,
+  showGestureControl = true,
   screenshotBaseName,
+  createGestureCameraProvider,
 }: {
   scene: Scene3DDocument;
   showScreenshotButton?: boolean;
+  showGestureControl?: boolean;
+  /** Test seam mirroring `CameraControl.tsx`'s own `createProvider` prop
+   * -- lets tests inject a fake `TrackingProvider` for the gesture-camera
+   * feature without touching a real camera/MediaPipe. */
+  createGestureCameraProvider?: CameraControlProps['createProvider'];
   /** Base name for the downloaded screenshot filename (e.g. the project
    * title) -- falls back to the scene document's own `id`. */
   screenshotBaseName?: string;
@@ -84,6 +118,29 @@ function Scene3DPreview({
   const [renderError, setRenderError] = useState(false);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(containerRef);
+
+  // Issue #294: "Steer the piece" -- gesture-driven camera control.
+  const [gestureControlEnabled, setGestureControlEnabled] = useState(false);
+  // The scene-rebuild effect below only re-runs when `scene`/`renderError`
+  // change, not on every `gestureControlEnabled` toggle (toggling it
+  // shouldn't tear down and rebuild the whole Three.js scene graph) -- a
+  // ref, kept in sync on every render, is what its render-loop closure
+  // actually reads, matching this codebase's existing "latest value ref"
+  // convention (e.g. `CameraControl.tsx`'s own `onFrameRef`).
+  const gestureControlEnabledRef = useRef(gestureControlEnabled);
+  gestureControlEnabledRef.current = gestureControlEnabled;
+  const handSignalExtractorRef = useRef(createHandSignalExtractor());
+  const latestHandSignalsRef = useRef<HandSignals | null>(null);
+  const previousHandSignalsRef = useRef<HandSignals | null>(null);
+  const gestureStartRef = useRef<number | null>(null);
+
+  function handleGestureFrame(frame: TrackingFrame) {
+    if (gestureStartRef.current === null) gestureStartRef.current = performance.now();
+    const timestamp = performance.now() - gestureStartRef.current;
+    const { signals } = handSignalExtractorRef.current.processFrame({ ...frame, timestamp });
+    previousHandSignalsRef.current = latestHandSignalsRef.current;
+    latestHandSignalsRef.current = signals;
+  }
 
   async function handleTakeScreenshot() {
     setScreenshotError(null);
@@ -165,8 +222,53 @@ function Scene3DPreview({
     controls.listenToKeyEvents(window);
     controls.update();
 
+    // Issue #294: applies the latest smoothed hand signals (if "Steer the
+    // piece" is on and a hand is present) as an orbit/zoom adjustment,
+    // layered on top of -- not replacing -- OrbitControls' own pointer/
+    // keyboard-driven state, since both share the same `camera`/
+    // `controls.target`.
+    const ORBIT_SENSITIVITY = 4; // radians per full frame-width/-height palm move
+    const MIN_ZOOM_RADIUS = 2;
+    const MAX_ZOOM_RADIUS = 30;
+    function applyGestureCameraControl() {
+      const current = latestHandSignalsRef.current;
+      if (!current?.handPresence) return;
+      const previous = previousHandSignalsRef.current;
+
+      const spherical = new THREE.Spherical();
+      spherical.setFromVector3(camera.position.clone().sub(controls.target));
+
+      if (
+        previous?.handPresence &&
+        current.palmX !== null &&
+        current.palmY !== null &&
+        previous.palmX !== null &&
+        previous.palmY !== null
+      ) {
+        const deltaX = current.palmX - previous.palmX;
+        const deltaY = current.palmY - previous.palmY;
+        spherical.theta -= deltaX * ORBIT_SENSITIVITY;
+        spherical.phi -= deltaY * ORBIT_SENSITIVITY;
+        // Clamp away from the poles -- matches OrbitControls' own default
+        // min/maxPolarAngle guard against the camera flipping through the
+        // target's straight-up/-down axis.
+        spherical.phi = Math.min(Math.max(spherical.phi, 0.1), Math.PI - 0.1);
+      }
+
+      if (current.pinchStrength !== null) {
+        // Fingers together (pinchStrength 1) pulls the camera in; a fully
+        // open hand (0) pushes it out to MAX_ZOOM_RADIUS.
+        spherical.radius =
+          MAX_ZOOM_RADIUS - current.pinchStrength * (MAX_ZOOM_RADIUS - MIN_ZOOM_RADIUS);
+      }
+
+      camera.position.setFromSpherical(spherical).add(controls.target);
+      camera.lookAt(controls.target);
+    }
+
     let frameId: number;
     function tick() {
+      if (gestureControlEnabledRef.current) applyGestureCameraControl();
       controls.update();
       activeRenderer.render(threeScene, camera);
       frameId = requestAnimationFrame(tick);
@@ -210,11 +312,37 @@ function Scene3DPreview({
         <button type="button" onClick={() => void toggleFullscreen()} aria-pressed={isFullscreen}>
           {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
         </button>
+        {showGestureControl && (
+          <button
+            type="button"
+            aria-pressed={gestureControlEnabled}
+            onClick={() => {
+              // Fresh smoothing/timestamp state on every re-enable, so a
+              // stale previous-frame position from a prior session never
+              // produces one large spurious jump on the first new frame.
+              previousHandSignalsRef.current = null;
+              latestHandSignalsRef.current = null;
+              gestureStartRef.current = null;
+              handSignalExtractorRef.current = createHandSignalExtractor();
+              setGestureControlEnabled((current) => !current);
+            }}
+          >
+            {gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+          </button>
+        )}
       </div>
       {screenshotError && (
         <p role="alert" aria-live="assertive" data-testid="screenshot-error">
           {screenshotError}
         </p>
+      )}
+      {showGestureControl && gestureControlEnabled && (
+        <div role="region" aria-label="Gesture camera control" data-testid="gesture-camera-control">
+          <CameraControl
+            onFrame={handleGestureFrame}
+            createProvider={createGestureCameraProvider}
+          />
+        </div>
       )}
     </div>
   );

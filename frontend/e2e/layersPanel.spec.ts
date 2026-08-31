@@ -43,7 +43,8 @@ type Fixtures = Extract<E2EState, { available: true }>;
 
 async function createBlankProjectViaUI(page: Page): Promise<void> {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Create new animation' }).click();
+  await page.getByRole('button', { name: 'More creation options' }).click();
+  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
   await page.waitForURL(/\/projects\/[^/]+$/);
   // Issue #131: "Add circle/rectangle/line/polygon" moved from the Tools
   // panel's (formerly collapsed) "Add & edit shapes" section into the

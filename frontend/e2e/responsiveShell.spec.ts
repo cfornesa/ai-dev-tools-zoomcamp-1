@@ -12,7 +12,8 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * sharing one, per this suite's existing convention). */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Create new animation' }).click();
+  await page.getByRole('button', { name: 'More creation options' }).click();
+  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
   await page.waitForURL(/\/projects\/[^/]+$/);
   const match = /\/projects\/([^/]+)$/.exec(page.url());
   if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
@@ -175,7 +176,14 @@ test.describe('Responsive app shell', () => {
       fixtures = requireE2EFixtures();
     });
 
-    test('stacks empty-gallery actions and centers its message on narrow screens', async ({
+    // Issue #268: the 4 "Create X" buttons + "Browse templates" link this
+    // test used to check for separate-row stacking are gone -- replaced by
+    // a single compact split-button ("+" plus an arrow that opens a
+    // dropdown), so there is no longer a two-elements-forced-apart layout
+    // to assert. This now checks the split-button itself stays visible
+    // and in-viewport, and that opening its dropdown doesn't overflow the
+    // narrow viewport either.
+    test('shows the create split-button and centers the empty message on narrow screens', async ({
       page,
     }) => {
       await page.setViewportSize(NARROW_VIEWPORT);
@@ -183,35 +191,29 @@ test.describe('Responsive app shell', () => {
 
       const panel = page.locator('.gallery-panel');
       const galleryHeader = page.locator('.gallery-header');
-      const createButton = page.getByRole('button', { name: 'Create new animation' });
-      const templatesLink = page.getByRole('link', { name: 'Browse templates' });
+      const createSplit = page.locator('.gallery-create-split');
       const emptyState = page.locator('.gallery-empty-state');
 
       await expectVisibleAndInViewport(panel);
       await expectVisibleAndInViewport(galleryHeader);
-      await expectVisibleAndInViewport(createButton);
-      await expectVisibleAndInViewport(templatesLink);
+      await expectVisibleAndInViewport(createSplit);
       await expect(emptyState).toBeVisible();
       await expect(emptyState).toContainText('You have not created any projects.');
       await expect(emptyState).toContainText('Create your first animation to get started.');
 
-      const createBox = await createButton.boundingBox();
-      const templatesBox = await templatesLink.boundingBox();
       const emptyBox = await emptyState.boundingBox();
       const panelBox = await panel.boundingBox();
-      expect(createBox).not.toBeNull();
-      expect(templatesBox).not.toBeNull();
       expect(emptyBox).not.toBeNull();
       expect(panelBox).not.toBeNull();
-
-      // The two actions must occupy separate rows rather than forcing the
-      // gallery header wider than the viewport.
-      expect(templatesBox!.y).toBeGreaterThan(createBox!.y + createBox!.height);
 
       // The empty state is centered within the bordered gallery panel.
       const emptyCenter = emptyBox!.x + emptyBox!.width / 2;
       const panelCenter = panelBox!.x + panelBox!.width / 2;
       expect(Math.abs(emptyCenter - panelCenter)).toBeLessThanOrEqual(1);
+      await expectNoHorizontalOverflow(page);
+
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await expect(page.getByRole('menu', { name: 'Create a new project' })).toBeVisible();
       await expectNoHorizontalOverflow(page);
     });
 

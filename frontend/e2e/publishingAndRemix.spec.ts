@@ -112,7 +112,8 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * issue #116), so there's no mount-order trap to avoid by deferring this. */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Create new animation' }).click();
+  await page.getByRole('button', { name: 'More creation options' }).click();
+  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
   await page.waitForURL(/\/projects\/[^/]+$/);
   const match = /\/projects\/([^/]+)$/.exec(page.url());
   if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);

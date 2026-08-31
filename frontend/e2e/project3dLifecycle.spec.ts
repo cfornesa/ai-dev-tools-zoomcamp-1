@@ -31,7 +31,8 @@ test.describe('3D project creation', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
     await page.goto('/');
-    await page.getByRole('button', { name: 'Create new 3D project' }).click();
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
     await page.waitForURL(/\/projects3d\/[^/]+$/);
     const match = /\/projects3d\/([^/]+)$/.exec(page.url());
     expect(match).not.toBeNull();
@@ -56,7 +57,8 @@ test.describe('3D project creation', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
     await page.goto('/');
-    await page.getByRole('button', { name: 'Create AI-assisted 3D project' }).click();
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create an AI-assisted 3D project' }).click();
     await page.waitForURL(/\/ai-projects3d\/[^/]+$/);
     const match = /\/ai-projects3d\/([^/]+)$/.exec(page.url());
     expect(match).not.toBeNull();

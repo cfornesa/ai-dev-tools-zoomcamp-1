@@ -18,6 +18,7 @@ const Project3DWorkspace = lazy(() => import('./pages/Project3DWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const Templates = lazy(() => import('./pages/Templates'));
+const CreateChooser = lazy(() => import('./pages/CreateChooser'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 
 /** Task 94 (issue #94): `/projects/:id/settings` no longer exists as a
@@ -49,6 +50,10 @@ function App() {
                   (`/api/public/projects/<public_id>/`). */}
               <Route path="p/:id" element={<PublicProjectViewer />} />
               <Route path="templates" element={<Templates />} />
+              {/* Issue #268: the gallery header's "+" icon navigates here --
+                  a card-grid chooser for all 5 creation actions, styled
+                  like the templates route above. */}
+              <Route path="create" element={<CreateChooser />} />
               {/* Issue #199 (epic #196): the first-slice multi-library AI
                   art generation flow (Canvas2D only). Deliberately not
                   yet linked from the header/gallery nav -- see this

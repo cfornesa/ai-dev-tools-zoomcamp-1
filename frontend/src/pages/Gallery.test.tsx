@@ -60,9 +60,19 @@ function renderGallery() {
         <Route path="/ai-projects/:id" element={<p>AI editor placeholder</p>} />
         <Route path="/projects3d/:id" element={<p>3D editor placeholder</p>} />
         <Route path="/ai-projects3d/:id" element={<p>3D AI editor placeholder</p>} />
+        <Route path="/templates" element={<p>Templates placeholder</p>} />
+        <Route path="/create" element={<p>Create chooser placeholder</p>} />
       </Routes>
     </MemoryRouter>,
   );
+}
+
+// Issue #268: the 4 create actions + "Browse templates" moved from
+// standalone buttons into the split-button's dropdown menu -- every test
+// below that used to click a button directly now opens the dropdown
+// first, then clicks the corresponding `role="menuitem"`.
+async function openCreateMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /more creation options/i }));
 }
 
 beforeEach(() => {
@@ -95,6 +105,7 @@ describe('Gallery loading/error/empty/populated states', () => {
 
   it('shows a clear empty state with a keyboard-accessible create action', async () => {
     mockedListProjects.mockResolvedValue([]);
+    const user = userEvent.setup();
 
     renderGallery();
 
@@ -102,9 +113,14 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(
       screen.getByText('You have not created any projects.').closest('.content-panel'),
     ).not.toBeNull();
-    const createButton = screen.getByRole('button', { name: /create new animation/i });
-    expect(createButton).toBeInTheDocument();
-    expect(createButton.tagName).toBe('BUTTON'); // native focusable element, no tabindex hacks
+    const plusLink = screen.getByRole('link', { name: /create a new project/i });
+    expect(plusLink).toBeInTheDocument();
+    expect(plusLink).toHaveAttribute('href', '/create');
+
+    await openCreateMenu(user);
+    const createMenuItem = screen.getByRole('menuitem', { name: /^create a new animation$/i });
+    expect(createMenuItem).toBeInTheDocument();
+    expect(createMenuItem.tagName).toBe('BUTTON'); // native focusable element, no tabindex hacks
   });
 
   it('renders each project as a card with title, visibility, and editor navigation', async () => {
@@ -188,7 +204,7 @@ describe('Gallery ownership safety', () => {
 });
 
 describe('Gallery keyboard accessibility', () => {
-  it('has a logical tab order through the create action and each card link', async () => {
+  it('has a logical tab order through the split-button and each card link', async () => {
     mockedListProjects.mockResolvedValue([
       baseProject({ id: 'p1', title: 'First' }),
       baseProject({ id: 'p2', title: 'Second' }),
@@ -202,19 +218,10 @@ describe('Gallery keyboard accessibility', () => {
     expect(screen.getByLabelText('Renderer')).toHaveFocus();
 
     await user.tab();
-    expect(screen.getByRole('button', { name: /create new animation/i })).toHaveFocus();
+    expect(screen.getByRole('link', { name: /create a new project/i })).toHaveFocus();
 
     await user.tab();
-    expect(screen.getByRole('button', { name: /create ai-assisted animation/i })).toHaveFocus();
-
-    await user.tab();
-    expect(screen.getByRole('button', { name: /create new 3d project/i })).toHaveFocus();
-
-    await user.tab();
-    expect(screen.getByRole('button', { name: /create ai-assisted 3d project/i })).toHaveFocus();
-
-    await user.tab();
-    expect(screen.getByRole('link', { name: /browse templates/i })).toHaveFocus();
+    expect(screen.getByRole('button', { name: /more creation options/i })).toHaveFocus();
 
     await user.tab();
     expect(screen.getAllByRole('link', { name: /^edit$/i })[0]).toHaveFocus();
@@ -228,18 +235,43 @@ describe('Gallery keyboard accessibility', () => {
     await user.tab();
     expect(screen.getAllByRole('button', { name: /^delete$/i })[1]).toHaveFocus();
   });
+
+  it('opens the dropdown with ArrowDown, moves focus with arrow keys, and closes with Escape back to the trigger', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    renderGallery();
+    await screen.findByText('You have not created any projects.');
+
+    const arrowButton = screen.getByRole('button', { name: /more creation options/i });
+    arrowButton.focus();
+    await user.keyboard('{ArrowDown}');
+
+    const firstItem = await screen.findByRole('menuitem', { name: /^create a new animation$/i });
+    expect(firstItem).toHaveFocus();
+
+    await user.keyboard('{ArrowDown}');
+    expect(
+      screen.getByRole('menuitem', { name: /^create an ai-assisted animation$/i }),
+    ).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(arrowButton).toHaveFocus();
+  });
 });
 
-describe('Gallery create action', () => {
+describe('Gallery create action (dropdown menu, issue #268)', () => {
   it('navigates to the new project editor on success', async () => {
     mockedListProjects.mockResolvedValue([]);
     mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-id' }));
     const user = userEvent.setup();
 
     renderGallery();
-    await screen.findByRole('button', { name: /create new animation/i });
+    await screen.findByText('You have not created any projects.');
+    await openCreateMenu(user);
 
-    await user.click(screen.getByRole('button', { name: /create new animation/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create a new animation$/i }));
 
     await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
     // Issue #206: defaults to the p5 renderer unless the picker is changed.
@@ -254,8 +286,9 @@ describe('Gallery create action', () => {
     renderGallery();
     const rendererSelect = await screen.findByLabelText<HTMLSelectElement>('Renderer');
     await user.selectOptions(rendererSelect, 'canvas2d');
+    await openCreateMenu(user);
 
-    await user.click(screen.getByRole('button', { name: /create new animation/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create a new animation$/i }));
 
     await waitFor(() =>
       expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'canvas2d'),
@@ -270,26 +303,27 @@ describe('Gallery create action', () => {
     renderGallery();
     const rendererSelect = await screen.findByLabelText<HTMLSelectElement>('Renderer');
     await user.selectOptions(rendererSelect, 'svg');
+    await openCreateMenu(user);
 
-    await user.click(screen.getByRole('button', { name: /create new animation/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create a new animation$/i }));
 
     await waitFor(() =>
       expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'svg'),
     );
   });
 
-  it('shows an accessible error and re-enables the button on failure', async () => {
+  it('shows an accessible error and re-enables the arrow trigger on failure', async () => {
     mockedListProjects.mockResolvedValue([]);
     mockedCreateBlankProject.mockRejectedValue(new Error('boom'));
     const user = userEvent.setup();
 
     renderGallery();
-    const createButton = await screen.findByRole('button', { name: /create new animation/i });
-
-    await user.click(createButton);
+    await screen.findByText('You have not created any projects.');
+    await openCreateMenu(user);
+    await user.click(screen.getByRole('menuitem', { name: /^create a new animation$/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not create/i);
-    expect(screen.getByRole('button', { name: /create new animation/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /more creation options/i })).toBeEnabled();
   });
 
   // Issue #223: a distinct creation entry point routing to the 2D
@@ -300,9 +334,10 @@ describe('Gallery create action', () => {
     const user = userEvent.setup();
 
     renderGallery();
-    await screen.findByRole('button', { name: /create ai-assisted animation/i });
+    await screen.findByText('You have not created any projects.');
+    await openCreateMenu(user);
 
-    await user.click(screen.getByRole('button', { name: /create ai-assisted animation/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create an ai-assisted animation$/i }));
 
     await waitFor(() => expect(screen.getByText('AI editor placeholder')).toBeInTheDocument());
     expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
@@ -324,9 +359,10 @@ describe('Gallery create action', () => {
     const user = userEvent.setup();
 
     renderGallery();
-    await screen.findByRole('button', { name: /create new 3d project/i });
+    await screen.findByText('You have not created any projects.');
+    await openCreateMenu(user);
 
-    await user.click(screen.getByRole('button', { name: /create new 3d project/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create a new 3d project$/i }));
 
     await waitFor(() => expect(screen.getByText('3D editor placeholder')).toBeInTheDocument());
     expect(mockedCreateProject3D).toHaveBeenCalled();
@@ -348,11 +384,37 @@ describe('Gallery create action', () => {
     const user = userEvent.setup();
 
     renderGallery();
-    await screen.findByRole('button', { name: /create ai-assisted 3d project/i });
+    await screen.findByText('You have not created any projects.');
+    await openCreateMenu(user);
 
-    await user.click(screen.getByRole('button', { name: /create ai-assisted 3d project/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create an ai-assisted 3d project$/i }));
 
     await waitFor(() => expect(screen.getByText('3D AI editor placeholder')).toBeInTheDocument());
     expect(mockedCreateProject3D).toHaveBeenCalled();
+  });
+
+  it('navigates to the templates route from the dropdown', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    renderGallery();
+    await screen.findByText('You have not created any projects.');
+    await openCreateMenu(user);
+
+    await user.click(screen.getByRole('menuitem', { name: /^browse templates$/i }));
+
+    await waitFor(() => expect(screen.getByText('Templates placeholder')).toBeInTheDocument());
+  });
+
+  it('navigates to the chooser page when the "+" icon itself is clicked', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    renderGallery();
+    await screen.findByText('You have not created any projects.');
+
+    await user.click(screen.getByRole('link', { name: /create a new project/i }));
+
+    await waitFor(() => expect(screen.getByText('Create chooser placeholder')).toBeInTheDocument());
   });
 });

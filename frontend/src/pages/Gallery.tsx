@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 
-import { createBlankProject, listProjects, type Project } from '../api/projects';
-import { createProject3D, listProjects3D, type Project3D } from '../api/projects3d';
+import { listProjects, type Project } from '../api/projects';
+import { listProjects3D, type Project3D } from '../api/projects3d';
 import { useAuth } from '../auth/useAuth';
 import Project3DCard from '../components/Project3DCard';
 import ProjectCard from '../components/ProjectCard';
+import GalleryCreateMenu from './GalleryCreateMenu';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
 function Gallery() {
   const auth = useAuth();
-  const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [projects, setProjects] = useState<Project[]>([]);
   // Gap found live in production while verifying #238's fix: 3D projects
@@ -54,64 +53,6 @@ function Gallery() {
   const ownProjects3D =
     auth.status === 'signed-in' ? projects3D.filter((p) => p.owner === auth.user.username) : [];
 
-  async function handleCreate() {
-    setCreating(true);
-    setCreateError(null);
-    try {
-      const requestId = crypto.randomUUID();
-      const project = await createBlankProject(requestId, newProjectRenderer);
-      navigate(`/projects/${project.id}`);
-    } catch {
-      setCreateError('Could not create a new project. Please try again.');
-      setCreating(false);
-    }
-  }
-
-  // Issue #223: the 2D AI-assisted editor is a distinct route over the
-  // same Project/SceneVersion document family and creation endpoint as
-  // the manual editor above -- only the destination route differs.
-  async function handleCreateAiAssisted() {
-    setCreating(true);
-    setCreateError(null);
-    try {
-      const requestId = crypto.randomUUID();
-      const project = await createBlankProject(requestId, newProjectRenderer);
-      navigate(`/ai-projects/${project.id}`);
-    } catch {
-      setCreateError('Could not create a new project. Please try again.');
-      setCreating(false);
-    }
-  }
-
-  // Issue #226: creates a Project3D (a genuinely separate document family,
-  // #208's decision) via the #213 creation endpoint and opens the new 3D
-  // manual editor route.
-  async function handleCreate3D() {
-    setCreating(true);
-    setCreateError(null);
-    try {
-      const project = await createProject3D();
-      navigate(`/projects3d/${project.id}`);
-    } catch {
-      setCreateError('Could not create a new project. Please try again.');
-      setCreating(false);
-    }
-  }
-
-  // Issue #231: same Project3D creation endpoint as the 3D manual editor
-  // above -- only the destination route differs.
-  async function handleCreate3DAiAssisted() {
-    setCreating(true);
-    setCreateError(null);
-    try {
-      const project = await createProject3D();
-      navigate(`/ai-projects3d/${project.id}`);
-    } catch {
-      setCreateError('Could not create a new project. Please try again.');
-      setCreating(false);
-    }
-  }
-
   if (loadState === 'loading') {
     return (
       <p role="status" aria-live="polite">
@@ -147,46 +88,18 @@ function Gallery() {
           <option value="canvas2d">Canvas2D</option>
           <option value="svg">SVG</option>
         </select>
-        {/* Issue: at narrow widths, four separate full-width "Create X"
-            buttons (up from the original two) pushed the gallery content
-            well past a single-screen-height's worth of header, discovered
-            by the responsive-shell e2e suite's populated-gallery viewport
-            check. Grouping them in their own two-column-at-narrow-width
-            container keeps each button's own DOM position (so tab order
-            is unaffected) while roughly halving this block's vertical
-            footprint on a phone. */}
-        <div className="gallery-create-actions">
-          <button className="shell-action" type="button" onClick={handleCreate} disabled={creating}>
-            {creating ? 'Creating…' : 'Create new animation'}
-          </button>
-          <button
-            className="shell-action"
-            type="button"
-            onClick={handleCreateAiAssisted}
-            disabled={creating}
-          >
-            {creating ? 'Creating…' : 'Create AI-assisted animation'}
-          </button>
-          <button
-            className="shell-action"
-            type="button"
-            onClick={handleCreate3D}
-            disabled={creating}
-          >
-            {creating ? 'Creating…' : 'Create new 3D project'}
-          </button>
-          <button
-            className="shell-action"
-            type="button"
-            onClick={handleCreate3DAiAssisted}
-            disabled={creating}
-          >
-            {creating ? 'Creating…' : 'Create AI-assisted 3D project'}
-          </button>
-        </div>
-        <Link className="shell-action" to="/templates">
-          Browse templates
-        </Link>
+        {/* Issue #268: the 4 "Create X" buttons + "Browse templates" link
+            that used to live here (and that narrow-width overflow fix
+            once needed for them) are replaced by a single split-button:
+            the renderer select above stays put, directly to the left of
+            the "+"/arrow pair, which is right-aligned in this row via the
+            gallery-header container's own `justify-content: space-between`. */}
+        <GalleryCreateMenu
+          renderer={newProjectRenderer}
+          creating={creating}
+          onCreatingChange={setCreating}
+          onError={setCreateError}
+        />
       </div>
 
       {createError && (

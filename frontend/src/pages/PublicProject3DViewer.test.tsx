@@ -134,3 +134,23 @@ describe('PublicProject3DViewer embed snippet', () => {
     expect(screen.queryByTestId('toggle-embed-snippet')).not.toBeInTheDocument();
   });
 });
+
+describe('PublicProject3DViewer immersive-view entry point (issue #311)', () => {
+  it('links to the immersive route, opened in a new tab', async () => {
+    mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
+    renderViewer();
+    await screen.findByRole('heading', { name: 'Rotating Cube' });
+
+    const link = screen.getByRole('link', { name: 'View in immersive mode' });
+    expect(link).toHaveAttribute('href', '/immersive/p3d/p1');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  it('never offers the link for an unavailable project', async () => {
+    mockedGetPublicProject3D.mockRejectedValue(new ApiError(404, null));
+    renderViewer();
+
+    await screen.findByText(/isn't available/i);
+    expect(screen.queryByRole('link', { name: /immersive mode/i })).not.toBeInTheDocument();
+  });
+});

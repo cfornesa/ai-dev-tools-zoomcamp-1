@@ -175,3 +175,26 @@ describe('/embed/p3d/:id (issue #296)', () => {
     expect(await screen.findByText(/this project isn't available/i)).toBeInTheDocument();
   });
 });
+
+describe('/immersive/p3d/:id (issue #311)', () => {
+  it('renders the immersive first-person view with no app-shell chrome', async () => {
+    mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
+    navigateTo('/immersive/p3d/p1');
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
+    expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
+    expect(document.querySelector('.app-shell-header')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Public gallery' })).not.toBeInTheDocument();
+  });
+
+  it('treats an unpublished/nonexistent 3D project identically to /p3d/:id -- no privacy regression', async () => {
+    mockedGetPublicProject3D.mockRejectedValue(new ApiError(404, null));
+    navigateTo('/immersive/p3d/does-not-exist');
+
+    render(<App />);
+
+    expect(await screen.findByText(/this project isn't available/i)).toBeInTheDocument();
+  });
+});

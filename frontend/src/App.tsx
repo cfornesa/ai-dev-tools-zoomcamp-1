@@ -18,6 +18,7 @@ const Project3DWorkspace = lazy(() => import('./pages/Project3DWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const PublicProject3DViewer = lazy(() => import('./pages/PublicProject3DViewer'));
+const ImmersiveProject3DViewer = lazy(() => import('./pages/ImmersiveProject3DViewer'));
 const Templates = lazy(() => import('./pages/Templates'));
 const CreateChooser = lazy(() => import('./pages/CreateChooser'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
@@ -108,6 +109,15 @@ function App() {
                 chrome-less, sibling to the Layout-wrapped `p3d/:id` route,
                 for embedding a published 3D piece in an `<iframe>`. */}
             <Route path="embed/p3d/:id" element={<PublicProject3DViewer />} />
+            {/* Issue #311: the immersive first-person free-fly view --
+                chrome-less like the embed routes above (this is a focused,
+                full-page viewing experience, opened in a new tab from
+                PublicProject3DViewer.tsx's own entry link, not something
+                that needs the app-shell nav around it). A distinct page
+                from `embed/p3d/:id`: same underlying scene content, but
+                rendered with Scene3DPreview.tsx's flyControls enabled
+                instead of iframe-embedding chrome. */}
+            <Route path="immersive/p3d/:id" element={<ImmersiveProject3DViewer />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

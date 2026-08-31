@@ -185,6 +185,7 @@ function Scene3DPreview({
   showScreenshotButton = true,
   showGestureControl = true,
   showSoundControl = true,
+  flyControls = false,
   screenshotBaseName,
   createGestureCameraProvider,
 }: {
@@ -196,6 +197,11 @@ function Scene3DPreview({
    * that surface -- an unaccepted proposal isn't the project's actual
    * saved state, so sounding it out would be confusing. */
   showSoundControl?: boolean;
+  /** Issue #311: arrow-key "fly" translation for the immersive first-
+   * person view (`ImmersiveProject3DViewer.tsx`) -- off by default for
+   * every other caller, since it changes what arrow keys do (translation
+   * instead of `OrbitControls`' own built-in panning). */
+  flyControls?: boolean;
   /** Test seam mirroring `CameraControl.tsx`'s own `createProvider` prop
    * -- lets tests inject a fake `TrackingProvider` for the gesture-camera
    * feature without touching a real camera/MediaPipe. */
@@ -485,7 +491,13 @@ function Scene3DPreview({
     const controls = new OrbitControls(camera, activeRenderer.domElement);
     controls.target.set(scene.camera.target.x, scene.camera.target.y, scene.camera.target.z);
     controls.enableDamping = true;
-    controls.listenToKeyEvents(window);
+    // Issue #311: `flyControls` (the immersive view) drives arrow keys
+    // itself (see the fly-translation block in `tick()` below) -- calling
+    // `listenToKeyEvents` too would double-handle every arrow key (its own
+    // built-in pan alongside this component's fly-translation), so it's
+    // skipped in that mode. Everything else about `OrbitControls` (mouse-
+    // drag orbit, wheel/pinch zoom) is unaffected either way.
+    if (!flyControls) controls.listenToKeyEvents(window);
     controls.update();
 
     // Issue #294: applies the latest smoothed hand signals (if "Steer the
@@ -539,9 +551,53 @@ function Scene3DPreview({
     // existing "safe no-op while idle" conventions).
     let previousCameraPosition: THREE.Vector3 | null = null;
 
+    // Issue #311: arrow-key "fly" translation for the immersive view --
+    // investigated directly against the reference implementation's own
+    // `createKeyboardNavigation` (a sibling repo, not guessed): arrow keys
+    // (never WASD -- WASD is reserved for #307's piano-key notes, the
+    // exact same key-collision problem the reference itself worked around
+    // the same way) translate the camera's position *and* orbit target
+    // together along the camera's own forward/right vectors, layered on
+    // top of -- not replacing -- mouse-drag orbit and wheel/pinch zoom.
+    const FLY_SPEED_UNITS_PER_SECOND = 6;
+    const heldFlyKeys = new Set<string>();
+    function handleFlyKeyDown(event: KeyboardEvent) {
+      if (event.key.startsWith('Arrow')) heldFlyKeys.add(event.key);
+    }
+    function handleFlyKeyUp(event: KeyboardEvent) {
+      heldFlyKeys.delete(event.key);
+    }
+    if (flyControls) {
+      window.addEventListener('keydown', handleFlyKeyDown);
+      window.addEventListener('keyup', handleFlyKeyUp);
+    }
+    function applyFlyTranslation(deltaSeconds: number) {
+      if (heldFlyKeys.size === 0) return;
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+      const move = new THREE.Vector3();
+      if (heldFlyKeys.has('ArrowUp')) move.add(forward);
+      if (heldFlyKeys.has('ArrowDown')) move.sub(forward);
+      if (heldFlyKeys.has('ArrowRight')) move.add(right);
+      if (heldFlyKeys.has('ArrowLeft')) move.sub(right);
+      if (move.lengthSq() === 0) return;
+      move.normalize().multiplyScalar(FLY_SPEED_UNITS_PER_SECOND * deltaSeconds);
+      camera.position.add(move);
+      controls.target.add(move);
+    }
+
     let frameId: number;
+    let lastTickAt = performance.now();
     function tick() {
+      const now = performance.now();
+      // Capped so a tab backgrounded mid-fly (a large real elapsed time on
+      // the next visible frame) never produces one huge teleport-like jump.
+      const deltaSeconds = Math.min((now - lastTickAt) / 1000, 0.1);
+      lastTickAt = now;
+
       if (gestureControlEnabledRef.current) applyGestureCameraControl();
+      if (flyControls) applyFlyTranslation(deltaSeconds);
       controls.update();
       if (previousCameraPosition) {
         sonicEngineRef.current?.reportMovement({
@@ -558,6 +614,10 @@ function Scene3DPreview({
 
     return () => {
       cancelAnimationFrame(frameId);
+      if (flyControls) {
+        window.removeEventListener('keydown', handleFlyKeyDown);
+        window.removeEventListener('keyup', handleFlyKeyUp);
+      }
       controls.dispose();
       disposeThreeSceneGraph(threeScene);
     };

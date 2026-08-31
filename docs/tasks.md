@@ -8792,7 +8792,23 @@ depend on this one shipping first.
 
 ## 228. Backend: compose an optional Persona's additive prompt into Mistral create/edit calls (2D+3D)
 
-Status: PROPOSED
+Status: COMPLETE. `MistralSceneProvider` gains a `persona_prompt`
+constructor param and a `_system_messages()` helper appending it as a
+second system message after the mandatory prompt in all four call
+sites (`_invoke`, `_invoke_edit`, `_invoke_3d`, `_invoke_edit_3d`,
+`backend/ai_provider/mistral_provider.py`). Both 2D and 3D
+create/edit request serializers gain an optional `persona_id`
+(`backend/scenes/ai_api.py`, `backend/scenes/ai_api3d.py`), resolved
+via `_resolve_persona_prompt` (owner-scoped; a foreign/missing id
+silently yields no persona) and threaded through `_provider_for_user`
+via the same contextvar pattern issue #198 established for `model`.
+New/updated tests across `test_mistral_provider.py`,
+`test_mistral_provider_3d.py`, `test_ai_persona_resolution.py`, and
+`test_mistral_credentials.py` cover persona-message composition
+(all 4 flows), mandatory-prompt byte-identity with/without a persona,
+cross-owner rejection, and the no-persona-selected case. `make check`
+passes (845 backend tests, 2157 frontend tests). QA comment posted on
+#260.
 
 GitHub issue: [#260](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/260)
 

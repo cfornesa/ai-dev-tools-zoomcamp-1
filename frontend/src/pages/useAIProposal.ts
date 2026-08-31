@@ -7,8 +7,10 @@ import {
   type AIErrorBody,
   type AIErrorCode,
 } from '../api/ai';
+import { fetchAIRetryPreference, type AIRetryPreference } from '../api/aiRetryPreference';
 import { ApiError } from '../api/client';
 import type { SceneDocument, SceneVersion } from '../api/projects';
+import { isRetryableAIErrorCode } from './aiRetry';
 
 export type ProposalMode = 'create' | 'edit';
 
@@ -242,11 +244,18 @@ export function useAIProposal(projectId: string | undefined) {
   const [genError, setGenError] = useState<GenerationError | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [acceptState, setAcceptState] = useState<AcceptState>(IDLE_ACCEPT_STATE);
+  // Issue #266: the number of attempts made for the current generation
+  // cycle (1 on the very first attempt), so the UI can show attempt
+  // transparency instead of just pass/fail. Reset whenever a fresh
+  // generation cycle starts.
+  const [attemptCount, setAttemptCount] = useState(0);
+  const [retryPreference, setRetryPreference] = useState<AIRetryPreference | null>(null);
 
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const acceptAbortRef = useRef<AbortController | null>(null);
   const acceptInFlightRef = useRef(false);
+  const attemptCountRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -257,12 +266,25 @@ export function useAIProposal(projectId: string | undefined) {
     };
   }, []);
 
+  // Issue #266: loaded once, best-effort -- a failed load just means
+  // auto-retry stays off (the safe default) for this session rather than
+  // blocking generation entirely.
+  useEffect(() => {
+    fetchAIRetryPreference()
+      .then((preference) => {
+        if (mountedRef.current) setRetryPreference(preference);
+      })
+      .catch(() => {});
+  }, []);
+
   const setMode = useCallback((next: ProposalMode) => {
     setModeState(next);
     setPhase('prompt');
     setGenError(null);
     setProposal(null);
     setAcceptState(IDLE_ACCEPT_STATE);
+    attemptCountRef.current = 0;
+    setAttemptCount(0);
   }, []);
 
   /** Aborts any in-flight generation request and returns to the prompt
@@ -272,10 +294,16 @@ export function useAIProposal(projectId: string | undefined) {
     abortControllerRef.current?.abort();
     setPhase('prompt');
     setGenError(null);
+    attemptCountRef.current = 0;
+    setAttemptCount(0);
   }, []);
 
   const generate = useCallback(
-    async (currentScene: SceneDocument | null, baseVersionId: number | null): Promise<void> => {
+    async (
+      currentScene: SceneDocument | null,
+      baseVersionId: number | null,
+      options?: { isManualRetry?: boolean },
+    ): Promise<void> => {
       if (!projectId) return;
       const trimmed = prompt.trim();
       if (!trimmed) {
@@ -301,55 +329,90 @@ export function useAIProposal(projectId: string | undefined) {
       setProposal(null);
 
       const trimmedModel = model.trim() || undefined;
-      try {
-        if (mode === 'create') {
-          const result = await createAIScene(
-            projectId,
-            trimmed,
-            controller.signal,
-            trimmedModel,
-            personaId ?? undefined,
-          );
+      const maxRetries = retryPreference?.auto_retry_enabled ? retryPreference.max_retries : 0;
+      // A manual retry (auto-retry off, user clicked "Retry") continues the
+      // visible attempt count from where it left off; any other call
+      // (the initial submission, or a superseded request) starts fresh.
+      let attempt = options?.isManualRetry ? attemptCountRef.current + 1 : 1;
+      attemptCountRef.current = attempt;
+      setAttemptCount(attempt);
+      // Issue #266: an auto-retry loop around the single request this hook
+      // already made -- each iteration is a fresh, independent request
+      // (still counted by the server's own rate limit/quota), never a
+      // retry the server performs on its own.
+      for (;;) {
+        try {
+          if (mode === 'create') {
+            const result = await createAIScene(
+              projectId,
+              trimmed,
+              controller.signal,
+              trimmedModel,
+              personaId ?? undefined,
+            );
+            if (!mountedRef.current || abortControllerRef.current !== controller) return;
+            setProposal({
+              mode: 'create',
+              scene: result.scene,
+              summary: 'A new scene was generated from your prompt.',
+              patch: null,
+              baseVersionId,
+              clientRequestId: crypto.randomUUID(),
+            });
+            setPhase('success');
+          } else {
+            const result = await editAIScene(
+              projectId,
+              trimmed,
+              currentScene as SceneDocument,
+              baseVersionId,
+              controller.signal,
+              trimmedModel,
+              personaId ?? undefined,
+            );
+            if (!mountedRef.current || abortControllerRef.current !== controller) return;
+            setProposal({
+              mode: 'edit',
+              scene: result.scene,
+              summary: result.change_summary,
+              patch: result.patch,
+              baseVersionId,
+              clientRequestId: crypto.randomUUID(),
+            });
+            setPhase('success');
+          }
+          return;
+        } catch (err) {
+          if (isAbortError(err)) return;
           if (!mountedRef.current || abortControllerRef.current !== controller) return;
-          setProposal({
-            mode: 'create',
-            scene: result.scene,
-            summary: 'A new scene was generated from your prompt.',
-            patch: null,
-            baseVersionId,
-            clientRequestId: crypto.randomUUID(),
-          });
-          setPhase('success');
-        } else {
-          const result = await editAIScene(
-            projectId,
-            trimmed,
-            currentScene as SceneDocument,
-            baseVersionId,
-            controller.signal,
-            trimmedModel,
-            personaId ?? undefined,
-          );
-          if (!mountedRef.current || abortControllerRef.current !== controller) return;
-          setProposal({
-            mode: 'edit',
-            scene: result.scene,
-            summary: result.change_summary,
-            patch: result.patch,
-            baseVersionId,
-            clientRequestId: crypto.randomUUID(),
-          });
-          setPhase('success');
+          const classified = classifyGenerationError(err);
+          if (isRetryableAIErrorCode(classified.error.code) && attempt <= maxRetries) {
+            attempt += 1;
+            attemptCountRef.current = attempt;
+            setAttemptCount(attempt);
+            continue;
+          }
+          setPhase(classified.phase);
+          setGenError(classified.error);
+          return;
         }
-      } catch (err) {
-        if (isAbortError(err)) return;
-        if (!mountedRef.current || abortControllerRef.current !== controller) return;
-        const classified = classifyGenerationError(err);
-        setPhase(classified.phase);
-        setGenError(classified.error);
       }
     },
-    [projectId, prompt, mode, model, personaId],
+    [projectId, prompt, mode, model, personaId, retryPreference],
+  );
+
+  /** Issue #266: with auto-retry off, a retryable failure only ever retries
+   * on this explicit user action -- never silently. Re-runs the exact same
+   * request that just failed (same prompt/mode/model/persona), continuing
+   * the same attempt count rather than resetting it. Retrying a
+   * non-retryable failure, or when there is no failure to retry, is a
+   * no-op. */
+  const retryGeneration = useCallback(
+    (currentScene: SceneDocument | null, baseVersionId: number | null): void => {
+      if (!isRetryableAIErrorCode(genError?.code)) return;
+      void generate(currentScene, baseVersionId, { isManualRetry: true });
+    },
+    [genError, generate],
   );
 
   /** Discards the current proposal client-side only — never calls the
@@ -426,5 +489,8 @@ export function useAIProposal(projectId: string | undefined) {
     accept,
     acceptState,
     cancelAccept,
+    attemptCount,
+    retryGeneration,
+    canRetryGeneration: isRetryableAIErrorCode(genError?.code),
   };
 }

@@ -8,6 +8,7 @@ from scenes.ai_preferences_api import (
     MistralModelPreferenceDetailView,
     MistralModelPreferenceListCreateView,
 )
+from scenes.ai_retry_preference_api import AIRetryPreferenceView
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
@@ -57,6 +58,11 @@ urlpatterns = [
         "account/ai-personas/<int:pk>/",
         AIPersonaDetailView.as_view(),
         name="ai-persona-detail",
+    ),
+    path(
+        "account/ai-retry-preference/",
+        AIRetryPreferenceView.as_view(),
+        name="ai-retry-preference",
     ),
     path("projects/", ProjectListCreateView.as_view(), name="project-list-create"),
     path("projects/blank/", BlankProjectCreateView.as_view(), name="project-create-blank"),

@@ -2,15 +2,18 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as aiApi from '../api/ai';
+import * as aiRetryPreferenceApi from '../api/aiRetryPreference';
 import { ApiError } from '../api/client';
 import type { SceneDocument, SceneVersion } from '../api/projects';
 import { useAIProposal } from './useAIProposal';
 
 vi.mock('../api/ai');
+vi.mock('../api/aiRetryPreference');
 
 const mockedCreateAIScene = vi.mocked(aiApi.createAIScene);
 const mockedEditAIScene = vi.mocked(aiApi.editAIScene);
 const mockedAcceptAIProposal = vi.mocked(aiApi.acceptAIProposal);
+const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
 
 const VALID_SCENE: SceneDocument = {
   schemaVersion: 1,
@@ -43,6 +46,7 @@ function makeVersion(overrides: Partial<SceneVersion> = {}): SceneVersion {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
 });
 
 describe('useAIProposal generation phases', () => {
@@ -493,5 +497,109 @@ describe('useAIProposal cancellation', () => {
 
     expect(result.current.phase).toBe('success');
     expect(result.current.proposal?.scene.id).toBe('from-second-live-response');
+  });
+});
+
+// Issue #266: configurable automated retry for retry-worthy failures
+// (invalid_structured_output, timeout, provider_failure), with the
+// attempt count made visible either way.
+describe('useAIProposal auto-retry (#266)', () => {
+  it('auto-retries a retryable failure until it succeeds, when enabled', async () => {
+    mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: true, max_retries: 3 });
+    mockedCreateAIScene
+      .mockRejectedValueOnce(new ApiError(502, { error: 'provider_failure', detail: 'down' }))
+      .mockResolvedValueOnce({
+        draft: true,
+        operation: 'create_scene',
+        scene: VALID_SCENE,
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+      });
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    await waitFor(() => expect(mockedFetchRetryPreference).toHaveBeenCalled());
+    act(() => result.current.setPrompt('anything'));
+
+    await act(async () => {
+      await result.current.generate(null, null);
+    });
+
+    expect(mockedCreateAIScene).toHaveBeenCalledTimes(2);
+    expect(result.current.phase).toBe('success');
+    expect(result.current.attemptCount).toBe(2);
+  });
+
+  it('stops auto-retrying once max_retries is exhausted and surfaces the error', async () => {
+    mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: true, max_retries: 2 });
+    mockedCreateAIScene.mockRejectedValue(
+      new ApiError(504, { error: 'timeout', detail: 'timed out' }),
+    );
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    await waitFor(() => expect(mockedFetchRetryPreference).toHaveBeenCalled());
+    act(() => result.current.setPrompt('anything'));
+
+    await act(async () => {
+      await result.current.generate(null, null);
+    });
+
+    // 1 initial attempt + 2 retries = 3 total calls.
+    expect(mockedCreateAIScene).toHaveBeenCalledTimes(3);
+    expect(result.current.phase).toBe('provider-error');
+    expect(result.current.attemptCount).toBe(3);
+  });
+
+  it('never auto-retries a non-retryable failure, even when enabled', async () => {
+    mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: true, max_retries: 3 });
+    mockedCreateAIScene.mockRejectedValue(
+      new ApiError(429, { error: 'quota_exceeded', detail: 'Daily limit reached.' }),
+    );
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    await waitFor(() => expect(mockedFetchRetryPreference).toHaveBeenCalled());
+    act(() => result.current.setPrompt('anything'));
+
+    await act(async () => {
+      await result.current.generate(null, null);
+    });
+
+    expect(mockedCreateAIScene).toHaveBeenCalledTimes(1);
+    expect(result.current.phase).toBe('quota-error');
+    expect(result.current.attemptCount).toBe(1);
+    expect(result.current.canRetryGeneration).toBe(false);
+  });
+
+  it('with auto-retry off, a retryable failure never retries silently but can be retried explicitly', async () => {
+    mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
+    mockedCreateAIScene
+      .mockRejectedValueOnce(new ApiError(502, { error: 'provider_failure', detail: 'down' }))
+      .mockResolvedValueOnce({
+        draft: true,
+        operation: 'create_scene',
+        scene: VALID_SCENE,
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+      });
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    await waitFor(() => expect(mockedFetchRetryPreference).toHaveBeenCalled());
+    act(() => result.current.setPrompt('anything'));
+
+    await act(async () => {
+      await result.current.generate(null, null);
+    });
+
+    expect(mockedCreateAIScene).toHaveBeenCalledTimes(1);
+    expect(result.current.phase).toBe('provider-error');
+    expect(result.current.attemptCount).toBe(1);
+    expect(result.current.canRetryGeneration).toBe(true);
+
+    await act(async () => {
+      result.current.retryGeneration(null, null);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(result.current.phase).toBe('success'));
+    expect(mockedCreateAIScene).toHaveBeenCalledTimes(2);
+    expect(result.current.attemptCount).toBe(2);
   });
 });

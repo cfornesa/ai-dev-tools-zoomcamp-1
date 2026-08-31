@@ -9,12 +9,16 @@ import {
   fetchAIPersonas,
   fetchMistralModelPreferences,
 } from '../api/aiPreferences';
+import { fetchAIRetryPreference, updateAIRetryPreference } from '../api/aiRetryPreference';
 import { ApiError } from '../api/client';
 import {
   fetchMistralCredential,
   removeMistralCredential,
   saveMistralCredential,
 } from '../api/credentials';
+
+const MIN_MAX_RETRIES = 1;
+const MAX_MAX_RETRIES = 10;
 
 const MISTRAL_MODELS_DOCS_URL = 'https://docs.mistral.ai/getting-started/models/';
 
@@ -110,7 +114,103 @@ function AccountSettings() {
       </div>
       <SavedMistralModels />
       <AIPersonas />
+      <AIRetrySettings />
     </section>
+  );
+}
+
+function AIRetrySettings() {
+  const [enabled, setEnabled] = useState(false);
+  const [maxRetries, setMaxRetries] = useState(3);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAIRetryPreference()
+      .then((preference) => {
+        setEnabled(preference.auto_retry_enabled);
+        setMaxRetries(preference.max_retries);
+        setLoaded(true);
+      })
+      .catch(() => setError('Could not load your automatic retry setting.'));
+  }, []);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const saved = await updateAIRetryPreference({
+        auto_retry_enabled: enabled,
+        max_retries: maxRetries,
+      });
+      setEnabled(saved.auto_retry_enabled);
+      setMaxRetries(saved.max_retries);
+      setMessage('Your automatic retry setting was saved.');
+    } catch {
+      setError('Could not save that setting. Check the retry count and try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="centered-state account-settings-section">
+      <h3>Automatic retry</h3>
+      <p>
+        When an AI generation fails with a retryable error (an invalid response, a timeout, or a
+        provider failure), automatically retry instead of leaving you to notice and resubmit.
+        Retries still count against your existing AI request limits. Off by default — while off, we
+        ask you to confirm before each retry.
+      </p>
+      {!loaded && !error && <p>Loading your automatic retry setting…</p>}
+      {loaded && (
+        <form
+          onSubmit={submit}
+          aria-label="Automatic retry settings"
+          className="account-settings-form"
+        >
+          <label htmlFor="ai-retry-enabled">
+            <input
+              id="ai-retry-enabled"
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+              disabled={busy}
+            />{' '}
+            Automatically retry failed AI generations
+          </label>
+          <label htmlFor="ai-retry-max">Retry attempts</label>
+          <input
+            id="ai-retry-max"
+            className="account-settings-input"
+            type="number"
+            min={MIN_MAX_RETRIES}
+            max={MAX_MAX_RETRIES}
+            value={maxRetries}
+            onChange={(e) => setMaxRetries(Number(e.target.value))}
+            disabled={busy}
+          />
+          <button
+            className="shell-action"
+            type="submit"
+            disabled={
+              busy ||
+              maxRetries < MIN_MAX_RETRIES ||
+              maxRetries > MAX_MAX_RETRIES ||
+              !Number.isInteger(maxRetries)
+            }
+          >
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+        </form>
+      )}
+      {message && <p role="status">{message}</p>}
+      {error && <p role="alert">{error}</p>}
+    </div>
   );
 }
 

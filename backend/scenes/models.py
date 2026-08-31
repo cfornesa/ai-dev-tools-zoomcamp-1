@@ -23,6 +23,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -108,6 +109,28 @@ class AIPersona(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} (owner {self.owner_id})"
+
+
+class AIRetryPreference(models.Model):
+    """A user's own configurable automated-retry setting for failed AI
+    generations (issue #266). One record per user, like `MistralCredential`
+    -- off by default, so a failed generation only ever retries when the
+    user has explicitly opted in. `max_retries` is bounded (1-10) since it
+    is applied client-side and counts against the existing per-user AI
+    rate limit/quota (`scenes/ai_api.py`), never bypassing it."""
+
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ai_retry_preference"
+    )
+    auto_retry_enabled = models.BooleanField(default=False)
+    max_retries = models.PositiveSmallIntegerField(
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"AI retry preference for user {self.owner_id}"
 
 
 class Project(models.Model):

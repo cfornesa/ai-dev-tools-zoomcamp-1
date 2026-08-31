@@ -4,18 +4,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as aiPreferencesApi from '../api/aiPreferences';
 import * as aiApi from '../api/ai';
+import * as aiRetryPreferenceApi from '../api/aiRetryPreference';
 import { ApiError } from '../api/client';
 import type { SceneDocument, SceneVersion } from '../api/projects';
 import AIProposalPanel from './AIProposalPanel';
 
 vi.mock('../api/ai');
 vi.mock('../api/aiPreferences');
+vi.mock('../api/aiRetryPreference');
 
 const mockedCreateAIScene = vi.mocked(aiApi.createAIScene);
 const mockedEditAIScene = vi.mocked(aiApi.editAIScene);
 const mockedAcceptAIProposal = vi.mocked(aiApi.acceptAIProposal);
 const mockedFetchModels = vi.mocked(aiPreferencesApi.fetchMistralModelPreferences);
 const mockedFetchPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
+const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
 
 const VALID_SCENE: SceneDocument = {
   schemaVersion: 1,
@@ -51,6 +54,7 @@ beforeEach(() => {
   window.localStorage.clear();
   mockedFetchModels.mockResolvedValue([]);
   mockedFetchPersonas.mockResolvedValue([]);
+  mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
 });
 
 function renderPanel(onAccepted = vi.fn()) {
@@ -271,6 +275,43 @@ describe('AIProposalPanel error states', () => {
 
     const alert = await screen.findByTestId('ai-error-provider-error');
     expect(alert).toHaveTextContent(/upstream failure/i);
+  });
+
+  it('offers an explicit Retry action for a retryable failure and retries on click (#266)', async () => {
+    mockedCreateAIScene
+      .mockRejectedValueOnce(new ApiError(502, { error: 'provider_failure', detail: 'Down.' }))
+      .mockResolvedValueOnce({
+        draft: true,
+        operation: 'create_scene',
+        scene: VALID_SCENE,
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+      });
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'x');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    const alert = await screen.findByTestId('ai-error-provider-error');
+    const retryButton = await screen.findByTestId('ai-retry-generation');
+    expect(alert).toContainElement(retryButton);
+
+    await userEvent.click(retryButton);
+
+    await screen.findByTestId('ai-proposal-success');
+    expect(mockedCreateAIScene).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not offer Retry for a non-retryable failure (#266)', async () => {
+    mockedCreateAIScene.mockRejectedValue(
+      new ApiError(429, { error: 'quota_exceeded', detail: 'Daily limit reached.' }),
+    );
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'x');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    await screen.findByTestId('ai-error-quota-error');
+    expect(screen.queryByTestId('ai-retry-generation')).not.toBeInTheDocument();
   });
 });
 

@@ -3,11 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as aiPreferencesApi from '../api/aiPreferences';
+import * as aiRetryPreferenceApi from '../api/aiRetryPreference';
 import * as credentialsApi from '../api/credentials';
 import AccountSettings from './AccountSettings';
 
 vi.mock('../api/credentials');
 vi.mock('../api/aiPreferences');
+vi.mock('../api/aiRetryPreference');
 
 const mockedFetch = vi.mocked(credentialsApi.fetchMistralCredential);
 const mockedSave = vi.mocked(credentialsApi.saveMistralCredential);
@@ -20,10 +22,14 @@ const mockedFetchPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
 const mockedCreatePersona = vi.mocked(aiPreferencesApi.createAIPersona);
 const mockedDeletePersona = vi.mocked(aiPreferencesApi.deleteAIPersona);
 
+const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
+const mockedUpdateRetryPreference = vi.mocked(aiRetryPreferenceApi.updateAIRetryPreference);
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockedFetchModels.mockResolvedValue([]);
   mockedFetchPersonas.mockResolvedValue([]);
+  mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
 });
 
 describe('AccountSettings', () => {
@@ -118,5 +124,29 @@ describe('AccountSettings', () => {
     await user.click(screen.getByRole('button', { name: /remove persona playful/i }));
     expect(mockedDeletePersona).toHaveBeenCalledWith(5);
     expect(await screen.findByText('No Personas yet.')).toBeInTheDocument();
+  });
+
+  it('loads and saves the automatic retry setting', async () => {
+    mockedFetch.mockResolvedValue({ configured: false });
+    mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
+    mockedUpdateRetryPreference.mockResolvedValue({ auto_retry_enabled: true, max_retries: 5 });
+    const user = userEvent.setup();
+    render(<AccountSettings />);
+
+    const toggle = await screen.findByLabelText(/automatically retry failed ai generations/i);
+    expect(toggle).not.toBeChecked();
+    const retriesInput = screen.getByLabelText(/retry attempts/i);
+    expect(retriesInput).toHaveValue(3);
+
+    await user.click(toggle);
+    await user.clear(retriesInput);
+    await user.type(retriesInput, '5');
+    await user.click(screen.getByRole('button', { name: /^save$/i }));
+
+    expect(mockedUpdateRetryPreference).toHaveBeenCalledWith({
+      auto_retry_enabled: true,
+      max_retries: 5,
+    });
+    expect(await screen.findByText(/automatic retry setting was saved/i)).toBeInTheDocument();
   });
 });

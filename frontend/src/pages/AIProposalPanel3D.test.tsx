@@ -4,15 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as ai3dApi from '../api/ai3d';
 import * as aiPreferencesApi from '../api/aiPreferences';
+import * as aiRetryPreferenceApi from '../api/aiRetryPreference';
+import { ApiError } from '../api/client';
 import AIProposalPanel3D from './AIProposalPanel3D';
 import type { Scene3DDocument } from './scene3dTypes';
 
 vi.mock('../api/ai3d');
 vi.mock('../api/aiPreferences');
+vi.mock('../api/aiRetryPreference');
 
 const mockedCreateAIScene3D = vi.mocked(ai3dApi.createAIScene3D);
 const mockedFetchModels = vi.mocked(aiPreferencesApi.fetchMistralModelPreferences);
 const mockedFetchPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
+const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
 
 const VALID_SCENE_3D: Scene3DDocument = {
   schemaVersion: 1,
@@ -37,6 +41,7 @@ beforeEach(() => {
   window.localStorage.clear();
   mockedFetchModels.mockResolvedValue([]);
   mockedFetchPersonas.mockResolvedValue([]);
+  mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
 });
 
 function renderPanel() {
@@ -87,5 +92,44 @@ describe('AIProposalPanel3D model/persona dropdowns (issue #262)', () => {
       'mistral-large-latest',
       9,
     );
+  });
+});
+
+describe('AIProposalPanel3D retry (#266)', () => {
+  it('offers an explicit Retry action for a retryable failure and retries on click', async () => {
+    mockedCreateAIScene3D
+      .mockRejectedValueOnce(new ApiError(502, { error: 'provider_failure', detail: 'Down.' }))
+      .mockResolvedValueOnce({
+        draft: true,
+        operation: 'create_scene',
+        scene: VALID_SCENE_3D,
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+      });
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a bare stage');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    const alert = await screen.findByTestId('ai-3d-error-provider-error');
+    const retryButton = await screen.findByTestId('ai-3d-retry-generation');
+    expect(alert).toContainElement(retryButton);
+
+    await userEvent.click(retryButton);
+
+    await screen.findByTestId('ai-3d-proposal-success');
+    expect(mockedCreateAIScene3D).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not offer Retry for a non-retryable failure', async () => {
+    mockedCreateAIScene3D.mockRejectedValue(
+      new ApiError(429, { error: 'quota_exceeded', detail: 'Daily limit reached.' }),
+    );
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a bare stage');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    await screen.findByTestId('ai-3d-error-quota-error');
+    expect(screen.queryByTestId('ai-3d-retry-generation')).not.toBeInTheDocument();
   });
 });

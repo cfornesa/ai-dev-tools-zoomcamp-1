@@ -7,8 +7,10 @@ import {
   type AIErrorBody3D,
 } from '../api/ai3d';
 import type { AIErrorCode } from '../api/ai';
+import { fetchAIRetryPreference, type AIRetryPreference } from '../api/aiRetryPreference';
 import { ApiError } from '../api/client';
 import type { SceneDocument3D, SceneVersion3D } from '../api/projects3d';
+import { isRetryableAIErrorCode } from './aiRetry';
 
 /**
  * Issue #232: the 3D counterpart of `useAIProposal.ts`. Same state
@@ -191,11 +193,16 @@ export function useAIProposal3D(projectId: string | undefined) {
   const [genError, setGenError] = useState<GenerationError3D | null>(null);
   const [proposal, setProposal] = useState<Proposal3D | null>(null);
   const [acceptState, setAcceptState] = useState<AcceptState3D>(IDLE_ACCEPT_STATE);
+  // Issue #266: mirrors useAIProposal.ts's own attempt-count/retry-
+  // preference state -- see that hook's comments for the full rationale.
+  const [attemptCount, setAttemptCount] = useState(0);
+  const [retryPreference, setRetryPreference] = useState<AIRetryPreference | null>(null);
 
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const acceptAbortRef = useRef<AbortController | null>(null);
   const acceptInFlightRef = useRef(false);
+  const attemptCountRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -206,22 +213,38 @@ export function useAIProposal3D(projectId: string | undefined) {
     };
   }, []);
 
+  useEffect(() => {
+    fetchAIRetryPreference()
+      .then((preference) => {
+        if (mountedRef.current) setRetryPreference(preference);
+      })
+      .catch(() => {});
+  }, []);
+
   const setMode = useCallback((next: ProposalMode3D) => {
     setModeState(next);
     setPhase('prompt');
     setGenError(null);
     setProposal(null);
     setAcceptState(IDLE_ACCEPT_STATE);
+    attemptCountRef.current = 0;
+    setAttemptCount(0);
   }, []);
 
   const cancelGeneration = useCallback(() => {
     abortControllerRef.current?.abort();
     setPhase('prompt');
     setGenError(null);
+    attemptCountRef.current = 0;
+    setAttemptCount(0);
   }, []);
 
   const generate = useCallback(
-    async (currentScene: SceneDocument3D | null, baseVersionId: number | null): Promise<void> => {
+    async (
+      currentScene: SceneDocument3D | null,
+      baseVersionId: number | null,
+      options?: { isManualRetry?: boolean },
+    ): Promise<void> => {
       if (!projectId) return;
       const trimmed = prompt.trim();
       if (!trimmed) {
@@ -247,55 +270,77 @@ export function useAIProposal3D(projectId: string | undefined) {
       setProposal(null);
 
       const trimmedModel = model.trim() || undefined;
-      try {
-        if (mode === 'create') {
-          const result = await createAIScene3D(
-            projectId,
-            trimmed,
-            controller.signal,
-            trimmedModel,
-            personaId ?? undefined,
-          );
+      const maxRetries = retryPreference?.auto_retry_enabled ? retryPreference.max_retries : 0;
+      let attempt = options?.isManualRetry ? attemptCountRef.current + 1 : 1;
+      attemptCountRef.current = attempt;
+      setAttemptCount(attempt);
+      for (;;) {
+        try {
+          if (mode === 'create') {
+            const result = await createAIScene3D(
+              projectId,
+              trimmed,
+              controller.signal,
+              trimmedModel,
+              personaId ?? undefined,
+            );
+            if (!mountedRef.current || abortControllerRef.current !== controller) return;
+            setProposal({
+              mode: 'create',
+              scene: result.scene,
+              summary: 'A new 3D scene was generated from your prompt.',
+              patch: null,
+              baseVersionId,
+              clientRequestId: crypto.randomUUID(),
+            });
+            setPhase('success');
+          } else {
+            const result = await editAIScene3D(
+              projectId,
+              trimmed,
+              currentScene as SceneDocument3D,
+              baseVersionId,
+              controller.signal,
+              trimmedModel,
+              personaId ?? undefined,
+            );
+            if (!mountedRef.current || abortControllerRef.current !== controller) return;
+            setProposal({
+              mode: 'edit',
+              scene: result.scene,
+              summary: result.change_summary,
+              patch: result.patch,
+              baseVersionId,
+              clientRequestId: crypto.randomUUID(),
+            });
+            setPhase('success');
+          }
+          return;
+        } catch (err) {
+          if (isAbortError(err)) return;
           if (!mountedRef.current || abortControllerRef.current !== controller) return;
-          setProposal({
-            mode: 'create',
-            scene: result.scene,
-            summary: 'A new 3D scene was generated from your prompt.',
-            patch: null,
-            baseVersionId,
-            clientRequestId: crypto.randomUUID(),
-          });
-          setPhase('success');
-        } else {
-          const result = await editAIScene3D(
-            projectId,
-            trimmed,
-            currentScene as SceneDocument3D,
-            baseVersionId,
-            controller.signal,
-            trimmedModel,
-            personaId ?? undefined,
-          );
-          if (!mountedRef.current || abortControllerRef.current !== controller) return;
-          setProposal({
-            mode: 'edit',
-            scene: result.scene,
-            summary: result.change_summary,
-            patch: result.patch,
-            baseVersionId,
-            clientRequestId: crypto.randomUUID(),
-          });
-          setPhase('success');
+          const classified = classifyGenerationError(err);
+          if (isRetryableAIErrorCode(classified.error.code) && attempt <= maxRetries) {
+            attempt += 1;
+            attemptCountRef.current = attempt;
+            setAttemptCount(attempt);
+            continue;
+          }
+          setPhase(classified.phase);
+          setGenError(classified.error);
+          return;
         }
-      } catch (err) {
-        if (isAbortError(err)) return;
-        if (!mountedRef.current || abortControllerRef.current !== controller) return;
-        const classified = classifyGenerationError(err);
-        setPhase(classified.phase);
-        setGenError(classified.error);
       }
     },
-    [projectId, prompt, mode, model, personaId],
+    [projectId, prompt, mode, model, personaId, retryPreference],
+  );
+
+  const retryGeneration = useCallback(
+    (currentScene: SceneDocument3D | null, baseVersionId: number | null): void => {
+      if (!isRetryableAIErrorCode(genError?.code)) return;
+      void generate(currentScene, baseVersionId, { isManualRetry: true });
+    },
+    [genError, generate],
   );
 
   const reject = useCallback(() => {
@@ -364,5 +409,8 @@ export function useAIProposal3D(projectId: string | undefined) {
     accept,
     acceptState,
     cancelAccept,
+    attemptCount,
+    retryGeneration,
+    canRetryGeneration: isRetryableAIErrorCode(genError?.code),
   };
 }

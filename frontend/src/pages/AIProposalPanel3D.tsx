@@ -49,6 +49,9 @@ function AIProposalPanel3D({
     reject,
     accept,
     acceptState,
+    attemptCount,
+    retryGeneration,
+    canRetryGeneration,
   } = useAIProposal3D(projectId);
 
   const { models: savedModels, personas: savedPersonas } = useSavedAIPreferences();
@@ -183,7 +186,9 @@ function AIProposalPanel3D({
 
       {pending && (
         <p role="status" aria-live="polite" data-testid="ai-3d-pending-status">
-          Contacting the AI assistant…
+          {attemptCount > 1
+            ? `Contacting the AI assistant… (attempt ${attemptCount})`
+            : 'Contacting the AI assistant…'}
         </p>
       )}
 
@@ -191,12 +196,22 @@ function AIProposalPanel3D({
         genError && (
           <div role="alert" aria-live="assertive" data-testid={`ai-3d-error-${phase}`}>
             <p>{genError.message}</p>
+            {attemptCount > 1 && <p>Failed after {attemptCount} attempts.</p>}
             {genError.code === 'personal_key_required' && (
               <p>
                 <a href="/account/settings">
                   Configure your personal Mistral key in Account settings
                 </a>
               </p>
+            )}
+            {canRetryGeneration && (
+              <button
+                type="button"
+                data-testid="ai-3d-retry-generation"
+                onClick={() => void retryGeneration(workingCopyRef.current, currentVersionId)}
+              >
+                Retry
+              </button>
             )}
           </div>
         )}

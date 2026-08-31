@@ -9308,14 +9308,12 @@ Dependencies: None for #270/#271/#280/#282/#283. #281 depends on #280.
 
 ## 237. Epic: per-piece screenshot, fullscreen, download/export, embed, gesture camera control, sound, and immersive VR view (parity with augmenthumankind.com)
 
-Status: FILED SCOPE COMPLETE -- every filed sub-issue (#285-295,
-#297-299, #306-310) is CLOSED as of 2026-08-31. The repository owner
-approved Tone.js and asked for the sound/audio scope to be groomed and
-implemented in this same session (see tasks 248-252) -- that scope is
-now fully shipped. Only the immersive first-person free-fly view
-remains unfiled, still pending a 2D-scope design decision the
-repository owner hasn't scheduled yet, so this epic stays open until
-that's either filed or explicitly descoped.
+Status: COMPLETE -- every sub-issue (#285-295, #297-299, #306-311) is
+CLOSED as of 2026-08-31. The repository owner approved Tone.js and
+asked for the sound/audio scope (tasks 248-252) and, after that, the
+immersive first-person free-fly view (task 253/#311) to both be
+groomed and implemented in this same session. No scope remains
+unfiled or unimplemented; this epic is closed.
 
 Sub-issue progress:
 - [#285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/285) (2D screenshot) -- CLOSED. Added a "Take screenshot" button to both 2D editors (manual and AI-assisted), capturing the live preview canvas via `captureLiveScreenshot.ts` (read-only `toBlob`/`toDataURL`, distinct from `captureSocialThumbnail.ts`'s off-screen stable-demo-mode render) and downloading it via a new shared `downloadBlob.ts` helper (extracted from 3 pre-existing duplicated download-trigger sites; #286 will reuse it too). Verified live. `make check` green.
@@ -10055,3 +10053,55 @@ With tasks 248-252/#306-#310 all complete, epic 237/#274's sound/audio
 sub-scope is fully shipped -- only the immersive first-person view
 remains as this epic's one unfiled item, still pending a 2D-scope
 design decision from the repository owner.
+
+## 253. 3D immersive first-person free-fly view
+
+Status: COMPLETE
+
+GitHub issue: [#311](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/311)
+
+Parent: task 237/#274 (epic) -- its last remaining scope item. The
+repository owner explicitly asked for this to be groomed and
+implemented now (2026-08-31), after a dedicated investigation into the
+actual reference implementation (`augment-humankind`'s original
+PHP/A-Frame app, plus its newer TypeScript port in
+`augment-humankind-platform`, both sibling repos -- not guessed).
+
+Grounded findings: a full separate page (`/immersive/pieces/{id}`),
+opened via a plain `target="_blank"` link, rendering the *same* piece
+content wrapped in a camera rig (mouse-drag orbit/zoom via `OrbitControls`
+plus a custom arrow-key "fly" translation layer -- both position and
+orbit target move together along the camera's forward/right vectors).
+Arrow keys only, never WASD -- the reference deliberately reserves
+WASD for piano-key note triggers when sound is active (the same
+key-collision problem task 249/#307 has in this app). No WebXR, no
+Pointer Lock API in the reference either -- a first-person camera
+*style*, not a VR-headset feature. The reference's own newer
+TypeScript port already dropped its webcam-hand-tracking camera
+steering when porting off PHP -- adopted here as the same v1 scope
+boundary.
+
+Scope: `flyControls` prop on `Scene3DPreview.tsx` (arrow-key fly
+translation, skips `OrbitControls`' own arrow-key panning to avoid
+double-handling); new chrome-less `/immersive/p3d/:id` route
+(`ImmersiveProject3DViewer.tsx`, mirrors `PublicProject3DViewer.tsx`'s
+conventions, gesture-camera-control disabled); a "View in immersive
+mode" entry-point link on the public 3D viewer.
+
+Dependencies: Depends on task 236/#271 (already shipped).
+
+Status update (2026-08-31): COMPLETE. Implemented as scoped above. New
+coverage: `Scene3DPreview.flyControls.test.tsx` (5 tests),
+`ImmersiveProject3DViewer.test.tsx` (4 tests), plus additions to
+`PublicProject3DViewer.test.tsx` and `App.embedRoute.test.tsx`. `make
+check` green (876 backend / 2363 frontend). Verified live: published a
+real 3D project, confirmed the new entry-point link and chrome-less
+immersive route rendering; in a fresh browser tab (the session's main
+tab had accumulated too many WebGL contexts from extensive earlier
+testing, a tooling artifact not a code defect), held `ArrowUp` and
+confirmed via `canvas.toDataURL()` diffing plus a screenshot that the
+camera genuinely flew forward through the scene, stabilizing cleanly
+on release. Unpublished the test project afterward.
+
+With task 253/#311 complete, epic 237/#274 has no remaining scope --
+see that epic's own entry for its closing status.

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import { buildThreeSceneGraph, disposeThreeSceneGraph } from '../render/threeSceneBuilder';
 import type { Scene3DDocument } from './scene3dTypes';
@@ -92,8 +93,23 @@ function Scene3DPreview({ scene }: { scene: Scene3DDocument }) {
     const aspect = (size.x || 1) / (size.y || 1);
     const { scene: threeScene, camera } = buildThreeSceneGraph(scene, aspect);
 
+    // Issue #271: mouse-drag/touch-drag orbit, scroll/pinch zoom, and
+    // (via listenToKeyEvents) arrow-key pan, all out of the box.
+    // Rebuilt alongside the scene graph each time `scene` changes (rather
+    // than kept alive across rebuilds) since the camera itself is a new
+    // object every time -- purely a transient viewport interaction, never
+    // persisted back into the scene document; see the issue's own scope
+    // note for why that's the simpler default given this component's
+    // existing whole-graph-rebuild-on-change architecture.
+    const controls = new OrbitControls(camera, activeRenderer.domElement);
+    controls.target.set(scene.camera.target.x, scene.camera.target.y, scene.camera.target.z);
+    controls.enableDamping = true;
+    controls.listenToKeyEvents(window);
+    controls.update();
+
     let frameId: number;
     function tick() {
+      controls.update();
       activeRenderer.render(threeScene, camera);
       frameId = requestAnimationFrame(tick);
     }
@@ -101,6 +117,7 @@ function Scene3DPreview({ scene }: { scene: Scene3DDocument }) {
 
     return () => {
       cancelAnimationFrame(frameId);
+      controls.dispose();
       disposeThreeSceneGraph(threeScene);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rendererRef/renderError are refs/state read once per effect run, not reactive inputs the loop needs to resubscribe to independently of `scene`.

@@ -9905,7 +9905,7 @@ muted -- all clean.
 
 ## 249. 3D sound: keyboard-triggered notes on the melodic voice
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#307](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/307)
 
@@ -9919,6 +9919,19 @@ interference with existing keyboard shortcuts (`OrbitControls`' own
 arrow-key pan, etc.).
 
 Dependencies: Depends on task 248/#306.
+
+Status update (2026-08-31): COMPLETE. `frontend/src/audio/pianoKeyMap.ts`
+(the standard ASDF layout + an `isEditableElement` guard) plus a new
+"Keyboard notes" toggle in `Scene3DPreview.tsx`, shown only once sound
+is enabled -- a `window` keydown listener triggers the melodic voice for
+mapped keys, ignoring any editable-element target (never fires while
+typing elsewhere on the page) and only covering letter/semicolon keys
+(no arrow-key conflict with `OrbitControls`). Resets automatically if
+sound is muted. New coverage: `pianoKeyMap.test.ts` (4 tests), 5 new
+tests in `Scene3DPreview.sound.test.tsx`. `make check` green (876
+backend / 2319 frontend). Verified live: enabled sound, toggled keyboard
+notes on, dispatched a mapped keypress -- zero errors, real Tone.js
+synth fired cleanly.
 
 ## 250. 3D sound: microphone input layer
 

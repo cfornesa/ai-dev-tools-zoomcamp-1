@@ -9462,7 +9462,7 @@ scene with zero app-shell chrome, unpublished it, and confirmed
 
 ## 239. 3D "Steer the piece" has no camera-feed overlay or opacity/mirror controls
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#297](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/297)
 
@@ -9482,6 +9482,20 @@ against a WebGL canvas (DOM-overlaid `<video>` vs. a Three.js
 video-texture plane).
 
 Dependencies: None functionally; builds on task 236/#294 (already shipped).
+
+Status update (2026-08-31): COMPLETE. Picked the DOM-overlaid `<video>`
+option: a small overlay in the corner of `.scene3d-preview` (CSS in
+`index.css`), shown once `CameraControl`'s status reaches `'active'`,
+wired via its existing `onStatusChange`/`onStreamChange` props (mirrors
+`EditorWorkspace.tsx`'s `srcObject` effect, including its documented
+mount-order dependency fix). Opacity slider + mirror checkbox reuse
+`useCameraOverlaySettings()` unchanged -- the same store the 2D editor's
+identical controls read/write. New `Scene3DPreview.cameraOverlay.test.tsx`
+(4 tests). `make check` green (871 backend / 2283 frontend). Verified
+live with a real camera via Claude for Chrome: "Steer the piece" -> "Enable
+camera" showed a live mirrored feed at 50% opacity in the preview's corner;
+unchecking "Mirror camera overlay" visibly flipped the feed; "Stop camera"
+cleaned up with no error.
 
 ## 240. Scene3DPreview.tsx's preview-action button row has no spacing/padding
 

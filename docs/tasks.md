@@ -9142,3 +9142,45 @@ Dependencies: None. Independent of tasks 231-233/#264-266 (all
 system-prompt/retry correctness, not preview UX) and of task
 212/#244 (already shipped, its `Scene3DPreview` component is reused
 unchanged).
+
+## 235. Merge gallery creation buttons into a single "+" split-button (page chooser + dropdown menu)
+
+Status: PROPOSED
+
+GitHub issue: [#268](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/268)
+
+Parent: none — requested directly by the repository owner via `/goal`
+(2026-08-31), after the previous session's readiness pass confirmed
+all outstanding AI/retry/preview backlog work was live-verified and
+closed.
+
+Discovered/requested: `Gallery.tsx`'s header currently has 6 separate
+creation affordances -- 4 full-width "Create X" buttons
+(`.gallery-create-actions`) plus a separate "Browse templates" link,
+plus a renderer `<select>` -- a lot of header real estate (already
+needed one prior narrow-width overflow fix, per that block's own code
+comment). The owner wants these consolidated into a single "+"
+split-button: clicking the icon itself navigates to a new chooser page
+(styled like `Templates.tsx`'s existing card-grid), while a separate
+downward-arrow button immediately to its right opens an inline
+accessible dropdown menu with the same 5 actions as menu items.
+Layout clarified mid-distillation: the renderer select stays in the
+header, positioned directly to the left of the "+"/arrow pair with
+appropriate padding, and the "+"/arrow pair is right-aligned in the
+header row.
+
+Scope: `frontend/src/pages/Gallery.tsx` (replace
+`.gallery-create-actions` + the templates `<Link>` with the new
+split-button, reusing the existing `handleCreate`/
+`handleCreateAiAssisted`/`handleCreate3D`/`handleCreate3DAiAssisted`
+handlers rather than duplicating them); a new chooser route/page
+mirroring `Templates.tsx`'s `template-grid`/`template-card` visual
+style, registered in `frontend/src/App.tsx`; a new split-button
+component with an accessible dropdown menu (WAI-ARIA APG menu-button
+pattern -- no existing dropdown/menu component exists in this
+codebase yet, checked against `frontend/src/a11y/`). Pure UI
+reorganization: all 5 existing actions (2D manual/AI create, 3D
+manual/AI create, browse templates) must produce byte-identical
+behavior to today. Full scope and acceptance criteria in #268.
+
+Dependencies: None.

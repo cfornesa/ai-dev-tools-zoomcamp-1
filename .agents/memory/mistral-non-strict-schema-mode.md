@@ -73,6 +73,24 @@ structural constraint the schema encodes (enums, required-field sets,
 conditional `if`/`then` branches) — not just enums — for each
 `response_format`/`strict: False` code path.
 
+**Fifth instance — the 3D system prompt has the same gap, for lights:**
+confirmed live in production (2026-08-31, same Claude in Chrome
+session as the fourth instance below) while verifying #262's 3D AI
+editor dropdowns work (they do). The prompt "a bare stage with a
+single sphere" reproduced `$.lights[0]: 0 is not of type 'object'`
+twice identically. `_SYSTEM_PROMPT_3D` restates each light type's
+conditional `position`/`direction` requirement but never states that
+every light is an object requiring `id`/`type`/`color`/`intensity`
+unconditionally — the same asymmetry #256 fixed for 2D `shapes[]`,
+just never applied to 3D `lights[]` even though `objects[]` in the
+same prompt already gets full geometry restatement. Filed as task
+232/[#265](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/265).
+This confirms the 3D prompt is not automatically exempt from this
+lesson just because it restates *some* structural constraints (the
+enum-mapping sentence for `objects[]` masked the gap for `lights[]`)
+— audit every array-of-typed-object field in a system prompt
+individually, not just the ones already partially covered.
+
 **Fourth instance — layerId uniqueness (not schema-expressible at all)
 and demoSignals' closed key set:** confirmed live in production
 (2026-08-31, via Claude in Chrome) while verifying #256's fix worked:

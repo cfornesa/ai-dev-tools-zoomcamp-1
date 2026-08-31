@@ -8975,3 +8975,38 @@ pattern, plus real-Mistral manual re-verification. Full scope and
 acceptance criteria in #264.
 
 Dependencies: None — same independent pattern as task 224/#256.
+
+## 232. 3D AI create-scene system prompt never restates each light's required fields
+
+Status: PROPOSED
+
+GitHub issue: [#265](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/265)
+
+Parent: none — distilled from live production verification of task
+230/#262's 3D AI editor panel, same session (2026-08-31).
+
+Discovered live against production via Claude in Chrome while
+confirming #262's 3D dropdowns work (they do — model/persona
+dropdowns rendered, populated, and submitted correctly). The prompt
+"a bare stage with a single sphere" against `mistral-small-latest`
+(a freshly-created AI-assisted 3D project), reproduced identically on
+two separate real Mistral calls, failed with
+`$.lights[0]: 0 is not of type 'object'`.
+
+Root cause: same class as #204/#256/#264. `_SYSTEM_PROMPT_3D`
+(`backend/ai_provider/mistral_provider.py`) restates each light
+type's `position`/`direction` conditional requirement but never
+states that every light is an object requiring `id`, `type`, `color`,
+`intensity` unconditionally (`schema/scene3d.schema.json`'s
+`$defs.light`) — unlike `objects[]`, which does get this full
+required-field restatement. This is the first confirmed instance of
+this lesson class in the 3D system prompt specifically (#264 explicitly
+left `_SYSTEM_PROMPT_3D` unconfirmed/out of scope; now confirmed).
+
+Scope: add the missing light required-field restatement to
+`_SYSTEM_PROMPT_3D`, plus a drift-proof regression test mirroring
+#256's pattern, plus real-Mistral manual re-verification. Full scope
+and acceptance criteria in #265.
+
+Dependencies: None — same independent pattern as task 224/#256 and
+task 231/#264.

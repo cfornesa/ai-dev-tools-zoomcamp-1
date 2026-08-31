@@ -9854,3 +9854,110 @@ AI assistant all coexist when Code is active.
 
 With #303/#304/#305 all complete, task 242/#300's filed sub-issue scope
 is done -- see task 242's own entry for the epic's closing status.
+
+## 248. 3D sound: core Tone.js engine (ambient/movement/melodic layers + master bus)
+
+Status: PROPOSED
+
+GitHub issue: [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306)
+
+Parent: task 237/#274 (epic). The repository owner explicitly approved
+adding `tone` as a new frontend dependency (2026-08-31) and asked for
+this scope to be groomed now, after being asked to resolve the epic's
+last open blocker.
+
+Grounded in a direct investigation of the actual reference
+implementation (`augment-humankind`'s `sonic-controller.js`, a sibling
+PHP repo -- not the earlier session's live-browser-only inventory):
+ambient/movement/melodic are three Tone.js synth voices sharing one
+`Tone.Volume` bus + `Tone.Filter`. Ambient is a tempo-paced ticker,
+movement triggers from real camera/scene position deltas, melodic has
+no built-in trigger (driven by #307/#309). Scoped to the 3D piece
+viewer only for this v1, matching where gesture camera control (#294)
+already lives.
+
+Scope: add `tone` dependency; build the shared audio graph as a new
+`frontend/src/audio/sonicEngine.ts` module; wire movement to the
+existing `Scene3DPreview.tsx`/`OrbitControls` camera state; a minimal
+master on/off + volume control (final placement refined by task
+252/#310).
+
+Dependencies: None. Foundation for tasks 249-252/#307-#310.
+
+## 249. 3D sound: keyboard-triggered notes on the melodic voice
+
+Status: PROPOSED
+
+GitHub issue: [#307](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/307)
+
+Parent: task 237/#274 (epic), task 248/#306 (the melodic voice this
+drives).
+
+Scope: an ASDF-piano-key keyboard mapping onto the melodic voice,
+matching the reference's own `attachPianoKeyListener` -- active only
+while the 3D surface has focus and sound is enabled, with no
+interference with existing keyboard shortcuts (`OrbitControls`' own
+arrow-key pan, etc.).
+
+Dependencies: Depends on task 248/#306.
+
+## 250. 3D sound: microphone input layer
+
+Status: PROPOSED
+
+GitHub issue: [#308](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/308)
+
+Parent: task 237/#274 (epic), task 248/#306 (the shared audio bus this
+mixes into).
+
+Scope: a "Live mic" toggle requesting `getUserMedia({audio:true})`
+(confirmed via the reference's `enableMic()`: raw mic-in, not used to
+analyze/modulate anything else -- that's #309's camera theremin, a
+separate feature) mixed into the shared bus; reuse `CameraControl.tsx`'s
+existing friendly-failure/privacy-notice conventions for the audio
+equivalent. A full per-effect chain (distortion/chorus/etc.) is
+optional, not required for v1.
+
+Dependencies: Depends on task 248/#306. Independent of tasks 249/#307
+and 251/#309.
+
+## 251. 3D sound: webcam "camera theremin" (hand-tracked pitch/volume)
+
+Status: PROPOSED
+
+GitHub issue: [#309](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/309)
+
+Parent: task 237/#274 (epic), task 248/#306 (the melodic voice this
+modulates).
+
+Scope: reuse this app's *existing* MediaPipe hand-tracking pipeline
+(`CameraControl.tsx`, `tracking/handSignals.ts`) -- confirmed via the
+reference's `handFrameStep`: wrist Y drives a continuous pitch glide
+(not discrete triggers), hand-spread drives that voice's own volume.
+Must share the camera/tracking pipeline with task 236/#294's existing
+"Steer the piece" (independently toggleable, not a second
+stream/model instance), matching the reference's own shared-pipeline
+architecture.
+
+Dependencies: Depends on task 248/#306. Related to task 236/#294
+(already shipped) for the shared camera/tracking infrastructure.
+
+## 252. 3D sound: "Piece controls" settings popover + main-toolbar mute toggle
+
+Status: PROPOSED
+
+GitHub issue: [#310](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/310)
+
+Parent: task 237/#274 (epic). Wires tasks 248-251/#306-#309 into one UI.
+
+Scope: one settings surface (new UI pattern -- reuse
+`HandGestureGuideDialog.tsx`'s dialog conventions or a simpler
+disclosure/popover, per implementer's judgment) exposing master sound
+on/off + volume, Keyboard toggle, Live-mic toggle, and Camera-theremin
+toggle together; a separate always-visible mute toggle in
+`Scene3DPreview.tsx`'s existing `scene3d-preview-actions` row,
+independent of the settings surface. Per-voice instrument-choice
+dropdowns are optional/nice-to-have, not required.
+
+Dependencies: Depends on tasks 248/#306, 249/#307, 250/#308, 251/#309.
+Implement last in this group.

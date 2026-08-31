@@ -243,13 +243,14 @@ function AIProposalPanel3D({
             Proposal ready. Nothing has been saved yet — review, then Accept or Reject.
           </p>
           <div data-testid="ai-3d-proposal-preview">
-            {/* Issue #286/#294: no screenshot or gesture-control affordance
-                here -- an unaccepted proposal isn't the project's actual
-                saved state yet. */}
+            {/* Issue #286/#294/#306: no screenshot, gesture-control, or
+                sound affordance here -- an unaccepted proposal isn't the
+                project's actual saved state yet. */}
             <Scene3DPreview
               scene={proposal.scene as unknown as Scene3DDocument}
               showScreenshotButton={false}
               showGestureControl={false}
+              showSoundControl={false}
             />
           </div>
           <p data-testid="ai-3d-proposal-scene-summary">

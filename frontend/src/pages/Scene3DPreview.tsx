@@ -6,6 +6,7 @@ import CameraControl, {
   type CameraControlProps,
   type CameraStatus,
 } from '../components/CameraControl';
+import { createSonicEngine, type SonicEngine } from '../audio/sonicEngine';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
@@ -157,17 +158,37 @@ import { useFullscreenToggle } from './useFullscreenToggle';
  * rather than `containerRef` -- so the canvas keeps a stable size
  * regardless of how much content renders below it, and the outer
  * container's own height always reflects everything it actually contains.
+ *
+ * ## Sound: master enable/volume (issue #306)
+ *
+ * A single, always-alive `SonicEngine` instance (`../audio/sonicEngine.ts`)
+ * per mounted `Scene3DPreview`, independent of `scene`/rebuild churn --
+ * `enable()` is idempotent and only actually starts audio the first time a
+ * real user gesture (this button's own click) calls it, matching the
+ * browser's autoplay-gesture requirement the same way `CameraControl.tsx`'s
+ * "Enable camera" click is what's allowed to call `getUserMedia`. The
+ * render loop below reports the camera's own per-frame position delta via
+ * `reportMovement`, driving the engine's "movement" voice from real scene
+ * motion. This is a minimal, always-reachable control -- issue #310 will
+ * consolidate it (plus keyboard/mic/camera-theremin from #307-#309) into a
+ * proper "Piece controls" settings surface.
  */
 function Scene3DPreview({
   scene,
   showScreenshotButton = true,
   showGestureControl = true,
+  showSoundControl = true,
   screenshotBaseName,
   createGestureCameraProvider,
 }: {
   scene: Scene3DDocument;
   showScreenshotButton?: boolean;
   showGestureControl?: boolean;
+  /** Issue #306: an unaccepted AI proposal preview passes `false`, matching
+   * `showScreenshotButton`/`showGestureControl`'s existing precedent for
+   * that surface -- an unaccepted proposal isn't the project's actual
+   * saved state, so sounding it out would be confusing. */
+  showSoundControl?: boolean;
   /** Test seam mirroring `CameraControl.tsx`'s own `createProvider` prop
    * -- lets tests inject a fake `TrackingProvider` for the gesture-camera
    * feature without touching a real camera/MediaPipe. */
@@ -183,6 +204,32 @@ function Scene3DPreview({
   const [renderError, setRenderError] = useState(false);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(containerRef);
+
+  // Issue #306: one `SonicEngine` per mount, independent of `scene`/rebuild
+  // churn -- see this component's own doc comment above.
+  const sonicEngineRef = useRef<SonicEngine | null>(null);
+  if (sonicEngineRef.current === null) sonicEngineRef.current = createSonicEngine();
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundVolume, setSoundVolume] = useState(50);
+  useEffect(() => {
+    const engine = sonicEngineRef.current;
+    return () => engine?.dispose();
+  }, []);
+
+  async function handleToggleSound() {
+    const engine = sonicEngineRef.current;
+    if (!engine) return;
+    if (soundEnabled) {
+      engine.disable();
+      setSoundEnabled(false);
+      return;
+    }
+    await engine.enable();
+    if (engine.status === 'active') {
+      engine.setVolume(soundVolume);
+      setSoundEnabled(true);
+    }
+  }
 
   // Issue #294: "Steer the piece" -- gesture-driven camera control.
   const [gestureControlEnabled, setGestureControlEnabled] = useState(false);
@@ -371,10 +418,25 @@ function Scene3DPreview({
       camera.lookAt(controls.target);
     }
 
+    // Issue #306: "movement" sound-voice input -- the camera's own
+    // per-frame position delta, fed to the sonic engine regardless of
+    // whether sound is currently enabled (a no-op call when it isn't;
+    // `reportMovement` is always safe to call, matching this component's
+    // existing "safe no-op while idle" conventions).
+    let previousCameraPosition: THREE.Vector3 | null = null;
+
     let frameId: number;
     function tick() {
       if (gestureControlEnabledRef.current) applyGestureCameraControl();
       controls.update();
+      if (previousCameraPosition) {
+        sonicEngineRef.current?.reportMovement({
+          dx: camera.position.x - previousCameraPosition.x,
+          dy: camera.position.y - previousCameraPosition.y,
+          dz: camera.position.z - previousCameraPosition.z,
+        });
+      }
+      previousCameraPosition = camera.position.clone();
       activeRenderer.render(threeScene, camera);
       frameId = requestAnimationFrame(tick);
     }
@@ -469,7 +531,35 @@ function Scene3DPreview({
           </button>
         )}
         {showGestureControl && <HandGestureGuideDialog />}
+        {showSoundControl && (
+          <button
+            type="button"
+            aria-pressed={soundEnabled}
+            onClick={() => void handleToggleSound()}
+          >
+            {soundEnabled ? 'Mute sound' : 'Enable sound'}
+          </button>
+        )}
       </div>
+      {showSoundControl && soundEnabled && (
+        <div className="editor-camera-overlay-control">
+          <label htmlFor="scene3d-sound-volume">Sound volume</label>
+          <input
+            id="scene3d-sound-volume"
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={soundVolume}
+            aria-valuetext={`${soundVolume}%`}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSoundVolume(next);
+              sonicEngineRef.current?.setVolume(next);
+            }}
+          />
+        </div>
+      )}
       {screenshotError && (
         <p role="alert" aria-live="assertive" data-testid="screenshot-error">
           {screenshotError}

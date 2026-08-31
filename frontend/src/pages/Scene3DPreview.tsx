@@ -6,6 +6,7 @@ import { captureLiveScreenshot, screenshotFilename } from '../export/captureLive
 import { downloadBlob } from '../export/downloadBlob';
 import { buildThreeSceneGraph, disposeThreeSceneGraph } from '../render/threeSceneBuilder';
 import type { Scene3DDocument } from './scene3dTypes';
+import { useFullscreenToggle } from './useFullscreenToggle';
 
 /**
  * Issue #244: replaces `project3d-preview-placeholder` with a real,
@@ -50,6 +51,21 @@ import type { Scene3DDocument } from './scene3dTypes';
  * proposal preview (documented implementation decision: an unaccepted
  * proposal isn't the project's actual saved state yet, so offering a
  * screenshot of it there would be more confusing than useful).
+ *
+ * ## "Expand piece to fullscreen" (issue #288)
+ *
+ * Unlike the screenshot button, fullscreen is offered in *all 3*
+ * consumers, including the AI-proposal preview -- documented
+ * implementation decision: fullscreen is a pure viewing convenience with
+ * no side effect and no ambiguity about "which scene" it's of (there's
+ * still only ever one canvas on screen), unlike a screenshot download,
+ * which implies exporting a specific artifact of a scene that hasn't
+ * been accepted yet. Resizing across the fullscreen transition needs no
+ * new code: the existing `ResizeObserver`+`renderer.setSize` effect
+ * already reacts to any container size change, fullscreen-driven or not
+ * (confirmed by a dedicated regression test simulating a
+ * `ResizeObserver` callback firing with the browser's fullscreen
+ * dimensions).
  */
 function Scene3DPreview({
   scene,
@@ -67,6 +83,7 @@ function Scene3DPreview({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const [renderError, setRenderError] = useState(false);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const { isFullscreen, toggleFullscreen } = useFullscreenToggle(containerRef);
 
   async function handleTakeScreenshot() {
     setScreenshotError(null);
@@ -184,13 +201,16 @@ function Scene3DPreview({
   return (
     <div ref={containerRef} className="scene3d-preview" data-testid="scene3d-preview">
       <canvas ref={canvasRef} data-testid="scene3d-preview-canvas" />
-      {showScreenshotButton && (
-        <div role="group" aria-label="Preview actions" className="editor-tool-group">
+      <div role="group" aria-label="Preview actions" className="editor-tool-group">
+        {showScreenshotButton && (
           <button type="button" onClick={() => void handleTakeScreenshot()}>
             Take screenshot
           </button>
-        </div>
-      )}
+        )}
+        <button type="button" onClick={() => void toggleFullscreen()} aria-pressed={isFullscreen}>
+          {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+        </button>
+      </div>
       {screenshotError && (
         <p role="alert" aria-live="assertive" data-testid="screenshot-error">
           {screenshotError}

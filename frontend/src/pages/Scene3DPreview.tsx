@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
+import { downloadBlob } from '../export/downloadBlob';
 import { buildThreeSceneGraph, disposeThreeSceneGraph } from '../render/threeSceneBuilder';
 import type { Scene3DDocument } from './scene3dTypes';
 
@@ -38,12 +40,45 @@ import type { Scene3DDocument } from './scene3dTypes';
  * denial/missing hardware/unsupported browser" convention from Task 31's
  * camera permission UX -- a 3D preview that can't render is exactly that
  * kind of environment limitation, not a bug to surface as a crash.
+ *
+ * ## "Take screenshot" (issue #286)
+ *
+ * Lives inside this shared component (not each of its 3 callers)
+ * since only this component holds the live `<canvas>`/renderer ref.
+ * `showScreenshotButton` defaults to `true` for the manual/AI-assisted
+ * editor callers; `AIProposalPanel3D.tsx` passes `false` for its
+ * proposal preview (documented implementation decision: an unaccepted
+ * proposal isn't the project's actual saved state yet, so offering a
+ * screenshot of it there would be more confusing than useful).
  */
-function Scene3DPreview({ scene }: { scene: Scene3DDocument }) {
+function Scene3DPreview({
+  scene,
+  showScreenshotButton = true,
+  screenshotBaseName,
+}: {
+  scene: Scene3DDocument;
+  showScreenshotButton?: boolean;
+  /** Base name for the downloaded screenshot filename (e.g. the project
+   * title) -- falls back to the scene document's own `id`. */
+  screenshotBaseName?: string;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const [renderError, setRenderError] = useState(false);
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
+
+  async function handleTakeScreenshot() {
+    setScreenshotError(null);
+    try {
+      const blob = await captureLiveScreenshot(canvasRef.current);
+      downloadBlob(blob, screenshotFilename(screenshotBaseName ?? scene.id));
+    } catch (error) {
+      setScreenshotError(
+        error instanceof Error ? error.message : 'Something went wrong taking the screenshot.',
+      );
+    }
+  }
 
   // Mount/unmount only: create the renderer once, tied to this
   // component's lifetime, and resize it to the container.
@@ -54,7 +89,13 @@ function Scene3DPreview({ scene }: { scene: Scene3DDocument }) {
 
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      // Issue #286: `preserveDrawingBuffer: true` so a screenshot
+      // capture (`canvas.toBlob`/`toDataURL`, called from a button
+      // click well outside the render loop) reads the last-rendered
+      // frame reliably -- without it, browsers are free to clear the
+      // drawing buffer between animation frames, so a capture taken
+      // between rAF calls can otherwise come back blank.
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
     } catch {
       setRenderError(true);
       return;
@@ -143,6 +184,18 @@ function Scene3DPreview({ scene }: { scene: Scene3DDocument }) {
   return (
     <div ref={containerRef} className="scene3d-preview" data-testid="scene3d-preview">
       <canvas ref={canvasRef} data-testid="scene3d-preview-canvas" />
+      {showScreenshotButton && (
+        <div role="group" aria-label="Preview actions" className="editor-tool-group">
+          <button type="button" onClick={() => void handleTakeScreenshot()}>
+            Take screenshot
+          </button>
+        </div>
+      )}
+      {screenshotError && (
+        <p role="alert" aria-live="assertive" data-testid="screenshot-error">
+          {screenshotError}
+        </p>
+      )}
     </div>
   );
 }

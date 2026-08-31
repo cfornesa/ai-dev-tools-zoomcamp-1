@@ -243,7 +243,12 @@ function AIProposalPanel3D({
             Proposal ready. Nothing has been saved yet — review, then Accept or Reject.
           </p>
           <div data-testid="ai-3d-proposal-preview">
-            <Scene3DPreview scene={proposal.scene as unknown as Scene3DDocument} />
+            {/* Issue #286: no screenshot button here -- an unaccepted
+                proposal isn't the project's actual saved state yet. */}
+            <Scene3DPreview
+              scene={proposal.scene as unknown as Scene3DDocument}
+              showScreenshotButton={false}
+            />
           </div>
           <p data-testid="ai-3d-proposal-scene-summary">
             {proposedScene?.objects?.length ?? 0} object(s), {proposedScene?.lights?.length ?? 0}{' '}

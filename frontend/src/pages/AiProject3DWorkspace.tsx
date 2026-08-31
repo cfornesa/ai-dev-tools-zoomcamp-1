@@ -140,7 +140,7 @@ function AiProject3DWorkspace() {
           <section aria-label="Preview" role="region" data-panel="preview">
             {/* Issue #244: real Three.js rendering, replacing the
                 #226/#231 placeholder. */}
-            <Scene3DPreview scene={scene} />
+            <Scene3DPreview scene={scene} screenshotBaseName={project?.title} />
           </section>
           {/* Issue #232: the prompt panel is this editor's primary
               interaction surface, not tucked into a collapsible section

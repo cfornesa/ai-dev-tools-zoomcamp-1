@@ -207,7 +207,7 @@ function Project3DWorkspace() {
           <section aria-label="Preview" role="region" data-panel="preview">
             {/* Issue #244: real Three.js rendering, replacing the
                 #226 placeholder. */}
-            <Scene3DPreview scene={workingScene} />
+            <Scene3DPreview scene={workingScene} screenshotBaseName={project?.title} />
           </section>
           <Outline3DInspector scene={workingScene} onChange={setWorkingScene} />
           <div role="group" aria-label="Whole-scene AI actions" className="editor-tool-group">

@@ -186,4 +186,11 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
 
     expect(screen.getByTestId('gesture-camera-control')).toBeInTheDocument();
   });
+
+  it('gives the "Preview actions" button row its own spacing class (issue #298)', () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    expect(screen.getByRole('group', { name: 'Preview actions' })).toHaveClass(
+      'scene3d-preview-actions',
+    );
+  });
 });

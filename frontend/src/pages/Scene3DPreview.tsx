@@ -125,6 +125,18 @@ import { useFullscreenToggle } from './useFullscreenToggle';
  * `cameraOverlaySettings.ts`'s existing shared, `localStorage`-persisted
  * store unchanged -- the same preference the 2D editor's identical controls
  * already read/write, not a second copy.
+ *
+ * ## Preview-action button spacing (issue #298)
+ *
+ * `.editor-tool-group` (the shared class this button row already used) is
+ * only ever given `display: flex; gap: 4px` when nested under
+ * `.editor-toolbar` (`index.css`) -- this row never is, so its buttons got
+ * no flex layout or gap at all. Rather than adding a new unscoped
+ * `.editor-tool-group` base rule (the issue's own scope note flags this as
+ * risky without auditing every one of that class's ~15 other consumers
+ * first, several of which are radiogroups/action rows this fix has no
+ * reason to touch), this row gets its own additional class,
+ * `scene3d-preview-actions`, scoped to exactly this component.
  */
 function Scene3DPreview({
   scene,
@@ -366,7 +378,11 @@ function Scene3DPreview({
   return (
     <div ref={containerRef} className="scene3d-preview" data-testid="scene3d-preview">
       <canvas ref={canvasRef} data-testid="scene3d-preview-canvas" />
-      <div role="group" aria-label="Preview actions" className="editor-tool-group">
+      <div
+        role="group"
+        aria-label="Preview actions"
+        className="editor-tool-group scene3d-preview-actions"
+      >
         {showScreenshotButton && (
           <button type="button" onClick={() => void handleTakeScreenshot()}>
             Take screenshot

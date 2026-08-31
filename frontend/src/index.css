@@ -2689,6 +2689,18 @@ select.ai-proposal-field-full-width {
    editor's canvas-composited approach). Opacity/mirroring are applied
    inline from the shared `cameraOverlaySettings.ts` store; this class only
    handles static position/size/chrome. */
+/* Issue #298: `.editor-tool-group` only gets `display: flex; gap: 4px`
+   when nested under `.editor-toolbar` (see that rule above) -- this row
+   never is, so it needs its own flex/gap, scoped to just this component
+   rather than a new unscoped base rule for the shared class (see
+   Scene3DPreview.tsx's own doc comment for why). */
+.scene3d-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .scene3d-camera-overlay-video {
   position: absolute;
   right: 8px;

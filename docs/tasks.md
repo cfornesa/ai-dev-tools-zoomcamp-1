@@ -9308,12 +9308,14 @@ Dependencies: None for #270/#271/#280/#282/#283. #281 depends on #280.
 
 ## 237. Epic: per-piece screenshot, fullscreen, download/export, embed, gesture camera control, sound, and immersive VR view (parity with augmenthumankind.com)
 
-Status: FILED SCOPE COMPLETE -- every filed sub-issue (#285-295, #297-299)
-is CLOSED as of 2026-08-31. Two items remain deliberately unfiled (Tone.js
-sound/audio and the immersive first-person free-fly view), per this
-epic's own scope note below -- both need a dependency-approval/design
-pass the repository owner hasn't scheduled yet, so this epic stays open
-until those are either filed or explicitly descoped.
+Status: FILED SCOPE COMPLETE -- every filed sub-issue (#285-295,
+#297-299, #306-310) is CLOSED as of 2026-08-31. The repository owner
+approved Tone.js and asked for the sound/audio scope to be groomed and
+implemented in this same session (see tasks 248-252) -- that scope is
+now fully shipped. Only the immersive first-person free-fly view
+remains unfiled, still pending a 2D-scope design decision the
+repository owner hasn't scheduled yet, so this epic stays open until
+that's either filed or explicitly descoped.
 
 Sub-issue progress:
 - [#285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/285) (2D screenshot) -- CLOSED. Added a "Take screenshot" button to both 2D editors (manual and AI-assisted), capturing the live preview canvas via `captureLiveScreenshot.ts` (read-only `toBlob`/`toDataURL`, distinct from `captureSocialThumbnail.ts`'s off-screen stable-demo-mode render) and downloading it via a new shared `downloadBlob.ts` helper (extracted from 3 pre-existing duplicated download-trigger sites; #286 will reuse it too). Verified live. `make check` green.
@@ -9328,6 +9330,7 @@ Sub-issue progress:
   - Discovered live (via Claude for Chrome) right after shipping: no camera-feed overlay/opacity/mirror controls exist for this 3D surface, unlike the 2D editor's equivalent feature -- filed as [#297](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/297). Also found the "Preview actions" button row (Take screenshot/Expand fullscreen/Steer the piece) has no spacing at all -- `.editor-tool-group` is only styled when nested under `.editor-toolbar`, which this row never is -- filed as [#298](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/298). A repository-owner screenshot then surfaced a third gap: the Scene outline list (#281) visually overlaps/obscures the Live camera panel's own text -- filed as [#299](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/299). All three distilled via task-distillation per the repository owner's request; none block #294's own closure.
 - [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295) (hand-gesture guide dialog) -- CLOSED. New `HandGestureGuideDialog.tsx` ("Show hand gesture guide" button, shown alongside "Steer the piece" under the same `showGestureControl` gate) opens an accessible `role="dialog"` reusing `useAlertDialogFocus` (mounted as its own sub-component so the focus-management effect fires on dialog-open, not on the always-mounted trigger's own mount -- mirrors `PublishControl3D.tsx`'s `PublishConfirmDialog3D` split). Content deliberately covers only what #294 actually shipped -- combined look/orbit (open-hand move) and zoom (pinch), plus how to stop safely -- with no separate "Move"/"pan" step, since #294 has no independent pan gesture (unlike augmenthumankind.com's 5-step reference guide). Verified live in the sandboxed pane: opened the dialog on a real 3D project, confirmed exact content via the DOM, confirmed Escape closes it and returns focus to the trigger. `make check` green (871 backend / 2279 frontend).
 - [#292](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/292) (embeddable public viewer) -- CLOSED. New chrome-less `/embed/p/:id` sibling route reusing `PublicProjectViewer.tsx` unchanged. Investigated framing/CORS: the frontend is Vite-served (never Django), neither layer sets any `X-Frame-Options`/CSP restriction today, so nothing needed loosening; privacy boundary already holds structurally via the existing public-detail 404 contract. Verified live: published then unpublished a real test project, confirming chrome-less rendering and the identical unavailable-state privacy boundary at both routes. **Also flagged**: this session hit several isolated 5s test-timeout flakes on unrelated frontend test files during full-suite `make check` runs (each passes alone) -- worth a dedicated look at test-infrastructure/parallel-worker contention, noted for session completion.
+- Sound/audio (tasks 248-252, [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306)-[#310](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/310)) -- ALL CLOSED. Repository owner approved adding `tone` as a new dependency and asked for this scope groomed and implemented in the same session, grounded in a direct investigation of the actual `augment-humankind` reference implementation (not just the earlier live-browser inventory). Shipped: a shared Tone.js engine (`frontend/src/audio/sonicEngine.ts` -- ambient/movement/melodic voices + master bus, #306), keyboard-triggered notes (`pianoKeyMap.ts`, #307), a microphone input layer (`Tone.UserMedia`, `micFailure.ts`, #308), a webcam "camera theremin" sharing #294's existing camera/hand-tracking pipeline rather than a second stream (#309), and a "Piece controls" settings panel consolidating all of it plus a separate always-visible mute toggle (#310). See each task's own entry for full detail. `make check` green throughout (876 backend / 2350 frontend by the end). Verification boundary: real camera/mic permission grants needed a human click on native OS-level prompts in a couple of sub-issues (#308/#309) -- documented per-issue, not blocking closure since the surrounding logic/UI was independently verified.
 
 GitHub issue: [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274)
 
@@ -10013,7 +10016,7 @@ in that browser profile (same verification-boundary class as #308).
 
 ## 252. 3D sound: "Piece controls" settings popover + main-toolbar mute toggle
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#310](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/310)
 
@@ -10030,3 +10033,25 @@ dropdowns are optional/nice-to-have, not required.
 
 Dependencies: Depends on tasks 248/#306, 249/#307, 250/#308, 251/#309.
 Implement last in this group.
+
+Status update (2026-08-31): COMPLETE. A plain non-modal disclosure panel
+(`role="group" aria-label="Piece controls"`), deliberately not a dialog
+like `HandGestureGuideDialog.tsx` -- these controls are meant to stay
+adjustable while interacting with the piece, so a focus-trapping modal
+would work against that. Consolidates the volume slider + Keyboard
+notes/Live mic/Camera theremin toggles, previously all cluttering the
+main "Preview actions" row directly. "Mute sound"/"Enable sound" stays
+in the main row, unconditionally reachable. Muting also collapses the
+panel and resets every sub-toggle. Per-voice instrument dropdowns
+omitted per the issue's own optional scope note. Updated existing
+tests to open the panel before interacting with its now-nested
+controls; added dedicated open/close/consolidation tests. `make check`
+green (876 backend / 2350 frontend). Verified live: main row now shows
+only "Mute sound"/"Sound settings" once enabled; expanding confirmed
+all four consolidated controls present via DOM query; collapsing
+removed the panel cleanly.
+
+With tasks 248-252/#306-#310 all complete, epic 237/#274's sound/audio
+sub-scope is fully shipped -- only the immersive first-person view
+remains as this epic's one unfiled item, still pending a 2D-scope
+design decision from the repository owner.

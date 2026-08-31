@@ -14,6 +14,7 @@ vi.mock('../api/aiPreferences');
 vi.mock('../api/aiRetryPreference');
 
 const mockedCreateAIScene3D = vi.mocked(ai3dApi.createAIScene3D);
+const mockedEditAIScene3D = vi.mocked(ai3dApi.editAIScene3D);
 const mockedFetchModels = vi.mocked(aiPreferencesApi.fetchMistralModelPreferences);
 const mockedFetchPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
 const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
@@ -131,5 +132,66 @@ describe('AIProposalPanel3D retry (#266)', () => {
 
     await screen.findByTestId('ai-3d-error-quota-error');
     expect(screen.queryByTestId('ai-3d-retry-generation')).not.toBeInTheDocument();
+  });
+});
+
+// Issue #267: the success state must render a live visual preview of
+// `proposal.scene` before Accept/Reject, mirroring
+// AIProposalPanel.test.tsx's own preview-canvas coverage.
+describe('AIProposalPanel3D visual preview before Accept/Reject (#267)', () => {
+  it('shows a preview for a successful Create proposal, before any Accept', async () => {
+    mockedCreateAIScene3D.mockResolvedValue({
+      draft: true,
+      operation: 'create_scene',
+      scene: VALID_SCENE_3D,
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a bare stage');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    await screen.findByTestId('ai-3d-proposal-success');
+    expect(screen.getByTestId('ai-3d-proposal-preview')).toBeInTheDocument();
+    // Nothing has been saved: no call to the accept endpoint yet.
+    expect(screen.queryByTestId('ai-3d-accept-error')).not.toBeInTheDocument();
+  });
+
+  it('shows a preview for a successful Edit proposal, previewing the patched scene', async () => {
+    mockedEditAIScene3D.mockResolvedValue({
+      draft: true,
+      operation: 'edit_scene',
+      patch: [{ op: 'replace', path: '/objects/0/name', value: 'Renamed' }],
+      scene: { ...VALID_SCENE_3D, id: 'scene3d-1-edited' },
+      change_summary: 'Renamed an object.',
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    renderPanel();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Edit' }));
+    await userEvent.type(screen.getByLabelText(/describe the change/i), 'rename the box');
+    await userEvent.click(screen.getByRole('button', { name: /propose edit/i }));
+
+    await screen.findByTestId('ai-3d-proposal-success');
+    expect(screen.getByTestId('ai-3d-proposal-preview')).toBeInTheDocument();
+  });
+
+  it('removes the preview on Reject without ever calling the accept endpoint', async () => {
+    mockedCreateAIScene3D.mockResolvedValue({
+      draft: true,
+      operation: 'create_scene',
+      scene: VALID_SCENE_3D,
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a bare stage');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    await screen.findByTestId('ai-3d-proposal-preview');
+    await userEvent.click(screen.getByTestId('ai-3d-reject-button'));
+
+    expect(screen.queryByTestId('ai-3d-proposal-preview')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ai-3d-proposal-success')).not.toBeInTheDocument();
   });
 });

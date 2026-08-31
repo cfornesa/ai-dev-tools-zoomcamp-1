@@ -2,6 +2,7 @@ import { useRef, type FormEvent } from 'react';
 
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import type { SceneVersion3D } from '../api/projects3d';
+import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
 import { useAIProposal3D, type ProposalMode3D } from './useAIProposal3D';
 import { useSavedAIPreferences } from './useSavedAIPreferences';
@@ -21,10 +22,14 @@ const MODE_LABELS: Record<ProposalMode3D, string> = {
 /**
  * Issue #232: the 3D counterpart of `AIProposalPanel.tsx` -- same prompt
  * entry / pending / success / error states and Accept/Reject flow, driven
- * by `useAIProposal3D` instead. No live preview canvas (unlike the 2D
- * panel): no 3D renderer exists yet (#226's placeholder), so the success
- * state shows a text summary of the proposed scene instead, mirroring
- * `Project3DWorkspace.tsx`'s own placeholder convention.
+ * by `useAIProposal3D` instead. Issue #267: the success state now also
+ * renders a live `Scene3DPreview` of `proposal.scene` (never
+ * `workingCopy`), reusing the same Three.js component `Project3DWorkspace.tsx`/
+ * `AiProject3DWorkspace.tsx` use for the real editor canvas -- so the user
+ * sees exactly what a Create/Edit proposal will produce before choosing
+ * Accept or Reject, mirroring the 2D panel's `previewMountRef` preview.
+ * Rejecting only clears client-side proposal state (`reject()` in
+ * `useAIProposal3D.ts`); the working/saved scene is never touched.
  */
 function AIProposalPanel3D({
   projectId,
@@ -221,6 +226,9 @@ function AIProposalPanel3D({
           <p role="status" aria-live="polite">
             Proposal ready. Nothing has been saved yet — review, then Accept or Reject.
           </p>
+          <div data-testid="ai-3d-proposal-preview">
+            <Scene3DPreview scene={proposal.scene as unknown as Scene3DDocument} />
+          </div>
           <p data-testid="ai-3d-proposal-scene-summary">
             {proposedScene?.objects?.length ?? 0} object(s), {proposedScene?.lights?.length ?? 0}{' '}
             light(s), {proposedScene?.groups?.length ?? 0} group(s) proposed.

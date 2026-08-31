@@ -9582,7 +9582,22 @@ the camera panel's visual bounds.
 
 ## 242. Epic: unify all 4 editor layouts (2D/3D x manual/AI) on the 2D manual editor's panel structure
 
-Status: IN PROGRESS -- grooming complete, 3 atomic sub-issues filed
+Status: FILED SCOPE COMPLETE -- #303/#304/#305 all CLOSED (2026-08-31).
+All 3 non-reference editors now have real `.editor-panel`/grid
+containment, scoped per-page so none inherit the 2D manual editor's
+unscoped 5-row rules. A cross-cutting defect found and fixed identically
+in all three: each editor's Visual/Code toggle had drifted from
+`EditorWorkspace.tsx`'s own documented issue #159 convention ("Preview is
+never hidden; Code lives alongside it"), instead hiding Preview *and*
+every other panel (Outline/Tools/AI-assistant) whenever Code was active
+-- corrected everywhere. No `EditorPanelSwitcher` reuse turned out to be
+warranted anywhere: `AiEditorWorkspace.tsx`/`AiProject3DWorkspace.tsx`
+each have only one non-Preview panel (nothing to switch between), and
+`Project3DWorkspace.tsx`'s 2-panel sidebar (Outline + Tools) gets
+adequate narrow-viewport behavior from `.editor-workspace`'s existing
+plain-CSS stacking, matching #299's own precedent. This epic's filed
+scope is done; it stays open only pending #300's own closure decision
+(no further sub-issues currently identified).
 
 GitHub issue: [#300](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/300)
 
@@ -9807,7 +9822,7 @@ Outline, Tools) coexist when Code is active.
 
 ## 247. AiProject3DWorkspace.tsx: add panel/grid containment + responsive panel switcher
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#305](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/305)
 
@@ -9823,3 +9838,20 @@ own already-documented omission of both.
 Dependencies: None functionally; part of task 242/#300. Suggested to
 sequence after task 245/#303 (2D AI-assisted counterpart) so the same
 panel-containment approach can be reused rather than designed twice.
+
+Status update (2026-08-31): COMPLETE. Same drift and fix as #303/#304:
+the Visual/Code toggle hid the entire Preview section plus the
+"Whole-scene AI actions" button and the AI assistant panel whenever Code
+was active. Corrected: Code now renders inside Preview only; AI
+assistant stays mounted/visible regardless of Visual/Code state. Both
+wrapped as `.editor-panel` regions in a scoped `.ai-project3d-workspace`
+grid, reusing #303's exact approach as suggested. No `EditorPanelSwitcher`
+-- only two panels, Preview never hidden, nothing to switch between.
+New regression test; one existing test updated for the corrected
+Preview/AI-assistant-never-hidden behavior. `make check` green (876
+backend / 2294 frontend). Verified live: screenshot confirms the
+2-column grid at desktop width; DOM query confirms Preview, Code, and
+AI assistant all coexist when Code is active.
+
+With #303/#304/#305 all complete, task 242/#300's filed sub-issue scope
+is done -- see task 242's own entry for the epic's closing status.

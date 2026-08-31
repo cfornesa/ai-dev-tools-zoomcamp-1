@@ -8764,7 +8764,16 @@ implementation now proceeds through its sub-issues.
 
 ## 227. Backend: MistralModelPreference and AIPersona models + CRUD API
 
-Status: PROPOSED
+Status: COMPLETE. Added `MistralModelPreference` and `AIPersona`
+models (`backend/scenes/models.py`), migration
+`0022_mistral_model_preference_and_ai_persona`, and
+`backend/scenes/ai_preferences_api.py` with owner-scoped list/create/
+delete endpoints under `/api/account/mistral-model-preferences/` and
+`/api/account/ai-personas/`, wired in `backend/scenes/urls.py`. New
+tests in `backend/tests/test_ai_preferences.py` (7 tests) cover CRUD,
+blank-field validation, cross-owner isolation (404 on delete, records
+survive), and anonymous 401. `make check` passes (834 backend tests,
+2157 frontend tests). QA comment posted on #259.
 
 GitHub issue: [#259](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/259)
 

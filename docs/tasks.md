@@ -8648,7 +8648,23 @@ go-ahead.
 
 ## 224. 2D AI create-scene system prompt never restates per-shape-type required geometry fields
 
-Status: PROPOSED
+Status: COMPLETE. `_SYSTEM_PROMPT` now restates each shape type's
+required fields (circle: radius; rect: width/height/cornerRadius; line:
+x2/y2; path: points/closed; particleEmitter: rate/size/lifespan/speed/
+palette), mirroring `_SYSTEM_PROMPT_3D`'s style
+(`backend/ai_provider/mistral_provider.py`). Added
+`test_create_scene_system_prompt_lists_every_shape_types_required_fields`
+(`backend/tests/test_mistral_provider.py`), which asserts the restated
+list can never drift from `SCENE_SCHEMA["$defs"]["shape"]["allOf"]`'s
+actual per-type `required` arrays, mirroring #204's enum-drift test.
+`make check` passes (827 backend tests, 2157 frontend tests, all
+green). Manual verification against the real Mistral API (not the fake
+e2e provider) is a verification boundary: this session has no
+`backend/.env`/Mistral credentials and no production access, so the
+prompt fix's actual effect on live model output is unverified here —
+next action is for the repository owner to retry the exact reproducing
+prompts ("a red circle and a blue square", "one blue square") against
+production and confirm they now produce schema-valid shapes.
 
 GitHub issue: [#256](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/256)
 

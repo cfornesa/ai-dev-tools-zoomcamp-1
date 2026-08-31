@@ -9726,7 +9726,7 @@ but strong evidence alongside a sound root-cause fix.
 
 ## 245. AiEditorWorkspace.tsx: add panel/grid containment + responsive panel switcher
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#303](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/303)
 
@@ -9741,6 +9741,26 @@ narrow-viewport panel switching. No new Layers/Tools panel -- this
 editor's own doc comment already documents why neither exists here.
 
 Dependencies: None functionally; part of task 242/#300.
+
+Status update (2026-08-31): COMPLETE. Discovered mid-implementation that
+`EditorWorkspace.tsx`'s actual Code view is a sub-view *inside* the
+Preview panel (issue #159: "Preview is never one of that switcher's
+tabs... a Code view belongs alongside it"), not a third top-level
+sibling panel as this issue's own wording assumed -- `AiEditorWorkspace.tsx`
+had drifted from that, hiding the *entire* Preview section while Code was
+active. Corrected: Code now lives inside Preview (same `role="region"
+aria-label="Code"`, zero test churn), Preview is never hidden. That
+leaves only one other panel ("AI assistant"), so no `EditorPanelSwitcher`
+is rendered -- nothing to switch *between* -- documented as a scoped
+decision rather than forcing an empty single-tab switcher.
+`EditorPanelSwitcher.tsx` generalized to accept an optional `panels` prop
+(default: the manual editor's own unchanged 5-tab list) for #304/#305 to
+use. New `.ai-editor-workspace.editor-workspace` grid, scoped so its
+2-column rules don't inherit the manual editor's unscoped 5-row
+`data-panel='preview'` rule. New regression test. `make check` green
+(876 backend / 2291 frontend). Verified live at both desktop (2-column
+side-by-side) and mobile (375px, clean full-width stacking) widths, plus
+confirmed Preview stays mounted while Code is active.
 
 ## 246. Project3DWorkspace.tsx: add panel/grid containment + responsive panel switcher
 

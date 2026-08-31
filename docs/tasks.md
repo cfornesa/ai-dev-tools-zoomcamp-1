@@ -9145,7 +9145,42 @@ unchanged).
 
 ## 235. Merge gallery creation buttons into a single "+" split-button (page chooser + dropdown menu)
 
-Status: PROPOSED
+Status: COMPLETE. `Gallery.tsx`'s 4 "Create X" buttons + "Browse
+templates" link replaced by a split-button (`GalleryCreateMenu.tsx`):
+a "+" `<Link to="/create">` plus an adjacent arrow button that opens
+an accessible `role="menu"` dropdown, via a new
+`frontend/src/a11y/useMenuButton.ts` hook implementing the WAI-ARIA
+menu-button pattern (ArrowDown/Up navigation, Home/End, Escape closes
+and returns focus to the trigger, outside-click dismiss) -- this
+codebase's first interactive dropdown/menu component. New
+`CreateChooser.tsx` page at `/create`, styled like `Templates.tsx`'s
+`template-grid`/`template-card`, offering the same 5 actions as cards
+(the 2 2D cards default to the 'p5' renderer, documented explicitly,
+since the renderer select intentionally stays header-only per the
+owner's layout decision). All 4 creation calls extracted into
+`galleryCreateActions.ts` so neither the dropdown nor the chooser page
+duplicates request-building/navigation logic -- byte-identical
+behavior to the pre-#268 buttons. Renderer select stays in the gallery
+header, directly left of the split-button (existing `gap`/`margin-right:
+auto` flex layout already satisfies this without new CSS).
+
+Updated every E2E spec that clicked "Create new animation"/"Create new
+3D project"/"Create AI-assisted 3D project" directly (8 files) to open
+the dropdown first, and rewrote `responsiveShell.spec.ts`'s
+narrow-width layout test (the old two-buttons-forced-apart assertion
+no longer applies to a single compact split-button). Verified locally
+against a real PostgreSQL + Django (`AI_PROVIDER=fake`) + Vite stack:
+every touched spec file passes for real (19 + 18 + 46 passed/1 skipped
+across three runs), not just `--list`-discovered. New Vitest coverage:
+`Gallery.test.tsx` (19 tests, updated for the dropdown flow plus new
+keyboard-navigation/Escape coverage) and `CreateChooser.test.tsx` (5
+new tests). `make check` passes (853 backend tests unaffected, 2188
+frontend tests, lint/format/typecheck clean).
+
+Verification boundary: no live browser check of the new dropdown/
+chooser page possible in this sandbox beyond the local E2E run above
+-- next action is the repository owner confirming the split-button
+renders and behaves correctly in production via Claude in Chrome.
 
 GitHub issue: [#268](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/268)
 

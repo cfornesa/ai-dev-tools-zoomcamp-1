@@ -3,6 +3,10 @@ import { useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { getProject3D, type Project3D, type SceneVersion3D } from '../api/projects3d';
+import {
+  generateScene3DBundle,
+  triggerScene3DBundleDownload,
+} from '../export/generateHtmlExport3D';
 import AIProposalPanel3D from './AIProposalPanel3D';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
@@ -37,6 +41,33 @@ function AiProject3DWorkspace() {
   const handleAskAiImproveScene = () => {
     setAiSeed({ prompt: 'Improve this scene: ', nonce: Date.now() });
   };
+
+  // Issue #291: same wiring as #290's manual-editor export, always
+  // against the current `scene` state -- already updated the instant an
+  // AI proposal is accepted (`handleVersionPersisted` below), so this
+  // never reflects a stale/cached version.
+  const [exportState, setExportState] = useState<{ pending: boolean; error: string | null }>({
+    pending: false,
+    error: null,
+  });
+  async function handleExport() {
+    if (!scene) return;
+    setExportState({ pending: true, error: null });
+    try {
+      const result = await generateScene3DBundle(scene, project?.title ?? 'scene');
+      if (!result.ok) {
+        setExportState({ pending: false, error: result.reasons.join(' ') });
+        return;
+      }
+      triggerScene3DBundleDownload(result.zipBlob, result.filename);
+      setExportState({ pending: false, error: null });
+    } catch {
+      setExportState({
+        pending: false,
+        error: 'Something went wrong generating the export. Please try again.',
+      });
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -116,6 +147,19 @@ function AiProject3DWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <h2>{project?.title}</h2>
+        <button
+          type="button"
+          onClick={() => void handleExport()}
+          disabled={exportState.pending}
+          data-testid="ai-project3d-export-button"
+        >
+          {exportState.pending ? 'Generating export…' : 'Download standalone bundle'}
+        </button>
+        {exportState.error && (
+          <p role="alert" aria-live="assertive" data-testid="ai-project3d-export-error">
+            {exportState.error}
+          </p>
+        )}
       </header>
       <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
         <button

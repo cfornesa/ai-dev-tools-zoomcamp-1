@@ -9312,6 +9312,7 @@ Sub-issue progress:
 - [#289](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/289) (3D export core generator) -- CLOSED. Added `generateScene3DBundle()` (`frontend/src/export/generateHtmlExport3D.ts`), the 3D counterpart of task 200/#200's multi-file bundle format (index.html + styles/ + scripts/ + vendored runtime/ + README.txt), following `../generative/artPieceBundle.ts`'s existing precedent rather than a new format. New `standaloneThreeRuntimeSource.ts` re-implements `threeSceneBuilder.ts`'s scene-graph logic as a self-contained JS string (no ESM import, since `file://` can't resolve bare specifiers) against a vendored global `THREE`. No OrbitControls -- static camera, out of scope. Core generator only; #290/#291 wire it into the UI. `make check` green.
 - [#290](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/290) (wire export: manual 3D editor) -- CLOSED. "Download standalone bundle" button in `Project3DWorkspace.tsx`, a single button (not a full `ExportConfigDialog.tsx`-style dialog, documented decision: scene3d has no interaction-mode/camera-overlay config to offer). Verified live: real CDN fetch + ZIP + download, no error.
 - [#291](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/291) (wire export: AI-assisted 3D editor) -- CLOSED. Same wiring in `AiProject3DWorkspace.tsx`; verified an accepted AI proposal is reflected in the export, not the original persisted scene. Verified live, no error.
+- [#293](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/293) (embed-snippet UI, 2D+3D) -- PARTIAL/OPEN. 2D half done: an "Embed" toggle on `PublicProjectViewer.tsx` reveals a copyable `<iframe>` snippet targeting #292's chrome-less `/embed/p/:id`, with Clipboard API copy + manual-copy fallback. Verified live. 3D half discovered impossible today: `Project3D` has no publish/visibility/public-viewer concept at all (only 2D `Project` does) -- filed and linked [#296](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/296) ("Add publish/public-viewer capability for 3D projects") to close that gap; #293 stays open, dependency-blocked on #296 for its 3D criterion.
 - [#292](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/292) (embeddable public viewer) -- CLOSED. New chrome-less `/embed/p/:id` sibling route reusing `PublicProjectViewer.tsx` unchanged. Investigated framing/CORS: the frontend is Vite-served (never Django), neither layer sets any `X-Frame-Options`/CSP restriction today, so nothing needed loosening; privacy boundary already holds structurally via the existing public-detail 404 contract. Verified live: published then unpublished a real test project, confirming chrome-less rendering and the identical unavailable-state privacy boundary at both routes. **Also flagged**: this session hit several isolated 5s test-timeout flakes on unrelated frontend test files during full-suite `make check` runs (each passes alone) -- worth a dedicated look at test-infrastructure/parallel-worker contention, noted for session completion.
 
 GitHub issue: [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274)
@@ -9377,3 +9378,34 @@ Full scope and acceptance criteria in each sub-issue and in #274.
 
 Dependencies: None for #285-289/#292. #290/#291 depend on #289. #293
 depends on #292. #294 depends on task 236/#271. #295 depends on #294.
+
+## 238. Add publish/public-viewer capability for 3D projects (Project3D)
+
+Status: PROPOSED
+
+GitHub issue: [#296](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/296)
+
+Parent: none -- discovered mid-implementation of task 237/#293 (2026-08-31):
+`backend/scenes/models.py`'s `Project3D` model has no `visibility`/
+`published_at` fields at all, unlike `Project` (2D), which has a full
+publish/unpublish workflow, a public detail serializer/view, and a
+public gallery. There is no `/api/public/projects3d/<public_id>/`
+endpoint and no public 3D viewer route in the frontend. A 3D project
+cannot be published today -- #293's "a published 3D project offers a
+copyable embed snippet" acceptance criterion is currently impossible to
+satisfy as a direct result, not merely unimplemented.
+
+Scope: `Project3D` model `visibility`/`published_at` fields (mirroring
+`Project`'s exact shapes/migration pattern); backend publish/unpublish
+endpoints + a public detail serializer/view (mirror
+`ProjectPublishView`/`ProjectUnpublishView`/`PublicProjectSerializer`/
+`PublicProjectDetailView`) at `/api/public/projects3d/<public_id>/` or
+similar; a `PublicProject3DViewer.tsx` (mirror `PublicProjectViewer.tsx`,
+rendering via `Scene3DPreview.tsx`) routed at `/p3d/:id` (chrome-wrapped)
+and `/embed/p3d/:id` (chrome-less, mirroring #292's `/embed/p/:id`
+sibling-route pattern); a publish/unpublish UI control in
+`Project3DWorkspace.tsx`/`AiProject3DWorkspace.tsx` (mirror
+`PublishControl.tsx`); gallery-listing changes to surface published 3D
+pieces (may warrant its own follow-up if scope grows too large).
+
+Dependencies: None directly, though it unblocks #293's 3D half.

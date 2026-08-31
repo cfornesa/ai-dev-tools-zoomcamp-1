@@ -8762,6 +8762,16 @@ criterion-ready sub-issues (tasks 227-230/#259-262 below), in
 dependency order. This epic issue itself stays open as the umbrella;
 implementation now proceeds through its sub-issues.
 
+Status update (same session, completion): all four sub-issues
+(227/#259, 228/#260, 229/#261, 230/#262) shipped and QA'd in this
+session — models/API, persona prompt composition, Account settings
+UI, and editor panel dropdowns/full-width fields. Every criterion
+passes except live-browser verification, recorded as a verification
+boundary on each sub-issue (this sandbox has no `backend/.env`/
+PostgreSQL). This epic's own scope is now fully delivered; #257
+itself can be closed once the repository owner confirms the
+verification boundary is acceptable or performs a manual check.
+
 ## 227. Backend: MistralModelPreference and AIPersona models + CRUD API
 
 Status: COMPLETE. Added `MistralModelPreference` and `AIPersona`
@@ -8857,7 +8867,25 @@ Dependencies: task 227/#259 (backend CRUD API must exist first).
 
 ## 230. Frontend: AI editor model/persona dropdowns and full-width panel fields (2D+3D, create+edit)
 
-Status: PROPOSED
+Status: COMPLETE. The free-text model field in `AIProposalPanel.tsx`
+(2D) and `AIProposalPanel3D.tsx` (3D) is replaced by a `<select>`
+sourced from the user's saved models (task 229/#261's API), each with
+a new optional Persona `<select>` alongside it and a graceful empty
+state pointing to Account settings when nothing is saved yet. A new
+shared `useSavedAIPreferences` hook (`frontend/src/pages/
+useSavedAIPreferences.ts`) fetches both lists once for both panels.
+`useAIProposal`/`useAIProposal3D` gain `personaId` state threaded
+into `api/ai.ts`/`api/ai3d.ts`'s create/edit calls (new trailing
+optional `personaId` param). New CSS
+(`.ai-proposal-field-full-width`) makes both fields render
+full-width, the original complaint that started epic 225/#257.
+Existing free-text-typing tests were migrated to `selectOptions`
+against mocked saved-model lists; new tests cover empty states and
+model/persona selection reaching the request payload for both panels.
+`make check` passes (845 backend tests unaffected, 2164 frontend
+tests). Verification boundary: no live browser check possible in this
+sandbox (same boundary as tasks 224/#256, 229/#261). QA comment
+posted on #262 — this completes all four sub-issues of epic 225/#257.
 
 GitHub issue: [#262](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/262)
 

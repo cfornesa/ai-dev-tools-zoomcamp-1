@@ -9319,7 +9319,8 @@ Sub-issue progress:
 - [#290](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/290) (wire export: manual 3D editor) -- CLOSED. "Download standalone bundle" button in `Project3DWorkspace.tsx`, a single button (not a full `ExportConfigDialog.tsx`-style dialog, documented decision: scene3d has no interaction-mode/camera-overlay config to offer). Verified live: real CDN fetch + ZIP + download, no error.
 - [#291](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/291) (wire export: AI-assisted 3D editor) -- CLOSED. Same wiring in `AiProject3DWorkspace.tsx`; verified an accepted AI proposal is reflected in the export, not the original persisted scene. Verified live, no error.
 - [#293](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/293) (embed-snippet UI, 2D+3D) -- PARTIAL/OPEN. 2D half done: an "Embed" toggle on `PublicProjectViewer.tsx` reveals a copyable `<iframe>` snippet targeting #292's chrome-less `/embed/p/:id`, with Clipboard API copy + manual-copy fallback. Verified live. 3D half discovered impossible today: `Project3D` has no publish/visibility/public-viewer concept at all (only 2D `Project` does) -- filed and linked [#296](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/296) ("Add publish/public-viewer capability for 3D projects") to close that gap; #293 stays open, dependency-blocked on #296 for its 3D criterion.
-- [#294](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/294) (gesture-driven 3D camera control) -- CLOSED. "Steer the piece" toggle (off by default) on shared `Scene3DPreview.tsx`, reusing the exact same `CameraControl`/MediaPipe pipeline 2D gesture bindings use. `palmX`/`palmY` deltas drive orbit, `pinchStrength` drives zoom; pan/move explicitly out of scope. Verified live up to the sandbox's camera-access boundary. `make check` green. Unblocks #295.
+- [#294](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/294) (gesture-driven 3D camera control) -- CLOSED. "Steer the piece" toggle (off by default) on shared `Scene3DPreview.tsx`, reusing the exact same `CameraControl`/MediaPipe pipeline 2D gesture bindings use. `palmX`/`palmY` deltas drive orbit, `pinchStrength` drives zoom; pan/move explicitly out of scope. Verified live twice: once in this session's sandboxed pane (camera denied, expected boundary), and again via Claude for Chrome with the repository owner's real camera -- "Camera is active. Hand tracking is running locally" confirmed end-to-end, no crash. `make check` green. Unblocks #295.
+  - Discovered live (via Claude for Chrome) right after shipping: no camera-feed overlay/opacity/mirror controls exist for this 3D surface, unlike the 2D editor's equivalent feature -- filed as [#297](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/297). Also found the "Preview actions" button row (Take screenshot/Expand fullscreen/Steer the piece) has no spacing at all -- `.editor-tool-group` is only styled when nested under `.editor-toolbar`, which this row never is -- filed as [#298](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/298). A repository-owner screenshot then surfaced a third gap: the Scene outline list (#281) visually overlaps/obscures the Live camera panel's own text -- filed as [#299](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/299). All three distilled via task-distillation per the repository owner's request; none block #294's own closure.
 - [#292](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/292) (embeddable public viewer) -- CLOSED. New chrome-less `/embed/p/:id` sibling route reusing `PublicProjectViewer.tsx` unchanged. Investigated framing/CORS: the frontend is Vite-served (never Django), neither layer sets any `X-Frame-Options`/CSP restriction today, so nothing needed loosening; privacy boundary already holds structurally via the existing public-detail 404 contract. Verified live: published then unpublished a real test project, confirming chrome-less rendering and the identical unavailable-state privacy boundary at both routes. **Also flagged**: this session hit several isolated 5s test-timeout flakes on unrelated frontend test files during full-suite `make check` runs (each passes alone) -- worth a dedicated look at test-infrastructure/parallel-worker contention, noted for session completion.
 
 GitHub issue: [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274)
@@ -9416,3 +9417,95 @@ sibling-route pattern); a publish/unpublish UI control in
 pieces (may warrant its own follow-up if scope grows too large).
 
 Dependencies: None directly, though it unblocks #293's 3D half.
+
+## 239. 3D "Steer the piece" has no camera-feed overlay or opacity/mirror controls
+
+Status: PROPOSED
+
+GitHub issue: [#297](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/297)
+
+Parent: none -- discovered live (via Claude for Chrome, real camera) by
+the repository owner immediately after task 236/#294 ("Steer the piece")
+shipped in this session (2026-08-31). The 2D editor's existing
+camera-overlay feature (`cameraOverlaySettings.ts`/`cameraOverlayGeometry.ts`,
+a live video feed composited into the canvas with a persisted opacity
+slider and mirror toggle) has no 3D equivalent -- enabling gesture
+camera control gives the user zero visual feedback of what the camera
+sees, and no way to adjust overlay opacity/mirroring.
+
+Scope: add a camera-feed overlay to `Scene3DPreview.tsx`'s gesture-control
+UI, reusing the existing shared `cameraOverlaySettings.ts` store (not a
+second copy); decide during implementation how the feed composites
+against a WebGL canvas (DOM-overlaid `<video>` vs. a Three.js
+video-texture plane).
+
+Dependencies: None functionally; builds on task 236/#294 (already shipped).
+
+## 240. Scene3DPreview.tsx's preview-action button row has no spacing/padding
+
+Status: PROPOSED
+
+GitHub issue: [#298](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/298)
+
+Parent: none -- discovered live (via Claude for Chrome) by the repository
+owner immediately after task 236/#294 shipped (2026-08-31), which added a
+third button to this row. Root cause confirmed by grepping `index.css`:
+`.editor-toolbar .editor-tool-group { display: flex; gap: 4px; }` is the
+only rule for that class, scoped to a `.editor-toolbar` ancestor
+`Scene3DPreview.tsx`'s "Preview actions" row never has -- it gets no
+flex layout or gap at all, just default block-level button stacking.
+
+Scope: give the row real spacing, either via a new unscoped
+`.editor-tool-group` base rule (checked against every other consumer of
+that class first) or a dedicated class for this row. Purely visual/CSS.
+
+Dependencies: None.
+
+## 241. 3D Scene outline rows visually overlap/obscure the Live camera panel
+
+Status: PROPOSED
+
+GitHub issue: [#299](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/299)
+
+Parent: none -- discovered live via a repository-owner screenshot
+immediately after task 236/#294 shipped (2026-08-31): the redesigned
+Scene outline (task 236/#281) and the new Live camera gesture-control
+panel (#294) render with overlapping layout in `Project3DWorkspace.tsx`
+-- an outline row and its "Ask AI to change" button sit on top of the
+Live camera panel's own privacy-notice text. Unlike 2D's `LayersPanel.tsx`
+(a properly contained, non-overlapping panel), the 3D outline has no
+equivalent layout containment.
+
+Scope: fix `Outline3DInspector.tsx`'s `.outline3d-panel` container and/or
+`Project3DWorkspace.tsx`'s overall layout so the outline, Live camera
+panel, and any other same-region panel never visually overlap, at every
+viewport width this app already tests.
+
+Dependencies: None. Related to task 236/#281 and task 236/#294 (both
+already shipped) -- their combined layout is what exposed this. Reframed
+under task 242/#300's broader cross-editor layout-unification direction;
+this issue stays filed as the first concrete instance.
+
+## 242. Epic: unify all 4 editor layouts (2D/3D x manual/AI) on the 2D manual editor's panel structure
+
+Status: PROPOSED
+
+GitHub issue: [#300](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/300)
+
+Parent: none -- the repository owner's explicit direction (2026-08-31,
+same session), given immediately after #297/#298/#299 were filed for the
+3D manual editor specifically: `EditorWorkspace.tsx`'s mature, properly
+contained panel/region/responsive-switcher structure (task 94/#94) should
+be the reference layout for `AiEditorWorkspace.tsx`, `Project3DWorkspace.tsx`,
+and `AiProject3DWorkspace.tsx` too, not just a one-off fix to task 241/#299's
+specific overlap bug.
+
+Scope: audit the 3 non-reference editors against `EditorWorkspace.tsx`'s
+structure; decide per editor how much genuinely transfers (2D AI-assisted
+intentionally has no Layers panel; 3D has no interaction-runtime yet)
+versus what's a deliberate, documented difference; file atomic
+implementation sub-issues once groomed, starting from #299.
+
+Dependencies: None to start (grooming/audit only). Directly related to
+task 241/#299 (a first concrete instance of the gap this epic addresses
+system-wide).

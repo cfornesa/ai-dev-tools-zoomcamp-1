@@ -9,6 +9,7 @@ import {
   type SceneVersion3D,
 } from '../api/projects3d';
 import { validateScene3D } from '../validation/scene3d';
+import AIProposalPanel3D from './AIProposalPanel3D';
 import Outline3DInspector from './Outline3DInspector';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
@@ -40,6 +41,17 @@ function Project3DWorkspace() {
   const [persistedScene, setPersistedScene] = useState<Scene3DDocument | null>(null);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
   const [saveState, setSaveState] = useState<SaveState>(IDLE_SAVE_STATE);
+  // Issue #283: this manual 3D editor previously had no AI panel at all
+  // (unlike its 2D counterpart's always-present "AI proposals" section) --
+  // mounted only while a whole-scene "Ask AI to improve this scene"
+  // request is active, mirroring the 2D manual editor's "Ask AI to fix
+  // this"/"Ask AI to change this" floating-panel pattern (#159/#282).
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [aiSeed, setAiSeed] = useState<{ prompt: string; nonce: number } | null>(null);
+  const handleAskAiImproveScene = () => {
+    setAiSeed({ prompt: 'Improve this scene: ', nonce: Date.now() });
+    setShowAiPanel(true);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -198,6 +210,29 @@ function Project3DWorkspace() {
             <Scene3DPreview scene={workingScene} />
           </section>
           <Outline3DInspector scene={workingScene} onChange={setWorkingScene} />
+          <div role="group" aria-label="Whole-scene AI actions" className="editor-tool-group">
+            <button type="button" onClick={handleAskAiImproveScene}>
+              Ask AI to improve this scene
+            </button>
+          </div>
+          {showAiPanel && (
+            <section
+              aria-label="Ask AI to improve this scene"
+              role="region"
+              data-testid="project3d-ai-improve-panel"
+            >
+              <button type="button" onClick={() => setShowAiPanel(false)}>
+                Close
+              </button>
+              <AIProposalPanel3D
+                projectId={id}
+                workingCopy={workingScene}
+                currentVersionId={project?.current_version?.id ?? null}
+                onAccepted={handleVersionSaved}
+                seed={aiSeed}
+              />
+            </section>
+          )}
         </>
       )}
       {previewView === 'code' && (

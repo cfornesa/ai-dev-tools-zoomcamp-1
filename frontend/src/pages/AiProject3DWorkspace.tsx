@@ -28,6 +28,15 @@ function AiProject3DWorkspace() {
   const [project, setProject] = useState<Project3D | null>(null);
   const [scene, setScene] = useState<Scene3DDocument | null>(null);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
+  // Issue #283: this panel is already always-present (the whole point of
+  // the AI-assisted editor), so "Ask AI to improve this scene" just
+  // re-seeds it into Edit mode with a generic prompt rather than mounting
+  // a second instance -- unlike the manual 3D editor
+  // (`Project3DWorkspace.tsx`), which had no AI panel to reuse.
+  const [aiSeed, setAiSeed] = useState<{ prompt: string; nonce: number } | null>(null);
+  const handleAskAiImproveScene = () => {
+    setAiSeed({ prompt: 'Improve this scene: ', nonce: Date.now() });
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -137,12 +146,18 @@ function AiProject3DWorkspace() {
               interaction surface, not tucked into a collapsible section
               -- same "prompt-first" convention as #224's 2D
               AiEditorWorkspace.tsx. */}
+          <div role="group" aria-label="Whole-scene AI actions" className="editor-tool-group">
+            <button type="button" onClick={handleAskAiImproveScene}>
+              Ask AI to improve this scene
+            </button>
+          </div>
           <section aria-label="AI assistant" role="region" data-panel="ai-assistant">
             <AIProposalPanel3D
               projectId={id}
               workingCopy={scene}
               currentVersionId={project?.current_version?.id ?? null}
               onAccepted={handleVersionPersisted}
+              seed={aiSeed}
             />
           </section>
         </>

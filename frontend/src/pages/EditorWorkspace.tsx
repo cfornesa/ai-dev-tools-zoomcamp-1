@@ -1537,6 +1537,15 @@ function EditorWorkspace() {
     setShowAiLayerPanel(true);
   };
 
+  // Issue #283: unscoped, whole-scene counterpart — not tied to any
+  // specific item, so the seeded prompt is a generic starting point the
+  // user fills in, rather than naming anything (documented implementation
+  // decision, per the issue's own "decide during implementation" note).
+  const handleAskAiImproveScene = () => {
+    setAiLayerSeed({ prompt: 'Improve this scene: ', nonce: Date.now() });
+    setShowAiLayerPanel(true);
+  };
+
   // Task 26: "latest value" refs so the window-level drag listeners below
   // (created once, lazily, and reused for the lifetime of the component —
   // see `dragHandlers`) always act against the current scene editor and
@@ -3777,6 +3786,7 @@ function EditorWorkspace() {
               cameraLayerOrder={effectiveCameraLayerOrder}
               onCameraLayerOrderChange={updateCameraLayerOrder}
               onAskAiChange={handleAskAiChangeLayer}
+              onAskAiImprove={handleAskAiImproveScene}
             />
             {/* Issue #282: mirrors the "Ask AI to fix this error" panel
                 above exactly — a second, independent `AIProposalPanel`

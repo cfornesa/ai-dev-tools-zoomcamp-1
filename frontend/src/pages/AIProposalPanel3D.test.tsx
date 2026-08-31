@@ -195,3 +195,53 @@ describe('AIProposalPanel3D visual preview before Accept/Reject (#267)', () => {
     expect(screen.queryByTestId('ai-3d-proposal-success')).not.toBeInTheDocument();
   });
 });
+
+describe('AIProposalPanel3D seed prop (issue #283)', () => {
+  it('switches to Edit mode and fills the prompt when a seed is provided', async () => {
+    render(
+      <AIProposalPanel3D
+        projectId="p1"
+        workingCopy={VALID_SCENE_3D}
+        currentVersionId={1}
+        onAccepted={vi.fn()}
+        seed={{ prompt: 'Improve this scene: ', nonce: 1 }}
+      />,
+    );
+
+    const editRadio = await screen.findByRole('radio', { name: 'Edit' });
+    expect(editRadio).toHaveAttribute('aria-checked', 'true');
+    const promptField = screen.getByLabelText(/describe the change/i) as HTMLTextAreaElement;
+    expect(promptField.value).toBe('Improve this scene: ');
+  });
+
+  it('re-applies the seed when nonce changes, even with identical prompt text', async () => {
+    const { rerender } = render(
+      <AIProposalPanel3D
+        projectId="p1"
+        workingCopy={VALID_SCENE_3D}
+        currentVersionId={1}
+        onAccepted={vi.fn()}
+        seed={{ prompt: 'Improve this scene: ', nonce: 1 }}
+      />,
+    );
+    const promptField = (await screen.findByLabelText(
+      /describe the change/i,
+    )) as HTMLTextAreaElement;
+    await userEvent.clear(promptField);
+    expect(promptField.value).toBe('');
+
+    rerender(
+      <AIProposalPanel3D
+        projectId="p1"
+        workingCopy={VALID_SCENE_3D}
+        currentVersionId={1}
+        onAccepted={vi.fn()}
+        seed={{ prompt: 'Improve this scene: ', nonce: 2 }}
+      />,
+    );
+
+    expect((screen.getByLabelText(/describe the change/i) as HTMLTextAreaElement).value).toBe(
+      'Improve this scene: ',
+    );
+  });
+});

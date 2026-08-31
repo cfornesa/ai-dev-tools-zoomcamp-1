@@ -187,3 +187,18 @@ describe('"Ask AI to change this" (LayersPanel rows)', () => {
     expect(mockedEditAIScene).not.toHaveBeenCalled();
   });
 });
+
+describe('"Ask AI to improve this scene" (whole-scene, issue #283)', () => {
+  it('offers an unscoped action that seeds a generic Edit-mode prompt', async () => {
+    await loadWorkspaceWithShape();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
+
+    const panel = screen.getByTestId('editor-ai-layer-panel');
+    const editRadio = within(panel).getByRole('radio', { name: 'Edit' });
+    expect(editRadio).toHaveAttribute('aria-checked', 'true');
+    const promptField = within(panel).getByLabelText(/describe the change/i) as HTMLTextAreaElement;
+    expect(promptField.value).toBe('Improve this scene: ');
+  });
+});

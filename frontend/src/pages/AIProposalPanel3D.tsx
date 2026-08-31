@@ -1,4 +1,4 @@
-import { useRef, type FormEvent } from 'react';
+import { useEffect, useRef, type FormEvent } from 'react';
 
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import type { SceneVersion3D } from '../api/projects3d';
@@ -12,6 +12,10 @@ type AIProposalPanel3DProps = {
   workingCopy: Scene3DDocument | null;
   currentVersionId: number | null;
   onAccepted: (version: SceneVersion3D) => void;
+  /** Issue #283: the 3D counterpart of `AIProposalPanel.tsx`'s identically
+   * named/shaped prop (issue #159) — when set, seeds this panel into Edit
+   * mode with a specific prompt every time `seed.nonce` changes. */
+  seed?: { prompt: string; nonce: number } | null;
 };
 
 const MODE_LABELS: Record<ProposalMode3D, string> = {
@@ -36,6 +40,7 @@ function AIProposalPanel3D({
   workingCopy,
   currentVersionId,
   onAccepted,
+  seed,
 }: AIProposalPanel3DProps) {
   const {
     mode,
@@ -63,6 +68,17 @@ function AIProposalPanel3D({
 
   const workingCopyRef = useRef(workingCopy);
   workingCopyRef.current = workingCopy;
+
+  // Issue #283: mirrors `AIProposalPanel.tsx`'s identical #159 seed effect
+  // exactly — keyed off `seed?.nonce` (not the `seed` object's identity or
+  // its `prompt` text alone) so a second seed with the same prompt text
+  // still re-applies.
+  useEffect(() => {
+    if (!seed) return;
+    setMode('edit');
+    setPrompt(seed.prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see comment above
+  }, [seed?.nonce]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

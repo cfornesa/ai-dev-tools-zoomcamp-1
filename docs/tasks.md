@@ -9857,7 +9857,7 @@ is done -- see task 242's own entry for the epic's closing status.
 
 ## 248. 3D sound: core Tone.js engine (ambient/movement/melodic layers + master bus)
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306)
 
@@ -9883,6 +9883,25 @@ master on/off + volume control (final placement refined by task
 252/#310).
 
 Dependencies: None. Foundation for tasks 249-252/#307-#310.
+
+Status update (2026-08-31): COMPLETE. `tone@15.1.22` added.
+`frontend/src/audio/sonicEngine.ts`: one `Tone.Volume` bus + `Tone.Filter`
+feeding three synth voices; ambient runs via `Tone.Loop`; movement is fed
+every render-loop frame by `Scene3DPreview.tsx` via the camera's real
+position delta (thresholded against idle jitter, debounced against
+per-frame retriggering); melodic has no trigger yet. `tone` is
+lazy-loaded via dynamic `import()` only inside `enable()`, mirroring
+`mediapipeProvider.ts`'s lazy-loading convention, so tests never touch
+real Web Audio API -- an injectable `loadTone` parameter matches
+`CameraControl.tsx`'s own `createProvider` test seam. A minimal "Enable
+sound"/volume-slider control wired into `Scene3DPreview.tsx`'s preview-
+actions row; `AIProposalPanel3D.tsx` opts out via a new
+`showSoundControl={false}`. New coverage: `sonicEngine.test.ts` (10
+tests), `Scene3DPreview.sound.test.tsx` (6 tests). `make check` green
+(876 backend / 2310 frontend). Verified live: enabled sound (console
+confirmed `Tone.js v15.1.22` initialized, zero errors), adjusted volume,
+dragged the canvas to drive real camera motion into the movement voice,
+muted -- all clean.
 
 ## 249. 3D sound: keyboard-triggered notes on the melodic voice
 

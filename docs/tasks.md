@@ -8934,3 +8934,44 @@ explicitly designated person) performs the click themselves, following
 Full scope and acceptance criteria in #258.
 
 Dependencies: None.
+
+## 231. 2D AI create-scene system prompt never restates layerId uniqueness or demoSignals' allowed keys
+
+Status: PROPOSED
+
+GitHub issue: [#264](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/264)
+
+Parent: none — distilled from live production verification of task
+224/#256's fix, same session (2026-08-31).
+
+Discovered live against production via Claude in Chrome while
+confirming #256's fix works (it does, for its own shape-geometry
+scope). The prompt "A red circle and a blue square side by side on a
+white background" against `mistral-small-latest`, reproduced across
+three separate real calls, produced two distinct schema-invalid
+failures never covered by #204 or #256:
+`$.demoSignals: Additional properties are not allowed ('handPresence'
+was unexpected)` (once, with a Persona selected) and
+`$.shapes[N].layerId: layerId '...' is assigned to 2 shapes; each
+shape must have its own layer.` (twice, with no Persona selected —
+confirming this is not #260's persona composition at fault).
+
+Root cause: same class `.agents/memory/mistral-non-strict-schema-mode.md`
+documents. The `layerId` uniqueness rule (task 111/#142,
+`backend/scenes/validation.py`) is a cross-item constraint **not
+expressible in JSON Schema at all**, so the system prompt's
+natural-language instruction is the *only* possible mitigation, and
+none exists yet. `demoSignals`' closed key set
+(`schema/scene.schema.json`'s `$defs.demoSignals`,
+`additionalProperties: false`) is schema-expressible but never
+restated, and likely confused with the separately-restated
+`signal` enum (which does include `handPresence`, just not as a
+`demoSignals` key).
+
+Scope: add both missing restatements to `_SYSTEM_PROMPT`
+(`backend/ai_provider/mistral_provider.py`), plus a drift-proof
+regression test for the `demoSignals` key list mirroring #204/#256's
+pattern, plus real-Mistral manual re-verification. Full scope and
+acceptance criteria in #264.
+
+Dependencies: None — same independent pattern as task 224/#256.

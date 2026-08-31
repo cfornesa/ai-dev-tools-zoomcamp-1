@@ -73,6 +73,29 @@ structural constraint the schema encodes (enums, required-field sets,
 conditional `if`/`then` branches) — not just enums — for each
 `response_format`/`strict: False` code path.
 
+**Fourth instance — layerId uniqueness (not schema-expressible at all)
+and demoSignals' closed key set:** confirmed live in production
+(2026-08-31, via Claude in Chrome) while verifying #256's fix worked:
+the same reproducing-prompt family ("A red circle and a blue square
+side by side on a white background") still fails, just on two
+*different* constraints #256 never covered. `$.demoSignals: Additional
+properties are not allowed ('handPresence' was unexpected)` and
+`$.shapes[N].layerId: layerId '...' is assigned to 2 shapes; each
+shape must have its own layer.` — the latter reproduced twice with "No
+persona" selected, ruling out #260's persona composition as the cause.
+The layerId-uniqueness rule (task 111/#142) is the first confirmed
+instance of this whole lesson where the constraint is **not
+expressible in JSON Schema at all** (a cross-item check in
+`scenes/validation.py`, not the schema file) — `response_format`'s
+structured-output mode literally cannot help here regardless of
+`strict` setting; the natural-language system prompt is the *only*
+possible mitigation. Filed as task 231/[#264](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/264).
+When auditing this class of gap going forward, also check
+cross-item/relational constraints enforced only in `validation.py`
+(uniqueness, referential integrity) — not just single-field schema
+constraints (enums, required, additionalProperties) covered by the
+first three instances above.
+
 **Third instance — additive Personas must never weaken this:** issue
 [#260](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/260)
 added per-user "Persona" system-prompt add-ons

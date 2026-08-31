@@ -2671,13 +2671,26 @@ select.ai-proposal-field-full-width {
    component's own documented choice. The canvas itself fills that box;
    `ResizeObserver`+`renderer.setSize` in Scene3DPreview.tsx keeps the
    camera's aspect ratio in sync with the box's actual size. */
+/* Issue #299: this container must stay auto-height, not a fixed 360px box
+   -- it holds the canvas frame below *plus* the button row and (while
+   gesture control is on) the Live camera panel, and a fixed height with
+   default (visible) overflow let that extra content spill past the box
+   without reserving space for it, so the next sibling in the page
+   (`Outline3DInspector`'s Scene outline list) started right at the 360px
+   mark and visually overlapped whatever had spilled over. The *canvas's*
+   own size still needs to stay fixed regardless of how much content is
+   below it -- that's what `.scene3d-preview-canvas-frame` is for. */
 .scene3d-preview {
+  width: 100%;
+}
+
+.scene3d-preview-canvas-frame {
   position: relative;
   width: 100%;
   height: 360px;
 }
 
-.scene3d-preview canvas {
+.scene3d-preview-canvas-frame canvas {
   display: block;
   width: 100%;
   height: 100%;

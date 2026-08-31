@@ -160,7 +160,14 @@ describe('Scene3DPreview "Expand piece to fullscreen" (issue #288)', () => {
     const { container } = render(<Scene3DPreview scene={baseScene()} />);
     setSizeSpy.mockClear();
 
-    const previewEl = container.querySelector('[data-testid="scene3d-preview"]') as HTMLElement;
+    // Issue #299: the canvas is sized from the fixed-height
+    // `.scene3d-preview-canvas-frame` box, not the outer `.scene3d-preview`
+    // (which must stay auto-height so it never clips/overlaps its own
+    // button row and gesture-control panel -- see Scene3DPreview.tsx's own
+    // doc comment) -- so this is the element resize-observed for sizing.
+    const previewEl = container.querySelector(
+      '[data-testid="scene3d-preview-canvas-frame"]',
+    ) as HTMLElement;
     Object.defineProperty(previewEl, 'clientWidth', { configurable: true, value: 1920 });
     Object.defineProperty(previewEl, 'clientHeight', { configurable: true, value: 1080 });
 

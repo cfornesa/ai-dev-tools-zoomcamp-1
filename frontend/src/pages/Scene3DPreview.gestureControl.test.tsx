@@ -193,4 +193,36 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
       'scene3d-preview-actions',
     );
   });
+
+  it('keeps the fixed-height canvas frame separate from the auto-height outer container (issue #299)', async () => {
+    const fake = createFakeProvider();
+    const { container } = render(
+      <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => fake.provider} />,
+    );
+    const user = userEvent.setup();
+
+    // The outer element (fullscreen target, `data-testid="scene3d-preview"`)
+    // must never carry the fixed-height class itself -- only its inner
+    // canvas frame does -- so it can grow to fit the button row and (once
+    // enabled) the Live camera panel without either spilling past it and
+    // overlapping whatever comes after this component in the page (the
+    // exact bug this issue reports).
+    const outer = screen.getByTestId('scene3d-preview');
+    expect(outer).not.toHaveClass('scene3d-preview-canvas-frame');
+    const canvasFrame = screen.getByTestId('scene3d-preview-canvas-frame');
+    expect(canvasFrame).toHaveClass('scene3d-preview-canvas-frame');
+    expect(outer.contains(canvasFrame)).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
+    const gestureRegion = screen.getByTestId('gesture-camera-control');
+    // The Live camera panel is a *sibling* of the canvas frame (both
+    // direct children of the auto-height outer container), not nested
+    // inside the fixed-height box -- so its content can never be clipped
+    // by, or spill silently past, that box.
+    expect(outer.contains(gestureRegion)).toBe(true);
+    expect(canvasFrame.contains(gestureRegion)).toBe(false);
+    expect(container.querySelector('.scene3d-preview')).not.toHaveClass(
+      'scene3d-preview-canvas-frame',
+    );
+  });
 });

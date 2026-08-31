@@ -118,10 +118,11 @@ import { useFullscreenToggle } from './useFullscreenToggle';
  * element could be composited through. The simplest option the issue's own
  * scope note offers -- a DOM-overlaid `<video>` element positioned over the
  * WebGL canvas -- is what's implemented here: a small `<video>` in the
- * corner of `.scene3d-preview`, shown only while gesture control is on and
- * `CameraControl`'s own status reaches `'active'`. No drag/resize (out of
- * scope -- the 2D feature's geometry system is a separate, more involved
- * concern this issue never asked for). Opacity and mirroring reuse
+ * corner of `.scene3d-preview-canvas-frame`, shown only while gesture
+ * control is on and `CameraControl`'s own status reaches `'active'`. No
+ * drag/resize (out of scope -- the 2D feature's geometry system is a
+ * separate, more involved concern this issue never asked for). Opacity
+ * and mirroring reuse
  * `cameraOverlaySettings.ts`'s existing shared, `localStorage`-persisted
  * store unchanged -- the same preference the 2D editor's identical controls
  * already read/write, not a second copy.
@@ -137,6 +138,25 @@ import { useFullscreenToggle } from './useFullscreenToggle';
  * first, several of which are radiogroups/action rows this fix has no
  * reason to touch), this row gets its own additional class,
  * `scene3d-preview-actions`, scoped to exactly this component.
+ *
+ * ## Fixed-height canvas without clipping its own siblings (issue #299)
+ *
+ * The outer element this component returns (`containerRef`, `.scene3d-preview`)
+ * must stay auto-height: it's the target `useFullscreenToggle` requests
+ * fullscreen on, and everything meant to stay visible/usable while
+ * fullscreen (the button row, the Live camera panel) must be its
+ * descendant. It used to also carry the canvas's own fixed 360px height
+ * directly -- with the default (visible) overflow, that let the button
+ * row and (once gesture control was on) the Live camera panel's text
+ * spill past that 360px box without the box's own height ever reflecting
+ * it, so a caller's next sibling in the DOM (`Project3DWorkspace.tsx`'s
+ * `Outline3DInspector`) started rendering right at the 360px mark and
+ * visually overlapped whatever had spilled over. The fixed height now
+ * lives on a dedicated inner `.scene3d-preview-canvas-frame` (holding only
+ * the canvas and its video overlay), sized/observed via `canvasFrameRef`
+ * rather than `containerRef` -- so the canvas keeps a stable size
+ * regardless of how much content renders below it, and the outer
+ * container's own height always reflects everything it actually contains.
  */
 function Scene3DPreview({
   scene,
@@ -157,6 +177,7 @@ function Scene3DPreview({
   screenshotBaseName?: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const canvasFrameRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const [renderError, setRenderError] = useState(false);
@@ -230,11 +251,20 @@ function Scene3DPreview({
   }
 
   // Mount/unmount only: create the renderer once, tied to this
-  // component's lifetime, and resize it to the container.
+  // component's lifetime, and resize it to the canvas frame.
   useEffect(() => {
     const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
+    // Issue #299: sized from `canvasFrameRef` (the fixed-height box that
+    // wraps only the canvas), not `containerRef` (the outer element,
+    // which must stay auto-height so the button row and gesture-control
+    // panel below the canvas are never clipped/overlapped by a sibling --
+    // see `.scene3d-preview`'s own doc comment in `index.css`).
+    // `containerRef` remains the fullscreen target (`useFullscreenToggle`
+    // below): the "Exit fullscreen" button and every other control must
+    // stay a descendant of whatever element enters native fullscreen, or
+    // they'd disappear from view entirely while fullscreen is active.
+    const canvasFrame = canvasFrameRef.current;
+    if (!canvas || !canvasFrame) return;
 
     let renderer: THREE.WebGLRenderer;
     try {
@@ -252,9 +282,9 @@ function Scene3DPreview({
     rendererRef.current = renderer;
 
     function resize() {
-      if (!container) return;
-      const width = container.clientWidth || 1;
-      const height = container.clientHeight || 1;
+      if (!canvasFrame) return;
+      const width = canvasFrame.clientWidth || 1;
+      const height = canvasFrame.clientHeight || 1;
       renderer.setSize(width, height, false);
     }
     resize();
@@ -262,7 +292,7 @@ function Scene3DPreview({
     let resizeObserver: ResizeObserver | undefined;
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(resize);
-      resizeObserver.observe(container);
+      resizeObserver.observe(canvasFrame);
     }
 
     return () => {
@@ -377,7 +407,28 @@ function Scene3DPreview({
 
   return (
     <div ref={containerRef} className="scene3d-preview" data-testid="scene3d-preview">
-      <canvas ref={canvasRef} data-testid="scene3d-preview-canvas" />
+      <div
+        ref={canvasFrameRef}
+        className="scene3d-preview-canvas-frame"
+        data-testid="scene3d-preview-canvas-frame"
+      >
+        <canvas ref={canvasRef} data-testid="scene3d-preview-canvas" />
+        {showGestureControl && gestureCameraStatus === 'active' && gestureCameraStream && (
+          <video
+            ref={gestureCameraVideoRef}
+            data-testid="scene3d-camera-overlay-video"
+            aria-hidden="true"
+            muted
+            playsInline
+            autoPlay
+            className="scene3d-camera-overlay-video"
+            style={{
+              opacity: cameraOverlayOpacity,
+              transform: cameraOverlayMirrored ? 'scaleX(-1)' : undefined,
+            }}
+          />
+        )}
+      </div>
       <div
         role="group"
         aria-label="Preview actions"
@@ -455,21 +506,6 @@ function Scene3DPreview({
                 Mirror camera overlay
               </label>
             </div>
-          )}
-          {gestureCameraStatus === 'active' && gestureCameraStream && (
-            <video
-              ref={gestureCameraVideoRef}
-              data-testid="scene3d-camera-overlay-video"
-              aria-hidden="true"
-              muted
-              playsInline
-              autoPlay
-              className="scene3d-camera-overlay-video"
-              style={{
-                opacity: cameraOverlayOpacity,
-                transform: cameraOverlayMirrored ? 'scaleX(-1)' : undefined,
-              }}
-            />
           )}
         </div>
       )}

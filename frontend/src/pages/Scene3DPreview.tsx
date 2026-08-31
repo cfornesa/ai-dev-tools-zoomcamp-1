@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import CameraControl, { type CameraControlProps } from '../components/CameraControl';
+import CameraControl, {
+  type CameraControlProps,
+  type CameraStatus,
+} from '../components/CameraControl';
+import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
 import { buildThreeSceneGraph, disposeThreeSceneGraph } from '../render/threeSceneBuilder';
@@ -102,6 +106,25 @@ import { useFullscreenToggle } from './useFullscreenToggle';
  * small accessible modal explaining exactly the gesture set documented
  * above -- see that component's own doc comment for why its content is
  * scoped to what this build actually ships.
+ *
+ * ## Camera-feed overlay + opacity/mirror controls (issue #297)
+ *
+ * Unlike the 2D editor's camera overlay (`EditorWorkspace.tsx`), which
+ * draws the video frame into the p5/Canvas2D canvas itself (so it can be
+ * dragged/resized independently of layer order) and keeps its own
+ * `<video>` element hidden, this 3D surface has no such compositing step
+ * to hook into -- `Scene3DPreview.tsx` hands a live Three.js render straight
+ * to the WebGL canvas every frame, with no per-frame drawing hook a DOM
+ * element could be composited through. The simplest option the issue's own
+ * scope note offers -- a DOM-overlaid `<video>` element positioned over the
+ * WebGL canvas -- is what's implemented here: a small `<video>` in the
+ * corner of `.scene3d-preview`, shown only while gesture control is on and
+ * `CameraControl`'s own status reaches `'active'`. No drag/resize (out of
+ * scope -- the 2D feature's geometry system is a separate, more involved
+ * concern this issue never asked for). Opacity and mirroring reuse
+ * `cameraOverlaySettings.ts`'s existing shared, `localStorage`-persisted
+ * store unchanged -- the same preference the 2D editor's identical controls
+ * already read/write, not a second copy.
  */
 function Scene3DPreview({
   scene,
@@ -142,6 +165,37 @@ function Scene3DPreview({
   const latestHandSignalsRef = useRef<HandSignals | null>(null);
   const previousHandSignalsRef = useRef<HandSignals | null>(null);
   const gestureStartRef = useRef<number | null>(null);
+
+  // Issue #297: camera-feed overlay + opacity/mirror controls, shown only
+  // while gesture control is active and the camera itself is live.
+  const [gestureCameraStatus, setGestureCameraStatus] = useState<CameraStatus>('idle');
+  const [gestureCameraStream, setGestureCameraStream] = useState<MediaStream | null>(null);
+  const gestureCameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  const {
+    opacity: cameraOverlayOpacity,
+    mirrored: cameraOverlayMirrored,
+    setOpacity,
+    setMirrored,
+  } = useCameraOverlaySettings();
+
+  useEffect(() => {
+    const videoEl = gestureCameraVideoRef.current;
+    if (!videoEl) return;
+    videoEl.srcObject = gestureCameraStream;
+    if (gestureCameraStream) {
+      // See `EditorWorkspace.tsx`'s identical effect for why this is
+      // wrapped in `Promise.resolve(...).catch()` -- normalizes jsdom's
+      // non-conformant `HTMLMediaElement.play()` and tolerates a real
+      // autoplay rejection without treating it as a scene-breaking error.
+      void Promise.resolve(videoEl.play()).catch(() => {});
+    }
+    // `gestureCameraStatus` must stay a dependency here even though it's
+    // not read in the body: the `<video>` element only mounts once status
+    // reaches 'active' (see the JSX below), so without it this effect
+    // would fire once while the ref is still null and never again once the
+    // element actually exists -- the identical bug documented on
+    // `EditorWorkspace.tsx`'s own version of this effect.
+  }, [gestureCameraStream, gestureCameraStatus]);
 
   function handleGestureFrame(frame: TrackingFrame) {
     if (gestureStartRef.current === null) gestureStartRef.current = performance.now();
@@ -333,6 +387,14 @@ function Scene3DPreview({
               latestHandSignalsRef.current = null;
               gestureStartRef.current = null;
               handSignalExtractorRef.current = createHandSignalExtractor();
+              // Issue #297: `CameraControl` unmounts (below) when gesture
+              // control turns off, but that only stops its own tracking
+              // provider/stream -- reset this component's own mirrored
+              // status/stream state too, so a stale 'active' status can
+              // never leave the video overlay/opacity controls rendered
+              // against a torn-down stream.
+              setGestureCameraStatus('idle');
+              setGestureCameraStream(null);
               setGestureControlEnabled((current) => !current);
             }}
           >
@@ -351,7 +413,48 @@ function Scene3DPreview({
           <CameraControl
             onFrame={handleGestureFrame}
             createProvider={createGestureCameraProvider}
+            onStatusChange={setGestureCameraStatus}
+            onStreamChange={setGestureCameraStream}
           />
+          {gestureCameraStatus === 'active' && (
+            <div className="editor-camera-overlay-control">
+              <label htmlFor="scene3d-camera-overlay-opacity">Camera overlay opacity</label>
+              <input
+                id="scene3d-camera-overlay-opacity"
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={Math.round(cameraOverlayOpacity * 100)}
+                aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                onChange={(event) => setOpacity(Number(event.target.value) / 100)}
+              />
+              <label htmlFor="scene3d-camera-overlay-mirror">
+                <input
+                  id="scene3d-camera-overlay-mirror"
+                  type="checkbox"
+                  checked={cameraOverlayMirrored}
+                  onChange={(event) => setMirrored(event.target.checked)}
+                />
+                Mirror camera overlay
+              </label>
+            </div>
+          )}
+          {gestureCameraStatus === 'active' && gestureCameraStream && (
+            <video
+              ref={gestureCameraVideoRef}
+              data-testid="scene3d-camera-overlay-video"
+              aria-hidden="true"
+              muted
+              playsInline
+              autoPlay
+              className="scene3d-camera-overlay-video"
+              style={{
+                opacity: cameraOverlayOpacity,
+                transform: cameraOverlayMirrored ? 'scaleX(-1)' : undefined,
+              }}
+            />
+          )}
         </div>
       )}
     </div>

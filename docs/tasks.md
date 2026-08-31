@@ -9659,7 +9659,7 @@ server-side and in the gallery listing.
 
 ## 244. Reduce cross-file test-suite flakiness under full parallel `make check` runs
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#302](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/302)
 
@@ -9684,3 +9684,16 @@ tests have a shared-state/timing assumption that only breaks under
 parallel load.
 
 Dependencies: None.
+
+Status update (2026-08-31): COMPLETE. Root cause: `frontend/vite.config.ts`'s
+`test` block had no `testTimeout`/`hookTimeout` override, so Vitest's
+default 5000ms applied everywhere -- with ~180 test files' worth of
+worker threads contending for this machine's CPU (this session also had
+Django + Vite dev servers running concurrently), occasional contention
+was enough to push some tests' real async work past that 5s ceiling,
+even though the same test finishes in well under a second in isolation.
+Tripled both `testTimeout` and `hookTimeout` to 15000ms -- no test file's
+own code needed changing. Verified via 3 consecutive full `npm test`
+runs plus one full `make check`, all green (181/181 files, 2290/2290
+tests each time) -- not a guarantee against a non-deterministic issue,
+but strong evidence alongside a sound root-cause fix.

@@ -94,6 +94,7 @@ import {
 } from './jsonCodeSync';
 import { createPreviewTrackingSource } from './previewTrackingSource';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
+import { useFullscreenToggle } from './useFullscreenToggle';
 import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime';
 import { useSceneEditor, type SceneEditor } from './useSceneEditor';
 import { getColorFieldValue } from './shapeStyleFields';
@@ -1389,6 +1390,8 @@ function EditorWorkspace() {
   // `handleLayerRowSelect` below scrolls into view when a Layers-panel row
   // click selects a shape/group while that section is off screen.
   const previewSectionRef = useRef<HTMLElement | null>(null);
+  // Issue #287: same Preview `<section>` above goes fullscreen.
+  const { isFullscreen, toggleFullscreen } = useFullscreenToggle(previewSectionRef);
 
   // Issue #171 (task 139): live user feedback after tasks 131-138 shipped
   // reported that selecting a shape via a Layers-panel row click gave no
@@ -2940,6 +2943,15 @@ function EditorWorkspace() {
           <div role="group" aria-label="Preview actions" className="editor-tool-group">
             <button type="button" onClick={() => void handleTakeScreenshot()}>
               Take screenshot
+            </button>
+            {/* Issue #287: real browser Fullscreen API, toggled on the
+                same preview section this screenshot button lives in. */}
+            <button
+              type="button"
+              onClick={() => void toggleFullscreen()}
+              aria-pressed={isFullscreen}
+            >
+              {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
             </button>
           </div>
           {screenshotError && (

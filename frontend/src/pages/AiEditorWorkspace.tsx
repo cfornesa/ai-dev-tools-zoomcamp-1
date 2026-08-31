@@ -15,6 +15,7 @@ import { downloadBlob } from '../export/downloadBlob';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview } from '../render/scenePreview';
 import AIProposalPanel from './AIProposalPanel';
+import { useFullscreenToggle } from './useFullscreenToggle';
 import { SceneCodeEditor, useJsonCodeSync } from './jsonCodeSync';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
@@ -41,6 +42,8 @@ function AiEditorWorkspace() {
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<ScenePreview | null>(null);
+  // Issue #287: the preview container itself goes fullscreen.
+  const { isFullscreen, toggleFullscreen } = useFullscreenToggle(previewContainerRef);
   // Issue #225: the same JSON Code tab the manual editor has, going
   // through the same client-side validateScene mirror of
   // scenes.validation.validate_scene as every other write (see
@@ -211,6 +214,10 @@ function AiEditorWorkspace() {
       <div role="group" aria-label="Preview actions" className="editor-tool-group">
         <button type="button" onClick={() => void handleTakeScreenshot()}>
           Take screenshot
+        </button>
+        {/* Issue #287: real browser Fullscreen API. */}
+        <button type="button" onClick={() => void toggleFullscreen()} aria-pressed={isFullscreen}>
+          {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
         </button>
       </div>
       {screenshotError && (

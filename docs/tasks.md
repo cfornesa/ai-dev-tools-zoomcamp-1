@@ -8554,3 +8554,76 @@ camera-diagnostic code) before committing to option (a) alone. Full
 scope and acceptance criteria in #253.
 
 Dependencies: None.
+
+## 222. Existing (not just new) zero-content 3D scenes still render solid black
+
+Status: PROPOSED
+
+GitHub issue: [#254](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/254)
+
+Parent: none — distilled from a live production readiness check
+immediately after publishing task 221/#253, on 2026-08-30, requested
+via `/goal`.
+
+Discovered live against production (https://animate.creatrweb.com), via
+the signed-in owner's account, right after publishing #253's fix:
+#253 changed `schema/fixtures3d/valid/minimal.json`'s default
+`backgroundColor` from `#000000` to `#808080`, which fixes every
+*newly created* 3D project — confirmed live by creating project id
+`6fde4c44-6e72-449a-a28c-6ac748c507ff` in production; its editor and
+thumbnail both render the new gray immediately. But the fix is a
+creation-time default, not a render-time behavior, so it never
+retroactively touches already-persisted documents. Project id
+`c27a457f-aebe-4f85-a637-2c387595327f` ("Untitled 3D scene" — the
+exact instance that originally motivated #253) still has
+`scene_json.scene.backgroundColor: "#000000"` and zero
+objects/lights, and still renders solid black in both the live editor
+and the gallery thumbnail — confirmed live, screenshotted side-by-side
+with the new gray-background project for comparison. Not a regression
+in #253; a gap its own scope (option (a), a fixture-only fix) didn't
+cover — any 3D scene created before the fix, or any future scene whose
+background is independently set/patched to a near-black value with no
+content, still reads as "broken" rather than "empty."
+
+Scope: move the fix from "creation-time default" to "render-time
+presentation" in both `frontend/src/render/threeSceneBuilder.ts`
+(`buildThreeSceneGraph`) and `backend/scenes/thumbnails3d.py`
+(`render_scene3d_thumbnail`) — when a scene has zero `objects`, zero
+`lights`, and empty `groups`, substitute or overlay a non-black
+presentation regardless of the document's stored `backgroundColor`,
+using one consistent approach across both renderers. No data migration
+needed if the render-time check makes persisted `backgroundColor`
+irrelevant for the zero-content case. Full scope and acceptance
+criteria in #254.
+
+Dependencies: None — builds on #253 (closed) but does not require
+reopening it.
+
+## 223. Decide/execute deletion of the orphaned production project 9494ae05...
+
+Status: PROPOSED
+
+GitHub issue: [#255](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/255)
+
+Parent: none — distilled from the same live production readiness check
+as task 222/#254, same session.
+
+This is the exact project that originally motivated task 220/#252.
+#252 explicitly listed deleting this specific record as out of scope,
+requiring the repository owner's direct confirmation before touching
+production data. Confirmed live in production on 2026-08-30, after
+#252 published: the project still exists, its gallery card still shows
+"No preview available" with a working Delete button, and opening it in
+the editor still correctly shows "This project has no valid scene to
+load." No deletion was performed.
+
+Scope: purely a decision + execution issue, not a code change — #252
+already built everything needed. The repository owner confirms (in
+chat or on the issue) that this specific project should be deleted,
+then someone clicks Delete on its gallery card in production, or the
+owner deletes it themselves. Full scope and acceptance criteria in
+#255.
+
+Dependencies: depends on #252 (closed, already satisfied) for the
+Delete capability to exist; blocked only on the owner's explicit
+go-ahead.

@@ -241,6 +241,11 @@ signal name.
 100 bindings, and 4 particle emitters.
 - Every id referenced by a binding, group, or connection must exist \
 elsewhere in the document.
+- Every shape requires its own specific fields beyond the common ones: \
+"circle" requires "radius"; "rect" requires "width", "height", and \
+"cornerRadius"; "line" requires "x2" and "y2"; "path" requires "points" \
+and "closed"; "particleEmitter" requires "rate", "size", "lifespan", \
+"speed", and "palette".
 - When the user's prompt implies a name for a shape (e.g. "add a sun" \
 implies naming that shape "Sun"), set that shape's optional "name" \
 field accordingly, so a later prompt in the same session can address it \

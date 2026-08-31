@@ -150,6 +150,38 @@ def test_create_scene_system_prompt_lists_every_binding_targetproperty_and_signa
         assert f'"{value}"' in content, f"signal {value!r} missing from system prompt"
 
 
+def test_create_scene_system_prompt_lists_every_shape_types_required_fields():
+    """Issue #256: a real Mistral call for simple prompts ("a red circle and
+    a blue square", "one blue square") produced `circle`/`rect` shapes
+    missing their required geometry fields (`radius`; `width`/`height`/
+    `cornerRadius`), rejected by `scenes.validation.validate_scene`. Same
+    underlying non-strict-`response_format` gap #204 fixed for binding
+    enums, just never applied to per-shape-type required fields. This test
+    fails if the schema's actual per-type `required` arrays and the system
+    prompt's own restated list ever drift apart."""
+    from scenes.validation import SCENE_SCHEMA
+
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    provider = _provider_with(handler)
+    provider.create_scene(AICreateSceneRequest(prompt="a scene"))
+
+    system_message = next(m for m in captured["messages"] if m["role"] == "system")
+    content = system_message["content"]
+
+    shape_defs = SCENE_SCHEMA["$defs"]["shape"]["allOf"]
+    for block in shape_defs:
+        shape_type = block["if"]["properties"]["type"]["const"]
+        for field in block["then"]["required"]:
+            assert f'"{field}"' in content, (
+                f"{shape_type} shape's required field {field!r} missing from system prompt"
+            )
+
+
 def test_create_scene_system_prompt_instructs_naming_implied_shapes():
     """#222: the model should set shape.name when the prompt implies one
     (e.g. "add a sun"), so a later edit prompt can address it back by name."""

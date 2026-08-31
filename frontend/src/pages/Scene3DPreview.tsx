@@ -218,6 +218,10 @@ function Scene3DPreview({
   if (sonicEngineRef.current === null) sonicEngineRef.current = createSonicEngine();
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundVolume, setSoundVolume] = useState(50);
+  // Issue #310: the "Piece controls" settings panel's own open/closed
+  // state -- independent of `soundEnabled` itself (the always-visible
+  // mute toggle).
+  const [showSoundSettings, setShowSoundSettings] = useState(false);
   useEffect(() => {
     const engine = sonicEngineRef.current;
     return () => engine?.dispose();
@@ -233,6 +237,7 @@ function Scene3DPreview({
       setMicState('idle');
       setMicFailure(null);
       setThereminEnabled(false);
+      setShowSoundSettings(false);
       return;
     }
     await engine.enable();
@@ -640,6 +645,11 @@ function Scene3DPreview({
           </button>
         )}
         {showGestureControl && <HandGestureGuideDialog />}
+        {/* Issue #310: the always-visible mute toggle stays directly in
+            this main preview-actions row, independent of whether the
+            settings panel below is open -- matches the reference's own
+            separate main-toolbar mute button (distinct from its "Piece
+            controls" popover). */}
         {showSoundControl && (
           <button
             type="button"
@@ -652,60 +662,83 @@ function Scene3DPreview({
         {showSoundControl && soundEnabled && (
           <button
             type="button"
-            aria-pressed={keyboardEnabled}
-            onClick={() => setKeyboardEnabled((current) => !current)}
+            aria-pressed={showSoundSettings}
+            aria-expanded={showSoundSettings}
+            aria-controls="scene3d-sound-settings-panel"
+            onClick={() => setShowSoundSettings((current) => !current)}
           >
-            {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
-          </button>
-        )}
-        {showSoundControl && soundEnabled && (
-          <button
-            type="button"
-            aria-pressed={micState === 'active'}
-            disabled={micState === 'requesting'}
-            onClick={() => void handleToggleMic()}
-          >
-            {micState === 'requesting'
-              ? 'Requesting mic…'
-              : micState === 'active'
-                ? 'Stop live mic'
-                : 'Live mic'}
-          </button>
-        )}
-        {showSoundControl && soundEnabled && (
-          <button type="button" aria-pressed={thereminEnabled} onClick={handleToggleTheremin}>
-            {thereminEnabled ? 'Stop camera theremin' : 'Camera theremin'}
+            {showSoundSettings ? 'Hide sound settings' : 'Sound settings'}
           </button>
         )}
       </div>
-      {showSoundControl && soundEnabled && (micState === 'requesting' || micState === 'active') && (
-        <p role="status" aria-live="polite" data-testid="mic-privacy-notice">
-          Audio from your microphone is processed locally in your browser. It is never recorded,
-          stored, or uploaded.
-        </p>
-      )}
-      {showSoundControl && micState === 'error' && micFailure && (
-        <p role="alert" aria-live="assertive" data-testid="mic-error">
-          {micRecoveryMessageFor(micFailure)}
-        </p>
-      )}
-      {showSoundControl && soundEnabled && (
-        <div className="editor-camera-overlay-control">
-          <label htmlFor="scene3d-sound-volume">Sound volume</label>
-          <input
-            id="scene3d-sound-volume"
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={soundVolume}
-            aria-valuetext={`${soundVolume}%`}
-            onChange={(event) => {
-              const next = Number(event.target.value);
-              setSoundVolume(next);
-              sonicEngineRef.current?.setVolume(next);
-            }}
-          />
+      {/* Issue #310: "Piece controls" settings panel -- consolidates
+          keyboard/mic/camera-theremin toggles and the volume slider
+          (issues #307/#308/#309/#306) into one surface, matching the
+          reference's own "Piece controls" popover. A plain non-modal
+          disclosure (not a dialog like `HandGestureGuideDialog.tsx`) --
+          these are controls a user adjusts *while* interacting with the
+          piece, so trapping focus/blocking the canvas behind a modal
+          would work against that, unlike the gesture guide's one-shot
+          read-then-dismiss content. */}
+      {showSoundControl && soundEnabled && showSoundSettings && (
+        <div
+          id="scene3d-sound-settings-panel"
+          role="group"
+          aria-label="Piece controls"
+          className="scene3d-sound-settings"
+        >
+          <div className="editor-camera-overlay-control">
+            <label htmlFor="scene3d-sound-volume">Sound volume</label>
+            <input
+              id="scene3d-sound-volume"
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={soundVolume}
+              aria-valuetext={`${soundVolume}%`}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setSoundVolume(next);
+                sonicEngineRef.current?.setVolume(next);
+              }}
+            />
+          </div>
+          <div className="editor-tool-group">
+            <button
+              type="button"
+              aria-pressed={keyboardEnabled}
+              onClick={() => setKeyboardEnabled((current) => !current)}
+            >
+              {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
+            </button>
+            <button
+              type="button"
+              aria-pressed={micState === 'active'}
+              disabled={micState === 'requesting'}
+              onClick={() => void handleToggleMic()}
+            >
+              {micState === 'requesting'
+                ? 'Requesting mic…'
+                : micState === 'active'
+                  ? 'Stop live mic'
+                  : 'Live mic'}
+            </button>
+            <button type="button" aria-pressed={thereminEnabled} onClick={handleToggleTheremin}>
+              {thereminEnabled ? 'Stop camera theremin' : 'Camera theremin'}
+            </button>
+          </div>
+          {(micState === 'requesting' || micState === 'active') && (
+            <p role="status" aria-live="polite" data-testid="mic-privacy-notice">
+              Audio from your microphone is processed locally in your browser. It is never recorded,
+              stored, or uploaded.
+            </p>
+          )}
+          {micState === 'error' && micFailure && (
+            <p role="alert" aria-live="assertive" data-testid="mic-error">
+              {micRecoveryMessageFor(micFailure)}
+            </p>
+          )}
         </div>
       )}
       {screenshotError && (

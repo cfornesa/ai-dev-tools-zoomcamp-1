@@ -2766,6 +2766,21 @@ select.ai-proposal-field-full-width {
   margin-top: 8px;
 }
 
+/* Issue #310: the "Piece controls" settings panel -- a plain non-modal
+   disclosure (see Scene3DPreview.tsx's own doc comment for why not a
+   dialog), styled as a contained box matching this app's existing panel
+   chrome (`.editor-panel`'s own border/radius/padding language) rather
+   than floating unstyled. */
+.scene3d-sound-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
 .scene3d-camera-overlay-video {
   position: absolute;
   right: 8px;

@@ -173,7 +173,7 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     expect(enableSpy).not.toHaveBeenCalled();
   });
 
-  it('enabling sound calls engine.enable() and reveals the volume slider', async () => {
+  it('enabling sound calls engine.enable() and reveals the "Sound settings" toggle', async () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
 
@@ -184,6 +184,8 @@ describe('Scene3DPreview sound control (issue #306)', () => {
       'aria-pressed',
       'true',
     );
+    expect(screen.queryByLabelText('Sound volume')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     expect(screen.getByLabelText('Sound volume')).toBeInTheDocument();
   });
 
@@ -191,6 +193,7 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
 
     const slider = screen.getByLabelText('Sound volume') as HTMLInputElement;
     act(() => {
@@ -242,6 +245,7 @@ describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
 
     await user.keyboard('a');
@@ -268,6 +272,7 @@ describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
 
     await user.click(screen.getByLabelText('Unrelated field'));
@@ -280,6 +285,7 @@ describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
 
     await user.click(screen.getByRole('button', { name: 'Mute sound' }));
@@ -301,6 +307,7 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
 
     await user.click(screen.getByRole('button', { name: 'Live mic' }));
 
@@ -319,6 +326,7 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
 
     await user.click(screen.getByRole('button', { name: 'Live mic' }));
 
@@ -333,6 +341,7 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Live mic' }));
     await screen.findByRole('button', { name: 'Stop live mic' });
 
@@ -347,6 +356,7 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Live mic' }));
     await screen.findByRole('button', { name: 'Stop live mic' });
 
@@ -369,6 +379,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
 
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
 
@@ -387,6 +398,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
     await user.click(screen.getByRole('button', { name: /enable camera/i }));
 
@@ -406,6 +418,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
 
     expect(screen.getAllByTestId('gesture-camera-control')).toHaveLength(1);
@@ -423,6 +436,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
 
     await user.click(screen.getByRole('button', { name: 'Stop camera theremin' }));
@@ -438,10 +452,64 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
 
     await user.click(screen.getByRole('button', { name: 'Mute sound' }));
 
     expect(screen.queryByRole('button', { name: /camera theremin/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('Scene3DPreview "Piece controls" settings panel (issue #310)', () => {
+  it('keeps the mute toggle reachable independent of whether settings are open', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    expect(screen.queryByRole('group', { name: 'Piece controls' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mute sound' })).toBeInTheDocument();
+  });
+
+  it('opens and closes the settings panel, consolidating keyboard/mic/theremin/volume together', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    const settingsToggle = screen.getByRole('button', { name: 'Sound settings' });
+    expect(settingsToggle).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(settingsToggle);
+
+    const panel = screen.getByRole('group', { name: 'Piece controls' });
+    expect(panel).toBeInTheDocument();
+    expect(screen.getByLabelText('Sound volume')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keyboard notes' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Live mic' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Camera theremin' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide sound settings' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Hide sound settings' }));
+    expect(screen.queryByRole('group', { name: 'Piece controls' })).not.toBeInTheDocument();
+  });
+
+  it('shows no "Sound settings" toggle until sound is enabled', () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    expect(screen.queryByRole('button', { name: /sound settings/i })).not.toBeInTheDocument();
+  });
+
+  it('muting sound also collapses an open settings panel', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Sound settings' }));
+
+    await user.click(screen.getByRole('button', { name: 'Mute sound' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    expect(screen.queryByRole('group', { name: 'Piece controls' })).not.toBeInTheDocument();
   });
 });

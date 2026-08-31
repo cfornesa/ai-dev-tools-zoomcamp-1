@@ -9,6 +9,10 @@ import {
   type SceneVersion3D,
 } from '../api/projects3d';
 import { validateScene3D } from '../validation/scene3d';
+import {
+  generateScene3DBundle,
+  triggerScene3DBundleDownload,
+} from '../export/generateHtmlExport3D';
 import AIProposalPanel3D from './AIProposalPanel3D';
 import Outline3DInspector from './Outline3DInspector';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
@@ -18,8 +22,10 @@ import type { Scene3DDocument } from './scene3dTypes';
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
 type PreviewView = 'visual' | 'code';
 type SaveState = { pending: boolean; error: string | null };
+type ExportState = { pending: boolean; error: string | null };
 
 const IDLE_SAVE_STATE: SaveState = { pending: false, error: null };
+const IDLE_EXPORT_STATE: ExportState = { pending: false, error: null };
 
 /**
  * Issue #226/#227/#229/#234: makes a `scene3d` project openable, with the
@@ -41,6 +47,29 @@ function Project3DWorkspace() {
   const [persistedScene, setPersistedScene] = useState<Scene3DDocument | null>(null);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
   const [saveState, setSaveState] = useState<SaveState>(IDLE_SAVE_STATE);
+  // Issue #290: a standalone export/download action, always against the
+  // current `workingScene` (never a stale/persisted copy), so the
+  // downloaded bundle always reflects unsaved edits too -- matching the
+  // acceptance criterion that export never uses cached output.
+  const [exportState, setExportState] = useState<ExportState>(IDLE_EXPORT_STATE);
+  async function handleExport() {
+    if (!workingScene) return;
+    setExportState({ pending: true, error: null });
+    try {
+      const result = await generateScene3DBundle(workingScene, project?.title ?? 'scene');
+      if (!result.ok) {
+        setExportState({ pending: false, error: result.reasons.join(' ') });
+        return;
+      }
+      triggerScene3DBundleDownload(result.zipBlob, result.filename);
+      setExportState(IDLE_EXPORT_STATE);
+    } catch {
+      setExportState({
+        pending: false,
+        error: 'Something went wrong generating the export. Please try again.',
+      });
+    }
+  }
   // Issue #283: this manual 3D editor previously had no AI panel at all
   // (unlike its 2D counterpart's always-present "AI proposals" section) --
   // mounted only while a whole-scene "Ask AI to improve this scene"
@@ -181,6 +210,24 @@ function Project3DWorkspace() {
         {saveState.error && (
           <p role="alert" aria-live="assertive" data-testid="project3d-save-error">
             {saveState.error}
+          </p>
+        )}
+        {/* Issue #290: a 3D counterpart of the 2D manual editor's
+            ExportConfigDialog.tsx -- a single button, not a full dialog,
+            since scene3d has no interaction modes/camera overlay to
+            configure (documented implementation decision: the 2D dialog
+            isn't a clean fit here, per the issue's own escape hatch). */}
+        <button
+          type="button"
+          onClick={() => void handleExport()}
+          disabled={exportState.pending}
+          data-testid="project3d-export-button"
+        >
+          {exportState.pending ? 'Generating export…' : 'Download standalone bundle'}
+        </button>
+        {exportState.error && (
+          <p role="alert" aria-live="assertive" data-testid="project3d-export-error">
+            {exportState.error}
           </p>
         )}
       </header>

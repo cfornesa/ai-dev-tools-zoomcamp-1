@@ -184,6 +184,9 @@ export function useAIProposal3D(projectId: string | undefined) {
     setModelState(next);
     persistModel(next);
   }, []);
+  // Issue #262: mirrors useAIProposal.ts's own personaId state -- see its
+  // comment for why this isn't persisted like `model`.
+  const [personaId, setPersonaId] = useState<number | null>(null);
   const [phase, setPhase] = useState<GenerationPhase3D>('prompt');
   const [genError, setGenError] = useState<GenerationError3D | null>(null);
   const [proposal, setProposal] = useState<Proposal3D | null>(null);
@@ -246,7 +249,13 @@ export function useAIProposal3D(projectId: string | undefined) {
       const trimmedModel = model.trim() || undefined;
       try {
         if (mode === 'create') {
-          const result = await createAIScene3D(projectId, trimmed, controller.signal, trimmedModel);
+          const result = await createAIScene3D(
+            projectId,
+            trimmed,
+            controller.signal,
+            trimmedModel,
+            personaId ?? undefined,
+          );
           if (!mountedRef.current || abortControllerRef.current !== controller) return;
           setProposal({
             mode: 'create',
@@ -265,6 +274,7 @@ export function useAIProposal3D(projectId: string | undefined) {
             baseVersionId,
             controller.signal,
             trimmedModel,
+            personaId ?? undefined,
           );
           if (!mountedRef.current || abortControllerRef.current !== controller) return;
           setProposal({
@@ -285,7 +295,7 @@ export function useAIProposal3D(projectId: string | undefined) {
         setGenError(classified.error);
       }
     },
-    [projectId, prompt, mode, model],
+    [projectId, prompt, mode, model, personaId],
   );
 
   const reject = useCallback(() => {
@@ -343,6 +353,8 @@ export function useAIProposal3D(projectId: string | undefined) {
     setPrompt,
     model,
     setModel,
+    personaId,
+    setPersonaId,
     phase,
     genError,
     proposal,

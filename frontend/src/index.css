@@ -2184,6 +2184,20 @@ textarea:disabled {
   height: auto !important;
 }
 
+/* Issue #257/#262: the AI assistant panel's model/persona fields render
+   full-width instead of `.behavior-card-field`'s default 320px cap --
+   the owner-reported reason this whole epic started. Applies to both the
+   wrapper (so the empty-state text/link also reaches full width) and the
+   `<select>` itself. */
+.ai-proposal-field-full-width.behavior-card-field select,
+select.ai-proposal-field-full-width {
+  max-width: 100%;
+}
+
+.ai-proposal-empty-preference {
+  margin: 0;
+}
+
 /* Task 41: the Version History panel (`VersionHistoryPanel.tsx`). The
    `.version-history-item` row's flex children had no `min-width: 0`, so
    its `.version-history-details` (title/timestamp/change-label text)

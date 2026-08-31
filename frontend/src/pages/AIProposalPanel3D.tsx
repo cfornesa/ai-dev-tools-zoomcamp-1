@@ -4,6 +4,7 @@ import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import type { SceneVersion3D } from '../api/projects3d';
 import type { Scene3DDocument } from './scene3dTypes';
 import { useAIProposal3D, type ProposalMode3D } from './useAIProposal3D';
+import { useSavedAIPreferences } from './useSavedAIPreferences';
 
 type AIProposalPanel3DProps = {
   projectId: string;
@@ -38,6 +39,8 @@ function AIProposalPanel3D({
     setPrompt,
     model,
     setModel,
+    personaId,
+    setPersonaId,
     phase,
     genError,
     proposal,
@@ -47,6 +50,8 @@ function AIProposalPanel3D({
     accept,
     acceptState,
   } = useAIProposal3D(projectId);
+
+  const { models: savedModels, personas: savedPersonas } = useSavedAIPreferences();
 
   const workingCopyRef = useRef(workingCopy);
   workingCopyRef.current = workingCopy;
@@ -116,16 +121,55 @@ function AIProposalPanel3D({
             onChange={(event) => setPrompt(event.target.value)}
           />
         </div>
-        <div className="behavior-card-field">
+        <div className="behavior-card-field ai-proposal-field-full-width">
           <label htmlFor="ai-proposal-3d-model">Mistral model (optional)</label>
-          <input
-            id="ai-proposal-3d-model"
-            type="text"
-            value={model}
-            disabled={pending}
-            placeholder="Uses the account default when blank"
-            onChange={(event) => setModel(event.target.value)}
-          />
+          {savedModels.length === 0 ? (
+            <p className="ai-proposal-empty-preference">
+              No saved models yet — add one in <a href="/account/settings">Account settings</a> to
+              pick from a list here.
+            </p>
+          ) : (
+            <select
+              id="ai-proposal-3d-model"
+              className="ai-proposal-field-full-width"
+              value={model}
+              disabled={pending}
+              onChange={(event) => setModel(event.target.value)}
+            >
+              <option value="">Uses the account default</option>
+              {savedModels.map((saved) => (
+                <option key={saved.id} value={saved.slug}>
+                  {saved.label ? `${saved.label} (${saved.slug})` : saved.slug}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+        <div className="behavior-card-field ai-proposal-field-full-width">
+          <label htmlFor="ai-proposal-3d-persona">Persona (optional)</label>
+          {savedPersonas.length === 0 ? (
+            <p className="ai-proposal-empty-preference">
+              No Personas yet — add one in <a href="/account/settings">Account settings</a> to pick
+              from a list here.
+            </p>
+          ) : (
+            <select
+              id="ai-proposal-3d-persona"
+              className="ai-proposal-field-full-width"
+              value={personaId ?? ''}
+              disabled={pending}
+              onChange={(event) =>
+                setPersonaId(event.target.value === '' ? null : Number(event.target.value))
+              }
+            >
+              <option value="">No persona</option>
+              {savedPersonas.map((persona) => (
+                <option key={persona.id} value={persona.id}>
+                  {persona.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <button type="submit" disabled={pending || prompt.trim().length === 0}>
           {pending ? 'Generating…' : mode === 'create' ? 'Generate scene' : 'Propose edit'}

@@ -2,16 +2,20 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as aiPreferencesApi from '../api/aiPreferences';
 import * as aiApi from '../api/ai';
 import { ApiError } from '../api/client';
 import type { SceneDocument, SceneVersion } from '../api/projects';
 import AIProposalPanel from './AIProposalPanel';
 
 vi.mock('../api/ai');
+vi.mock('../api/aiPreferences');
 
 const mockedCreateAIScene = vi.mocked(aiApi.createAIScene);
 const mockedEditAIScene = vi.mocked(aiApi.editAIScene);
 const mockedAcceptAIProposal = vi.mocked(aiApi.acceptAIProposal);
+const mockedFetchModels = vi.mocked(aiPreferencesApi.fetchMistralModelPreferences);
+const mockedFetchPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
 
 const VALID_SCENE: SceneDocument = {
   schemaVersion: 1,
@@ -45,6 +49,8 @@ function makeVersion(overrides: Partial<SceneVersion> = {}): SceneVersion {
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
+  mockedFetchModels.mockResolvedValue([]);
+  mockedFetchPersonas.mockResolvedValue([]);
 });
 
 function renderPanel(onAccepted = vi.fn()) {
@@ -130,10 +136,22 @@ describe('AIProposalPanel prompt/pending/success states', () => {
       'a red circle',
       expect.anything(),
       undefined,
+      undefined,
     );
   });
 
-  it('sends a typed model id and remembers it in localStorage across a fresh mount', async () => {
+  // Issue #262: the free-text model field was replaced with a dropdown
+  // sourced from the user's saved Mistral models.
+  it('shows an empty-state pointer to Account settings when no models are saved', async () => {
+    renderPanel();
+    expect(await screen.findByText(/no saved models yet/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /account settings/i }).length).toBeGreaterThan(0);
+  });
+
+  it('selects a saved model id and remembers it in localStorage across a fresh mount', async () => {
+    mockedFetchModels.mockResolvedValue([
+      { id: 1, slug: 'codestral-2405', label: 'Codestral', created_at: '2026-01-01T00:00:00Z' },
+    ]);
     mockedCreateAIScene.mockResolvedValue({
       draft: true,
       operation: 'create_scene',
@@ -150,7 +168,7 @@ describe('AIProposalPanel prompt/pending/success states', () => {
     );
 
     await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red circle');
-    await userEvent.type(screen.getByLabelText(/mistral model/i), 'codestral-2405');
+    await userEvent.selectOptions(await screen.findByLabelText(/mistral model/i), 'codestral-2405');
     await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
 
     await screen.findByTestId('ai-proposal-success');
@@ -159,6 +177,7 @@ describe('AIProposalPanel prompt/pending/success states', () => {
       'a red circle',
       expect.anything(),
       'codestral-2405',
+      undefined,
     );
 
     unmount();
@@ -170,7 +189,33 @@ describe('AIProposalPanel prompt/pending/success states', () => {
         onAccepted={vi.fn()}
       />,
     );
-    expect(screen.getByLabelText(/mistral model/i)).toHaveValue('codestral-2405');
+    expect(await screen.findByLabelText(/mistral model/i)).toHaveValue('codestral-2405');
+  });
+
+  it('shows an empty-state pointer for Personas when none are saved, and selects one when present', async () => {
+    mockedFetchPersonas.mockResolvedValue([
+      { id: 7, name: 'Playful', prompt_text: 'Be playful.', created_at: '2026-01-01T00:00:00Z' },
+    ]);
+    mockedCreateAIScene.mockResolvedValue({
+      draft: true,
+      operation: 'create_scene',
+      scene: VALID_SCENE,
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    renderPanel();
+
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red circle');
+    await userEvent.selectOptions(await screen.findByLabelText(/^persona/i), '7');
+    await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
+
+    await screen.findByTestId('ai-proposal-success');
+    expect(mockedCreateAIScene).toHaveBeenCalledWith(
+      'p1',
+      'a red circle',
+      expect.anything(),
+      undefined,
+      7,
+    );
   });
 });
 
@@ -196,7 +241,6 @@ describe('AIProposalPanel error states', () => {
     renderPanel();
 
     await userEvent.type(screen.getByLabelText(/describe the scene/i), 'x');
-    await userEvent.type(screen.getByLabelText(/mistral model/i), 'Not Valid!');
     await userEvent.click(screen.getByRole('button', { name: /generate scene/i }));
 
     const alert = await screen.findByTestId('ai-error-validation-error');
@@ -322,6 +366,7 @@ describe('AIProposalPanel edit mode', () => {
       VALID_SCENE,
       1,
       expect.anything(),
+      undefined,
       undefined,
     );
     expect(screen.getByTestId('ai-proposal-summary')).toHaveTextContent(

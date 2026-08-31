@@ -157,6 +157,7 @@ describe('useAIProposal generation phases', () => {
       3,
       expect.anything(),
       undefined,
+      undefined,
     );
     expect(result.current.phase).toBe('success');
     expect(result.current.proposal?.summary).toBe('1 change: 1 canvas property updated.');

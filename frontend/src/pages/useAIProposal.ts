@@ -232,6 +232,12 @@ export function useAIProposal(projectId: string | undefined) {
     setModelState(next);
     persistModel(next);
   }, []);
+  // Issue #262: the caller's optionally-selected Persona id (from the
+  // panel's own saved-preferences dropdown) -- not persisted like `model`,
+  // since a saved persona can be deleted between sessions and a stale id
+  // would silently resolve to "no persona" server-side anyway (#260's
+  // `_resolve_persona_prompt`).
+  const [personaId, setPersonaId] = useState<number | null>(null);
   const [phase, setPhase] = useState<GenerationPhase>('prompt');
   const [genError, setGenError] = useState<GenerationError | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
@@ -297,7 +303,13 @@ export function useAIProposal(projectId: string | undefined) {
       const trimmedModel = model.trim() || undefined;
       try {
         if (mode === 'create') {
-          const result = await createAIScene(projectId, trimmed, controller.signal, trimmedModel);
+          const result = await createAIScene(
+            projectId,
+            trimmed,
+            controller.signal,
+            trimmedModel,
+            personaId ?? undefined,
+          );
           if (!mountedRef.current || abortControllerRef.current !== controller) return;
           setProposal({
             mode: 'create',
@@ -316,6 +328,7 @@ export function useAIProposal(projectId: string | undefined) {
             baseVersionId,
             controller.signal,
             trimmedModel,
+            personaId ?? undefined,
           );
           if (!mountedRef.current || abortControllerRef.current !== controller) return;
           setProposal({
@@ -336,7 +349,7 @@ export function useAIProposal(projectId: string | undefined) {
         setGenError(classified.error);
       }
     },
-    [projectId, prompt, mode, model],
+    [projectId, prompt, mode, model, personaId],
   );
 
   /** Discards the current proposal client-side only — never calls the
@@ -402,6 +415,8 @@ export function useAIProposal(projectId: string | undefined) {
     setPrompt,
     model,
     setModel,
+    personaId,
+    setPersonaId,
     phase,
     genError,
     proposal,

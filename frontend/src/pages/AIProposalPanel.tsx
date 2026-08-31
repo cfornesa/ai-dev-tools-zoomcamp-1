@@ -5,6 +5,7 @@ import type { SceneDocument, SceneVersion } from '../api/projects';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview, SceneRendererId } from '../render/scenePreview';
 import { useAIProposal, type ProposalMode } from './useAIProposal';
+import { useSavedAIPreferences } from './useSavedAIPreferences';
 
 type AIProposalPanelProps = {
   projectId: string;
@@ -60,6 +61,8 @@ function AIProposalPanel({
     setPrompt,
     model,
     setModel,
+    personaId,
+    setPersonaId,
     phase,
     genError,
     proposal,
@@ -69,6 +72,8 @@ function AIProposalPanel({
     accept,
     acceptState,
   } = useAIProposal(projectId);
+
+  const { models: savedModels, personas: savedPersonas } = useSavedAIPreferences();
 
   // Issue #159: applies (or re-applies) the caller's seed — switches this
   // panel to Edit mode and fills in `prompt` — every time `seed?.nonce`
@@ -187,22 +192,65 @@ function AIProposalPanel({
             onChange={(event) => setPrompt(event.target.value)}
           />
         </div>
-        {/* Issue #198: optional, defaults to the server's own model.
-            Remembered per browser via `useAIProposal`'s own localStorage
-            key, the same convention `cameraOverlaySettings.ts` uses for
-            opacity/mirrored. A malformed id is caught by the server's
+        {/* Issue #198/#262: optional, defaults to the server's own model.
+            Sourced from the user's saved Mistral models (Account
+            settings, #261) rather than free text -- the selected value is
+            still remembered per browser via `useAIProposal`'s own
+            localStorage key. A malformed id is caught by the server's
             existing `model_invalid` validation error, surfaced through
             the same error UI as every other validation error below. */}
-        <div className="behavior-card-field">
+        <div className="behavior-card-field ai-proposal-field-full-width">
           <label htmlFor="ai-proposal-model">Mistral model (optional)</label>
-          <input
-            id="ai-proposal-model"
-            type="text"
-            value={model}
-            disabled={pending}
-            placeholder="Uses the account default when blank"
-            onChange={(event) => setModel(event.target.value)}
-          />
+          {savedModels.length === 0 ? (
+            <p className="ai-proposal-empty-preference">
+              No saved models yet — add one in <a href="/account/settings">Account settings</a> to
+              pick from a list here.
+            </p>
+          ) : (
+            <select
+              id="ai-proposal-model"
+              className="ai-proposal-field-full-width"
+              value={model}
+              disabled={pending}
+              onChange={(event) => setModel(event.target.value)}
+            >
+              <option value="">Uses the account default</option>
+              {savedModels.map((saved) => (
+                <option key={saved.id} value={saved.slug}>
+                  {saved.label ? `${saved.label} (${saved.slug})` : saved.slug}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+        {/* Issue #257/#262: an optional Persona layers additive style/tone
+            guidance on top of the mandatory technical system prompt --
+            never a replacement for it (#260). */}
+        <div className="behavior-card-field ai-proposal-field-full-width">
+          <label htmlFor="ai-proposal-persona">Persona (optional)</label>
+          {savedPersonas.length === 0 ? (
+            <p className="ai-proposal-empty-preference">
+              No Personas yet — add one in <a href="/account/settings">Account settings</a> to pick
+              from a list here.
+            </p>
+          ) : (
+            <select
+              id="ai-proposal-persona"
+              className="ai-proposal-field-full-width"
+              value={personaId ?? ''}
+              disabled={pending}
+              onChange={(event) =>
+                setPersonaId(event.target.value === '' ? null : Number(event.target.value))
+              }
+            >
+              <option value="">No persona</option>
+              {savedPersonas.map((persona) => (
+                <option key={persona.id} value={persona.id}>
+                  {persona.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <button type="submit" disabled={pending || prompt.trim().length === 0}>
           {pending ? 'Generating…' : mode === 'create' ? 'Generate scene' : 'Propose edit'}

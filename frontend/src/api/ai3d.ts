@@ -35,10 +35,15 @@ export function createAIScene3D(
   prompt: string,
   signal?: AbortSignal,
   model?: string,
+  personaId?: number,
 ): Promise<AICreateScene3DResponse> {
   return apiFetch<AICreateScene3DResponse>(`/api/projects3d/${projectId}/ai/create-scene/`, {
     method: 'POST',
-    body: JSON.stringify(model ? { prompt, model } : { prompt }),
+    body: JSON.stringify({
+      prompt,
+      ...(model ? { model } : {}),
+      ...(personaId ? { persona_id: personaId } : {}),
+    }),
     signal,
   });
 }
@@ -50,6 +55,7 @@ export function editAIScene3D(
   baseVersionId: number | null,
   signal?: AbortSignal,
   model?: string,
+  personaId?: number,
 ): Promise<AIEditScene3DResponse> {
   return apiFetch<AIEditScene3DResponse>(`/api/projects3d/${projectId}/ai/edit-scene/`, {
     method: 'POST',
@@ -58,6 +64,7 @@ export function editAIScene3D(
       current_scene: currentScene,
       base_version_id: baseVersionId,
       ...(model ? { model } : {}),
+      ...(personaId ? { persona_id: personaId } : {}),
     }),
     signal,
   });

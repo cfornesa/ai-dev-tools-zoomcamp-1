@@ -82,10 +82,15 @@ export function createAIScene(
   prompt: string,
   signal?: AbortSignal,
   model?: string,
+  personaId?: number,
 ): Promise<AICreateSceneResponse> {
   return apiFetch<AICreateSceneResponse>(`/api/projects/${projectId}/ai/create-scene/`, {
     method: 'POST',
-    body: JSON.stringify(model ? { prompt, model } : { prompt }),
+    body: JSON.stringify({
+      prompt,
+      ...(model ? { model } : {}),
+      ...(personaId ? { persona_id: personaId } : {}),
+    }),
     signal,
   });
 }
@@ -97,6 +102,7 @@ export function editAIScene(
   baseVersionId: number | null,
   signal?: AbortSignal,
   model?: string,
+  personaId?: number,
 ): Promise<AIEditSceneResponse> {
   return apiFetch<AIEditSceneResponse>(`/api/projects/${projectId}/ai/edit-scene/`, {
     method: 'POST',
@@ -105,6 +111,7 @@ export function editAIScene(
       current_scene: currentScene,
       base_version_id: baseVersionId,
       ...(model ? { model } : {}),
+      ...(personaId ? { persona_id: personaId } : {}),
     }),
     signal,
   });

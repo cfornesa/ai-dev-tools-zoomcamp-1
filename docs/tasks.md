@@ -9222,7 +9222,11 @@ Dependencies: None.
 
 ## 236. Epic: 3D editor parity -- realistic thumbnails, camera interactivity, Layers-panel outline, per-item AI edits, and animation
 
-Status: IN PROGRESS
+Status: FILED SCOPE COMPLETE -- all 7 sub-issues closed (2026-08-31).
+Item 3 (3D animation/interaction system) remains deliberately unfiled per
+this epic's own original grooming -- epic-scale, needs its own dedicated
+design/grooming pass; next action is the repository owner scheduling
+that session. GitHub epic issue #269 closed with this reconciliation.
 
 Sub-issue progress:
 - [#280](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/280) (PM decision: outline detail surface) -- CLOSED, decision: inline inspector.

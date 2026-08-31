@@ -790,8 +790,12 @@ describe('EditorWorkspace scene outline: reparenting (Task 76)', () => {
     const groupedShapeRow = within(outlineList())
       .getAllByRole('listitem')
       .find((r) => r.dataset.outlineKind === 'shape')!;
-    // The compact row's only button is its own select/name button.
-    await user.click(within(groupedShapeRow).getByRole('button'));
+    // Issue #282 added a second "Ask AI to change this" button to each
+    // shape row, so this can no longer assume the row's only button is
+    // its own select/name button -- select it by its exact accessible
+    // name (the shape's plain label, unlike the AI button's longer
+    // "Ask AI to change ..." label).
+    await user.click(within(groupedShapeRow).getByRole('button', { name: 'Circle 1' }));
 
     const hud = screen.getByTestId('selection-hud');
     const groupSelect = within(hud).getByRole('combobox', {

@@ -647,6 +647,7 @@ function OutlineRowItem({
   sceneEditor,
   drag,
   onRowSelect,
+  onAskAiChange,
 }: {
   row: OutlineRow;
   sceneEditor: SceneEditor;
@@ -660,6 +661,13 @@ function OutlineRowItem({
   // regression test (`LayersPanel.autoScroll.test.ts`) asserts this source
   // file itself makes no such call anywhere, per issue #166.
   onRowSelect?: () => void;
+  // Issue #282: called with the row's own display name/label when its
+  // "Ask AI to change this" button is clicked — `EditorWorkspace.tsx` uses
+  // this to seed `AIProposalPanel`'s Edit-mode prompt, mirroring #159's
+  // existing "Ask AI to fix this" seed mechanism exactly. Never invokes any
+  // AI call itself — purely a prompt-seeding hook, same contract as
+  // `onRowSelect`.
+  onAskAiChange?: (label: string) => void;
 }) {
   const indent = { paddingLeft: `${row.depth * 1.25}rem` };
   const dragAttrs = dragAttributesFor(row, drag);
@@ -766,6 +774,17 @@ function OutlineRowItem({
         >
           <span aria-hidden="true">×</span>
         </button>
+        {onAskAiChange && (
+          <button
+            type="button"
+            className="editor-outline-ask-ai"
+            aria-label={`Ask AI to change ${row.name}`}
+            title={`Ask AI to change ${row.name}`}
+            onClick={() => onAskAiChange(row.name)}
+          >
+            <span aria-hidden="true">✨</span>
+          </button>
+        )}
         <details
           className="editor-outline-row-more"
           onClick={() => sceneEditor.selectLayer(row.id)}
@@ -860,6 +879,17 @@ function OutlineRowItem({
         >
           {label}
         </button>
+        {onAskAiChange && (
+          <button
+            type="button"
+            className="editor-outline-ask-ai"
+            aria-label={`Ask AI to change ${row.name}`}
+            title={`Ask AI to change ${row.name}`}
+            onClick={() => onAskAiChange(row.name)}
+          >
+            <span aria-hidden="true">✨</span>
+          </button>
+        )}
       </li>
     );
   }
@@ -932,6 +962,17 @@ function OutlineRowItem({
       <span id={`${row.id}-selection-help`} className="sr-only">
         Select shape {label}
       </span>
+      {onAskAiChange && (
+        <button
+          type="button"
+          className="editor-outline-ask-ai"
+          aria-label={`Ask AI to change ${label}`}
+          title={`Ask AI to change ${label}`}
+          onClick={() => onAskAiChange(label)}
+        >
+          <span aria-hidden="true">✨</span>
+        </button>
+      )}
     </li>
   );
 }
@@ -1097,6 +1138,7 @@ function LayersPanel({
   cameraOverlayActive = false,
   cameraLayerOrder,
   onCameraLayerOrderChange,
+  onAskAiChange,
 }: {
   sceneEditor: SceneEditor;
   // Issue #171 (task 139): see `OutlineRowItem`'s identically-named prop
@@ -1106,6 +1148,9 @@ function LayersPanel({
   cameraOverlayActive?: boolean;
   cameraLayerOrder?: number;
   onCameraLayerOrderChange?: (order: number) => void;
+  // Issue #282: see `OutlineRowItem`'s identically-named prop doc comment
+  // — threaded straight through to every row unchanged.
+  onAskAiChange?: (label: string) => void;
 }) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -1304,6 +1349,7 @@ function LayersPanel({
                     sceneEditor={sceneEditor}
                     drag={drag}
                     onRowSelect={onRowSelect}
+                    onAskAiChange={onAskAiChange}
                   />
                 </Fragment>
               );

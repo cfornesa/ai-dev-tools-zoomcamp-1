@@ -1523,6 +1523,20 @@ function EditorWorkspace() {
     if (!previewError) setShowAiFixPanel(false);
   }, [previewError]);
 
+  // Issue #282: "Ask AI to change this" on a `LayersPanel.tsx` row —
+  // mirrors #159's `showAiFixPanel`/`aiFixSeed` pair exactly (a second,
+  // independent `AIProposalPanel` instance, pre-seeded into Edit mode),
+  // but kept as its own state rather than reused: #159's panel
+  // auto-closes when `previewError` clears, which has no relationship to
+  // "the user asked to change a layer" and would close this panel
+  // immediately after opening it.
+  const [showAiLayerPanel, setShowAiLayerPanel] = useState(false);
+  const [aiLayerSeed, setAiLayerSeed] = useState<{ prompt: string; nonce: number } | null>(null);
+  const handleAskAiChangeLayer = (label: string) => {
+    setAiLayerSeed({ prompt: `Change ${label}: `, nonce: Date.now() });
+    setShowAiLayerPanel(true);
+  };
+
   // Task 26: "latest value" refs so the window-level drag listeners below
   // (created once, lazily, and reused for the lifetime of the component —
   // see `dragHandlers`) always act against the current scene editor and
@@ -3762,7 +3776,38 @@ function EditorWorkspace() {
               cameraOverlayActive={cameraStatus === 'active' && cameraLayerOrder !== null}
               cameraLayerOrder={effectiveCameraLayerOrder}
               onCameraLayerOrderChange={updateCameraLayerOrder}
+              onAskAiChange={handleAskAiChangeLayer}
             />
+            {/* Issue #282: mirrors the "Ask AI to fix this error" panel
+                above exactly — a second, independent `AIProposalPanel`
+                instance mounted only while a layer-edit request is
+                active, pre-seeded into Edit mode via `seed`. Placed
+                directly under the Layers panel it was requested from. */}
+            {showAiLayerPanel && id && (
+              <div
+                className="editor-ai-fix-panel"
+                data-testid="editor-ai-layer-panel"
+                aria-label="Ask AI to change this layer"
+              >
+                <div className="editor-ai-fix-panel-header">
+                  <h4>Ask AI to change this</h4>
+                  <button
+                    type="button"
+                    data-testid="close-ai-layer-panel"
+                    onClick={() => setShowAiLayerPanel(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+                <AIProposalPanel
+                  projectId={id}
+                  workingCopy={workingCopy}
+                  currentVersionId={project?.current_version ?? null}
+                  seed={aiLayerSeed}
+                  onAccepted={handleAIProposalAccepted}
+                />
+              </div>
+            )}
           </TopLevelPanel>
         </section>
 

@@ -9302,7 +9302,10 @@ Dependencies: None for #270/#271/#280/#282/#283. #281 depends on #280.
 
 ## 237. Epic: per-piece screenshot, fullscreen, download/export, embed, gesture camera control, sound, and immersive VR view (parity with augmenthumankind.com)
 
-Status: PROPOSED
+Status: IN PROGRESS
+
+Sub-issue progress:
+- [#285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/285) (2D screenshot) -- CLOSED. Added a "Take screenshot" button to both 2D editors (manual and AI-assisted), capturing the live preview canvas via `captureLiveScreenshot.ts` (read-only `toBlob`/`toDataURL`, distinct from `captureSocialThumbnail.ts`'s off-screen stable-demo-mode render) and downloading it via a new shared `downloadBlob.ts` helper (extracted from 3 pre-existing duplicated download-trigger sites; #286 will reuse it too). Verified live. `make check` green.
 
 GitHub issue: [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274)
 

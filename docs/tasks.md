@@ -9219,3 +9219,64 @@ manual/AI create, browse templates) must produce byte-identical
 behavior to today. Full scope and acceptance criteria in #268.
 
 Dependencies: None.
+
+## 236. Epic: 3D editor parity -- realistic thumbnails, camera interactivity, Layers-panel outline, per-item AI edits, and animation
+
+Status: PROPOSED
+
+GitHub issue: [#269](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/269)
+
+Parent: none -- the repository owner compared task 234/#267's 3D
+AI-proposal-preview screenshots against a reference example and
+identified 6 distinct gaps, same session (2026-08-31). Investigated
+directly in the code (not guessed) before filing.
+
+Findings:
+1. 3D gallery thumbnails don't reflect the live scene's lighting --
+   `backend/scenes/thumbnails3d.py` deliberately never reads the
+   `lights` array (documented, mirrors `thumbnails.py`'s equivalent
+   2D decision), invisible for flat 2D fills but visually wrong once
+   Three.js's real Lambertian shading is the comparison point.
+2. No mouse/touch/keyboard camera interactivity anywhere in the 3D
+   preview -- `Scene3DPreview.tsx`/`threeSceneBuilder.ts` have zero
+   event listeners; `three` (already a dependency) ships
+   `OrbitControls` as an addon, so no new dependency is needed.
+3. 3D scenes have no animation/interaction system at all --
+   `schema/scene3d.schema.json` has no `bindings`/`graph` equivalent
+   to 2D's gesture-reactive system (2D's own interaction-runtime
+   touches 11+ frontend files alone). Epic-scale, needs its own
+   dedicated design/grooming pass -- deliberately not filed as a
+   numbered sub-issue with fabricated acceptance criteria yet.
+4. The 3D outline (`Outline3DInspector.tsx`, from task 227/#227's own
+   intentionally-flat design) should be a real Layers-panel
+   (`LayersPanel.tsx` parity), not a flat button list with a separate
+   inspector below.
+5. Open PM question flagged, not guessed: does "opens a small dialog
+   window" mean a genuinely new modal pattern (this app's only real
+   `role="dialog"` is `ExportConfigDialog.tsx`), or is the owner
+   describing 2D's own inline Selection HUD/Inspector convention
+   loosely (2D's `LayersPanel.tsx` itself doesn't open dialogs
+   either)? Deferred to sub-issue #272's own grooming.
+6. Per-item ("layer-by-layer" or whole-piece) AI-generated edit
+   affordance -- checked `LayersPanel.tsx` directly, no AI code
+   exists there at all today, so this is new for *both* editors, not
+   3D catching up to 2D. Reuses issue #159's existing `seed`-prompt
+   mechanism (`AIProposalPanel.tsx`).
+
+Sub-issues filed (dependency order): [#270](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/270)
+(thumbnail lighting, independent), [#271](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/271)
+(camera interactivity, independent), [#272](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/272)
+(outline redesign, independent, one open PM question), [#273](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/273)
+(per-item AI-edit affordance, 2D half independent, 3D half depends on
+#272). Item 3 (3D animation system) has no numbered sub-issue yet --
+next action is the repository owner scheduling a dedicated
+design/grooming session for it separately.
+
+Scope: this epic's own sub-issues (#270-273) are UI/rendering-quality
+improvements to the *existing* static 3D document family -- none
+require the animation/interactivity gap (item 3) to close first; they
+ship independently. Full scope and acceptance criteria in each
+sub-issue and in #269.
+
+Dependencies: None for #270/#271. #272 depends on one resolved PM
+question before implementation. #273's 3D half depends on #272.

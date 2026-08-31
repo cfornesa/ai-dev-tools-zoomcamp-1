@@ -256,6 +256,112 @@ def test_camera_at_its_own_target_raises_render_error_not_a_crash():
         render_scene3d_thumbnail(scene)
 
 
+# --- Lighting (issue #270) ---
+
+
+def _lit_sphere_scene(intensity: float) -> dict:
+    scene = copy.deepcopy(MINIMAL_SCENE3D)
+    scene["scene"]["backgroundColor"] = "#000000"
+    scene["camera"] = {
+        "position": {"x": 0, "y": 0, "z": 10},
+        "target": {"x": 0, "y": 0, "z": 0},
+        "fov": 60,
+        "near": 0.1,
+        "far": 1000,
+    }
+    scene["groups"] = []
+    scene["lights"] = [
+        {
+            "id": "sun",
+            "type": "directional",
+            "color": "#ffffff",
+            "intensity": intensity,
+            "direction": {"x": 0, "y": 0, "z": -1},
+        }
+    ]
+    scene["objects"] = [
+        {
+            "id": "obj-1",
+            "type": "sphere",
+            "groupId": None,
+            "transform": {
+                "position": {"x": 0, "y": 0, "z": 0},
+                "rotation": {"x": 0, "y": 0, "z": 0},
+                "scale": {"x": 1, "y": 1, "z": 1},
+                "opacity": 1,
+            },
+            "material": {"color": "#ff0000", "opacity": 1},
+            "visible": True,
+            "radius": 2,
+        }
+    ]
+    return scene
+
+
+def test_lit_scene_pixels_differ_from_the_same_scene_with_zero_intensity():
+    """Proves lighting is actually applied to the rendered pixels, not just
+    read and ignored -- a directional light shining straight at the camera
+    (so the billboard-impostor disc faces it head-on) must brighten the
+    sphere compared to the identical scene with that light's intensity set
+    to 0."""
+    lit_png = render_card_thumbnail3d_png(_lit_sphere_scene(intensity=2.0))
+    unlit_png = render_card_thumbnail3d_png(_lit_sphere_scene(intensity=0.0))
+    assert lit_png != unlit_png
+
+    lit_image = Image.open(io.BytesIO(lit_png))
+    unlit_image = Image.open(io.BytesIO(unlit_png))
+    center = (CARD_WIDTH // 2, CARD_HEIGHT // 2)
+    lit_pixel = lit_image.getpixel(center)
+    unlit_pixel = unlit_image.getpixel(center)
+    # Red channel (the sphere's material.color) must be brighter when lit.
+    assert lit_pixel[0] > unlit_pixel[0]
+    # A directional light contributes no green/blue to a pure-red material.
+    assert lit_pixel[1:] == unlit_pixel[1:]
+
+
+def test_zero_lights_falls_back_to_full_brightness_without_crashing():
+    """Issue #270's documented zero-lights fallback: an empty `lights`
+    array still renders (no crash) at the material's own color, matching
+    this module's pre-#270 (unlit) output exactly."""
+    scene = _lit_sphere_scene(intensity=0.0)
+    scene["lights"] = []
+    image = render_scene3d_thumbnail(scene)
+    center = image.getpixel((CARD_WIDTH // 2, CARD_HEIGHT // 2))
+    assert center[:3] == (0xFF, 0x00, 0x00)
+
+
+def test_ambient_light_brightens_a_face_regardless_of_orientation():
+    scene = _lit_sphere_scene(intensity=0.0)
+    scene["lights"] = [{"id": "fill", "type": "ambient", "color": "#ffffff", "intensity": 0.5}]
+    image = render_scene3d_thumbnail(scene)
+    center = image.getpixel((CARD_WIDTH // 2, CARD_HEIGHT // 2))
+    assert center[:3] == (0x80, 0x00, 0x00)
+
+
+def test_point_light_shading_matches_directional_for_a_light_directly_in_front():
+    scene = _lit_sphere_scene(intensity=0.0)
+    scene["lights"] = [
+        {
+            "id": "bulb",
+            "type": "point",
+            "color": "#ffffff",
+            "intensity": 1.0,
+            "position": {"x": 0, "y": 0, "z": 10},
+        }
+    ]
+    image = render_scene3d_thumbnail(scene)
+    center = image.getpixel((CARD_WIDTH // 2, CARD_HEIGHT // 2))
+    assert center[:3] == (0xFF, 0x00, 0x00)
+
+
+def test_lit_scene_still_renders_byte_identical_png_across_calls():
+    """Determinism is preserved once lighting math is in the render path."""
+    scene = _lit_sphere_scene(intensity=1.5)
+    first = render_card_thumbnail3d_png(scene)
+    second = render_card_thumbnail3d_png(copy.deepcopy(scene))
+    assert first == second
+
+
 def test_fallback_png_bytes_is_reused_from_the_2d_module():
     # Issue #243 deliberately reuses the same generic, artwork-neutral
     # fallback image rather than defining a second one -- see

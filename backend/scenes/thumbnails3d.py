@@ -10,12 +10,28 @@ simplified, dependency-light (Pillow only) server-side rasterizer that
 projects `scene3d` geometry through the document's own camera using a
 standard look-at + perspective projection, then draws each face as a
 flat-shaded filled polygon in camera-facing order (a painter's-algorithm
-depth sort, not a per-pixel z-buffer). There is no lighting model: the
-`lights` array is read by nothing in this module, exactly like
-`thumbnails.py` never evaluates graph/binding state -- only
-`material.color`/`material.opacity` (and each object/group's own
-`transform.opacity`) determine what gets drawn, so this stays "artwork
-only" by construction.
+depth sort, not a per-pixel z-buffer).
+
+## Lighting model (issue #270)
+
+Each face's fill color is computed with basic per-face diffuse
+(Lambertian) shading against the scene's `lights` array: for every
+`ambient` light, its color/intensity contributes uniformly regardless of
+face orientation; for every `directional`/`point` light, its
+contribution is scaled by `max(0, normal . direction_to_light)`, then all
+contributions are summed per RGB channel, clamped to `[0, 1]`, and
+multiplied against `material.color`. This intentionally approximates
+`threeSceneBuilder.ts`'s `MeshStandardMaterial` well enough for a small
+gallery-card thumbnail without attempting specular highlights, shadows,
+or physically-based attenuation -- diffuse-only, no per-pixel renderer,
+same tradeoff `thumbnails.py` already accepts elsewhere in this module.
+A scene with an empty `lights` array renders every face at full
+brightness (an implicit "fully lit" fallback) rather than crashing or
+going black, preserving this module's pre-#270 output for scenes with no
+lights declared. Spheres have no real face normals (see "Primitive
+approximations" below) so their billboard-impostor disc is shaded using
+the flat normal facing the camera -- a coarse approximation, not
+per-pixel sphere shading.
 
 ## Card size
 
@@ -256,6 +272,73 @@ def _plane_faces(width: float, height: float) -> list[list[Vec3]]:
 
 
 @dataclass
+class _Light:
+    kind: str  # "ambient" | "directional" | "point"
+    color: Vec3  # 0-1 per channel
+    intensity: float
+    direction: Vec3 | None = None  # directional: normalized, points *toward* the scene
+    position: Vec3 | None = None  # point: world-space position
+
+
+def _parse_lights(scene: dict) -> list[_Light]:
+    lights: list[_Light] = []
+    for light in scene.get("lights") or []:
+        try:
+            kind = light["type"]
+            intensity = float(light["intensity"])
+            rgba = _hex_to_rgba(light["color"], 1.0)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise Thumbnail3DRenderError(f"malformed light: {light!r}") from exc
+        if rgba is None:
+            raise Thumbnail3DRenderError(f"malformed light: {light!r}")
+        color: Vec3 = (rgba[0] / 255, rgba[1] / 255, rgba[2] / 255)
+        if kind == "ambient":
+            lights.append(_Light(kind, color, intensity))
+        elif kind == "directional":
+            lights.append(
+                _Light(kind, color, intensity, direction=_normalize(_vec3(light["direction"])))
+            )
+        elif kind == "point":
+            lights.append(_Light(kind, color, intensity, position=_vec3(light["position"])))
+        else:
+            raise Thumbnail3DRenderError(f"unknown light type: {kind!r}")
+    return lights
+
+
+def _shade_color(
+    base_rgb: tuple[int, int, int], normal: Vec3, world_point: Vec3, lights: list[_Light]
+) -> tuple[int, int, int]:
+    """Applies diffuse (Lambertian) shading from `lights` to `base_rgb` at a
+    face whose world-space unit normal is `normal`. An empty `lights` list
+    is a documented "fully lit" fallback (issue #270's zero-lights
+    acceptance criterion): the base color passes through unchanged."""
+    if not lights:
+        return base_rgb
+    factor = [0.0, 0.0, 0.0]
+    for light in lights:
+        if light.kind == "ambient":
+            for i in range(3):
+                factor[i] += light.color[i] * light.intensity
+            continue
+        if light.kind == "directional":
+            assert light.direction is not None
+            to_light = (-light.direction[0], -light.direction[1], -light.direction[2])
+        else:
+            assert light.position is not None
+            to_light = _normalize(_sub(light.position, world_point))
+        n_dot_l = max(0.0, _dot(normal, to_light))
+        if n_dot_l == 0.0:
+            continue
+        for i in range(3):
+            factor[i] += light.color[i] * light.intensity * n_dot_l
+    return (
+        max(0, min(255, round(base_rgb[0] * min(factor[0], 1.0)))),
+        max(0, min(255, round(base_rgb[1] * min(factor[1], 1.0)))),
+        max(0, min(255, round(base_rgb[2] * min(factor[2], 1.0)))),
+    )
+
+
+@dataclass
 class _Camera:
     position: Vec3
     right: Vec3
@@ -309,6 +392,7 @@ def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tu
     """Returns a list of `(depth, kind, payload, rgba)` draw commands,
     unsorted -- caller sorts by depth (descending: far to near)."""
     groups_by_id = {g["id"]: g for g in scene.get("groups") or []}
+    lights = _parse_lights(scene)
     commands: list[tuple[float, str, list, tuple]] = []
 
     for obj in scene.get("objects") or []:
@@ -367,7 +451,11 @@ def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tu
                 1.0,
                 math.hypot(edge_screen[0] - center_screen[0], edge_screen[1] - center_screen[1]),
             )
-            commands.append((center_view[2], "disc", [center_screen, screen_radius], rgba))
+            disc_normal = _normalize(_sub(camera.position, center_world))
+            shaded_rgb = _shade_color(rgba[:3], disc_normal, center_world, lights)
+            commands.append(
+                (center_view[2], "disc", [center_screen, screen_radius], (*shaded_rgb, rgba[3]))
+            )
             continue
         else:
             raise Thumbnail3DRenderError(f"unknown object type: {obj_type!r}")
@@ -379,12 +467,18 @@ def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tu
                 sum(p[1] for p in face_world) / len(face_world),
                 sum(p[2] for p in face_world) / len(face_world),
             )
+            normal_raw = _cross(
+                _sub(face_world[1], face_world[0]), _sub(face_world[2], face_world[0])
+            )
+            normal_length = _length(normal_raw)
+            if normal_length < 1e-9:
+                continue
+            normal = (
+                normal_raw[0] / normal_length,
+                normal_raw[1] / normal_length,
+                normal_raw[2] / normal_length,
+            )
             if cull:
-                normal = _cross(
-                    _sub(face_world[1], face_world[0]), _sub(face_world[2], face_world[0])
-                )
-                if _length(normal) < 1e-9:
-                    continue
                 to_camera = _sub(camera.position, centroid)
                 if _dot(normal, to_camera) <= 0:
                     continue
@@ -396,7 +490,8 @@ def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tu
             if any(s is None for s in face_screen):
                 continue
             depth = sum(v[2] for v in face_view) / len(face_view)
-            commands.append((depth, "poly", face_screen, rgba))
+            shaded_rgb = _shade_color(rgba[:3], normal, centroid, lights)
+            commands.append((depth, "poly", face_screen, (*shaded_rgb, rgba[3])))
 
     return commands
 

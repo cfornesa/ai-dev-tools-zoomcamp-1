@@ -9308,7 +9308,12 @@ Dependencies: None for #270/#271/#280/#282/#283. #281 depends on #280.
 
 ## 237. Epic: per-piece screenshot, fullscreen, download/export, embed, gesture camera control, sound, and immersive VR view (parity with augmenthumankind.com)
 
-Status: IN PROGRESS
+Status: FILED SCOPE COMPLETE -- every filed sub-issue (#285-295, #297-299)
+is CLOSED as of 2026-08-31. Two items remain deliberately unfiled (Tone.js
+sound/audio and the immersive first-person free-fly view), per this
+epic's own scope note below -- both need a dependency-approval/design
+pass the repository owner hasn't scheduled yet, so this epic stays open
+until those are either filed or explicitly descoped.
 
 Sub-issue progress:
 - [#285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/285) (2D screenshot) -- CLOSED. Added a "Take screenshot" button to both 2D editors (manual and AI-assisted), capturing the live preview canvas via `captureLiveScreenshot.ts` (read-only `toBlob`/`toDataURL`, distinct from `captureSocialThumbnail.ts`'s off-screen stable-demo-mode render) and downloading it via a new shared `downloadBlob.ts` helper (extracted from 3 pre-existing duplicated download-trigger sites; #286 will reuse it too). Verified live. `make check` green.
@@ -9610,7 +9615,7 @@ duplicate issue.
 
 ## 243. 3D projects have no title-rename capability anywhere in the UI
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#301](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/301)
 
@@ -9630,5 +9635,52 @@ editable-title UI in both 3D workspace headers (mirror
 simpler single-field case). Once this lands, reconsider whether
 `validate_meaningful_metadata_3d` should be strengthened to require a
 non-default title too, for full 2D parity.
+
+Dependencies: None.
+
+Status update (2026-08-31): COMPLETE. Added `Project3DMetadataSerializer`
+(title-only) + a `patch` method on `Project3DDetailView`
+(`Action.PROJECT3D_WRITE`), mirroring `ProjectMetadataSerializer`/
+`ProjectDetailView.patch` exactly, same route (no URL change). Frontend:
+`updateProjectMetadata3D`; a new `EditableProject3DTitle` (pencil ->
+inline form) in the manual editor mirroring `EditorWorkspace.tsx`'s
+`EditableProjectTitle`; the lighter title-input/onBlur-save pattern
+(mirroring `AiEditorWorkspace.tsx`) in the AI-assisted editor. Both reuse
+the existing `validateProjectMetadataForPrivateSave`.
+`validate_meaningful_metadata_3d` deliberately left unchanged --
+strengthening it was framed as optional ("reconsider"), not a required
+acceptance criterion, so doing so here would have been scope creep. New
+coverage: `backend/tests/test_project3d_metadata_api.py` (5 tests) plus
+frontend regression tests in both workspace test files. `make check`
+green (876 backend / 2290 frontend). Verified live: renamed a real 3D
+project's title via the pencil affordance, reloaded the page (fresh
+`GET`, not just local state) and confirmed the new title persisted
+server-side and in the gallery listing.
+
+## 244. Reduce cross-file test-suite flakiness under full parallel `make check` runs
+
+Status: PROPOSED
+
+GitHub issue: [#302](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/302)
+
+Parent: none -- observed repeatedly across multiple sessions (not just
+this one): isolated ~5-second timeout failures on unrelated frontend
+test files (e.g. `EditorWorkspace.a11y.test.tsx`,
+`EditorWorkspace.multiTransform.test.tsx`,
+`EditorWorkspace.selectionHud.test.tsx`) during a full parallel `make
+check`/`npm test` run, each of which passes cleanly and quickly when
+run in isolation (`npx vitest run <file>`). Never yet reproduced as a
+deterministic failure, and never yet filed as its own GitHub issue --
+flagged in several QA comments and prior tasks.md notes as a probable
+test-infrastructure/parallel-worker-contention issue (Vitest's default
+worker-pool concurrency under CPU/memory pressure from ~180 test files
+running at once), not a product defect.
+
+Scope: investigate whether Vitest's pool/worker configuration
+(`vitest.config.ts`) needs tuning (e.g. `pool: 'threads'` options,
+`maxWorkers`/`minWorkers`, per-test `testTimeout`) for this repo's
+current test-file count and CI/local hardware, or whether specific
+tests have a shared-state/timing assumption that only breaks under
+parallel load.
 
 Dependencies: None.

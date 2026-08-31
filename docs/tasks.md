@@ -8827,7 +8827,20 @@ Dependencies: task 227/#259 (`AIPersona` model must exist first).
 
 ## 229. Frontend: Account settings management for saved Mistral models and Personas
 
-Status: PROPOSED
+Status: COMPLETE. Added `frontend/src/api/aiPreferences.ts` (typed
+CRUD wrappers for both models), and two new sections in
+`frontend/src/pages/AccountSettings.tsx` -- "Saved Mistral models" and
+"Personas" -- each with add/list/delete, empty states, and a link to
+Mistral's own model documentation (`target="_blank"`,
+`rel="noopener noreferrer"`). New CSS
+(`.account-settings-section`/`-textarea`/`-list`, `frontend/src/
+index.css`) follows the page's existing conventions. Component tests
+in `AccountSettings.test.tsx` cover add/remove for both sections, both
+empty states, and the documentation link. `make check` passes (845
+backend tests unaffected, 2160 frontend tests). Verification boundary:
+no live browser check of the rendered page -- this sandbox has no
+`backend/.env`/PostgreSQL to run the full dev stack (same boundary as
+task 224/#256). QA comment posted on #261.
 
 GitHub issue: [#261](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/261)
 

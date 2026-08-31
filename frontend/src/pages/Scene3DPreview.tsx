@@ -8,6 +8,7 @@ import { downloadBlob } from '../export/downloadBlob';
 import { buildThreeSceneGraph, disposeThreeSceneGraph } from '../render/threeSceneBuilder';
 import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
 import type { TrackingFrame } from '../tracking/types';
+import HandGestureGuideDialog from './HandGestureGuideDialog';
 import type { Scene3DDocument } from './scene3dTypes';
 import { useFullscreenToggle } from './useFullscreenToggle';
 
@@ -93,6 +94,14 @@ import { useFullscreenToggle } from './useFullscreenToggle';
  * (default; `AIProposalPanel3D.tsx` passes `false`, matching
  * `showScreenshotButton`'s existing precedent for that proposal-preview
  * surface).
+ *
+ * ## Hand gesture guide (issue #295)
+ *
+ * "Show hand gesture guide" is shown alongside "Steer the piece" (same
+ * `showGestureControl` gate) and opens `HandGestureGuideDialog.tsx`, a
+ * small accessible modal explaining exactly the gesture set documented
+ * above -- see that component's own doc comment for why its content is
+ * scoped to what this build actually ships.
  */
 function Scene3DPreview({
   scene,
@@ -330,6 +339,7 @@ function Scene3DPreview({
             {gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
           </button>
         )}
+        {showGestureControl && <HandGestureGuideDialog />}
       </div>
       {screenshotError && (
         <p role="alert" aria-live="assertive" data-testid="screenshot-error">

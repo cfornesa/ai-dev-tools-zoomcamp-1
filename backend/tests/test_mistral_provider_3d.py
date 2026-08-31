@@ -9,7 +9,11 @@ from types import SimpleNamespace
 
 from ai_provider.interface import AIErrorCategory
 from ai_provider.interface3d import AICreateScene3DRequest, AIEditScene3DRequest
-from ai_provider.mistral_provider import MistralSceneProvider
+from ai_provider.mistral_provider import (
+    _EDIT_SYSTEM_PROMPT_3D,
+    _SYSTEM_PROMPT_3D,
+    MistralSceneProvider,
+)
 
 _FIXTURE_PATH = (
     Path(__file__).resolve().parent.parent.parent
@@ -41,8 +45,8 @@ class _FakeClient:
         self.chat = _FakeChat(handler)
 
 
-def _provider_with(handler) -> MistralSceneProvider:
-    return MistralSceneProvider(client=_FakeClient(handler))
+def _provider_with(handler, *, persona_prompt: str | None = None) -> MistralSceneProvider:
+    return MistralSceneProvider(client=_FakeClient(handler), persona_prompt=persona_prompt)
 
 
 # --- create_scene3d --------------------------------------------------------
@@ -178,3 +182,61 @@ def test_edit_scene3d_abc_method_returns_only_the_operation_result():
 
     assert result.success
     assert result.scene["camera"]["fov"] == 70
+
+
+# --- Issue #260: Persona additive prompt composition (3D) ----------------
+
+
+def test_create_scene3d_appends_persona_as_a_second_system_message():
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(MINIMAL_SCENE_3D))
+
+    provider = _provider_with(handler, persona_prompt="Favor bold geometric forms.")
+    provider.create_scene3d(AICreateScene3DRequest(prompt="a bare stage"))
+
+    system_messages = [m for m in captured["messages"] if m["role"] == "system"]
+    assert len(system_messages) == 2
+    assert system_messages[0]["content"] == _SYSTEM_PROMPT_3D
+    assert system_messages[1]["content"] == "Favor bold geometric forms."
+
+
+def test_create_scene3d_mandatory_prompt_is_unchanged_with_or_without_a_persona():
+    captured_without: dict = {}
+    captured_with: dict = {}
+
+    def handler_without(**kwargs):
+        captured_without.update(kwargs)
+        return _fake_response(json.dumps(MINIMAL_SCENE_3D))
+
+    def handler_with(**kwargs):
+        captured_with.update(kwargs)
+        return _fake_response(json.dumps(MINIMAL_SCENE_3D))
+
+    _provider_with(handler_without).create_scene3d(AICreateScene3DRequest(prompt="a bare stage"))
+    _provider_with(handler_with, persona_prompt="Be theatrical.").create_scene3d(
+        AICreateScene3DRequest(prompt="a bare stage")
+    )
+
+    mandatory_without = captured_without["messages"][0]["content"]
+    mandatory_with = captured_with["messages"][0]["content"]
+    assert mandatory_without == mandatory_with == _SYSTEM_PROMPT_3D
+
+
+def test_edit_scene3d_appends_persona_as_a_second_system_message():
+    captured = {}
+    patch = [{"op": "replace", "path": "/camera/fov", "value": 70}]
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(patch))
+
+    provider = _provider_with(handler, persona_prompt="Prefer wide-angle shots.")
+    provider.edit_scene3d_with_patch(_edit_request("zoom out"))
+
+    system_messages = [m for m in captured["messages"] if m["role"] == "system"]
+    assert len(system_messages) == 2
+    assert system_messages[0]["content"] == _EDIT_SYSTEM_PROMPT_3D
+    assert system_messages[1]["content"] == "Prefer wide-angle shots."

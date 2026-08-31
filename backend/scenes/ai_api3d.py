@@ -52,6 +52,7 @@ from scenes.ai_api import (
     _quota_cache_key,
     _rate_limit_cache_key,
     _request_invalid_response,
+    _resolve_persona_prompt,
     _stale_base_response,
     _validate_model_id,
 )
@@ -201,6 +202,7 @@ class AICreateScene3DRequestSerializer(serializers.Serializer):
         required=False,
         default="",
     )
+    persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -219,6 +221,7 @@ class AIEditScene3DRequestSerializer(serializers.Serializer):
         required=False,
         default="",
     )
+    persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -244,6 +247,9 @@ class AICreateScene3DView(APIView):
             return _request_invalid_response(input_serializer.errors)
         prompt = input_serializer.validated_data["prompt"]
         model = input_serializer.validated_data.get("model") or None
+        persona_prompt = _resolve_persona_prompt(
+            request.user, input_serializer.validated_data.get("persona_id")
+        )
 
         user_id = request.user.id
         if not _increment_and_check(
@@ -258,7 +264,7 @@ class AICreateScene3DView(APIView):
             return _quota_exceeded_response_3d()
 
         try:
-            provider = _provider_for_user(request.user, model)
+            provider = _provider_for_user(request.user, model, persona_prompt)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
         result = provider.create_scene3d(AICreateScene3DRequest(prompt=prompt))
@@ -305,6 +311,9 @@ class AIEditScene3DView(APIView):
         current_scene = input_serializer.validated_data["current_scene"]
         base_version_id = input_serializer.validated_data["base_version_id"]
         model = input_serializer.validated_data.get("model") or None
+        persona_prompt = _resolve_persona_prompt(
+            request.user, input_serializer.validated_data.get("persona_id")
+        )
 
         if not isinstance(current_scene, dict):
             return Response(
@@ -335,7 +344,7 @@ class AIEditScene3DView(APIView):
             return _edit_quota_exceeded_response_3d()
 
         try:
-            provider = _provider_for_user(request.user, model)
+            provider = _provider_for_user(request.user, model, persona_prompt)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
         outcome = provider.edit_scene3d_with_patch(

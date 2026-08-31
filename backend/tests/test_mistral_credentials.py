@@ -100,13 +100,18 @@ def test_owner_key_is_selected_for_real_provider(owner, monkeypatch):
     captured = {}
 
     class CapturingProvider:
-        def __init__(self, *, api_key, model=None):
+        def __init__(self, *, api_key, model=None, persona_prompt=None):
             captured["api_key"] = api_key
             captured["model"] = model
+            captured["persona_prompt"] = persona_prompt
 
     monkeypatch.setattr(ai_api, "MistralSceneProvider", CapturingProvider)
     ai_api._provider_for_user(owner)
-    assert captured == {"api_key": "sk-owner-only-key-12345", "model": None}
+    assert captured == {
+        "api_key": "sk-owner-only-key-12345",
+        "model": None,
+        "persona_prompt": None,
+    }
 
 
 @pytest.mark.django_db
@@ -122,19 +127,29 @@ def test_caller_supplied_model_reaches_the_real_provider(owner, monkeypatch):
     captured = {}
 
     class CapturingProvider:
-        def __init__(self, *, api_key, model=None):
+        def __init__(self, *, api_key, model=None, persona_prompt=None):
             captured["api_key"] = api_key
             captured["model"] = model
+            captured["persona_prompt"] = persona_prompt
 
     monkeypatch.setattr(ai_api, "MistralSceneProvider", CapturingProvider)
     ai_api._provider_for_user(owner, "codestral-2405")
-    assert captured == {"api_key": "sk-owner-only-key-12345", "model": "codestral-2405"}
+    assert captured == {
+        "api_key": "sk-owner-only-key-12345",
+        "model": "codestral-2405",
+        "persona_prompt": None,
+    }
 
     # A blank/falsy model means "use the provider's own default", not the
     # literal string -- confirmed by omission from `captured`'s expected
     # value above, and re-confirmed explicitly here for `""`.
     ai_api._provider_for_user(owner, "")
     assert captured["model"] is None
+
+    # Issue #260: a persona's resolved prompt text reaches the provider the
+    # same way `model` does.
+    ai_api._provider_for_user(owner, "codestral-2405", "Be whimsical.")
+    assert captured["persona_prompt"] == "Be whimsical."
 
 
 @pytest.mark.django_db

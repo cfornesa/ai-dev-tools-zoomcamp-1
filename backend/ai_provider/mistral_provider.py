@@ -474,6 +474,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
         api_key: str | None = None,
         model: str | None = None,
         timeout_ms: int = REQUEST_TIMEOUT_MS,
+        persona_prompt: str | None = None,
     ):
         # `client` is an injection point: tests pass a mock/fake client so
         # this provider never opens a socket or reads MISTRAL_API_KEY under
@@ -483,6 +484,23 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
         self._api_key = api_key
         self.model = model or DEFAULT_MODEL
         self.timeout_ms = timeout_ms
+        # Issue #260: an optional Persona's additive prompt text, appended
+        # as a second system message after the mandatory technical prompt
+        # in every create/edit call below -- never merged into or replacing
+        # it. `None`/blank means "no persona selected" (unchanged behavior).
+        self.persona_prompt = persona_prompt or None
+
+    def _system_messages(self, mandatory_prompt: str) -> list[dict[str, str]]:
+        """Builds the leading system-message list for one Mistral call:
+        the mandatory technical prompt always first and unmodified, plus
+        (issue #260) the selected Persona's additive text as a second,
+        separate system message when one is set. Centralizing this in one
+        place is what lets a regression test assert the mandatory prompt's
+        content never changes whether or not a persona is present."""
+        messages = [{"role": "system", "content": mandatory_prompt}]
+        if self.persona_prompt:
+            messages.append({"role": "system", "content": self.persona_prompt})
+        return messages
 
     @property
     def client(self) -> Any:
@@ -588,7 +606,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             response = self.client.chat.complete(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    *self._system_messages(_SYSTEM_PROMPT),
                     {"role": "user", "content": prompt},
                 ],
                 response_format={
@@ -688,7 +706,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             response = self.client.chat.complete(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": _EDIT_SYSTEM_PROMPT},
+                    *self._system_messages(_EDIT_SYSTEM_PROMPT),
                     {"role": "user", "content": user_content},
                 ],
                 response_format={
@@ -837,7 +855,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             response = self.client.chat.complete(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT_3D},
+                    *self._system_messages(_SYSTEM_PROMPT_3D),
                     {"role": "user", "content": prompt},
                 ],
                 response_format={
@@ -935,7 +953,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             response = self.client.chat.complete(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": _EDIT_SYSTEM_PROMPT_3D},
+                    *self._system_messages(_EDIT_SYSTEM_PROMPT_3D),
                     {"role": "user", "content": user_content},
                 ],
                 response_format={

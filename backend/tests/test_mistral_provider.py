@@ -17,6 +17,8 @@ import httpx
 
 from ai_provider.interface import AICreateSceneRequest, AIEditSceneRequest, AIErrorCategory
 from ai_provider.mistral_provider import (
+    _EDIT_SYSTEM_PROMPT,
+    _SYSTEM_PROMPT,
     MAX_RAW_RESPONSE_BYTES,
     RESPONSE_TOO_LARGE_PREFIX,
     MistralSceneProvider,
@@ -50,8 +52,8 @@ class _FakeClient:
         self.chat = _FakeChat(handler)
 
 
-def _provider_with(handler) -> MistralSceneProvider:
-    return MistralSceneProvider(client=_FakeClient(handler))
+def _provider_with(handler, *, persona_prompt: str | None = None) -> MistralSceneProvider:
+    return MistralSceneProvider(client=_FakeClient(handler), persona_prompt=persona_prompt)
 
 
 # --- Success -------------------------------------------------------------
@@ -403,3 +405,82 @@ def test_client_property_lazily_builds_a_real_client_using_the_env_var(monkeypat
 
     assert isinstance(client, _FakeMistralSDKClass)
     assert constructed["api_key"] == "sk-fake-test-value-not-real"
+
+
+# --- Issue #260: Persona additive prompt composition ---------------------
+
+
+def test_create_scene_appends_persona_as_a_second_system_message():
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    provider = _provider_with(handler, persona_prompt="Favor bright, whimsical colors.")
+    provider.create_scene(AICreateSceneRequest(prompt="a scene"))
+
+    system_messages = [m for m in captured["messages"] if m["role"] == "system"]
+    assert len(system_messages) == 2
+    assert system_messages[0]["content"] == _SYSTEM_PROMPT
+    assert system_messages[1]["content"] == "Favor bright, whimsical colors."
+
+
+def test_create_scene_mandatory_prompt_is_unchanged_with_or_without_a_persona():
+    """A Persona must be strictly additive: the mandatory technical system
+    message's own content must never differ whether or not a persona is
+    selected -- directly guards against #256's failure mode reappearing
+    through a persona that could otherwise crowd out required-field
+    guidance."""
+    captured_without: dict = {}
+    captured_with: dict = {}
+
+    def handler_without(**kwargs):
+        captured_without.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    def handler_with(**kwargs):
+        captured_with.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    _provider_with(handler_without).create_scene(AICreateSceneRequest(prompt="a scene"))
+    _provider_with(handler_with, persona_prompt="Be minimalist.").create_scene(
+        AICreateSceneRequest(prompt="a scene")
+    )
+
+    mandatory_without = captured_without["messages"][0]["content"]
+    mandatory_with = captured_with["messages"][0]["content"]
+    assert mandatory_without == mandatory_with == _SYSTEM_PROMPT
+
+
+def test_create_scene_omits_persona_message_when_none_selected():
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    provider = _provider_with(handler)
+    provider.create_scene(AICreateSceneRequest(prompt="a scene"))
+
+    system_messages = [m for m in captured["messages"] if m["role"] == "system"]
+    assert len(system_messages) == 1
+
+
+def test_edit_scene_appends_persona_as_a_second_system_message():
+    captured = {}
+    patch = [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#000000"}]
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(patch))
+
+    provider = _provider_with(handler, persona_prompt="Prefer dark themes.")
+    provider.edit_scene_with_patch(
+        AIEditSceneRequest(prompt="make it black", current_scene=BLANK_SCENE)
+    )
+
+    system_messages = [m for m in captured["messages"] if m["role"] == "system"]
+    assert len(system_messages) == 2
+    assert system_messages[0]["content"] == _EDIT_SYSTEM_PROMPT
+    assert system_messages[1]["content"] == "Prefer dark themes."

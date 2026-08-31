@@ -104,6 +104,7 @@ from ai_provider.mistral_provider import (
 )
 from scenes.api import _get_project_or_404, _require_or_404
 from scenes.models import (
+    AIPersona,
     MistralCredential,
     MistralCredentialDecryptionError,
     Project,
@@ -246,6 +247,13 @@ class AICreateSceneRequestSerializer(serializers.Serializer):
         required=False,
         default="",
     )
+    # Issue #260: an optional caller-chosen Persona id, resolved to that
+    # persona's owner-scoped additive prompt text below (never trusted from
+    # the request body directly). A persona id that doesn't belong to the
+    # requesting user is silently ignored (treated as "no persona"), not a
+    # validation error -- same "don't confirm hidden data" spirit as this
+    # project's other owner-scoped lookups.
+    persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -278,6 +286,7 @@ class AIEditSceneRequestSerializer(serializers.Serializer):
         required=False,
         default="",
     )
+    persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -445,6 +454,12 @@ _current_ai_user: ContextVar[object | None] = ContextVar("current_ai_user", defa
 # parameter, for the exact same reason `_current_ai_user` is one -- see
 # `get_ai_provider`'s own docstring.
 _current_ai_model: ContextVar[str | None] = ContextVar("current_ai_model", default=None)
+# Issue #260: the resolved, owner-scoped text of the caller's selected
+# Persona (or `None` for "no persona selected"), threaded through the same
+# contextvar pattern as `_current_ai_model` and for the same reason.
+_current_ai_persona_prompt: ContextVar[str | None] = ContextVar(
+    "current_ai_persona_prompt", default=None
+)
 
 
 class MissingPersonalMistralCredential(Exception):
@@ -490,24 +505,43 @@ def get_ai_provider() -> AISceneProvider:
         key = credential.get_key()
     except MistralCredentialDecryptionError as exc:
         raise MissingPersonalMistralCredential from exc
-    return MistralSceneProvider(api_key=key, model=_current_ai_model.get() or None)
+    return MistralSceneProvider(
+        api_key=key,
+        model=_current_ai_model.get() or None,
+        persona_prompt=_current_ai_persona_prompt.get() or None,
+    )
 
 
-def _provider_for_user(user, model: str | None = None):
+def _resolve_persona_prompt(user, persona_id: int | None) -> str | None:
+    """Issue #260: resolves a caller-supplied persona id to that persona's
+    `prompt_text`, scoped strictly to `user`. A missing id, or one that
+    doesn't belong to `user`, resolves to `None` (no persona applied) --
+    never an error, matching this field's optional, best-effort nature."""
+    if persona_id is None:
+        return None
+    persona = AIPersona.objects.filter(owner=user, pk=persona_id).first()
+    return persona.prompt_text if persona else None
+
+
+def _provider_for_user(user, model: str | None = None, persona_prompt: str | None = None):
     """Issue #198: `model` is the caller's validated, optional request-body
     value (blank/`None` means "server default", see `get_ai_provider`).
-    Threaded through the same contextvar pattern as `user` so
-    `get_ai_provider`'s zero-argument signature -- and every existing
+    Issue #260 adds `persona_prompt`, the already-resolved, owner-scoped
+    text of the caller's selected Persona (or `None`). Both are threaded
+    through the same contextvar pattern as `user` so `get_ai_provider`'s
+    zero-argument signature -- and every existing
     `monkeypatch.setattr(ai_api, "get_ai_provider", ...)` test -- keeps
     working unchanged.
     """
     user_token = _current_ai_user.set(user)
     model_token = _current_ai_model.set(model or None)
+    persona_token = _current_ai_persona_prompt.set(persona_prompt or None)
     try:
         return get_ai_provider()
     finally:
         _current_ai_user.reset(user_token)
         _current_ai_model.reset(model_token)
+        _current_ai_persona_prompt.reset(persona_token)
 
 
 def _request_invalid_response(errors: dict) -> Response:
@@ -552,6 +586,9 @@ class AICreateSceneView(APIView):
             return _request_invalid_response(input_serializer.errors)
         prompt = input_serializer.validated_data["prompt"]
         model = input_serializer.validated_data.get("model") or None
+        persona_prompt = _resolve_persona_prompt(
+            request.user, input_serializer.validated_data.get("persona_id")
+        )
 
         user_id = request.user.id
         if not _increment_and_check(
@@ -565,7 +602,7 @@ class AICreateSceneView(APIView):
             return _quota_exceeded_response()
 
         try:
-            provider = _provider_for_user(request.user, model)
+            provider = _provider_for_user(request.user, model, persona_prompt)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
         result = provider.create_scene(AICreateSceneRequest(prompt=prompt))
@@ -662,6 +699,9 @@ class AIEditSceneView(APIView):
         current_scene = input_serializer.validated_data["current_scene"]
         base_version_id = input_serializer.validated_data["base_version_id"]
         model = input_serializer.validated_data.get("model") or None
+        persona_prompt = _resolve_persona_prompt(
+            request.user, input_serializer.validated_data.get("persona_id")
+        )
 
         if not isinstance(current_scene, dict):
             return Response(
@@ -692,7 +732,7 @@ class AIEditSceneView(APIView):
             return _edit_quota_exceeded_response()
 
         try:
-            provider = _provider_for_user(request.user, model)
+            provider = _provider_for_user(request.user, model, persona_prompt)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
         outcome = provider.edit_scene_with_patch(

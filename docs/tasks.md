@@ -9975,7 +9975,7 @@ class already documented for camera permissions.
 
 ## 251. 3D sound: webcam "camera theremin" (hand-tracked pitch/volume)
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#309](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/309)
 
@@ -9993,6 +9993,23 @@ architecture.
 
 Dependencies: Depends on task 248/#306. Related to task 236/#294
 (already shipped) for the shared camera/tracking infrastructure.
+
+Status update (2026-08-31): COMPLETE. `sonicEngine.ts` gained
+`startCameraTheremin()`/`updateCameraTheremin()`/`stopCameraTheremin()`
+-- a sustained, continuously-ramped tone on the melodic voice.
+`Scene3DPreview.tsx`'s "Camera theremin" toggle shares the exact same
+`CameraControl` mount as "Steer the piece" (mount condition widened to
+either toggle) -- only ever one camera stream/model instance regardless
+of which/how many are on, verified by an automated test. Palm Y drives
+continuous pitch; `pinchStrength` stands in inversely for the
+reference's own hand-spread volume signal (documented simplification --
+this codebase doesn't compute a wrist-to-fingertip metric, and adding
+one felt like scope beyond v1). New coverage: 5 tests in
+`sonicEngine.test.ts`, 6 in `Scene3DPreview.sound.test.tsx`. `make
+check` green (876 backend / 2346 frontend). Verified live via Claude for
+Chrome: toggle/shared-pipeline behavior confirmed; the granted-camera
+pitch-tracking path itself hit a pre-existing camera-permission denial
+in that browser profile (same verification-boundary class as #308).
 
 ## 252. 3D sound: "Piece controls" settings popover + main-toolbar mute toggle
 

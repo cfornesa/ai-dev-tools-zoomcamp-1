@@ -9222,7 +9222,11 @@ Dependencies: None.
 
 ## 236. Epic: 3D editor parity -- realistic thumbnails, camera interactivity, Layers-panel outline, per-item AI edits, and animation
 
-Status: PROPOSED
+Status: IN PROGRESS
+
+Sub-issue progress:
+- [#280](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/280) (PM decision: outline detail surface) -- CLOSED, decision: inline inspector.
+- [#270](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/270) (thumbnail lighting) -- CLOSED. Added diffuse Lambertian shading (ambient + directional/point) to `backend/scenes/thumbnails3d.py`'s per-face color computation, approximating `threeSceneBuilder.ts`'s `MeshStandardMaterial`; empty `lights` array falls back to full brightness (pre-#270 behavior unchanged). 7 new regression tests in `backend/tests/test_thumbnails3d.py`; `make check` green.
 
 GitHub issue: [#269](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/269)
 

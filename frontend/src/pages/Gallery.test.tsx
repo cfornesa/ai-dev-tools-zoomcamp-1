@@ -24,6 +24,7 @@ function baseProject3D(overrides: Partial<projects3dApi.Project3D> = {}): projec
   return {
     id: 'p3d-1',
     owner: 'alice',
+    visibility: 'private',
     title: 'Untitled 3D scene',
     thumbnail_url: null,
     current_version: null,
@@ -350,6 +351,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     mockedCreateProject3D.mockResolvedValue({
       id: 'new-3d-id',
       owner: 'alice',
+      visibility: 'private',
       title: 'Untitled 3D scene',
       thumbnail_url: null,
       current_version: null,
@@ -375,6 +377,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     mockedCreateProject3D.mockResolvedValue({
       id: 'new-3d-ai-id',
       owner: 'alice',
+      visibility: 'private',
       title: 'Untitled 3D scene',
       thumbnail_url: null,
       current_version: null,

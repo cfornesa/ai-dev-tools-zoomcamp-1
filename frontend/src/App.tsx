@@ -17,6 +17,7 @@ const EditorWorkspace = lazy(() => import('./pages/EditorWorkspace'));
 const Project3DWorkspace = lazy(() => import('./pages/Project3DWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
+const PublicProject3DViewer = lazy(() => import('./pages/PublicProject3DViewer'));
 const Templates = lazy(() => import('./pages/Templates'));
 const CreateChooser = lazy(() => import('./pages/CreateChooser'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
@@ -49,6 +50,10 @@ function App() {
                   URL scheme Task 49's API already uses
                   (`/api/public/projects/<public_id>/`). */}
               <Route path="p/:id" element={<PublicProjectViewer />} />
+              {/* Issue #296: the 3D counterpart of `p/:id` above --
+                  `/p3d/<public_id>` matches the `public_id`-keyed
+                  `/api/public/projects3d/<public_id>/` route. */}
+              <Route path="p3d/:id" element={<PublicProject3DViewer />} />
               <Route path="templates" element={<Templates />} />
               {/* Issue #268: the gallery header's "+" icon navigates here --
                   a card-grid chooser for all 5 creation actions, styled
@@ -99,6 +104,10 @@ function App() {
                 duplicate component, since the only actual difference is
                 which chrome wraps it. */}
             <Route path="embed/p/:id" element={<PublicProjectViewer />} />
+            {/* Issue #296: the 3D counterpart of `embed/p/:id` above --
+                chrome-less, sibling to the Layout-wrapped `p3d/:id` route,
+                for embedding a published 3D piece in an `<iframe>`. */}
+            <Route path="embed/p3d/:id" element={<PublicProject3DViewer />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

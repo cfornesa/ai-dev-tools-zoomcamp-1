@@ -8,6 +8,7 @@ import {
   triggerScene3DBundleDownload,
 } from '../export/generateHtmlExport3D';
 import AIProposalPanel3D from './AIProposalPanel3D';
+import PublishControl3D from './PublishControl3D';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
@@ -147,6 +148,7 @@ function AiProject3DWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <h2>{project?.title}</h2>
+        <PublishControl3D id={id} project={project} setProject={setProject} />
         <button
           type="button"
           onClick={() => void handleExport()}

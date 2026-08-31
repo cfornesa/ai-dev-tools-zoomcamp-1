@@ -15,6 +15,7 @@ import {
 } from '../export/generateHtmlExport3D';
 import AIProposalPanel3D from './AIProposalPanel3D';
 import Outline3DInspector from './Outline3DInspector';
+import PublishControl3D from './PublishControl3D';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
@@ -196,6 +197,7 @@ function Project3DWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <h2>{project?.title}</h2>
+        <PublishControl3D id={id} project={project} setProject={setProject} />
         <p
           role="status"
           aria-live="polite"

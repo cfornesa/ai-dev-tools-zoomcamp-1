@@ -18,6 +18,7 @@ function baseProject3D(overrides: Partial<Project3D> = {}): Project3D {
   return {
     id: 'p3d-1',
     owner: 'alice',
+    visibility: 'private',
     title: 'Untitled 3D scene',
     thumbnail_url: null,
     current_version: null,

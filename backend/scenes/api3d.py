@@ -24,8 +24,10 @@ from rest_framework.views import APIView
 
 from scenes.models import Project3D, SceneVersion3D, Thumbnail3D
 from scenes.permissions import Action, can
+from scenes.publishing import validate_meaningful_metadata_3d
 from scenes.serializers import (
     Project3DSerializer,
+    PublicProject3DSerializer,
     SceneVersion3DCreateSerializer,
     SceneVersion3DSerializer,
 )
@@ -115,6 +117,86 @@ class Project3DDetailView(APIView):
         project.save(update_fields=["is_deleted", "deleted_at"])
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class Project3DPublishValidationError(Exception):
+    """Raised inside an atomic block to abort a publish that fails validation."""
+
+    def __init__(self, errors: dict[str, list[str]]):
+        self.errors = errors
+
+
+class Project3DPublishView(APIView):
+    """Issue #296: the Project3D counterpart of `ProjectPublishView`
+    (`scenes/api.py`) -- same lock-then-validate-then-flip shape, same
+    "current saved version resolved fresh at request time, never
+    snapshotted" guarantee for `PublicProject3DDetailView` below. Only
+    title is validated (`validate_meaningful_metadata_3d`): Project3D has
+    no `description` field to check, a deliberate scope boundary (see
+    that model's own comment)."""
+
+    def post(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_PUBLISH, project):
+            raise Http404
+
+        try:
+            with transaction.atomic():
+                locked_project = Project3D.objects.select_for_update().get(pk=project.pk)
+
+                errors = validate_meaningful_metadata_3d(locked_project.title)
+                if locked_project.current_version_id is None:
+                    errors.setdefault("current_version", []).append(
+                        "Save at least one version before publishing."
+                    )
+                if errors:
+                    raise Project3DPublishValidationError(errors)
+
+                locked_project.visibility = Project3D.Visibility.PUBLIC
+                locked_project.published_at = timezone.now()
+                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+        except Project3DPublishValidationError as exc:
+            return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
+        except Project3D.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(Project3DSerializer(locked_project).data)
+
+
+class Project3DUnpublishView(APIView):
+    """Issue #296: the Project3D counterpart of `ProjectUnpublishView` --
+    same "no content validation needed to go private, immediate effect"
+    shape."""
+
+    def post(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_PUBLISH, project):
+            raise Http404
+
+        try:
+            with transaction.atomic():
+                locked_project = Project3D.objects.select_for_update().get(pk=project.pk)
+                locked_project.visibility = Project3D.Visibility.PRIVATE
+                locked_project.published_at = None
+                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+        except Project3D.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(Project3DSerializer(locked_project).data)
+
+
+class PublicProject3DDetailView(APIView):
+    """Issue #296: the Project3D counterpart of `PublicProjectDetailView` --
+    same absolute "404 for literally everyone, owner included, the instant
+    visibility isn't public" gate, checked directly rather than through
+    `Action.PROJECT3D_READ` (which also happily returns a private project
+    to its own owner -- correct for the owner-scoped API, wrong here)."""
+
+    def get(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if project.visibility != Project3D.Visibility.PUBLIC:
+            raise Http404
+        return Response(PublicProject3DSerializer(project).data)
 
 
 class SceneVersion3DListCreateView(APIView):

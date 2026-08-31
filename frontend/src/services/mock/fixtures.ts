@@ -112,6 +112,7 @@ export const mockState = {
     {
       id: 'mock-project3d-1',
       owner: MOCK_USER.username,
+      visibility: 'private',
       title: 'Rotating Cube',
       thumbnail_url: null,
       current_version: {

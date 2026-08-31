@@ -402,17 +402,65 @@ class SceneVersion3DSerializer(serializers.ModelSerializer):
 
 
 class Project3DSerializer(serializers.ModelSerializer):
-    """Mirrors ProjectSerializer's shape at #213's scope: Project3D has no
-    `visibility`/`description`/`tags` fields yet (#212 deferred them), so
-    this serializer is deliberately smaller, not a partial view of a
-    larger shape."""
+    """Mirrors ProjectSerializer's shape: Project3D still has no
+    `description`/`tags`/`allow_public_remix`/`export_attribution` fields
+    (a deliberate, documented scope boundary -- see that model's own
+    comment), but issue #296 gave it `visibility`, exposed here the same
+    way ProjectSerializer exposes it."""
 
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.CharField(source="owner.username", read_only=True)
     current_version = SceneVersion3DSerializer(read_only=True)
     # Issue #243: mirrors ProjectSerializer.thumbnail_url, via the
-    # owner-gated `project3d-thumbnail` route (there is no public 3D route
-    # to mirror yet -- see scenes/thumbnail_generation3d.py).
+    # owner-gated `project3d-thumbnail` route. That same route now also
+    # resolves for anonymous/non-owner callers once a project is public
+    # (issue #296 widened `Action.PROJECT3D_READ` to allow it), so there is
+    # still no separate public-only 3D thumbnail route needed.
+    thumbnail_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project3D
+        fields = [
+            "id",
+            "owner",
+            "title",
+            "visibility",
+            "thumbnail_url",
+            "current_version",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+    def get_thumbnail_url(self, project: Project3D) -> str | None:
+        if project.current_version_id is None:
+            return None
+        return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
+
+
+class PublicSceneVersion3DSerializer(serializers.ModelSerializer):
+    """Issue #296: the 3D counterpart of `PublicSceneVersionSerializer` --
+    same exclusion policy (no `created_by`/`ai_request_id`, internal
+    history bookkeeping, not creator attribution)."""
+
+    class Meta:
+        model = SceneVersion3D
+        fields = ["sequence", "scene_json", "created_at"]
+        read_only_fields = fields
+
+
+class PublicProject3DSerializer(serializers.ModelSerializer):
+    """Issue #296: the 3D counterpart of `PublicProjectSerializer`. No
+    `remix_provenance` field -- Project3D has no fork/remix capability at
+    all (out of this issue's scope), so there is nothing to compute here,
+    unlike the 2D serializer which always includes the key (`null` for a
+    non-remix). `PublicProject3DDetailView` (`scenes/api3d.py`) is the
+    only place this is used, and that view refuses anything whose
+    `visibility` isn't public, regardless of who's asking."""
+
+    id = serializers.UUIDField(source="public_id", read_only=True)
+    owner = serializers.CharField(source="owner.username", read_only=True)
+    current_version = PublicSceneVersion3DSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:

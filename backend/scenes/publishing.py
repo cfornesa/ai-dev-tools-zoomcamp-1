@@ -47,3 +47,22 @@ def validate_meaningful_metadata(title: str, description: str) -> dict[str, list
         errors["description"] = ["Add a description before publishing."]
 
     return errors
+
+
+# Issue #296: `Project3D` has no `description` field, and -- unlike the
+# 2D `Project` -- no title-rename UI anywhere in this app today either
+# (a separate, unfiled gap, out of this issue's scope). Gating publish on
+# "the title isn't the untouched default" the way `validate_meaningful_metadata`
+# does for 2D would therefore be a usability dead end: a user could never
+# satisfy it. The only meaningful-content rule enforced here is "at least
+# one saved version exists" (checked directly in
+# `Project3DPublishView`/`Project3DUnpublishView`, `scenes/api3d.py`) --
+# this function exists as the documented placeholder for that scope
+# decision, kept separate from the view so a future title-rename feature
+# has one obvious place to add the check back, mirroring
+# `validate_meaningful_metadata`'s shape.
+def validate_meaningful_metadata_3d(title: str) -> dict[str, list[str]]:
+    """Currently always returns no errors -- see the module-level comment
+    above for why Project3D's publish gate is title-check-free today."""
+    del title  # unused until a 3D title-rename feature exists
+    return {}

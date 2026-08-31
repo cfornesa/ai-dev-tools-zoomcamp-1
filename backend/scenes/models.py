@@ -658,11 +658,28 @@ class Project3DManager(models.Manager):
 
 
 class Project3D(models.Model):
+    class Visibility(models.TextChoices):
+        PRIVATE = "private", "Private"
+        PUBLIC = "public", "Public"
+
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="projects_3d"
     )
     title = models.CharField(max_length=200, default="Untitled 3D scene")
+    # Issue #296: publish/visibility parity with the 2D `Project` model
+    # above -- same field shapes, same PRIVATE-by-default, same separate
+    # `published_at` (not `updated_at`) sort/cursor key for a future public
+    # 3D gallery. No `allow_public_remix`/`tags`/`description`/
+    # `export_attribution` counterparts: Project3D has no remix/fork
+    # capability and no description/tags fields at all today, and none of
+    # that is required by #296's own scope (publish + a public viewer +
+    # an embed target) -- a deliberate, documented scope boundary, not an
+    # oversight.
+    visibility = models.CharField(
+        max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
+    )
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
     current_version = models.ForeignKey(
         "scenes.SceneVersion3D",
         null=True,
@@ -688,6 +705,15 @@ class Project3D(models.Model):
         base_manager_name = "all_objects"
         default_manager_name = "objects"
         ordering = ["-created_at"]
+        indexes = [
+            # Issue #296: mirrors Project.Meta's identical
+            # `project_public_gallery_idx` -- ready for a future public 3D
+            # gallery listing, same compound (visibility, -published_at,
+            # -id) access pattern.
+            models.Index(
+                fields=["visibility", "-published_at", "-id"], name="project3d_public_gallery_idx"
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.title

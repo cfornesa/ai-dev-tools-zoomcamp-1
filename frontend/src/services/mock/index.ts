@@ -429,6 +429,7 @@ export const mockServices: BackendServices = {
       const project = {
         id: projectId,
         owner: MOCK_USER.username,
+        visibility: 'private' as const,
         title: 'Untitled 3D project',
         thumbnail_url: null,
         current_version: {

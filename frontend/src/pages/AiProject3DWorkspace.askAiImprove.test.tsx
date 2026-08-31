@@ -22,6 +22,7 @@ function baseProject(overrides: Partial<Project3D> = {}): Project3D {
   return {
     id: 'p1',
     owner: 'alice',
+    visibility: 'private',
     title: 'My AI 3D scene',
     thumbnail_url: null,
     current_version: {

@@ -31,7 +31,10 @@ from scenes.api import (
 from scenes.api3d import (
     Project3DDetailView,
     Project3DListCreateView,
+    Project3DPublishView,
     Project3DThumbnailView,
+    Project3DUnpublishView,
+    PublicProject3DDetailView,
     SceneVersion3DListCreateView,
 )
 from scenes.art_piece_api import ArtPieceGenerateView
@@ -171,11 +174,32 @@ urlpatterns = [
         SceneVersion3DListCreateView.as_view(),
         name="project3d-version-list-create",
     ),
-    # #243: owner-facing gallery-card thumbnail.
+    # #243: owner-facing gallery-card thumbnail (also now resolves for
+    # anonymous/non-owner callers once a project is public -- issue #296
+    # widened Action.PROJECT3D_READ; no separate public thumbnail route
+    # needed).
     path(
         "projects3d/<uuid:public_id>/thumbnail/",
         Project3DThumbnailView.as_view(),
         name="project3d-thumbnail",
+    ),
+    # Issue #296: publish/unpublish + the public detail route, mirroring
+    # the 2D "projects/<id>/publish/"/"unpublish/"/"public/projects/<id>/"
+    # trio above.
+    path(
+        "projects3d/<uuid:public_id>/publish/",
+        Project3DPublishView.as_view(),
+        name="project3d-publish",
+    ),
+    path(
+        "projects3d/<uuid:public_id>/unpublish/",
+        Project3DUnpublishView.as_view(),
+        name="project3d-unpublish",
+    ),
+    path(
+        "public/projects3d/<uuid:public_id>/",
+        PublicProject3DDetailView.as_view(),
+        name="public-project3d-detail",
     ),
     # #232: the 3D AI-assisted editor's create/edit/accept endpoints.
     path(

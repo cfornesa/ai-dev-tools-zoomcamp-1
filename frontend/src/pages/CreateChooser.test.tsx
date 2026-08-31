@@ -75,6 +75,7 @@ describe('CreateChooser (issue #268)', () => {
     mockedCreateProject3D.mockResolvedValue({
       id: 'new-3d-ai-id',
       owner: 'alice',
+      visibility: 'private',
       title: 'Untitled 3D scene',
       thumbnail_url: null,
       current_version: null,

@@ -35,17 +35,19 @@ class Action(StrEnum):
     TEMPLATE_CREATE = "template.create"
     AI_CREATE_SCENE = "ai.create_scene"
     AI_EDIT_SCENE = "ai.edit_scene"
-    # #213: the 3D document family (Project3D/SceneVersion3D, #212) has no
-    # `visibility` field yet -- unlike PROJECT_READ above, PROJECT3D_READ is
-    # unconditionally owner-only until a publish/gallery feature gives it
-    # one, same shape as _OWNER_ONLY_PROJECT_ACTIONS' 2D actions.
     PROJECT3D_CREATE = "project3d.create"
+    # Issue #296: `Project3D` now has a `visibility` field -- PROJECT3D_READ
+    # follows PROJECT_READ's exact shape below (public OR owner), no longer
+    # unconditionally owner-only.
     PROJECT3D_READ = "project3d.read"
-    # #228: saving a new SceneVersion3D is owner-only, same shape as
-    # PROJECT3D_READ above (no visibility field yet to allow anyone else).
+    # #228: saving a new SceneVersion3D is owner-only -- public visibility
+    # never grants write, same as the 2D actions in
+    # _OWNER_ONLY_PROJECT_ACTIONS.
     PROJECT3D_WRITE = "project3d.write"
     # #242: delete parity with PROJECT_DELETE -- owner-only, same shape.
     PROJECT3D_DELETE = "project3d.delete"
+    # Issue #296: publish/unpublish parity with PROJECT_PUBLISH -- owner-only.
+    PROJECT3D_PUBLISH = "project3d.publish"
 
 
 class PermissionDenied(Exception):
@@ -88,6 +90,17 @@ _OWNER_ONLY_PROJECT_ACTIONS = frozenset(
         # project and never creates a SceneVersion or touches
         # current_version, but it's still owner-only working state.
         Action.AI_EDIT_SCENE,
+    }
+)
+
+# Issue #296: the Project3D counterpart of _OWNER_ONLY_PROJECT_ACTIONS
+# above -- every action here treats Project3D's public visibility as
+# irrelevant.
+_OWNER_ONLY_PROJECT3D_ACTIONS = frozenset(
+    {
+        Action.PROJECT3D_WRITE,
+        Action.PROJECT3D_DELETE,
+        Action.PROJECT3D_PUBLISH,
     }
 )
 
@@ -134,7 +147,14 @@ def can(user, action: Action, resource=None) -> bool:
     if action == Action.PROJECT3D_CREATE:
         return _is_authenticated(user)
 
-    if action in (Action.PROJECT3D_READ, Action.PROJECT3D_WRITE, Action.PROJECT3D_DELETE):
+    if action == Action.PROJECT3D_READ:
+        if not isinstance(resource, Project3D):
+            return False
+        if resource.visibility == Project3D.Visibility.PUBLIC:
+            return True
+        return _is_owner_3d(user, resource)
+
+    if action in _OWNER_ONLY_PROJECT3D_ACTIONS:
         if not isinstance(resource, Project3D):
             return False
         return _is_owner_3d(user, resource)

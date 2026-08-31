@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from './api/client';
 import * as projectsApi from './api/projects';
 import type { PublicProject } from './api/projects';
+import * as projects3dApi from './api/projects3d';
+import type { PublicProject3D } from './api/projects3d';
 import App from './App';
 
 /**
@@ -19,11 +21,13 @@ import App from './App';
  */
 
 vi.mock('./api/projects');
+vi.mock('./api/projects3d');
 vi.mock('./api/auth', () => ({
   fetchCurrentUser: vi.fn().mockResolvedValue(null),
 }));
 
 const mockedGetPublicProject = vi.mocked(projectsApi.getPublicProject);
+const mockedGetPublicProject3D = vi.mocked(projects3dApi.getPublicProject3D);
 
 const BLANK_SCENE = {
   schemaVersion: 1,
@@ -50,6 +54,42 @@ function basePublicProject(overrides: Partial<PublicProject> = {}): PublicProjec
     thumbnail_url: '/api/public/projects/p1/thumbnail.png',
     remix_provenance: null,
     current_version: { sequence: 1, scene_json: BLANK_SCENE, created_at: '2026-01-01T00:00:00Z' },
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-02T00:00:00Z',
+    ...overrides,
+  };
+}
+
+function basePublicProject3D(overrides: Partial<PublicProject3D> = {}): PublicProject3D {
+  return {
+    id: 'p1',
+    owner: 'alice',
+    title: 'Rotating Cube',
+    thumbnail_url: '/api/public/projects3d/p1/thumbnail.png',
+    current_version: {
+      id: 1,
+      sequence: 1,
+      origin: 'manual',
+      created_by: 'alice',
+      created_at: '2026-01-01T00:00:00Z',
+      scene_json: {
+        schemaVersion: 1,
+        documentType: 'scene3d',
+        id: 'scene3d-1',
+        scene: { backgroundColor: '#000000' },
+        camera: {
+          position: { x: 0, y: 5, z: 10 },
+          target: { x: 0, y: 0, z: 0 },
+          fov: 50,
+          near: 0.1,
+          far: 1000,
+        },
+        lights: [],
+        groups: [],
+        objects: [],
+        randomness: { seed: 0, enabled: false },
+      },
+    },
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
     ...overrides,
@@ -95,6 +135,40 @@ describe('/embed/p/:id (issue #292)', () => {
   it('treats an unpublished/nonexistent project identically to /p/:id -- no privacy regression', async () => {
     mockedGetPublicProject.mockRejectedValue(new ApiError(404, null));
     navigateTo('/embed/p/does-not-exist');
+
+    render(<App />);
+
+    expect(await screen.findByText(/this project isn't available/i)).toBeInTheDocument();
+  });
+});
+
+describe('/embed/p3d/:id (issue #296)', () => {
+  it('renders the public 3D project viewer with no app-shell chrome', async () => {
+    mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
+    navigateTo('/embed/p3d/p1');
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
+    expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
+    expect(document.querySelector('.app-shell-header')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Public gallery' })).not.toBeInTheDocument();
+  });
+
+  it('preserves the existing Layout-wrapped chrome at /p3d/:id (unchanged)', async () => {
+    mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
+    navigateTo('/p3d/p1');
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
+    expect(document.querySelector('.app-shell-header')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Public gallery' })).toBeInTheDocument();
+  });
+
+  it('treats an unpublished/nonexistent 3D project identically to /p3d/:id -- no privacy regression', async () => {
+    mockedGetPublicProject3D.mockRejectedValue(new ApiError(404, null));
+    navigateTo('/embed/p3d/does-not-exist');
 
     render(<App />);
 

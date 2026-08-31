@@ -9935,7 +9935,7 @@ synth fired cleanly.
 
 ## 250. 3D sound: microphone input layer
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#308](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/308)
 
@@ -9952,6 +9952,26 @@ optional, not required for v1.
 
 Dependencies: Depends on task 248/#306. Independent of tasks 249/#307
 and 251/#309.
+
+Status update (2026-08-31): COMPLETE. `sonicEngine.ts` gained
+`connectMic()`/`disconnectMic()` via `Tone.UserMedia` (Tone.js's own
+`getUserMedia({audio:true})` wrapper), mixed into the shared bus. New
+`frontend/src/audio/micFailure.ts` mirrors `cameraFailure.ts`'s
+category/recovery-message shape, plus a separate `isMicSupported()`
+pre-flight check (deliberately not folded into error categorization,
+mirroring `CameraControl.tsx`'s own `isSecureContext` pre-check
+pattern). A "Live mic" toggle in `Scene3DPreview.tsx`, shown only once
+sound is enabled, reuses the camera control's privacy-notice
+convention. New coverage: 6 tests in `sonicEngine.test.ts`, 5 in
+`micFailure.test.ts`, 4 in `Scene3DPreview.sound.test.tsx`. `make
+check` green (876 backend / 2335 frontend). Verified live via Claude
+for Chrome: sound enabled, "Live mic" clicked, UI transitioned to
+"Requesting mic…" with the privacy notice shown and zero errors;
+muted sound mid-request and confirmed clean reset with no stuck state.
+Verification boundary: the real OS-level mic-permission prompt is
+outside the page DOM and needs a human click -- the actual
+successful-grant path is unverified in this session, same boundary
+class already documented for camera permissions.
 
 ## 251. 3D sound: webcam "camera theremin" (hand-tracked pitch/volume)
 

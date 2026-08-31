@@ -183,68 +183,96 @@ function AiEditorWorkspace() {
           onBlur={handleTitleBlur}
         />
       </header>
-      <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={previewView === 'visual'}
-          onClick={() => setPreviewView('visual')}
-        >
-          Visual
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={previewView === 'code'}
-          onClick={() => setPreviewView('code')}
-        >
-          Code
-        </button>
-      </div>
-      <section
-        aria-label="Preview"
-        role="region"
-        data-panel="preview"
-        hidden={previewView !== 'visual'}
-      >
-        <div ref={previewContainerRef} className="ai-editor-preview" />
-      </section>
-      {/* Issue #285: read-only capture of whatever the live preview
-          canvas currently shows -- never mutates render state. */}
-      <div role="group" aria-label="Preview actions" className="editor-tool-group">
-        <button type="button" onClick={() => void handleTakeScreenshot()}>
-          Take screenshot
-        </button>
-        {/* Issue #287: real browser Fullscreen API. */}
-        <button type="button" onClick={() => void toggleFullscreen()} aria-pressed={isFullscreen}>
-          {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-        </button>
-      </div>
-      {screenshotError && (
-        <p role="alert" aria-live="assertive" data-testid="screenshot-error">
-          {screenshotError}
-        </p>
-      )}
-      {previewView === 'code' && (
-        <section aria-label="Code" role="region" data-panel="code">
-          <SceneCodeEditor sync={jsonCodeSync} />
+      <div className="ai-editor-workspace editor-workspace">
+        {/* Task 245 (issue #303): a real `.editor-panel` region, matching
+            `EditorWorkspace.tsx`'s convention, wrapped in a scoped
+            `.ai-editor-workspace` class so its 2-panel grid (Preview +
+            AI assistant only, unlike the manual editor's 5-panel sidebar)
+            doesn't inherit that other page's unscoped
+            `.editor-panel[data-panel='preview']` grid-row/span rule. */}
+        <section aria-label="Preview" role="region" data-panel="preview" className="editor-panel">
+          <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewView === 'visual'}
+              onClick={() => setPreviewView('visual')}
+            >
+              Visual
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewView === 'code'}
+              onClick={() => setPreviewView('code')}
+            >
+              Code
+            </button>
+          </div>
+          {/* Issue #159 (matching EditorWorkspace.tsx's own documented
+              convention): Visual/Code is a sub-toggle inside the Preview
+              panel, not a separate top-level panel -- Preview itself is
+              never hidden, so a Code view of the same scene document
+              belongs alongside it. */}
+          {previewView === 'code' && (
+            <section aria-label="Code" role="region" data-panel="code">
+              <SceneCodeEditor sync={jsonCodeSync} />
+            </section>
+          )}
+          <div hidden={previewView !== 'visual'}>
+            <div ref={previewContainerRef} className="ai-editor-preview" />
+            {/* Issue #285: read-only capture of whatever the live preview
+                canvas currently shows -- never mutates render state. */}
+            <div role="group" aria-label="Preview actions" className="editor-tool-group">
+              <button type="button" onClick={() => void handleTakeScreenshot()}>
+                Take screenshot
+              </button>
+              {/* Issue #287: real browser Fullscreen API. */}
+              <button
+                type="button"
+                onClick={() => void toggleFullscreen()}
+                aria-pressed={isFullscreen}
+              >
+                {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+              </button>
+            </div>
+            {screenshotError && (
+              <p role="alert" aria-live="assertive" data-testid="screenshot-error">
+                {screenshotError}
+              </p>
+            )}
+          </div>
         </section>
-      )}
-      {/* Issue #224: the prompt panel is this editor's primary, default
-          interaction surface -- not tucked into a collapsible section
-          like the manual editor's AI proposals panel (#221's decision
-          keeps that one as a supplementary feature; this editor's whole
-          purpose is prompt-first authoring). */}
-      <section aria-label="AI assistant" role="region" data-panel="ai-assistant">
-        {id && (
-          <AIProposalPanel
-            projectId={id}
-            workingCopy={scene}
-            currentVersionId={project?.current_version ?? null}
-            onAccepted={handleAccepted}
-          />
-        )}
-      </section>
+        {/* Issue #224: the prompt panel is this editor's primary, default
+            interaction surface -- not tucked into a collapsible section
+            like the manual editor's AI proposals panel (#221's decision
+            keeps that one as a supplementary feature; this editor's whole
+            purpose is prompt-first authoring). Task 245 (issue #303): this
+            is the only sidebar panel this editor has (no Layers/Tools/
+            Details/Inspector -- see this file's own top-of-file doc
+            comment), so it's never hidden and no `EditorPanelSwitcher` is
+            rendered -- there is nothing for a narrow-viewport switcher to
+            switch *between*. `.editor-workspace`'s existing responsive CSS
+            (stacking below 1024px) still applies unconditionally, giving
+            this 2-panel layout the same narrow-viewport behavior as the
+            reference editor without a switcher that would have exactly
+            one, permanently-selected tab. */}
+        <section
+          aria-label="AI assistant"
+          role="region"
+          data-panel="ai-assistant"
+          className="editor-panel"
+        >
+          {id && (
+            <AIProposalPanel
+              projectId={id}
+              workingCopy={scene}
+              currentVersionId={project?.current_version ?? null}
+              onAccepted={handleAccepted}
+            />
+          )}
+        </section>
+      </div>
     </div>
   );
 }

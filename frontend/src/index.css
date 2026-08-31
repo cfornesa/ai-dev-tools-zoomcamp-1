@@ -1763,6 +1763,25 @@ textarea:disabled {
   min-height: 400px;
 }
 
+/* Task 245 (issue #303): this editor's own 2-panel grid (Preview + AI
+   assistant only) -- scoped under `.ai-editor-workspace` (a compound
+   selector, so it always wins over the bare `.editor-panel[data-panel=…]`
+   rules above written for the 2D manual editor's 5-panel sidebar) rather
+   than reusing those unscoped rules directly, which would otherwise force
+   this page's Preview panel into a `grid-row: 1 / span 5` it has no
+   matching rows for. `.editor-workspace`'s own base rules (grid-template-
+   columns, gap, the <1024px flex-column collapse, etc.) still apply
+   unscoped, unchanged for every consumer. */
+.ai-editor-workspace .editor-panel[data-panel='preview'] {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.ai-editor-workspace .editor-panel[data-panel='ai-assistant'] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
 /* Issue #220: which renderer (p5.js/Canvas2D/SVG) the open project uses. */
 .editor-renderer-badge {
   font-size: 0.85em;

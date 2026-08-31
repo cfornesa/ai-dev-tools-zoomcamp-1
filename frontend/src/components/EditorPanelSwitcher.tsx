@@ -17,7 +17,19 @@ export type EditorPanelName = 'details' | 'tools' | 'preview' | 'inspector' | 'l
 // so existing narrow-viewport behavior for a first-time visit is
 // unchanged — a user reaches Layers with one switcher click, same as
 // every other non-default tab already required before this change.
-const PANELS: Array<{ name: Exclude<EditorPanelName, 'preview'>; label: string }> = [
+//
+// Task 245 (issue #303): the fixed `EditorPanelName` union and this
+// specific 5-tab list are `EditorWorkspace.tsx`'s (the 2D manual editor's)
+// own panel set — kept here, unchanged, as the default `panels` prop value
+// below, so that file's existing `<EditorPanelSwitcher activePanel={...}
+// onSelect={...} />` call (no `panels` prop) keeps behaving identically.
+// A caller with a different panel set (any other editor variant unifying
+// on this same switcher) passes its own `panels` array of `{name, label}`
+// instead of relying on this default.
+export const DEFAULT_EDITOR_PANELS: Array<{
+  name: Exclude<EditorPanelName, 'preview'>;
+  label: string;
+}> = [
   { name: 'layers', label: 'Layers' },
   { name: 'canvas', label: 'Canvas' },
   { name: 'details', label: 'Details' },
@@ -25,24 +37,34 @@ const PANELS: Array<{ name: Exclude<EditorPanelName, 'preview'>; label: string }
   { name: 'inspector', label: 'Inspector' },
 ];
 
-/** Task 21 (reworked by issue #93, extended by issue #94/#127): the
- * narrow-layout (<1024px) panel switcher — a keyboard-operable tab list for
- * moving between the Details, Tools, Layers, and Inspector panels when they
- * can't be shown side by side with Preview. Preview itself is never one of
- * these tabs; it stays visible regardless of which tab is active (see the
- * module comment above). Each tab is an independently tabbable button, so
- * it participates in the normal Tab/Shift+Tab order without a
- * roving-tabindex pattern. */
-function EditorPanelSwitcher({
+/** Task 21 (reworked by issue #93, extended by issue #94/#127, generalized
+ * by issue #303): the narrow-layout (<1024px) panel switcher — a
+ * keyboard-operable tab list for moving between panels that can't be shown
+ * side by side with Preview at that width. Preview itself is never one of
+ * these tabs; it stays visible regardless of which tab is active (matches
+ * every caller's own `panelHidden`-style logic, not something this
+ * component enforces itself). Each tab is an independently tabbable
+ * button, so it participates in the normal Tab/Shift+Tab order without a
+ * roving-tabindex pattern.
+ *
+ * `panels` defaults to `DEFAULT_EDITOR_PANELS` (the 2D manual editor's own
+ * fixed 5-tab set) so `EditorWorkspace.tsx`'s existing call site needs no
+ * changes; any other caller passes its own panel list and its own
+ * `activePanel`/`onSelect` type (a plain `string` here, not the fixed
+ * `EditorPanelName` union, since a different editor's panel set is never a
+ * subset of that specific union). */
+function EditorPanelSwitcher<TPanelName extends string>({
   activePanel,
   onSelect,
+  panels = DEFAULT_EDITOR_PANELS as unknown as Array<{ name: TPanelName; label: string }>,
 }: {
-  activePanel: EditorPanelName;
-  onSelect: (panel: EditorPanelName) => void;
+  activePanel: TPanelName;
+  onSelect: (panel: TPanelName) => void;
+  panels?: Array<{ name: TPanelName; label: string }>;
 }) {
   return (
     <div role="tablist" aria-label="Editor panels" className="editor-panel-switcher">
-      {PANELS.map(({ name, label }) => (
+      {panels.map(({ name, label }) => (
         <button
           key={name}
           type="button"

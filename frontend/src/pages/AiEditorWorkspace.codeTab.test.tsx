@@ -101,6 +101,26 @@ describe('AiEditorWorkspace Code tab', () => {
     );
   });
 
+  it('keeps the Preview panel itself mounted and visible while Code is active (issue #303)', async () => {
+    mockedGetProject.mockResolvedValue(baseProject());
+    mockedGetSceneVersion.mockResolvedValue(baseVersion());
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    const previewPanel = await screen.findByRole('region', { name: 'Preview' });
+    expect(previewPanel).toHaveClass('editor-panel');
+
+    await user.click(screen.getByRole('radio', { name: 'Code' }));
+    await screen.findByRole('region', { name: 'Code' });
+
+    // Preview is never hidden -- matches EditorWorkspace.tsx's own
+    // documented "Preview is never one of the switcher's tabs" rule
+    // (issue #159); only its internal Visual sub-view (canvas + preview
+    // actions) toggles, not the Preview panel/section itself.
+    expect(screen.getByRole('region', { name: 'Preview' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'AI assistant' })).toHaveClass('editor-panel');
+  });
+
   it('applies a valid JSON edit to the working scene on blur', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());

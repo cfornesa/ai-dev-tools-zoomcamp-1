@@ -8756,6 +8756,88 @@ to avoid merge friction on the same file (`mistral_provider.py`'s system
 prompts). Implementation explicitly paused mid-session at the owner's
 direct instruction (2026-08-31) — not started beyond epic filing.
 
+Status update (2026-08-31 backlog session): task 224/#256 shipped first
+per the owner's instruction, then this epic was groomed into four
+criterion-ready sub-issues (tasks 227-230/#259-262 below), in
+dependency order. This epic issue itself stays open as the umbrella;
+implementation now proceeds through its sub-issues.
+
+## 227. Backend: MistralModelPreference and AIPersona models + CRUD API
+
+Status: PROPOSED
+
+GitHub issue: [#259](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/259)
+
+Parent: task 225/#257 (epic).
+
+Scope: add `MistralModelPreference` (owner FK, slug, label) and
+`AIPersona` (owner FK, name, prompt_text) models to
+`backend/scenes/models.py`, a migration, and a new API module (e.g.
+`backend/scenes/ai_preferences_api.py`) with list/create/delete
+endpoints for each, mirroring `scenes/credentials_api.py`'s
+`APIView`/`_auth_required` pattern and `MistralCredential`'s per-user
+isolation. Full scope and acceptance criteria in #259.
+
+Dependencies: None. First of the epic's sub-issues — 228-230/#260-262
+depend on this one shipping first.
+
+## 228. Backend: compose an optional Persona's additive prompt into Mistral create/edit calls (2D+3D)
+
+Status: PROPOSED
+
+GitHub issue: [#260](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/260)
+
+Parent: task 225/#257 (epic).
+
+Scope: extend the 2D/3D create/edit request path and
+`MistralSceneProvider`'s `_invoke`/`_invoke_edit` (and 3D counterparts)
+to accept an optional persona id, scoped to the requesting user, and
+append its `prompt_text` as an additional system message immediately
+after the existing mandatory system prompt — never replacing or
+altering it, directly guarding against task 224/#256's failure mode
+recurring through a persona. Full scope and acceptance criteria in
+#260.
+
+Dependencies: task 227/#259 (`AIPersona` model must exist first).
+
+## 229. Frontend: Account settings management for saved Mistral models and Personas
+
+Status: PROPOSED
+
+GitHub issue: [#261](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/261)
+
+Parent: task 225/#257 (epic).
+
+Scope: add "Saved Mistral models" and "Personas" management sections
+to `frontend/src/pages/AccountSettings.tsx` (add/list/delete for each,
+plus a link to Mistral's own model documentation), and a new typed API
+wrapper (e.g. `frontend/src/api/aiPreferences.ts`) following
+`frontend/src/api/credentials.ts`'s conventions. Full scope and
+acceptance criteria in #261.
+
+Dependencies: task 227/#259 (backend CRUD API must exist first).
+
+## 230. Frontend: AI editor model/persona dropdowns and full-width panel fields (2D+3D, create+edit)
+
+Status: PROPOSED
+
+GitHub issue: [#262](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/262)
+
+Parent: task 225/#257 (epic).
+
+Scope: replace the free-text "Mistral model (optional)" field in
+`frontend/src/pages/AIProposalPanel.tsx` (2D) and
+`frontend/src/pages/AIProposalPanel3D.tsx` (3D) with a dropdown sourced
+from the user's saved models, add an optional Persona dropdown, and fix
+both panels' constrained-width fields to render full-width — covering
+all four AI flows (2D/3D × create/edit) since each panel already serves
+both modes of its document family. Full scope and acceptance criteria
+in #262.
+
+Dependencies: task 227/#259 (backend models/API), task 228/#260
+(persona composition), and task 229/#261 (Account settings UI to
+manage what this dropdown selects from).
+
 ## 226. Decide/execute deletion of two test projects created in production during a live feature demo
 
 Status: PROPOSED

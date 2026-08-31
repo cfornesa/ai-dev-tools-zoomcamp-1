@@ -9534,7 +9534,7 @@ confirmed via computed style (`display: flex; gap: 8px`).
 
 ## 241. 3D Scene outline rows visually overlap/obscure the Live camera panel
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#299](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/299)
 
@@ -9556,6 +9556,24 @@ Dependencies: None. Related to task 236/#281 and task 236/#294 (both
 already shipped) -- their combined layout is what exposed this. Reframed
 under task 242/#300's broader cross-editor layout-unification direction;
 this issue stays filed as the first concrete instance.
+
+Status update (2026-08-31): COMPLETE. Root cause was `.scene3d-preview`
+having a fixed `height: 360px` with default (visible) overflow -- once
+gesture control was on, the button row + Live camera panel content
+pushed past that box without its own height ever growing to match, so
+`Outline3DInspector` (the next sibling in `Project3DWorkspace.tsx`)
+started rendering right at the 360px mark, overlapping the spillover.
+Fixed by moving the fixed height onto a new inner
+`.scene3d-preview-canvas-frame` (canvas + #297's video overlay only,
+sized/observed via its own `canvasFrameRef`), while the outer container
+(still the `useFullscreenToggle` target, unchanged) stays auto-height.
+New regression test; one existing test updated to resize-observe the
+now-differently-scoped fixed-height element. `make check` green (871
+backend / 2285 frontend). Verified live via `getBoundingClientRect()`:
+outline `top` (439.5) now cleanly below the camera panel/outer
+container's `bottom` (415.6) -- before the fix the outer container was
+pinned at 360px regardless of content, so the outline started inside
+the camera panel's visual bounds.
 
 ## 242. Epic: unify all 4 editor layouts (2D/3D x manual/AI) on the 2D manual editor's panel structure
 

@@ -6,6 +6,7 @@ import CameraControl, {
   type CameraControlProps,
   type CameraStatus,
 } from '../components/CameraControl';
+import { isEditableElement, PIANO_KEY_MAP } from '../audio/pianoKeyMap';
 import { createSonicEngine, type SonicEngine } from '../audio/sonicEngine';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
@@ -222,6 +223,7 @@ function Scene3DPreview({
     if (soundEnabled) {
       engine.disable();
       setSoundEnabled(false);
+      setKeyboardEnabled(false);
       return;
     }
     await engine.enable();
@@ -230,6 +232,28 @@ function Scene3DPreview({
       setSoundEnabled(true);
     }
   }
+
+  // Issue #307: keyboard-triggered notes on the melodic voice -- a
+  // standard ASDF-piano-key mapping (`../audio/pianoKeyMap.ts`), matching
+  // the reference implementation. A `window` keydown listener (not scoped
+  // to this component's own container) is what lets a user play notes
+  // without first clicking into the 3D canvas, but it must never fire
+  // while the user is typing in a form field elsewhere on the page --
+  // `isEditableElement` guards exactly that. Only attached at all while
+  // both sound and this toggle are on, and torn down immediately if sound
+  // itself is muted (see `handleToggleSound` above).
+  const [keyboardEnabled, setKeyboardEnabled] = useState(false);
+  useEffect(() => {
+    if (!soundEnabled || !keyboardEnabled) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.repeat || isEditableElement(event.target)) return;
+      const note = PIANO_KEY_MAP[event.key.toLowerCase()];
+      if (!note) return;
+      sonicEngineRef.current?.triggerMelodicNote(note);
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [soundEnabled, keyboardEnabled]);
 
   // Issue #294: "Steer the piece" -- gesture-driven camera control.
   const [gestureControlEnabled, setGestureControlEnabled] = useState(false);
@@ -538,6 +562,15 @@ function Scene3DPreview({
             onClick={() => void handleToggleSound()}
           >
             {soundEnabled ? 'Mute sound' : 'Enable sound'}
+          </button>
+        )}
+        {showSoundControl && soundEnabled && (
+          <button
+            type="button"
+            aria-pressed={keyboardEnabled}
+            onClick={() => setKeyboardEnabled((current) => !current)}
+          >
+            {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
           </button>
         )}
       </div>

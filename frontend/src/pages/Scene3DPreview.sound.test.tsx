@@ -14,15 +14,21 @@ import type { Scene3DDocument } from './scene3dTypes';
  * than reimplementing their internals here.
  */
 
-const { engineStatusRef, enableSpy, disableSpy, setVolumeSpy, reportMovementSpy } = vi.hoisted(
-  () => ({
-    engineStatusRef: { current: 'idle' as SonicEngineStatus },
-    enableSpy: vi.fn(),
-    disableSpy: vi.fn(),
-    setVolumeSpy: vi.fn(),
-    reportMovementSpy: vi.fn(),
-  }),
-);
+const {
+  engineStatusRef,
+  enableSpy,
+  disableSpy,
+  setVolumeSpy,
+  reportMovementSpy,
+  triggerMelodicNoteSpy,
+} = vi.hoisted(() => ({
+  engineStatusRef: { current: 'idle' as SonicEngineStatus },
+  enableSpy: vi.fn(),
+  disableSpy: vi.fn(),
+  setVolumeSpy: vi.fn(),
+  reportMovementSpy: vi.fn(),
+  triggerMelodicNoteSpy: vi.fn(),
+}));
 
 vi.mock('../audio/sonicEngine', () => ({
   createSonicEngine: (): SonicEngine => ({
@@ -39,7 +45,7 @@ vi.mock('../audio/sonicEngine', () => ({
     },
     setVolume: setVolumeSpy,
     reportMovement: reportMovementSpy,
-    triggerMelodicNote: vi.fn(),
+    triggerMelodicNote: triggerMelodicNoteSpy,
     dispose: vi.fn(),
   }),
 }));
@@ -175,5 +181,64 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
     expect(reportMovementSpy).toHaveBeenCalled();
+  });
+});
+
+describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
+  it('shows no "Keyboard notes" toggle until sound is enabled', () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    expect(screen.queryByRole('button', { name: /keyboard notes/i })).not.toBeInTheDocument();
+  });
+
+  it('pressing a mapped key triggers a melodic note once both sound and keyboard notes are on', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
+
+    await user.keyboard('a');
+
+    expect(triggerMelodicNoteSpy).toHaveBeenCalledWith('C4');
+  });
+
+  it('does nothing while the toggle is off, even with sound enabled', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    await user.keyboard('a');
+
+    expect(triggerMelodicNoteSpy).not.toHaveBeenCalled();
+  });
+
+  it('never fires while typing in an unrelated form field', async () => {
+    render(
+      <div>
+        <input aria-label="Unrelated field" />
+        <Scene3DPreview scene={baseScene()} />
+      </div>,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
+
+    await user.click(screen.getByLabelText('Unrelated field'));
+    await user.keyboard('a');
+
+    expect(triggerMelodicNoteSpy).not.toHaveBeenCalled();
+  });
+
+  it('stops responding once sound is muted, and resets the toggle', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
+
+    await user.click(screen.getByRole('button', { name: 'Mute sound' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.keyboard('a');
+
+    expect(triggerMelodicNoteSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /keyboard notes/i, pressed: true })).toBeNull();
   });
 });

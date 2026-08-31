@@ -1802,6 +1802,19 @@ textarea:disabled {
   grid-row: 2;
 }
 
+/* Task 247 (issue #305): the 3D AI-assisted editor's own 2-panel grid
+   (Preview + AI assistant only) -- same scoping approach as
+   `.ai-editor-workspace`/`.project3d-workspace` above. */
+.ai-project3d-workspace .editor-panel[data-panel='preview'] {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.ai-project3d-workspace .editor-panel[data-panel='ai-assistant'] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
 /* Issue #220: which renderer (p5.js/Canvas2D/SVG) the open project uses. */
 .editor-renderer-badge {
   font-size: 0.85em;

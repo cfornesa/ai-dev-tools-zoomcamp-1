@@ -195,56 +195,71 @@ function AiProject3DWorkspace() {
           </p>
         )}
       </header>
-      <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={previewView === 'visual'}
-          onClick={() => setPreviewView('visual')}
-        >
-          Visual
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={previewView === 'code'}
-          onClick={() => setPreviewView('code')}
-        >
-          Code
-        </button>
-      </div>
-      {previewView === 'visual' && (
-        <>
-          <section aria-label="Preview" role="region" data-panel="preview">
+      <div className="ai-project3d-workspace editor-workspace">
+        {/* Task 247 (issue #305): a real `.editor-panel` region, scoped
+            under `.ai-project3d-workspace` so its grid-row/column rules
+            don't inherit the 2D manual editor's unscoped 5-row rules --
+            same approach as #303/#304. Visual/Code is a sub-toggle inside
+            this panel (issue #159's convention): Preview is never hidden,
+            so Code lives alongside it rather than replacing the whole
+            panel plus AI assistant/Tools entirely, which is what this file
+            did before this fix. */}
+        <section aria-label="Preview" role="region" data-panel="preview" className="editor-panel">
+          <div role="radiogroup" aria-label="Preview view" className="editor-tool-group">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewView === 'visual'}
+              onClick={() => setPreviewView('visual')}
+            >
+              Visual
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewView === 'code'}
+              onClick={() => setPreviewView('code')}
+            >
+              Code
+            </button>
+          </div>
+          {previewView === 'code' && (
+            <section aria-label="Code" role="region" data-panel="code">
+              <Scene3DCodeEditor projectId={id} scene={scene} onSaved={handleVersionPersisted} />
+            </section>
+          )}
+          <div hidden={previewView !== 'visual'}>
             {/* Issue #244: real Three.js rendering, replacing the
                 #226/#231 placeholder. */}
             <Scene3DPreview scene={scene} screenshotBaseName={project?.title} />
-          </section>
-          {/* Issue #232: the prompt panel is this editor's primary
-              interaction surface, not tucked into a collapsible section
-              -- same "prompt-first" convention as #224's 2D
-              AiEditorWorkspace.tsx. */}
+          </div>
+        </section>
+        {/* Issue #232: the prompt panel is this editor's primary
+            interaction surface, not tucked into a collapsible section --
+            same "prompt-first" convention as #224's 2D
+            AiEditorWorkspace.tsx. Task 247 (issue #305): now its own
+            always-visible `.editor-panel`, no longer gated by
+            `previewView`. */}
+        <section
+          aria-label="AI assistant"
+          role="region"
+          data-panel="ai-assistant"
+          className="editor-panel"
+        >
           <div role="group" aria-label="Whole-scene AI actions" className="editor-tool-group">
             <button type="button" onClick={handleAskAiImproveScene}>
               Ask AI to improve this scene
             </button>
           </div>
-          <section aria-label="AI assistant" role="region" data-panel="ai-assistant">
-            <AIProposalPanel3D
-              projectId={id}
-              workingCopy={scene}
-              currentVersionId={project?.current_version?.id ?? null}
-              onAccepted={handleVersionPersisted}
-              seed={aiSeed}
-            />
-          </section>
-        </>
-      )}
-      {previewView === 'code' && (
-        <section aria-label="Code" role="region" data-panel="code">
-          <Scene3DCodeEditor projectId={id} scene={scene} onSaved={handleVersionPersisted} />
+          <AIProposalPanel3D
+            projectId={id}
+            workingCopy={scene}
+            currentVersionId={project?.current_version?.id ?? null}
+            onAccepted={handleVersionPersisted}
+            seed={aiSeed}
+          />
         </section>
-      )}
+      </div>
     </div>
   );
 }

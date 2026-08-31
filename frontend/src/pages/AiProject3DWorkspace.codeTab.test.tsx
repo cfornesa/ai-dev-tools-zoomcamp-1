@@ -84,8 +84,12 @@ describe('AiProject3DWorkspace Code tab', () => {
     await user.click(screen.getByRole('radio', { name: 'Code' }));
 
     expect(await screen.findByRole('region', { name: 'Code' })).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Preview' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'AI assistant' })).not.toBeInTheDocument();
+    // Issue #305: Preview and AI assistant are never hidden -- matches
+    // EditorWorkspace.tsx's own documented issue #159 convention (also
+    // just corrected for #303/#304); only Preview's internal Visual
+    // sub-view toggles, not the Preview panel or AI assistant.
+    expect(screen.getByRole('region', { name: 'Preview' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'AI assistant' })).toBeInTheDocument();
   });
 
   it('a saved Code-tab edit updates the title-bar scene summary shown on Visual', async () => {

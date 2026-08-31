@@ -118,4 +118,13 @@ describe('AiProject3DWorkspace', () => {
       expect(mockedUpdate).toHaveBeenCalledWith('p1', { title: 'Renamed 3D scene' });
     });
   });
+
+  it('gives Preview and AI assistant each a contained .editor-panel region (issue #305)', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+
+    renderWorkspace();
+
+    expect(await screen.findByRole('region', { name: 'Preview' })).toHaveClass('editor-panel');
+    expect(screen.getByRole('region', { name: 'AI assistant' })).toHaveClass('editor-panel');
+  });
 });

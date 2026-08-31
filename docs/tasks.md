@@ -8557,7 +8557,17 @@ Dependencies: None.
 
 ## 222. Existing (not just new) zero-content 3D scenes still render solid black
 
-Status: PROPOSED
+Status: COMPLETE. Moved the fix from creation-time default (#253) to
+render-time presentation: `frontend/src/render/threeSceneBuilder.ts`
+(`buildThreeSceneGraph`) and `backend/scenes/thumbnails3d.py`
+(`render_scene3d_thumbnail`) now substitute a fixed `#808080` background
+whenever a scene has zero `objects`, zero `lights`, and empty `groups`,
+regardless of the document's stored `backgroundColor` — no data
+migration. Verified against the exact pre-existing production scenario
+(minimal fixture with `backgroundColor` forced to `#000000`): rendered
+pixel is `(128, 128, 128)` and the input's stored color is unchanged
+afterward. `make check` passes (826 backend, 2157 frontend tests).
+QA: PASS, see issue comment. Commit `ac6f9c6`.
 
 GitHub issue: [#254](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/254)
 

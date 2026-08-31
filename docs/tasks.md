@@ -9306,6 +9306,7 @@ Status: IN PROGRESS
 
 Sub-issue progress:
 - [#285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/285) (2D screenshot) -- CLOSED. Added a "Take screenshot" button to both 2D editors (manual and AI-assisted), capturing the live preview canvas via `captureLiveScreenshot.ts` (read-only `toBlob`/`toDataURL`, distinct from `captureSocialThumbnail.ts`'s off-screen stable-demo-mode render) and downloading it via a new shared `downloadBlob.ts` helper (extracted from 3 pre-existing duplicated download-trigger sites; #286 will reuse it too). Verified live. `make check` green.
+- [#286](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/286) (3D screenshot) -- CLOSED. Added the button inside the shared `Scene3DPreview.tsx` itself (only it holds the live canvas ref) with a `showScreenshotButton` prop (default true; `false` for `AIProposalPanel3D.tsx`'s unaccepted-proposal preview). Bundled fix: `preserveDrawingBuffer: true` on the `WebGLRenderer`, since a capture outside the render loop could otherwise read a blank cleared buffer. Reuses #285's helpers unchanged. Verified live. `make check` green.
 
 GitHub issue: [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274)
 

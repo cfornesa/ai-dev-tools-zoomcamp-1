@@ -86,6 +86,19 @@ function App() {
                   project's unified editor instead of a dead route. */}
               <Route path="projects/:id/settings" element={<ProjectSettingsRedirect />} />
             </Route>
+            {/* Issue #292: a chrome-less counterpart of `p/:id` above, for
+                embedding a published project's public view in an
+                `<iframe>` from another origin -- deliberately a *sibling*
+                route to the `Layout`-wrapped one, not nested inside it, so
+                none of `Layout.tsx`'s app-shell chrome (nav header,
+                account links, mobile menu) ever renders here. Reuses
+                `PublicProjectViewer.tsx` unchanged (it reads no
+                Layout-provided context -- see that component's own doc
+                comment on how it reads reduced-motion/camera-overlay
+                state independently via localStorage) rather than a
+                duplicate component, since the only actual difference is
+                which chrome wraps it. */}
+            <Route path="embed/p/:id" element={<PublicProjectViewer />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

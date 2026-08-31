@@ -9079,7 +9079,22 @@ after those (already shipped) avoids merge friction.
 
 ## 234. 3D AI proposal panel shows no visual preview before Accept/Reject
 
-Status: PROPOSED
+Status: COMPLETE. `AIProposalPanel3D.tsx` now renders `<Scene3DPreview
+scene={proposal.scene as unknown as Scene3DDocument} />` (wrapped in a
+`data-testid="ai-3d-proposal-preview"` div) whenever `phase ===
+'success' && proposal`, alongside the existing object/light/group
+count text — reusing task 212/#244's `Scene3DPreview` component
+unchanged, exactly as scoped. No changes to `useAIProposal3D.ts` or
+`Scene3DPreview.tsx`; `reject()` was already client-side-only and
+untouched. New tests in `AIProposalPanel3D.test.tsx` (3, mirroring
+`AIProposalPanel.test.tsx`'s own preview-canvas coverage): preview
+present after a successful Create, after a successful Edit (previewing
+the patched scene), and gone after Reject with no accept-endpoint
+call. `make check` passes (853 backend tests unaffected, 2180 frontend
+tests, lint/format/typecheck clean). Verification boundary: no live
+browser check possible in this sandbox — same boundary as tasks
+224/225/227-233; next action is the repository owner confirming the
+live preview renders correctly in production via Claude in Chrome.
 
 GitHub issue: [#267](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/267)
 

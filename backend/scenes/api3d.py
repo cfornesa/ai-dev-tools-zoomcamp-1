@@ -26,6 +26,7 @@ from scenes.models import Project3D, SceneVersion3D, Thumbnail3D
 from scenes.permissions import Action, can
 from scenes.publishing import validate_meaningful_metadata_3d
 from scenes.serializers import (
+    Project3DMetadataSerializer,
     Project3DSerializer,
     PublicProject3DSerializer,
     SceneVersion3DCreateSerializer,
@@ -105,6 +106,20 @@ class Project3DDetailView(APIView):
         project = _get_project3d_or_404(public_id)
         if not can(request.user, Action.PROJECT3D_READ, project):
             raise Http404
+        return Response(Project3DSerializer(project).data)
+
+    def patch(self, request, public_id):
+        # Issue #301: title-only metadata PATCH, mirroring
+        # `ProjectDetailView.patch` -- see `Project3DMetadataSerializer`'s
+        # own doc comment for why it's scoped to just `title`.
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_WRITE, project):
+            raise Http404
+
+        serializer = Project3DMetadataSerializer(project, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         return Response(Project3DSerializer(project).data)
 
     def delete(self, request, public_id):

@@ -99,7 +99,7 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
       filename: 'my-ai-3d-scene.zip',
     });
     renderWorkspace();
-    await screen.findByRole('heading', { name: 'My AI 3D scene' });
+    await screen.findByLabelText('Project title');
     const user = userEvent.setup();
 
     await user.click(screen.getByTestId('ai-project3d-export-button'));
@@ -137,7 +137,7 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
       scene_json: proposedScene,
     });
     renderWorkspace();
-    await screen.findByRole('heading', { name: 'My AI 3D scene' });
+    await screen.findByLabelText('Project title');
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/describe the scene/i), 'a bare stage');
@@ -160,7 +160,7 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
       reasons: ['camera: must have required property fov'],
     });
     renderWorkspace();
-    await screen.findByRole('heading', { name: 'My AI 3D scene' });
+    await screen.findByLabelText('Project title');
     const user = userEvent.setup();
 
     await user.click(screen.getByTestId('ai-project3d-export-button'));

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -115,5 +115,75 @@ describe('Project3DWorkspace', () => {
 
     expect(await screen.findByRole('region', { name: 'Code' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Preview' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Project3DWorkspace inline title editing (issue #301)', () => {
+  it('shows the title as plain text with an Edit affordance by default', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject({ title: 'My 3D scene' }));
+
+    renderWorkspace();
+
+    expect(await screen.findByRole('heading', { name: 'My 3D scene' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit title' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+  });
+
+  it('swaps to a text input on Edit, saves through updateProjectMetadata3D, and updates the heading in place', async () => {
+    const mockedUpdate = vi.mocked(projects3dApi.updateProjectMetadata3D);
+    mockedGetProject3D.mockResolvedValue(baseProject({ title: 'My 3D scene' }));
+    mockedUpdate.mockResolvedValue(baseProject({ title: 'Renamed 3D scene' }));
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('heading', { name: 'My 3D scene' });
+
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const titleInput = screen.getByLabelText('Title');
+    expect(titleInput).toHaveValue('My 3D scene');
+    const titleForm = within(titleInput.closest('form')!);
+
+    await user.clear(titleInput);
+    await user.type(titleInput, 'Renamed 3D scene');
+    await user.click(titleForm.getByRole('button', { name: 'Save' }));
+
+    expect(mockedUpdate).toHaveBeenCalledWith('p1', { title: 'Renamed 3D scene' });
+    expect(await screen.findByRole('heading', { name: 'Renamed 3D scene' })).toBeInTheDocument();
+  });
+
+  it('Cancel discards the draft and restores the original title without saving', async () => {
+    const mockedUpdate = vi.mocked(projects3dApi.updateProjectMetadata3D);
+    mockedGetProject3D.mockResolvedValue(baseProject({ title: 'My 3D scene' }));
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('heading', { name: 'My 3D scene' });
+
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const titleInput = screen.getByLabelText('Title');
+    await user.clear(titleInput);
+    await user.type(titleInput, 'Discarded');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('heading', { name: 'My 3D scene' })).toBeInTheDocument();
+    expect(mockedUpdate).not.toHaveBeenCalled();
+  });
+
+  it('rejects a blank title without saving', async () => {
+    const mockedUpdate = vi.mocked(projects3dApi.updateProjectMetadata3D);
+    mockedGetProject3D.mockResolvedValue(baseProject({ title: 'My 3D scene' }));
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('heading', { name: 'My 3D scene' });
+
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const titleInput = screen.getByLabelText('Title');
+    const titleForm = within(titleInput.closest('form')!);
+    await user.clear(titleInput);
+    await user.click(titleForm.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/cannot be blank/i);
+    expect(mockedUpdate).not.toHaveBeenCalled();
   });
 });

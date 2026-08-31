@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
-import { getProject3D, type Project3D, type SceneVersion3D } from '../api/projects3d';
+import {
+  getProject3D,
+  updateProjectMetadata3D,
+  type Project3D,
+  type SceneVersion3D,
+} from '../api/projects3d';
 import {
   generateScene3DBundle,
   triggerScene3DBundleDownload,
@@ -33,6 +38,12 @@ function AiProject3DWorkspace() {
   const [project, setProject] = useState<Project3D | null>(null);
   const [scene, setScene] = useState<Scene3DDocument | null>(null);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
+  // Issue #301: mirrors AiEditorWorkspace.tsx's title-input/onBlur-save
+  // pattern -- no separate "Edit title" affordance (unlike the manual 3D
+  // editor's `EditableProject3DTitle`), matching the 2D AI-assisted
+  // editor's own lighter convention for this same asymmetry.
+  const [title, setTitle] = useState('');
+  const [titleSaving, setTitleSaving] = useState(false);
   // Issue #283: this panel is already always-present (the whole point of
   // the AI-assisted editor), so "Ask AI to improve this scene" just
   // re-seeds it into Edit mode with a generic prompt rather than mounting
@@ -79,6 +90,7 @@ function AiProject3DWorkspace() {
       .then((loadedProject) => {
         if (cancelled) return;
         setProject(loadedProject);
+        setTitle(loadedProject.title);
         if (loadedProject.current_version) {
           setScene(loadedProject.current_version.scene_json as unknown as Scene3DDocument);
           setLoadState('ready');
@@ -144,10 +156,30 @@ function AiProject3DWorkspace() {
     setProject((current) => (current ? { ...current, current_version: version } : current));
   }
 
+  async function handleTitleBlur() {
+    if (!id || !project || title === project.title) return;
+    setTitleSaving(true);
+    try {
+      const updated = await updateProjectMetadata3D(id, { title });
+      setProject(updated);
+    } catch {
+      setTitle(project.title); // revert on failure
+    } finally {
+      setTitleSaving(false);
+    }
+  }
+
   return (
     <div>
       <header className="editor-workspace-header">
-        <h2>{project?.title}</h2>
+        <input
+          className="ai-editor-title-input"
+          aria-label="Project title"
+          value={title}
+          disabled={titleSaving}
+          onChange={(event) => setTitle(event.target.value)}
+          onBlur={() => void handleTitleBlur()}
+        />
         <PublishControl3D id={id} project={project} setProject={setProject} />
         <button
           type="button"

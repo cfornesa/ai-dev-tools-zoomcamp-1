@@ -73,7 +73,7 @@ describe('AiProject3DWorkspace "Ask AI to improve this scene"', () => {
   it('re-seeds the always-present AIProposalPanel3D into Edit mode with a generic prompt', async () => {
     mockedGetProject3D.mockResolvedValue(baseProject());
     renderWorkspace();
-    await screen.findByRole('heading', { name: 'My AI 3D scene' });
+    await screen.findByLabelText('Project title');
     const user = userEvent.setup();
 
     const panel = screen.getByRole('region', { name: 'AI assistant' });

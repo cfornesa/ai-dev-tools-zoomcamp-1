@@ -21,7 +21,8 @@ export type Project3DVisibility = 'private' | 'public';
 
 /** Mirrors `scenes/serializers.py`'s `Project3DSerializer` -- still
  * smaller than the 2D `Project` type (issue #212 deferred
- * description/tags/remix; there is no metadata-update endpoint yet).
+ * description/tags/remix; issue #301 added a title-only metadata-update
+ * endpoint -- see `updateProjectMetadata3D` below).
  * `current_version` is the full nested version object (unlike 2D
  * `Project.current_version`, which is a bare id) -- matches the server
  * shape exactly. */
@@ -51,6 +52,22 @@ export function listProjects3D(): Promise<Project3D[]> {
 
 export function getProject3D(id: string): Promise<Project3D> {
   return apiFetch<Project3D>(`/api/projects3d/${id}/`);
+}
+
+/** Issue #301: title-only metadata PATCH, mirroring the 2D
+ * `updateProjectMetadata` -- scoped to just `title` since `Project3D` has
+ * no `description`/`tags`/`allow_public_remix`/`export_attribution`
+ * fields (see `Project3DMetadataSerializer`'s own doc comment). */
+export type Project3DMetadataInput = Partial<Pick<Project3D, 'title'>>;
+
+export function updateProjectMetadata3D(
+  id: string,
+  data: Project3DMetadataInput,
+): Promise<Project3D> {
+  return apiFetch<Project3D>(`/api/projects3d/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 /** Issue #242: owner-only soft-delete, mirroring the 2D

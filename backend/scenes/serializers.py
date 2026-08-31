@@ -438,6 +438,21 @@ class Project3DSerializer(serializers.ModelSerializer):
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
 
 
+class Project3DMetadataSerializer(serializers.ModelSerializer):
+    """Issue #301: the `Project3D` counterpart of `ProjectMetadataSerializer`,
+    scoped to just `title` -- `Project3D` has no `description`/`tags`/
+    `allow_public_remix`/`export_attribution` fields to extend this to (the
+    same documented scope boundary `Project3DSerializer` itself notes), and
+    `visibility` is excluded for the identical reason `ProjectMetadataSerializer`
+    excludes it: publishing must go through `Project3DPublishView`/
+    `Project3DUnpublishView`, not a generic metadata PATCH."""
+
+    class Meta:
+        model = Project3D
+        fields = ["title"]
+        extra_kwargs = {"title": {"required": False, "allow_blank": False}}
+
+
 class PublicSceneVersion3DSerializer(serializers.ModelSerializer):
     """Issue #296: the 3D counterpart of `PublicSceneVersionSerializer` --
     same exclusion policy (no `created_by`/`ai_request_id`, internal

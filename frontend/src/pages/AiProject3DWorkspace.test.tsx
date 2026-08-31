@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -76,7 +76,10 @@ describe('AiProject3DWorkspace', () => {
 
     renderWorkspace();
 
-    expect(await screen.findByRole('heading', { name: 'My AI 3D scene' })).toBeInTheDocument();
+    // Issue #301: the title is now an editable input (mirrors
+    // AiEditorWorkspace.tsx's own title-input/onBlur-save pattern), not a
+    // plain heading.
+    expect(await screen.findByLabelText('Project title')).toHaveValue('My AI 3D scene');
     expect(await screen.findByTestId('scene3d-preview-unavailable')).toHaveTextContent(
       '1 object(s), 1 light(s), 0 group(s)',
     );
@@ -98,5 +101,21 @@ describe('AiProject3DWorkspace', () => {
     renderWorkspace();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no saved scene/i);
+  });
+
+  it('saves the title on blur when it changed (issue #301)', async () => {
+    const mockedUpdate = vi.mocked(projects3dApi.updateProjectMetadata3D);
+    mockedGetProject3D.mockResolvedValue(baseProject());
+    mockedUpdate.mockResolvedValue(baseProject({ title: 'Renamed 3D scene' }));
+
+    renderWorkspace();
+
+    const input = await screen.findByLabelText('Project title');
+    fireEvent.change(input, { target: { value: 'Renamed 3D scene' } });
+    fireEvent.blur(input);
+
+    await vi.waitFor(() => {
+      expect(mockedUpdate).toHaveBeenCalledWith('p1', { title: 'Renamed 3D scene' });
+    });
   });
 });

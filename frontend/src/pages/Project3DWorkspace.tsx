@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import {
   getProject3D,
   saveSceneVersion3D,
+  updateProjectMetadata3D,
   type Project3D,
   type SceneVersion3D,
 } from '../api/projects3d';
+import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
 import { validateScene3D } from '../validation/scene3d';
 import {
   generateScene3DBundle,
@@ -27,6 +29,100 @@ type ExportState = { pending: boolean; error: string | null };
 
 const IDLE_SAVE_STATE: SaveState = { pending: false, error: null };
 const IDLE_EXPORT_STATE: ExportState = { pending: false, error: null };
+
+/**
+ * Issue #301: inline title editing for `Project3D`, mirroring
+ * `EditorWorkspace.tsx`'s `EditableProjectTitle` -- scoped to just `title`
+ * (no description/tags fields exist to edit here), writing through
+ * `updateProjectMetadata3D` with no navigation or reload.
+ */
+function EditableProject3DTitle({
+  id,
+  project,
+  setProject,
+}: {
+  id: string | undefined;
+  project: Project3D | null;
+  setProject: Dispatch<SetStateAction<Project3D | null>>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function startEditing() {
+    setDraft(project?.title ?? '');
+    setError(null);
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setIsEditing(false);
+    setError(null);
+  }
+
+  async function saveTitle(event: FormEvent) {
+    event.preventDefault();
+    if (!id) return;
+    const errors = validateProjectMetadataForPrivateSave({ title: draft });
+    if (errors.title) {
+      setError(errors.title.join(' '));
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updateProjectMetadata3D(id, { title: draft });
+      setProject(updated);
+      setIsEditing(false);
+    } catch {
+      setError('Could not save the title. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!isEditing) {
+    return (
+      <div className="editor-title-display">
+        <h2>{project?.title}</h2>
+        <button
+          type="button"
+          className="editor-icon-button"
+          aria-label="Edit title"
+          onClick={startEditing}
+        >
+          <span aria-hidden="true">✎</span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form className="editor-title-edit" onSubmit={(event) => void saveTitle(event)}>
+      <label htmlFor="project3d-title-input">Title</label>
+      <input
+        id="project3d-title-input"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? 'project3d-title-error' : undefined}
+        autoFocus
+      />
+      <button type="submit" disabled={saving}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+      <button type="button" onClick={cancelEditing}>
+        Cancel
+      </button>
+      {error && (
+        <p id="project3d-title-error" role="alert">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
 
 /**
  * Issue #226/#227/#229/#234: makes a `scene3d` project openable, with the
@@ -196,7 +292,7 @@ function Project3DWorkspace() {
   return (
     <div>
       <header className="editor-workspace-header">
-        <h2>{project?.title}</h2>
+        <EditableProject3DTitle id={id} project={project} setProject={setProject} />
         <PublishControl3D id={id} project={project} setProject={setProject} />
         <p
           role="status"

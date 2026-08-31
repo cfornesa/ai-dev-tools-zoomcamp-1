@@ -77,6 +77,36 @@ def test_create_scene3d_requests_json_schema_targeting_scene3d():
     assert "scene3d" in system_message["content"] or "documentType" in system_message["content"]
 
 
+def test_create_scene3d_system_prompt_states_every_light_required_fields():
+    """Issue #265: a real Mistral call for "a bare stage with a single
+    sphere" produced `lights[0]: 0` (a bare number, not an object), rejected
+    by `scenes.validation3d.validate_scene3d`. `_SYSTEM_PROMPT_3D` already
+    restated each light type's conditional position/direction requirement
+    but never stated that every light is an object requiring id/type/color/
+    intensity unconditionally -- unlike `objects[]`, which does get this
+    restatement. This test fails if the schema's actual unconditional
+    `required` list for light and the system prompt's own restated list
+    ever drift apart."""
+    from scenes.validation3d import SCENE3D_SCHEMA
+
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(MINIMAL_SCENE_3D))
+
+    provider = _provider_with(handler)
+    provider.create_scene3d(AICreateScene3DRequest(prompt="a bare stage"))
+
+    system_message = next(m for m in captured["messages"] if m["role"] == "system")
+    content = system_message["content"]
+
+    for field in SCENE3D_SCHEMA["$defs"]["light"]["required"]:
+        assert f'"{field}"' in content, (
+            f"light's required field {field!r} missing from system prompt"
+        )
+
+
 def test_create_scene3d_invalid_structured_output_is_rejected():
     provider = _provider_with(lambda **kw: _fake_response(json.dumps({"not": "a scene3d"})))
     result = provider.create_scene3d(AICreateScene3DRequest(prompt="anything"))

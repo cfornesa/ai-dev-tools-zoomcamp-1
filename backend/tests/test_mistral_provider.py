@@ -184,6 +184,54 @@ def test_create_scene_system_prompt_lists_every_shape_types_required_fields():
             )
 
 
+def test_create_scene_system_prompt_states_layerid_uniqueness():
+    """Issue #264: a real Mistral call for "a red circle and a blue square"
+    produced two shapes sharing one layerId, rejected by
+    `scenes.validation.validate_scene` -- the cross-item layerId-uniqueness
+    rule (task 111/#142) is not expressible in JSON Schema at all, so the
+    system prompt's natural-language instruction is the only mitigation."""
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    provider = _provider_with(handler)
+    provider.create_scene(AICreateSceneRequest(prompt="a scene"))
+
+    system_message = next(m for m in captured["messages"] if m["role"] == "system")
+    content = system_message["content"]
+
+    assert "layerId" in content
+    assert "share" in content.lower() or "distinct" in content.lower()
+
+
+def test_create_scene_system_prompt_lists_every_demosignals_key():
+    """Issue #264: a real Mistral call produced `demoSignals: {"handPresence":
+    ...}`, rejected because `demoSignals` has a closed key set
+    (`additionalProperties: false`) that never got restated in the system
+    prompt, unlike the separately-restated `signal` enum (which does include
+    `handPresence`, just not as a valid `demoSignals` key). This test fails
+    if the schema's actual `demoSignals` keys and the system prompt's own
+    restated list ever drift apart."""
+    from scenes.validation import SCENE_SCHEMA
+
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(BLANK_SCENE))
+
+    provider = _provider_with(handler)
+    provider.create_scene(AICreateSceneRequest(prompt="a scene"))
+
+    system_message = next(m for m in captured["messages"] if m["role"] == "system")
+    content = system_message["content"]
+
+    for key in SCENE_SCHEMA["$defs"]["demoSignals"]["properties"]:
+        assert f'"{key}"' in content, f"demoSignals key {key!r} missing from system prompt"
+
+
 def test_create_scene_system_prompt_instructs_naming_implied_shapes():
     """#222: the model should set shape.name when the prompt implies one
     (e.g. "add a sun"), so a later edit prompt can address it back by name."""

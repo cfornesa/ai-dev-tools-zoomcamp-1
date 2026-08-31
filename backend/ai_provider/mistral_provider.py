@@ -246,6 +246,13 @@ elsewhere in the document.
 "cornerRadius"; "line" requires "x2" and "y2"; "path" requires "points" \
 and "closed"; "particleEmitter" requires "rate", "size", "lifespan", \
 "speed", and "palette".
+- Every shape is its own independent layer: no two shapes may share the \
+same "layerId" -- each shape needs a distinct layer with a distinct id, \
+even if you otherwise reuse a shared style or transform.
+- If you include "demoSignals", it may only contain these keys: "palmX", \
+"palmY", "pinchStrength", "handDistance", "gestureState" -- no other key \
+(e.g. "handPresence") is ever allowed there, even though it is a valid \
+"signal" value elsewhere.
 - When the user's prompt implies a name for a shape (e.g. "add a sun" \
 implies naming that shape "Sun"), set that shape's optional "name" \
 field accordingly, so a later prompt in the same session can address it \
@@ -300,9 +307,11 @@ are the top-level fields).
 "cylinder", "plane" -- each requires its own specific dimension fields \
 (box: width/height/depth; sphere: radius; cylinder: radiusTop/ \
 radiusBottom/height; plane: width/height).
-- Every light's "type" must be exactly one of: "directional", "point", \
-"ambient". A "point" light requires "position"; a "directional" light \
-requires "direction"; "ambient" needs neither.
+- Every light is an object requiring "id", "type", "color", and \
+"intensity" -- never a bare number or string. Its "type" must be exactly \
+one of: "directional", "point", "ambient". A "point" light additionally \
+requires "position"; a "directional" light additionally requires \
+"direction"; "ambient" needs neither.
 - Every object's "groupId" must be an existing group's id, or null.
 - When the user's prompt implies a name for an object or light (e.g. \
 "add a sun" implies naming that light or object "Sun"), set its optional \

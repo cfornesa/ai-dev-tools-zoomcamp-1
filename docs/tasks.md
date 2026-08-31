@@ -9227,6 +9227,7 @@ Status: IN PROGRESS
 Sub-issue progress:
 - [#280](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/280) (PM decision: outline detail surface) -- CLOSED, decision: inline inspector.
 - [#270](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/270) (thumbnail lighting) -- CLOSED. Added diffuse Lambertian shading (ambient + directional/point) to `backend/scenes/thumbnails3d.py`'s per-face color computation, approximating `threeSceneBuilder.ts`'s `MeshStandardMaterial`; empty `lights` array falls back to full brightness (pre-#270 behavior unchanged). 7 new regression tests in `backend/tests/test_thumbnails3d.py`; `make check` green.
+- [#271](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/271) (camera interactivity) -- CLOSED. Wired Three.js's `OrbitControls` (already shipped by the installed `three` package) into `Scene3DPreview.tsx`, rebuilt alongside the scene graph each time the scene changes since the camera object itself is rebuilt too; purely transient, never persisted to the saved document. Applies to all 3 consumers automatically. New `Scene3DPreview.orbitControls.test.tsx` mocks `WebGLRenderer` to succeed and spies on the real `OrbitControls` class. Verified live in a real browser: mouse-drag orbit and scroll-wheel zoom both visibly worked against a real Django+Vite stack. `make check` green.
 
 GitHub issue: [#269](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/269)
 

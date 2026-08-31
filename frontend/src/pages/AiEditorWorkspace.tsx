@@ -10,6 +10,8 @@ import {
   type SceneDocument,
   type SceneVersion,
 } from '../api/projects';
+import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
+import { downloadBlob } from '../export/downloadBlob';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview } from '../render/scenePreview';
 import AIProposalPanel from './AIProposalPanel';
@@ -105,6 +107,22 @@ function AiEditorWorkspace() {
     setProject((current) => (current ? { ...current, current_version: version.id } : current));
   }
 
+  // Issue #285: "Take screenshot" — captures whatever the live preview
+  // canvas currently shows and downloads it as a PNG.
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  async function handleTakeScreenshot() {
+    setScreenshotError(null);
+    try {
+      const canvas = previewRef.current?.getCanvasElement() ?? null;
+      const blob = await captureLiveScreenshot(canvas);
+      downloadBlob(blob, screenshotFilename(project?.title ?? id ?? 'scene'));
+    } catch (error) {
+      setScreenshotError(
+        error instanceof Error ? error.message : 'Something went wrong taking the screenshot.',
+      );
+    }
+  }
+
   async function handleTitleBlur() {
     if (!id || !project || title === project.title) return;
     setTitleSaving(true);
@@ -188,6 +206,18 @@ function AiEditorWorkspace() {
       >
         <div ref={previewContainerRef} className="ai-editor-preview" />
       </section>
+      {/* Issue #285: read-only capture of whatever the live preview
+          canvas currently shows -- never mutates render state. */}
+      <div role="group" aria-label="Preview actions" className="editor-tool-group">
+        <button type="button" onClick={() => void handleTakeScreenshot()}>
+          Take screenshot
+        </button>
+      </div>
+      {screenshotError && (
+        <p role="alert" aria-live="assertive" data-testid="screenshot-error">
+          {screenshotError}
+        </p>
+      )}
       {previewView === 'code' && (
         <section aria-label="Code" role="region" data-panel="code">
           <SceneCodeEditor sync={jsonCodeSync} />

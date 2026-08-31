@@ -26,6 +26,8 @@ import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
+import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
+import { downloadBlob } from '../export/downloadBlob';
 import { exportRendererIdFor } from '../export/generateHtmlExport';
 import { RENDERER_LABELS } from '../export/exportCompatibility';
 import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
@@ -1530,6 +1532,22 @@ function EditorWorkspace() {
   // auto-closes when `previewError` clears, which has no relationship to
   // "the user asked to change a layer" and would close this panel
   // immediately after opening it.
+  // Issue #285: "Take screenshot" — captures whatever the live preview
+  // canvas currently shows and downloads it as a PNG.
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  async function handleTakeScreenshot() {
+    setScreenshotError(null);
+    try {
+      const canvas = previewRef.current?.getCanvasElement() ?? null;
+      const blob = await captureLiveScreenshot(canvas);
+      downloadBlob(blob, screenshotFilename(project?.title ?? id ?? 'scene'));
+    } catch (error) {
+      setScreenshotError(
+        error instanceof Error ? error.message : 'Something went wrong taking the screenshot.',
+      );
+    }
+  }
+
   const [showAiLayerPanel, setShowAiLayerPanel] = useState(false);
   const [aiLayerSeed, setAiLayerSeed] = useState<{ prompt: string; nonce: number } | null>(null);
   const handleAskAiChangeLayer = (label: string) => {
@@ -2915,6 +2933,20 @@ function EditorWorkspace() {
         >
           <h3>Preview</h3>
           <p>{shapeCount} shape(s) in the working copy.</p>
+          {/* Issue #285: captures whatever the live preview canvas
+              currently shows (mid-gesture/mid-animation included) and
+              downloads it as a PNG -- read-only against the canvas,
+              never mutates render state. */}
+          <div role="group" aria-label="Preview actions" className="editor-tool-group">
+            <button type="button" onClick={() => void handleTakeScreenshot()}>
+              Take screenshot
+            </button>
+          </div>
+          {screenshotError && (
+            <p role="alert" aria-live="assertive" data-testid="screenshot-error">
+              {screenshotError}
+            </p>
+          )}
           {/* Issue #111: a short, always-visible, non-intrusive explanation
               of the primary pointer interactions — matches the actual
               gestures `getShapeHandles`/`applyShapeDrag` implement (move/

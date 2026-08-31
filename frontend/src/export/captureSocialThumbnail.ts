@@ -110,7 +110,7 @@ function dataUrlToBlob(dataUrl: string): Blob {
  * `toDataURL` + manual decode (some `<canvas>` polyfills, including the
  * `canvas` package used by this repo's own jsdom test environment, don't
  * implement `toBlob`). */
-function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+export function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     if (typeof canvas.toBlob === 'function') {
       canvas.toBlob((blob) => {

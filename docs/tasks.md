@@ -9010,3 +9010,41 @@ and acceptance criteria in #265.
 
 Dependencies: None — same independent pattern as task 224/#256 and
 task 231/#264.
+
+## 233. Add configurable automated retry for failed AI generations, with transparent attempt count
+
+Status: PROPOSED
+
+GitHub issue: [#266](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/266)
+
+Parent: none — requested directly by the repository owner (2026-08-31)
+after this session's live production verification of tasks 224/#256
+and 230/#262 needed several manual re-submissions to confirm a
+schema-invalid AI failure was fixed vs. flaky, with no attempt-count
+visibility.
+
+Two related asks: (1) transparency — make the number of attempts
+made visible, not just pass/fail; (2) a configurable auto-retry
+Account setting, off by default, with a separate editable retry-count
+field (default 3). With the toggle off, the app must prompt for
+explicit confirmation before each retry rather than silently retrying
+or leaving the user to notice and manually resubmit.
+
+Scope: a new per-user `AIRetryPreference` (owner, `auto_retry_enabled`
+bool default False, `max_retries` int default 3, bounded) with a
+GET/PUT API mirroring `MistralCredentialView`
+(`backend/scenes/credentials_api.py`); retries must count against the
+existing per-user rate limit/quota
+(`RATE_LIMIT_MAX_ATTEMPTS`/`EDIT_RATE_LIMIT_MAX_ATTEMPTS`,
+`backend/scenes/ai_api.py`), never bypass it; only retry-worthy
+failure categories (`invalid_structured_output`, `timeout`, generic
+`provider_failure`) trigger a retry — never quota/rate-limit/auth
+errors; Account settings gains a toggle + retry-count field
+(#261-style section); `useAIProposal`/`useAIProposal3D` gain retry
+orchestration (auto when the toggle is on, confirm-prompted when
+off) with a visible attempt counter, across all four AI flows (2D/3D
+× create/edit). Full scope and acceptance criteria in #266.
+
+Dependencies: None functionally, though it touches the same hooks
+and Account settings page as tasks 227-230/#259-262 — implementing
+after those (already shipped) avoids merge friction.

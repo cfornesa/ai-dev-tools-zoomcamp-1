@@ -73,6 +73,19 @@ structural constraint the schema encodes (enums, required-field sets,
 conditional `if`/`then` branches) — not just enums — for each
 `response_format`/`strict: False` code path.
 
+**Verification transparency:** when manually re-verifying a fix in this
+class against the real Mistral API (the "retried at least 3 times"
+style acceptance criterion #256/#264/#265 all use), always report the
+exact attempt count and per-attempt outcome in the QA comment/task
+entry — not just a pass/fail summary. The repository owner asked for
+this explicitly (2026-08-31) after this session's live verification
+needed several manual re-submissions with no attempt-count visibility,
+which also prompted task 233/[#266](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/266)
+(a user-facing configurable auto-retry feature, with the same
+transparency requirement extended to end users, not just verification
+agents). Report format: "N/M attempts succeeded" or "failed on attempt
+K of N with <error>", not "reproduced" or "confirmed" alone.
+
 **Fifth instance — the 3D system prompt has the same gap, for lights:**
 confirmed live in production (2026-08-31, same Claude in Chrome
 session as the fourth instance below) while verifying #262's 3D AI

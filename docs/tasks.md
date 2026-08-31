@@ -9256,7 +9256,12 @@ Findings:
    `role="dialog"` is `ExportConfigDialog.tsx`), or is the owner
    describing 2D's own inline Selection HUD/Inspector convention
    loosely (2D's `LayersPanel.tsx` itself doesn't open dialogs
-   either)? Deferred to sub-issue #272's own grooming.
+   either)? Resolved via sub-issue
+   [#280](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/280)
+   (closed 2026-08-31): the owner chose the inline-inspector option —
+   no new dialog component; #281 redesigns the outline as a
+   Layers-panel-style list paired with a compact inline Selection
+   HUD/Inspector, matching 2D's existing pattern.
 6. Per-item ("layer-by-layer" or whole-piece) AI-generated edit
    affordance -- checked `LayersPanel.tsx` directly, no AI code
    exists there at all today, so this is new for *both* editors, not

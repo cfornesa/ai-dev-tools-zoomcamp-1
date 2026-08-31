@@ -62,9 +62,25 @@ per-`shapes[]`-type requirements (`circle` -> `radius`; `rect` ->
 separate real `mistral-small-latest` calls for simple prompts ("a red
 circle and a blue square", "one blue square") each produced a
 schema-invalid shape missing its type's required fields, reproducibly.
-Filed as task 224/[#256](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/256)
-(not yet fixed as of this writing — implementation was intentionally
-paused mid-session at the owner's direction). When auditing this class of
-gap, check *every* AI-facing structural constraint the schema encodes
-(enums, required-field sets, conditional `if`/`then` branches) — not just
-enums — for each `response_format`/`strict: False` code path.
+Filed as task 224/[#256](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/256),
+fixed same repo session (2026-08-31), commit `70487f3`: `_SYSTEM_PROMPT`
+now restates each shape type's required fields, with a drift-proof
+regression test mirroring #204's. Manual verification against the real
+Mistral API is a recorded verification boundary (no credentials/
+production access in that sandbox) — pending the repository owner's
+confirmation. When auditing this class of gap, check *every* AI-facing
+structural constraint the schema encodes (enums, required-field sets,
+conditional `if`/`then` branches) — not just enums — for each
+`response_format`/`strict: False` code path.
+
+**Third instance — additive Personas must never weaken this:** issue
+[#260](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/260)
+added per-user "Persona" system-prompt add-ons
+(`backend/scenes/models.py`'s `AIPersona`). Because a Persona's text is
+appended as a *second*, separate system message after the mandatory
+technical prompt (`MistralSceneProvider._system_messages()`) rather than
+merged into or replacing it, a Persona can never dilute or crowd out the
+restated enum/required-field reinforcement this lesson is about — a
+regression test asserts the mandatory prompt's content is byte-identical
+whether or not a persona is selected. Preserve this separation if the
+Persona feature is ever extended.

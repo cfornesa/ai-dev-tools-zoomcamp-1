@@ -9076,3 +9076,54 @@ off) with a visible attempt counter, across all four AI flows (2D/3D
 Dependencies: None functionally, though it touches the same hooks
 and Account settings page as tasks 227-230/#259-262 — implementing
 after those (already shipped) avoids merge friction.
+
+## 234. 3D AI proposal panel shows no visual preview before Accept/Reject
+
+Status: PROPOSED
+
+GitHub issue: [#267](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/267)
+
+Parent: none — discovered live via Claude in Chrome while verifying
+task 232/#265 against production, same session (2026-08-31). The
+repository owner set explicit new product criteria on discovering
+this: show the user visual changes before they Accept or Reject,
+where Reject simply reverts to the original visual state.
+
+Discovered live against production: generating a 3D AI proposal ("a
+bare stage with a single sphere") showed only
+`AIProposalPanel3D.tsx`'s text summary ("2 object(s), 2 light(s), 0
+group(s) proposed."), with the main editor canvas staying blank/gray
+until *after* clicking Accept, at which point the sphere rendered for
+the first time. `AIProposalPanel.tsx` (2D) already renders a live
+preview of `proposal.scene` before Accept/Reject via
+`previewMountRef`/`createScenePreview`
+(`data-testid="ai-proposal-preview-canvas"`) — the 3D panel never
+does the equivalent.
+
+Root cause: `AIProposalPanel3D.tsx` only destructures
+`proposedScene = proposal?.scene` for its text summary; there is no
+preview-rendering call anywhere in the file.
+
+Fix is low-risk: the rendering machinery already exists and needs no
+new work. `frontend/src/pages/Scene3DPreview.tsx` (added by task
+212/#244) is already a self-contained `<Scene3DPreview
+scene={Scene3DDocument} />` component, live-rendering via Three.js
+with a graceful WebGL-unavailable fallback, already reused as-is by
+both `Project3DWorkspace.tsx` and `AiProject3DWorkspace.tsx`.
+
+Scope: render `<Scene3DPreview scene={proposal.scene} />` in
+`AIProposalPanel3D.tsx` whenever `phase === 'success' && proposal`
+(alongside, not replacing, the existing object/light/group count
+text); no changes needed to `useAIProposal3D.ts`, `Scene3DPreview.tsx`,
+or backend code — Reject already only clears client-side proposal
+state and never touches `workingCopy`/`currentVersionId`, so this is
+purely a presentational addition. New focused tests in
+`AIProposalPanel3D.test.tsx` mirror `AIProposalPanel.test.tsx`'s
+existing preview-canvas success-state test, for both Create and Edit,
+plus a Reject-removes-the-preview-without-mutating-anything test.
+Full scope and acceptance criteria in #267.
+
+Dependencies: None. Independent of tasks 231-233/#264-266 (all
+system-prompt/retry correctness, not preview UX) and of task
+212/#244 (already shipped, its `Scene3DPreview` component is reused
+unchanged).

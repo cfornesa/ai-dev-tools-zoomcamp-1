@@ -9263,23 +9263,30 @@ Findings:
    3D catching up to 2D. Reuses issue #159's existing `seed`-prompt
    mechanism (`AIProposalPanel.tsx`).
 
-Sub-issues filed (dependency order): [#270](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/270)
+Sub-issues filed (dependency order), re-split into more atomic tasks
+per the repository owner's explicit stated preference (2026-08-31,
+same session): original bundled #272/#273 closed in favor of this
+list.
+[#270](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/270)
 (thumbnail lighting, independent), [#271](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/271)
-(camera interactivity, independent), [#272](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/272)
-(outline redesign, independent, one open PM question), [#273](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/273)
-(per-item AI-edit affordance, 2D half independent, 3D half depends on
-#272). Item 3 (3D animation system) has no numbered sub-issue yet --
-next action is the repository owner scheduling a dedicated
-design/grooming session for it separately.
+(camera interactivity, independent), [#280](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/280)
+(PM decision: outline dialog vs. inline, independent), [#281](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/281)
+(outline redesign itself, depends on #280), [#282](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/282)
+(2D per-item AI-edit affordance, independent), [#284](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/284)
+(3D per-item AI-edit affordance, depends on #281), [#283](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/283)
+(whole-scene "Ask AI to improve this" action, 2D+3D, independent).
+Item 3 (3D animation system) has no numbered sub-issue yet -- next
+action is the repository owner scheduling a dedicated design/grooming
+session for it separately.
 
-Scope: this epic's own sub-issues (#270-273) are UI/rendering-quality
-improvements to the *existing* static 3D document family -- none
-require the animation/interactivity gap (item 3) to close first; they
-ship independently. Full scope and acceptance criteria in each
-sub-issue and in #269.
+Scope: this epic's own sub-issues (#270, #271, #280-284) are
+UI/rendering-quality improvements to the *existing* static 3D document
+family -- none require the animation/interactivity gap (item 3) to
+close first; they ship independently. Full scope and acceptance
+criteria in each sub-issue and in #269.
 
-Dependencies: None for #270/#271. #272 depends on one resolved PM
-question before implementation. #273's 3D half depends on #272.
+Dependencies: None for #270/#271/#280/#282/#283. #281 depends on #280.
+#284 depends on #281.
 
 ## 237. Epic: per-piece screenshot, fullscreen, download/export, embed, gesture camera control, sound, and immersive VR view (parity with augmenthumankind.com)
 
@@ -9321,22 +9328,30 @@ MediaPipe hand-tracking (already powering 2D's gesture bindings) is
 directly reusable for gesture-driven camera control rather than
 needing new tracking infrastructure.
 
-Sub-issues filed (dependency order): [#275](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/275)
-(screenshot capture, independent), [#276](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/276)
-(fullscreen, independent), [#277](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/277)
-(3D export/download bundle, independent), [#278](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/278)
-(embed code generation, independent), [#279](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/279)
-(gesture-driven camera control + guide dialog, depends on task
-236/#271). Two items intentionally have no numbered sub-issue yet --
-the Tone.js sound/audio system (dependency approval + its own design
-pass needed) and the immersive first-person free-fly view (depends on
-#271, needs a 2D-scope decision) -- next action is the repository
-owner scheduling dedicated design sessions for those when ready to
-prioritize them.
+Sub-issues filed (dependency order), re-split into more atomic tasks
+per the repository owner's explicit stated preference (2026-08-31,
+same session): original bundled #275-279 closed in favor of this
+list. [#285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/285)
+(2D screenshot, independent), [#286](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/286)
+(3D screenshot, independent), [#287](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/287)
+(2D fullscreen, independent), [#288](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/288)
+(3D fullscreen, independent), [#289](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/289)
+(3D export core generator, independent), [#290](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/290)
+(wire export into manual 3D editor, depends on #289), [#291](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/291)
+(wire export into AI-assisted 3D editor, depends on #289), [#292](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/292)
+(make public viewer embeddable, independent), [#293](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/293)
+(embed-snippet UI, depends on #292), [#294](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/294)
+(gesture-driven camera control, depends on task 236/#271), [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295)
+(hand-gesture guide dialog, depends on #294). Two items intentionally
+have no numbered sub-issue yet -- the Tone.js sound/audio system
+(dependency approval + its own design pass needed) and the immersive
+first-person free-fly view (depends on #271, needs a 2D-scope
+decision) -- next action is the repository owner scheduling dedicated
+design sessions for those when ready to prioritize them.
 
-Scope: this epic runs alongside, not blocked by, epic 236/#269 --
-#279 is the only sub-issue here with a cross-epic dependency (on
-#271). Full scope and acceptance criteria in each sub-issue and in
-#274.
+Scope: this epic runs alongside, not blocked by, epic 236/#269 -- #294
+is the only sub-issue here with a cross-epic dependency (on #271).
+Full scope and acceptance criteria in each sub-issue and in #274.
 
-Dependencies: None for #275-278. #279 depends on task 236/#271.
+Dependencies: None for #285-289/#292. #290/#291 depend on #289. #293
+depends on #292. #294 depends on task 236/#271. #295 depends on #294.

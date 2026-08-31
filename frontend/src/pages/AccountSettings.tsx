@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
+import {
+  type AIPersona,
+  type MistralModelPreference,
+  createAIPersona,
+  createMistralModelPreference,
+  deleteAIPersona,
+  deleteMistralModelPreference,
+  fetchAIPersonas,
+  fetchMistralModelPreferences,
+} from '../api/aiPreferences';
 import { ApiError } from '../api/client';
 import {
   fetchMistralCredential,
   removeMistralCredential,
   saveMistralCredential,
 } from '../api/credentials';
+
+const MISTRAL_MODELS_DOCS_URL = 'https://docs.mistral.ai/getting-started/models/';
 
 function AccountSettings() {
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -96,7 +108,214 @@ function AccountSettings() {
         {message && <p role="status">{message}</p>}
         {error && <p role="alert">{error}</p>}
       </div>
+      <SavedMistralModels />
+      <AIPersonas />
     </section>
+  );
+}
+
+function SavedMistralModels() {
+  const [models, setModels] = useState<MistralModelPreference[] | null>(null);
+  const [slug, setSlug] = useState('');
+  const [label, setLabel] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMistralModelPreferences()
+      .then(setModels)
+      .catch(() => setError('Could not load your saved Mistral models.'));
+  }, []);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await createMistralModelPreference(slug, label);
+      setModels((current) => [...(current ?? []), created]);
+      setSlug('');
+      setLabel('');
+    } catch {
+      setError('Could not save that model. Check the slug and try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(id: number) {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteMistralModelPreference(id);
+      setModels((current) => (current ?? []).filter((m) => m.id !== id));
+    } catch {
+      setError('Could not remove that model.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="centered-state account-settings-section">
+      <h3>Saved Mistral models</h3>
+      <p>
+        Save your own Mistral model slugs to pick from a dropdown in the AI assistant, instead of
+        retyping one each time. Look up valid slugs in{' '}
+        <a href={MISTRAL_MODELS_DOCS_URL} target="_blank" rel="noopener noreferrer">
+          Mistral&apos;s model documentation
+        </a>
+        .
+      </p>
+      <form
+        onSubmit={submit}
+        aria-label="Add a saved Mistral model"
+        className="account-settings-form"
+      >
+        <label htmlFor="mistral-model-slug">Model slug</label>
+        <input
+          id="mistral-model-slug"
+          className="account-settings-input"
+          type="text"
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+          disabled={busy}
+        />
+        <label htmlFor="mistral-model-label">Label (optional)</label>
+        <input
+          id="mistral-model-label"
+          className="account-settings-input"
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          disabled={busy}
+        />
+        <button className="shell-action" type="submit" disabled={busy || slug.trim() === ''}>
+          Add model
+        </button>
+      </form>
+      {models === null && !error && <p>Loading your saved models…</p>}
+      {models !== null && models.length === 0 && <p>No saved models yet.</p>}
+      {models !== null && models.length > 0 && (
+        <ul className="account-settings-list" aria-label="Saved Mistral models">
+          {models.map((model) => (
+            <li key={model.id}>
+              <span>{model.label ? `${model.label} (${model.slug})` : model.slug}</span>
+              <button
+                className="shell-action"
+                type="button"
+                onClick={() => void remove(model.id)}
+                disabled={busy}
+                aria-label={`Remove saved model ${model.slug}`}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
+
+function AIPersonas() {
+  const [personas, setPersonas] = useState<AIPersona[] | null>(null);
+  const [name, setName] = useState('');
+  const [promptText, setPromptText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAIPersonas()
+      .then(setPersonas)
+      .catch(() => setError('Could not load your Personas.'));
+  }, []);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await createAIPersona(name, promptText);
+      setPersonas((current) => [...(current ?? []), created]);
+      setName('');
+      setPromptText('');
+    } catch {
+      setError('Could not save that Persona. Check the fields and try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(id: number) {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteAIPersona(id);
+      setPersonas((current) => (current ?? []).filter((p) => p.id !== id));
+    } catch {
+      setError('Could not remove that Persona.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="centered-state account-settings-section">
+      <h3>Personas</h3>
+      <p>
+        A Persona adds your own style/tone guidance on top of the AI assistant&apos;s required
+        technical instructions — it can never replace or remove them.
+      </p>
+      <form onSubmit={submit} aria-label="Add a Persona" className="account-settings-form">
+        <label htmlFor="ai-persona-name">Persona name</label>
+        <input
+          id="ai-persona-name"
+          className="account-settings-input"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={busy}
+        />
+        <label htmlFor="ai-persona-prompt">Additive prompt text</label>
+        <textarea
+          id="ai-persona-prompt"
+          className="account-settings-input account-settings-textarea"
+          value={promptText}
+          onChange={(e) => setPromptText(e.target.value)}
+          disabled={busy}
+        />
+        <button
+          className="shell-action"
+          type="submit"
+          disabled={busy || name.trim() === '' || promptText.trim() === ''}
+        >
+          Add Persona
+        </button>
+      </form>
+      {personas === null && !error && <p>Loading your Personas…</p>}
+      {personas !== null && personas.length === 0 && <p>No Personas yet.</p>}
+      {personas !== null && personas.length > 0 && (
+        <ul className="account-settings-list" aria-label="Personas">
+          {personas.map((persona) => (
+            <li key={persona.id}>
+              <span>{persona.name}</span>
+              <button
+                className="shell-action"
+                type="button"
+                onClick={() => void remove(persona.id)}
+                disabled={busy}
+                aria-label={`Remove Persona ${persona.name}`}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <p role="alert">{error}</p>}
+    </div>
   );
 }
 

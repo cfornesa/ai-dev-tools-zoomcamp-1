@@ -239,6 +239,41 @@ button:disabled {
   font: inherit;
 }
 
+/* Issue #257/#261: saved Mistral models and Personas management sections. */
+.account-settings-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.account-settings-textarea {
+  min-height: 80px;
+  width: 100%;
+  max-width: 480px;
+  resize: vertical;
+}
+
+.account-settings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.account-settings-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
 .content-panel {
   width: calc(100% - 48px);
   max-width: 1126px;

@@ -10105,3 +10105,33 @@ on release. Unpublished the test project afterward.
 
 With task 253/#311 complete, epic 237/#274 has no remaining scope --
 see that epic's own entry for its closing status.
+
+## 254. Playwright E2E suite had a one-off CI flake in publishingAndRemix.spec.ts
+
+Status: PROPOSED
+
+GitHub issue: [#312](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/312)
+
+Parent: none -- discovered while pushing this session's 69 commits to
+`main` and verifying CI (2026-08-31). `main` CI run 33417564773's
+"Browser acceptance E2E" job failed on first attempt with a real
+(non-timeout) assertion mismatch in `publishingAndRemix.spec.ts:781`
+("shows the loading state before the project finishes fetching" --
+expected 0 `<h2>` headings during a delayed-API loading state, found 1,
+stable across 14 retries over 5s). A re-run of the exact same commit
+passed cleanly with no code changes, confirming CI-environment
+flakiness rather than a real regression in what was pushed.
+
+Same *class* of issue as task 244/#302 (Vitest unit-test flakiness,
+already fixed via a `testTimeout` increase), but for the Playwright E2E
+suite specifically, which #302 never addressed. The failure mode here
+is different though -- a *stable* wrong DOM state across retries, not a
+timeout -- so root cause may be CI resource contention or a genuine
+shared-fixture/ordering issue, not guaranteed to be the identical fix.
+
+Scope: investigate root cause; fix if a real defect, or document an
+explicit CI-flakiness acceptance + mitigation (e.g. `playwright.config.ts`
+retries) if not.
+
+Dependencies: None. Related to task 244/#302 (same flakiness class,
+different suite).

@@ -9499,7 +9499,7 @@ cleaned up with no error.
 
 ## 240. Scene3DPreview.tsx's preview-action button row has no spacing/padding
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#298](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/298)
 
@@ -9516,6 +9516,21 @@ Scope: give the row real spacing, either via a new unscoped
 that class first) or a dedicated class for this row. Purely visual/CSS.
 
 Dependencies: None.
+
+Status update (2026-08-31): COMPLETE. Added a dedicated
+`scene3d-preview-actions` class (flex, 8px gap, wraps), scoped to only
+this component, rather than a new unscoped `.editor-tool-group` base
+rule -- the issue's own caution about auditing ~15 other consumers of
+that shared class first turned out to be warranted: `EditorWorkspace.tsx`
+and `AiEditorWorkspace.tsx` each have their own identically-unstyled
+"Preview actions" row (same missing-gap defect, never fixed here --
+out of scope for this Scene3DPreview.tsx-specific issue). Flagged for
+task 242/#300's own audit pass rather than filed as a third duplicate
+issue, since that epic already exists to catch exactly this class of
+cross-editor finding. New regression test asserting the class is
+present. `make check` green (871 backend / 2284 frontend). Verified
+live: screenshot shows clear, even gaps between all four buttons;
+confirmed via computed style (`display: flex; gap: 8px`).
 
 ## 241. 3D Scene outline rows visually overlap/obscure the Live camera panel
 
@@ -9565,6 +9580,15 @@ implementation sub-issues once groomed, starting from #299.
 Dependencies: None to start (grooming/audit only). Directly related to
 task 241/#299 (a first concrete instance of the gap this epic addresses
 system-wide).
+
+Additional finding for this epic's audit (from task 240/#298,
+2026-08-31): `EditorWorkspace.tsx` and `AiEditorWorkspace.tsx` each have
+their own "Preview actions" button row (`Take screenshot`/`Expand piece
+to fullscreen`) using the same `.editor-tool-group` class outside any
+`.editor-toolbar` ancestor, with the identical missing-flex/gap defect
+#298 fixed for `Scene3DPreview.tsx` -- not fixed there (out of scope for
+that issue), left here as a concrete audit item rather than a third
+duplicate issue.
 
 ## 243. 3D projects have no title-rename capability anywhere in the UI
 

@@ -264,6 +264,12 @@ implementation and exact routes:
   canvas, Piece controls, Reset view, and Non-Camera camera-feature omission
   are exercised. The correct-stack suite passes 3/3 with this executable
   artifact coverage.
+- The full 138-test browser batch then exposed a composed toolbar regression:
+  the new download popover could remain open across editor interactions and
+  intercept Layers-panel pointer targets. The shared toolbar now closes the
+  popover on outside pointer input and explicitly honors `[hidden]`; the
+  targeted Layers suite passes 7/7 and the full batch passes 137/137 with one
+  intentional skip.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

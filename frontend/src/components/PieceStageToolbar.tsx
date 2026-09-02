@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { type PieceStageCapabilities, TWO_D_STAGE_CAPABILITIES } from './pieceStageCapabilities';
 
@@ -43,6 +43,20 @@ export default function PieceStageToolbar({
   capabilities = TWO_D_STAGE_CAPABILITIES,
 }: PieceStageToolbarProps) {
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const downloadRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!downloadOpen) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && !downloadRef.current?.contains(target)) {
+        setDownloadOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
+  }, [downloadOpen]);
+
   return (
     <div role="toolbar" aria-label={ariaLabel} className="piece-stage-toolbar">
       <div role="group" aria-label={ariaLabel} className={className}>
@@ -58,7 +72,7 @@ export default function PieceStageToolbar({
           </button>
         )}
         {capabilities.download && onDownload && (
-          <div className="piece-stage-download">
+          <div ref={downloadRef} className="piece-stage-download">
             <button
               type="button"
               className="piece-stage-icon-button"

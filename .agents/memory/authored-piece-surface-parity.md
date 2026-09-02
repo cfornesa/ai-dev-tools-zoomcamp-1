@@ -36,3 +36,9 @@ assertion does not prove the shared capability contract. In particular, keep
 camera/demo disclosures stage-associated in every 2D consumer, and verify the
 portable runtime's behavior (not only the presence/absence of script names)
 before accepting Full/Non-Camera parity.
+
+The shared stage download menu must explicitly style both its open placement
+and its `[hidden]` state, and close on outside pointer input. Otherwise an
+overlay can remain hit-testable across unrelated editor interactions and
+intercept controls outside the piece surface; the full browser suite caught
+this composed failure on 2026-09-02.

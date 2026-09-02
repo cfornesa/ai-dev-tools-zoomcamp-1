@@ -45,6 +45,21 @@ describe('PieceStageToolbar', () => {
     expect(screen.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeInTheDocument();
   });
 
+  it('closes the download menu when another stage or page control receives a pointer event', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <PieceStageToolbar onDownload={vi.fn()} />
+        <button type="button">Other control</button>
+      </>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Open download menu' }));
+    expect(screen.getByRole('menuitem', { name: 'Download Full' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Other control' }));
+    expect(screen.queryByRole('menuitem', { name: 'Download Full' })).not.toBeInTheDocument();
+  });
+
   it('does not render controls that the capability contract disables', () => {
     render(
       <PieceStageToolbar

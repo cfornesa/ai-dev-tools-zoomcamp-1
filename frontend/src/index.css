@@ -2915,6 +2915,10 @@ select.ai-proposal-field-full-width {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
+.piece-stage-download-menu[hidden] {
+  display: none;
+}
+
 .piece-stage-download-menu button {
   width: 100%;
   min-height: 2.25rem;

@@ -255,6 +255,12 @@ transaction/concurrency guarantees SQLite doesn't provide.
 
 - `make e2e` (from the repo root) - run the whole suite; equivalent to
   `cd frontend && npm run test:e2e` (`playwright test`)
+- `make compose-preflight` - read-only verification that an already-running
+  Docker Compose stack belongs to this repository (`ai-dev-tools-zoomcamp-1`),
+  was created from the repository's `compose.yaml`, and serves this app's
+  health/root/auth identity before browser scenarios use it. It never starts,
+  stops, or removes containers; it reports the exact conflicting project and
+  safe start command when the wrong stack is running.
 - CI's `Responsive shell E2E` job provisions PostgreSQL, installs Chromium
   with Linux browser dependencies, applies migrations, starts Django and
   Vite, and runs `responsiveShell.spec.ts` at its 375px viewport. Its

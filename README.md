@@ -175,6 +175,20 @@ exit. It never reads or writes the developer `backend/.env` database. Use
 runs retain temporary logs and print their paths so a browser or service
 failure is actionable.
 
+When using Docker Compose, start only this repository's explicitly named
+project and verify it before browser testing:
+
+```bash
+docker compose --project-name ai-dev-tools-zoomcamp-1 --file compose.yaml up -d --build
+make compose-preflight
+```
+
+`make compose-preflight` is read-only. It verifies the Compose project,
+working directory, config file, served `Creatrweb Animation Studio` marker,
+health response, and anonymous auth response; it reports unrelated running
+Compose projects without stopping them. Native `make browser-qa` remains an
+independent disposable-stack path.
+
 ## License
 
 MIT License — see [LICENSE](./LICENSE).

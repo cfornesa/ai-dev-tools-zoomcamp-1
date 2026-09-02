@@ -2,7 +2,7 @@
 	lint format format-check typecheck test \
 	backend-lint backend-format backend-format-check backend-typecheck backend-test \
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
-git-safe-push browser-qa \
+git-safe-push browser-qa compose-preflight \
 e2e dev run deploy-check migrate smoke-local smoke-hosted-git
 
 # Run every backend and frontend check (same checks CI runs).
@@ -64,6 +64,12 @@ e2e:
 # BROWSER_QA_RUNTIME_BENCH=1 for the standalone runtime benchmark.
 browser-qa:
 	bash scripts/browser-qa.sh
+
+# Issue #321: verify an already-running repository-owned Compose stack before
+# using it for browser/readiness checks. This target is read-only and never
+# starts or stops containers; use the printed command when the stack is absent.
+compose-preflight:
+	bash scripts/compose-preflight.sh
 
 # Task 89 (issue #91): start Postgres (if needed), the backend, and the
 # frontend together from one terminal. Ctrl+C stops all of them cleanly.

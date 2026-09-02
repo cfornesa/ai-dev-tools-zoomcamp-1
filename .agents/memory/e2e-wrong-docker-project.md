@@ -18,6 +18,14 @@ Vite on port 5000). A healthy container list alone is insufficient.
 Current follow-up: issue #321 tracks adding an explicit Compose project identity
 check and served-app fingerprint before browser readiness.
 
+Issue #321 now provides `compose.yaml` and `make compose-preflight`. The
+preflight pins project `ai-dev-tools-zoomcamp-1`, checks Compose working-dir
+and config-file labels, verifies the `Creatrweb Animation Studio` root marker,
+and requires the repository-specific anonymous `/api/whoami/` 401 response.
+It is read-only and reports conflicting projects without stopping them. A
+successful config parse is not enough: the correct stack must be running and
+its image build/pull must complete before Docker browser evidence is valid.
+
 ## A more specific variant: this repo's own dev server, wrong backend (2026-08-28)
 
 A subtler version of the same class: `frontend/vite.config.ts`'s `backendProxyTarget`

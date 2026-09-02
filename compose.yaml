@@ -1,0 +1,52 @@
+name: ai-dev-tools-zoomcamp-1
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gesture_studio
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gesture_studio"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      AI_PROVIDER: fake
+      CSRF_TRUSTED_ORIGINS: http://localhost:5000,http://127.0.0.1:5000
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/gesture_studio
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      DJANGO_DEBUG: "True"
+      DJANGO_SECRET_KEY: compose-qa-only-secret-key
+      GOOGLE_OAUTH_CLIENT_ID: compose-qa.apps.googleusercontent.com
+      GOOGLE_OAUTH_CLIENT_SECRET: compose-qa-only-oauth-secret
+      MISTRAL_CREDENTIAL_ENCRYPTION_KEY: hDmcNCp7WCvpOjI3tmEd0-foRjnnjh_-OgVogBK30V4=
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8001:8000"
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=2)"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    environment:
+      BROWSER_QA_BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5000:5000"

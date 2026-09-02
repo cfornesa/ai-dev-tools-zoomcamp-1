@@ -56,7 +56,10 @@ to the later backlog-session engineer pass.
   not-applicable decision. If the issue needs another route, an unprovisioned
   credential, or a parent-wide visual judgment to decide pass/fail, split or
   reclassify it before engineering.
-- Process and reconcile one closure-sized issue at a time. After its required
+- Distillation and grooming may be performed in one bulk pass so the complete
+  backlog can be decomposed and ordered. That batching ends at the handoff:
+  backlog-session must process engineering and testing as a strict
+  per-issue transaction. Process and reconcile one closure-sized issue at a time. After its required
   QA passes, immediately post the criterion matrix and set its GitHub status
   (closed only when every criterion passes; otherwise open with a classified
   blocker). Do not accumulate several hours of implementation without

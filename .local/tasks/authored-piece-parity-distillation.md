@@ -28,8 +28,8 @@ as read-only behavioral reference.
 
 | Issue | Goal / scope | Dependencies / order | Status | Blocker / next action |
 | --- | --- | --- | --- | --- |
-| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome and capability contract | Parent integration gate; decomposed into #325–#341 | `in_progress` | Process one closure-sized route/capability child at a time; close parent only after all children are terminal and reconciled |
-| [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Superseded authored-piece parity umbrella | Historical parent; replaced by #320 and closure-sized children | `closed_not_planned` | Do not reopen or use as an implementation unit |
+| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome and capability contract | Parent integration gate; decomposed into #295, #306, #325–#345 | `in_progress` | Process one closure-sized route/capability child at a time; close parent only after all children are terminal and reconciled |
+| [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Superseded authored-piece parity umbrella | Historical parent; replaced by #320 and closure-sized children | `closed_not_planned` | Historical reference only; do not use as a closure unit |
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
 | [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; no repository Compose definition currently exists | `dependency-blocked` | `workflow/infrastructure-defect`; native runner fingerprints its own stack, but a repository Compose definition is required before Compose preflight can be implemented; do not stop sibling containers |
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
@@ -50,6 +50,12 @@ as read-only behavioral reference.
 | [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
 | [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
+| [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295) | Live 3D five-slide hand-gesture guide | Shared capability; portable guide remains in #337 | `open` (reopened) | Current source has 3 steps; implement exact five-slide contract and browser evidence |
+| [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306) | Shared Tone.js 3D audio foundation | Foundation for sound consumers; route evidence remains #327–#337 | `open` (reopened) | Current source has no `tone` dependency; implement and test the stated graph |
+| [#342](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/342) | Independent 3D camera-view toggle | Shared capability; consumers verify through #327–#337 | `open` | Implement explicit camera visibility independent of steering/theremin |
+| [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad travel | Immersive capability; route variants decide inclusion in #333–#335 | `open` | Implement press/release/cancel semantics and touch-browser evidence |
+| [#344](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/344) | Immersive 3D hand gesture move/strafe | Depends on #295; route evidence remains #333–#335 | `open` | Implement bounded travel and safe-stop behavior, or document a linked product decision |
+| [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | Depends on #306/#310; route/artifact evidence remains #327–#337 | `open` | Implement three finite selectors and isolated voice changes |
 
 ## Distillation handoff gate (2026-09-02)
 
@@ -67,6 +73,18 @@ publication relocation and must first be classified against the affected
 route issues (#338–#341) during grooming. No product or test change is part
 of this distillation increment.
 
+## Execution cadence gate (2026-09-02)
+
+Distillation and grooming are intentionally bulk activities: the complete
+backlog is decomposed, deduplicated, ordered, and given closure contracts in
+one manifest. Engineering and testing are not bulk activities. Backlog-session
+must select exactly one groomed issue, implement only that issue, write and
+run its focused tests, run its required full/browser checks, perform QA, and
+reconcile its evidence and GitHub status before starting the next issue. A QA
+failure keeps the same issue current until it is closed, blocked, or handed
+off with a classified blocker and exact next action. No later issue may be
+used as a parallel implementation queue.
+
 ## Duplicate / already-covered report
 
 - #313–#319 are generated `ArtPiece` routes (`/art-pieces/*`) and do not
@@ -83,15 +101,29 @@ of this distillation increment.
 
 | Surface / requirement | Current evidence | Classification | Existing issue / next action |
 | --- | --- | --- | --- |
-| Manual 2D editor | Local source now places authoring, Camera, and Demo controls in stage-local chrome; exact deployed/editor visual parity remains unverified | `implemented locally / needs browser evidence` | #320; authenticate and verify the exact owner route after publish |
-| AI-assisted 2D editor | Local source now uses shared stage-local toolbar and Camera/Demo disclosure with the existing preview lifecycle; exact deployed/editor visual parity remains unverified | `implemented locally / needs browser evidence` | #320; authenticate and verify the exact owner route after publish |
-| Public 2D viewer / embed | Local source now uses shared stage-local toolbar and Camera/Demo disclosure; deployed route still serves the old sibling-panel shell | `verification-boundary` | #320; publish, then verify exact public and embed routes |
-| Manual/AI 3D editors | Shared toolbar and publication control exist locally; editor-specific actions remain a separate authoring toolbar within the stage, which is acceptable only if it does not duplicate runtime chrome | `implemented locally / needs browser evidence` | #320; verify visual hierarchy and all controls with authenticated browser |
-| Public/embed/immersive 3D | Shared `Scene3DPreview` toolbar exists locally; immersive route supports Custom/CMS embed query variants and arrow-key fly | `implemented locally / needs deployed evidence` | #320; verify exact public/embed/immersive routes after publish |
-| Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, fullscreen, and bundled MediaPipe/Wasm/model assets | `implemented locally / needs deployed evidence` | #320; verify the exact deployed download after publish |
-| Non-Camera downloads | Camera host/module and camera-only mic/theremin code are omitted while non-camera sound/keyboard/view controls remain; disposable-stack browser test downloads and inspects the real ZIP | `implemented locally / needs deployed evidence` | #320; verify the exact deployed download after publish |
+| Manual 2D editor | Local source now places authoring, Camera, and Demo controls in stage-local chrome; exact deployed/editor visual parity remains unverified | `implemented locally / needs browser evidence` | #325/#338; authenticate and verify the exact owner route after publish |
+| AI-assisted 2D editor | Local source now uses shared stage-local toolbar and Camera/Demo disclosure with the existing preview lifecycle; exact deployed/editor visual parity remains unverified | `implemented locally / needs browser evidence` | #326/#340; authenticate and verify the exact owner route after publish |
+| Public 2D viewer / embed | Local source now uses shared stage-local toolbar and Camera/Demo disclosure; deployed route still serves the old sibling-panel shell | `verification-boundary` | #329/#331; publish, then verify exact public and embed routes |
+| Manual/AI 3D editors | Shared toolbar and publication control exist locally; editor-specific actions remain a separate authoring toolbar within the stage, which is acceptable only if it does not duplicate runtime chrome | `implemented locally / needs browser evidence` | #327/#328/#339/#341; verify visual hierarchy and all controls with authenticated browser |
+| Public/embed/immersive 3D | Shared `Scene3DPreview` toolbar exists locally; immersive route supports Custom/CMS embed query variants and arrow-key fly | `implemented locally / needs deployed evidence` | #330/#332/#333/#334/#335; verify exact routes after publish |
+| Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, fullscreen, and bundled MediaPipe/Wasm/model assets | `implemented locally / needs deployed evidence` | #337; verify the exact deployed download after publish; #295/#306/#342/#345 changes must be reflected before closure |
+| Non-Camera downloads | Camera host/module and camera-only mic/theremin code are omitted while non-camera sound/keyboard/view controls remain; disposable-stack browser test downloads and inspects the real ZIP | `implemented locally / needs deployed evidence` | #337; verify the exact deployed download after publish |
 | Draft / Published | 2D and 3D owner controls exist locally and API tests cover atomic transitions; supplied private deployed route cannot be inspected anonymously | `verification-boundary` | #320; authenticate in the owner's browser session, then verify both states on exact URLs |
 | Deployed examples | Public supplied URL serves the old shell; local `main` is 61 commits ahead of `origin/main` and has not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
+
+## Closed-issue audit (2026-09-02)
+
+Closed issues #285–#311 were re-read against their own hard acceptance criteria
+and the current source, not their historical QA labels. Their narrow behavior
+may remain valid, but none proves cross-surface parity. Two were materially
+false as currently implemented and were reopened: #295 (three-step guide vs
+required five-step guide) and #306 (custom Web Audio vs required Tone.js).
+Issues #294 and #311 retain their narrower contracts: orbit/zoom gesture
+support and arrow-key immersive fly. Their descriptions explicitly left
+Move/strafe and touch d-pad behavior out of scope, which is why #343 and #344
+are separate. #310's instrument selectors were optional, so #345 makes that
+reference capability independently closable. #297 proves only the active
+steering overlay, so #342 owns the independent camera-view toggle.
 
 ## Criterion-ready definition for #320
 
@@ -185,9 +217,31 @@ implementation and exact routes:
   pass. Moving the editor authoring toolbar into the stage initially exposed
   a Code-tab regression; the toolbar is now still available while the visual
   canvas is hidden, with the focused Code-tab suite passing 11/11.
-- GitHub open-issue enumeration now contains #274, #320, and #321; #123 is
-  closed with a QA PASS. #274 remains dependency-blocked by #320 and is not
-  treated as complete merely because earlier child issues were closed.
+- GitHub open-issue enumeration on 2026-09-02 contains #320, #321, #325–#345
+  except the historical closed #323/#324; #295 and #306 are reopened. #123,
+  #274, #323, and #324 are closed historical records and are not closure
+  evidence for the current parent. The current manifest therefore has 23
+  open issues: #320, #321, #325–#345, plus reopened #295 and #306.
+
+## Distillation decisions and uncovered context
+
+- The repository has no `examples/` directory. Existing `attached_assets/`,
+  tests, and the sibling PHP contract are the available references. No issue
+  was invented for a missing user-provided folder; if examples are required,
+  the owner must supply or identify them before route QA.
+- Structured 2D currently has no sound, hand-steering, hand-guide, or 2D
+  immersive renderer capability. Those controls are explicitly N/A in the
+  2D child contracts rather than being silently claimed. A future 2D audio or
+  immersive implementation requires a new groomed issue after product scope
+  is chosen.
+- The stale published revision and anonymous private-editor response are
+  deployment/authentication boundaries, not implementation closure evidence.
+  No push, publish, credential acquisition, or sibling-container mutation is
+  authorized by this task.
+- Every open route/artifact issue now names its fixed entry, finite controls,
+  exact privacy/fallback behavior, browser/automation evidence, deployment
+  boundary, explicit N/A behavior, and one next action. A child with a vague
+  “verify parity” statement is not closure-ready.
 
 - Full 3D ZIPs also bundle the MediaPipe vision module, Wasm/JS runtime files,
   and gesture-recognizer model under `runtime/mediapipe/`, so direct `file://`

@@ -20,6 +20,10 @@ Phase gate
   Distillation may inspect failures and write backlog, issue, manifest, and
   durable-memory records, but it must not change product source or product
   tests to make an observed failure pass.
+- Distillation and grooming may be batched across the complete backlog. Once
+  engineering starts, work is transactional per issue: implementation,
+  focused tests, required full checks, browser QA, reconciliation, and the
+  issue status decision for issue N must finish before issue N+1 begins.
 - The handoff must name exactly one next groomed issue and include the complete
   manifest, duplicate/already-covered report, dependency order, blocker
   triage, verification boundaries, and a closure contract for every

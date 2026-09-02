@@ -10427,7 +10427,8 @@ Atomicity follow-up (2026-09-02): distillation found that #320 was still too
 large to close honestly. #274 is now closed as superseded, and broad #324 was
 closed as not planned. The remaining work is represented by #323 plus one
 closure-sized issue per editor route, public/embed route, immersive variant,
-and portable artifact: #325-#341. Each child has one independently observable
+portable artifact, and newly identified shared capability: #295, #306,
+#325-#345. Each child has one independently observable
 surface and must be QA-reconciled immediately after its own evidence is ready;
 #320 remains the parent integration gate until every child is terminal.
 
@@ -10442,6 +10443,13 @@ affected route issues are groomed with fixed fixtures, finite criteria,
 exact commands, and explicit deployment boundaries. Do not reuse earlier
 “verified live” wording as proof for #325–#341; each child requires fresh
 evidence on the exact published revision.
+
+Execution cadence correction (2026-09-02): distillation and grooming may be
+batched across the backlog, but engineering and testing may not. For issue N,
+complete its implementation, focused tests, required full/browser checks, QA
+comment, evidence reconciliation, and GitHub status decision before beginning
+engineering or testing issue N+1. A failed QA result keeps issue N current;
+it is not permission to queue fixes for later issues.
 
 ## 263. Make Docker browser verification select and fingerprint this repository
 

@@ -240,6 +240,10 @@ implementation and exact routes:
   is rendered in the actual browser editor surface. This does not replace
   the still-missing authenticated exact-route check against the deployed
   application.
+- Commit `647f0ca` extends that suite with a published 3D project flow. The
+  real browser now verifies public screenshot/sound/Piece-controls/steering/
+  guide/fullscreen chrome, both ZIP download variants, and the owner’s
+  Published → Draft transition; the expanded suite passes 3/3.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

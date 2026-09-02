@@ -822,12 +822,13 @@ code {
   position: absolute;
   top: 12px;
   left: 12px;
-  right: 12px;
-  z-index: 4;
+  right: auto;
+  z-index: 6;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
+  width: max-content;
   max-width: calc(100% - 24px);
   padding: 8px 12px;
   border: 1px solid var(--border);
@@ -2860,7 +2861,10 @@ select.ai-proposal-field-full-width {
   position: absolute;
   left: 12px;
   bottom: 12px;
-  z-index: 3;
+  /* Keep the shared stage actions above editor-only overlays such as the
+     selection HUD. The toolbar is interactive chrome, so a visible HUD must
+     never win hit-testing merely because it is rendered later in the panel. */
+  z-index: 20;
   display: flex;
   gap: 8px;
 }

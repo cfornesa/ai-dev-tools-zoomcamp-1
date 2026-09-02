@@ -10,11 +10,16 @@ import {
   type SceneDocument,
   type SceneVersion,
 } from '../api/projects';
+import PieceStageToolbar from '../components/PieceStageToolbar';
+import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
+import { generateHtmlExport, triggerHtmlDownload } from '../export/generateHtmlExport';
+import { getAvailableInteractionModes } from '../export/exportCompatibility';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview } from '../render/scenePreview';
 import AIProposalPanel from './AIProposalPanel';
+import PublishControl from './PublishControl';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import { SceneCodeEditor, useJsonCodeSync } from './jsonCodeSync';
 
@@ -126,6 +131,30 @@ function AiEditorWorkspace() {
     }
   }
 
+  function handleDownload(variant: 'full' | 'non-camera' = 'full') {
+    if (!scene) return;
+    const availableModes = getAvailableInteractionModes(scene);
+    const interactionMode =
+      variant === 'non-camera'
+        ? 'demo'
+        : availableModes.includes('demo-camera')
+          ? 'demo-camera'
+          : 'demo';
+    const result = generateHtmlExport({
+      scene,
+      title,
+      description: project?.description ?? '',
+      interactionMode,
+      includeAttribution: false,
+    });
+    if (!result.ok) {
+      setScreenshotError(result.reasons.join(' '));
+      return;
+    }
+    setScreenshotError(null);
+    triggerHtmlDownload(result.html, result.filename);
+  }
+
   async function handleTitleBlur() {
     if (!id || !project || title === project.title) return;
     setTitleSaving(true);
@@ -182,6 +211,14 @@ function AiEditorWorkspace() {
           onChange={(event) => setTitle(event.target.value)}
           onBlur={handleTitleBlur}
         />
+        {id && (
+          <PublishControl
+            id={id}
+            project={project}
+            setProject={setProject}
+            persistPendingDetails={async () => ({ status: 'skipped' })}
+          />
+        )}
       </header>
       <div className="ai-editor-workspace editor-workspace">
         {/* Task 245 (issue #303): a real `.editor-panel` region, matching
@@ -219,23 +256,18 @@ function AiEditorWorkspace() {
               <SceneCodeEditor sync={jsonCodeSync} />
             </section>
           )}
-          <div hidden={previewView !== 'visual'}>
-            <div ref={previewContainerRef} className="ai-editor-preview" />
+          <div>
+            <div ref={previewContainerRef} className="ai-editor-preview piece-stage-shell">
+              <PieceStageToolbar
+                onScreenshot={() => void handleTakeScreenshot()}
+                onDownload={(variant) => handleDownload(variant)}
+                capabilities={TWO_D_STAGE_CAPABILITIES}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={() => void toggleFullscreen()}
+              />
+            </div>
             {/* Issue #285: read-only capture of whatever the live preview
                 canvas currently shows -- never mutates render state. */}
-            <div role="group" aria-label="Preview actions" className="editor-tool-group">
-              <button type="button" onClick={() => void handleTakeScreenshot()}>
-                Take screenshot
-              </button>
-              {/* Issue #287: real browser Fullscreen API. */}
-              <button
-                type="button"
-                onClick={() => void toggleFullscreen()}
-                aria-pressed={isFullscreen}
-              >
-                {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-              </button>
-            </div>
             {screenshotError && (
               <p role="alert" aria-live="assertive" data-testid="screenshot-error">
                 {screenshotError}

@@ -91,6 +91,11 @@ describe('AiEditorWorkspace', () => {
 
     await screen.findByRole('region', { name: 'Preview' });
     expect(screen.getByLabelText('Project title')).toHaveValue('My AI animation');
+    expect(screen.getByRole('toolbar', { name: 'Piece actions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Take screenshot' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open download menu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Draft' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Published' })).toBeEnabled();
   });
 
   it('shows access-denied for a 404', async () => {

@@ -643,9 +643,12 @@ function Scene3DPreview({
         {(onDownload || editorControls) && (
           <PieceStageToolbar
             ariaLabel="Preview actions"
+            immersiveHref={immersiveHref}
             onDownload={onDownload}
             downloadFormat={downloadFormat}
             capabilities={THREE_D_STAGE_CAPABILITIES}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
             editorControls={editorControls}
           />
         )}

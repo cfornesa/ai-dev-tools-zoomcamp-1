@@ -151,6 +151,32 @@ implementation and exact routes:
   suites after waiting for the jsdom WebGL fallback before interacting with
   its remounted toolbar.
 
+## Re-audit correction increment (2026-09-01)
+
+- The second source audit found that the prior parity claim was too broad:
+  AI-assisted 2D still had a separate screenshot/fullscreen row, manual 2D
+  Save still lived in the header, AI-assisted 3D still had its whole-scene
+  action outside the stage, and public 3D ignored the selected download
+  variant. These were implementation defects, not deployment-only evidence
+  gaps.
+- AI-assisted 2D now uses `PieceStageToolbar` for screenshot, Full/
+  Non-Camera HTML export, and fullscreen, and exposes the same Draft/Published
+  control. Manual 2D Save is compact and inside the authoring stage toolbar.
+  AI-assisted 3D's whole-scene action is also stage-local. The manual 2D
+  stage toolbar remains reachable while Code is selected; only the artwork
+  canvas is hidden.
+- Public 3D now forwards the toolbar's selected export variant. The 3D
+  fallback toolbar preserves immersive/download/fullscreen affordances even
+  when WebGL cannot initialize.
+- Focused correction coverage passes 65/65. The clean full frontend rerun is
+  green at 188 files / 2,373 tests after one asynchronous WebGL-toolbar
+  test-readiness failure was fixed. The first corrected publishing/remix
+  browser rerun exposed a real selection-HUD hit-testing regression over the
+  compact authoring Save control; the editor toolbar is now content-sized and
+  layered above the HUD, and the shared stage toolbar remains above editor
+  overlays. The complete disposable PostgreSQL/Django/Vite publishing/remix
+  suite passes 24/24 after that correction.
+
 ## Memory links
 
 - `.agents/memory/authored-piece-surface-parity.md`

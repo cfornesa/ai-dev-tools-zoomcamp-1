@@ -74,6 +74,9 @@ describe('AiProject3DWorkspace "Ask AI to improve this scene"', () => {
     mockedGetProject3D.mockResolvedValue(baseProject());
     renderWorkspace();
     await screen.findByLabelText('Project title');
+    // jsdom cannot create WebGL; wait for the graceful fallback to remount
+    // the stage toolbar before interacting with its editor action.
+    await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
     const panel = screen.getByRole('region', { name: 'AI assistant' });

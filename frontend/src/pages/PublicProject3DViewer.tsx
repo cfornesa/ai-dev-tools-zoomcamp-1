@@ -187,7 +187,7 @@ function PublicProject3DViewer() {
           <Scene3DPreview
             scene={project.current_version.scene_json as unknown as Scene3DDocument}
             screenshotBaseName={project.title}
-            onDownload={() => void handleDownload()}
+            onDownload={(variant) => void handleDownload(variant)}
             immersiveHref={`/immersive/p3d/${id}`}
           />
         )}

@@ -10360,6 +10360,27 @@ authenticate and publish the current build for exact editor, immersive, embed,
 and downloaded-runtime route evidence. Do not close this task or its parent
 until those deployment-boundary criteria are proven.
 
+Second parity correction (2026-09-01): the first increment still left real
+surface defects. AI-assisted 2D had a separate screenshot/fullscreen action
+row, manual 2D Save remained in the header, AI-assisted 3D kept its whole-scene
+AI action in the assistant panel, and the public 3D viewer discarded the
+selected Full/Non-Camera menu variant. These are now corrected: all such
+actions route through the stage-local toolbar, the manual 2D Save control is
+compact and overlaid, AI 2D now has the same screenshot/export/fullscreen
+toolbar plus publication status controls, and public 3D forwards the selected
+download variant. The manual 2D toolbar is also reachable while Code is
+selected; the canvas alone is hidden. Focused correction coverage is 65/65,
+and the clean post-correction full frontend run is green at 188 files / 2,373
+tests after one test-readiness flake was fixed.
+
+Browser follow-up (2026-09-02): the first corrected publishing/remix run
+found a genuine hit-testing defect when the selection HUD covered the compact
+authoring Save control. The editor toolbar is now content-sized and layered
+above the HUD, while the shared stage toolbar remains above editor overlays.
+The complete disposable PostgreSQL/Django/Vite publishing/remix suite passes
+24/24, including owner Save/Publish, anonymous camera fallbacks, remix
+permissions, and fork concurrency.
+
 Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)
 
 ## 263. Make Docker browser verification select and fingerprint this repository

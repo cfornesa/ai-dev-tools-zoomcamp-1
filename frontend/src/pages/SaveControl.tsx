@@ -31,11 +31,13 @@ function SaveControl({
   workingCopy,
   isDirty,
   onSaved,
+  compact = false,
 }: {
   projectId: string;
   workingCopy: SceneDocument | null;
   isDirty: boolean;
   onSaved: (version: SceneVersion) => void;
+  compact?: boolean;
 }) {
   const { save, saveState } = useVersionHistory(projectId, false);
 
@@ -51,10 +53,13 @@ function SaveControl({
     <div className="editor-save-control">
       <button
         type="button"
+        className={compact ? 'piece-stage-icon-button' : undefined}
         onClick={() => void handleSave()}
         disabled={!workingCopy || !isDirty || saveState.pending}
+        aria-label={compact ? 'Save' : undefined}
+        title={compact ? 'Save scene' : undefined}
       >
-        {saveState.pending ? 'Saving…' : 'Save'}
+        {compact ? <span aria-hidden="true">▣</span> : saveState.pending ? 'Saving…' : 'Save'}
       </button>
 
       {saveState.error && <ActionErrorMessage error={saveState.error} testId="save-error" />}

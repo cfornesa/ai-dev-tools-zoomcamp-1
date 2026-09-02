@@ -229,6 +229,17 @@ function AiProject3DWorkspace() {
               scene={scene}
               screenshotBaseName={project?.title}
               onDownload={(variant) => void handleExport(variant)}
+              editorControls={
+                <button
+                  type="button"
+                  className="piece-stage-icon-button"
+                  onClick={handleAskAiImproveScene}
+                  aria-label="Ask AI to improve this scene"
+                  title="Ask AI to improve this scene"
+                >
+                  <span aria-hidden="true">✦</span>
+                </button>
+              }
             />
           </div>
         </section>
@@ -244,11 +255,6 @@ function AiProject3DWorkspace() {
           data-panel="ai-assistant"
           className="editor-panel"
         >
-          <div role="group" aria-label="Whole-scene AI actions" className="editor-tool-group">
-            <button type="button" onClick={handleAskAiImproveScene}>
-              Ask AI to improve this scene
-            </button>
-          </div>
           <AIProposalPanel3D
             projectId={id}
             workingCopy={scene}

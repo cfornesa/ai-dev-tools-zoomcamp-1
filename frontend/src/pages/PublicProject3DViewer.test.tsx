@@ -83,6 +83,9 @@ describe('PublicProject3DViewer load states', () => {
     expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
+    expect(screen.getByRole('toolbar', { name: 'Preview actions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open download menu' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View in immersive mode' })).toBeInTheDocument();
   });
 
   it('shows a safe, undifferentiated message for a 404 (never-existed or not public)', async () => {

@@ -2821,6 +2821,15 @@ function EditorWorkspace() {
           {sceneEditor.lockError}
         </p>
       )}
+      {id && (
+        <SaveControl
+          projectId={id}
+          workingCopy={workingCopy}
+          isDirty={isDirty}
+          onSaved={handleVersionSaved}
+          compact
+        />
+      )}
     </div>
   );
 
@@ -2862,14 +2871,6 @@ function EditorWorkspace() {
             project={project}
             setProject={setProject}
             persistPendingDetails={persistPendingDetails}
-          />
-        )}
-        {id && (
-          <SaveControl
-            projectId={id}
-            workingCopy={workingCopy}
-            isDirty={isDirty}
-            onSaved={handleVersionSaved}
           />
         )}
         <span className="editor-header-break editor-header-break-desktop" aria-hidden="true" />
@@ -3056,16 +3057,11 @@ function EditorWorkspace() {
               <CodeTab jsonSync={jsonCodeSync} htmlCssSync={htmlCssCodeSync} jsSync={jsCodeSync} />
             </div>
           )}
-          {/* Issue #159: everything below through the end of the canvas
-              viewport is the "Visual" sub-view — hidden (not unmounted;
-              `previewMounted`/the p5 instance and its own render effect
-              must keep running so a background re-render after a Code-tab
-              edit is instant when the user switches back, rather than
-              needing a fresh mount) while "Code" is active. Rendered as
-              `hidden` rather than a conditional so the p5 canvas mount div
-              (`previewMountCallbackRef`) never gets torn down/recreated
-              on every Visual/Code toggle. */}
-          <div hidden={previewView !== 'visual'}>
+          {/* Issue #159: keep the preview runtime mounted while Code is
+              active, but leave the stage-local editor/runtime toolbars
+              reachable. Only the artwork canvas is hidden below; this keeps
+              the compact overlay actions available in both sub-views. */}
+          <div>
             {/* Task 110 (issue #141): the camera overlay opacity slider,
               visible only while the live camera is active — see the
               <video> overlay itself below, inside `.editor-scene-canvas`.

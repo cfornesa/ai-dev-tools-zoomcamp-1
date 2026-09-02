@@ -11357,3 +11357,19 @@ local publication workflow, #325 owns exact authenticated/deployed verification,
 and #320 owns release reconciliation. The blocker is environmental rather than
 user judgment, so #338 remains open while independent #326 may proceed. Re-run
 the exact browser command after Docker access is restored.
+
+## 269aa. End-of-blocked-issue distillation for #326
+
+Status: #326 BLOCKED BY DOCKER ENVIRONMENT — #327 REMAINS ELIGIBLE
+
+The AI 2D owner-route transaction remains open. Its focused React/export/
+publication suite passes 34/34, but
+`BROWSER_QA_E2E_SPEC=e2e/ai2dPublication.spec.ts make browser-qa` cannot start
+because Docker cannot access its daemon socket; `docker info` reports the same
+permission failure. Local component evidence and prior browser results do not
+close the required real-browser matrix or deployed-revision boundary.
+
+Distillation found no duplicate or further decomposition: #326 owns one finite
+AI 2D route verification, #340 owns local implementation, and #320 owns release
+reconciliation. The blocker is environmental rather than user judgment, so
+#326 remains open while independent #327 may proceed.

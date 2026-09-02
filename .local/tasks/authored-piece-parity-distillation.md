@@ -48,9 +48,9 @@ as read-only behavioral reference.
 | [#336](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/336) | Verify portable 2D download runtime | Child of #320; one artifact surface | `handed_off_verification_boundary` | Isolated Chromium artifact suite passes 17/17 through Docker-backed browser QA, covering extracted HTML, demo/camera modes, permission lifecycle, attribution, content exclusion, exact dependencies, and ZIP output. Published artifact remains unverified; keep open for exact post-publish download verification |
 | [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337) | Verify portable 3D Full/Non-Camera downloads | Child of #320; one artifact capability | `handed_off_verification_boundary` | `project3dLifecycle.spec.ts` passes 4/4 against the disposable stack: real Full/Non-Camera ZIP clicks, extracted `file://` execution, functional canvas/controls, camera-surface separation, and reversible publication; deployed artifact remains unverified |
 | [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; local implementation slice | `blocked_environment` | Focused component gate passes 67/67; required disposable-stack Chromium gate is blocked by Docker daemon permission failure. Keep open; exact deployed route verification remains #325 |
-| [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; one route and capability | `local_implementation_verified` | Dedicated `ai3dStageChrome.spec.ts` passes 1/1: exact AI editor route, shared 3D controls, AI action, Draft/Published control, no legacy standalone export action, and stage containment. Keep open for post-publish exact-route verification |
-| [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `reopened_verification_boundary` | GitHub was reopened after the live contradiction audit; local route evidence exists, but the deployed revision is unverified and the owner reports the old bulky editor scheme. Re-run exact authenticated route QA after publish before closure |
-| [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `local_implementation_verified` | Dedicated `manual3dStageChrome.spec.ts` passes 1/1 with PHP-relative rendered toolbar geometry, named 3D/editor/publication controls, stage containment, and no legacy standalone export action. Keep open for post-publish exact-route verification |
+| [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; local implementation slice | `local_evidence_unreconciled` | Prior local `ai3dStageChrome.spec.ts` evidence is not a current closure transaction; exact local implementation/body criteria and current browser gate must be reconciled separately, with no deployed claim |
+| [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; local implementation slice | `local_evidence_unreconciled` | Reopened after live contradiction; prior local evidence does not close the current local-only contract or exact deployed route. Process one transaction after #338/#339 |
+| [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; local implementation slice | `local_evidence_unreconciled` | Prior local `manual3dStageChrome.spec.ts` evidence is not a current closure transaction; reconcile focused/browser evidence separately, with no deployed claim |
 | [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295) | Live 3D five-slide hand-gesture guide | Shared capability; portable guide remains in #337 | `handed_off_verification_boundary` | Focused React tests pass 5/5 and disposable browser QA passes 1/1 for the five named slides, accessible dialog behavior, and no camera permission on open. Published `/p3d/:id` evidence remains unavailable; keep open until exact post-publish verification |
 | [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306) | Shared Tone.js 3D audio foundation | Foundation for sound consumers; route evidence remains #327–#337 | `closed_completed_local` | Narrow local foundation closure; exact public/editor/download behavior remains #327–#337 |
 | [#342](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/342) | Independent 3D camera-view toggle | Shared capability; consumers verify through #327–#337 | `handed_off_verification_boundary` | Focused component tests pass 6/6 and exact browser QA passes 1/1 for independent camera preview, but published consumers remain unverified; keep open until exact post-publish consumer evidence |
@@ -1360,3 +1360,81 @@ independent public-surface transaction remains eligible
   deployed revision are not proven; local component evidence is insufficient.
 - Atomicity check: no split is needed. This is one finite authenticated AI 3D
   route verification boundary.
+
+## Current re-audit: live contradiction and closure reset (2026-09-02)
+
+Status: DISTILLATION ACTIVE — NO PRODUCT ENGINEERING AUTHORIZED
+
+The live URLs were inspected again after the owner reported that the requested
+changes were still absent. The public 2D URL
+`https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`
+currently loads `https://animate.creatrweb.com/assets/index-CyiyAAR0.js`,
+renders one canvas inside two legacy `.editor-panel` regions, exposes zero
+`role="toolbar"` elements, and visibly shows only the Preview, Live camera,
+and Demo signal controls. Screenshot, download, fullscreen, stage-local
+publication, and compact capability overlays are absent from the live DOM.
+
+The supplied private 3D editor URL
+`https://animate.creatrweb.com/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`
+loads the anonymous “This project doesn't exist, or you don't have access to
+it” state, so it proves neither the old bulky editor controls nor Draft /
+Published behavior. The current checkout is `5e4204366f1a4b6be149616ba2bfc30e534ac106`,
+154 commits ahead of `origin/main` at
+`14e01334e7ff827189162df5db993d7a0f001a71`; local `PieceStageToolbar`
+consumers therefore cannot be treated as deployed evidence.
+
+### Closure correction
+
+The following closed issues are retained as narrow local capability records,
+not parity closures: #296–#311, #343, and #345. Their bodies explicitly leave
+consumer-route, embed, immersive, downloaded-artifact, or deployed evidence to
+the route issues. #274, #323, and #324 are historical parents/containers and
+must not absorb or imply completion of their former broad checklists. The
+actual authored-piece closure matrix remains #325–#337 plus the local
+implementation slices #338–#341, with #295/#342/#344 as shared capability
+prerequisites and #320 as the final roll-up.
+
+### Complete gap classification
+
+| Gap | Evidence | Classification | Existing owner / next action |
+| --- | --- | --- | --- |
+| Manual/AI 2D and 3D editor stage-local authoring, runtime, and publication overlays | Local consumers exist; exact private production route is inaccessible; owner reports legacy bulky controls | `verification-boundary` with local implementation evidence | #325–#328 verify exact owner routes; #338–#341 own local implementation; publish reviewed revision before deployed QA |
+| Draft ↔ Published reversal on every owner route | Local `PublishControl`/`PublishControl3D` consumers and tests exist; no authenticated production evidence | `verification-boundary` | #325–#328, then reconcile #320 |
+| Anonymous public 2D controls | Live DOM directly contradicts requested toolbar; local route evidence is on a different revision | `deployed-revision mismatch` | #329; authorized publish, then exact anonymous URL QA |
+| Public 3D, embedded 2D/3D, regular/custom/CMS immersive variants | Local route scenarios exist; no exact published revision evidence | `verification-boundary` | #330–#335, one URL/variant each |
+| Downloaded 2D/3D runtime overlays and Full/Non-Camera behavior | Local artifact tests exist; no exact production archive has been extracted and exercised | `verification-boundary` | #336/#337 |
+| Shared sound, camera, hand control, gesture guide, and touch travel | Narrow local capability issues are closed or open; consumers remain unverified | `local-only evidence` / #344 `verification-boundary` | #295/#342/#344 prerequisites; route consumers #327–#337 |
+| Deployment identity/publication | `origin/main` and the live asset differ; no authorized push/publish in this session | `dependency-blocked` | #321/#320; obtain authorized publication, fingerprint revision, rerun each child sequentially |
+| Docker-backed browser QA | `docker info` reports permission denied for `docker.sock`; three route transactions hit the same failure | `workflow/infrastructure-defect` | No duplicate issue: environment owner must restore Docker access; retry exact child command and fresh-distill at each blocked handoff |
+
+### Historical capability coverage report
+
+Issues #296–#311 cover isolated 3D publication, camera, sound, layout, and
+immersive foundations. They are already-covered implementation prerequisites,
+not missing duplicates. None can close #320 because each lacks the complete
+consumer matrix and exact published-revision evidence. #343 covers the
+immersive d-pad capability and #345 covers per-voice selectors under the same
+narrow local boundary; #295 and #342 remain open for their unresolved deployed
+or physical-camera boundaries, and #344 remains open for manual-camera movement
+evidence. No new issue is justified by this audit.
+
+### Dependency and order rationale
+
+1. #321/#320 must establish the reviewed deployment identity and authorized
+   publication before any child can claim deployed parity.
+2. While that dependency is unavailable, process independent local/verification
+   transactions one issue at a time: #338, #339, #340, #341 are implementation
+   slices; #325–#328 and #329–#337 are exact consumer/artifact checks.
+3. A Docker failure is a workflow blocker, not a product completion signal.
+   After each blocked issue, fresh distillation is required before selecting
+   the next independent issue.
+4. #320 closes only after every child is terminal and its exact evidence is
+   reconciled; production-readiness follows that roll-up, never precedes it.
+
+### Exactly one next groomed issue
+
+The next issue is #338, the manual 2D local implementation slice. Its issue
+body now has one entry route, finite Draft/Published criteria, exact focused
+and Chromium commands, and an explicit boundary to #325. It must remain open
+until its own transaction is complete; if Docker remains unavailable, record
+the blocker and fresh-distill before moving to #339.

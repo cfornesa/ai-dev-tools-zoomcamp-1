@@ -11404,3 +11404,45 @@ Distillation found no duplicate or further decomposition: #328 owns one finite
 AI 3D route verification, #339 owns local implementation, and #320 owns release
 reconciliation. The blocker is environmental rather than user judgment, so
 #328 remains open while independent public-surface work may proceed.
+
+## 269ad. Thorough authored-piece parity re-audit and closure reset (2026-09-02)
+
+Status: DISTILLATION ACTIVE — NO PRODUCT ENGINEERING AUTHORIZED
+
+The owner’s report is confirmed by fresh inspection. The deployed public 2D
+URL still loads `assets/index-CyiyAAR0.js`, renders the legacy `.editor-panel` /
+`p5Canvas` shell with sibling Live camera and Demo signal controls, and has
+zero `role="toolbar"` elements. The stage-local screenshot, download,
+fullscreen, publication, and compact capability overlays are absent. The
+supplied private 3D editor URL is anonymous and returns the unavailable state,
+so its bulky controls and Draft/Published reversal are not authenticated
+evidence either. The current checkout is `5e42043`, 154 commits ahead of
+`origin/main` `14e01334`; local React toolbar consumers have not been
+published.
+
+Root cause of the false closure impression: isolated implementation issues and
+local disposable-browser tests were treated as composed live parity; a shared
+toolbar was treated as proof for every consumer; and broad historical issues
+were closed without requiring exact route/artifact evidence. #274/#323/#324
+remain historical containers. #296–#311, #343, and #345 remain narrow local
+capability records only. The actual closure matrix is #325–#337 plus local
+implementation #338–#341, with #295/#342/#344 as shared capability boundaries
+and #320 as the final roll-up.
+
+| Gap | Classification | Existing owner and next action |
+| --- | --- | --- |
+| Four authenticated editor routes: stage-local authoring/runtime/publication chrome and Draft ↔ Published | Verification boundary; local implementation exists but deployed route is unavailable/stale | #325–#328 and #338–#341; publish reviewed revision, then verify each exact owner route sequentially |
+| Public 2D controls | Deployed-revision mismatch | #329; publish, then anonymous exact URL QA |
+| Public 3D, embeds, regular/custom/CMS immersive routes | Verification boundary | #330–#335; each URL/variant independently |
+| Downloaded controls/functions and Full vs Non-Camera behavior | Verification boundary | #336/#337; download exact production artifacts, extract, execute, and exercise controls |
+| Shared sound/camera/hand/gesture capabilities | Local-only or physical/deployed verification boundary | #295/#342/#344 plus consuming route issues; no duplicate issue |
+| Deployment identity/publication | Dependency-blocked | #321/#320; authorized publish is required; no push/publish was attempted |
+| Docker-backed browser QA | Workflow/infrastructure defect | No duplicate issue; `docker info` and all current browser commands fail at `docker.sock`; restore access and retry exact commands |
+
+No new issue is warranted: every actionable gap maps to an existing issue, and
+the manifest now records the route, fixture, finite named controls, boundary,
+blocker owner, and next action. The order is deployment identity (#321/#320),
+then one editor/public/embed/immersive/artifact transaction per issue, then
+parent reconciliation and production readiness. Exactly one next groomed item
+is #338; if its Docker gate remains blocked, perform fresh distillation before
+selecting #339. Task completion remains GitHub closure after all criteria pass.

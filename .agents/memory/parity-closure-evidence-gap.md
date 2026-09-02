@@ -40,3 +40,14 @@ ahead of `origin/main`; local stage-toolbar work is not evidence that the
 published app contains it. Backlog status must show local implementation and
 deployed verification separately, and closed narrow capability issues (#306,
 #343, #345) must not be reused as proof of live route parity.
+
+Current re-audit reinforcement (2026-09-02): at checkout
+`5e4204366f1a4b6be149616ba2bfc30e534ac106` the repository is 154 commits ahead
+of `origin/main` (`14e01334e7ff827189162df5db993d7a0f001a71`). The public URL
+still has the legacy shell and the private 3D URL still resolves to the
+anonymous unavailable state. Treat #296–#311/#343/#345 as isolated local
+capabilities only; the actual authored-piece parity closure remains the exact
+consumer and downloaded-artifact matrix in #325–#337 plus local implementation
+#338–#341 and release reconciliation #320/#321. A Docker socket permission
+failure is a workflow/infrastructure blocker requiring a fresh distillation at
+each blocked handoff, not permission to close or skip evidence.

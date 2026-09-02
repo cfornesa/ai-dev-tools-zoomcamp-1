@@ -26,6 +26,12 @@ It is read-only and reports conflicting projects without stopping them. A
 successful config parse is not enough: the correct stack must be running and
 its image build/pull must complete before Docker browser evidence is valid.
 
+On 2026-09-02, host HTTPS probes reached Docker Hub and GHCR while Docker
+Desktop's BuildKit metadata resolution and a direct `docker pull
+node:22-bookworm-slim` hung/returned `DeadlineExceeded`. When this split occurs,
+diagnose Docker Desktop's daemon/BuildKit image-fetch path or provide approved
+equivalent images; never reuse the unrelated project's images or containers.
+
 ## A more specific variant: this repo's own dev server, wrong backend (2026-08-28)
 
 A subtler version of the same class: `frontend/vite.config.ts`'s `backendProxyTarget`

@@ -10527,6 +10527,12 @@ same metadata-resolution point and terminated with `DeadlineExceeded` for
 both uncached base images. This is now dependency-blocked on Docker registry
 access; it is not evidence of a product or parity failure.
 
+Additional triage (2026-09-02): host-level HTTPS probes reach Docker Hub and
+GHCR, but a direct `docker pull node:22-bookworm-slim` also hung without
+progress and was interrupted. This isolates the remaining failure to Docker
+Desktop's daemon/BuildKit image-fetch path. No prebuilt sibling image may be
+reused as a workaround.
+
 ## 264. Restore backend format-check cleanliness in startup configuration test
 
 Status: COMPLETE

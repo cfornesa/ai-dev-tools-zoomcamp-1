@@ -99,11 +99,18 @@ implementation and exact routes:
 - Current local source: `PieceStageToolbar` is used by `EditorWorkspace`,
   `PublicProjectViewer`, and `Scene3DPreview`; the portable 2D runtime already
   contains screenshot/fullscreen and camera/demo capability scripts, while the
-  portable 3D runtime now contains screenshot/fullscreen plus reset/orbit/zoom.
+  portable 3D runtime now contains screenshot/fullscreen, reset/orbit/zoom,
+  explicit sound enable/settings, volume, keyboard notes, and movement tones.
+- The capability policy is explicit in
+  `frontend/src/components/pieceStageCapabilities.ts`: 2D exposes only its
+  implemented screenshot/HTML-export/fullscreen controls, while 3D exposes
+  ZIP export, immersive, sound, piece controls, gesture, guide, and fullscreen.
+  The immersive 3D route now keeps gesture steering and its guide enabled.
 - Correct-stack verification: `scripts/browser-qa.sh` passed its repository
   identity probes; focused injection passed 33/33 and public lifecycle/camera
-  passed 24/24. A full 137-test run reached 99 passed before the two focused
-  regressions were corrected; it is not recorded as a clean full-batch pass.
+  passed 24/24. The first full 137-test run reached 99 passed before the two
+  focused regressions were corrected; the corrected focused suites pass, but a
+  clean replacement full batch remains required before readiness.
 - GitHub open-issue enumeration now contains #274, #320, and #321; #123 is
   closed with a QA PASS. #274 remains dependency-blocked by #320 and is not
   treated as complete merely because earlier child issues were closed.

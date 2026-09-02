@@ -14,6 +14,10 @@ skip only issues that depend on the blocker. Halt the goal only when no
 independent actionable work remains or all remaining work requires the same
 unavailable external state. Engineering and testing remain strictly
 per-issue, and completion still means GitHub closure.
+For a dependency or environment blocker unrelated to the user's judgment or
+decision, perform and record a fresh task-distillation reconciliation when that
+issue ends, before selecting the next issue. Recheck duplicates, dependency
+order, closure criteria, ownership, and follow-up issue coverage.
 
 ## 1. Set up an empty project with a passing test
 Goal: Create the minimal Django and React/TypeScript project structure and prove the test toolchain works.

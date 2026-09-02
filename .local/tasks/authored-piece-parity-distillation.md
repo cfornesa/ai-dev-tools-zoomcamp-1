@@ -153,7 +153,7 @@ first reconcile the existing runner and #321 workflow scope.
 | Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, fullscreen, and bundled MediaPipe/Wasm/model assets | `implemented locally / needs deployed evidence` | #337; verify the exact deployed download after publish; #295/#306/#342/#345 changes must be reflected before closure |
 | Non-Camera downloads | Camera host/module and camera-only mic/theremin code are omitted while non-camera sound/keyboard/view controls remain; disposable-stack browser test downloads and inspects the real ZIP | `implemented locally / needs deployed evidence` | #337; verify the exact deployed download after publish |
 | Draft / Published | 2D and 3D owner controls exist locally and API tests cover atomic transitions; supplied private deployed route cannot be inspected anonymously | `verification-boundary` | #320; authenticate in the owner's browser session, then verify both states on exact URLs |
-| Deployed examples | Public supplied URL serves the old shell; local `main` is 61 commits ahead of `origin/main` and has not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
+| Deployed examples | Public supplied URL serves the old shell; local `main` is 82 commits ahead of `origin/main` and has not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
 
 ## Closed-issue audit (2026-09-02)
 
@@ -449,3 +449,69 @@ implementation and exact routes:
 - `.agents/memory/generated-art-piece-surface-parity.md`
 - `.agents/memory/e2e-wrong-docker-project.md`
 - `.agents/memory/full-browser-readiness-gate.md`
+
+## Third distillation re-audit (2026-09-02)
+
+The owner reported that the requested parity is still absent from the
+deployed application: editor controls remain bulky and outside the canvas,
+the Draft/Published control is not visible, and the public `/p/:id` surface
+has no expected stage button overlays. Direct browser inspection corroborated
+the public report: the supplied deployed 2D URL rendered the legacy Preview
+and sibling Demo/camera-controls layout, with no compact screenshot, download,
+fullscreen, or publication toolbar. The supplied private 3D editor URL could
+not prove its controls anonymously and returned the unavailable/access-denied
+state.
+
+The checkout does contain newer local toolbar/publication implementations, but
+`main` is 82 commits ahead of `origin/main`; no push or publish was authorized
+in this pass. The root cause is therefore a closure/evidence mismatch: prior
+records treated local, localhost, disposable-browser, source-string, and
+focused-test evidence as if it proved the current deployed revision. They
+also allowed parent-wide parity to be inferred from independently closed
+child capabilities. Those claims are demoted to narrow implementation
+evidence and must not close #320 or any exact route/artifact issue.
+
+### Closure-sized decomposition
+
+Keep the existing issue numbers and do not create duplicates while the GitHub
+API is unavailable. The actionable contract is:
+
+| Issue | One closure unit | Fixed entry/precondition | Required observable proof | Explicit boundary |
+| --- | --- | --- | --- | --- |
+| #338 | Manual 2D editor publication chrome | Authenticated owner at `/projects/:id` with one editable fixture | Stage-local Draft/Published control is visible and keyboard actionable; both transitions work; no duplicate page-level control | Does not prove AI 2D, 3D, public, or downloads |
+| #340/#326 | AI 2D editor publication and surface verification | Authenticated owner at `/ai-projects/:id` with one fixture | Finite toolbar/control checklist passes and save/AI actions remain reachable | Does not prove manual 2D or 3D |
+| #341/#327 | Manual 3D editor publication and surface verification | Authenticated owner at `/projects3d/:id` | Named 3D toolbar controls, Draft/Published transitions, and editor actions work | Does not prove AI 3D or runtime consumers |
+| #339/#328 | AI 3D editor publication and surface verification | Authenticated owner at `/ai-projects3d/:id` | Same finite 3D checklist and AI action reachability | Does not prove manual 3D or runtime consumers |
+| #329 | Public 2D viewer | Published fixed fixture at `/p/:id` | Toolbar overlays artwork; named screenshot/fullscreen/export controls work; Camera/Demo are stage-local opt-in disclosures | Does not prove embed or downloads |
+| #330 | Public 3D viewer | Published fixed fixture at `/p3d/:id` | Named 3D toolbar, sound, gesture-guide, camera/view, screenshot, fullscreen, and immersive-entry behavior | Does not prove embeds, variants, or downloads |
+| #331 | Embedded 2D viewer | Published fixed fixture at `/embed/p/:id` | Chrome-less stage-local controls and 2D behavior work in the embed entry point | Does not prove regular public 2D |
+| #332 | Embedded 3D viewer | Published fixed fixture at `/embed/p3d/:id` | Chrome-less 3D toolbar and named controls work in the embed entry point | Does not prove regular public 3D |
+| #333 | Regular immersive 3D | Published fixed fixture at `/immersive/p3d/:id` | Immersive entry, arrow-key travel, guide, sound, view, screenshot, and fullscreen behavior | Does not prove query variants |
+| #334 | Custom immersive 3D | Same fixture at `/immersive/p3d/:id?embed=1` | Custom chrome-less variant preserves named permitted controls and safe fallback | Does not prove regular/CMS variant |
+| #335 | CMS immersive 3D | Same fixture at `/immersive/p3d/:id?embed=1&cms=1` | CMS chrome-less variant preserves named permitted controls and safe fallback | Does not prove regular/custom variant |
+| #336 | Portable 2D runtime | Download from published `/p/:id`, extract, open entry HTML | Screenshot/fullscreen and explicit demo/camera lifecycle work with stage-local controls and no network dependency | Does not prove 3D or source presence alone |
+| #337 | Portable 3D Full vs Non-Camera runtime | Download both variants from published 3D fixture, extract, open with `file://` | Full retains named sound/view/gesture/camera/hand-guide controls and assets; Non-Camera omits camera/hand UI/assets while retaining non-camera controls | Does not prove editor/public chrome |
+| #295/#306/#342/#345 | Shared capability prerequisites | Local focused fixture/component boundary | Each narrow capability passes its own focused tests and is linked as prerequisite evidence | Never closes a consuming route or parent by itself |
+
+Every row needs exact commands, fixture identifiers, browser assertions or
+screenshots, and a post-publish revision marker in its issue before closure.
+The broad #274/#324 concepts remain reconciliation containers, not
+implementation units. #320 remains open until all applicable rows are
+independently terminal and reconciled.
+
+### Blocker and ordering decision
+
+The stale deployment requires an owner-authorized push/publish, so it is a
+user-judgment verification boundary and cannot be bypassed by more local
+testing. Docker/browser-runner and fixture-publish failures are separate
+workflow/infrastructure blockers tracked by #321 and the existing #329
+boundary; they must not be silently converted into product closure. A
+non-user-judgment dependency or environment blocker now requires a fresh
+task-distillation reconciliation at the end of that blocked issue before any
+independent issue is selected.
+
+No new GitHub issues were created because the authenticated API was
+unavailable (`gh issue view` could not connect to `api.github.com`) and the
+existing issue map covers the discovered work. The next handoff is to groom
+exactly one existing route slice after deployment access and fixture
+availability are resolved; no product engineering begins from this re-audit.

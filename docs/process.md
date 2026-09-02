@@ -38,6 +38,11 @@ Phase gate
   that depend on it and select the next independent closure-ready issue. Halt
   the goal only when no independent actionable work remains or every remaining
   issue requires the same unavailable external state.
+- If the blocker is a dependency or environment problem unrelated to the user's
+  judgment or decision, complete a fresh task-distillation reconciliation at
+  the end of that issue before selecting the next issue. Recheck duplicates,
+  dependency order, closure criteria, ownership, and follow-up issue coverage;
+  record the result before continuing.
 
 Roles
 

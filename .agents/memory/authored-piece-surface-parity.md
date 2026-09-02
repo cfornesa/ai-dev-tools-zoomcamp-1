@@ -88,3 +88,19 @@ files, and the gesture-recognizer model under relative paths so camera and hand
 overlays remain functional when opened directly from `file://`. Non-Camera
 downloads must omit those camera-only assets and runtime paths while retaining
 non-camera sound and view controls.
+
+Production closure re-audit (2026-09-02): direct inspection of the supplied
+deployed public 2D URL still showed the legacy Preview plus sibling Demo and
+camera-controls layout, with no stage-local screenshot, download, fullscreen,
+or publication controls. The supplied private 3D editor URL could only show
+the anonymous access-denied/unavailable state. The checkout contained newer
+local implementations, but `main` was 82 commits ahead of `origin/main` and
+had not been intentionally published. Local, localhost, disposable-stack,
+source-string, or focused-test evidence cannot close a deployed
+route/artifact criterion; each surface needs its own fixed fixture, exact
+entry point, finite checklist, and evidence from the revision under test.
+
+Closure process rule: when a non-user-judgment dependency or environment
+blocker ends an issue, run a fresh task-distillation reconciliation before
+selecting the next issue. Recheck duplicates, dependency order, closure
+criteria, blocker ownership, and follow-up issue coverage.

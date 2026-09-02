@@ -80,6 +80,12 @@ must never treat implementation or QA as completion; each issue reaches
   independent closure-ready issue. Stop the goal only when no independent
   actionable work remains or all remaining work requires the same unavailable
   external state.
+- When an issue is blocked by a dependency or environment problem unrelated to
+  the user's judgment or decision, perform a fresh task-distillation
+  reconciliation at the end of that issue before selecting the next issue.
+  Recheck duplicates, dependency order, closure criteria, blocker ownership,
+  and follow-up issue coverage, and record the result in the manifest and
+  handoff.
 
 ## Gap and blocker triage
 

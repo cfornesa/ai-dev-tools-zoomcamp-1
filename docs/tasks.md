@@ -2753,6 +2753,14 @@ further buried. `npm run typecheck`/`lint`/`format` clean; full frontend
 suite green (1691/1691); `EditorWorkspace.a11y.test.tsx`'s jest-axe checks
 pass (8/8).
 
+Docker verification update (2026-09-02): the same `make e2e` command against
+the currently supported Compose stack reproduced the port drift in the other
+direction: Compose exposes Vite on `5173`, while the default E2E target is
+`5000`. Result: 51 passed, 83 skipped, and 3 responsive-shell connection
+refusals. This is a workflow/infrastructure follow-up reopened in
+[#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1); the native
+Vite-dev `5000` track remains the documented default.
+
 ## 123. Selection marquee outline is wrong for rotated/scaled shapes
 
 Goal: Fix `shapeBounds()` (and its selection-outline/hover-outline/
@@ -10306,3 +10314,20 @@ Project and Project3D surfaces, then verify the downloaded runtime and exact
 published URLs after authentication and publish.
 
 Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)
+
+## 263. Make Docker browser verification select and fingerprint this repository
+
+Status: PROPOSED
+
+GitHub issue: [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321)
+
+Classification: workflow/infrastructure-defect. During the 2026-09-02
+Docker-backed browser run, the healthy containers belonged to the unrelated
+`ai-dev-tools-zoomcamp` project (`/Users/Fornesus/Code/ai-dev-tools-zoomcamp`)
+and served an `Interview Canvas` shell. This is not product evidence for this
+repository. The existing durable constraint is
+[E2E wrong Docker project](../.agents/memory/e2e-wrong-docker-project.md).
+
+Acceptance criteria and next action are maintained in GitHub #321. Do not
+stop or mutate unrelated containers; select this repository's Compose project
+explicitly, fingerprint the served app, then rerun browser readiness.

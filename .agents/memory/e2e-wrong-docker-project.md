@@ -15,6 +15,9 @@ application origin with `GET /health/` and anonymous `GET /api/whoami/`, and con
 the frontend port matches this repository's documented startup path (`make dev` uses
 Vite on port 5000). A healthy container list alone is insufficient.
 
+Current follow-up: issue #321 tracks adding an explicit Compose project identity
+check and served-app fingerprint before browser readiness.
+
 ## A more specific variant: this repo's own dev server, wrong backend (2026-08-28)
 
 A subtler version of the same class: `frontend/vite.config.ts`'s `backendProxyTarget`

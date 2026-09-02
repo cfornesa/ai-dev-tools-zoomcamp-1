@@ -46,17 +46,17 @@ component never close a deployed route.
 | #325 | authenticated manual 2D `/projects/:id` | owner browser access | open | verify stage-local authoring/runtime/publication controls |
 | #326 | authenticated AI 2D `/ai-projects/:id` | owner browser access | open | verify stage-local AI/publication controls |
 | #327 | authenticated manual 3D `/projects3d/:id` | owner browser + 3D fixture | open | verify exact editor route and status transitions |
-| #328 | authenticated AI 3D `/ai-projects3d/:id` | owner browser + 3D fixture | open | verify exact editor route and status transitions |
+| #328 | authenticated AI 3D `/ai-projects3d/:id` | owner browser + 3D fixture | closed | deployed route, focused tests, browser QA, and Draft restoration recorded |
 | #329 | anonymous public 2D `/p/:id` | published 2D fixture | reopened / disputed | reconcile user-visible conflict at exact URL/viewport/cache |
-| #330 | anonymous public 3D `/p3d/:id` | published 3D fixture | blocked | publish/expose deterministic 3D fixture, then QA |
+| #330 | anonymous public 3D `/p3d/:id` | published 3D fixture | closed | deployed anonymous controls/privacy and local browser QA recorded |
 | #331 | anonymous 2D `/embed/p/:id` | published 2D fixture | reopened / disputed | reconcile user-visible conflict independently |
-| #332 | anonymous 3D `/embed/p3d/:id` | published 3D fixture | blocked | publish/expose deterministic 3D fixture, then QA |
-| #333 | regular immersive 3D | published 3D fixture | dependency-blocked | verify exact URL after #330 fixture |
-| #334 | custom immersive `?embed=1` | published 3D fixture | dependency-blocked | verify exact query variant after fixture |
+| #332 | anonymous 3D `/embed/p3d/:id` | published 3D fixture | closed | deployed chrome-less embed and local browser QA recorded |
+| #333 | regular immersive 3D | published 3D fixture | closed | deployed route, controls/privacy, and local browser QA recorded |
+| #334 | custom immersive `?embed=1` | published 3D fixture | closed | deployed chrome-less query variant and local browser QA recorded |
 | #335 | CMS immersive `?embed=1&cms=1` | published 3D fixture | dependency-blocked | verify exact query variant after fixture |
 | #336 | extracted standalone 2D artifact | approved file-capable browser | blocked | execute captured Full/Non-Camera files |
 | #337 | extracted Full/Non-Camera 3D artifacts | published 3D fixture + file browser | dependency-blocked | download, extract, execute both variants |
-| #295 | five-slide 3D hand guide | published 3D fixture | dependency-blocked | verify exact public consumer |
+| #295 | five-slide 3D hand guide | published 3D fixture | closed | deployed guide, focused tests, and route QA recorded |
 | #342 | independent 3D camera view | published 3D consumer | dependency-blocked | verify exact deployed consumer |
 | #344 | 3D hand Move/strafe | published 3D + physical/manual camera | dependency-blocked | run movement evidence and guide consistency |
 

@@ -11672,3 +11672,6 @@ changed to Draft and neither is closed. Each remains open with its own exact
 route evidence; no evidence is transferred between routes. The next action is
 an authorized live transition check (or a criterion-ready N/A decision), then
 issue-specific reconciliation and closure.
+## Current backlog-session closure reconciliation (2026-09-02)
+
+The sequential backlog run closed #295, #328, #330, #332, #333, and #334 only after each issue's route-specific acceptance criteria, focused tests, real Chromium scenario, deployed revision, and final Draft restoration were recorded in GitHub. #329 remains open because public-2D camera activation/failure evidence has not been authorized. #336/#337 remain blocked by the browser `file://` policy. Engineering and testing remained per issue; no next issue was selected before the prior issue was closed.

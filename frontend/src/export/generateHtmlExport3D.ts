@@ -96,6 +96,20 @@ const PIECE_CSS = `html, body {
 }
 #piece-audio-controls[hidden] { display: none; }
 #piece-audio-controls label { display: grid; gap: .25rem; font-size: .8rem; }
+#piece-hand-guide {
+  position: fixed;
+  inset: 10% auto auto 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1rem;
+  color: #fff;
+  background: rgba(10,12,20,.94);
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: .75rem;
+}
+#piece-hand-guide[hidden] { display: none; }
+#piece-hand-guide button { width: auto; height: auto; padding: .5rem .75rem; }
 #camera-controls-host { position: fixed; left: 1rem; bottom: 5.5rem; z-index: 10; display: grid; gap: .5rem; min-width: 15rem; max-width: min(22rem, calc(100vw - 2rem)); padding: .75rem; color: #fff; background: rgba(10,12,20,.9); border: 1px solid rgba(255,255,255,.28); border-radius: .75rem; }
 #camera-controls-host:empty { display: none; }
 #camera-controls-host video { width: 100%; max-height: 10rem; object-fit: cover; border-radius: .5rem; }
@@ -134,7 +148,19 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
   <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view">↺</button>
   <button id="piece-sound" type="button" aria-label="Enable sound" title="Enable sound" aria-pressed="false">♪</button>
   <button id="piece-audio-settings" type="button" aria-label="Sound settings" title="Sound settings" aria-expanded="false">☰</button>
+  <button id="piece-hand-guide-toggle" type="button" aria-label="Hand gesture guide" title="Hand gesture guide" aria-expanded="false">?</button>
   <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
+</div>
+<div id="piece-hand-guide" role="dialog" aria-label="Hand gesture guide" hidden>
+  <h2>Hand gesture guide</h2>
+  <ol>
+    <li>Look: keep your hand visible to the camera.</li>
+    <li>Move: move your palm to steer the piece.</li>
+    <li>Orbit: move left or right to orbit the view.</li>
+    <li>Zoom: pinch to change distance.</li>
+    <li>Stop: release the gesture or stop the camera.</li>
+  </ol>
+  <button id="piece-hand-guide-close" type="button">Close</button>
 </div>
 <div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
   <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
@@ -152,6 +178,9 @@ ${
   const screenshot = document.getElementById('piece-screenshot');
   const resetView = document.getElementById('piece-reset-view');
   const fullscreen = document.getElementById('piece-fullscreen');
+  const guideToggle = document.getElementById('piece-hand-guide-toggle');
+  const guide = document.getElementById('piece-hand-guide');
+  const guideClose = document.getElementById('piece-hand-guide-close');
   const canvas = () => host && host.querySelector('canvas');
   screenshot?.addEventListener('click', () => {
     const current = canvas();
@@ -167,6 +196,13 @@ ${
     else await (host?.requestFullscreen?.() ?? Promise.resolve());
     fullscreen.setAttribute('aria-label', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen');
   });
+  function setGuideOpen(open) {
+    if (!guide || !guideToggle) return;
+    guide.hidden = !open;
+    guideToggle.setAttribute('aria-expanded', String(open));
+  }
+  guideToggle?.addEventListener('click', () => setGuideOpen(Boolean(guide?.hidden)));
+  guideClose?.addEventListener('click', () => setGuideOpen(false));
 })();
 </script>
 </body>

@@ -100,6 +100,13 @@ source-string, or focused-test evidence cannot close a deployed
 route/artifact criterion; each surface needs its own fixed fixture, exact
 entry point, finite checklist, and evidence from the revision under test.
 
+Deployment revision reconciliation (2026-09-02): local `main` is at
+`0c6bc5f` and 128 commits ahead of `origin/main` at
+`14e01334e7ff827189162df5db993d7a0f001a71`, whose GitHub metadata identifies
+Replit's `Published your App` commit. The live site therefore cannot contain
+the local parity work until an authorized push/publish operation. Treat this
+as the current replacement for earlier ahead-count observations.
+
 Owner re-audit reinforcement (2026-09-02): the owner reports that the
 deployed editor still exposes the old bulky functional-button layout and does
 not expose the expected Draft/Published reversal, while the deployed public

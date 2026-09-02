@@ -11075,3 +11075,20 @@ gesture guide, steering, and fullscreen behavior. The production revision is
 still unverified, so #332 remains open and is not marked COMPLETE. Publish the
 tested revision, rerun the exact anonymous embed URL, and close only after
 that deployed criterion passes.
+
+## 269g. Reconcile the actual deployed revision (#320/#321)
+
+Status: BLOCKED ON AUTHORIZED PUSH/PUBLISH
+
+Local `main` is at `0c6bc5f` and 128 commits ahead of `origin/main`, which is
+`14e01334e7ff827189162df5db993d7a0f001a71`. GitHub identifies the latter as
+Replit's `Published your App` commit with deployment build id
+`fd3105fd-8768-4a68-b561-10b4ab5865f1`. This explains why the exact production
+URLs still show the legacy controls: the tested local revision is not the
+published revision.
+
+This is already covered by #320/#321; no duplicate deployment issue is being
+created. The next action requires an authorized push/publish of the tested
+revision, followed by authenticated editor and anonymous public/embed/artifact
+verification. Until then, route issues remain open or handed off and no parent
+issue may close.

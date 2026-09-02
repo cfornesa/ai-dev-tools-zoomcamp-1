@@ -257,7 +257,7 @@ first reconcile the existing runner and #321 workflow scope.
 | Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, fullscreen, and bundled MediaPipe/Wasm/model assets | `implemented locally / needs deployed evidence` | #337; verify the exact deployed download after publish; #295/#306/#342/#345 changes must be reflected before closure |
 | Non-Camera downloads | Camera host/module and camera-only mic/theremin code are omitted while non-camera sound/keyboard/view controls remain; disposable-stack browser test downloads and inspects the real ZIP | `implemented locally / needs deployed evidence` | #337; verify the exact deployed download after publish |
 | Draft / Published | 2D and 3D owner controls exist locally and API tests cover atomic transitions; supplied private deployed route cannot be inspected anonymously | `verification-boundary` | #320; authenticate in the owner's browser session, then verify both states on exact URLs |
-| Deployed examples | Public supplied URL serves the old shell; local `main` is 82 commits ahead of `origin/main` and has not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
+| Deployed examples | Public supplied URL serves the old shell; local `HEAD` is `0c6bc5f` and local `main` is 128 commits ahead of `origin/main` (`14e0133`), whose GitHub commit is Replit's `Published your App` deployment commit | `verification-boundary` | #320/#321; obtain authorization to push/publish the tested revision, then run exact-route post-deploy QA |
 
 ## Closed-issue audit (2026-09-02)
 
@@ -1103,3 +1103,19 @@ covered by #321 and must be repaired or explicitly handed off before a child
 can close. Any non-user-judgment environment blocker at the end of #329
 requires another fresh distillation pass; no product source or test change is
 authorized by this distillation increment.
+
+## Deployment revision reconciliation (2026-09-02)
+
+Current repository evidence makes the live discrepancy explainable rather
+than ambiguous: local `main` is at `0c6bc5f`, while `origin/main` is at
+`14e01334e7ff827189162df5db993d7a0f001a71`, 128 commits behind. GitHub
+identifies `14e0133` as Replit's `Published your App` commit with deployment
+build id `fd3105fd-8768-4a68-b561-10b4ab5865f1`. The live public URL still
+matches that older deployed revision, so local React fixes cannot appear
+there until an authorized push/publish operation occurs.
+
+This is covered by #320/#321; no deployment duplicate or workaround is
+created. The exact next action is authority to publish the tested revision,
+then authenticated editor and anonymous public/embed/artifact checks against
+that deployed revision. Until then, all route issues remain open or handed
+off and no parent closure is valid.

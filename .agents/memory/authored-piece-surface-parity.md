@@ -116,3 +116,14 @@ Closure process rule: when a non-user-judgment dependency or environment
 blocker ends an issue, run a fresh task-distillation reconciliation before
 selecting the next issue. Recheck duplicates, dependency order, closure
 criteria, blocker ownership, and follow-up issue coverage.
+
+Fresh owner-evidence audit (2026-09-02): the authenticated GitHub connector
+confirmed that #340 and #342 had been closed while the supplied deployment
+still contradicted the requested parity. Both were reopened with explicit
+re-audit comments. The public URL still renders the legacy sibling camera and
+demo-control shell; the supplied private 3D editor URL is anonymous and only
+returns the unavailable state. This is the canonical example that local
+disposable-browser evidence must not close a deployed route or shared
+capability. The next required gate is #321/#320 deployment identity and
+authorized publication, followed by exact authenticated editor and anonymous
+public route QA.

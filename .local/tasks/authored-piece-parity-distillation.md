@@ -48,11 +48,11 @@ as read-only behavioral reference.
 | [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337) | Verify portable 3D Full/Non-Camera downloads | Child of #320; one artifact capability | `local_implementation_verified` | `project3dLifecycle.spec.ts` passes 4/4 against the disposable stack: real Full/Non-Camera ZIP clicks, extracted `file://` execution, functional canvas/controls, camera-surface separation, and reversible publication; deployed artifact remains unverified |
 | [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; one route and capability | `local_implementation_verified` | Shared stage rail matches PHP reference-relative top-left/0.75rem/2.75rem rounded-square styling; strengthened dedicated Chromium route QA passes 1/1 with stage-local authoring/runtime/publication controls, rendered containment, Add circle → Undo, and no legacy header row. Keep open for post-publish exact-route verification |
 | [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; one route and capability | `local_implementation_verified` | Dedicated `ai3dStageChrome.spec.ts` passes 1/1: exact AI editor route, shared 3D controls, AI action, Draft/Published control, no legacy standalone export action, and stage containment. Keep open for post-publish exact-route verification |
-| [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `local_implementation_verified` | Exact `ai2dPublication.spec.ts` passes 1/1 with PHP-relative rendered toolbar geometry, stage-local publication control, Draft → Published → Draft, and no legacy header row. Keep open for post-publish exact-route verification |
+| [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `reopened_verification_boundary` | GitHub was reopened after the live contradiction audit; local route evidence exists, but the deployed revision is unverified and the owner reports the old bulky editor scheme. Re-run exact authenticated route QA after publish before closure |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `local_implementation_verified` | Dedicated `manual3dStageChrome.spec.ts` passes 1/1 with PHP-relative rendered toolbar geometry, named 3D/editor/publication controls, stage containment, and no legacy standalone export action. Keep open for post-publish exact-route verification |
 | [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295) | Live 3D five-slide hand-gesture guide | Shared capability; portable guide remains in #337 | `open` | Reopened: its closure contract requires a published `/p3d/:id` fixture, but prior evidence was local-only; verify exact route before closure |
 | [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306) | Shared Tone.js 3D audio foundation | Foundation for sound consumers; route evidence remains #327–#337 | `closed_completed_local` | Narrow local foundation closure; exact public/editor/download behavior remains #327–#337 |
-| [#342](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/342) | Independent 3D camera-view toggle | Shared capability; consumers verify through #327–#337 | `closed_completed_local` | Narrow local capability closure; exact deployed consumers remain #327–#337 |
+| [#342](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/342) | Independent 3D camera-view toggle | Shared capability; consumers verify through #327–#337 | `reopened_verification_boundary` | GitHub was reopened after the live contradiction audit; local capability evidence exists, but no deployed editor/public consumer proves the control is present. Verify through #327–#337 after publish before closure |
 | [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad travel | Immersive capability; route variants decide inclusion in #333–#335 | `ready_for_github_reconciliation` | Focused component suite passes 6/6; exact immersive browser route passes 4/4 with four 40px+ controls and matching ArrowUp/Left/Down/Right keydown/keyup pairs. Post QA evidence and close through authenticated GitHub reconciliation; no duplicate issue |
 | [#344](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/344) | Immersive 3D hand gesture move/strafe | Depends on #295; route evidence remains #333–#335 | `blocked_user_judgment` | The PHP reference defines movement/strafe semantics, but the React product contract currently implements orbit/zoom only. Choose whether to ship bounded hand travel/strafe (with gesture thresholds and safe-stop behavior) or explicitly retain the current N/A boundary before engineering |
 | [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | Depends on #306/#310; route/artifact evidence remains #327–#337 | `handed-off` | Local implementation and QA pass; GitHub API unavailable for required QA comment/closure. Retry authenticated issue reconciliation; do not duplicate the issue |
@@ -110,10 +110,15 @@ GitHub issue creation and closure are pending authenticated access.
 4. Verify downloaded artifacts (#336/#337) by behavior, not source markers.
 5. Only then reconcile #320 and any historical umbrella records.
 
-The GitHub API remains unavailable (`gh issue list --repo
+The authenticated GitHub connector is now available and has been used to
+enumerate the open issue set. The prior CLI failure remains historical:
+`gh issue list --repo
 cfornesa/ai-dev-tools-zoomcamp-1 --state open --limit 100` failed with
 `error connecting to api.github.com`), so no remote issue was modified or
-closed. The existing issue numbers are reused; no duplicate issue is created.
+closed. GitHub confirms #295, #320, #321, #325–#339, #341, and #343–#345
+remain open; #340 and #342 were incorrectly closed against the live
+contradiction and were reopened with state reason `reopened`. Existing issue
+numbers are reused; no duplicate issue is created.
 
 This manifest is the source of truth before any further implementation. The
 open children above must be groomed and QA-closed independently against their
@@ -128,6 +133,48 @@ authorization. It exposed selector/contract drift after the stage-local
 publication relocation and must first be classified against the affected
 route issues (#338–#341) during grooming. No product or test change is part
 of this distillation increment.
+
+## Fresh owner-evidence distillation re-audit (2026-09-02)
+
+The supplied live public URL was reopened in the approved browser and its
+rendered body was inspected. It contains `Preview`, a sibling `Live camera`
+disclosure, and a sibling `Demo signal controls` disclosure, but no visible
+stage-local screenshot, download, fullscreen, or publication controls. This
+directly fails the public 2D contract in #329 and the parent #320 requirement
+that controls belong to the piece stage.
+
+The supplied private 3D editor URL was also opened in a fresh anonymous
+context. It returned only “This project doesn't exist, or you don't have
+access to it.” and theme controls. Therefore editor authoring controls and
+Draft/Published reversal are unverified, not absent; owner-authenticated
+route evidence is required before any editor issue can close.
+
+The checkout contains newer `PieceStageToolbar`, publication, and authoring
+implementations, but the live pages prove that those commits have not reached
+the deployed revision. The root process defect was closure based on local
+source/disposable-browser evidence without proving the exact deployed revision
+and without reconciling closed child issues after the owner’s live rejection.
+
+Re-audit decisions:
+
+- Reuse #320 for the deployment/revision gate and #321 for Compose identity;
+  no duplicate deployment issue is needed.
+- Keep #325–#339 and #341 open until each exact route is checked on the
+  published revision; local route passes are implementation evidence only.
+- Reopen #340 and #342 in GitHub; their local criteria may pass, but their
+  prior closure was not sufficient to establish the user-requested live
+  parity and their consumer/deployment boundary remains unresolved.
+- Keep #295 open for the published five-slide guide contract, #343 open for
+  authenticated/deployed immersive touch evidence, #344 blocked on the
+  explicit movement/strafe product decision, and #345 open until its GitHub
+  QA/status reconciliation is posted.
+
+No product source or product-test changes are authorized in this distillation
+increment. The next backlog-session handoff is exactly one issue: #321,
+because deployment identity and publication are prerequisites for exact live
+verification. If #321 is blocked by an environment dependency, run another
+distillation reconciliation at its end before selecting the next independent
+issue.
 
 ## Execution cadence gate (2026-09-02)
 

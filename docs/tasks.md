@@ -10896,6 +10896,23 @@ and Full/Non-Camera ZIP menu entries. This local evidence does not close the
 issue: the supplied production revision still requires exact post-publish
 embed verification, and authenticated GitHub reconciliation is unavailable.
 
+## Distillation re-audit: owner live evidence (2026-09-02)
+
+The supplied public route was inspected again in a fresh browser context and
+still renders the legacy `Preview` plus sibling `Live camera` and `Demo signal
+controls` regions. It does not render the requested stage-local screenshot,
+download, fullscreen, publication, or compact control overlays. The supplied
+private 3D editor URL returns an anonymous unavailable state, so editor
+authoring controls and Draft/Published reversal remain unverified.
+
+The authenticated GitHub audit found #340 and #342 actually closed despite
+this unresolved live contradiction. Both issues were reopened with GitHub
+state reason `reopened`, and re-audit comments were posted on #320, #340, and
+#342. No duplicate issue was created: #320 owns the parity reconciliation and
+#321 owns deployment/Compose identity. The corrected distillation manifest is
+`.local/tasks/authored-piece-parity-distillation.md`; its next single handoff
+is #321, followed by one exact deployed route transaction at a time.
+
 ## Production-readiness assessment (2026-09-02)
 
 Local application and CI-equivalent dimensions passed after retrying the

@@ -10998,6 +10998,20 @@ pre-existing generated/fixture drift; changed files pass direct Prettier
 validation. The deployed revision still serves the legacy public shell, so
 #329 remains open pending exact published-route verification.
 
+## 269t. Handoff public 2D route verification (#329)
+
+Status: #329 HANDED OFF — DEPLOYED REVISION VERIFICATION BOUNDARY
+
+`BROWSER_QA_E2E_SPEC=e2e/publishingAndRemix.spec.ts make browser-qa` passed
+24/24 against disposable PostgreSQL/Django/Vite/Chromium services, covering
+the public `/p/:id` lifecycle, anonymous rendering, demo-first behavior, and
+camera denial/unsupported/no-hardware/pending/active/stop fallback states.
+GitHub `QA: FAIL` comment `5510399615` records the exact evidence. The issue
+remains open because the supplied production URL still serves the legacy
+sibling-panel shell and the tested revision has not been authorized/published;
+local evidence cannot close the deployed-route boundary. #331 is the next
+independent route and may proceed.
+
 ## 270. Distill deployed authored-piece parity contradiction and public 2D consumer gap (#320/#329)
 
 Status: DISTILLED; NEXT ENGINEERING HANDOFF IS #329

@@ -11602,3 +11602,20 @@ approved owner-authenticated evidence for #325–#328; then engineer #346 as its
 own shared 2D capability transaction; then verify downloaded and 3D surfaces
 one issue at a time. Do not close any issue from source inspection, local
 tests, shared-component presence, or an inaccessible editor URL.
+
+## 269am. Shared structured-2D sound foundation (#346, 2026-09-02)
+
+Status: IMPLEMENTED AND QA-READY — LOCAL-ONLY BOUNDARY
+
+Issue #346 now has a finite shared-foundation implementation. The canonical
+2D schema accepts optional `runtimeCapabilities` declarations, two fixed valid
+fixtures cover enabled and disabled sound, and the shared derivation and
+control components expose only explicitly enabled inputs. Audio and
+microphone activation occur only from their controls; failures report
+actionable status without removing the controls.
+
+Evidence: the focused frontend validator/component run passed 54 tests;
+`npm run typecheck`, `npm run lint` (existing warnings only), and `npm run
+build` passed; Django scene validation passed 49 tests. This closes only the
+shared capability foundation; route, downloaded-artifact, and deployed parity
+remain in their separate issues and are not claimed here.

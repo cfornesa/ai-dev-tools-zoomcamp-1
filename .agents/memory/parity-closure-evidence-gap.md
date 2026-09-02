@@ -71,3 +71,13 @@ returns anonymous access denied and cannot establish editor behavior. Keep
 is explained; never close from one browser observation. The source audit also
 confirmed that structured 2D declares `sound: false` while the PHP reference
 uses capability-driven sound, which is tracked as new atomic issue #346.
+Shared-foundation completion (2026-09-02): #346's local-only contract is now
+implemented and QA-ready. `schema/scene.schema.json` owns optional
+`runtimeCapabilities`; enabled/disabled canonical fixtures are validated by
+both TypeScript and Django; `structured2dCapabilities.ts` derives the finite
+control set; and `Structured2DSoundControls.tsx` activates sound/microphone
+only from explicit buttons and reports failures. The focused frontend suite
+passed 54 tests, backend scene validation passed 49 tests, and the frontend
+typecheck/lint/build passed (lint retains unrelated existing warnings). Do
+not use this as evidence for route, artifact, or deployed parity: those remain
+separate issue contracts.

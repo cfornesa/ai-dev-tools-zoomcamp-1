@@ -118,6 +118,15 @@ save, and export like any other scene field, and (unlike `Template`
 metadata) it's available even for onboarding hints on non-template
 scenes in the future if ever needed.
 
+## Runtime capabilities
+
+`runtimeCapabilities` is an optional, declarative contract for stage-local
+controls. It is intentionally separate from renderer data and defaults to
+all capabilities disabled when absent. The structured 2D sound foundation
+uses `sound`, `voiceInput`, and `microphone`; consumers must render only the
+controls explicitly enabled by this object and must activate audio or input
+from a visitor gesture.
+
 ## Referential integrity
 
 JSON Schema validates document *shape*, not cross-references within a

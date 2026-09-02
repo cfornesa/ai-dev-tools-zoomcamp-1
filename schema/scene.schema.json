@@ -84,6 +84,16 @@
       "items": { "type": "string", "minLength": 1, "maxLength": 240 },
       "maxItems": 8
     },
+    "runtimeCapabilities": {
+      "description": "Optional declarations for stage-local runtime affordances. An absent declaration means every capability is disabled.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sound": { "type": "boolean" },
+        "voiceInput": { "type": "boolean" },
+        "microphone": { "type": "boolean" }
+      }
+    },
     "randomness": {
       "type": "object",
       "additionalProperties": false,

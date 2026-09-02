@@ -10394,6 +10394,14 @@ privacy network capture, attribution, and thumbnail ZIP output. The separate
 3D lifecycle/export suite passes 3/3 and inspects both downloaded ZIP variants
 and the Published → Draft transition.
 
+Artifact execution follow-up (2026-09-02): the 3D browser coverage now
+extracts both generated ZIPs and opens them from `file://` in a fresh Chromium
+page. It proves each vendored runtime renders a canvas, opens the packaged
+Piece controls, executes Reset view, and keeps camera-only controls out of the
+Non-Camera variant. This closes the earlier weakness where ZIP source strings
+were inspected without executing the downloaded runtime; deployed artifact
+verification remains pending publication.
+
 Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)
 
 ## 263. Make Docker browser verification select and fingerprint this repository

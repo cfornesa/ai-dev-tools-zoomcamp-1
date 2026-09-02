@@ -13,6 +13,9 @@
  * inspector, code tab, AI proposals) is out of scope per the issue.
  */
 import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import JSZip from 'jszip';
 import { expect, test, type Page } from '@playwright/test';
@@ -22,6 +25,17 @@ import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
+
+async function extractBundle(zip: JSZip, prefix: string) {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
+  for (const entry of Object.values(zip.files)) {
+    if (entry.dir) continue;
+    const target = path.join(directory, entry.name);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, await entry.async('nodebuffer'));
+  }
+  return { directory, indexUrl: pathToFileURL(path.join(directory, 'index.html')).href };
+}
 
 async function expectThreeDStageChrome(page: Page) {
   const frame = page.getByTestId('scene3d-preview-canvas-frame');
@@ -155,11 +169,15 @@ test.describe('3D project creation', () => {
     // The bundle generator fetches the pinned Three.js runtime in the
     // browser. Fulfill that one request locally so this test proves the
     // actual click-to-download path without depending on a CDN.
+    const threeRuntime = await fs.readFile(
+      path.resolve(process.cwd(), 'node_modules/three/build/three.min.js'),
+      'utf8',
+    );
     await page.route('**/three@0.160.0/build/three.min.js', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/javascript',
-        body: '/* browser QA runtime fixture */',
+        body: threeRuntime,
       }),
     );
 
@@ -191,6 +209,31 @@ test.describe('3D project creation', () => {
     expect(nonCameraHtml).not.toContain('piece-theremin');
     expect(nonCameraScript).not.toContain('getUserMedia');
     expect(nonCameraScript).not.toContain('thereminEnabled');
+
+    // Execute both extracted bundles as a user would, from file://, so the
+    // acceptance proof covers the packaged runtime behavior and controls,
+    // not only source-string markers in the ZIP.
+    const artifactPage = await page.context().newPage();
+    const fullArtifact = await extractBundle(fullZip, 'creatrweb-full-3d-');
+    await artifactPage.goto(fullArtifact.indexUrl);
+    await expect(artifactPage.locator('#scene3d-canvas-host canvas')).toHaveCount(1);
+    await expect(artifactPage.getByRole('toolbar', { name: 'Piece actions' })).toBeVisible();
+    await artifactPage.getByRole('button', { name: 'Piece controls' }).click();
+    await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
+    await artifactPage.getByRole('button', { name: 'Reset view' }).click();
+    await expect(artifactPage.getByRole('button', { name: 'Enable sound' })).toBeVisible();
+
+    const nonCameraArtifact = await extractBundle(nonCameraZip, 'creatrweb-non-camera-3d-');
+    await artifactPage.goto(nonCameraArtifact.indexUrl);
+    await expect(artifactPage.locator('#scene3d-canvas-host canvas')).toHaveCount(1);
+    await artifactPage.getByRole('button', { name: 'Piece controls' }).click();
+    await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
+    await expect(artifactPage.getByRole('button', { name: 'Live mic' })).toHaveCount(0);
+    await expect(artifactPage.getByRole('button', { name: 'Camera theremin' })).toHaveCount(0);
+    await artifactPage.getByRole('button', { name: 'Reset view' }).click();
+    await artifactPage.close();
+    await fs.rm(fullArtifact.directory, { recursive: true, force: true });
+    await fs.rm(nonCameraArtifact.directory, { recursive: true, force: true });
 
     await page.goto(`/projects3d/${projectId}`);
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');

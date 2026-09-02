@@ -259,6 +259,11 @@ implementation and exact routes:
   hosts, removes the duplicate tag, and the real Chromium artifact suite
   passes 17/17 across all interaction modes and camera lifecycle/privacy
   scenarios.
+- The 3D artifact check was strengthened beyond source inspection: both ZIPs
+  are extracted and opened from `file://` in a fresh Chromium page, where the
+  canvas, Piece controls, Reset view, and Non-Camera camera-feature omission
+  are exercised. The correct-stack suite passes 3/3 with this executable
+  artifact coverage.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

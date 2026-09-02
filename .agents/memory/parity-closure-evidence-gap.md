@@ -21,3 +21,13 @@ artifact slices; use #338–#341 for route-specific publication chrome.
 When a dependency or environment blocker unrelated to user judgment ends an
 issue, task-distillation must be rerun at that issue's handoff to reconcile
 duplicates, dependency order, closure criteria, owner, and follow-up coverage.
+
+Owner-rejection re-audit (2026-09-02): the same live public route was
+inspected again and still had no `Piece actions` toolbar, screenshot,
+download, fullscreen, or publication controls. Treat any local child marked
+`ready_for_github_reconciliation` as local evidence only until the exact
+deployed revision is inspected; “ready for a comment” is not a substitute for
+passing deployed acceptance criteria. Do not infer a parent’s parity from
+child tests that ran against a different revision. The PHP reference’s stage,
+immersive, and exported-runtime contracts must be checked on the actual route
+or extracted artifact before closure.

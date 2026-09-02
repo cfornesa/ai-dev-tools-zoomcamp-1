@@ -10503,6 +10503,36 @@ suite passed 18 tests with one expected skip. This is a workflow/fixture
 reconciliation item under #321’s existing workflow scope; it is not product
 parity evidence and does not authorize fixing a later route issue in parallel.
 
+Owner rejection and fourth distillation re-audit (2026-09-02): the supplied
+production `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` was inspected again in the
+browser and still renders the legacy Preview plus sibling Demo and camera
+controls, with no stage-local screenshot, download, fullscreen, or
+Draft/Published control. The supplied private `/projects3d/...` URL is not
+authenticated in the available browser and exposes no editor DOM. The local
+checkout’s newer `PieceStageToolbar` implementation therefore cannot be
+treated as deployed parity. Route children #325–#332 are reclassified as
+local-evidence-only and remain open; their local browser passes are useful
+implementation evidence but are not closure evidence.
+
+The prior false closure is classified as an evidence-boundary/process defect:
+local source, local tests, disposable-stack tests, and historical issue
+comments were allowed to stand in for exact post-publish route/artifact
+evidence, and a broad parent was inferred from narrow child checks. The
+maintained PHP contract remains `../augment-humankind/docs/piece-surface-parity.md`
+and its `piece-stage.php`, `immersive-chrome.php`, and `piece-render.php`
+implementations/tests. Before engineering resumes, each child must state one
+exact route or artifact, one fixed fixture, named controls, a visual/DOM
+stage-descendant check, reversible publication evidence where applicable, and
+an explicit deployment revision marker. No product source or product-test
+change is authorized during this distillation increment.
+
+GitHub API access remains unavailable (`gh` cannot connect to
+`api.github.com`), and no push/publish or credential entry is authorized by
+this task. No new issue is created because existing #320 and #325–#345 cover
+the discovered surfaces; any genuinely new implementation gap must be marked
+`issue-creation-pending-authorization` with an owner and next action before
+implementation.
+
 ## 264. Add visitor-selectable instruments for each 3D sound voice
 
 Status: HANDED-OFF

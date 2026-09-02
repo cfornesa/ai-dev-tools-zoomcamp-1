@@ -33,14 +33,14 @@ as read-only behavioral reference.
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
 | [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `ready_for_github_reconciliation` | Docker image build/start and `make compose-preflight` now pass; backend image was fixed to copy `/schema`; focused `project3dLifecycle.spec.ts` browser QA passes 3/3. Post the QA evidence and close through authenticated GitHub reconciliation; no duplicate issue |
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
-| [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Dedicated authenticated Chromium route test passes 1/1: stage-local toolbar, named screenshot/download/fullscreen/publication controls, in-stage geometry, and no legacy header publication row. Focused editor/publication component regression passes 57/57. Post evidence and close through authenticated GitHub reconciliation; no duplicate issue |
-| [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Existing exact authenticated Chromium test passes 1/1: stage-local publication control publishes and returns to Draft, legacy header publication row is absent, and AI editor remains reachable. Post evidence and close through authenticated GitHub reconciliation; no duplicate issue |
-| [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Current authenticated Chromium lifecycle suite passes 4/4, including manual editor mount, shared stage chrome, publication to public and back to Draft, and no regression in the immersive route. Post evidence and close through authenticated GitHub reconciliation; no duplicate issue |
-| [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Current authenticated Chromium lifecycle suite passes 4/4, including AI 3D editor mount and shared stage chrome; publication and immersive regressions remain green. Post evidence and close through authenticated GitHub reconciliation; no duplicate issue |
-| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Corrected stage-local publication selectors/status labels and current public-route contract; full `publishingAndRemix.spec.ts` passes 24/24, including `/p/:id`, gallery/privacy, screenshot/download/fullscreen, camera/demo fallback, and remix boundaries. Post evidence and close through authenticated GitHub reconciliation; deployed revision remains unverified |
-| [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Current authenticated/disposable Chromium lifecycle suite passes 4/4, including exact `/p3d/:id` public stage chrome, named controls, publication transition, and immersive regression. Post evidence and close through authenticated GitHub reconciliation; production revision remains unverified |
-| [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Dedicated `embed2dStageChrome.spec.ts` passes 1/1 against disposable PostgreSQL/Django/Vite/Chromium: creates and publishes a fixture, verifies no app shell/nav, stage-local screenshot/fullscreen/download controls, download menu entries, and toolbar containment. Post evidence and close through authenticated GitHub reconciliation; production revision remains unverified |
-| [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Dedicated `embed3dStageChrome.spec.ts` passes 1/1 against disposable PostgreSQL/Django/Vite/Chromium: creates and publishes a fixture, verifies no app shell/nav, 3D stage-local sound/piece/steer/gesture/screenshot/fullscreen controls, and both ZIP download variants. Post evidence and close through authenticated GitHub reconciliation; production revision remains unverified |
+| [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `local_evidence_only` | Dedicated authenticated Chromium route test passes 1/1 locally, but the owner’s deployed editor was not authenticated/inspected. Local evidence cannot close this route; after authorized publish, rerun the exact route and compare the rendered control geometry against the PHP stage contract |
+| [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_evidence_only` | Exact authenticated Chromium test passes 1/1 locally, but no deployed AI editor evidence exists. Keep open until the published revision is authenticated and its stage-local publication/authoring controls are inspected |
+| [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but the supplied deployed editor URL is anonymous/unavailable. Keep open until an authenticated owner session verifies the exact deployed route |
+| [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but no deployed AI 3D editor evidence exists. Keep open until the published revision is authenticated and inspected |
+| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `local_evidence_only` | Local disposable publishing/remix suite passes 24/24, while the supplied production route visibly serves the old sibling Demo/camera panel with no stage toolbar. This is contradicted deployed evidence, not closure; publish the intended revision and rerun the exact URL |
+| [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but no deployed public 3D route evidence exists. Keep open until the intended revision is published and the exact anonymous route is inspected |
+| [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `local_evidence_only` | Dedicated local browser test passes 1/1, but production embed behavior is unverified and the public 2D route is demonstrably stale. Publish and inspect the exact embed entry point before closure |
+| [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Dedicated local browser test passes 1/1, but production embed behavior is unverified. Publish and inspect the exact embed entry point before closure |
 | [#333](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/333) | Verify regular immersive 3D `/immersive/p3d/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
 | [#334](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/334) | Verify custom immersive 3D `/immersive/p3d/:id?embed=1` | Child of #320; one route/variant | `open` | Requires deployment and browser evidence |
 | [#335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/335) | Verify CMS immersive 3D `/immersive/p3d/:id?embed=1&cms=1` | Child of #320; one route/variant | `open` | Requires deployment and browser evidence |
@@ -515,6 +515,80 @@ unavailable (`gh issue view` could not connect to `api.github.com`) and the
 existing issue map covers the discovered work. The next handoff is to groom
 exactly one existing route slice after deployment access and fixture
 availability are resolved; no product engineering begins from this re-audit.
+
+## Fourth distillation re-audit: owner-reported live mismatch (2026-09-02)
+
+The owner explicitly rejected the prior local-only closure posture and
+reported that the supplied live editor/public URLs still lack the requested
+controls. A fresh direct browser inspection agrees:
+
+- `https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`
+  exposes `Preview` and a sibling `Demo and camera controls` region. Its DOM
+  has no `Piece actions` toolbar, screenshot button, download menu, fullscreen
+  button, or visible Draft/Published control.
+- `https://animate.creatrweb.com/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`
+  is not authenticated in the available browser session and returns no
+  inspectable editor DOM. It therefore proves neither the editor toolbar nor
+  the reversible publication state.
+- The current checkout contains `PieceStageToolbar`, stage-local 2D/3D
+  consumers, and publication controls, but the branch is not the deployed
+  revision. Local source, unit tests, disposable-stack browser tests, and
+  historical issue comments cannot override the live contradiction.
+
+### False-closure cause and reclassification
+
+The prior process conflated four different statements: “the source contains
+an implementation,” “a local test passes,” “a disposable stack serves that
+source,” and “the exact deployed route has the behavior.” Only the last
+statement can satisfy a deployed-route criterion. A second error inferred the
+parent’s parity from narrow child checks even though the PHP reference defines
+one cross-surface contract for regular, embed, immersive, and downloaded
+surfaces. The following children are therefore explicitly `local_evidence_only`
+and remain open: #325–#332. They are not ready to close or merely waiting for
+a GitHub comment.
+
+The shared implementation must be re-audited against the maintained PHP
+reference before route closure. In particular, compare the React toolbar and
+downloaded HTML/ZIP runtime with:
+
+- `../augment-humankind/public/app/views/partials/piece-stage.php` for the
+  regular stage overlay, screenshot, download choices, immersive entry, and
+  Piece controls disclosure;
+- `../augment-humankind/public/app/helpers/immersive-chrome.php` for the
+  compact icon sizing, overlay anchoring, control ordering, explicit
+  capability gating, and fullscreen behavior; and
+- `../augment-humankind/public/app/helpers/piece-render.php` plus the
+  reference runtime tests for the functional controls that must survive in
+  extracted Full/Non-Camera downloads.
+
+### Closure contracts after this re-audit
+
+No parity child may move beyond `local_evidence_only` until its exact route or
+artifact is tested from the revision actually served to the owner. Each route
+contract must include a finite named checklist and a visual/DOM assertion that
+the compact controls are descendants of the stage, not simply present
+somewhere on the page. Each downloaded-artifact contract must open the
+extracted entry point and exercise the controls, not only grep generated
+strings. Publication contracts must show Draft → Published → Draft on the
+same owner fixture and verify anonymous visibility changes between states.
+
+The requested deployment is a user-judgment boundary: no push, publish, or
+credential entry is authorized by this re-audit. GitHub API access is also
+unavailable (`gh` cannot connect to `api.github.com`), so no new issue or
+closure comment can be created in this pass. Existing issue numbers are
+reused; any genuinely new implementation gap found during the reference
+comparison must be recorded as `issue-creation-pending-authorization` with
+owner and next action before engineering continues.
+
+### Distillation exit decision
+
+Distillation is complete for this re-audit only after the source/reference
+comparison is captured in the matrix above, the local-only child statuses are
+reconciled, and exactly one implementation issue is named for the next
+backlog-session transaction. The next issue must be a shared capability or
+one route—not the broad #320 parent—and must carry its own focused test,
+deployment evidence boundary, and explicit out-of-scope surfaces. No product
+source or product-test edits are authorized by this section.
 
 ## Blocker reconciliation (2026-09-02)
 

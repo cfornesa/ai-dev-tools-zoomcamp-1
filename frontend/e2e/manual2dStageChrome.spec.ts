@@ -24,6 +24,35 @@ test.describe('manual 2D editor stage chrome', () => {
     await page.waitForURL(/\/projects\/[^/]+$/);
 
     const stage = page.locator('.piece-stage-shell');
+    const canvas = page.getByTestId('scene-canvas');
+    const authoringToolbar = canvas.getByRole('toolbar', { name: 'Editor actions' });
+    await expect(authoringToolbar).toBeVisible();
+    for (const label of [
+      'Add circle',
+      'Add rectangle',
+      'Add line',
+      'Add polygon',
+      'Undo',
+      'Redo',
+      'Duplicate selected shape',
+      'Delete selected shape',
+      'Add layer',
+      'Combine into group',
+      'Ungroup selected',
+      'Delete selected group',
+      'Save',
+    ]) {
+      await expect(authoringToolbar.getByRole('button', { name: label })).toBeVisible();
+    }
+    await expect(page.locator('.editor-workspace-header .editor-toolbar')).toHaveCount(0);
+
+    const initialShapeCount = await page.getByText(/shape\(s\) in the working copy\./).innerText();
+    await authoringToolbar.getByRole('button', { name: 'Add circle' }).click();
+    await expect(page.getByText(/1 shape\(s\) in the working copy\./)).toBeVisible();
+    await expect(authoringToolbar.getByRole('button', { name: 'Undo' })).toBeEnabled();
+    await authoringToolbar.getByRole('button', { name: 'Undo' }).click();
+    await expect(page.getByText(initialShapeCount)).toBeVisible();
+
     const toolbar = stage.getByRole('toolbar', { name: 'Piece actions' });
     await expect(toolbar).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
@@ -40,6 +69,19 @@ test.describe('manual 2D editor stage chrome', () => {
     expect(toolbarBox!.x).toBeGreaterThanOrEqual(stageBox!.x);
     expect(toolbarBox!.y).toBeGreaterThanOrEqual(stageBox!.y);
     expect(toolbarBox!.x + toolbarBox!.width).toBeLessThanOrEqual(stageBox!.x + stageBox!.width);
+
+    const authoringBox = await authoringToolbar.boundingBox();
+    const canvasBox = await canvas.boundingBox();
+    expect(authoringBox).not.toBeNull();
+    expect(canvasBox).not.toBeNull();
+    expect(authoringBox!.x).toBeGreaterThanOrEqual(canvasBox!.x);
+    expect(authoringBox!.y).toBeGreaterThanOrEqual(canvasBox!.y);
+    expect(authoringBox!.x + authoringBox!.width).toBeLessThanOrEqual(
+      canvasBox!.x + canvasBox!.width,
+    );
+    expect(authoringBox!.y + authoringBox!.height).toBeLessThanOrEqual(
+      canvasBox!.y + canvasBox!.height,
+    );
 
     const chrome = await toolbar.evaluate((element) => {
       const toolbarStyle = getComputedStyle(element);

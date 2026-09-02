@@ -10596,6 +10596,17 @@ and exact revision evidence. Existing #320/#321 cover the deployment boundary;
 no duplicate issue is created, and GitHub issue updates remain pending because
 `gh issue list` cannot connect to `api.github.com`.
 
+Manual 2D editor implementation correction (#325/#338, 2026-09-02): the
+strengthened browser contract found a 14px local overflow in the stage-local
+authoring toolbar because its width limit did not include padding and border.
+`box-sizing: border-box` corrected the product CSS. The same test now proves
+all finite authoring controls are inside the canvas, Add circle → Undo works,
+runtime/publication controls remain stage-local, and no header duplicate
+exists. Focused React coverage passes 46/46, TypeScript/format checks pass,
+and disposable browser QA passes 1/1. This remains local evidence only; the
+deployed editor/public routes still require exact published-revision
+verification and authenticated GitHub reconciliation.
+
 Portable 2D runtime implementation slice (#336, 2026-09-02): the existing
 isolated Chromium artifact suite passed 17/17 through the Docker-backed
 browser runner after a direct macOS Chromium launch was blocked by a

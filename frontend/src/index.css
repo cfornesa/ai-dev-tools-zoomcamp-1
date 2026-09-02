@@ -2753,6 +2753,7 @@ select.ai-proposal-field-full-width {
    own size still needs to stay fixed regardless of how much content is
    below it -- that's what `.scene3d-preview-canvas-frame` is for. */
 .scene3d-preview {
+  position: relative;
   width: 100%;
 }
 
@@ -2898,19 +2899,40 @@ select.ai-proposal-field-full-width {
   margin-top: 8px;
 }
 
-/* Issue #310: the "Piece controls" settings panel -- a plain non-modal
-   disclosure (see Scene3DPreview.tsx's own doc comment for why not a
-   dialog), styled as a contained box matching this app's existing panel
-   chrome (`.editor-panel`'s own border/radius/padding language) rather
-   than floating unstyled. */
+/* Issue #310: the "Piece controls" settings panel is an opt-in stage-local
+   popover, matching the reference's compact piece chrome rather than adding
+   another bulky row below the canvas. */
 .scene3d-sound-settings {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  width: min(360px, calc(100% - 24px));
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 8px;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  background: color-mix(in srgb, var(--code-bg) 96%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.scene3d-preview [data-testid='gesture-camera-control'] {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  width: min(360px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--code-bg) 96%, transparent);
+  box-shadow: var(--shadow);
 }
 
 .scene3d-camera-overlay-video {

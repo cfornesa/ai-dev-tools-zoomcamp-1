@@ -154,20 +154,12 @@ import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
  *
  * The outer element this component returns (`containerRef`, `.scene3d-preview`)
  * must stay auto-height: it's the target `useFullscreenToggle` requests
- * fullscreen on, and everything meant to stay visible/usable while
- * fullscreen (the button row, the Live camera panel) must be its
- * descendant. It used to also carry the canvas's own fixed 360px height
- * directly -- with the default (visible) overflow, that let the button
- * row and (once gesture control was on) the Live camera panel's text
- * spill past that 360px box without the box's own height ever reflecting
- * it, so a caller's next sibling in the DOM (`Project3DWorkspace.tsx`'s
- * `Outline3DInspector`) started rendering right at the 360px mark and
- * visually overlapped whatever had spilled over. The fixed height now
- * lives on a dedicated inner `.scene3d-preview-canvas-frame` (holding only
- * the canvas and its video overlay), sized/observed via `canvasFrameRef`
- * rather than `containerRef` -- so the canvas keeps a stable size
- * regardless of how much content renders below it, and the outer
- * container's own height always reflects everything it actually contains.
+ * fullscreen on, and every control must remain its descendant while
+ * fullscreen is active. It used to also carry the canvas's own fixed 360px
+ * height directly, which let controls spill below it and overlap the next
+ * sibling. The fixed height now lives on a dedicated inner
+ * `.scene3d-preview-canvas-frame`; the opt-in settings panels are positioned
+ * over that frame so the stage remains compact without clipping.
  *
  * ## Sound: master enable/volume (issue #306)
  *
@@ -434,10 +426,8 @@ function Scene3DPreview({
   useEffect(() => {
     const canvas = canvasRef.current;
     // Issue #299: sized from `canvasFrameRef` (the fixed-height box that
-    // wraps only the canvas), not `containerRef` (the outer element,
-    // which must stay auto-height so the button row and gesture-control
-    // panel below the canvas are never clipped/overlapped by a sibling --
-    // see `.scene3d-preview`'s own doc comment in `index.css`).
+    // wraps only the canvas), not `containerRef` (the outer element, which
+    // also owns the stage-local toolbar and opt-in settings overlays).
     // `containerRef` remains the fullscreen target (`useFullscreenToggle`
     // below): the "Exit fullscreen" button and every other control must
     // stay a descendant of whatever element enters native fullscreen, or
@@ -742,15 +732,9 @@ function Scene3DPreview({
           gestureGuide={showGestureControl ? <HandGestureGuideDialog /> : undefined}
         />
       </div>
-      {/* Issue #310: "Piece controls" settings panel -- consolidates
-          keyboard/mic/camera-theremin toggles and the volume slider
-          (issues #307/#308/#309/#306) into one surface, matching the
-          reference's own "Piece controls" popover. A plain non-modal
-          disclosure (not a dialog like `HandGestureGuideDialog.tsx`) --
-          these are controls a user adjusts *while* interacting with the
-          piece, so trapping focus/blocking the canvas behind a modal
-          would work against that, unlike the gesture guide's one-shot
-          read-then-dismiss content. */}
+      {/* Issue #310: "Piece controls" settings panel -- an opt-in,
+          stage-local non-modal popover that consolidates keyboard/mic/
+          camera-theremin toggles and the volume slider. */}
       {showSoundControl && soundEnabled && showSoundSettings && (
         <div
           id="scene3d-sound-settings-panel"

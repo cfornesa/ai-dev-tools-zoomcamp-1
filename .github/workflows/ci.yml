@@ -248,9 +248,9 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Install Chromium and Linux browser dependencies
+      - name: Install Playwright browsers and Linux dependencies
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Write CI environment file
         # globalSetup deliberately uses uv's --env-file behavior, matching

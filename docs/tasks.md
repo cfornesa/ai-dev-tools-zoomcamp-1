@@ -11526,3 +11526,21 @@ product defect or user-judgment decision. Exact next action for #330 is to
 publish/expose one deterministic 3D fixture, then rerun its anonymous route
 matrix and reconcile before closure. The manifest retains #330 as BLOCKED and
 selects #331 as the next groomed issue.
+
+## 269aj. Fresh distillation after #332 published-fixture blocker (2026-09-02)
+
+Status: DISTILLATION COMPLETE — #332 BLOCKED; NEXT INDEPENDENT ISSUE #336
+
+The manifest was rechecked after #332's deployment-boundary failure. #329 and
+#331 are closed with exact published 2D evidence. #330 and #332 both remain
+open because no anonymous published 3D fixture exists; their route contracts
+are distinct and neither is being closed from local evidence. The 3D route
+children #333–#335 and downloaded 3D artifact #337 depend on that same fixture
+and remain deferred. #336 is independent and can use the published 2D fixture.
+
+No duplicate, parent-wide criterion, or further decomposition was found. The
+blocker is a verification/deployment dependency unrelated to user judgment;
+its owner and next action are recorded on #330 and #332: publish or expose one
+deterministic 3D fixture, then rerun each exact route transaction separately.
+No product source or product-test changes are authorized by this distillation
+step. The next groomed issue is #336, the standalone 2D artifact contract.

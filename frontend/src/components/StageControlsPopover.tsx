@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Stage-local disclosure for controls that are too detailed to live in the
@@ -10,11 +10,17 @@ import { useState } from 'react';
 export default function StageControlsPopover({
   children,
   label = 'Piece controls',
+  resetKey,
 }: {
   children: ReactNode;
   label?: string;
+  resetKey?: string | number;
 }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [resetKey]);
 
   return (
     <div className="piece-stage-controls">
@@ -29,7 +35,13 @@ export default function StageControlsPopover({
       >
         <span aria-hidden="true">☰</span>
       </button>
-      <div role="group" aria-label={label} className="piece-stage-controls-panel" hidden={!open}>
+      <div
+        role="group"
+        aria-label={label}
+        aria-hidden={!open}
+        className="piece-stage-controls-panel"
+        hidden={!open}
+      >
         {children}
       </div>
     </div>

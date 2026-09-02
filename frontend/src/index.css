@@ -2961,6 +2961,12 @@ select.ai-proposal-field-full-width {
   box-shadow: var(--shadow);
 }
 
+.scene3d-sound-settings-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .scene3d-preview [data-testid='gesture-camera-control'] {
   position: absolute;
   top: 12px;

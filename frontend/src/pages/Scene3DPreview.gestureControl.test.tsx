@@ -152,6 +152,7 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: /enable camera/i }));
 
     // Two frames with a moved hand -- the first just seeds "previous
@@ -214,13 +215,13 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
     expect(outer.contains(canvasFrame)).toBe(true);
 
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     const gestureRegion = screen.getByTestId('gesture-camera-control');
-    // The Live camera panel is a *sibling* of the canvas frame (both
-    // direct children of the auto-height outer container), not nested
-    // inside the fixed-height box -- so its content can never be clipped
-    // by, or spill silently past, that box.
+    // The Live camera panel is now inside the stage-local Piece controls
+    // disclosure, which remains a descendant of the canvas frame so the
+    // complete authored-piece chrome travels with the stage.
     expect(outer.contains(gestureRegion)).toBe(true);
-    expect(canvasFrame.contains(gestureRegion)).toBe(false);
+    expect(canvasFrame.contains(gestureRegion)).toBe(true);
     expect(container.querySelector('.scene3d-preview')).not.toHaveClass(
       'scene3d-preview-canvas-frame',
     );

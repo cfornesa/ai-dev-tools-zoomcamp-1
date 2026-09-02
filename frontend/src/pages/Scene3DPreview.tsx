@@ -8,6 +8,7 @@ import CameraControl, {
   type CameraStatus,
 } from '../components/CameraControl';
 import PieceStageToolbar from '../components/PieceStageToolbar';
+import StageControlsPopover from '../components/StageControlsPopover';
 import { THREE_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import {
   categorizeMicError,
@@ -232,10 +233,6 @@ function Scene3DPreview({
   if (sonicEngineRef.current === null) sonicEngineRef.current = createSonicEngine();
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundVolume, setSoundVolume] = useState(50);
-  // Issue #310: the "Piece controls" settings panel's own open/closed
-  // state -- independent of `soundEnabled` itself (the always-visible
-  // mute toggle).
-  const [showSoundSettings, setShowSoundSettings] = useState(false);
   useEffect(() => {
     const engine = sonicEngineRef.current;
     return () => engine?.dispose();
@@ -251,7 +248,6 @@ function Scene3DPreview({
       setMicState('idle');
       setMicFailure(null);
       setThereminEnabled(false);
-      setShowSoundSettings(false);
       return;
     }
     await engine.enable();
@@ -704,19 +700,107 @@ function Scene3DPreview({
             ) : undefined
           }
           controlsControl={
-            showSoundControl && soundEnabled ? (
-              <button
-                type="button"
-                className="piece-stage-icon-button"
-                title="Piece controls"
-                aria-label={showSoundSettings ? 'Hide sound settings' : 'Sound settings'}
-                aria-haspopup="true"
-                aria-expanded={showSoundSettings}
-                onClick={() => setShowSoundSettings((current) => !current)}
-              >
-                <span aria-hidden="true">☰</span>
-              </button>
-            ) : undefined
+            <StageControlsPopover resetKey={soundEnabled ? 'sound-enabled' : 'sound-disabled'}>
+              {showSoundControl && soundEnabled && (
+                <div className="scene3d-sound-settings-inline">
+                  <div className="editor-camera-overlay-control">
+                    <label htmlFor="scene3d-sound-volume">Sound volume</label>
+                    <input
+                      id="scene3d-sound-volume"
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={soundVolume}
+                      aria-valuetext={`${soundVolume}%`}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setSoundVolume(next);
+                        sonicEngineRef.current?.setVolume(next);
+                      }}
+                    />
+                  </div>
+                  <div className="editor-tool-group">
+                    <button
+                      type="button"
+                      aria-pressed={keyboardEnabled}
+                      onClick={() => setKeyboardEnabled((current) => !current)}
+                    >
+                      {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={micState === 'active'}
+                      disabled={micState === 'requesting'}
+                      onClick={() => void handleToggleMic()}
+                    >
+                      {micState === 'requesting'
+                        ? 'Requesting mic…'
+                        : micState === 'active'
+                          ? 'Stop live mic'
+                          : 'Live mic'}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={thereminEnabled}
+                      onClick={handleToggleTheremin}
+                    >
+                      {thereminEnabled ? 'Stop camera theremin' : 'Camera theremin'}
+                    </button>
+                  </div>
+                  {(micState === 'requesting' || micState === 'active') && (
+                    <p role="status" aria-live="polite" data-testid="mic-privacy-notice">
+                      Audio from your microphone is processed locally in your browser. It is never
+                      recorded, stored, or uploaded.
+                    </p>
+                  )}
+                  {micState === 'error' && micFailure && (
+                    <p role="alert" aria-live="assertive" data-testid="mic-error">
+                      {micRecoveryMessageFor(micFailure)}
+                    </p>
+                  )}
+                </div>
+              )}
+              {((showGestureControl && gestureControlEnabled) ||
+                (showSoundControl && thereminEnabled)) && (
+                <div
+                  role="region"
+                  aria-label="Gesture camera control"
+                  data-testid="gesture-camera-control"
+                >
+                  <CameraControl
+                    onFrame={handleGestureFrame}
+                    createProvider={createGestureCameraProvider}
+                    onStatusChange={setGestureCameraStatus}
+                    onStreamChange={setGestureCameraStream}
+                  />
+                  {gestureCameraStatus === 'active' && (
+                    <div className="editor-camera-overlay-control">
+                      <label htmlFor="scene3d-camera-overlay-opacity">Camera overlay opacity</label>
+                      <input
+                        id="scene3d-camera-overlay-opacity"
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={Math.round(cameraOverlayOpacity * 100)}
+                        aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                        onChange={(event) => setOpacity(Number(event.target.value) / 100)}
+                      />
+                      <label htmlFor="scene3d-camera-overlay-mirror">
+                        <input
+                          id="scene3d-camera-overlay-mirror"
+                          type="checkbox"
+                          checked={cameraOverlayMirrored}
+                          onChange={(event) => setMirrored(event.target.checked)}
+                        />
+                        Mirror camera overlay
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+            </StageControlsPopover>
           }
           gestureControl={
             showGestureControl ? (
@@ -746,108 +830,10 @@ function Scene3DPreview({
           editorControls={editorControls}
         />
       </div>
-      {/* Issue #310: "Piece controls" settings panel -- an opt-in,
-          stage-local non-modal popover that consolidates keyboard/mic/
-          camera-theremin toggles and the volume slider. */}
-      {showSoundControl && soundEnabled && showSoundSettings && (
-        <div
-          id="scene3d-sound-settings-panel"
-          role="group"
-          aria-label="Piece controls"
-          className="scene3d-sound-settings"
-        >
-          <div className="editor-camera-overlay-control">
-            <label htmlFor="scene3d-sound-volume">Sound volume</label>
-            <input
-              id="scene3d-sound-volume"
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={soundVolume}
-              aria-valuetext={`${soundVolume}%`}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSoundVolume(next);
-                sonicEngineRef.current?.setVolume(next);
-              }}
-            />
-          </div>
-          <div className="editor-tool-group">
-            <button
-              type="button"
-              aria-pressed={keyboardEnabled}
-              onClick={() => setKeyboardEnabled((current) => !current)}
-            >
-              {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
-            </button>
-            <button
-              type="button"
-              aria-pressed={micState === 'active'}
-              disabled={micState === 'requesting'}
-              onClick={() => void handleToggleMic()}
-            >
-              {micState === 'requesting'
-                ? 'Requesting mic…'
-                : micState === 'active'
-                  ? 'Stop live mic'
-                  : 'Live mic'}
-            </button>
-            <button type="button" aria-pressed={thereminEnabled} onClick={handleToggleTheremin}>
-              {thereminEnabled ? 'Stop camera theremin' : 'Camera theremin'}
-            </button>
-          </div>
-          {(micState === 'requesting' || micState === 'active') && (
-            <p role="status" aria-live="polite" data-testid="mic-privacy-notice">
-              Audio from your microphone is processed locally in your browser. It is never recorded,
-              stored, or uploaded.
-            </p>
-          )}
-          {micState === 'error' && micFailure && (
-            <p role="alert" aria-live="assertive" data-testid="mic-error">
-              {micRecoveryMessageFor(micFailure)}
-            </p>
-          )}
-        </div>
-      )}
       {screenshotError && (
         <p role="alert" aria-live="assertive" data-testid="screenshot-error">
           {screenshotError}
         </p>
-      )}
-      {((showGestureControl && gestureControlEnabled) || (showSoundControl && thereminEnabled)) && (
-        <div role="region" aria-label="Gesture camera control" data-testid="gesture-camera-control">
-          <CameraControl
-            onFrame={handleGestureFrame}
-            createProvider={createGestureCameraProvider}
-            onStatusChange={setGestureCameraStatus}
-            onStreamChange={setGestureCameraStream}
-          />
-          {gestureCameraStatus === 'active' && (
-            <div className="editor-camera-overlay-control">
-              <label htmlFor="scene3d-camera-overlay-opacity">Camera overlay opacity</label>
-              <input
-                id="scene3d-camera-overlay-opacity"
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={Math.round(cameraOverlayOpacity * 100)}
-                aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
-                onChange={(event) => setOpacity(Number(event.target.value) / 100)}
-              />
-              <label htmlFor="scene3d-camera-overlay-mirror">
-                <input
-                  id="scene3d-camera-overlay-mirror"
-                  type="checkbox"
-                  checked={cameraOverlayMirrored}
-                  onChange={(event) => setMirrored(event.target.checked)}
-                />
-                Mirror camera overlay
-              </label>
-            </div>
-          )}
-        </div>
       )}
     </div>
   );

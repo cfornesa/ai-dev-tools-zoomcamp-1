@@ -10581,6 +10581,17 @@ downloaded-runtime behavior remains #337. This is local implementation
 evidence only; #333 remains open until the exact published immersive route is
 authenticated and inspected.
 
+Portable 2D runtime implementation slice (#336, 2026-09-02): the existing
+isolated Chromium artifact suite passed 17/17 through the Docker-backed
+browser runner after a direct macOS Chromium launch was blocked by a
+Mach-port permission error before test execution. The suite verifies extracted
+standalone HTML, demo-only/camera/combined controls, permission lifecycle,
+attribution, content exclusion, pinned dependencies, and 2D ZIP output. The
+environment blocker was reconciled with no new dependency or duplicate issue.
+This is local implementation evidence only; #336 remains open until the
+exact published download is verified and the issue can be reconciled through
+authenticated GitHub access.
+
 Custom immersive 3D implementation slice (#334, 2026-09-02): the dedicated
 `immersive3dCustomStageChrome.spec.ts` browser transaction passed 1/1 against
 the disposable PostgreSQL/Django/Vite/Chromium stack. It verifies the exact

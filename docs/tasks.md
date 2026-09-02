@@ -10851,6 +10851,22 @@ Ran the configured Ruff formatter with no behavior change; `make check` now
 passes all backend and frontend gates. The issue remains open until the
 corresponding QA/status reconciliation is posted to GitHub.
 
+## 267. Clarify immersive 3D hand-gesture movement scope
+
+Status: BLOCKED ON PRODUCT JUDGMENT
+
+GitHub issue: [#344](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/344)
+
+The maintained PHP reference describes a five-step hand interaction including
+bounded forward/backward travel and sideways strafe. The React implementation
+currently supports the shipped orbit/zoom gesture only; it does not have an
+approved threshold, coordinate mapping, or safe-stop contract for movement.
+This task is therefore not implementation-ready. Before engineering, the owner
+must choose either (a) a finite movement/strafe contract with thresholds and
+fallback behavior, or (b) an explicit N/A boundary for this product. No
+environmental blocker exists, so fresh dependency distillation is not required
+for this judgment blocker.
+
 ## 266. Verify portable 3D Full/Non-Camera downloads
 
 Status: LOCAL IMPLEMENTATION VERIFIED; DEPLOYED/GITHUB RECONCILIATION PENDING

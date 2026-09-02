@@ -26,9 +26,13 @@ async function expectThreeDStageChrome(page: Page) {
   await expect(toolbar).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Piece controls' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
+
+  await toolbar.getByRole('button', { name: 'Piece controls' }).click();
+  await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
 
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
   await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();

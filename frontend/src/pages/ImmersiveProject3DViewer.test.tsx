@@ -12,7 +12,7 @@ import ImmersiveProject3DViewer from './ImmersiveProject3DViewer';
  * counterpart of `PublicProject3DViewer.test.tsx`'s own load-state
  * coverage (same anonymous-reachable, 404-undifferentiated conventions),
  * scoped to what's actually new here: rendering via `Scene3DPreview.tsx`
- * with `flyControls` enabled and `showGestureControl` disabled.
+ * with `flyControls` enabled and the shared gesture controls available.
  */
 
 vi.mock('../api/projects3d');
@@ -84,10 +84,8 @@ describe('ImmersiveProject3DViewer load states', () => {
     expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
-    // The gesture-camera-control toggle is disabled here (out of scope
-    // per this issue's own scope note -- hand-tracking-driven fly steering
-    // is a deliberate v1 boundary, not implemented).
-    expect(screen.queryByRole('button', { name: /steer the piece/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /steer the piece/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /show hand gesture guide/i })).toBeInTheDocument();
   });
 
   it('shows a safe, undifferentiated message for a 404 (never-existed or not public)', async () => {

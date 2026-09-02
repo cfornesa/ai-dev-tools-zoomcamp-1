@@ -27,16 +27,11 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * `requestPointerLock` call anywhere in its source) -- this is a
  * first-person *camera style*, not a VR-headset feature.
  *
- * ## Scoped down from the reference on purpose
- *
- * The reference's immersive route also lets the same webcam hand-tracking
- * pipeline that drives "steer the piece"/the camera theremin (#294/#309)
- * steer this free-fly camera too. The reference's own newer TypeScript
- * port (a sibling repo the same investigation found) already dropped that
- * tie-in when porting off the original PHP/A-Frame stack -- kept here as
- * the same deliberate v1 scope boundary: mouse + arrow-key fly only, no
- * hand-tracking integration. A-Frame itself is irrelevant to this port --
- * this app's 3D document family only ever renders through Three.js.
+ * The immersive route reuses the same hand-tracking controls as the normal
+ * 3D piece surface. That keeps "steer the piece" and its guide available in
+ * both views while arrow-key fly mode adds immersive camera motion. A-Frame
+ * itself is irrelevant to this port -- this app's 3D document family only
+ * ever renders through Three.js.
  *
  * ## A real separate page, opened in a new tab
  *
@@ -140,7 +135,6 @@ function ImmersiveProject3DViewer() {
           <Scene3DPreview
             scene={readyProject.current_version.scene_json as unknown as Scene3DDocument}
             screenshotBaseName={readyProject.title}
-            showGestureControl={false}
             flyControls
             onDownload={(variant) => void handleDownload(variant)}
           />

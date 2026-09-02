@@ -28,7 +28,7 @@ as read-only behavioral reference.
 
 | Issue | Goal / scope | Dependencies / order | Status | Blocker / next action |
 | --- | --- | --- | --- | --- |
-| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome and capability contract | Parent integration gate; decomposed into #295, #306, #325–#345 | `in_progress` | Live re-audit FAIL: supplied public 2D URL still has legacy sibling controls; supplied 3D editor URL is unavailable anonymously. Publish current revision, then process #325–#337 exact-route/artifact verification before parent closure |
+| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome and capability contract | Parent integration gate; decomposed into #295, #306, #325–#345 | `distillation_required` | Owner re-audit confirms deployed public 2D still has the legacy sibling-panel shell and deployed 3D editor is unavailable anonymously. Re-groom every child against the exact PHP contract, verify the published revision, and do not infer closure from local source/tests |
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Superseded authored-piece parity umbrella | Historical parent; replaced by #320 and closure-sized children | `closed_not_planned` | Historical reference only; do not use as a closure unit |
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
 | [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `ready_for_github_reconciliation` | Docker image build/start and `make compose-preflight` now pass; backend image was fixed to copy `/schema`; focused `project3dLifecycle.spec.ts` browser QA passes 3/3. Post the QA evidence and close through authenticated GitHub reconciliation; no duplicate issue |
@@ -37,7 +37,7 @@ as read-only behavioral reference.
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_evidence_only` | Exact authenticated Chromium test passes 1/1 locally, but no deployed AI editor evidence exists. Keep open until the published revision is authenticated and its stage-local publication/authoring controls are inspected |
 | [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but the supplied deployed editor URL is anonymous/unavailable. Keep open until an authenticated owner session verifies the exact deployed route |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but no deployed AI 3D editor evidence exists. Keep open until the published revision is authenticated and inspected |
-| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `local_evidence_only` | Local disposable publishing/remix suite passes 24/24, while the supplied production route visibly serves the old sibling Demo/camera panel with no stage toolbar. This is contradicted deployed evidence, not closure; publish the intended revision and rerun the exact URL |
+| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `re_audit_required` | Owner-supplied production route visibly serves the old sibling Demo/camera panel with no stage toolbar, screenshot, download, fullscreen, or publication controls. Local 24/24 evidence is contradicted and cannot close this route |
 | [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but no deployed public 3D route evidence exists. Keep open until the intended revision is published and the exact anonymous route is inspected |
 | [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `local_evidence_only` | Dedicated local browser test passes 1/1, but production embed behavior is unverified and the public 2D route is demonstrably stale. Publish and inspect the exact embed entry point before closure |
 | [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Dedicated local browser test passes 1/1, but production embed behavior is unverified. Publish and inspect the exact embed entry point before closure |
@@ -58,6 +58,62 @@ as read-only behavioral reference.
 | [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | Depends on #306/#310; route/artifact evidence remains #327–#337 | `handed-off` | Local implementation and QA pass; GitHub API unavailable for required QA comment/closure. Retry authenticated issue reconciliation; do not duplicate the issue |
 
 ## Distillation handoff gate (2026-09-02)
+
+## Owner-reported parity re-audit (2026-09-02)
+
+The owner’s current report is treated as authoritative review evidence, not
+as a request to reinterpret local test results. Direct inspection of the
+supplied deployed public URL still shows the legacy shell: the Preview canvas
+has a sibling “Live camera”/“Demo signal controls” region, with no visible
+stage-local screenshot, download, fullscreen, or publication controls. The
+supplied deployed 3D editor URL is unavailable anonymously, so its editor
+controls and Draft/Published transition remain unverified. The checkout’s
+React source contains newer stage-local components, but source, localhost,
+and disposable-stack evidence cannot prove that the deployed revision contains
+them.
+
+Root cause of the prior false closures: local implementation, focused tests,
+disposable browser runs, and live/deployed verification were conflated; a
+shared toolbar was treated as proof for every consuming surface; and parent or
+narrow child issue status was treated as completion without exact-route or
+download evidence. This re-audit resets the affected parity work to
+`re_audit_required`/local-only evidence and preserves #320 as a roll-up, not a
+closure unit.
+
+Required re-groomed closure matrix:
+
+| Surface | Reusable issue | Exact closure proof | Boundary |
+| --- | --- | --- | --- |
+| Manual 2D editor | #325/#338 | Authenticated published `/projects/:id`; compact stage-local authoring/runtime/publication controls; no duplicate bulky action row; Draft → Published → Draft | Private route and deployed revision |
+| AI 2D editor | #326/#340 | Authenticated published `/ai-projects/:id`; same finite stage-local control matrix plus AI action | Private route and deployed revision |
+| Manual 3D editor | #327/#341 | Authenticated published `/projects3d/:id`; 3D stage controls, in-stage Save/AI actions, and reversible publication status | Private route and deployed revision |
+| AI 3D editor | #328/#339 | Authenticated published `/ai-projects3d/:id`; 3D stage controls, AI action, and reversible publication status | Private route and deployed revision |
+| Public 2D | #329 | Anonymous published `/p/:id`; controls visibly overlay the canvas and functional screenshot/download/fullscreen/publication affordances are stage-associated | Exact public URL |
+| Public/embed/immersive variants | #330–#335 | One fixture per exact route/variant with named controls and stated not-applicable decisions | Each URL independently |
+| Portable 2D/3D | #336/#337 | Trigger the real download, extract it, open it in a browser, and exercise packaged controls/functions; Full vs Non-Camera differences are explicit | Exact archive and extracted runtime |
+
+“All controls” is not accepted as a criterion. Each child must enumerate the
+finite named controls it owns, identify controls intentionally absent because
+the route is already immersive or chrome-less, and state the exact command and
+revision used for verification. No new issue is filed for the stale deployed
+revision because #321/#320 already cover the deployment/verification boundary;
+GitHub issue creation and closure are pending authenticated access.
+
+### Distillation findings and order
+
+1. Reconcile the deployment/revision boundary first through #321/#320; no
+   deployed child can close while the supplied URL serves an older shell.
+2. Re-groom and engineer each editor route (#325–#328, #338–#341) as one
+   route transaction, including the actual authoring controls rather than
+   publication chrome alone.
+3. Re-verify public/embed/immersive routes (#329–#335) independently.
+4. Verify downloaded artifacts (#336/#337) by behavior, not source markers.
+5. Only then reconcile #320 and any historical umbrella records.
+
+The GitHub API remains unavailable (`gh issue list --repo
+cfornesa/ai-dev-tools-zoomcamp-1 --state open --limit 100` failed with
+`error connecting to api.github.com`), so no remote issue was modified or
+closed. The existing issue numbers are reused; no duplicate issue is created.
 
 This manifest is the source of truth before any further implementation. The
 open children above must be groomed and QA-closed independently against their

@@ -10581,6 +10581,21 @@ downloaded-runtime behavior remains #337. This is local implementation
 evidence only; #333 remains open until the exact published immersive route is
 authenticated and inspected.
 
+Owner parity re-audit (2026-09-02): direct inspection of the supplied
+deployed public 2D URL still shows the legacy Preview plus sibling Live camera
+and Demo signal controls, with no stage-local screenshot, download, fullscreen,
+or publication controls. The supplied deployed 3D editor URL is unavailable
+anonymously, so it does not prove editor controls or Draft/Published
+transitions. The checkout contains newer React stage-local components, but
+local source, localhost, and disposable-stack evidence cannot prove the
+deployed revision. The prior closure failure came from conflating those
+evidence boundaries and treating a shared toolbar or parent issue as proof of
+every consuming route. Re-groomed closure requires one exact route or archive
+per child, a finite named-control checklist, explicit not-applicable decisions,
+and exact revision evidence. Existing #320/#321 cover the deployment boundary;
+no duplicate issue is created, and GitHub issue updates remain pending because
+`gh issue list` cannot connect to `api.github.com`.
+
 Portable 2D runtime implementation slice (#336, 2026-09-02): the existing
 isolated Chromium artifact suite passed 17/17 through the Docker-backed
 browser runner after a direct macOS Chromium launch was blocked by a

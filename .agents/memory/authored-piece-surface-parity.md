@@ -100,6 +100,18 @@ source-string, or focused-test evidence cannot close a deployed
 route/artifact criterion; each surface needs its own fixed fixture, exact
 entry point, finite checklist, and evidence from the revision under test.
 
+Owner re-audit reinforcement (2026-09-02): the owner reports that the
+deployed editor still exposes the old bulky functional-button layout and does
+not expose the expected Draft/Published reversal, while the deployed public
+piece still has no visible controls. Treat this as confirmation of the live
+contradiction, not as evidence that the newer checkout implementation shipped.
+The editor closure matrix must enumerate authoring controls as well as runtime
+and publication controls; the shared stage toolbar alone is insufficient.
+Re-groom each editor, public, embed, immersive, and downloaded-artifact route
+independently before engineering. Do not create a duplicate deployment issue:
+#320/#321 own that boundary, and authenticated GitHub updates remain pending
+when the API is unavailable.
+
 Closure process rule: when a non-user-judgment dependency or environment
 blocker ends an issue, run a fresh task-distillation reconciliation before
 selecting the next issue. Recheck duplicates, dependency order, closure

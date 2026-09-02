@@ -15,6 +15,12 @@ associated with the stage. Downloads must package the runtime functions and
 overlays, excluding only the download action itself, with explicit Full and
 Non-Camera privacy/capability differences.
 
+The standalone 2D HTML export follows the same rule: motion, demo-signal, and
+camera hosts belong inside a compact stage-local Piece controls disclosure,
+not as page-level sections. A real browser test must open that disclosure
+before asserting camera lifecycle controls; otherwise a hidden host can be
+mistaken for a missing feature.
+
 Do not close parity work based only on local unit tests or a different route:
 the exact deployed target route must be inspected after publish, and private
 editor routes require authenticated browser evidence. Camera/microphone and

@@ -302,6 +302,9 @@ test.describe('Interaction modes: demo-only, camera-only, and combined contain e
     expect(result.html).not.toContain(generator.constants.MEDIAPIPE_VISION_BUNDLE_CDN_URL);
 
     await openExportInIsolatedContext(page, result.html, 'demo-only.html');
+    await expect(page.getByRole('button', { name: 'Piece controls' })).toBeVisible();
+    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await expect(page.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     await expect(page.locator('#demo-controls-host')).toBeVisible();
     await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
     await expect(page.locator('#camera-controls-host')).toHaveCount(0);
@@ -334,6 +337,7 @@ test.describe('Interaction modes: demo-only, camera-only, and combined contain e
     expect(externalScripts).toHaveLength(1);
 
     await openExportInIsolatedContext(page, result.html, 'camera-mode.html');
+    await page.getByRole('button', { name: 'Piece controls' }).click();
     await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
     await expect(page.getByTestId('camera-enable')).toBeVisible();
     await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
@@ -361,6 +365,7 @@ test.describe('Interaction modes: demo-only, camera-only, and combined contain e
     expect(result.html).toContain('camera-controls-host');
 
     await openExportInIsolatedContext(page, result.html, 'combined.html');
+    await page.getByRole('button', { name: 'Piece controls' }).click();
     await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
     await expect(page.getByTestId('camera-enable')).toBeVisible();
 
@@ -484,6 +489,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       await cameraModeExportHtml(),
       'lifecycle-inactive.html',
     );
+    await page.getByRole('button', { name: 'Piece controls' }).click();
 
     await expect(page.getByTestId('camera-status')).toHaveText('');
     await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
@@ -501,6 +507,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     interceptCdnAndTrackRequests(page, { allowCamera: true });
     await installCameraTestSeams(page, 'deny');
     await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-denied.html');
+    await page.getByRole('button', { name: 'Piece controls' }).click();
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-error')).toContainText(/camera access was denied/i);
@@ -519,6 +526,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     interceptCdnAndTrackRequests(page, { allowCamera: true });
     await installCameraTestSeams(page, 'missing-device');
     await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-missing.html');
+    await page.getByRole('button', { name: 'Piece controls' }).click();
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-error')).toContainText(/no camera was found/i);
@@ -538,6 +546,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       await cameraModeExportHtml(),
       'lifecycle-unsupported.html',
     );
+    await page.getByRole('button', { name: 'Piece controls' }).click();
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-error')).toContainText(/doesn't support/i);
@@ -553,6 +562,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     interceptCdnAndTrackRequests(page, { allowCamera: true });
     await installCameraTestSeams(page, 'succeed');
     await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-active.html');
+    await page.getByRole('button', { name: 'Piece controls' }).click();
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
@@ -600,6 +610,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       await cameraModeExportHtml(),
       'lifecycle-network-capture.html',
     );
+    await page.getByRole('button', { name: 'Piece controls' }).click();
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);

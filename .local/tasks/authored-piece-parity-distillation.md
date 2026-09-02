@@ -251,6 +251,14 @@ implementation and exact routes:
   scripts. This is local disposable-stack evidence; the supplied deployed
   URLs remain unverified until the current branch is published and an owner
   browser session is available.
+- The standalone 2D export audit found the same class of parity miss in a
+  different surface: motion/demo/camera controls were still page-level while
+  only screenshot/fullscreen were stage-local, and the generated document had
+  a duplicate camera-runtime tag. The export now packages one compact,
+  stage-local Piece controls disclosure containing the existing functional
+  hosts, removes the duplicate tag, and the real Chromium artifact suite
+  passes 17/17 across all interaction modes and camera lifecycle/privacy
+  scenarios.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

@@ -267,7 +267,13 @@ function renderStageToolbar(): string {
   return `
     <div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
       <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot">⌗</button>
+      <button id="piece-controls-toggle" type="button" aria-label="Piece controls" aria-expanded="false" aria-controls="piece-controls-panel" title="Piece controls">☷</button>
       <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
+    </div>
+    <div id="piece-controls-panel" role="group" aria-label="Piece controls" hidden>
+      ${renderMotionControl()}
+      ${renderDemoControlsSection()}
+      {{CAMERA_CONTROLS}}
     </div>`;
 }
 
@@ -276,8 +282,16 @@ function renderStageToolbarScript(): string {
 (() => {
   const host = document.getElementById('scene-canvas-host');
   const screenshot = document.getElementById('piece-screenshot');
+  const controlsToggle = document.getElementById('piece-controls-toggle');
+  const controlsPanel = document.getElementById('piece-controls-panel');
   const fullscreen = document.getElementById('piece-fullscreen');
   const canvas = () => host && host.querySelector('canvas, svg');
+  controlsToggle?.addEventListener('click', () => {
+    if (!controlsPanel) return;
+    const open = controlsPanel.hasAttribute('hidden');
+    controlsPanel.toggleAttribute('hidden', !open);
+    controlsToggle.setAttribute('aria-expanded', String(open));
+  });
   screenshot?.addEventListener('click', () => {
     const current = canvas();
     if (!current) return;
@@ -312,8 +326,13 @@ const EXPORT_STYLE = `
     #scene-canvas-host { position: relative; max-width: 100%; }
     #scene-canvas-host canvas { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
     #scene-canvas-host svg { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
-    #piece-toolbar { position: absolute; right: 1rem; bottom: 1rem; z-index: 4; display: flex; gap: .5rem; }
+    #piece-toolbar { position: absolute; right: 1rem; top: 1rem; z-index: 4; display: flex; gap: .5rem; }
     #piece-toolbar button { width: 2.75rem; height: 2.75rem; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: rgba(10,12,20,.78); color: #fff; cursor: pointer; }
+    #piece-toolbar button:hover, #piece-toolbar button:focus-visible { background: rgba(21,26,40,.94); }
+    #piece-controls-panel { position: absolute; left: 1rem; top: 1rem; z-index: 5; width: min(22rem, calc(100% - 2rem)); max-height: min(70vh, 32rem); overflow: auto; box-sizing: border-box; padding: .75rem; border: 1px solid rgba(255,255,255,.25); border-radius: .75rem; background: rgba(10,12,20,.94); color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+    #piece-controls-panel[hidden] { display: none; }
+    #piece-controls-panel h2 { margin: 0 0 .5rem; font-size: 1rem; }
+    #piece-controls-panel #motion-control, #piece-controls-panel #demo-controls-host, #piece-controls-panel #camera-controls-host { margin-top: .75rem; }
     #export-camera-overlay { pointer-events: none; }
     #demo-controls-host { margin-top: 1.5rem; }
     #demo-controls-host [role="radiogroup"] { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
@@ -367,10 +386,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   ${includeAttribution ? renderAttributionComment() : ''}
   <h1>${safeTitle}</h1>
   ${hasDescription ? `<p id="project-description">${safeDescription}</p>` : ''}
-  <div id="scene-canvas-host">${renderCameraOverlay(input.cameraOverlay)}${renderStageToolbar()}</div>
-  ${renderMotionControl()}
-  ${renderDemoControlsSection()}
-  ${includesCamera ? renderCameraControlsSection() : ''}
+  <div id="scene-canvas-host">${renderCameraOverlay(input.cameraOverlay)}${renderStageToolbar().replace('{{CAMERA_CONTROLS}}', includesCamera ? renderCameraControlsSection() : '')}</div>
 
   ${usesCdnFreeRenderer ? '' : `<script src="${P5_CDN_URL}"></script>`}
   ${embedJsonScript('scene-data', strippedScene)}

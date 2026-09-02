@@ -349,3 +349,21 @@ stage controls with persistent state/action naming; finite interactions for
 screenshot, download menu, Piece controls, fullscreen, and Draft/Published
 state; focused tests, `make check`, production build, and exact-route QA.
 If #347 passes, process and close it before grooming or engineering #348.
+
+## #347 engineering and QA transaction — 2026-09-02
+
+Implemented locally in `b98eb49`: shared stage actions now render persistent
+short labels beside their SVG icons; Piece controls, sound, steering, and the
+gesture guide are visibly labeled; the fixed-viewport Chromium acceptance
+assertion now targets the persistent publication label specifically. Focused
+tests passed 35/35, the issue-specific Docker Chromium scenario passed 1/1 at
+1280×900 and 375×812, frontend lint/format/typecheck passed, and the
+production build passed.
+
+The issue is not complete or closed. Full `make check` remains blocked by the
+host's socket permission and launcher timeout failures plus one unrelated
+frontend `useDraftAutosave` failure. The exact published public route still
+serves `assets/index-C5ipN-ir.js` and has zero persistent action labels, so
+publication/revision verification is also incomplete. #347 stays open with
+QA FAIL and the next action is republish `b98eb49`, then recheck the exact
+published routes before any closure decision.

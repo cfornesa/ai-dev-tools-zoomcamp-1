@@ -11804,6 +11804,21 @@ public 2D route now visibly renders screenshot, download, Piece controls, and
 fullscreen controls over the artwork. This is evidence for the shared
 #347/#348 implementation boundary only.
 
+## 269an. #347 shared stage-control engineering transaction (2026-09-02)
+
+Implemented locally in `b98eb49`: shared stage actions render persistent
+short labels beside SVG icons, Piece controls are visibly labeled by default,
+and 3D sound/steering/gesture-guide actions expose visible labels. Focused
+tests passed 35/35, fixed-viewport Docker Chromium QA passed 1/1, frontend
+lint/format/typecheck passed, and the production build passed.
+
+Status: ACTIVE / QA FAIL — not closed. Full `make check` has host-level socket
+and launcher-timeout failures plus one unrelated frontend autosave test
+failure. The exact published public route still serves `index-C5ipN-ir.js`
+without the new labels. Next action: republish `b98eb49`, inspect both fixed
+viewports on the exact published consumer, and resolve the remaining full-gate
+failures before reconciling #347 closure. #348 has not started.
+
 The public 2D download affordance opened without exposing Full/Non-Camera
 download entries during the same live check. Keep the relevant public-route
 and artifact issues open; shared toolbar presence must not be used as evidence

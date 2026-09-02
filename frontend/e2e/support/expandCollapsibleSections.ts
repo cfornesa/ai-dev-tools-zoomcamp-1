@@ -18,6 +18,12 @@ import type { Page } from '@playwright/test';
  * hidden nested toggle can never become the first locator match.
  */
 export async function expandAllCollapsibleSections(page: Page): Promise<void> {
+  const pieceControls = page.getByRole('button', { name: 'Piece controls' });
+  if ((await pieceControls.count()) > 0 && (await pieceControls.isVisible())) {
+    if ((await pieceControls.getAttribute('aria-expanded')) === 'false') {
+      await pieceControls.click();
+    }
+  }
   const topLevelToggles = page.locator('.editor-panel-disclosure-toggle:visible');
   await topLevelToggles.first().waitFor({ state: 'visible' });
   const topLevelCount = await topLevelToggles.count();

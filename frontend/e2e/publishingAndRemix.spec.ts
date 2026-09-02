@@ -129,9 +129,11 @@ function shapeListItem(page: Page) {
 }
 
 async function openCameraAndDemoControls(page: Page) {
-  const disclosure = page.locator('details.piece-stage-settings');
+  const disclosure = page.getByRole('button', { name: 'Piece controls' });
   await expect(disclosure).toBeVisible();
-  await disclosure.locator('summary').click();
+  if ((await disclosure.getAttribute('aria-expanded')) === 'false') {
+    await disclosure.click();
+  }
 }
 
 async function expectPublicStageChrome(page: Page) {

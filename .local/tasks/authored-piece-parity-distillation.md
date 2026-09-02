@@ -350,6 +350,29 @@ screenshot, download menu, Piece controls, fullscreen, and Draft/Published
 state; focused tests, `make check`, production build, and exact-route QA.
 If #347 passes, process and close it before grooming or engineering #348.
 
+## Fresh blocker distillation after #347 deployment handoff — 2026-09-02
+
+The Replit workspace initially blocked publication because it was in an
+interactive rebase onto `b98eb49`, with the newer distillation manifest in a
+delete/modify conflict. The conflict was inspected and resolved in favor of
+the newer manifest; Replit now reports a clean `main` containing `b98eb49`
+and three subsequent Replit publish commits.
+
+The republish operation is still unresolved: the deployment UI reports
+`Publishing`, while the exact supplied 3D editor and public 2D route continue
+to serve `assets/index-C5ipN-ir.js` with zero `piece-stage-action-label`
+elements. Classify #347 as `dependency-blocked / deployment verification`
+with owner/context `Replit publish operation`; the concrete next action is to
+obtain a terminal publish result or error, then recheck both exact routes and
+their fixed viewport renders. This is an environment/deployment blocker, not
+a reason to close #347 or begin #348.
+
+Duplicate/order recheck: no new issue is warranted. #347 remains the current
+shared affordance transaction, #348 remains its dependent editor-layout
+transaction, and #325–#337 retain independent consumer/artifact boundaries.
+The same blocker does not justify parallel engineering; continue only after
+#347 has a terminal QA/reconciliation result.
+
 ## #347 engineering and QA transaction — 2026-09-02
 
 Implemented locally in `b98eb49`: shared stage actions now render persistent

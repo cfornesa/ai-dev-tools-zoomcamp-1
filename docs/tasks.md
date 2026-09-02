@@ -11804,6 +11804,19 @@ public 2D route now visibly renders screenshot, download, Piece controls, and
 fullscreen controls over the artwork. This is evidence for the shared
 #347/#348 implementation boundary only.
 
+## 269ao. Fresh #347 deployment-blocker distillation (2026-09-02)
+
+The Replit workspace was found mid-rebase onto `b98eb49`; the newer
+distillation manifest was preserved and the rebase completed. Replit now
+reports a clean `main` containing `b98eb49` and three subsequent publish
+commits. A republish is active, but the exact supplied routes still serve
+`assets/index-C5ipN-ir.js` without the new persistent labels.
+
+Status: #347 remains `dependency-blocked / deployment verification`. The
+blocker owner is the Replit publish operation; next action is to obtain its
+terminal result or error and recheck the exact fixed-viewport routes. No new
+issue is warranted, and #348 remains gated behind #347 closure.
+
 ## 269an. #347 shared stage-control engineering transaction (2026-09-02)
 
 Implemented locally in `b98eb49`: shared stage actions render persistent

@@ -11739,3 +11739,27 @@ new commits are republished and each exact surface is independently verified.
 The exact deployed asset is now a mandatory handoff field: a pushed commit is
 not a published revision. The current live `index-B8XLvuYD.js` proves the
 latest shared implementation has not reached Replit yet.
+
+## Fresh user-visible parity re-audit after shared closures (2026-09-02)
+
+The owner again reported that the requested controls are absent, the editor
+still has the bulky functional-button scheme, Draft/Published is not visibly
+switchable, and public pieces do not visibly expose controls. Fresh Chrome
+inspection of the exact supplied editor and public URLs confirmed the report:
+both serve `assets/index-B8XLvuYD.js`; the editor renders Unicode glyph controls
+and an icon-only closed Draft trigger, while the public viewer renders only the
+old glyph-only screenshot/download/controls/fullscreen row. The live editor
+snapshot includes named DOM controls, but no tooltip nodes or visible
+publication label, so DOM presence is not contrary evidence. The live public
+inspection is authenticated in the current Chrome session and therefore is not
+anonymous privacy evidence.
+
+The checkout contains newer local work in `8ff191a` and `ac66427`, including
+inline SVG stage icons, the unified editor overlay, and fixed-viewport tests.
+Those commits are pushed but are not represented by the live B8 asset. The
+prior #347/#348 closures are reopened in the distillation manifest because the
+required rendered screenshot inspection and published-revision verification
+were not actually completed. No duplicate issues are needed: #347/#348 own
+the shared implementation contracts; #325–#337 own each route/artifact. No
+product source or product tests are authorized during this audit. Next
+groomed issue is #347 after its criterion contract is reconciled again.

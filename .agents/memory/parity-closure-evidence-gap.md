@@ -108,3 +108,12 @@ Record the exact deployed asset from the target URL before treating a closure
 as live evidence. In this audit the target still served `index-B8XLvuYD.js`
 after #347/#348 were pushed, so both shared implementation closures were
 reopened and all consumer route issues remained open.
+
+Fresh owner re-audit (2026-09-02): both supplied live URLs still served the B8
+bundle after the reviewed SVG/overlay commits were pushed. The editor visibly
+remained on Unicode glyph controls with an icon-only closed publication
+trigger, and the public viewer remained glyph-only. Local browser assertions
+against a disposable stack exercised a different revision and did not include
+inspected rendered screenshots. Reopen shared affordance/layout closures when
+the exact published bundle and rendered evidence are missing; a DOM-only QA
+comment is not live parity evidence.

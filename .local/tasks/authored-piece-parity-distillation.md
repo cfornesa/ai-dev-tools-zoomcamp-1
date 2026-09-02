@@ -53,8 +53,8 @@ component never close a deployed route.
 | --- | --- | --- | --- | --- |
 | #320 | Parent authored-piece reconciliation | all children | open roll-up | reconcile only after children pass |
 | #346 | Shared structured 2D sound capability | #320; existing audio foundation | open / newly filed | groom and engineer only after this distillation exits |
-| #347 | shared stage control discoverability/status affordance | #320 | proposed / groomed | implement visible labels/tooltips, explicit Draft/Published state, compact stage overlay |
-| #348 | shared editor authoring overlay layout | #320; #347 ordering decision | proposed / groomed | remove competing dense row and preserve named authoring actions in canvas overlay |
+| #347 | shared stage control discoverability/status affordance | #320 | reopened / re-distill | re-groom closure evidence and verify recognizable rendered controls plus explicit Draft/Published state on a published revision |
+| #348 | shared editor authoring overlay layout | #320; #347 ordering decision | reopened / re-distill | re-groom closure evidence and verify one compact rendered authoring surface at fixed viewports on a published revision |
 | #325 | authenticated manual 2D `/projects/:id` | #347/#348; owner browser | reopened | reverify visual controls, authoring overlay, and status transitions |
 | #326 | authenticated AI 2D `/ai-projects/:id` | #347/#348; owner browser | reopened | reverify visual controls, AI/editor overlay, and status transitions |
 | #327 | authenticated manual 3D `/projects3d/:id` | #347/#348; owner browser + 3D fixture | reopened | reverify actual screenshot/layout and status transitions |
@@ -204,9 +204,9 @@ phase may begin only with exactly one groomed issue after the access/fixture
 boundary is resolved; engineering and QA must then finish and close that issue
 before the next one begins.
 
-## Current owner re-audit and #347 reclosure (2026-09-02)
+## Current owner re-audit after prior shared closures (2026-09-02)
 
-Status: DISTILLATION HANDOFF COMPLETE — #347 CLOSED, #348 NEXT
+Status: DISTILLATION ACTIVE — PRIOR #347/#348 CLOSURES REOPENED
 
 The exact supplied routes were inspected again in the connected Chrome session:
 
@@ -224,29 +224,33 @@ The exact supplied routes were inspected again in the connected Chrome session:
   actions, and `9ca8697` records closure. The commits are present on
   `origin/main`, but the deployed asset has not changed.
 
-The prior closure transaction was invalid for two reasons: the #347/#348
-browser runs used the disposable stack's default viewport rather than the
-required 1280×900 and 375×812 rendered evidence, and DOM role/bounds evidence
-was treated as proof of visual parity. #347 has now been re-engineered with
-recognizable inline SVG controls, verified at both fixed viewports, passed
-focused/full checks and the production build, pushed as `8ff191a`, and closed
-with a `## QA: PASS` GitHub evidence comment. This closes only the shared local
-affordance scope; no route child or parent may inherit live parity.
+The prior #347/#348 closure transactions were invalid. Their disposable
+browser checks asserted DOM roles/bounds but did not provide inspected rendered
+screenshots for the required fixed viewports, and the exact published consumer
+was not verified after `8ff191a`/`ac66427` were pushed. Fresh Chrome inspection
+now shows both supplied URLs still serving the old B8 bundle: editor controls
+are Unicode glyphs with an icon-only closed publication trigger, and public
+controls are likewise glyph-only. The newer local SVG/overlay source is not
+live evidence. Reopen both shared issues and require exact published-revision
+inspection plus rendered screenshot evidence before closure.
 
 No duplicate issue is warranted. Existing coverage remains sufficient:
 
-- #347 owns the shared control affordance, but must be re-engineered or
-  reverified with recognizable visual icons/labels at both fixed viewports and
-  a persistent closed Draft/Published label.
-- #348 owns the single stage-associated editor control surface, but must prove
-  the unified visual layout does not obscure the artwork or collapse at either
-  fixed viewport.
+- #347 owns the shared control affordance, but must be re-groomed/reverified
+  with recognizable visual icons/labels at both fixed viewports, a persistent
+  closed Draft/Published label, and exact published-bundle identity.
+- #348 owns the single stage-associated editor control surface, but must be
+  re-groomed/reverified with inspected rendered evidence that the unified
+  visual layout does not obscure the artwork or collapse at either viewport.
 - #325–#337 remain independently open route/artifact contracts; their old
   closure evidence is not revived by the stale asset.
 - #346 remains a local 2D sound foundation only. It does not close route or
   download sound parity.
 
-Next groomed issue: #348, with the strengthened fixed-viewport visual closure
-contract. Engineering may begin only after this distillation section is
-reconciled in the GitHub issue and docs; then process #348 transactionally
-before any route issue.
+The exact live evidence is a deployment/revision verification boundary for all
+route children, while the user-visible glyph/layout failure remains an
+implementation contract failure once the correct revision is deployed. No new
+duplicate issue is warranted: #347/#348 already own the shared contracts and
+#325–#337 own each consumer/artifact. Next groomed issue after this audit:
+#347, reopened with the requirement to inspect rendered screenshots and the
+exact deployed asset before any closure.

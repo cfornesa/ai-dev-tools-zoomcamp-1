@@ -11504,3 +11504,25 @@ tests plus typecheck/format/lint. The GitHub issue body contains the criterion
 matrix and exact evidence. This closure covers only local manual 3D
 implementation; exact authenticated `/projects3d/:id` deployment evidence
 remains #327 and release reconciliation remains #320.
+
+## 269ai. Fresh distillation after #330 published-fixture blocker (2026-09-02)
+
+Status: DISTILLATION COMPLETE — #330 BLOCKED; NEXT INDEPENDENT ISSUE #331
+
+The post-publication audit rechecked the active manifest, duplicate coverage,
+dependencies, and closure contracts. #329 is now closed as completed after the
+anonymous public 2D fixture served the stage-local toolbar from deployed asset
+`assets/index-CKhsUQOh.js`. #330 remains open and blocked only by the missing
+published 3D fixture: the prior `/p3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`
+target returns the unavailable state and the public gallery exposes no 3D
+fixture. No product source or test changes are authorized by this distillation
+step.
+
+No duplicate or further decomposition is warranted. #330 owns only the
+anonymous public 3D route; #331 owns the independent anonymous 2D embed and
+can proceed using the published 2D fixture; #332–#337 remain separate route
+and artifact contracts. The blocker is a verification boundary rather than a
+product defect or user-judgment decision. Exact next action for #330 is to
+publish/expose one deterministic 3D fixture, then rerun its anonymous route
+matrix and reconcile before closure. The manifest retains #330 as BLOCKED and
+selects #331 as the next groomed issue.

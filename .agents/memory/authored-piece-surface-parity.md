@@ -48,3 +48,9 @@ as query-driven, chrome-less variants of the same stage runtime. Downloaded
 3D pieces must retain arrow-key camera travel while reserving WASD for the
 keyboard-note contract; test this in an extracted `file://` artifact rather
 than inferring behavior from generated source strings.
+
+Full 3D downloads must bundle the MediaPipe vision module, its Wasm/JS runtime
+files, and the gesture-recognizer model under relative paths so camera and hand
+overlays remain functional when opened directly from `file://`. Non-Camera
+downloads must omit those camera-only assets and runtime paths while retaining
+non-camera sound and view controls.

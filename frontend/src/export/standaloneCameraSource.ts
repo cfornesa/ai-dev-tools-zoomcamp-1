@@ -122,15 +122,24 @@ export const MAX_INFERENCE_FPS = 30;
  * after the standalone runtime script (`standaloneRuntimeSource.ts`'s
  * `buildStandaloneRuntimeScript()`) so `window.__exportSetActiveInput`
  * already exists by the time any camera state change tries to call it. */
-export function buildStandaloneCameraScript(): string {
+export type StandaloneCameraAssetPaths = {
+  visionBundleUrl?: string;
+  wasmBaseUrl?: string;
+  modelUrl?: string;
+};
+
+export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = {}): string {
+  const visionBundleUrl = paths.visionBundleUrl ?? MEDIAPIPE_VISION_BUNDLE_CDN_URL;
+  const wasmBaseUrl = paths.wasmBaseUrl ?? MEDIAPIPE_WASM_BASE_URL;
+  const modelUrl = paths.modelUrl ?? GESTURE_RECOGNIZER_MODEL_URL;
   return `
 (function () {
   "use strict";
 
   var MEDIAPIPE_VERSION = ${JSON.stringify(MEDIAPIPE_TASKS_VISION_VERSION)};
-  var VISION_BUNDLE_URL = ${JSON.stringify(MEDIAPIPE_VISION_BUNDLE_CDN_URL)};
-  var WASM_BASE_URL = ${JSON.stringify(MEDIAPIPE_WASM_BASE_URL)};
-  var MODEL_URL = ${JSON.stringify(GESTURE_RECOGNIZER_MODEL_URL)};
+  var VISION_BUNDLE_URL = ${JSON.stringify(visionBundleUrl)};
+  var WASM_BASE_URL = ${JSON.stringify(wasmBaseUrl)};
+  var MODEL_URL = ${JSON.stringify(modelUrl)};
   var MAX_INFERENCE_FPS = ${MAX_INFERENCE_FPS};
   var MIN_INFERENCE_INTERVAL_MS = 1000 / MAX_INFERENCE_FPS;
 

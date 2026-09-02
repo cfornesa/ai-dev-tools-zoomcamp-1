@@ -10425,7 +10425,7 @@ authenticated owner session are available.
 
 ## 263. Make Docker browser verification select and fingerprint this repository
 
-Status: PROPOSED
+Status: BLOCKED / HANDOFF
 
 GitHub issue: [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321)
 
@@ -10436,9 +10436,14 @@ and served an `Interview Canvas` shell. This is not product evidence for this
 repository. The existing durable constraint is
 [E2E wrong Docker project](../.agents/memory/e2e-wrong-docker-project.md).
 
-Acceptance criteria and next action are maintained in GitHub #321. Do not
-stop or mutate unrelated containers; select this repository's Compose project
-explicitly, fingerprint the served app, then rerun browser readiness.
+The repository has no Compose definition or Dockerfile to select. The healthy
+containers observed during the audit belong to the unrelated sibling project
+`ai-dev-tools-zoomcamp`, so they are not product evidence for this repository.
+Do not stop or mutate those containers. The next authorized action is to add or
+provide this repository's Compose definition, then select and fingerprint that
+project explicitly before rerunning browser readiness. Until then the
+repository-owned native `scripts/browser-qa.sh` runner is the valid disposable
+stack path.
 
 ## 264. Restore backend format-check cleanliness in startup configuration test
 

@@ -31,7 +31,7 @@ as read-only behavioral reference.
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome, public/embed/immersive parity, publication state, portable capability-preserving downloads, privacy, browser coverage | First implementation item; consumes existing renderer, camera, sound, gesture, export pieces | `in_progress` | Remaining `verification-boundary`: authenticate and publish for exact-route QA |
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Parent parity epic covering screenshot, fullscreen, download menu, sound, controls, camera/hand behavior, immersive view | Parent of #320 and prior generated-art work | `dependency-blocked` | #320 must pass before parent can close; retain open because prior #285–#311 closures cover only narrower/other surfaces |
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
-| [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; no repository Compose definition currently exists | `open_in_progress` | `workflow/infrastructure-defect`; native runner fingerprints its own stack, but Compose preflight remains to be implemented; do not stop sibling containers |
+| [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; no repository Compose definition currently exists | `dependency-blocked` | `workflow/infrastructure-defect`; native runner fingerprints its own stack, but a repository Compose definition is required before Compose preflight can be implemented; do not stop sibling containers |
 
 ## Duplicate / already-covered report
 
@@ -54,10 +54,10 @@ as read-only behavioral reference.
 | Public 2D viewer / embed | Local source now uses shared stage-local toolbar and Camera/Demo disclosure; deployed route still serves the old sibling-panel shell | `verification-boundary` | #320; publish, then verify exact public and embed routes |
 | Manual/AI 3D editors | Shared toolbar and publication control exist locally; editor-specific actions remain a separate authoring toolbar within the stage, which is acceptable only if it does not duplicate runtime chrome | `implemented locally / needs browser evidence` | #320; verify visual hierarchy and all controls with authenticated browser |
 | Public/embed/immersive 3D | Shared `Scene3DPreview` toolbar exists locally; immersive route supports Custom/CMS embed query variants and arrow-key fly | `implemented locally / needs deployed evidence` | #320; verify exact public/embed/immersive routes after publish |
-| Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, and fullscreen behavior; disposable-stack browser test downloads and inspects the real ZIP | `implemented locally / needs deployed evidence` | #320; verify the exact deployed download after publish |
+| Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, fullscreen, and bundled MediaPipe/Wasm/model assets | `implemented locally / needs deployed evidence` | #320; verify the exact deployed download after publish |
 | Non-Camera downloads | Camera host/module and camera-only mic/theremin code are omitted while non-camera sound/keyboard/view controls remain; disposable-stack browser test downloads and inspects the real ZIP | `implemented locally / needs deployed evidence` | #320; verify the exact deployed download after publish |
 | Draft / Published | 2D and 3D owner controls exist locally and API tests cover atomic transitions; supplied private deployed route cannot be inspected anonymously | `verification-boundary` | #320; authenticate in the owner's browser session, then verify both states on exact URLs |
-| Deployed examples | Public supplied URL serves the old shell; local `main` is 42 commits ahead of `origin/main` and has not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
+| Deployed examples | Public supplied URL serves the old shell; local `main` is 61 commits ahead of `origin/main` and has not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
 
 ## Criterion-ready definition for #320
 
@@ -154,6 +154,11 @@ implementation and exact routes:
 - GitHub open-issue enumeration now contains #274, #320, and #321; #123 is
   closed with a QA PASS. #274 remains dependency-blocked by #320 and is not
   treated as complete merely because earlier child issues were closed.
+
+- Full 3D ZIPs also bundle the MediaPipe vision module, Wasm/JS runtime files,
+  and gesture-recognizer model under `runtime/mediapipe/`, so direct `file://`
+  downloads do not depend on a CDN. Non-Camera ZIPs omit those assets and
+  their camera runtime entirely.
 
 ## Re-audit implementation increment (2026-09-01)
 

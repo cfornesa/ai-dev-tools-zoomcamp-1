@@ -86,6 +86,13 @@ describe('generateScene3DBundle', () => {
     expect(fileNames(zip)).toEqual([
       'README.txt',
       'index.html',
+      'runtime/mediapipe/gesture_recognizer.task',
+      'runtime/mediapipe/vision_bundle.mjs',
+      'runtime/mediapipe/wasm/vision_wasm_internal.js',
+      'runtime/mediapipe/wasm/vision_wasm_internal.wasm',
+      'runtime/mediapipe/wasm/vision_wasm_module_internal.js',
+      'runtime/mediapipe/wasm/vision_wasm_module_internal.wasm',
+      'runtime/mediapipe/wasm/vision_wasm_nosimd_internal.wasm',
       'runtime/three.min.js',
       'scripts/piece.js',
       'styles/piece.css',
@@ -123,6 +130,9 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('getUserMedia');
     expect(script).toContain('__exportSetActiveInput');
     expect(script).toContain('recognizeForVideo');
+    expect(script).toContain('./runtime/mediapipe/vision_bundle.mjs');
+    expect(script).toContain('./runtime/mediapipe/wasm');
+    expect(script).toContain('./runtime/mediapipe/gesture_recognizer.task');
 
     const runtime = await zip.files['runtime/three.min.js'].async('string');
     expect(runtime).toBe('/* fake three.js runtime */');
@@ -142,6 +152,7 @@ describe('generateScene3DBundle', () => {
     const script = await zip.files['scripts/piece.js'].async('string');
     expect(script).not.toContain('getUserMedia');
     expect(script).not.toContain('recognizeForVideo');
+    expect(fileNames(zip).some((name) => name.includes('mediapipe'))).toBe(false);
   });
 
   it('embeds the exact scene document -- output reflects the input, no stale caching', async () => {

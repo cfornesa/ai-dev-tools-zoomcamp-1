@@ -22,7 +22,11 @@ import JSZip from 'jszip';
 import { validateScene3D } from '../validation/scene3d';
 import { downloadBlob } from './downloadBlob';
 import { buildStandaloneThreeRuntimeScript } from './standaloneThreeRuntimeSource';
-import { buildStandaloneCameraScript } from './standaloneCameraSource';
+import {
+  GESTURE_RECOGNIZER_MODEL_URL,
+  MEDIAPIPE_TASKS_VISION_VERSION,
+  buildStandaloneCameraScript,
+} from './standaloneCameraSource';
 import type { Scene3DDocument } from '../pages/scene3dTypes';
 
 export class Scene3DBundleError extends Error {
@@ -42,6 +46,31 @@ export type Scene3DExportVariant = 'full' | 'non-camera';
  * installed `three` dependency (`^0.160.0`). */
 const THREE_CDN_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
 const THREE_RUNTIME_FILENAME = 'three.min.js';
+const MEDIAPIPE_CDN_BASE_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_TASKS_VISION_VERSION}`;
+const MEDIAPIPE_ASSET_FILES = [
+  ['runtime/mediapipe/vision_bundle.mjs', `${MEDIAPIPE_CDN_BASE_URL}/vision_bundle.mjs`],
+  [
+    'runtime/mediapipe/wasm/vision_wasm_internal.wasm',
+    `${MEDIAPIPE_CDN_BASE_URL}/wasm/vision_wasm_internal.wasm`,
+  ],
+  [
+    'runtime/mediapipe/wasm/vision_wasm_module_internal.wasm',
+    `${MEDIAPIPE_CDN_BASE_URL}/wasm/vision_wasm_module_internal.wasm`,
+  ],
+  [
+    'runtime/mediapipe/wasm/vision_wasm_nosimd_internal.wasm',
+    `${MEDIAPIPE_CDN_BASE_URL}/wasm/vision_wasm_nosimd_internal.wasm`,
+  ],
+  [
+    'runtime/mediapipe/wasm/vision_wasm_module_internal.js',
+    `${MEDIAPIPE_CDN_BASE_URL}/wasm/vision_wasm_module_internal.js`,
+  ],
+  [
+    'runtime/mediapipe/wasm/vision_wasm_internal.js',
+    `${MEDIAPIPE_CDN_BASE_URL}/wasm/vision_wasm_internal.js`,
+  ],
+] as const;
+const MEDIAPIPE_MODEL_PATH = 'runtime/mediapipe/gesture_recognizer.task';
 
 const PIECE_CSS = `html, body {
   margin: 0;
@@ -237,6 +266,34 @@ async function fetchThreeRuntime(): Promise<Uint8Array> {
   return new Uint8Array(await response.arrayBuffer());
 }
 
+async function fetchBinaryAsset(url: string, label: string): Promise<Uint8Array> {
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    throw new Scene3DBundleError(
+      `Could not download the ${label} -- check your network connection.`,
+      {
+        cause: error,
+      },
+    );
+  }
+  if (!response.ok) {
+    throw new Scene3DBundleError(`Could not download the ${label} (HTTP ${response.status}).`);
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+async function fetchMediaPipeAssets(): Promise<Map<string, Uint8Array>> {
+  const assets = await Promise.all(
+    [...MEDIAPIPE_ASSET_FILES, [MEDIAPIPE_MODEL_PATH, GESTURE_RECOGNIZER_MODEL_URL] as const].map(
+      async ([path, url]) =>
+        [path, await fetchBinaryAsset(url, `MediaPipe asset ${path}`)] as const,
+    ),
+  );
+  return new Map(assets);
+}
+
 /** Turns `title` into a filesystem-safe, lowercase, hyphenated basename --
  * same convention `generateHtmlExport.ts`'s `slugifyFilename` uses for
  * the 2D single-file export. */
@@ -273,6 +330,7 @@ export async function generateScene3DBundle(
 
   const variant = options.variant ?? 'full';
   const runtimeBytes = await fetchThreeRuntime();
+  const mediapipeAssets = variant === 'full' ? await fetchMediaPipeAssets() : null;
 
   try {
     const zip = new JSZip();
@@ -281,9 +339,10 @@ export async function generateScene3DBundle(
     zip.file('index.html', buildIndexHtml(variant));
     zip.file(
       'scripts/piece.js',
-      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript({ includeCameraFeatures: variant === 'full' })}${variant === 'full' ? `\n${buildStandaloneCameraScript()}` : ''}`,
+      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript({ includeCameraFeatures: variant === 'full' })}${variant === 'full' ? `\n${buildStandaloneCameraScript({ visionBundleUrl: './runtime/mediapipe/vision_bundle.mjs', wasmBaseUrl: './runtime/mediapipe/wasm', modelUrl: `./${MEDIAPIPE_MODEL_PATH}` })}` : ''}`,
     );
     zip.file(`runtime/${THREE_RUNTIME_FILENAME}`, runtimeBytes);
+    mediapipeAssets?.forEach((bytes, path) => zip.file(path, bytes));
     const zipBlob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
     return { ok: true, zipBlob, filename: `${slugifyFilename(baseName)}.zip` };
   } catch (error) {

@@ -203,3 +203,49 @@ linked to an existing issue, and no product change is authorized yet. The next
 phase may begin only with exactly one groomed issue after the access/fixture
 boundary is resolved; engineering and QA must then finish and close that issue
 before the next one begins.
+
+## Current owner re-audit (2026-09-02, after commits #347/#348)
+
+Status: DISTILLATION ACTIVE — PRIOR #347/#348 CLOSURES REOPENED
+
+The exact supplied routes were inspected again in the connected Chrome session:
+
+- `https://animate.creatrweb.com/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`
+  serves `assets/index-B8XLvuYD.js`. Its rendered stage contains the expected
+  named DOM controls, but no `[role=tooltip]` nodes or visible publication
+  label; the screenshot shows a row of cryptic Unicode glyph buttons.
+- `https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`
+  serves the same `assets/index-B8XLvuYD.js`. Its rendered preview contains
+  screenshot, download, Piece controls, and fullscreen buttons, but they are
+  glyph-only and visually easy to miss. The displayed page is authenticated
+  in this Chrome session, so this is not anonymous privacy evidence.
+- The checked-out reviewed implementation is newer than that asset:
+  `d945de8` adds shared visible affordances, `8f5a963` consolidates editor
+  actions, and `9ca8697` records closure. The commits are present on
+  `origin/main`, but the deployed asset has not changed.
+
+The prior closure transaction was invalid for two reasons: the #347/#348
+browser runs used the disposable stack's default viewport rather than the
+required 1280×900 and 375×812 rendered screenshot checks, and DOM role/bounds
+evidence was treated as proof of visual parity. Therefore #347 and #348 are
+reopened as incomplete implementation/verification contracts, not accepted as
+live parity. Their local code remains available for review, but no route child
+or parent may inherit their closure.
+
+No duplicate issue is warranted. Existing coverage remains sufficient:
+
+- #347 owns the shared control affordance, but must be re-engineered or
+  reverified with recognizable visual icons/labels at both fixed viewports and
+  a persistent closed Draft/Published label.
+- #348 owns the single stage-associated editor control surface, but must prove
+  the unified visual layout does not obscure the artwork or collapse at either
+  fixed viewport.
+- #325–#337 remain independently open route/artifact contracts; their old
+  closure evidence is not revived by the stale asset.
+- #346 remains a local 2D sound foundation only. It does not close route or
+  download sound parity.
+
+Next groomed issue: #347, reopened with the strengthened fixed-viewport visual
+closure contract. Engineering may begin only after this distillation section
+is reconciled in the GitHub issue and docs; then process #347 transactionally
+before #348 or any route issue.

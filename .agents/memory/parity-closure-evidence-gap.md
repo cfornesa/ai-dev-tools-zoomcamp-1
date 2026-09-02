@@ -101,3 +101,10 @@ entry-point interaction; ARIA presence, non-zero bounds, local tests, or
 another route cannot close them. Follow-up implementation slices are #347
 (shared stage affordance/status) and #348 (editor authoring overlay layout);
 route consumers remain independently reopened in #325–#335 and #338–#341.
+
+Deployment identity lesson (2026-09-02): a successful push and a successful
+local/disposable browser run do not mean Replit has published that revision.
+Record the exact deployed asset from the target URL before treating a closure
+as live evidence. In this audit the target still served `index-B8XLvuYD.js`
+after #347/#348 were pushed, so both shared implementation closures were
+reopened and all consumer route issues remained open.

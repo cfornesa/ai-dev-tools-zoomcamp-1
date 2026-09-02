@@ -11716,3 +11716,26 @@ authoring controls into the stage-associated toolbar and preserved the existing
 mutations, disabled states, and error announcements. GitHub records the final
 QA evidence and completed closure for both issues. Route-level deployed checks
 remain open under #325–#337 until these commits are republished.
+
+## Owner re-audit after #347/#348 closure (2026-09-02)
+
+The owner-supplied routes were inspected again in Chrome. Both exact URLs still
+serve `assets/index-B8XLvuYD.js`, while the reviewed #347/#348 implementation
+is in pushed commits `d945de8`, `8f5a963`, and `9ca8697`. The deployed editor
+still renders cryptic glyph-only stage controls without a visible publication
+label, and the public preview still renders glyph-only controls that are easy
+to miss. The current public inspection was authenticated, so it is not treated
+as anonymous privacy evidence.
+
+The prior #347/#348 closures are reopened in the backlog reconciliation because
+their required 1280×900 and 375×812 rendered screenshot evidence was not
+actually gathered; the disposable browser runs used a different default
+viewport, and DOM roles/bounds were over-weighted as visual proof. No new issue
+is needed. #347 is the next groomed issue and must be re-engineered/reverified
+with the strengthened fixed-viewport visual contract before #348 or any route
+issue proceeds. Route-level children #325–#337 remain open until the new
+commits are republished and each exact surface is independently verified.
+
+The exact deployed asset is now a mandatory handoff field: a pushed commit is
+not a published revision. The current live `index-B8XLvuYD.js` proves the
+latest shared implementation has not reached Replit yet.

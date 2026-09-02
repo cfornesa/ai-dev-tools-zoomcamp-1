@@ -10723,12 +10723,11 @@ lint`, `npm run format:check`, and `npm run build` passed. Lint retained only
 the repository's existing warnings, and the build retained its existing large
 chunk warning.
 
-Handoff: the local implementation is closure-ready, but the GitHub API was
-unreachable during this pass, so the required `## QA: PASS` comment and issue
-closure could not be reconciled. Retry authenticated GitHub access, post the
-criterion matrix to #345, and close it only after confirming the evidence
-above. This does not block independent issues; it blocks only #345's final
-GitHub reconciliation.
+Closure: GitHub comment `5510368100` records the full criterion matrix and
+`#345` was closed with `state_reason=completed` after the focused tests,
+deterministic Chromium selector smoke, full frontend/static gates, and
+selector-only closure boundary were confirmed. Consumer-route and downloaded-
+artifact evidence remains owned by #327–#337.
 
 ## 265. Add touch d-pad travel to the immersive 3D viewer
 

@@ -10606,6 +10606,13 @@ the complete default browser-QA gate passed 7/7. The sibling
 `ai-dev-tools-zoomcamp` project was not stopped or modified. GitHub closure
 remains pending because authenticated issue access was unavailable.
 
+Manual 2D route verification (2026-09-02): #325's dedicated Chromium test
+passed 1/1 against `/projects/:id` after `EditorWorkspace` was corrected to
+wrap its canvas and `PieceStageToolbar` in the same `.piece-stage-shell`.
+The focused editor/publication component regression set passed 57/57. This
+proves the local route contract only; it does not prove the stale published
+`animate.creatrweb.com` revision.
+
 Retry evidence (2026-09-02): a second `docker compose --project-name
 ai-dev-tools-zoomcamp-1 --file compose.yaml up -d --build` attempt reached the
 same metadata-resolution point and terminated with `DeadlineExceeded` for

@@ -190,6 +190,7 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: /enable camera/i }));
 
@@ -253,6 +254,7 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
     expect(outer.contains(canvasFrame)).toBe(true);
 
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     const gestureRegion = screen.getByTestId('gesture-camera-control');
     // The Live camera panel is now inside the stage-local Piece controls

@@ -264,6 +264,7 @@ describe('Preview panel stays populated across camera activation (Task 109, issu
 
     assertPreviewFullyRendered(1);
 
+    fireEvent.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Piece controls' }));
     assertPreviewFullyRendered(1);
   });

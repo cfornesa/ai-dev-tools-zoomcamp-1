@@ -124,6 +124,16 @@ blocker ends an issue, run a fresh task-distillation reconciliation before
 selecting the next issue. Recheck duplicates, dependency order, closure
 criteria, blocker ownership, and follow-up issue coverage.
 
+Responsive command-surface decision (2026-09-02): the owner prefers a
+stage-associated hamburger command surface on narrow authored-piece views over
+a dense persistent action rail. The trigger opens a fixed/inset translucent
+full-viewport overlay; each subordinate menu has a visible X/Close action,
+Escape dismissal, focus entry/restoration, and background scroll/hit-test
+isolation. Keep accessible names and keyboard operation even when visual action
+labels collapse to icons. Treat this as the shared #347 shell contract, with
+#348 owning editor authoring commands and each route/artifact retaining its own
+deployed verification boundary.
+
 Consumer-layout lesson (2026-09-02): a shared `PieceStageToolbar` does not
 guarantee parity when a consumer omits the inner control-group layout class.
 The outer absolute rail can exist while direct child wrappers still collapse
@@ -157,3 +167,21 @@ checkout's `View immersive piece` wiring (`4f912c9`), so #327 remains open until
 that reviewed revision is pushed, republished, and rechecked at the exact URL.
 The public 2D route independently showed its compact stage toolbar in the same
 session; do not transfer that evidence to any 3D route or extracted artifact.
+
+Live revision reconciliation (2026-09-02): after reviewed commit `0721322`
+was pushed, authenticated Chrome still received `assets/index-DIraFw-9.js`.
+The exact 3D editor had no hamburger trigger and rendered the legacy 851x106px
+desktop / 276x290px mobile rail; the public 2D route had direct controls but no
+hamburger in that authenticated session. Treat this as proof that the
+published bundle and reviewed GitHub revision are different states, not as
+successful deployment verification. Reconcile bundle identity before closing
+#347/#348 or any dependent route issue, and capture anonymous public evidence
+separately from authenticated owner evidence.
+
+Replit source-sync diagnosis (2026-09-02): the authenticated Git panel showed
+`Sync Changes 1`, latest visible workspace commit `fix: keep editor overlay
+within mobile stage` (`4a9bd38`), and `Not pushed to remote`, while GitHub
+`origin/main` was `a130261`. A successful Replit publication can therefore
+serve an older workspace snapshot. Require Pull/Sync to the reviewed GitHub
+revision before exact-route parity QA; publish status alone is not revision
+identity. Pull/Sync is a workspace mutation and requires explicit approval.

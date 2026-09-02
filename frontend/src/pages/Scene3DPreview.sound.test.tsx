@@ -196,6 +196,7 @@ describe('Scene3DPreview sound control (issue #306)', () => {
       'aria-pressed',
       'true',
     );
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     expect(screen.getByLabelText('Sound volume')).toBeInTheDocument();
   });
@@ -204,6 +205,7 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
 
     const slider = screen.getByLabelText('Sound volume') as HTMLInputElement;
@@ -256,6 +258,7 @@ describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
 
@@ -283,6 +286,7 @@ describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
 
@@ -296,6 +300,7 @@ describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
 
@@ -318,6 +323,7 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
 
     await user.click(screen.getByRole('button', { name: 'Live mic' }));
@@ -337,6 +343,7 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
 
     await user.click(screen.getByRole('button', { name: 'Live mic' }));
@@ -352,6 +359,7 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Live mic' }));
     await screen.findByRole('button', { name: 'Stop live mic' });
@@ -367,6 +375,7 @@ describe('Scene3DPreview live mic (issue #308)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Live mic' }));
     await screen.findByRole('button', { name: 'Stop live mic' });
@@ -390,6 +399,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
 
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
@@ -409,6 +419,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
     await user.click(screen.getByRole('button', { name: /enable camera/i }));
@@ -429,6 +440,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
 
@@ -447,6 +459,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
 
@@ -463,6 +476,7 @@ describe('Scene3DPreview camera theremin (issue #309)', () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Camera theremin' }));
 
@@ -514,6 +528,7 @@ describe('Scene3DPreview "Piece controls" settings panel (issue #310)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
 
     await user.selectOptions(screen.getByLabelText('Movement instrument'), 'fmsynth');

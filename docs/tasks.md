@@ -11861,3 +11861,61 @@ x=-43 and is clipped by the preview/stage boundary. This is a real published
 responsive failure, so #348 remains open with QA FAIL. Correct the mobile
 overlay geometry, republish, repeat both exact viewport checks, and close only
 after the published evidence passes.
+
+## Re-distillation: stage hamburger command surface and false closures (2026-09-02)
+
+The owner clarified the target interaction for authored-piece surfaces: an
+upper-left stage hamburger opens a transparent full-viewport command surface;
+each available command opens its own menu/panel; every opened menu has a
+visible `X` close action, Escape closes it, focus enters and returns correctly,
+and the artwork remains visible beneath the translucent scrim. The PHP
+reference's fixed hand-guide overlay is the visual precedent for this pattern.
+
+Latest exact published evidence uses `assets/index-DIraFw-9.js`: public 2D and
+embedded 2D render controls but still use the old direct row; the authenticated
+3D editor renders real content, a dense multi-row Preview actions rail, and
+`Publication status: Draft`; supplied 3D public/embed/immersive routes are
+unavailable because that fixture is Draft. Local source/test evidence cannot
+close those deployed surfaces.
+
+Re-groom #347 as the shared stage-command surface and #348 as the editor-only
+command integration. #347's finite contract must name the hamburger trigger,
+translucent overlay, visible heading and `X`, command list, focus/keyboard/
+Escape/outside dismissal, scroll and hit-test isolation, and fixed 1280x900 /
+375x812 screenshots. #348 must name the editor actions and preserve their
+mutations/disabled/error states inside that surface. Keep #325–#335 route
+specific and #336/#337 artifact specific; do not let a shared-component pass
+close any consumer. Reopen/re-groom closed route records that contain later
+owner rejection text, plus #343/#345 whose acceptance lists remained
+unchecked. The next engineering handoff is #347 only, after this distillation.
+
+## Fresh owner re-audit after commit 0721322 (2026-09-02)
+
+Authenticated Chrome confirms a deployment mismatch. The exact 3D editor
+serves `assets/index-DIraFw-9.js`, has zero hamburger triggers, and renders the
+old `Preview actions` rail at 851x106px desktop and 276x290px at 375x812. The
+public 2D route serves the same asset and shows direct controls without a
+hamburger in this authenticated session; that is not anonymous privacy
+evidence and does not disprove the owner’s no-controls report. Reviewed
+`origin/main` is `0721322`, whose local shared component contains the
+hamburger overlay, so the live bundle cannot prove that commit was published.
+
+No new issue is warranted. #347 remains the next single groomed
+implementation/verification transaction and must require exact published
+asset identity, fixed 1280x900 and 375x812 screenshots, hamburger/X/Escape/
+focus checks, and visible Draft/Published state before closure. #348 remains
+gated behind #347; route and artifact children stay independently open.
+Next action: synchronize Replit to reviewed `0721322` (or a reviewed
+descendant), publish, and recheck the exact supplied URLs before engineering
+or closing another issue.
+
+### Replit source-sync diagnosis
+
+The authenticated Replit Git panel shows `Sync Changes 1`, the latest visible
+workspace commit is `fix: keep editor overlay within mobile stage` (`4a9bd38`),
+and the panel says `Not pushed to remote`; GitHub `origin/main` is `a130261`.
+The successful publication therefore used an older Replit workspace snapshot.
+This is a deployment/source-sync verification boundary. Pull/Sync must be
+performed in Replit, conflicts preserved/resolved, and the reviewed revision
+published before #347 can close or #348 can begin. The agent did not mutate
+Replit through Pull/Sync.

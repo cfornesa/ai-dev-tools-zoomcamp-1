@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -98,7 +98,10 @@ describe('"Take screenshot" (2D manual editor, issue #285)', () => {
     expandAllCollapsibleSections();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: 'Take screenshot' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Take screenshot' }),
+    );
 
     await waitFor(() => expect(mockedDownloadBlob).toHaveBeenCalledTimes(1));
     const [blob, filename] = mockedDownloadBlob.mock.calls[0];

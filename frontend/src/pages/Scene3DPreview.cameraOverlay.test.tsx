@@ -196,6 +196,7 @@ describe('Scene3DPreview independent camera preview (issue #342)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Show camera' }));
     expect(screen.getByRole('button', { name: 'Steer the piece' })).toHaveAttribute(
@@ -215,6 +216,7 @@ describe('Scene3DPreview independent camera preview (issue #342)', () => {
   it('hiding the preview removes the stream overlay without changing steering', async () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: 'Show camera' }));
     setCameraStream(fakeStream());

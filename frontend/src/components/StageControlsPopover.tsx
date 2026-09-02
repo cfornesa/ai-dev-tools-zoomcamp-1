@@ -54,6 +54,14 @@ export default function StageControlsPopover({
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
+        <button
+          type="button"
+          className="piece-stage-submenu-close"
+          aria-label={`Close ${label.toLowerCase()}`}
+          onClick={() => setOpen(false)}
+        >
+          × Close
+        </button>
         {children}
       </div>
     </div>

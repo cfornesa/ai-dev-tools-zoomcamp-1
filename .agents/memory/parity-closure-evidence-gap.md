@@ -157,3 +157,12 @@ cannot be dismissed as a DOM absence without reconciling browser/revision
 context and rendered discoverability. Prior issue closures that relied on
 different fixtures or unchecked visual criteria must be reopened; do not
 convert a shared-component or local browser pass into route closure.
+
+Replit rebase blocker lesson (2026-09-02): a workspace can appear clean or
+show the reviewed commit in history while a prior interactive rebase is still
+unfinished and publication is operating on an older deployed revision. When
+the workspace reports a rebase conflict, inspect the staged sides, preserve
+the newest reviewed manifest, finish the rebase, and only then republish.
+Verify the published hashed asset after the publish operation reaches a
+terminal result; a persistent `Publishing` label and unchanged asset are not
+deployment evidence.

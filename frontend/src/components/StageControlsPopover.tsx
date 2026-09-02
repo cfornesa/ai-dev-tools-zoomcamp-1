@@ -14,11 +14,13 @@ export default function StageControlsPopover({
   label = 'Piece controls',
   resetKey,
   showVisibleLabel = true,
+  panelClassName,
 }: {
   children: ReactNode;
   label?: string;
   resetKey?: string | number;
   showVisibleLabel?: boolean;
+  panelClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -47,7 +49,7 @@ export default function StageControlsPopover({
         role="group"
         aria-label={label}
         aria-hidden={!open}
-        className="piece-stage-controls-panel"
+        className={`piece-stage-controls-panel${panelClassName ? ` ${panelClassName}` : ''}`}
         hidden={!open}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}

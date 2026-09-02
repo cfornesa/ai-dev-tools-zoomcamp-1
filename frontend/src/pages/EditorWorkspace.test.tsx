@@ -394,6 +394,7 @@ describe('EditorWorkspace responsive layout', () => {
     renderWorkspace();
 
     await screen.findByRole('tablist', { name: /editor panels/i });
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
     const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
     expect(toolbars).toHaveLength(1);
     const toolbar = toolbars[0];
@@ -414,6 +415,7 @@ describe('EditorWorkspace responsive layout', () => {
     renderWorkspace();
 
     await screen.findByRole('region', { name: 'Preview' });
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
     const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
     expect(toolbars).toHaveLength(1);
     expect(toolbars[0].closest('[data-testid="editor-piece-stage-shell"]')).toBe(
@@ -455,6 +457,7 @@ describe('EditorWorkspace responsive layout', () => {
     // as a real mobile user would tap the Layers tab before adding a shape.
     await screen.findByRole('tab', { name: 'Layers' });
     fireEvent.click(screen.getByRole('tab', { name: 'Layers' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit scene' }));
     await screen.findByRole('button', { name: 'Add circle' });
     fireEvent.click(screen.getByRole('button', { name: 'Add circle' }));
 

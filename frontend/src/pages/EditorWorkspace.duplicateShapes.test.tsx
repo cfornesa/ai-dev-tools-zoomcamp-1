@@ -179,6 +179,7 @@ async function loadWorkspace(scene: unknown, project: Partial<Project> = {}) {
   const rendered = renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
   expandAllCollapsibleSections();
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
   return rendered;
 }
 

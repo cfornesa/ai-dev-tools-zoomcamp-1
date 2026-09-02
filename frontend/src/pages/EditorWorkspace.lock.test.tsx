@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -90,6 +91,7 @@ async function loadReadyWorkspace() {
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
   expandAllCollapsibleSections();
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
 }
 
 function mockCanvasRect() {

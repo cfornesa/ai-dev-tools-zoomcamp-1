@@ -11804,6 +11804,48 @@ public 2D route now visibly renders screenshot, download, Piece controls, and
 fullscreen controls over the artwork. This is evidence for the shared
 #347/#348 implementation boundary only.
 
+## 269ao. Fresh #347 deployment-blocker distillation (2026-09-02)
+
+The Replit workspace was found mid-rebase onto `b98eb49`; the newer
+distillation manifest was preserved and the rebase completed. Replit now
+reports a clean `main` containing `b98eb49` and three subsequent publish
+commits. A republish is active, but the exact supplied routes still serve
+`assets/index-C5ipN-ir.js` without the new persistent labels.
+
+Status: #347 remains `dependency-blocked / deployment verification`. The
+blocker owner is the Replit publish operation; next action is to obtain its
+terminal result or error and recheck the exact fixed-viewport routes. No new
+issue is warranted, and #348 remains gated behind #347 closure.
+
+## 269ap. #347 final QA and closure reconciliation (2026-09-02)
+
+The deployment blocker cleared. Exact published routes serve
+`assets/index-DVjamtqV.js`. Live fixed-viewport inspection verified labeled
+stage controls on the 3D editor and public 2D route; the live 3D publication
+panel exposed Draft and Published with the current state disabled, and the
+authorized Published → Draft restoration completed successfully.
+
+Focused tests passed 35/35; Docker Chromium fixed-viewport QA passed 1/1;
+full `make check` passed with 888 backend tests passed / 22 skipped and 2,396
+frontend tests passed; production build passed. Status: #347 COMPLETE,
+pending the final GitHub close operation. #348 remains gated until #347 is
+closed.
+
+## 269an. #347 shared stage-control engineering transaction (2026-09-02)
+
+Implemented locally in `b98eb49`: shared stage actions render persistent
+short labels beside SVG icons, Piece controls are visibly labeled by default,
+and 3D sound/steering/gesture-guide actions expose visible labels. Focused
+tests passed 35/35, fixed-viewport Docker Chromium QA passed 1/1, frontend
+lint/format/typecheck passed, and the production build passed.
+
+Status: ACTIVE / QA FAIL — not closed. Full `make check` has host-level socket
+and launcher-timeout failures plus one unrelated frontend autosave test
+failure. The exact published public route still serves `index-C5ipN-ir.js`
+without the new labels. Next action: republish `b98eb49`, inspect both fixed
+viewports on the exact published consumer, and resolve the remaining full-gate
+failures before reconciling #347 closure. #348 has not started.
+
 The public 2D download affordance opened without exposing Full/Non-Camera
 download entries during the same live check. Keep the relevant public-route
 and artifact issues open; shared toolbar presence must not be used as evidence

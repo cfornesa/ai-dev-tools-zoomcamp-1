@@ -1,4 +1,4 @@
-/** Issue #325: manual 2D editor controls stay in the stage-local toolbar. */
+/** Issues #325/#348: manual 2D controls stay in compact stage-local chrome. */
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
@@ -25,6 +25,11 @@ test.describe('manual 2D editor stage chrome', () => {
 
     const stage = page.locator('.piece-stage-shell');
     const authoringToolbar = stage.getByRole('toolbar', { name: 'Editor actions' });
+    const editSceneButton = stage.getByRole('button', { name: 'Edit scene' });
+    await expect(editSceneButton).toBeVisible();
+    await expect(authoringToolbar).toBeHidden();
+    await expect(page.locator('.editor-workspace-header .editor-toolbar')).toHaveCount(0);
+    await editSceneButton.click();
     await expect(authoringToolbar).toBeVisible();
     for (const label of [
       'Add circle',
@@ -43,8 +48,6 @@ test.describe('manual 2D editor stage chrome', () => {
     ]) {
       await expect(authoringToolbar.getByRole('button', { name: label })).toBeVisible();
     }
-    await expect(page.locator('.editor-workspace-header .editor-toolbar')).toHaveCount(0);
-
     const initialShapeCount = await page.getByText(/shape\(s\) in the working copy\./).innerText();
     await authoringToolbar.getByRole('button', { name: 'Add circle' }).click();
     await expect(page.getByText(/1 shape\(s\) in the working copy\./)).toBeVisible();
@@ -59,6 +62,7 @@ test.describe('manual 2D editor stage chrome', () => {
       { width: 375, height: 812 },
     ]) {
       await page.setViewportSize(viewport);
+      await expect(editSceneButton).toBeVisible();
       await expect(authoringToolbar).toBeVisible();
       await expect(toolbar).toBeVisible();
       await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
@@ -94,10 +98,11 @@ test.describe('manual 2D editor stage chrome', () => {
     expect(authoringBox!.y + authoringBox!.height).toBeLessThanOrEqual(
       stageBoxForAuthoring!.y + stageBoxForAuthoring!.height,
     );
+    expect(authoringBox!.width).toBeLessThanOrEqual(520);
 
     const chrome = await toolbar.evaluate((element) => {
       const toolbarStyle = getComputedStyle(element);
-      const button = element.querySelector('.piece-stage-icon-button');
+      const button = element.querySelector('.piece-stage-toolbar .piece-stage-icon-button');
       const buttonStyle = button ? getComputedStyle(button) : null;
       return {
         top: toolbarStyle.top,
@@ -110,10 +115,10 @@ test.describe('manual 2D editor stage chrome', () => {
     expect(chrome).toMatchObject({
       top: '13.5px',
       left: '13.5px',
-      buttonWidth: '49.5px',
       buttonHeight: '49.5px',
       buttonRadius: '13.5px',
     });
+    expect(Number.parseFloat(chrome.buttonWidth ?? '0')).toBeGreaterThanOrEqual(49.5);
 
     const runtimeLayout = await toolbar.locator(':scope > [role="group"]').evaluate((element) => {
       const style = getComputedStyle(element);

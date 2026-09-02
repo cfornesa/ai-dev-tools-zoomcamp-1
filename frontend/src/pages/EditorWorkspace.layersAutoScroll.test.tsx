@@ -102,6 +102,7 @@ async function loadReadyWorkspace() {
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
   expandAllCollapsibleSections();
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
 }
 
 function outlineList() {

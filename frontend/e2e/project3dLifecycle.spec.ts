@@ -303,6 +303,8 @@ test.describe('3D project creation', () => {
       ['Move left', 'ArrowLeft'],
       ['Move backward', 'ArrowDown'],
       ['Move right', 'ArrowRight'],
+      ['Zoom in', 'ZoomIn'],
+      ['Zoom out', 'ZoomOut'],
     ] as const;
     await expect(navigation.getByRole('button')).toHaveCount(directions.length);
 

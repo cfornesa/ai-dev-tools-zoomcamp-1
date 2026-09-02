@@ -112,6 +112,8 @@ describe('Scene3DPreview fly controls (issue #311)', () => {
     expect(listenToKeyEventsSpy).not.toHaveBeenCalled();
     expect(screen.getByRole('region', { name: 'Immersive touch navigation' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Move forward' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Zoom out' })).toBeInTheDocument();
   });
 
   it('dispatches a matching key release when a touch direction is cancelled', () => {
@@ -128,6 +130,25 @@ describe('Scene3DPreview fly controls (issue #311)', () => {
     expect(keyEvents.map((event) => [event.type, event.key])).toEqual([
       ['keydown', 'ArrowUp'],
       ['keyup', 'ArrowUp'],
+    ]);
+    window.removeEventListener('keydown', listener);
+    window.removeEventListener('keyup', listener);
+  });
+
+  it('dispatches matching zoom press and release events', () => {
+    const keyEvents: KeyboardEvent[] = [];
+    const listener = (event: KeyboardEvent) => keyEvents.push(event);
+    window.addEventListener('keydown', listener);
+    window.addEventListener('keyup', listener);
+    render(<Scene3DPreview scene={baseScene()} flyControls />);
+
+    const zoomIn = screen.getByRole('button', { name: 'Zoom in' });
+    fireEvent.pointerDown(zoomIn, { pointerType: 'touch' });
+    fireEvent.pointerUp(zoomIn, { pointerType: 'touch' });
+
+    expect(keyEvents.map((event) => [event.type, event.key])).toEqual([
+      ['keydown', 'ZoomIn'],
+      ['keyup', 'ZoomIn'],
     ]);
     window.removeEventListener('keydown', listener);
     window.removeEventListener('keyup', listener);

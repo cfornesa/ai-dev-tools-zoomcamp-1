@@ -595,9 +595,12 @@ function Scene3DPreview({
     // together along the camera's own forward/right vectors, layered on
     // top of -- not replacing -- mouse-drag orbit and wheel/pinch zoom.
     const FLY_SPEED_UNITS_PER_SECOND = 6;
+    const FLY_ZOOM_SPEED_UNITS_PER_SECOND = 8;
     const heldFlyKeys = new Set<string>();
     function handleFlyKeyDown(event: KeyboardEvent) {
-      if (event.key.startsWith('Arrow')) heldFlyKeys.add(event.key);
+      if (event.key.startsWith('Arrow') || event.key === 'ZoomIn' || event.key === 'ZoomOut') {
+        heldFlyKeys.add(event.key);
+      }
     }
     function handleFlyKeyUp(event: KeyboardEvent) {
       heldFlyKeys.delete(event.key);
@@ -616,10 +619,25 @@ function Scene3DPreview({
       if (heldFlyKeys.has('ArrowDown')) move.sub(forward);
       if (heldFlyKeys.has('ArrowRight')) move.add(right);
       if (heldFlyKeys.has('ArrowLeft')) move.sub(right);
-      if (move.lengthSq() === 0) return;
-      move.normalize().multiplyScalar(FLY_SPEED_UNITS_PER_SECOND * deltaSeconds);
-      camera.position.add(move);
-      controls.target.add(move);
+      if (move.lengthSq() !== 0) {
+        move.normalize().multiplyScalar(FLY_SPEED_UNITS_PER_SECOND * deltaSeconds);
+        camera.position.add(move);
+        controls.target.add(move);
+      }
+
+      const zoomDirection =
+        (heldFlyKeys.has('ZoomIn') ? -1 : 0) + (heldFlyKeys.has('ZoomOut') ? 1 : 0);
+      if (zoomDirection !== 0) {
+        const spherical = new THREE.Spherical();
+        spherical.setFromVector3(camera.position.clone().sub(controls.target));
+        spherical.radius = THREE.MathUtils.clamp(
+          spherical.radius + zoomDirection * FLY_ZOOM_SPEED_UNITS_PER_SECOND * deltaSeconds,
+          MIN_ZOOM_RADIUS,
+          MAX_ZOOM_RADIUS,
+        );
+        camera.position.setFromSpherical(spherical).add(controls.target);
+        camera.lookAt(controls.target);
+      }
     }
 
     let frameId: number;
@@ -955,29 +973,54 @@ function Scene3DPreview({
         />
         {flyControls && (
           <div className="scene3d-touch-dpad" role="region" aria-label="Immersive touch navigation">
-            {(
-              [
-                ['ArrowUp', 'Move forward', '↑'],
-                ['ArrowLeft', 'Move left', '←'],
-                ['ArrowDown', 'Move backward', '↓'],
-                ['ArrowRight', 'Move right', '→'],
-              ] as const
-            ).map(([key, label, glyph]) => (
-              <button
-                key={key}
-                type="button"
-                aria-label={label}
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  dispatchFlyKey(key, 'keydown');
-                }}
-                onPointerUp={() => releaseFlyKey(key)}
-                onPointerCancel={() => releaseFlyKey(key)}
-                onPointerLeave={() => releaseFlyKey(key)}
-              >
-                {glyph}
-              </button>
-            ))}
+            <div className="scene3d-touch-dpad-directions" aria-label="Move through piece">
+              {(
+                [
+                  ['ArrowUp', 'Move forward', '↑'],
+                  ['ArrowLeft', 'Move left', '←'],
+                  ['ArrowDown', 'Move backward', '↓'],
+                  ['ArrowRight', 'Move right', '→'],
+                ] as const
+              ).map(([key, label, glyph]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-label={label}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    dispatchFlyKey(key, 'keydown');
+                  }}
+                  onPointerUp={() => releaseFlyKey(key)}
+                  onPointerCancel={() => releaseFlyKey(key)}
+                  onPointerLeave={() => releaseFlyKey(key)}
+                >
+                  {glyph}
+                </button>
+              ))}
+            </div>
+            <div className="scene3d-touch-dpad-zoom" aria-label="Zoom view">
+              {(
+                [
+                  ['ZoomIn', 'Zoom in', '+'],
+                  ['ZoomOut', 'Zoom out', '−'],
+                ] as const
+              ).map(([key, label, glyph]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-label={label}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    dispatchFlyKey(key, 'keydown');
+                  }}
+                  onPointerUp={() => releaseFlyKey(key)}
+                  onPointerCancel={() => releaseFlyKey(key)}
+                  onPointerLeave={() => releaseFlyKey(key)}
+                >
+                  {glyph}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

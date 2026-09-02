@@ -46,7 +46,7 @@ as read-only behavioral reference.
 | [#335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/335) | Verify CMS immersive 3D `/immersive/p3d/:id?embed=1&cms=1` | Child of #320; one route/variant | `open` | Requires deployment and browser evidence |
 | [#336](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/336) | Verify portable 2D download runtime | Child of #320; one artifact surface | `open` | Requires deployed download and extracted-browser evidence |
 | [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337) | Verify portable 3D Full/Non-Camera downloads | Child of #320; one artifact capability | `open` | Requires deployed downloads and extracted-browser evidence |
-| [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
+| [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; one route and capability | `local_implementation_verified` | Shared stage rail now matches PHP reference-relative top-left/0.75rem/2.75rem rounded-square styling; focused React regression passes 61/61 and dedicated Chromium route QA passes 1/1 with computed geometry/style, named publication controls, and no legacy header row. Keep open for post-publish exact-route verification |
 | [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
 | [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `closed_completed_local` | Narrow local implementation closure; not deployment evidence. Exact deployed verification remains #326 |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
@@ -658,6 +658,19 @@ separate from #330's regular public route, #333–#335's immersive variants, and
 #337's downloaded runtime. Authenticated GitHub access is still unavailable,
 so the issue is ready for reconciliation but not closed; the deployed
 revision still requires authorized publish and exact-route QA.
+
+## Blocker reconciliation: #338 (2026-09-02)
+
+#338’s local implementation and QA transaction completed. The shared stage
+toolbar styling was corrected to the PHP reference’s relative dimensions and
+anchoring (`top/left: 0.75rem`, icon controls `2.75rem`, rounded-square
+corners), and `manual2dStageChrome.spec.ts` now asserts the rendered result.
+Focused React coverage passed 61/61; the dedicated disposable-stack browser
+route passed 1/1. No duplicate or new dependency was found. This remains
+local implementation evidence only: the supplied production revision still
+serves the legacy shell, and no push/publish or authenticated GitHub
+reconciliation is authorized/available. Next action is exact post-publish
+`/projects/:id` verification; do not mark #338 closed from this commit.
 
 ## Blocker reconciliation: #329 (2026-09-02)
 

@@ -10533,6 +10533,16 @@ the discovered surfaces; any genuinely new implementation gap must be marked
 `issue-creation-pending-authorization` with an owner and next action before
 implementation.
 
+Manual 2D implementation slice (#338, 2026-09-02): the shared stage rail was
+corrected to match the PHP reference-relative visual contract: top/left
+`0.75rem`, `2.75rem` icon controls, rounded-square corners, translucent dark
+background, and stage-local placement. The focused React regression passed
+61/61 and `BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa`
+passed 1/1, including computed rendered geometry, publication controls, and
+absence of the legacy header publication row. This is local implementation
+evidence only; #338 remains open until the exact published `/projects/:id`
+route is inspected on the deployed revision.
+
 ## 264. Add visitor-selectable instruments for each 3D sound voice
 
 Status: HANDED-OFF

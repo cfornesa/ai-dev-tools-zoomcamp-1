@@ -2913,26 +2913,37 @@ select.ai-proposal-field-full-width {
 
 .piece-stage-toolbar {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 0.75rem;
+  left: 0.75rem;
   /* Keep the shared stage actions above editor-only overlays such as the
      selection HUD. The toolbar is interactive chrome, so a visible HUD must
      never win hit-testing merely because it is rendered later in the panel. */
   z-index: 20;
   display: flex;
-  gap: 8px;
+  gap: 0.65rem;
 }
 
-.piece-stage-toolbar button {
-  width: 40px;
-  height: 40px;
+.piece-stage-toolbar .piece-stage-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  background: rgba(10, 12, 20, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   cursor: pointer;
+}
+
+.piece-stage-toolbar .piece-stage-icon-button:hover,
+.piece-stage-toolbar .piece-stage-icon-button:focus-visible {
+  border-color: #fff;
+  background: rgba(0, 0, 0, 0.72);
 }
 
 .piece-stage-controls {

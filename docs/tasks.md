@@ -11076,6 +11076,17 @@ still unverified, so #332 remains open and is not marked COMPLETE. Publish the
 tested revision, rerun the exact anonymous embed URL, and close only after
 that deployed criterion passes.
 
+## 269h. Handoff regular immersive 3D route (#333)
+
+Status: #333 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The dedicated Docker-backed `immersive3dStageChrome.spec.ts` transaction
+passed 1/1. It verified the regular immersive route's compact stage-local
+rail, named screenshot/download/sound/Piece/steering/guide/fullscreen controls,
+and arrow-key travel. The deployed revision remains unverified, so #333 stays
+open and is not COMPLETE. Publish the tested revision, rerun the exact
+anonymous immersive fixture URL, and close only after deployed evidence passes.
+
 ## 269g. Reconcile the actual deployed revision (#320/#321)
 
 Status: BLOCKED ON AUTHORIZED PUSH/PUBLISH

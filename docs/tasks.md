@@ -10331,3 +10331,15 @@ repository. The existing durable constraint is
 Acceptance criteria and next action are maintained in GitHub #321. Do not
 stop or mutate unrelated containers; select this repository's Compose project
 explicitly, fingerprint the served app, then rerun browser readiness.
+
+## 264. Restore backend format-check cleanliness in startup configuration test
+
+Status: COMPLETE
+
+GitHub issue: [#322](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/322)
+
+Classification: workflow/infrastructure-defect. Ruff reported a deterministic
+formatting mismatch at `backend/tests/test_startup_configuration.py:115`.
+Ran the configured Ruff formatter with no behavior change; `make check` now
+passes all backend and frontend gates. The issue remains open until the
+corresponding QA/status reconciliation is posted to GitHub.

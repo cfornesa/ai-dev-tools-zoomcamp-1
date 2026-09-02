@@ -112,9 +112,7 @@ def test_production_wrapper_selects_preview_mode_via_the_shared_launcher():
 
 def test_production_environment_disables_runtime_migrations():
     config = (ROOT / ".replit").read_text()
-    production = config.split("[userenv.production]", 1)[1].split(
-        "[workflows]", 1
-    )[0]
+    production = config.split("[userenv.production]", 1)[1].split("[workflows]", 1)[0]
 
     assert 'RUN_MIGRATIONS_ON_START = "false"' in production
 

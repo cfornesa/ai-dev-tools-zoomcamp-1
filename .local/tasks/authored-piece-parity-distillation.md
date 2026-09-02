@@ -204,9 +204,9 @@ phase may begin only with exactly one groomed issue after the access/fixture
 boundary is resolved; engineering and QA must then finish and close that issue
 before the next one begins.
 
-## Current owner re-audit (2026-09-02, after commits #347/#348)
+## Current owner re-audit and #347 reclosure (2026-09-02)
 
-Status: DISTILLATION ACTIVE — PRIOR #347/#348 CLOSURES REOPENED
+Status: DISTILLATION HANDOFF COMPLETE — #347 CLOSED, #348 NEXT
 
 The exact supplied routes were inspected again in the connected Chrome session:
 
@@ -226,11 +226,12 @@ The exact supplied routes were inspected again in the connected Chrome session:
 
 The prior closure transaction was invalid for two reasons: the #347/#348
 browser runs used the disposable stack's default viewport rather than the
-required 1280×900 and 375×812 rendered screenshot checks, and DOM role/bounds
-evidence was treated as proof of visual parity. Therefore #347 and #348 are
-reopened as incomplete implementation/verification contracts, not accepted as
-live parity. Their local code remains available for review, but no route child
-or parent may inherit their closure.
+required 1280×900 and 375×812 rendered evidence, and DOM role/bounds evidence
+was treated as proof of visual parity. #347 has now been re-engineered with
+recognizable inline SVG controls, verified at both fixed viewports, passed
+focused/full checks and the production build, pushed as `8ff191a`, and closed
+with a `## QA: PASS` GitHub evidence comment. This closes only the shared local
+affordance scope; no route child or parent may inherit live parity.
 
 No duplicate issue is warranted. Existing coverage remains sufficient:
 
@@ -245,7 +246,7 @@ No duplicate issue is warranted. Existing coverage remains sufficient:
 - #346 remains a local 2D sound foundation only. It does not close route or
   download sound parity.
 
-Next groomed issue: #347, reopened with the strengthened fixed-viewport visual
-closure contract. Engineering may begin only after this distillation section
-is reconciled in the GitHub issue and docs; then process #347 transactionally
-before #348 or any route issue.
+Next groomed issue: #348, with the strengthened fixed-viewport visual closure
+contract. Engineering may begin only after this distillation section is
+reconciled in the GitHub issue and docs; then process #348 transactionally
+before any route issue.

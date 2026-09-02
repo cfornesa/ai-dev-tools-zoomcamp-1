@@ -212,6 +212,20 @@ implementation and exact routes:
   supplied deployed URLs still require a publish before production-readiness
   can be assessed.
 
+## Re-audit implementation increment (2026-09-02, continued)
+
+- A second DOM-level inspection found the manual 2D authoring toolbar was
+  still only positioned inside the outer canvas viewport, not inside the
+  actual artwork canvas. That preserved the visual failure mode reported by
+  the owner even though the earlier test only checked the viewport ancestor.
+- Commit `b04b6b6` moves the complete authoring toolbar into
+  `[data-testid="scene-canvas"]` and updates the narrow/desktop structural
+  assertions. `EditorWorkspace.test.tsx` and
+  `EditorWorkspace.toolbarAddShape.test.tsx` pass 37/37.
+- This is an implementation-defect correction, not a deployment-only gap.
+  Exact deployed verification remains blocked until the current local
+  commits are pushed/published by the repository owner.
+
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`
 - `.agents/memory/e2e-wrong-docker-project.md`

@@ -504,6 +504,12 @@ describe('EditorWorkspace keyboard accessibility', () => {
     // The header's Save control (next to Publish) is disabled with
     // nothing unsaved, so it's skipped entirely in the tab order.
     await user.tab();
+    // Publication status is deliberately keyboard-actionable so users can
+    // discover and change Draft/Published without relying on the adjacent
+    // prose status line.
+    expect(screen.getByRole('button', { name: 'Published' })).toHaveFocus();
+
+    await user.tab();
     expect(screen.getByRole('button', { name: 'Exit without saving' })).toHaveFocus();
 
     // Task 129 (issue #154): Layers is now the first switcher tab, ahead

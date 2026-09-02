@@ -11313,3 +11313,30 @@ issue is created: #320/#321 own deployment, #325–#342/#344 own atomic routes
 and capabilities, and #336/#337 own downloaded artifacts. The exact next
 action is authorized publish, then sequential exact-route/artifact QA; no
 production-readiness claim is valid before that.
+
+## 269x. Handoff manual 2D editor route (#325)
+
+Status: #325 HANDED OFF — DEPLOYED REVISION VERIFICATION BOUNDARY
+
+The focused editor/publication/camera/fullscreen suites pass 67/67, and
+`BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa` passes
+1/1 against disposable PostgreSQL/Django/Vite/Chromium. Local evidence covers
+the named stage-local authoring/runtime/publication controls, Add circle → Undo,
+horizontal PHP-relative toolbar geometry, stage containment, and no legacy
+header publication row. GitHub `QA: FAIL` comment `5510565616` records the
+criterion matrix. The issue remains open because exact authenticated
+production `/projects/:id` and Draft ↔ Published evidence cannot be proven
+until the reviewed revision is authorized and published.
+
+## 269y. End-of-blocked-issue distillation for #325
+
+Status: DISTILLATION COMPLETE — #325 LOCALLY VERIFIED/HANDED OFF; #326 UNBLOCKED
+
+No duplicate is warranted: #325 owns only the manual 2D owner editor, while
+AI 2D, 3D, public, embed, immersive, and artifact surfaces remain separate
+children. The local transaction is complete at 67/67 focused tests and 1/1
+Chromium route test; exact production authentication/publication is a
+non-user-judgment `verification-boundary` owned by #320/#321. The route is
+atomic as one finite stage-local control/publication workflow. #326 is the
+next independent editor route and may proceed while #325 remains open pending
+authorized publication and exact authenticated evidence.

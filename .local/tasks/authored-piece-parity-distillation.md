@@ -34,7 +34,7 @@ as read-only behavioral reference.
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
 | [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `closed_completed` | `30fcec0` hardens the preflight to fixed repository project/file identity; focused configuration tests pass 8/8, correct-stack preflight passes, unrelated-project override is rejected, QA comment posted, and GitHub issue closed |
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
-| [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Issue #325's 2D runtime group now has an explicit wrapped flex-row layout. Focused React/type checks pass, and Docker-backed `manual2dStageChrome.spec.ts` passes 1/1 with stage containment, named controls, Add circle → Undo, publication popover, and horizontal geometry. Keep open for exact deployed-route verification |
+| [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `handed_off_verification_boundary` | Focused route tests pass 67/67 and Docker-backed `manual2dStageChrome.spec.ts` passes 1/1 with stage containment, named controls, Add circle → Undo, publication popover, and horizontal geometry. GitHub `QA: FAIL` comment `5510565616` records the evidence; keep open for exact authenticated deployed-route verification |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated authenticated Chromium route test passes 1/1 with stage-local publication controls, PHP-relative geometry, reversible Draft → Published → Draft, and no header duplicate. Keep open for exact deployed-route verification |
 | [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, Save, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
@@ -1267,3 +1267,20 @@ repair; otherwise #325 is the first closure-ready editor route transaction.
 No engineering begins until that single selection has an issue body, finite
 criteria, fixed fixture, exact commands, and an explicit deployed-revision
 boundary. This audit makes no product-source or product-test changes.
+
+## End-of-blocked-issue distillation: #325 (2026-09-02)
+
+Status: DISTILLATION COMPLETE — #325 LOCALLY VERIFIED, HANDED OFF; NEXT ISSUE MAY PROCEED
+
+- Duplicate check: no new issue is warranted. #325 owns only the manual 2D
+  owner editor; AI 2D, 3D editors, public, embed, immersive, and artifacts
+  remain separate children.
+- Blocker check: the route transaction passes locally (67/67 focused tests,
+  1/1 exact Chromium route), but exact production authentication/publication
+  is unavailable. This is a non-user-judgment `verification-boundary` owned
+  by #320/#321; no product duplicate is filed.
+- Atomicity check: no split is needed. The manual 2D route has one finite
+  stage-local control and publication workflow; its deployment evidence is a
+  boundary, not another route.
+- Next-order check: #326 is the next independent editor route. #325 remains
+  open until authorized publication and exact authenticated route evidence.

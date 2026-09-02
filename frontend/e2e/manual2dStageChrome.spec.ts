@@ -214,4 +214,45 @@ test.describe('manual 2D editor stage chrome', () => {
     await expect(stageDialog.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
     await expect(stageDialog.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
   });
+
+  test('keeps the fullscreen command synchronized after browser Escape', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'Native fullscreen Escape behavior is covered in the supported Chromium browser.',
+    );
+
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
+    await page.waitForURL(/\/projects\/[^/]+$/);
+
+    const stage = page.locator('.piece-stage-shell');
+    const stageMenu = stage.locator('button.piece-stage-menu-trigger');
+    await stageMenu.click();
+    const stageDialog = stage.getByRole('dialog');
+    const fullscreenButton = stageDialog.getByRole('button', {
+      name: 'Expand piece to fullscreen',
+      exact: true,
+    });
+
+    await expect(fullscreenButton).toBeVisible();
+    await fullscreenButton.click();
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+    await expect(
+      stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    await page.keyboard.press('Escape');
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+    await expect(stageDialog).toBeHidden();
+    await stageMenu.click();
+    await expect(stageDialog).toBeVisible();
+    await expect(
+      stageDialog.getByRole('button', { name: 'Expand piece to fullscreen', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'false');
+  });
 });

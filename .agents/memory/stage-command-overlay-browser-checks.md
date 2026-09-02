@@ -7,4 +7,8 @@ Use state-aware, uniquely scoped locators when testing the shared stage command 
 
 **Why:** A real browser run can otherwise report false failures from strict-mode locator collisions or stale assumptions about the pre-overlay DOM. Narrow editor submenus also need their position measured against the stage/card boundary because their containing block is a small control wrapper.
 
-**How to apply:** Prefer the dedicated trigger class plus `aria-expanded`, exact names for action commands, and a dialog-card-scoped group locator. Exercise both pointer and keyboard opening, then verify fullscreen state through `document.fullscreenElement` at the supported narrow viewport.
+**How to apply:** Prefer the dedicated trigger class plus `aria-expanded`, exact names for action commands, and a dialog-card-scoped group locator. Exercise both pointer and keyboard opening, then verify fullscreen state through `document.fullscreenElement` at the supported narrow viewport. In automated Chromium, page-level Escape may not reach the native fullscreen controller, so the shared hook must provide an Escape exit fallback while keeping `fullscreenchange` authoritative.
+
+**Why:** A real-browser run exposed that Playwright's synthetic Escape can be delivered to the page without Chromium clearing `document.fullscreenElement`; relying only on the browser's native controller left the command state stuck.
+
+**How to apply:** Keep the user-facing Escape path browser-driven, but make the shared fullscreen hook call `document.exitFullscreen()` when Escape targets its fullscreen element. Reopen a menu that Escape closes before asserting the restored command label and `aria-pressed="false"`.

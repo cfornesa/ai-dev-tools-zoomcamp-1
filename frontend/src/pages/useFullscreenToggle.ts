@@ -21,8 +21,17 @@ export function useFullscreenToggle<T extends HTMLElement>(elementRef: RefObject
     function handleFullscreenChange() {
       setIsFullscreen(document.fullscreenElement === elementRefLive.current.current);
     }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && document.fullscreenElement === elementRefLive.current.current) {
+        void document.exitFullscreen();
+      }
+    }
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
   async function toggleFullscreen() {

@@ -36,7 +36,7 @@ as read-only behavioral reference.
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `handed_off_verification_boundary` | Focused route tests pass 67/67 and Docker-backed `manual2dStageChrome.spec.ts` passes 1/1 with stage containment, named controls, Add circle → Undo, publication popover, and horizontal geometry. GitHub `QA: FAIL` comment `5510565616` records the evidence; keep open for exact authenticated deployed-route verification |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `blocked_environment` | Focused AI 2D suite passes 34/34; required disposable-stack Chromium gate is blocked by Docker daemon permission failure. Keep open; exact deployed route verification remains pending |
-| [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, Save, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
+| [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `blocked_environment` | Focused manual 3D suite passes 52/52; required disposable-stack Chromium gate is blocked by Docker daemon permission failure. Keep open; exact deployed route verification remains pending |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
 | [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `handed_off_verification_boundary` | Exact `publishingAndRemix.spec.ts` passes 24/24 locally, including anonymous rendering and camera/demo fallback lifecycle. GitHub `QA: FAIL` comment `5510399615` records the boundary; production `/p/:id` still serves the legacy sibling-panel shell until authorized publish through #320/#321. Continue with independent #331 |
 | [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `handed_off_verification_boundary` | Dedicated Docker-backed `project3dLifecycle.spec.ts` passes 4/4, including public 3D controls, reversible publication, and immersive touch travel. Exact published `/p3d/:id` and authenticated owner evidence remain required; continue with independent next route after reconciliation |
@@ -1323,4 +1323,23 @@ REMAINS THE NEXT INDEPENDENT TRANSACTION
 - Atomicity check: no split is needed. This is one finite authenticated AI 2D
   route verification boundary.
 - Progress rule: #327 is independent and may proceed; retry #326 only after
+  Docker access and the reviewed deployment revision are available.
+
+## End-of-blocked-issue distillation: #327 (2026-09-02)
+
+Status: DISTILLATION COMPLETE — #327 LOCALLY PARTIAL, ENVIRONMENT-BLOCKED; #328
+REMAINS THE NEXT INDEPENDENT TRANSACTION
+
+- Duplicate check: no new issue is warranted. #327 owns only the manual 3D
+  owner route; #341 owns local manual 3D implementation, #320 owns release
+  reconciliation, and sibling route/artifact issues retain their boundaries.
+- Blocker check: the focused 3D suite passed 52/52, but
+  `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa` could
+  not start because Docker cannot access its server socket. The issue body
+  records the exact command and `docker info` permission failure.
+- Closure check: #327 remains open. The real-browser control matrix and exact
+  deployed revision are not proven; local component evidence is insufficient.
+- Atomicity check: no split is needed. This is one finite authenticated manual
+  3D route verification boundary.
+- Progress rule: #328 is independent and may proceed; retry #327 only after
   Docker access and the reviewed deployment revision are available.

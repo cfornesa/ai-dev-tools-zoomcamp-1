@@ -11373,3 +11373,19 @@ Distillation found no duplicate or further decomposition: #326 owns one finite
 AI 2D route verification, #340 owns local implementation, and #320 owns release
 reconciliation. The blocker is environmental rather than user judgment, so
 #326 remains open while independent #327 may proceed.
+
+## 269ab. End-of-blocked-issue distillation for #327
+
+Status: #327 BLOCKED BY DOCKER ENVIRONMENT — #328 REMAINS ELIGIBLE
+
+The manual 3D owner-route transaction remains open. Its focused suite passes
+52/52 across save/export/publication, screenshot, sound, and gesture coverage,
+but `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa` cannot
+start because Docker cannot access its daemon socket; `docker info` reports the
+same permission failure. Local component evidence does not close the required
+real-browser matrix or deployed-revision boundary.
+
+Distillation found no duplicate or further decomposition: #327 owns one finite
+manual 3D route verification, #341 owns local implementation, and #320 owns
+release reconciliation. The blocker is environmental rather than user
+judgment, so #327 remains open while independent #328 may proceed.

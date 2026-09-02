@@ -670,7 +670,11 @@ function Scene3DPreview({
             }}
           />
         )}
-        <div role="toolbar" aria-label="Piece actions" className="scene3d-stage-toolbar">
+        <div
+          role="group"
+          aria-label="Preview actions"
+          className="editor-tool-group scene3d-preview-actions scene3d-stage-toolbar"
+        >
           {showScreenshotButton && (
             <button
               type="button"
@@ -748,12 +752,12 @@ function Scene3DPreview({
               <span aria-hidden="true">♪</span>
             </button>
           )}
-          {showSoundControl && (
+          {showSoundControl && soundEnabled && (
             <button
               type="button"
               className="scene3d-stage-icon-button"
               title="Piece controls"
-              aria-label="Piece controls"
+              aria-label={showSoundSettings ? 'Hide sound settings' : 'Sound settings'}
               aria-haspopup="true"
               aria-expanded={showSoundSettings}
               onClick={() => setShowSoundSettings((current) => !current)}
@@ -772,7 +776,7 @@ function Scene3DPreview({
           piece, so trapping focus/blocking the canvas behind a modal
           would work against that, unlike the gesture guide's one-shot
           read-then-dismiss content. */}
-      {showSoundControl && showSoundSettings && (
+      {showSoundControl && soundEnabled && showSoundSettings && (
         <div
           id="scene3d-sound-settings-panel"
           role="group"

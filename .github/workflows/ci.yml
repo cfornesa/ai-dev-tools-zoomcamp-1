@@ -289,6 +289,16 @@ jobs:
             done
           '
 
+      - name: Run WebKit fullscreen Escape regression
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:5000
+        run: >-
+          npm run test:e2e --
+          e2e/manual2dStageChrome.spec.ts
+          --project=webkit
+          --grep "keeps the fullscreen command synchronized after browser Escape"
+
       - name: Run full browser acceptance suite
         working-directory: frontend
         env:

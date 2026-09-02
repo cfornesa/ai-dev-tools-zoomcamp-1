@@ -11116,6 +11116,18 @@ Full/Non-Camera 3D ZIP entries. The deployed revision remains stale, so #334
 is open and is not COMPLETE. Publish the tested revision, rerun the exact
 custom immersive URL, and close only after deployed evidence passes.
 
+## 269m. Handoff manual 2D editor route (#338)
+
+Status: #338 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The Docker-backed `manual2dStageChrome.spec.ts` transaction passed 1/1. It
+verified stage-contained authoring/runtime/publication controls, PHP-relative
+compact rail geometry, rendered containment, Add circle → Undo, and absence
+of the legacy page-level publication row. The deployed revision remains stale,
+so #338 is open and is not COMPLETE. Publish the tested revision, rerun the
+exact authenticated `/projects/:id` route, and close only after deployed
+evidence passes.
+
 ## 269l. Handoff portable 3D downloads (#337)
 
 Status: #337 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY

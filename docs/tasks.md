@@ -10366,6 +10366,14 @@ Next action: authenticate and publish the current build for exact editor,
 immersive, embed, and downloaded-runtime route evidence. Do not close this
 task or its parent until those deployment-boundary criteria are proven.
 
+Live re-audit (2026-09-02): direct browser inspection confirmed this remains
+unfinished. The supplied public 2D URL still renders the legacy sibling
+“Demo and camera controls” panel and lacks the stage toolbar; the supplied 3D
+editor URL is unavailable in the anonymous session. Local disposable-stack
+passes are implementation evidence only, not deployed evidence. Route and
+artifact verification stays in #325–#337, and #320 remains open until the
+current revision is published and those exact surfaces are checked.
+
 Second parity correction (2026-09-01): the first increment still left real
 surface defects. AI-assisted 2D had a separate screenshot/fullscreen action
 row, manual 2D Save remained in the header, AI-assisted 3D kept its whole-scene

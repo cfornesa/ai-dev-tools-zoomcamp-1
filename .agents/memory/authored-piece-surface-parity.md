@@ -30,6 +30,26 @@ Linked backlog: #320, #325–#341. #274 and broad #323/#324 are closed as
 superseded/not-planned; their replacement issues are deliberately one route,
 surface, variant, or downloaded capability each.
 
+Deployment re-audit (2026-09-02): direct inspection of the supplied live URLs
+found that the published revision still serves the legacy structured UI. The
+public 2D piece `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` has a sibling
+“Demo and camera controls” region outside the Preview stage and no screenshot,
+download, fullscreen, or stage-local publication controls. The supplied
+`/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` URL returns the anonymous
+“doesn't exist, or you don't have access” state, so it does not prove an
+authenticated editor contract. Local disposable-stack browser passes prove
+only the checked-out revision; they are not live evidence until that revision
+is intentionally published and the exact URLs are rechecked. Keep #320 open
+and use #325–#337 for route/artifact verification.
+
+Additional local inspection from the same re-audit found that
+`PublicProjectViewer.tsx` renders its active camera video with
+`visibility: hidden` to avoid the p5 canvas stacking problem. That contradicts
+the maintained reference contract, which requires the visitor-activated
+camera composition to be visible. Treat this as an implementation defect in
+the closure-sized public 2D route issue #329, not as evidence that the public
+surface is complete.
+
 Re-audit lesson (2026-09-02): isolated child issues can all be locally
 implemented while the composed structured surfaces still fail parity. Treat
 the editor, public viewer, embed, immersive route, and downloaded runtime as

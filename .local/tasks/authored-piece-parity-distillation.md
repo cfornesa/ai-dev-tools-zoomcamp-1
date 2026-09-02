@@ -294,3 +294,20 @@ of anonymous public 2D camera compositing and denial/retry behavior. The
 blocker is external browser permission state and is independent of the next
 3D embed route; continue with #332 while #329 awaits completion of Allow in
 the visible browser context. Do not close #329 from the waiting state.
+
+## Blocked-issue distillation: standalone 2D artifact file execution — 2026-09-02
+
+Issue #336 remains `blocked / verification-boundary`, not an implementation
+failure. The captured Full and Non-Camera HTML files exist in
+`/Users/Fornesus/Downloads`, and local Docker-backed artifact QA passed 17/17,
+but both the in-app browser and the approved Chrome control reject the exact
+`file://` navigation required by the closure contract. Browser policy also
+prohibits workarounds such as indirect execution or raw CDP.
+
+No duplicate or product follow-up issue is warranted: #336 already owns the
+standalone 2D artifact, while #337 independently owns extracted 3D artifacts.
+The blocker owner/context is the browser-policy-capable Chromium environment.
+The concrete next action is to open both captured files in an approved
+file-capable Chromium context, exercise screenshot/fullscreen/Piece controls
+and camera fallback, then reconcile #336 before closure. Independent route
+issues continue; #336 is not a goal stop.

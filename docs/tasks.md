@@ -10674,9 +10674,14 @@ Mach-port permission error before test execution. The suite verifies extracted
 standalone HTML, demo-only/camera/combined controls, permission lifecycle,
 attribution, content exclusion, pinned dependencies, and 2D ZIP output. The
 environment blocker was reconciled with no new dependency or duplicate issue.
-This is local implementation evidence only; #336 remains open until the
-exact published download is verified and the issue can be reconciled through
-authenticated GitHub access.
+This is local implementation evidence only. #336 remains blocked on the
+verification boundary because both the in-app browser and approved Chrome
+control reject the exact `file://` navigation required to execute the captured
+Full and Non-Camera files. Browser policy forbids indirect execution or raw
+CDP workarounds. No duplicate/follow-up issue is warranted: #336 owns the
+standalone 2D artifact and #337 independently owns 3D artifacts. Next action:
+use an approved file-capable Chromium context, exercise screenshot/fullscreen/
+Piece controls and camera fallback, then reconcile #336 before closure.
 
 Custom immersive 3D implementation slice (#334, 2026-09-02): the dedicated
 `immersive3dCustomStageChrome.spec.ts` browser transaction passed 1/1 against

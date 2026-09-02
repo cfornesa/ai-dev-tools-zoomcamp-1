@@ -22,6 +22,15 @@ When a dependency or environment blocker unrelated to user judgment ends an
 issue, task-distillation must be rerun at that issue's handoff to reconcile
 duplicates, dependency order, closure criteria, owner, and follow-up coverage.
 
+Standalone artifact boundary (2026-09-02): #336's generated Full and
+Non-Camera HTML files are present and the Docker-backed artifact suite passes,
+but the connected in-app browser and approved Chrome control both reject
+`file://` navigation. This is a verification-boundary blocker, not product
+evidence or permission to use an indirect/raw-CDP workaround. Keep #336 open,
+record the browser-policy owner and exact next action, and run fresh
+task-distillation before selecting the next independent issue. #337 remains a
+separate 3D artifact consumer and is not a duplicate.
+
 Owner-rejection re-audit (2026-09-02): the same live public route was
 inspected again and still had no `Piece actions` toolbar, screenshot,
 download, fullscreen, or publication controls. Treat any local child marked

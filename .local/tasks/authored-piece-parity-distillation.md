@@ -57,7 +57,7 @@ as read-only behavioral reference.
 | Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, and fullscreen behavior; executable browser runtime parity remains incomplete | `verification gap` | #320; add downloaded-runtime lifecycle coverage and verify a real downloaded Full ZIP |
 | Non-Camera downloads | Camera host/module and camera-only mic/theremin code are omitted while non-camera sound/keyboard/view controls remain; downloaded execution still needs browser proof | `verification gap` | #320; add executable artifact checks and verify a real downloaded Non-Camera ZIP |
 | Draft / Published | 2D and 3D owner controls exist locally and API tests cover atomic transitions; supplied private deployed route cannot be inspected anonymously | `verification-boundary` | #320; authenticate in the owner's browser session, then verify both states on exact URLs |
-| Deployed examples | Public supplied URL serves the old shell; local commits are 32 ahead of `origin/main` and have not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
+| Deployed examples | Public supplied URL serves the old shell; local `main` is 42 commits ahead of `origin/main` and has not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
 
 ## Criterion-ready definition for #320
 

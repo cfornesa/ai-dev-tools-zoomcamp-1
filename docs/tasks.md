@@ -11861,3 +11861,30 @@ x=-43 and is clipped by the preview/stage boundary. This is a real published
 responsive failure, so #348 remains open with QA FAIL. Correct the mobile
 overlay geometry, republish, repeat both exact viewport checks, and close only
 after the published evidence passes.
+
+## Re-distillation: stage hamburger command surface and false closures (2026-09-02)
+
+The owner clarified the target interaction for authored-piece surfaces: an
+upper-left stage hamburger opens a transparent full-viewport command surface;
+each available command opens its own menu/panel; every opened menu has a
+visible `X` close action, Escape closes it, focus enters and returns correctly,
+and the artwork remains visible beneath the translucent scrim. The PHP
+reference's fixed hand-guide overlay is the visual precedent for this pattern.
+
+Latest exact published evidence uses `assets/index-DIraFw-9.js`: public 2D and
+embedded 2D render controls but still use the old direct row; the authenticated
+3D editor renders real content, a dense multi-row Preview actions rail, and
+`Publication status: Draft`; supplied 3D public/embed/immersive routes are
+unavailable because that fixture is Draft. Local source/test evidence cannot
+close those deployed surfaces.
+
+Re-groom #347 as the shared stage-command surface and #348 as the editor-only
+command integration. #347's finite contract must name the hamburger trigger,
+translucent overlay, visible heading and `X`, command list, focus/keyboard/
+Escape/outside dismissal, scroll and hit-test isolation, and fixed 1280x900 /
+375x812 screenshots. #348 must name the editor actions and preserve their
+mutations/disabled/error states inside that surface. Keep #325–#335 route
+specific and #336/#337 artifact specific; do not let a shared-component pass
+close any consumer. Reopen/re-groom closed route records that contain later
+owner rejection text, plus #343/#345 whose acceptance lists remained
+unchecked. The next engineering handoff is #347 only, after this distillation.

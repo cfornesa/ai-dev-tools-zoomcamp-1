@@ -124,6 +124,16 @@ blocker ends an issue, run a fresh task-distillation reconciliation before
 selecting the next issue. Recheck duplicates, dependency order, closure
 criteria, blocker ownership, and follow-up issue coverage.
 
+Responsive command-surface decision (2026-09-02): the owner prefers a
+stage-associated hamburger command surface on narrow authored-piece views over
+a dense persistent action rail. The trigger opens a fixed/inset translucent
+full-viewport overlay; each subordinate menu has a visible X/Close action,
+Escape dismissal, focus entry/restoration, and background scroll/hit-test
+isolation. Keep accessible names and keyboard operation even when visual action
+labels collapse to icons. Treat this as the shared #347 shell contract, with
+#348 owning editor authoring commands and each route/artifact retaining its own
+deployed verification boundary.
+
 Consumer-layout lesson (2026-09-02): a shared `PieceStageToolbar` does not
 guarantee parity when a consumer omits the inner control-group layout class.
 The outer absolute rail can exist while direct child wrappers still collapse

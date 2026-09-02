@@ -423,3 +423,69 @@ mobile layout failure within #348's acceptance contract. No new issue is
 warranted because the defect is owned by #348's compact overlay contract. Keep
 #348 open with QA FAIL; correct the responsive positioning/density, republish,
 and rerun both exact viewport checks before closure.
+
+## Owner parity re-distillation — hamburger command surface — 2026-09-02
+
+The owner clarified the desired responsive interaction: a stage-associated
+hamburger at the upper-left opens a transparent, full-viewport command surface;
+each named control can open its own focused menu/panel; every opened menu has a
+visible `X` close action, Escape closes it, focus is contained and restored, and
+the artwork remains visible beneath the translucent scrim. This is the target
+interaction for editor and public piece surfaces, not merely an icon-only
+toolbar. The PHP reference's fixed hand-guide overlay provides the established
+visual precedent for a fixed translucent surface, focusable close button, and
+mobile full-screen card.
+
+### Current published evidence matrix
+
+The latest exact published asset is `assets/index-DIraFw-9.js`.
+
+| Surface | Current observation | Distillation status / next action |
+|---|---|---|
+| `/projects/:id` | authenticated route did not finish loading in the sampled wait | recheck with an owner fixture after shared menu contract is implemented |
+| `/ai-projects/:id` | route entry reached the loading state in the sampled wait | same route-specific recheck; no closure transfer from manual 2D |
+| `/projects3d/:id` | authenticated editor renders real 3D content, a dense multi-row Preview actions rail, and `Publication status: Draft` | reopen route contract; replace the dense rail with the shared menu entry point and verify Draft/Published interaction |
+| `/ai-projects3d/:id` | only route entry/loading was sampled | independently recheck after fixture and menu contract are available |
+| `/p/:id` | stage-local screenshot/download/Piece controls/fullscreen are rendered, but the old direct row remains | reopen/re-groom public 2D for the command-surface contract and anonymous privacy |
+| `/embed/p/:id` | stage-local controls are rendered with the same old direct row | reopen/re-groom embedded 2D independently |
+| `/p3d/:id`, `/embed/p3d/:id`, `/immersive/p3d/:id` | exact supplied fixture is unavailable because its current state is Draft | dependency-blocked on a published 3D fixture; no control or privacy closure evidence |
+| extracted Full/Non-Camera artifacts | existing generation code/tests exist, but exact extracted runtime behavior is not established | retain #336/#337 open and verify each artifact independently |
+
+### Criterion-ready shared contract
+
+Re-groom #347 as the shared stage-command surface: one named hamburger trigger
+per consumer; opening it renders a fixed/inset translucent overlay with a
+visible heading, a visible `Close menu`/`X` button, a finite list of the named
+available commands, `aria-expanded`/`aria-controls`, keyboard focus entry and
+restoration, Escape/outside-scrim dismissal, and no background scroll or stage
+hit-testing while open. Selecting Download, Piece controls, publication, guide,
+camera, sound, fullscreen, or immersive opens or performs only that command's
+existing surface; each subordinate panel has its own named close button and
+Escape behavior. At 1280x900 and 375x812, screenshots must show the closed
+stage-associated trigger and the open translucent overlay without the previous
+multi-row/bulky rail. Anonymous surfaces must omit publication/editor controls.
+
+Re-groom #348 as the editor-only command integration: the same hamburger
+surface must expose Add circle, Add rectangle, Add line, Add polygon, Undo,
+Redo, Duplicate, Delete, Add layer, group/ungroup, fill color, Save, and the
+existing error status with their current mutation and disabled behavior. The
+editor command menu is one independently testable workflow and must not be
+claimed by public/immersive route issues.
+
+### False-closure and order report
+
+Closed route records #325–#335 and local implementation records #338–#341
+contain later owner-visible rejection text or are now contradicted by the
+revised command-surface contract; they must be open/re-groomed rather than
+treated as evidence. #343 and #345 were closed while their own acceptance
+lists still contain unchecked items, so they are also false closures. #342 is
+retained as a narrow completed camera capability implementation, but its route
+and artifact consumers remain separate. #320 remains the reconciliation
+parent, not an implementation unit. No duplicate issue is warranted: #347 owns
+the shared command surface, #348 owns editor commands, #325–#335 own one route
+each, and #336/#337 own one extracted artifact family each.
+
+The next groomed engineering issue is #347 only. Distillation is complete for
+this handoff; engineering must not begin on #348 or any consumer route until
+#347 has its criterion-ready contract, focused tests, published fixed-viewport
+evidence, and GitHub closure decision.

@@ -34,7 +34,7 @@ as read-only behavioral reference.
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
 | [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `closed_completed` | `30fcec0` hardens the preflight to fixed repository project/file identity; focused configuration tests pass 8/8, correct-stack preflight passes, unrelated-project override is rejected, QA comment posted, and GitHub issue closed |
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
-| [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Strengthened authenticated Chromium route test passes 1/1: finite authoring controls are inside the canvas, Add circle → Undo works, runtime/publication controls are stage-local, and the authoring overlay is geometrically contained. Keep open for exact deployed-route verification |
+| [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Issue #325's 2D runtime group now has an explicit wrapped flex-row layout. Focused React/type checks pass, and Docker-backed `manual2dStageChrome.spec.ts` passes 1/1 with stage containment, named controls, Add circle → Undo, publication popover, and horizontal geometry. Keep open for exact deployed-route verification |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated authenticated Chromium route test passes 1/1 with stage-local publication controls, PHP-relative geometry, reversible Draft → Published → Draft, and no header duplicate. Keep open for exact deployed-route verification |
 | [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, Save, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
@@ -992,3 +992,50 @@ entry point and its publication transition. Fresh distillation found no
 duplicate or new dependency; #327 remains separate from #328 (AI 3D), public,
 embed, immersive-variant, and download slices. Authenticated GitHub access is
 still unavailable, so the issue is ready for reconciliation but not closed.
+
+## Reconciliation: #325 manual 2D toolbar geometry (2026-09-02)
+
+Engineering corrected the concrete local defect found during fresh
+distillation: `.editor-piece-stage-toolbar` now owns a wrapped flex row,
+because the 2D group is a direct child of the shared stage toolbar and does
+not inherit the `.editor-toolbar .editor-tool-group` rule. The change keeps
+all controls inside the existing `.piece-stage-shell` and does not alter
+public, embed, immersive, or download issue boundaries.
+
+Evidence: the focused HandGestureGuideDialog suite passed 5/5, frontend
+TypeScript type-check passed, and
+`BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa` passed
+1/1 against disposable PostgreSQL/Django/Vite/Chromium. The browser
+transaction verified the named authoring/runtime/publication controls,
+Add circle → Undo, no legacy header row, PHP-relative 2.75rem button
+geometry, stage containment, and a horizontal runtime rail. This is local
+implementation evidence only. The deployed public revision remains stale or
+unverified, so #325 remains open for exact authenticated published-route
+verification and GitHub closure.
+
+## Fresh distillation: manual 2D toolbar geometry (2026-09-02)
+
+The rebuilt repository Compose stack was inspected through an authenticated
+Chromium transaction on a newly created manual 2D project. The exact route was
+`/projects/cb9e802b-3373-423f-be69-46d77dca8061`. The authoring overlay was
+inside the canvas, but the shared runtime `PieceStageToolbar` measured
+49.5px wide by 247.5px tall at the default viewport. Its screenshot,
+download, camera/manual, publication, and fullscreen controls therefore form
+a vertical column instead of the PHP reference's compact horizontal stage
+rail.
+
+This is an implementation defect within the existing #325 manual 2D route
+slice and its #338 publication-parity capability; it is not a new issue and
+does not justify changing the public-route #329 or downloaded-runtime #336
+boundaries. The closure-sized engineering transaction is: add the 2D
+stage-toolbar row layout without moving it outside the canvas; prove the
+finite named controls remain functional, stage-contained, and horizontally
+laid out at the documented viewport; run focused tests plus the exact browser
+scenario; then reconcile GitHub. No deployed issue can close until the same
+fixture behavior is observed on the published revision.
+
+The next single groomed handoff is #325. Its dependency is only the current
+checkout and running repository Compose stack, both available. If browser or
+Docker execution becomes an environment blocker unrelated to owner judgment,
+re-run task distillation at the end of this issue before selecting the next
+independent route.

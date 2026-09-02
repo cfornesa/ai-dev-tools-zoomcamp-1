@@ -2924,6 +2924,19 @@ select.ai-proposal-field-full-width {
   gap: 0.65rem;
 }
 
+/* Issue #325: the shared stage rail's 2D editor group is a direct child of
+   `.piece-stage-toolbar`, not a child of `.editor-toolbar`. Give it the same
+   compact row contract as the 3D preview group so screenshot/download,
+   capability, publication, and fullscreen actions do not collapse into a
+   tall vertical column. */
+.editor-piece-stage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.65rem;
+  max-width: calc(100vw - 5rem);
+}
+
 .piece-stage-toolbar .piece-stage-icon-button {
   display: inline-flex;
   align-items: center;

@@ -103,6 +103,20 @@ test.describe('manual 2D editor stage chrome', () => {
       buttonRadius: '13.5px',
     });
 
+    const runtimeLayout = await toolbar.locator(':scope > [role="group"]').evaluate((element) => {
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      return {
+        display: style.display,
+        flexDirection: style.flexDirection,
+        width: box.width,
+        height: box.height,
+      };
+    });
+    expect(runtimeLayout.display).toBe('flex');
+    expect(runtimeLayout.flexDirection).toBe('row');
+    expect(runtimeLayout.width).toBeGreaterThan(runtimeLayout.height);
+
     await toolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
     await expect(
       toolbar.getByRole('group', { name: 'Publication status', exact: true }),

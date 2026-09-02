@@ -10963,3 +10963,18 @@ container mutation. QA passed with `make compose-preflight`, the rejection
 probe, and `UV_CACHE_DIR=/private/tmp/ai-dev-tools-uv-cache uv run pytest
 tests/test_browser_qa_configuration.py` (8 passed). QA evidence was posted to
 GitHub and #321 was closed as completed.
+
+## 269. Correct manual 2D runtime rail geometry (#325/#338)
+
+Status: LOCAL IMPLEMENTATION VERIFIED; DEPLOYED/GITHUB RECONCILIATION PENDING
+
+Engineering added the missing standalone flex-row rule for the direct-child
+2D stage toolbar group. Focused React tests passed 5/5, TypeScript type-check
+passed, and Docker-backed `manual2dStageChrome.spec.ts` passed 1/1. The
+transaction verified the finite named authoring/runtime/publication controls,
+Add circle → Undo, stage containment, no legacy header publication row, the
+PHP-relative 2.75rem icon geometry, and horizontal runtime-rail layout.
+
+The deployed revision still requires exact authenticated `/projects/:id`
+verification, so #325/#338 remain open and are not marked COMPLETE. This
+route correction does not absorb public #329 or downloaded artifact #336.

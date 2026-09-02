@@ -198,6 +198,20 @@ implementation and exact routes:
 
 ## Memory links
 
+## Re-audit implementation increment (2026-09-02)
+
+- The shared 3D preview now keeps sound, keyboard/mic/theremin, gesture-camera,
+  and overlay settings inside the stage-local Piece controls disclosure; the
+  previous duplicate panels below the canvas were removed. Sound transitions
+  reset the disclosure safely.
+- Full and Non-Camera 3D exports retain the stage action controls and now make
+  keyboard notes an explicit, functional opt-in in the portable runtime.
+- Focused verification passes: 3D live controls 37/37, 3D export 7/7, and the
+  real disposable PostgreSQL/Django/Vite browser lifecycle suite 2/2 for
+  manual and AI-assisted 3D editors. This remains local evidence only; the
+  supplied deployed URLs still require a publish before production-readiness
+  can be assessed.
+
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`
 - `.agents/memory/e2e-wrong-docker-project.md`

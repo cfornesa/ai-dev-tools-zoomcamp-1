@@ -11817,6 +11817,20 @@ blocker owner is the Replit publish operation; next action is to obtain its
 terminal result or error and recheck the exact fixed-viewport routes. No new
 issue is warranted, and #348 remains gated behind #347 closure.
 
+## 269ap. #347 final QA and closure reconciliation (2026-09-02)
+
+The deployment blocker cleared. Exact published routes serve
+`assets/index-DVjamtqV.js`. Live fixed-viewport inspection verified labeled
+stage controls on the 3D editor and public 2D route; the live 3D publication
+panel exposed Draft and Published with the current state disabled, and the
+authorized Published → Draft restoration completed successfully.
+
+Focused tests passed 35/35; Docker Chromium fixed-viewport QA passed 1/1;
+full `make check` passed with 888 backend tests passed / 22 skipped and 2,396
+frontend tests passed; production build passed. Status: #347 COMPLETE,
+pending the final GitHub close operation. #348 remains gated until #347 is
+closed.
+
 ## 269an. #347 shared stage-control engineering transaction (2026-09-02)
 
 Implemented locally in `b98eb49`: shared stage actions render persistent

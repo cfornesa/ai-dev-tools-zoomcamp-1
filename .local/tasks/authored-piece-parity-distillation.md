@@ -373,6 +373,22 @@ transaction, and #325–#337 retain independent consumer/artifact boundaries.
 The same blocker does not justify parallel engineering; continue only after
 #347 has a terminal QA/reconciliation result.
 
+## #347 final reconciliation — 2026-09-02
+
+The deployment blocker cleared. Exact published routes now serve
+`assets/index-DVjamtqV.js`. Live 3D verification at desktop and mobile fixed
+viewports showed the persistent labeled Screenshot, Download, Immersive,
+Sound, Steer, Guide, and Fullscreen actions plus a visible Draft status. The
+publication panel exposed Draft and Published, disabled the current state,
+and the authorized live transaction completed Published then restored Draft.
+The exact public 2D route showed labeled stage controls and its live download
+menu exposed both Full and Non-Camera entries.
+
+Focused tests (35/35), fixed-viewport Docker Chromium QA (1/1), full
+`make check` (888 backend passed / 22 skipped; 2,396 frontend passed), and
+the production build all pass. #347 is `completed` and ready for GitHub
+closure. #348 remains the next issue and has not started.
+
 ## #347 engineering and QA transaction — 2026-09-02
 
 Implemented locally in `b98eb49`: shared stage actions now render persistent

@@ -529,3 +529,14 @@ existing workflow issue, #343 is no longer dependency-blocked, and route/
 artifact children remain separate. GitHub reconciliation is still pending
 because the authenticated GitHub API was unavailable; local readiness is not
 represented as GitHub closure.
+
+## Blocker reconciliation: #325 (2026-09-02)
+
+#325 completed its implementation and QA transaction locally, but authenticated
+GitHub issue reconciliation remains unavailable. The fresh distillation check
+found no duplicate or new dependency: #325 stays the manual 2D route slice,
+#326 remains the independent AI 2D route slice, and #320 remains the parent
+roll-up. Local readiness is recorded above; the missing GitHub comment/closure
+is the explicit handoff blocker. Because this is not a user-judgment blocker,
+the rule requires this reconciliation before selecting the next issue; it does
+not make #325 closed.

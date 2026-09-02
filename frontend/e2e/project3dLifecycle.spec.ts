@@ -274,4 +274,70 @@ test.describe('3D project creation', () => {
     await unpublishResponse;
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Private');
   });
+
+  test('immersive 3D touch d-pad holds and releases the matching travel keys', async ({ page }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
+    await page.waitForURL(/\/projects3d\/[^/]+$/);
+    const match = /\/projects3d\/([^/]+)$/.exec(page.url());
+    expect(match).not.toBeNull();
+    const projectId = match?.[1];
+    if (!projectId) return;
+
+    await expect(page.getByTestId('project3d-save-status')).toBeVisible();
+    await page.getByRole('button', { name: 'Publication status: Draft' }).click();
+    await page.getByRole('button', { name: 'Published', exact: true }).click();
+    const dialog = page.getByRole('alertdialog', { name: /Publish/ });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
+    await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
+
+    await page.goto(`/immersive/p3d/${projectId}`);
+    const navigation = page.getByRole('region', { name: 'Immersive touch navigation' });
+    await expect(navigation).toBeVisible();
+    const directions = [
+      ['Move forward', 'ArrowUp'],
+      ['Move left', 'ArrowLeft'],
+      ['Move backward', 'ArrowDown'],
+      ['Move right', 'ArrowRight'],
+    ] as const;
+    await expect(navigation.getByRole('button')).toHaveCount(directions.length);
+
+    await page.evaluate(() => {
+      (window as unknown as { __touchKeyEvents?: string[] }).__touchKeyEvents = [];
+      window.addEventListener('keydown', (event) => {
+        (window as unknown as { __touchKeyEvents: string[] }).__touchKeyEvents.push(
+          `${event.type}:${event.key}`,
+        );
+      });
+      window.addEventListener('keyup', (event) => {
+        (window as unknown as { __touchKeyEvents: string[] }).__touchKeyEvents.push(
+          `${event.type}:${event.key}`,
+        );
+      });
+    });
+
+    for (const [label, key] of directions) {
+      const button = navigation.getByRole('button', { name: label });
+      const box = await button.boundingBox();
+      expect(box?.width).toBeGreaterThanOrEqual(40);
+      expect(box?.height).toBeGreaterThanOrEqual(40);
+
+      await page.evaluate(() => {
+        (window as unknown as { __touchKeyEvents: string[] }).__touchKeyEvents.length = 0;
+      });
+      await button.dispatchEvent('pointerdown', { pointerType: 'touch', bubbles: true });
+      await button.dispatchEvent('pointerup', { pointerType: 'touch', bubbles: true });
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => (window as unknown as { __touchKeyEvents: string[] }).__touchKeyEvents,
+          ),
+        )
+        .toEqual([`keydown:${key}`, `keyup:${key}`]);
+    }
+  });
 });

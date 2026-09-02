@@ -10535,7 +10535,7 @@ GitHub reconciliation.
 
 ## 265. Add touch d-pad travel to the immersive 3D viewer
 
-Status: DEPENDENCY-BLOCKED
+Status: ACTIVE — READY FOR GITHUB RECONCILIATION
 
 GitHub issue: [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343)
 
@@ -10555,6 +10555,15 @@ failure. Retry the correct repository Compose stack after #321's Docker
 image-fetch/daemon issue is resolved, exercise the real touch browser path,
 post `## QA: PASS` or `## QA: FAIL` to #343, and close only after all criteria
 pass.
+
+Updated verification (2026-09-02): after #321's repository stack was repaired,
+the focused real-browser lifecycle suite was extended with the exact
+immersive route and touch path. `BROWSER_QA_E2E_SPEC=e2e/project3dLifecycle.spec.ts
+make browser-qa` passed 4/4, including all four 40px+ controls and matching
+keydown/keyup pairs for ArrowUp, ArrowLeft, ArrowDown, and ArrowRight.
+`npx prettier --check e2e/project3dLifecycle.spec.ts` and the focused Vitest
+suite passed (6/6). The remaining step is authenticated GitHub QA-comment and
+closure reconciliation; local verification is not GitHub closure.
 
 ## 263. Make Docker browser verification select and fingerprint this repository
 

@@ -42,13 +42,17 @@ only the checked-out revision; they are not live evidence until that revision
 is intentionally published and the exact URLs are rechecked. Keep #320 open
 and use #325–#337 for route/artifact verification.
 
-Additional local inspection from the same re-audit found that
-`PublicProjectViewer.tsx` renders its active camera video with
-`visibility: hidden` to avoid the p5 canvas stacking problem. That contradicts
-the maintained reference contract, which requires the visitor-activated
-camera composition to be visible. Treat this as an implementation defect in
-the closure-sized public 2D route issue #329, not as evidence that the public
-surface is complete.
+The local `PublicProjectViewer.tsx` camera-source defect was corrected during
+#329 engineering: the active public camera `<video>` is now visible behind the
+transparent artwork canvas, while the canvas remains the layer-aware
+composite. The focused unit/static checks pass; this does not establish
+deployed proof.
+
+The 2026-09-02 disposable Chromium publishing run could not create its public
+fixture because `POST /api/projects/<id>/publish/` returned 404 even though
+the focused backend publish API suite passed 18/18 plus one skip. Treat this as
+a runner/auth-fixture reconciliation blocker for #329, not as evidence that
+the public viewer implementation passed.
 
 Re-audit lesson (2026-09-02): isolated child issues can all be locally
 implemented while the composed structured surfaces still fail parity. Treat

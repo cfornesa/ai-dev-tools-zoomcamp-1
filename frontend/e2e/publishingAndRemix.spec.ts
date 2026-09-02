@@ -1003,13 +1003,13 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       'Camera is active. Hand tracking is running locally in your browser.',
     );
 
-    // Issue #195: the camera image itself is drawn inside the p5 canvas
-    // (matching EditorWorkspace.tsx's fix from issue #169); this <video> is
-    // `visibility: hidden` and exists only as the live frame source, so it
-    // is attached but not "visible" per Playwright's actionability check.
+    // Issue #195: the canvas owns layer-aware artwork compositing, while the
+    // source video remains visibly stacked behind its transparent background
+    // as a public-surface fallback when a renderer cannot draw a frame.
     const overlayVideo = anonPage.getByTestId('camera-overlay-video');
     await expect(overlayVideo).toBeAttached();
-    await expect(overlayVideo).toHaveCSS('visibility', 'hidden');
+    await expect(overlayVideo).toBeVisible();
+    await expect(overlayVideo).toHaveCSS('visibility', 'visible');
     const opacitySlider = anonPage.getByLabel('Camera overlay opacity');
     const mirrorToggle = anonPage.getByLabel('Mirror camera overlay');
     await expect(opacitySlider).toHaveValue('50');

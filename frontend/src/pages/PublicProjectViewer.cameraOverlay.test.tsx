@@ -163,6 +163,8 @@ describe('PublicProjectViewer camera video overlay (Task 119, issue #152)', () =
     expect(video).toBeInTheDocument();
     expect(video.style.opacity).toBe('0.5');
     expect(video.style.transform).toBe('scaleX(-1)');
+    expect(video.style.visibility).toBe('visible');
+    expect(video.style.zIndex).toBe('-2');
     expect(video.srcObject).toBe(stream);
 
     const slider = screen.getByLabelText('Camera overlay opacity') as HTMLInputElement;

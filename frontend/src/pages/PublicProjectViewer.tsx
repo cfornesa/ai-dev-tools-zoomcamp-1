@@ -164,19 +164,13 @@ function PublicProjectViewer() {
     }
   }, [cameraStream, cameraStatus]);
 
-  // Issue #195: the actual visible camera image is drawn *inside* the p5
-  // canvas (see the render effect below), exactly like
-  // `EditorWorkspace.tsx`'s `getCameraOverlay` -- this component's own
-  // `<video>` element (below, in the JSX) is `visibility: hidden` and
-  // exists only as the live `HTMLVideoElement` frame source `render()`
-  // reads from every frame. Previously this page drew the raw `<video>` as
-  // a CSS-stacked DOM overlay *behind* the p5 canvas, which the canvas's
-  // own opaque per-frame background fill hid almost entirely regardless of
-  // the video's own CSS opacity or z-index -- see `p5Adapter.ts`'s
-  // `render()` doc comment for why only a transparent canvas plus an
-  // in-canvas draw can make a shape legitimately appear "in front of" a
-  // live camera feed. This mirrors the editor's fix (Task 137, issue
-  // #169) that this page never received.
+  // Issue #195: the camera image is composited in the p5 canvas so artwork
+  // layers can appear in front of it. The source `<video>` remains visible
+  // behind that transparent canvas as a resilient public-surface fallback:
+  // it makes the active camera feed observable even when a renderer cannot
+  // draw a frame, while the canvas remains the authoritative layer-aware
+  // composite. This matches the editor's stage layering (Task 137, issue
+  // #169) without hiding the public camera surface.
   const getCameraOverlay = useCallback((): RenderableCameraOverlay | undefined => {
     if (cameraStatus !== 'active' || !cameraStream || !cameraVideoRef.current) return undefined;
     const rawLayers = project?.current_version?.scene_json.layers;
@@ -519,20 +513,10 @@ function PublicProjectViewer() {
               className="editor-scene-canvas"
               style={{ position: 'relative', width: 800, height: 600, maxWidth: '100%' }}
             >
-              {/* Issue #195 (fixing #169's un-ported public-viewer gap): the
-                live camera image is drawn *inside* the p5 canvas by
-                `getCameraOverlay`/the render effect above, exactly like
-                `EditorWorkspace.tsx`. This `<video>` is `visibility:
-                hidden` and exists only as the live frame source that
-                render effect reads every frame -- it is never itself the
-                visible overlay (a DOM-stacked, CSS-visible `<video>`
-                behind the p5 canvas was this page's previous approach,
-                and the canvas's own opaque per-frame background fill hid
-                it almost entirely regardless of its CSS opacity/z-index;
-                see `p5Adapter.ts`'s `render()` doc comment). `opacity`/
-                `transform` stay set here (unused visually, but read by
-                existing unit tests and kept consistent with the editor's
-                identical hidden `<video>`). */}
+              {/* Issue #195: the p5 canvas draws the layer-aware composite,
+                while this visible source video sits behind its transparent
+                background. That fallback keeps the public camera surface
+                visibly usable if a renderer cannot draw a frame. */}
               {cameraStatus === 'active' && cameraStream && (
                 <video
                   ref={cameraVideoRef}
@@ -549,7 +533,7 @@ function PublicProjectViewer() {
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    visibility: 'hidden',
+                    visibility: 'visible',
                     transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
                     opacity: cameraOverlayOpacity,
                     pointerEvents: 'none',

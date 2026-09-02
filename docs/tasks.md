@@ -11040,3 +11040,15 @@ the #320/#321 deployment/revision gate; #329 remains open and is not marked
 COMPLETE. Per the blocked-work rule, the next independent transaction is
 #331's exact chrome-less `/embed/p/:id` route, with separate evidence and no
 claim that #329 or the parent is closed.
+
+## 269d. Handoff embedded 2D route (#331)
+
+Status: #331 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+#331's exact `/embed/p/:id` browser transaction passed 1/1 against disposable
+PostgreSQL/Django/Vite/Chromium. It verified the chrome-less shell,
+stage-local screenshot/fullscreen/export and opt-in Camera/Demo controls,
+download behavior, and privacy boundary. The deployed revision is still
+unverified because production serves the legacy public shell. #331 remains
+open; publish the tested revision, rerun the exact anonymous embed URL, and
+close only after that criterion passes.

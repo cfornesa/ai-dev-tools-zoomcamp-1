@@ -11063,3 +11063,15 @@ Draft behavior, and immersive touch travel. The exact published `/p3d/:id`
 revision and authenticated owner evidence remain unavailable; the issue is
 open and is not marked COMPLETE. Publish the tested revision, inspect the
 owner editor, then rerun the exact public 3D fixture route before closure.
+
+## 269f. Handoff embedded 3D route (#332)
+
+Status: #332 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The dedicated Docker-backed `embed3dStageChrome.spec.ts` transaction passed
+1/1. It verified the exact chrome-less `/embed/p3d/:id` entry point,
+stage-local 3D screenshot, Full/Non-Camera download, sound, Piece controls,
+gesture guide, steering, and fullscreen behavior. The production revision is
+still unverified, so #332 remains open and is not marked COMPLETE. Publish the
+tested revision, rerun the exact anonymous embed URL, and close only after
+that deployed criterion passes.

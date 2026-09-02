@@ -3,6 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { getPublicProject3D, type PublicProject3D } from '../api/projects3d';
+import {
+  generateScene3DBundle,
+  triggerScene3DBundleDownload,
+} from '../export/generateHtmlExport3D';
 import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
 
@@ -31,6 +35,7 @@ function PublicProject3DViewer() {
   // separate visibility check gates the affordance.
   const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -71,6 +76,20 @@ function PublicProject3DViewer() {
     } catch {
       setEmbedCopyStatus('failed');
     }
+  }
+
+  async function handleDownload() {
+    if (!project?.current_version) return;
+    setDownloadError(null);
+    const result = await generateScene3DBundle(
+      project.current_version.scene_json as unknown as Scene3DDocument,
+      project.title,
+    );
+    if (!result.ok) {
+      setDownloadError(result.reasons.join(' '));
+      return;
+    }
+    triggerScene3DBundleDownload(result.zipBlob, result.filename);
   }
 
   if (loadState === 'loading') {
@@ -165,9 +184,16 @@ function PublicProject3DViewer() {
           <Scene3DPreview
             scene={project.current_version.scene_json as unknown as Scene3DDocument}
             screenshotBaseName={project.title}
+            onDownload={() => void handleDownload()}
+            immersiveHref={`/immersive/p3d/${id}`}
           />
         )}
       </section>
+      {downloadError && (
+        <p role="alert" aria-live="assertive">
+          Couldn’t download this piece: {downloadError}
+        </p>
+      )}
     </div>
   );
 }

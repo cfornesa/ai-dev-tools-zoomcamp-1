@@ -187,6 +187,8 @@ function Scene3DPreview({
   showSoundControl = true,
   flyControls = false,
   screenshotBaseName,
+  onDownload,
+  immersiveHref,
   createGestureCameraProvider,
 }: {
   scene: Scene3DDocument;
@@ -202,6 +204,10 @@ function Scene3DPreview({
    * every other caller, since it changes what arrow keys do (translation
    * instead of `OrbitControls`' own built-in panning). */
   flyControls?: boolean;
+  /** Stage-level download action supplied by the owning editor/viewer. */
+  onDownload?: () => void | Promise<void>;
+  /** Optional public immersive entry point rendered in the stage toolbar. */
+  immersiveHref?: string;
   /** Test seam mirroring `CameraControl.tsx`'s own `createProvider` prop
    * -- lets tests inject a fake `TrackingProvider` for the gesture-camera
    * feature without touching a real camera/MediaPipe. */
@@ -664,72 +670,102 @@ function Scene3DPreview({
             }}
           />
         )}
-      </div>
-      <div
-        role="group"
-        aria-label="Preview actions"
-        className="editor-tool-group scene3d-preview-actions"
-      >
-        {showScreenshotButton && (
-          <button type="button" onClick={() => void handleTakeScreenshot()}>
-            Take screenshot
-          </button>
-        )}
-        <button type="button" onClick={() => void toggleFullscreen()} aria-pressed={isFullscreen}>
-          {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-        </button>
-        {showGestureControl && (
+        <div
+          role="toolbar"
+          aria-label="Piece actions"
+          className="scene3d-stage-toolbar"
+        >
+          {showScreenshotButton && (
+            <button
+              type="button"
+              className="scene3d-stage-icon-button"
+              title="Take screenshot"
+              aria-label="Take screenshot"
+              onClick={() => void handleTakeScreenshot()}
+            >
+              <span aria-hidden="true">⌗</span>
+            </button>
+          )}
+          {onDownload && (
+            <button
+              type="button"
+              className="scene3d-stage-icon-button"
+              title="Download piece"
+              aria-label="Download piece"
+              onClick={() => void onDownload()}
+            >
+              <span aria-hidden="true">↓</span>
+            </button>
+          )}
+          {immersiveHref && (
+            <a
+              className="scene3d-stage-icon-button"
+              title="View immersive piece"
+              aria-label="View immersive piece"
+              href={immersiveHref}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span aria-hidden="true">◈</span>
+            </a>
+          )}
           <button
             type="button"
-            aria-pressed={gestureControlEnabled}
-            onClick={() => {
-              // Fresh smoothing/timestamp state on every re-enable, so a
-              // stale previous-frame position from a prior session never
-              // produces one large spurious jump on the first new frame.
-              previousHandSignalsRef.current = null;
-              latestHandSignalsRef.current = null;
-              gestureStartRef.current = null;
-              handSignalExtractorRef.current = createHandSignalExtractor();
-              // Issue #297: `CameraControl` unmounts (below) when gesture
-              // control turns off, but that only stops its own tracking
-              // provider/stream -- reset this component's own mirrored
-              // status/stream state too, so a stale 'active' status can
-              // never leave the video overlay/opacity controls rendered
-              // against a torn-down stream.
-              setGestureCameraStatus('idle');
-              setGestureCameraStream(null);
-              setGestureControlEnabled((current) => !current);
-            }}
+            className="scene3d-stage-icon-button"
+            title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+            onClick={() => void toggleFullscreen()}
+            aria-pressed={isFullscreen}
           >
-            {gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+            <span aria-hidden="true">⛶</span>
           </button>
-        )}
-        {showGestureControl && <HandGestureGuideDialog />}
-        {/* Issue #310: the always-visible mute toggle stays directly in
-            this main preview-actions row, independent of whether the
-            settings panel below is open -- matches the reference's own
-            separate main-toolbar mute button (distinct from its "Piece
-            controls" popover). */}
-        {showSoundControl && (
-          <button
-            type="button"
-            aria-pressed={soundEnabled}
-            onClick={() => void handleToggleSound()}
-          >
-            {soundEnabled ? 'Mute sound' : 'Enable sound'}
-          </button>
-        )}
-        {showSoundControl && soundEnabled && (
-          <button
-            type="button"
-            aria-pressed={showSoundSettings}
-            aria-expanded={showSoundSettings}
-            aria-controls="scene3d-sound-settings-panel"
-            onClick={() => setShowSoundSettings((current) => !current)}
-          >
-            {showSoundSettings ? 'Hide sound settings' : 'Sound settings'}
-          </button>
-        )}
+          {showGestureControl && (
+            <button
+              type="button"
+              className="scene3d-stage-icon-button"
+              title={gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+              aria-label={gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+              aria-pressed={gestureControlEnabled}
+              onClick={() => {
+                previousHandSignalsRef.current = null;
+                latestHandSignalsRef.current = null;
+                gestureStartRef.current = null;
+                handSignalExtractorRef.current = createHandSignalExtractor();
+                setGestureCameraStatus('idle');
+                setGestureCameraStream(null);
+                setGestureControlEnabled((current) => !current);
+              }}
+            >
+              <span aria-hidden="true">✋</span>
+            </button>
+          )}
+          {showGestureControl && <HandGestureGuideDialog />}
+          {showSoundControl && (
+            <button
+              type="button"
+              className="scene3d-stage-icon-button"
+              title={soundEnabled ? 'Mute sound' : 'Enable sound'}
+              aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}
+              aria-pressed={soundEnabled}
+              onClick={() => void handleToggleSound()}
+            >
+              <span aria-hidden="true">♪</span>
+            </button>
+          )}
+          {showSoundControl && (
+            <button
+              type="button"
+              className="scene3d-stage-icon-button"
+              title="Piece controls"
+              aria-label="Piece controls"
+              aria-haspopup="true"
+              aria-expanded={showSoundSettings}
+              onClick={() => setShowSoundSettings((current) => !current)}
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
+          )}
+        </div>
       </div>
       {/* Issue #310: "Piece controls" settings panel -- consolidates
           keyboard/mic/camera-theremin toggles and the volume slider
@@ -740,7 +776,7 @@ function Scene3DPreview({
           piece, so trapping focus/blocking the canvas behind a modal
           would work against that, unlike the gesture guide's one-shot
           read-then-dismiss content. */}
-      {showSoundControl && soundEnabled && showSoundSettings && (
+      {showSoundControl && showSoundSettings && (
         <div
           id="scene3d-sound-settings-panel"
           role="group"

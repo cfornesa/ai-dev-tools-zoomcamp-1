@@ -374,7 +374,11 @@ function Project3DWorkspace() {
           <div hidden={previewView !== 'visual'}>
             {/* Issue #244: real Three.js rendering, replacing the
                 #226 placeholder. */}
-            <Scene3DPreview scene={workingScene} screenshotBaseName={project?.title} />
+            <Scene3DPreview
+              scene={workingScene}
+              screenshotBaseName={project?.title}
+              onDownload={() => void handleExport()}
+            />
           </div>
         </section>
         <Outline3DInspector

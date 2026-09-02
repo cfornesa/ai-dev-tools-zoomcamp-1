@@ -10271,3 +10271,38 @@ GitHub issue: [#319](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/
 Parent: task 255/#313; depends on tasks 256-260/#314-318. This is the final
 real-browser verification and release-readiness gate for status transitions,
 public access, controls, thumbnails, captures, downloads, and immersive mode.
+
+## 262. Unify authored Project/Project3D piece surfaces with augment-humankind parity
+
+Status: PROPOSED
+
+GitHub issue: [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320)
+
+Parent: [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274).
+This task corrects the scope error identified during the 2026-09-02 review:
+the deployed examples use the structured `/p/:id`, `/p3d/:id`, and
+`/projects3d/:id` surfaces, while #313-#319 implement the separate
+`/art-pieces/*` domain. The structured surfaces must be the source of truth
+for pieces authored by this editor.
+
+Evidence: the deployed `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` page shows
+an external “Demo and camera controls” panel and no compact stage toolbar;
+the local `PublicProjectViewer.tsx` confirms those controls are rendered as a
+sibling panel outside the artwork. `Scene3DPreview.tsx` similarly places
+large text controls below the canvas. The reference contract is
+`../augment-humankind/docs/piece-surface-parity.md` plus its stage, immersive,
+runtime, and export helpers.
+
+Acceptance criteria are maintained in GitHub #320 and cover the shared
+editor/public/embed/immersive stage toolbar, Draft/Published visibility,
+portable Full/Non-Camera runtime downloads, screenshot framing/privacy,
+sandboxing, and real-browser verification against the exact target routes.
+
+Status update (2026-09-02): PROPOSED. The public route evidence is definitive;
+the private editor URL remains an authentication verification boundary.
+
+Next action: implement the shared stage/capability contract for structured
+Project and Project3D surfaces, then verify the downloaded runtime and exact
+published URLs after authentication and publish.
+
+Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)

@@ -11704,4 +11704,15 @@ The distillation correction is recorded in `.local/tasks/authored-piece-parity-d
 - No product source or product tests were changed during this audit. The next
   engineering handoff is exactly one of #347 or #348 after PM ordering, and
   it must be implemented, tested, reconciled, and closed before the next
-  issue begins.
+issue begins.
+
+## #347/#348 implementation and closure (2026-09-02)
+
+The two shared implementation handoffs were completed sequentially and closed
+only after engineering, focused tests, full repository checks, and Chromium
+route QA passed. #347 (`d945de8`) made shared stage controls discoverable and
+made closed publication state explicit. #348 (`8f5a963`) consolidated editor
+authoring controls into the stage-associated toolbar and preserved the existing
+mutations, disabled states, and error announcements. GitHub records the final
+QA evidence and completed closure for both issues. Route-level deployed checks
+remain open under #325–#337 until these commits are republished.

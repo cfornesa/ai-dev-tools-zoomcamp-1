@@ -851,6 +851,21 @@ evidence only: the deployed AI editor remains unverified, so #326/#340 stay
 open for exact post-publish route inspection and authenticated GitHub
 reconciliation.
 
+## Reconciliation: #329 public 2D viewer (2026-09-02)
+
+The complete `publishingAndRemix.spec.ts` transaction passed 24/24 against
+the disposable PostgreSQL/Django/Vite/Chromium stack. It covers the published
+anonymous `/p/:id` route, visible scene rendering, camera/demo lifecycle and
+fallbacks, stage-local screenshot/download/fullscreen controls, publication
+and unpublication, remix authorization, and concurrency boundaries. The
+owner-supplied production screenshot remains contradictory: it shows the old
+Preview plus sibling camera/demo panels and no stage toolbar or controls.
+This is therefore local implementation evidence plus a deployment
+verification blocker, not closure. No duplicate issue is needed; #320/#321
+own the revision/publish boundary. Next action is authorized publication of
+the intended revision followed by exact anonymous `/p/:id` inspection and
+authenticated GitHub reconciliation.
+
 ## Reconciliation: #328/#339 AI 3D editor (2026-09-02)
 
 The dedicated `ai3dStageChrome.spec.ts` transaction passed 1/1 against the

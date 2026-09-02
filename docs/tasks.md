@@ -10638,6 +10638,17 @@ the legacy standalone-export action. No local product defect was found. This
 remains local evidence only; exact deployed-route verification and
 authenticated GitHub reconciliation remain open.
 
+Public 2D viewer verification (#329, 2026-09-02): the complete
+`publishingAndRemix.spec.ts` transaction passed 24/24 against the disposable
+PostgreSQL/Django/Vite/Chromium stack. It covers anonymous `/p/:id` rendering,
+camera/demo lifecycle and fallbacks, stage-local screenshot/download/
+fullscreen controls, publication/unpublication, remix authorization, and
+concurrency boundaries. The owner-supplied production screenshot still shows
+the old sibling-panel shell with no stage toolbar or controls, so this is
+local implementation evidence plus a deployment verification blocker—not a
+closed route. Authorized publication and exact deployed-route inspection are
+still required before GitHub reconciliation.
+
 Portable 2D runtime implementation slice (#336, 2026-09-02): the existing
 isolated Chromium artifact suite passed 17/17 through the Docker-backed
 browser runner after a direct macOS Chromium launch was blocked by a

@@ -11221,3 +11221,20 @@ for all six controls. The custom and CMS embed decisions to retain the shared
 d-pad are recorded on #334 and #335. Route deployment verification remains
 owned by those route issues; it was not incorrectly used as a reason to leave
 this implementation issue open.
+
+## 269r. Handoff immersive hand Move capability (#344)
+
+Status: #344 HANDED OFF — DEPLOYED/MANUAL-CAMERA VERIFICATION BOUNDARY
+
+Commit `7ea23da` implements bounded held-pinch forward/back/strafe in the
+immersive 3D preview, moves camera and orbit target together, preserves the
+existing Look/Orbit/Zoom and fallback controls, resets stale signals on pinch
+release/hand loss/camera stop/steering-off, and updates the five-step guide.
+Focused React tests pass 13/13; the full frontend suite passes 2,386/2,386;
+typecheck, lint, and build pass; and the exact Docker-backed
+`handGestureGuide.spec.ts` passes 1/1. The issue remains open because its
+acceptance criteria require real/manual-camera Chromium evidence for movement,
+bounds, release, hand loss, and steering-off, which the current harness cannot
+provide without fabricating signals. Exact deployed route evidence also remains
+owned by #333–#335/#320. GitHub comment `5510319526` records the evidence and
+boundary; do not close #344 until those explicit checks pass.

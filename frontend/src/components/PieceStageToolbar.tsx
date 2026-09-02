@@ -21,6 +21,10 @@ export type PieceStageToolbarProps = {
   capabilities?: PieceStageCapabilities;
 };
 
+function StageActionLabel({ children }: { children: string }) {
+  return <span className="piece-stage-action-label">{children}</span>;
+}
+
 /**
  * Shared stage chrome for authored pieces. Surface-specific capabilities are
  * passed in as controls, but the order, labels, icon-only presentation, and
@@ -70,6 +74,7 @@ export default function PieceStageToolbar({
             onClick={() => void onScreenshot()}
           >
             <PieceStageIcon name="screenshot" />
+            <StageActionLabel>Screenshot</StageActionLabel>
             <span className="piece-stage-tooltip" role="tooltip">
               Take screenshot
             </span>
@@ -87,6 +92,7 @@ export default function PieceStageToolbar({
               onClick={() => setDownloadOpen((current) => !current)}
             >
               <PieceStageIcon name="download" />
+              <StageActionLabel>Download</StageActionLabel>
               <span className="piece-stage-tooltip" role="tooltip">
                 Open download menu
               </span>
@@ -131,6 +137,7 @@ export default function PieceStageToolbar({
             title="View immersive piece"
           >
             <PieceStageIcon name="immersive" />
+            <StageActionLabel>Immersive</StageActionLabel>
             <span className="piece-stage-tooltip" role="tooltip">
               View immersive piece
             </span>
@@ -151,6 +158,7 @@ export default function PieceStageToolbar({
             onClick={() => void onToggleFullscreen()}
           >
             <PieceStageIcon name="fullscreen" />
+            <StageActionLabel>{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</StageActionLabel>
             <span className="piece-stage-tooltip" role="tooltip">
               {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
             </span>

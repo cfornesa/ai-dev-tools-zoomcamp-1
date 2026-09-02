@@ -2962,9 +2962,10 @@ select.ai-proposal-field-full-width {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
+  width: auto;
+  min-width: 2.75rem;
   height: 2.75rem;
-  padding: 0;
+  padding: 0 0.65rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.55);
@@ -2977,6 +2978,18 @@ select.ai-proposal-field-full-width {
 
 .piece-stage-icon {
   flex: 0 0 auto;
+}
+
+/* Keep the stage actions visibly discoverable without requiring hover. The
+   short labels are part of the control, while the longer tooltip remains an
+   accessible clarification for keyboard and pointer users. */
+.piece-stage-action-label {
+  margin-left: 0.35rem;
+  color: currentColor;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .piece-stage-tooltip {
@@ -3021,6 +3034,28 @@ select.ai-proposal-field-full-width {
 .piece-stage-toolbar .piece-stage-icon-button:focus-visible {
   border-color: #fff;
   background: rgba(0, 0, 0, 0.72);
+}
+
+@media (max-width: 700px) {
+  .piece-stage-toolbar {
+    right: 0.75rem;
+    max-width: calc(100% - 1.5rem);
+  }
+
+  .piece-stage-toolbar-group,
+  .editor-piece-stage-toolbar {
+    gap: 0.4rem;
+  }
+
+  .piece-stage-toolbar .piece-stage-icon-button {
+    min-height: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .piece-stage-action-label {
+    font-size: 0.66rem;
+  }
 }
 
 .piece-stage-controls {

@@ -13,7 +13,7 @@ export default function StageControlsPopover({
   children,
   label = 'Piece controls',
   resetKey,
-  showVisibleLabel = false,
+  showVisibleLabel = true,
 }: {
   children: ReactNode;
   label?: string;

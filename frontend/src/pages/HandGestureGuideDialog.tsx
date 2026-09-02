@@ -134,6 +134,7 @@ function HandGestureGuideDialog() {
         onClick={() => setIsOpen(true)}
       >
         <PieceStageIcon name="guide" />
+        <span className="piece-stage-action-label">Guide</span>
         <span className="piece-stage-tooltip" role="tooltip">
           Show hand gesture guide
         </span>

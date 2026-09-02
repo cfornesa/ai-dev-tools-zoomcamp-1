@@ -32,9 +32,11 @@ test.describe('manual 3D editor stage chrome', () => {
       await page.setViewportSize(viewport);
       await expect(toolbar).toBeVisible();
       await expect(toolbar.locator('svg.piece-stage-icon')).toHaveCount(9);
-      await expect(toolbar.locator('.piece-stage-visible-label')).toHaveText(
-        'Publication status: Draft',
-      );
+      await expect(
+        toolbar.locator('.piece-stage-visible-label').filter({
+          hasText: 'Publication status: Draft',
+        }),
+      ).toBeVisible();
     }
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
@@ -70,10 +72,10 @@ test.describe('manual 3D editor stage chrome', () => {
     expect(chrome).toMatchObject({
       top: '13.5px',
       left: '13.5px',
-      buttonWidth: '49.5px',
       buttonHeight: '49.5px',
       buttonRadius: '13.5px',
     });
+    expect(Number.parseFloat(chrome.buttonWidth ?? '0')).toBeGreaterThanOrEqual(49.5);
 
     const toolbarBox = await toolbar.boundingBox();
     const frameBox = await frame.boundingBox();

@@ -818,6 +818,9 @@ function Scene3DPreview({
                 onClick={() => void handleToggleSound()}
               >
                 <PieceStageIcon name="sound" />
+                <span className="piece-stage-action-label">
+                  {soundEnabled ? 'Mute sound' : 'Sound'}
+                </span>
                 <span className="piece-stage-tooltip" role="tooltip">
                   {soundEnabled ? 'Mute sound' : 'Enable sound'}
                 </span>
@@ -1024,6 +1027,9 @@ function Scene3DPreview({
                 }}
               >
                 <PieceStageIcon name="steer" />
+                <span className="piece-stage-action-label">
+                  {gestureControlEnabled ? 'Stop steer' : 'Steer'}
+                </span>
                 <span className="piece-stage-tooltip" role="tooltip">
                   {gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
                 </span>

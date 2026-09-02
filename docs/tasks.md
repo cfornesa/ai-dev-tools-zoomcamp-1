@@ -10907,6 +10907,13 @@ and the supplied deployment has not been shown to contain this revision. #295
 remains open with its next action: re-run the exact route after authorized
 publication.
 
+The follow-up local implementation correction in `f0b6e13` changed the guide
+trigger from a visibly wide text button to the compact `piece-stage-icon-button`
+used by the shared stage rail. Rebuilt repository Compose inspection confirmed
+the rendered trigger contains only the hand icon while retaining the accessible
+name/title. Focused React tests pass 5/5 and the disposable browser scenario
+passes 1/1; this does not change the published-route blocker.
+
 ## Distillation re-audit: owner live evidence (2026-09-02)
 
 The supplied public route was inspected again in a fresh browser context and

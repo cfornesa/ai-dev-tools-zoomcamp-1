@@ -50,7 +50,7 @@ as read-only behavioral reference.
 | [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
 | [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `closed_completed_local` | Narrow local implementation closure; not deployment evidence. Exact deployed verification remains #326 |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
-| [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295) | Live 3D five-slide hand-gesture guide | Shared capability; portable guide remains in #337 | `closed_completed_local` | Narrow local implementation closure; exact deployed/editor verification remains #327/#330/#337 |
+| [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295) | Live 3D five-slide hand-gesture guide | Shared capability; portable guide remains in #337 | `open` | Reopened: its closure contract requires a published `/p3d/:id` fixture, but prior evidence was local-only; verify exact route before closure |
 | [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306) | Shared Tone.js 3D audio foundation | Foundation for sound consumers; route evidence remains #327–#337 | `closed_completed_local` | Narrow local foundation closure; exact public/editor/download behavior remains #327–#337 |
 | [#342](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/342) | Independent 3D camera-view toggle | Shared capability; consumers verify through #327–#337 | `closed_completed_local` | Narrow local capability closure; exact deployed consumers remain #327–#337 |
 | [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad travel | Immersive capability; route variants decide inclusion in #333–#335 | `open` | Implement press/release/cancel semantics and touch-browser evidence |
@@ -84,6 +84,47 @@ reconcile its evidence and GitHub status before starting the next issue. A QA
 failure keeps the same issue current until it is closed, blocked, or handed
 off with a classified blocker and exact next action. No later issue may be
 used as a parallel implementation queue.
+
+## Second distillation re-audit (2026-09-02)
+
+This pass supersedes historical closure prose that described local or
+disposable-stack evidence as “verified live.” The supplied production public
+2D route still renders the legacy `Preview` plus sibling `Demo and camera
+controls` layout, with no compact stage toolbar, screenshot, download,
+fullscreen, or publication controls. The supplied `/projects3d/:id` route is
+private and returned the anonymous unavailable state, so its editor controls
+and Draft/Published toggle cannot be claimed from that URL.
+
+The current checkout does contain local stage-toolbar and publication-control
+implementations, but `main` is not the deployed revision. This explains the
+user-visible discrepancy: local commits cannot change the live URLs without a
+separately authorized push/publish operation. The local public camera-source
+visibility defect was corrected in commit `a38dce4`, but that is not deployed
+evidence.
+
+Closed-issue reconciliation:
+
+- #274, #300, #323, and #324 are parent/umbrella records and remain historical
+  or superseded; they are not implementation closure units.
+- #295 is reopened because its own contract requires a published `/p3d/:id`
+  fixture and the prior evidence was local-only.
+- #306 remains closed only as the narrow Tone.js foundation; it does not prove
+  any editor, public, immersive, or downloaded consumer.
+- #285–#294, #296–#311, and #340/#342 remain narrow implementation records only
+  where their explicit local acceptance is independently covered. Their
+  historical “verified live” wording is demoted and cannot close #320 or any
+  exact-route child.
+- Exact route and artifact proof remains open in #325–#337. No child may close
+  on source inspection, stale deployment output, or a local test that does not
+  enter its named route/artifact.
+
+Runner triage: `BROWSER_QA_E2E_SPEC=e2e/publishingAndRemix.spec.ts make
+browser-qa` reached the repository-owned disposable stack but fixture setup
+received HTTP 404 from `POST /api/projects/<id>/publish/`; the focused backend
+publish suite passed 18 tests with one expected skip. This is a reproducible
+workflow/fixture blocker requiring reconciliation before #329 or any
+publication-dependent child can close. No duplicate issue is created yet;
+first reconcile the existing runner and #321 workflow scope.
 
 ## Duplicate / already-covered report
 
@@ -217,11 +258,14 @@ implementation and exact routes:
   pass. Moving the editor authoring toolbar into the stage initially exposed
   a Code-tab regression; the toolbar is now still available while the visual
   canvas is hidden, with the focused Code-tab suite passing 11/11.
-- GitHub open-issue enumeration on 2026-09-02 contains #320, #321, #325–#345
-  except the historical closed #323/#324; #295 and #306 are reopened. #123,
+- GitHub issue enumeration on 2026-09-02 confirms #295 is now reopened because
+  its published-route criterion was not proven. #320, #321, and #325–#345
+  remain open; #123, #274, #323, #324, and the other narrow implementation
+  issues remain closed only for their explicitly bounded local scopes. #306
+  remains closed as a foundation issue, not route/deployment evidence. #123,
   #274, #323, and #324 are closed historical records and are not closure
-  evidence for the current parent. The current manifest therefore has 23
-  open issues: #320, #321, #325–#345, plus reopened #295 and #306.
+  evidence for the current parent. The current manifest therefore has 24
+  open issues: #295, #320, #321, and #325–#345.
 
 ## Distillation decisions and uncovered context
 

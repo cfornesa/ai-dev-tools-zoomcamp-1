@@ -10464,6 +10464,33 @@ comment, evidence reconciliation, and GitHub status decision before beginning
 engineering or testing issue N+1. A failed QA result keeps issue N current;
 it is not permission to queue fixes for later issues.
 
+Second distillation re-audit (2026-09-02): the user-visible production
+discrepancy is confirmed, not a selector misunderstanding. The supplied
+`/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` route still exposes the legacy
+`Preview` plus sibling `Demo and camera controls` panel and has no compact
+stage toolbar, screenshot, download, fullscreen, or publication controls. The
+supplied `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` route returns the
+anonymous unavailable state, so its editor controls and Draft/Published toggle
+cannot be claimed from the live URL. The current local `main` contains the
+stage-toolbar/publication implementation but is not the deployed revision;
+no push or publish is authorized by this task.
+
+The closed-issue audit found that historical “verified live” comments were
+used beyond their evidence. Parent records (#274, #300, #323, #324) remain
+non-implementation containers. #295 was reopened because its own contract
+requires a published `/p3d/:id` fixture and its prior proof was local-only.
+#306 remains closed only as a narrow Tone.js foundation; its closure does not
+prove any consuming route or downloaded artifact. Exact editor, public,
+embed, immersive, and download verification remains in #325–#337, and no
+route issue may close from source inspection or a stale deployment.
+
+Runner blocker: `BROWSER_QA_E2E_SPEC=e2e/publishingAndRemix.spec.ts make
+browser-qa` reached the disposable stack but fixture setup received HTTP 404
+from `POST /api/projects/<id>/publish/`, while the focused backend publish
+suite passed 18 tests with one expected skip. This is a workflow/fixture
+reconciliation item under #321’s existing workflow scope; it is not product
+parity evidence and does not authorize fixing a later route issue in parallel.
+
 ## 263. Make Docker browser verification select and fingerprint this repository
 
 Status: BLOCKED / HANDOFF

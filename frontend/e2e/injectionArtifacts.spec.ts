@@ -194,7 +194,7 @@ async function eventHandlerAttributes(page: Page): Promise<string[]> {
 
 /** Count of `<script>` elements in the live DOM beyond the exact expected,
  * pinned set for a demo-only export (p5 CDN loader, two JSON data blocks,
- * runtime script — 4 total). Every scenario below uses `interactionMode:
+ * runtime script, and the stage-toolbar runtime — 5 total). Every scenario below uses `interactionMode:
  * 'demo'` except the dedicated interaction-mode-matrix test, which adjusts
  * the expected count itself. */
 async function unexpectedScriptElementCount(page: Page, expected: number): Promise<number> {
@@ -221,7 +221,7 @@ async function assertArtifactIsInert(
   browser: Browser,
   html: string,
   filename: string,
-  expectedScriptCount = 4,
+  expectedScriptCount = 5,
 ): Promise<void> {
   const { page, close, observed } = await openInIsolatedContext(browser, html, filename);
   try {
@@ -360,7 +360,7 @@ test.describe('Injection audit: combined worst-case payload across attribution o
       // export-config json + runtime script (4), plus the camera script
       // for camera-inclusive modes (5). Attribution never adds a <script>
       // (only a footer/comment/marker).
-      const expectedScriptCount = includesCamera ? 5 : 4;
+      const expectedScriptCount = includesCamera ? 6 : 5;
 
       await assertArtifactIsInert(
         browser,

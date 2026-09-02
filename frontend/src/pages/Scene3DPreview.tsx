@@ -356,6 +356,13 @@ function Scene3DPreview({
   const [gestureCameraStatus, setGestureCameraStatus] = useState<CameraStatus>('idle');
   const [gestureCameraStream, setGestureCameraStream] = useState<MediaStream | null>(null);
   const gestureCameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  // Issue #342: a camera preview is independently toggleable from gesture
+  // steering and theremin. It uses the existing permission/error lifecycle,
+  // but has no frame handler, so it cannot alter the scene or sound.
+  const [cameraPreviewEnabled, setCameraPreviewEnabled] = useState(false);
+  const [cameraPreviewStatus, setCameraPreviewStatus] = useState<CameraStatus>('idle');
+  const [cameraPreviewStream, setCameraPreviewStream] = useState<MediaStream | null>(null);
+  const cameraPreviewVideoRef = useRef<HTMLVideoElement | null>(null);
   const {
     opacity: cameraOverlayOpacity,
     mirrored: cameraOverlayMirrored,
@@ -381,6 +388,13 @@ function Scene3DPreview({
     // element actually exists -- the identical bug documented on
     // `EditorWorkspace.tsx`'s own version of this effect.
   }, [gestureCameraStream, gestureCameraStatus]);
+
+  useEffect(() => {
+    const videoEl = cameraPreviewVideoRef.current;
+    if (!videoEl) return;
+    videoEl.srcObject = cameraPreviewStream;
+    if (cameraPreviewStream) void Promise.resolve(videoEl.play()).catch(() => {});
+  }, [cameraPreviewStream, cameraPreviewStatus]);
 
   function handleGestureFrame(frame: TrackingFrame) {
     if (gestureStartRef.current === null) gestureStartRef.current = performance.now();
@@ -675,6 +689,21 @@ function Scene3DPreview({
             }}
           />
         )}
+        {cameraPreviewEnabled && cameraPreviewStatus === 'active' && cameraPreviewStream && (
+          <video
+            ref={cameraPreviewVideoRef}
+            data-testid="scene3d-camera-preview-video"
+            aria-hidden="true"
+            muted
+            playsInline
+            autoPlay
+            className="scene3d-camera-overlay-video"
+            style={{
+              opacity: cameraOverlayOpacity,
+              transform: cameraOverlayMirrored ? 'scaleX(-1)' : undefined,
+            }}
+          />
+        )}
         <PieceStageToolbar
           ariaLabel="Preview actions"
           className="editor-tool-group scene3d-preview-actions"
@@ -701,6 +730,55 @@ function Scene3DPreview({
           }
           controlsControl={
             <StageControlsPopover resetKey={soundEnabled ? 'sound-enabled' : 'sound-disabled'}>
+              <div className="editor-tool-group">
+                <button
+                  type="button"
+                  aria-pressed={cameraPreviewEnabled}
+                  onClick={() => {
+                    if (cameraPreviewEnabled) {
+                      setCameraPreviewEnabled(false);
+                      setCameraPreviewStatus('idle');
+                      setCameraPreviewStream(null);
+                    } else {
+                      setCameraPreviewEnabled(true);
+                    }
+                  }}
+                >
+                  {cameraPreviewEnabled ? 'Hide camera' : 'Show camera'}
+                </button>
+              </div>
+              {cameraPreviewEnabled && (
+                <div role="region" aria-label="Camera preview" data-testid="camera-preview-control">
+                  <CameraControl
+                    onStatusChange={setCameraPreviewStatus}
+                    onStreamChange={setCameraPreviewStream}
+                  />
+                  {cameraPreviewStatus === 'active' && (
+                    <div className="editor-camera-overlay-control">
+                      <label htmlFor="scene3d-camera-preview-opacity">Camera overlay opacity</label>
+                      <input
+                        id="scene3d-camera-preview-opacity"
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={Math.round(cameraOverlayOpacity * 100)}
+                        aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                        onChange={(event) => setOpacity(Number(event.target.value) / 100)}
+                      />
+                      <label htmlFor="scene3d-camera-preview-mirror">
+                        <input
+                          id="scene3d-camera-preview-mirror"
+                          type="checkbox"
+                          checked={cameraOverlayMirrored}
+                          onChange={(event) => setMirrored(event.target.checked)}
+                        />
+                        Mirror camera overlay
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
               {showSoundControl && soundEnabled && (
                 <div className="scene3d-sound-settings-inline">
                   <div className="editor-camera-overlay-control">

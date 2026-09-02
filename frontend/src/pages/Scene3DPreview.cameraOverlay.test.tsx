@@ -190,3 +190,41 @@ describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #2
     expect(screen.queryByTestId('scene3d-camera-overlay-video')).not.toBeInTheDocument();
   });
 });
+
+describe('Scene3DPreview independent camera preview (issue #342)', () => {
+  it('shows camera separately from steering and exposes overlay controls', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+    await user.click(screen.getByRole('button', { name: 'Show camera' }));
+    expect(screen.getByRole('button', { name: 'Steer the piece' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.queryByRole('button', { name: 'Camera theremin' })).not.toBeInTheDocument();
+
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+
+    expect(screen.getByTestId('scene3d-camera-preview-video')).toBeInTheDocument();
+    expect(screen.getByLabelText('Camera overlay opacity')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mirror camera overlay')).toBeInTheDocument();
+  });
+
+  it('hiding the preview removes the stream overlay without changing steering', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+    await user.click(screen.getByRole('button', { name: 'Show camera' }));
+    setCameraStream(fakeStream());
+    setCameraStatus('active');
+    await user.click(screen.getByRole('button', { name: 'Hide camera' }));
+
+    expect(screen.queryByTestId('scene3d-camera-preview-video')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Steer the piece' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+});

@@ -11770,6 +11770,17 @@ exposed in the read-only panel. The next deployment action is to synchronize
 that workspace to reviewed `ba140ff` (or an explicitly reviewed descendant),
 publish it, and recheck both exact URLs.
 
+## 269al. Blocked-issue distillation: anonymous 2D camera permission (2026-09-02)
+
+#329’s user-authorized public 2D camera check reached the browser permission
+bubble. The page preserved the artwork, exposed Stop camera, attached no video
+while waiting, and displayed its actionable Allow guidance. The in-app browser
+cannot operate the address-bar permission bubble, so the stream was stopped
+and the viewport reset. This is an external browser-state blocker, not a new
+product issue; #329 remains the sole owner of the camera compositing/retry
+contract. Continue with independent #332 while the visible browser prompt
+awaits Allow, and do not close #329 from the waiting state.
+
 ## 269ak. Published shared parity recheck and remaining public-download gap (2026-09-02)
 
 The reviewed revision was published through Replit and the exact supplied

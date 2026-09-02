@@ -279,3 +279,18 @@ but not the consumer matrix. During the same inspection, opening the public 2D
 download control exposed no Full/Non-Camera menu entries, so public 2D
 download behavior remains an actionable route/artifact gap under its existing
 consumer issue. Do not transfer shared-control evidence to that issue.
+
+## Blocked-issue distillation: anonymous 2D camera permission — 2026-09-02
+
+The user-authorized #329 camera check reached a browser-chrome permission
+boundary, not a product failure: the page displayed its explicit waiting
+message, preserved the artwork, exposed Stop camera, and attached no video
+while permission remained pending. The connected in-app browser can control
+the page but cannot click the address-bar permission bubble. The stream was
+stopped safely and the temporary viewport was reset.
+
+No duplicate or implementation split is warranted. #329 remains the sole owner
+of anonymous public 2D camera compositing and denial/retry behavior. The
+blocker is external browser permission state and is independent of the next
+3D embed route; continue with #332 while #329 awaits completion of Allow in
+the visible browser context. Do not close #329 from the waiting state.

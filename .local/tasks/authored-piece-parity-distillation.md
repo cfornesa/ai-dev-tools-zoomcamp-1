@@ -53,6 +53,7 @@ component never close a deployed route.
 | #332 | anonymous 3D `/embed/p3d/:id` | published 3D fixture | closed | deployed chrome-less embed and local browser QA recorded |
 | #333 | regular immersive 3D | published 3D fixture | closed | deployed route, controls/privacy, and local browser QA recorded |
 | #334 | custom immersive `?embed=1` | published 3D fixture | closed | deployed chrome-less query variant and local browser QA recorded |
+| #335 | CMS immersive `?embed=1&cms=1` | published 3D fixture | closed | deployed chrome-less CMS variant and local browser QA recorded |
 | #335 | CMS immersive `?embed=1&cms=1` | published 3D fixture | dependency-blocked | verify exact query variant after fixture |
 | #336 | extracted standalone 2D artifact | approved file-capable browser | blocked | execute captured Full/Non-Camera files |
 | #337 | extracted Full/Non-Camera 3D artifacts | published 3D fixture + file browser | dependency-blocked | download, extract, execute both variants |

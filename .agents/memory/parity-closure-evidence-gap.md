@@ -51,3 +51,13 @@ consumer and downloaded-artifact matrix in #325–#337 plus local implementation
 #338–#341 and release reconciliation #320/#321. A Docker socket permission
 failure is a workflow/infrastructure blocker requiring a fresh distillation at
 each blocked handoff, not permission to close or skip evidence.
+
+Post-republish audit (2026-09-02): the published 2D fixture now serves the
+stage-local toolbar from `assets/index-CKhsUQOh.js`; #329 and #331 were closed
+only after exact anonymous route inspection. The in-app browser security
+policy rejects `file://` navigation, so captured production standalone HTML
+can be downloaded and statically inspected but cannot satisfy the artifact
+execution criterion until an approved Chromium context supports local-file
+opening. The published gallery currently exposes no 3D fixture, leaving the
+3D route, immersive, and 3D-download issues blocked on a concrete publication
+dependency rather than on local implementation evidence.

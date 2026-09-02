@@ -511,35 +511,6 @@ function PublicProjectViewer() {
               Couldn't render the preview: {previewError}
             </p>
           )}
-          {/* Task 119 (issue #152): the camera overlay opacity slider +
-              mirror toggle, visible only while the live camera is active —
-              see the <video> overlay itself below, inside
-              `.editor-scene-canvas`. Ports EditorWorkspace.tsx's identical
-              controls verbatim (Tasks 110/118, issues #141/#147). */}
-          {cameraStatus === 'active' && (
-            <div className="editor-camera-overlay-control">
-              <label htmlFor="public-camera-overlay-opacity">Camera overlay opacity</label>
-              <input
-                id="public-camera-overlay-opacity"
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={Math.round(cameraOverlayOpacity * 100)}
-                aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
-                onChange={(event) => setCameraOverlayOpacity(Number(event.target.value) / 100)}
-              />
-              <label htmlFor="public-camera-overlay-mirror">
-                <input
-                  id="public-camera-overlay-mirror"
-                  type="checkbox"
-                  checked={cameraOverlayMirrored}
-                  onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
-                />
-                Mirror camera overlay
-              </label>
-            </div>
-          )}
           <div ref={previewStageRef} className="piece-stage-shell">
             <div
               data-testid="public-scene-canvas"

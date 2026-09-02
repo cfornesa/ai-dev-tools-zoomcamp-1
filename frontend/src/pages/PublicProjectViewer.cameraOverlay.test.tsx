@@ -93,10 +93,13 @@ function renderViewer(id = 'p1') {
   );
 }
 
-async function loadViewer() {
+async function loadViewer(openControls = false) {
   mockedGetPublicProject.mockResolvedValue(basePublicProject());
   renderViewer();
   await screen.findByRole('heading', { name: 'Hand Follower' });
+  if (openControls) {
+    fireEvent.click(screen.getByRole('button', { name: 'Piece controls' }));
+  }
 }
 
 function setCameraStatus(status: CameraStatus) {
@@ -150,7 +153,7 @@ describe('PublicProjectViewer camera video overlay (Task 119, issue #152)', () =
 
   it('renders the overlay and controls once active with a stream, defaulting to 50% opacity + mirrored', async () => {
     const stream = fakeStream();
-    await loadViewer();
+    await loadViewer(true);
     setCameraStatus('starting');
     setCameraStream(stream);
     setCameraStatus('active');
@@ -169,7 +172,7 @@ describe('PublicProjectViewer camera video overlay (Task 119, issue #152)', () =
   });
 
   it('moving the slider updates the overlay opacity live', async () => {
-    await loadViewer();
+    await loadViewer(true);
     setCameraStream(fakeStream());
     setCameraStatus('active');
 
@@ -185,7 +188,7 @@ describe('PublicProjectViewer camera video overlay (Task 119, issue #152)', () =
   });
 
   it('mirror toggle flips the transform live with no re-mount', async () => {
-    await loadViewer();
+    await loadViewer(true);
     setCameraStream(fakeStream());
     setCameraStatus('active');
 
@@ -201,7 +204,7 @@ describe('PublicProjectViewer camera video overlay (Task 119, issue #152)', () =
   });
 
   it('removes the overlay and controls immediately on Stop (no frozen frame)', async () => {
-    await loadViewer();
+    await loadViewer(true);
     setCameraStream(fakeStream());
     setCameraStatus('active');
     expect(screen.getByTestId('camera-overlay-video')).toBeInTheDocument();
@@ -221,7 +224,7 @@ describe('PublicProjectViewer camera video overlay (Task 119, issue #152)', () =
 
   describe('shared store with the editor (not forked)', () => {
     it('a preference set on this page persists to the same localStorage key the editor reads', async () => {
-      await loadViewer();
+      await loadViewer(true);
       setCameraStream(fakeStream());
       setCameraStatus('active');
 
@@ -248,7 +251,7 @@ describe('PublicProjectViewer camera video overlay (Task 119, issue #152)', () =
       setCameraOverlayOpacity(0.2);
       setCameraOverlayMirrored(false);
 
-      await loadViewer();
+      await loadViewer(true);
       setCameraStream(fakeStream());
       setCameraStatus('active');
 

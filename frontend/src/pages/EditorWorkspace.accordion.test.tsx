@@ -111,16 +111,15 @@ describe('EditorWorkspace top-level and nested disclosures', () => {
 
     const tools = await screen.findByRole('region', { name: 'Tools' });
     await userEvent.click(within(tools).getByRole('button', { name: 'Expand Tools panel' }));
-    const toggles = screen.getAllByRole('button', { name: /Editing preferences|Camera/ });
+    const toggles = screen.getAllByRole('button', { name: /Editing preferences/ });
     toggles.forEach((toggle) => expect(toggle).toHaveAttribute('aria-expanded', 'false'));
+    expect(screen.getByRole('button', { name: 'Piece controls' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
-  // Issue #127: "Scene outline" was removed from Tools (it's now the
-  // dedicated, always-visible Layers panel — no longer a
-  // `CollapsibleSection` at all), so this independence check now pairs
-  // "Editing preferences" against "Camera", one of Tools' remaining
-  // collapsible sections.
-  it('expanding one Tools section leaves a different, still-closed section closed', async () => {
+  it('expanding editor preferences leaves the stage controls disclosure closed', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     const user = userEvent.setup();
@@ -129,22 +128,21 @@ describe('EditorWorkspace top-level and nested disclosures', () => {
     const tools = await screen.findByRole('region', { name: 'Tools' });
     await user.click(within(tools).getByRole('button', { name: 'Expand Tools panel' }));
 
-    const cameraToggle = screen.getByRole('button', { name: /Camera/ });
     const addEditToggle = screen.getByRole('button', { name: /Editing preferences/ });
-    expect(cameraToggle).toHaveAttribute('aria-expanded', 'false');
     expect(addEditToggle).toHaveAttribute('aria-expanded', 'false');
+    const pieceControls = screen.getByRole('button', { name: 'Piece controls' });
+    expect(pieceControls).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(addEditToggle);
 
     expect(addEditToggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('group', { name: 'Add shape' })).toBeInTheDocument();
-    // Camera was never touched -- it must still be closed.
-    expect(cameraToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('heading', { name: 'Snapping' })).toBeInTheDocument();
+    expect(pieceControls).toHaveAttribute('aria-expanded', 'false');
 
     // Collapsing the expanded section again doesn't disturb the other.
     await user.click(addEditToggle);
     expect(addEditToggle).toHaveAttribute('aria-expanded', 'false');
-    expect(cameraToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(pieceControls).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('expanding one Inspector section leaves a different, still-closed section closed', async () => {

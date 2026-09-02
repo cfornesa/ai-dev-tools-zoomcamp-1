@@ -61,6 +61,15 @@ def test_browser_qa_is_available_from_the_frontend_working_directory():
     assert "$(MAKE) -C .. browser-qa" in makefile
 
 
+def test_compose_preflight_cannot_be_redirected_to_another_project_or_file():
+    script = (ROOT / "scripts" / "compose-preflight.sh").read_text()
+
+    assert 'expected_project="ai-dev-tools-zoomcamp-1"' in script
+    assert 'compose_file="$repo_root/compose.yaml"' in script
+    assert 'COMPOSE_PROJECT_NAME must be' in script
+    assert 'COMPOSE_FILE must resolve to this repository' in script
+
+
 def test_ci_runs_the_full_browser_acceptance_suite_and_uploads_diagnostics():
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
 

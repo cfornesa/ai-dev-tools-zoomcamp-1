@@ -6,8 +6,8 @@
 set -Eeuo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-expected_project="${COMPOSE_PROJECT_NAME:-ai-dev-tools-zoomcamp-1}"
-compose_file="${COMPOSE_FILE:-$repo_root/compose.yaml}"
+expected_project="ai-dev-tools-zoomcamp-1"
+compose_file="$repo_root/compose.yaml"
 base_url="${COMPOSE_QA_BASE_URL:-http://127.0.0.1:5000}"
 
 fail() {
@@ -18,6 +18,15 @@ fail() {
 command -v docker >/dev/null || fail "docker is required"
 docker info >/dev/null 2>&1 || fail "Docker daemon is unavailable; start Docker and retry"
 [[ -f "$compose_file" ]] || fail "Compose file does not exist: $compose_file"
+
+if [[ -n "${COMPOSE_PROJECT_NAME:-}" && "$COMPOSE_PROJECT_NAME" != "$expected_project" ]]; then
+  fail "COMPOSE_PROJECT_NAME must be '$expected_project' for this repository; refusing to validate '$COMPOSE_PROJECT_NAME'"
+fi
+if [[ -n "${COMPOSE_FILE:-}" ]]; then
+  configured_compose_file="$(cd "$(dirname "$COMPOSE_FILE")" 2>/dev/null && pwd)/$(basename "$COMPOSE_FILE")" || true
+  [[ "$configured_compose_file" == "$compose_file" ]] \
+    || fail "COMPOSE_FILE must resolve to this repository's Compose file '$compose_file'; refusing '$COMPOSE_FILE'"
+fi
 
 compose=(docker compose --project-name "$expected_project" --file "$compose_file")
 config_services="$("${compose[@]}" config --services 2>&1)" \

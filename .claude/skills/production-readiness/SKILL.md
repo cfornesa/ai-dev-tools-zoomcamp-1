@@ -34,6 +34,12 @@ Assess separately:
 5. Link each finding to the relevant issue and memory topic. Before creating a new issue or topic, check for an existing record.
 6. Reconcile all surfaces before exit: backlog, GitHub issue state/comments, PR state, commits, memory, and readiness report.
 
+For a parity/release assessment, never count a locally closed capability as
+deployed evidence. Compare the exact published asset/revision and every
+user-supplied target URL with the checkout under review. A mismatch is an open
+verification boundary for the affected route/artifact and for the parent
+release gate, even when local unit, browser, and build checks pass.
+
 ## Output
 
 Return:

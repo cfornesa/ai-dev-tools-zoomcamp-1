@@ -58,6 +58,13 @@ owner, blocker class, and next action.
   outcomes, specify exact commands/evidence, and state what is explicitly not
   applicable. Rewrite or split criteria containing “all permitted,” “where
   applicable,” or parent-wide visual judgments before implementation.
+- Separate implementation status from release/parity status. A local
+  capability issue may close only when its own contract is explicitly local;
+  it must never be described as live or production parity. Any issue whose
+  contract names a deployed URL, a user-supplied live example, or a published
+  revision must verify that exact URL against the exact revision under test.
+  Localhost, disposable Compose, source-string, or shared-component evidence
+  cannot close that deployed criterion.
 
 ## Batch manifest
 
@@ -116,6 +123,12 @@ For every failed or unavailable check, classify the cause. First exhaust the aut
 Set the manifest status and reconcile the backlog entry, issue comment, commits, memory links, and next action immediately after that issue's QA pass. An issue is `completed` only when every acceptance criterion and required check passes. Otherwise use `blocked`, `dependency-blocked`, or `handed-off` with evidence. If the criteria are complete, close the GitHub issue in the same reconciliation step; do not leave a verified closure-sized issue open merely because its parent batch is unfinished.
 
 Before assigning a terminal status, verify that every blocker has a class, owner/context, exact next action, and an existing/new follow-up issue or an explicit non-actionable/verification-boundary rationale. `handed-off` requires a linked owner issue unless issue creation is pending authorization.
+
+For parity work, the final status must state both dimensions when they differ:
+`implemented locally` versus `deployed and verified`. Do not inherit a child
+capability's local closure as evidence for a route, artifact, or parent release
+gate. If a live URL contradicts the checkout, reopen or keep the affected
+deployed-scope issue open and record the published asset/revision evidence.
 
 ## Batch completion pass
 

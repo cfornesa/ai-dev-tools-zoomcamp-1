@@ -13,6 +13,11 @@ Closure-ready atomicity
   visual judgment, split the work or classify the dependency before starting.
 - After QA, reconcile and close that issue immediately when every criterion
   passes. The parent remains a roll-up/reconciliation container.
+- Record local implementation and deployed verification separately. A passing
+  local or disposable-stack test cannot be reported as live parity. When a
+  user-supplied URL contradicts the checkout, keep the affected deployed
+  route/artifact and parent release gate open until the exact published
+  revision is inspected; record the asset/revision and URL as evidence.
 
 Phase gate
 

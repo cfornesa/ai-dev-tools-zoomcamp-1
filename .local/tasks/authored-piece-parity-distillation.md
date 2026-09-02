@@ -1203,3 +1203,67 @@ Status: DISTILLATION COMPLETE — #329 HANDED OFF; NEXT ISSUE MAY PROCEED
 - Next-order check: #331 is the next independent closure-sized route and may
   proceed. #329 remains open until authorized publication and exact production
   URL evidence are reconciled.
+
+## Current owner-reported contradiction audit (2026-09-02)
+
+Status: DISTILLATION ACTIVE — NO PRODUCT ENGINEERING AUTHORIZED
+
+The supplied production public URL was inspected again in the in-app browser.
+It loads `https://animate.creatrweb.com/assets/index-CyiyAAR0.js`, renders a
+legacy `editor-panel`/`p5Canvas` layout, has zero `role="toolbar"` elements,
+and visibly exposes only sibling Live camera and Demo signal controls. It
+does not expose the requested stage-local screenshot, download, fullscreen, or
+publication controls. The supplied private 3D editor URL cannot be evaluated
+anonymously, so its Draft/Published controls remain unverified rather than
+assumed absent.
+
+The checkout is `ca6169fb758e1ec0f836e6fa7bc502785219213` and is 148 commits
+ahead of `origin/main` at `14e01334e7ff827189162df5db993d7a0f001a71`; the live
+asset therefore cannot contain the local toolbar changes. The direct public
+DOM contradiction is the authoritative reason prior “verified” claims failed.
+
+### Closure reset and classification
+
+- #274, #323, and #324 are correctly historical/reconciliation containers,
+  not implementation units; their closure must not be presented as parity.
+- #306, #343, and #345 are narrow local-capability closures with valid local
+  evidence, but none is deployed-route evidence. Their status is retained as
+  closed while the manifest explicitly excludes them from #320 production
+  proof; #295, #320, #325–#342, and #344 remain open.
+- #340 and #342 were correctly reopened after the earlier live contradiction.
+- Current actionable route/artifact work is already covered by #320,
+  #325–#342, and #344. No duplicate issue is created.
+
+### Complete gap matrix
+
+| Requirement | Current evidence | Classification | Existing owner / next action |
+| --- | --- | --- | --- |
+| Editor stage-local overlays | Local consumers exist; live private editor is anonymous/unavailable and owner reports legacy bulky controls | `verification-boundary` / deployed revision mismatch | #325–#328/#338–#341, then #320 after authorized publish |
+| Draft ↔ Published status | Local controls/tests exist; exact owner route/state transitions are not live-verified | `verification-boundary` | #325–#328/#338–#341; authenticated exact-route QA |
+| Public 2D controls | Live DOM has no toolbar and sibling camera/demo panels; local 24/24 transaction passes | `deployed-revision mismatch` | #329; publish exact revision, rerun anonymous URL |
+| Public/embed/immersive 3D | Local consumers/tests exist; production revision unverified | `verification-boundary` | #330–#335; exact post-publish route QA |
+| Downloaded functional overlays | Local extracted-artifact tests exist; production downloads unverified | `verification-boundary` | #336/#337; download exact published artifacts and execute them |
+| Hand/audio/camera capabilities | Narrow local issues exist; production consumer matrix unverified | `local-only evidence` | #295/#342/#344 and #327–#337 consumer routes |
+| Release gate | Published asset differs from checkout; no authorized push/publish has occurred | `verification-boundary` | #320/#321; obtain authorized publication, then sequential QA |
+
+### Duplicate, blocker, and atomicity report
+
+No new issue is needed. #320 owns release reconciliation, #321 owns Compose
+identity, each #325–#342 child owns one route/variant/capability, and #336/#337
+own downloaded artifacts. #274/#323/#324 do not absorb work. Every active
+child has one route/workflow or narrowly bounded capability, a finite issue
+contract, and one evidence boundary; the remaining broad judgment belongs
+only to #320's final roll-up.
+
+The deployment mismatch is a non-user-judgment verification blocker. Its exact
+next action is an authorized push/publish of the reviewed checkout, followed
+by the same per-issue exact-route/artifact checks. Until then, no deployed
+child or #320 may close, and production-readiness must remain incomplete.
+
+### Exactly one next groomed issue
+
+The next issue after this distillation is #321 if deployment identity requires
+repair; otherwise #325 is the first closure-ready editor route transaction.
+No engineering begins until that single selection has an issue body, finite
+criteria, fixed fixture, exact commands, and an explicit deployed-revision
+boundary. This audit makes no product-source or product-test changes.

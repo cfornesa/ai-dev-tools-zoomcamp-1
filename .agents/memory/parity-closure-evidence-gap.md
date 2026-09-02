@@ -31,3 +31,12 @@ passing deployed acceptance criteria. Do not infer a parent’s parity from
 child tests that ran against a different revision. The PHP reference’s stage,
 immersive, and exported-runtime contracts must be checked on the actual route
 or extracted artifact before closure.
+
+Live contradiction re-audit (2026-09-02): the supplied public URL currently
+loads `assets/index-CyiyAAR0.js` and renders the legacy `editor-panel`/`p5Canvas`
+layout with zero `role="toolbar"` elements, a sibling Live camera disclosure,
+and a sibling Demo signal controls disclosure. The checkout is 148 commits
+ahead of `origin/main`; local stage-toolbar work is not evidence that the
+published app contains it. Backlog status must show local implementation and
+deployed verification separately, and closed narrow capability issues (#306,
+#343, #345) must not be reused as proof of live route parity.

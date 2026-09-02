@@ -11291,3 +11291,25 @@ GitHub `QA: FAIL` comment `5510417053` records the evidence. The issue remains
 open because the published revision is stale relative to the tested checkout;
 rerun the exact anonymous embed URL after authorized publication before
 closure.
+
+## 269w. Current owner-reported parity contradiction audit (2026-09-02)
+
+Status: DISTILLATION ACTIVE — NO PRODUCT ENGINEERING AUTHORIZED
+
+The supplied production public URL loads `assets/index-CyiyAAR0.js`, renders
+the legacy `editor-panel`/`p5Canvas` layout, has zero `role="toolbar"` elements,
+and exposes sibling Live camera and Demo signal controls instead of the
+requested stage-local screenshot/download/fullscreen/publication controls.
+The private 3D editor URL is anonymous/unavailable, so Draft/Published state
+is unverified rather than assumed absent. The checkout is 148 commits ahead
+of the published `origin/main` revision, explaining why local toolbar commits
+do not appear live.
+
+This re-audit corrects the meaning of prior statuses: #306/#343/#345 are valid
+narrow local-capability closures but are not deployed parity evidence; #320
+and route/artifact issues remain open until exact published-revision checks
+pass. #274/#323/#324 remain historical reconciliation containers. No duplicate
+issue is created: #320/#321 own deployment, #325–#342/#344 own atomic routes
+and capabilities, and #336/#337 own downloaded artifacts. The exact next
+action is authorized publish, then sequential exact-route/artifact QA; no
+production-readiness claim is valid before that.

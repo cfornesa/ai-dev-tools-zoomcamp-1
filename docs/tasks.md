@@ -10383,6 +10383,17 @@ The complete disposable PostgreSQL/Django/Vite publishing/remix suite passes
 24/24, including owner Save/Publish, anonymous camera fallbacks, remix
 permissions, and fork concurrency.
 
+Export follow-up (2026-09-02): the standalone 2D HTML artifact still had
+motion/demo/camera hosts as page-level sections while only screenshot and
+fullscreen were stage-local; it also emitted a duplicate camera-runtime tag.
+The artifact now has one compact stage-local Piece controls disclosure around
+the existing functional hosts, with the duplicate tag removed. The real
+Chromium export artifact suite passes 17/17, covering latest/historical
+artifacts, all interaction modes, camera failure/retry/active lifecycle,
+privacy network capture, attribution, and thumbnail ZIP output. The separate
+3D lifecycle/export suite passes 3/3 and inspects both downloaded ZIP variants
+and the Published → Draft transition.
+
 Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)
 
 ## 263. Make Docker browser verification select and fingerprint this repository

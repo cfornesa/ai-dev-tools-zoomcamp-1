@@ -11238,3 +11238,18 @@ bounds, release, hand loss, and steering-off, which the current harness cannot
 provide without fabricating signals. Exact deployed route evidence also remains
 owned by #333–#335/#320. GitHub comment `5510319526` records the evidence and
 boundary; do not close #344 until those explicit checks pass.
+
+## 269s. End-of-blocked-issue distillation for #344
+
+Status: DISTILLATION COMPLETE — #344 IMPLEMENTED/HANDED OFF; #345 UNBLOCKED
+
+No duplicate issue is warranted: manual-camera Chromium evidence belongs to
+#344, while deployed immersive route evidence belongs to #333–#335 and
+revision/publish ownership belongs to #320/#321. The remaining blocker is a
+test-harness/environment dependency because this repository has no approved
+manual-camera signal-injection route; evidence must come from a real camera or
+an explicitly groomed harness capability, never fabricated signals. #344 is
+atomic as one independently observable hand-input behavior with finite
+threshold, bounds, and stop-transition criteria. #345 is the next independent
+closure-sized capability and may proceed under the sequential backlog rule;
+#344 remains open until its explicit evidence boundary is reconciled.

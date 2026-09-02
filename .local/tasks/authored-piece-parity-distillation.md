@@ -1168,3 +1168,21 @@ finite named criteria, exact focused/full commands, explicit N/A decisions, and
 the exact deployed or extracted-artifact evidence boundary. The next single
 groomed engineering issue is #295. Distillation is complete; no product source
 or product tests were changed during this pass.
+
+## End-of-blocked-issue distillation: #344 (2026-09-02)
+
+Status: DISTILLATION COMPLETE — #344 IMPLEMENTED, HANDED OFF; NEXT ISSUE MAY PROCEED
+
+- Duplicate check: no new issue is warranted. Manual-camera Chromium evidence
+  is part of #344's explicit acceptance; deployed immersive route evidence
+  remains in #333–#335 and revision/publish ownership remains in #320/#321.
+- Blocker check: implementation is no longer blocked. The remaining blocker is
+  a test-harness/environment dependency: this repository has no approved
+  manual-camera signal injection route, so evidence must come from a real
+  camera/manual harness or an explicitly groomed test capability. No
+  fabricated evidence is permitted.
+- Atomicity check: no split is needed. #344 is one independently observable
+  hand-input behavior with finite thresholds, bounds, and stop transitions.
+- Next-order check: #345 is the next independent, closure-sized 3D audio
+  capability and may proceed under the sequential backlog rule. #344 stays
+  open until its missing evidence is reconciled.

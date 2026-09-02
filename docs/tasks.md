@@ -11052,3 +11052,14 @@ download behavior, and privacy boundary. The deployed revision is still
 unverified because production serves the legacy public shell. #331 remains
 open; publish the tested revision, rerun the exact anonymous embed URL, and
 close only after that criterion passes.
+
+## 269e. Handoff public 3D route (#330)
+
+Status: #330 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The dedicated Docker-backed `project3dLifecycle.spec.ts` transaction passed
+4/4, covering 3D project entry, public stage controls, reversible Published →
+Draft behavior, and immersive touch travel. The exact published `/p3d/:id`
+revision and authenticated owner evidence remain unavailable; the issue is
+open and is not marked COMPLETE. Publish the tested revision, inspect the
+owner editor, then rerun the exact public 3D fixture route before closure.

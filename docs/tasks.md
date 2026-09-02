@@ -10618,6 +10618,16 @@ local evidence only; the deployed editor is unavailable without authentication
 and the published revision is stale, so exact post-publish verification and
 GitHub reconciliation remain open.
 
+AI 2D editor verification (#326/#340, 2026-09-02): the dedicated
+`ai2dPublication.spec.ts` transaction passed 1/1 against the disposable
+PostgreSQL/Django/Vite/Chromium stack. It verifies the exact `/ai-projects/:id`
+route, stage-local publication control, PHP-relative toolbar geometry,
+reversible Draft → Published → Draft behavior, and absence of the legacy
+header publication row. No additional local product defect was found. The AI
+prompt/assistant remains a separate authoring panel and is not counted as
+runtime stage chrome. This remains local evidence only; exact deployed-route
+verification and authenticated GitHub reconciliation remain open.
+
 Portable 2D runtime implementation slice (#336, 2026-09-02): the existing
 isolated Chromium artifact suite passed 17/17 through the Docker-backed
 browser runner after a direct macOS Chromium launch was blocked by a

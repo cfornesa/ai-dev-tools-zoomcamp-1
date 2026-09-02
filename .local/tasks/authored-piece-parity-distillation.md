@@ -34,7 +34,7 @@ as read-only behavioral reference.
 | [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `ready_for_github_reconciliation` | Docker image build/start and `make compose-preflight` now pass; backend image was fixed to copy `/schema`; focused `project3dLifecycle.spec.ts` browser QA passes 3/3. Post the QA evidence and close through authenticated GitHub reconciliation; no duplicate issue |
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Strengthened authenticated Chromium route test passes 1/1: finite authoring controls are inside the canvas, Add circle → Undo works, runtime/publication controls are stage-local, and the authoring overlay is geometrically contained. Keep open for exact deployed-route verification |
-| [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_evidence_only` | Exact authenticated Chromium test passes 1/1 locally, but no deployed AI editor evidence exists. Keep open until the published revision is authenticated and its stage-local publication/authoring controls are inspected |
+| [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated authenticated Chromium route test passes 1/1 with stage-local publication controls, PHP-relative geometry, reversible Draft → Published → Draft, and no header duplicate. Keep open for exact deployed-route verification |
 | [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, Save, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but no deployed AI 3D editor evidence exists. Keep open until the published revision is authenticated and inspected |
 | [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `re_audit_required` | Owner-supplied production route visibly serves the old sibling Demo/camera panel with no stage toolbar, screenshot, download, fullscreen, or publication controls. Local 24/24 evidence is contradicted and cannot close this route |
@@ -837,6 +837,19 @@ found in this transaction. This is local implementation evidence only: the
 owner-supplied deployed editor remains unavailable without authentication and
 the deployed public revision is stale. #327/#341 remain open for exact
 post-publish route verification and authenticated GitHub reconciliation.
+
+## Reconciliation: #326/#340 AI 2D editor (2026-09-02)
+
+The dedicated `ai2dPublication.spec.ts` transaction passed 1/1 against the
+disposable PostgreSQL/Django/Vite/Chromium stack. It verifies the exact
+`/ai-projects/:id` route, stage-local publication control, PHP-relative
+toolbar geometry, reversible Draft → Published → Draft behavior, and absence
+of the legacy header publication row. No additional local product defect was
+found in this route transaction. The AI prompt/assistant surface remains its
+own authoring panel; it is not counted as runtime stage chrome. This is local
+evidence only: the deployed AI editor remains unverified, so #326/#340 stay
+open for exact post-publish route inspection and authenticated GitHub
+reconciliation.
 
 ## Blocker reconciliation: #336 (2026-09-02)
 

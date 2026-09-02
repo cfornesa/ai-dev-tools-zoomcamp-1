@@ -7,6 +7,14 @@ underway is marked `Status: ACTIVE`, and not-yet-started work is marked
 `Status: PROPOSED`; blocked or handed-off work remains open with its owner,
 blocker, and next action recorded.
 
+Blocked-work continuation: a blocked issue does not stop the backlog session
+or goal. After reconciling its blocker class, owner/context, exact next action,
+and dependency edge, continue with the next independent closure-ready issue;
+skip only issues that depend on the blocker. Halt the goal only when no
+independent actionable work remains or all remaining work requires the same
+unavailable external state. Engineering and testing remain strictly
+per-issue, and completion still means GitHub closure.
+
 ## 1. Set up an empty project with a passing test
 Goal: Create the minimal Django and React/TypeScript project structure and prove the test toolchain works.
 Description: Initialize the backend and frontend applications, add their test runners, and document the local test commands. Include one trivial backend test and one trivial frontend test that both pass without implementing product behavior.

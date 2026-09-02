@@ -1,20 +1,21 @@
 ---
 name: stop-goal-loop-when-blocked-on-replit-publish
-description: For every /goal in this repo, reaching the point where progress requires the user to explicitly publish to Replit IS the goal stopper — treat that blocked state as the goal's completion/exit point, not something to keep polling past.
+description: A Replit publish blocker stops only deployment-dependent work; independent backlog work continues, and a goal stops only when no independent actionable work remains.
 metadata:
   type: feedback
 ---
 
-**Standing policy (repository owner's direct instruction, given after
-clearing the goal below): "For all goals, consider Replit deployment
-as a goal stopper to indicate successful completion of a goal."** This
-applies to every future `/goal` in this repo, not just #236 — the
-moment a goal's remaining work reduces to "the user needs to publish to
-Replit," that is the correct stopping point. Report the blocker clearly
-(what's ready, what's pending, exactly what the user needs to do) and
-treat the goal as done from the agent's side — do not keep polling
-deployment state or treat the goal as still "in progress" waiting for
-a publish that only the user can trigger.
+**Current superseding policy:** a Replit publish blocker stops only the
+deployment-dependent issue or workstream. Record the blocker, owner/context,
+exact next action, and issue status, then continue with independent local,
+documentation, or implementation issues. The backlog session and goal stop
+only when no independent actionable work remains, or all remaining work
+requires the same unavailable external state. Never poll an unchanged publish
+state, but do not abandon unrelated closure-ready work.
+
+The historical policy below required stopping every goal at a publish
+boundary. It is retained as history only and is superseded by the current
+blocked-work continuation rule.
 
 During #236 verification, an automated stop-hook kept re-firing the
 same "publish to Replit and retest" goal condition dozens of times in a

@@ -26,6 +26,7 @@ owner, blocker class, and next action.
 - Work in exactly one project per session. If the project is unclear, ask before changing files.
 - At session start, discover and reconcile every open GitHub issue associated with that project against its `tasks.md`. Do not silently omit, duplicate, or invent an issue.
 - Process issues sequentially, never in parallel. A blocker on one issue does not stop independent issues; dependency-blocked issues receive a documented handoff and are not implemented prematurely.
+- A blocked issue is not a session or goal stop. After recording its blocker class, owner/context, exact next action, and GitHub status, skip only issues that depend on it and select the next independent closure-ready issue. Halt the goal only when no independent actionable work remains or every remaining issue requires the same unavailable external state.
 - Batch only the PM/distillation work. Engineering and testing are a strict
   per-issue transaction: finish implementation, focused tests, required full
   checks, browser QA, evidence reconciliation, and the GitHub status decision

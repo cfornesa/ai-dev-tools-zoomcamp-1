@@ -33,6 +33,11 @@ Phase gate
 - Backlog-session may implement only the named issue. A test failure found
   while distilling or grooming is captured and classified first; it is not an
   implicit authorization to fix it.
+- A blocked issue is not a session or goal stop. Record its blocker class,
+  owner/context, exact next action, and dependency edge, then skip only issues
+  that depend on it and select the next independent closure-ready issue. Halt
+  the goal only when no independent actionable work remains or every remaining
+  issue requires the same unavailable external state.
 
 Roles
 
@@ -60,7 +65,10 @@ are intermediate gates; the task is complete only after the orchestrator
 reconciles the checklist, evidence, backlog, and GitHub state and closes the
 issue. Blocked or handed-off work stays open with an explicit terminal status,
 owner, blocker class, and next action.
-7. Repeat until the backlog is empty OR the specified task is complete.
+7. Repeat until the backlog is empty OR the specified task is complete. If an
+   issue is blocked, reconcile its handoff and continue with the next
+   independent closure-ready issue; do not treat the blocker as a reason to
+   abandon the goal.
 
 Rules
 

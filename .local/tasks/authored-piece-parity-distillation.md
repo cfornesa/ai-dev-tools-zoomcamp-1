@@ -83,7 +83,10 @@ run its focused tests, run its required full/browser checks, perform QA, and
 reconcile its evidence and GitHub status before starting the next issue. A QA
 failure keeps the same issue current until it is closed, blocked, or handed
 off with a classified blocker and exact next action. No later issue may be
-used as a parallel implementation queue.
+used as a parallel implementation queue. If the issue is blocked, reconcile
+the handoff immediately and continue with the next independent closure-ready
+issue; skip only dependent issues. Stop the goal only when no independent work
+remains or every remaining issue requires the same unavailable external state.
 
 ## Second distillation re-audit (2026-09-02)
 

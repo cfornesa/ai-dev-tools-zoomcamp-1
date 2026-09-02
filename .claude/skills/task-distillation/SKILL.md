@@ -74,6 +74,12 @@ must never treat implementation or QA as completion; each issue reaches
   criteria, exact agent-runnable verification, explicit out-of-scope items,
   and a blocker/owner/next action. A list of small-looking issue titles is
   not sufficient.
+- A blocked issue is not a backlog-session or goal stop. The manifest must
+  record its blocker class, owner/context, exact next action, and dependency
+  edge; backlog-session skips only dependent issues and may select the next
+  independent closure-ready issue. Stop the goal only when no independent
+  actionable work remains or all remaining work requires the same unavailable
+  external state.
 
 ## Gap and blocker triage
 

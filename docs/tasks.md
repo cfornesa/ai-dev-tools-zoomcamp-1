@@ -10607,6 +10607,17 @@ and disposable browser QA passes 1/1. This remains local evidence only; the
 deployed editor/public routes still require exact published-revision
 verification and authenticated GitHub reconciliation.
 
+Manual 3D editor verification (#327/#341, 2026-09-02): the dedicated
+`manual3dStageChrome.spec.ts` transaction passed 1/1 against the disposable
+PostgreSQL/Django/Vite/Chromium stack. It verifies the exact `/projects3d/:id`
+route, stage-contained screenshot/download/sound/Piece controls, gesture guide,
+fullscreen, manual Save and AI authoring actions, Draft/Published control,
+PHP-relative toolbar geometry, rendered containment, and removal of the legacy
+standalone-export action. No local product defect was found. This remains
+local evidence only; the deployed editor is unavailable without authentication
+and the published revision is stale, so exact post-publish verification and
+GitHub reconciliation remain open.
+
 Portable 2D runtime implementation slice (#336, 2026-09-02): the existing
 isolated Chromium artifact suite passed 17/17 through the Docker-backed
 browser runner after a direct macOS Chromium launch was blocked by a

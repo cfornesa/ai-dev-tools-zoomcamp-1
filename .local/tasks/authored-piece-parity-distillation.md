@@ -35,7 +35,7 @@ as read-only behavioral reference.
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Strengthened authenticated Chromium route test passes 1/1: finite authoring controls are inside the canvas, Add circle → Undo works, runtime/publication controls are stage-local, and the authoring overlay is geometrically contained. Keep open for exact deployed-route verification |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_evidence_only` | Exact authenticated Chromium test passes 1/1 locally, but no deployed AI editor evidence exists. Keep open until the published revision is authenticated and its stage-local publication/authoring controls are inspected |
-| [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but the supplied deployed editor URL is anonymous/unavailable. Keep open until an authenticated owner session verifies the exact deployed route |
+| [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, Save, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but no deployed AI 3D editor evidence exists. Keep open until the published revision is authenticated and inspected |
 | [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `re_audit_required` | Owner-supplied production route visibly serves the old sibling Demo/camera panel with no stage toolbar, screenshot, download, fullscreen, or publication controls. Local 24/24 evidence is contradicted and cannot close this route |
 | [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but no deployed public 3D route evidence exists. Keep open until the intended revision is published and the exact anonymous route is inspected |
@@ -824,6 +824,19 @@ TypeScript/format checks pass. This is local implementation evidence only:
 the owner-supplied deployed editor remains unauthenticated/unavailable and
 the stale public deployment contradicts the intended revision. #325/#338
 remain open for exact published-route inspection and GitHub reconciliation.
+
+## Reconciliation: #327/#341 manual 3D editor (2026-09-02)
+
+The dedicated `manual3dStageChrome.spec.ts` transaction passed 1/1 against the
+disposable PostgreSQL/Django/Vite/Chromium stack. It verifies the exact
+`/projects3d/:id` route, stage-contained screenshot/download/sound/Piece
+controls, gesture guide, fullscreen, manual Save and AI authoring actions,
+Draft/Published control, PHP-relative toolbar geometry, rendered containment,
+and removal of the legacy standalone-export action. No product defect was
+found in this transaction. This is local implementation evidence only: the
+owner-supplied deployed editor remains unavailable without authentication and
+the deployed public revision is stale. #327/#341 remain open for exact
+post-publish route verification and authenticated GitHub reconciliation.
 
 ## Blocker reconciliation: #336 (2026-09-02)
 

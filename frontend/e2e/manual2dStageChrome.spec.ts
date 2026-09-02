@@ -25,13 +25,42 @@ test.describe('manual 2D editor stage chrome', () => {
 
     const stage = page.locator('.piece-stage-shell');
     const authoringToolbar = stage.getByRole('toolbar', { name: 'Editor actions' });
-    const stageMenu = stage.getByRole('button', { name: 'Open piece controls menu' });
-    const editSceneButton = stage.getByRole('button', { name: 'Edit scene' });
+    const stageMenu = stage.locator('button.piece-stage-menu-trigger');
+    const editSceneButton = stage.getByRole('button', { name: /^(Edit scene|Hide edit scene)$/ });
     await stageMenu.click();
     const stageDialog = stage.getByRole('dialog');
     await expect(editSceneButton).toBeVisible();
     await expect(authoringToolbar).toBeHidden();
     await expect(page.locator('.editor-workspace-header .editor-toolbar')).toHaveCount(0);
+
+    // Verify both real browser input paths for the stage-local command menu,
+    // then exercise the shared fullscreen action through the browser API.
+    await expect(stageMenu).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Escape');
+    await expect(stageDialog).toBeHidden();
+    await expect(stageMenu).toHaveAttribute('aria-expanded', 'false');
+    await expect(stageMenu).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(stageDialog).toBeVisible();
+    await expect(
+      stageDialog.getByRole('button', { name: 'Close piece controls menu' }),
+    ).toBeFocused();
+    const fullscreenButton = stageDialog.getByRole('button', {
+      name: 'Expand piece to fullscreen',
+      exact: true,
+    });
+    await expect(fullscreenButton).toBeVisible();
+    await fullscreenButton.click();
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+    await expect(
+      stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+    await expect(
+      stageDialog.getByRole('button', { name: 'Expand piece to fullscreen', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'false');
+
     await editSceneButton.click();
     await expect(authoringToolbar).toBeVisible();
     for (const label of [
@@ -108,6 +137,28 @@ test.describe('manual 2D editor stage chrome', () => {
     expect(authoringBox!.width).toBeLessThanOrEqual(520);
 
     await page.setViewportSize({ width: 375, height: 812 });
+    await page.keyboard.press('Escape');
+    await expect(stageDialog).toBeHidden();
+    await stageMenu.click();
+    await expect(stageDialog).toBeVisible();
+    await expect(
+      stageDialog.getByRole('button', { name: 'Expand piece to fullscreen', exact: true }),
+    ).toBeVisible();
+    await editSceneButton.click();
+    await expect(authoringToolbar).toBeHidden();
+    await stageDialog
+      .getByRole('button', { name: 'Expand piece to fullscreen', exact: true })
+      .click();
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+    await expect(
+      stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }),
+    ).toBeVisible();
+    await stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+    await expect(stageDialog).toBeVisible();
+    await editSceneButton.click();
+    await expect(authoringToolbar).toBeVisible();
+
     const mobileAuthoringBox = await authoringToolbar.boundingBox();
     const mobileStageBox = await stage.boundingBox();
     expect(mobileAuthoringBox).not.toBeNull();
@@ -140,16 +191,18 @@ test.describe('manual 2D editor stage chrome', () => {
     });
     expect(Number.parseFloat(chrome.buttonWidth ?? '0')).toBeGreaterThanOrEqual(49.5);
 
-    const runtimeLayout = await toolbar.locator(':scope > [role="group"]').evaluate((element) => {
-      const style = getComputedStyle(element);
-      const box = element.getBoundingClientRect();
-      return {
-        display: style.display,
-        flexDirection: style.flexDirection,
-        width: box.width,
-        height: box.height,
-      };
-    });
+    const runtimeLayout = await stageDialog
+      .locator('.piece-stage-command-card > [role="group"]')
+      .evaluate((element) => {
+        const style = getComputedStyle(element);
+        const box = element.getBoundingClientRect();
+        return {
+          display: style.display,
+          flexDirection: style.flexDirection,
+          width: box.width,
+          height: box.height,
+        };
+      });
     expect(runtimeLayout.display).toBe('flex');
     expect(runtimeLayout.flexDirection).toBe('row');
     expect(runtimeLayout.width).toBeGreaterThan(runtimeLayout.height);

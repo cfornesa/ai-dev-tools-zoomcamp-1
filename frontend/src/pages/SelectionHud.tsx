@@ -274,7 +274,10 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
       {!collapsed && (
         <div className="editor-selection-hud-controls">
           <section aria-labelledby="selection-hud-properties-heading">
-            <h4 id="selection-hud-properties-heading">Shape properties</h4>
+            {/* Keep this at the panel-section level: the HUD can remain
+                mounted while responsive panel headings are hidden, so h4
+                would create a skipped heading level for assistive tech. */}
+            <h3 id="selection-hud-properties-heading">Shape properties</h3>
             <p className="editor-selection-hud-primitive" aria-label="Shape primitive">
               Primitive: <strong>{shapeTypeDisplayName(selectedShape.type)}</strong>
             </p>

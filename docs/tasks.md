@@ -10620,6 +10620,16 @@ the legacy header publication row, and continued AI-editor reachability.
 This is local route evidence only and does not prove the stale published
 `animate.creatrweb.com` revision.
 
+Public 2D route verification (2026-09-02): #329's corrected full
+`publishingAndRemix.spec.ts` browser suite passed 24/24. It verified the
+stage-local `/p/:id` toolbar and publication flow, gallery and privacy
+transitions, screenshot/download/fullscreen actions, camera/demo opt-in and
+failure fallbacks, and remix boundaries. The suite was updated to the current
+stage-local publication popover and status labels after its first run exposed
+retired header selectors. This remains local/disposable-stack evidence; the
+published `animate.creatrweb.com` revision still requires authorized
+deployment and exact-route recheck.
+
 Retry evidence (2026-09-02): a second `docker compose --project-name
 ai-dev-tools-zoomcamp-1 --file compose.yaml up -d --build` attempt reached the
 same metadata-resolution point and terminated with `DeadlineExceeded` for

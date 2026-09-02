@@ -148,6 +148,30 @@ async function expectPublicStageChrome(page: Page) {
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
 }
 
+function pieceActionsToolbar(page: Page) {
+  return page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
+}
+
+async function choosePublished(page: Page): Promise<void> {
+  const toolbar = pieceActionsToolbar(page);
+  const trigger = toolbar.getByRole('button', { name: 'Publication status: Draft' });
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  await toolbar
+    .getByRole('group', { name: 'Publication status', exact: true })
+    .getByRole('button', { name: 'Published', exact: true })
+    .click();
+}
+
+async function chooseDraft(page: Page): Promise<void> {
+  const toolbar = pieceActionsToolbar(page);
+  const trigger = toolbar.getByRole('button', { name: 'Publication status: Published' });
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  await toolbar
+    .getByRole('group', { name: 'Publication status', exact: true })
+    .getByRole('button', { name: 'Draft', exact: true })
+    .click();
+}
+
 /** Navigates to the given project's editor and fills in meaningful
  * title/description (and optionally toggles the remix checkbox) through
  * the real, current in-editor UI -- never touches visibility. Issue #94
@@ -191,11 +215,11 @@ async function saveMeaningfulMetadata(
  * helper asserts the confirmation dialog actually appears (never
  * short-circuited by a client-side validation block). */
 async function confirmPublish(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Publish', exact: true }).click();
+  await choosePublished(page);
   const dialog = page.getByRole('alertdialog', { name: /Publish/ });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
-  await expect(page.getByTestId('visibility-status')).toContainText('Public');
+  await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
 }
 
 test.describe('Publishing', () => {
@@ -225,11 +249,11 @@ test.describe('Publishing', () => {
     // 1. Invalid metadata (still the untouched default title, still a
     //    blank description) blocks Publish client-side -- field errors
     //    surface, and the confirmation dialog never opens.
-    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+    await choosePublished(page);
     await expect(page.getByTestId('publish-title-error')).toBeVisible();
     await expect(page.getByTestId('publish-description-error')).toBeVisible();
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    await expect(page.getByTestId('visibility-status')).toContainText('Private');
+    await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');
 
     // 2. Fix metadata, then Publish requires an explicit confirmation --
     //    the dialog names the project and only *its own* Publish button
@@ -238,21 +262,21 @@ test.describe('Publishing', () => {
       title: 'A meaningful public title',
       description: 'A meaningful public description of this animation.',
     });
-    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+    await choosePublished(page);
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('A meaningful public title');
     // Cancel first -- proves confirmation is a real gate, not cosmetic.
     await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    await expect(page.getByTestId('visibility-status')).toContainText('Private');
+    await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');
 
-    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+    await choosePublished(page);
     await page
       .getByRole('alertdialog', { name: /Publish/ })
       .getByRole('button', { name: 'Publish', exact: true })
       .click();
-    await expect(page.getByTestId('visibility-status')).toContainText('Public');
+    await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
 
     // 3. Now reachable in the public gallery, anonymously.
     const anonContext = await context.browser()!.newContext();
@@ -310,7 +334,7 @@ test.describe('Publishing', () => {
       .fill('Typed into the Details panel, never explicitly saved before Publish.');
 
     // Publish directly -- no click on the Details panel's "Save changes".
-    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+    await choosePublished(page);
 
     // The auto-persist ran the freshly-typed description through
     // validation successfully, so the confirmation dialog opens (not the
@@ -322,7 +346,7 @@ test.describe('Publishing', () => {
     await expect(page.getByTestId('publish-description-error')).toHaveCount(0);
 
     await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
-    await expect(page.getByTestId('visibility-status')).toContainText('Public');
+    await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
 
     // The Details panel itself now reflects the auto-persisted value (the
     // same PATCH "Save changes" would have sent), and the public surface
@@ -379,8 +403,8 @@ test.describe('Publishing', () => {
     ).toBeVisible();
     expect((await apiGet(anonContext, `/api/public/projects/${projectId}/`)).status()).toBe(200);
 
-    await page.getByRole('button', { name: 'Unpublish', exact: true }).click();
-    await expect(page.getByTestId('visibility-status')).toContainText('Private');
+    await chooseDraft(page);
+    await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');
 
     // The very next request to either public surface must already
     // reflect the change -- no caching/staleness window.
@@ -1292,8 +1316,8 @@ test.describe('Remix and fork', () => {
     // Durability across a source-side change: unpublishing the SOURCE
     // must never remove the fork's attribution -- only drop the link.
     await ownerPage.goto(`/projects/${sourceId}`);
-    await ownerPage.getByRole('button', { name: 'Unpublish', exact: true }).click();
-    await expect(ownerPage.getByTestId('visibility-status')).toContainText('Private');
+    await chooseDraft(ownerPage);
+    await expect(ownerPage.getByTestId('visibility-status')).toContainText('Draft (private)');
 
     await anonPage.reload();
     const provenanceAfterUnpublish = anonPage.getByTestId('provenance');
@@ -1555,12 +1579,12 @@ test.describe('Authorization boundaries', () => {
     expect(anonPublishAttempt.status()).toBe(404);
 
     // Owner succeeds, from an independent context too.
-    await ownerPage.getByRole('button', { name: 'Publish', exact: true }).click();
+    await choosePublished(ownerPage);
     await ownerPage
       .getByRole('alertdialog', { name: /Publish/ })
       .getByRole('button', { name: 'Publish', exact: true })
       .click();
-    await expect(ownerPage.getByTestId('visibility-status')).toContainText('Public');
+    await expect(ownerPage.getByTestId('visibility-status')).toContainText('Published (public)');
 
     const ownerUnpublishAttempt = await apiPost(
       ownerContext,

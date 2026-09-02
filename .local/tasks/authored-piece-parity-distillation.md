@@ -37,7 +37,7 @@ as read-only behavioral reference.
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Existing exact authenticated Chromium test passes 1/1: stage-local publication control publishes and returns to Draft, legacy header publication row is absent, and AI editor remains reachable. Post evidence and close through authenticated GitHub reconciliation; no duplicate issue |
 | [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Current authenticated Chromium lifecycle suite passes 4/4, including manual editor mount, shared stage chrome, publication to public and back to Draft, and no regression in the immersive route. Post evidence and close through authenticated GitHub reconciliation; no duplicate issue |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Current authenticated Chromium lifecycle suite passes 4/4, including AI 3D editor mount and shared stage chrome; publication and immersive regressions remain green. Post evidence and close through authenticated GitHub reconciliation; no duplicate issue |
-| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `open` | Local camera-source visibility fix is implemented and focused unit/static checks pass; exact disposable browser route is blocked by runner fixture publish 404, and live deployment remains stale/unpublished |
+| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Corrected stage-local publication selectors/status labels and current public-route contract; full `publishingAndRemix.spec.ts` passes 24/24, including `/p/:id`, gallery/privacy, screenshot/download/fullscreen, camera/demo fallback, and remix boundaries. Post evidence and close through authenticated GitHub reconciliation; deployed revision remains unverified |
 | [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `open` | Requires deployment and anonymous browser evidence |
 | [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
 | [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
@@ -549,6 +549,18 @@ unavailable, so the QA comment and closure cannot be posted. Fresh distillation
 found no duplicate, new dependency, or follow-up gap: #326 remains the AI 2D
 route slice, while #340 remains only its narrow local publication prerequisite.
 The issue is ready for authenticated GitHub reconciliation, not closed.
+
+## Blocker reconciliation: #329 (2026-09-02)
+
+#329 completed its implementation/QA transaction locally. The public 2D
+publishing/remix suite initially exposed stale header selectors and retired
+`Public`/`Private` text expectations; the suite was updated to the actual
+stage-local publication popover contract, then the full 24-test run passed.
+Fresh distillation found no duplicate or new dependency. #329 remains the
+single `/p/:id` route slice, separate from #331's embed and #336's downloaded
+runtime. Authenticated GitHub access is still unavailable, so the issue is
+ready for reconciliation but not closed; production proof still requires the
+authorized published revision and exact URL recheck.
 
 ## Blocker reconciliation: #328 (2026-09-02)
 

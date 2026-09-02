@@ -142,3 +142,10 @@ disposable-browser evidence must not close a deployed route or shared
 capability. The next required gate is #321/#320 deployment identity and
 authorized publication, followed by exact authenticated editor and anonymous
 public route QA.
+
+Closure reset lesson (2026-09-02): checked-off issue criteria and passing
+disposable-stack tests are not deployed parity evidence. Compare each supplied
+live URL with the current checkout and published revision before engineering;
+when they differ, reset the issue to open and classify the gap as a
+verification boundary. Keep one route or capability per issue and never let a
+parent rollout or local browser pass close a deployed surface.

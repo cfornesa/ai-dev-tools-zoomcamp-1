@@ -1119,3 +1119,52 @@ created. The exact next action is authority to publish the tested revision,
 then authenticated editor and anonymous public/embed/artifact checks against
 that deployed revision. Until then, all route issues remain open or handed
 off and no parent closure is valid.
+
+## Fresh distillation audit: live contradiction and closure reset (2026-09-02)
+
+The exact supplied public 2D URL was rechecked anonymously before engineering.
+It renders the legacy `Preview`/`Live camera`/`Demo signal controls` panel,
+has no `role="toolbar"`, and has no stage-local screenshot/download/fullscreen
+or publication overlay. The supplied 3D editor URL is anonymous and renders
+only the unavailable-project state, so it cannot prove the authenticated owner
+editor. The current checkout does contain shared toolbar consumers in the four
+editor routes, public 2D/3D viewers, embeds, and immersive 3D, but that source
+evidence cannot establish what production serves.
+
+The exact revision mismatch is the root cause of the live contradiction:
+local `HEAD` is `1fd3af80cd41b80caa379c90674b53f3c0be5c51`, 135 commits ahead of
+`origin/main` at `14e01334e7ff827189162df5db993d7a0f001a71`, the published
+Replit revision. This is a verification/deployment boundary, not evidence that
+the requested parity shipped.
+
+### Route and capability matrix
+
+| Boundary | Current checkout | Production evidence | Decision |
+| --- | --- | --- | --- |
+| Manual 2D `/projects/:id` | Stage toolbar and compact publication disclosure wired | Authenticated route unavailable | Existing #325/#338 remains open |
+| AI 2D `/ai-projects/:id` | Stage toolbar and publication disclosure wired | Owner reports legacy bulky controls; no authenticated access | Existing #326/#340 remains open; criteria reset |
+| Manual/AI 3D editors | Shared `Scene3DPreview` toolbar receives editor/publication actions | Supplied 3D URL is anonymous/unavailable | Existing #327/#328/#339/#341 remains open |
+| Public 2D `/p/:id` | `PublicProjectViewer` mounts `PieceStageToolbar` | Exact supplied URL has no toolbar and retains legacy panel | Existing #329; verify after publish |
+| Public/embed 3D and 2D | Shared viewer/preview toolbar consumers exist | Exact deployed routes unverified | Existing #330–#332 remain open |
+| Regular/custom/CMS immersive 3D | Query variants and fly preview are wired | Exact deployed routes unverified | Existing #333–#335 remain open |
+| Portable 2D/3D artifacts | Local runtimes and Full/Non-Camera variants exist | Exact production downloads unverified | Existing #336/#337 remain open |
+| Five-slide guide | Historical issue had a three-slide defect; body falsely showed checked criteria | Published guide unverified | Existing #295; criteria reset and open |
+| 3D camera view/selectors/touch/hand move | #342/#345 locally represented; #343/#344 remain implementation work | No deployed evidence | Existing #342–#345; independent capability order |
+
+### Duplicate, blocker, and order report
+
+No new issue is created for the supplied public/editor contradiction: #329 owns
+the public 2D route, #325/#326/#327/#328/#338/#339/#340/#341 own editor routes,
+and #320/#321 own revision/publish and Compose identity. #274, #323, and #324
+remain historical reconciliation containers, not implementation units. The
+stale published revision is `verification-boundary`; anonymous access to a
+private editor is also `verification-boundary`; the touch d-pad and hand
+Move/strafe are implementation defects already covered by #343/#344. The
+checked-off-but-unverified #295/#340 criteria were a process defect and have
+been reset through GitHub.
+
+Every child remains open until its named route/capability has a fixed fixture,
+finite named criteria, exact focused/full commands, explicit N/A decisions, and
+the exact deployed or extracted-artifact evidence boundary. The next single
+groomed engineering issue is #295. Distillation is complete; no product source
+or product tests were changed during this pass.

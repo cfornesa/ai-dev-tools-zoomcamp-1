@@ -11164,3 +11164,23 @@ gesture-guide and fullscreen controls, zero embed padding, and both
 Full/Non-Camera 3D ZIP entries. The deployed revision remains stale, so #335
 is open and is not COMPLETE. Publish the tested revision, rerun the exact CMS
 immersive URL, and close only after deployed evidence passes.
+
+## 269n. Fresh authored-piece parity distillation audit (2026-09-02)
+
+Status: DISTILLATION COMPLETE — ENGINEERING NOT YET STARTED
+
+The exact supplied public 2D URL still renders the legacy
+`Preview`/`Live camera`/`Demo signal controls` panel and no stage toolbar. The
+supplied 3D editor URL is anonymous and returns the unavailable state. The
+checkout has shared toolbar consumers across the intended editor, public,
+embed, immersive, and artifact paths, but local `HEAD` (`1fd3af8`) is 135
+commits ahead of the published Replit revision
+(`14e01334e7ff827189162df5db993d7a0f001a71`).
+
+The prior failure was both technical and procedural: local/disposable evidence
+was treated as deployed completion, and #295/#340 retained checked criteria
+despite reopened, unverified state. Those issue bodies were reset. The full
+route/capability matrix, duplicate report, blocker triage, and closure contract
+are in `.local/tasks/authored-piece-parity-distillation.md`; the next single
+groomed engineering issue is #295. No product source or product tests were
+changed during this distillation pass.

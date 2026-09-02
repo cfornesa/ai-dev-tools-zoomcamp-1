@@ -10649,6 +10649,15 @@ local implementation evidence plus a deployment verification blocker—not a
 closed route. Authorized publication and exact deployed-route inspection are
 still required before GitHub reconciliation.
 
+Public 3D viewer verification (#330, 2026-09-02): the complete
+`project3dLifecycle.spec.ts` transaction passed 4/4 against the disposable
+PostgreSQL/Django/Vite/Chromium stack. It verifies the exact published
+`/p3d/:id` route, shared 3D screenshot/download/sound/Piece/gesture-guide/
+fullscreen controls, Full/Non-Camera download menu entries, reversible
+publication, and the immersive touch regression. No additional local
+product defect was found. This remains local evidence only; exact deployed
+anonymous verification and authenticated GitHub reconciliation remain open.
+
 Portable 2D runtime implementation slice (#336, 2026-09-02): the existing
 isolated Chromium artifact suite passed 17/17 through the Docker-backed
 browser runner after a direct macOS Chromium launch was blocked by a

@@ -38,7 +38,7 @@ as read-only behavioral reference.
 | [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, Save, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
 | [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `re_audit_required` | Owner-supplied production route visibly serves the old sibling Demo/camera panel with no stage toolbar, screenshot, download, fullscreen, or publication controls. Local 24/24 evidence is contradicted and cannot close this route |
-| [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Local lifecycle suite passes 4/4, but no deployed public 3D route evidence exists. Keep open until the intended revision is published and the exact anonymous route is inspected |
+| [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Complete `project3dLifecycle.spec.ts` passes 4/4 against disposable PostgreSQL/Django/Vite/Chromium, including exact public 3D controls, downloads, reversible publication, and immersive regression. Keep open for exact deployed-route verification |
 | [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `local_evidence_only` | Dedicated local browser test passes 1/1, but production embed behavior is unverified and the public 2D route is demonstrably stale. Publish and inspect the exact embed entry point before closure |
 | [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Dedicated local browser test passes 1/1, but production embed behavior is unverified. Publish and inspect the exact embed entry point before closure |
 | [#333](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/333) | Verify regular immersive 3D `/immersive/p3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 against disposable PostgreSQL/Django/Vite; verifies regular immersive page, PHP-relative stage rail, screenshot/download/sound/Piece controls/steer/guide/fullscreen, and both 3D ZIP menu entries. Keep open for exact post-publish route verification |
@@ -865,6 +865,17 @@ verification blocker, not closure. No duplicate issue is needed; #320/#321
 own the revision/publish boundary. Next action is authorized publication of
 the intended revision followed by exact anonymous `/p/:id` inspection and
 authenticated GitHub reconciliation.
+
+## Reconciliation: #330 public 3D viewer (2026-09-02)
+
+The complete `project3dLifecycle.spec.ts` transaction passed 4/4 against the
+disposable PostgreSQL/Django/Vite/Chromium stack. It verifies the exact
+published `/p3d/:id` route, shared 3D screenshot/download/sound/Piece/gesture
+guide/fullscreen controls, Full/Non-Camera download menu entries, reversible
+publication, and the immersive touch regression. No additional local product
+defect was found in this route transaction. This is local evidence only: the
+deployed public 3D route remains unverified, so #330 stays open for exact
+post-publish anonymous inspection and authenticated GitHub reconciliation.
 
 ## Reconciliation: #328/#339 AI 3D editor (2026-09-02)
 

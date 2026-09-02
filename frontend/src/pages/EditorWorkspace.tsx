@@ -3149,7 +3149,6 @@ function EditorWorkspace() {
               overflow: zoom > 1 ? 'hidden' : 'visible',
             }}
           >
-            {editorToolbar}
             <div hidden={previewView !== 'visual'}>
               <div
                 ref={canvasRef}
@@ -3204,6 +3203,7 @@ function EditorWorkspace() {
                 onPointerLeave={handleCanvasPointerLeave}
                 onDoubleClick={handleCanvasDoubleClick}
               >
+                {editorToolbar}
                 {/* Task 110 (issue #141), restacked by task 137 (issue #169)
                 and made artwork-relative by issue #151: the camera pixels
                 are drawn by the p5 compositor, which inserts them into the

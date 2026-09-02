@@ -382,16 +382,11 @@ describe('EditorWorkspace responsive layout', () => {
   );
 
   // Issue #157 (owner correction, 2026-08-24): below the 1024px breakpoint
-  // the always-visible toolbar (task 112/#143) must sit directly above or
-  // below the canvas, not wherever it used to fall in mobile document flow
-  // relative to the Details/Tools/Layers/Inspector switcher. This
-  // implementation places it inside the Preview panel, immediately after
-  // the canvas viewport — asserted here two ways: the toolbar's closest
-  // `[data-panel]` ancestor is "preview" (not a page-level sibling of the
-  // switcher), and it appears exactly once (never duplicated between the
-  // desktop and mobile render positions). The editor actions now share the
-  // canvas viewport as a compact overlay rather than sitting in page flow.
-  it('places the toolbar over the canvas viewport below 1024px', async () => {
+  // the authoring toolbar must be a true canvas overlay, not merely a
+  // page-level row somewhere inside the Preview panel. It is rendered once
+  // inside the actual scene canvas so it remains attached to the artwork
+  // when the surrounding editor layout changes.
+  it('places the toolbar inside the scene canvas below 1024px', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     setViewportWidth(375);
@@ -404,13 +399,14 @@ describe('EditorWorkspace responsive layout', () => {
     const toolbar = toolbars[0];
     expect(toolbar.closest('[data-panel]')).toHaveAttribute('data-panel', 'preview');
 
-    const canvasViewport = screen.getByTestId('scene-canvas-viewport');
-    expect(toolbar.closest('[data-testid="scene-canvas-viewport"]')).toBe(canvasViewport);
+    expect(toolbar.closest('[data-testid="scene-canvas"]')).toBe(
+      screen.getByTestId('scene-canvas'),
+    );
   });
 
-  // Issue #157 parity follow-up: desktop uses the same stage placement as
-  // narrow layouts, so the toolbar never reverts to a bulky page-level row.
-  it('places the editor toolbar over the canvas viewport at >=1024px', async () => {
+  // Issue #157 parity follow-up: desktop uses the same true canvas placement
+  // as narrow layouts, so the toolbar never reverts to a bulky page-level row.
+  it('places the editor toolbar inside the scene canvas at >=1024px', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     setViewportWidth(1024);
@@ -420,8 +416,8 @@ describe('EditorWorkspace responsive layout', () => {
     await screen.findByRole('region', { name: 'Preview' });
     const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
     expect(toolbars).toHaveLength(1);
-    expect(toolbars[0].closest('[data-testid="scene-canvas-viewport"]')).toBe(
-      screen.getByTestId('scene-canvas-viewport'),
+    expect(toolbars[0].closest('[data-testid="scene-canvas"]')).toBe(
+      screen.getByTestId('scene-canvas'),
     );
   });
 
@@ -462,13 +458,19 @@ describe('EditorWorkspace responsive layout', () => {
     await screen.findByRole('button', { name: 'Add circle' });
     fireEvent.click(screen.getByRole('button', { name: 'Add circle' }));
 
+    // Return to the canvas panel before asserting the live stage. The
+    // narrow-layout switcher hides non-active panels, so this mirrors the
+    // real interaction sequence instead of querying a hidden canvas.
+    fireEvent.click(screen.getByRole('tab', { name: 'Canvas' }));
+
     const canvas = screen.getByTestId('scene-canvas');
     canvas.getBoundingClientRect = () =>
       ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 }) as DOMRect;
+    fireEvent.click(canvas, { clientX: 400, clientY: 300 });
 
     // Added circle is auto-selected with move/resize/rotate handles, same
     // as the desktop-width behavior this issue must not regress.
-    expect(screen.getByTestId('shape-handle-move')).toBeInTheDocument();
+    expect(await screen.findByTestId('shape-handle-move')).toBeInTheDocument();
 
     fireEvent.pointerDown(canvas, { clientX: 400, clientY: 300 });
     fireEvent.pointerMove(window, { clientX: 450, clientY: 260 });

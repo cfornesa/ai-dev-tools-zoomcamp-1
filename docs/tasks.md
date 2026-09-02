@@ -10570,6 +10570,17 @@ containment, and absence of the legacy standalone export action. This is
 local implementation evidence only; #341 remains open until the exact
 published manual 3D editor route is authenticated and inspected.
 
+Regular immersive 3D implementation slice (#333, 2026-09-02): the dedicated
+`immersive3dStageChrome.spec.ts` browser transaction passed 1/1 against the
+disposable PostgreSQL/Django/Vite/Chromium stack. It verifies the exact regular
+`/immersive/p3d/:id` route, regular-page attribution/embed actions,
+PHP-relative stage rail geometry, screenshot/download/sound/Piece controls,
+gesture guide, fullscreen, and both Full/Non-Camera 3D ZIP menu entries.
+Touch d-pad behavior remains #343, query variants remain #334/#335, and
+downloaded-runtime behavior remains #337. This is local implementation
+evidence only; #333 remains open until the exact published immersive route is
+authenticated and inspected.
+
 ## 264. Add visitor-selectable instruments for each 3D sound voice
 
 Status: HANDED-OFF

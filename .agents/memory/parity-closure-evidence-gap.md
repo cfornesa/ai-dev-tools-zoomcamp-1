@@ -61,3 +61,13 @@ execution criterion until an approved Chromium context supports local-file
 opening. The published gallery currently exposes no 3D fixture, leaving the
 3D route, immersive, and 3D-download issues blocked on a concrete publication
 dependency rather than on local implementation evidence.
+
+Owner re-audit correction (2026-09-02): the owner reports absent public
+controls and bulky editor actions. The exact public 2D URL was independently
+reopened and currently renders a visible stage toolbar, so this is an
+unresolved user-visible evidence conflict, not a pass. The private editor URL
+returns anonymous access denied and cannot establish editor behavior. Keep
+#329/#331 open until the differing asset, cache, viewport, or browser context
+is explained; never close from one browser observation. The source audit also
+confirmed that structured 2D declares `sound: false` while the PHP reference
+uses capability-driven sound, which is tracked as new atomic issue #346.

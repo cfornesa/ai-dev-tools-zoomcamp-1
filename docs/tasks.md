@@ -11567,3 +11567,38 @@ by this distillation. The goal is blocked because all remaining work requires
 the same unavailable external state (published 3D/owner access or approved
 artifact-browser capability); resume after that state changes and process each
 issue sequentially, closing it immediately after its QA evidence passes.
+
+## 269al. Owner parity re-audit and false-closure correction (2026-09-02)
+
+Status: DISTILLATION ACTIVE — PRIOR PUBLIC CLOSURES REOPENED; NO ENGINEERING
+
+The owner reported that the editor still shows bulky actions outside the
+canvas, Draft/Published cannot be reversed, and public pieces show no buttons.
+The current checkout was inspected before accepting that report as a product
+fact. The supplied private 3D URL is anonymous and returns an access-denied
+state, so editor controls and publication transitions are unverified. A fresh
+anonymous inspection of the supplied public 2D URL does render a visible
+stage-local toolbar with non-zero bounds, but this conflicts with the owner's
+view and therefore does not close the route. #329 and #331 were reopened with
+the conflict and exact next action recorded in GitHub.
+
+The source audit found the claimed React toolbar consumers in both 2D and 3D
+editor/public surfaces, but also found a genuine capability gap: structured 2D
+hard-codes `sound: false` even though the PHP reference derives sound from a
+capability contract. This is now criterion-ready issue #346; no code was
+changed during this distillation pass.
+
+The Replit publication commit `050fe8e` descends from the reviewed product
+commit `d142430` and contains the toolbar consumers; the previous explanation
+that the implementation simply had not been pushed is stale. The remaining
+question is whether the owner's viewing context is receiving the same asset
+and whether the authenticated editor consumers render the intended hierarchy.
+No new route issue is warranted: #325–#337 already isolate each route/artifact,
+#338–#341 remain explicitly local implementation prerequisites, and #320
+remains the roll-up gate.
+
+Re-audit order: first reconcile #329/#331's live visual conflict; then obtain
+approved owner-authenticated evidence for #325–#328; then engineer #346 as its
+own shared 2D capability transaction; then verify downloaded and 3D surfaces
+one issue at a time. Do not close any issue from source inspection, local
+tests, shared-component presence, or an inaccessible editor URL.

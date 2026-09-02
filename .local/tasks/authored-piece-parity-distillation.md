@@ -225,6 +225,10 @@ implementation and exact routes:
 - This is an implementation-defect correction, not a deployment-only gap.
   Exact deployed verification remains blocked until the current local
   commits are pushed/published by the repository owner.
+- The PHP reference contract also anchors shared stage chrome at the top of
+  the stage. Commit `cea96ca` aligns the React toolbar and its menus with
+  that placement for both 2D and 3D surfaces; focused parity tests remain
+  green (82/82), and the production build passes.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

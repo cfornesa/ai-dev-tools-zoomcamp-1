@@ -8945,7 +8945,7 @@ Dependencies: None.
 
 ## 231. 2D AI create-scene system prompt never restates layerId uniqueness or demoSignals' allowed keys
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 GitHub issue: [#264](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/264)
 
@@ -10306,15 +10306,18 @@ editor/public/embed/immersive stage toolbar, Draft/Published visibility,
 portable Full/Non-Camera runtime downloads, screenshot framing/privacy,
 sandboxing, and real-browser verification against the exact target routes.
 
-Status update (2026-09-02): IN_PROGRESS. Commits `aee6047`, `4042de7`,
+Status update (2026-09-01): IN_PROGRESS. Commits `aee6047`, `4042de7`,
 `3c205c5`, `4bdf8cc`, `579e2b6`, `d7eefde`, `a8b92c7`, `dddc8bc`, and
-`e6dce16`
-move structured editor/public controls into the stage and package screenshot,
-fullscreen, and explicit 3D Full/Non-Camera download variants. The exact
-deployed route remains stale until these commits are published; authenticated
-editor, embed, immersive, and downloaded-runtime browser criteria remain open.
+`e6dce16`, plus `735d564`, now route structured 2D and 3D surfaces through
+one shared React stage toolbar. The toolbar owns the action order and
+Full/Non-Camera menu, while 2D Full exports select a camera-capable runtime
+only for camera-driven scenes and Non-Camera exports remain demo-only. The
+portable 3D runtime now includes functional reset/orbit/zoom view controls.
+The exact deployed route remains stale until these commits are published;
+authenticated editor, embed, immersive, and downloaded-runtime browser
+criteria remain open.
 
-Local regression evidence: full frontend suite 187 files / 2,367 tests
+Local regression evidence: full frontend suite 188 files / 2,369 tests
 passed; full backend suite passes under host-level loopback permissions
 (907 collected, 880 passed, 22 skipped). The sandbox-only cache, subprocess,
 and socket failures are retained as a verification boundary, not product

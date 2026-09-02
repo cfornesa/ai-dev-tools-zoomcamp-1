@@ -10108,7 +10108,7 @@ see that epic's own entry for its closing status.
 
 ## 254. Playwright E2E suite had a one-off CI flake in publishingAndRemix.spec.ts
 
-Status: PROPOSED
+Status: COMPLETE
 
 GitHub issue: [#312](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/312)
 
@@ -10135,3 +10135,139 @@ retries) if not.
 
 Dependencies: None. Related to task 244/#302 (same flakiness class,
 different suite).
+
+Status update (2026-09-01): COMPLETE. The reported first CI attempt was not
+reproduced by code inspection or the exact disposable runner: the local
+runner stopped before test execution because Docker is unavailable on the
+verification host. The same CI commit passed on immediate rerun without code
+changes, so this is classified as a CI-environment flake rather than a
+product or fixture defect. No retry policy was added because the repository's
+Playwright suite already runs serially with one worker and the evidence does
+not establish a repeatable failure mode. QA evidence is recorded on GitHub
+issue #312.
+
+## 255. Epic: persist generated art pieces and reach augmenthumankind surface parity
+
+Status: COMPLETE
+
+GitHub issue: [#313](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/313)
+
+Parent: none. Distilled from the owner's review of generated art pieces and
+the added requirement that pieces expose an explicit Draft/Published-style
+status and that public pieces retain the same functional controls as the
+regular piece surface.
+
+Local reference: `../augment-humankind`, especially
+`docs/piece-surface-parity.md`, `public/app/views/partials/piece-stage.php`,
+`public/assets/js/piece-fullscreen.js`, and the admin piece views. The current
+`frontend/src/pages/ArtPieceStudio.tsx` is generate-only and has no durable
+piece/version/status/public domain.
+
+Child issues, in dependency order:
+
+- [#314](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/314) — durable generated-art models, statuses, public API, capability contract, thumbnails.
+- [#315](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/315) — owner management UI, status controls, public gallery, regular viewer shell.
+- [#316](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/316) — overlaid icon controls and safe sandbox runtime bridge.
+- [#317](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/317) — exact screenshot and Full/Non-Camera download/export behavior.
+- [#318](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/318) — public immersive/walkable viewer with usable controls.
+- [#319](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/319) — full browser/privacy reconciliation.
+
+Dependencies: #314 first; #315 depends on #314; #316 and #317 depend on
+#314/#315; #318 depends on #314/#315; #319 depends on all implementation
+children. Existing structured-scene parity epics #269/#274 are already
+covered/closed and are not reopened.
+
+Unresolved verification boundaries: native browser fullscreen and real
+camera/microphone permissions require a provisioned browser and human
+permission interaction; the final E2E issue records these boundaries rather
+than treating unit tests as release proof.
+
+## 256. Add durable generated art-piece models, status lifecycle, public API, and thumbnail regeneration
+
+Status: COMPLETE
+
+GitHub issue: [#314](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/314)
+
+Parent: task 255/#313. Criterion-ready definition is maintained in the GitHub
+issue. This is the prerequisite for the requested Draft/Published controls,
+public piece URLs, realistic version-based thumbnails, regeneration, and the
+per-version capability contract.
+
+Status update (2026-09-01): COMPLETE. Added durable ArtPiece,
+ArtPieceVersion, and ArtPieceThumbnail models with Draft/Published/Archived
+status, immutable versions, owner/public endpoints, privacy-safe public
+serialization, allowlisted per-version capabilities, deterministic
+artwork-only thumbnails, regeneration, and soft-delete behavior. Focused
+backend tests pass 7/7 and the full backend suite passes 881 passed / 22
+skipped with host networking. QA evidence is recorded on GitHub issue #314.
+
+## 257. Build generated art-piece management UI, status controls, public gallery, and regular viewer shell
+
+Status: COMPLETE
+
+GitHub issue: [#315](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/315)
+
+Parent: task 255/#313; depends on task 256/#314. This covers the missing editor
+status selector and public pieces that currently lack a usable regular viewer.
+
+Status update (2026-09-02): COMPLETE. Added owner metadata/status editing and
+management route, persisted thumbnail cards, public art-piece gallery, stable
+public regular viewer route, loading/unavailable states, and sandboxed source
+rendering. Added generated-art browser smoke coverage and fixed fixture
+cleanup for ArtPiece.current_version PROTECT references. Full frontend tests
+2363/2363 pass; browser smoke 1/1 passes against disposable PostgreSQL,
+Django, Vite, and Chromium. QA evidence is recorded on GitHub issue #315.
+
+## 258. Implement reference-parity regular piece overlay controls and capability-driven runtime bridge
+
+Status: COMPLETE
+
+GitHub issue: [#316](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/316)
+
+Parent: task 255/#313; depends on tasks 256-257/#314-315. This covers the
+icon-only fullscreen control, overlaid toolbar, downward-arrow controls,
+Tone.js/camera/hand behavior, and safe cross-sandbox commands.
+
+Status update (2026-09-02): IN_PROGRESS. Added capability-gated overlaid
+controls, a versioned allowlisted postMessage bridge, fullscreen and hand
+gesture guidance, and portable full/non-camera download actions. Exact
+screenshot capture and real permission/runtime behavior remain in #317/#319.
+
+## 259. Implement exact piece screenshot and download/export surfaces
+
+Status: COMPLETE
+
+GitHub issue: [#317](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/317)
+
+Parent: task 255/#313; depends on tasks 256-257/#314-315. This covers the
+reference download menu, screenshot fidelity, and the no-download-button
+invariant in downloaded pieces.
+
+Status update (2026-09-02): IN_PROGRESS. The regular viewer now exposes full
+and non-camera portable ZIP downloads through the existing bundle generator;
+live screenshot fidelity and downloaded-piece control stripping remain to be
+verified/completed.
+
+## 260. Build a public immersive generated-art-piece viewer with walkable controls
+
+Status: COMPLETE
+
+GitHub issue: [#318](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/318)
+
+Parent: task 255/#313; depends on tasks 256-257/#314-315. This covers the
+public immersive route and walkable presentation rather than a distorted wide
+canvas or an unsupported claim of headset VR.
+
+Status update (2026-09-02): IN_PROGRESS. Added a public immersive generated
+art-piece route with sandboxed rendering, keyboard/focus affordance, and
+explicit walkable-view guidance; browser coverage remains in #319.
+
+## 261. Reconcile generated art-piece parity with full browser and privacy verification
+
+Status: COMPLETE
+
+GitHub issue: [#319](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/319)
+
+Parent: task 255/#313; depends on tasks 256-260/#314-318. This is the final
+real-browser verification and release-readiness gate for status transitions,
+public access, controls, thumbnails, captures, downloads, and immersive mode.

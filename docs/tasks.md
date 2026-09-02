@@ -10850,3 +10850,17 @@ formatting mismatch at `backend/tests/test_startup_configuration.py:115`.
 Ran the configured Ruff formatter with no behavior change; `make check` now
 passes all backend and frontend gates. The issue remains open until the
 corresponding QA/status reconciliation is posted to GitHub.
+
+## 265. Verify embedded 3D viewer route parity
+
+Status: LOCAL IMPLEMENTATION VERIFIED; DEPLOYED/GITHUB RECONCILIATION PENDING
+
+GitHub issue: [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332)
+
+The dedicated `embed3dStageChrome.spec.ts` browser transaction passed 1/1
+against the disposable PostgreSQL/Django/Vite/Chromium stack. It verified the
+exact `/embed/p3d/:id` entry point, chrome-less shell, live 3D canvas,
+stage-local screenshot/download/sound/Piece/gesture-guide/fullscreen controls,
+and Full/Non-Camera ZIP menu entries. This local evidence does not close the
+issue: the supplied production revision still requires exact post-publish
+embed verification, and authenticated GitHub reconciliation is unavailable.

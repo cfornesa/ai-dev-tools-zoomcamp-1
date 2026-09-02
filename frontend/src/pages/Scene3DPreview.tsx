@@ -670,11 +670,7 @@ function Scene3DPreview({
             }}
           />
         )}
-        <div
-          role="toolbar"
-          aria-label="Piece actions"
-          className="scene3d-stage-toolbar"
-        >
+        <div role="toolbar" aria-label="Piece actions" className="scene3d-stage-toolbar">
           {showScreenshotButton && (
             <button
               type="button"

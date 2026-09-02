@@ -56,6 +56,23 @@ const PIECE_CSS = `html, body {
   width: 100%;
   height: 100%;
 }
+#piece-toolbar {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 10;
+  display: flex;
+  gap: .5rem;
+}
+#piece-toolbar button {
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 999px;
+  background: rgba(10,12,20,.76);
+  color: #fff;
+  cursor: pointer;
+}
 `;
 
 const README = `EXPORT: 3D scene
@@ -84,7 +101,32 @@ function buildIndexHtml(): string {
 </head>
 <body>
 <div id="scene3d-canvas-host"></div>
+<div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
+  <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot">⌗</button>
+  <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
+</div>
 <script src="scripts/piece.js"></script>
+<script>
+(() => {
+  const host = document.getElementById('scene3d-canvas-host');
+  const screenshot = document.getElementById('piece-screenshot');
+  const fullscreen = document.getElementById('piece-fullscreen');
+  const canvas = () => host && host.querySelector('canvas');
+  screenshot?.addEventListener('click', () => {
+    const current = canvas();
+    if (!current) return;
+    const link = document.createElement('a');
+    link.download = 'piece-screenshot.png';
+    link.href = current.toDataURL('image/png');
+    link.click();
+  });
+  fullscreen?.addEventListener('click', async () => {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await (host?.requestFullscreen?.() ?? Promise.resolve());
+    fullscreen.setAttribute('aria-label', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen');
+  });
+})();
+</script>
 </body>
 </html>
 `;

@@ -14,8 +14,12 @@ import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
 import { normalizeSceneLayers } from '../validation/scene';
+import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
+import { downloadBlob } from '../export/downloadBlob';
+import { generateHtmlExport, triggerHtmlDownload } from '../export/generateHtmlExport';
 import DemoControlsPanel from './DemoControlsPanel';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
+import { useFullscreenToggle } from './useFullscreenToggle';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -119,6 +123,7 @@ function PublicProjectViewer() {
   // this" guarantee.
   const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [surfaceError, setSurfaceError] = useState<string | null>(null);
   const forkRequestIdRef = useRef<string | null>(null);
 
   // Task 119 (issue #152): mirrors `EditorWorkspace.tsx`'s identical
@@ -193,6 +198,8 @@ function PublicProjectViewer() {
   ]);
 
   const previewRef = useRef<ScenePreview | null>(null);
+  const previewStageRef = useRef<HTMLDivElement | null>(null);
+  const { isFullscreen, toggleFullscreen } = useFullscreenToggle(previewStageRef);
   // Issue #206: "latest value" ref (same rationale as `EditorWorkspace.tsx`'s
   // `workingCopyRef`) so `previewMountCallbackRef` below -- memoized with
   // `[]` deps -- still reads whichever project is current at the moment the
@@ -323,6 +330,32 @@ function PublicProjectViewer() {
     } catch {
       setEmbedCopyStatus('failed');
     }
+  }
+
+  async function handleTakeScreenshot() {
+    try {
+      const blob = await captureLiveScreenshot(previewRef.current?.getCanvasElement() ?? null);
+      downloadBlob(blob, screenshotFilename(project?.title ?? id ?? 'scene'));
+    } catch (error) {
+      setSurfaceError(error instanceof Error ? error.message : 'Screenshot failed.');
+    }
+  }
+
+  function handleDownload() {
+    if (!project?.current_version) return;
+    const result = generateHtmlExport({
+      scene: project.current_version.scene_json,
+      title: project.title,
+      description: project.description ?? '',
+      interactionMode: 'demo',
+      includeAttribution: true,
+    });
+    if (!result.ok) {
+      setSurfaceError(result.reasons.join(' '));
+      return;
+    }
+    setSurfaceError(null);
+    triggerHtmlDownload(result.html, result.filename);
   }
 
   async function handleFork() {
@@ -496,14 +529,15 @@ function PublicProjectViewer() {
               </label>
             </div>
           )}
-          <div
-            data-testid="public-scene-canvas"
-            role="group"
-            aria-label="Scene canvas"
-            className="editor-scene-canvas"
-            style={{ position: 'relative', width: 800, height: 600, maxWidth: '100%' }}
-          >
-            {/* Issue #195 (fixing #169's un-ported public-viewer gap): the
+          <div ref={previewStageRef} className="piece-stage-shell">
+            <div
+              data-testid="public-scene-canvas"
+              role="group"
+              aria-label="Scene canvas"
+              className="editor-scene-canvas"
+              style={{ position: 'relative', width: 800, height: 600, maxWidth: '100%' }}
+            >
+              {/* Issue #195 (fixing #169's un-ported public-viewer gap): the
                 live camera image is drawn *inside* the p5 canvas by
                 `getCameraOverlay`/the render effect above, exactly like
                 `EditorWorkspace.tsx`. This `<video>` is `visibility:
@@ -517,55 +551,90 @@ function PublicProjectViewer() {
                 `transform` stay set here (unused visually, but read by
                 existing unit tests and kept consistent with the editor's
                 identical hidden `<video>`). */}
-            {cameraStatus === 'active' && cameraStream && (
-              <video
-                ref={cameraVideoRef}
-                data-testid="camera-overlay-video"
-                aria-hidden="true"
-                muted
-                playsInline
-                autoPlay
-                className="editor-camera-overlay"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: -2,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  visibility: 'hidden',
-                  transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
-                  opacity: cameraOverlayOpacity,
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
-            {/* Task 25's p5.js preview mounts its <canvas> into this div;
+              {cameraStatus === 'active' && cameraStream && (
+                <video
+                  ref={cameraVideoRef}
+                  data-testid="camera-overlay-video"
+                  aria-hidden="true"
+                  muted
+                  playsInline
+                  autoPlay
+                  className="editor-camera-overlay"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: -2,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    visibility: 'hidden',
+                    transform: cameraOverlayMirrored ? 'scaleX(-1)' : 'none',
+                    opacity: cameraOverlayOpacity,
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+              {/* Task 25's p5.js preview mounts its <canvas> into this div;
                 see EditorWorkspace.tsx's identical comment for why React
                 is never given children to reconcile here. */}
-            <div
-              ref={previewMountCallbackRef}
-              aria-hidden="true"
-              style={{ position: 'absolute', inset: 0, zIndex: -1 }}
-            />
-          </div>
-        </section>
-
-        <section role="region" aria-label="Demo and camera controls" className="editor-panel">
-          {/* Task 31: the exact same camera permission/privacy control the
+              <div
+                ref={previewMountCallbackRef}
+                aria-hidden="true"
+                style={{ position: 'absolute', inset: 0, zIndex: -1 }}
+              />
+              <div role="toolbar" aria-label="Piece actions" className="piece-stage-toolbar">
+                <button
+                  type="button"
+                  aria-label="Take screenshot"
+                  title="Take screenshot"
+                  onClick={() => void handleTakeScreenshot()}
+                >
+                  ⌗
+                </button>
+                <button
+                  type="button"
+                  aria-label="Download piece"
+                  title="Download piece"
+                  onClick={handleDownload}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+                  title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+                  aria-pressed={isFullscreen}
+                  onClick={() => void toggleFullscreen()}
+                >
+                  ⛶
+                </button>
+              </div>
+            </div>
+            <details className="piece-stage-settings">
+              <summary>Camera and demo controls</summary>
+              <div role="region" aria-label="Demo and camera controls">
+                {/* Task 31: the exact same camera permission/privacy control the
               authenticated editor uses (`CameraControl.tsx`) — notice,
               status, stop, and denial/unsupported/failure messaging, all
               unchanged. Never auto-starts; only its own `Enable camera`
               button can ever request camera access. Task 119 (issue #152):
               `onStatusChange`/`onStreamChange` feed the overlay <video>
               above, the same way `EditorWorkspace.tsx` does. */}
-          <CameraControl onStatusChange={setCameraStatus} onStreamChange={setCameraStream} />
+                <CameraControl onStatusChange={setCameraStatus} onStreamChange={setCameraStream} />
 
-          {/* Task 28: the exact same demo signal controls the authenticated
+                {/* Task 28: the exact same demo signal controls the authenticated
               editor uses (`DemoControlsPanel.tsx`) — this is the
               deterministic non-camera mode this page starts in by
               default. */}
-          <DemoControlsPanel />
+                <DemoControlsPanel />
+              </div>
+            </details>
+            {surfaceError && (
+              <p role="alert" aria-live="assertive">
+                {surfaceError}
+              </p>
+            )}
+          </div>
         </section>
       </div>
     </div>

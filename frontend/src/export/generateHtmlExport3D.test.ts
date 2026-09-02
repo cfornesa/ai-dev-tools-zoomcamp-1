@@ -95,6 +95,8 @@ describe('generateScene3DBundle', () => {
     expect(html).toContain('runtime/three.min.js');
     expect(html).toContain('scripts/piece.js');
     expect(html).toContain('scene3d-canvas-host');
+    expect(html).toContain('piece-screenshot');
+    expect(html).toContain('piece-fullscreen');
 
     const script = await zip.files['scripts/piece.js'].async('string');
     expect(script).toContain('window.__SCENE3D_DATA__');

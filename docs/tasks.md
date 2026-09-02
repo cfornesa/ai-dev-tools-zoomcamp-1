@@ -10552,6 +10552,15 @@ absence of the legacy standalone export action, and stage containment. This
 is local implementation evidence only; #339 remains open until the exact
 published AI editor route is authenticated and inspected.
 
+AI 2D implementation slice (#340, 2026-09-02): the exact
+`ai2dPublication.spec.ts` browser transaction passed 1/1 against the
+disposable PostgreSQL/Django/Vite/Chromium stack. It now also asserts the
+PHP-relative rendered toolbar geometry and verifies the stage-local
+publication control, Draft → Published → Draft transitions, and absence of
+the legacy header row. The previous `closed_completed_local` wording is
+reclassified as local implementation evidence only; #340 remains open until
+the exact published AI editor route is authenticated and inspected.
+
 ## 264. Add visitor-selectable instruments for each 3D sound voice
 
 Status: HANDED-OFF

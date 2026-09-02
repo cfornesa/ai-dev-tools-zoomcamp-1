@@ -40,6 +40,26 @@ test.describe('AI-assisted 2D publication', () => {
     await expect(toolbar.getByRole('button', { name: 'Publication status: Draft' })).toBeVisible();
     await expect(page.locator('.editor-workspace-header .editor-publish-control')).toHaveCount(0);
 
+    const chrome = await toolbar.evaluate((element) => {
+      const toolbarStyle = getComputedStyle(element);
+      const button = element.querySelector('.piece-stage-icon-button');
+      const buttonStyle = button ? getComputedStyle(button) : null;
+      return {
+        top: toolbarStyle.top,
+        left: toolbarStyle.left,
+        buttonWidth: buttonStyle?.width,
+        buttonHeight: buttonStyle?.height,
+        buttonRadius: buttonStyle?.borderRadius,
+      };
+    });
+    expect(chrome).toMatchObject({
+      top: '13.5px',
+      left: '13.5px',
+      buttonWidth: '49.5px',
+      buttonHeight: '49.5px',
+      buttonRadius: '13.5px',
+    });
+
     await toolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
     const publicationGroup = toolbar.getByRole('group', {
       name: 'Publication status',

@@ -48,7 +48,7 @@ as read-only behavioral reference.
 | [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337) | Verify portable 3D Full/Non-Camera downloads | Child of #320; one artifact capability | `open` | Requires deployed downloads and extracted-browser evidence |
 | [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; one route and capability | `local_implementation_verified` | Shared stage rail now matches PHP reference-relative top-left/0.75rem/2.75rem rounded-square styling; focused React regression passes 61/61 and dedicated Chromium route QA passes 1/1 with computed geometry/style, named publication controls, and no legacy header row. Keep open for post-publish exact-route verification |
 | [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; one route and capability | `local_implementation_verified` | Dedicated `ai3dStageChrome.spec.ts` passes 1/1: exact AI editor route, shared 3D controls, AI action, Draft/Published control, no legacy standalone export action, and stage containment. Keep open for post-publish exact-route verification |
-| [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `closed_completed_local` | Narrow local implementation closure; not deployment evidence. Exact deployed verification remains #326 |
+| [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `local_implementation_verified` | Exact `ai2dPublication.spec.ts` passes 1/1 with PHP-relative rendered toolbar geometry, stage-local publication control, Draft → Published → Draft, and no legacy header row. Keep open for post-publish exact-route verification |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
 | [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295) | Live 3D five-slide hand-gesture guide | Shared capability; portable guide remains in #337 | `open` | Reopened: its closure contract requires a published `/p3d/:id` fixture, but prior evidence was local-only; verify exact route before closure |
 | [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306) | Shared Tone.js 3D audio foundation | Foundation for sound consumers; route evidence remains #327–#337 | `closed_completed_local` | Narrow local foundation closure; exact public/editor/download behavior remains #327–#337 |
@@ -683,6 +683,18 @@ local implementation evidence only because the supplied production revision
 is stale and the private route is not authenticated in the available browser;
 no GitHub closure or deployment action is claimed. Next action is exact
 post-publish `/ai-projects3d/:id` verification.
+
+## Blocker reconciliation: #340 (2026-09-02)
+
+#340’s local implementation and QA transaction completed. The exact
+`ai2dPublication.spec.ts` browser test passed 1/1 against disposable
+PostgreSQL/Django/Vite/Chromium and verified the PHP-relative stage rail,
+stage-local publication control, reversible Draft/Published transitions, and
+absence of the legacy header publication row. No duplicate or new dependency
+was found. The prior `closed_completed_local` label was corrected because
+local evidence cannot close a deployed route. The supplied production
+revision remains stale and no GitHub closure or deployment action is claimed;
+next action is authenticated post-publish `/ai-projects/:id` verification.
 
 ## Blocker reconciliation: #329 (2026-09-02)
 

@@ -330,6 +330,8 @@ export function buildStandaloneThreeRuntimeScript(
     var dragging = false;
     var lastX = 0;
     var lastY = 0;
+    var pressedArrows = {};
+    var lastFrameAt = performance.now();
 
     function applyOrbit() {
       var cosPitch = Math.cos(orbit.pitch);
@@ -349,6 +351,56 @@ export function buildStandaloneThreeRuntimeScript(
       orbit.pitch = Math.asin((initialPosition.y - target.y) / Math.max(orbit.distance, 0.001));
       graph.camera.lookAt(target);
     }
+
+    // Keep the reference runtime's arrow-key travel behavior in downloaded
+    // pieces. WASD remains reserved for the optional piano-key notes, so
+    // these controls deliberately use arrows only. Both the camera and orbit
+    // target move together, preserving the current view direction.
+    function applyArrowTravel(deltaSeconds) {
+      var x = 0;
+      var z = 0;
+      if (pressedArrows.ArrowUp) z += 1;
+      if (pressedArrows.ArrowDown) z -= 1;
+      if (pressedArrows.ArrowRight) x += 1;
+      if (pressedArrows.ArrowLeft) x -= 1;
+      if (x === 0 && z === 0) return;
+      var forward = new THREE.Vector3().subVectors(target, graph.camera.position).normalize();
+      var right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+      var travel = new THREE.Vector3()
+        .addScaledVector(forward, z)
+        .addScaledVector(right, x)
+        .normalize()
+        .multiplyScalar(Math.min(deltaSeconds, 0.05) * 4);
+      target.add(travel);
+      applyOrbit();
+    }
+
+    // Keep the portable runtime's camera state inspectable for host integrations
+    // and browser acceptance checks without coupling them to Three.js objects.
+    window.__exportGetCameraState = function () {
+      return {
+        position: {
+          x: graph.camera.position.x,
+          y: graph.camera.position.y,
+          z: graph.camera.position.z,
+        },
+        target: { x: target.x, y: target.y, z: target.z },
+      };
+    };
+
+    window.addEventListener('keydown', function (event) {
+      if (event.key.indexOf('Arrow') !== 0 || event.target instanceof HTMLInputElement) return;
+      pressedArrows[event.key] = true;
+      // Apply one bounded step immediately as well as during the animation
+      // loop. This makes a discrete keyboard activation observable even when
+      // a browser delivers keydown and keyup within one frame.
+      applyArrowTravel(0.05);
+      event.preventDefault();
+    });
+    window.addEventListener('keyup', function (event) {
+      if (event.key.indexOf('Arrow') !== 0) return;
+      pressedArrows[event.key] = false;
+    });
 
     function applyHandCamera() {
       if (!activeHandInput || typeof activeHandInput.getSignals !== 'function') {
@@ -416,6 +468,9 @@ export function buildStandaloneThreeRuntimeScript(
     });
 
     function tick() {
+      var now = performance.now();
+      applyArrowTravel((now - lastFrameAt) / 1000);
+      lastFrameAt = now;
       applyHandCamera();
       renderer.render(graph.scene, graph.camera);
       requestAnimationFrame(tick);

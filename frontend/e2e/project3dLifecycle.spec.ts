@@ -220,6 +220,15 @@ test.describe('3D project creation', () => {
     await expect(artifactPage.getByRole('toolbar', { name: 'Piece actions' })).toBeVisible();
     await artifactPage.getByRole('button', { name: 'Piece controls' }).click();
     await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
+    const cameraBeforeTravel = await artifactPage.evaluate(() =>
+      (window as unknown as { __exportGetCameraState: () => unknown }).__exportGetCameraState(),
+    );
+    await artifactPage.locator('body').press('ArrowUp');
+    await artifactPage.waitForTimeout(100);
+    const cameraAfterTravel = await artifactPage.evaluate(() =>
+      (window as unknown as { __exportGetCameraState: () => unknown }).__exportGetCameraState(),
+    );
+    expect(cameraAfterTravel).not.toEqual(cameraBeforeTravel);
     await artifactPage.getByRole('button', { name: 'Reset view' }).click();
     await expect(artifactPage.getByRole('button', { name: 'Enable sound' })).toBeVisible();
 

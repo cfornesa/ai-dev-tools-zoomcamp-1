@@ -28,7 +28,7 @@ as read-only behavioral reference.
 
 | Issue | Goal / scope | Dependencies / order | Status | Blocker / next action |
 | --- | --- | --- | --- | --- |
-| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome, public/embed/immersive parity, publication state, portable capability-preserving downloads, privacy, browser coverage | First implementation item; consumes existing renderer, camera, sound, gesture, export pieces | `in_progress` | `implementation-defect` plus `verification-boundary`; build one shared stage contract/component, add artifact/browser coverage, then authenticate and publish for exact-route QA |
+| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome, public/embed/immersive parity, publication state, portable capability-preserving downloads, privacy, browser coverage | First implementation item; consumes existing renderer, camera, sound, gesture, export pieces | `in_progress` | Remaining `verification-boundary`: authenticate and publish for exact-route QA |
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Parent parity epic covering screenshot, fullscreen, download menu, sound, controls, camera/hand behavior, immersive view | Parent of #320 and prior generated-art work | `dependency-blocked` | #320 must pass before parent can close; retain open because prior #285–#311 closures cover only narrower/other surfaces |
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
 | [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; no repository Compose definition currently exists | `open_in_progress` | `workflow/infrastructure-defect`; native runner fingerprints its own stack, but Compose preflight remains to be implemented; do not stop sibling containers |
@@ -53,7 +53,7 @@ as read-only behavioral reference.
 | AI-assisted 2D editor | Local source now uses shared stage-local toolbar and Camera/Demo disclosure with the existing preview lifecycle; exact deployed/editor visual parity remains unverified | `implemented locally / needs browser evidence` | #320; authenticate and verify the exact owner route after publish |
 | Public 2D viewer / embed | Local source now uses shared stage-local toolbar and Camera/Demo disclosure; deployed route still serves the old sibling-panel shell | `verification-boundary` | #320; publish, then verify exact public and embed routes |
 | Manual/AI 3D editors | Shared toolbar and publication control exist locally; editor-specific actions remain a separate authoring toolbar within the stage, which is acceptable only if it does not duplicate runtime chrome | `implemented locally / needs browser evidence` | #320; verify visual hierarchy and all controls with authenticated browser |
-| Public/embed/immersive 3D | Shared `Scene3DPreview` toolbar exists locally; immersive route reuses the regular orbit runtime plus arrow-key fly, but there is no reference-equivalent Custom/CMS immersive embed choice | `implementation-defect` | #320; decide and implement the permitted React equivalent or document the deliberate route-scope difference in acceptance evidence |
+| Public/embed/immersive 3D | Shared `Scene3DPreview` toolbar exists locally; immersive route supports Custom/CMS embed query variants and arrow-key fly | `implemented locally / needs deployed evidence` | #320; verify exact public/embed/immersive routes after publish |
 | Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, and fullscreen behavior; disposable-stack browser test downloads and inspects the real ZIP | `implemented locally / needs deployed evidence` | #320; verify the exact deployed download after publish |
 | Non-Camera downloads | Camera host/module and camera-only mic/theremin code are omitted while non-camera sound/keyboard/view controls remain; disposable-stack browser test downloads and inspects the real ZIP | `implemented locally / needs deployed evidence` | #320; verify the exact deployed download after publish |
 | Draft / Published | 2D and 3D owner controls exist locally and API tests cover atomic transitions; supplied private deployed route cannot be inspected anonymously | `verification-boundary` | #320; authenticate in the owner's browser session, then verify both states on exact URLs |
@@ -277,6 +277,19 @@ implementation and exact routes:
   the stage controls remain accessible and functional in Code. The focused
   Code-tab suite passes 11/11 and the full frontend suite passes 189 files /
   2,375 tests; typecheck and production build also pass.
+
+## Re-audit implementation increment (2026-09-02, immersive/download)
+
+- The immersive 3D route now implements the reference contract's Custom and
+  CMS embed variants as copyable iframe snippets and query-driven chrome-less
+  modes.
+- The standalone 3D runtime now implements arrow-key camera travel while
+  leaving WASD available for keyboard notes. The extracted Full ZIP executes
+  this state transition from `file://` in Chromium.
+- Focused immersive tests pass 13/13, frontend format/typecheck pass, and the
+  corrected disposable PostgreSQL/Django/Vite `project3dLifecycle.spec.ts`
+  passes 3/3. Exact deployed immersive/embed/download evidence remains
+  pending publication and authenticated owner access.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

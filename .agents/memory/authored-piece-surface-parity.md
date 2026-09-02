@@ -42,3 +42,9 @@ and its `[hidden]` state, and close on outside pointer input. Otherwise an
 overlay can remain hit-testable across unrelated editor interactions and
 intercept controls outside the piece surface; the full browser suite caught
 this composed failure on 2026-09-02.
+
+Immersive 3D must preserve the reference's Custom and CMS embed entry points
+as query-driven, chrome-less variants of the same stage runtime. Downloaded
+3D pieces must retain arrow-key camera travel while reserving WASD for the
+keyboard-note contract; test this in an extracted `file://` artifact rather
+than inferring behavior from generated source strings.

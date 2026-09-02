@@ -10412,6 +10412,17 @@ deployed-route and published-download evidence remains open.
 
 Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)
 
+Immersive/download follow-up (2026-09-02): the reference contract's Custom
+and CMS immersive embed variants are now implemented in the React route with
+copyable, capability-preserving iframe snippets and chrome-less query-mode
+rendering. The standalone 3D runtime now supports arrow-key camera travel
+while retaining WASD for keyboard notes; the real downloaded Full artifact
+executes that state transition from `file://` in Chromium. Focused immersive
+tests pass 13/13, frontend format/typecheck pass, and the corrected disposable
+PostgreSQL/Django/Vite `project3dLifecycle.spec.ts` passes 3/3. Exact deployed
+immersive/embed/download verification remains open until publication and an
+authenticated owner session are available.
+
 ## 263. Make Docker browser verification select and fingerprint this repository
 
 Status: PROPOSED

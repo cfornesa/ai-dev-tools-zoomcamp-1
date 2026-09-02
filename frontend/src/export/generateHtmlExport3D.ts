@@ -120,6 +120,10 @@ const README = `EXPORT: 3D scene
 Open index.html to run this piece -- no build step, no server, works
 straight from your file system or any static host.
 
+Use the arrow keys to fly through the piece; WASD remains available for
+optional keyboard notes. Drag to orbit, scroll/pinch to zoom, and use Reset
+view to return to the authored camera pose.
+
 MAKING IT YOUR OWN:
 Edit styles/piece.css for appearance, and scripts/piece.js for behavior,
 then reopen index.html. The scene document itself lives at the top of

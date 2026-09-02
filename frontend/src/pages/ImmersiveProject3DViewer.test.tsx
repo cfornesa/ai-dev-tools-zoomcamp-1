@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -66,6 +67,16 @@ function renderViewer(id = 'p1') {
   );
 }
 
+function renderViewerAt(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/immersive/p3d/:id" element={<ImmersiveProject3DViewer />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -86,6 +97,38 @@ describe('ImmersiveProject3DViewer load states', () => {
     expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
     expect(screen.getByRole('button', { name: /steer the piece/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /show hand gesture guide/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Embed (Custom)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Embed (CMS)' })).toBeInTheDocument();
+  });
+
+  it('copies reference-equivalent Custom and CMS immersive embed snippets', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+    mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
+    renderViewer();
+
+    await screen.findByRole('heading', { name: 'Rotating Cube' });
+    await user.click(screen.getByRole('button', { name: 'Embed (Custom)' }));
+    expect(writeText).toHaveBeenLastCalledWith(
+      expect.stringContaining('/immersive/p3d/p1?embed=1'),
+    );
+    await user.click(screen.getByRole('button', { name: 'Embed (CMS)' }));
+    expect(writeText).toHaveBeenLastCalledWith(
+      expect.stringContaining('/immersive/p3d/p1?embed=1&cms=1'),
+    );
+  });
+
+  it('keeps only the stage preview and controls on Custom/CMS embed routes', async () => {
+    mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
+    renderViewerAt('/immersive/p3d/p1?embed=1&cms=1');
+
+    await screen.findByRole('button', { name: /show hand gesture guide/i });
+    expect(screen.queryByRole('heading', { name: 'Rotating Cube' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('immersive-project3d-viewer')).toHaveAttribute(
+      'data-immersive-embed-mode',
+      'cms',
+    );
   });
 
   it('shows a safe, undifferentiated message for a 404 (never-existed or not public)', async () => {

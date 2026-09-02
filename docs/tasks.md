@@ -11028,3 +11028,15 @@ separate dependent or later reconciliation surfaces. #274/#324 remain
 historical containers, not closure units.
 
 No product source or product test was changed during this distillation pass.
+
+## 269c. Handoff public 2D route and continue to embedded 2D (#329 → #331)
+
+Status: #329 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY; NEXT #331
+
+#329 is locally implemented and QA-tested in commit `09047c6`. Its full
+public/embedded browser transaction passed 24/24, but the exact production
+`/p/:id` still serves the legacy shell. That sole unmet criterion belongs to
+the #320/#321 deployment/revision gate; #329 remains open and is not marked
+COMPLETE. Per the blocked-work rule, the next independent transaction is
+#331's exact chrome-less `/embed/p/:id` route, with separate evidence and no
+claim that #329 or the parent is closed.

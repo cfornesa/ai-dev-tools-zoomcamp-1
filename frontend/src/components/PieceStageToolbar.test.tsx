@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import PieceStageToolbar from './PieceStageToolbar';
+import { THREE_D_STAGE_CAPABILITIES, TWO_D_STAGE_CAPABILITIES } from './pieceStageCapabilities';
 
 describe('PieceStageToolbar', () => {
   it('keeps the shared action order and routes both download variants', async () => {
@@ -13,6 +14,7 @@ describe('PieceStageToolbar', () => {
       <PieceStageToolbar
         onScreenshot={vi.fn()}
         onDownload={onDownload}
+        capabilities={THREE_D_STAGE_CAPABILITIES}
         immersiveHref="/immersive"
         soundControl={<button type="button">Sound</button>}
         controlsControl={<button type="button">Piece controls</button>}
@@ -41,5 +43,24 @@ describe('PieceStageToolbar', () => {
     render(<PieceStageToolbar onDownload={vi.fn()} downloadFormat="zip" />);
     await user.click(screen.getByRole('button', { name: 'Open download menu' }));
     expect(screen.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeInTheDocument();
+  });
+
+  it('does not render controls that the capability contract disables', () => {
+    render(
+      <PieceStageToolbar
+        capabilities={{ ...TWO_D_STAGE_CAPABILITIES, screenshot: false, download: false }}
+        onScreenshot={vi.fn()}
+        onDownload={vi.fn()}
+        immersiveHref="/immersive"
+        soundControl={<button type="button">Sound</button>}
+        onToggleFullscreen={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Take screenshot' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open download menu' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'View immersive piece' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sound' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeInTheDocument();
   });
 });

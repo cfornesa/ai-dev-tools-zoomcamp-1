@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
+import { type PieceStageCapabilities, TWO_D_STAGE_CAPABILITIES } from './pieceStageCapabilities';
+
 export type PieceStageToolbarProps = {
   onScreenshot?: () => void | Promise<void>;
   onDownload?: (variant?: 'full' | 'non-camera') => void | Promise<void>;
@@ -14,6 +16,7 @@ export type PieceStageToolbarProps = {
   ariaLabel?: string;
   className?: string;
   downloadFormat?: 'html' | 'zip';
+  capabilities?: PieceStageCapabilities;
 };
 
 /**
@@ -35,12 +38,13 @@ export default function PieceStageToolbar({
   ariaLabel = 'Piece actions',
   className,
   downloadFormat = 'html',
+  capabilities = TWO_D_STAGE_CAPABILITIES,
 }: PieceStageToolbarProps) {
   const [downloadOpen, setDownloadOpen] = useState(false);
   return (
     <div role="toolbar" aria-label={ariaLabel} className="piece-stage-toolbar">
       <div role="group" aria-label={ariaLabel} className={className}>
-        {onScreenshot && (
+        {capabilities.screenshot && onScreenshot && (
           <button
             type="button"
             className="piece-stage-icon-button"
@@ -51,7 +55,7 @@ export default function PieceStageToolbar({
             <span aria-hidden="true">⌗</span>
           </button>
         )}
-        {onDownload && (
+        {capabilities.download && onDownload && (
           <div className="piece-stage-download">
             <button
               type="button"
@@ -94,7 +98,7 @@ export default function PieceStageToolbar({
             </div>
           </div>
         )}
-        {immersiveHref && (
+        {capabilities.immersive && immersiveHref && (
           <a
             className="piece-stage-icon-button"
             href={immersiveHref}
@@ -106,11 +110,11 @@ export default function PieceStageToolbar({
             <span aria-hidden="true">◈</span>
           </a>
         )}
-        {soundControl}
-        {controlsControl}
-        {gestureControl}
-        {gestureGuide}
-        {onToggleFullscreen && (
+        {capabilities.sound && soundControl}
+        {capabilities.pieceControls && controlsControl}
+        {capabilities.gesture && gestureControl}
+        {capabilities.gestureGuide && gestureGuide}
+        {capabilities.fullscreen && onToggleFullscreen && (
           <button
             type="button"
             className="piece-stage-icon-button"

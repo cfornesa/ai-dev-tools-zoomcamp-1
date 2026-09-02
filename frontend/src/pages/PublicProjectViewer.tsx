@@ -19,6 +19,7 @@ import { downloadBlob } from '../export/downloadBlob';
 import { generateHtmlExport, triggerHtmlDownload } from '../export/generateHtmlExport';
 import { getAvailableInteractionModes } from '../export/exportCompatibility';
 import PieceStageToolbar from '../components/PieceStageToolbar';
+import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import DemoControlsPanel from './DemoControlsPanel';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { useFullscreenToggle } from './useFullscreenToggle';
@@ -594,6 +595,7 @@ function PublicProjectViewer() {
               <PieceStageToolbar
                 onScreenshot={() => void handleTakeScreenshot()}
                 onDownload={(variant) => handleDownload(variant)}
+                capabilities={TWO_D_STAGE_CAPABILITIES}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={() => void toggleFullscreen()}
               />

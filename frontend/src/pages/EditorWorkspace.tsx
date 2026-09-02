@@ -26,6 +26,7 @@ import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import PieceStageToolbar from '../components/PieceStageToolbar';
+import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
@@ -3645,6 +3646,7 @@ function EditorWorkspace() {
                 className="editor-piece-stage-toolbar"
                 onScreenshot={() => void handleTakeScreenshot()}
                 onDownload={() => setExportDialogOpenSignal((current) => current + 1)}
+                capabilities={TWO_D_STAGE_CAPABILITIES}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={() => void toggleFullscreen()}
               />

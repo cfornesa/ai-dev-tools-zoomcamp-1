@@ -7,6 +7,7 @@ import CameraControl, {
   type CameraStatus,
 } from '../components/CameraControl';
 import PieceStageToolbar from '../components/PieceStageToolbar';
+import { THREE_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import {
   categorizeMicError,
   isMicSupported,
@@ -681,6 +682,7 @@ function Scene3DPreview({
           onScreenshot={showScreenshotButton ? handleTakeScreenshot : undefined}
           onDownload={onDownload}
           downloadFormat={downloadFormat}
+          capabilities={THREE_D_STAGE_CAPABILITIES}
           immersiveHref={immersiveHref}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}

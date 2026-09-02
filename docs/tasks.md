@@ -8986,7 +8986,7 @@ Dependencies: None — same independent pattern as task 224/#256.
 
 ## 232. 3D AI create-scene system prompt never restates each light's required fields
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 GitHub issue: [#265](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/265)
 
@@ -10332,6 +10332,11 @@ An earlier full 137-test run reached 99 passed but exposed two regressions
 introduced by this increment; both were fixed and their focused suites passed.
 The full batch should be rerun once the remaining authored-surface browser
 coverage is added.
+
+Latest focused browser evidence: after making the camera/demo controls an
+opt-in stage-associated disclosure and restoring keyboard focusability to the
+Draft/Published status controls, the complete `publishingAndRemix.spec.ts`
+suite passed 24/24 against the disposable PostgreSQL/Django/Vite stack.
 
 Next action: implement the shared stage/capability contract for structured
 Project and Project3D surfaces, then verify the downloaded runtime and exact

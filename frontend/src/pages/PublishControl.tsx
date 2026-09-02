@@ -249,7 +249,6 @@ function PublishControl({
         <button
           type="button"
           className="publish-visibility-option"
-          tabIndex={-1}
           aria-pressed={visibility === 'private'}
           disabled={visibility === 'private' || publishState !== 'idle'}
           onClick={() => void handleUnpublish()}
@@ -259,7 +258,6 @@ function PublishControl({
         <button
           type="button"
           className="publish-visibility-option"
-          tabIndex={-1}
           aria-pressed={visibility === 'public'}
           disabled={visibility === 'public' || publishState !== 'idle'}
           onClick={() => void handlePublishClick()}

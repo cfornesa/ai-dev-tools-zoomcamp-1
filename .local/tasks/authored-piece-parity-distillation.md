@@ -108,7 +108,9 @@ implementation and exact routes:
   The immersive 3D route now keeps gesture steering and its guide enabled.
 - Correct-stack verification: `scripts/browser-qa.sh` passed its repository
   identity probes; focused injection passed 33/33 and public lifecycle/camera
-  passed 24/24. The first full 137-test run reached 99 passed before the two
+  passed 24/24, including the corrected opt-in camera/demo disclosure. The
+  publication-status controls are now keyboard-actionable and covered by
+  component tests. The first full 137-test run reached 99 passed before the two
   focused regressions were corrected; the corrected focused suites pass, but a
   clean replacement full batch reached 135/137 with one skipped and one
   authentication/fixture timing failure before the target scenario began.

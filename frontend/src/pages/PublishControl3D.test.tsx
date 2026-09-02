@@ -51,6 +51,18 @@ beforeEach(() => {
 });
 
 describe('PublishControl3D', () => {
+  it('exposes Draft/Published as visible, keyboard-actionable publication status controls', () => {
+    render(<Harness initialProject={baseProject()} />);
+
+    const status = screen.getByRole('group', { name: 'Publication status' });
+    const draft = within(status).getByRole('button', { name: 'Draft' });
+    const published = within(status).getByRole('button', { name: 'Published' });
+    expect(draft).toHaveAttribute('aria-pressed', 'true');
+    expect(published).toHaveAttribute('aria-pressed', 'false');
+    expect(draft).toHaveProperty('tabIndex', 0);
+    expect(published).toHaveProperty('tabIndex', 0);
+  });
+
   it('shows a confirmation naming the title and creator before the first private-to-public switch', async () => {
     const user = userEvent.setup();
     render(<Harness initialProject={baseProject()} />);

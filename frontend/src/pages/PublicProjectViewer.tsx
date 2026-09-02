@@ -600,7 +600,7 @@ function PublicProjectViewer() {
                 onToggleFullscreen={() => void toggleFullscreen()}
               />
             </div>
-            <details className="piece-stage-settings" open>
+            <details className="piece-stage-settings">
               <summary>Camera and demo controls</summary>
               <div role="region" aria-label="Demo and camera controls">
                 {/* Task 31: the exact same camera permission/privacy control the

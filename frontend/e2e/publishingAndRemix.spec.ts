@@ -128,6 +128,12 @@ function shapeListItem(page: Page) {
   return page.locator('[data-outline-kind="shape"] button[aria-pressed]');
 }
 
+async function openCameraAndDemoControls(page: Page) {
+  const disclosure = page.locator('details.piece-stage-settings');
+  await expect(disclosure).toBeVisible();
+  await disclosure.locator('summary').click();
+}
+
 /** Navigates to the given project's editor and fills in meaningful
  * title/description (and optionally toggles the remix checkbox) through
  * the real, current in-editor UI -- never touches visibility. Issue #94
@@ -591,6 +597,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
     await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
       'Anonymous viewer fixture project',
     );
@@ -623,6 +630,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     });
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
 
     await anonPage.getByRole('button', { name: 'Enable camera' }).click();
     await expect(anonPage.getByTestId('camera-error')).toContainText('Camera access was denied');
@@ -683,6 +691,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     });
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
 
     await anonPage.getByRole('button', { name: 'Enable camera' }).click();
     await expect(anonPage.getByTestId('camera-error')).toContainText("doesn't support");
@@ -710,6 +719,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
     await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
       'Anonymous viewer fixture project',
     );
@@ -839,6 +849,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     });
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
 
     await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
       'Anonymous viewer fixture project',
@@ -868,6 +879,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     });
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
 
     await anonPage.getByRole('button', { name: 'Enable camera' }).click();
     await expect(anonPage.getByTestId('camera-permission-hint')).toBeVisible({ timeout: 8000 });
@@ -893,6 +905,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     });
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
 
     await anonPage.getByRole('button', { name: 'Enable camera' }).click();
     await expect(anonPage.getByTestId('camera-error')).toContainText(/no camera/i);
@@ -927,6 +940,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const observedRequests = trackRequestUrls(anonPage);
 
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
     await anonPage.getByRole('button', { name: 'Enable camera' }).click();
 
     await expect(anonPage.getByTestId('camera-status')).toHaveText(
@@ -957,6 +971,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const anonPage = await anonContext.newPage();
 
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
 
     // No overlay/controls before the camera is enabled.
     await expect(anonPage.getByTestId('camera-overlay-video')).toHaveCount(0);
@@ -1002,6 +1017,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const observedRequests = trackRequestUrls(anonPage);
 
     await anonPage.goto(`/p/${publicProjectId}`);
+    await openCameraAndDemoControls(anonPage);
     await anonPage.getByRole('button', { name: 'Enable camera' }).click();
     await expect(anonPage.getByTestId('camera-status')).toHaveText(
       'Camera is active. Hand tracking is running locally in your browser.',
@@ -1050,6 +1066,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     ]) {
       await anonPage.setViewportSize({ width: viewport.width, height: viewport.height });
       await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
       await anonPage.getByRole('button', { name: 'Enable camera' }).click();
       await expect(anonPage.getByTestId('camera-status')).toContainText(/camera is active/i);
 

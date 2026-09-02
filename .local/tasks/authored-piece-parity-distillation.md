@@ -47,7 +47,7 @@ as read-only behavioral reference.
 | [#335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/335) | Verify CMS immersive 3D `/immersive/p3d/:id?embed=1&cms=1` | Child of #320; one route/variant | `handed_off_verification_boundary` | Dedicated Chromium route test passes 1/1 against disposable PostgreSQL/Django/Vite; verifies chrome-less CMS variant, retained stage controls, zero embed padding, and both 3D ZIP menu entries. Published revision remains stale; keep open for exact post-publish route verification |
 | [#336](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/336) | Verify portable 2D download runtime | Child of #320; one artifact surface | `handed_off_verification_boundary` | Isolated Chromium artifact suite passes 17/17 through Docker-backed browser QA, covering extracted HTML, demo/camera modes, permission lifecycle, attribution, content exclusion, exact dependencies, and ZIP output. Published artifact remains unverified; keep open for exact post-publish download verification |
 | [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337) | Verify portable 3D Full/Non-Camera downloads | Child of #320; one artifact capability | `handed_off_verification_boundary` | `project3dLifecycle.spec.ts` passes 4/4 against the disposable stack: real Full/Non-Camera ZIP clicks, extracted `file://` execution, functional canvas/controls, camera-surface separation, and reversible publication; deployed artifact remains unverified |
-| [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; one route and capability | `handed_off_verification_boundary` | Shared stage rail matches PHP reference-relative top-left/0.75rem/2.75rem rounded-square styling; strengthened dedicated Chromium route QA passes 1/1 with stage-local authoring/runtime/publication controls, rendered containment, Add circle → Undo, and no legacy header row. Published revision remains stale; keep open for post-publish exact-route verification |
+| [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; local implementation slice | `blocked_environment` | Focused component gate passes 67/67; required disposable-stack Chromium gate is blocked by Docker daemon permission failure. Keep open; exact deployed route verification remains #325 |
 | [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; one route and capability | `local_implementation_verified` | Dedicated `ai3dStageChrome.spec.ts` passes 1/1: exact AI editor route, shared 3D controls, AI action, Draft/Published control, no legacy standalone export action, and stage containment. Keep open for post-publish exact-route verification |
 | [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `reopened_verification_boundary` | GitHub was reopened after the live contradiction audit; local route evidence exists, but the deployed revision is unverified and the owner reports the old bulky editor scheme. Re-run exact authenticated route QA after publish before closure |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `local_implementation_verified` | Dedicated `manual3dStageChrome.spec.ts` passes 1/1 with PHP-relative rendered toolbar geometry, named 3D/editor/publication controls, stage containment, and no legacy standalone export action. Keep open for post-publish exact-route verification |
@@ -1284,3 +1284,24 @@ Status: DISTILLATION COMPLETE — #325 LOCALLY VERIFIED, HANDED OFF; NEXT ISSUE 
   boundary, not another route.
 - Next-order check: #326 is the next independent editor route. #325 remains
   open until authorized publication and exact authenticated route evidence.
+
+## End-of-blocked-issue distillation: #338 (2026-09-02)
+
+Status: DISTILLATION COMPLETE — #338 LOCALLY PARTIAL, ENVIRONMENT-BLOCKED; #326
+REMAINS THE NEXT INDEPENDENT TRANSACTION
+
+- Duplicate check: no new issue is warranted. #338 owns only the manual 2D
+  local publication implementation; #325 owns exact authenticated/deployed
+  verification, and #320 owns release reconciliation.
+- Blocker check: the focused component gate passed 67/67, but
+  `BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa` could
+  not start because Docker cannot access its server socket. `docker info`
+  independently reports permission denied for `docker.sock`.
+- Closure check: #338 must remain open. Prior browser evidence is not reused
+  to satisfy this transaction, and no deployed parity is claimed.
+- Atomicity check: no split is needed; the local implementation is one finite
+  manual 2D publication workflow. The Docker failure is an environment
+  boundary, not a reason to create a second product issue.
+- Progress rule: #326 is independent and remains eligible to proceed; revisit
+  #338 only after the Docker permission boundary changes, using the exact
+  Chromium command above.

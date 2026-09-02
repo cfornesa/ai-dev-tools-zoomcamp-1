@@ -11340,3 +11340,20 @@ non-user-judgment `verification-boundary` owned by #320/#321. The route is
 atomic as one finite stage-local control/publication workflow. #326 is the
 next independent editor route and may proceed while #325 remains open pending
 authorized publication and exact authenticated evidence.
+
+## 269z. End-of-blocked-issue distillation for #338
+
+Status: #338 BLOCKED BY DOCKER ENVIRONMENT — #326 REMAINS ELIGIBLE
+
+The manual 2D implementation transaction remains open. The focused component
+gate passes 67/67, but
+`BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa` cannot
+start because the Docker daemon socket is inaccessible; `docker info` reports
+the same permission failure. This is not closure evidence, and prior browser
+results are not reused for the current transaction.
+
+Distillation found no duplicate or further decomposition: #338 owns one finite
+local publication workflow, #325 owns exact authenticated/deployed verification,
+and #320 owns release reconciliation. The blocker is environmental rather than
+user judgment, so #338 remains open while independent #326 may proceed. Re-run
+the exact browser command after Docker access is restored.

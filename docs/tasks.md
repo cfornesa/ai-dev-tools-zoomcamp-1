@@ -10931,3 +10931,17 @@ without authentication. Therefore the project is not production-ready and no
 issue or parent is closed from this assessment. Next actions are authorized
 production publish, exact-route/artifact QA, and authenticated GitHub status
 reconciliation.
+
+## 268. Reconcile Docker identity preflight (#321)
+
+Status: COMPLETE
+
+GitHub issue: [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321)
+
+Engineering hardened `scripts/compose-preflight.sh` so the expected Compose
+project and file are fixed to this repository; only the probe base URL remains
+configurable. An explicit unrelated project override is rejected before any
+container mutation. QA passed with `make compose-preflight`, the rejection
+probe, and `UV_CACHE_DIR=/private/tmp/ai-dev-tools-uv-cache uv run pytest
+tests/test_browser_qa_configuration.py` (8 passed). QA evidence was posted to
+GitHub and #321 was closed as completed.

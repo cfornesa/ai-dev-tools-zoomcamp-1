@@ -21,8 +21,9 @@ as read-only behavioral reference.
   capability behavior; Full ZIP preserves permitted controls while
   Non-Camera removes camera rendering/UI/theremin/hand tracking/MediaPipe but
   retains non-camera sound.
-- The repository has no `compose.yaml` or Dockerfile. The running Docker
-  project is an unrelated sibling app and must not be treated as this project.
+- The repository owns `compose.yaml` and Dockerfiles. A running Docker project
+  is evidence only when its Compose labels and served identity match this
+  repository; the read-only `make compose-preflight` gate enforces that.
 
 ## Complete issue manifest
 
@@ -31,7 +32,7 @@ as read-only behavioral reference.
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome and capability contract | Parent integration gate; decomposed into #295, #306, #325–#345 | `distillation_required` | Owner re-audit confirms deployed public 2D still has the legacy sibling-panel shell and deployed 3D editor is unavailable anonymously. Re-groom every child against the exact PHP contract, verify the published revision, and do not infer closure from local source/tests |
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Superseded authored-piece parity umbrella | Historical parent; replaced by #320 and closure-sized children | `closed_not_planned` | Historical reference only; do not use as a closure unit |
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
-| [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `ready_for_github_reconciliation` | Docker image build/start and `make compose-preflight` now pass; backend image was fixed to copy `/schema`; focused `project3dLifecycle.spec.ts` browser QA passes 3/3. Post the QA evidence and close through authenticated GitHub reconciliation; no duplicate issue |
+| [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `closed_completed` | `30fcec0` hardens the preflight to fixed repository project/file identity; focused configuration tests pass 8/8, correct-stack preflight passes, unrelated-project override is rejected, QA comment posted, and GitHub issue closed |
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Strengthened authenticated Chromium route test passes 1/1: finite authoring controls are inside the canvas, Add circle → Undo works, runtime/publication controls are stage-local, and the authoring overlay is geometrically contained. Keep open for exact deployed-route verification |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated authenticated Chromium route test passes 1/1 with stage-local publication controls, PHP-relative geometry, reversible Draft → Published → Draft, and no header duplicate. Keep open for exact deployed-route verification |

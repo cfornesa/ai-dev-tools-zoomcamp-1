@@ -2896,6 +2896,42 @@ select.ai-proposal-field-full-width {
   position: relative;
 }
 
+.piece-stage-download {
+  position: relative;
+}
+
+.piece-stage-download-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 30;
+  display: grid;
+  gap: 0.35rem;
+  min-width: 12rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.75rem;
+  background: rgba(10, 12, 20, 0.94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.piece-stage-download-menu button {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.piece-stage-download-menu button:hover,
+.piece-stage-download-menu button:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .piece-stage-controls-panel {
   position: absolute;
   left: 0;

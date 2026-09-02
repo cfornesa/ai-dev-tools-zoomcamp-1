@@ -12,6 +12,9 @@
  * everything else about the 3D manual/AI-assisted editors (outline,
  * inspector, code tab, AI proposals) is out of scope per the issue.
  */
+import fs from 'node:fs/promises';
+
+import JSZip from 'jszip';
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
@@ -142,8 +145,52 @@ test.describe('3D project creation', () => {
     await toolbar.getByRole('button', { name: 'Piece controls' }).click();
     await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     await toolbar.getByRole('button', { name: 'Open download menu' }).click();
-    await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
-    await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera ZIP' })).toBeVisible();
+    const fullMenuItem = toolbar.getByRole('menuitem', { name: 'Download Full ZIP' });
+    const nonCameraMenuItem = toolbar.getByRole('menuitem', {
+      name: 'Download Non-Camera ZIP',
+    });
+    await expect(fullMenuItem).toBeVisible();
+    await expect(nonCameraMenuItem).toBeVisible();
+
+    // The bundle generator fetches the pinned Three.js runtime in the
+    // browser. Fulfill that one request locally so this test proves the
+    // actual click-to-download path without depending on a CDN.
+    await page.route('**/three@0.160.0/build/three.min.js', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/javascript',
+        body: '/* browser QA runtime fixture */',
+      }),
+    );
+
+    const fullDownloadPromise = page.waitForEvent('download');
+    await fullMenuItem.click();
+    const fullDownload = await fullDownloadPromise;
+    const fullPath = await fullDownload.path();
+    expect(fullPath).not.toBeNull();
+    if (!fullPath) return;
+    const fullZip = await JSZip.loadAsync(await fs.readFile(fullPath));
+    const fullHtml = await fullZip.file('index.html')?.async('string');
+    const fullScript = await fullZip.file('scripts/piece.js')?.async('string');
+    expect(fullHtml).toContain('piece-audio-controls');
+    expect(fullHtml).toContain('camera-controls-host');
+    expect(fullScript).toContain('getUserMedia');
+    expect(fullScript).toContain('thereminEnabled');
+
+    await toolbar.getByRole('button', { name: 'Open download menu' }).click();
+    const nonCameraDownloadPromise = page.waitForEvent('download');
+    await toolbar.getByRole('menuitem', { name: 'Download Non-Camera ZIP' }).click();
+    const nonCameraDownload = await nonCameraDownloadPromise;
+    const nonCameraPath = await nonCameraDownload.path();
+    expect(nonCameraPath).not.toBeNull();
+    if (!nonCameraPath) return;
+    const nonCameraZip = await JSZip.loadAsync(await fs.readFile(nonCameraPath));
+    const nonCameraHtml = await nonCameraZip.file('index.html')?.async('string');
+    const nonCameraScript = await nonCameraZip.file('scripts/piece.js')?.async('string');
+    expect(nonCameraHtml).not.toContain('camera-controls-host');
+    expect(nonCameraHtml).not.toContain('piece-theremin');
+    expect(nonCameraScript).not.toContain('getUserMedia');
+    expect(nonCameraScript).not.toContain('thereminEnabled');
 
     await page.goto(`/projects3d/${projectId}`);
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');

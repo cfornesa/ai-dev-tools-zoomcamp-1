@@ -244,6 +244,13 @@ implementation and exact routes:
   real browser now verifies public screenshot/sound/Piece-controls/steering/
   guide/fullscreen chrome, both ZIP download variants, and the owner’s
   Published → Draft transition; the expanded suite passes 3/3.
+- The expanded 3D run initially caught a real hit-testing defect: the shared
+  download popover lacked its anchored layout, so the visible Full action could
+  invoke Non-Camera. Adding the shared popover CSS fixed the composed behavior;
+  the rerun passes 3/3 and inspects both downloaded ZIP manifests/runtime
+  scripts. This is local disposable-stack evidence; the supplied deployed
+  URLs remain unverified until the current branch is published and an owner
+  browser session is available.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

@@ -11115,3 +11115,15 @@ gesture-guide and fullscreen controls, fixed stage geometry, and both
 Full/Non-Camera 3D ZIP entries. The deployed revision remains stale, so #334
 is open and is not COMPLETE. Publish the tested revision, rerun the exact
 custom immersive URL, and close only after deployed evidence passes.
+
+## 269j. Handoff CMS immersive 3D route (#335)
+
+Status: #335 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The dedicated Docker-backed `immersive3dCmsStageChrome.spec.ts` transaction
+passed 1/1. It verified the exact `/immersive/p3d/:id?embed=1&cms=1` route,
+the CMS chrome-less boundary, stage-local screenshot/download/sound/Piece,
+gesture-guide and fullscreen controls, zero embed padding, and both
+Full/Non-Camera 3D ZIP entries. The deployed revision remains stale, so #335
+is open and is not COMPLETE. Publish the tested revision, rerun the exact CMS
+immersive URL, and close only after deployed evidence passes.

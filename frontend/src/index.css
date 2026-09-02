@@ -2975,6 +2975,10 @@ select.ai-proposal-field-full-width {
   cursor: pointer;
 }
 
+.piece-stage-icon {
+  flex: 0 0 auto;
+}
+
 .piece-stage-tooltip {
   position: absolute;
   left: 50%;

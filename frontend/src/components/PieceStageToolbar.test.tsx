@@ -30,6 +30,9 @@ describe('PieceStageToolbar', () => {
     expect(screen.getByRole('link', { name: 'View immersive piece' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Take screenshot' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Take screenshot' }).querySelector('svg'),
+    ).toHaveClass('piece-stage-icon');
     expect(screen.getByRole('tooltip', { name: 'Take screenshot' })).toBeInTheDocument();
     expect(screen.getByRole('tooltip', { name: 'Open download menu' })).toBeInTheDocument();
     expect(screen.getByRole('tooltip', { name: 'View immersive piece' })).toBeInTheDocument();

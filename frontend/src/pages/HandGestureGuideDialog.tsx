@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
+import PieceStageIcon from '../components/PieceStageIcon';
 
 /**
  * Issue #295: a "Show hand gesture guide" button opening an accessible
@@ -132,7 +133,7 @@ function HandGestureGuideDialog() {
         title="Show hand gesture guide"
         onClick={() => setIsOpen(true)}
       >
-        <span aria-hidden="true">✋</span>
+        <PieceStageIcon name="guide" />
         <span className="piece-stage-tooltip" role="tooltip">
           Show hand gesture guide
         </span>

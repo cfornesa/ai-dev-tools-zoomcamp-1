@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 import { type PieceStageCapabilities, TWO_D_STAGE_CAPABILITIES } from './pieceStageCapabilities';
+import PieceStageIcon from './PieceStageIcon';
 
 export type PieceStageToolbarProps = {
   onScreenshot?: () => void | Promise<void>;
@@ -68,7 +69,7 @@ export default function PieceStageToolbar({
             title="Take screenshot"
             onClick={() => void onScreenshot()}
           >
-            <span aria-hidden="true">⌗</span>
+            <PieceStageIcon name="screenshot" />
             <span className="piece-stage-tooltip" role="tooltip">
               Take screenshot
             </span>
@@ -85,7 +86,7 @@ export default function PieceStageToolbar({
               aria-expanded={downloadOpen}
               onClick={() => setDownloadOpen((current) => !current)}
             >
-              <span aria-hidden="true">↓</span>
+              <PieceStageIcon name="download" />
               <span className="piece-stage-tooltip" role="tooltip">
                 Open download menu
               </span>
@@ -129,7 +130,7 @@ export default function PieceStageToolbar({
             aria-label="View immersive piece"
             title="View immersive piece"
           >
-            <span aria-hidden="true">◈</span>
+            <PieceStageIcon name="immersive" />
             <span className="piece-stage-tooltip" role="tooltip">
               View immersive piece
             </span>
@@ -149,7 +150,7 @@ export default function PieceStageToolbar({
             aria-pressed={isFullscreen}
             onClick={() => void onToggleFullscreen()}
           >
-            <span aria-hidden="true">⛶</span>
+            <PieceStageIcon name="fullscreen" />
             <span className="piece-stage-tooltip" role="tooltip">
               {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
             </span>

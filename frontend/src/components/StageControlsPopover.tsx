@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 
+import PieceStageIcon from './PieceStageIcon';
+
 /**
  * Stage-local disclosure for controls that are too detailed to live in the
  * compact icon row. Children stay mounted while the popover is closed so
@@ -35,7 +37,7 @@ export default function StageControlsPopover({
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <span aria-hidden="true">☰</span>
+        <PieceStageIcon name="controls" />
         <span className="piece-stage-tooltip" role="tooltip">
           {label}
         </span>

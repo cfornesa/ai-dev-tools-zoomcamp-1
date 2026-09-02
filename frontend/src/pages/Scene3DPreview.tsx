@@ -9,6 +9,7 @@ import CameraControl, {
 } from '../components/CameraControl';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import StageControlsPopover from '../components/StageControlsPopover';
+import PieceStageIcon from '../components/PieceStageIcon';
 import { THREE_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import {
   categorizeMicError,
@@ -816,7 +817,7 @@ function Scene3DPreview({
                 aria-pressed={soundEnabled}
                 onClick={() => void handleToggleSound()}
               >
-                <span aria-hidden="true">♪</span>
+                <PieceStageIcon name="sound" />
                 <span className="piece-stage-tooltip" role="tooltip">
                   {soundEnabled ? 'Mute sound' : 'Enable sound'}
                 </span>
@@ -1022,7 +1023,7 @@ function Scene3DPreview({
                   setGestureControlEnabled((current) => !current);
                 }}
               >
-                <span aria-hidden="true">✋</span>
+                <PieceStageIcon name="steer" />
                 <span className="piece-stage-tooltip" role="tooltip">
                   {gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
                 </span>

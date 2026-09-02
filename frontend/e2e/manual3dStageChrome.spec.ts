@@ -25,6 +25,18 @@ test.describe('manual 3D editor stage chrome', () => {
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(toolbar).toBeVisible();
+    for (const viewport of [
+      { width: 1280, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect(toolbar).toBeVisible();
+      await expect(toolbar.locator('svg.piece-stage-icon')).toHaveCount(9);
+      await expect(toolbar.locator('.piece-stage-visible-label')).toHaveText(
+        'Publication status: Draft',
+      );
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();

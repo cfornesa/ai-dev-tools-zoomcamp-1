@@ -29,7 +29,7 @@ describe('HandGestureGuideDialog', () => {
     const trigger = screen.getByRole('button', { name: 'Show hand gesture guide' });
     expect(trigger).toHaveClass('piece-stage-icon-button');
     expect(trigger).toHaveAttribute('title', 'Show hand gesture guide');
-    expect(trigger).toHaveTextContent('✋');
+    expect(trigger.querySelector('svg')).toHaveClass('piece-stage-icon');
   });
 
   it('shows the first named slide and navigates through all five steps', async () => {

@@ -2940,20 +2940,6 @@ function EditorWorkspace() {
               currently shows (mid-gesture/mid-animation included) and
               downloads it as a PNG -- read-only against the canvas,
               never mutates render state. */}
-          <div role="group" aria-label="Preview actions" className="editor-tool-group">
-            <button type="button" onClick={() => void handleTakeScreenshot()}>
-              Take screenshot
-            </button>
-            {/* Issue #287: real browser Fullscreen API, toggled on the
-                same preview section this screenshot button lives in. */}
-            <button
-              type="button"
-              onClick={() => void toggleFullscreen()}
-              aria-pressed={isFullscreen}
-            >
-              {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-            </button>
-          </div>
           {screenshotError && (
             <p role="alert" aria-live="assertive" data-testid="screenshot-error">
               {screenshotError}
@@ -3652,6 +3638,29 @@ function EditorWorkspace() {
                           </>
                         );
                       })()}
+              </div>
+              <div
+                role="toolbar"
+                aria-label="Piece actions"
+                className="piece-stage-toolbar editor-piece-stage-toolbar"
+              >
+                <button
+                  type="button"
+                  aria-label="Take screenshot"
+                  title="Take screenshot"
+                  onClick={() => void handleTakeScreenshot()}
+                >
+                  ⌗
+                </button>
+                <button
+                  type="button"
+                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+                  title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+                  aria-pressed={isFullscreen}
+                  onClick={() => void toggleFullscreen()}
+                >
+                  ⛶
+                </button>
               </div>
             </div>
           </div>

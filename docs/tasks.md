@@ -10628,6 +10628,16 @@ prompt/assistant remains a separate authoring panel and is not counted as
 runtime stage chrome. This remains local evidence only; exact deployed-route
 verification and authenticated GitHub reconciliation remain open.
 
+AI 3D editor verification (#328/#339, 2026-09-02): the dedicated
+`ai3dStageChrome.spec.ts` transaction passed 1/1 against the disposable
+PostgreSQL/Django/Vite/Chromium stack. It verifies the exact
+`/ai-projects3d/:id` route, stage-contained screenshot/download/sound/Piece
+controls, gesture guide, fullscreen, AI authoring action, Draft/Published
+control, PHP-relative toolbar geometry, rendered containment, and absence of
+the legacy standalone-export action. No local product defect was found. This
+remains local evidence only; exact deployed-route verification and
+authenticated GitHub reconciliation remain open.
+
 Portable 2D runtime implementation slice (#336, 2026-09-02): the existing
 isolated Chromium artifact suite passed 17/17 through the Docker-backed
 browser runner after a direct macOS Chromium launch was blocked by a

@@ -10896,6 +10896,17 @@ and Full/Non-Camera ZIP menu entries. This local evidence does not close the
 issue: the supplied production revision still requires exact post-publish
 embed verification, and authenticated GitHub reconciliation is unavailable.
 
+## #295 QA reconciliation (2026-09-02)
+
+The dedicated `handGestureGuide.spec.ts` transaction passed 1/1 through
+`BROWSER_QA_E2E_SPEC=e2e/handGestureGuide.spec.ts make browser-qa`. It verified
+Look, Move, Orbit, Zoom, and Stop safely, keyboard progression, and no camera
+permission request on opening. QA was posted to GitHub as `## QA: FAIL` because
+the issue’s current contract also requires exact published `/p3d/:id` evidence,
+and the supplied deployment has not been shown to contain this revision. #295
+remains open with its next action: re-run the exact route after authorized
+publication.
+
 ## Distillation re-audit: owner live evidence (2026-09-02)
 
 The supplied public route was inspected again in a fresh browser context and

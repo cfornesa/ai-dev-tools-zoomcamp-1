@@ -33,6 +33,10 @@ test.describe('AI-assisted 3D editor stage chrome', () => {
     await expect(toolbar.getByRole('button', { name: 'Piece controls' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
+    await expect(toolbar.getByRole('link', { name: 'View immersive piece' })).toHaveAttribute(
+      'href',
+      /\/immersive\/p3d\/.+$/,
+    );
     await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
     await expect(
       toolbar.getByRole('button', { name: 'Ask AI to improve this scene' }),

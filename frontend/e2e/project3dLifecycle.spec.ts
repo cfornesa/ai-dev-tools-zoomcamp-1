@@ -20,6 +20,21 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+async function expectThreeDStageChrome(page: Page) {
+  const frame = page.getByTestId('scene3d-preview-canvas-frame');
+  const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
+  await expect(toolbar).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
+
+  await toolbar.getByRole('button', { name: 'Open download menu' }).click();
+  await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
+  await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera ZIP' })).toBeVisible();
+}
+
 test.describe('3D project creation', () => {
   let fixtures: Fixtures;
 
@@ -42,6 +57,7 @@ test.describe('3D project creation', () => {
     // Project3DWorkspace.tsx has fetched the project and its current
     // version successfully (Project3DWorkspace.tsx).
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
+    await expectThreeDStageChrome(page);
 
     // Reload to prove the project genuinely persisted server-side, not
     // just in local React state from the create response.
@@ -71,6 +87,7 @@ test.describe('3D project creation', () => {
     // live canvas -- not the WebGL-unavailable fallback -- is what proves
     // the preview actually mounted and rendered.
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
+    await expectThreeDStageChrome(page);
 
     await page.reload();
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();

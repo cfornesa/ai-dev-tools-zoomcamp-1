@@ -11103,3 +11103,15 @@ created. The next action requires an authorized push/publish of the tested
 revision, followed by authenticated editor and anonymous public/embed/artifact
 verification. Until then, route issues remain open or handed off and no parent
 issue may close.
+
+## 269i. Handoff custom immersive 3D route (#334)
+
+Status: #334 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The dedicated Docker-backed `immersive3dCustomStageChrome.spec.ts` transaction
+passed 1/1. It verified the exact `/immersive/p3d/:id?embed=1` route, the
+custom chrome-less boundary, stage-local screenshot/download/sound/Piece,
+gesture-guide and fullscreen controls, fixed stage geometry, and both
+Full/Non-Camera 3D ZIP entries. The deployed revision remains stale, so #334
+is open and is not COMPLETE. Publish the tested revision, rerun the exact
+custom immersive URL, and close only after deployed evidence passes.

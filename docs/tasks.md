@@ -11544,3 +11544,26 @@ its owner and next action are recorded on #330 and #332: publish or expose one
 deterministic 3D fixture, then rerun each exact route transaction separately.
 No product source or product-test changes are authorized by this distillation
 step. The next groomed issue is #336, the standalone 2D artifact contract.
+
+## 269ak. Fresh distillation after #336 artifact execution boundary (2026-09-02)
+
+Status: DISTILLATION COMPLETE — NO UNBLOCKED CLOSURE-READY ISSUE REMAINS
+
+The complete open-work manifest was reconciled after the #336 artifact
+verification boundary. #329 and #331 are closed with exact published 2D route
+evidence. #330 and #332–#335, #337, #342, and #344 require a published 3D
+fixture or its deployed consumers; none is currently exposed in the public
+gallery, and the known 3D target is unavailable. #325–#328 require
+authenticated owner-editor access that is not available in the current
+browser context. #295 has the same published 3D dependency. #336 requires an
+approved Chromium context capable of opening the captured `file://` artifacts;
+the in-app browser explicitly blocks that navigation, while its local
+Docker-backed artifact suite is already green.
+
+No duplicate or further decomposition is warranted. Every remaining item has
+an existing issue, a finite contract, a blocker class, an owner/context, and a
+concrete next action. No product source or product-test changes are authorized
+by this distillation. The goal is blocked because all remaining work requires
+the same unavailable external state (published 3D/owner access or approved
+artifact-browser capability); resume after that state changes and process each
+issue sequentially, closing it immediately after its QA evidence passes.

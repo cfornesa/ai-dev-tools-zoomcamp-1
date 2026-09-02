@@ -11184,3 +11184,16 @@ route/capability matrix, duplicate report, blocker triage, and closure contract
 are in `.local/tasks/authored-piece-parity-distillation.md`; the next single
 groomed engineering issue is #295. No product source or product tests were
 changed during this distillation pass.
+
+## 269o. Handoff five-slide 3D gesture guide (#295)
+
+Status: #295 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The existing guide implementation was verified after the closure reset:
+`cd frontend && npm test -- --run src/pages/HandGestureGuideDialog.test.tsx`
+passed 5/5, and `BROWSER_QA_E2E_SPEC=e2e/handGestureGuide.spec.ts make
+browser-qa` passed 1/1. The checks cover the accessible dialog, five named
+slides, truthful Move copy, navigation edge states, focus/Escape/close, and no
+camera permission on guide open. The exact published `/p3d/:id` evidence is
+still unavailable because production serves an older revision; #295 remains
+open and is not COMPLETE until post-publish evidence passes.

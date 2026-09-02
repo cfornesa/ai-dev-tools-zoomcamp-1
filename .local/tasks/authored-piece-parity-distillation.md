@@ -350,6 +350,24 @@ screenshot, download menu, Piece controls, fullscreen, and Draft/Published
 state; focused tests, `make check`, production build, and exact-route QA.
 If #347 passes, process and close it before grooming or engineering #348.
 
+## Fresh owner re-audit after commit 0721322 (2026-09-02)
+
+Authenticated Chrome inspection of the exact supplied routes confirms the
+reviewed revision is not the live revision. The 3D editor serves
+`assets/index-DIraFw-9.js`, has zero `Open piece controls menu` buttons, and
+renders the old `Preview actions` rail at 851x106px desktop and 276x290px at
+375x812. The public 2D route serves the same asset and, in this authenticated
+session, shows direct controls without a hamburger; this is not anonymous
+privacy evidence and conflicts with the owner’s no-controls observation.
+
+Reviewed `origin/main` is `0721322`, whose local shared component contains the
+hamburger overlay. Classify the live mismatch as a deployment/source-sync
+verification boundary, not a successful parity result. No duplicate issue is
+warranted. Re-groom #347 as the next single transaction with exact published
+asset identity, fixed-viewport screenshots, hamburger/X/Escape/focus checks,
+and visible publication state; keep #348 gated behind #347 and all route/
+artifact children independently open.
+
 ## Fresh blocker distillation after #347 deployment handoff — 2026-09-02
 
 The Replit workspace initially blocked publication because it was in an

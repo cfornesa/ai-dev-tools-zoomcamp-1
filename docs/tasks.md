@@ -11888,3 +11888,23 @@ specific and #336/#337 artifact specific; do not let a shared-component pass
 close any consumer. Reopen/re-groom closed route records that contain later
 owner rejection text, plus #343/#345 whose acceptance lists remained
 unchecked. The next engineering handoff is #347 only, after this distillation.
+
+## Fresh owner re-audit after commit 0721322 (2026-09-02)
+
+Authenticated Chrome confirms a deployment mismatch. The exact 3D editor
+serves `assets/index-DIraFw-9.js`, has zero hamburger triggers, and renders the
+old `Preview actions` rail at 851x106px desktop and 276x290px at 375x812. The
+public 2D route serves the same asset and shows direct controls without a
+hamburger in this authenticated session; that is not anonymous privacy
+evidence and does not disprove the owner’s no-controls report. Reviewed
+`origin/main` is `0721322`, whose local shared component contains the
+hamburger overlay, so the live bundle cannot prove that commit was published.
+
+No new issue is warranted. #347 remains the next single groomed
+implementation/verification transaction and must require exact published
+asset identity, fixed 1280x900 and 375x812 screenshots, hamburger/X/Escape/
+focus checks, and visible Draft/Published state before closure. #348 remains
+gated behind #347; route and artifact children stay independently open.
+Next action: synchronize Replit to reviewed `0721322` (or a reviewed
+descendant), publish, and recheck the exact supplied URLs before engineering
+or closing another issue.

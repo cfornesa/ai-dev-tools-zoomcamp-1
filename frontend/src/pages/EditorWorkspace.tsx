@@ -2745,20 +2745,11 @@ function EditorWorkspace() {
   // rejected action is always visibly announced regardless of any
   // accordion's open/closed state or active tab.
   //
-  // Issue #157 (owner correction, 2026-08-24): extracted into a variable,
-  // rendered at ONE of two different DOM positions rather than always in
-  // the same spot, so the desktop/tablet layout and the mobile layout can
-  // each place it correctly without duplicating this JSX (and without ever
-  // rendering it twice, which would create a second `role="toolbar"`
-  // landmark with the same accessible name). At >=1024px (`!isNarrow`) it
-  // stays exactly where it always has, above `.editor-workspace` next to
-  // `OnboardingHints`. Below 1024px (`isNarrow`) it's rendered instead
-  // inside the Preview panel, directly below the canvas viewport (see the
-  // `{isNarrow && editorToolbar}` placement further down, right after
-  // `.editor-scene-canvas-viewport` closes) — every control stays
-  // reachable without obscuring the canvas or needing horizontal scroll,
-  // and it no longer sits above the Details/Tools/Layers/Inspector
-  // switcher tabs where it used to fall in mobile document flow.
+  // Issue #157 (owner correction, 2026-08-24): extracted into a variable so
+  // the editor's authoring actions can share the canvas viewport with the
+  // piece-stage toolbar at every width. These actions remain distinct from
+  // runtime controls, but are compact overlays over the artwork instead of
+  // a page-level row that recreates the bulky public-surface layout.
   const editorToolbar = (
     <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
       <span role="group" aria-label="Add shape" className="editor-tool-group">
@@ -2908,16 +2899,6 @@ function EditorWorkspace() {
         cameraActive={cameraStatus === 'active'}
         pinchEventCount={pinchEventCount}
       />
-
-      {/* Issue #157: at >=1024px the toolbar stays in its original
-          position — outside the panel switcher (there isn't one at this
-          width), same placement as OnboardingHints above, visible
-          regardless of which of Details/Tools/Layers/Inspector is active.
-          Below 1024px it's rendered instead inside the Preview panel,
-          directly below the canvas — see `editorToolbar`'s own doc
-          comment above and the `{isNarrow && editorToolbar}` placement
-          further down. */}
-      {!isNarrow && editorToolbar}
 
       {isNarrow && <EditorPanelSwitcher activePanel={activePanel} onSelect={setActivePanel} />}
 
@@ -3205,6 +3186,7 @@ function EditorWorkspace() {
                 overflow: zoom > 1 ? 'hidden' : 'visible',
               }}
             >
+              {editorToolbar}
               <div
                 ref={canvasRef}
                 data-testid="scene-canvas"
@@ -3662,15 +3644,6 @@ function EditorWorkspace() {
               its own when nothing is selected — see `SelectionHud.tsx`'s
               doc comment. */}
           <SelectionHud sceneEditor={sceneEditor} />
-          {/* Issue #157: the mobile placement of the always-visible
-              toolbar — directly below the canvas viewport, inside the
-              Preview panel itself, rather than above the Details/Tools/
-              Layers/Inspector switcher where it used to fall in mobile
-              document flow. Preview is never hidden (`panelHidden`
-              always returns false for it), so this is unconditionally
-              reachable at every narrow width, and never obscures the
-              canvas since it renders after it in normal document flow. */}
-          {isNarrow && editorToolbar}
         </section>
 
         {/* Task 94 (issue #94), point 1: project-metadata editing folded

@@ -814,38 +814,34 @@ code {
   margin-right: 6px;
 }
 
-/* Task 112 (issue #143): the always-visible editor toolbar (Undo, Redo,
-   Duplicate, Delete, fill color). `overflow-x: auto` plus `flex-wrap`
-   keeps a narrow viewport from ever growing page-level horizontal scroll
-   or clipping a control. */
+/* Task 112 (issue #143), parity follow-up: editor authoring actions stay
+   available, but live over the canvas viewport alongside the shared piece
+   toolbar instead of creating a bulky page-level row. `overflow-x: auto`
+   plus `flex-wrap` keeps the compact overlay usable at narrow widths. */
 .editor-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 4;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
-  margin: 16px 24px 0;
+  max-width: calc(100% - 24px);
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--code-bg);
+  background: color-mix(in srgb, var(--code-bg) 94%, transparent);
   box-shadow: var(--shadow);
   min-width: 0;
-  overflow: visible;
+  overflow-x: auto;
 }
 
-/* Issue #157: below 1024px the toolbar renders nested inside the Preview
-   panel (`.editor-panel[data-panel='preview']`, directly below the canvas
-   viewport — see EditorWorkspace.tsx's `editorToolbar` placement) rather
-   than as a page-level sibling of `.editor-workspace`. The panel already
-   supplies its own 16px/12px padding (`.editor-panel`, with the narrower
-   figure below 767px), so the toolbar's own page-level `24px` side margins
-   would double up with it and push the toolbar's border past the panel's
-   other content — this override drops the toolbar back to a plain
-   top-margin-only spacer in that nested context, matching how every other
-   element already inside the panel (the canvas hint, zoom controls, etc.)
-   only relies on the panel's own padding for its side spacing. */
+/* The Preview panel owns the viewport at every breakpoint, so the overlay
+   never falls back to page-level margins or document flow. */
 .editor-panel[data-panel='preview'] .editor-toolbar {
-  margin: 16px 0 0;
+  margin: 0;
 }
 
 .editor-toolbar .editor-tool-group {

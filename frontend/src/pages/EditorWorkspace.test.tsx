@@ -389,8 +389,9 @@ describe('EditorWorkspace responsive layout', () => {
   // the canvas viewport — asserted here two ways: the toolbar's closest
   // `[data-panel]` ancestor is "preview" (not a page-level sibling of the
   // switcher), and it appears exactly once (never duplicated between the
-  // desktop and mobile render positions).
-  it('nests the toolbar inside the Preview panel, directly below the canvas, below 1024px', async () => {
+  // desktop and mobile render positions). The editor actions now share the
+  // canvas viewport as a compact overlay rather than sitting in page flow.
+  it('places the toolbar over the canvas viewport below 1024px', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     setViewportWidth(375);
@@ -404,21 +405,12 @@ describe('EditorWorkspace responsive layout', () => {
     expect(toolbar.closest('[data-panel]')).toHaveAttribute('data-panel', 'preview');
 
     const canvasViewport = screen.getByTestId('scene-canvas-viewport');
-    // The toolbar must follow the canvas viewport in document order (i.e.
-    // sit "below" it, this implementation's chosen side) rather than
-    // precede it — DOCUMENT_POSITION_FOLLOWING (4) means `toolbar` comes
-    // after `canvasViewport`.
-    // eslint-disable-next-line no-bitwise
-    expect(canvasViewport.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
+    expect(toolbar.closest('[data-testid="scene-canvas-viewport"]')).toBe(canvasViewport);
   });
 
-  // Issue #157: at >=1024px the toolbar keeps its original placement — a
-  // page-level sibling of `.editor-workspace`, not nested inside any panel
-  // — since the desktop/tablet layout already shows every panel side by
-  // side and has no switcher for the toolbar to get lost above.
-  it('keeps the toolbar outside any panel at >=1024px', async () => {
+  // Issue #157 parity follow-up: desktop uses the same stage placement as
+  // narrow layouts, so the toolbar never reverts to a bulky page-level row.
+  it('places the editor toolbar over the canvas viewport at >=1024px', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     setViewportWidth(1024);
@@ -428,7 +420,9 @@ describe('EditorWorkspace responsive layout', () => {
     await screen.findByRole('region', { name: 'Preview' });
     const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
     expect(toolbars).toHaveLength(1);
-    expect(toolbars[0].closest('[data-panel]')).toBeNull();
+    expect(toolbars[0].closest('[data-testid="scene-canvas-viewport"]')).toBe(
+      screen.getByTestId('scene-canvas-viewport'),
+    );
   });
 
   // Issue #184: the viewport fills its responsive framing box at mobile

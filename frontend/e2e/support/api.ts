@@ -48,6 +48,14 @@ export async function apiDelete(context: BrowserContext, path: string): Promise<
   return context.request.delete(path, { headers });
 }
 
+export async function apiPatch(
+  context: BrowserContext,
+  path: string,
+  data: unknown = {},
+): Promise<APIResponse> {
+  return context.request.patch(path, { data, headers: await csrfHeaders(context) });
+}
+
 export async function apiGet(context: BrowserContext, path: string): Promise<APIResponse> {
   return context.request.get(path);
 }

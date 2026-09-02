@@ -48,6 +48,7 @@
 import type { ArtPieceLibrary } from '../api/artPieces';
 
 export const ART_PIECE_SANDBOX_MESSAGE_SOURCE = 'art-piece-sandbox';
+export const ART_PIECE_BRIDGE_VERSION = 1;
 
 export type ArtPieceSandboxMessage =
   | { source: typeof ART_PIECE_SANDBOX_MESSAGE_SOURCE; status: 'ready' }
@@ -139,6 +140,14 @@ const LISTENER_SCRIPT = `
         report('ready', '');
       });
     });
+  });
+  // Versioned, allowlisted commands are surfaced as DOM events. Generated
+  // code may opt into them, but never receives arbitrary parent messages.
+  window.addEventListener('message', function (event) {
+    var data = event && event.data;
+    var allowed = ['screenshot', 'toggle-sound', 'enable-microphone', 'enable-camera', 'enable-hand-steering', 'reset-view'];
+    if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
+    try { window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: data.type, version: 1 } })); } catch (e) {}
   });
 })();
 </script>

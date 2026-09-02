@@ -13,12 +13,16 @@ import Home from './pages/Home';
 const AiEditorWorkspace = lazy(() => import('./pages/AiEditorWorkspace'));
 const AiProject3DWorkspace = lazy(() => import('./pages/AiProject3DWorkspace'));
 const ArtPieceStudio = lazy(() => import('./pages/ArtPieceStudio'));
+const PublicArtPieceGallery = lazy(() => import('./pages/PublicArtPieceGallery'));
+const PublicArtPieceViewer = lazy(() => import('./pages/PublicArtPieceViewer'));
+const ArtPieceManagement = lazy(() => import('./pages/ArtPieceManagement'));
 const EditorWorkspace = lazy(() => import('./pages/EditorWorkspace'));
 const Project3DWorkspace = lazy(() => import('./pages/Project3DWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const PublicProject3DViewer = lazy(() => import('./pages/PublicProject3DViewer'));
 const ImmersiveProject3DViewer = lazy(() => import('./pages/ImmersiveProject3DViewer'));
+const ImmersiveArtPieceViewer = lazy(() => import('./pages/ImmersiveArtPieceViewer'));
 const Templates = lazy(() => import('./pages/Templates'));
 const CreateChooser = lazy(() => import('./pages/CreateChooser'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
@@ -66,6 +70,10 @@ function App() {
                   issue's grooming for why the direct route is enough for
                   this slice. */}
               <Route path="art-pieces" element={<ArtPieceStudio />} />
+              <Route path="art-pieces/manage" element={<ArtPieceManagement />} />
+              <Route path="art-pieces/gallery" element={<PublicArtPieceGallery />} />
+              <Route path="art-pieces/p/:id" element={<PublicArtPieceViewer />} />
+              <Route path="art-pieces/immersive/:id" element={<ImmersiveArtPieceViewer />} />
               <Route path="account/settings" element={<AccountSettings />} />
               <Route path="projects/:id" element={<EditorWorkspace />} />
               {/* Issue #223: the 2D AI-assisted editor -- a distinct route

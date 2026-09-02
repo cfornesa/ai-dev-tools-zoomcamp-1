@@ -134,7 +134,7 @@ class Command(BaseCommand):
     def _cleanup(self, as_json: bool):
         from django.db.models import Q
 
-        from scenes.models import ForkProvenance, Project, Project3D
+        from scenes.models import ArtPiece, ForkProvenance, Project, Project3D
 
         User = get_user_model()
         usernames = [username for username, _email in E2E_USERS.values()]
@@ -200,6 +200,9 @@ class Command(BaseCommand):
             # fork feature), so this is a plain update with none of Project's
             # surrounding trigger complexity.
             Project3D.all_objects.filter(owner__username__in=usernames).update(current_version=None)
+            # Issue #314: ArtPiece.current_version is also PROTECT, so clear
+            # it before the fixture users' generated pieces cascade away.
+            ArtPiece.all_objects.filter(owner__username__in=usernames).update(current_version=None)
             if connection.vendor == "postgresql":
                 with connection.cursor() as cursor:
                     cursor.execute(

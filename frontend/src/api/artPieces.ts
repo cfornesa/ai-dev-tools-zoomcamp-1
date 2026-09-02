@@ -37,6 +37,44 @@ export type GenerateArtPieceResponse = {
   usage: ArtPieceUsage;
 };
 
+export type ArtPieceCapabilitySet = Partial<
+  Record<
+    | 'sound'
+    | 'keyboard'
+    | 'microphone'
+    | 'camera_view'
+    | 'hand_steering'
+    | 'fullscreen'
+    | 'screenshot'
+    | 'download'
+    | 'immersive',
+    boolean
+  >
+>;
+
+export type ArtPieceVersion = {
+  id: number;
+  sequence: number;
+  source: string;
+  capabilities: ArtPieceCapabilitySet;
+  thumbnail_url: string;
+  created_at: string;
+  generation_metadata?: Record<string, unknown>;
+};
+
+export type ArtPiece = {
+  public_id: string;
+  title: string;
+  description: string;
+  prompt?: string;
+  engine: ArtPieceLibrary;
+  status: 'draft' | 'published' | 'archived';
+  current_version: ArtPieceVersion | null;
+  created_at: string;
+  updated_at: string;
+  published_at?: string | null;
+};
+
 /** Every distinct `error` code this endpoint can return -- see
  * `scenes/art_piece_api.py`'s `ArtPieceGenerateView.post` for the mapping. */
 export type ArtPieceErrorCode =
@@ -70,4 +108,37 @@ export function generateArtPiece(
     body: JSON.stringify(model ? { library, prompt, model } : { library, prompt }),
     signal,
   });
+}
+
+export function listArtPieces(): Promise<ArtPiece[]> {
+  return apiFetch<ArtPiece[]>('/api/art-pieces/');
+}
+
+export function createArtPiece(input: {
+  title: string;
+  description: string;
+  prompt: string;
+  engine: ArtPieceLibrary;
+  source: string;
+  capabilities?: ArtPieceCapabilitySet;
+}): Promise<ArtPiece> {
+  return apiFetch<ArtPiece>('/api/art-pieces/', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export function updateArtPiece(
+  publicId: string,
+  input: Partial<Pick<ArtPiece, 'title' | 'description' | 'status'>>,
+): Promise<ArtPiece> {
+  return apiFetch<ArtPiece>(`/api/art-pieces/${publicId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function listPublicArtPieces(): Promise<ArtPiece[]> {
+  return apiFetch<ArtPiece[]>('/api/public/art-pieces/');
+}
+
+export function getPublicArtPiece(publicId: string): Promise<ArtPiece> {
+  return apiFetch<ArtPiece>(`/api/public/art-pieces/${publicId}/`);
 }

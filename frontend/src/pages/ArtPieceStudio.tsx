@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { ApiError } from '../api/client';
-import { generateArtPiece, type ArtPieceErrorBody, type ArtPieceLibrary } from '../api/artPieces';
+import {
+  createArtPiece,
+  generateArtPiece,
+  updateArtPiece,
+  type ArtPiece,
+  type ArtPieceErrorBody,
+  type ArtPieceLibrary,
+} from '../api/artPieces';
 import { useAuth } from '../auth/useAuth';
 import {
   generateArtPieceBundle,
@@ -85,6 +92,10 @@ function ArtPieceStudio() {
   const [resultLibrary, setResultLibrary] = useState<ArtPieceLibrary>('canvas2d');
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [title, setTitle] = useState('Untitled art piece');
+  const [description, setDescription] = useState('');
+  const [savedPiece, setSavedPiece] = useState<ArtPiece | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -177,6 +188,34 @@ function ArtPieceStudio() {
     }
   }
 
+  async function handleSave() {
+    if (!code) return;
+    setSaveError(null);
+    try {
+      const piece = await createArtPiece({
+        title: title.trim() || 'Untitled art piece',
+        description,
+        prompt,
+        engine: resultLibrary,
+        source: code,
+      });
+      setSavedPiece(piece);
+    } catch {
+      setSaveError('Could not save this art piece. Please try again.');
+    }
+  }
+
+  async function handleStatusChange(nextStatus: ArtPiece['status']) {
+    if (!savedPiece) return;
+    try {
+      setSavedPiece(await updateArtPiece(savedPiece.public_id, { status: nextStatus }));
+    } catch {
+      setSaveError(
+        'Could not change the piece status. Check its title and description, then try again.',
+      );
+    }
+  }
+
   return (
     <section aria-label="Art piece studio">
       <h2>Art piece studio</h2>
@@ -250,6 +289,20 @@ function ArtPieceStudio() {
 
       {sandboxDoc && (phase === 'previewing' || phase === 'ready' || phase === 'crashed') && (
         <div>
+          <div className="behavior-card-field">
+            <label htmlFor="art-piece-title">Piece title</label>
+            <input
+              id="art-piece-title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+            <label htmlFor="art-piece-description">Piece description</label>
+            <textarea
+              id="art-piece-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
           <iframe
             ref={iframeRef}
             title="Art piece preview"
@@ -259,15 +312,38 @@ function ArtPieceStudio() {
             style={{ width: '100%', height: 480, border: '1px solid #ccc' }}
           />
           {phase === 'ready' && (
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={downloading}
-              data-testid="art-piece-download"
-            >
-              {downloading ? 'Preparing download…' : 'Download'}
-            </button>
+            <>
+              <button type="button" onClick={handleSave} data-testid="art-piece-save">
+                {savedPiece ? 'Saved' : 'Save piece'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                data-testid="art-piece-download"
+              >
+                {downloading ? 'Preparing download…' : 'Download'}
+              </button>
+            </>
           )}
+          {savedPiece && (
+            <p role="status">
+              Saved as {savedPiece.title} ({savedPiece.status}).
+              <label>
+                {' '}
+                Status
+                <select
+                  value={savedPiece.status}
+                  onChange={(event) => handleStatusChange(event.target.value as ArtPiece['status'])}
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </label>
+            </p>
+          )}
+          {saveError && <p role="alert">{saveError}</p>}
           {downloadError && (
             <p role="alert" aria-live="assertive" data-testid="art-piece-download-error">
               {downloadError}

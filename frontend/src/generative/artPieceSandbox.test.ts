@@ -38,6 +38,14 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain(SNIPPET);
   });
 
+  it('embeds the versioned, allowlisted parent command bridge', () => {
+    const doc = buildArtPieceSandboxDocument(SNIPPET);
+    expect(doc).toContain("data.source !== 'art-piece-parent'");
+    expect(doc).toContain('data.version !== 1');
+    expect(doc).toContain('art-piece-command');
+    expect(doc).toContain('enable-hand-steering');
+  });
+
   it("never references this app's own API/session surface", () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET);
     expect(doc).not.toMatch(/\/api\//);

@@ -793,3 +793,104 @@ class Thumbnail3D(models.Model):
     def __str__(self) -> str:
         kind = "fallback" if self.is_fallback else "generated"
         return f"thumbnail3d({self.scene_version_id}, {kind})"
+
+
+# Issue #314: durable generated-art-piece document family. Generated source
+# stays opaque to Django and is only ever rendered by the frontend sandbox.
+class ArtPieceManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
+class ArtPiece(models.Model):
+    class Engine(models.TextChoices):
+        CANVAS2D = "canvas2d", "Canvas2D"
+        SVG = "svg", "SVG"
+        THREEJS = "threejs", "Three.js"
+        AFRAME = "aframe", "A-Frame"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        PUBLISHED = "published", "Published"
+        ARCHIVED = "archived", "Archived"
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="art_pieces"
+    )
+    title = models.CharField(max_length=200, default="Untitled art piece")
+    description = models.TextField(default="", blank=True)
+    prompt = models.TextField(max_length=4000)
+    engine = models.CharField(max_length=20, choices=Engine.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    current_version = models.ForeignKey(
+        "scenes.ArtPieceVersion",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="current_for_pieces",
+    )
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    all_objects = models.Manager()
+    objects = ArtPieceManager()
+
+    class Meta:
+        base_manager_name = "all_objects"
+        default_manager_name = "objects"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-published_at", "-id"], name="art_piece_public_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class ArtPieceVersion(models.Model):
+    piece = models.ForeignKey(ArtPiece, on_delete=models.CASCADE, related_name="versions")
+    sequence = models.PositiveIntegerField()
+    source = models.TextField(max_length=1_000_000)
+    capabilities = models.JSONField(default=dict)
+    generation_metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["piece", "sequence"]
+        constraints = [
+            models.UniqueConstraint(fields=["piece", "sequence"], name="unique_art_piece_sequence"),
+            models.CheckConstraint(
+                condition=models.Q(sequence__gte=1), name="art_piece_sequence_gte_1"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.piece_id} v{self.sequence}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            previous = type(self).objects.get(pk=self.pk)
+            for field in ("piece_id", "sequence", "source", "capabilities", "generation_metadata"):
+                if getattr(previous, field) != getattr(self, field):
+                    raise ValidationError("Art-piece versions are immutable.")
+        super().save(*args, **kwargs)
+
+
+class ArtPieceThumbnail(models.Model):
+    version = models.OneToOneField(
+        ArtPieceVersion, on_delete=models.CASCADE, related_name="thumbnail"
+    )
+    image_data = models.BinaryField()
+    content_type = models.CharField(max_length=50, default="image/png")
+    width = models.PositiveIntegerField(default=320)
+    height = models.PositiveIntegerField(default=240)
+    is_fallback = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    generated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"art-piece-thumbnail({self.version_id})"

@@ -14,7 +14,7 @@ flags allow.
 
 from enum import StrEnum
 
-from scenes.models import EditSessionDraft, Project, Project3D, Template
+from scenes.models import ArtPiece, EditSessionDraft, Project, Project3D, Template
 
 
 class Action(StrEnum):
@@ -48,6 +48,10 @@ class Action(StrEnum):
     PROJECT3D_DELETE = "project3d.delete"
     # Issue #296: publish/unpublish parity with PROJECT_PUBLISH -- owner-only.
     PROJECT3D_PUBLISH = "project3d.publish"
+    ART_PIECE_CREATE = "art_piece.create"
+    ART_PIECE_READ = "art_piece.read"
+    ART_PIECE_WRITE = "art_piece.write"
+    ART_PIECE_DELETE = "art_piece.delete"
 
 
 class PermissionDenied(Exception):
@@ -109,6 +113,23 @@ def can(user, action: Action, resource=None) -> bool:
     """Return whether `user` may perform `action` on `resource`. Default deny."""
     if action == Action.PROJECT_CREATE:
         return _is_authenticated(user)
+
+    if action == Action.ART_PIECE_CREATE:
+        return _is_authenticated(user)
+
+    if action == Action.ART_PIECE_READ:
+        if not isinstance(resource, ArtPiece):
+            return False
+        return resource.status == ArtPiece.Status.PUBLISHED or (
+            _is_authenticated(user) and resource.owner_id == user.id
+        )
+
+    if action in (Action.ART_PIECE_WRITE, Action.ART_PIECE_DELETE):
+        return (
+            isinstance(resource, ArtPiece)
+            and _is_authenticated(user)
+            and resource.owner_id == user.id
+        )
 
     if action == Action.PROJECT_READ:
         if not isinstance(resource, Project):

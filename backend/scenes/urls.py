@@ -38,6 +38,16 @@ from scenes.api3d import (
     SceneVersion3DListCreateView,
 )
 from scenes.art_piece_api import ArtPieceGenerateView
+from scenes.art_piece_persistence import (
+    ArtPieceDetailView,
+    ArtPieceListCreateView,
+    ArtPieceRegenerateThumbnailView,
+    ArtPieceThumbnailView,
+    ArtPieceVersionListCreateView,
+    PublicArtPieceDetailView,
+    PublicArtPieceListView,
+    PublicArtPieceThumbnailView,
+)
 from scenes.credentials_api import MistralCredentialView
 
 urlpatterns = [
@@ -157,6 +167,34 @@ urlpatterns = [
         "ai/art-pieces/generate/",
         ArtPieceGenerateView.as_view(),
         name="art-piece-generate",
+    ),
+    path("art-pieces/", ArtPieceListCreateView.as_view(), name="art-piece-list-create"),
+    path("art-pieces/<uuid:public_id>/", ArtPieceDetailView.as_view(), name="art-piece-detail"),
+    path(
+        "art-pieces/<uuid:public_id>/versions/",
+        ArtPieceVersionListCreateView.as_view(),
+        name="art-piece-version-list-create",
+    ),
+    path(
+        "art-pieces/<uuid:public_id>/thumbnail.png",
+        ArtPieceThumbnailView.as_view(),
+        name="art-piece-thumbnail",
+    ),
+    path(
+        "art-pieces/<uuid:public_id>/thumbnail/regenerate/",
+        ArtPieceRegenerateThumbnailView.as_view(),
+        name="art-piece-thumbnail-regenerate",
+    ),
+    path("public/art-pieces/", PublicArtPieceListView.as_view(), name="public-art-piece-list"),
+    path(
+        "public/art-pieces/<uuid:public_id>/",
+        PublicArtPieceDetailView.as_view(),
+        name="public-art-piece-detail",
+    ),
+    path(
+        "public/art-pieces/<uuid:public_id>/thumbnail.png",
+        PublicArtPieceThumbnailView.as_view(),
+        name="public-art-piece-thumbnail",
     ),
     # #213: the 3D scene document family (Project3D/SceneVersion3D, #212) --
     # a genuinely separate URL namespace from "projects/" above, matching

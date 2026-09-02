@@ -20,6 +20,27 @@ test.describe('3D hand gesture guide', () => {
     await page.getByRole('button', { name: 'More creation options' }).click();
     await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
     await page.waitForURL(/\/projects3d\/[^/]+$/);
+    const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
+    expect(projectId).toBeTruthy();
+    if (!projectId) return;
+
+    await page.getByRole('button', { name: 'Edit title' }).click();
+    const titleForm = page.locator('.editor-title-edit');
+    await titleForm.locator('#project3d-title-input').fill('Hand gesture guide fixture');
+    await titleForm.getByRole('button', { name: 'Save' }).click();
+    await expect(titleForm).toHaveCount(0);
+
+    const publicationTrigger = page.getByRole('button', {
+      name: 'Publication status: Draft',
+    });
+    await publicationTrigger.click();
+    await page.getByRole('button', { name: 'Published' }).click();
+    const publishDialog = page.getByRole('alertdialog', { name: /Publish/ });
+    await expect(publishDialog).toBeVisible();
+    await publishDialog.getByRole('button', { name: 'Publish', exact: true }).click();
+    await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
+
+    await page.goto(`/p3d/${projectId}`);
 
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });

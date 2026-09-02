@@ -13,11 +13,9 @@
  * field -- an exported piece should look identical to the live editor
  * preview it was exported from, not a simplified stand-in.
  *
- * No `OrbitControls` here (out of scope for issue #289's own core-
- * generator acceptance criteria, which only requires the piece renders
- * standalone) -- a static camera, matching the saved document's own
- * `camera.position`/`camera.target` exactly, same as a screenshot of the
- * live preview would show before any interaction.
+ * The runtime includes a small dependency-free orbit/zoom interaction so
+ * the downloaded piece retains the same basic view controls as the live
+ * preview without needing to vendor OrbitControls.
  */
 export function buildStandaloneThreeRuntimeScript(): string {
   return `
@@ -157,6 +155,60 @@ export function buildStandaloneThreeRuntimeScript(): string {
     var size = currentSize();
     renderer.setSize(size.width, size.height, false);
     var graph = buildSceneGraph(scene3d, size.width / size.height);
+    var initialPosition = graph.camera.position.clone();
+    var initialTarget = new THREE.Vector3(
+      scene3d.camera.target.x,
+      scene3d.camera.target.y,
+      scene3d.camera.target.z
+    );
+    var target = initialTarget.clone();
+    var orbit = { yaw: 0, pitch: 0, distance: graph.camera.position.distanceTo(target) };
+    var dragging = false;
+    var lastX = 0;
+    var lastY = 0;
+
+    function applyOrbit() {
+      var cosPitch = Math.cos(orbit.pitch);
+      graph.camera.position.set(
+        target.x + orbit.distance * cosPitch * Math.sin(orbit.yaw),
+        target.y + orbit.distance * Math.sin(orbit.pitch),
+        target.z + orbit.distance * cosPitch * Math.cos(orbit.yaw)
+      );
+      graph.camera.lookAt(target);
+    }
+
+    function resetView() {
+      graph.camera.position.copy(initialPosition);
+      target.copy(initialTarget);
+      orbit.distance = initialPosition.distanceTo(target);
+      orbit.yaw = Math.atan2(initialPosition.x - target.x, initialPosition.z - target.z);
+      orbit.pitch = Math.asin((initialPosition.y - target.y) / Math.max(orbit.distance, 0.001));
+      graph.camera.lookAt(target);
+    }
+
+    host.addEventListener('pointerdown', function (event) {
+      dragging = true;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      host.setPointerCapture?.(event.pointerId);
+    });
+    host.addEventListener('pointermove', function (event) {
+      if (!dragging) return;
+      orbit.yaw -= (event.clientX - lastX) * 0.01;
+      orbit.pitch = Math.max(-1.45, Math.min(1.45, orbit.pitch + (event.clientY - lastY) * 0.01));
+      lastX = event.clientX;
+      lastY = event.clientY;
+      applyOrbit();
+    });
+    host.addEventListener('pointerup', function () { dragging = false; });
+    host.addEventListener('pointercancel', function () { dragging = false; });
+    host.addEventListener('wheel', function (event) {
+      event.preventDefault();
+      orbit.distance = Math.max(0.1, orbit.distance * Math.exp(event.deltaY * 0.001));
+      applyOrbit();
+    }, { passive: false });
+    window.addEventListener('piece-reset-view', resetView);
+    resetView();
 
     window.addEventListener('resize', function () {
       var next = currentSize();

@@ -17,6 +17,8 @@ import { normalizeSceneLayers } from '../validation/scene';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
 import { generateHtmlExport, triggerHtmlDownload } from '../export/generateHtmlExport';
+import { getAvailableInteractionModes } from '../export/exportCompatibility';
+import PieceStageToolbar from '../components/PieceStageToolbar';
 import DemoControlsPanel from './DemoControlsPanel';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { useFullscreenToggle } from './useFullscreenToggle';
@@ -341,13 +343,20 @@ function PublicProjectViewer() {
     }
   }
 
-  function handleDownload() {
+  function handleDownload(variant: 'full' | 'non-camera' = 'full') {
     if (!project?.current_version) return;
+    const availableModes = getAvailableInteractionModes(project.current_version.scene_json);
+    const interactionMode =
+      variant === 'non-camera'
+        ? 'demo'
+        : availableModes.includes('demo-camera')
+          ? 'demo-camera'
+          : 'demo';
     const result = generateHtmlExport({
       scene: project.current_version.scene_json,
       title: project.title,
       description: project.description ?? '',
-      interactionMode: 'demo',
+      interactionMode,
       includeAttribution: true,
     });
     if (!result.ok) {
@@ -582,33 +591,12 @@ function PublicProjectViewer() {
                 aria-hidden="true"
                 style={{ position: 'absolute', inset: 0, zIndex: -1 }}
               />
-              <div role="toolbar" aria-label="Piece actions" className="piece-stage-toolbar">
-                <button
-                  type="button"
-                  aria-label="Take screenshot"
-                  title="Take screenshot"
-                  onClick={() => void handleTakeScreenshot()}
-                >
-                  ⌗
-                </button>
-                <button
-                  type="button"
-                  aria-label="Download piece"
-                  title="Download piece"
-                  onClick={handleDownload}
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-                  title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-                  aria-pressed={isFullscreen}
-                  onClick={() => void toggleFullscreen()}
-                >
-                  ⛶
-                </button>
-              </div>
+              <PieceStageToolbar
+                onScreenshot={() => void handleTakeScreenshot()}
+                onDownload={(variant) => handleDownload(variant)}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={() => void toggleFullscreen()}
+              />
             </div>
             <details className="piece-stage-settings">
               <summary>Camera and demo controls</summary>

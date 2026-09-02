@@ -6,6 +6,7 @@ import CameraControl, {
   type CameraControlProps,
   type CameraStatus,
 } from '../components/CameraControl';
+import PieceStageToolbar from '../components/PieceStageToolbar';
 import {
   categorizeMicError,
   isMicSupported,
@@ -189,6 +190,7 @@ function Scene3DPreview({
   flyControls = false,
   screenshotBaseName,
   onDownload,
+  downloadFormat = 'zip',
   immersiveHref,
   createGestureCameraProvider,
 }: {
@@ -207,6 +209,8 @@ function Scene3DPreview({
   flyControls?: boolean;
   /** Stage-level download action supplied by the owning editor/viewer. */
   onDownload?: (variant?: Scene3DExportVariant) => void | Promise<void>;
+  /** Artifact format used by the owning surface, for accurate menu labels. */
+  downloadFormat?: 'html' | 'zip';
   /** Optional public immersive entry point rendered in the stage toolbar. */
   immersiveHref?: string;
   /** Test seam mirroring `CameraControl.tsx`'s own `createProvider` prop
@@ -235,7 +239,6 @@ function Scene3DPreview({
   // state -- independent of `soundEnabled` itself (the always-visible
   // mute toggle).
   const [showSoundSettings, setShowSoundSettings] = useState(false);
-  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   useEffect(() => {
     const engine = sonicEngineRef.current;
     return () => engine?.dispose();
@@ -672,124 +675,70 @@ function Scene3DPreview({
             }}
           />
         )}
-        <div
-          role="group"
-          aria-label="Preview actions"
-          className="editor-tool-group scene3d-preview-actions scene3d-stage-toolbar"
-        >
-          {showScreenshotButton && (
-            <button
-              type="button"
-              className="scene3d-stage-icon-button"
-              title="Take screenshot"
-              aria-label="Take screenshot"
-              onClick={() => void handleTakeScreenshot()}
-            >
-              <span aria-hidden="true">⌗</span>
-            </button>
-          )}
-          {onDownload && (
-            <div className="scene3d-stage-download">
+        <PieceStageToolbar
+          ariaLabel="Preview actions"
+          className="editor-tool-group scene3d-preview-actions"
+          onScreenshot={showScreenshotButton ? handleTakeScreenshot : undefined}
+          onDownload={onDownload}
+          downloadFormat={downloadFormat}
+          immersiveHref={immersiveHref}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          soundControl={
+            showSoundControl ? (
               <button
                 type="button"
-                className="scene3d-stage-icon-button"
-                title="Open download menu"
-                aria-label="Open download menu"
-                aria-haspopup="true"
-                aria-expanded={showDownloadMenu}
-                onClick={() => setShowDownloadMenu((current) => !current)}
+                className="piece-stage-icon-button"
+                title={soundEnabled ? 'Mute sound' : 'Enable sound'}
+                aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}
+                aria-pressed={soundEnabled}
+                onClick={() => void handleToggleSound()}
               >
-                <span aria-hidden="true">↓</span>
+                <span aria-hidden="true">♪</span>
               </button>
-              {showDownloadMenu && (
-                <div
-                  role="menu"
-                  aria-label="Download piece"
-                  className="scene3d-stage-download-menu"
-                >
-                  <button type="button" role="menuitem" onClick={() => void onDownload('full')}>
-                    Download Full ZIP
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => void onDownload('non-camera')}
-                  >
-                    Download Non-Camera ZIP
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          {immersiveHref && (
-            <a
-              className="scene3d-stage-icon-button"
-              title="View immersive piece"
-              aria-label="View immersive piece"
-              href={immersiveHref}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span aria-hidden="true">◈</span>
-            </a>
-          )}
-          <button
-            type="button"
-            className="scene3d-stage-icon-button"
-            title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-            aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-            onClick={() => void toggleFullscreen()}
-            aria-pressed={isFullscreen}
-          >
-            <span aria-hidden="true">⛶</span>
-          </button>
-          {showGestureControl && (
-            <button
-              type="button"
-              className="scene3d-stage-icon-button"
-              title={gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
-              aria-label={gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
-              aria-pressed={gestureControlEnabled}
-              onClick={() => {
-                previousHandSignalsRef.current = null;
-                latestHandSignalsRef.current = null;
-                gestureStartRef.current = null;
-                handSignalExtractorRef.current = createHandSignalExtractor();
-                setGestureCameraStatus('idle');
-                setGestureCameraStream(null);
-                setGestureControlEnabled((current) => !current);
-              }}
-            >
-              <span aria-hidden="true">✋</span>
-            </button>
-          )}
-          {showGestureControl && <HandGestureGuideDialog />}
-          {showSoundControl && (
-            <button
-              type="button"
-              className="scene3d-stage-icon-button"
-              title={soundEnabled ? 'Mute sound' : 'Enable sound'}
-              aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}
-              aria-pressed={soundEnabled}
-              onClick={() => void handleToggleSound()}
-            >
-              <span aria-hidden="true">♪</span>
-            </button>
-          )}
-          {showSoundControl && soundEnabled && (
-            <button
-              type="button"
-              className="scene3d-stage-icon-button"
-              title="Piece controls"
-              aria-label={showSoundSettings ? 'Hide sound settings' : 'Sound settings'}
-              aria-haspopup="true"
-              aria-expanded={showSoundSettings}
-              onClick={() => setShowSoundSettings((current) => !current)}
-            >
-              <span aria-hidden="true">☰</span>
-            </button>
-          )}
-        </div>
+            ) : undefined
+          }
+          controlsControl={
+            showSoundControl && soundEnabled ? (
+              <button
+                type="button"
+                className="piece-stage-icon-button"
+                title="Piece controls"
+                aria-label={showSoundSettings ? 'Hide sound settings' : 'Sound settings'}
+                aria-haspopup="true"
+                aria-expanded={showSoundSettings}
+                onClick={() => setShowSoundSettings((current) => !current)}
+              >
+                <span aria-hidden="true">☰</span>
+              </button>
+            ) : undefined
+          }
+          gestureControl={
+            showGestureControl ? (
+              <button
+                type="button"
+                className="piece-stage-icon-button"
+                title={gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+                aria-label={
+                  gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'
+                }
+                aria-pressed={gestureControlEnabled}
+                onClick={() => {
+                  previousHandSignalsRef.current = null;
+                  latestHandSignalsRef.current = null;
+                  gestureStartRef.current = null;
+                  handSignalExtractorRef.current = createHandSignalExtractor();
+                  setGestureCameraStatus('idle');
+                  setGestureCameraStream(null);
+                  setGestureControlEnabled((current) => !current);
+                }}
+              >
+                <span aria-hidden="true">✋</span>
+              </button>
+            ) : undefined
+          }
+          gestureGuide={showGestureControl ? <HandGestureGuideDialog /> : undefined}
+        />
       </div>
       {/* Issue #310: "Piece controls" settings panel -- consolidates
           keyboard/mic/camera-theremin toggles and the volume slider

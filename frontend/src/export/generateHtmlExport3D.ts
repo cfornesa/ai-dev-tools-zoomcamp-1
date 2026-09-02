@@ -75,6 +75,10 @@ const PIECE_CSS = `html, body {
   color: #fff;
   cursor: pointer;
 }
+#piece-toolbar button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
 `;
 
 const README = `EXPORT: 3D scene
@@ -106,6 +110,7 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
 <div id="scene3d-canvas-host"></div>
 <div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
   <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot">⌗</button>
+  <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view">↺</button>
   <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
 </div>
 <script src="scripts/piece.js"></script>
@@ -113,6 +118,7 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
 (() => {
   const host = document.getElementById('scene3d-canvas-host');
   const screenshot = document.getElementById('piece-screenshot');
+  const resetView = document.getElementById('piece-reset-view');
   const fullscreen = document.getElementById('piece-fullscreen');
   const canvas = () => host && host.querySelector('canvas');
   screenshot?.addEventListener('click', () => {
@@ -123,6 +129,7 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
     link.href = current.toDataURL('image/png');
     link.click();
   });
+  resetView?.addEventListener('click', () => window.dispatchEvent(new Event('piece-reset-view')));
   fullscreen?.addEventListener('click', async () => {
     if (document.fullscreenElement) await document.exitFullscreen();
     else await (host?.requestFullscreen?.() ?? Promise.resolve());

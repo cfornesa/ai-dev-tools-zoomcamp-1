@@ -25,6 +25,7 @@ import {
 import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
+import PieceStageToolbar from '../components/PieceStageToolbar';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
@@ -3640,37 +3641,13 @@ function EditorWorkspace() {
                         );
                       })()}
               </div>
-              <div
-                role="toolbar"
-                aria-label="Piece actions"
-                className="piece-stage-toolbar editor-piece-stage-toolbar"
-              >
-                <button
-                  type="button"
-                  aria-label="Take screenshot"
-                  title="Take screenshot"
-                  onClick={() => void handleTakeScreenshot()}
-                >
-                  ⌗
-                </button>
-                <button
-                  type="button"
-                  aria-label="Open download menu"
-                  title="Open download menu"
-                  onClick={() => setExportDialogOpenSignal((current) => current + 1)}
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-                  title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-                  aria-pressed={isFullscreen}
-                  onClick={() => void toggleFullscreen()}
-                >
-                  ⛶
-                </button>
-              </div>
+              <PieceStageToolbar
+                className="editor-piece-stage-toolbar"
+                onScreenshot={() => void handleTakeScreenshot()}
+                onDownload={() => setExportDialogOpenSignal((current) => current + 1)}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={() => void toggleFullscreen()}
+              />
             </div>
           </div>
           {/* Issue #163 (task 131): the canvas-overlaid selection HUD —

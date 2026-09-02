@@ -1,0 +1,128 @@
+import type { ReactNode } from 'react';
+import { useState } from 'react';
+
+export type PieceStageToolbarProps = {
+  onScreenshot?: () => void | Promise<void>;
+  onDownload?: (variant?: 'full' | 'non-camera') => void | Promise<void>;
+  immersiveHref?: string;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void | Promise<void>;
+  soundControl?: ReactNode;
+  controlsControl?: ReactNode;
+  gestureControl?: ReactNode;
+  gestureGuide?: ReactNode;
+  ariaLabel?: string;
+  className?: string;
+  downloadFormat?: 'html' | 'zip';
+};
+
+/**
+ * Shared stage chrome for authored pieces. Surface-specific capabilities are
+ * passed in as controls, but the order, labels, icon-only presentation, and
+ * download menu are intentionally owned here so editor/public/embed/immersive
+ * surfaces cannot drift apart.
+ */
+export default function PieceStageToolbar({
+  onScreenshot,
+  onDownload,
+  immersiveHref,
+  isFullscreen = false,
+  onToggleFullscreen,
+  soundControl,
+  controlsControl,
+  gestureControl,
+  gestureGuide,
+  ariaLabel = 'Piece actions',
+  className,
+  downloadFormat = 'html',
+}: PieceStageToolbarProps) {
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  return (
+    <div role="toolbar" aria-label={ariaLabel} className="piece-stage-toolbar">
+      <div role="group" aria-label={ariaLabel} className={className}>
+        {onScreenshot && (
+          <button
+            type="button"
+            className="piece-stage-icon-button"
+            aria-label="Take screenshot"
+            title="Take screenshot"
+            onClick={() => void onScreenshot()}
+          >
+            <span aria-hidden="true">⌗</span>
+          </button>
+        )}
+        {onDownload && (
+          <div className="piece-stage-download">
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-label="Open download menu"
+              title="Open download menu"
+              aria-haspopup="true"
+              aria-expanded={downloadOpen}
+              onClick={() => setDownloadOpen((current) => !current)}
+            >
+              <span aria-hidden="true">↓</span>
+            </button>
+            <div
+              data-piece-stage-download-menu
+              role="menu"
+              aria-label="Download piece"
+              className="piece-stage-download-menu"
+              hidden={!downloadOpen}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setDownloadOpen(false);
+                  void onDownload('full');
+                }}
+              >
+                Download Full{downloadFormat === 'zip' ? ' ZIP' : ''}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setDownloadOpen(false);
+                  void onDownload('non-camera');
+                }}
+              >
+                Download Non-Camera{downloadFormat === 'zip' ? ' ZIP' : ''}
+              </button>
+            </div>
+          </div>
+        )}
+        {immersiveHref && (
+          <a
+            className="piece-stage-icon-button"
+            href={immersiveHref}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="View immersive piece"
+            title="View immersive piece"
+          >
+            <span aria-hidden="true">◈</span>
+          </a>
+        )}
+        {soundControl}
+        {controlsControl}
+        {gestureControl}
+        {gestureGuide}
+        {onToggleFullscreen && (
+          <button
+            type="button"
+            className="piece-stage-icon-button"
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+            title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+            aria-pressed={isFullscreen}
+            onClick={() => void onToggleFullscreen()}
+          >
+            <span aria-hidden="true">⛶</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

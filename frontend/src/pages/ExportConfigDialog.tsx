@@ -110,6 +110,8 @@ export type ExportConfig = {
 export type ExportConfigDialogProps = {
   projectId: string;
   project: Project | null;
+  /** Increment to open the dialog from a stage-local export affordance. */
+  openSignal?: number;
   /** Task 56: generates the standalone HTML export and triggers a browser
    * download by default (`defaultOnExport` below). Task 59 extended this
    * to optionally produce a ZIP instead — see that function's doc
@@ -178,6 +180,7 @@ function ExportConfigDialog({
   project,
   onExport = defaultOnExport,
   getCameraExport,
+  openSignal,
 }: ExportConfigDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { historyLoadState, historyError, versions, reloadHistory } = useVersionHistory(
@@ -299,6 +302,10 @@ function ExportConfigDialog({
     setGenerationErrors([]);
     setIsOpen(true);
   }
+
+  useEffect(() => {
+    if (openSignal !== undefined && openSignal > 0) handleOpen();
+  }, [openSignal]);
 
   function handleClose() {
     setIsOpen(false);

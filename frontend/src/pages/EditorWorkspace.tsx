@@ -1538,6 +1538,7 @@ function EditorWorkspace() {
   // Issue #285: "Take screenshot" — captures whatever the live preview
   // canvas currently shows and downloads it as a PNG.
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const [exportDialogOpenSignal, setExportDialogOpenSignal] = useState(0);
   async function handleTakeScreenshot() {
     setScreenshotError(null);
     try {
@@ -3654,6 +3655,14 @@ function EditorWorkspace() {
                 </button>
                 <button
                   type="button"
+                  aria-label="Open download menu"
+                  title="Open download menu"
+                  onClick={() => setExportDialogOpenSignal((current) => current + 1)}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
                   aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
                   title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
                   aria-pressed={isFullscreen}
@@ -3970,6 +3979,7 @@ function EditorWorkspace() {
                 <ExportConfigDialog
                   projectId={id}
                   project={project}
+                  openSignal={exportDialogOpenSignal}
                   getCameraExport={getCameraExport}
                 />
               )}

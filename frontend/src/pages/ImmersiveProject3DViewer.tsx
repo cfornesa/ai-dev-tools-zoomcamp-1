@@ -3,6 +3,11 @@ import { Link, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { getPublicProject3D, type PublicProject3D } from '../api/projects3d';
+import {
+  generateScene3DBundle,
+  triggerScene3DBundleDownload,
+  type Scene3DExportVariant,
+} from '../export/generateHtmlExport3D';
 import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
 
@@ -108,24 +113,36 @@ function ImmersiveProject3DViewer() {
   }
 
   if (!project) return null; // unreachable once loadState === 'ready'
+  const readyProject = project;
+
+  async function handleDownload(variant: Scene3DExportVariant = 'full') {
+    if (!readyProject.current_version) return;
+    const result = await generateScene3DBundle(
+      readyProject.current_version.scene_json as unknown as Scene3DDocument,
+      readyProject.title,
+      { variant },
+    );
+    if (result.ok) triggerScene3DBundleDownload(result.zipBlob, result.filename);
+  }
 
   return (
     <div className="immersive-project3d-viewer">
       <header>
-        <h2>{project.title}</h2>
-        <p className="public-project-attribution">By {project.owner}</p>
+        <h2>{readyProject.title}</h2>
+        <p className="public-project-attribution">By {readyProject.owner}</p>
         <p role="note">
           Drag to look around, scroll/pinch to zoom, and use the arrow keys to fly through the
           piece.
         </p>
       </header>
       <section role="region" aria-label="Preview" data-panel="preview">
-        {project.current_version && (
+        {readyProject.current_version && (
           <Scene3DPreview
-            scene={project.current_version.scene_json as unknown as Scene3DDocument}
-            screenshotBaseName={project.title}
+            scene={readyProject.current_version.scene_json as unknown as Scene3DDocument}
+            screenshotBaseName={readyProject.title}
             showGestureControl={false}
             flyControls
+            onDownload={(variant) => void handleDownload(variant)}
           />
         )}
       </section>

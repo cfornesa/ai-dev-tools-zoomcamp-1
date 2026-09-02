@@ -3642,7 +3642,12 @@ function EditorWorkspace() {
                   }
                   editorControls={
                     <>
-                      {editorToolbar}
+                      <StageControlsPopover
+                        label="Edit scene"
+                        panelClassName="editor-authoring-controls-panel"
+                      >
+                        {editorToolbar}
+                      </StageControlsPopover>
                       {id ? (
                         <PublishControl
                           id={id}

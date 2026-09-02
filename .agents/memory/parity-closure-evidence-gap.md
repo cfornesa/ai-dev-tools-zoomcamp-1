@@ -117,3 +117,13 @@ against a disposable stack exercised a different revision and did not include
 inspected rendered screenshots. Reopen shared affordance/layout closures when
 the exact published bundle and rendered evidence are missing; a DOM-only QA
 comment is not live parity evidence.
+
+Replit synchronization lesson (2026-09-02): the connected `creatrweb`
+dashboard can show a clean Replit branch/workspace with a recent Replit Agent
+commit while the published custom domain still serves an older hashed bundle.
+Treat GitHub `origin/main`, the Replit workspace branch, the published
+deployment revision, and the browser asset as four separately verified
+identities. Before live parity closure, synchronize the reviewed GitHub commit
+into the Replit workspace, publish it, and compare the exact deployed asset;
+do not infer synchronization from “no changes to commit” or a recent publish
+timestamp.

@@ -11762,4 +11762,10 @@ required rendered screenshot inspection and published-revision verification
 were not actually completed. No duplicate issues are needed: #347/#348 own
 the shared implementation contracts; #325–#337 own each route/artifact. No
 product source or product tests are authorized during this audit. Next
-groomed issue is #347 after its criterion contract is reconciled again.
+groomed issue is #347 after its criterion contract is reconciled again. The
+connected Replit `creatrweb` Git panel shows a recent Replit Agent commit on
+branch `main` and no local changes, confirming a separate workspace/deployment
+revision state from GitHub `origin/main`; the exact Replit commit hash is not
+exposed in the read-only panel. The next deployment action is to synchronize
+that workspace to reviewed `ba140ff` (or an explicitly reviewed descendant),
+publish it, and recheck both exact URLs.

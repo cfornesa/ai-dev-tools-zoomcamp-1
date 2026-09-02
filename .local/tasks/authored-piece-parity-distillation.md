@@ -223,6 +223,11 @@ The exact supplied routes were inspected again in the connected Chrome session:
   `d945de8` adds shared visible affordances, `8f5a963` consolidates editor
   actions, and `9ca8697` records closure. The commits are present on
   `origin/main`, but the deployed asset has not changed.
+- The connected Replit `creatrweb` dashboard's Git panel shows branch `main`
+  with a recent Replit Agent commit and “There are no changes to commit.” This
+  confirms that the Replit workspace/deployment source is a separate revision
+  state from the pushed GitHub `origin/main`; the exact Replit commit hash is
+  not exposed in the current read-only panel.
 
 The prior #347/#348 closure transactions were invalid. Their disposable
 browser checks asserted DOM roles/bounds but did not provide inspected rendered
@@ -253,4 +258,7 @@ implementation contract failure once the correct revision is deployed. No new
 duplicate issue is warranted: #347/#348 already own the shared contracts and
 #325–#337 own each consumer/artifact. Next groomed issue after this audit:
 #347, reopened with the requirement to inspect rendered screenshots and the
-exact deployed asset before any closure.
+exact deployed asset before any closure. The deployment handoff's next action
+is to synchronize the Replit workspace to reviewed `origin/main` `ba140ff` (or
+an explicitly reviewed descendant), publish it, and recheck the exact URLs;
+until then all live route/artifact issues remain open.

@@ -11185,6 +11185,17 @@ are in `.local/tasks/authored-piece-parity-distillation.md`; the next single
 groomed engineering issue is #295. No product source or product tests were
 changed during this distillation pass.
 
+## 269p. Handoff independent 3D camera-view capability (#342)
+
+Status: #342 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The focused `Scene3DPreview.cameraOverlay.test.tsx` suite passed 6/6 and the
+Docker-backed `cameraPreview3d.spec.ts` transaction passed 1/1. Local evidence
+covers independent Show/Hide camera behavior, opt-in permission lifecycle,
+camera-preview rendering, steering independence, and failure handling. The
+published consumers remain unverified; #342 is open and is not COMPLETE until
+the tested revision is published and the exact consumer matrix passes.
+
 ## 269o. Handoff five-slide 3D gesture guide (#295)
 
 Status: #295 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY

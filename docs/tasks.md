@@ -10561,6 +10561,15 @@ the legacy header row. The previous `closed_completed_local` wording is
 reclassified as local implementation evidence only; #340 remains open until
 the exact published AI editor route is authenticated and inspected.
 
+Manual 3D implementation slice (#341, 2026-09-02): the dedicated
+`manual3dStageChrome.spec.ts` browser transaction passed 1/1 against the
+disposable PostgreSQL/Django/Vite/Chromium stack. It verifies the exact
+`/projects3d/:id` route, PHP-relative stage rail geometry, 3D stage controls,
+manual Save and AI authoring actions, Draft/Published control, stage
+containment, and absence of the legacy standalone export action. This is
+local implementation evidence only; #341 remains open until the exact
+published manual 3D editor route is authenticated and inspected.
+
 ## 264. Add visitor-selectable instruments for each 3D sound voice
 
 Status: HANDED-OFF

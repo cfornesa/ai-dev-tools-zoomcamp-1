@@ -10323,6 +10323,16 @@ passed; full backend suite passes under host-level loopback permissions
 and socket failures are retained as a verification boundary, not product
 evidence.
 
+Correct-stack browser evidence (2026-09-01): the repository-owned
+`scripts/browser-qa.sh` identity gate passed against disposable PostgreSQL,
+Django, and Vite services. The focused injection suite passed 33/33 and the
+public publishing/remix suite passed 24/24, including camera permission
+fallbacks, public rendering, and the 10-second desktop/narrow diagnostics.
+An earlier full 137-test run reached 99 passed but exposed two regressions
+introduced by this increment; both were fixed and their focused suites passed.
+The full batch should be rerun once the remaining authored-surface browser
+coverage is added.
+
 Next action: implement the shared stage/capability contract for structured
 Project and Project3D surfaces, then verify the downloaded runtime and exact
 published URLs after authentication and publish.

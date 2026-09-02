@@ -43,7 +43,7 @@ as read-only behavioral reference.
 | [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `local_evidence_only` | Dedicated local browser test passes 1/1, but production embed behavior is unverified. Publish and inspect the exact embed entry point before closure |
 | [#333](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/333) | Verify regular immersive 3D `/immersive/p3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 against disposable PostgreSQL/Django/Vite; verifies regular immersive page, PHP-relative stage rail, screenshot/download/sound/Piece controls/steer/guide/fullscreen, and both 3D ZIP menu entries. Keep open for exact post-publish route verification |
 | [#334](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/334) | Verify custom immersive 3D `/immersive/p3d/:id?embed=1` | Child of #320; one route/variant | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 against disposable PostgreSQL/Django/Vite; verifies chrome-less custom variant, retained stage controls, fixed geometry, and both 3D ZIP menu entries. Keep open for exact post-publish route verification |
-| [#335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/335) | Verify CMS immersive 3D `/immersive/p3d/:id?embed=1&cms=1` | Child of #320; one route/variant | `open` | Requires deployment and browser evidence |
+| [#335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/335) | Verify CMS immersive 3D `/immersive/p3d/:id?embed=1&cms=1` | Child of #320; one route/variant | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 against disposable PostgreSQL/Django/Vite; verifies chrome-less CMS variant, retained stage controls, zero embed padding, and both 3D ZIP menu entries. Keep open for exact post-publish route verification |
 | [#336](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/336) | Verify portable 2D download runtime | Child of #320; one artifact surface | `open` | Requires deployed download and extracted-browser evidence |
 | [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337) | Verify portable 3D Full/Non-Camera downloads | Child of #320; one artifact capability | `open` | Requires deployed downloads and extracted-browser evidence |
 | [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; one route and capability | `local_implementation_verified` | Shared stage rail now matches PHP reference-relative top-left/0.75rem/2.75rem rounded-square styling; focused React regression passes 61/61 and dedicated Chromium route QA passes 1/1 with computed geometry/style, named publication controls, and no legacy header row. Keep open for post-publish exact-route verification |
@@ -739,6 +739,20 @@ stale and no push/publish or authenticated GitHub reconciliation is
 authorized/available. Next action is authenticated post-publish verification
 of the exact custom immersive URL; do not mark #334 closed from this local
 commit.
+
+## Blocker reconciliation: #335 (2026-09-02)
+
+#335 completed its implementation and QA transaction locally. The dedicated
+`immersive3dCmsStageChrome.spec.ts` browser test passed 1/1 against disposable
+PostgreSQL/Django/Vite/Chromium and verified the exact
+`/immersive/p3d/:id?embed=1&cms=1` route, CMS chrome-less boundary, retained
+stage-local screenshot/download/sound/Piece controls, gesture guide,
+fullscreen, zero embed padding, and both Full/Non-Camera 3D ZIP menu entries.
+Fresh distillation found no duplicate or new dependency. This is local
+implementation evidence only: the supplied production revision is stale and
+no push/publish or authenticated GitHub reconciliation is authorized/available.
+Next action is authenticated post-publish verification of the exact CMS
+immersive URL; do not mark #335 closed from this local commit.
 
 ## Blocker reconciliation: #329 (2026-09-02)
 

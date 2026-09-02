@@ -10592,6 +10592,17 @@ downloaded-runtime behavior remains #337. This is local implementation
 evidence only; #334 remains open until the exact published custom immersive
 route is authenticated and inspected.
 
+CMS immersive 3D implementation slice (#335, 2026-09-02): the dedicated
+`immersive3dCmsStageChrome.spec.ts` browser transaction passed 1/1 against the
+disposable PostgreSQL/Django/Vite/Chromium stack. It verifies the exact
+`/immersive/p3d/:id?embed=1&cms=1` route, CMS chrome-less boundary, retained
+stage-local screenshot/download/sound/Piece controls, gesture guide,
+fullscreen, zero embed padding, and both Full/Non-Camera 3D ZIP menu entries.
+Regular immersive behavior remains #333, custom remains #334, and downloaded-
+runtime behavior remains #337. This is local implementation evidence only;
+#335 remains open until the exact published CMS immersive route is
+authenticated and inspected.
+
 ## 264. Add visitor-selectable instruments for each 3D sound voice
 
 Status: HANDED-OFF

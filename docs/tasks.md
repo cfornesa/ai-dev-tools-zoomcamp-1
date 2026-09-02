@@ -11908,3 +11908,14 @@ gated behind #347; route and artifact children stay independently open.
 Next action: synchronize Replit to reviewed `0721322` (or a reviewed
 descendant), publish, and recheck the exact supplied URLs before engineering
 or closing another issue.
+
+### Replit source-sync diagnosis
+
+The authenticated Replit Git panel shows `Sync Changes 1`, the latest visible
+workspace commit is `fix: keep editor overlay within mobile stage` (`4a9bd38`),
+and the panel says `Not pushed to remote`; GitHub `origin/main` is `a130261`.
+The successful publication therefore used an older Replit workspace snapshot.
+This is a deployment/source-sync verification boundary. Pull/Sync must be
+performed in Replit, conflicts preserved/resolved, and the reviewed revision
+published before #347 can close or #348 can begin. The agent did not mutate
+Replit through Pull/Sync.

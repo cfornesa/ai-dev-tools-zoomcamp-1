@@ -177,3 +177,11 @@ published bundle and reviewed GitHub revision are different states, not as
 successful deployment verification. Reconcile bundle identity before closing
 #347/#348 or any dependent route issue, and capture anonymous public evidence
 separately from authenticated owner evidence.
+
+Replit source-sync diagnosis (2026-09-02): the authenticated Git panel showed
+`Sync Changes 1`, latest visible workspace commit `fix: keep editor overlay
+within mobile stage` (`4a9bd38`), and `Not pushed to remote`, while GitHub
+`origin/main` was `a130261`. A successful Replit publication can therefore
+serve an older workspace snapshot. Require Pull/Sync to the reviewed GitHub
+revision before exact-route parity QA; publish status alone is not revision
+identity. Pull/Sync is a workspace mutation and requires explicit approval.

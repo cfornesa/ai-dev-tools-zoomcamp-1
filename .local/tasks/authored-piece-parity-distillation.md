@@ -507,3 +507,14 @@ The next groomed engineering issue is #347 only. Distillation is complete for
 this handoff; engineering must not begin on #348 or any consumer route until
 #347 has its criterion-ready contract, focused tests, published fixed-viewport
 evidence, and GitHub closure decision.
+
+## Replit source-sync diagnosis (2026-09-02)
+
+The authenticated Replit Git panel shows `Sync Changes 1`, the latest visible
+workspace commit is `fix: keep editor overlay within mobile stage` (`4a9bd38`),
+and the panel says `Not pushed to remote`; GitHub `origin/main` is `a130261`.
+The successful publication therefore used an older Replit workspace snapshot.
+This is a deployment/source-sync verification boundary, not a product-parity
+pass. The required next action is Pull/Sync to reviewed GitHub main, preserve
+and resolve any conflict, publish, and repeat exact route QA. The agent did not
+click Pull/Sync because that would mutate the Replit workspace.

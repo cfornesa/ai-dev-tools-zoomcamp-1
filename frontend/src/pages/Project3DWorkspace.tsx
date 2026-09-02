@@ -359,6 +359,7 @@ function Project3DWorkspace() {
             <Scene3DPreview
               scene={workingScene}
               screenshotBaseName={project?.title}
+              immersiveHref={id ? `/immersive/p3d/${id}` : undefined}
               onDownload={(variant) => void handleExport(variant)}
               editorControls={
                 <>

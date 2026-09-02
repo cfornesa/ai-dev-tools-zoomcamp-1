@@ -10613,6 +10613,13 @@ The focused editor/publication component regression set passed 57/57. This
 proves the local route contract only; it does not prove the stale published
 `animate.creatrweb.com` revision.
 
+AI-assisted 2D route verification (2026-09-02): #326's existing dedicated
+Chromium test passed 1/1 against `/ai-projects/:id`. It verified the
+stage-local Draft/Published control, both publication transitions, absence of
+the legacy header publication row, and continued AI-editor reachability.
+This is local route evidence only and does not prove the stale published
+`animate.creatrweb.com` revision.
+
 Retry evidence (2026-09-02): a second `docker compose --project-name
 ai-dev-tools-zoomcamp-1 --file compose.yaml up -d --build` attempt reached the
 same metadata-resolution point and terminated with `DeadlineExceeded` for

@@ -11116,6 +11116,19 @@ Full/Non-Camera 3D ZIP entries. The deployed revision remains stale, so #334
 is open and is not COMPLETE. Publish the tested revision, rerun the exact
 custom immersive URL, and close only after deployed evidence passes.
 
+## 269k. Handoff portable 2D download runtime (#336)
+
+Status: #336 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The Docker-backed `exportArtifacts.spec.ts` transaction passed 17/17. It
+verified extracted `file://` execution for latest and historical HTML,
+demo/camera/combined controls and dependencies, camera permission lifecycle,
+attribution and content exclusion, pinned CDN dependencies, and the exact
+two-file thumbnail ZIP. The deployed download artifact remains unverified,
+so #336 is open and is not COMPLETE. Publish the tested revision, download
+the exact production artifact, and close only after the extracted runtime
+evidence passes.
+
 ## 269j. Handoff CMS immersive 3D route (#335)
 
 Status: #335 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY

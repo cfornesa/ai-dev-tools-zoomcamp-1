@@ -1,4 +1,4 @@
-/** Issue #306: the live 3D sound control performs an explicit user-gesture flow. */
+/** Issues #306/#345: the live 3D sound controls perform an explicit user-gesture flow. */
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
@@ -34,6 +34,17 @@ test.describe('3D sound engine', () => {
     await expect(volume).toBeVisible();
     await volume.fill('80');
     await expect(volume).toHaveValue('80');
+
+    const ambient = toolbar.getByLabel('Ambient instrument');
+    const movement = toolbar.getByLabel('Movement instrument');
+    const melodic = toolbar.getByLabel('Melodic instrument');
+    await expect(ambient).toHaveValue('synth');
+    await expect(movement).toHaveValue('synth');
+    await expect(melodic).toHaveValue('synth');
+    await movement.selectOption('fmsynth');
+    await expect(movement).toHaveValue('fmsynth');
+    await expect(ambient).toHaveValue('synth');
+    await expect(melodic).toHaveValue('synth');
 
     await mute.click();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toHaveAttribute(

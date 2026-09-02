@@ -8716,7 +8716,7 @@ not started.
 
 ## 225. Epic: per-user saved Mistral models and additive Personas across all AI editors
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 GitHub issue: [#257](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/257)
 
@@ -10306,8 +10306,12 @@ editor/public/embed/immersive stage toolbar, Draft/Published visibility,
 portable Full/Non-Camera runtime downloads, screenshot framing/privacy,
 sandboxing, and real-browser verification against the exact target routes.
 
-Status update (2026-09-02): PROPOSED. The public route evidence is definitive;
-the private editor URL remains an authentication verification boundary.
+Status update (2026-09-02): IN_PROGRESS. Commits `aee6047`, `4042de7`,
+`3c205c5`, `4bdf8cc`, `579e2b6`, and the current publication-state increment
+move structured editor/public controls into the stage and package screenshot,
+fullscreen, and explicit 3D Full/Non-Camera download variants. The exact
+deployed route remains stale until these commits are published; authenticated
+editor, embed, immersive, and downloaded-runtime browser criteria remain open.
 
 Next action: implement the shared stage/capability contract for structured
 Project and Project3D surfaces, then verify the downloaded runtime and exact

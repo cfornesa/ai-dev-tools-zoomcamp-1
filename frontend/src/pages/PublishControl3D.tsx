@@ -116,6 +116,27 @@ function PublishControl3D({
         {visibility === 'public' ? 'Public — visible to anyone.' : 'Private — only visible to you.'}
       </p>
 
+      <div className="publish-visibility-switch" role="group" aria-label="Publication status">
+        <button
+          type="button"
+          className="publish-visibility-option"
+          aria-pressed={visibility === 'private'}
+          disabled={visibility === 'private' || publishState !== 'idle'}
+          onClick={() => void handleUnpublish()}
+        >
+          Draft
+        </button>
+        <button
+          type="button"
+          className="publish-visibility-option"
+          aria-pressed={visibility === 'public'}
+          disabled={visibility === 'public' || publishState !== 'idle'}
+          onClick={() => setShowPublishConfirm(true)}
+        >
+          Published
+        </button>
+      </div>
+
       <span className="editor-header-break" aria-hidden="true" />
 
       <div className="editor-publish-action">

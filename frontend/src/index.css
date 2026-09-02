@@ -658,6 +658,30 @@ code {
     order: 6;
   }
 }
+.publish-visibility-switch {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--shell-border, #c7ccd6);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.publish-visibility-option {
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.publish-visibility-option[aria-pressed='true'] {
+  background: var(--shell-accent, #252a36);
+  color: #fff;
+  font-weight: 700;
+}
+.publish-visibility-option:disabled {
+  cursor: default;
+  opacity: 1;
+}
 
 /* Task 94 (issue #94): inline project-title editing, next to the title
    above Preview. */

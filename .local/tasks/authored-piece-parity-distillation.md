@@ -235,6 +235,11 @@ implementation and exact routes:
   interaction boundary around the overlay. The corrected disposable
   PostgreSQL/Django/Vite publishing/remix run passes 24/24, including public
   rendering, camera fallbacks, unpublishing, and remix.
+- A separate corrected real-stack run of `project3dLifecycle.spec.ts` passes
+  2/2 for manual and AI-assisted 3D creation, confirming the stage toolbar
+  is rendered in the actual browser editor surface. This does not replace
+  the still-missing authenticated exact-route check against the deployed
+  application.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

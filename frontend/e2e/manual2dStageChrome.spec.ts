@@ -1,11 +1,20 @@
 /** Issues #325/#348: manual 2D controls stay in compact stage-local chrome. */
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
+
+async function hasNativeFullscreenSupport(page: Page) {
+  return page.evaluate(
+    () =>
+      document.fullscreenEnabled &&
+      typeof Element.prototype.requestFullscreen === 'function' &&
+      typeof document.exitFullscreen === 'function',
+  );
+}
 
 test.describe('manual 2D editor stage chrome', () => {
   let fixtures: Fixtures;
@@ -16,6 +25,7 @@ test.describe('manual 2D editor stage chrome', () => {
 
   test('renders finite stage actions without the legacy page-level publication row', async ({
     page,
+    browserName,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await page.goto('/');
@@ -49,17 +59,31 @@ test.describe('manual 2D editor stage chrome', () => {
       name: 'Expand piece to fullscreen',
       exact: true,
     });
+    const nativeFullscreenSupported = await hasNativeFullscreenSupport(page);
+    if (!nativeFullscreenSupported) {
+      if (browserName === 'chromium') {
+        throw new Error(
+          'Chromium must expose native fullscreen support for this regression suite.',
+        );
+      }
+      test.info().annotations.push({
+        type: 'note',
+        description: `Native fullscreen is unavailable in the ${browserName} runner; fullscreen assertions are skipped for this engine.`,
+      });
+    }
     await expect(fullscreenButton).toBeVisible();
-    await fullscreenButton.click();
-    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
-    await expect(
-      stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }),
-    ).toHaveAttribute('aria-pressed', 'true');
-    await stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }).click();
-    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
-    await expect(
-      stageDialog.getByRole('button', { name: 'Expand piece to fullscreen', exact: true }),
-    ).toHaveAttribute('aria-pressed', 'false');
+    if (nativeFullscreenSupported) {
+      await fullscreenButton.click();
+      await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+      await expect(
+        stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      await stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }).click();
+      await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+      await expect(
+        stageDialog.getByRole('button', { name: 'Expand piece to fullscreen', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'false');
+    }
 
     await editSceneButton.click();
     await expect(authoringToolbar).toBeVisible();
@@ -146,16 +170,18 @@ test.describe('manual 2D editor stage chrome', () => {
     ).toBeVisible();
     await editSceneButton.click();
     await expect(authoringToolbar).toBeHidden();
-    await stageDialog
-      .getByRole('button', { name: 'Expand piece to fullscreen', exact: true })
-      .click();
-    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
-    await expect(
-      stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }),
-    ).toBeVisible();
-    await stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }).click();
-    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
-    await expect(stageDialog).toBeVisible();
+    if (nativeFullscreenSupported) {
+      await stageDialog
+        .getByRole('button', { name: 'Expand piece to fullscreen', exact: true })
+        .click();
+      await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+      await expect(
+        stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }),
+      ).toBeVisible();
+      await stageDialog.getByRole('button', { name: 'Exit fullscreen', exact: true }).click();
+      await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+      await expect(stageDialog).toBeVisible();
+    }
     await editSceneButton.click();
     await expect(authoringToolbar).toBeVisible();
 
@@ -219,11 +245,6 @@ test.describe('manual 2D editor stage chrome', () => {
     page,
     browserName,
   }) => {
-    test.skip(
-      browserName !== 'chromium',
-      'Native fullscreen Escape behavior is covered in the supported Chromium browser.',
-    );
-
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await page.goto('/');
     await page.getByRole('button', { name: 'More creation options' }).click();
@@ -238,6 +259,18 @@ test.describe('manual 2D editor stage chrome', () => {
       name: 'Expand piece to fullscreen',
       exact: true,
     });
+    const nativeFullscreenSupported = await hasNativeFullscreenSupport(page);
+    if (!nativeFullscreenSupported) {
+      if (browserName === 'chromium') {
+        throw new Error(
+          'Chromium must expose native fullscreen support for this regression suite.',
+        );
+      }
+      test.skip(
+        true,
+        `Native fullscreen is unavailable in the ${browserName} runner; browser Escape synchronization is not applicable.`,
+      );
+    }
 
     await expect(fullscreenButton).toBeVisible();
     await fullscreenButton.click();
@@ -248,6 +281,13 @@ test.describe('manual 2D editor stage chrome', () => {
 
     await page.keyboard.press('Escape');
     await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+    // Firefox and WebKit may leave the stage command dialog visible after
+    // native fullscreen is exited; close it through its normal control before
+    // reopening the menu. Keep Chromium's hidden assertion strict so a
+    // Chromium command-state regression cannot be normalized away.
+    if (browserName !== 'chromium' && (await stageDialog.isVisible())) {
+      await stageDialog.getByRole('button', { name: 'Close piece controls menu' }).click();
+    }
     await expect(stageDialog).toBeHidden();
     await stageMenu.click();
     await expect(stageDialog).toBeVisible();

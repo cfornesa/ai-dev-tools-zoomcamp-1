@@ -2784,7 +2784,7 @@ select.ai-proposal-field-full-width {
 .scene3d-stage-toolbar {
   position: absolute;
   left: 12px;
-  bottom: 12px;
+  top: 12px;
   z-index: 3;
   display: flex;
   flex-wrap: wrap;
@@ -2814,7 +2814,7 @@ select.ai-proposal-field-full-width {
 .scene3d-stage-download-menu {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 0.5rem);
+  top: calc(100% + 0.5rem);
   display: grid;
   gap: 0.35rem;
   min-width: 12rem;
@@ -2870,8 +2870,8 @@ select.ai-proposal-field-full-width {
 
 .piece-stage-toolbar {
   position: absolute;
-  left: 12px;
-  bottom: 12px;
+  top: 12px;
+  right: 12px;
   /* Keep the shared stage actions above editor-only overlays such as the
      selection HUD. The toolbar is interactive chrome, so a visible HUD must
      never win hit-testing merely because it is rendered later in the panel. */
@@ -2899,7 +2899,7 @@ select.ai-proposal-field-full-width {
 .piece-stage-controls-panel {
   position: absolute;
   left: 0;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   z-index: 30;
   width: min(360px, calc(100vw - 32px));
   max-height: min(70vh, 520px);

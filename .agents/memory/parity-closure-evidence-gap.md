@@ -89,3 +89,15 @@ did not include the immersive link because `Project3DWorkspace` omitted the
 existing `immersiveHref` prop; local commit `4f912c9` fixes the wiring and the
 route assertion. Keep #327 open until that exact commit is pushed and
 republished; local QA does not establish deployed parity.
+
+User-visible closure reset (2026-09-02): the owner reports that the requested
+controls remain absent or visually unusable despite the prior DOM-role and
+bounding-box closures. Fresh screenshots show glyph-only stage controls, an
+icon-only closed publication trigger, and a dense editor authoring/runtime
+row. Treat this as an implementation/UI-contract defect until fixed, not as a
+browser disagreement to hand-wave away. Future parity issues require fixed-
+viewport rendered inspection, visible affordance/state-label evidence, and
+entry-point interaction; ARIA presence, non-zero bounds, local tests, or
+another route cannot close them. Follow-up implementation slices are #347
+(shared stage affordance/status) and #348 (editor authoring overlay layout);
+route consumers remain independently reopened in #325–#335 and #338–#341.

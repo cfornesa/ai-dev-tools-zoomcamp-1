@@ -36,6 +36,16 @@ component never close a deployed route.
   working downloaded runtimes. The React 2D capability contract currently
   sets `sound: false`; this is a confirmed parity question requiring an
   explicit product decision or implementation task, not an implicit N/A.
+- Fresh live screenshots on 2026-09-02 contradict the prior closure evidence:
+  the manual 3D editor shows a dense glyph-only authoring/runtime row inside
+  the stage, while the closed-state publication control exposes only an icon;
+  the public 2D viewer shows glyph-only controls that are easy to miss and do
+  not visually communicate their actions. DOM role presence and non-zero
+  bounds were insufficient evidence for the requested visual parity.
+- The shared editor source still defines a separate `Editor actions` toolbar
+  containing Add shape, History, Edit shape, Layer/group actions, color, and
+  Save controls. Its current tests assert containment/roles, not the absence
+  of the dense competing visual row required by the user's parity request.
 
 ## Complete manifest and order
 
@@ -43,29 +53,30 @@ component never close a deployed route.
 | --- | --- | --- | --- | --- |
 | #320 | Parent authored-piece reconciliation | all children | open roll-up | reconcile only after children pass |
 | #346 | Shared structured 2D sound capability | #320; existing audio foundation | open / newly filed | groom and engineer only after this distillation exits |
-| #325 | authenticated manual 2D `/projects/:id` | owner browser access | open | verify stage-local authoring/runtime/publication controls |
-| #326 | authenticated AI 2D `/ai-projects/:id` | owner browser access | open | verify stage-local AI/publication controls |
-| #327 | authenticated manual 3D `/projects3d/:id` | owner browser + 3D fixture | open | verify exact editor route and status transitions |
-| #328 | authenticated AI 3D `/ai-projects3d/:id` | owner browser + 3D fixture | closed | deployed route, focused tests, browser QA, and Draft restoration recorded |
+| #347 | shared stage control discoverability/status affordance | #320 | proposed / groomed | implement visible labels/tooltips, explicit Draft/Published state, compact stage overlay |
+| #348 | shared editor authoring overlay layout | #320; #347 ordering decision | proposed / groomed | remove competing dense row and preserve named authoring actions in canvas overlay |
+| #325 | authenticated manual 2D `/projects/:id` | #347/#348; owner browser | reopened | reverify visual controls, authoring overlay, and status transitions |
+| #326 | authenticated AI 2D `/ai-projects/:id` | #347/#348; owner browser | reopened | reverify visual controls, AI/editor overlay, and status transitions |
+| #327 | authenticated manual 3D `/projects3d/:id` | #347/#348; owner browser + 3D fixture | reopened | reverify actual screenshot/layout and status transitions |
+| #328 | authenticated AI 3D `/ai-projects3d/:id` | #347/#348; owner browser + 3D fixture | reopened | reverify actual screenshot/layout and status transitions |
 | #329 | anonymous public 2D `/p/:id` | published 2D fixture | reopened / disputed | reconcile user-visible conflict at exact URL/viewport/cache |
-| #330 | anonymous public 3D `/p3d/:id` | published 3D fixture | closed | deployed anonymous controls/privacy and local browser QA recorded |
+| #330 | anonymous public 3D `/p3d/:id` | #347; published 3D fixture | reopened | reverify visible/discoverable controls and privacy |
 | #331 | anonymous 2D `/embed/p/:id` | published 2D fixture | reopened / disputed | reconcile user-visible conflict independently |
-| #332 | anonymous 3D `/embed/p3d/:id` | published 3D fixture | closed | deployed chrome-less embed and local browser QA recorded |
-| #333 | regular immersive 3D | published 3D fixture | closed | deployed route, controls/privacy, and local browser QA recorded |
-| #334 | custom immersive `?embed=1` | published 3D fixture | closed | deployed chrome-less query variant and local browser QA recorded |
-| #335 | CMS immersive `?embed=1&cms=1` | published 3D fixture | closed | deployed chrome-less CMS variant and local browser QA recorded |
-| #335 | CMS immersive `?embed=1&cms=1` | published 3D fixture | dependency-blocked | verify exact query variant after fixture |
+| #332 | anonymous 3D `/embed/p3d/:id` | #347; published 3D fixture | reopened | reverify visible/discoverable chrome-less controls |
+| #333 | regular immersive 3D | #347; published 3D fixture | reopened | reverify visible/discoverable controls/privacy |
+| #334 | custom immersive `?embed=1` | #347; published 3D fixture | reopened | reverify visible/discoverable query-variant controls |
+| #335 | CMS immersive `?embed=1&cms=1` | #347; published 3D fixture | reopened | reverify visible/discoverable CMS controls |
 | #336 | extracted standalone 2D artifact | approved file-capable browser | blocked | execute captured Full/Non-Camera files |
 | #337 | extracted Full/Non-Camera 3D artifacts | published 3D fixture + file browser | dependency-blocked | download, extract, execute both variants |
-| #295 | five-slide 3D hand guide | published 3D fixture | closed | deployed guide, focused tests, and route QA recorded |
-| #342 | independent 3D camera view | published 3D consumer | dependency-blocked | verify exact deployed consumer |
+| #295 | five-slide 3D hand guide | #347; published 3D fixture | closed / capability only | route consumers must pass refreshed visual affordance checks |
+| #342 | independent 3D camera view | #347; published 3D consumer | closed / capability only | route consumers must pass refreshed visual affordance checks |
 | #344 | 3D hand Move/strafe | published 3D + physical/manual camera | dependency-blocked | run movement evidence and guide consistency |
 
-Local-only closed records #338–#341, #343, and #345 remain historical
-implementation prerequisites. They do not satisfy the open route/artifact
-contracts above and are not reopened unless their own explicit local scope is
-found false. Historical umbrellas #274/#323/#324 remain non-implementation
-containers. #321 is closed and is not a duplicate deployment task.
+Records #338–#341 are reopened because their publication criteria accepted an
+icon-only trigger as “named Draft/Published” and did not test the user-visible
+affordance. #343 and #345 remain historical narrow prerequisites. Historical
+umbrellas #274/#323/#324 remain non-implementation containers. #321 is closed
+and is not a duplicate deployment task.
 
 ## Confirmed gap definitions
 
@@ -92,14 +103,25 @@ containers. #321 is closed and is not a duplicate deployment task.
    2D sound implementation slice or a documented product decision that the
    structured 2D contract is intentionally silent. Do not silently mark it
    N/A.
+7. Shared visible affordance gap (#347): current glyph-only stage buttons and
+   icon-only closed publication state are technically accessible but visually
+   undiscoverable in the supplied screenshots. This is a shared implementation
+   task; route issues must still verify each consumer.
+8. Editor authoring density/placement (#348): the shared editor still defines
+   a dense authoring toolbar with ten actions competing with the runtime stage
+   controls. Preserve each mutation, but prove a compact canvas-associated
+   presentation and absence of the old competing row.
 
 ## Duplicate and coverage report
 
 - #320 owns roll-up reconciliation; it is not an implementation issue.
-- #325–#337 already cover each route/artifact independently; no new route
-  issue is warranted.
-- #338–#341 cover local implementation only; they do not duplicate deployed
-  verification. #295/#342/#344 cover shared 3D capabilities.
+- #325–#337 still cover each route/artifact independently, but the user audit
+  invalidated their prior closures; their bodies now require fresh visual
+  evidence after #347/#348 where applicable.
+- #338–#341 remain the existing publication implementation records and were
+  reopened rather than duplicated. #347 owns shared stage affordance; #348
+  owns shared editor authoring layout. #295/#342/#344 remain distinct 3D
+  capabilities.
 - #306/#343/#345 are narrow local prerequisites and cannot prove consumer
   parity. #321 covers Compose identity. No duplicate issue is created in this
   distillation pass. #346 is the only newly discovered implementation gap:
@@ -116,6 +138,10 @@ containers. #321 is closed and is not a duplicate deployment task.
   approved browser capability; next action is an approved Chromium context.
 - User report versus fresh public DOM: unresolved evidence conflict, not a
   product pass or fail. Keep #329/#331 open until reconciled.
+- User screenshot versus prior DOM-only closure: `implementation-defect` for
+  the shared discoverability/layout contract; linked follow-ups are #347/#348.
+  Reopened route issues remain open until those changes are deployed and
+  independently inspected.
 
 ## Re-audit after authenticated Chrome verification — 2026-09-02
 
@@ -157,6 +183,18 @@ only the temporary 3D publication flow.
 region plus the compact Piece actions toolbar. It remains open for the same
 unperformed live publication transition boundary. These are independent
 handoffs; neither is closed from local evidence or from the other route.
+
+## User-audit re-distillation — 2026-09-02
+
+The earlier closure batch is superseded. It used DOM-role/bounding-box checks
+as a proxy for visual parity and allowed shared-component evidence to stand in
+for consumer evidence. The authoritative manifest now reopens #325–#328,
+#330–#335, and #338–#341, creates #347/#348 for the missing shared
+implementation slices, and leaves #329/#331/#336/#337/#344 open with their
+existing boundaries. No product source or product tests were changed during
+this audit. The next phase must begin with exactly one groomed implementation
+issue, then process it through engineering, QA, reconciliation, and GitHub
+closure before selecting the next issue.
 
 ## Distillation exit
 

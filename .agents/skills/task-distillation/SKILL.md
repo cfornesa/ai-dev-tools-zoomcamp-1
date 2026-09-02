@@ -60,6 +60,14 @@ must never treat implementation or QA as completion; each issue reaches
   not-applicable decision. If the issue needs another route, an unprovisioned
   credential, or a parent-wide visual judgment to decide pass/fail, split or
   reclassify it before engineering.
+- For visual/UI parity, DOM roles, accessible names, non-zero bounds, and
+  source-string matches are insufficient by themselves. The closure contract
+  must name fixed viewport(s), require screenshot or equivalent rendered
+  inspection, identify the visible affordance/state label, and test the
+  interaction from the user's entry point. If the owner reports that a
+  control is absent or visually unusable, classify the conflict as unresolved
+  until the differing revision, viewport, cache, or styling is explained;
+  never close on a DOM-only observation.
 - Distillation and grooming may be performed in one bulk pass so the complete
   backlog can be decomposed and ordered. That batching ends at the handoff:
   backlog-session must process engineering and testing as a strict

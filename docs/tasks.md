@@ -11677,3 +11677,31 @@ issue-specific reconciliation and closure.
 The sequential backlog run closed #295, #328, #330, #332, #333, #334, and #335 only after each issue's route-specific acceptance criteria, focused tests, real Chromium scenario, deployed revision, and final Draft restoration were recorded in GitHub. #329 remains open because public-2D camera activation/failure evidence has not been authorized. #336/#337 remain blocked by the browser `file://` policy. Engineering and testing remained per issue; no next issue was selected before the prior issue was closed.
 
 Blocked-issue distillation handoff (2026-09-02): #329 is narrowed to one missing authorized public-2D camera permission/fallback transaction; no code change is inferred. #336 and #337 share one external browser-capability dependency, but remain separate artifact contracts; they must be rechecked independently once an approved Chromium context can open downloaded `file://` artifacts.
+
+## User-visible parity re-distillation (2026-09-02)
+
+Status: DISTILLATION COMPLETE — PRIOR PARITY CLOSURES INVALIDATED
+
+The supplied live routes were rechecked before any implementation work. The
+manual 3D editor renders a dense glyph-only authoring/runtime row over the
+stage, and its closed publication control exposes an icon rather than a
+persistently visible Draft/Published label. The public 2D viewer renders
+glyph-only stage controls that are easy to miss. The source still contains a
+shared `Editor actions` toolbar with Add shape, History, Edit shape,
+Layer/group, color, and Save actions. The prior closure evidence proved DOM
+roles and bounds, not the requested visual discoverability or density.
+
+The distillation correction is recorded in `.local/tasks/authored-piece-parity-distillation.md`:
+
+- Reopened #325–#328, #330–#335, and #338–#341; their prior route/local
+  closures are not accepted as proof of the requested end state.
+- Created [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347)
+  for shared visible stage controls and explicit publication-state affordance.
+- Created [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348)
+  for compact canvas-associated editor authoring controls.
+- Kept #329/#331/#336/#337/#344 open with their existing camera, artifact, and
+  physical-input boundaries; these are not silently absorbed into #347/#348.
+- No product source or product tests were changed during this audit. The next
+  engineering handoff is exactly one of #347 or #348 after PM ordering, and
+  it must be implemented, tested, reconciled, and closed before the next
+  issue begins.

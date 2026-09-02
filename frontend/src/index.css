@@ -2924,6 +2924,17 @@ select.ai-proposal-field-full-width {
   gap: 0.65rem;
 }
 
+/* Every consumer gets a compact row by default. Route-specific classes may
+   add wrapping or surface-specific limits, but omitting `className` must not
+   silently turn the shared stage controls into block-flow content. */
+.piece-stage-toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
 /* Issue #325: the shared stage rail's 2D editor group is a direct child of
    `.piece-stage-toolbar`, not a child of `.editor-toolbar`. Give it the same
    compact row contract as the 3D preview group so screenshot/download,

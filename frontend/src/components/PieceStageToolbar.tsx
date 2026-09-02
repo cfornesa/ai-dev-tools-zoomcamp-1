@@ -59,7 +59,7 @@ export default function PieceStageToolbar({
 
   return (
     <div role="toolbar" aria-label={ariaLabel} className="piece-stage-toolbar">
-      <div role="group" aria-label={ariaLabel} className={className}>
+      <div role="group" aria-label={ariaLabel} className={className ?? 'piece-stage-toolbar-group'}>
         {capabilities.screenshot && onScreenshot && (
           <button
             type="button"

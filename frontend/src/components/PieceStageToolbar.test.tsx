@@ -24,6 +24,9 @@ describe('PieceStageToolbar', () => {
     );
 
     expect(screen.getByRole('toolbar', { name: 'Piece actions' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Piece actions' })).toHaveClass(
+      'piece-stage-toolbar-group',
+    );
     expect(screen.getByRole('link', { name: 'View immersive piece' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Take screenshot' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeInTheDocument();

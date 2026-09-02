@@ -117,6 +117,14 @@ blocker ends an issue, run a fresh task-distillation reconciliation before
 selecting the next issue. Recheck duplicates, dependency order, closure
 criteria, blocker ownership, and follow-up issue coverage.
 
+Consumer-layout lesson (2026-09-02): a shared `PieceStageToolbar` does not
+guarantee parity when a consumer omits the inner control-group layout class.
+The outer absolute rail can exist while direct child wrappers still collapse
+controls into block flow. Every route consumer must be inspected and browser-
+asserted for both outer stage placement and inner horizontal compact geometry;
+do not infer public/embed parity from the shared component or another
+consumer's CSS.
+
 Fresh owner-evidence audit (2026-09-02): the authenticated GitHub connector
 confirmed that #340 and #342 had been closed while the supplied deployment
 still contradicted the requested parity. Both were reopened with explicit

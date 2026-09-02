@@ -38,7 +38,7 @@ as read-only behavioral reference.
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated authenticated Chromium route test passes 1/1 with stage-local publication controls, PHP-relative geometry, reversible Draft → Published → Draft, and no header duplicate. Keep open for exact deployed-route verification |
 | [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, Save, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 and verifies stage-contained 3D runtime controls, AI authoring, publication status, rendered geometry, and no legacy standalone-export action. Keep open for exact deployed-route verification |
-| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `re_audit_required` | Owner-supplied production route visibly serves the old sibling Demo/camera panel with no stage toolbar, screenshot, download, fullscreen, or publication controls. Local 24/24 evidence is contradicted and cannot close this route |
+| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `local_implementation_defect_found` | Live production still serves the old sibling Demo/camera panel with no stage toolbar. Source audit also found `PublicProjectViewer` mounts `PieceStageToolbar` without an inner row-layout class, so local public 2D controls can collapse even after deployment. Fix that consumer, run the exact public route transaction, then retain the deployed-revision gate |
 | [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Complete `project3dLifecycle.spec.ts` passes 4/4 against disposable PostgreSQL/Django/Vite/Chromium, including exact public 3D controls, downloads, reversible publication, and immersive regression. Keep open for exact deployed-route verification |
 | [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated Chromium route test passes 1/1 with chrome-less stage-local controls and functional screenshot/download behavior. Keep open for exact deployed-route verification |
 | [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `local_implementation_verified` | Dedicated disposable-stack browser test passes 1/1 for the exact embed entry point, chrome-less shell, stage-local controls, and Full/Non-Camera download menu; deployed revision remains unverified |
@@ -251,7 +251,7 @@ first reconcile the existing runner and #321 workflow scope.
 | --- | --- | --- | --- |
 | Manual 2D editor | Local source now places authoring, Camera, and Demo controls in stage-local chrome; exact deployed/editor visual parity remains unverified | `implemented locally / needs browser evidence` | #325/#338; authenticate and verify the exact owner route after publish |
 | AI-assisted 2D editor | Local source now uses shared stage-local toolbar and Camera/Demo disclosure with the existing preview lifecycle; exact deployed/editor visual parity remains unverified | `implemented locally / needs browser evidence` | #326/#340; authenticate and verify the exact owner route after publish |
-| Public 2D viewer / embed | Deployed route still serves old sibling-panel shell; local public 2D camera-source visibility is now corrected, but exact route behavior is not proven because the disposable browser fixture cannot publish (`POST /api/projects/<id>/publish/` returned 404) and live deployment is stale | `verification-boundary + runner-blocker` | #329/#331; repair/reconcile the runner fixture publish path, then publish and verify exact public/embed routes |
+| Public 2D viewer / embed | Deployed route still serves old sibling-panel shell; source audit found the public 2D `PieceStageToolbar` consumer omitted a default inner row layout; the corrected disposable transaction now publishes and verifies public/embed behavior, while live deployment remains stale | `implementation-defect resolved locally + verification-boundary` | #329/#331; reconcile the local fix against the exact published revision, then verify embed independently |
 | Manual/AI 3D editors | Shared toolbar and publication control exist locally; editor-specific actions remain a separate authoring toolbar within the stage, which is acceptable only if it does not duplicate runtime chrome | `implemented locally / needs browser evidence` | #327/#328/#339/#341; verify visual hierarchy and all controls with authenticated browser |
 | Public/embed/immersive 3D | Shared `Scene3DPreview` toolbar exists locally; immersive route supports Custom/CMS embed query variants and arrow-key fly | `implemented locally / needs deployed evidence` | #330/#332/#333/#334/#335; verify exact routes after publish |
 | Full 3D download | Local bundle includes stage controls, hand guide, permission-gated hand tracking, microphone, camera theremin, sound, keyboard, reset, screenshot, fullscreen, and bundled MediaPipe/Wasm/model assets | `implemented locally / needs deployed evidence` | #337; verify the exact deployed download after publish; #295/#306/#342/#345 changes must be reflected before closure |
@@ -1039,3 +1039,67 @@ checkout and running repository Compose stack, both available. If browser or
 Docker execution becomes an environment blocker unrelated to owner judgment,
 re-run task distillation at the end of this issue before selecting the next
 independent route.
+
+## Reconciliation: #329 public 2D consumer layout (2026-09-02)
+
+Engineering added a default `piece-stage-toolbar-group` flex-row class to the
+shared `PieceStageToolbar`, closing the consumer omission found during this
+distillation pass without requiring every route to remember an override. The
+component regression passed 4/4, the full frontend suite passed 189 files /
+2,384 tests, frontend lint/typecheck/build passed, and the complete
+`BROWSER_QA_E2E_SPEC=e2e/publishingAndRemix.spec.ts make browser-qa`
+transaction passed 24/24. It exercised the exact public `/p/:id` and embed
+routes, named screenshot/download/fullscreen/Camera/Demo controls, compact
+stage geometry, publication/privacy/remix behavior, and camera fallbacks.
+
+The earlier disposable publish 404 did not reproduce in this complete
+transaction, so it is no longer an active runner blocker; historical notes
+remain for provenance. The repository-wide format check still reports
+pre-existing generated/fixture drift, while the changed files pass direct
+Prettier validation. #329 remains open because the supplied production
+revision still serves the legacy shell and exact post-publish evidence is
+required before GitHub closure.
+
+## Third distillation re-audit: deployed contradiction and public 2D consumer (2026-09-02)
+
+The supplied production URLs were inspected directly again. Anonymous
+`/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` still renders the legacy `Preview`
+with sibling `Live camera` and `Demo signal controls` regions; its DOM has no
+stage toolbar, screenshot, download, fullscreen, or publication controls. The
+supplied private `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` returns the
+anonymous unavailable state and therefore cannot prove editor controls or
+Draft/Published reversal. This is a deployment/authentication verification
+boundary owned by #320/#321, not evidence to close any child.
+
+The current source audit found one additional implementation defect before
+engineering: `PublicProjectViewer.tsx` renders the shared `PieceStageToolbar`
+without the inner control-group layout class used by the 3D consumer. The
+outer toolbar alone is insufficient; direct child wrappers can retain block
+flow and collapse the public 2D controls. This is already covered by #329's
+single `/p/:id` route scope, so no duplicate issue is filed. #329's GitHub
+closure contract was updated to require a compact horizontal stage-associated
+toolbar and to distinguish this implementation defect from the deployed
+revision boundary.
+
+Duplicate/already-covered decisions: #274 and #324 remain historical
+reconciliation containers; #320 owns deployment/revision reconciliation;
+#321 owns Compose identity; #331 owns the separate embed entry point; #336
+owns extracted 2D artifacts. No new issue is warranted for the stale live
+revision or the missing public consumer class.
+
+The complete actionable order remains: (1) fix and test #329's public 2D
+consumer; (2) complete the independent #331 embed route transaction; (3)
+complete #330 and #332–#335 route transactions; (4) complete #336/#337
+artifact behavior; (5) perform authorized publish and exact-route/artifact
+verification; (6) reconcile #320. The next handoff is exactly one issue,
+#329, with fixed entry `/p/:id`, one published fixture, anonymous browser
+context, named screenshot/download/fullscreen/Camera/Demo controls, no owner
+chrome, compact horizontal stage geometry, and explicit camera fallback.
+
+Blocker triage: the stale production revision and anonymous private editor are
+verification boundaries, not new implementation issues. The prior disposable
+fixture publish 404 is a reproducible runner/infrastructure blocker already
+covered by #321 and must be repaired or explicitly handed off before a child
+can close. Any non-user-judgment environment blocker at the end of #329
+requires another fresh distillation pass; no product source or test change is
+authorized by this distillation increment.

@@ -10978,3 +10978,53 @@ PHP-relative 2.75rem icon geometry, and horizontal runtime-rail layout.
 The deployed revision still requires exact authenticated `/projects/:id`
 verification, so #325/#338 remain open and are not marked COMPLETE. This
 route correction does not absorb public #329 or downloaded artifact #336.
+
+## 269b. Reconcile public 2D toolbar consumer (#329)
+
+Status: LOCAL IMPLEMENTATION VERIFIED; DEPLOYED/GITHUB RECONCILIATION PENDING
+
+The shared `PieceStageToolbar` now supplies a default inner flex-row class,
+fixing the public 2D consumer that previously omitted a route layout class.
+Component tests passed 4/4; the full frontend suite passed 189 files / 2,384
+tests; lint, type-check, and production build passed; and
+`BROWSER_QA_E2E_SPEC=e2e/publishingAndRemix.spec.ts make browser-qa` passed
+24/24. The browser transaction verified public and embed entry points,
+stage-local named controls, compact geometry, camera/demo fallback,
+publication/privacy/remix behavior, and real screenshot/download/fullscreen
+affordances.
+
+The prior disposable publish 404 did not reproduce in this run and is no
+longer an active runner blocker. The full repository format check still has
+pre-existing generated/fixture drift; changed files pass direct Prettier
+validation. The deployed revision still serves the legacy public shell, so
+#329 remains open pending exact published-route verification.
+
+## 270. Distill deployed authored-piece parity contradiction and public 2D consumer gap (#320/#329)
+
+Status: DISTILLED; NEXT ENGINEERING HANDOFF IS #329
+
+The supplied production public 2D route was inspected directly and still
+serves the legacy Preview plus sibling Live camera/Demo signal controls, with
+no visible stage toolbar, screenshot, download, fullscreen, or publication
+controls. The supplied private 3D editor remains anonymous/unavailable, so
+its editor controls and Draft/Published reversal are unverified. These are
+deployment/authentication verification boundaries owned by #320/#321 and do
+not justify closing any child issue.
+
+The source audit found an additional local implementation defect in the
+existing #329 route slice: `PublicProjectViewer.tsx` mounts the shared
+`PieceStageToolbar` without the inner control-group row-layout class used by
+the 3D consumer. A shared outer toolbar is therefore insufficient proof of a
+compact public 2D rail. No duplicate issue is filed; #329's GitHub closure
+contract now explicitly requires horizontal stage-associated geometry and
+distinguishes it from the deployed revision gate.
+
+The next issue is exactly #329: one published fixture, anonymous `/p/:id`
+entry, named screenshot/fullscreen/HTML Full/Non-Camera/Camera/Demo controls,
+no owner or legacy sibling chrome, compact horizontal stage geometry, explicit
+camera fallback, focused tests, the route browser transaction, and exact
+published-revision verification. #331, #330, #332–#337, and #320 remain
+separate dependent or later reconciliation surfaces. #274/#324 remain
+historical containers, not closure units.
+
+No product source or product test was changed during this distillation pass.

@@ -146,6 +146,19 @@ async function expectPublicStageChrome(page: Page) {
   await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera' })).toBeVisible();
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
+  const layout = await toolbar.getByRole('group', { name: 'Piece actions' }).evaluate((element) => {
+    const style = getComputedStyle(element);
+    const box = element.getBoundingClientRect();
+    return {
+      display: style.display,
+      flexDirection: style.flexDirection,
+      width: box.width,
+      height: box.height,
+    };
+  });
+  expect(layout.display).toBe('flex');
+  expect(layout.flexDirection).toBe('row');
+  expect(layout.width).toBeGreaterThan(layout.height);
 }
 
 function pieceActionsToolbar(page: Page) {

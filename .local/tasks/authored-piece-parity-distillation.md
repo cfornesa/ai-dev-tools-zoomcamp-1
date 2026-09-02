@@ -116,6 +116,33 @@ containers. #321 is closed and is not a duplicate deployment task.
 - User report versus fresh public DOM: unresolved evidence conflict, not a
   product pass or fail. Keep #329/#331 open until reconciled.
 
+## Re-audit after authenticated Chrome verification — 2026-09-02
+
+The connected owner Chrome session verified the exact private 3D editor's
+stage-local screenshot, download, sound, Piece controls, steering, guide,
+fullscreen, camera-view, and Draft → Published → Draft controls. Camera
+activation and safe stop were verified after the owner authorized that flow;
+the five guide steps were advanced end-to-end.
+
+This is not complete parity evidence: the deployed editor still reports zero
+`View immersive piece` links, while the reviewed checkout contains that wiring
+in `4f912c9`. The evidence handoff is `28ece99`, and local Docker-backed
+`manual3dStageChrome.spec.ts` passes 1/1. #327 remains open as a
+deployment/revision handoff. Its exact next action is authorized push,
+republish, and recheck of the exact route before closure.
+
+The supplied public 2D route was independently rechecked in the same Chrome
+session and showed non-zero stage-local controls and functional screenshot,
+Full/Non-Camera downloads, Piece controls, and fullscreen. This route-specific
+evidence does not transfer to 3D or extracted artifacts; #336 remains open
+because the captured standalone files have not been executed in an approved
+file-capable browser.
+
+No new issue or further decomposition is warranted. #327 owns the
+authenticated manual 3D route, #329 the public 2D route, and #336 the extracted
+2D artifact. The remaining route and artifact issues retain their own
+dependencies and closure contracts.
+
 ## Distillation exit
 
 The manifest is complete, duplicates are reconciled, every actionable gap is

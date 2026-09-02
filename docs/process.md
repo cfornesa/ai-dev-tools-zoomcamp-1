@@ -18,6 +18,11 @@ Closure-ready atomicity
   user-supplied URL contradicts the checkout, keep the affected deployed
   route/artifact and parent release gate open until the exact published
   revision is inspected; record the asset/revision and URL as evidence.
+- A shared control component is not consumer evidence. For every route,
+  inspect the actual rendered consumer for compact inner-toolbar geometry,
+  stage containment, named controls, and that route's privacy/publication
+  boundary. A local implementation commit, source-string match, or another
+  route's browser pass cannot close the consumer route.
 
 Phase gate
 

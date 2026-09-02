@@ -11636,3 +11636,21 @@ pass `immersiveHref` into `Scene3DPreview`. Commit `4f912c9` wires
 suite passes with it. The deployed editor has not received this commit yet,
 so #327 remains open pending push and republish. Do not claim deployed manual
 3D parity from the local pass alone.
+
+## 269ao. Reconcile authenticated Chrome evidence and deployed revision (#327, 2026-09-02)
+
+Status: DISTILLATION COMPLETE — #327 HANDED OFF FOR AUTHORIZED PUSH/PUBLISH
+
+The authenticated owner Chrome session verified the exact private 3D editor's
+stage-local runtime controls, camera activation/stop, five-step guide, and
+Draft → Published → Draft transition. The deployed route still reports zero
+`View immersive piece` links, while the reviewed checkout contains that fix in
+`4f912c9` and the handoff evidence in `28ece99`. Local Docker-backed browser QA
+passes 1/1. #327 remains open: push those reviewed commits, republish, and
+recheck the exact route before issue closure.
+
+The supplied public 2D route independently showed non-zero stage-local
+controls and functional screenshot, download, Piece controls, and fullscreen
+actions. This evidence is route-specific; extracted 2D artifact execution
+remains #336, and no 3D route or artifact is inferred from it. No new issue or
+further decomposition was found in this reconciliation.

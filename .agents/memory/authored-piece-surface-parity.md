@@ -149,3 +149,11 @@ live URL with the current checkout and published revision before engineering;
 when they differ, reset the issue to open and classify the gap as a
 verification boundary. Keep one route or capability per issue and never let a
 parent rollout or local browser pass close a deployed surface.
+
+Authenticated Chrome handoff (2026-09-02): the owner-authenticated 3D editor
+verified the stage-local runtime controls, camera activation/stop, five-step
+guide, and Draft/Published reversal. The deployed revision still lacked the
+checkout's `View immersive piece` wiring (`4f912c9`), so #327 remains open until
+that reviewed revision is pushed, republished, and rechecked at the exact URL.
+The public 2D route independently showed its compact stage toolbar in the same
+session; do not transfer that evidence to any 3D route or extracted artifact.

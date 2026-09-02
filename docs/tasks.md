@@ -11446,3 +11446,22 @@ then one editor/public/embed/immersive/artifact transaction per issue, then
 parent reconciliation and production readiness. Exactly one next groomed item
 is #338; if its Docker gate remains blocked, perform fresh distillation before
 selecting #339. Task completion remains GitHub closure after all criteria pass.
+
+## 269ae. Close local manual 2D implementation slice (#338)
+
+Status: #338 COMPLETE — GITHUB CLOSED `completed` (LOCAL IMPLEMENTATION ONLY)
+
+The manual 2D stage-local publication implementation passed its complete local
+transaction: focused component tests 67/67, `make frontend-check` with 189
+frontend test files and 2,386 passing tests plus typecheck/format/lint, and
+`BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa` 1/1
+against disposable PostgreSQL/Django/Vite/Chromium. Implementation evidence
+is in `fd5bd14`, `09047c6`, and `1ca7baa`, including the shared stage toolbar,
+stage controls disclosure, editor consumer, and publication control.
+
+The GitHub issue was closed only for its explicitly local implementation
+contract. Its QA matrix is embedded in the issue body because the available
+issue-comment connector incorrectly validates issue comments as PR comments;
+no unsafe workaround was used. This closure does not claim live parity: exact
+authenticated `/projects/:id` verification remains #325 and release
+reconciliation remains #320.

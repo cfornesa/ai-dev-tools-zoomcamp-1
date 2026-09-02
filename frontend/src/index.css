@@ -3147,6 +3147,37 @@ select.ai-proposal-field-full-width {
   box-shadow: none;
 }
 
+/* On a narrow stage, the contextual panel must grow from the controls button
+   toward the right edge of the stage rather than using `right: 0` against the
+   44px-wide button wrapper. Toolbar actions are already icon-only buttons with
+   aria-labels and focus tooltips, so preserve that compact representation on
+   mobile while keeping the editable color value available as a small control. */
+@media (max-width: 600px) {
+  .editor-authoring-controls-panel {
+    left: 0;
+    right: auto;
+    width: min(320px, calc(100vw - 48px));
+  }
+
+  .editor-authoring-controls-panel .editor-toolbar-color-control label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .editor-authoring-controls-panel .editor-toolbar-color-control input {
+    width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+  }
+}
+
 .piece-stage-settings {
   margin-top: 12px;
 }

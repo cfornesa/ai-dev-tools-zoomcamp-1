@@ -100,6 +100,19 @@ test.describe('manual 2D editor stage chrome', () => {
     );
     expect(authoringBox!.width).toBeLessThanOrEqual(520);
 
+    await page.setViewportSize({ width: 375, height: 812 });
+    const mobileAuthoringBox = await authoringToolbar.boundingBox();
+    const mobileStageBox = await stage.boundingBox();
+    expect(mobileAuthoringBox).not.toBeNull();
+    expect(mobileStageBox).not.toBeNull();
+    expect(mobileAuthoringBox!.x).toBeGreaterThanOrEqual(mobileStageBox!.x);
+    expect(mobileAuthoringBox!.x + mobileAuthoringBox!.width).toBeLessThanOrEqual(
+      mobileStageBox!.x + mobileStageBox!.width,
+    );
+    expect(mobileAuthoringBox!.width).toBeLessThanOrEqual(320);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+
     const chrome = await toolbar.evaluate((element) => {
       const toolbarStyle = getComputedStyle(element);
       const button = element.querySelector('.piece-stage-toolbar .piece-stage-icon-button');

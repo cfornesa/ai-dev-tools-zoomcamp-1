@@ -446,6 +446,7 @@ function EditorToolbarColorControl({ sceneEditor }: { sceneEditor: SceneEditor }
       <input
         id="editor-toolbar-fill-color"
         type="text"
+        aria-label="Fill color"
         value={draft}
         disabled={!shape}
         placeholder={shape ? '' : 'No shape selected'}

@@ -10851,6 +10851,21 @@ Ran the configured Ruff formatter with no behavior change; `make check` now
 passes all backend and frontend gates. The issue remains open until the
 corresponding QA/status reconciliation is posted to GitHub.
 
+## 266. Verify portable 3D Full/Non-Camera downloads
+
+Status: LOCAL IMPLEMENTATION VERIFIED; DEPLOYED/GITHUB RECONCILIATION PENDING
+
+GitHub issue: [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337)
+
+The `project3dLifecycle.spec.ts` disposable-stack transaction passed 4/4.
+The published 3D fixture flow triggered real Full and Non-Camera ZIP downloads,
+extracted both archives, opened each through `file://`, and exercised the
+packaged canvas, Piece controls, reset/view travel, and sound controls. It
+verified that Full retains camera/hand-tracking surfaces and bundled runtime
+assets while Non-Camera omits camera/hand UI and runtime while retaining
+non-camera controls. This local evidence does not close the issue: exact
+post-publish downloads and authenticated GitHub reconciliation remain pending.
+
 ## 265. Verify embedded 3D viewer route parity
 
 Status: LOCAL IMPLEMENTATION VERIFIED; DEPLOYED/GITHUB RECONCILIATION PENDING

@@ -1,12 +1,13 @@
-import { useState, type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 
-import type { ArtPieceCapabilitySet } from '../api/artPieces';
+import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
 import { ART_PIECE_BRIDGE_VERSION } from '../generative/artPieceSandbox';
 import {
   generateArtPieceBundle,
   triggerArtPieceBundleDownload,
 } from '../generative/artPieceBundle';
-import type { ArtPieceLibrary } from '../api/artPieces';
+import { downloadBlob } from '../export/downloadBlob';
+import { screenshotFilename } from '../export/captureLiveScreenshot';
 import { useFullscreenToggle } from './useFullscreenToggle';
 
 type Props = {
@@ -31,17 +32,55 @@ function PieceStageControls({
   const [open, setOpen] = useState(false);
   const [guide, setGuide] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(stageRef);
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      const data = event.data as {
+        source?: string;
+        status?: string;
+        message?: string;
+        data?: string;
+        filename?: string;
+      } | null;
+      if (data?.source === 'art-piece-sandbox' && data.status === 'error') {
+        setScreenshotError(data.message || 'The art piece could not complete that action.');
+      }
+      if (data?.source === 'art-piece-sandbox' && data.status === 'screenshot' && data.data) {
+        try {
+          const [header, encoded] = data.data.split(',', 2);
+          const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+          const mime = header.match(/data:([^;]+)/)?.[1] || 'image/png';
+          downloadBlob(
+            new Blob([bytes], { type: mime }),
+            data.filename || 'art-piece-screenshot.png',
+          );
+        } catch {
+          setScreenshotError('Screenshot failed: the captured artwork was not a valid image.');
+        }
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [iframeRef]);
   function command(type: string) {
+    if (type === 'screenshot') setScreenshotError(null);
     iframeRef.current?.contentWindow?.postMessage(
-      { source: 'art-piece-parent', version: ART_PIECE_BRIDGE_VERSION, type },
+      {
+        source: 'art-piece-parent',
+        version: ART_PIECE_BRIDGE_VERSION,
+        type,
+        filename: screenshotFilename(title || 'art-piece'),
+      },
       '*',
     );
   }
   async function downloadPiece(label: string) {
     setDownloadError(null);
     try {
-      const blob = await generateArtPieceBundle(library, source);
+      const mode = label === 'non-camera' ? 'non-camera' : 'full';
+      const blob = await generateArtPieceBundle(library, source, { capabilities, mode });
       triggerArtPieceBundleDownload(blob, `${title || 'art-piece'}-${label}.zip`);
       setOpen(false);
     } catch (error) {
@@ -132,6 +171,7 @@ function PieceStageControls({
           {downloadError && <p role="alert">{downloadError}</p>}
         </div>
       )}
+      {screenshotError && <p role="alert">{screenshotError}</p>}
       {guide && (
         <div role="dialog" aria-label="Hand gesture guide" aria-modal="true">
           <h3>Hand gesture guide</h3>

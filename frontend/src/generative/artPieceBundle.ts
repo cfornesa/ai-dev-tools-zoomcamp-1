@@ -45,7 +45,14 @@
  */
 import JSZip from 'jszip';
 
-import type { ArtPieceLibrary } from '../api/artPieces';
+import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
+
+export type ArtPieceExportMode = 'full' | 'non-camera';
+
+export type ArtPieceExportOptions = {
+  capabilities?: ArtPieceCapabilitySet;
+  mode?: ArtPieceExportMode;
+};
 
 export class ArtPieceBundleError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -91,7 +98,70 @@ const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, { url: string; filename: stri
   },
 };
 
-function buildIndexHtml(library: ArtPieceLibrary, code: string, runtimeFilename?: string): string {
+function stripCameraArtifacts(code: string): string {
+  return code
+    .replace(/<script[^>]*?(?:mediapipe|camera)[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/(?:navigator\.)?mediaDevices\.getUserMedia/gi, 'undefined')
+    .replace(/@mediapipe\/[\w/-]+/gi, '')
+    .replace(/\b(?:camera|webcam|mediapipe|hand[_-]?tracking)\b/gi, 'non-camera');
+}
+
+function buildExportControls(
+  capabilities: ArtPieceCapabilitySet,
+  mode: ArtPieceExportMode,
+): string {
+  const buttons = [
+    capabilities.screenshot !== false ? '<button data-action="screenshot">Screenshot</button>' : '',
+    capabilities.sound ? '<button data-action="sound">Mute sound</button>' : '',
+    capabilities.hand_steering && mode === 'full'
+      ? '<button data-action="hand">Hand steering</button>'
+      : '',
+    capabilities.camera_view && mode === 'full'
+      ? '<button data-action="camera">Camera view</button>'
+      : '',
+    capabilities.fullscreen !== false ? '<button data-action="fullscreen">Fullscreen</button>' : '',
+    '<button data-action="reset">Reset view</button>',
+  ].filter(Boolean);
+  return `<nav class="art-piece-controls" aria-label="Piece controls">${buttons.join('')}</nav>
+<script>
+(function () {
+  var controls = document.querySelector('.art-piece-controls');
+  function canvas() { return document.querySelector('canvas'); }
+  function filename() { return 'art-piece-screenshot-' + Date.now() + '.png'; }
+  function save(blob, name) {
+    var url = URL.createObjectURL(blob); var a = document.createElement('a');
+    a.href = url; a.download = name; a.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 0);
+  }
+  if (!controls) return;
+  controls.addEventListener('click', function (event) {
+    var action = event.target && event.target.getAttribute('data-action');
+    if (action === 'screenshot') {
+      var target = canvas();
+      if (target && target.toBlob) target.toBlob(function (blob) { if (blob) save(blob, filename()); });
+      else {
+        var svg = document.querySelector('svg');
+        if (svg) save(new Blob([new XMLSerializer().serializeToString(svg)], {type: 'image/svg+xml'}), filename().replace('.png', '.svg'));
+      }
+    } else if (action === 'fullscreen') {
+      document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+    } else if (action === 'reset') {
+      window.dispatchEvent(new CustomEvent('art-piece-command', {detail: {type: 'reset-view', version: 1}}));
+    } else if (action === 'sound' || action === 'camera' || action === 'hand') {
+      window.dispatchEvent(new CustomEvent('art-piece-command', {detail: {type: action, version: 1}}));
+    }
+  });
+})();
+</script>`;
+}
+
+function buildIndexHtml(
+  library: ArtPieceLibrary,
+  code: string,
+  runtimeFilename: string | undefined,
+  options: ArtPieceExportOptions,
+): string {
+  const mode = options.mode ?? 'full';
+  const exportCode = mode === 'non-camera' ? stripCameraArtifacts(code) : code;
   const runtimeScriptTag = runtimeFilename
     ? `<script src="runtime/${runtimeFilename}"></script>\n`
     : '';
@@ -103,8 +173,9 @@ function buildIndexHtml(library: ArtPieceLibrary, code: string, runtimeFilename?
     // canvas2d, svg, aframe: natural content already includes whatever
     // markup/script it needs -- see this module's doc comment for why
     // these aren't split further.
-    body = code;
+    body = exportCode;
   }
+  const controls = buildExportControls(options.capabilities ?? {}, mode);
   return `<!doctype html>
 <html>
 <head>
@@ -114,6 +185,7 @@ function buildIndexHtml(library: ArtPieceLibrary, code: string, runtimeFilename?
 ${runtimeScriptTag}</head>
 <body>
 ${body}
+${controls}
 </body>
 </html>
 `;
@@ -170,6 +242,7 @@ async function fetchRuntimeFile(url: string): Promise<Uint8Array> {
 export async function generateArtPieceBundle(
   library: ArtPieceLibrary,
   code: string,
+  options: ArtPieceExportOptions = {},
 ): Promise<Blob> {
   const runtime = LIBRARY_CDN[library];
   const runtimeBytes = runtime ? await fetchRuntimeFile(runtime.url) : null;
@@ -178,9 +251,12 @@ export async function generateArtPieceBundle(
     const zip = new JSZip();
     zip.file('README.txt', README);
     zip.file('styles/piece.css', PIECE_CSS);
-    zip.file('index.html', buildIndexHtml(library, code, runtime?.filename));
+    zip.file('index.html', buildIndexHtml(library, code, runtime?.filename, options));
     if (library === 'threejs') {
-      zip.file('scripts/piece.js', code);
+      zip.file(
+        'scripts/piece.js',
+        options.mode === 'non-camera' ? stripCameraArtifacts(code) : code,
+      );
     }
     if (runtime && runtimeBytes) {
       zip.file(`runtime/${runtime.filename}`, runtimeBytes);

@@ -60,6 +60,37 @@ describe('generateArtPieceBundle', () => {
     expect(await zip.files['index.html'].async('string')).toContain(SVG_CODE);
   });
 
+  it('adds viewer controls without a recursive download control', async () => {
+    const blob = await generateArtPieceBundle('canvas2d', CANVAS2D_CODE, {
+      capabilities: { screenshot: true, sound: true, hand_steering: true, camera_view: true },
+      mode: 'full',
+    });
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    expect(html).toContain('data-action="screenshot"');
+    expect(html).toContain('data-action="sound"');
+    expect(html).toContain('data-action="camera"');
+    expect(html).toContain('data-action="hand"');
+    expect(html).not.toContain('Download full piece');
+    expect(html).not.toContain('data-action="download"');
+  });
+
+  it('non-camera mode removes camera/hand surface and keeps screenshot controls', async () => {
+    const source =
+      '<script src="https://cdn.example/mediapipe.js"></script><script>navigator.mediaDevices.getUserMedia({video:true});</script>';
+    const blob = await generateArtPieceBundle('canvas2d', source, {
+      capabilities: { screenshot: true, camera_view: true, hand_steering: true },
+      mode: 'non-camera',
+    });
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    expect(html).not.toContain('mediapipe.js');
+    expect(html).not.toContain('getUserMedia');
+    expect(html).not.toContain('data-action="camera"');
+    expect(html).not.toContain('data-action="hand"');
+    expect(html).toContain('data-action="screenshot"');
+  });
+
   it('threejs: splits the code into scripts/piece.js, provides a container div, and vendors the runtime', async () => {
     const blob = await generateArtPieceBundle('threejs', THREEJS_CODE);
     const zip = await JSZip.loadAsync(blob);

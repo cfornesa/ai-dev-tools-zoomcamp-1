@@ -147,7 +147,29 @@ const LISTENER_SCRIPT = `
     var data = event && event.data;
     var allowed = ['screenshot', 'toggle-sound', 'enable-microphone', 'enable-camera', 'enable-hand-steering', 'reset-view'];
     if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
-    try { window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: data.type, version: 1 } })); } catch (e) {}
+    try {
+      if (data.type === 'screenshot') {
+        var canvas = document.querySelector('canvas');
+        var filename = typeof data.filename === 'string' ? data.filename : 'art-piece-screenshot.png';
+        function reportScreenshot(data, name) {
+          window.parent.postMessage({
+            source: ${JSON.stringify(ART_PIECE_SANDBOX_MESSAGE_SOURCE)},
+            status: 'screenshot', data: data, filename: name
+          }, '*');
+        }
+        if (canvas && canvas.toBlob) {
+          var image = canvas.toDataURL('image/png');
+          reportScreenshot(image, filename);
+        } else {
+          var svg = document.querySelector('svg');
+          if (!svg) throw new Error('The generated piece has no capturable artwork.');
+          var svgText = new XMLSerializer().serializeToString(svg);
+          reportScreenshot('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText), filename.replace('.png', '.svg'));
+        }
+      } else {
+        window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: data.type, version: 1 } }));
+      }
+    } catch (e) { report('error', (e && e.message) || 'The requested piece action failed.'); }
   });
 })();
 </script>

@@ -10543,6 +10543,15 @@ absence of the legacy header publication row. This is local implementation
 evidence only; #338 remains open until the exact published `/projects/:id`
 route is inspected on the deployed revision.
 
+AI 3D implementation slice (#339, 2026-09-02): the dedicated
+`ai3dStageChrome.spec.ts` browser transaction passed 1/1 against the
+disposable PostgreSQL/Django/Vite/Chromium stack. It verifies the exact
+`/ai-projects3d/:id` route, shared 3D screenshot/download/sound/piece/steer/
+gesture/fullscreen controls, AI authoring action, Draft/Published control,
+absence of the legacy standalone export action, and stage containment. This
+is local implementation evidence only; #339 remains open until the exact
+published AI editor route is authenticated and inspected.
+
 ## 264. Add visitor-selectable instruments for each 3D sound voice
 
 Status: HANDED-OFF

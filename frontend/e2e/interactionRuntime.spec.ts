@@ -126,6 +126,14 @@ function lastFrameStatus(page: Page) {
   return page.locator('.demo-last-frame');
 }
 
+async function openPieceControls(page: Page): Promise<void> {
+  const disclosure = page.getByRole('button', { name: 'Piece controls' });
+  await expect(disclosure).toBeVisible();
+  if ((await disclosure.getAttribute('aria-expanded')) === 'false') {
+    await disclosure.click();
+  }
+}
+
 function playbackProgress(page: Page) {
   return page.getByRole('status').filter({ hasText: /of \d+ events played/ });
 }
@@ -201,6 +209,7 @@ test.describe('Interaction runtime', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
     await expandAllCollapsibleSections(page);
+    await openPieceControls(page);
 
     await expect(lastFrameStatus(page)).toHaveText('No frame emitted yet.');
 
@@ -244,6 +253,7 @@ test.describe('Interaction runtime', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
     await expandAllCollapsibleSections(page);
+    await openPieceControls(page);
 
     await page.getByRole('radio', { name: 'Synthetic playback' }).click();
     await expect(playbackProgress(page)).toHaveText('0 of 9 events played');
@@ -277,6 +287,7 @@ test.describe('Interaction runtime', () => {
     // asks for) reproduces the same sequence again from a clean start.
     await page.reload();
     await expandAllCollapsibleSections(page);
+    await openPieceControls(page);
     await page.getByRole('radio', { name: 'Synthetic playback' }).click();
     const reloadedFrames: string[] = [];
     for (let i = 0; i < 9; i += 1) {
@@ -290,6 +301,7 @@ test.describe('Interaction runtime', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
     await expandAllCollapsibleSections(page);
+    await openPieceControls(page);
 
     await page.getByRole('radio', { name: 'Synthetic playback' }).click();
     // Full motion (the default in a fresh Chromium profile, no OS

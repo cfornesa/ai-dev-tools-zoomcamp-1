@@ -10499,6 +10499,36 @@ suite passed 18 tests with one expected skip. This is a workflow/fixture
 reconciliation item under #321’s existing workflow scope; it is not product
 parity evidence and does not authorize fixing a later route issue in parallel.
 
+## 264. Add visitor-selectable instruments for each 3D sound voice
+
+Status: HANDED-OFF
+
+GitHub issue: [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345)
+
+Closure slice: the 3D `Piece controls` popover exposes exactly three finite
+selectors — Ambient, Movement, and Melodic — with the seven reference
+instruments (Synth, AM Synth, FM Synth, Membrane, Metal, Plucked String, and
+Duo Synth). Selecting one voice replaces only that voice's Tone.js synth; the
+other voices continue to target their existing synth instances. The selection
+is local to the mounted viewer and is not persisted into scene/project data.
+Consumer-route and downloaded-artifact evidence remains owned by #327–#337.
+
+Evidence: `frontend/src/audio/sonicEngine.ts` adds typed voice/instrument
+contracts and isolated replacement; `Scene3DPreview.tsx` renders the three
+selectors in the existing Piece controls disclosure. Focused Vitest passed
+49/49 (`sonicEngine.test.ts`, `Scene3DPreview.sound.test.tsx`); the full
+frontend suite passed 189 files / 2,382 tests; `npm run typecheck`, `npm run
+lint`, `npm run format:check`, and `npm run build` passed. Lint retained only
+the repository's existing warnings, and the build retained its existing large
+chunk warning.
+
+Handoff: the local implementation is closure-ready, but the GitHub API was
+unreachable during this pass, so the required `## QA: PASS` comment and issue
+closure could not be reconciled. Retry authenticated GitHub access, post the
+criterion matrix to #345, and close it only after confirming the evidence
+above. This does not block independent issues; it blocks only #345's final
+GitHub reconciliation.
+
 ## 263. Make Docker browser verification select and fingerprint this repository
 
 Status: IN_PROGRESS

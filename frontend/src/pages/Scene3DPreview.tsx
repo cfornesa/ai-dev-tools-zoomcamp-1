@@ -17,7 +17,13 @@ import {
   type MicFailureCategory,
 } from '../audio/micFailure';
 import { isEditableElement, PIANO_KEY_MAP } from '../audio/pianoKeyMap';
-import { createSonicEngine, type SonicEngine } from '../audio/sonicEngine';
+import {
+  createSonicEngine,
+  SONIC_INSTRUMENT_OPTIONS,
+  type SonicEngine,
+  type SonicInstrument,
+  type SonicVoice,
+} from '../audio/sonicEngine';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
@@ -233,6 +239,11 @@ function Scene3DPreview({
   if (sonicEngineRef.current === null) sonicEngineRef.current = createSonicEngine();
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundVolume, setSoundVolume] = useState(50);
+  const [voiceInstruments, setVoiceInstruments] = useState<Record<SonicVoice, SonicInstrument>>({
+    ambient: 'synth',
+    movement: 'synth',
+    melodic: 'synth',
+  });
   useEffect(() => {
     const engine = sonicEngineRef.current;
     return () => engine?.dispose();
@@ -797,6 +808,33 @@ function Scene3DPreview({
                         sonicEngineRef.current?.setVolume(next);
                       }}
                     />
+                  </div>
+                  <div className="editor-tool-group scene3d-voice-instrument-pickers">
+                    {(['ambient', 'movement', 'melodic'] as const).map((voice) => (
+                      <label key={voice} htmlFor={`scene3d-${voice}-instrument`}>
+                        {voice[0].toUpperCase() + voice.slice(1)}
+                        <select
+                          id={`scene3d-${voice}-instrument`}
+                          aria-label={`${voice[0].toUpperCase() + voice.slice(1)} instrument`}
+                          value={voiceInstruments[voice]}
+                          onChange={(event) => {
+                            const instrument = event.target.value as SonicInstrument;
+                            if (sonicEngineRef.current?.setVoiceInstrument(voice, instrument)) {
+                              setVoiceInstruments((current) => ({
+                                ...current,
+                                [voice]: instrument,
+                              }));
+                            }
+                          }}
+                        >
+                          {SONIC_INSTRUMENT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
                   </div>
                   <div className="editor-tool-group">
                     <button

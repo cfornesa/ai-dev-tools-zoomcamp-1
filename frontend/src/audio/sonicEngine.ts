@@ -38,6 +38,23 @@ export type SonicEngineStatus = 'idle' | 'active' | 'error';
 
 export type MovementDelta = { dx: number; dy: number; dz: number };
 
+export type SonicVoice = 'ambient' | 'movement' | 'melodic';
+export type SonicInstrument =
+  'synth' | 'amsynth' | 'fmsynth' | 'membranesynth' | 'metalsynth' | 'plucksynth' | 'duosynth';
+
+export const SONIC_INSTRUMENT_OPTIONS: ReadonlyArray<{
+  value: SonicInstrument;
+  label: string;
+}> = [
+  { value: 'synth', label: 'Synth' },
+  { value: 'amsynth', label: 'AM Synth' },
+  { value: 'fmsynth', label: 'FM Synth' },
+  { value: 'membranesynth', label: 'Membrane' },
+  { value: 'metalsynth', label: 'Metal' },
+  { value: 'plucksynth', label: 'Plucked String' },
+  { value: 'duosynth', label: 'Duo Synth' },
+];
+
 /** Below this speed, `reportMovement` is treated as "not really moving" and
  * never triggers a note -- otherwise idle jitter/damping settle-out from
  * `OrbitControls` would fire notes constantly at rest. */
@@ -61,6 +78,8 @@ export interface SonicEngine {
    * melodic together -- the reference has no per-voice mute, only this
    * one shared control). */
   setVolume(percent: number): void;
+  /** Replaces one voice's instrument without changing the other voices. */
+  setVoiceInstrument(voice: SonicVoice, instrument: SonicInstrument): boolean;
   /** Called every frame by the 3D preview's own render loop with the
    * camera's position delta since the previous frame. */
   reportMovement(delta: MovementDelta): void;
@@ -103,9 +122,23 @@ export function createSonicEngine(
   let tone: ToneModule | null = null;
   let bus: InstanceType<ToneModule['Volume']> | null = null;
   let filter: InstanceType<ToneModule['Filter']> | null = null;
-  let ambientSynth: InstanceType<ToneModule['Synth']> | null = null;
-  let movementSynth: InstanceType<ToneModule['Synth']> | null = null;
-  let melodicSynth: InstanceType<ToneModule['Synth']> | null = null;
+  type VoiceSynth = {
+    connect(destination: unknown): unknown;
+    triggerAttackRelease(note: string, duration: string, time?: number): void;
+    triggerAttack(note: string): void;
+    triggerRelease(): void;
+    dispose(): void;
+    volume: { value: number };
+    frequency: { rampTo(value: number, duration?: number): void };
+  };
+  let ambientSynth: VoiceSynth | null = null;
+  let movementSynth: VoiceSynth | null = null;
+  let melodicSynth: VoiceSynth | null = null;
+  const voiceInstruments: Record<SonicVoice, SonicInstrument> = {
+    ambient: 'synth',
+    movement: 'synth',
+    melodic: 'synth',
+  };
   let ambientLoop: InstanceType<ToneModule['Loop']> | null = null;
   let userMedia: InstanceType<ToneModule['UserMedia']> | null = null;
   let thereminSounding = false;
@@ -119,9 +152,9 @@ export function createSonicEngine(
 
       filter = new tone.Filter(2000, 'lowpass').toDestination();
       bus = new tone.Volume(0).connect(filter);
-      ambientSynth = new tone.Synth().connect(bus);
-      movementSynth = new tone.Synth().connect(bus);
-      melodicSynth = new tone.Synth().connect(bus);
+      ambientSynth = createVoiceSynth('ambient');
+      movementSynth = createVoiceSynth('movement');
+      melodicSynth = createVoiceSynth('melodic');
 
       let ambientIndex = 0;
       ambientLoop = new tone.Loop((time) => {
@@ -172,6 +205,42 @@ export function createSonicEngine(
     // simple linear-to-dB mapping, matching the reference's own single
     // shared volume slider governing all three voices together.
     bus.volume.value = clamped === 0 ? -60 : (clamped / 100) * 24 - 24;
+  }
+
+  function createVoiceSynth(voice: SonicVoice): VoiceSynth {
+    if (!tone || !bus) throw new Error('Sound must be enabled before selecting an instrument.');
+    const instrument = voiceInstruments[voice];
+    const synth =
+      instrument === 'amsynth'
+        ? new tone.AMSynth()
+        : instrument === 'fmsynth'
+          ? new tone.FMSynth()
+          : instrument === 'membranesynth'
+            ? new tone.MembraneSynth()
+            : instrument === 'metalsynth'
+              ? new tone.MetalSynth()
+              : instrument === 'plucksynth'
+                ? new tone.PluckSynth()
+                : instrument === 'duosynth'
+                  ? new tone.DuoSynth()
+                  : new tone.Synth();
+    return synth.connect(bus) as unknown as VoiceSynth;
+  }
+
+  function setVoiceInstrument(voice: SonicVoice, instrument: SonicInstrument): boolean {
+    if (!tone || !bus || status !== 'active') return false;
+    const previous =
+      voice === 'ambient' ? ambientSynth : voice === 'movement' ? movementSynth : melodicSynth;
+    previous?.dispose();
+    if (voice === 'melodic') {
+      thereminSounding = false;
+    }
+    voiceInstruments[voice] = instrument;
+    const next = createVoiceSynth(voice);
+    if (voice === 'ambient') ambientSynth = next;
+    else if (voice === 'movement') movementSynth = next;
+    else melodicSynth = next;
+    return true;
   }
 
   function reportMovement(delta: MovementDelta) {
@@ -252,6 +321,7 @@ export function createSonicEngine(
     enable,
     disable,
     setVolume,
+    setVoiceInstrument,
     reportMovement,
     triggerMelodicNote,
     connectMic,

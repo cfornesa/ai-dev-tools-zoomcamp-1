@@ -55,7 +55,7 @@ as read-only behavioral reference.
 | [#342](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/342) | Independent 3D camera-view toggle | Shared capability; consumers verify through #327–#337 | `closed_completed_local` | Narrow local capability closure; exact deployed consumers remain #327–#337 |
 | [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad travel | Immersive capability; route variants decide inclusion in #333–#335 | `open` | Implement press/release/cancel semantics and touch-browser evidence |
 | [#344](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/344) | Immersive 3D hand gesture move/strafe | Depends on #295; route evidence remains #333–#335 | `open` | Implement bounded travel and safe-stop behavior, or document a linked product decision |
-| [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | Depends on #306/#310; route/artifact evidence remains #327–#337 | `open` | Implement three finite selectors and isolated voice changes |
+| [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | Depends on #306/#310; route/artifact evidence remains #327–#337 | `handed-off` | Local implementation and QA pass; GitHub API unavailable for required QA comment/closure. Retry authenticated issue reconciliation; do not duplicate the issue |
 
 ## Distillation handoff gate (2026-09-02)
 

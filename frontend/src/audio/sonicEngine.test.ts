@@ -107,6 +107,12 @@ function createFakeToneModule() {
 
   const fakeModule = {
     Synth: FakeSynth,
+    AMSynth: FakeSynth,
+    FMSynth: FakeSynth,
+    MembraneSynth: FakeSynth,
+    MetalSynth: FakeSynth,
+    PluckSynth: FakeSynth,
+    DuoSynth: FakeSynth,
     Volume: FakeVolume,
     Filter: FakeFilter,
     Loop: FakeLoop,
@@ -178,6 +184,20 @@ describe('createSonicEngine', () => {
     engine.reportMovement({ dx: 1, dy: 1, dz: 1 });
     expect(fake.triggerCalls).toHaveLength(1);
     expect(fake.triggerCalls[0].kind).toBe('synth-2'); // movementSynth
+  });
+
+  it('replaces only the selected voice instrument', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    expect(engine.setVoiceInstrument('movement', 'fmsynth')).toBe(true);
+    fake.triggerCalls.length = 0;
+    engine.triggerMelodicNote('E4');
+    expect(fake.triggerCalls).toEqual([{ kind: 'synth-3', note: 'E4' }]);
+    engine.reportMovement({ dx: 1, dy: 0, dz: 0 });
+    expect(fake.triggerCalls.some((call) => call.kind === 'synth-4')).toBe(true);
+    expect(fake.disposeCalls).toContain('synth-2');
   });
 
   it('reportMovement retriggers only after the debounce window elapses', async () => {

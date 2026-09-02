@@ -21,6 +21,7 @@ const {
   enableSpy,
   disableSpy,
   setVolumeSpy,
+  setVoiceInstrumentSpy,
   reportMovementSpy,
   triggerMelodicNoteSpy,
   connectMicSpy,
@@ -33,6 +34,7 @@ const {
   enableSpy: vi.fn(),
   disableSpy: vi.fn(),
   setVolumeSpy: vi.fn(),
+  setVoiceInstrumentSpy: vi.fn(() => true),
   reportMovementSpy: vi.fn(),
   triggerMelodicNoteSpy: vi.fn(),
   connectMicSpy: vi.fn().mockResolvedValue(undefined),
@@ -43,6 +45,15 @@ const {
 }));
 
 vi.mock('../audio/sonicEngine', () => ({
+  SONIC_INSTRUMENT_OPTIONS: [
+    { value: 'synth', label: 'Synth' },
+    { value: 'amsynth', label: 'AM Synth' },
+    { value: 'fmsynth', label: 'FM Synth' },
+    { value: 'membranesynth', label: 'Membrane' },
+    { value: 'metalsynth', label: 'Metal' },
+    { value: 'plucksynth', label: 'Plucked String' },
+    { value: 'duosynth', label: 'Duo Synth' },
+  ],
   createSonicEngine: (): SonicEngine => ({
     get status() {
       return engineStatusRef.current;
@@ -56,6 +67,7 @@ vi.mock('../audio/sonicEngine', () => ({
       engineStatusRef.current = 'idle';
     },
     setVolume: setVolumeSpy,
+    setVoiceInstrument: setVoiceInstrumentSpy,
     reportMovement: reportMovementSpy,
     triggerMelodicNote: triggerMelodicNoteSpy,
     connectMic: connectMicSpy,
@@ -483,6 +495,9 @@ describe('Scene3DPreview "Piece controls" settings panel (issue #310)', () => {
     const panel = screen.getByRole('group', { name: 'Piece controls' });
     expect(panel).toBeInTheDocument();
     expect(screen.getByLabelText('Sound volume')).toBeInTheDocument();
+    expect(screen.getByLabelText('Ambient instrument')).toHaveValue('synth');
+    expect(screen.getByLabelText('Movement instrument')).toHaveValue('synth');
+    expect(screen.getByLabelText('Melodic instrument')).toHaveValue('synth');
     expect(screen.getByRole('button', { name: 'Keyboard notes' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Live mic' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Camera theremin' })).toBeInTheDocument();
@@ -493,6 +508,20 @@ describe('Scene3DPreview "Piece controls" settings panel (issue #310)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Hide piece controls' }));
     expect(screen.queryByRole('group', { name: 'Piece controls' })).not.toBeInTheDocument();
+  });
+
+  it('changes one voice instrument without changing the other selectors', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+
+    await user.selectOptions(screen.getByLabelText('Movement instrument'), 'fmsynth');
+
+    expect(setVoiceInstrumentSpy).toHaveBeenCalledWith('movement', 'fmsynth');
+    expect(screen.getByLabelText('Ambient instrument')).toHaveValue('synth');
+    expect(screen.getByLabelText('Movement instrument')).toHaveValue('fmsynth');
+    expect(screen.getByLabelText('Melodic instrument')).toHaveValue('synth');
   });
 
   it('shows the Piece controls disclosure before sound is enabled', () => {

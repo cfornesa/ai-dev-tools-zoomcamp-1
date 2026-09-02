@@ -8721,7 +8721,7 @@ not started.
 
 ## 225. Epic: per-user saved Mistral models and additive Personas across all AI editors
 
-Status: IN_PROGRESS
+Status: BLOCKED / HANDOFF
 
 GitHub issue: [#257](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/257)
 
@@ -10520,6 +10520,12 @@ uncached `node:22-bookworm-slim` and
 until the image pull/build succeeds, the preflight passes against running
 repository containers, and the Docker browser/readiness gate runs against
 that stack. Native `scripts/browser-qa.sh` remains independent.
+
+Retry evidence (2026-09-02): a second `docker compose --project-name
+ai-dev-tools-zoomcamp-1 --file compose.yaml up -d --build` attempt reached the
+same metadata-resolution point and terminated with `DeadlineExceeded` for
+both uncached base images. This is now dependency-blocked on Docker registry
+access; it is not evidence of a product or parity failure.
 
 ## 264. Restore backend format-check cleanliness in startup configuration test
 

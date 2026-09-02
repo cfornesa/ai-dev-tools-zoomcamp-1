@@ -94,6 +94,7 @@ describe('AiEditorWorkspace', () => {
     expect(screen.getByRole('toolbar', { name: 'Piece actions' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Take screenshot' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open download menu' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Publication status: Draft' }));
     expect(screen.getByRole('button', { name: 'Draft' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Published' })).toBeEnabled();
   });

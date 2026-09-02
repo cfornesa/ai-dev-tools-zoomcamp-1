@@ -110,7 +110,11 @@ implementation and exact routes:
   identity probes; focused injection passed 33/33 and public lifecycle/camera
   passed 24/24. The first full 137-test run reached 99 passed before the two
   focused regressions were corrected; the corrected focused suites pass, but a
-  clean replacement full batch remains required before readiness.
+  clean replacement full batch reached 135/137 with one skipped and one
+  authentication/fixture timing failure before the target scenario began.
+  The exact failed 8-test `projectLifecycle.spec.ts` rerun passed 8/8 in
+  isolation. This is recorded as a verification flake, not as a clean full
+  batch, until the complete run is repeatably green.
 - GitHub open-issue enumeration now contains #274, #320, and #321; #123 is
   closed with a QA PASS. #274 remains dependency-blocked by #320 and is not
   treated as complete merely because earlier child issues were closed.

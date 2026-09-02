@@ -10357,10 +10357,9 @@ while retaining the non-camera runtime controls. The stage remains actionable
 while Code is selected, and header-level duplicate Save/export actions are
 removed.
 
-Next action: add dedicated 3D Full-export runtime lifecycle tests and then
-authenticate and publish the current build for exact editor, immersive, embed,
-and downloaded-runtime route evidence. Do not close this task or its parent
-until those deployment-boundary criteria are proven.
+Next action: authenticate and publish the current build for exact editor,
+immersive, embed, and downloaded-runtime route evidence. Do not close this
+task or its parent until those deployment-boundary criteria are proven.
 
 Second parity correction (2026-09-01): the first increment still left real
 surface defects. AI-assisted 2D had a separate screenshot/fullscreen action

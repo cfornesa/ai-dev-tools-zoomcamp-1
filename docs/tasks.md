@@ -11012,6 +11012,19 @@ sibling-panel shell and the tested revision has not been authorized/published;
 local evidence cannot close the deployed-route boundary. #331 is the next
 independent route and may proceed.
 
+## 269u. End-of-blocked-issue distillation for #329
+
+Status: DISTILLATION COMPLETE — #329 HANDED OFF; #331 UNBLOCKED
+
+No duplicate is warranted: public 2D remains one closure-sized route; revision
+identity belongs to #320/#321, and embedded 2D is separately scoped to #331.
+The local public transaction is complete at 24/24; only the external published
+revision remains blocked because it still serves the legacy shell. No product
+change or deployment duplicate is filed. The route is atomic as one finite
+anonymous lifecycle/fallback/stage-chrome surface. #331 is the next independent
+task and may proceed while #329 awaits authorized publication and exact URL
+evidence.
+
 ## 270. Distill deployed authored-piece parity contradiction and public 2D consumer gap (#320/#329)
 
 Status: DISTILLED; NEXT ENGINEERING HANDOFF IS #329

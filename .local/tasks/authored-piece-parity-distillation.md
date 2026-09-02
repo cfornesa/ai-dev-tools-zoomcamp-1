@@ -1186,3 +1186,20 @@ Status: DISTILLATION COMPLETE — #344 IMPLEMENTED, HANDED OFF; NEXT ISSUE MAY P
 - Next-order check: #345 is the next independent, closure-sized 3D audio
   capability and may proceed under the sequential backlog rule. #344 stays
   open until its missing evidence is reconciled.
+
+## End-of-blocked-issue distillation: #329 (2026-09-02)
+
+Status: DISTILLATION COMPLETE — #329 HANDED OFF; NEXT ISSUE MAY PROCEED
+
+- Duplicate check: no new issue is warranted. The public 2D route remains a
+  single closure unit; deployment/revision identity belongs to #320/#321, and
+  embedded 2D remains independently scoped to #331.
+- Blocker check: the local route transaction is complete at 24/24. The only
+  remaining blocker is the external published revision, which still serves
+  the legacy shell; no product change or duplicate deployment issue is filed.
+- Atomicity check: no split is needed. The route's finite anonymous lifecycle,
+  fallback states, and stage chrome are one independently observable public
+  surface, while embed/download behavior has explicit sibling issues.
+- Next-order check: #331 is the next independent closure-sized route and may
+  proceed. #329 remains open until authorized publication and exact production
+  URL evidence are reconciled.

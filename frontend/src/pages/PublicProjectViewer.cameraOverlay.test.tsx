@@ -98,6 +98,7 @@ async function loadViewer(openControls = false) {
   renderViewer();
   await screen.findByRole('heading', { name: 'Hand Follower' });
   if (openControls) {
+    fireEvent.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Piece controls' }));
   }
 }

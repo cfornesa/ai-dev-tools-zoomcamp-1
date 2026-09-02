@@ -93,6 +93,7 @@ async function loadReadyWorkspace() {
   // mounted content is intentionally collapsed by default and opening all
   // of it makes these interaction tests depend on unrelated panel work.
   await screen.findByRole('region', { name: 'Layers' });
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
   await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
 }
 

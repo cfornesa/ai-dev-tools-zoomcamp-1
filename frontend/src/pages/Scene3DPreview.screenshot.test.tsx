@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -72,7 +72,10 @@ describe('Scene3DPreview "Take screenshot" (issue #286)', () => {
     render(<Scene3DPreview scene={baseScene()} screenshotBaseName="My 3D scene" />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: 'Take screenshot' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Take screenshot' }),
+    );
 
     await waitFor(() => expect(mockedDownloadBlob).toHaveBeenCalledTimes(1));
     const [blob, filename] = mockedDownloadBlob.mock.calls[0];
@@ -84,7 +87,10 @@ describe('Scene3DPreview "Take screenshot" (issue #286)', () => {
     render(<Scene3DPreview scene={baseScene({ id: 'scene3d-abc' })} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: 'Take screenshot' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Take screenshot' }),
+    );
 
     await waitFor(() => expect(mockedDownloadBlob).toHaveBeenCalledTimes(1));
     expect(mockedDownloadBlob.mock.calls[0][1]).toMatch(/^scene3d-abc-screenshot-\d+\.png$/);
@@ -93,6 +99,7 @@ describe('Scene3DPreview "Take screenshot" (issue #286)', () => {
   it('hides the button when showScreenshotButton is false (the AI-proposal preview)', () => {
     render(<Scene3DPreview scene={baseScene()} showScreenshotButton={false} />);
 
-    expect(screen.queryByRole('button', { name: 'Take screenshot' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open piece controls menu' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { hidden: true })).toHaveAttribute('hidden');
   });
 });

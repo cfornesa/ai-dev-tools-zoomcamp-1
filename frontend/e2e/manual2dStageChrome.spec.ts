@@ -25,7 +25,10 @@ test.describe('manual 2D editor stage chrome', () => {
 
     const stage = page.locator('.piece-stage-shell');
     const authoringToolbar = stage.getByRole('toolbar', { name: 'Editor actions' });
+    const stageMenu = stage.getByRole('button', { name: 'Open piece controls menu' });
     const editSceneButton = stage.getByRole('button', { name: 'Edit scene' });
+    await stageMenu.click();
+    const stageDialog = stage.getByRole('dialog');
     await expect(editSceneButton).toBeVisible();
     await expect(authoringToolbar).toBeHidden();
     await expect(page.locator('.editor-workspace-header .editor-toolbar')).toHaveCount(0);
@@ -65,16 +68,20 @@ test.describe('manual 2D editor stage chrome', () => {
       await expect(editSceneButton).toBeVisible();
       await expect(authoringToolbar).toBeVisible();
       await expect(toolbar).toBeVisible();
-      await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+      await expect(stageDialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
       await expect(
-        toolbar.getByRole('button', { name: 'Publication status: Draft' }),
+        stageDialog.getByRole('button', { name: 'Publication status: Draft' }),
       ).toBeVisible();
     }
     await page.setViewportSize({ width: 1280, height: 900 });
-    await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Publication status: Draft' })).toBeVisible();
+    await expect(stageDialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+    await expect(stageDialog.getByRole('button', { name: 'Open download menu' })).toBeVisible();
+    await expect(
+      stageDialog.getByRole('button', { name: 'Expand piece to fullscreen' }),
+    ).toBeVisible();
+    await expect(
+      stageDialog.getByRole('button', { name: 'Publication status: Draft' }),
+    ).toBeVisible();
     await expect(page.locator('.editor-workspace-header .editor-publish-control')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
 
@@ -147,11 +154,11 @@ test.describe('manual 2D editor stage chrome', () => {
     expect(runtimeLayout.flexDirection).toBe('row');
     expect(runtimeLayout.width).toBeGreaterThan(runtimeLayout.height);
 
-    await toolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
+    await stageDialog.getByRole('button', { name: 'Publication status: Draft' }).click();
     await expect(
-      toolbar.getByRole('group', { name: 'Publication status', exact: true }),
+      stageDialog.getByRole('group', { name: 'Publication status', exact: true }),
     ).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
-    await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
+    await expect(stageDialog.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
+    await expect(stageDialog.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
   });
 });

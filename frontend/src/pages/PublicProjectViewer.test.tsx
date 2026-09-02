@@ -65,6 +65,7 @@ function renderViewer(id = 'p1') {
 
 async function openPieceControls() {
   const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
   await user.click(screen.getByRole('button', { name: 'Piece controls' }));
 }
 

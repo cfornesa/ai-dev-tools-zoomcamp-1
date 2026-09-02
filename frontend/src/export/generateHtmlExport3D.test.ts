@@ -96,11 +96,18 @@ describe('generateScene3DBundle', () => {
     expect(html).toContain('scripts/piece.js');
     expect(html).toContain('scene3d-canvas-host');
     expect(html).toContain('piece-screenshot');
+    expect(html).toContain('piece-reset-view');
+    expect(html).toContain('piece-sound');
+    expect(html).toContain('piece-audio-controls');
     expect(html).toContain('piece-fullscreen');
 
     const script = await zip.files['scripts/piece.js'].async('string');
     expect(script).toContain('window.__SCENE3D_DATA__');
     expect(script).toContain('"id":"obj-1"');
+    expect(script).toContain('piece-reset-view');
+    expect(script).toContain('piece-sound');
+    expect(script).toContain('AudioContext');
+    expect(script).toContain('piece-volume');
 
     const runtime = await zip.files['runtime/three.min.js'].async('string');
     expect(runtime).toBe('/* fake three.js runtime */');

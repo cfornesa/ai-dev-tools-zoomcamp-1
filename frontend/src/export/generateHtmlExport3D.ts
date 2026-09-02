@@ -79,6 +79,22 @@ const PIECE_CSS = `html, body {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+#piece-audio-controls {
+  position: fixed;
+  left: 1rem;
+  bottom: 5.5rem;
+  z-index: 10;
+  display: grid;
+  gap: .5rem;
+  min-width: 13rem;
+  padding: .75rem;
+  color: #fff;
+  background: rgba(10,12,20,.9);
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: .75rem;
+}
+#piece-audio-controls[hidden] { display: none; }
+#piece-audio-controls label { display: grid; gap: .25rem; font-size: .8rem; }
 `;
 
 const README = `EXPORT: 3D scene
@@ -111,7 +127,13 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
 <div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
   <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot">⌗</button>
   <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view">↺</button>
+  <button id="piece-sound" type="button" aria-label="Enable sound" title="Enable sound" aria-pressed="false">♪</button>
+  <button id="piece-audio-settings" type="button" aria-label="Sound settings" title="Sound settings" aria-expanded="false">☰</button>
   <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
+</div>
+<div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
+  <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
+  <p>Enable sound, then use the A–L keys to play notes.</p>
 </div>
 <script src="scripts/piece.js"></script>
 <script>

@@ -155,6 +155,70 @@ export function buildStandaloneThreeRuntimeScript(): string {
     var size = currentSize();
     renderer.setSize(size.width, size.height, false);
     var graph = buildSceneGraph(scene3d, size.width / size.height);
+    var audioContext = null;
+    var masterGain = null;
+    var soundEnabled = false;
+    var lastToneAt = 0;
+    var notes = { a: 261.63, s: 293.66, d: 329.63, f: 349.23, g: 392.0, h: 440.0, j: 493.88, k: 523.25, l: 587.33 };
+
+    function setSoundButton() {
+      var button = document.getElementById('piece-sound');
+      if (!button) return;
+      button.setAttribute('aria-pressed', String(soundEnabled));
+      button.setAttribute('aria-label', soundEnabled ? 'Mute sound' : 'Enable sound');
+      button.setAttribute('title', soundEnabled ? 'Mute sound' : 'Enable sound');
+    }
+
+    function playTone(frequency, duration) {
+      if (!soundEnabled || !audioContext || !masterGain) return;
+      var oscillator = audioContext.createOscillator();
+      var gain = audioContext.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.16, audioContext.currentTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
+      oscillator.connect(gain);
+      gain.connect(masterGain);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + duration + 0.02);
+    }
+
+    function toggleSound() {
+      if (soundEnabled) {
+        soundEnabled = false;
+        if (masterGain) masterGain.gain.value = 0;
+        setSoundButton();
+        return;
+      }
+      var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      audioContext = audioContext || new AudioContextClass();
+      if (audioContext.state === 'suspended') audioContext.resume();
+      masterGain = masterGain || audioContext.createGain();
+      masterGain.gain.value = 0.5;
+      masterGain.connect(audioContext.destination);
+      soundEnabled = true;
+      setSoundButton();
+      playTone(261.63, 0.25);
+    }
+
+    document.getElementById('piece-sound')?.addEventListener('click', toggleSound);
+    document.getElementById('piece-audio-settings')?.addEventListener('click', function () {
+      var panel = document.getElementById('piece-audio-controls');
+      var button = document.getElementById('piece-audio-settings');
+      if (!panel || !button) return;
+      panel.hidden = !panel.hidden;
+      button.setAttribute('aria-expanded', String(!panel.hidden));
+    });
+    document.getElementById('piece-volume')?.addEventListener('input', function (event) {
+      if (masterGain) masterGain.gain.value = Number(event.target.value) / 100;
+    });
+    window.addEventListener('keydown', function (event) {
+      if (!soundEnabled || event.repeat || event.target instanceof HTMLInputElement) return;
+      var frequency = notes[event.key.toLowerCase()];
+      if (frequency) playTone(frequency, 0.3);
+    });
     var initialPosition = graph.camera.position.clone();
     var initialTarget = new THREE.Vector3(
       scene3d.camera.target.x,
@@ -199,6 +263,11 @@ export function buildStandaloneThreeRuntimeScript(): string {
       lastX = event.clientX;
       lastY = event.clientY;
       applyOrbit();
+      var now = performance.now();
+      if (soundEnabled && now - lastToneAt > 150) {
+        lastToneAt = now;
+        playTone(180 + Math.min(360, Math.abs(event.movementX || 0) * 12), 0.08);
+      }
     });
     host.addEventListener('pointerup', function () { dragging = false; });
     host.addEventListener('pointercancel', function () { dragging = false; });

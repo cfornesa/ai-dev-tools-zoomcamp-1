@@ -3203,7 +3203,13 @@ function EditorWorkspace() {
                 onPointerLeave={handleCanvasPointerLeave}
                 onDoubleClick={handleCanvasDoubleClick}
               >
-                {editorToolbar}
+                <div
+                  className="editor-canvas-authoring-toolbar"
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
+                  {editorToolbar}
+                </div>
                 {/* Task 110 (issue #141), restacked by task 137 (issue #169)
                 and made artwork-relative by issue #151: the camera pixels
                 are drawn by the p5 compositor, which inserts them into the

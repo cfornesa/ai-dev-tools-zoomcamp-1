@@ -56,6 +56,7 @@ test.describe('3D hand gesture guide', () => {
     for (const title of ['Move', 'Orbit', 'Zoom', 'Stop safely']) {
       await dialog.getByRole('button', { name: 'Next' }).click();
       await expect(dialog.getByRole('heading', { name: title })).toBeVisible();
+      if (title === 'Move') await expect(dialog).toContainText('pinch and hold');
     }
     await expect(dialog.getByRole('button', { name: 'Next' })).toBeDisabled();
 

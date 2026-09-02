@@ -6,8 +6,7 @@ import HandGestureGuideDialog from './HandGestureGuideDialog';
 
 /**
  * Issue #295: "Show hand gesture guide" opens an accessible modal dialog
- * documenting the reference's five named steps, while truthfully marking
- * Move unavailable until its separate capability issue ships.
+ * documenting the reference's five named steps, including immersive Move.
  */
 
 describe('HandGestureGuideDialog', () => {
@@ -44,7 +43,7 @@ describe('HandGestureGuideDialog', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Next' }));
     expect(within(dialog).getByRole('heading', { name: 'Move' })).toBeInTheDocument();
-    expect(dialog).toHaveTextContent(/not available in this build/i);
+    expect(dialog).toHaveTextContent(/pinch and hold/i);
 
     await user.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
     expect(within(dialog).getByRole('heading', { name: 'Stop safely' })).toBeInTheDocument();

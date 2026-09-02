@@ -11,9 +11,8 @@ import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
  * ## Content matches the reference's finite five-step contract
  *
  * The guide deliberately renders one slide at a time: Look, Move, Orbit,
- * Zoom, and Stop safely. The Move slide is truthful about the current build's
- * status until the separate move/strafe capability issue ships; it never
- * presents an unavailable gesture as working.
+ * Zoom, and Stop safely. The Move slide describes the immersive pinch-held
+ * forward/back/strafe mapping shipped by issue #344.
  *
  * ## Reuses `ExportConfigDialog.tsx`'s `role="dialog"` conventions
  *
@@ -33,7 +32,7 @@ export const STEPS = [
   },
   {
     title: 'Move',
-    body: 'Independent forward, back, and sideways hand travel is not available in this build yet. Use the mouse, touch, or arrow-key controls to move through an immersive view.',
+    body: 'In an immersive view, pinch and hold, then move your hand left or right to strafe. Move your pinched hand closer to or farther from the camera to travel forward or back. Release the pinch, lose the hand, or stop steering to stop safely.',
   },
   {
     title: 'Orbit',

@@ -35,6 +35,30 @@ import type { Scene3DDocument } from './scene3dTypes';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
 
+const HAND_MOVE_PINCH_THRESHOLD = 0.75;
+
+/** Translate normalized hand signals into bounded immersive travel axes. */
+export function getImmersiveHandMoveAxes(signals: HandSignals): {
+  strafe: number;
+  forward: number;
+} {
+  if (
+    !signals.handPresence ||
+    signals.pinchStrength === null ||
+    signals.pinchStrength < HAND_MOVE_PINCH_THRESHOLD
+  ) {
+    return { strafe: 0, forward: 0 };
+  }
+
+  const strafe =
+    signals.palmX === null ? 0 : THREE.MathUtils.clamp((signals.palmX - 0.5) * 2, -1, 1);
+  const forwardSource = signals.handDepth ?? (signals.palmY === null ? 0 : 0.5 - signals.palmY);
+  return {
+    strafe,
+    forward: THREE.MathUtils.clamp(forwardSource * 2, -1, 1),
+  };
+}
+
 /**
  * Issue #244: replaces `project3d-preview-placeholder` with a real,
  * live-updating Three.js render of the current `scene3d` document.
@@ -389,6 +413,13 @@ function Scene3DPreview({
     setMirrored,
   } = useCameraOverlaySettings();
 
+  function resetGestureSignals() {
+    previousHandSignalsRef.current = null;
+    latestHandSignalsRef.current = null;
+    gestureStartRef.current = null;
+    handSignalExtractorRef.current = createHandSignalExtractor();
+  }
+
   useEffect(() => {
     const videoEl = gestureCameraVideoRef.current;
     if (!videoEl) return;
@@ -543,7 +574,11 @@ function Scene3DPreview({
     const ORBIT_SENSITIVITY = 4; // radians per full frame-width/-height palm move
     const MIN_ZOOM_RADIUS = 2;
     const MAX_ZOOM_RADIUS = 30;
-    function applyGestureCameraControl() {
+    const MAX_GESTURE_TRAVEL = 20;
+    const GESTURE_MOVE_SPEED_UNITS_PER_SECOND = 4;
+    let gestureTravel = new THREE.Vector3();
+
+    function applyGestureCameraControl(deltaSeconds: number) {
       const current = latestHandSignalsRef.current;
       if (!current?.handPresence) return;
       const previous = previousHandSignalsRef.current;
@@ -577,6 +612,26 @@ function Scene3DPreview({
 
       camera.position.setFromSpherical(spherical).add(controls.target);
       camera.lookAt(controls.target);
+
+      if (!flyControls) return;
+      const axes = getImmersiveHandMoveAxes(current);
+      if (axes.strafe === 0 && axes.forward === 0) return;
+
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward).normalize();
+      const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+      const requested = forward
+        .multiplyScalar(axes.forward)
+        .add(right.multiplyScalar(axes.strafe))
+        .multiplyScalar(GESTURE_MOVE_SPEED_UNITS_PER_SECOND * deltaSeconds);
+      const nextTravel = gestureTravel.clone().add(requested);
+      if (nextTravel.length() > MAX_GESTURE_TRAVEL) {
+        nextTravel.setLength(MAX_GESTURE_TRAVEL);
+      }
+      const applied = nextTravel.clone().sub(gestureTravel);
+      gestureTravel = nextTravel;
+      camera.position.add(applied);
+      controls.target.add(applied);
     }
 
     // Issue #306: "movement" sound-voice input -- the camera's own
@@ -649,7 +704,7 @@ function Scene3DPreview({
       const deltaSeconds = Math.min((now - lastTickAt) / 1000, 0.1);
       lastTickAt = now;
 
-      if (gestureControlEnabledRef.current) applyGestureCameraControl();
+      if (gestureControlEnabledRef.current) applyGestureCameraControl(deltaSeconds);
       if (flyControls) applyFlyTranslation(deltaSeconds);
       controls.update();
       if (previousCameraPosition) {
@@ -913,7 +968,10 @@ function Scene3DPreview({
                   <CameraControl
                     onFrame={handleGestureFrame}
                     createProvider={createGestureCameraProvider}
-                    onStatusChange={setGestureCameraStatus}
+                    onStatusChange={(status) => {
+                      setGestureCameraStatus(status);
+                      if (status !== 'active') resetGestureSignals();
+                    }}
                     onStreamChange={setGestureCameraStream}
                   />
                   {gestureCameraStatus === 'active' && (
@@ -955,10 +1013,7 @@ function Scene3DPreview({
                 }
                 aria-pressed={gestureControlEnabled}
                 onClick={() => {
-                  previousHandSignalsRef.current = null;
-                  latestHandSignalsRef.current = null;
-                  gestureStartRef.current = null;
-                  handSignalExtractorRef.current = createHandSignalExtractor();
+                  resetGestureSignals();
                   setGestureCameraStatus('idle');
                   setGestureCameraStream(null);
                   setGestureControlEnabled((current) => !current);

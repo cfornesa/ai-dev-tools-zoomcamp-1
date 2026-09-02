@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { hand, landmarks } from '../tracking/testFixtures';
 import type { TrackingFrame, TrackingProvider, TrackingProviderError } from '../tracking/types';
 import type { Scene3DDocument } from './scene3dTypes';
+import { getImmersiveHandMoveAxes } from './Scene3DPreview';
 
 /**
  * Issue #294: "Steer the piece" gesture-driven camera control in the
@@ -106,6 +107,43 @@ function baseScene(overrides: Partial<Scene3DDocument> = {}): Scene3DDocument {
     ...overrides,
   };
 }
+
+describe('immersive hand Move mapping (issue #344)', () => {
+  it('requires a held pinch and maps palm position/depth to bounded axes', () => {
+    const axes = getImmersiveHandMoveAxes({
+      timestamp: 1,
+      handPresence: true,
+      indexTipX: null,
+      indexTipY: null,
+      palmX: 1,
+      palmY: 0.5,
+      handDepth: -0.5,
+      handSpeed: 0,
+      pinchDistance: 0,
+      pinchStrength: 1,
+      gestureConfidence: 1,
+      gestureState: 'closedFist',
+    });
+    expect(axes).toEqual({ strafe: 1, forward: -1 });
+
+    expect(
+      getImmersiveHandMoveAxes({
+        timestamp: 1,
+        handPresence: true,
+        indexTipX: null,
+        indexTipY: null,
+        palmX: 1,
+        palmY: 0.5,
+        handDepth: 0,
+        handSpeed: 0,
+        pinchDistance: 0.3,
+        pinchStrength: 0.5,
+        gestureConfidence: 1,
+        gestureState: 'openPalm',
+      }),
+    ).toEqual({ strafe: 0, forward: 0 });
+  });
+});
 
 describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)', () => {
   it('is off by default and its toggle is hidden when showGestureControl is false', () => {

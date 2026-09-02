@@ -81,3 +81,11 @@ passed 54 tests, backend scene validation passed 49 tests, and the frontend
 typecheck/lint/build passed (lint retains unrelated existing warnings). Do
 not use this as evidence for route, artifact, or deployed parity: those remain
 separate issue contracts.
+Manual 3D live recheck (2026-09-02): the connected owner Chrome session
+verified camera activation and safe stop, sound activation, the five-step hand
+guide, Full ZIP download, and Draft → Published → Draft on the exact private
+editor URL. Docker-backed manual 3D browser QA passed 1/1. That live toolbar
+did not include the immersive link because `Project3DWorkspace` omitted the
+existing `immersiveHref` prop; local commit `4f912c9` fixes the wiring and the
+route assertion. Keep #327 open until that exact commit is pushed and
+republished; local QA does not establish deployed parity.

@@ -11619,3 +11619,20 @@ Evidence: the focused frontend validator/component run passed 54 tests;
 build` passed; Django scene validation passed 49 tests. This closes only the
 shared capability foundation; route, downloaded-artifact, and deployed parity
 remain in their separate issues and are not claimed here.
+## 269an. Authenticated manual 3D parity recheck (#327, 2026-09-02)
+
+Status: LOCAL QA GREEN — DEPLOYMENT HANDOFF REQUIRED
+
+The connected owner Chrome session verified the exact 3D editor route:
+stage-local screenshot/download/sound/piece/steering/guide/fullscreen,
+camera activation with overlay controls, and Draft → Published → Draft all
+work. The five-step guide advanced through every step. Docker-backed
+`BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa` passed
+1/1 after elevated Docker access was enabled.
+
+The live recheck found one real missing control: the manual editor did not
+pass `immersiveHref` into `Scene3DPreview`. Commit `4f912c9` wires
+`/immersive/p3d/:id` into that toolbar and adds a route assertion; the local
+suite passes with it. The deployed editor has not received this commit yet,
+so #327 remains open pending push and republish. Do not claim deployed manual
+3D parity from the local pass alone.

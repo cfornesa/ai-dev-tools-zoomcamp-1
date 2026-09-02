@@ -229,6 +229,12 @@ implementation and exact routes:
   the stage. Commit `cea96ca` aligns the React toolbar and its menus with
   that placement for both 2D and 3D surfaces; focused parity tests remain
   green (82/82), and the production build passes.
+- The first real-stack browser rerun after the canvas move exposed event
+  bubbling from the nested authoring toolbar into canvas hit-testing, which
+  cleared shape selection and hid the inspector. Commit `0f28d67` adds an
+  interaction boundary around the overlay. The corrected disposable
+  PostgreSQL/Django/Vite publishing/remix run passes 24/24, including public
+  rendering, camera fallbacks, unpublishing, and remix.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

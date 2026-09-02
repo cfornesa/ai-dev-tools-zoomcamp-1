@@ -11478,3 +11478,16 @@ disposable PostgreSQL/Django/Vite/Chromium. The GitHub issue body contains the
 criterion matrix and exact evidence. This closure covers only local AI 3D
 implementation; exact authenticated `/ai-projects3d/:id` deployment evidence
 remains #328 and release reconciliation remains #320.
+
+## 269ag. Close local AI 2D implementation slice (#340)
+
+Status: #340 COMPLETE — GITHUB CLOSED `completed` (LOCAL IMPLEMENTATION ONLY)
+
+The AI 2D stage-local publication implementation passed its complete local
+transaction: focused AI 2D tests 34/34, the exact
+`BROWSER_QA_E2E_SPEC=e2e/ai2dPublication.spec.ts make browser-qa` scenario 1/1
+including Published → Draft, and `make frontend-check` with 189 frontend test
+files and 2,386 passing tests plus typecheck/format/lint. The GitHub issue body
+contains the criterion matrix and exact evidence. This closure covers only
+local AI 2D implementation; exact authenticated `/projects/ai/:id` deployment
+evidence remains #326 and release reconciliation remains #320.

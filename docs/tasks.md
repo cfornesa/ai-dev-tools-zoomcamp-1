@@ -10282,7 +10282,7 @@ public access, controls, thumbnails, captures, downloads, and immersive mode.
 
 ## 262. Unify authored Project/Project3D piece surfaces with augment-humankind parity
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 GitHub issue: [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320)
 
@@ -10317,7 +10317,7 @@ The exact deployed route remains stale until these commits are published;
 authenticated editor, embed, immersive, and downloaded-runtime browser
 criteria remain open.
 
-Local regression evidence: full frontend suite 188 files / 2,369 tests
+Local regression evidence: full frontend suite 188 files / 2,373 tests
 passed; full backend suite passes under host-level loopback permissions
 (907 collected, 880 passed, 22 skipped). The sandbox-only cache, subprocess,
 and socket failures are retained as a verification boundary, not product
@@ -10334,9 +10334,15 @@ The full batch should be rerun once the remaining authored-surface browser
 coverage is added.
 
 Latest focused browser evidence: after making the camera/demo controls an
-opt-in stage-associated disclosure and restoring keyboard focusability to the
-Draft/Published status controls, the complete `publishingAndRemix.spec.ts`
-suite passed 24/24 against the disposable PostgreSQL/Django/Vite stack.
+opt-in stage-associated disclosure, restoring keyboard focusability to the
+Draft/Published status controls, and asserting the shared toolbar on the
+chrome-less embed route, the complete `publishingAndRemix.spec.ts` suite
+passed 24/24 against the disposable PostgreSQL/Django/Vite stack. The full
+frontend suite then passed 188 files / 2,373 tests; lint, typecheck, format,
+and production build also pass (with existing non-blocking lint/chunk-size
+warnings). The editor Code-tab regression caused by keeping authoring actions
+stage-local was corrected: the authoring toolbar remains available while the
+visual canvas is hidden, and its focused suite passes 11/11.
 
 Further parity increment (2026-09-01): the editor authoring toolbar and 3D
 Piece controls/gesture-camera panels now render as stage-local overlays rather
@@ -10346,9 +10352,10 @@ artifact suite passes 7/7; Full bundles now include explicit local camera
 capture controls and Non-Camera bundles omit them while retaining the
 non-camera runtime controls. Standalone 3D hand-tracking parity remains open.
 
-Next action: implement the shared stage/capability contract for structured
-Project and Project3D surfaces, then verify the downloaded runtime and exact
-published URLs after authentication and publish.
+Next action: complete standalone 3D hand-tracking parity in Full downloads,
+then authenticate and publish the current build for exact editor, immersive,
+embed, and downloaded-runtime route evidence. Do not close this task or its
+parent until those deployment-boundary criteria are proven.
 
 Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)
 

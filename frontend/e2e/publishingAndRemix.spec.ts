@@ -134,6 +134,18 @@ async function openCameraAndDemoControls(page: Page) {
   await disclosure.locator('summary').click();
 }
 
+async function expectPublicStageChrome(page: Page) {
+  const toolbar = page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
+  await expect(toolbar).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
+  await toolbar.getByRole('button', { name: 'Open download menu' }).click();
+  await expect(toolbar.getByRole('menuitem', { name: 'Download Full' })).toBeVisible();
+  await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera' })).toBeVisible();
+  await toolbar.getByRole('button', { name: 'Open download menu' }).click();
+  await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
+}
+
 /** Navigates to the given project's editor and fills in meaningful
  * title/description (and optionally toggles the remix checkbox) through
  * the real, current in-editor UI -- never touches visibility. Issue #94
@@ -597,6 +609,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
+    await expectPublicStageChrome(anonPage);
     await openCameraAndDemoControls(anonPage);
     await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
       'Anonymous viewer fixture project',
@@ -614,6 +627,12 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
     const cookies = await anonContext.cookies();
     expect(cookies.some((c) => c.name === 'sessionid')).toBe(false);
+
+    // The iframe route reuses the same stage component but must not inherit
+    // the application shell's page chrome.
+    await anonPage.goto(`/embed/p/${publicProjectId}`);
+    await expectPublicStageChrome(anonPage);
+    await expect(anonPage.locator('nav')).toHaveCount(0);
 
     await anonContext.close();
   });

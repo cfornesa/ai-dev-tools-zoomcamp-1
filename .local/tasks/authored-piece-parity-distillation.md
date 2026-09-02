@@ -123,6 +123,13 @@ implementation and exact routes:
   toolbar controls on both manual and AI-assisted editor routes. Focused 3D
   artifact coverage passes 7/7 and proves Full/Non-Camera camera-surface
   separation; standalone 3D hand-tracking remains an implementation gap.
+- The corrected public publishing/remix browser run passes 24/24 and now
+  asserts screenshot, Full/Non-Camera download menu, fullscreen, and the
+  chrome-less `/embed/p/:id` route's shared stage toolbar. The full frontend
+  suite passes 188 files / 2,373 tests; lint, typecheck, format, and build
+  pass. Moving the editor authoring toolbar into the stage initially exposed
+  a Code-tab regression; the toolbar is now still available while the visual
+  canvas is hidden, with the focused Code-tab suite passing 11/11.
 - GitHub open-issue enumeration now contains #274, #320, and #321; #123 is
   closed with a QA PASS. #274 remains dependency-blocked by #320 and is not
   treated as complete merely because earlier child issues were closed.

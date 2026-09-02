@@ -3164,7 +3164,8 @@ function EditorWorkspace() {
                 Fit to viewport
               </button>
             </div>
-            {/* Issue #156: the fixed-size, `overflow: hidden` (once zoomed)
+          </div>
+          {/* Issue #156: the fixed-size, `overflow: hidden` (once zoomed)
               clipping viewport panning happens inside. Carries the exact
               same responsive width/aspect-ratio sizing `.editor-scene-
               canvas` itself used to own alone (issue #109) — the inner
@@ -3176,17 +3177,18 @@ function EditorWorkspace() {
               `hidden` once actually zoomed) so a handle that pokes
               slightly outside the canvas at 100% (unchanged pre-existing
               behavior) isn't newly clipped. */}
-            <div
-              ref={viewportCallbackRef}
-              data-testid="scene-canvas-viewport"
-              className="editor-scene-canvas-viewport"
-              style={{
-                position: 'relative',
-                width: '100%',
-                overflow: zoom > 1 ? 'hidden' : 'visible',
-              }}
-            >
-              {editorToolbar}
+          <div
+            ref={viewportCallbackRef}
+            data-testid="scene-canvas-viewport"
+            className="editor-scene-canvas-viewport"
+            style={{
+              position: 'relative',
+              width: '100%',
+              overflow: zoom > 1 ? 'hidden' : 'visible',
+            }}
+          >
+            {editorToolbar}
+            <div hidden={previewView !== 'visual'}>
               <div
                 ref={canvasRef}
                 data-testid="scene-canvas"
@@ -3624,15 +3626,15 @@ function EditorWorkspace() {
                         );
                       })()}
               </div>
-              <PieceStageToolbar
-                className="editor-piece-stage-toolbar"
-                onScreenshot={() => void handleTakeScreenshot()}
-                onDownload={() => setExportDialogOpenSignal((current) => current + 1)}
-                capabilities={TWO_D_STAGE_CAPABILITIES}
-                isFullscreen={isFullscreen}
-                onToggleFullscreen={() => void toggleFullscreen()}
-              />
             </div>
+            <PieceStageToolbar
+              className="editor-piece-stage-toolbar"
+              onScreenshot={() => void handleTakeScreenshot()}
+              onDownload={() => setExportDialogOpenSignal((current) => current + 1)}
+              capabilities={TWO_D_STAGE_CAPABILITIES}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={() => void toggleFullscreen()}
+            />
           </div>
           {/* Issue #163 (task 131): the canvas-overlaid selection HUD —
               rendered as a sibling of (not inside) the zoom/pan viewport

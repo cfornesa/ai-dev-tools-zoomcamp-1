@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 
@@ -8,17 +8,12 @@ import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
  * piece" (issue #294) actually ships, alongside `Scene3DPreview.tsx`'s
  * gesture-control toggle.
  *
- * ## Content matches what #294 actually implements -- no aspirational steps
+ * ## Content matches the reference's finite five-step contract
  *
- * The reference site (augmenthumankind.com) documents five steps (Look /
- * Move / Orbit / Zoom / Stop safely). This app's #294 implementation only
- * has two independent gesture inputs -- open-hand move (`palmX`/`palmY`)
- * drives combined look/orbit, and pinch strength drives zoom -- with no
- * separate pan/move axis (`Scene3DPreview.tsx`'s own doc comment documents
- * this as a deliberate scope boundary, not a gap). Listing a "Move" step
- * here would document a gesture this build doesn't have, so this guide's
- * three steps are: orbit, zoom, and how to stop safely -- reused as-is if a
- * future issue ever adds a real pan/move gesture.
+ * The guide deliberately renders one slide at a time: Look, Move, Orbit,
+ * Zoom, and Stop safely. The Move slide is truthful about the current build's
+ * status until the separate move/strafe capability issue ships; it never
+ * presents an unavailable gesture as working.
  *
  * ## Reuses `ExportConfigDialog.tsx`'s `role="dialog"` conventions
  *
@@ -31,14 +26,22 @@ import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
  * the hook's own behavior (moving focus into the dialog and back out again)
  * is identical for a plain informational dialog, so no fork was needed.
  */
-const STEPS = [
+export const STEPS = [
   {
-    title: 'Look and orbit',
-    body: 'With "Steer the piece" on, move your open hand around in front of the camera. The camera orbits to follow your hand\'s left/right and up/down movement.',
+    title: 'Look',
+    body: 'With "Steer the piece" on, move your open hand around in front of the camera. The view follows your hand\'s left/right and up/down movement.',
+  },
+  {
+    title: 'Move',
+    body: 'Independent forward, back, and sideways hand travel is not available in this build yet. Use the mouse, touch, or arrow-key controls to move through an immersive view.',
+  },
+  {
+    title: 'Orbit',
+    body: 'With an open hand, move left, right, up, or down to orbit around the piece. Keep "Steer the piece" enabled while you look around.',
   },
   {
     title: 'Zoom',
-    body: 'Pinch your fingers together to zoom in; open your hand back up to zoom out.',
+    body: 'Pinch your fingers together to zoom in or move your pinched hand to adjust the view. Release the pinch to stop zooming.',
   },
   {
     title: 'Stop safely',
@@ -56,27 +59,59 @@ const STEPS = [
  * reason.
  */
 function HandGestureGuideDialogContent({ onClose }: { onClose: () => void }) {
+  const [stepIndex, setStepIndex] = useState(0);
   const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onClose);
+  const step = STEPS[stepIndex];
+
+  // A click on the last Next button disables that button during the update,
+  // which can otherwise leave browser focus on the page body. Keep keyboard
+  // navigation inside the dialog after every slide transition.
+  useEffect(() => {
+    if (stepIndex > 0) dialogRef.current?.focus();
+  }, [dialogRef, stepIndex]);
+
+  function moveStep(delta: number) {
+    setStepIndex((current) => Math.max(0, Math.min(STEPS.length - 1, current + delta)));
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    onKeyDown(event);
+    if (event.defaultPrevented) return;
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      moveStep(-1);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      moveStep(1);
+    }
+  }
 
   return (
     <div
       ref={dialogRef}
       tabIndex={-1}
-      onKeyDown={onKeyDown}
+      onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
       aria-labelledby="hand-gesture-guide-title"
       className="hand-gesture-guide-dialog"
     >
       <h4 id="hand-gesture-guide-title">Hand gesture guide</h4>
-      <ol>
-        {STEPS.map((step) => (
-          <li key={step.title}>
-            <h5>{step.title}</h5>
-            <p>{step.body}</p>
-          </li>
-        ))}
-      </ol>
+      <p role="status" aria-live="polite">
+        Step {stepIndex + 1} of {STEPS.length}
+      </p>
+      <div aria-live="polite">
+        <h5>{step.title}</h5>
+        <p>{step.body}</p>
+      </div>
+      <nav aria-label="Hand gesture guide navigation">
+        <button type="button" onClick={() => moveStep(-1)} disabled={stepIndex === 0}>
+          Previous
+        </button>
+        <button type="button" onClick={() => moveStep(1)} disabled={stepIndex === STEPS.length - 1}>
+          Next
+        </button>
+      </nav>
       <button type="button" onClick={onClose}>
         Close
       </button>

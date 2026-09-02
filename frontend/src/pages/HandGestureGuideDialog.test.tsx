@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -6,8 +6,8 @@ import HandGestureGuideDialog from './HandGestureGuideDialog';
 
 /**
  * Issue #295: "Show hand gesture guide" opens an accessible modal dialog
- * documenting exactly the gesture set #294 shipped (orbit + zoom + stop),
- * with no separate pan/move step -- see the component's own doc comment.
+ * documenting the reference's five named steps, while truthfully marking
+ * Move unavailable until its separate capability issue ships.
  */
 
 describe('HandGestureGuideDialog', () => {
@@ -24,20 +24,23 @@ describe('HandGestureGuideDialog', () => {
     expect(dialog).toHaveFocus();
   });
 
-  it('documents orbit, zoom, and stop -- no aspirational "move/pan" step', async () => {
+  it('shows the first named slide and navigates through all five steps', async () => {
     const user = userEvent.setup();
     render(<HandGestureGuideDialog />);
     await user.click(screen.getByRole('button', { name: 'Show hand gesture guide' }));
 
     const dialog = screen.getByRole('dialog');
-    expect(dialog).toHaveTextContent(/look and orbit/i);
-    expect(dialog).toHaveTextContent(/zoom/i);
-    expect(dialog).toHaveTextContent(/stop safely/i);
-    // No separate "move"/"pan" step -- #294 has no independent pan/move
-    // gesture, only combined look/orbit and zoom (see the component's
-    // own doc comment for why documenting one here would be aspirational).
-    expect(screen.queryByRole('heading', { name: /^move$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /pan/i })).not.toBeInTheDocument();
+    expect(dialog).toHaveTextContent(/step 1 of 5/i);
+    expect(within(dialog).getByRole('heading', { name: 'Look' })).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Next' }));
+    expect(within(dialog).getByRole('heading', { name: 'Move' })).toBeInTheDocument();
+    expect(dialog).toHaveTextContent(/not available in this build/i);
+
+    await user.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
+    expect(within(dialog).getByRole('heading', { name: 'Stop safely' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Previous' })).not.toBeDisabled();
   });
 
   it('closes on Escape and returns focus to the trigger button', async () => {

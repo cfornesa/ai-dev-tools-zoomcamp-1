@@ -17,6 +17,12 @@ criteria require a parent-wide judgment, stop and return to distillation.
 
 ## Scope and invariants
 
+Completion means closure: code, tests, or QA finishing in isolation is not
+task completion. The final step is reconciliation of evidence, checklist,
+backlog, and GitHub state; only then may a passing issue be marked `completed`
+and closed. Blocked or handed-off work remains open with its terminal status,
+owner, blocker class, and next action.
+
 - Work in exactly one project per session. If the project is unclear, ask before changing files.
 - At session start, discover and reconcile every open GitHub issue associated with that project against its `tasks.md`. Do not silently omit, duplicate, or invent an issue.
 - Process issues sequentially, never in parallel. A blocker on one issue does not stop independent issues; dependency-blocked issues receive a documented handoff and are not implemented prematurely.

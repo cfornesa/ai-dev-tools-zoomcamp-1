@@ -54,6 +54,12 @@ Lifecycle
 4. QA verifies it
 5. On FAIL, back to step 3 with the QA comment as input
 6. On PASS, close the issue. Do NOT proceed until the issue can be closed.
+
+Task completion equals task closure. Code merged, tests passing, or a QA PASS
+are intermediate gates; the task is complete only after the orchestrator
+reconciles the checklist, evidence, backlog, and GitHub state and closes the
+issue. Blocked or handed-off work stays open with an explicit terminal status,
+owner, blocker class, and next action.
 7. Repeat until the backlog is empty OR the specified task is complete.
 
 Rules

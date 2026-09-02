@@ -1,6 +1,11 @@
 # Creatrweb Animation Studio Backlog
 
-Status convention: Each completed item is marked `Status: COMPLETE`. Work that is underway is marked `Status: ACTIVE`, and not-yet-started work is marked `Status: PROPOSED`.
+Status convention: Each completed item is marked `Status: COMPLETE` only after
+its acceptance evidence is reconciled and the corresponding GitHub issue is
+closed. Passing implementation or QA alone is not completion. Work that is
+underway is marked `Status: ACTIVE`, and not-yet-started work is marked
+`Status: PROPOSED`; blocked or handed-off work remains open with its owner,
+blocker, and next action recorded.
 
 ## 1. Set up an empty project with a passing test
 Goal: Create the minimal Django and React/TypeScript project structure and prove the test toolchain works.

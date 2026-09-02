@@ -33,6 +33,10 @@ to the later backlog-session engineer pass.
 
 ## Atomicity and closure cadence
 
+Completion means closure. Distillation may prepare many issues in bulk, but it
+must never treat implementation or QA as completion; each issue reaches
+`completed` only after its evidence and GitHub closure are reconciled.
+
 - Treat an epic or parent issue as a reconciliation container, never as one
   implementation/closure unit. Parent acceptance criteria must be decomposed
   before engineering begins.

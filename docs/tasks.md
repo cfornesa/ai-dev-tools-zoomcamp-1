@@ -10895,3 +10895,22 @@ stage-local screenshot/download/sound/Piece/gesture-guide/fullscreen controls,
 and Full/Non-Camera ZIP menu entries. This local evidence does not close the
 issue: the supplied production revision still requires exact post-publish
 embed verification, and authenticated GitHub reconciliation is unavailable.
+
+## Production-readiness assessment (2026-09-02)
+
+Local application and CI-equivalent dimensions passed after retrying the
+host-limited checks with an isolated writable UV cache and approved localhost
+permissions: backend `make check` content passed 907 tests with 22 expected
+skips, the affected 23 startup/git tests passed, frontend lint/format/typecheck
+passed, Vitest passed 189 files / 2,383 tests, and `npm run build` passed.
+
+`make deploy-check` executed successfully but emitted five Django security
+warnings: missing HSTS, HTTPS redirect disabled, non-secure session and CSRF
+cookies, and `DEBUG=True`. Repository policy treats any deploy-check warning
+as a release blocker; production Replit settings must be verified with
+production-safe values before publish. The supplied live revision also still
+renders the legacy public shell, and private editor verification is unavailable
+without authentication. Therefore the project is not production-ready and no
+issue or parent is closed from this assessment. Next actions are authorized
+production publish, exact-route/artifact QA, and authenticated GitHub status
+reconciliation.

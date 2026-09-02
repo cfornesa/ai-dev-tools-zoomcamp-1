@@ -54,6 +54,19 @@ test.describe('manual 2D editor stage chrome', () => {
 
     const toolbar = stage.getByRole('toolbar', { name: 'Piece actions' });
     await expect(toolbar).toBeVisible();
+    for (const viewport of [
+      { width: 1280, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect(authoringToolbar).toBeVisible();
+      await expect(toolbar).toBeVisible();
+      await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+      await expect(
+        toolbar.getByRole('button', { name: 'Publication status: Draft' }),
+      ).toBeVisible();
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();

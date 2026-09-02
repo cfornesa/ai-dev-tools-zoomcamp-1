@@ -17,8 +17,11 @@
  * the downloaded piece retains the same basic view controls as the live
  * preview without needing to vendor OrbitControls.
  */
-export function buildStandaloneThreeRuntimeScript(): string {
-  return `
+export function buildStandaloneThreeRuntimeScript(
+  options: { includeCameraFeatures?: boolean } = {},
+): string {
+  const includeCameraFeatures = options.includeCameraFeatures ?? true;
+  const source = `
 (function () {
   var scene3d = window.__SCENE3D_DATA__;
 
@@ -169,6 +172,13 @@ export function buildStandaloneThreeRuntimeScript(): string {
     var masterGain = null;
     var soundEnabled = false;
     var keyboardEnabled = false;
+    /* EXPORT_CAMERA_FEATURES_START */
+    var micStream = null;
+    var micSource = null;
+    var thereminEnabled = false;
+    var thereminOscillator = null;
+    var thereminGain = null;
+    /* EXPORT_CAMERA_FEATURES_END */
     var lastToneAt = 0;
     var notes = { a: 261.63, s: 293.66, d: 329.63, f: 349.23, g: 392.0, h: 440.0, j: 493.88, k: 523.25, l: 587.33 };
 
@@ -201,6 +211,8 @@ export function buildStandaloneThreeRuntimeScript(): string {
         keyboardEnabled = false;
         var keyboardButton = document.getElementById('piece-keyboard');
         if (keyboardButton) keyboardButton.setAttribute('aria-pressed', 'false');
+        if (typeof stopMic === 'function') stopMic();
+        if (typeof stopTheremin === 'function') stopTheremin();
         if (masterGain) masterGain.gain.value = 0;
         setSoundButton();
         return;
@@ -233,6 +245,75 @@ export function buildStandaloneThreeRuntimeScript(): string {
       this.setAttribute('aria-pressed', String(keyboardEnabled));
       this.textContent = keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes';
     });
+    /* EXPORT_CAMERA_FEATURES_START */
+    function stopMic() {
+      if (micSource) {
+        micSource.disconnect();
+        micSource = null;
+      }
+      if (micStream) {
+        micStream.getTracks().forEach(function (track) { track.stop(); });
+        micStream = null;
+      }
+      var micButton = document.getElementById('piece-mic');
+      if (micButton) {
+        micButton.setAttribute('aria-pressed', 'false');
+        micButton.textContent = 'Live mic';
+      }
+    }
+    document.getElementById('piece-mic')?.addEventListener('click', async function () {
+      if (!soundEnabled || !audioContext || !masterGain) return;
+      if (micStream) {
+        stopMic();
+        return;
+      }
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        micSource = audioContext.createMediaStreamSource(micStream);
+        micSource.connect(masterGain);
+        this.setAttribute('aria-pressed', 'true');
+        this.textContent = 'Stop live mic';
+      } catch {
+        stopMic();
+        this.textContent = 'Mic unavailable';
+      }
+    });
+    function stopTheremin() {
+      if (thereminOscillator) {
+        try { thereminOscillator.stop(); } catch {}
+        thereminOscillator.disconnect();
+        thereminOscillator = null;
+      }
+      if (thereminGain) {
+        thereminGain.disconnect();
+        thereminGain = null;
+      }
+      thereminEnabled = false;
+      var thereminButton = document.getElementById('piece-theremin');
+      if (thereminButton) {
+        thereminButton.setAttribute('aria-pressed', 'false');
+        thereminButton.textContent = 'Camera theremin';
+      }
+    }
+    document.getElementById('piece-theremin')?.addEventListener('click', function () {
+      if (!soundEnabled || !audioContext || !masterGain) return;
+      if (thereminEnabled) {
+        stopTheremin();
+        return;
+      }
+      thereminOscillator = audioContext.createOscillator();
+      thereminGain = audioContext.createGain();
+      thereminOscillator.type = 'sine';
+      thereminOscillator.frequency.value = 261.63;
+      thereminGain.gain.value = 0;
+      thereminOscillator.connect(thereminGain);
+      thereminGain.connect(masterGain);
+      thereminOscillator.start();
+      thereminEnabled = true;
+      this.setAttribute('aria-pressed', 'true');
+      this.textContent = 'Stop camera theremin';
+    });
+    /* EXPORT_CAMERA_FEATURES_END */
     window.addEventListener('keydown', function (event) {
       if (!soundEnabled || !keyboardEnabled || event.repeat || event.target instanceof HTMLInputElement) return;
       var frequency = notes[event.key.toLowerCase()];
@@ -287,6 +368,14 @@ export function buildStandaloneThreeRuntimeScript(): string {
         }
         applyOrbit();
       }
+      /* EXPORT_CAMERA_FEATURES_START */
+      if (thereminEnabled && thereminOscillator && thereminGain) {
+        var midiNote = 36 + (1 - signals.palmY) * 24;
+        thereminOscillator.frequency.setTargetAtTime(440 * Math.pow(2, (midiNote - 69) / 12), audioContext.currentTime, 0.05);
+        var openness = signals.pinchStrength == null ? 0.5 : 1 - signals.pinchStrength;
+        thereminGain.gain.setTargetAtTime(Math.max(0, Math.min(0.2, openness * 0.2)), audioContext.currentTime, 0.05);
+      }
+      /* EXPORT_CAMERA_FEATURES_END */
       previousHand = { x: signals.palmX, y: signals.palmY };
     }
 
@@ -341,4 +430,10 @@ export function buildStandaloneThreeRuntimeScript(): string {
   }
 })();
 `;
+  return includeCameraFeatures
+    ? source
+    : source.replace(
+        /\/\* EXPORT_CAMERA_FEATURES_START \*\/[\s\S]*?\/\* EXPORT_CAMERA_FEATURES_END \*\//g,
+        '',
+      );
 }

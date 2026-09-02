@@ -165,6 +165,8 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
 <div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
   <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
   <button id="piece-keyboard" type="button" aria-pressed="false">Keyboard notes</button>
+  ${variant === 'full' ? '<button id="piece-mic" type="button" aria-pressed="false">Live mic</button>' : ''}
+  ${variant === 'full' ? '<button id="piece-theremin" type="button" aria-pressed="false">Camera theremin</button>' : ''}
   <p>Enable sound, then turn on keyboard notes to play A–L keys.</p>
 </div>
 ${
@@ -275,7 +277,7 @@ export async function generateScene3DBundle(
     zip.file('index.html', buildIndexHtml(variant));
     zip.file(
       'scripts/piece.js',
-      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript()}${variant === 'full' ? `\n${buildStandaloneCameraScript()}` : ''}`,
+      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript({ includeCameraFeatures: variant === 'full' })}${variant === 'full' ? `\n${buildStandaloneCameraScript()}` : ''}`,
     );
     zip.file(`runtime/${THREE_RUNTIME_FILENAME}`, runtimeBytes);
     const zipBlob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });

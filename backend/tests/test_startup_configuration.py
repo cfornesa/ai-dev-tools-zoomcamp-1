@@ -68,6 +68,7 @@ def run_launcher(bin_dir, state_file, **extra_env):
             "PATH": f"{bin_dir}:{environment['PATH']}",
             "PORT": "5001",
             "STATE_FILE": str(state_file),
+            "RUN_MIGRATIONS_ON_START": "false",
         }
     )
     environment.update(extra_env)
@@ -105,7 +106,17 @@ def test_production_wrapper_selects_preview_mode_via_the_shared_launcher():
     wrapper = (ROOT / "scripts" / "start-production.sh").read_text()
 
     assert "FRONTEND_SERVE_MODE=preview" in wrapper
+    assert "RUN_MIGRATIONS_ON_START=false" in wrapper
     assert 'exec "$(dirname "${BASH_SOURCE[0]}")/start.sh"' in wrapper
+
+
+def test_production_environment_disables_runtime_migrations():
+    config = (ROOT / ".replit").read_text()
+    production = config.split("[userenv.production]", 1)[1].split(
+        "[workflows]", 1
+    )[0]
+
+    assert 'RUN_MIGRATIONS_ON_START = "false"' in production
 
 
 def test_launcher_runs_vite_preview_against_the_built_frontend_in_preview_mode():

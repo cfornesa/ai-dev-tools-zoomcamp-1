@@ -18,6 +18,7 @@ RUN_MIGRATIONS_ON_START = "true"
 [userenv.production]
 DJANGO_ALLOWED_HOSTS = "animate.creatrweb.com,creatrweb.replit.app,localhost,127.0.0.1"
 DJANGO_DEBUG = "false"
+RUN_MIGRATIONS_ON_START = "false"
 
 [workflows]
 runButton = "Project"

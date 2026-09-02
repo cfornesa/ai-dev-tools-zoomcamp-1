@@ -11,4 +11,8 @@
 set -Eeuo pipefail
 
 export FRONTEND_SERVE_MODE=preview
+# Production schema changes are applied by Replit's publish/schema-diff flow.
+# Running migrations on every autoscale instance delays port availability and
+# can create overlapping startup work during scale-out.
+export RUN_MIGRATIONS_ON_START=false
 exec "$(dirname "${BASH_SOURCE[0]}")/start.sh"

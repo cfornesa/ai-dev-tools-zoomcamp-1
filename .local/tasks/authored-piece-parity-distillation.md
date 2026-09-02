@@ -1,4 +1,4 @@
-# Authored-piece parity distillation — 2026-09-02
+# Authored-piece parity distillation — 2026-09-02 (re-audit)
 
 Project: `cfornesa/ai-dev-tools-zoomcamp-1`, with `../augment-humankind`
 as read-only behavioral reference.
@@ -7,12 +7,15 @@ as read-only behavioral reference.
 
 - Live public `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` still renders the
   prior deployed revision: Preview has no stage toolbar and the camera/demo
-  controls remain a separate always-visible region.
+  controls remain a separate always-visible region. This was re-confirmed
+  from the current deployed DOM on 2026-09-02.
 - Live private `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` redirects to
   the anonymous access error, so editor controls and publication state are
   not verified without authentication.
-- Local source now contains partial overlay/export work, but it is duplicated
-  across 2D/3D rather than governed by one shared capability contract.
+- Local source now contains a shared `PieceStageToolbar` for structured 2D/3D
+  surfaces, but the complete capability contract and exact deployed proof are
+  still incomplete. This distinction explains why local tests can pass while
+  the user’s live URLs still show the old UI: commits have not been published.
 - The reference contract in `../augment-humankind/docs/piece-surface-parity.md`
   requires regular, embed, immersive, and downloaded surfaces to share
   capability behavior; Full ZIP preserves permitted controls while
@@ -27,8 +30,8 @@ as read-only behavioral reference.
 | --- | --- | --- | --- | --- |
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome, public/embed/immersive parity, publication state, portable capability-preserving downloads, privacy, browser coverage | First implementation item; consumes existing renderer, camera, sound, gesture, export pieces | `in_progress` | `implementation-defect` plus `verification-boundary`; build one shared stage contract/component, add artifact/browser coverage, then authenticate and publish for exact-route QA |
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Parent parity epic covering screenshot, fullscreen, download menu, sound, controls, camera/hand behavior, immersive view | Parent of #320 and prior generated-art work | `dependency-blocked` | #320 must pass before parent can close; retain open because prior #285–#311 closures cover only narrower/other surfaces |
-| [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `completed_in_code_unverified` | Source defaults are now `:5000`; run exact native stack E2E |
-| [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; no repository Compose definition currently exists | `handed_off` | `workflow/infrastructure-defect`; add/choose an explicit repository-owned Docker workflow or document native `browser-qa` as the supported runner without stopping sibling containers |
+| [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
+| [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; no repository Compose definition currently exists | `open_in_progress` | `workflow/infrastructure-defect`; native runner fingerprints its own stack, but Compose preflight remains to be implemented; do not stop sibling containers |
 
 ## Duplicate / already-covered report
 
@@ -85,10 +88,29 @@ implementation and exact routes:
 - Native fullscreen and real camera/microphone prompts require browser/OS
   permission evidence and are not proven by jsdom.
 
+## Re-audit evidence (2026-09-02)
+
+- Exact public URL: the deployed DOM contains `Preview` with only `Scene
+  canvas`; the `Demo and camera controls` region is a sibling region outside
+  the stage and no screenshot/download/fullscreen toolbar is present.
+- Exact private 3D editor URL: after loading, the deployed DOM reports “This
+  project doesn't exist, or you don't have access to it.” No editor controls
+  can be claimed without the owner’s authenticated browser session.
+- Current local source: `PieceStageToolbar` is used by `EditorWorkspace`,
+  `PublicProjectViewer`, and `Scene3DPreview`; the portable 2D runtime already
+  contains screenshot/fullscreen and camera/demo capability scripts, while the
+  portable 3D runtime now contains screenshot/fullscreen plus reset/orbit/zoom.
+- Correct-stack verification: `scripts/browser-qa.sh` passed its repository
+  identity probes; focused injection passed 33/33 and public lifecycle/camera
+  passed 24/24. A full 137-test run reached 99 passed before the two focused
+  regressions were corrected; it is not recorded as a clean full-batch pass.
+- GitHub open-issue enumeration now contains #274, #320, and #321; #123 is
+  closed with a QA PASS. #274 remains dependency-blocked by #320 and is not
+  treated as complete merely because earlier child issues were closed.
+
 ## Memory links
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`
 - `.agents/memory/e2e-wrong-docker-project.md`
 - `.agents/memory/full-browser-readiness-gate.md`
-

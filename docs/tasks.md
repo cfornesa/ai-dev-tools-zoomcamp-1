@@ -11654,3 +11654,21 @@ controls and functional screenshot, download, Piece controls, and fullscreen
 actions. This evidence is route-specific; extracted 2D artifact execution
 remains #336, and no 3D route or artifact is inferred from it. No new issue or
 further decomposition was found in this reconciliation.
+
+## 269ap. Independent 2D editor-route QA handoffs (#325/#326, 2026-09-02)
+
+Status: #325/#326 HANDED OFF — LIVE PUBLICATION TRANSITION AUTHORIZATION REQUIRED
+
+#325's authenticated `/projects/:id` route passed live compact-toolbar and
+stage-containment inspection, focused `EditorWorkspace` tests 30/30, the
+Docker-backed route scenario 1/1, and `make check` (888 backend tests and
+2,394 frontend tests passed). #326's authenticated `/ai-projects/:id` route
+passed its Docker-backed route scenario 1/1 and live inspection of its compact
+Piece actions toolbar and separate AI assistant region.
+
+Both fixtures were already Published. The available authorization covered
+temporary publication of the 3D fixture only, so neither live 2D issue was
+changed to Draft and neither is closed. Each remains open with its own exact
+route evidence; no evidence is transferred between routes. The next action is
+an authorized live transition check (or a criterion-ready N/A decision), then
+issue-specific reconciliation and closure.

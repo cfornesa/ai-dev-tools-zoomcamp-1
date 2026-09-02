@@ -143,6 +143,20 @@ authenticated manual 3D route, #329 the public 2D route, and #336 the extracted
 2D artifact. The remaining route and artifact issues retain their own
 dependencies and closure contracts.
 
+## Independent editor-route handoffs — 2026-09-02
+
+#325's exact authenticated `/projects/:id` route passed live layout/control
+inspection, focused `EditorWorkspace` tests 30/30, full `make check`, and
+Docker-backed route QA 1/1. It remains open because its already-Published
+fixture was not toggled to Draft: the available user authorization covered
+only the temporary 3D publication flow.
+
+#326's exact authenticated `/ai-projects/:id` route passed Docker-backed
+`ai2dPublication.spec.ts` 1/1 and live inspection of the route-local AI
+region plus the compact Piece actions toolbar. It remains open for the same
+unperformed live publication transition boundary. These are independent
+handoffs; neither is closed from local evidence or from the other route.
+
 ## Distillation exit
 
 The manifest is complete, duplicates are reconciled, every actionable gap is

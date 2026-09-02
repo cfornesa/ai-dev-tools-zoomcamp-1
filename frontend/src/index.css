@@ -1784,6 +1784,17 @@ textarea:disabled {
   min-height: 400px;
 }
 
+/* CameraControl owns permission and this element is only the live frame source
+   for the renderer's camera composite; the scene preview draws the pixels. */
+.ai-editor-camera-source {
+  position: absolute;
+  inset: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Task 245 (issue #303): this editor's own 2-panel grid (Preview + AI
    assistant only) -- scoped under `.ai-editor-workspace` (a compound
    selector, so it always wins over the bare `.editor-panel[data-panel=…]`
@@ -2879,6 +2890,33 @@ select.ai-proposal-field-full-width {
   color: #fff;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
   cursor: pointer;
+}
+
+.piece-stage-controls {
+  position: relative;
+}
+
+.piece-stage-controls-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--code-bg) 96%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.piece-stage-controls-panel[hidden] {
+  display: none;
 }
 
 .piece-stage-settings {

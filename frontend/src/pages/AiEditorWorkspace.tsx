@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
@@ -11,13 +11,21 @@ import {
   type SceneVersion,
 } from '../api/projects';
 import PieceStageToolbar from '../components/PieceStageToolbar';
+import CameraControl, { type CameraStatus } from '../components/CameraControl';
+import StageControlsPopover from '../components/StageControlsPopover';
 import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
 import { generateHtmlExport, triggerHtmlDownload } from '../export/generateHtmlExport';
 import { getAvailableInteractionModes } from '../export/exportCompatibility';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
-import type { ScenePreview } from '../render/scenePreview';
+import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
+import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
+import {
+  clampCameraOverlayGeometry,
+  useCameraOverlayGeometry,
+} from '../editor/cameraOverlayGeometry';
+import DemoControlsPanel from './DemoControlsPanel';
 import AIProposalPanel from './AIProposalPanel';
 import PublishControl from './PublishControl';
 import { useFullscreenToggle } from './useFullscreenToggle';
@@ -47,8 +55,32 @@ function AiEditorWorkspace() {
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<ScenePreview | null>(null);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  const { opacity: cameraOverlayOpacity, mirrored: cameraOverlayMirrored } =
+    useCameraOverlaySettings();
+  const { setGeometry: _setCameraGeometry, ...cameraGeometry } = useCameraOverlayGeometry();
   // Issue #287: the preview container itself goes fullscreen.
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(previewContainerRef);
+
+  useEffect(() => {
+    const video = cameraVideoRef.current;
+    if (!video) return;
+    video.srcObject = cameraStream;
+    if (cameraStream) void Promise.resolve(video.play()).catch(() => undefined);
+  }, [cameraStream, cameraStatus]);
+
+  const getCameraOverlay = useCallback((): RenderableCameraOverlay | undefined => {
+    if (cameraStatus !== 'active' || !cameraStream || !cameraVideoRef.current) return undefined;
+    return {
+      source: cameraVideoRef.current,
+      geometry: clampCameraOverlayGeometry(cameraGeometry, 800, 600),
+      opacity: cameraOverlayOpacity,
+      mirrored: cameraOverlayMirrored,
+      layerOrder: Number.MAX_SAFE_INTEGER,
+    };
+  }, [cameraGeometry, cameraOverlayMirrored, cameraOverlayOpacity, cameraStatus, cameraStream]);
   // Issue #225: the same JSON Code tab the manual editor has, going
   // through the same client-side validateScene mirror of
   // scenes.validation.validate_scene as every other write (see
@@ -95,12 +127,13 @@ function AiEditorWorkspace() {
     const node = previewContainerRef.current;
     if (!node || loadState !== 'ready' || !scene) return;
     previewRef.current = createScenePreview(node, resolveSceneRendererId(scene));
-    previewRef.current.render(scene);
+    const cameraOverlay = getCameraOverlay();
+    previewRef.current.render(scene, [], [], Boolean(cameraOverlay), cameraOverlay);
     return () => {
       previewRef.current?.destroy();
       previewRef.current = null;
     };
-  }, [loadState, scene]);
+  }, [cameraStatus, getCameraOverlay, loadState, scene]);
 
   // Issue #224: applies an accepted AI proposal exactly like
   // EditorWorkspace.tsx's `handleAIProposalAccepted` -- the server has
@@ -258,12 +291,31 @@ function AiEditorWorkspace() {
           )}
           <div>
             <div ref={previewContainerRef} className="ai-editor-preview piece-stage-shell">
+              {cameraStatus === 'active' && cameraStream && (
+                <video
+                  ref={cameraVideoRef}
+                  aria-hidden="true"
+                  muted
+                  playsInline
+                  autoPlay
+                  className="ai-editor-camera-source"
+                />
+              )}
               <PieceStageToolbar
                 onScreenshot={() => void handleTakeScreenshot()}
                 onDownload={(variant) => handleDownload(variant)}
                 capabilities={TWO_D_STAGE_CAPABILITIES}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={() => void toggleFullscreen()}
+                controlsControl={
+                  <StageControlsPopover>
+                    <CameraControl
+                      onStatusChange={setCameraStatus}
+                      onStreamChange={setCameraStream}
+                    />
+                    <DemoControlsPanel />
+                  </StageControlsPopover>
+                }
               />
             </div>
             {/* Issue #285: read-only capture of whatever the live preview

@@ -63,6 +63,11 @@ function renderViewer(id = 'p1') {
   );
 }
 
+async function openPieceControls() {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockedUseAuth.mockReturnValue({ status: 'signed-out', user: null });
@@ -158,6 +163,7 @@ describe('PublicProjectViewer camera and demo controls', () => {
     renderViewer();
 
     await screen.findByRole('heading', { name: 'Hand Follower' });
+    await openPieceControls();
 
     const cameraGroup = screen.getByRole('group', { name: 'Live camera' });
     expect(within(cameraGroup).getByRole('button', { name: /enable camera/i })).toBeInTheDocument();
@@ -174,6 +180,7 @@ describe('PublicProjectViewer camera and demo controls', () => {
     renderViewer();
 
     await screen.findByRole('heading', { name: 'Hand Follower' });
+    await openPieceControls();
 
     expect(
       screen.getByText(/processed locally in your browser/i, { exact: false }),
@@ -186,6 +193,7 @@ describe('PublicProjectViewer camera and demo controls', () => {
     renderViewer();
 
     await screen.findByRole('heading', { name: 'Hand Follower' });
+    await openPieceControls();
 
     expect(screen.getByRole('heading', { name: /demo signal controls/i })).toBeInTheDocument();
     expect(screen.getByRole('radiogroup', { name: /demo input mode/i })).toBeInTheDocument();
@@ -197,6 +205,7 @@ describe('PublicProjectViewer camera and demo controls', () => {
 
     renderViewer();
     await screen.findByRole('heading', { name: 'Hand Follower' });
+    await openPieceControls();
 
     const playbackOption = screen.getByRole('radio', { name: /synthetic playback/i });
     playbackOption.focus();
@@ -226,6 +235,7 @@ describe('PublicProjectViewer keyboard operability and focus visibility', () => 
 
     renderViewer();
     await screen.findByRole('heading', { name: 'Hand Follower' });
+    await openPieceControls();
 
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);

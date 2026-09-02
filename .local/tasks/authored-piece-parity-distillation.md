@@ -45,6 +45,20 @@ as read-only behavioral reference.
 - Existing camera, renderer, sandbox, and publication issues are component
   prerequisites or regression coverage, not replacements for #320.
 
+## Cross-surface gap matrix (re-audited 2026-09-02)
+
+| Surface / requirement | Current evidence | Classification | Existing issue / next action |
+| --- | --- | --- | --- |
+| Manual 2D editor | Authoring actions are over the viewport, but Camera and Demo signal controls still live in sidebar disclosures outside the artwork stage; the stage toolbar does not expose them through the shared capability contract | `implementation-defect` | #320; move the existing mounted controls into a stage-local Piece controls disclosure without creating duplicate providers |
+| AI-assisted 2D editor | Shared screenshot/export/fullscreen toolbar exists, but there is no camera/demo control or camera-overlay lifecycle for this editor preview | `implementation-defect` | #320; reuse the 2D camera/tracking/render pipeline and add stage-associated opt-in controls |
+| Public 2D viewer / embed | Screenshot/export/fullscreen toolbar exists, but Camera and Demo controls are still a sibling `<details>` block below the stage rather than a stage-local control popover | `implementation-defect` | #320; move the existing controls into shared stage chrome and preserve anonymous privacy/camera opt-in behavior |
+| Manual/AI 3D editors | Shared toolbar and publication control exist locally; editor-specific actions remain a separate authoring toolbar within the stage, which is acceptable only if it does not duplicate runtime chrome | `implemented locally / needs browser evidence` | #320; verify visual hierarchy and all controls with authenticated browser |
+| Public/embed/immersive 3D | Shared `Scene3DPreview` toolbar exists locally; immersive route reuses the regular orbit runtime plus arrow-key fly, but there is no reference-equivalent Custom/CMS immersive embed choice | `implementation-defect` | #320; decide and implement the permitted React equivalent or document the deliberate route-scope difference in acceptance evidence |
+| Full 3D download | Includes Three.js, screenshot/fullscreen/reset/sound/basic keyboard notes, and a permission-gated camera module; it does not yet reproduce the live Piece controls panel, hand-guide dialog, microphone/theremin behavior, or the reference's complete hand-steering lifecycle | `implementation-defect` | #320; extend the standalone runtime from the shared capability contract and add runtime lifecycle tests |
+| Non-Camera downloads | Camera host/module is omitted and non-camera controls remain, but the exact documented exclusion set and visual/runtime parity need artifact assertions beyond string presence | `verification gap` | #320; add executable artifact checks for no camera UI/API/module and retained controls |
+| Draft / Published | 2D and 3D owner controls exist locally and API tests cover atomic transitions; supplied private deployed route cannot be inspected anonymously | `verification-boundary` | #320; authenticate in the owner's browser session, then verify both states on exact URLs |
+| Deployed examples | Public supplied URL serves the old shell; local commits are 32 ahead of `origin/main` and have not been published | `verification-boundary` | #320/#274; after implementation, obtain authorization to push/publish, then run exact-route post-deploy QA |
+
 ## Criterion-ready definition for #320
 
 The issue is not complete until all of these are proven against the current
@@ -87,6 +101,11 @@ implementation and exact routes:
   remains the repository-owned disposable browser runner.
 - Native fullscreen and real camera/microphone prompts require browser/OS
   permission evidence and are not proven by jsdom.
+- The previous #274 closure comment incorrectly treated the isolated child
+  issue list as the complete product contract. The maintained parity gate is
+  now #320's cross-surface matrix above; closed child issues are evidence for
+  their narrow behavior only, never for integration across structured editor,
+  public, embed, immersive, and downloaded surfaces.
 
 ## Re-audit evidence (2026-09-02)
 

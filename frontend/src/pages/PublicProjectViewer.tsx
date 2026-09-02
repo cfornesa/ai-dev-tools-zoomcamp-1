@@ -19,6 +19,7 @@ import { downloadBlob } from '../export/downloadBlob';
 import { generateHtmlExport, triggerHtmlDownload } from '../export/generateHtmlExport';
 import { getAvailableInteractionModes } from '../export/exportCompatibility';
 import PieceStageToolbar from '../components/PieceStageToolbar';
+import StageControlsPopover from '../components/StageControlsPopover';
 import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import DemoControlsPanel from './DemoControlsPanel';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
@@ -598,27 +599,45 @@ function PublicProjectViewer() {
                 capabilities={TWO_D_STAGE_CAPABILITIES}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={() => void toggleFullscreen()}
+                controlsControl={
+                  <StageControlsPopover>
+                    <CameraControl
+                      onStatusChange={setCameraStatus}
+                      onStreamChange={setCameraStream}
+                    />
+                    {cameraStatus === 'active' && (
+                      <div className="editor-camera-overlay-control">
+                        <label htmlFor="public-camera-overlay-opacity">
+                          Camera overlay opacity
+                        </label>
+                        <input
+                          id="public-camera-overlay-opacity"
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={Math.round(cameraOverlayOpacity * 100)}
+                          aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                          onChange={(event) =>
+                            setCameraOverlayOpacity(Number(event.target.value) / 100)
+                          }
+                        />
+                        <label htmlFor="public-camera-overlay-mirror">
+                          <input
+                            id="public-camera-overlay-mirror"
+                            type="checkbox"
+                            checked={cameraOverlayMirrored}
+                            onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
+                          />
+                          Mirror camera overlay
+                        </label>
+                      </div>
+                    )}
+                    <DemoControlsPanel />
+                  </StageControlsPopover>
+                }
               />
             </div>
-            <details className="piece-stage-settings">
-              <summary>Camera and demo controls</summary>
-              <div role="region" aria-label="Demo and camera controls">
-                {/* Task 31: the exact same camera permission/privacy control the
-              authenticated editor uses (`CameraControl.tsx`) — notice,
-              status, stop, and denial/unsupported/failure messaging, all
-              unchanged. Never auto-starts; only its own `Enable camera`
-              button can ever request camera access. Task 119 (issue #152):
-              `onStatusChange`/`onStreamChange` feed the overlay <video>
-              above, the same way `EditorWorkspace.tsx` does. */}
-                <CameraControl onStatusChange={setCameraStatus} onStreamChange={setCameraStream} />
-
-                {/* Task 28: the exact same demo signal controls the authenticated
-              editor uses (`DemoControlsPanel.tsx`) — this is the
-              deterministic non-camera mode this page starts in by
-              default. */}
-                <DemoControlsPanel />
-              </div>
-            </details>
             {surfaceError && (
               <p role="alert" aria-live="assertive">
                 {surfaceError}

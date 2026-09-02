@@ -15,7 +15,9 @@ export const TWO_D_STAGE_CAPABILITIES: PieceStageCapabilities = {
   download: 'html',
   immersive: false,
   sound: false,
-  pieceControls: false,
+  // Camera/demo and other stage-local controls use the same compact disclosure
+  // on 2D surfaces; the disclosure itself is safe when its children are idle.
+  pieceControls: true,
   gesture: false,
   gestureGuide: false,
   fullscreen: true,

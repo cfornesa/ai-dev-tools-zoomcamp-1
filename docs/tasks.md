@@ -9316,12 +9316,14 @@ Dependencies: None for #270/#271/#280/#282/#283. #281 depends on #280.
 
 ## 237. Epic: per-piece screenshot, fullscreen, download/export, embed, gesture camera control, sound, and immersive VR view (parity with augmenthumankind.com)
 
-Status: COMPLETE -- every sub-issue (#285-295, #297-299, #306-311) is
-CLOSED as of 2026-08-31. The repository owner approved Tone.js and
-asked for the sound/audio scope (tasks 248-252) and, after that, the
-immersive first-person free-fly view (task 253/#311) to both be
-groomed and implemented in this same session. No scope remains
-unfiled or unimplemented; this epic is closed.
+Status: REOPENED / DEPENDENCY-BLOCKED by #320. The prior closure treated
+isolated child issues (#285-295, #297-299, #306-311) as proof of complete
+parity, but those slices did not establish integration across the structured
+Project/Project3D editor, public, embed, immersive, and downloaded surfaces.
+The cross-surface contract, current gap matrix, and exact deployed-route gate
+are maintained in `.local/tasks/authored-piece-parity-distillation.md` and
+#320. The child issues remain closed for their narrow scopes; this epic is not
+complete until #320 passes.
 
 Sub-issue progress:
 - [#285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/285) (2D screenshot) -- CLOSED. Added a "Take screenshot" button to both 2D editors (manual and AI-assisted), capturing the live preview canvas via `captureLiveScreenshot.ts` (read-only `toBlob`/`toDataURL`, distinct from `captureSocialThumbnail.ts`'s off-screen stable-demo-mode render) and downloading it via a new shared `downloadBlob.ts` helper (extracted from 3 pre-existing duplicated download-trigger sites; #286 will reuse it too). Verified live. `make check` green.

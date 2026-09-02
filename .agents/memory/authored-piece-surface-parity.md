@@ -21,3 +21,12 @@ editor routes require authenticated browser evidence. Camera/microphone and
 native fullscreen remain explicit browser/OS verification boundaries.
 
 Linked backlog: #274 and #320.
+
+Re-audit lesson (2026-09-02): isolated child issues can all be locally
+implemented while the composed structured surfaces still fail parity. Treat
+the editor, public viewer, embed, immersive route, and downloaded runtime as
+one acceptance matrix; a stage button in one consumer or a string-level ZIP
+assertion does not prove the shared capability contract. In particular, keep
+camera/demo disclosures stage-associated in every 2D consumer, and verify the
+portable runtime's behavior (not only the presence/absence of script names)
+before accepting Full/Non-Camera parity.

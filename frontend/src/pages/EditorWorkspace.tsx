@@ -26,6 +26,7 @@ import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import PieceStageToolbar from '../components/PieceStageToolbar';
+import StageControlsPopover from '../components/StageControlsPopover';
 import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
@@ -3062,41 +3063,6 @@ function EditorWorkspace() {
               reachable. Only the artwork canvas is hidden below; this keeps
               the compact overlay actions available in both sub-views. */}
           <div>
-            {/* Task 110 (issue #141): the camera overlay opacity slider,
-              visible only while the live camera is active — see the
-              <video> overlay itself below, inside `.editor-scene-canvas`.
-              Task 118 (issue #147): both the opacity and the mirror toggle
-              now persist via `useCameraOverlaySettings`. */}
-            {cameraStatus === 'active' && (
-              <div className="editor-camera-overlay-control">
-                <label htmlFor="editor-camera-overlay-opacity">Camera overlay opacity</label>
-                <input
-                  id="editor-camera-overlay-opacity"
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={Math.round(cameraOverlayOpacity * 100)}
-                  aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
-                  onChange={(event) => setCameraOverlayOpacity(Number(event.target.value) / 100)}
-                />
-                <label htmlFor="editor-camera-overlay-mirror">
-                  <input
-                    id="editor-camera-overlay-mirror"
-                    type="checkbox"
-                    checked={cameraOverlayMirrored}
-                    onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
-                  />
-                  Mirror camera overlay
-                </label>
-              </div>
-            )}
-            {cameraStatus === 'active' && (
-              <p role="status" aria-live="polite" data-testid="camera-overlay-status">
-                {cameraOverlayStatus ??
-                  'Camera overlay. Use arrow keys to move; Shift+arrow changes the movement step. Use + or − to resize.'}
-              </p>
-            )}
             {/* Issue #156: zoom in/out buttons, a live percentage readout,
               and a reset-to-100% action. Reuses `ToolbarButton` (issue
               #143's existing icon-button pattern — visible `aria-hidden`
@@ -3630,6 +3596,58 @@ function EditorWorkspace() {
               capabilities={TWO_D_STAGE_CAPABILITIES}
               isFullscreen={isFullscreen}
               onToggleFullscreen={() => void toggleFullscreen()}
+              controlsControl={
+                <StageControlsPopover>
+                  <CameraControl
+                    onStatusChange={(status) => {
+                      setCameraStatus(status);
+                      if (status !== 'active') cameraTrackingGestureRef.current = null;
+                      trackingSourceRef.current.setCameraActive(status === 'active');
+                    }}
+                    onFrame={(frame) => {
+                      trackingSourceRef.current.reportCameraFrame(frame);
+                      handleCameraTrackingFrame(frame);
+                    }}
+                    onStreamChange={setCameraStream}
+                  />
+                  {cameraStatus === 'active' && (
+                    <div className="editor-camera-overlay-control">
+                      <label htmlFor="editor-camera-overlay-opacity">Camera overlay opacity</label>
+                      <input
+                        id="editor-camera-overlay-opacity"
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={Math.round(cameraOverlayOpacity * 100)}
+                        aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                        onChange={(event) =>
+                          setCameraOverlayOpacity(Number(event.target.value) / 100)
+                        }
+                      />
+                      <label htmlFor="editor-camera-overlay-mirror">
+                        <input
+                          id="editor-camera-overlay-mirror"
+                          type="checkbox"
+                          checked={cameraOverlayMirrored}
+                          onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
+                        />
+                        Mirror camera overlay
+                      </label>
+                    </div>
+                  )}
+                  {cameraStatus === 'active' && (
+                    <p role="status" aria-live="polite" data-testid="camera-overlay-status">
+                      {cameraOverlayStatus ??
+                        'Camera overlay. Use arrow keys to move; Shift+arrow changes the movement step. Use + or − to resize.'}
+                    </p>
+                  )}
+                  <DemoControlsPanel
+                    onPinchStart={() => setPinchEventCount((count) => count + 1)}
+                    onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
+                  />
+                </StageControlsPopover>
+              }
             />
           </div>
           {/* Issue #163 (task 131): the canvas-overlaid selection HUD —
@@ -3721,53 +3739,6 @@ function EditorWorkspace() {
                 component's return), so the section was renamed to
                 describe what actually remains. */}
               <SnapPreferenceControl />
-            </CollapsibleSection>
-
-            {/* Issue #95, point 7: what was one "Camera & demo controls"
-              section (too large once its content is visible, bundling
-              CameraControl and the much larger DemoControlsPanel under one
-              disclosure) is now two independent CollapsibleSections, each
-              with its own open/closed state — consistent with this file's
-              existing "opening one must not close another" rule. */}
-            <CollapsibleSection heading="Camera" icon="📷">
-              {/* Task 31: the camera permission/privacy control.
-                Self-contained (owns its own lazily-created MediaPipe
-                tracking-provider instance; see CameraControl.tsx) and
-                rendered unconditionally alongside — never in place of —
-                DemoControlsPanel below, so the non-camera fallback stays
-                available before camera activation, during any camera
-                failure, and after Stop camera is pressed (acceptance
-                criterion). */}
-              <CameraControl
-                onStatusChange={(status) => {
-                  setCameraStatus(status);
-                  if (status !== 'active') cameraTrackingGestureRef.current = null;
-                  // Task 83: the live preview runtime loop prefers camera
-                  // frames over demo frames exactly while the camera is
-                  // actually producing them — see
-                  // `previewTrackingSource.ts`'s own doc comment.
-                  trackingSourceRef.current.setCameraActive(status === 'active');
-                }}
-                onFrame={(frame) => {
-                  trackingSourceRef.current.reportCameraFrame(frame);
-                  handleCameraTrackingFrame(frame);
-                }}
-                onStreamChange={setCameraStream}
-              />
-            </CollapsibleSection>
-
-            <CollapsibleSection heading="Demo signal controls" icon="✋">
-              {/* Task 28: local demo signal controls — sliders/toggles/event
-                buttons plus deterministic synthetic playback, so every
-                normalized gesture signal can be exercised without a
-                camera. Self-contained (owns its own tracking-provider
-                controller; see DemoControlsPanel.tsx), so it lives here as
-                an independent section rather than threading through
-                useSceneEditor/workingCopy. */}
-              <DemoControlsPanel
-                onPinchStart={() => setPinchEventCount((count) => count + 1)}
-                onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
-              />
             </CollapsibleSection>
           </TopLevelPanel>
         </section>

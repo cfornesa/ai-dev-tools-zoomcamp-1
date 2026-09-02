@@ -10,6 +10,13 @@ import { fireEvent, screen } from '@testing-library/react';
  * workspace mounts rather than re-deriving which toggles apply to it.
  */
 export function expandAllCollapsibleSections(): void {
+  // Stage-local camera/demo controls are intentionally disclosed separately
+  // from the editor sidebars. Open the shared disclosure for legacy suites
+  // that exercise those controls after expanding editor panels.
+  const pieceControls = screen.queryByRole('button', { name: 'Piece controls' });
+  if (pieceControls?.getAttribute('aria-expanded') === 'false') {
+    fireEvent.click(pieceControls);
+  }
   screen
     .queryAllByRole('button', { expanded: false, hidden: true })
     .filter((toggle) => toggle.classList.contains('editor-panel-disclosure-toggle'))

@@ -253,18 +253,18 @@ describe('Preview panel stays populated across camera activation (Task 109, issu
     assertPreviewFullyRendered(1);
   });
 
-  it('stays populated after the Camera CollapsibleSection is collapsed post-activation', async () => {
+  it('stays populated after the stage controls disclosure is closed post-activation', async () => {
     await loadWorkspace(baseScene({ shapes: [CIRCLE_SHAPE] }));
     setCameraStatus('active');
     assertPreviewFullyRendered(1);
 
-    const cameraToggle = screen.getByRole('button', { name: /▾ Camera/ });
-    fireEvent.click(cameraToggle);
-    expect(screen.queryByTestId('fake-camera-control')).toBeNull();
+    const controlsToggle = screen.getByRole('button', { name: 'Hide piece controls' });
+    fireEvent.click(controlsToggle);
+    expect(screen.getByTestId('fake-camera-control')).toBeInTheDocument();
 
     assertPreviewFullyRendered(1);
 
-    fireEvent.click(screen.getByRole('button', { name: /▸ Camera/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Piece controls' }));
     assertPreviewFullyRendered(1);
   });
 

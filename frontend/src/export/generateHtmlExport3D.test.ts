@@ -100,6 +100,8 @@ describe('generateScene3DBundle', () => {
     expect(html).toContain('piece-sound');
     expect(html).toContain('piece-audio-controls');
     expect(html).toContain('piece-fullscreen');
+    expect(html).toContain('piece-camera-settings');
+    expect(html).toContain('piece-camera-enable');
 
     const script = await zip.files['scripts/piece.js'].async('string');
     expect(script).toContain('window.__SCENE3D_DATA__');
@@ -108,9 +110,23 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('piece-sound');
     expect(script).toContain('AudioContext');
     expect(script).toContain('piece-volume');
+    expect(script).toContain('getUserMedia');
 
     const runtime = await zip.files['runtime/three.min.js'].async('string');
     expect(runtime).toBe('/* fake three.js runtime */');
+  });
+
+  it('removes camera controls from the Non-Camera variant while retaining sound controls', async () => {
+    const result = await generateScene3DBundle(validScene(), 'My 3D Scene', {
+      variant: 'non-camera',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const zip = await JSZip.loadAsync(result.zipBlob);
+    const html = await zip.files['index.html'].async('string');
+    expect(html).not.toContain('piece-camera-settings');
+    expect(html).not.toContain('piece-camera-enable');
+    expect(html).toContain('piece-sound');
   });
 
   it('embeds the exact scene document -- output reflects the input, no stale caching', async () => {

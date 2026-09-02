@@ -10338,6 +10338,14 @@ opt-in stage-associated disclosure and restoring keyboard focusability to the
 Draft/Published status controls, the complete `publishingAndRemix.spec.ts`
 suite passed 24/24 against the disposable PostgreSQL/Django/Vite stack.
 
+Further parity increment (2026-09-01): the editor authoring toolbar and 3D
+Piece controls/gesture-camera panels now render as stage-local overlays rather
+than page-level rows. The manual and AI-assisted 3D browser lifecycle suite
+passes 2/2 while asserting the toolbar and both download variants. The 3D
+artifact suite passes 7/7; Full bundles now include explicit local camera
+capture controls and Non-Camera bundles omit them while retaining the
+non-camera runtime controls. Standalone 3D hand-tracking parity remains open.
+
 Next action: implement the shared stage/capability contract for structured
 Project and Project3D surfaces, then verify the downloaded runtime and exact
 published URLs after authentication and publish.

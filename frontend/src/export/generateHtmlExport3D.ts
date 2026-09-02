@@ -95,6 +95,9 @@ const PIECE_CSS = `html, body {
 }
 #piece-audio-controls[hidden] { display: none; }
 #piece-audio-controls label { display: grid; gap: .25rem; font-size: .8rem; }
+#piece-camera-controls[hidden] { display: none; }
+#piece-camera-controls { position: fixed; left: 1rem; bottom: 5.5rem; z-index: 10; display: grid; gap: .5rem; min-width: 15rem; max-width: min(22rem, calc(100vw - 2rem)); padding: .75rem; color: #fff; background: rgba(10,12,20,.9); border: 1px solid rgba(255,255,255,.28); border-radius: .75rem; }
+#piece-camera-controls video { width: 100%; max-height: 10rem; object-fit: cover; border-radius: .5rem; }
 `;
 
 const README = `EXPORT: 3D scene
@@ -129,12 +132,23 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
   <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view">↺</button>
   <button id="piece-sound" type="button" aria-label="Enable sound" title="Enable sound" aria-pressed="false">♪</button>
   <button id="piece-audio-settings" type="button" aria-label="Sound settings" title="Sound settings" aria-expanded="false">☰</button>
+  ${variant === 'full' ? '<button id="piece-camera-settings" type="button" aria-label="Camera controls" title="Camera controls" aria-expanded="false">◉</button>' : ''}
   <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
 </div>
 <div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
   <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
   <p>Enable sound, then use the A–L keys to play notes.</p>
 </div>
+${
+  variant === 'full'
+    ? `<div id="piece-camera-controls" role="group" aria-label="Camera controls" hidden>
+  <button id="piece-camera-enable" type="button">Enable camera</button>
+  <p id="piece-camera-status" role="status" aria-live="polite"></p>
+  <p>Camera video is processed locally in your browser and is never recorded, stored, or uploaded.</p>
+  <video id="piece-camera-video" autoplay muted playsinline hidden></video>
+</div>`
+    : ''
+}
 <script src="scripts/piece.js"></script>
 <script>
 (() => {

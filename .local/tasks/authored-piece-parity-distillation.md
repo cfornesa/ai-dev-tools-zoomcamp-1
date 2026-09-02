@@ -100,7 +100,9 @@ implementation and exact routes:
   `PublicProjectViewer`, and `Scene3DPreview`; the portable 2D runtime already
   contains screenshot/fullscreen and camera/demo capability scripts, while the
   portable 3D runtime now contains screenshot/fullscreen, reset/orbit/zoom,
-  explicit sound enable/settings, volume, keyboard notes, and movement tones.
+  explicit sound enable/settings, volume, keyboard notes, movement tones, and
+  a permission-gated local camera overlay in Full bundles. Non-Camera 3D
+  bundles omit that camera surface while retaining non-camera controls.
 - The capability policy is explicit in
   `frontend/src/components/pieceStageCapabilities.ts`: 2D exposes only its
   implemented screenshot/HTML-export/fullscreen controls, while 3D exposes
@@ -117,6 +119,10 @@ implementation and exact routes:
   The exact failed 8-test `projectLifecycle.spec.ts` rerun passed 8/8 in
   isolation. This is recorded as a verification flake, not as a clean full
   batch, until the complete run is repeatably green.
+- Focused 3D editor browser coverage now passes 2/2, asserting stage-local
+  toolbar controls on both manual and AI-assisted editor routes. Focused 3D
+  artifact coverage passes 7/7 and proves Full/Non-Camera camera-surface
+  separation; standalone 3D hand-tracking remains an implementation gap.
 - GitHub open-issue enumeration now contains #274, #320, and #321; #123 is
   closed with a QA PASS. #274 remains dependency-blocked by #320 and is not
   treated as complete merely because earlier child issues were closed.

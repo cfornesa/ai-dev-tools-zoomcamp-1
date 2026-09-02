@@ -155,6 +155,61 @@ export function buildStandaloneThreeRuntimeScript(): string {
     var size = currentSize();
     renderer.setSize(size.width, size.height, false);
     var graph = buildSceneGraph(scene3d, size.width / size.height);
+    var exportVariant = document.querySelector('meta[name="creatrweb-export-variant"]')?.getAttribute('content') || 'full';
+    var cameraStream = null;
+    var cameraVideo = document.getElementById('piece-camera-video');
+    var cameraButton = document.getElementById('piece-camera-enable');
+    var cameraStatus = document.getElementById('piece-camera-status');
+
+    function setCameraState(active, message) {
+      if (cameraButton) {
+        cameraButton.textContent = active ? 'Stop camera' : 'Enable camera';
+        cameraButton.setAttribute('aria-label', active ? 'Stop camera' : 'Enable camera');
+      }
+      if (cameraStatus) cameraStatus.textContent = message || '';
+      if (cameraVideo) cameraVideo.hidden = !active;
+    }
+
+    async function toggleCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(function (track) { track.stop(); });
+        cameraStream = null;
+        if (cameraVideo) cameraVideo.srcObject = null;
+        setCameraState(false, 'Camera stopped. No video is being captured.');
+        return;
+      }
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        setCameraState(false, "This browser doesn't support camera access.");
+        return;
+      }
+      try {
+        setCameraState(false, 'Requesting camera access…');
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (cameraVideo) {
+          cameraVideo.srcObject = cameraStream;
+          await cameraVideo.play().catch(function () {});
+        }
+        setCameraState(true, 'Camera is active. Video stays local to this browser.');
+      } catch (error) {
+        cameraStream = null;
+        var name = error && error.name;
+        setCameraState(false, name === 'NotAllowedError' ? 'Camera access was denied.' : 'Camera could not be started.');
+      }
+    }
+
+    if (exportVariant === 'full') {
+      document.getElementById('piece-camera-settings')?.addEventListener('click', function () {
+        var panel = document.getElementById('piece-camera-controls');
+        var button = document.getElementById('piece-camera-settings');
+        if (!panel || !button) return;
+        panel.hidden = !panel.hidden;
+        button.setAttribute('aria-expanded', String(!panel.hidden));
+      });
+      cameraButton?.addEventListener('click', toggleCamera);
+      window.addEventListener('beforeunload', function () {
+        cameraStream?.getTracks().forEach(function (track) { track.stop(); });
+      });
+    }
     var audioContext = null;
     var masterGain = null;
     var soundEnabled = false;

@@ -58,6 +58,9 @@ test.describe('3D project creation', () => {
     // version successfully (Project3DWorkspace.tsx).
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
     await expectThreeDStageChrome(page);
+    await expect(page.getByTestId('project3d-save-button')).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Ask AI to improve this scene' })).toBeVisible();
 
     // Reload to prove the project genuinely persisted server-side, not
     // just in local React state from the create response.
@@ -88,6 +91,7 @@ test.describe('3D project creation', () => {
     // the preview actually mounted and rendered.
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
     await expectThreeDStageChrome(page);
+    await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
 
     await page.reload();
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();

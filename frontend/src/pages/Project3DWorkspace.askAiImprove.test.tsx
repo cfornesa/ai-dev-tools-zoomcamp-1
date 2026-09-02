@@ -90,9 +90,12 @@ describe('Project3DWorkspace "Ask AI to improve this scene"', () => {
 
     expect(screen.queryByTestId('project3d-ai-improve-panel')).not.toBeInTheDocument();
 
+    // jsdom cannot create WebGL; wait for the graceful fallback to remount
+    // the shared toolbar before clicking its editor action.
+    await screen.findByTestId('scene3d-preview-unavailable');
     await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
 
-    const panel = screen.getByTestId('project3d-ai-improve-panel');
+    const panel = await screen.findByTestId('project3d-ai-improve-panel');
     expect(panel).toBeInTheDocument();
     const editRadio = within(panel).getByRole('radio', { name: 'Edit' });
     expect(editRadio).toHaveAttribute('aria-checked', 'true');
@@ -106,8 +109,9 @@ describe('Project3DWorkspace "Ask AI to improve this scene"', () => {
     await screen.findByRole('heading', { name: 'My 3D scene' });
     const user = userEvent.setup();
 
+    await screen.findByTestId('scene3d-preview-unavailable');
     await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
-    expect(screen.getByTestId('project3d-ai-improve-panel')).toBeInTheDocument();
+    expect(await screen.findByTestId('project3d-ai-improve-panel')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
 

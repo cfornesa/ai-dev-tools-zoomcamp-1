@@ -100,8 +100,7 @@ describe('generateScene3DBundle', () => {
     expect(html).toContain('piece-sound');
     expect(html).toContain('piece-audio-controls');
     expect(html).toContain('piece-fullscreen');
-    expect(html).toContain('piece-camera-settings');
-    expect(html).toContain('piece-camera-enable');
+    expect(html).toContain('camera-controls-host');
 
     const script = await zip.files['scripts/piece.js'].async('string');
     expect(script).toContain('window.__SCENE3D_DATA__');
@@ -111,6 +110,8 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('AudioContext');
     expect(script).toContain('piece-volume');
     expect(script).toContain('getUserMedia');
+    expect(script).toContain('__exportSetActiveInput');
+    expect(script).toContain('recognizeForVideo');
 
     const runtime = await zip.files['runtime/three.min.js'].async('string');
     expect(runtime).toBe('/* fake three.js runtime */');
@@ -124,9 +125,11 @@ describe('generateScene3DBundle', () => {
     if (!result.ok) return;
     const zip = await JSZip.loadAsync(result.zipBlob);
     const html = await zip.files['index.html'].async('string');
-    expect(html).not.toContain('piece-camera-settings');
-    expect(html).not.toContain('piece-camera-enable');
+    expect(html).not.toContain('camera-controls-host');
     expect(html).toContain('piece-sound');
+    const script = await zip.files['scripts/piece.js'].async('string');
+    expect(script).not.toContain('getUserMedia');
+    expect(script).not.toContain('recognizeForVideo');
   });
 
   it('embeds the exact scene document -- output reflects the input, no stale caching', async () => {

@@ -183,14 +183,6 @@ function AiProject3DWorkspace() {
           onBlur={() => void handleTitleBlur()}
         />
         <PublishControl3D id={id} project={project} setProject={setProject} />
-        <button
-          type="button"
-          onClick={() => void handleExport()}
-          disabled={exportState.pending}
-          data-testid="ai-project3d-export-button"
-        >
-          {exportState.pending ? 'Generating export…' : 'Download standalone bundle'}
-        </button>
         {exportState.error && (
           <p role="alert" aria-live="assertive" data-testid="ai-project3d-export-error">
             {exportState.error}
@@ -230,7 +222,7 @@ function AiProject3DWorkspace() {
               <Scene3DCodeEditor projectId={id} scene={scene} onSaved={handleVersionPersisted} />
             </section>
           )}
-          <div hidden={previewView !== 'visual'}>
+          <div>
             {/* Issue #244: real Three.js rendering, replacing the
                 #226/#231 placeholder. */}
             <Scene3DPreview

@@ -100,9 +100,11 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
     });
     renderWorkspace();
     await screen.findByLabelText('Project title');
+    await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId('ai-project3d-export-button'));
+    await user.click(screen.getByRole('button', { name: 'Open download menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
     await waitFor(() => expect(mockedGenerateScene3DBundle).toHaveBeenCalledTimes(1));
     const [scenePassed, baseName] = mockedGenerateScene3DBundle.mock.calls[0];
@@ -138,6 +140,7 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
     });
     renderWorkspace();
     await screen.findByLabelText('Project title');
+    await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/describe the scene/i), 'a bare stage');
@@ -146,7 +149,8 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
     await user.click(screen.getByTestId('ai-3d-accept-button'));
     await waitFor(() => expect(mockedAcceptAIProposal3D).toHaveBeenCalledTimes(1));
 
-    await user.click(screen.getByTestId('ai-project3d-export-button'));
+    await user.click(screen.getByRole('button', { name: 'Open download menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
     await waitFor(() => expect(mockedGenerateScene3DBundle).toHaveBeenCalledTimes(1));
     const [scenePassed] = mockedGenerateScene3DBundle.mock.calls[0];
@@ -161,9 +165,11 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
     });
     renderWorkspace();
     await screen.findByLabelText('Project title');
+    await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId('ai-project3d-export-button'));
+    await user.click(screen.getByRole('button', { name: 'Open download menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
     expect(await screen.findByTestId('ai-project3d-export-error')).toHaveTextContent(
       'camera: must have required property fov',

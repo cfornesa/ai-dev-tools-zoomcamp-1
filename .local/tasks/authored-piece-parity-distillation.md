@@ -122,7 +122,9 @@ implementation and exact routes:
 - Focused 3D editor browser coverage now passes 2/2, asserting stage-local
   toolbar controls on both manual and AI-assisted editor routes. Focused 3D
   artifact coverage passes 7/7 and proves Full/Non-Camera camera-surface
-  separation; standalone 3D hand-tracking remains an implementation gap.
+  separation. Full 3D scripts now include the shared standalone MediaPipe
+  module and expose its active hand signals to the local Three.js orbit/zoom
+  loop; Non-Camera scripts omit the tracking module and camera host.
 - The corrected public publishing/remix browser run passes 24/24 and now
   asserts screenshot, Full/Non-Camera download menu, fullscreen, and the
   chrome-less `/embed/p/:id` route's shared stage toolbar. The full frontend
@@ -133,6 +135,21 @@ implementation and exact routes:
 - GitHub open-issue enumeration now contains #274, #320, and #321; #123 is
   closed with a QA PASS. #274 remains dependency-blocked by #320 and is not
   treated as complete merely because earlier child issues were closed.
+
+## Re-audit implementation increment (2026-09-01)
+
+- Manual and AI-assisted 3D editors no longer place Save/export as bulky
+  header actions. They pass authoring controls into the shared stage toolbar,
+  with the visual stage remaining mounted while Code is selected.
+- The manual 3D export callback now receives the shared Full/Non-Camera menu
+  variant instead of silently exporting Full for both menu choices.
+- Full 3D downloads reuse `buildStandaloneCameraScript()` and the existing
+  `window.__exportSetActiveInput` contract. The Three.js runtime consumes
+  palm deltas for orbit, pinch strength for zoom, and resets the bridge when
+  camera tracking stops. Non-Camera generation does not embed that module.
+- Focused regression coverage is green: 15/15 across the 3D export and editor
+  suites after waiting for the jsdom WebGL fallback before interacting with
+  its remounted toolbar.
 
 ## Memory links
 

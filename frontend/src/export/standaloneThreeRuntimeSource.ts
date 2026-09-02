@@ -155,61 +155,16 @@ export function buildStandaloneThreeRuntimeScript(): string {
     var size = currentSize();
     renderer.setSize(size.width, size.height, false);
     var graph = buildSceneGraph(scene3d, size.width / size.height);
-    var exportVariant = document.querySelector('meta[name="creatrweb-export-variant"]')?.getAttribute('content') || 'full';
-    var cameraStream = null;
-    var cameraVideo = document.getElementById('piece-camera-video');
-    var cameraButton = document.getElementById('piece-camera-enable');
-    var cameraStatus = document.getElementById('piece-camera-status');
-
-    function setCameraState(active, message) {
-      if (cameraButton) {
-        cameraButton.textContent = active ? 'Stop camera' : 'Enable camera';
-        cameraButton.setAttribute('aria-label', active ? 'Stop camera' : 'Enable camera');
-      }
-      if (cameraStatus) cameraStatus.textContent = message || '';
-      if (cameraVideo) cameraVideo.hidden = !active;
-    }
-
-    async function toggleCamera() {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(function (track) { track.stop(); });
-        cameraStream = null;
-        if (cameraVideo) cameraVideo.srcObject = null;
-        setCameraState(false, 'Camera stopped. No video is being captured.');
-        return;
-      }
-      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-        setCameraState(false, "This browser doesn't support camera access.");
-        return;
-      }
-      try {
-        setCameraState(false, 'Requesting camera access…');
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (cameraVideo) {
-          cameraVideo.srcObject = cameraStream;
-          await cameraVideo.play().catch(function () {});
-        }
-        setCameraState(true, 'Camera is active. Video stays local to this browser.');
-      } catch (error) {
-        cameraStream = null;
-        var name = error && error.name;
-        setCameraState(false, name === 'NotAllowedError' ? 'Camera access was denied.' : 'Camera could not be started.');
-      }
-    }
-
-    if (exportVariant === 'full') {
-      document.getElementById('piece-camera-settings')?.addEventListener('click', function () {
-        var panel = document.getElementById('piece-camera-controls');
-        var button = document.getElementById('piece-camera-settings');
-        if (!panel || !button) return;
-        panel.hidden = !panel.hidden;
-        button.setAttribute('aria-expanded', String(!panel.hidden));
-      });
-      cameraButton?.addEventListener('click', toggleCamera);
-      window.addEventListener('beforeunload', function () {
-        cameraStream?.getTracks().forEach(function (track) { track.stop(); });
-      });
-    }
+    var activeHandInput = null;
+    var previousHand = null;
+    // The Full export's standalone camera module installs the same optional
+    // input contract used by the 2D export. Keeping this bridge on window
+    // lets that module remain reusable while Three.js consumes its signals
+    // locally for orbit control.
+    window.__exportSetActiveInput = function (input) {
+      activeHandInput = input;
+      previousHand = null;
+    };
     var audioContext = null;
     var masterGain = null;
     var soundEnabled = false;
@@ -305,6 +260,27 @@ export function buildStandaloneThreeRuntimeScript(): string {
       graph.camera.lookAt(target);
     }
 
+    function applyHandCamera() {
+      if (!activeHandInput || typeof activeHandInput.getSignals !== 'function') {
+        previousHand = null;
+        return;
+      }
+      var signals = activeHandInput.getSignals();
+      if (!signals || !signals.handPresence || signals.palmX == null || signals.palmY == null) {
+        previousHand = null;
+        return;
+      }
+      if (previousHand) {
+        orbit.yaw -= (signals.palmX - previousHand.x) * 2.2;
+        orbit.pitch = Math.max(-1.45, Math.min(1.45, orbit.pitch + (signals.palmY - previousHand.y) * 1.8));
+        if (signals.pinchStrength != null) {
+          orbit.distance = Math.max(0.1, Math.min(1000, orbit.distance * (1 + (signals.pinchStrength - 0.5) * 0.018)));
+        }
+        applyOrbit();
+      }
+      previousHand = { x: signals.palmX, y: signals.palmY };
+    }
+
     host.addEventListener('pointerdown', function (event) {
       dragging = true;
       lastX = event.clientX;
@@ -342,6 +318,7 @@ export function buildStandaloneThreeRuntimeScript(): string {
     });
 
     function tick() {
+      applyHandCamera();
       renderer.render(graph.scene, graph.camera);
       requestAnimationFrame(tick);
     }

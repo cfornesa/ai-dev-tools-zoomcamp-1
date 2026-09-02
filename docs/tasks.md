@@ -10348,14 +10348,17 @@ Further parity increment (2026-09-01): the editor authoring toolbar and 3D
 Piece controls/gesture-camera panels now render as stage-local overlays rather
 than page-level rows. The manual and AI-assisted 3D browser lifecycle suite
 passes 2/2 while asserting the toolbar and both download variants. The 3D
-artifact suite passes 7/7; Full bundles now include explicit local camera
-capture controls and Non-Camera bundles omit them while retaining the
-non-camera runtime controls. Standalone 3D hand-tracking parity remains open.
+artifact suite passes 7/7; Full bundles now include the shared standalone
+MediaPipe camera module and connect its local hand signals to Three.js orbit /
+zoom control, while Non-Camera bundles omit the camera host and tracking APIs
+while retaining the non-camera runtime controls. The stage remains actionable
+while Code is selected, and header-level duplicate Save/export actions are
+removed.
 
-Next action: complete standalone 3D hand-tracking parity in Full downloads,
-then authenticate and publish the current build for exact editor, immersive,
-embed, and downloaded-runtime route evidence. Do not close this task or its
-parent until those deployment-boundary criteria are proven.
+Next action: add dedicated 3D Full-export runtime lifecycle tests and then
+authenticate and publish the current build for exact editor, immersive, embed,
+and downloaded-runtime route evidence. Do not close this task or its parent
+until those deployment-boundary criteria are proven.
 
 Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)
 

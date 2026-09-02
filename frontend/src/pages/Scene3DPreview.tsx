@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -185,6 +186,7 @@ function Scene3DPreview({
   onDownload,
   downloadFormat = 'zip',
   immersiveHref,
+  editorControls,
   createGestureCameraProvider,
 }: {
   scene: Scene3DDocument;
@@ -206,6 +208,8 @@ function Scene3DPreview({
   downloadFormat?: 'html' | 'zip';
   /** Optional public immersive entry point rendered in the stage toolbar. */
   immersiveHref?: string;
+  /** Optional authoring actions rendered inside the same stage toolbar. */
+  editorControls?: ReactNode;
   /** Test seam mirroring `CameraControl.tsx`'s own `createProvider` prop
    * -- lets tests inject a fake `TrackingProvider` for the gesture-camera
    * feature without touching a real camera/MediaPipe. */
@@ -628,17 +632,23 @@ function Scene3DPreview({
 
   if (renderError) {
     return (
-      <div
-        className="scene3d-preview-unavailable"
-        role="status"
-        aria-live="polite"
-        data-testid="scene3d-preview-unavailable"
-      >
-        <p>3D preview isn't available in this browser.</p>
-        <p>
-          {scene.objects.length} object(s), {scene.lights.length} light(s), {scene.groups.length}{' '}
-          group(s) in this scene.
-        </p>
+      <div ref={containerRef} className="scene3d-preview scene3d-preview-unavailable">
+        <div role="status" aria-live="polite" data-testid="scene3d-preview-unavailable">
+          <p>3D preview isn't available in this browser.</p>
+          <p>
+            {scene.objects.length} object(s), {scene.lights.length} light(s), {scene.groups.length}{' '}
+            group(s) in this scene.
+          </p>
+        </div>
+        {(onDownload || editorControls) && (
+          <PieceStageToolbar
+            ariaLabel="Preview actions"
+            onDownload={onDownload}
+            downloadFormat={downloadFormat}
+            capabilities={THREE_D_STAGE_CAPABILITIES}
+            editorControls={editorControls}
+          />
+        )}
       </div>
     );
   }
@@ -730,6 +740,7 @@ function Scene3DPreview({
             ) : undefined
           }
           gestureGuide={showGestureControl ? <HandGestureGuideDialog /> : undefined}
+          editorControls={editorControls}
         />
       </div>
       {/* Issue #310: "Piece controls" settings panel -- an opt-in,

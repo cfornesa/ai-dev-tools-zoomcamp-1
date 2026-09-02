@@ -102,9 +102,11 @@ describe('"Download standalone bundle" (manual 3D editor, issue #290)', () => {
     });
     renderWorkspace();
     await screen.findByRole('heading', { name: 'My 3D scene' });
+    await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId('project3d-export-button'));
+    await user.click(screen.getByRole('button', { name: 'Open download menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
     await waitFor(() => expect(mockedGenerateScene3DBundle).toHaveBeenCalledTimes(1));
     const [scenePassed, baseName] = mockedGenerateScene3DBundle.mock.calls[0];
@@ -123,6 +125,7 @@ describe('"Download standalone bundle" (manual 3D editor, issue #290)', () => {
     });
     renderWorkspace();
     await screen.findByRole('heading', { name: 'My 3D scene' });
+    await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
     // Outline3DInspector.onChange replaces workingScene wholesale, purely
@@ -134,7 +137,8 @@ describe('"Download standalone bundle" (manual 3D editor, issue #290)', () => {
     const colorField = await screen.findByLabelText('Color');
     fireEvent.change(colorField, { target: { value: '#123456' } });
 
-    await user.click(screen.getByTestId('project3d-export-button'));
+    await user.click(screen.getByRole('button', { name: 'Open download menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
     await waitFor(() => expect(mockedGenerateScene3DBundle).toHaveBeenCalledTimes(1));
     const [scenePassed] = mockedGenerateScene3DBundle.mock.calls[0];
@@ -152,9 +156,11 @@ describe('"Download standalone bundle" (manual 3D editor, issue #290)', () => {
     });
     renderWorkspace();
     await screen.findByRole('heading', { name: 'My 3D scene' });
+    await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId('project3d-export-button'));
+    await user.click(screen.getByRole('button', { name: 'Open download menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
     expect(await screen.findByTestId('project3d-export-error')).toHaveTextContent(
       'camera: must have required property fov',

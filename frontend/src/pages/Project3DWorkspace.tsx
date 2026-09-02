@@ -308,32 +308,11 @@ function Project3DWorkspace() {
             ? 'Unsaved changes'
             : `Saved${project?.current_version ? ` as version ${project.current_version.sequence}` : ''}`}
         </p>
-        <button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={!isDirty || saveState.pending}
-          data-testid="project3d-save-button"
-        >
-          {saveState.pending ? 'Saving…' : 'Save'}
-        </button>
         {saveState.error && (
           <p role="alert" aria-live="assertive" data-testid="project3d-save-error">
             {saveState.error}
           </p>
         )}
-        {/* Issue #290: a 3D counterpart of the 2D manual editor's
-            ExportConfigDialog.tsx -- a single button, not a full dialog,
-            since scene3d has no interaction modes/camera overlay to
-            configure (documented implementation decision: the 2D dialog
-            isn't a clean fit here, per the issue's own escape hatch). */}
-        <button
-          type="button"
-          onClick={() => void handleExport()}
-          disabled={exportState.pending}
-          data-testid="project3d-export-button"
-        >
-          {exportState.pending ? 'Generating export…' : 'Download standalone bundle'}
-        </button>
         {exportState.error && (
           <p role="alert" aria-live="assertive" data-testid="project3d-export-error">
             {exportState.error}
@@ -375,13 +354,37 @@ function Project3DWorkspace() {
               <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleVersionSaved} />
             </section>
           )}
-          <div hidden={previewView !== 'visual'}>
+          <div>
             {/* Issue #244: real Three.js rendering, replacing the
                 #226 placeholder. */}
             <Scene3DPreview
               scene={workingScene}
               screenshotBaseName={project?.title}
-              onDownload={() => void handleExport()}
+              onDownload={(variant) => void handleExport(variant)}
+              editorControls={
+                <span role="group" aria-label="Editor actions" className="editor-tool-group">
+                  <button
+                    type="button"
+                    className="piece-stage-icon-button"
+                    onClick={() => void handleSave()}
+                    disabled={!isDirty || saveState.pending}
+                    data-testid="project3d-save-button"
+                    aria-label={saveState.pending ? 'Saving scene' : 'Save scene'}
+                    title={saveState.pending ? 'Saving scene' : 'Save scene'}
+                  >
+                    <span aria-hidden="true">▣</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="piece-stage-icon-button"
+                    onClick={handleAskAiImproveScene}
+                    aria-label="Ask AI to improve this scene"
+                    title="Ask AI to improve this scene"
+                  >
+                    <span aria-hidden="true">✦</span>
+                  </button>
+                </span>
+              }
             />
           </div>
         </section>
@@ -391,11 +394,6 @@ function Project3DWorkspace() {
           onAskAiChange={handleAskAiChangeItem}
         />
         <section aria-label="Tools" role="region" data-panel="tools" className="editor-panel">
-          <div role="group" aria-label="Whole-scene AI actions" className="editor-tool-group">
-            <button type="button" onClick={handleAskAiImproveScene}>
-              Ask AI to improve this scene
-            </button>
-          </div>
           {showAiPanel && (
             <section
               aria-label="Ask AI to improve this scene"

@@ -22,6 +22,7 @@ import JSZip from 'jszip';
 import { validateScene3D } from '../validation/scene3d';
 import { downloadBlob } from './downloadBlob';
 import { buildStandaloneThreeRuntimeScript } from './standaloneThreeRuntimeSource';
+import { buildStandaloneCameraScript } from './standaloneCameraSource';
 import type { Scene3DDocument } from '../pages/scene3dTypes';
 
 export class Scene3DBundleError extends Error {
@@ -95,9 +96,9 @@ const PIECE_CSS = `html, body {
 }
 #piece-audio-controls[hidden] { display: none; }
 #piece-audio-controls label { display: grid; gap: .25rem; font-size: .8rem; }
-#piece-camera-controls[hidden] { display: none; }
-#piece-camera-controls { position: fixed; left: 1rem; bottom: 5.5rem; z-index: 10; display: grid; gap: .5rem; min-width: 15rem; max-width: min(22rem, calc(100vw - 2rem)); padding: .75rem; color: #fff; background: rgba(10,12,20,.9); border: 1px solid rgba(255,255,255,.28); border-radius: .75rem; }
-#piece-camera-controls video { width: 100%; max-height: 10rem; object-fit: cover; border-radius: .5rem; }
+#camera-controls-host { position: fixed; left: 1rem; bottom: 5.5rem; z-index: 10; display: grid; gap: .5rem; min-width: 15rem; max-width: min(22rem, calc(100vw - 2rem)); padding: .75rem; color: #fff; background: rgba(10,12,20,.9); border: 1px solid rgba(255,255,255,.28); border-radius: .75rem; }
+#camera-controls-host:empty { display: none; }
+#camera-controls-host video { width: 100%; max-height: 10rem; object-fit: cover; border-radius: .5rem; }
 `;
 
 const README = `EXPORT: 3D scene
@@ -110,9 +111,10 @@ Edit styles/piece.css for appearance, and scripts/piece.js for behavior,
 then reopen index.html. The scene document itself lives at the top of
 scripts/piece.js as plain JSON (window.__SCENE3D_DATA__).
 
-runtime/ holds a vendored copy of Three.js, fetched once at export time
-so this piece works completely offline -- it never depends on a live CDN
-connection after you download it.
+runtime/ holds a vendored copy of Three.js, fetched once at export time.
+The Full variant also loads the pinned MediaPipe hand-tracking module/model
+only after the reader explicitly enables the camera; Non-Camera omits that
+feature and all camera permissions.
 `;
 
 function buildIndexHtml(variant: Scene3DExportVariant): string {
@@ -132,7 +134,6 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
   <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view">↺</button>
   <button id="piece-sound" type="button" aria-label="Enable sound" title="Enable sound" aria-pressed="false">♪</button>
   <button id="piece-audio-settings" type="button" aria-label="Sound settings" title="Sound settings" aria-expanded="false">☰</button>
-  ${variant === 'full' ? '<button id="piece-camera-settings" type="button" aria-label="Camera controls" title="Camera controls" aria-expanded="false">◉</button>' : ''}
   <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
 </div>
 <div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
@@ -141,12 +142,7 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
 </div>
 ${
   variant === 'full'
-    ? `<div id="piece-camera-controls" role="group" aria-label="Camera controls" hidden>
-  <button id="piece-camera-enable" type="button">Enable camera</button>
-  <p id="piece-camera-status" role="status" aria-live="polite"></p>
-  <p>Camera video is processed locally in your browser and is never recorded, stored, or uploaded.</p>
-  <video id="piece-camera-video" autoplay muted playsinline hidden></video>
-</div>`
+    ? '<div id="camera-controls-host" role="group" aria-label="Camera controls"></div>'
     : ''
 }
 <script src="scripts/piece.js"></script>
@@ -242,7 +238,7 @@ export async function generateScene3DBundle(
     zip.file('index.html', buildIndexHtml(variant));
     zip.file(
       'scripts/piece.js',
-      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript()}`,
+      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript()}${variant === 'full' ? `\n${buildStandaloneCameraScript()}` : ''}`,
     );
     zip.file(`runtime/${THREE_RUNTIME_FILENAME}`, runtimeBytes);
     const zipBlob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });

@@ -28,10 +28,28 @@ as read-only behavioral reference.
 
 | Issue | Goal / scope | Dependencies / order | Status | Blocker / next action |
 | --- | --- | --- | --- | --- |
-| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome, public/embed/immersive parity, publication state, portable capability-preserving downloads, privacy, browser coverage | First implementation item; consumes existing renderer, camera, sound, gesture, export pieces | `in_progress` | Remaining `verification-boundary`: authenticate and publish for exact-route QA |
-| [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Parent parity epic covering screenshot, fullscreen, download menu, sound, controls, camera/hand behavior, immersive view | Parent of #320 and prior generated-art work | `dependency-blocked` | #320 must pass before parent can close; retain open because prior #285–#311 closures cover only narrower/other surfaces |
+| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome and capability contract | Parent integration gate; decomposed into #325–#341 | `in_progress` | Process one closure-sized route/capability child at a time; close parent only after all children are terminal and reconciled |
+| [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Superseded authored-piece parity umbrella | Historical parent; replaced by #320 and closure-sized children | `closed_not_planned` | Do not reopen or use as an implementation unit |
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
 | [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; no repository Compose definition currently exists | `dependency-blocked` | `workflow/infrastructure-defect`; native runner fingerprints its own stack, but a repository Compose definition is required before Compose preflight can be implemented; do not stop sibling containers |
+| [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
+| [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `open` | Requires authenticated browser evidence |
+| [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `open` | Requires authenticated browser evidence |
+| [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | Verify manual 3D editor `/projects3d/:id` | Child of #320; one route/surface | `open` | Requires authenticated browser evidence |
+| [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `open` | Requires authenticated browser evidence |
+| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `open` | Requires deployment and anonymous browser evidence |
+| [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `open` | Requires deployment and anonymous browser evidence |
+| [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
+| [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
+| [#333](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/333) | Verify regular immersive 3D `/immersive/p3d/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
+| [#334](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/334) | Verify custom immersive 3D `/immersive/p3d/:id?embed=1` | Child of #320; one route/variant | `open` | Requires deployment and browser evidence |
+| [#335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/335) | Verify CMS immersive 3D `/immersive/p3d/:id?embed=1&cms=1` | Child of #320; one route/variant | `open` | Requires deployment and browser evidence |
+| [#336](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/336) | Verify portable 2D download runtime | Child of #320; one artifact surface | `open` | Requires deployed download and extracted-browser evidence |
+| [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337) | Verify portable 3D Full/Non-Camera downloads | Child of #320; one artifact capability | `open` | Requires deployed downloads and extracted-browser evidence |
+| [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D stage-local publication parity `/projects/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
+| [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D stage-local publication parity `/ai-projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
+| [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
+| [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
 
 ## Duplicate / already-covered report
 
@@ -295,6 +313,20 @@ implementation and exact routes:
   corrected disposable PostgreSQL/Django/Vite `project3dLifecycle.spec.ts`
   passes 3/3. Exact deployed immersive/embed/download evidence remains
   pending publication and authenticated owner access.
+
+## Re-audit implementation increment (2026-09-02, publication chrome)
+
+- Draft/Published controls now live in the compact stage-local editor toolbar
+  for manual and AI-assisted 2D/3D editors, keeping publication state beside
+  the authored piece rather than in a bulky header row.
+- The shared publication switch explicitly uses content-sized horizontal
+  options, preventing the stage icon-button rule from overlapping Draft and
+  Published hitboxes. Focused React coverage passes 46/46 and the disposable
+  real-browser 3D lifecycle passes 3/3, including the Published → Draft
+  transition.
+- This increment is tracked by #323. The former broad #324 verification issue
+  was closed as not planned and replaced by #325–#337, one route, variant, or
+  downloaded artifact per independently observable closure unit.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

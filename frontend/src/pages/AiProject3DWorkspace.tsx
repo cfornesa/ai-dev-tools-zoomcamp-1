@@ -182,7 +182,6 @@ function AiProject3DWorkspace() {
           onChange={(event) => setTitle(event.target.value)}
           onBlur={() => void handleTitleBlur()}
         />
-        <PublishControl3D id={id} project={project} setProject={setProject} />
         {exportState.error && (
           <p role="alert" aria-live="assertive" data-testid="ai-project3d-export-error">
             {exportState.error}
@@ -230,15 +229,18 @@ function AiProject3DWorkspace() {
               screenshotBaseName={project?.title}
               onDownload={(variant) => void handleExport(variant)}
               editorControls={
-                <button
-                  type="button"
-                  className="piece-stage-icon-button"
-                  onClick={handleAskAiImproveScene}
-                  aria-label="Ask AI to improve this scene"
-                  title="Ask AI to improve this scene"
-                >
-                  <span aria-hidden="true">✦</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="piece-stage-icon-button"
+                    onClick={handleAskAiImproveScene}
+                    aria-label="Ask AI to improve this scene"
+                    title="Ask AI to improve this scene"
+                  >
+                    <span aria-hidden="true">✦</span>
+                  </button>
+                  <PublishControl3D id={id} project={project} setProject={setProject} compact />
+                </>
               }
             />
           </div>

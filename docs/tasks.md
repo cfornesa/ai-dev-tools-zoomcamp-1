@@ -10423,6 +10423,14 @@ PostgreSQL/Django/Vite `project3dLifecycle.spec.ts` passes 3/3. Exact deployed
 immersive/embed/download verification remains open until publication and an
 authenticated owner session are available.
 
+Atomicity follow-up (2026-09-02): distillation found that #320 was still too
+large to close honestly. #274 is now closed as superseded, and broad #324 was
+closed as not planned. The remaining work is represented by #323 plus one
+closure-sized issue per editor route, public/embed route, immersive variant,
+and portable artifact: #325-#341. Each child has one independently observable
+surface and must be QA-reconciled immediately after its own evidence is ready;
+#320 remains the parent integration gate until every child is terminal.
+
 ## 263. Make Docker browser verification select and fingerprint this repository
 
 Status: BLOCKED / HANDOFF

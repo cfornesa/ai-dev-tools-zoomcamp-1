@@ -244,14 +244,6 @@ function AiEditorWorkspace() {
           onChange={(event) => setTitle(event.target.value)}
           onBlur={handleTitleBlur}
         />
-        {id && (
-          <PublishControl
-            id={id}
-            project={project}
-            setProject={setProject}
-            persistPendingDetails={async () => ({ status: 'skipped' })}
-          />
-        )}
       </header>
       <div className="ai-editor-workspace editor-workspace">
         {/* Task 245 (issue #303): a real `.editor-panel` region, matching
@@ -315,6 +307,17 @@ function AiEditorWorkspace() {
                     />
                     <DemoControlsPanel />
                   </StageControlsPopover>
+                }
+                editorControls={
+                  id ? (
+                    <PublishControl
+                      id={id}
+                      project={project}
+                      setProject={setProject}
+                      persistPendingDetails={async () => ({ status: 'skipped' })}
+                      compact
+                    />
+                  ) : undefined
                 }
               />
             </div>

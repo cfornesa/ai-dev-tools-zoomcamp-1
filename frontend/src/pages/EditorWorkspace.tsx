@@ -2866,15 +2866,6 @@ function EditorWorkspace() {
           </p>
         )}
         <span className="editor-header-break" aria-hidden="true" />
-        {id && (
-          <PublishControl
-            id={id}
-            project={project}
-            setProject={setProject}
-            persistPendingDetails={persistPendingDetails}
-          />
-        )}
-        <span className="editor-header-break editor-header-break-desktop" aria-hidden="true" />
         <button
           type="button"
           className="editor-icon-button editor-exit-button"
@@ -3653,6 +3644,17 @@ function EditorWorkspace() {
                     onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
                   />
                 </StageControlsPopover>
+              }
+              editorControls={
+                id ? (
+                  <PublishControl
+                    id={id}
+                    project={project}
+                    setProject={setProject}
+                    persistPendingDetails={persistPendingDetails}
+                    compact
+                  />
+                ) : undefined
               }
             />
           </div>

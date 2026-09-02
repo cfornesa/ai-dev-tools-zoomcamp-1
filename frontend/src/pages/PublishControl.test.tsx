@@ -53,9 +53,11 @@ function baseProject(overrides: Partial<Project> = {}): Project {
 function Harness({
   initialProject,
   persistPendingDetails = () => Promise.resolve({ status: 'skipped' as const }),
+  compact = false,
 }: {
   initialProject: Project;
   persistPendingDetails?: () => Promise<PersistDetailsResult>;
+  compact?: boolean;
 }) {
   const [project, setProject] = useState<Project | null>(initialProject);
   return (
@@ -64,6 +66,7 @@ function Harness({
       project={project}
       setProject={setProject}
       persistPendingDetails={persistPendingDetails}
+      compact={compact}
     />
   );
 }
@@ -73,6 +76,20 @@ beforeEach(() => {
 });
 
 describe('PublishControl', () => {
+  it('keeps the publication state and Draft/Published actions inside a compact stage disclosure', async () => {
+    render(<Harness initialProject={baseProject()} compact />);
+
+    expect(screen.getByTestId('visibility-status').closest('[role="group"]')).toHaveAttribute(
+      'hidden',
+    );
+    const trigger = screen.getByRole('button', { name: 'Publication status: Draft' });
+    await userEvent.setup().click(trigger);
+
+    expect(screen.getByTestId('visibility-status')).toHaveTextContent(/draft/i);
+    expect(screen.getByRole('button', { name: 'Draft' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Published' })).toBeEnabled();
+  });
+
   it('exposes Draft/Published as visible, keyboard-actionable publication status controls', () => {
     render(<Harness initialProject={baseProject()} />);
 

@@ -18,6 +18,16 @@ Use this skill when the user asks to work through a project backlog and its GitH
 - Use the authenticated GitHub connector for issue, comment, and PR operations. Do not use a local `gh` token as a substitute.
 - Read acceptance criteria before implementation and again during QA.
 - Treat a blocker as a triage decision, not an automatic new issue: classify it as an implementation defect, verification boundary, workflow/infrastructure defect, dependency blocker, or non-actionable limitation. Any distinct actionable repository/workflow defect must be linked to an existing issue or created immediately when issue creation is authorized.
+- Enforce closure-sized work: a parent/epic is not an implementation unit. Split
+  distinct routes, editor modes, embeds, immersive query variants, and
+  downloaded artifacts into separate issues before implementation. Process one
+  such issue at a time and reconcile its GitHub state immediately after QA;
+  never defer several issue closures until the end of a long batch.
+- Enforce closure-ready contracts, not just small titles: every active issue
+  must name one entry point and fixture, enumerate finite observable pass/fail
+  outcomes, specify exact commands/evidence, and state what is explicitly not
+  applicable. Rewrite or split criteria containing “all permitted,” “where
+  applicable,” or parent-wide visual judgments before implementation.
 
 ## Batch manifest
 
@@ -43,7 +53,7 @@ Read the issue, relevant `tasks.md`, `docs/process.md`, `docs/team/pm.md`, and a
 - criterion-by-criterion implementation plan;
 - backlog entry and GitHub issue URL.
 
-If the issue is not implementable because a dependency is unresolved, record `dependency-blocked`, its exact prerequisite, and its next action. Continue to the next independent issue.
+If the issue is not implementable because a dependency is unresolved, record `dependency-blocked`, its exact prerequisite, and its next action. Continue to the next independent issue. If the issue spans multiple independently observable surfaces, stop grooming it as a unit and create/reuse one criterion-ready child per surface before engineering.
 
 If grooming discovers distinct actionable work outside the current issue, reuse an existing issue or create a criterion-ready follow-up immediately through the authenticated connector when authorized. Link it from the current issue and manifest. If creation is not authorized, mark the current work `handed-off` with `issue-creation-pending-authorization`, an owner, and the exact issue definition needed; do not silently absorb or omit the work.
 
@@ -65,7 +75,7 @@ For every failed or unavailable check, classify the cause. If the full command f
 
 ### Issue handoff
 
-Set the manifest status and reconcile the backlog entry, issue comment, commits, memory links, and next action. An issue is `completed` only when every acceptance criterion and required check passes. Otherwise use `blocked`, `dependency-blocked`, or `handed-off` with evidence.
+Set the manifest status and reconcile the backlog entry, issue comment, commits, memory links, and next action immediately after that issue's QA pass. An issue is `completed` only when every acceptance criterion and required check passes. Otherwise use `blocked`, `dependency-blocked`, or `handed-off` with evidence. If the criteria are complete, close the GitHub issue in the same reconciliation step; do not leave a verified closure-sized issue open merely because its parent batch is unfinished.
 
 Before assigning a terminal status, verify that every blocker has a class, owner/context, exact next action, and an existing/new follow-up issue or an explicit non-actionable/verification-boundary rationale. `handed-off` requires a linked owner issue unless issue creation is pending authorization.
 

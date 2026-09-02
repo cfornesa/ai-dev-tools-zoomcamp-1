@@ -41,6 +41,8 @@ export default function StageControlsPopover({
         aria-hidden={!open}
         className="piece-stage-controls-panel"
         hidden={!open}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         {children}
       </div>

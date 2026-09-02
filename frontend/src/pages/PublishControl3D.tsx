@@ -3,6 +3,7 @@ import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { ApiError } from '../api/client';
 import { publishProject3D, unpublishProject3D, type Project3D } from '../api/projects3d';
+import StageControlsPopover from '../components/StageControlsPopover';
 
 /**
  * Issue #296: the Project3D counterpart of `PublishControl.tsx`, scoped
@@ -62,10 +63,12 @@ function PublishControl3D({
   id,
   project,
   setProject,
+  compact = false,
 }: {
   id: string;
   project: Project3D | null;
   setProject: Dispatch<SetStateAction<Project3D | null>>;
+  compact?: boolean;
 }) {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [publishState, setPublishState] = useState<'idle' | 'publishing' | 'unpublishing'>('idle');
@@ -104,6 +107,64 @@ function PublishControl3D({
       setPublishState('idle');
       setPublishError('Could not unpublish this project. Please try again.');
     }
+  }
+
+  const statusLabel = visibility === 'public' ? 'Published' : 'Draft';
+  const statusMessage =
+    visibility === 'public'
+      ? 'Public (Published) — visible to anyone.'
+      : 'Draft (Private) — only visible to you.';
+  const publicationPanel = (
+    <>
+      <p
+        aria-live="polite"
+        data-testid="visibility-status-3d"
+        className="editor-publish-visibility"
+      >
+        {statusMessage}
+      </p>
+      <div className="publish-visibility-switch" role="group" aria-label="Publication status">
+        <button
+          type="button"
+          className="publish-visibility-option"
+          aria-pressed={visibility === 'private'}
+          disabled={visibility === 'private' || publishState !== 'idle'}
+          onClick={() => void handleUnpublish()}
+        >
+          Draft
+        </button>
+        <button
+          type="button"
+          className="publish-visibility-option"
+          aria-pressed={visibility === 'public'}
+          disabled={visibility === 'public' || publishState !== 'idle'}
+          onClick={() => setShowPublishConfirm(true)}
+        >
+          Published
+        </button>
+      </div>
+      {publishError && (
+        <p role="alert" data-testid="publish-3d-error">
+          {publishError}
+        </p>
+      )}
+      {showPublishConfirm && (
+        <PublishConfirmDialog3D
+          title={title}
+          ownerName={ownerName}
+          onConfirm={() => void handleConfirmPublish()}
+          onCancel={() => setShowPublishConfirm(false)}
+        />
+      )}
+    </>
+  );
+
+  if (compact) {
+    return (
+      <StageControlsPopover label={`Publication status: ${statusLabel}`}>
+        {publicationPanel}
+      </StageControlsPopover>
+    );
   }
 
   return (

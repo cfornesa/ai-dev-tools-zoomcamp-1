@@ -9,6 +9,7 @@ import {
   type PublishValidationErrorBody,
 } from '../api/projects';
 import { validateProjectMetadataForPublish, type FieldErrors } from '../validation/projectMetadata';
+import StageControlsPopover from '../components/StageControlsPopover';
 import type { PersistDetailsResult } from './EditorDetailsPanel';
 
 /**
@@ -85,11 +86,13 @@ function PublishControl({
   project,
   setProject,
   persistPendingDetails,
+  compact = false,
 }: {
   id: string;
   project: Project | null;
   setProject: Dispatch<SetStateAction<Project | null>>;
   persistPendingDetails: () => Promise<PersistDetailsResult>;
+  compact?: boolean;
 }) {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [publishState, setPublishState] = useState<'idle' | 'publishing' | 'unpublishing'>('idle');
@@ -184,6 +187,71 @@ function PublishControl({
     }
   }
 
+  const statusLabel = visibility === 'public' ? 'Published' : 'Draft';
+  const statusMessage =
+    visibility === 'public'
+      ? 'Published (public) — visible to anyone and eligible for the public gallery.'
+      : 'Draft (private) — only visible to you.';
+
+  const publicationPanel = (
+    <>
+      <p aria-live="polite" data-testid="visibility-status" className="editor-publish-visibility">
+        {statusMessage}
+      </p>
+      <div className="publish-visibility-switch" role="group" aria-label="Publication status">
+        <button
+          type="button"
+          className="publish-visibility-option"
+          aria-pressed={visibility === 'private'}
+          disabled={visibility === 'private' || publishState !== 'idle'}
+          onClick={() => void handleUnpublish()}
+        >
+          Draft
+        </button>
+        <button
+          type="button"
+          className="publish-visibility-option"
+          aria-pressed={visibility === 'public'}
+          disabled={visibility === 'public' || publishState !== 'idle'}
+          onClick={() => void handlePublishClick()}
+        >
+          Published
+        </button>
+      </div>
+      {publishErrors.title && (
+        <p role="alert" data-testid="publish-title-error">
+          {publishErrors.title.join(' ')}
+        </p>
+      )}
+      {publishErrors.description && (
+        <p role="alert" data-testid="publish-description-error">
+          {publishErrors.description.join(' ')}
+        </p>
+      )}
+      {publishErrors.form && (
+        <p role="alert" data-testid="publish-form-error">
+          {publishErrors.form.join(' ')}
+        </p>
+      )}
+      {showPublishConfirm && (
+        <PublishConfirmDialog
+          title={title}
+          ownerName={ownerName}
+          onConfirm={() => void handleConfirmPublish()}
+          onCancel={() => setShowPublishConfirm(false)}
+        />
+      )}
+    </>
+  );
+
+  if (compact) {
+    return (
+      <StageControlsPopover label={`Publication status: ${statusLabel}`}>
+        {publicationPanel}
+      </StageControlsPopover>
+    );
+  }
+
   return (
     // Issue #95, point 3: `.editor-publish-control` renders as `display:
     // contents` (see index.css) so its two children below — the visibility
@@ -193,9 +261,7 @@ function PublishControl({
     // per that issue's header breakpoint rules.
     <div className="editor-publish-control">
       <p aria-live="polite" data-testid="visibility-status" className="editor-publish-visibility">
-        {visibility === 'public'
-          ? 'Public — visible to anyone and eligible for the public gallery.'
-          : 'Private — only visible to you.'}
+        {statusMessage}
       </p>
 
       <span className="editor-header-break" aria-hidden="true" />

@@ -297,7 +297,6 @@ function Project3DWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <EditableProject3DTitle id={id} project={project} setProject={setProject} />
-        <PublishControl3D id={id} project={project} setProject={setProject} />
         <p
           role="status"
           aria-live="polite"
@@ -362,28 +361,31 @@ function Project3DWorkspace() {
               screenshotBaseName={project?.title}
               onDownload={(variant) => void handleExport(variant)}
               editorControls={
-                <span role="group" aria-label="Editor actions" className="editor-tool-group">
-                  <button
-                    type="button"
-                    className="piece-stage-icon-button"
-                    onClick={() => void handleSave()}
-                    disabled={!isDirty || saveState.pending}
-                    data-testid="project3d-save-button"
-                    aria-label={saveState.pending ? 'Saving scene' : 'Save scene'}
-                    title={saveState.pending ? 'Saving scene' : 'Save scene'}
-                  >
-                    <span aria-hidden="true">▣</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="piece-stage-icon-button"
-                    onClick={handleAskAiImproveScene}
-                    aria-label="Ask AI to improve this scene"
-                    title="Ask AI to improve this scene"
-                  >
-                    <span aria-hidden="true">✦</span>
-                  </button>
-                </span>
+                <>
+                  <span role="group" aria-label="Editor actions" className="editor-tool-group">
+                    <button
+                      type="button"
+                      className="piece-stage-icon-button"
+                      onClick={() => void handleSave()}
+                      disabled={!isDirty || saveState.pending}
+                      data-testid="project3d-save-button"
+                      aria-label={saveState.pending ? 'Saving scene' : 'Save scene'}
+                      title={saveState.pending ? 'Saving scene' : 'Save scene'}
+                    >
+                      <span aria-hidden="true">▣</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="piece-stage-icon-button"
+                      onClick={handleAskAiImproveScene}
+                      aria-label="Ask AI to improve this scene"
+                      title="Ask AI to improve this scene"
+                    >
+                      <span aria-hidden="true">✦</span>
+                    </button>
+                  </span>
+                  <PublishControl3D id={id} project={project} setProject={setProject} compact />
+                </>
               }
             />
           </div>

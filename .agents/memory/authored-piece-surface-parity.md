@@ -26,7 +26,9 @@ the exact deployed target route must be inspected after publish, and private
 editor routes require authenticated browser evidence. Camera/microphone and
 native fullscreen remain explicit browser/OS verification boundaries.
 
-Linked backlog: #274 and #320.
+Linked backlog: #320, #325–#341. #274 and broad #323/#324 are closed as
+superseded/not-planned; their replacement issues are deliberately one route,
+surface, variant, or downloaded capability each.
 
 Re-audit lesson (2026-09-02): isolated child issues can all be locally
 implemented while the composed structured surfaces still fail parity. Treat
@@ -42,6 +44,14 @@ and its `[hidden]` state, and close on outside pointer input. Otherwise an
 overlay can remain hit-testable across unrelated editor interactions and
 intercept controls outside the piece surface; the full browser suite caught
 this composed failure on 2026-09-02.
+
+Backlog atomicity rule (2026-09-02): a parent parity issue is a reconciliation
+container, not a closure unit. If acceptance criteria name multiple routes,
+editor modes, embeds, immersive variants, or downloaded artifacts, distill
+one independently observable issue per surface. Process and close each child
+after its own implementation and QA evidence, then use the parent only for
+cross-surface reconciliation. This cadence prevents a broad issue from
+remaining open for hours while unrelated surfaces accumulate.
 
 Immersive 3D must preserve the reference's Custom and CMS embed entry points
 as query-driven, chrome-less variants of the same stage runtime. Downloaded

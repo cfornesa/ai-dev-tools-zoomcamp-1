@@ -15,6 +15,37 @@ Use this skill to turn a user request, review feedback, failures, or readiness f
 4. Build or update an issue manifest containing issue number, URL, goal, dependencies, priority/order, duplicate links, scope, and status.
 5. Order work by dependencies, then backlog order, then priority. Mark already-completed, duplicate, blocked, and dependency-blocked items explicitly.
 
+## Atomicity and closure cadence
+
+- Treat an epic or parent issue as a reconciliation container, never as one
+  implementation/closure unit. Parent acceptance criteria must be decomposed
+  before engineering begins.
+- A closure-sized issue has one independently observable vertical slice: one
+  route/surface, one workflow, or one narrowly bounded capability. If two
+  surfaces need separate browser entry points, fixtures, screenshots, or
+  deployment evidence, they are separate issues even when they share code.
+- Do not combine regular editor, AI editor, public viewer, embed, immersive
+  variants, and downloaded artifacts into one issue. Shared components belong
+  in implementation issues; each consuming route gets its own acceptance and
+  QA issue.
+- During grooming, record the route or surface in the issue title and list
+  exactly which evidence is in scope. A parent may close only after every
+  child is terminal and reconciled; it must not be used to postpone a failed
+  child criterion.
+- A smaller issue is not automatically closable. Before filing it, require a
+  closure contract: one named entry point, fixed fixture/precondition, a
+  finite checklist of observable outcomes, exact focused/full commands, and
+  one explicit evidence boundary. Replace vague phrases such as “all
+  permitted controls” or “where applicable” with named controls and a stated
+  not-applicable decision. If the issue needs another route, an unprovisioned
+  credential, or a parent-wide visual judgment to decide pass/fail, split or
+  reclassify it before engineering.
+- Process and reconcile one closure-sized issue at a time. After its required
+  QA passes, immediately post the criterion matrix and set its GitHub status
+  (closed only when every criterion passes; otherwise open with a classified
+  blocker). Do not accumulate several hours of implementation without
+  terminalizing or handing off the current issue.
+
 ## Gap and blocker triage
 
 Classify every discovered gap or failed gate before deciding its issue status:

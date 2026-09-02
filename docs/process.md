@@ -2,6 +2,18 @@
 - Read the acceptance criteria before starting and before closing
 - Commit regularly
 
+Closure-ready atomicity
+
+- An issue is atomic only when it has one named entry point or workflow, one
+  fixed fixture/precondition, a finite observable acceptance checklist, exact
+  verification commands, and one explicit evidence boundary.
+- Do not use vague criteria such as “all permitted controls” or “where
+  applicable.” Name the controls and record an explicit not-applicable result.
+- If pass/fail requires another route, another deployment, or a parent-wide
+  visual judgment, split the work or classify the dependency before starting.
+- After QA, reconcile and close that issue immediately when every criterion
+  passes. The parent remains a roll-up/reconciliation container.
+
 Roles
 
 - PM - grooms a task before anyone implements it, follows docs/team/pm.md

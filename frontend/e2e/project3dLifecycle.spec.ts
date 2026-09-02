@@ -47,6 +47,16 @@ async function expectThreeDStageChrome(page: Page) {
   await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
+  const publicationTrigger = toolbar.getByRole('button', {
+    name: 'Publication status: Draft',
+  });
+  await expect(publicationTrigger).toBeVisible();
+  await publicationTrigger.click();
+  await expect(
+    toolbar.getByRole('group', { name: 'Publication status', exact: true }),
+  ).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
+  await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
 
   await toolbar.getByRole('button', { name: 'Piece controls' }).click();
   await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
@@ -139,6 +149,10 @@ test.describe('3D project creation', () => {
     await titleForm.getByRole('button', { name: 'Save' }).click();
     await expect(titleForm).toHaveCount(0);
 
+    const publicationTrigger = page.getByRole('button', {
+      name: 'Publication status: Draft',
+    });
+    await publicationTrigger.click();
     await page.getByRole('button', { name: 'Published' }).click();
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(dialog).toBeVisible();
@@ -246,7 +260,18 @@ test.describe('3D project creation', () => {
 
     await page.goto(`/projects3d/${projectId}`);
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
-    await page.getByRole('button', { name: 'Draft' }).click();
+    await page.getByRole('button', { name: 'Publication status: Published' }).click();
+    const unpublishResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/projects3d/${projectId}/unpublish/`) && response.ok(),
+    );
+    const draftButton = page
+      .locator('.piece-stage-controls-panel[aria-label="Publication status: Published"]')
+      .getByRole('button', { name: 'Draft', exact: true });
+    await expect(draftButton).toBeVisible();
+    await expect(draftButton).toBeEnabled();
+    await draftButton.click({ force: true });
+    await unpublishResponse;
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Private');
   });
 });

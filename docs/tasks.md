@@ -11279,3 +11279,15 @@ atomic as one independently observable hand-input behavior with finite
 threshold, bounds, and stop-transition criteria. #345 is the next independent
 closure-sized capability and may proceed under the sequential backlog rule;
 #344 remains open until its explicit evidence boundary is reconciled.
+
+## 269v. Handoff embedded 2D route verification (#331)
+
+Status: #331 HANDED OFF — DEPLOYED REVISION VERIFICATION BOUNDARY
+
+`BROWSER_QA_E2E_SPEC=e2e/embed2dStageChrome.spec.ts make browser-qa` passed
+1/1 against disposable PostgreSQL/Django/Vite/Chromium services, verifying the
+chrome-less `/embed/p/:id` entry point and functional stage-local controls.
+GitHub `QA: FAIL` comment `5510417053` records the evidence. The issue remains
+open because the published revision is stale relative to the tested checkout;
+rerun the exact anonymous embed URL after authorized publication before
+closure.

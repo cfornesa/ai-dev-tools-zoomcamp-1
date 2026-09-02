@@ -10307,11 +10307,18 @@ portable Full/Non-Camera runtime downloads, screenshot framing/privacy,
 sandboxing, and real-browser verification against the exact target routes.
 
 Status update (2026-09-02): IN_PROGRESS. Commits `aee6047`, `4042de7`,
-`3c205c5`, `4bdf8cc`, `579e2b6`, and the current publication-state increment
+`3c205c5`, `4bdf8cc`, `579e2b6`, `d7eefde`, `a8b92c7`, `dddc8bc`, and
+`e6dce16`
 move structured editor/public controls into the stage and package screenshot,
 fullscreen, and explicit 3D Full/Non-Camera download variants. The exact
 deployed route remains stale until these commits are published; authenticated
 editor, embed, immersive, and downloaded-runtime browser criteria remain open.
+
+Local regression evidence: full frontend suite 187 files / 2,367 tests
+passed; full backend suite passes under host-level loopback permissions
+(907 collected, 880 passed, 22 skipped). The sandbox-only cache, subprocess,
+and socket failures are retained as a verification boundary, not product
+evidence.
 
 Next action: implement the shared stage/capability contract for structured
 Project and Project3D surfaces, then verify the downloaded runtime and exact

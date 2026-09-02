@@ -10529,6 +10529,29 @@ criterion matrix to #345, and close it only after confirming the evidence
 above. This does not block independent issues; it blocks only #345's final
 GitHub reconciliation.
 
+## 265. Add touch d-pad travel to the immersive 3D viewer
+
+Status: DEPENDENCY-BLOCKED
+
+GitHub issue: [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343)
+
+Closure slice: when `Scene3DPreview` is used in immersive `flyControls` mode,
+the stage exposes four touch-sized controls for forward, left, backward, and
+right travel. Each press dispatches the matching arrow-key hold used by the
+existing fly controller, and pointer-up, pointer-cancel, or pointer-leave
+releases it so cancelled touches cannot leave motion stuck on.
+
+Evidence: focused `Scene3DPreview.flyControls.test.tsx` passed 6/6; the full
+frontend suite passed 189 files / 2,383 tests; `npm run typecheck`, `npm run
+lint`, and `npm run format:check` passed. Required browser QA was attempted
+with `BROWSER_QA_E2E_SPEC=e2e/project3dLifecycle.spec.ts make browser-qa` and
+failed before execution because the Docker daemon was unavailable. This is
+the existing #321 workflow/infrastructure dependency, not a product test
+failure. Retry the correct repository Compose stack after #321's Docker
+image-fetch/daemon issue is resolved, exercise the real touch browser path,
+post `## QA: PASS` or `## QA: FAIL` to #343, and close only after all criteria
+pass.
+
 ## 263. Make Docker browser verification select and fingerprint this repository
 
 Status: IN_PROGRESS

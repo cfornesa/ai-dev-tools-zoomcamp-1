@@ -268,6 +268,14 @@ function Scene3DPreview({
     }
   }
 
+  function dispatchFlyKey(key: string, type: 'keydown' | 'keyup') {
+    window.dispatchEvent(new KeyboardEvent(type, { key, bubbles: true }));
+  }
+
+  function releaseFlyKey(key: string) {
+    dispatchFlyKey(key, 'keyup');
+  }
+
   // Issue #307: keyboard-triggered notes on the melodic voice -- a
   // standard ASDF-piano-key mapping (`../audio/pianoKeyMap.ts`), matching
   // the reference implementation. A `window` keydown listener (not scoped
@@ -945,6 +953,33 @@ function Scene3DPreview({
           gestureGuide={showGestureControl ? <HandGestureGuideDialog /> : undefined}
           editorControls={editorControls}
         />
+        {flyControls && (
+          <div className="scene3d-touch-dpad" role="region" aria-label="Immersive touch navigation">
+            {(
+              [
+                ['ArrowUp', 'Move forward', '↑'],
+                ['ArrowLeft', 'Move left', '←'],
+                ['ArrowDown', 'Move backward', '↓'],
+                ['ArrowRight', 'Move right', '→'],
+              ] as const
+            ).map(([key, label, glyph]) => (
+              <button
+                key={key}
+                type="button"
+                aria-label={label}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  dispatchFlyKey(key, 'keydown');
+                }}
+                onPointerUp={() => releaseFlyKey(key)}
+                onPointerCancel={() => releaseFlyKey(key)}
+                onPointerLeave={() => releaseFlyKey(key)}
+              >
+                {glyph}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {screenshotError && (
         <p role="alert" aria-live="assertive" data-testid="screenshot-error">

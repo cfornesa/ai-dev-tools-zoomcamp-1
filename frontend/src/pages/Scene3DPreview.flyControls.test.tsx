@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Scene3DDocument } from './scene3dTypes';
@@ -110,6 +110,27 @@ describe('Scene3DPreview fly controls (issue #311)', () => {
   it('when enabled, never calls listenToKeyEvents -- avoids double-handling arrow keys', () => {
     render(<Scene3DPreview scene={baseScene()} flyControls />);
     expect(listenToKeyEventsSpy).not.toHaveBeenCalled();
+    expect(screen.getByRole('region', { name: 'Immersive touch navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Move forward' })).toBeInTheDocument();
+  });
+
+  it('dispatches a matching key release when a touch direction is cancelled', () => {
+    const keyEvents: KeyboardEvent[] = [];
+    const listener = (event: KeyboardEvent) => keyEvents.push(event);
+    window.addEventListener('keydown', listener);
+    window.addEventListener('keyup', listener);
+    render(<Scene3DPreview scene={baseScene()} flyControls />);
+
+    const forward = screen.getByRole('button', { name: 'Move forward' });
+    fireEvent.pointerDown(forward, { pointerType: 'touch' });
+    fireEvent.pointerCancel(forward, { pointerType: 'touch' });
+
+    expect(keyEvents.map((event) => [event.type, event.key])).toEqual([
+      ['keydown', 'ArrowUp'],
+      ['keyup', 'ArrowUp'],
+    ]);
+    window.removeEventListener('keydown', listener);
+    window.removeEventListener('keyup', listener);
   });
 
   it('holding ArrowUp moves the camera position and orbit target together', async () => {

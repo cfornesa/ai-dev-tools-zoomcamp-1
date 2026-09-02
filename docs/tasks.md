@@ -11208,3 +11208,16 @@ slides, truthful Move copy, navigation edge states, focus/Escape/close, and no
 camera permission on guide open. The exact published `/p3d/:id` evidence is
 still unavailable because production serves an older revision; #295 remains
 open and is not COMPLETE until post-publish evidence passes.
+
+## 269q. Close immersive 3D touch d-pad capability (#343)
+
+Status: #343 COMPLETE — CLOSED 2026-09-02
+
+Commit `26aed1f` adds the missing bounded held Zoom in/Zoom out controls to
+the existing immersive directional d-pad. Focused tests pass 7/7, the full
+frontend suite passes 2,385/2,385, typecheck/build/lint pass, and the exact
+Docker-backed browser transaction passes 4/4 with press/release verification
+for all six controls. The custom and CMS embed decisions to retain the shared
+d-pad are recorded on #334 and #335. Route deployment verification remains
+owned by those route issues; it was not incorrectly used as a reason to leave
+this implementation issue open.

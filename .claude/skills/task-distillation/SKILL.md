@@ -95,6 +95,24 @@ must never treat implementation or QA as completion; each issue reaches
   and follow-up issue coverage, and record the result in the manifest and
   handoff.
 
+### User-visible rejection and closure integrity
+
+- A current owner-reported visual or functional failure reopens the affected
+  issue unless the exact report is disproven at the same route, fixture,
+  viewport, browser state, and published revision. Do not defend a closure
+  with an older comment, a different fixture, or a local/disposable run.
+- A closed GitHub state is not evidence that acceptance criteria passed. If
+  the body still contains unchecked criteria, contradictory evidence, or a
+  later owner rejection, record `reopened / false closure` and repair the
+  GitHub state before selecting engineering work.
+- Visual parity requires inspected rendered screenshots at the named fixed
+  viewports plus the finite interactions in the issue. Accessible names,
+  non-zero bounds, source strings, or shared-component tests are supporting
+  evidence only and never close a route or artifact by themselves.
+- Preserve an issue's scope when reopening it. Split only independently
+  closable route/workflow, fixture, or artifact contracts; do not create
+  cosmetic duplicates merely to increase issue count.
+
 ## Gap and blocker triage
 
 Classify every discovered gap or failed gate before deciding its issue status:

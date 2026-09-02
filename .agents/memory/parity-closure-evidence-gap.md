@@ -145,3 +145,15 @@ places four controls over the artwork, but its download disclosure did not
 expose Full/Non-Camera entries in the live check. Shared visual evidence is
 therefore valid for #347/#348 only; retain separate consumer/artifact closure
 boundaries for public downloads and downloaded runtime behavior.
+
+Fresh exact-route correction (2026-09-02): after the owner reported that the
+editor controls were still bulky and the public controls were absent, the
+current authenticated 2D editor was inspected at the supplied project route.
+It has an `Editor actions` toolbar nested under the stage, but the toolbar
+renders as a dense 44px row at the bottom of a 562px stage; containment alone
+does not satisfy compact overlay parity. The current published public route
+does render four stage controls, but they are small/icon-only, so the report
+cannot be dismissed as a DOM absence without reconciling browser/revision
+context and rendered discoverability. Prior issue closures that relied on
+different fixtures or unchecked visual criteria must be reopened; do not
+convert a shared-component or local browser pass into route closure.

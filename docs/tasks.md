@@ -19,6 +19,14 @@ decision, perform and record a fresh task-distillation reconciliation when that
 issue ends, before selecting the next issue. Recheck duplicates, dependency
 order, closure criteria, ownership, and follow-up issue coverage.
 
+User-visible closure reset: a current owner report that a feature is absent
+or visually unusable reopens the affected issue until the exact route, fixed
+viewport, browser state, fixture, and deployed asset disprove it. A closed
+GitHub state, DOM-role/bounds assertion, source match, or shared-component QA
+comment is not sufficient when rendered parity is in scope. A closed issue
+with unchecked or contradictory criteria is a false closure and must be
+reconciled before engineering resumes.
+
 ## 1. Set up an empty project with a passing test
 Goal: Create the minimal Django and React/TypeScript project structure and prove the test toolchain works.
 Description: Initialize the backend and frontend applications, add their test runners, and document the local test commands. Include one trivial backend test and one trivial frontend test that both pass without implementing product behavior.

@@ -311,3 +311,41 @@ The concrete next action is to open both captured files in an approved
 file-capable Chromium context, exercise screenshot/fullscreen/Piece controls
 and camera fallback, then reconcile #336 before closure. Independent route
 issues continue; #336 is not a goal stop.
+
+## Fresh exact-route correction after user unblocked — 2026-09-02
+
+The current authenticated 2D editor was inspected at the supplied project
+route. Its `Editor actions` toolbar is technically nested under the stage,
+but its rendered bounds are approximately `x=55,y=750,w=711,h=44` inside a
+`562px` stage viewport. The result is a dense authoring row at the bottom of
+the stage, not the compact overlay treatment described by #348. The stage
+contains named controls and the mutation handlers remain present, but those
+facts do not satisfy the visual compactness criterion.
+
+The current anonymous public 2D route was separately inspected and does show
+four stage controls at non-zero bounds (screenshot, download, Piece controls,
+fullscreen). They are small/icon-only in the rendered surface. This does not
+disprove the owner's report without reconciling browser, viewport, cache, and
+published-bundle context; it does establish that the correct acceptance
+contract must test visual discoverability, not just DOM presence.
+
+The live routes currently serve `assets/index-C5ipN-ir.js`, which supersedes
+the prior stale B8/CK/Dy asset references in older comments and notes. The
+closed GitHub states and later closure comments for #347/#348 conflict with
+this fresh rendered evidence and with their finite visual requirements. Both
+issues are therefore reopened as `false closure / re-groom required`; no
+product source or product tests were changed during this distillation pass.
+
+### Distillation exit decision
+
+No new issue is warranted. #347 owns shared visible stage affordances and
+publication-state discoverability; #348 owns the authoring-toolbar placement
+and density. #325–#337 remain separate consumer/artifact contracts and must
+not inherit closure from either shared issue. #336/#337 remain file-execution
+boundaries; #344 remains physical-camera-bound. The next and only groomed
+engineering candidate is #347. Its closure contract is: exact published
+asset identity; inspected screenshots at 1280×900 and 375×812; recognizable
+stage controls with persistent state/action naming; finite interactions for
+screenshot, download menu, Piece controls, fullscreen, and Draft/Published
+state; focused tests, `make check`, production build, and exact-route QA.
+If #347 passes, process and close it before grooming or engineering #348.

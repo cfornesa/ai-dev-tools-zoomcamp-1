@@ -38,6 +38,18 @@ owner, blocker class, and next action.
   for issue N before starting engineering or testing issue N+1. Never build a
   queue of implementations and postpone their tests or closures.
 - Build an issue manifest before implementation. Every manifest item must end as `completed`, `blocked`, `dependency-blocked`, or `handed-off`.
+
+Closure integrity after owner review:
+
+- Treat a current owner-visible failure as a reopen signal. Reconcile the
+  exact route, fixture, viewport, browser state, and deployed asset before
+  accepting or defending a prior closure.
+- Never close on DOM roles, accessible names, non-zero geometry, source
+  matches, or shared-component tests alone when the issue includes visual or
+  route-level criteria. Require inspected rendered evidence and the named
+  interaction boundary.
+- If a closed issue has unchecked criteria or contradictory closure comments,
+  record it as a false closure, reopen it, and re-groom it before engineering.
 - Inspect `git status --short --branch` before editing. Classify pre-existing changes as unrelated, user-owned relevant work, or session work. Preserve unrelated and user-owned changes; do not commit them without clear authorization.
 - Do not add dependencies without the user's approval.
 - Use the authenticated GitHub connector for issue, comment, and PR operations. Do not use a local `gh` token as a substitute.

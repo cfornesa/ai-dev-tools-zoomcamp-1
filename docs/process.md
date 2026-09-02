@@ -23,6 +23,10 @@ Closure-ready atomicity
   stage containment, named controls, and that route's privacy/publication
   boundary. A local implementation commit, source-string match, or another
   route's browser pass cannot close the consumer route.
+- A current owner-visible failure supersedes a prior closure until the exact
+  route, fixture, viewport, browser state, and deployed asset disprove it.
+  Closed GitHub state and unchecked or contradictory comments must be
+  reconciled as a false closure before engineering resumes.
 
 Phase gate
 

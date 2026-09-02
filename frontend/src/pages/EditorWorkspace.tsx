@@ -3149,7 +3149,7 @@ function EditorWorkspace() {
               overflow: zoom > 1 ? 'hidden' : 'visible',
             }}
           >
-            <div hidden={previewView !== 'visual'}>
+            <div className={previewView !== 'visual' ? 'editor-scene-visual-hidden' : undefined}>
               <div
                 ref={canvasRef}
                 data-testid="scene-canvas"

@@ -270,6 +270,13 @@ implementation and exact routes:
   popover on outside pointer input and explicitly honors `[hidden]`; the
   targeted Layers suite passes 7/7 and the full batch passes 137/137 with one
   intentional skip.
+- The repository-wide check then exposed the related Code-tab boundary: the
+  visual-view wrapper hid the stage-mounted authoring toolbar along with the
+  artwork, so Add/Undo actions were unavailable while Code was selected. The
+  wrapper now remains mounted and CSS hides only artwork/interaction layers;
+  the stage controls remain accessible and functional in Code. The focused
+  Code-tab suite passes 11/11 and the full frontend suite passes 189 files /
+  2,375 tests; typecheck and production build also pass.
 
 - `.agents/memory/authored-piece-surface-parity.md`
 - `.agents/memory/generated-art-piece-surface-parity.md`

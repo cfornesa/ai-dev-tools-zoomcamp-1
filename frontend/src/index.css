@@ -1579,6 +1579,18 @@ textarea:disabled {
   height: auto !important;
 }
 
+/* Issue #177: the Code tab keeps the stage-mounted authoring and piece
+   controls reachable. Hide only the rendered artwork and its interaction
+   layers while Code is selected; hiding the whole stage wrapper would also
+   remove the toolbar from the accessibility tree and break undo/add-shape
+   workflows that intentionally stay on the Code tab. */
+.editor-scene-visual-hidden
+  .editor-scene-canvas
+  > :not(.editor-canvas-authoring-toolbar):not(.piece-stage-toolbar) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .editor-scene-shape-selection-outline {
   stroke: var(--accent);
   stroke-width: 2;

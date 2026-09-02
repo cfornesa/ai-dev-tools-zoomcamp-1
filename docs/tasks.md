@@ -10401,6 +10401,15 @@ Non-Camera variant. This closes the earlier weakness where ZIP source strings
 were inspected without executing the downloaded runtime; deployed artifact
 verification remains pending publication.
 
+Code-tab follow-up (2026-09-02): the full check exposed that hiding the visual
+view wrapper also hid the stage-mounted authoring toolbar, making Add/Undo
+unavailable while Code was selected. The wrapper now stays mounted and CSS
+hides only artwork and interaction layers, preserving the stage toolbar's
+accessibility and behavior. The focused Code-tab suite passes 11/11; the full
+frontend suite passes 189 files / 2,375 tests, backend pytest passes 885 with
+22 skips, and frontend typecheck/build pass. Local readiness is green; exact
+deployed-route and published-download evidence remains open.
+
 Durable memory link: [authored-piece-surface-parity.md](../.agents/memory/authored-piece-surface-parity.md)
 
 ## 263. Make Docker browser verification select and fingerprint this repository

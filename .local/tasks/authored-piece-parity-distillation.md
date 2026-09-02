@@ -540,3 +540,12 @@ roll-up. Local readiness is recorded above; the missing GitHub comment/closure
 is the explicit handoff blocker. Because this is not a user-judgment blocker,
 the rule requires this reconciliation before selecting the next issue; it does
 not make #325 closed.
+
+## Blocker reconciliation: #326 (2026-09-02)
+
+#326 completed its implementation/QA transaction locally with the exact
+authenticated AI 2D route test passing 1/1. GitHub issue access remains
+unavailable, so the QA comment and closure cannot be posted. Fresh distillation
+found no duplicate, new dependency, or follow-up gap: #326 remains the AI 2D
+route slice, while #340 remains only its narrow local publication prerequisite.
+The issue is ready for authenticated GitHub reconciliation, not closed.

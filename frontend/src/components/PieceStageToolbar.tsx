@@ -69,6 +69,9 @@ export default function PieceStageToolbar({
             onClick={() => void onScreenshot()}
           >
             <span aria-hidden="true">⌗</span>
+            <span className="piece-stage-tooltip" role="tooltip">
+              Take screenshot
+            </span>
           </button>
         )}
         {capabilities.download && onDownload && (
@@ -83,6 +86,9 @@ export default function PieceStageToolbar({
               onClick={() => setDownloadOpen((current) => !current)}
             >
               <span aria-hidden="true">↓</span>
+              <span className="piece-stage-tooltip" role="tooltip">
+                Open download menu
+              </span>
             </button>
             <div
               data-piece-stage-download-menu
@@ -124,6 +130,9 @@ export default function PieceStageToolbar({
             title="View immersive piece"
           >
             <span aria-hidden="true">◈</span>
+            <span className="piece-stage-tooltip" role="tooltip">
+              View immersive piece
+            </span>
           </a>
         )}
         {capabilities.sound && soundControl}
@@ -141,6 +150,9 @@ export default function PieceStageToolbar({
             onClick={() => void onToggleFullscreen()}
           >
             <span aria-hidden="true">⛶</span>
+            <span className="piece-stage-tooltip" role="tooltip">
+              {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+            </span>
           </button>
         )}
       </div>

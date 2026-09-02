@@ -31,4 +31,17 @@ describe('StageControlsPopover', () => {
     await user.click(screen.getByRole('button', { name: 'Hide piece controls' }));
     expect(screen.getByRole('group', { hidden: true })).toHaveAttribute('hidden');
   });
+
+  it('can keep a publication state label visible while the panel is closed', () => {
+    render(
+      <StageControlsPopover label="Publication status: Draft" showVisibleLabel>
+        <button type="button">Publish</button>
+      </StageControlsPopover>,
+    );
+
+    expect(
+      screen.getByText('Publication status: Draft', { selector: '.piece-stage-visible-label' }),
+    ).toBeVisible();
+    expect(screen.getByRole('tooltip', { name: 'Publication status: Draft' })).toBeInTheDocument();
+  });
 });

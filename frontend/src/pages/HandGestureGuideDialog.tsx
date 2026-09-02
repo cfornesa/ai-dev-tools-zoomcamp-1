@@ -133,6 +133,9 @@ function HandGestureGuideDialog() {
         onClick={() => setIsOpen(true)}
       >
         <span aria-hidden="true">✋</span>
+        <span className="piece-stage-tooltip" role="tooltip">
+          Show hand gesture guide
+        </span>
       </button>
 
       {isOpen && <HandGestureGuideDialogContent onClose={() => setIsOpen(false)} />}

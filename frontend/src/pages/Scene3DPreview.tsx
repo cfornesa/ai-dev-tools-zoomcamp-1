@@ -817,6 +817,9 @@ function Scene3DPreview({
                 onClick={() => void handleToggleSound()}
               >
                 <span aria-hidden="true">♪</span>
+                <span className="piece-stage-tooltip" role="tooltip">
+                  {soundEnabled ? 'Mute sound' : 'Enable sound'}
+                </span>
               </button>
             ) : undefined
           }
@@ -1020,6 +1023,9 @@ function Scene3DPreview({
                 }}
               >
                 <span aria-hidden="true">✋</span>
+                <span className="piece-stage-tooltip" role="tooltip">
+                  {gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+                </span>
               </button>
             ) : undefined
           }

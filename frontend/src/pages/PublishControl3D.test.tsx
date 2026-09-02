@@ -41,9 +41,15 @@ function baseProject(overrides: Partial<Project3D> = {}): Project3D {
   };
 }
 
-function Harness({ initialProject }: { initialProject: Project3D }) {
+function Harness({
+  initialProject,
+  compact = false,
+}: {
+  initialProject: Project3D;
+  compact?: boolean;
+}) {
   const [project, setProject] = useState<Project3D | null>(initialProject);
-  return <PublishControl3D id="p1" project={project} setProject={setProject} />;
+  return <PublishControl3D id="p1" project={project} setProject={setProject} compact={compact} />;
 }
 
 beforeEach(() => {
@@ -51,6 +57,14 @@ beforeEach(() => {
 });
 
 describe('PublishControl3D', () => {
+  it('shows the publication state in the compact stage control', () => {
+    render(<Harness initialProject={baseProject()} compact />);
+
+    expect(
+      screen.getByText('Publication status: Draft', { selector: '.piece-stage-visible-label' }),
+    ).toBeVisible();
+  });
+
   it('exposes Draft/Published as visible, keyboard-actionable publication status controls', () => {
     render(<Harness initialProject={baseProject()} />);
 

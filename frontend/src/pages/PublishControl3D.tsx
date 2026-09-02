@@ -161,7 +161,7 @@ function PublishControl3D({
 
   if (compact) {
     return (
-      <StageControlsPopover label={`Publication status: ${statusLabel}`}>
+      <StageControlsPopover label={`Publication status: ${statusLabel}`} showVisibleLabel>
         {publicationPanel}
       </StageControlsPopover>
     );

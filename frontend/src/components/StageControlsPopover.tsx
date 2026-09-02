@@ -11,10 +11,12 @@ export default function StageControlsPopover({
   children,
   label = 'Piece controls',
   resetKey,
+  showVisibleLabel = false,
 }: {
   children: ReactNode;
   label?: string;
   resetKey?: string | number;
+  showVisibleLabel?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -34,7 +36,11 @@ export default function StageControlsPopover({
         onClick={() => setOpen((current) => !current)}
       >
         <span aria-hidden="true">☰</span>
+        <span className="piece-stage-tooltip" role="tooltip">
+          {label}
+        </span>
       </button>
+      {showVisibleLabel && <span className="piece-stage-visible-label">{label}</span>}
       <div
         role="group"
         aria-label={label}

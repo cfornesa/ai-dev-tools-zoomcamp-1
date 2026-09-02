@@ -2949,6 +2949,7 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-toolbar .piece-stage-icon-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2963,6 +2964,44 @@ select.ai-proposal-field-full-width {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   cursor: pointer;
+}
+
+.piece-stage-tooltip {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.45rem);
+  z-index: 50;
+  width: max-content;
+  max-width: min(18rem, 70vw);
+  padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.35rem;
+  background: rgba(15, 15, 18, 0.96);
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -0.2rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.piece-stage-icon-button:hover > .piece-stage-tooltip,
+.piece-stage-icon-button:focus-visible > .piece-stage-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.piece-stage-visible-label {
+  align-self: center;
+  max-width: 12rem;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .piece-stage-toolbar .piece-stage-icon-button:hover,

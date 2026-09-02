@@ -62,11 +62,13 @@ function AiProject3DWorkspace() {
     pending: false,
     error: null,
   });
-  async function handleExport() {
+  async function handleExport(
+    variant: import('../export/generateHtmlExport3D').Scene3DExportVariant = 'full',
+  ) {
     if (!scene) return;
     setExportState({ pending: true, error: null });
     try {
-      const result = await generateScene3DBundle(scene, project?.title ?? 'scene');
+      const result = await generateScene3DBundle(scene, project?.title ?? 'scene', { variant });
       if (!result.ok) {
         setExportState({ pending: false, error: result.reasons.join(' ') });
         return;
@@ -231,7 +233,11 @@ function AiProject3DWorkspace() {
           <div hidden={previewView !== 'visual'}>
             {/* Issue #244: real Three.js rendering, replacing the
                 #226/#231 placeholder. */}
-            <Scene3DPreview scene={scene} screenshotBaseName={project?.title} />
+            <Scene3DPreview
+              scene={scene}
+              screenshotBaseName={project?.title}
+              onDownload={(variant) => void handleExport(variant)}
+            />
           </div>
         </section>
         {/* Issue #232: the prompt panel is this editor's primary

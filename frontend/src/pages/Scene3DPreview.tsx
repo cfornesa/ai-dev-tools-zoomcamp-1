@@ -23,6 +23,7 @@ import type { TrackingFrame } from '../tracking/types';
 import HandGestureGuideDialog from './HandGestureGuideDialog';
 import type { Scene3DDocument } from './scene3dTypes';
 import { useFullscreenToggle } from './useFullscreenToggle';
+import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
 
 /**
  * Issue #244: replaces `project3d-preview-placeholder` with a real,
@@ -205,7 +206,7 @@ function Scene3DPreview({
    * instead of `OrbitControls`' own built-in panning). */
   flyControls?: boolean;
   /** Stage-level download action supplied by the owning editor/viewer. */
-  onDownload?: () => void | Promise<void>;
+  onDownload?: (variant?: Scene3DExportVariant) => void | Promise<void>;
   /** Optional public immersive entry point rendered in the stage toolbar. */
   immersiveHref?: string;
   /** Test seam mirroring `CameraControl.tsx`'s own `createProvider` prop
@@ -234,6 +235,7 @@ function Scene3DPreview({
   // state -- independent of `soundEnabled` itself (the always-visible
   // mute toggle).
   const [showSoundSettings, setShowSoundSettings] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   useEffect(() => {
     const engine = sonicEngineRef.current;
     return () => engine?.dispose();
@@ -687,15 +689,37 @@ function Scene3DPreview({
             </button>
           )}
           {onDownload && (
-            <button
-              type="button"
-              className="scene3d-stage-icon-button"
-              title="Download piece"
-              aria-label="Download piece"
-              onClick={() => void onDownload()}
-            >
-              <span aria-hidden="true">↓</span>
-            </button>
+            <div className="scene3d-stage-download">
+              <button
+                type="button"
+                className="scene3d-stage-icon-button"
+                title="Open download menu"
+                aria-label="Open download menu"
+                aria-haspopup="true"
+                aria-expanded={showDownloadMenu}
+                onClick={() => setShowDownloadMenu((current) => !current)}
+              >
+                <span aria-hidden="true">↓</span>
+              </button>
+              {showDownloadMenu && (
+                <div
+                  role="menu"
+                  aria-label="Download piece"
+                  className="scene3d-stage-download-menu"
+                >
+                  <button type="button" role="menuitem" onClick={() => void onDownload('full')}>
+                    Download Full ZIP
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => void onDownload('non-camera')}
+                  >
+                    Download Non-Camera ZIP
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           {immersiveHref && (
             <a

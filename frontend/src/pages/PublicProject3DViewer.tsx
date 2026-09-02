@@ -78,12 +78,15 @@ function PublicProject3DViewer() {
     }
   }
 
-  async function handleDownload() {
+  async function handleDownload(
+    variant: import('../export/generateHtmlExport3D').Scene3DExportVariant = 'full',
+  ) {
     if (!project?.current_version) return;
     setDownloadError(null);
     const result = await generateScene3DBundle(
       project.current_version.scene_json as unknown as Scene3DDocument,
       project.title,
+      { variant },
     );
     if (!result.ok) {
       setDownloadError(result.reasons.join(' '));

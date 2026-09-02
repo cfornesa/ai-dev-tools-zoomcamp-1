@@ -263,11 +263,57 @@ function renderMotionControl(): string {
     </div>`;
 }
 
+function renderStageToolbar(): string {
+  return `
+    <div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
+      <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot">⌗</button>
+      <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
+    </div>`;
+}
+
+function renderStageToolbarScript(): string {
+  return `<script id="piece-stage-runtime">
+(() => {
+  const host = document.getElementById('scene-canvas-host');
+  const screenshot = document.getElementById('piece-screenshot');
+  const fullscreen = document.getElementById('piece-fullscreen');
+  const canvas = () => host && host.querySelector('canvas, svg');
+  screenshot?.addEventListener('click', () => {
+    const current = canvas();
+    if (!current) return;
+    if (current instanceof HTMLCanvasElement) {
+      const link = document.createElement('a');
+      link.download = 'piece-screenshot.png';
+      link.href = current.toDataURL('image/png');
+      link.click();
+      return;
+    }
+    const source = new XMLSerializer().serializeToString(current);
+    const blob = new Blob([source], { type: 'image/svg+xml' });
+    const link = document.createElement('a');
+    link.download = 'piece-screenshot.svg';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+  fullscreen?.addEventListener('click', async () => {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await (host?.requestFullscreen?.() ?? Promise.resolve());
+    fullscreen.setAttribute('aria-label', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen');
+    fullscreen.setAttribute('title', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen');
+  });
+})();
+</script>`;
+}
+
 const EXPORT_STYLE = `
     body { font-family: system-ui, sans-serif; margin: 0; padding: 1.5rem; max-width: 960px; }
     h1 { margin-top: 0; }
     #scene-canvas-host { position: relative; max-width: 100%; }
     #scene-canvas-host canvas { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
+    #scene-canvas-host svg { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
+    #piece-toolbar { position: absolute; right: 1rem; bottom: 1rem; z-index: 4; display: flex; gap: .5rem; }
+    #piece-toolbar button { width: 2.75rem; height: 2.75rem; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: rgba(10,12,20,.78); color: #fff; cursor: pointer; }
     #export-camera-overlay { pointer-events: none; }
     #demo-controls-host { margin-top: 1.5rem; }
     #demo-controls-host [role="radiogroup"] { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
@@ -321,7 +367,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   ${includeAttribution ? renderAttributionComment() : ''}
   <h1>${safeTitle}</h1>
   ${hasDescription ? `<p id="project-description">${safeDescription}</p>` : ''}
-  <div id="scene-canvas-host">${renderCameraOverlay(input.cameraOverlay)}</div>
+  <div id="scene-canvas-host">${renderCameraOverlay(input.cameraOverlay)}${renderStageToolbar()}</div>
   ${renderMotionControl()}
   ${renderDemoControlsSection()}
   ${includesCamera ? renderCameraControlsSection() : ''}
@@ -342,6 +388,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
         : buildStandaloneRuntimeScript()
   }</script>
   ${includesCamera ? `<script>${buildStandaloneCameraScript()}</script>` : ''}
+  ${renderStageToolbarScript()}
   ${includeAttribution ? renderAttributionFooter() : ''}
   ${includeAttribution ? renderExportVersionMarker() : ''}
 </body>

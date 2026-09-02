@@ -34,6 +34,8 @@ export class Scene3DBundleError extends Error {
 export type GenerateScene3DBundleResult =
   { ok: true; zipBlob: Blob; filename: string } | { ok: false; reasons: string[] };
 
+export type Scene3DExportVariant = 'full' | 'non-camera';
+
 /** Pinned to the exact same CDN URL/version `../generative/artPieceBundle.ts`'s
  * `LIBRARY_CDN.threejs` entry already vendors, matching this app's own
  * installed `three` dependency (`^0.160.0`). */
@@ -90,12 +92,13 @@ so this piece works completely offline -- it never depends on a live CDN
 connection after you download it.
 `;
 
-function buildIndexHtml(): string {
+function buildIndexHtml(variant: Scene3DExportVariant): string {
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>3D scene</title>
+<meta name="creatrweb-export-variant" content="${variant}">
 <link rel="stylesheet" href="styles/piece.css">
 <script src="runtime/${THREE_RUNTIME_FILENAME}"></script>
 </head>
@@ -176,6 +179,7 @@ function slugifyFilename(title: string): string {
 export async function generateScene3DBundle(
   scene: Scene3DDocument,
   baseName: string,
+  options: { variant?: Scene3DExportVariant } = {},
 ): Promise<GenerateScene3DBundleResult> {
   const validation = validateScene3D(scene);
   if (!validation.valid) {
@@ -185,13 +189,14 @@ export async function generateScene3DBundle(
     };
   }
 
+  const variant = options.variant ?? 'full';
   const runtimeBytes = await fetchThreeRuntime();
 
   try {
     const zip = new JSZip();
     zip.file('README.txt', README);
     zip.file('styles/piece.css', PIECE_CSS);
-    zip.file('index.html', buildIndexHtml());
+    zip.file('index.html', buildIndexHtml(variant));
     zip.file(
       'scripts/piece.js',
       `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript()}`,

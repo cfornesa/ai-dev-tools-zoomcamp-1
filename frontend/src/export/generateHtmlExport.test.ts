@@ -70,6 +70,22 @@ describe('generateHtmlExport: happy path', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('packages the stage-local screenshot and fullscreen controls', () => {
+    const result = generateHtmlExport(baseInput());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const doc = new DOMParser().parseFromString(result.html, 'text/html');
+    expect(doc.querySelector('[role="toolbar"][aria-label="Piece actions"]')).toBeTruthy();
+    expect(doc.getElementById('piece-screenshot')?.getAttribute('aria-label')).toBe(
+      'Take screenshot',
+    );
+    expect(doc.getElementById('piece-fullscreen')?.getAttribute('aria-label')).toBe(
+      'Enter fullscreen',
+    );
+    expect(result.html).toContain('requestFullscreen');
+    expect(result.html).toContain('toDataURL');
+  });
+
   it('pins the exact documented p5.js version in the CDN script tag', () => {
     const result = generateHtmlExport(baseInput());
     expect(result.ok).toBe(true);
@@ -331,10 +347,10 @@ describe('generateHtmlExport: safe scene embedding (XSS prevention)', () => {
       const doc = new DOMParser().parseFromString(result.html, 'text/html');
       const scripts = Array.from(doc.querySelectorAll('script'));
 
-      // Exactly the four expected scripts exist: the p5 CDN tag, the two
-      // application/json data blocks, and the runtime script -- never a
-      // fifth one an injection could have created.
-      expect(scripts).toHaveLength(4);
+      // Exactly the five expected scripts exist: the p5 CDN tag, the two
+      // application/json data blocks, the scene runtime, and the stage
+      // controls runtime -- never a sixth one an injection could create.
+      expect(scripts).toHaveLength(5);
 
       const sceneDataScript = doc.getElementById('scene-data');
       expect(sceneDataScript?.getAttribute('type')).toBe('application/json');

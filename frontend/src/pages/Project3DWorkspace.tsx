@@ -149,11 +149,15 @@ function Project3DWorkspace() {
   // downloaded bundle always reflects unsaved edits too -- matching the
   // acceptance criterion that export never uses cached output.
   const [exportState, setExportState] = useState<ExportState>(IDLE_EXPORT_STATE);
-  async function handleExport() {
+  async function handleExport(
+    variant: import('../export/generateHtmlExport3D').Scene3DExportVariant = 'full',
+  ) {
     if (!workingScene) return;
     setExportState({ pending: true, error: null });
     try {
-      const result = await generateScene3DBundle(workingScene, project?.title ?? 'scene');
+      const result = await generateScene3DBundle(workingScene, project?.title ?? 'scene', {
+        variant,
+      });
       if (!result.ok) {
         setExportState({ pending: false, error: result.reasons.join(' ') });
         return;

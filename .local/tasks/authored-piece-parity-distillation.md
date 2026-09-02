@@ -39,7 +39,7 @@ as read-only behavioral reference.
 | [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | Verify AI 3D editor `/ai-projects3d/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Current authenticated Chromium lifecycle suite passes 4/4, including AI 3D editor mount and shared stage chrome; publication and immersive regressions remain green. Post evidence and close through authenticated GitHub reconciliation; no duplicate issue |
 | [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | Verify public 2D viewer `/p/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Corrected stage-local publication selectors/status labels and current public-route contract; full `publishingAndRemix.spec.ts` passes 24/24, including `/p/:id`, gallery/privacy, screenshot/download/fullscreen, camera/demo fallback, and remix boundaries. Post evidence and close through authenticated GitHub reconciliation; deployed revision remains unverified |
 | [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | Verify public 3D viewer `/p3d/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Current authenticated/disposable Chromium lifecycle suite passes 4/4, including exact `/p3d/:id` public stage chrome, named controls, publication transition, and immersive regression. Post evidence and close through authenticated GitHub reconciliation; production revision remains unverified |
-| [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
+| [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | Verify embedded 2D viewer `/embed/p/:id` | Child of #320; one route/surface | `ready_for_github_reconciliation` | Dedicated `embed2dStageChrome.spec.ts` passes 1/1 against disposable PostgreSQL/Django/Vite/Chromium: creates and publishes a fixture, verifies no app shell/nav, stage-local screenshot/fullscreen/download controls, download menu entries, and toolbar containment. Post evidence and close through authenticated GitHub reconciliation; production revision remains unverified |
 | [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | Verify embedded 3D viewer `/embed/p3d/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
 | [#333](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/333) | Verify regular immersive 3D `/immersive/p3d/:id` | Child of #320; one route/surface | `open` | Requires deployment and browser evidence |
 | [#334](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/334) | Verify custom immersive 3D `/immersive/p3d/:id?embed=1` | Child of #320; one route/variant | `open` | Requires deployment and browser evidence |
@@ -560,6 +560,18 @@ new dependency: #330 remains separate from #332's embed, #333–#335's
 immersive variants, and #337's downloaded runtime. Authenticated GitHub access
 is still unavailable, so the issue is ready for reconciliation but not closed;
 the deployed revision still requires authorized publish and exact-route QA.
+
+## Blocker reconciliation: #331 (2026-09-02)
+
+#331 completed its dedicated embedded 2D route QA transaction locally. The
+new `embed2dStageChrome.spec.ts` passed 1/1 after distillation corrected two
+fixture-harness mismatches: the 2D title input is `#editor-title-input` (not
+the 3D field), and 2D publication requires a saved non-empty description
+before its confirmation dialog appears. Fresh distillation found no duplicate
+or new dependency: #331 remains separate from #329's regular public route and
+#336's downloaded runtime. Authenticated GitHub access is still unavailable,
+so the issue is ready for reconciliation but not closed; the deployed
+revision still requires authorized publish and exact-route QA.
 
 ## Blocker reconciliation: #329 (2026-09-02)
 

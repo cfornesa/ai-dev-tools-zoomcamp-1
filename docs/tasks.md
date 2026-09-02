@@ -11116,6 +11116,18 @@ Full/Non-Camera 3D ZIP entries. The deployed revision remains stale, so #334
 is open and is not COMPLETE. Publish the tested revision, rerun the exact
 custom immersive URL, and close only after deployed evidence passes.
 
+## 269l. Handoff portable 3D downloads (#337)
+
+Status: #337 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY
+
+The Docker-backed `project3dLifecycle.spec.ts` transaction passed 4/4. It
+verified 3D project creation, public stage controls, reversible Published →
+Draft behavior, immersive touch travel, real Full/Non-Camera ZIP downloads,
+extracted standalone runtime controls, and camera-surface separation. The
+deployed artifact remains unverified, so #337 is open and is not COMPLETE.
+Publish the tested revision, download both exact production artifacts, and
+close only after their extracted runtime evidence passes.
+
 ## 269k. Handoff portable 2D download runtime (#336)
 
 Status: #336 HANDED OFF — DEPLOYED VERIFICATION BOUNDARY

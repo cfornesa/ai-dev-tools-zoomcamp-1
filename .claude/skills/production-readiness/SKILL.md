@@ -7,6 +7,14 @@ description: Assess one project's complete backlog batch for local deployment, C
 
 Evaluate the whole selected project and its issue manifest, not only the latest commit or issue. This is an evidence assessment, not permission to broaden implementation scope.
 
+## Scope gate
+
+Run this skill only after task distillation has produced a complete,
+criterion-ready manifest. Production-readiness review may classify failed or
+missing evidence and create/link follow-up backlog records, but it must not
+implement fixes or rewrite tests to satisfy the readiness result. A readiness
+failure remains open until the named issue is engineered and QA-reconciled.
+
 ## Readiness dimensions
 
 Assess separately:

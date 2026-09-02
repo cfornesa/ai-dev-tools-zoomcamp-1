@@ -7,6 +7,14 @@ description: Process every remaining open backlog issue for one project sequenti
 
 Use this skill when the user asks to work through a project backlog and its GitHub issues. A session is a complete run for one project: discover every remaining open backlog issue, process issues one at a time in dependency order, and leave every issue with a terminal status. Never claim the project batch is complete when a required gate was skipped.
 
+## Prerequisite phase gate
+
+Do not begin an engineering pass from a raw backlog. The task-distillation
+phase must first leave a reconciled manifest, duplicate report, dependency
+order, blocker triage, and criterion-ready closure contract for every
+actionable issue. If any item still needs decomposition or its acceptance
+criteria require a parent-wide judgment, stop and return to distillation.
+
 ## Scope and invariants
 
 - Work in exactly one project per session. If the project is unclear, ask before changing files.

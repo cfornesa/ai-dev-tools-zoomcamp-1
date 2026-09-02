@@ -7,6 +7,22 @@ description: Discover, deduplicate, groom, and reconcile all actionable backlog 
 
 Use this skill to turn a user request, review feedback, failures, or readiness findings into a reconciled project backlog. It is batch-aware and idempotent: do not create duplicate GitHub issues or memory topics when an existing record already covers the work.
 
+## Phase gate: distill before engineering
+
+This skill is a read/reconcile and backlog-definition phase. Do not implement
+product behavior, update product tests to accommodate a suspected fix, or
+close an issue while this phase is active. A failed test or observed UI gap is
+evidence to classify and capture, not permission to start fixing it. Engineering
+may begin only after the required outputs below exist and the next issue has a
+complete closure contract. If the contract is incomplete, stop at the
+backlog/documentation change and leave the item open or blocked with its next
+action.
+
+The only permitted writes during distillation are backlog/task records,
+criterion-ready GitHub issue definitions and links, durable memory updates,
+and the distillation manifest. Product source and product-test changes belong
+to the later backlog-session engineer pass.
+
 ## Discovery and reconciliation
 
 1. Identify exactly one project and read its `tasks.md`, relevant plan, `docs/process.md`, and applicable acceptance criteria and constraints.
@@ -45,6 +61,12 @@ Use this skill to turn a user request, review feedback, failures, or readiness f
   (closed only when every criterion passes; otherwise open with a classified
   blocker). Do not accumulate several hours of implementation without
   terminalizing or handing off the current issue.
+- Before handing the manifest to backlog-session, perform a completeness
+  check: every actionable item has a unique issue, one route/workflow or
+  capability boundary, fixed preconditions/fixtures, finite pass/fail
+  criteria, exact agent-runnable verification, explicit out-of-scope items,
+  and a blocker/owner/next action. A list of small-looking issue titles is
+  not sufficient.
 
 ## Gap and blocker triage
 
@@ -93,5 +115,11 @@ Exit only when every discovered gap is one of:
 - explicitly classified as duplicate or already covered;
 - documented as blocked with an exact next action; or
 - documented as non-actionable with a reason.
+
+Also do not exit into implementation until the manifest, duplicate report,
+criterion-ready issue definitions, dependency/order rationale, blocker triage,
+and verification boundaries have all been written and reconciled. The next
+phase must name exactly one groomed issue; it may not select a broad parent or
+an issue whose acceptance criteria still require a later decomposition.
 
 Return the manifest to the caller so backlog-session can process every remaining open issue sequentially.

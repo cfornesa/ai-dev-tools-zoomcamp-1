@@ -14,6 +14,22 @@ Closure-ready atomicity
 - After QA, reconcile and close that issue immediately when every criterion
   passes. The parent remains a roll-up/reconciliation container.
 
+Phase gate
+
+- Task distillation is completed before backlog-session engineering starts.
+  Distillation may inspect failures and write backlog, issue, manifest, and
+  durable-memory records, but it must not change product source or product
+  tests to make an observed failure pass.
+- The handoff must name exactly one next groomed issue and include the complete
+  manifest, duplicate/already-covered report, dependency order, blocker
+  triage, verification boundaries, and a closure contract for every
+  actionable item. If any criterion is still broad, subjective, route-spanning,
+  or dependent on an unprovisioned environment, the work remains in
+  distillation/blocked status.
+- Backlog-session may implement only the named issue. A test failure found
+  while distilling or grooming is captured and classified first; it is not an
+  implicit authorization to fix it.
+
 Roles
 
 - PM - grooms a task before anyone implements it, follows docs/team/pm.md

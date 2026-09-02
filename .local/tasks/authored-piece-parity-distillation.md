@@ -51,6 +51,22 @@ as read-only behavioral reference.
 | [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D stage-local publication parity `/ai-projects/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D stage-local publication parity `/projects3d/:id` | Child of #320; one route and capability | `open` | Route-specific implementation and Chromium evidence |
 
+## Distillation handoff gate (2026-09-02)
+
+This manifest is the source of truth before any further implementation. The
+open children above must be groomed and QA-closed independently against their
+exact route or artifact. Before engineering starts, the selected issue must
+have a fixed fixture and entry URL, finite named controls/states, exact
+local/CI/browser commands, a deployment evidence boundary, explicit
+not-applicable controls, dependencies, and one next action written in both
+the issue and this manifest. Parent #320 is a roll-up only.
+
+The interrupted publishing browser run is captured as evidence, not a fix
+authorization. It exposed selector/contract drift after the stage-local
+publication relocation and must first be classified against the affected
+route issues (#338–#341) during grooming. No product or test change is part
+of this distillation increment.
+
 ## Duplicate / already-covered report
 
 - #313–#319 are generated `ArtPiece` routes (`/art-pieces/*`) and do not

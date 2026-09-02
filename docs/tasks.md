@@ -10431,6 +10431,18 @@ and portable artifact: #325-#341. Each child has one independently observable
 surface and must be QA-reconciled immediately after its own evidence is ready;
 #320 remains the parent integration gate until every child is terminal.
 
+Process correction (2026-09-02): the historical implementation increments
+above are not current closure evidence. A later disposable browser audit
+found that the published revision still exposed the older header-level
+publication affordance, while the local branch had moved publication into
+the stage toolbar. The run also showed legacy browser assertions still
+targeting the removed header control. These observations remain classified
+for distillation and do not authorize a product or test fix before the
+affected route issues are groomed with fixed fixtures, finite criteria,
+exact commands, and explicit deployment boundaries. Do not reuse earlier
+“verified live” wording as proof for #325–#341; each child requires fresh
+evidence on the exact published revision.
+
 ## 263. Make Docker browser verification select and fingerprint this repository
 
 Status: BLOCKED / HANDOFF

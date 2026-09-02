@@ -7,6 +7,14 @@ description: Process every remaining open backlog issue for one project sequenti
 
 Use this skill when the user asks to work through a project backlog and its GitHub issues. A session is a complete run for one project: discover every remaining open backlog issue, process issues one at a time in dependency order, and leave every issue with a terminal status. Never claim the project batch is complete when a required gate was skipped.
 
+## Prerequisite phase gate
+
+Do not begin an engineering pass from a raw backlog. The task-distillation
+phase must first leave a reconciled manifest, duplicate report, dependency
+order, blocker triage, and criterion-ready closure contract for every
+actionable issue. If any item still needs decomposition or its acceptance
+criteria require a parent-wide judgment, stop and return to distillation.
+
 ## Scope and invariants
 
 - Work in exactly one project per session. If the project is unclear, ask before changing files.
@@ -17,6 +25,11 @@ Use this skill when the user asks to work through a project backlog and its GitH
 - Do not add dependencies without the user's approval.
 - Use the authenticated GitHub connector for issue, comment, and PR operations. Do not use a local `gh` token as a substitute.
 - Read acceptance criteria before implementation and again during QA.
+- Make verification automation-first: the agent or CI must execute local,
+  browser, integration, and regression checks. Do not hand a local test
+  command to the user as a prerequisite or substitute for QA. Manual checks
+  are reserved for Replit deployment verification when the acceptance
+  criteria explicitly require deployed behavior or a human visual judgment.
 - Treat a blocker as a triage decision, not an automatic new issue: classify it as an implementation defect, verification boundary, workflow/infrastructure defect, dependency blocker, or non-actionable limitation. Any distinct actionable repository/workflow defect must be linked to an existing issue or created immediately when issue creation is authorized.
 - Enforce closure-sized work: a parent/epic is not an implementation unit. Split
   distinct routes, editor modes, embeds, immersive query variants, and
@@ -51,6 +64,9 @@ Read the issue, relevant `tasks.md`, `docs/process.md`, `docs/team/pm.md`, and a
 - duplicate/related issue links;
 - blocker triage, including whether each blocker is covered by this issue, an existing issue, or a new follow-up;
 - criterion-by-criterion implementation plan;
+- automated verification commands and fixtures, including the local runner
+  or CI job that owns execution; identify any Replit-only manual acceptance
+  separately and do not make it a local development prerequisite;
 - backlog entry and GitHub issue URL.
 
 If the issue is not implementable because a dependency is unresolved, record `dependency-blocked`, its exact prerequisite, and its next action. Continue to the next independent issue. If the issue spans multiple independently observable surfaces, stop grooming it as a unit and create/reuse one criterion-ready child per surface before engineering.
@@ -59,7 +75,7 @@ If grooming discovers distinct actionable work outside the current issue, reuse 
 
 ### Engineer pass — implement
 
-Read `docs/team/software-engineer.md`. Before writing tests, read `docs/testing-guidelines.md`; for UI work, also read `docs/design-system.md` when those files exist. Implement only the current issue, add focused regression coverage, and run its documented checks. Commit coherent issue-scoped changes before advancing. Do not close the issue.
+Read `docs/team/software-engineer.md`. Before writing tests, read `docs/testing-guidelines.md`; for UI work, also read `docs/design-system.md` when those files exist. Implement only the current issue, add focused regression coverage, and run its documented checks through the repository's automated runner or CI-equivalent environment. If a required local check is manual or cannot be repeated, automate it in the repository or classify the missing automation as a workflow/infrastructure defect before advancing; never ask the user to perform it. Commit coherent issue-scoped changes before advancing. Do not close the issue.
 
 If implementation is blocked, do not modify unrelated code. Record the attempted command or tool, exact failure, impact, and next action, then mark the issue `blocked` or `handed-off` and continue with independent issues.
 
@@ -67,11 +83,11 @@ When engineering discovers a new defect, decide whether it belongs to the curren
 
 ### QA pass — verify
 
-Read `docs/team/qa-engineer.md` and the issue acceptance criteria again. Do not modify code during QA. Exercise every criterion against the running result using the exact commands and environment specified by the issue where possible. Run focused tests and the full relevant suite, plus required builds/checks. Separate local, approved-browser, CI, and production evidence.
+Read `docs/team/qa-engineer.md` and the issue acceptance criteria again. Do not modify code during QA. Exercise every criterion against the running result using automated tests, browser automation, fixtures, and the exact commands/environment specified by the issue where possible. The agent owns local execution: provision disposable services, resolve ports, start/stop servers, install or reuse test browsers, and retain logs/traces through repository scripts or CI. Run focused tests and the full relevant suite, plus required builds/checks. Separate local automated, CI, and Replit deployment evidence; use manual verification only for Replit deployment acceptance that automation cannot faithfully establish.
 
 Post a GitHub comment for the issue beginning with `## QA: PASS` or `## QA: FAIL`, including a criterion matrix, commands, results, environment, and exact next action. A focused test never substitutes for the full relevant suite. A failed issue does not prevent QA of later independent issues.
 
-For every failed or unavailable check, classify the cause. If the full command fails because the required service, Compose stack, browser harness, fixture, or CI setup is absent or broken, treat that as a workflow/infrastructure defect when reproducible or required by the command: create or reuse a follow-up issue and link it from the parent. If the environment is merely unavailable in the current session and no repository work is indicated, record a verification boundary instead. Never report “focused tests pass” as sufficient when the full acceptance command failed.
+For every failed or unavailable check, classify the cause. First exhaust the automated runner's supported setup and cleanup paths; do not classify a check as unavailable merely because the user has not started a service or run a command. If the automated command fails because the required service, Compose stack, browser harness, fixture, or CI setup is absent or broken, treat that as a workflow/infrastructure defect when reproducible or required by the command: create or reuse a follow-up issue and link it from the parent. If the agent cannot execute the check because of a genuine host or platform boundary, record the exact automated attempt and retain a verification boundary; do not transfer the check to the user unless it is explicitly Replit deployment verification. Never report “focused tests pass” as sufficient when the full acceptance command failed.
 
 ### Issue handoff
 
@@ -94,7 +110,8 @@ Include per issue and as a batch rollup:
 | Scope | Project, complete issue manifest, ordering, worktree classification |
 | PM | Grooming result, issue URL, acceptance matrix, plan |
 | Engineer | Changed files, focused tests, commits, dependency decisions |
-| QA | Exact focused/full commands, environment, results, criterion verdicts, GitHub comment |
+| Automation | Repository runner/CI ownership of local and browser verification, disposable-service setup, cleanup, and retained failure artifacts |
+| QA | Exact automated focused/full commands, runner/CI environment, results, criterion verdicts, GitHub comment; any Replit-only manual evidence is explicitly labeled |
 | Memory | Updated or explicitly unchanged topics, linked to issues |
 | Session completion | Batch reconciliation result and remaining-item audit |
 | Handoff | Every issue's status, blocker, owner/context, and exact next action |
@@ -109,6 +126,9 @@ The project batch may be reported complete only when:
 - every discovered issue has a terminal status;
 - every issue reported as completed has all acceptance criteria passing;
 - full relevant suites and required builds/checks pass for completed issues;
+- all local and CI verification is executable by the agent or CI without a
+  user-operated terminal/browser session; any remaining manual step is
+  explicitly limited to Replit deployment acceptance;
 - QA results are recorded on every processed issue;
 - changes are committed without unrelated files;
 - backlog, GitHub, and memory links are reconciled;

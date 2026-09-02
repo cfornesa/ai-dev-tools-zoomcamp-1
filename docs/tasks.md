@@ -11850,3 +11850,14 @@ The public 2D download affordance opened without exposing Full/Non-Camera
 download entries during the same live check. Keep the relevant public-route
 and artifact issues open; shared toolbar presence must not be used as evidence
 that downloaded runtime parity or every consumer action is complete.
+
+## #348 — Published mobile overlay verification (2026-09-02)
+
+The republished exact editor route serves `assets/index-CcScGc1L.js`. At
+1280x900, `Edit scene` opens the compact authoring controls and Add circle / Undo
+successfully changes 4 shapes to 5 and back to 4; no legacy `Editor actions` row
+is present. At 375x812, however, the open authoring toolbar begins at roughly
+x=-43 and is clipped by the preview/stage boundary. This is a real published
+responsive failure, so #348 remains open with QA FAIL. Correct the mobile
+overlay geometry, republish, repeat both exact viewport checks, and close only
+after the published evidence passes.

@@ -406,3 +406,20 @@ serves `assets/index-C5ipN-ir.js` and has zero persistent action labels, so
 publication/revision verification is also incomplete. #347 stays open with
 QA FAIL and the next action is republish `b98eb49`, then recheck the exact
 published routes before any closure decision.
+
+## #348 republish verification and dependency-blocker distillation — 2026-09-02
+
+The reviewed revision is now published and the exact authenticated editor route
+serves `assets/index-CcScGc1L.js`. Desktop verification at 1280x900 found no
+legacy `Editor actions` row; opening `Edit scene` exposed the compact named
+authoring controls, and Add circle changed the working copy from 4 to 5 shapes
+before Undo restored 4. The published action surface is present and functional
+on desktop.
+
+The exact same route at 375x812 exposed a genuine responsive defect: the open
+authoring toolbar measured approximately x=-43 through x=274, so its 317px
+surface is clipped by the narrow preview/stage boundary. This is a published
+mobile layout failure within #348's acceptance contract. No new issue is
+warranted because the defect is owned by #348's compact overlay contract. Keep
+#348 open with QA FAIL; correct the responsive positioning/density, republish,
+and rerun both exact viewport checks before closure.

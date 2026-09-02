@@ -127,3 +127,12 @@ identities. Before live parity closure, synchronize the reviewed GitHub commit
 into the Replit workspace, publish it, and compare the exact deployed asset;
 do not infer synchronization from “no changes to commit” or a recent publish
 timestamp.
+
+Post-publish correction (2026-09-02): the reviewed shared-control revision is
+now live as `assets/index-DyASLgrd.js`. The supplied 3D editor visibly exposes
+nine SVG controls and a Draft label; its publication control successfully
+completed Draft → Published → Draft. The supplied public 2D route visibly
+places four controls over the artwork, but its download disclosure did not
+expose Full/Non-Camera entries in the live check. Shared visual evidence is
+therefore valid for #347/#348 only; retain separate consumer/artifact closure
+boundaries for public downloads and downloaded runtime behavior.

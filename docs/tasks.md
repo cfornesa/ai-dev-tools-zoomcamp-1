@@ -11769,3 +11769,18 @@ revision state from GitHub `origin/main`; the exact Replit commit hash is not
 exposed in the read-only panel. The next deployment action is to synchronize
 that workspace to reviewed `ba140ff` (or an explicitly reviewed descendant),
 publish it, and recheck both exact URLs.
+
+## 269ak. Published shared parity recheck and remaining public-download gap (2026-09-02)
+
+The reviewed revision was published through Replit and the exact supplied
+routes now serve `assets/index-DyASLgrd.js`. Live inspection verified nine
+recognizable SVG editor controls, a visible Draft publication label, and a
+real Draft → Published → Draft transition on the supplied 3D fixture. The
+public 2D route now visibly renders screenshot, download, Piece controls, and
+fullscreen controls over the artwork. This is evidence for the shared
+#347/#348 implementation boundary only.
+
+The public 2D download affordance opened without exposing Full/Non-Camera
+download entries during the same live check. Keep the relevant public-route
+and artifact issues open; shared toolbar presence must not be used as evidence
+that downloaded runtime parity or every consumer action is complete.

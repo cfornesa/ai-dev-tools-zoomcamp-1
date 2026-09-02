@@ -262,3 +262,20 @@ exact deployed asset before any closure. The deployment handoff's next action
 is to synchronize the Replit workspace to reviewed `origin/main` `ba140ff` (or
 an explicitly reviewed descendant), publish it, and recheck the exact URLs;
 until then all live route/artifact issues remain open.
+
+## Post-publish verification boundary — 2026-09-02
+
+The reviewed revision was subsequently published through Replit. Both supplied
+routes now serve `assets/index-DyASLgrd.js`. Live editor inspection found nine
+recognizable SVG stage controls, a visible `Publication status: Draft` label,
+and an end-to-end Draft → Published → Draft transition on the supplied 3D
+fixture. The live public 2D route visibly renders screenshot, download,
+controls, and fullscreen controls in the stage overlay; an inspected render
+also confirms that the controls sit over the artwork rather than in the old
+page-level action row.
+
+This closes the deployment identity gap for the shared visual implementation,
+but not the consumer matrix. During the same inspection, opening the public 2D
+download control exposed no Full/Non-Camera menu entries, so public 2D
+download behavior remains an actionable route/artifact gap under its existing
+consumer issue. Do not transfer shared-control evidence to that issue.

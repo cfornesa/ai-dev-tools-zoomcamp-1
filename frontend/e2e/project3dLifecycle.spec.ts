@@ -100,4 +100,54 @@ test.describe('3D project creation', () => {
     await page.reload();
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
   });
+
+  test('published 3D projects expose the shared public stage chrome and can return to Draft', async ({
+    page,
+  }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
+    await page.waitForURL(/\/projects3d\/[^/]+$/);
+    const match = /\/projects3d\/([^/]+)$/.exec(page.url());
+    expect(match).not.toBeNull();
+    const projectId = match?.[1];
+    if (!projectId) return;
+
+    await expect(page.getByTestId('project3d-save-status')).toBeVisible();
+    await page.getByRole('button', { name: 'Edit title' }).click();
+    const titleForm = page.locator('.editor-title-edit');
+    await titleForm.locator('#project3d-title-input').fill('Public 3D parity fixture');
+    await titleForm.getByRole('button', { name: 'Save' }).click();
+    await expect(titleForm).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Published' }).click();
+    const dialog = page.getByRole('alertdialog', { name: /Publish/ });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
+    await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
+
+    await page.goto(`/p3d/${projectId}`);
+    const frame = page.getByTestId('scene3d-preview-canvas-frame');
+    const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
+    await expect(toolbar).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Piece controls' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
+
+    await toolbar.getByRole('button', { name: 'Piece controls' }).click();
+    await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
+    await toolbar.getByRole('button', { name: 'Open download menu' }).click();
+    await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
+    await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera ZIP' })).toBeVisible();
+
+    await page.goto(`/projects3d/${projectId}`);
+    await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
+    await page.getByRole('button', { name: 'Draft' }).click();
+    await expect(page.getByTestId('visibility-status-3d')).toContainText('Private');
+  });
 });

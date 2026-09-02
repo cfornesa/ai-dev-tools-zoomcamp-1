@@ -822,18 +822,15 @@ code {
    toolbar instead of creating a bulky page-level row. `overflow-x: auto`
    plus `flex-wrap` keeps the compact overlay usable at narrow widths. */
 .editor-toolbar {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  right: auto;
+  position: static;
   box-sizing: border-box;
   z-index: 6;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
-  width: max-content;
-  max-width: calc(100% - 24px);
+  width: auto;
+  max-width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -841,6 +838,18 @@ code {
   box-shadow: var(--shadow);
   min-width: 0;
   overflow-x: auto;
+}
+
+/* Issue #348: the authoring controls are now the editor-controls group of
+   the shared stage rail. Keep their existing toolbar semantics and actions,
+   but remove the former independent canvas rail so runtime and authoring
+   controls form one compact, stage-associated surface. */
+.piece-stage-toolbar .editor-toolbar {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* The Preview panel owns the viewport at every breakpoint, so the overlay

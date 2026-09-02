@@ -3195,13 +3195,6 @@ function EditorWorkspace() {
                   onPointerLeave={handleCanvasPointerLeave}
                   onDoubleClick={handleCanvasDoubleClick}
                 >
-                  <div
-                    className="editor-canvas-authoring-toolbar"
-                    onClick={(event) => event.stopPropagation()}
-                    onPointerDown={(event) => event.stopPropagation()}
-                  >
-                    {editorToolbar}
-                  </div>
                   {/* Task 110 (issue #141), restacked by task 137 (issue #169)
                 and made artwork-relative by issue #151: the camera pixels
                 are drawn by the p5 compositor, which inserts them into the
@@ -3586,80 +3579,83 @@ function EditorWorkspace() {
                           );
                         })()}
                 </div>
-              </div>
-              <PieceStageToolbar
-                className="editor-piece-stage-toolbar"
-                onScreenshot={() => void handleTakeScreenshot()}
-                onDownload={() => setExportDialogOpenSignal((current) => current + 1)}
-                capabilities={TWO_D_STAGE_CAPABILITIES}
-                isFullscreen={isFullscreen}
-                onToggleFullscreen={() => void toggleFullscreen()}
-                controlsControl={
-                  <StageControlsPopover>
-                    <CameraControl
-                      onStatusChange={(status) => {
-                        setCameraStatus(status);
-                        if (status !== 'active') cameraTrackingGestureRef.current = null;
-                        trackingSourceRef.current.setCameraActive(status === 'active');
-                      }}
-                      onFrame={(frame) => {
-                        trackingSourceRef.current.reportCameraFrame(frame);
-                        handleCameraTrackingFrame(frame);
-                      }}
-                      onStreamChange={setCameraStream}
-                    />
-                    {cameraStatus === 'active' && (
-                      <div className="editor-camera-overlay-control">
-                        <label htmlFor="editor-camera-overlay-opacity">
-                          Camera overlay opacity
-                        </label>
-                        <input
-                          id="editor-camera-overlay-opacity"
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={Math.round(cameraOverlayOpacity * 100)}
-                          aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
-                          onChange={(event) =>
-                            setCameraOverlayOpacity(Number(event.target.value) / 100)
-                          }
-                        />
-                        <label htmlFor="editor-camera-overlay-mirror">
+                <PieceStageToolbar
+                  className="editor-piece-stage-toolbar"
+                  onScreenshot={() => void handleTakeScreenshot()}
+                  onDownload={() => setExportDialogOpenSignal((current) => current + 1)}
+                  capabilities={TWO_D_STAGE_CAPABILITIES}
+                  isFullscreen={isFullscreen}
+                  onToggleFullscreen={() => void toggleFullscreen()}
+                  controlsControl={
+                    <StageControlsPopover>
+                      <CameraControl
+                        onStatusChange={(status) => {
+                          setCameraStatus(status);
+                          if (status !== 'active') cameraTrackingGestureRef.current = null;
+                          trackingSourceRef.current.setCameraActive(status === 'active');
+                        }}
+                        onFrame={(frame) => {
+                          trackingSourceRef.current.reportCameraFrame(frame);
+                          handleCameraTrackingFrame(frame);
+                        }}
+                        onStreamChange={setCameraStream}
+                      />
+                      {cameraStatus === 'active' && (
+                        <div className="editor-camera-overlay-control">
+                          <label htmlFor="editor-camera-overlay-opacity">
+                            Camera overlay opacity
+                          </label>
                           <input
-                            id="editor-camera-overlay-mirror"
-                            type="checkbox"
-                            checked={cameraOverlayMirrored}
-                            onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
+                            id="editor-camera-overlay-opacity"
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={Math.round(cameraOverlayOpacity * 100)}
+                            aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                            onChange={(event) =>
+                              setCameraOverlayOpacity(Number(event.target.value) / 100)
+                            }
                           />
-                          Mirror camera overlay
-                        </label>
-                      </div>
-                    )}
-                    {cameraStatus === 'active' && (
-                      <p role="status" aria-live="polite" data-testid="camera-overlay-status">
-                        {cameraOverlayStatus ??
-                          'Camera overlay. Use arrow keys to move; Shift+arrow changes the movement step. Use + or − to resize.'}
-                      </p>
-                    )}
-                    <DemoControlsPanel
-                      onPinchStart={() => setPinchEventCount((count) => count + 1)}
-                      onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
-                    />
-                  </StageControlsPopover>
-                }
-                editorControls={
-                  id ? (
-                    <PublishControl
-                      id={id}
-                      project={project}
-                      setProject={setProject}
-                      persistPendingDetails={persistPendingDetails}
-                      compact
-                    />
-                  ) : undefined
-                }
-              />
+                          <label htmlFor="editor-camera-overlay-mirror">
+                            <input
+                              id="editor-camera-overlay-mirror"
+                              type="checkbox"
+                              checked={cameraOverlayMirrored}
+                              onChange={(event) => setCameraOverlayMirrored(event.target.checked)}
+                            />
+                            Mirror camera overlay
+                          </label>
+                        </div>
+                      )}
+                      {cameraStatus === 'active' && (
+                        <p role="status" aria-live="polite" data-testid="camera-overlay-status">
+                          {cameraOverlayStatus ??
+                            'Camera overlay. Use arrow keys to move; Shift+arrow changes the movement step. Use + or − to resize.'}
+                        </p>
+                      )}
+                      <DemoControlsPanel
+                        onPinchStart={() => setPinchEventCount((count) => count + 1)}
+                        onFrame={(frame) => trackingSourceRef.current.reportDemoFrame(frame)}
+                      />
+                    </StageControlsPopover>
+                  }
+                  editorControls={
+                    <>
+                      {editorToolbar}
+                      {id ? (
+                        <PublishControl
+                          id={id}
+                          project={project}
+                          setProject={setProject}
+                          persistPendingDetails={persistPendingDetails}
+                          compact
+                        />
+                      ) : null}
+                    </>
+                  }
+                />
+              </div>
             </div>
           </div>
           {/* Issue #163 (task 131): the canvas-overlaid selection HUD —

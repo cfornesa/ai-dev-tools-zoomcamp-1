@@ -24,8 +24,7 @@ test.describe('manual 2D editor stage chrome', () => {
     await page.waitForURL(/\/projects\/[^/]+$/);
 
     const stage = page.locator('.piece-stage-shell');
-    const canvas = page.getByTestId('scene-canvas');
-    const authoringToolbar = canvas.getByRole('toolbar', { name: 'Editor actions' });
+    const authoringToolbar = stage.getByRole('toolbar', { name: 'Editor actions' });
     await expect(authoringToolbar).toBeVisible();
     for (const label of [
       'Add circle',
@@ -71,16 +70,16 @@ test.describe('manual 2D editor stage chrome', () => {
     expect(toolbarBox!.x + toolbarBox!.width).toBeLessThanOrEqual(stageBox!.x + stageBox!.width);
 
     const authoringBox = await authoringToolbar.boundingBox();
-    const canvasBox = await canvas.boundingBox();
+    const stageBoxForAuthoring = await stage.boundingBox();
     expect(authoringBox).not.toBeNull();
-    expect(canvasBox).not.toBeNull();
-    expect(authoringBox!.x).toBeGreaterThanOrEqual(canvasBox!.x);
-    expect(authoringBox!.y).toBeGreaterThanOrEqual(canvasBox!.y);
+    expect(stageBoxForAuthoring).not.toBeNull();
+    expect(authoringBox!.x).toBeGreaterThanOrEqual(stageBoxForAuthoring!.x);
+    expect(authoringBox!.y).toBeGreaterThanOrEqual(stageBoxForAuthoring!.y);
     expect(authoringBox!.x + authoringBox!.width).toBeLessThanOrEqual(
-      canvasBox!.x + canvasBox!.width,
+      stageBoxForAuthoring!.x + stageBoxForAuthoring!.width,
     );
     expect(authoringBox!.y + authoringBox!.height).toBeLessThanOrEqual(
-      canvasBox!.y + canvasBox!.height,
+      stageBoxForAuthoring!.y + stageBoxForAuthoring!.height,
     );
 
     const chrome = await toolbar.evaluate((element) => {

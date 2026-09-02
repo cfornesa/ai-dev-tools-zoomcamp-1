@@ -399,8 +399,8 @@ describe('EditorWorkspace responsive layout', () => {
     const toolbar = toolbars[0];
     expect(toolbar.closest('[data-panel]')).toHaveAttribute('data-panel', 'preview');
 
-    expect(toolbar.closest('[data-testid="scene-canvas"]')).toBe(
-      screen.getByTestId('scene-canvas'),
+    expect(toolbar.closest('[data-testid="editor-piece-stage-shell"]')).toBe(
+      screen.getByTestId('editor-piece-stage-shell'),
     );
   });
 
@@ -416,8 +416,8 @@ describe('EditorWorkspace responsive layout', () => {
     await screen.findByRole('region', { name: 'Preview' });
     const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
     expect(toolbars).toHaveLength(1);
-    expect(toolbars[0].closest('[data-testid="scene-canvas"]')).toBe(
-      screen.getByTestId('scene-canvas'),
+    expect(toolbars[0].closest('[data-testid="editor-piece-stage-shell"]')).toBe(
+      screen.getByTestId('editor-piece-stage-shell'),
     );
   });
 

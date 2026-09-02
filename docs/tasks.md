@@ -10579,12 +10579,23 @@ verifies this app's root/health/anonymous-auth fingerprints without stopping
 or mutating unrelated containers. Its expected conflict test correctly
 reported the running `ai-dev-tools-zoomcamp` project.
 
-The correct-stack build is not yet verified: Docker timed out resolving the
-uncached `node:22-bookworm-slim` and
-`ghcr.io/astral-sh/uv:python3.13-bookworm-slim` base images. Keep #321 open
-until the image pull/build succeeds, the preflight passes against running
-repository containers, and the Docker browser/readiness gate runs against
-that stack. Native `scripts/browser-qa.sh` remains independent.
+The correct-stack build is now verified. The backend image previously omitted
+the root `schema/` directory, causing Django to exit with
+`FileNotFoundError: /app/schema/scene.schema.json`; `docker/backend.Dockerfile`
+now copies that directory. The explicitly named stack builds and starts,
+`make compose-preflight` passes against `ai-dev-tools-zoomcamp-1`, and
+`BROWSER_QA_E2E_SPEC=e2e/project3dLifecycle.spec.ts make browser-qa` passes
+3/3. Native browser QA is now runnable against the repository stack.
+
+Keep #321 open only for GitHub reconciliation until its QA evidence and
+closure comment are posted; the repository-owned implementation and required
+verification are complete locally.
+
+Final local verification (2026-09-02): the corrected stack passed
+`make compose-preflight`; focused `project3dLifecycle.spec.ts` passed 3/3;
+the complete default browser-QA gate passed 7/7. The sibling
+`ai-dev-tools-zoomcamp` project was not stopped or modified. GitHub closure
+remains pending because authenticated issue access was unavailable.
 
 Retry evidence (2026-09-02): a second `docker compose --project-name
 ai-dev-tools-zoomcamp-1 --file compose.yaml up -d --build` attempt reached the

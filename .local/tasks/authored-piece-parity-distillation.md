@@ -31,7 +31,7 @@ as read-only behavioral reference.
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Shared authored Project/Project3D stage chrome and capability contract | Parent integration gate; decomposed into #295, #306, #325–#345 | `in_progress` | Live re-audit FAIL: supplied public 2D URL still has legacy sibling controls; supplied 3D editor URL is unavailable anonymously. Publish current revision, then process #325–#337 exact-route/artifact verification before parent closure |
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Superseded authored-piece parity umbrella | Historical parent; replaced by #320 and closure-sized children | `closed_not_planned` | Historical reference only; do not use as a closure unit |
 | [#123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/123) | Native E2E default port must match Vite’s documented port | Independent workflow item | `closed_completed` | QA PASS posted and issue closed after source/default and browser-runner verification |
-| [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `dependency-blocked` | `workflow/infrastructure-defect`; preflight identifies the sibling project, host registry probes succeed, but Docker Desktop BuildKit and a direct `docker pull` both hang/timeout on uncached base-image metadata; restore daemon image fetching or provide approved equivalent images, then close only with correct-stack evidence |
+| [#321](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/321) | Docker browser verification must select and fingerprint the correct project | Independent workflow item; repository Compose definition now exists | `ready_for_github_reconciliation` | Docker image build/start and `make compose-preflight` now pass; backend image was fixed to copy `/schema`; focused `project3dLifecycle.spec.ts` browser QA passes 3/3. Post the QA evidence and close through authenticated GitHub reconciliation; no duplicate issue |
 | [#323](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/323) | Superseded four-route publication-control implementation umbrella | Historical parent; replaced by #338–#341 | `closed_not_planned` | Do not reopen or use as a closure unit |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | Verify manual 2D editor `/projects/:id` | Child of #320; one route/surface | `open` | Requires authenticated browser evidence |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | Verify AI 2D editor `/ai-projects/:id` | Child of #320; one route/surface | `open` | Requires authenticated browser evidence |
@@ -53,7 +53,7 @@ as read-only behavioral reference.
 | [#295](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/295) | Live 3D five-slide hand-gesture guide | Shared capability; portable guide remains in #337 | `open` | Reopened: its closure contract requires a published `/p3d/:id` fixture, but prior evidence was local-only; verify exact route before closure |
 | [#306](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/306) | Shared Tone.js 3D audio foundation | Foundation for sound consumers; route evidence remains #327–#337 | `closed_completed_local` | Narrow local foundation closure; exact public/editor/download behavior remains #327–#337 |
 | [#342](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/342) | Independent 3D camera-view toggle | Shared capability; consumers verify through #327–#337 | `closed_completed_local` | Narrow local capability closure; exact deployed consumers remain #327–#337 |
-| [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad travel | Immersive capability; route variants decide inclusion in #333–#335 | `dependency-blocked` | Local implementation and unit/full frontend QA pass; required `make browser-qa` failed because Docker daemon was unavailable. Retry #321's correct-stack browser runner, then post QA evidence and close #343 |
+| [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad travel | Immersive capability; route variants decide inclusion in #333–#335 | `open` | #321's correct-stack runner is available; groom and process #343 as its own issue, then post focused touch/browser evidence before closure |
 | [#344](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/344) | Immersive 3D hand gesture move/strafe | Depends on #295; route evidence remains #333–#335 | `open` | Implement bounded travel and safe-stop behavior, or document a linked product decision |
 | [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | Depends on #306/#310; route/artifact evidence remains #327–#337 | `handed-off` | Local implementation and QA pass; GitHub API unavailable for required QA comment/closure. Retry authenticated issue reconciliation; do not duplicate the issue |
 
@@ -515,3 +515,17 @@ unavailable (`gh issue view` could not connect to `api.github.com`) and the
 existing issue map covers the discovered work. The next handoff is to groom
 exactly one existing route slice after deployment access and fixture
 availability are resolved; no product engineering begins from this re-audit.
+
+## Blocker reconciliation (2026-09-02)
+
+The non-user-judgment #321 environment blocker was re-investigated at the end
+of the blocked work as required by the workflow rule. The sibling Compose
+project was left untouched. This repository's explicitly named stack built and
+started after `docker/backend.Dockerfile` copied the missing root `schema/`
+directory; `make compose-preflight` passed, and
+`BROWSER_QA_E2E_SPEC=e2e/project3dLifecycle.spec.ts make browser-qa` passed
+3/3. Duplicate and dependency review found no new issue: #321 remains the
+existing workflow issue, #343 is no longer dependency-blocked, and route/
+artifact children remain separate. GitHub reconciliation is still pending
+because the authenticated GitHub API was unavailable; local readiness is not
+represented as GitHub closure.

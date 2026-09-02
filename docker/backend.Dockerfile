@@ -6,6 +6,7 @@ COPY backend/pyproject.toml backend/uv.lock ./backend/
 RUN cd backend && uv sync --locked --no-dev
 
 COPY backend ./backend
+COPY schema ./schema
 
 WORKDIR /app/backend
 CMD ["sh", "-c", "uv run python manage.py migrate --noinput && uv run python manage.py runserver 0.0.0.0:8000"]

@@ -125,8 +125,15 @@ function HandGestureGuideDialog() {
 
   return (
     <>
-      <button type="button" ref={triggerRef} onClick={() => setIsOpen(true)}>
-        Show hand gesture guide
+      <button
+        type="button"
+        ref={triggerRef}
+        className="piece-stage-icon-button"
+        aria-label="Show hand gesture guide"
+        title="Show hand gesture guide"
+        onClick={() => setIsOpen(true)}
+      >
+        <span aria-hidden="true">✋</span>
       </button>
 
       {isOpen && <HandGestureGuideDialogContent onClose={() => setIsOpen(false)} />}

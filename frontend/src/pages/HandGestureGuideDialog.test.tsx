@@ -24,6 +24,15 @@ describe('HandGestureGuideDialog', () => {
     expect(dialog).toHaveFocus();
   });
 
+  it('uses the compact stage icon treatment for the guide trigger', () => {
+    render(<HandGestureGuideDialog />);
+
+    const trigger = screen.getByRole('button', { name: 'Show hand gesture guide' });
+    expect(trigger).toHaveClass('piece-stage-icon-button');
+    expect(trigger).toHaveAttribute('title', 'Show hand gesture guide');
+    expect(trigger).toHaveTextContent('✋');
+  });
+
   it('shows the first named slide and navigates through all five steps', async () => {
     const user = userEvent.setup();
     render(<HandGestureGuideDialog />);

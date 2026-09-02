@@ -99,6 +99,8 @@ describe('generateScene3DBundle', () => {
     expect(html).toContain('piece-reset-view');
     expect(html).toContain('piece-sound');
     expect(html).toContain('piece-audio-controls');
+    expect(html).toContain('piece-audio-settings');
+    expect(html).toContain('piece-keyboard');
     expect(html).toContain('piece-fullscreen');
     expect(html).toContain('piece-hand-guide-toggle');
     expect(html).toContain('Hand gesture guide');
@@ -112,6 +114,8 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('piece-sound');
     expect(script).toContain('AudioContext');
     expect(script).toContain('piece-volume');
+    expect(script).toContain('piece-keyboard');
+    expect(script).toContain('keyboardEnabled');
     expect(script).toContain('getUserMedia');
     expect(script).toContain('__exportSetActiveInput');
     expect(script).toContain('recognizeForVideo');

@@ -147,7 +147,7 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
   <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot">⌗</button>
   <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view">↺</button>
   <button id="piece-sound" type="button" aria-label="Enable sound" title="Enable sound" aria-pressed="false">♪</button>
-  <button id="piece-audio-settings" type="button" aria-label="Sound settings" title="Sound settings" aria-expanded="false">☰</button>
+  <button id="piece-audio-settings" type="button" aria-label="Piece controls" title="Piece controls" aria-expanded="false">☰</button>
   <button id="piece-hand-guide-toggle" type="button" aria-label="Hand gesture guide" title="Hand gesture guide" aria-expanded="false">?</button>
   <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
 </div>
@@ -164,7 +164,8 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
 </div>
 <div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
   <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
-  <p>Enable sound, then use the A–L keys to play notes.</p>
+  <button id="piece-keyboard" type="button" aria-pressed="false">Keyboard notes</button>
+  <p>Enable sound, then turn on keyboard notes to play A–L keys.</p>
 </div>
 ${
   variant === 'full'

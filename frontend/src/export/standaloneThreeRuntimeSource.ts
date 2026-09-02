@@ -168,6 +168,7 @@ export function buildStandaloneThreeRuntimeScript(): string {
     var audioContext = null;
     var masterGain = null;
     var soundEnabled = false;
+    var keyboardEnabled = false;
     var lastToneAt = 0;
     var notes = { a: 261.63, s: 293.66, d: 329.63, f: 349.23, g: 392.0, h: 440.0, j: 493.88, k: 523.25, l: 587.33 };
 
@@ -197,6 +198,9 @@ export function buildStandaloneThreeRuntimeScript(): string {
     function toggleSound() {
       if (soundEnabled) {
         soundEnabled = false;
+        keyboardEnabled = false;
+        var keyboardButton = document.getElementById('piece-keyboard');
+        if (keyboardButton) keyboardButton.setAttribute('aria-pressed', 'false');
         if (masterGain) masterGain.gain.value = 0;
         setSoundButton();
         return;
@@ -224,8 +228,13 @@ export function buildStandaloneThreeRuntimeScript(): string {
     document.getElementById('piece-volume')?.addEventListener('input', function (event) {
       if (masterGain) masterGain.gain.value = Number(event.target.value) / 100;
     });
+    document.getElementById('piece-keyboard')?.addEventListener('click', function () {
+      keyboardEnabled = !keyboardEnabled;
+      this.setAttribute('aria-pressed', String(keyboardEnabled));
+      this.textContent = keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes';
+    });
     window.addEventListener('keydown', function (event) {
-      if (!soundEnabled || event.repeat || event.target instanceof HTMLInputElement) return;
+      if (!soundEnabled || !keyboardEnabled || event.repeat || event.target instanceof HTMLInputElement) return;
       var frequency = notes[event.key.toLowerCase()];
       if (frequency) playTone(frequency, 0.3);
     });

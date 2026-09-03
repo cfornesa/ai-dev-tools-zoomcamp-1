@@ -2804,8 +2804,8 @@ select.ai-proposal-field-full-width {
 /* Issue #244: Scene3DPreview.tsx's live Three.js canvas. The container
    needs an explicit height -- unlike the 2D `.editor-scene-canvas`, it has
    no scene-defined aspect ratio to derive one from (the schema's `camera`
-   has no notion of output pixel dimensions), so a fixed height is this
-   component's own documented choice. The canvas itself fills that box;
+   has no notion of output pixel dimensions), so a responsive aspect-ratio
+   box is this component's own documented choice. The canvas itself fills it;
    `ResizeObserver`+`renderer.setSize` in Scene3DPreview.tsx keeps the
    camera's aspect ratio in sync with the box's actual size. */
 /* Issue #299: this container must stay auto-height, not a fixed 360px box
@@ -2825,7 +2825,9 @@ select.ai-proposal-field-full-width {
 .scene3d-preview-canvas-frame {
   position: relative;
   width: 100%;
-  height: 360px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  min-height: 180px;
 }
 
 .scene3d-preview-canvas-frame canvas {

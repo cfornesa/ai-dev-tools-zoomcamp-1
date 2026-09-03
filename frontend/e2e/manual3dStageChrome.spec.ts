@@ -43,6 +43,18 @@ test.describe('manual 3D editor stage chrome', () => {
       await expect(
         toolbar.getByRole('button', { name: 'Publication status: Draft' }),
       ).toBeVisible();
+      const canvasMetrics = await frame.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const canvas = element.querySelector('canvas');
+        return {
+          width: box.width,
+          height: box.height,
+          canvasWidth: canvas?.width ?? 0,
+          canvasHeight: canvas?.height ?? 0,
+        };
+      });
+      expect(canvasMetrics.width / canvasMetrics.height).toBeCloseTo(16 / 9, 1);
+      expect(canvasMetrics.canvasWidth / canvasMetrics.canvasHeight).toBeCloseTo(16 / 9, 1);
     }
     const mobileCommandGeometry = await toolbar
       .locator('.piece-stage-command-card > [role="group"] .piece-stage-icon-button')

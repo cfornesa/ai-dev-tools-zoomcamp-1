@@ -12999,4 +12999,7 @@ the disposable PostgreSQL container did not become ready. The issue comment
 records both runs and the retained log path. #362 therefore remains open as a
 verification handoff. The next action is to rerun the same browser gate,
 reconcile rendered evidence at 1280×900 and 375×812, and close #362 only if
-all criteria pass. No other issue may enter engineering first.
+all criteria pass. Because this is an external dependency blocker rather than
+a judgment blocker, the queue may rotate to an independent groomed issue
+after this handoff; #362 remains in the retry queue and must be closed before
+it is treated as complete.

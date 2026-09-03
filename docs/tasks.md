@@ -13223,3 +13223,22 @@ other closed issues remain immutable; no issue was reopened.
 The next and only groomed engineering target is **#362**. Its remaining
 browser-QA retry is independent and must be completed and closed as its own
 transaction before another issue enters engineering.
+
+### #362 closure reconciliation — 2026-09-03
+
+#362 is closed as completed for the shared React command-menu capability.
+Focused component tests passed 7/7; the Docker-backed manual 2D stage gate
+passed 6/6 across Chromium, Firefox, and WebKit; and the full frontend gate
+passed formatting, typecheck, lint with existing warnings only, and
+2,400/2,400 tests. Rendered checks covered the hamburger entry point,
+icon-plus-text labels, stacked rows, no overlap, no actual command-card
+scrollbar, nested disclosure behavior, Escape/focus return, and fullscreen
+synchronization at 1280×900 and 375×812. Commit `d242a13` records the final
+browser-contract reconciliation.
+
+Implemented/verified here: the shared React runtime-menu contract. Shifted to
+linked work: editor authoring placement #365 (already closed), downloaded 3D
+artifact QA #364, and deployed route/fixture verification #355/#356. No
+closed issue was reopened. The next groomed engineering target is **#364**;
+its browser gate remains the only outstanding step in that artifact
+transaction.

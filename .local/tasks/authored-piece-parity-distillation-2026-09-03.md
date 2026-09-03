@@ -158,3 +158,24 @@ issue.
   verification. No closed issue was reopened.
 - #371 is complete and must be permanently closed; later parity work is a new
   linked issue rather than a reopening.
+
+## Current owner-reported parity re-audit — 2026-09-03 (canonical)
+
+Definition-only pass; no product source or tests changed. Parity covers only
+the `augment-humankind` pieces implementation/examples, translated into
+Django/Python and React/TypeScript; PHP is reference-only. Closed issues are
+immutable and none were reopened. #355 owns authenticated manual 3D deployed
+verification (anonymous inspection is access-denied). #356 owns anonymous
+public 2D fixture/controls (the route is anonymous but renders `Blank canvas`
+and its 375x812 menu visibly has oversized rows, detached labels, and a
+detached download tooltip). #360 owns public 3D geometry; #328 and #330–#335
+own remaining route verification; #339/#341 own open publication records;
+#344 owns physical held-pinch evidence. #274/#320/#324 are reconciliation
+containers only.
+
+Both routes serve `assets/index-CecM7AFX.js`, not reviewed checkout
+`a66c8965f4805e67c6aa1c78423df6c65bf6bab3`; local tests cannot substitute for
+deployed evidence. No duplicate issue is needed, and #347–#371 remain closed.
+Handoff is #355, blocked by owner authentication and republish; #356 can
+proceed independently once the intended fixture is published. Engineering and
+QA remain paired per issue before permanent closure.

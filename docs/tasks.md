@@ -13481,6 +13481,52 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+## Canonical override: owner-reported parity re-audit — 2026-09-03
+
+Use the later re-audit record above as the current state. The historical
+“next issue is #368” text immediately preceding this note is retained for
+traceability and is not the current handoff. Current handoff is #355, with
+#356 independently ready once its intended non-empty fixture is published.
+Closed issues remain immutable; PHP remains reference-only; no product source
+or tests were changed during this distillation pass.
+
+## Current owner-reported parity re-audit — 2026-09-03 (canonical)
+
+This is the current distillation record; earlier “next issue” notes remain
+history. Full parity means only the `augment-humankind` pieces
+implementation/examples, translated into this repository's Django/Python
+backend and React/TypeScript frontend. PHP is reference-only.
+
+Closed issues are immutable. No issue was reopened in this audit, and none may
+be reopened without explicit owner authorization naming that exact issue in
+the current conversation. Distillation/grooming may be bulk; engineering and
+QA are one issue at a time, followed by reconciliation and permanent closure.
+New gaps are new linked issues, never additions to closed work.
+
+| Boundary | Finding | Owner |
+| --- | --- | --- |
+| Authenticated manual 3D editor | Anonymous route is access-denied; owner controls and Draft/Published behavior remain unverified. | #355, open |
+| Anonymous public 2D piece | Route is anonymous but renders `Blank canvas`; at 375x812 the opened menu has oversized rows, detached labels, and a detached download tooltip. | #356, open |
+| Public 3D geometry | Route-specific geometry verification. | #360, open |
+| Remaining routes | AI 3D: #328/#339; public/embed/immersive: #330–#335. | Existing open issues |
+| Physical held-pinch evidence | Synthetic proof remains unavailable. | #344, independent blocker |
+| Reconciliation | Parent containers, not implementation units. | #274/#320/#324 |
+| Download artifacts | #350/#351/#368/#370/#371 are closed; deployed consumers remain owned by route verification. | Closed, immutable |
+
+The exact live routes serve `assets/index-CecM7AFX.js`, not reviewed checkout
+`a66c8965f4805e67c6aa1c78423df6c65bf6bab3`. Local React source and artifact
+tests therefore cannot close deployed-route evidence. No duplicate issue is
+needed: #355 owns the private boundary, #356 the public fixture/control
+boundary, and #360 public 3D geometry. Closed #347–#371, including #359,
+#368, #370, and #371, remain permanently closed.
+
+Handoff: #355 is next groomed but blocked by the absent owner-authenticated
+session and stale published asset. Exact unblock: authenticate the owner
+session, republish the reviewed revision, then capture 1280x900 and 375x812
+screenshots plus asset identity. #356 is independently groomed but needs the
+intended non-empty fixture published. No product source or tests were changed
+during this distillation pass.
+
 ## #370 transaction reconciliation — 2026-09-03
 
 - Full 3D downloads now provide explicit steering lifecycle, failure recovery,

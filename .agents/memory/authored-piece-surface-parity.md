@@ -245,6 +245,16 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Canonical re-audit rule (2026-09-03): pieces parity covers only the
+`augment-humankind` pieces implementation/examples, translated into this
+repository's Django/Python backend and React/TypeScript frontend. PHP is
+reference-only. Closed issues are immutable unless the owner explicitly names
+that exact issue for reopening in the current conversation; later gaps are
+new linked work. Local source/tests never substitute for deployed-route,
+fixture, or owner-authenticated evidence. The current public boundary is
+owned by #356 and the private owner boundary by #355; see the canonical
+re-audit in `docs/tasks.md`.
+
 #370 closure evidence (2026-09-03): Full 3D downloads gate camera steering
 behind an explicit “Steer the piece” action, expose “Stop steering” cleanup and
 failure recovery, and keep Non-Camera downloads free of camera UI/assets. The

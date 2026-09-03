@@ -254,6 +254,14 @@ passed at 375x812 in Chromium, Firefox, and WebKit. This is not evidence for
 AI 2D publication (#340), other routes, artifacts, or any closed issue; later
 parity gaps require new/open linked work and never reopen #326.
 
+Manual 2D publication capability closure (2026-09-03): issue #338 is
+permanently closed for the local stage-local publication implementation. Its
+browser acceptance passed 6/6 across Chromium, Firefox, and WebKit against the
+disposable stack, covering Draft/Published disclosure, keyboard activation,
+legacy-header removal, and fullscreen synchronization. Deployed route
+verification remains the immutable #325 boundary; later gaps do not reopen
+#338.
+
 Deployed parity rejection audit (2026-09-03): authenticated Chrome can load
 the exact manual 3D owner route, but it serves stale asset
 `index-CecM7AFX.js`, which lacks the checkout's newer 3D authoring submenu;

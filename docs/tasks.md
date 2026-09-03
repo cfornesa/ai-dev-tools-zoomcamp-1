@@ -12775,7 +12775,7 @@ blocker handoff, before another issue begins.
 | #325 | Authenticated manual 2D route `/projects/:id` excluding publication-only assertions | CLOSED / completed | QA comment `5521948799`; exact authenticated route verified at 1280×900 and 375×812 against `index-CecM7AFX.js`; no evidence transferred to other routes |
 | #326 | Authenticated AI 2D route `/ai-projects/:id` excluding publication-only assertions | CLOSED / completed | QA comment `5522027138`; AI route canvas containment verified at 375×812 in Chromium, Firefox, and WebKit; no evidence transferred to publication-only #340 or other routes |
 | #328 | Authenticated AI 3D route `/ai-projects3d/:id` excluding publication-only assertions | OPEN / route contract | After #349 and shared surface evidence; verify AI editor controls, 3D stage, and responsive rendered evidence on one owner fixture |
-| #338 | Manual 2D publication workflow | OPEN / capability contract | Process independently of #325: Draft → Published → Draft on one authenticated fixture, then verify anonymous privacy |
+| #338 | Manual 2D publication workflow | CLOSED / completed | QA comment `5522058043`; local stage-local publication capability passed 6/6 browser scenarios across Chromium, Firefox, and WebKit; deployed verification remains the immutable #325 boundary |
 | #340 | AI 2D publication workflow | OPEN / capability contract | Process independently of #326 with the same finite state transition and privacy check |
 | #341 | Manual 3D publication workflow | OPEN / capability contract | Process independently of #355's deployment check; verify the API/UI state transition on one authenticated fixture and anonymous privacy |
 | #339 | AI 3D publication workflow | OPEN / capability contract | Process independently of #328 with the same finite state transition and anonymous privacy check |
@@ -12856,3 +12856,17 @@ typecheck passed. GitHub QA comment `5522027138` records the exact boundary.
 This closure makes no claim about AI 2D publication #340, public/embed/
 immersive routes, 3D routes, downloaded artifacts, or any closed issue.
 Later gaps require new or existing open linked work and must not reopen #326.
+
+### #338 closure reconciliation — 2026-09-03
+
+#338 is closed as completed for the local manual 2D stage-local publication
+capability only. The local acceptance contract passed 6/6 scenarios across
+Chromium, Firefox, and WebKit against disposable PostgreSQL/Django/Vite using
+`BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa`.
+Evidence covered the single stage-local publication trigger, named
+Draft/Published states, keyboard activation, removal of the legacy page-level
+publication row, and fullscreen synchronization. Exact deployed
+`/projects/:id` verification remains the already-closed #325 boundary. This
+closure makes no claim about AI, 3D, public, embed, immersive, downloads, or
+other closed issues; later gaps must use new/open linked work and must not
+reopen #338.

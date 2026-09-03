@@ -906,3 +906,8 @@ The remaining #344 gates are physical held-pinch movement, release/hand-loss/
 disable/stop safety, and denial/unavailable fallback in the authorized Chrome
 session. These remain open verification criteria, not a reason to invalidate
 the prior scoped closures or move on to another issue.
+
+Post-engineering distillation found no new duplicate or independently closable
+task. The remaining physical-camera criteria stay on #344. The pushed branch
+must be synced and published before the owner performs the authorized Chrome
+gesture transaction; prior scoped closures remain valid and immutable.

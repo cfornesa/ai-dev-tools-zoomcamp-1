@@ -14646,3 +14646,9 @@ Evidence:
 resolved in this branch, while its remaining physical-input acceptance gate
 is handed back to the authorized Chrome session. No next issue is started
 until this issue's engineering and testing transaction is reconciled.
+
+Post-engineering task-distillation: the remaining physical-camera criteria are
+still the same finite #344 acceptance boundary, with no duplicate or smaller
+independent issue identified. The pushed branch must be synced and published
+before the owner performs the authorized Chrome gesture transaction. This
+handoff does not reopen or invalidate any prior scoped closure.

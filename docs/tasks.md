@@ -11924,3 +11924,23 @@ Replit through Pull/Sync.
 Status: ACTIVE / ENGINEERING COMPLETE / DEPLOYMENT QA PENDING. GitHub: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349.
 
 The owner supplied screenshots showing a red sphere rendered as a tall ellipse at a narrow editor width and the editor shell/inspector clipped horizontally on mobile. Backlog search found no existing aspect-ratio issue. The sphere projection and responsive overflow are kept in one small visual transaction because both are caused by the preview allocation and share the same two fixed viewport checks; data/schema semantics and shared command-menu redesign remain out of scope. Engineering must preserve deliberate non-uniform object scales, add focused sizing coverage, and verify exact published editor/public routes at 1280x900 and 375x812 before closure. #348 remains the shared authoring-layout owner and is not closed by this issue.
+
+## User-visible parity re-distillation — 2026-09-03
+
+The owner reported that the previously claimed parity was still absent: no
+usable controls on the public piece, the editor still had a bulky action scheme
+outside the canvas, and Draft/Published switching was not discoverable. The
+exact current deployed asset is `assets/index-WKdMIR98.js`. Fresh browser
+inspection found a partial hamburger implementation and named controls in the
+closed overlay, but this is not sufficient to prove the requested rendered
+parity, fixed-viewport visual treatment, route coverage, or downloaded-runtime
+behavior. The authenticated editor measured no horizontal overflow at 375x812,
+but the owner screenshot remains unresolved until reproduced or disproved
+against the same route, fixture, viewport, browser state, and asset.
+
+#274 and #324 were reopened from `not_planned` as false-closure reconciliation
+containers. The complete atomic manifest is
+`.local/tasks/authored-piece-parity-distillation.md`; #347 is the next shared
+implementation transaction, followed by #348, #349, then each route and
+artifact issue independently. No implementation or closure claim may use the
+old broad issue closures as evidence.

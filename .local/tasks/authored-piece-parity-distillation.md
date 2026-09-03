@@ -1,0 +1,107 @@
+# Authored-piece parity distillation manifest
+
+Date: 2026-09-03  
+Project: `cfornesa/ai-dev-tools-zoomcamp-1`  
+Status: DISTILLATION ACTIVE — no new implementation may begin until the next
+single issue is selected from this manifest.
+
+## Current-state evidence
+
+- The exact authenticated editor URL currently serves `assets/index-WKdMIR98.js`.
+  At `375x812`, it has a visible stage hamburger (`Open piece controls menu`),
+  named controls inside the hidden overlay, and a visible `Visual`/`Code` tab.
+- The exact public URL currently serves the same asset. It has a visible stage
+  hamburger and named screenshot/download/Piece-controls/fullscreen actions in
+  the closed overlay, but those actions are not visible until the user opens
+  the menu. This does not prove the requested visual parity at the fixed
+  screenshots or prove downloaded-runtime behavior.
+- The public route's current measured document width is 947px at a 962px
+  viewport. The authenticated editor's current `375x812` measurement has
+  body/root width 360px, workspace width 326px, and no horizontal overflow;
+  this does not disprove the owner's supplied screenshot because that report
+  must be reconciled against the exact browser, route, viewport, and asset.
+- The local fix for stale 3D camera projection on resize is committed/pushed as
+  `89e8706` (including `0a43b0b`) but has not yet been proven on the exact
+  published revision. #349 remains open.
+- Full local checks passed on the current checkout: 888 backend tests passed,
+  22 skipped, and 2,398 frontend tests passed, with existing lint warnings.
+  Local green checks cannot close deployed-route issues.
+
+## Manifest and order
+
+| Issue | Boundary | Status | Order/dependency | Closure evidence owner |
+|---|---|---|---|---|
+| [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Historical parity epic/container | OPEN, reopened false closure | Reconcile last | #320 |
+| [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
+| [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
+| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | OPEN | First implementation transaction | Shared component + one consumer QA |
+| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | OPEN | After #347 implementation handoff | Shared component + manual 2D QA |
+| [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN | Independent of #347; can follow current distillation | Manual 3D/public 3D QA |
+| [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |
+| [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | `/ai-projects/:id` AI 2D editor | OPEN | Shared implementation then route QA | Route QA |
+| [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | `/projects3d/:id` manual 3D editor | OPEN | #347/#348/#349 then route QA | Route QA |
+| [#328](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/328) | `/ai-projects3d/:id` AI 3D editor | OPEN | Shared implementation then route QA | Route QA |
+| [#329](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/329) | `/p/:id` anonymous public 2D | OPEN | Shared implementation then anonymous QA | Route QA |
+| [#330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/330) | `/p3d/:id` anonymous public 3D | OPEN | Published 3D fixture + shared implementation | Route QA |
+| [#331](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/331) | `/embed/p/:id` anonymous 2D embed | OPEN | Shared implementation then embed QA | Route QA |
+| [#332](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/332) | `/embed/p3d/:id` anonymous 3D embed | OPEN | Published 3D fixture + shared implementation | Route QA |
+| [#333](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/333) | `/immersive/p3d/:id` regular immersive 3D | OPEN | #343 and shared implementation | Route QA |
+| [#334](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/334) | Custom immersive 3D embed | OPEN | Immersive capability + published fixture | Route QA |
+| [#335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/335) | CMS immersive 3D embed | OPEN | Immersive capability + published fixture | Route QA |
+| [#336](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/336) | Portable 2D Full/Non-Camera downloads | OPEN | Downloaded artifact test boundary | Artifact QA |
+| [#337](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/337) | Portable 3D Full/Non-Camera downloads | OPEN | 3D exporter + artifact browser boundary | Artifact QA |
+| [#338](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/338) | Manual 2D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
+| [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
+| [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
+| [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
+| [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad | OPEN | Independent capability; before #333 route closure | Capability QA |
+| [#344](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/344) | Immersive 3D hand move/strafe | OPEN | Physical-input boundary; before affected route closure | Physical QA |
+| [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | OPEN, reopened | Audio dependency #306/#310 | Capability QA |
+
+Issue #342 is retained as a completed narrow camera-view capability only; its
+route and downloaded-artifact consumers remain open. #346 is retained as a
+completed structured-2D sound foundation only; it does not prove consumer
+route or artifact parity.
+
+## Duplicate/already-covered report
+
+- No duplicate was created for the owner’s absent/visually unusable shared
+  controls: #347 owns that exact shared capability.
+- No duplicate was created for the bulky editor action row or mobile editor
+  layout: #348 owns the shared implementation; #325–#328 own route evidence.
+- No duplicate was created for the sphere/mobile issue: search found no open
+  equivalent, so #349 was filed with fixed routes/viewports and finite criteria.
+- #274 and #324 are not completed work. They are reopened reconciliation
+  containers and must not be used as implementation or closure units.
+- Closed #342/#346 remain narrow capability prerequisites only; they are not
+  evidence that every consuming route, public boundary, or download works.
+
+## Blocker and verification-boundary triage
+
+1. `implementation-defect`: the owner reports absent/undiscoverable controls,
+   bulky editor actions, and missing visible publication state. Current source
+   and current live DOM show a partial hamburger implementation, but the
+   fixed rendered parity contract remains unproven. Owner: engineering/QA.
+   Next action: process #347 as one transaction, then #348.
+2. `implementation-defect`: #349's prior screenshot shows a distorted sphere;
+   camera-resize synchronization is implemented locally but needs exact live
+   rendered proof. Owner: #349 QA. Next action: republish and inspect both
+   fixed routes/viewports.
+3. `verification-boundary`: exact public 3D/embed/immersive checks require a
+   published 3D fixture and authenticated owner access. Owner: Replit/owner.
+   Keep #327/#330/#332–#335 open until the exact consumer is reachable.
+4. `verification-boundary`: Full/Non-Camera downloaded artifacts require
+   extraction and behavior checks in an approved browser/file context. Owner:
+   artifact QA. Keep #336/#337 open; do not infer artifact parity from a
+   download button.
+5. `dependency-blocked`: #333–#335 depend on the immersive capabilities they
+   consume, including #343/#344 where their criteria require those controls.
+   Skip only dependent route work; continue independent issues.
+
+## Handoff
+
+Distillation is complete only after this manifest, the linked GitHub issues,
+`docs/tasks.md`, and memory agree. The next engineering handoff is exactly
+#347, after the owner/repository selects it; engineering and testing must be
+performed and reconciled for one issue before another begins. Every issue
+stays open until its QA evidence is posted and the GitHub issue is closed.

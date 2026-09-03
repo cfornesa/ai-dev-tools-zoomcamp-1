@@ -84,6 +84,8 @@ describe('PublicProject3DViewer load states', () => {
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
     expect(screen.getByRole('toolbar', { name: 'Preview actions' })).toBeInTheDocument();
+    await screen.findByTestId('scene3d-preview-unavailable');
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     expect(screen.getByRole('button', { name: 'Open download menu' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View in immersive mode' })).toBeInTheDocument();
   });

@@ -109,6 +109,7 @@ describe('"Expand piece to fullscreen" (2D AI-assisted editor, issue #287)', () 
     renderWorkspace();
     await screen.findByRole('region', { name: 'Preview' });
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
     const button = screen.getByRole('button', { name: 'Expand piece to fullscreen' });
     expect(button).toHaveAttribute('aria-pressed', 'false');
@@ -129,6 +130,7 @@ describe('"Expand piece to fullscreen" (2D AI-assisted editor, issue #287)', () 
     renderWorkspace();
     await screen.findByRole('region', { name: 'Preview' });
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
     await user.click(screen.getByRole('button', { name: 'Expand piece to fullscreen' }));
     expect(screen.getByRole('button', { name: 'Exit fullscreen' })).toBeInTheDocument();

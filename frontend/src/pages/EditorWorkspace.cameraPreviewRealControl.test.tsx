@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -221,6 +222,8 @@ describe('Preview panel through the REAL CameraControl lifecycle (Task 109, issu
     await loadWorkspace(baseScene());
     assertPreviewFullyRendered(1);
 
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
     const enableButton = await screen.findByRole('button', { name: /enable camera/i });
     await act(async () => {
       fireEvent.click(enableButton);
@@ -248,6 +251,8 @@ describe('Preview panel through the REAL CameraControl lifecycle (Task 109, issu
   it('stays populated across a real Stop camera -> re-Enable cycle', async () => {
     await loadWorkspace(baseScene());
 
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
     const enableButton = await screen.findByRole('button', { name: /enable camera/i });
     await act(async () => {
       fireEvent.click(enableButton);
@@ -279,6 +284,8 @@ describe('Preview panel through the REAL CameraControl lifecycle (Task 109, issu
   it('surfaces no render-time error and leaves the rest of the editor usable through the real activation path', async () => {
     await loadWorkspace(baseScene());
 
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
     const enableButton = await screen.findByRole('button', { name: /enable camera/i });
     await act(async () => {
       fireEvent.click(enableButton);

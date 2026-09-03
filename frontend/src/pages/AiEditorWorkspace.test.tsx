@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -92,6 +93,7 @@ describe('AiEditorWorkspace', () => {
     await screen.findByRole('region', { name: 'Preview' });
     expect(screen.getByLabelText('Project title')).toHaveValue('My AI animation');
     expect(screen.getByRole('toolbar', { name: 'Piece actions' })).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     expect(screen.getByRole('button', { name: 'Take screenshot' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open download menu' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Publication status: Draft' }));

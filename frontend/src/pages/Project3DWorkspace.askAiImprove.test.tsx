@@ -93,6 +93,7 @@ describe('Project3DWorkspace "Ask AI to improve this scene"', () => {
     // jsdom cannot create WebGL; wait for the graceful fallback to remount
     // the shared toolbar before clicking its editor action.
     await screen.findByTestId('scene3d-preview-unavailable');
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
 
     const panel = await screen.findByTestId('project3d-ai-improve-panel');
@@ -110,6 +111,7 @@ describe('Project3DWorkspace "Ask AI to improve this scene"', () => {
     const user = userEvent.setup();
 
     await screen.findByTestId('scene3d-preview-unavailable');
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
     expect(await screen.findByTestId('project3d-ai-improve-panel')).toBeInTheDocument();
 

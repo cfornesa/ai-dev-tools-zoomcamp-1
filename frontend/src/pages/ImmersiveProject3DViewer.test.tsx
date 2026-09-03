@@ -8,6 +8,53 @@ import * as projects3dApi from '../api/projects3d';
 import type { PublicProject3D } from '../api/projects3d';
 import ImmersiveProject3DViewer from './ImmersiveProject3DViewer';
 
+vi.mock('three/examples/jsm/controls/OrbitControls.js', () => {
+  class FakeOrbitControls {
+    target = new (class {
+      x = 0;
+      y = 0;
+      z = 0;
+      set(x: number, y: number, z: number) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        return this;
+      }
+      add(vector: { x: number; y: number; z: number }) {
+        this.x += vector.x;
+        this.y += vector.y;
+        this.z += vector.z;
+        return this;
+      }
+    })();
+    enableDamping = false;
+    listenToKeyEvents() {}
+    update() {}
+    dispose() {}
+  }
+  return { OrbitControls: FakeOrbitControls };
+});
+
+vi.mock('three', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('three')>();
+  class FakeWebGLRenderer {
+    private readonly options: { canvas: HTMLCanvasElement };
+    constructor(options: { canvas: HTMLCanvasElement }) {
+      this.options = options;
+    }
+    setSize() {}
+    getSize(target: { set: (x: number, y: number) => unknown }) {
+      return target.set(320, 240);
+    }
+    render() {}
+    dispose() {}
+    get domElement() {
+      return this.options.canvas;
+    }
+  }
+  return { ...actual, WebGLRenderer: FakeWebGLRenderer };
+});
+
 /**
  * Issue #311: the immersive first-person free-fly view -- the Project3D
  * counterpart of `PublicProject3DViewer.test.tsx`'s own load-state
@@ -95,6 +142,7 @@ describe('ImmersiveProject3DViewer load states', () => {
     expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     expect(screen.getByRole('button', { name: /steer the piece/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /show hand gesture guide/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Embed (Custom)' })).toBeInTheDocument();
@@ -123,6 +171,9 @@ describe('ImmersiveProject3DViewer load states', () => {
     mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
     renderViewerAt('/immersive/p3d/p1?embed=1&cms=1');
 
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('button', { name: 'Open piece controls menu' }));
     await screen.findByRole('button', { name: /show hand gesture guide/i });
     expect(screen.queryByRole('heading', { name: 'Rotating Cube' })).not.toBeInTheDocument();
     expect(screen.getByTestId('immersive-project3d-viewer')).toHaveAttribute(

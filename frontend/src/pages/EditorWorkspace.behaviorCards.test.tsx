@@ -99,6 +99,10 @@ async function loadReadyWorkspace() {
   expandAllCollapsibleSections();
   await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
   await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
+  const commandDialog = screen.getByRole('dialog', { name: 'Piece actions' });
+  await userEvent
+    .setup()
+    .click(within(commandDialog).getByRole('button', { name: 'Close piece controls menu' }));
 }
 
 beforeEach(() => {

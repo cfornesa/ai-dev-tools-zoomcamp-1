@@ -214,6 +214,7 @@ describe('Project3DWorkspace panel/grid containment (issue #304)', () => {
     await screen.findByRole('region', { name: 'Code' });
 
     expect(screen.getByRole('region', { name: 'Outline' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     expect(
       screen.getByRole('button', { name: 'Ask AI to improve this scene' }),
     ).toBeInTheDocument();

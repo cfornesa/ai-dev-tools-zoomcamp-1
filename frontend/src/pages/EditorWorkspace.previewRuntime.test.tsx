@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -167,6 +168,8 @@ afterEach(() => {
 describe('live preview runtime (Task 83, issue #83)', () => {
   it('a Follow-hand binding visibly moves a shape in the live preview as demo input changes', async () => {
     await loadWorkspace(baseScene({ bindings: [FOLLOW_HAND_BINDING] }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
 
     // Set the slider to its target value *before* the hand becomes
     // present, so the one frame `setPresent(true)` emits is the first
@@ -234,6 +237,8 @@ describe('live preview runtime (Task 83, issue #83)', () => {
       bindings: [FOLLOW_HAND_BINDING],
     });
     await loadWorkspace(scene);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
 
     const slider = screen.getByLabelText(/Index fingertip X/i);
     fireEvent.change(slider, { target: { value: '0.9' } });

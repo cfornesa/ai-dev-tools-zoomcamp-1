@@ -103,6 +103,7 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
     await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Open download menu' }));
     await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
@@ -149,6 +150,7 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
     await user.click(screen.getByTestId('ai-3d-accept-button'));
     await waitFor(() => expect(mockedAcceptAIProposal3D).toHaveBeenCalledTimes(1));
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Open download menu' }));
     await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
@@ -168,6 +170,7 @@ describe('"Download standalone bundle" (AI-assisted 3D editor, issue #291)', () 
     await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Open download menu' }));
     await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 

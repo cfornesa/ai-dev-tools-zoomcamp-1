@@ -86,6 +86,7 @@ describe('AiProject3DWorkspace "Ask AI to improve this scene"', () => {
       'true',
     );
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
 
     expect(within(panel).getByRole('radio', { name: 'Edit' })).toHaveAttribute(

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -258,14 +259,16 @@ describe('Preview panel stays populated across camera activation (Task 109, issu
     setCameraStatus('active');
     assertPreviewFullyRendered(1);
 
-    const controlsToggle = screen.getByRole('button', { name: 'Hide piece controls' });
-    fireEvent.click(controlsToggle);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+    const controlsToggle = await screen.findByRole('button', { name: 'Hide piece controls' });
+    await user.click(controlsToggle);
     expect(screen.getByTestId('fake-camera-control')).toBeInTheDocument();
 
     assertPreviewFullyRendered(1);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Piece controls' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     assertPreviewFullyRendered(1);
   });
 
@@ -289,9 +292,12 @@ describe('Preview panel stays populated across camera activation (Task 109, issu
     await loadWorkspace(baseScene({ shapes: [CIRCLE_SHAPE] }));
     setCameraStatus('active');
 
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     const presentButton = screen.getByRole('button', { name: /hand (present|absent)/i });
     expect(presentButton).toBeEnabled();
-    fireEvent.click(presentButton);
+    await user.click(presentButton);
     expect(presentButton).toBeEnabled();
   });
 

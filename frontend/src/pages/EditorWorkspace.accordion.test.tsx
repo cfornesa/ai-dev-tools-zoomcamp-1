@@ -111,6 +111,7 @@ describe('EditorWorkspace top-level and nested disclosures', () => {
 
     const tools = await screen.findByRole('region', { name: 'Tools' });
     await userEvent.click(within(tools).getByRole('button', { name: 'Expand Tools panel' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     const toggles = screen.getAllByRole('button', { name: /Editing preferences/ });
     toggles.forEach((toggle) => expect(toggle).toHaveAttribute('aria-expanded', 'false'));
     expect(screen.getByRole('button', { name: 'Piece controls' })).toHaveAttribute(
@@ -127,6 +128,7 @@ describe('EditorWorkspace top-level and nested disclosures', () => {
     renderWorkspace();
     const tools = await screen.findByRole('region', { name: 'Tools' });
     await user.click(within(tools).getByRole('button', { name: 'Expand Tools panel' }));
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
     const addEditToggle = screen.getByRole('button', { name: /Editing preferences/ });
     expect(addEditToggle).toHaveAttribute('aria-expanded', 'false');

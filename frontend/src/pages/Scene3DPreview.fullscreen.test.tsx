@@ -112,6 +112,7 @@ describe('Scene3DPreview "Expand piece to fullscreen" (issue #288)', () => {
     const mocks = mockFullscreenApi();
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
     const button = screen.getByRole('button', { name: 'Expand piece to fullscreen' });
     expect(button).toHaveAttribute('aria-pressed', 'false');
@@ -129,6 +130,7 @@ describe('Scene3DPreview "Expand piece to fullscreen" (issue #288)', () => {
     mockFullscreenApi();
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
     await user.click(screen.getByRole('button', { name: 'Expand piece to fullscreen' }));
     expect(screen.getByRole('button', { name: 'Exit fullscreen' })).toBeInTheDocument();
@@ -147,9 +149,10 @@ describe('Scene3DPreview "Expand piece to fullscreen" (issue #288)', () => {
     );
   });
 
-  it('is offered even in the AI-proposal preview (showScreenshotButton=false)', () => {
+  it('is offered even in the AI-proposal preview (showScreenshotButton=false)', async () => {
     mockFullscreenApi();
     render(<Scene3DPreview scene={baseScene()} showScreenshotButton={false} />);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
     expect(screen.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Take screenshot' })).not.toBeInTheDocument();

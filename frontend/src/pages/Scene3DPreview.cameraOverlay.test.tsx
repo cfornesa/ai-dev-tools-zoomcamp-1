@@ -133,6 +133,7 @@ beforeEach(() => {
 describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #297)', () => {
   async function enableGestureControl() {
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
   }
 

@@ -88,6 +88,7 @@ describe('"Take screenshot" (2D AI-assisted editor, issue #285)', () => {
     renderWorkspace();
     await screen.findByRole('region', { name: 'Preview' });
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
     await user.click(screen.getByRole('button', { name: 'Take screenshot' }));
 

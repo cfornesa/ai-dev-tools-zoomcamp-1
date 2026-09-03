@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -157,6 +157,7 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
       <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => fake.provider} />,
     );
     const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
     const toggle = screen.getByRole('button', { name: 'Steer the piece' });
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
@@ -189,8 +190,8 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
       <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => fake.provider} />,
     );
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     await user.click(screen.getByRole('button', { name: /enable camera/i }));
 
@@ -220,6 +221,7 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
     );
     const user = userEvent.setup();
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
     await user.click(screen.getByRole('button', { name: 'Stop steering with gestures' }));
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
@@ -229,6 +231,7 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
 
   it('gives the "Preview actions" button row its own spacing class (issue #298)', () => {
     render(<Scene3DPreview scene={baseScene()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     expect(screen.getByRole('group', { name: 'Preview actions' })).toHaveClass(
       'scene3d-preview-actions',
     );
@@ -253,8 +256,8 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
     expect(canvasFrame).toHaveClass('scene3d-preview-canvas-frame');
     expect(outer.contains(canvasFrame)).toBe(true);
 
-    await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
     const gestureRegion = screen.getByTestId('gesture-camera-control');
     // The Live camera panel is now inside the stage-local Piece controls

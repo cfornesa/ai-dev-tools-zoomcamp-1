@@ -105,6 +105,7 @@ describe('"Download standalone bundle" (manual 3D editor, issue #290)', () => {
     await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Open download menu' }));
     await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
@@ -137,6 +138,7 @@ describe('"Download standalone bundle" (manual 3D editor, issue #290)', () => {
     const colorField = await screen.findByLabelText('Color');
     fireEvent.change(colorField, { target: { value: '#123456' } });
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Open download menu' }));
     await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 
@@ -159,6 +161,7 @@ describe('"Download standalone bundle" (manual 3D editor, issue #290)', () => {
     await screen.findByTestId('scene3d-preview-unavailable');
     const user = userEvent.setup();
 
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Open download menu' }));
     await user.click(screen.getByRole('menuitem', { name: 'Download Full ZIP' }));
 

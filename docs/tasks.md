@@ -12535,7 +12535,7 @@ reference; product implementation is Django/Python plus React/TypeScript.
 
 | Issue | Current behavior | Desired finite outcome | Order/status |
 | --- | --- | --- | --- |
-| [#358](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/358) | Published manual 3D editor has runtime/publication controls but no 3D authoring command set in its stage menu | Add named 3D authoring operations, working-scene/outline updates, save behavior, keyboard/focus/responsive evidence, and explicit N/A decisions for unsupported operations | After #357 or as the next independent implementation transaction; OPEN / GROOMED |
+| [#358](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/358) | Published manual 3D editor has runtime/publication controls but no 3D authoring command set in its stage menu | Add named 3D authoring operations, working-scene/outline updates, save behavior, keyboard/focus/responsive evidence, and explicit N/A decisions for unsupported operations | After #357; implementation and QA reconciled | CLOSED / completed; do not reopen |
 
 Existing #355 and #356 remain the exact deployed owner/public fixture
 verification boundaries. #357 remains the extracted-artifact responsive
@@ -12543,3 +12543,22 @@ geometry boundary. #358 is the only new implementation defect from this audit;
 the other reported “missing controls” are either discoverability/entry-state
 observations already represented by those boundaries or are already present in
 the current published bundle after opening the hamburger.
+
+### #358 closure reconciliation
+
+Issue #358 closed as completed for the local manual 3D authoring transaction.
+The stage menu now has a separate `3D authoring` submenu containing Add
+sphere, Add plane, Delete selected object, Duplicate selected object, Undo,
+Redo, Add group, Delete selected group, and Save scene. The existing outline
+selection is shared with those commands, and scene changes flow through the
+existing save endpoint; publication remains an independent control.
+
+Focused workspace/popover tests passed 32/32; the full frontend Vitest suite
+passed 2,400/2,400 across 191 files; lint, typecheck, and production build
+passed with existing lint warnings; and the manual 3D route browser scenario
+passed 3/3 across Chromium, Firefox, and WebKit. The exact republished
+owner-session deployment check remains #355 and was not claimed here. #358 is
+permanently closed; later parity or deployment gaps must be new linked issues
+unless the owner explicitly authorizes reopening #358 in the current
+conversation. The next independent groomed implementation item is #351;
+blocked #355/#356 remain in the manifest with their dependencies.

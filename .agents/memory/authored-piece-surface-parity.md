@@ -256,6 +256,18 @@ Chromium/Firefox/WebKit browser-QA scenarios at 1280x900 and 375x812. Later
 artifact parity gaps must be new issues; do not reopen #357 without explicit
 owner authorization naming #357 in the current conversation.
 
+Manual 3D authoring closure (2026-09-03): #358 is permanently closed for the
+local manual 3D editor transaction. The stage menu now exposes a separate
+`3D authoring` submenu with Add sphere, Add plane, Delete selected object,
+Duplicate selected object, Undo, Redo, Add group, Delete selected group, and
+Save scene. Outline selection feeds the commands, working-scene mutations are
+undoable, and save uses the existing scene-version endpoint while publication
+remains independent. Evidence: 32 focused workspace/popover tests, 2,400
+full frontend tests, lint/typecheck/build, and 3/3 manual-route browser QA
+across Chromium/Firefox/WebKit. Exact republished owner-session verification
+remains #355; later gaps must be new tasks and must not reopen #358 without
+explicit owner authorization naming #358 in the current conversation.
+
 Closure correction (2026-09-03): the owner explicitly confirmed that closed
 issues are immutable unless that exact issue is explicitly authorized for
 reopening in the current conversation. The later closure transaction closed

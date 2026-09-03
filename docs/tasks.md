@@ -13201,3 +13201,25 @@ the unavailable browser-QA infrastructure for their remaining gates, while
 #355/#356 also require the owner's authenticated/published deployment state.
 No independent closure-ready issue remains that can satisfy its own required
 evidence without those external states.
+
+### #365 closure reconciliation — 2026-09-03
+
+#365 is closed as completed for the owner-editor authoring-menu transaction.
+The local manual 2D, manual 3D, and AI 3D browser gates passed respectively
+6/6, 3/3, and 3/3 across Chromium, Firefox, and WebKit. Full frontend
+verification passed formatting, typecheck, lint with existing warnings only,
+and 2,400/2,400 tests. The browser contracts now enter through the hamburger
+menu and measure actual scrollable overflow, permitting deliberately opened
+nested panels without misclassifying their visible extent as a command-card
+scrollbar. Commit `d242a13` records the test-contract reconciliation.
+
+Implemented/verified here: owner-editor contextual authoring-menu placement,
+named action reachability, publication disclosure reachability, responsive
+geometry, and focus/interaction evidence in the local stack. Shifted to
+linked work: shared runtime presentation #362, extracted 3D artifact QA #364,
+and exact deployed route/fixture verification #355/#356. Closed #348 and all
+other closed issues remain immutable; no issue was reopened.
+
+The next and only groomed engineering target is **#362**. Its remaining
+browser-QA retry is independent and must be completed and closed as its own
+transaction before another issue enters engineering.

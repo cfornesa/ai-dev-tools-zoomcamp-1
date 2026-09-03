@@ -179,3 +179,17 @@ deployed evidence. No duplicate issue is needed, and #347–#371 remain closed.
 Handoff is #355, blocked by owner authentication and republish; #356 can
 proceed independently once the intended fixture is published. Engineering and
 QA remain paired per issue before permanent closure.
+
+## Revalidation evidence — 2026-09-03
+
+- Docker Compose backend and PostgreSQL are healthy; the frontend container is
+  running.
+- A clean local production build emitted `index-BzFsv-7v.js` and
+  `index-TvD3gX1E.css`; focused `PieceStageToolbar` and
+  `StageControlsPopover` tests passed 7/7.
+- The local authenticated session has no copy of the supplied project or
+  public-piece fixture, so it cannot replace the deployed route evidence.
+- The deployed public route still emits `index-CecM7AFX.js` and the deployed
+  private route is access-denied without the owner session. This is evidence
+  of a deployment/fixture/session boundary, not authorization to reopen any
+  closed issue.

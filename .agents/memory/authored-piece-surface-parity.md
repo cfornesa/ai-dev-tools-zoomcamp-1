@@ -754,3 +754,8 @@ Custom immersive verification (2026-09-04): #334 passed 3/3 browsers for
 asserts the hamburger-open control surface and responsive 16:9 stage geometry,
 not the obsolete fixed 360px height. #334 is permanently closed; later gaps
 require new issues. The next FIFO transaction is #335's CMS variant.
+
+CMS immersive verification (2026-09-04): #335 passed 3/3 browsers for
+`/immersive/p3d/:id?embed=1&cms=1`, verifying the chrome-less CMS wrapper,
+hamburger-open controls, downloads, and responsive behavior. #335 is
+permanently closed; later gaps require new issues and must not reopen it.

@@ -14524,3 +14524,16 @@ actions, and the obsolete fixed `360px` height assertion is replaced by the
 responsive aspect contract. No closed issue was reopened.
 
 The next FIFO candidate is #335, the CMS immersive query variant.
+
+## #335 closure reconciliation — 2026-09-04
+
+#335 is permanently closed as `completed` for the anonymous CMS immersive 3D
+route `/immersive/p3d/:id?embed=1&cms=1`. Its focused browser transaction
+passed 3/3 in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services, verifying the chrome-less CMS wrapper,
+stage-local hamburger/stacked overlay, named controls and downloads, and
+responsive behavior. The QA setup opens the hamburger before inspecting
+hidden actions. No closed issue was reopened.
+
+The remaining open work is #344's physical-camera verification boundary and
+the parent reconciliation containers; no parent is engineered directly.

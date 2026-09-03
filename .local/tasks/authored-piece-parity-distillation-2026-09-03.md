@@ -116,6 +116,16 @@ downloads, and responsive 16:9 geometry. The fixed-height QA assertion was
 corrected to the responsive contract. No closed issue was reopened. The next
 FIFO candidate is #335.
 
+## #335 closure reconciliation — 2026-09-04
+
+#335 is permanently closed as `completed` for the anonymous CMS immersive 3D
+route `/immersive/p3d/:id?embed=1&cms=1`. Its focused browser transaction
+passed 3/3 in Chromium, Firefox, and WebKit, covering the chrome-less CMS
+wrapper, hamburger/stacked overlay, named controls/downloads, and responsive
+behavior. The QA setup opens the hamburger before inspecting hidden actions.
+No closed issue was reopened. Remaining work is #344's physical-camera gate
+and parent reconciliation only.
+
 ## #368 transaction reconciliation — 2026-09-03
 
 - Engineering completed the immersive export option through

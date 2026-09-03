@@ -15011,3 +15011,13 @@ download entries, containment, and no owner metadata. The fixture was restored
 to Draft through the authenticated editor, and the anonymous route returned
 the unavailable/private state. GitHub comment 5533662175 records the complete
 criterion matrix. The next FIFO issue is #385; no closed issue was reopened.
+
+## #385 closure reconciliation — 2026-09-04
+
+#385 is permanently closed as `completed` for the exact anonymous public 3D
+route. Deployed asset `assets/index-UmUBnruG` passed the 1280×900 and 375×812
+rendered transactions with proportional sphere geometry, the stage-local
+hamburger, all named public controls, containment, and no owner metadata. The
+fixture was restored to Draft and the anonymous route returned the
+unavailable/private state. GitHub comment 5533685789 records the complete
+criterion matrix. The next FIFO issue is #386; no closed issue was reopened.

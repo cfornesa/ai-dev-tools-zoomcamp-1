@@ -1216,3 +1216,14 @@ to Draft through the authenticated editor and the anonymous route returned its
 unavailable/private state. GitHub comment 5533662175 records the criterion
 matrix. This closure does not imply completion of #385–#389; #385 is now the
 next FIFO transaction. No closed issue was reopened.
+
+## #385 closure reconciliation — 2026-09-04
+
+#385 is permanently closed as `completed` for the exact anonymous public 3D
+route. The deployed `assets/index-UmUBnruG` revision passed the 1280×900 and
+375×812 rendered transactions, including proportional sphere geometry, the
+stage-local hamburger, all named public controls, containment, and absence of
+owner metadata. The fixture was restored to Draft and the anonymous route
+returned its unavailable/private state. GitHub comment 5533685789 records the
+criterion matrix. The next FIFO transaction is #386. No closed issue was
+reopened.

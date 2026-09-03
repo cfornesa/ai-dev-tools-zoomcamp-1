@@ -181,13 +181,16 @@ export function cleanupExportHarnessArtifacts(): void {
 
 const BROWSER_ENTRY_SOURCE = `import { generateHtmlExport, P5_CDN_URL } from '../../src/export/generateHtmlExport';
 import { generateSocialThumbnailZip } from '../../src/export/generateSocialThumbnailZip';
+import { generateScene3DBundle } from '../../src/export/generateHtmlExport3D';
 import { MEDIAPIPE_VISION_BUNDLE_CDN_URL } from '../../src/export/standaloneCameraSource';
 
 (window as unknown as { __exportHarness: unknown }).__exportHarness = {
   generateHtmlExport,
   generateSocialThumbnailZip,
+  generateScene3DBundle,
   P5_CDN_URL,
   MEDIAPIPE_VISION_BUNDLE_CDN_URL,
+  THREE_CDN_URL: 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
 };
 `;
 
@@ -266,6 +269,9 @@ export async function bundleExportModuleForBrowser(): Promise<string> {
 export type GenerateHtmlExportBrowserResult =
   { ok: true; html: string; filename: string } | { ok: false; reasons: string[] };
 
+export type GenerateScene3DBrowserResult =
+  { ok: true; filename: string; zipBase64: string } | { ok: false; reasons: string[] };
+
 /** A Playwright `Page` with the export-module bundle already injected
  * (`window.__exportHarness`), plus the two CDN URL constants it also
  * exposes and Node-side wrappers around its exported functions —
@@ -276,8 +282,17 @@ export type GenerateHtmlExportBrowserResult =
  * isolated context an export runs in". */
 export type ExportGeneratorPage = {
   page: import('@playwright/test').Page;
-  constants: { P5_CDN_URL: string; MEDIAPIPE_VISION_BUNDLE_CDN_URL: string };
+  constants: {
+    P5_CDN_URL: string;
+    MEDIAPIPE_VISION_BUNDLE_CDN_URL: string;
+    THREE_CDN_URL: string;
+  };
   generateHtmlExport: (input: Record<string, unknown>) => Promise<GenerateHtmlExportBrowserResult>;
+  generateScene3DBundle: (
+    scene: Record<string, unknown>,
+    title: string,
+    variant: 'full' | 'non-camera',
+  ) => Promise<GenerateScene3DBrowserResult>;
   close: () => Promise<void>;
 };
 
@@ -297,12 +312,17 @@ export async function createExportGeneratorPage(
   const constants = await page.evaluate(() => {
     const harness = (
       window as unknown as {
-        __exportHarness: { P5_CDN_URL: string; MEDIAPIPE_VISION_BUNDLE_CDN_URL: string };
+        __exportHarness: {
+          P5_CDN_URL: string;
+          MEDIAPIPE_VISION_BUNDLE_CDN_URL: string;
+          THREE_CDN_URL: string;
+        };
       }
     ).__exportHarness;
     return {
       P5_CDN_URL: harness.P5_CDN_URL,
       MEDIAPIPE_VISION_BUNDLE_CDN_URL: harness.MEDIAPIPE_VISION_BUNDLE_CDN_URL,
+      THREE_CDN_URL: harness.THREE_CDN_URL,
     };
   });
 
@@ -320,6 +340,36 @@ export async function createExportGeneratorPage(
         ).__exportHarness;
         return harness.generateHtmlExport(inputArg);
       }, input),
+    generateScene3DBundle: (scene, title, variant) =>
+      page.evaluate(
+        async ({ scene: sceneArg, title: titleArg, variant: variantArg }) => {
+          const harness = (
+            window as unknown as {
+              __exportHarness: {
+                generateScene3DBundle: (
+                  scene: unknown,
+                  title: string,
+                  options: { variant: 'full' | 'non-camera' },
+                ) => Promise<
+                  { ok: true; zipBlob: Blob; filename: string } | { ok: false; reasons: string[] }
+                >;
+              };
+            }
+          ).__exportHarness;
+          const result = await harness.generateScene3DBundle(sceneArg, titleArg, {
+            variant: variantArg,
+          });
+          if (!result.ok) return result;
+          const bytes = new Uint8Array(await result.zipBlob.arrayBuffer());
+          let binary = '';
+          const chunkSize = 0x8000;
+          for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+            binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+          }
+          return { ok: true as const, filename: result.filename, zipBase64: btoa(binary) };
+        },
+        { scene, title, variant },
+      ),
     close: () => context.close(),
   };
 }

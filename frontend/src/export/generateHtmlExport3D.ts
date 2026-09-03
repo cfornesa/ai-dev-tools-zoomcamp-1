@@ -260,8 +260,8 @@ ${
     if (open) {
       menuReturnFocus = document.activeElement;
       actionsClose?.focus();
-    } else if (menuReturnFocus instanceof HTMLElement) {
-      menuReturnFocus.focus();
+    } else {
+      menuTrigger.focus();
       menuReturnFocus = null;
     }
   }

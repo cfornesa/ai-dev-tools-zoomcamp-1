@@ -68,6 +68,8 @@
  * possible, since nothing here ever constructs one.
  */
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import JSZip from 'jszip';
 import { expect, test, type Browser, type Page, type Route } from '@playwright/test';
@@ -291,6 +293,119 @@ test.describe('HTML export: responsive piece action surface', () => {
     }
 
     await context.close();
+  });
+});
+
+test.describe('3D ZIP export: responsive packaged command surface', () => {
+  const scene3d = {
+    schemaVersion: 1,
+    documentType: 'scene3d',
+    id: 'browser-3d-export-fixture',
+    scene: { backgroundColor: '#101018' },
+    camera: {
+      position: { x: 0, y: 5, z: 10 },
+      target: { x: 0, y: 0, z: 0 },
+      fov: 50,
+      near: 0.1,
+      far: 1000,
+    },
+    lights: [{ id: 'sun', type: 'ambient', color: '#ffffff', intensity: 1 }],
+    groups: [],
+    objects: [
+      {
+        id: 'sphere',
+        type: 'sphere',
+        groupId: null,
+        transform: {
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+          opacity: 1,
+        },
+        material: { color: '#ff0000' },
+        visible: true,
+        radius: 1,
+      },
+    ],
+    randomness: { seed: 1, enabled: false },
+  };
+
+  test('extracts Full and Non-Camera bundles and keeps their command dialog responsive', async ({
+    page,
+  }) => {
+    await generator.page.route('**/*', (route) => {
+      const url = route.request().url();
+      if (url === generator.constants.THREE_CDN_URL) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/javascript',
+          body: '/* browser QA fake three runtime */',
+        });
+      }
+      if (url.startsWith('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@')) {
+        return route.fulfill({ status: 200, body: '/* browser QA fake MediaPipe asset */' });
+      }
+      if (url.startsWith('https://storage.googleapis.com/mediapipe-models/')) {
+        return route.fulfill({ status: 200, body: '/* browser QA fake MediaPipe model */' });
+      }
+      return route.abort('failed');
+    });
+
+    for (const variant of ['full', 'non-camera'] as const) {
+      const result = await generator.generateScene3DBundle(
+        scene3d,
+        `Browser QA ${variant}`,
+        variant,
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const zip = await JSZip.loadAsync(Buffer.from(result.zipBase64, 'base64'));
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'export-3d-e2e-'));
+      try {
+        for (const [name, entry] of Object.entries(zip.files)) {
+          if (entry.dir) continue;
+          const target = path.join(root, name);
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, await entry.async('nodebuffer'));
+        }
+        await page.goto(`file://${path.join(root, 'index.html')}`);
+        const menu = page.getByRole('button', { name: 'Open piece controls menu' });
+        await menu.click();
+        const dialog = page.getByRole('dialog', { name: 'Piece actions' });
+        await expect(dialog).toBeVisible();
+        await expect(dialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+        await expect(
+          dialog.getByRole('button', { name: 'Piece controls', exact: true }),
+        ).toBeVisible();
+        await expect(dialog.getByRole('button', { name: 'Enter fullscreen' })).toBeVisible();
+        const geometry = await dialog.evaluate((element) => {
+          const card = element as HTMLElement;
+          const rows = [...card.querySelectorAll('.piece-action-list > button')].map((row) => {
+            const rect = row.getBoundingClientRect();
+            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+          });
+          return {
+            overflow: getComputedStyle(card).overflow,
+            rows,
+            width: innerWidth,
+          };
+        });
+        expect(geometry.overflow).toBe('visible');
+        expect(
+          geometry.rows.every((row) => row.left >= 16 && row.right <= geometry.width - 16),
+        ).toBe(true);
+        for (let index = 1; index < geometry.rows.length; index += 1) {
+          expect(geometry.rows[index]!.top).toBeGreaterThanOrEqual(
+            geometry.rows[index - 1]!.bottom,
+          );
+        }
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+        await expect(menu).toBeFocused();
+      } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    }
   });
 });
 

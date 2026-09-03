@@ -13242,3 +13242,31 @@ artifact QA #364, and deployed route/fixture verification #355/#356. No
 closed issue was reopened. The next groomed engineering target is **#364**;
 its browser gate remains the only outstanding step in that artifact
 transaction.
+
+### #364 closure reconciliation — 2026-09-03
+
+#364 is closed as completed for the extracted 3D runtime command-surface
+transaction. The generated Full and Non-Camera ZIP artifacts were generated
+in a real browser, extracted, opened from isolated `file://` pages, and
+verified at the required desktop and mobile dimensions. The browser gate
+passed 57/57 across Chromium, Firefox, and WebKit. Focused 3D generator tests
+passed 7/7, and the full frontend gate passed formatting, typecheck, lint with
+existing warnings only, and 2,400/2,400 tests.
+
+Implemented/verified here: no always-on scrollbar on the generated 3D command
+dialog, stacked responsive action rows, bounded scrolling only for deliberately
+opened nested disclosures, functional Full and Non-Camera packaged controls,
+Escape dismissal, and focus return to the menu trigger. The export harness now
+tests the actual generated 3D ZIP runtime in all three browser engines, with
+deterministic CDN/model interception and no camera payload leakage. The focus
+fallback is intentionally trigger-based for cross-engine reliability.
+
+Shifted to linked work: exact deployed manual/public route verification #355
+and #356, live/editor geometry issues #349/#360, and other independently
+scoped route/workflow contracts. This closure does not claim deployed
+republishing or reopen any closed issue. No closed issue was reopened.
+
+The queue now rotates to the next independently groomed, closure-ready issue;
+engineering and testing remain one issue at a time, and any newly discovered
+gap must be distilled into a new issue rather than attached to or reopening
+#364.

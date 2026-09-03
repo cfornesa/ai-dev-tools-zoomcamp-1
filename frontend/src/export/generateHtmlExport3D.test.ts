@@ -131,7 +131,7 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('piece-reset-view');
     expect(html).toContain('setGuideOpen');
     expect(html).toContain("event.key === 'Escape'");
-    expect(html).toContain('menuReturnFocus.focus()');
+    expect(html).toContain('menuTrigger.focus()');
     expect(script).toContain('piece-sound');
     expect(script).toContain('AudioContext');
     expect(script).toContain('piece-volume');

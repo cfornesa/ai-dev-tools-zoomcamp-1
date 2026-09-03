@@ -13531,6 +13531,29 @@ cleanup or newly discovered behavior is new linked work.
 
 Fresh post-closure distillation is required before selecting the next issue.
 
+## #375 transaction reconciliation — 2026-09-03
+
+The reviewed deployment was verified on the authenticated owner route
+`/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`, serving
+`assets/index-CQvhOwx-.js`. Rendered screenshots at 1280x900 and 375x812
+showed the uniformly scaled sphere as round. At mobile width the 315x180
+preview remained inside the 375px viewport, document scroll width equaled
+375px, and the stage menu actions—including 3D authoring, Save scene, and
+Publication status: Draft—were stacked and contained. The mobile owner menu
+also kept navigation and the inspector/scene-outline entry point reachable.
+
+#375 is permanently closed as `completed` for its deployed verification
+contract. Its evidence is recorded here because the issue-comment connector
+could not safely target GitHub issues and was not bypassed. Public 3D fixture
+verification remains #360; no closed issue was reopened.
+
+Fresh distillation leaves #360 dependency-blocked because the fixed public URL
+still serves the non-empty 2D fixture rather than the intended published 3D
+sphere. #331 remains an open embed-route contract and #344 remains blocked by
+physical held-pinch evidence. Next groomed candidate: #331, unless its exact
+current deployed route is first classified as a new criterion-ready follow-up
+without reopening any closed history.
+
 ## #344 blocker reconciliation and fresh distillation — 2026-09-03
 
 Focused implementation checks for #344 passed 26/26, but the required

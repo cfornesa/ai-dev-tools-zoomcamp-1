@@ -452,3 +452,17 @@ Fresh distillation must now reclassify #375 as deployment-unblocked and keep
 #360 dependency-blocked only until its own public 3D fixture criteria are
 verified. #344 remains independently blocked by physical held-pinch evidence;
 #331 remains a separate embed-route contract. Next groomed candidate: #375.
+
+## #375 closure and fresh distillation — 2026-09-03
+
+#375 completed its deployed authenticated 3D verification against
+`assets/index-CQvhOwx-.js` at 1280x900 and 375x812. The sphere remained round,
+the mobile preview and stage-menu actions were contained, and Draft status plus
+3D authoring/Save scene remained reachable. It is permanently closed as
+`completed`; no closed issue was reopened.
+
+The public route currently remains a non-empty 2D fixture, so #360 is still
+dependency-blocked on publishing the intended 3D fixture. #331 is open and
+owns the embed route; #344 is open with a physical-camera verification
+boundary. The next groomed candidate is #331, subject to exact current-route
+reconciliation and no reopening of closed history.

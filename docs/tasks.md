@@ -12772,7 +12772,7 @@ blocker handoff, before another issue begins.
 | --- | --- | --- | --- |
 | #355 | Authenticated manual 3D owner route `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` | OPEN / verification-boundary | First after the reviewed revision is actually deployed; verify 1280×900 and 375×812 rendered screenshots, menu/authoring/publication interactions, asset identity, and no state mutation beyond the authorized round trip |
 | #356 | Anonymous public 2D route `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` | OPEN / dependency-blocked by fixture publication | Verify the intended non-empty fixture at both fixed viewports, public-only controls, privacy, and rendered discoverability after the owner publishes the intended fixture |
-| #325 | Authenticated manual 2D route `/projects/:id` excluding publication-only assertions | OPEN / route contract | After shared surface #354; run one owner fixture through named editor/runtime/save controls and responsive rendered evidence |
+| #325 | Authenticated manual 2D route `/projects/:id` excluding publication-only assertions | CLOSED / completed | QA comment `5521948799`; exact authenticated route verified at 1280×900 and 375×812 against `index-CecM7AFX.js`; no evidence transferred to other routes |
 | #326 | Authenticated AI 2D route `/ai-projects/:id` excluding publication-only assertions | OPEN / route contract | After shared surface #354; verify the AI editor's named controls and responsive rendered evidence on one owner fixture |
 | #328 | Authenticated AI 3D route `/ai-projects3d/:id` excluding publication-only assertions | OPEN / route contract | After #349 and shared surface evidence; verify AI editor controls, 3D stage, and responsive rendered evidence on one owner fixture |
 | #338 | Manual 2D publication workflow | OPEN / capability contract | Process independently of #325: Draft → Published → Draft on one authenticated fixture, then verify anonymous privacy |
@@ -12825,3 +12825,18 @@ external state remains unavailable, backlog-session may process the next
 independent route contract **#325** (or its explicitly groomed successor)
 without reopening or modifying any closed issue. Engineering and QA remain a
 single per-issue transaction; completion is the final GitHub closure step.
+
+### #325 closure reconciliation — 2026-09-03
+
+#325 is closed as completed for the authenticated manual 2D consumer only.
+The exact route `/projects/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` was inspected
+at 1280×900 and 375×812. The rendered stage menu was translucent,
+stage-associated, stacked, keyboard-addressable, and free of menu overlap or
+scrollbars; its named controls included Screenshot, Full/Non-Camera Download,
+Piece controls, Edit scene, Fullscreen, and visible Published status with
+Draft available. Focused `EditorWorkspace`, accessibility, camera,
+fullscreen, and publication tests passed 67/67. GitHub QA comment
+`5521948799` records the finite matrix and the explicit boundary: no AI,
+3D, public, embed, immersive, or downloaded surface is claimed. #325 is
+closed permanently for this scope; later gaps require new/open linked work
+and must not reopen it.

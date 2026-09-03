@@ -311,6 +311,14 @@ boundaries, respectively. The application remains Django/Python with a
 React/TypeScript frontend; the PHP repository is only the pieces parity
 reference, not an implementation target. No new duplicate issue was created.
 
+Manual 2D route closure (2026-09-03): #325 was processed as its own route
+transaction and closed completed after exact authenticated rendered inspection
+at 1280×900 and 375×812 plus 67/67 focused React tests. The stage-local
+hamburger surface showed the finite manual 2D authoring/runtime/publication
+controls without overlap or an internal scrollbar. This evidence belongs only
+to `/projects/:id`; it does not prove AI, 3D, public, embed, immersive, or
+downloaded surfaces, and #325 must not be reopened for those gaps.
+
 Portable 2D responsive closure (2026-09-03): #357 is permanently closed for
 the extracted artifact's responsive action surface. The artifact now packages
 an accessible hamburger menu, fullscreen translucent overlay, stacked labeled

@@ -166,3 +166,15 @@ the newest reviewed manifest, finish the rebase, and only then republish.
 Verify the published hashed asset after the publish operation reaches a
 terminal result; a persistent `Publishing` label and unchanged asset are not
 deployment evidence.
+
+Owner-rejection reset (2026-09-03): the exact supplied editor and public URLs
+served `assets/index-CecM7AFX.js`, but rendered inspection still showed
+inconsistent shared-menu rows (full-width Screenshot/Fullscreen, compact
+Download, and a detached Piece-controls label) plus glyph-only manual-3D
+authoring rows. The Draft/Published disclosure was present and operable-looking,
+but no transition was triggered during the read-only audit. The public audit
+session retained owner authentication and the URL rendered a `Blank canvas`
+2D fixture, so it did not prove anonymous public privacy or intended-fixture
+parity. Treat this class of owner-visible contradiction as new corrective work
+linked to closed history, never as permission to reopen a closed issue; require
+both a shared local visual contract and exact per-route deployed verification.

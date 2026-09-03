@@ -13270,3 +13270,91 @@ The queue now rotates to the next independently groomed, closure-ready issue;
 engineering and testing remain one issue at a time, and any newly discovered
 gap must be distilled into a new issue rather than attached to or reopening
 #364.
+
+## Owner-rejection task-distillation reset — 2026-09-03
+
+This is the current canonical distillation manifest after the owner reported
+that the requested parity was not actually present. It supersedes any earlier
+claim that the broad pieces experience was complete. The parity target remains
+only the `augment-humankind` pieces implementation/examples, translated into
+this repository's Django/Python backend and React/TypeScript frontend. PHP is
+read-only reference material and is never implemented here.
+
+### Current-state evidence
+
+- Exact authenticated editor route:
+  `https://animate.creatrweb.com/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`.
+  The current deployed asset is `assets/index-CecM7AFX.js`. The closed state
+  has only the hamburger trigger, and the opened menu contains the expected
+  runtime actions and an owner-only `Publication status: Draft` disclosure.
+  The rendered menu is nevertheless defective: Screenshot and Fullscreen
+  occupy inconsistent full-width rows, Download is compact, Piece controls has
+  a detached label, and Save/Ask AI authoring rows are glyph-only. The
+  publication disclosure is present and exposes Draft/Published controls;
+  no state transition was triggered during this read-only audit.
+- Exact supplied public route:
+  `https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`.
+  It serves the same `index-CecM7AFX.js`, renders the `Blank canvas` 2D
+  fixture, and exposes the hamburger only while closed. Opening it reveals
+  Screenshot, Download, Piece controls, and Fullscreen, but the rendered rows
+  have the same inconsistent/detached-label treatment. This audit browser
+  retained an authenticated session (`Logout` was visible), so it is not
+  anonymous public evidence and cannot prove the public privacy boundary.
+- The local checkout's current `PieceStageToolbar`/stage-menu source does not
+  contain the deployed `piece-stage-visible-label` markup observed above,
+  establishing a revision/deployment mismatch that must be reconciled rather
+  than treated as local parity proof.
+
+### Duplicate and already-covered-work report
+
+- Closed #362 (shared command-menu capability), #365 (editor authoring-menu
+  placement), #347, and #348 remain immutable. The owner did not authorize
+  reopening any of them. Their contradictory live evidence is preserved here
+  and is represented by new corrective issues.
+- Existing open #355 owns authenticated deployed manual 3D route evidence;
+  #356 owns anonymous deployed public 2D fixture/control evidence. They remain
+  the correct route boundaries and were not duplicated.
+- Existing open #349/#360 own manual/public 3D sphere geometry; #328,
+  #330–#335, #339–#341 own separate AI/public/embed/immersive/publication
+  route workflows. #363/#364 own downloaded 2D/3D artifacts. None is a
+  duplicate of the newly confirmed shared row or manual-3D authoring defects.
+- New actionable gaps are therefore [#366](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/366),
+  shared visible action-row styling, and [#367](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/367),
+  manual 3D authoring labels. No other issue was created from the publication
+  report because the live Draft/Published disclosure is present; the remaining
+  proof belongs to #355 and the anonymous boundary belongs to #356.
+
+### Atomic issue manifest and order
+
+| Issue | Atomic boundary | Status / dependency / next action |
+| --- | --- | --- |
+| #366 | Shared React stage-menu visible row contract | **NEXT GROOMED**; engineer and test the shared component capability, then reconcile and close or terminally hand off |
+| #367 | Manual 3D editor authoring action labels | Open; depends on #366's shared row contract, then one manual-3D engineering/QA transaction |
+| #355 | Authenticated deployed manual 3D route | Open; depends on reviewed implementation publish and owner session; verify exact asset and both viewports |
+| #356 | Anonymous deployed public 2D route/fixture | Open; requires a genuinely anonymous context and intended non-empty fixture/revision |
+| #349/#360 | Manual/public 3D sphere proportions | Open; #360 depends on intended public 3D fixture from its route boundary |
+| #328, #330–#335, #339–#341 | Each named AI/public/embed/immersive/publication route/workflow | Open; process one route/workflow per transaction |
+| #320, #324, #274 | Release/readiness/history parents | Open containers only; never engineer or close directly |
+
+### Blocker and verification-boundary report
+
+- `implementation-defect`: the deployed shared menu visibly fails cohesive
+  row layout and the manual 3D authoring actions lack visible labels. Covered
+  by new #366 and #367; owner is this engineering queue; next action is the
+  groomed #366 transaction.
+- `verification-boundary`: the public audit browser was authenticated, and
+  the public URL currently serves the `Blank canvas` fixture rather than a
+  proven intended published fixture. Covered by existing #356; next action
+  is an anonymous fixed-viewport audit after the intended revision/fixture is
+  published.
+- `verification-boundary`: the exact editor route is deployed, but the
+  deployed hash/revision is not proven to be the reviewed checkout. Covered by
+  existing #355; next action is synchronize/publish the reviewed commit and
+  record the deployed asset identity before route closure.
+- No dependency or environment blocker halted this distillation. No issue was
+  reopened, and no duplicate blocker issue was created.
+
+Distillation and bulk grooming are complete. Exactly one next engineering
+target is groomed: **#366**. Engineering and testing must be performed as one
+transaction for #366, followed by reconciliation and permanent GitHub closure
+before #367 or any route issue enters engineering.

@@ -789,3 +789,19 @@ user must separately open `Piece controls` and activate `Enable camera` before
 the stream and local hand tracking become active. Treat this as an explicit
 #344 lifecycle criterion to resolve or justify, and do not infer physical
 gesture behavior from the toggle state alone.
+
+Current revision reconciliation (2026-09-04): the republished
+`assets/index-UmUBnruG` bundle was inspected on the exact owner, public,
+embed, regular immersive, and CMS immersive routes. The stage-local hamburger,
+stacked labeled controls, publication disclosure, and route-specific control
+sets were present; the owner 3D fixture was restored to Draft after temporary
+publication. An authenticated Chrome profile cannot prove the separate
+anonymous privacy/restoration boundary, so #384–#389 remain open for that
+verification only. The owner report is preserved as revision/session-sensitive
+evidence and is not used to invalidate prior scoped closures.
+
+No-reopen enforcement (2026-09-04): GitHub may show historical parent
+containers such as #274/#324 as open with a `reopened` reason, but the current
+workflow does not reopen or rewrite closed issues. Any later gap is a new
+criterion-ready issue or an existing open route transaction; closed #347–#349
+and #390 remain immutable.

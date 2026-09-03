@@ -14981,3 +14981,23 @@ session. The 3D fixture was restored to Draft after the checks. Issues #386–
 #389 remain open only for their explicit anonymous fixed-viewport privacy and
 restoration gates (plus camera opt-in checks where applicable); comments
 5533570144, 5533578464, 5533578988, and 5533579589 record the evidence.
+
+## Fresh owner-report distillation — 2026-09-04
+
+The current published bundle `assets/index-UmUBnruG` was inspected against
+the exact supplied owner and public routes and the route-specific deployment
+children. The reported missing editor/public controls and missing
+Draft/Published disclosure were not reproduced: the editor has one
+stage-local hamburger with a stacked labeled overlay and publication switch,
+and the public route has its hamburger with Screenshot, Download, Piece
+controls, and Fullscreen. The regular 2D/3D embeds and regular/CMS immersive
+routes likewise exposed their scoped controls during temporary publication;
+the 3D fixture was restored to Draft.
+
+This is a revision/session-sensitive `not reproduced` result, not a claim of
+anonymous parity. Chrome remains authenticated, so #384–#389 stay open for
+their exact anonymous fixed-viewport and privacy/restoration gates. No new
+implementation defect or duplicate issue was found. #274/#324 remain open
+reconciliation containers from prior history; this pass does not reopen or
+rewrite any issue. Closed #347–#349 and #390 remain immutable. The next FIFO
+handoff is #384.

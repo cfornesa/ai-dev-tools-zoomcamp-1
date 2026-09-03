@@ -1168,3 +1168,39 @@ visible, stacked, and contained. Its anonymous-profile gate remains open.
 public 3D overlay rendered the expected controls and the fixture was restored
 to Draft. Its anonymous-profile gate remains open. GitHub comments 5533485457
 and 5533492806 record the route evidence. No closed issue was reopened.
+
+## Fresh owner-report distillation — 2026-09-04
+
+This definition pass used the current checkout, the maintained
+`augment-humankind` pieces contract, the current GitHub issue set, and fresh
+rendered inspection of the exact supplied routes. No product source or
+product tests were changed.
+
+### Findings and classification
+
+| Reported gap | Current evidence | Distillation result |
+| --- | --- | --- |
+| Editor controls absent or outside the canvas | Published `assets/index-UmUBnruG`; authenticated editor screenshot shows one hamburger inside Preview and an opened translucent stacked overlay with runtime, authoring, publication, and fullscreen actions. | Not reproduced on the reviewed revision; no new implementation issue. #383 remains closed for its scoped route contract. |
+| Draft/Published switching absent | The opened `Publication status: Draft` disclosure exposes Draft/Published choices; a controlled Published → Draft restoration completed. | Not reproduced; no new implementation issue. |
+| Public controls absent | The exact public 2D route shows one stage-local hamburger; opening it exposes Screenshot, Download, Piece controls, and Fullscreen. | Not reproduced in the authenticated session; #384 remains the existing anonymous route transaction. |
+| Embed/immersive parity | Exact regular 2D embed, regular 3D embed, immersive 3D, and CMS immersive 3D routes exposed their scoped menus and controls while temporarily Published; the fixture was restored to Draft. | Existing #386–#389 cover these route boundaries. No duplicate issue created. |
+| Anonymous privacy and fixed viewport evidence | Chrome is authenticated and cannot provide an independent anonymous profile; local fixed-viewport QA is supporting evidence only. | `verification-boundary`; retain #384–#389 open until each exact anonymous transaction is independently captured and restored. |
+| Downloaded runtime parity | Existing #390 is permanently closed for its scoped extracted artifact transaction. | Closed history remains immutable; later gaps require new linked issues, not reopening. |
+
+### Duplicate, closure, and parent-state report
+
+No new actionable product defect was found, so no new GitHub issue is filed.
+The open route issues #384–#389 already provide one criterion-ready issue per
+surface and are not duplicates. #344 remains the independent physical-camera
+verification boundary. #274 and #324 are currently open reconciliation
+containers in GitHub from prior history; this pass does not reopen, rewrite,
+or close them. Closed issues, including #347–#349 and #390, remain immutable.
+
+### Handoff
+
+Distillation is complete. The next groomed FIFO issue is #384, whose remaining
+gate is a genuinely anonymous fixed-viewport rendered transaction with
+Draft/private restoration. If that external browser boundary remains
+unavailable, record the blocker and continue to the next independent route
+issue without reopening any closed issue. Engineering and QA remain paired per
+issue after this handoff.

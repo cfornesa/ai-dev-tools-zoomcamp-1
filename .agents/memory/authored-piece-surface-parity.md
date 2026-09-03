@@ -642,3 +642,10 @@ outgoing changes, and incomplete Pull while the published asset's chunk graph
 did not match a fresh local build. This is tracked by new workflow issue #380;
 keep #379 open until remote auth, branch identity, and intentional publishing
 are reconciled. Never reopen closed parity issues for this state.
+Deployment reconciliation completion (2026-09-03): Replit Git synchronization
+was repaired and `main` reconciled to `origin/main` at `cfd16d1`. The custom
+domain switched to `assets/index-xwmMEBBo.js`, byte-identical to the fresh
+local build. Exact editor/public route inspection and Draft → Published →
+Draft verification then completed #379; workflow repair completed #380. Both
+are permanently closed. Future owner contradictions must be new linked work,
+not reopenings.

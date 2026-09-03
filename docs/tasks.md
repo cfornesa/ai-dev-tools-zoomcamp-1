@@ -14278,3 +14278,16 @@ and not permission to reopen closed issues.
 New criterion-ready [#380](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/380)
 owns Replit remote authentication, branch reconciliation, and intentional
 republishing. #379 remains open and dependency-blocked on #380.
+## #380/#379 final deployment reconciliation — 2026-09-03
+
+Replit Git synchronization was repaired and `main` reconciled to
+`origin/main` at `cfd16d1`. The reviewed revision was republished; the custom
+domain now serves `assets/index-xwmMEBBo.js`, byte-identical to the fresh local
+build. Exact editor verification confirmed the stage-local controls and
+Draft/Published panel, including a live Published → Draft restoration. Exact
+anonymous public verification confirmed the hamburger and permitted
+Screenshot, Download, Piece controls, and Fullscreen overlay. Fixed-viewport
+QA for the same build covered 1280x900 and 375x812. #380 (workflow) and #379
+(owner-visible reconciliation) are permanently closed as `completed`. No
+closed issue was reopened; later gaps require new linked criterion-ready
+issues.

@@ -13341,6 +13341,24 @@ The queue now rotates to the next independently groomed open route/workflow
 issue only after its deployment or fixture dependency is satisfied; no later
 engineering transaction is started in this reconciliation step.
 
+### Post-#367 deployment handoff — 2026-09-03
+
+The local reviewed parity fixes are now committed through `a3d5791`, with
+documentation reconciliation in `050496b`. The exact deployed asset observed
+during distillation was `index-CecM7AFX.js`, which predates or otherwise does
+not correspond to the current checkout's corrected shared-row and manual-3D
+authoring-label implementation. The next groomed task is **#355**, but its
+engineering/QA transaction is a deployed verification transaction and must
+not begin until these reviewed commits are synchronized into the deployment
+workspace and published.
+
+After publication, #355 must verify the authenticated manual 3D route at
+1280x900 and 375x812, including the corrected menu, visible Save/Ask-AI
+labels, and Draft/Published disclosure. #356 remains a separate anonymous
+public 2D fixture/route transaction and cannot inherit #355 evidence. The
+owner's authenticated/published deployment state is the current verification
+boundary; no issue is reopened and no local pass is reported as live parity.
+
 ## Owner-rejection task-distillation reset — 2026-09-03
 
 This is the current canonical distillation manifest after the owner reported

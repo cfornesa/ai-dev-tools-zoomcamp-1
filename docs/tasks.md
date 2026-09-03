@@ -14780,3 +14780,18 @@ the connected Chrome surface cannot emulate fixed viewports or provide a
 separate anonymous profile. QA result: FAIL / verification-boundary;
 GitHub comment 5532948496 records the matrix. #386 remains open and
 terminally handed off; #387 is next.
+
+### #388 engineering and QA handoff — 2026-09-03
+
+Added `frontend/e2e/public3dImmersiveStageChrome.spec.ts` for the anonymous
+regular immersive 3D route. The isolated fixed-viewport transaction passed
+3/3 in Chromium, Firefox, and WebKit at 1280x900 and 375x812. It verifies the
+route-local stage and hamburger controls, no duplicate application chrome,
+proportional geometry, no horizontal overflow or unjustified scrollbar,
+no camera request on load, screenshot evidence, and Draft restoration.
+The exact republished route serves `assets/index-CREpJGbM.js`, but the supplied
+shared fixture is currently Draft/private and therefore returns the deployed
+unavailable state; exact anonymous deployed rendered evidence remains
+unverified. QA result: FAIL / verification-boundary; GitHub comment
+5533080734 records the matrix. #388 remains open and terminally handed off;
+#389 is next.

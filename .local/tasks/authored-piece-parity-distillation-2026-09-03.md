@@ -985,3 +985,14 @@ variants, and private fallback. The exact republished URL serves
 deployed fixed-viewport and anonymous-profile evidence remains unavailable
 through the connected Chrome surface. QA comment 5532948496 records FAIL /
 verification-boundary. #386 remains open and handed off; #387 is next.
+## #388 engineering and QA handoff — 2026-09-03
+
+Added `public3dImmersiveStageChrome.spec.ts`. The fixed-viewport local
+transaction passed 3/3 across Chromium, Firefox, and WebKit at 1280x900 and
+375x812, covering the chrome-less stage, named controls, proportional
+geometry, overflow/scrollbar boundaries, no camera request on load, rendered
+screenshots, and Draft restoration. The exact republished route serves
+`assets/index-CREpJGbM.js` but the shared fixture is Draft/private and returns
+the unavailable state, so exact deployed anonymous/fixed-viewport evidence
+cannot yet close the issue. QA comment 5533080734 records FAIL /
+verification-boundary. #388 remains open and handed off; #389 is next.

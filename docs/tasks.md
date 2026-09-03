@@ -14972,3 +14972,12 @@ The published route rendered the artwork and the expected stage-local control
 set with no horizontal overflow in the available session. #385 remains open
 only for anonymous fixed-viewport evidence; GitHub comment 5533560098 records
 the result. The next FIFO candidate is #386. Closed issues remain immutable.
+
+The same republished asset was then checked route-by-route for #386 through
+#389. The regular 2D embed, regular 3D embed, regular immersive 3D, and CMS
+immersive 3D routes each rendered their scoped chrome-less/stage-local menu
+and applicable named controls without horizontal overflow in the available
+session. The 3D fixture was restored to Draft after the checks. Issues #386–
+#389 remain open only for their explicit anonymous fixed-viewport privacy and
+restoration gates (plus camera opt-in checks where applicable); comments
+5533570144, 5533578464, 5533578988, and 5533579589 record the evidence.

@@ -13271,6 +13271,39 @@ engineering and testing remain one issue at a time, and any newly discovered
 gap must be distilled into a new issue rather than attached to or reopening
 #364.
 
+### #366 engineering and QA handoff — 2026-09-03
+
+#366 was groomed as the sole next task after the owner-rejection reset. Its
+scope is the shared local React stage command menu: every enabled action must
+keep its visible label inside the same hit target, use a consistent stacked
+row, and avoid duplicate hover-tooltip leakage in the opened menu. Route,
+fixture, and deployed revision evidence remain #355/#356.
+
+### #366 closure reconciliation — 2026-09-03
+
+#366 is complete for its scoped shared local stage-menu capability. The
+implementation gives Download and nested Piece-controls triggers the same
+full-width row contract as sibling actions, keeps visible labels at mobile
+widths, removes duplicated tooltips from the opened menu, and removes stale
+detached-label styling. The focused component suite passed 5/5; the supported
+Docker browser gate passed 6/6 across Chromium, Firefox, and WebKit; and
+`make frontend-check` passed lint with existing warnings only, formatting,
+typecheck, and 2,400/2,400 tests. Commit `6eaa637` records the implementation.
+
+Implemented/verified here: shared component DOM contract, row styling,
+desktop/mobile stacking, pointer/keyboard menu entry, Escape/focus return,
+fullscreen synchronization, no command-card scrollbar, and publication
+disclosure reachability in the local browser fixture. Shifted to linked work:
+manual 3D authoring labels #367, exact authenticated deployed editor evidence
+#355, exact anonymous public fixture/evidence #356, and other route-specific
+pieces parity work. The deployed `index-CecM7AFX.js` observation remains
+recorded as a deployment mismatch; this local capability closure does not
+claim that Replit has published this commit. No closed issue was reopened.
+
+The queue now rotates to **#367**, the next independently groomed issue. It
+must receive its own engineering, QA, reconciliation, and permanent closure
+before any later issue begins engineering.
+
 ## Owner-rejection task-distillation reset — 2026-09-03
 
 This is the current canonical distillation manifest after the owner reported

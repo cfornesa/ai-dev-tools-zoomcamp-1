@@ -14511,3 +14511,16 @@ was temporarily published for anonymous verification and restored to Draft.
 No closed issue was reopened.
 
 Parent #320/#324/#274 remain reconciliation containers, not engineering tasks.
+
+## #334 closure reconciliation — 2026-09-04
+
+#334 is permanently closed as `completed` for the anonymous custom immersive
+3D route `/immersive/p3d/:id?embed=1`. Its focused browser transaction passed
+3/3 in Chromium, Firefox, and WebKit against disposable PostgreSQL/Django/Vite
+services. It verified the chrome-less route, stage-local hamburger/stacked
+overlay, named controls and Full/Non-Camera downloads, and responsive 16:9
+stage geometry. The QA setup now opens the hamburger before inspecting hidden
+actions, and the obsolete fixed `360px` height assertion is replaced by the
+responsive aspect contract. No closed issue was reopened.
+
+The next FIFO candidate is #335, the CMS immersive query variant.

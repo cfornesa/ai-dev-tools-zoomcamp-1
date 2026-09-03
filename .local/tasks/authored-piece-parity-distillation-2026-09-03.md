@@ -107,6 +107,15 @@ sound tests passed 37/37, and the manual 3D browser scenario passed 3/3 in
 Chromium, Firefox, and WebKit. #372 is ready for permanent closure; no closed
 issue was reopened.
 
+## #334 closure reconciliation — 2026-09-04
+
+#334 is permanently closed as `completed` for `/immersive/p3d/:id?embed=1`.
+Its focused browser transaction passed 3/3 in Chromium, Firefox, and WebKit,
+covering the chrome-less stage, hamburger/stacked overlay, named controls,
+downloads, and responsive 16:9 geometry. The fixed-height QA assertion was
+corrected to the responsive contract. No closed issue was reopened. The next
+FIFO candidate is #335.
+
 ## #368 transaction reconciliation — 2026-09-03
 
 - Engineering completed the immersive export option through

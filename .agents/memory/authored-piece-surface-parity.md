@@ -748,3 +748,9 @@ route. Its dedicated browser transaction passed 3/3 engines at 1280×900 and
 overflow, and public controls; the temporary publication was restored to
 Draft. #360 is permanently closed for that boundary. Later gaps require new
 issues and must not reopen it.
+
+Custom immersive verification (2026-09-04): #334 passed 3/3 browsers for
+`/immersive/p3d/:id?embed=1` at the focused responsive transaction. Its QA
+asserts the hamburger-open control surface and responsive 16:9 stage geometry,
+not the obsolete fixed 360px height. #334 is permanently closed; later gaps
+require new issues. The next FIFO transaction is #335's CMS variant.

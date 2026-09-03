@@ -32,7 +32,15 @@ test.describe('custom immersive 3D stage chrome', () => {
     if (!projectId) return;
 
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
-    await page.getByRole('button', { name: 'Publication status: Draft' }).click();
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const ownerToolbar = page
+      .getByTestId('scene3d-preview-canvas-frame')
+      .getByRole('toolbar', { name: 'Preview actions' });
+    await ownerToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await ownerToolbar
+      .getByRole('button', { name: 'Publication status: Draft' })
+      .scrollIntoViewIfNeeded();
+    await ownerToolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
     await page.getByRole('button', { name: 'Published', exact: true }).click();
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
@@ -50,6 +58,7 @@ test.describe('custom immersive 3D stage chrome', () => {
     await expect(frame.locator('canvas')).toBeVisible();
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(toolbar).toBeVisible();
+    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     for (const label of [
       'Take screenshot',
       'Open download menu',
@@ -59,11 +68,16 @@ test.describe('custom immersive 3D stage chrome', () => {
       'Show hand gesture guide',
       'Expand piece to fullscreen',
     ]) {
-      await expect(toolbar.getByRole('button', { name: label })).toBeVisible();
+      await expect(
+        toolbar.getByRole('button', { name: label, exact: label === 'Piece controls' }),
+      ).toBeVisible();
     }
 
-    const frameHeight = await frame.evaluate((element) => getComputedStyle(element).height);
-    expect(frameHeight).toBe('360px');
+    const frameAspectRatio = await frame.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return box.width / box.height;
+    });
+    expect(frameAspectRatio).toBeCloseTo(16 / 9, 1);
     await toolbar.getByRole('button', { name: 'Open download menu' }).click();
     await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
     await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera ZIP' })).toBeVisible();

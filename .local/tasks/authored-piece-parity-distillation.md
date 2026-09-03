@@ -200,3 +200,28 @@ WebKit at `1280x900` and `375x812`; `make check` passed 888 backend tests,
 open: completion is not closure, and closure requires the exact reviewed
 revision to be published and the fixed authenticated route to pass rendered
 desktop/mobile checks. The reviewed commit is pushed to `origin/main`.
+## Fresh owner re-audit and distillation reset — 2026-09-03
+
+The exact live authenticated 3D editor and public URL were inspected again.
+Both serve `https://animate.creatrweb.com/assets/index-WKdMIR98.js`, not the
+reviewed `origin/main` revision (`beab74a`, including #348 fix `52b87c9`). The
+authenticated editor has a stage hamburger, but its opened mobile command card
+is visibly cramped with overlap/clipping risk. The public URL opens a stage
+menu, but the fixture is `Blank canvas` (2D), not the expected 3D sphere; at
+375px the hamburger remains visibly underneath the opened command card. These
+are deployment/fixture observations, not closure evidence.
+
+The PHP reference contract was re-read from
+`../augment-humankind/docs/piece-surface-parity.md` and
+`../augment-humankind/public/app/helpers/immersive-chrome.php`: stage-local
+compact controls, explicit Draft/Published state, opt-in disclosure panels,
+capability/privacy boundaries, and behaviorally functional Full/Non-Camera
+downloads across regular, embed, immersive, and extracted surfaces. Existing
+issues #347/#348 cover shared controls/layout; #325–#337 cover each consuming
+route/artifact; #320/#321 cover release identity. No duplicate is warranted.
+
+The next handoff remains exactly one issue at a time: publish the reviewed
+shared revision and reconcile #347/#348 on the supplied fixtures before route
+children are processed. Completion is not closure: no issue is complete until
+its finite criteria, exact rendered evidence, and GitHub closed state are all
+reconciled.

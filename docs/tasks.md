@@ -12077,3 +12077,28 @@ and type-checking. #348 is engineered and pushed, but remains OPEN until the
 reviewed revision is published and the exact authenticated route passes its
 rendered closure criteria. Task completion is not issue closure; the GitHub
 issue is closed only after that evidence is reconciled.
+## Fresh owner re-audit and distillation reset — 2026-09-03
+
+The exact live authenticated 3D editor and public URL were inspected again.
+Both serve `https://animate.creatrweb.com/assets/index-WKdMIR98.js`, not the
+reviewed `origin/main` revision (`beab74a`, including #348 fix `52b87c9`). The
+authenticated editor exposes a stage hamburger, but its opened mobile command
+card is still visibly cramped with overlap/clipping risk. The public URL opens
+a stage menu, but its fixture is `Blank canvas` (2D), not the expected 3D sphere;
+at 375px the hamburger remains visibly underneath the opened command card.
+This is deployment/fixture evidence, not closure evidence.
+
+The PHP parity reference remains
+`../augment-humankind/docs/piece-surface-parity.md` plus
+`../augment-humankind/public/app/helpers/immersive-chrome.php`: stage-local
+compact controls, explicit Draft/Published state, opt-in disclosure panels,
+capability/privacy boundaries, and behaviorally functional Full/Non-Camera
+downloads across regular, embed, immersive, and extracted surfaces. #347/#348
+own shared controls/layout, #325–#337 own consuming routes/artifacts, and
+#320/#321 own deployment identity. No duplicate issue is warranted.
+
+The backlog remains in distillation handoff with one active implementation
+boundary at a time. No later route issue may begin until the reviewed shared
+revision is published and #347/#348 are independently reconciled. Completion
+is not closure: an issue is complete only after its finite criteria, exact
+rendered evidence, and GitHub closed state are reconciled.

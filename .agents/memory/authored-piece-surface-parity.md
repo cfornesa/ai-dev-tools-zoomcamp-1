@@ -209,3 +209,13 @@ The owner-visible mismatch is therefore partly explained by stale publication
 and browser authentication/state, but the requested visual parity is still
 unproven. Never close #348 or route children until the exact reviewed asset is
 published and fixed-viewport screenshots/interactions are reconciled.
+Fresh owner re-audit (2026-09-03): the exact authenticated 3D editor and public
+URL both served `assets/index-WKdMIR98.js`, while `origin/main` was at `beab74a`
+with #348's mobile containment fix in `52b87c9`. The live editor's opened mobile
+command card remained visibly cramped, and the public fixture was `Blank canvas`
+(2D), not the expected 3D sphere; its hamburger remained underneath the opened
+card at 375px. Treat this as stale deployment/fixture identity plus unresolved
+rendered parity, not as closure evidence. The PHP contract still requires
+stage-local compact controls, explicit publication state, and functional
+capability/privacy parity across regular, embed, immersive, and downloaded
+surfaces. Reconcile #347/#348 and deployment identity before route children.

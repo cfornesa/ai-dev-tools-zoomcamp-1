@@ -14711,3 +14711,17 @@ shows the intended services healthy, but multiple similarly named project
 stacks are running; local service output is therefore not a substitute for
 the exact published route. Next action remains sync/publish, then run #383's
 fixed-viewport rendered transaction.
+
+### #383 QA handoff — 2026-09-03
+
+The reviewed revision is now published as `assets/index-CREpJGbM.js`. The
+exact authenticated route renders the stage-local hamburger, named stacked
+actions, and `Publication status: Draft` in the connected Chrome session.
+The repository-owned fixed-viewport transaction
+`BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa` passed
+3/3 in Chromium, Firefox, and WebKit at 1280x900 and 375x812. However, the
+connected Chrome surface cannot set those fixed viewports, so exact deployed
+rendered screenshots and the deployed Draft round trip at both sizes remain
+unverified. QA result: FAIL / verification-boundary; GitHub comment 5532864370
+records the criterion matrix and exact next action. #383 remains open and
+terminally handed off; #384 is the next independent transaction.

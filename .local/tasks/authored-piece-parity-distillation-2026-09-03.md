@@ -934,3 +934,13 @@ owner route, while the pushed local build has a different asset hash. Docker
 reports healthy services but multiple project stacks, so the exact published
 revision remains the authoritative blocker for #383. No closed issue changed
 state.
+
+## #383 QA handoff — 2026-09-03
+
+Republish verification found `assets/index-CREpJGbM.js` and the live owner
+route shows the intended hamburger, named overlay, and Draft status. The
+fixed-viewport local browser transaction passed 3/3 across Chromium, Firefox,
+and WebKit. Exact deployed 1280x900/375x812 screenshots and deployed Draft
+round-trip evidence remain unavailable through the connected Chrome surface.
+GitHub QA comment 5532864370 records FAIL / verification-boundary. #383 stays
+open and terminally handed off; independent #384 is next.

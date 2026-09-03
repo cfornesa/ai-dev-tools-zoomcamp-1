@@ -421,3 +421,20 @@ dependency-blocked on pulling and publishing the reviewed revision, and #360
 depends on #356. #349/#355/#367/#374 remain permanently closed. The next
 queue action is the independent #344 manual-camera evidence transaction;
 deployment-dependent work waits for its prerequisite.
+
+## #331 re-audit and fresh distillation — 2026-09-03
+
+Anonymous exact-route inspection of
+`https://animate.creatrweb.com/embed/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`
+found deployed asset `assets/index-I1VsT0b2.js`, site/banner metadata rendered
+around the stage instead of the required chrome-less embed, and desktop
+detached action labels. The hamburger still exposes Screenshot, Download,
+Piece controls, and Fullscreen. #331 remains open with QA FAIL; the evidence
+was added to the issue. This reuses #331/#356 and does not reopen or duplicate
+anything.
+
+Fresh reconciliation leaves #344 physically blocked; #331/#356/#375 blocked
+by Replit `MERGE_CONFLICT` / `UNAUTHENTICATED`; and #360 dependent on #356.
+Closed issues remain immutable. No independent closure-ready issue is
+available until either the manual camera transaction or Replit synchronization
+state changes.

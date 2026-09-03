@@ -13531,6 +13531,23 @@ and published. #360 remains dependent on #356. Closed issues—including #349,
 independent manual-camera evidence for #344; deployment-dependent issues must
 wait for their stated prerequisite.
 
+## #331 re-audit and fresh distillation — 2026-09-03
+
+The still-open embedded 2D route was independently rechecked anonymously.
+`https://animate.creatrweb.com/embed/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`
+serves `assets/index-I1VsT0b2.js`, renders the site/banner metadata instead of
+the required chrome-less stage, and retains the desktop detached-label
+geometry. The hamburger does expose Screenshot, Download, Piece controls, and
+Fullscreen. #331 therefore remains open and failed QA; its exact deployment
+boundary is recorded on GitHub. This reuses #331 and #356 and creates no
+duplicate or reopening.
+
+Fresh duplicate/dependency reconciliation: #344 remains physically blocked;
+#356, #331, and #375 remain blocked by the Replit `MERGE_CONFLICT` /
+`UNAUTHENTICATED` synchronization state; #360 depends on #356. Closed issues
+remain immutable. No independent closure-ready issue is currently available
+without either the manual camera transaction or the Replit state change.
+
 ## Current canonical distillation after exact-route re-audit — 2026-09-03
 
 This section supersedes prior handoff notes above. It is a distillation and

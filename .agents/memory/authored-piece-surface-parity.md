@@ -268,6 +268,15 @@ across Chromium/Firefox/WebKit. Exact republished owner-session verification
 remains #355; later gaps must be new tasks and must not reopen #358 without
 explicit owner authorization naming #358 in the current conversation.
 
+Route atomicity distillation (2026-09-03): the former #349 contract combined
+authenticated manual 3D editor geometry and anonymous public 3D viewer
+geometry despite different entry points, fixtures, permissions, and deployed
+evidence. Preserve #349 as the parent/reconciliation container; #359 is the
+criterion-ready manual-editor child and the next independent transaction, while
+#360 is the criterion-ready public-viewer child blocked by #356's intended
+published fixture. Closed issues remain immutable, and PHP remains reference
+material only.
+
 Closure correction (2026-09-03): the owner explicitly confirmed that closed
 issues are immutable unless that exact issue is explicitly authorized for
 reopening in the current conversation. The later closure transaction closed

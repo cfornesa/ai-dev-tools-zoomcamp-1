@@ -12536,6 +12536,8 @@ reference; product implementation is Django/Python plus React/TypeScript.
 | Issue | Current behavior | Desired finite outcome | Order/status |
 | --- | --- | --- | --- |
 | [#358](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/358) | Published manual 3D editor has runtime/publication controls but no 3D authoring command set in its stage menu | Add named 3D authoring operations, working-scene/outline updates, save behavior, keyboard/focus/responsive evidence, and explicit N/A decisions for unsupported operations | After #357; implementation and QA reconciled | CLOSED / completed; do not reopen |
+| [#359](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/359) | Manual 3D editor sphere proportions | One authenticated editor route, two fixed viewports, uniform/non-uniform scale and responsive reachability | Child distilled from #349; next independent implementation transaction | OPEN / GROOMED; next |
+| [#360](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/360) | Public 3D viewer sphere proportions | One anonymous public route, two fixed viewports, intended published fixture and public-only controls | Child distilled from #349; dependency-blocked by #356 | OPEN / DEPENDENCY-BLOCKED |
 
 Existing #355 and #356 remain the exact deployed owner/public fixture
 verification boundaries. #357 remains the extracted-artifact responsive
@@ -12562,3 +12564,14 @@ permanently closed; later parity or deployment gaps must be new linked issues
 unless the owner explicitly authorizes reopening #358 in the current
 conversation. The next independent groomed implementation item is #351;
 blocked #355/#356 remain in the manifest with their dependencies.
+
+### #349 route atomicity reconciliation — 2026-09-03
+
+#349 was not engineering-ready as a single transaction because its closure
+contract combined the authenticated manual editor and anonymous public viewer,
+which have different entry points, fixtures, permissions, and deployment
+evidence. Distillation preserved #349 as the parent/reconciliation container
+and created two criterion-ready children: #359 for the manual 3D editor and
+#360 for the public 3D viewer. #359 is the next independent groomed issue;
+#360 is dependency-blocked by #356's intended public fixture. No closed issue
+was reopened, and no PHP implementation work was introduced.

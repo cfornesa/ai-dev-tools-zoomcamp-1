@@ -13560,6 +13560,24 @@ Focused implementation checks for #344 passed 26/26, but the required
 physical held-pinch camera transaction could not be produced by available
 automation. #344 remains open and explicitly blocked by an environment /
 verification boundary; it is not closed and is not a reason to halt the goal.
+
+## #331 engineering/QA handoff and fresh distillation — 2026-09-03
+
+The closure-sized embed fix is committed as `6d1e38e`. It conditionally
+removes the public metadata header on `/embed/p/:id` and scopes away the
+Preview shell while preserving the stage and toolbar. Focused route tests
+passed 8/8; `make frontend-check` passed with existing lint warnings.
+
+Deployed QA against `assets/index-CQvhOwx-.js` still showed the pre-fix title,
+author, Embed button, and Preview shell. Local browser QA could not load the
+fixture from the local API. This is a deployment dependency blocker, not a
+new product issue. #331 remains open and must be republished before exact
+anonymous visual QA and permanent closure. No closed issue was reopened.
+
+The fresh distillation found no duplicate or additional actionable gap. #360
+remains blocked on the intended public 3D fixture; #344 remains physically
+blocked. The next action is the #331 deployed verification after publishing
+`6d1e38e`.
 Its exact next action is one manual Chromium camera transaction covering
 forward/back and sideways translation, release/hand loss/disable/stop, and
 camera denial fallback.

@@ -465,4 +465,22 @@ The public route currently remains a non-empty 2D fixture, so #360 is still
 dependency-blocked on publishing the intended 3D fixture. #331 is open and
 owns the embed route; #344 is open with a physical-camera verification
 boundary. The next groomed candidate is #331, subject to exact current-route
-reconciliation and no reopening of closed history.
+ reconciliation and no reopening of closed history.
+
+## #331 engineering/QA handoff and fresh distillation — 2026-09-03
+
+The closure-sized embed fix is committed as `6d1e38e`. It conditionally
+removes the public metadata header on `/embed/p/:id` and scopes away the
+Preview shell while preserving the stage and toolbar. Focused route tests
+passed 8/8; `make frontend-check` passed with existing lint warnings.
+
+Deployed QA against `assets/index-CQvhOwx-.js` still showed the pre-fix title,
+author, Embed button, and Preview shell. Local browser QA could not load the
+fixture from the local API. This is a deployment dependency blocker, not a
+new product issue. #331 remains open and must be republished before exact
+anonymous visual QA and permanent closure. No closed issue was reopened.
+
+The fresh distillation found no duplicate or additional actionable gap. #360
+remains blocked on the intended public 3D fixture; #344 remains physically
+blocked. The next action is the #331 deployed verification after publishing
+`6d1e38e`.

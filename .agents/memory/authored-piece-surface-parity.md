@@ -710,3 +710,11 @@ empty, with only docs/memory/task divergence. The deployed
 `index-xwmMEBBo.js` therefore contains the reviewed toolbar implementation.
 Keep owner-visible contradictions in #381/#382 until fixed-viewport/session
 evidence is available; do not reopen closed issues.
+
+Manual 3D owner-route verification (2026-09-04): #381 passed the focused
+browser transaction in Chromium, Firefox, and WebKit at 1280×900 and 375×812.
+It verified the stage-local hamburger/stacked overlay, named runtime and
+authoring controls, responsive canvas aspect geometry, and the authorized
+Draft → Published → Draft round trip. #381 is permanently closed for that
+boundary. Any later defect is a new issue; never reopen #381 or another closed
+issue. The next FIFO transaction is #382's anonymous public 2D route audit.

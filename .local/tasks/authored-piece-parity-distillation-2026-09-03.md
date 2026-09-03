@@ -781,3 +781,15 @@ Download, Piece controls, Edit scene, Fullscreen, and a visible Publication
 status: Published disclosure with Draft available. This is covered behavior,
 not a new implementation defect or a reason to reopen closed #354/#356;
 fixed-viewport proof remains in the route-specific verification queue.
+
+## #381 closure reconciliation — 2026-09-04
+
+#381 is permanently closed as `completed` for its exact authenticated manual
+3D owner-route verification boundary. `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts
+make browser-qa` passed in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services. The focused scenario covered 1280×900 and
+375×812, the stage hamburger/stacked overlay, named runtime and authoring
+actions, responsive canvas aspect geometry, and Draft → Published → Draft with
+final state Draft. No closed issue was reopened. The next FIFO candidate is
+#382; engineering/QA/reconciliation/closure must finish for it before the
+next issue.

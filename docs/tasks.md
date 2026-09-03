@@ -12382,18 +12382,20 @@ against the broader pieces-parity goal, but it does not reopen #347.
 | --- | --- | --- | --- | --- |
 | [#354](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/354) | Shared editor canvas authoring overlay | Manual 2D representative route; both fixed viewports; no page-level row, finite authoring controls, mutations, keyboard operation, no overlap/overflow | Fresh replacement for #348; local implementation and browser QA reconciled | CLOSED / completed |
 | [#352](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/352) | Published manual 3D owner editor | Repository-backed manual 3D owner-editor integration: canvas-associated authoring/publication overlay, existing editor/runtime actions, responsive stage behavior, and Draft/Published control wiring | #354/#349 for implementation evidence; exact republished owner-session verification shifted to #355 | CLOSED / completed; do not reopen |
-| [#355](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/355) | Republished manual 3D owner route verification | Exact published `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` with owner auth at 1280x900 and 375x812; deployed asset identity, piece load, compact controls, publication state, and rendered evidence | Discovered during #352 QA; requires owner-authenticated published session | OPEN / GROOMED; next deployed-verification transaction |
+| [#355](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/355) | Republished manual 3D owner route verification | Exact published `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` with owner auth at 1280x900 and 375x812; deployed asset identity, piece load, compact controls, publication state, and rendered evidence | Discovered during #352 QA; requires owner-authenticated published session | OPEN / DEPENDENCY-BLOCKED; resume when owner session/deployment identity is available |
 | [#353](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/353) | Published anonymous public 2D piece | Exact supplied public route, fresh anonymous context, same two viewports; hamburger disclosure, permitted controls, privacy, keyboard/pointer behavior, rendered evidence | After #352 only if shared deployment/fixture dependency requires it | OPEN / GROOMED |
 | [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | One downloaded Full artifact served locally; runtime assets, rendered controls, capability/permission behavior, no overlap/ordinary scrollbar | After #353 provides a published 2D fixture | OPEN / GROOMED |
 | [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | OPEN / GROOMED |
 
-The next handoff is #355 only. #354 and #352 have completed their engineering,
-QA, reconciliation, and closure transactions; #355 is a deployed-verification
-task created from the exact-route evidence boundary that could not be exercised
-in the local owner session. Engineering and QA must finish, reconcile, and
-close #355 before selecting #353. If a later report finds another gap after one
-of these closes, create another linked task unless the owner explicitly
-authorizes reopening that exact issue.
+The next handoff is #355 only while its owner-session dependency is available.
+#354 and #352 have completed their engineering, QA, reconciliation, and closure
+transactions. #355 is now dependency-blocked after a good-faith local and
+published-session check; the blocker was re-distilled into this deployed-only
+boundary and independently actionable #353 may proceed while it remains
+blocked. Resume #355 when the required owner session/deployment identity is
+available. If a later report finds another gap after one of these closes,
+create another linked task unless the owner explicitly authorizes reopening
+that exact issue.
 
 ### #354 closure reconciliation
 
@@ -12425,5 +12427,6 @@ The only unresolved portion found while closing #352 was exact deployed
 owner-session verification. It is not folded back into #352. Fresh issue #355
 owns the fixed published route, owner session, two-viewport matrix, deployed
 asset identity, publication state, and rendered evidence. No prior closed issue
-was reopened; #353 remains the next independent public-surface task after #355
-is terminally closed or handed off.
+was reopened. Because the owner session is a dependency blocker, #353 is the
+next independent public-surface task; #355 remains open and returns to the
+queue when its dependency is cleared.

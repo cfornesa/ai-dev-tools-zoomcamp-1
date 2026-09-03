@@ -245,6 +245,16 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Owner governance correction (2026-09-03): closed issues are immutable unless
+the owner explicitly names that exact issue for reopening in the current
+conversation. The current owner-reported contradiction therefore produced
+new corrective issues #376 (manual 3D publication lifecycle), #377 (manual 3D
+canvas controls/layout), and #378 (public 2D control discoverability); it did
+not authorize reopening #347–#375. Distillation must separate route/workflow
+contracts and must not treat DOM presence, local tests, or a pushed commit as
+proof of the requested deployed rendered experience. The next handoff is
+#377, with engineering and QA paired for that issue before #376 or #378.
+
 Canonical re-audit rule (2026-09-03): pieces parity covers only the
 `augment-humankind` pieces implementation/examples, translated into this
 repository's Django/Python backend and React/TypeScript frontend. PHP is

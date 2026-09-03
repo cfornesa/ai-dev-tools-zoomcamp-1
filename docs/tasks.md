@@ -13479,7 +13479,7 @@ and the rerun passed. #374 is complete for its local implementation boundary
 and is ready for permanent GitHub closure. #356 remains the next independent
 deployed public-route verification transaction. No closed issue was reopened.
 
-## Current canonical pieces-parity distillation — 2026-09-03
+## Historical pieces-parity distillation — 2026-09-03
 
 This section supersedes earlier historical notes that describe issues as
 reopened. Closed issues are immutable under the current owner rule: no issue
@@ -13510,8 +13510,166 @@ and [#369](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/369).
 Full artifact's missing user-facing camera steering/camera-view contract and
 the corresponding Non-Camera omission. Closed #364 remains closed.
 
-The next groomed issue is #368. Engineering and QA must be completed and
-reconciled as one issue transaction before #369 or any other issue begins.
+Historical handoff was #368. Engineering and QA were required as one issue
+transaction before #369 or any other issue began.
+
+## Current owner-reported parity distillation — latest 2026-09-03
+
+This latest audit supersedes the historical text above. Full CMS parity is
+limited to the augment-humankind pieces implementation/examples, translated
+into this repository's Django/Python backend and React/TypeScript frontend;
+PHP and unrelated CMS features remain reference-only and out of scope.
+
+The owner reports missing or unusable editor controls, bulky controls outside
+the canvas, no understandable Draft/Published workflow, and absent public
+controls. Exact deployed inspection found stage entry points in the current
+bundle, but prior closures relied on DOM/source/local evidence that did not
+establish consistent rendered parity. No closed issue was reopened.
+
+New corrective issues, each with a single route/workflow contract:
+
+- [#376](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/376):
+  deployed manual 3D Draft/Published lifecycle.
+- [#377](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/377):
+  deployed manual 3D canvas-associated controls and layout.
+- [#378](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/378):
+  deployed anonymous public 2D control discoverability.
+
+#331 has local embed fix commit `6d1e38e`, but published QA still showed the
+pre-fix metadata/Preview shell, so it remains deployment-blocked. #360 remains
+blocked on the intended public 3D fixture; #344 remains blocked by physical
+held-pinch evidence. Existing AI, public 3D, embed, immersive, and downloaded
+route issues remain separate transactions.
+
+Closed #347–#375 remain immutable. Any later failure or broader parity gap is
+a new linked criterion-ready issue, never a reopening. The next handoff is
+exactly #377 after grooming; engineering, QA, reconciliation, and closure
+must finish for it before #376 or #378 engineering begins.
+
+## Canonical owner-reported parity distillation — latest 2026-09-03
+
+The owner-visible end state remains unproven. Full CMS parity is limited to
+the augment-humankind pieces implementation/examples, translated into this
+repository's Django/Python backend and React/TypeScript frontend; PHP and
+unrelated CMS features are reference-only and out of scope.
+
+The owner reports missing or unusable editor controls, bulky controls outside
+the canvas, no understandable Draft/Published workflow, and absent public
+controls. Exact deployed inspection found that the current bundle can expose
+stage entry points, but prior closures relied on DOM/source/local evidence
+that did not establish consistent rendered parity. No closed issue was
+reopened. New corrective issues are #376 (manual 3D publication lifecycle),
+#377 (manual 3D canvas-associated controls/layout), and #378 (anonymous public
+2D control discoverability).
+
+#331 has local commit `6d1e38e` removing embed metadata/Preview chrome, but
+published QA still showed the pre-fix bundle; it remains deployment-blocked.
+#360 remains blocked on the intended public 3D fixture. #344 remains blocked
+by physical held-pinch evidence. Existing AI, public 3D, embed, immersive,
+and downloaded route issues remain separate transactions.
+
+Closed #347–#375 remain immutable. Any later failure or broader parity gap is
+a new linked criterion-ready issue, never a reopening. Handoff is exactly
+#377 after grooming; engineering, QA, reconciliation, and closure must finish
+for it before #376 or #378 engineering begins.
+
+## Canonical owner-reported parity distillation — 2026-09-03 (latest)
+
+The owner-visible end state remains unproven. Full CMS parity is limited to
+the augment-humankind pieces implementation/examples, translated into this
+repository's Django/Python backend and React/TypeScript frontend; PHP and
+unrelated CMS features are reference-only and out of scope.
+
+The owner reports missing or unusable editor controls, bulky controls outside
+the canvas, no understandable Draft/Published workflow, and absent public
+controls. Exact deployed inspection found that the current bundle can expose
+the stage entry points, but prior closures relied on DOM/source/local evidence
+that did not establish consistent rendered parity. No closed issue was
+reopened. New corrective issues are:
+
+- #376 — deployed manual 3D Draft/Published lifecycle.
+- #377 — deployed manual 3D canvas-associated controls and layout.
+- #378 — deployed anonymous public 2D control discoverability.
+
+#331 has local commit `6d1e38e` removing embed metadata/Preview chrome, but
+published QA still showed the pre-fix bundle; it remains deployment-blocked.
+#360 remains blocked on the intended public 3D fixture. #344 remains blocked
+by physical held-pinch evidence. Existing AI, public 3D, embed, and immersive
+route issues remain separate route transactions.
+
+Closure integrity: #347–#375 that are closed remain immutable. Any later
+failure or broader parity gap is a new linked criterion-ready task, never a
+reopening. Current next handoff is exactly #377 after grooming; engineering,
+QA, reconciliation, and closure must finish for that issue before #376 or
+#378 engineering begins.
+
+## Canonical owner-reported parity distillation — 2026-09-03 (latest)
+
+The owner-visible end state remains unproven. Full CMS parity is limited to
+the augment-humankind pieces implementation/examples, translated into this
+repository's Django/Python backend and React/TypeScript frontend; PHP and
+unrelated CMS features are reference-only and out of scope.
+
+The owner reports missing or unusable editor controls, bulky controls outside
+the canvas, no understandable Draft/Published workflow, and absent public
+controls. Exact deployed inspection found that the current bundle can expose
+the stage entry points, but prior closures relied on DOM/source/local evidence
+that did not establish consistent rendered parity. No closed issue was
+reopened. New corrective issues are:
+
+- #376 — deployed manual 3D Draft/Published lifecycle.
+- #377 — deployed manual 3D canvas-associated controls and layout.
+- #378 — deployed anonymous public 2D control discoverability.
+
+#331 has local commit `6d1e38e` removing embed metadata/Preview chrome, but
+published QA still showed the pre-fix bundle; it remains deployment-blocked.
+#360 remains blocked on the intended public 3D fixture. #344 remains blocked
+by physical held-pinch evidence. Existing AI, public 3D, embed, and immersive
+route issues remain separate route transactions.
+
+Closure integrity: #347–#375 that are closed remain immutable. Any later
+failure or broader parity gap is a new linked criterion-ready task, never a
+reopening. Current next handoff is exactly #377 after grooming; engineering,
+QA, reconciliation, and closure must finish for that issue before #376 or
+#378 engineering begins.
+
+## Canonical owner-reported parity distillation — 2026-09-03
+
+This is the current backlog definition. Full CMS parity remains limited to the
+augment-humankind pieces implementation/examples, translated into this
+repository's Django/Python backend and React/TypeScript frontend. PHP and
+unrelated CMS features remain reference-only/out of scope.
+
+The owner reports that the deployed editor still does not provide the intended
+visible in-canvas controls or an understandable Draft/Published workflow, and
+that public pieces appear to have no usable controls. Current exact-route
+inspection confirms a mixed result: the deployed bundle exposes controls in
+the DOM and through the stage entry point, but the owner-visible parity claim
+cannot be closed from that evidence because rendered discoverability and the
+published revision are not consistently demonstrated. Closed issues are
+immutable; no issue was reopened in this audit.
+
+| Finding | Classification | Owner | Next action |
+| --- | --- | --- | --- |
+| Manual 3D editor controls are not reliably visibly discoverable in the requested canvas-associated overlay | New corrective deployed route task | [#377](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/377) | Pull/publish reviewed revision, then run exact 1280x900 and 375x812 rendered QA |
+| Manual 3D Draft/Published status and round trip are not reliably discoverable/proven | New corrective workflow task | [#376](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/376) | Verify owner transition Published → Draft on exact route and final Draft state |
+| Public 2D controls appear absent or insufficiently discoverable to the owner | New corrective deployed route task | [#378](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/378) | Verify anonymous exact route, named actions, and rendered trigger/menu at both viewports |
+| Embed route still showed metadata/Preview shell on the published pre-fix bundle | Implementation committed, deployment-blocked | #331 | Publish commit `6d1e38e`, then run exact anonymous embed QA |
+| Public 3D sphere fixture is not established at the fixed public URL | Dependency-blocked | #360 | Provision/publish intended 3D fixture; do not infer from 2D public fixture |
+| Physical held-pinch movement cannot be synthesized by current automation | Verification-boundary blocked | #344 | Perform one authorized real-camera evidence transaction when available |
+| AI/editor/immersive route consumers | Existing route-specific open issues | #328, #330–#335 | Reconcile each route separately; never transfer evidence across consumers |
+
+Duplicate/closure report: #347, #348, #349, #350–#355, #356, #357–#375
+remain closed historical transactions and were not reopened. The new issues
+#376–#378 are corrective follow-ups created because later owner-visible gaps
+must be new criterion-ready work. #274/#320/#324 remain reconciliation
+containers, not engineering units.
+
+Handoff is exactly #377 for engineering after the required grooming gate;
+#376 is a separate publication workflow transaction and #378 is a separate
+anonymous public route transaction. Engineering and QA must remain paired per
+issue, followed immediately by reconciliation and permanent closure or a
+classified terminal handoff.
 
 ## #356 transaction reconciliation — 2026-09-03
 
@@ -13926,7 +14084,7 @@ engineering, QA, reconciliation, and permanent closure before the next begins.
 - #368 is ready for permanent completion closure. Do not reopen it for #369,
   deployment publication, or any later parity work.
 
-## Current canonical pieces-parity distillation — 2026-09-03
+## Current canonical pieces-parity distillation — 2026-09-03 (superseded by the owner re-audit below)
 
 This section supersedes earlier historical notes that describe issues as
 reopened. Closed issues are immutable under the current owner rule: no issue
@@ -13957,5 +14115,35 @@ and [#369](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/369).
 Full artifact's missing user-facing camera steering/camera-view contract and
 the corresponding Non-Camera omission. Closed #364 remains closed.
 
-The next groomed issue is #368. Engineering and QA must be completed and
-reconciled as one issue transaction before #369 or any other issue begins.
+Historical handoff was #368. Engineering and QA were required as one issue
+transaction before #369 or any other issue began.
+
+## Current owner-reported parity distillation — latest 2026-09-03
+
+This latest audit supersedes the historical text above. Full CMS parity is
+limited to the augment-humankind pieces implementation/examples, translated
+into this repository's Django/Python backend and React/TypeScript frontend;
+PHP and unrelated CMS features remain reference-only and out of scope.
+
+The owner reports missing or unusable editor controls, bulky controls outside
+the canvas, no understandable Draft/Published workflow, and absent public
+controls. Exact deployed inspection found stage entry points in the current
+bundle, but prior closures relied on DOM/source/local evidence that did not
+establish consistent rendered parity. No closed issue was reopened.
+
+New corrective issues, each with a single route/workflow contract:
+
+- #376: deployed manual 3D Draft/Published lifecycle.
+- #377: deployed manual 3D canvas-associated controls and layout.
+- #378: deployed anonymous public 2D control discoverability.
+
+#331 has local embed fix commit `6d1e38e`, but published QA still showed the
+pre-fix metadata/Preview shell, so it remains deployment-blocked. #360 remains
+blocked on the intended public 3D fixture; #344 remains blocked by physical
+held-pinch evidence. Existing AI, public 3D, embed, immersive, and downloaded
+route issues remain separate transactions.
+
+Closed #347–#375 remain immutable. Any later failure or broader parity gap is
+a new linked criterion-ready issue, never a reopening. The next handoff is
+exactly #377 after grooming; engineering, QA, reconciliation, and closure
+must finish for it before #376 or #378 engineering begins.

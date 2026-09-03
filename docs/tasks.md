@@ -14892,3 +14892,19 @@ evidence.
 #387 local regular-3D-embed fixed-viewport QA passed 3/3 across Chromium,
 Firefox, and WebKit with proportional geometry and public controls; GitHub
 comment 5533310824 records the handoff. #387 stays open for deployed evidence.
+
+#388 local regular-immersive-3D fixed-viewport QA passed 3/3 across Chromium,
+Firefox, and WebKit at 1280x900 and 375x812, including compact stage-local
+controls and no camera request on load; GitHub comment 5533332273 records the
+handoff. #388 stays open for deployed evidence.
+
+#389 local CMS-immersive-3D fixed-viewport QA passed 3/3 across Chromium,
+Firefox, and WebKit at 1280x900 and 375x812, including the chrome-less wrapper
+and no camera request on load; GitHub comment 5533332709 records the handoff.
+#389 stays open for deployed evidence.
+
+The FIFO deployment QA pass is complete through #389, but none of these issues
+was closed because exact deployed rendered gates remain unavailable through
+connected Chrome. #390 remains permanently closed. Obtain deployed
+anonymous/fixed-viewport evidence, then reconcile and close each issue
+individually in FIFO order.

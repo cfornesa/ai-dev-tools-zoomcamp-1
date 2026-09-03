@@ -1104,3 +1104,19 @@ anonymous fixed-viewport capture remains unavailable through connected Chrome.
 fixed-viewport transaction passed 3/3 across Chromium, Firefox, and WebKit,
 including proportional geometry and public controls. Its exact deployed
 anonymous fixed-viewport capture remains the outstanding verification gate.
+
+#388 received QA evidence comment 5533332273. Its local regular-immersive-3D
+fixed-viewport transaction passed 3/3 across Chromium, Firefox, and WebKit at
+1280x900 and 375x812, including compact stage-local controls and no camera
+request on load. It remains open for deployed anonymous evidence.
+
+#389 received QA evidence comment 5533332709. Its local CMS-immersive-3D
+fixed-viewport transaction passed 3/3 across Chromium, Firefox, and WebKit at
+1280x900 and 375x812, including the chrome-less wrapper and no camera request
+on load. It remains open for deployed anonymous evidence.
+
+The FIFO deployment QA pass is therefore complete through #389, but no issue
+was closed because the exact deployed rendered gates are still unavailable in
+the connected Chrome session. #390 remains permanently closed. The next safe
+step is to obtain the required deployed anonymous/fixed-viewport evidence,
+then reconcile and close each issue individually in FIFO order.

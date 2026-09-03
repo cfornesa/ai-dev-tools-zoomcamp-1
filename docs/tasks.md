@@ -13097,3 +13097,74 @@ presentation and #355/#356 own deployed route evidence. The next independent
 candidate is #339's local AI 3D publication contract; its stale browser
 selectors can be reconciled independently, but its engineering→QA transaction
 must remain separate from #364.
+
+## Fresh task-distillation audit after current owner re-audit — 2026-09-03
+
+This is the current canonical backlog handoff and supersedes earlier queue
+prose for selection. The parity target remains limited to the
+`augment-humankind` pieces implementation and maintained examples, translated
+into this repository's Django/Python backend and React/TypeScript frontend.
+PHP is read-only reference material; unrelated CMS features remain out of
+scope.
+
+### Evidence and duplicate report
+
+The exact authenticated manual 3D editor route
+`/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` was inspected at the
+available desktop viewport. The hamburger overlay is present, but the
+deployed revision still renders inconsistent rows: Download is compact,
+Piece controls and publication status use detached icon/label presentation,
+and Save/Ask AI authoring actions render as unlabeled glyph rows. This is
+current rendered evidence, not a reason to reopen #347 or closed #348.
+
+The exact public URL `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` currently
+renders a 2D `Blank canvas` fixture and a hamburger-driven public control
+surface. Its intended published fixture/revision remains the existing #356
+boundary. No duplicate issue is needed for that report. #362 owns shared
+React runtime-menu presentation; #363 is closed for extracted 2D artifacts;
+#364 owns extracted 3D artifacts and remains open pending Docker browser QA;
+#355 owns exact authenticated deployed manual 3D verification; #349/#360 own
+3D sphere proportions. Closed issues remain immutable.
+
+The editor-authoring gap had previously been scoped to closed #348. Because
+the owner has not authorized reopening it, the genuinely new corrective
+contract is [#365](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/365),
+covering the named 2D/3D owner-editor authoring actions and the exact fixed
+viewport/browser evidence. No other new issue was created: the remaining
+reported gaps are covered by existing open issues or are deployment/fixture
+verification boundaries.
+
+### Current atomic manifest
+
+| Record | Atomic boundary | Status and next action |
+| --- | --- | --- |
+| #362 | Shared React runtime command-menu labels, rows, and no closed-card scrollbar | Open; pending supported browser QA after Docker recovery |
+| #364 | Extracted Full/Non-Camera 3D runtime command surface | Open; engineering committed, browser QA blocked by unavailable Docker daemon |
+| #365 | Owner-editor authoring actions in the canvas-associated hamburger menu | **NEXT GROOMED**; engineer and test this one transaction only |
+| #355 | Authenticated deployed manual 3D editor route | Open; requires exact owner session and republished revision |
+| #356 | Anonymous deployed public 2D route and intended published fixture | Open; requires intended fixture/revision |
+| #328, #330–#335, #339–#341 | AI/public/embed/immersive route and local publication contracts | Open; one route/workflow transaction per issue |
+| #349/#360 | Manual/public 3D primitive proportions | Open; separate route geometry evidence |
+| #320, #324, #274 | Release/readiness/history parents | Open containers; never engineer directly |
+
+### Blockers, dependency order, and handoff
+
+- The Docker daemon is unavailable for #362/#364 browser QA. This is a
+  workflow/infrastructure verification blocker, not a product completion
+  signal. The exact retained log and next action are recorded in #364's
+  handoff; no blocker follow-up issue was created because this is already
+  covered by the documented browser-QA workflow/parent #320.
+- Deployed route evidence is a verification boundary requiring the owner's
+  authenticated browser state and the intended published fixture. Existing
+  #355/#356 cover it; no duplicate issue was created.
+- #365 is independent of the Docker-blocked artifact and route verification
+  tasks at the definition level, but its own closure requires the supported
+  browser scenarios. Its finite criteria name the routes, applicable action
+  inventory, fixed viewports, handlers, focus behavior, and out-of-scope
+  surfaces.
+
+Distillation and grooming are complete. The only groomed engineering target
+is **#365**. Engineering and testing must be performed together for #365,
+then reconciliation and permanent GitHub closure (or a classified blocker
+handoff) must occur before another issue enters engineering. Completion means
+closure; no closed issue may be reopened without explicit owner authorization.

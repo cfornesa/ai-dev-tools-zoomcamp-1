@@ -214,3 +214,21 @@ across Chromium, Firefox, and WebKit. The local Draft/Published disclosure,
 responsive stage toolbar, and removal of the standalone bundle control were
 verified. Exact deployed verification remains #328. #339 is permanently
 closed; no closed issue was reopened.
+
+## Reopened Chrome route revalidation — 2026-09-03
+
+The authenticated Chrome session now reaches the supplied owner route. The
+live compact disclosure exposes Screenshot, Download, Immersive, Sound, Piece
+controls, Steer, Guide, editor actions, Publication status: Draft, and
+Fullscreen. The publication disclosure exposes the private Draft explanation
+and Draft/Published choices. At 375x812, a pointer-cleared rendered capture
+showed the menu and publication drawer within the viewport with no horizontal
+overflow. The deployed asset observed was `assets/index-CecM7AFX.js`.
+
+The browser window cannot establish 1280x900; its maximum observed viewport is
+962x865 even after requesting the larger size. Therefore #355 remains open as
+a verification boundary. Its next action is the same route matrix in a
+session capable of 1280x900, followed by exact deployed revision
+reconciliation. No product source/tests changed, no closed issue was
+reopened, and the required post-blocker distillation found no duplicate or
+new implementation issue.

@@ -13481,6 +13481,26 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+### Reopened Chrome route revalidation — 2026-09-03
+
+The reopened authenticated Chrome session now reaches the supplied owner route
+and shows the current compact stage disclosure. Opening the menu exposed
+Screenshot, Download, Immersive, Sound, Piece controls, Steer, Guide, editor
+actions, Publication status: Draft, and Fullscreen. Opening the publication
+control exposed the Draft (Private) explanation and Draft/Published choices.
+At 375x812, the rendered menu and publication drawer fit the viewport without
+horizontal overflow; a clean screenshot after moving the pointer away showed
+no clipped required controls. The live asset observed was
+`assets/index-CecM7AFX.js`.
+
+The Chrome window could not establish the required 1280x900 viewport: its
+maximum observed viewport was 962x865, even after requesting 1280x900. Because
+#355 explicitly requires both fixed viewports and exact deployed revision
+reconciliation, this is a verification-boundary result, not closure evidence.
+The issue remains open with the next action to rerun the same matrix in a
+browser session that can provide 1280x900 and then reconcile the deployed
+revision. No issue was reopened and no product source/tests were changed.
+
 ## #339 transaction reconciliation — 2026-09-03
 
 #339's local AI 3D stage-local publication implementation passed 55/55 focused

@@ -996,3 +996,15 @@ screenshots, and Draft restoration. The exact republished route serves
 the unavailable state, so exact deployed anonymous/fixed-viewport evidence
 cannot yet close the issue. QA comment 5533080734 records FAIL /
 verification-boundary. #388 remains open and handed off; #389 is next.
+
+## #389 engineering and QA handoff — 2026-09-03
+
+Added `public3dImmersiveCmsStageChrome.spec.ts`. The fixed-viewport local
+transaction passed 3/3 across Chromium, Firefox, and WebKit at 1280x900 and
+375x812, covering the CMS chrome-less wrapper, named controls, proportional
+containment, overflow/scrollbar boundaries, no camera request on load,
+rendered screenshots, and Draft restoration. The exact republished route
+serves `assets/index-CREpJGbM.js` but the shared fixture is Draft/private and
+returns the unavailable state, so exact deployed anonymous/fixed-viewport
+evidence cannot yet close the issue. QA comment 5533098204 records FAIL /
+verification-boundary. #389 remains open and handed off; #390 is next.

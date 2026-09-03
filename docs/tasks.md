@@ -14795,3 +14795,17 @@ unavailable state; exact anonymous deployed rendered evidence remains
 unverified. QA result: FAIL / verification-boundary; GitHub comment
 5533080734 records the matrix. #388 remains open and terminally handed off;
 #389 is next.
+
+### #389 engineering and QA handoff — 2026-09-03
+
+Added `frontend/e2e/public3dImmersiveCmsStageChrome.spec.ts` for the
+anonymous CMS immersive route. The isolated fixed-viewport transaction passed
+3/3 in Chromium, Firefox, and WebKit at 1280x900 and 375x812. It verifies the
+CMS chrome-less wrapper, stage-local controls, proportional containment, no
+horizontal overflow or unjustified scrollbar, no camera request on load,
+screenshot evidence, and Draft restoration. The exact republished route
+serves `assets/index-CREpJGbM.js`, but the supplied shared fixture is currently
+Draft/private and returns the unavailable state; exact deployed anonymous
+rendered evidence remains unverified. QA result: FAIL /
+verification-boundary; GitHub comment 5533098204 records the matrix. #389
+remains open and terminally handed off; #390 is next.

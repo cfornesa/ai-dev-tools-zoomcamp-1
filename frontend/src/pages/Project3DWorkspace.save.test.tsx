@@ -102,6 +102,23 @@ describe('Project3DWorkspace Save action', () => {
     expect(screen.getByRole('button', { name: 'Sphere 1 copy' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Redo' }));
     expect(screen.queryByRole('button', { name: 'Sphere 1 copy' })).not.toBeInTheDocument();
+
+    mockedSaveSceneVersion3D.mockResolvedValue({
+      id: 2,
+      sequence: 2,
+      origin: 'manual',
+      created_by: 'alice',
+      created_at: '2026-01-01T00:00:01Z',
+      scene_json: baseProject().current_version!.scene_json,
+    });
+    await user.click(screen.getByRole('button', { name: 'Save scene' }));
+    await waitFor(() => expect(mockedSaveSceneVersion3D).toHaveBeenCalled());
+    expect(mockedSaveSceneVersion3D).toHaveBeenLastCalledWith(
+      'p1',
+      expect.objectContaining({
+        objects: expect.arrayContaining([expect.objectContaining({ type: 'sphere' })]),
+      }),
+    );
   });
 
   it('starts with the Save button disabled and status "Saved as version 1"', async () => {

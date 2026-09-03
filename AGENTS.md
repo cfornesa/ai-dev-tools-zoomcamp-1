@@ -273,9 +273,32 @@ transaction/concurrency guarantees SQLite doesn't provide.
 - `cd frontend && npx playwright test --list` - list every scenario
   without running a browser; useful to confirm the suite is syntactically
   valid and every test is discoverable with no server running at all
-- `cd frontend && npx playwright install --with-deps chromium` - one-time
-  download of the Chromium build Playwright drives (only needed once per
-  machine, not before every run)
+- `cd frontend && npx playwright install --with-deps chromium firefox webkit`
+  - on a supported Ubuntu/Debian host, one-time download of the browser
+  builds plus the Linux libraries their exact builds require (only needed
+  once per machine, not before every run). The `--with-deps` step is
+  important for WebKit: its ABI dependencies include the matching ICU,
+  `libatomic`, Opus, and GStreamer codec libraries, so installing similarly
+  named but different Nix libraries is not a supported substitute.
+- `make webkit-fullscreen` (from the repo root) - run the exact WebKit
+  fullscreen/Escape regression isolated in CI. Start the disposable local
+  stack first with `make dev`, or set `E2E_BASE_URL` to another reachable
+  Django/Vite origin. This target expands to:
+
+  ```bash
+  cd frontend && E2E_BASE_URL=http://localhost:5000 npm run test:e2e -- \
+    e2e/manual2dStageChrome.spec.ts \
+    --project=webkit \
+    --grep "keeps the fullscreen command synchronized after browser Escape"
+  ```
+
+  The Replit Nix host may still reject the downloaded WebKit binary because
+  its system library ABI differs from the browser build. In that environment,
+  use the repository's CI `e2e-browser` job (or another disposable
+  Ubuntu/Debian browser runner) as the approved validation path; it runs the
+  same `npx playwright install --with-deps chromium firefox webkit` setup and
+  the same regression command. A WebKit process-launch error is a host setup
+  failure, not evidence that the fullscreen assertion failed.
 
 Before running `make e2e`, in order:
 
@@ -309,7 +332,7 @@ every scenario self-skips with an actionable message instead of failing,
 the same convention `backend.test_settings`'s `POSTGRES_TEST_DATABASE_URL`
 gate already uses for backend-only PostgreSQL tests. Set `E2E_BASE_URL`
 to point the suite at a different origin than the default
-`http://localhost:5173`.
+  `http://localhost:5000`.
 
 Rules
 

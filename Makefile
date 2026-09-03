@@ -3,7 +3,7 @@
 	backend-lint backend-format backend-format-check backend-typecheck backend-test \
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
 git-safe-push browser-qa compose-preflight \
-e2e dev run deploy-check migrate smoke-local smoke-hosted-git
+e2e webkit-fullscreen dev run deploy-check migrate smoke-local smoke-hosted-git
 
 # Run every backend and frontend check (same checks CI runs).
 check: backend-check frontend-check
@@ -57,6 +57,12 @@ frontend-test:
 # running this.
 e2e:
 	cd frontend && npm run test:e2e
+
+# Run the CI-isolated WebKit fullscreen/Escape regression against the local
+# Django/Vite stack. WebKit itself must have been installed with --with-deps
+# on a supported Ubuntu/Debian host; see AGENTS.md.
+webkit-fullscreen:
+	cd frontend && E2E_BASE_URL=$${E2E_BASE_URL:-http://localhost:5000} npm run test:e2e -- e2e/manual2dStageChrome.spec.ts --project=webkit --grep "keeps the fullscreen command synchronized after browser Escape"
 
 # Provision a disposable PostgreSQL-backed Django/Vite stack, verify the
 # origin is this repository, run the Layers browser suite, and clean up.

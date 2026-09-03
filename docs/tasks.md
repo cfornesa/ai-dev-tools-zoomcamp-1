@@ -14700,3 +14700,14 @@ published asset identity must be reconciled before live claims. Physical
 camera behavior remains a separate owner-controlled verification boundary on
 #344. No actionable gap remains only in prose; every fresh route/artifact gap
 has a criterion-ready issue and exact next action.
+
+### #383 deployment precondition recheck — 2026-09-03
+
+The exact authenticated owner route remains available in Chrome and renders
+the stage hamburger, opened named action overlay, and `Publication status:
+Draft`. It still serves `assets/index-xwmMEBBo.js`, not the current pushed
+build, so #383 remains open at its deployment-revision boundary. Docker status
+shows the intended services healthy, but multiple similarly named project
+stacks are running; local service output is therefore not a substitute for
+the exact published route. Next action remains sync/publish, then run #383's
+fixed-viewport rendered transaction.

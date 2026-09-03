@@ -928,3 +928,9 @@ regular 3D embed, #388 immersive 3D, #389 CMS immersive 3D, and #390 extracted
 Full/Non-Camera downloads. #344 remains the independent physical-camera
 capability issue. The next groomed child is #383 after deployment sync; route
 transactions proceed FIFO, one engineering+QA transaction at a time.
+
+Recheck: Chrome still serves `assets/index-xwmMEBBo.js` on the authenticated
+owner route, while the pushed local build has a different asset hash. Docker
+reports healthy services but multiple project stacks, so the exact published
+revision remains the authoritative blocker for #383. No closed issue changed
+state.

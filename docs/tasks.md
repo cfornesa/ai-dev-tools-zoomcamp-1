@@ -13649,6 +13649,20 @@ bulk task-distillation and grooming across the remaining open backlog; then
 process exactly one selected issue through engineering, QA, reconciliation,
 and permanent closure before advancing.
 
+## #330 blocker and queue halt — 2026-09-03
+
+Fresh anonymous inspection of the exact required public 3D route returned
+“This project isn't available” from deployed asset `assets/index-CQvhOwx-.js`.
+#330 therefore remains open and blocked on the required published non-empty
+3D fixture; it was not closed or reopened. The remaining independent route
+work is likewise externally blocked: #331 needs the local embed fix to reach
+the published bundle, #332–#335 need published 3D/immersive fixtures, and
+#344 needs physical held-pinch evidence. Parent #274/#320/#324 remain release
+gates, not engineering units. No closure-ready task remains honestly
+available in the current state, so the FIFO session pauses until publication,
+deployment synchronization, or physical camera evidence changes. Closed
+issues stay permanently closed; later gaps require new issues.
+
 ## Canonical owner-reported parity distillation — 2026-09-03 (latest)
 
 The owner-visible end state remains unproven. Full CMS parity is limited to

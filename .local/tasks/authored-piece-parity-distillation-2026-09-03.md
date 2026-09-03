@@ -569,3 +569,16 @@ parity, distinct from #360's sphere-proportion child. #344 remains blocked on
 physical held-pinch evidence. The next action is to groom #330, then process
 its engineering and QA together before permanent closure or a recorded
 dependency handoff.
+
+## #330 blocker and queue halt reconciliation — 2026-09-03
+
+The exact anonymous public 3D route is unavailable because the required
+published fixture is not present. #330 remains open and blocked; no source
+change or closure claim was made. Fresh queue review finds #331 blocked by its
+stale published embed bundle, #332–#335 dependent on unavailable published
+3D/immersive fixtures, and #344 blocked on physical held-pinch evidence.
+Parent containers remain non-engineering release gates. There is no remaining
+independent closure-ready task that can be honestly completed from the current
+external state, so activity pauses at these documented blockers. Resume with
+#330 after intentionally republishing the required fixture, or with #331
+after the embed fix is deployed; closed issues remain immutable.

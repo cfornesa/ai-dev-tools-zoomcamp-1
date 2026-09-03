@@ -13513,6 +13513,24 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+## #344 blocker reconciliation and fresh distillation — 2026-09-03
+
+Focused implementation checks for #344 passed 26/26, but the required
+physical held-pinch camera transaction could not be produced by available
+automation. #344 remains open and explicitly blocked by an environment /
+verification boundary; it is not closed and is not a reason to halt the goal.
+Its exact next action is one manual Chromium camera transaction covering
+forward/back and sideways translation, release/hand loss/disable/stop, and
+camera denial fallback.
+
+Fresh distillation after this blocker found no new implementation issue. The
+Replit workspace currently reports `MERGE_CONFLICT` and `UNAUTHENTICATED`, so
+#356 and #375 remain dependency-blocked on a reviewed revision being pulled
+and published. #360 remains dependent on #356. Closed issues—including #349,
+#355, #367, and #374—remain permanently closed. The next queue action is
+independent manual-camera evidence for #344; deployment-dependent issues must
+wait for their stated prerequisite.
+
 ## Current canonical distillation after exact-route re-audit — 2026-09-03
 
 This section supersedes prior handoff notes above. It is a distillation and

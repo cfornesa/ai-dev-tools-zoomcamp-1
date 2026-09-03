@@ -405,3 +405,19 @@ independent engineering candidate is #344; #375 is the next deployment-
 dependent verification candidate after Replit synchronization. Engineering
 and testing remain one issue at a time, followed immediately by
 reconciliation and permanent closure.
+
+## #344 blocker reconciliation and fresh distillation — 2026-09-03
+
+Focused implementation checks passed 26/26. The physical held-pinch camera
+acceptance could not be produced by current automation, so #344 is explicitly
+blocked by an environment/verification boundary and remains open. The exact
+next action is one manual Chromium camera transaction covering movement,
+release/hand loss/disable/stop, and denial fallback. The blocker does not halt
+the goal.
+
+Fresh duplicate/dependency review found no new implementation issue. Replit
+currently reports `MERGE_CONFLICT` and `UNAUTHENTICATED`; #356 and #375 remain
+dependency-blocked on pulling and publishing the reviewed revision, and #360
+depends on #356. #349/#355/#367/#374 remain permanently closed. The next
+queue action is the independent #344 manual-camera evidence transaction;
+deployment-dependent work waits for its prerequisite.

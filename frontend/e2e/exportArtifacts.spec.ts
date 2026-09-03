@@ -211,6 +211,85 @@ async function openExportInIsolatedContext(
   await page.goto(fileUrl);
 }
 
+async function openExportPieceControls(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Open piece controls menu' }).click();
+  await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+}
+
+test.describe('HTML export: responsive piece action surface', () => {
+  test('stacks labeled actions and confines scrolling to opened controls at desktop and mobile widths', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    interceptCdnAndTrackRequests(page);
+    const result = await generator.generateHtmlExport({
+      scene: exportFixtureScene(),
+      title: 'Responsive standalone piece',
+      description: 'Responsive standalone piece for browser QA.',
+      interactionMode: 'demo',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    await openExportInIsolatedContext(page, result.html, 'responsive-actions.html');
+
+    const menuToggle = page.getByRole('button', { name: 'Open piece controls menu' });
+    await expect(menuToggle).toBeVisible();
+
+    for (const viewport of [
+      { width: 1280, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await menuToggle.click();
+
+      const overlay = page.getByRole('dialog', { name: 'Piece actions' });
+      await expect(overlay).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Piece controls', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Enter fullscreen' })).toBeVisible();
+
+      const geometry = await page.evaluate(() => {
+        const card = document.getElementById('piece-command-card');
+        const actions = [...document.querySelectorAll('#piece-action-list > button')];
+        const rect = (element: Element) => {
+          const box = element.getBoundingClientRect();
+          return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+        };
+        return {
+          card: card ? rect(card) : null,
+          actions: actions.map(rect),
+          documentWidth: document.documentElement.scrollWidth,
+          documentHeight: document.documentElement.scrollHeight,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+        };
+      });
+      expect(geometry.card).not.toBeNull();
+      expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+      expect(geometry.documentHeight).toBeLessThanOrEqual(geometry.viewportHeight);
+      for (const action of geometry.actions) {
+        expect(action.left).toBeGreaterThanOrEqual(geometry.card!.left);
+        expect(action.right).toBeLessThanOrEqual(geometry.card!.right);
+        expect(action.top).toBeGreaterThanOrEqual(geometry.card!.top);
+        expect(action.bottom).toBeLessThanOrEqual(geometry.card!.bottom);
+      }
+      for (let index = 1; index < geometry.actions.length; index += 1) {
+        expect(geometry.actions[index]!.top).toBeGreaterThanOrEqual(
+          geometry.actions[index - 1]!.bottom,
+        );
+      }
+
+      await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+      await expect(page.locator('#piece-controls-panel')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(overlay).toBeHidden();
+    }
+
+    await context.close();
+  });
+});
+
 test.describe('HTML export: latest and historical versions run in an isolated browser context, no Django', () => {
   test('a "latest version" export opens and runs, requesting only the pinned p5 CDN script -- never any /api/, /accounts/, or /health/ path', async ({
     browser,
@@ -302,9 +381,8 @@ test.describe('Interaction modes: demo-only, camera-only, and combined contain e
     expect(result.html).not.toContain(generator.constants.MEDIAPIPE_VISION_BUNDLE_CDN_URL);
 
     await openExportInIsolatedContext(page, result.html, 'demo-only.html');
-    await expect(page.getByRole('button', { name: 'Piece controls' })).toBeVisible();
-    await page.getByRole('button', { name: 'Piece controls' }).click();
-    await expect(page.getByRole('group', { name: 'Piece controls' })).toBeVisible();
+    await openExportPieceControls(page);
+    await expect(page.locator('#piece-controls-panel')).toBeVisible();
     await expect(page.locator('#demo-controls-host')).toBeVisible();
     await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
     await expect(page.locator('#camera-controls-host')).toHaveCount(0);
@@ -337,7 +415,7 @@ test.describe('Interaction modes: demo-only, camera-only, and combined contain e
     expect(externalScripts).toHaveLength(1);
 
     await openExportInIsolatedContext(page, result.html, 'camera-mode.html');
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await openExportPieceControls(page);
     await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
     await expect(page.getByTestId('camera-enable')).toBeVisible();
     await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
@@ -365,7 +443,7 @@ test.describe('Interaction modes: demo-only, camera-only, and combined contain e
     expect(result.html).toContain('camera-controls-host');
 
     await openExportInIsolatedContext(page, result.html, 'combined.html');
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await openExportPieceControls(page);
     await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
     await expect(page.getByTestId('camera-enable')).toBeVisible();
 
@@ -489,7 +567,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       await cameraModeExportHtml(),
       'lifecycle-inactive.html',
     );
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await openExportPieceControls(page);
 
     await expect(page.getByTestId('camera-status')).toHaveText('');
     await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
@@ -507,7 +585,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     interceptCdnAndTrackRequests(page, { allowCamera: true });
     await installCameraTestSeams(page, 'deny');
     await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-denied.html');
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await openExportPieceControls(page);
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-error')).toContainText(/camera access was denied/i);
@@ -526,7 +604,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     interceptCdnAndTrackRequests(page, { allowCamera: true });
     await installCameraTestSeams(page, 'missing-device');
     await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-missing.html');
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await openExportPieceControls(page);
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-error')).toContainText(/no camera was found/i);
@@ -546,7 +624,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       await cameraModeExportHtml(),
       'lifecycle-unsupported.html',
     );
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await openExportPieceControls(page);
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-error')).toContainText(/doesn't support/i);
@@ -562,7 +640,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     interceptCdnAndTrackRequests(page, { allowCamera: true });
     await installCameraTestSeams(page, 'succeed');
     await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-active.html');
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await openExportPieceControls(page);
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
@@ -610,7 +688,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       await cameraModeExportHtml(),
       'lifecycle-network-capture.html',
     );
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await openExportPieceControls(page);
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);

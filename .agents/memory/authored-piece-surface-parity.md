@@ -253,6 +253,13 @@ acceptance test now follows the current stacked dialog contract rather than
 obsolete fixed icon geometry. Deployed verification remains the immutable
 #326 boundary; later gaps do not reopen #340.
 
+Manual 3D publication QA boundary (2026-09-03): #341 remains open because
+`manual3dStageChrome.spec.ts` passed Chromium and WebKit but Firefox timed out
+while selecting the hidden Movement instrument control after the shared Piece
+controls interaction. This is a cross-browser control-state/test-contract
+defect, not an external dependency blocker; do not advance the queue or close
+the issue until engineering and QA reconcile it.
+
 AI 2D responsive closure (2026-09-03): issue #326 is permanently closed for
 the authenticated `/ai-projects/:id` consumer. Live audit found its direct p5
 canvas retained an 800px inline width at 375px, causing horizontal document

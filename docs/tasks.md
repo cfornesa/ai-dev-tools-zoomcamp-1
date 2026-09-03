@@ -12856,6 +12856,16 @@ not obsolete fixed icon geometry. Exact deployed `/ai-projects/:id`
 verification remains the already-closed #326 boundary. Later gaps must use
 new/open linked work and must not reopen #340.
 
+### #341 QA handoff — 2026-09-03
+
+#341 remains open. The disposable `manual3dStageChrome.spec.ts` run passed in
+Chromium and WebKit but failed in Firefox after 30 seconds: the Movement
+instrument select at line 142 remained hidden when the scenario attempted
+`selectOption('fmsynth')`. This is a cross-browser interaction/test-state
+defect, not an external dependency blocker and not permission to advance the
+queue. No issue was reopened. Engineering must reconcile the control state or
+test contract, then QA must rerun the complete scenario before closure.
+
 ### #326 closure reconciliation — 2026-09-03
 
 #326 is closed as completed for the authenticated AI-assisted 2D editor

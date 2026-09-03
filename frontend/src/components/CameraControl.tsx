@@ -19,6 +19,13 @@ export type CameraControlProps = {
    * each time (acceptance criterion: retrying after a recoverable failure
    * must not duplicate streams, recognizers, or event listeners). */
   createProvider?: () => TrackingProvider;
+  /**
+   * Starts the camera when this control mounts. This is reserved for a
+   * separate, explicit capability activation (for example, the user has just
+   * pressed "Steer the piece"). Ordinary camera controls keep the default
+   * false value so merely rendering them never requests permission.
+   */
+  startOnMount?: boolean;
   /** Test seam for `window.isSecureContext` — jsdom always reports `true`
    * for that read-only global, so a test that wants to exercise the
    * "insecure context" failure category overrides this instead. */
@@ -97,10 +104,10 @@ function statusMessage(status: CameraStatus): string | null {
  * `EditorWorkspace.tsx` and never touched by this component).
  *
  * Lifecycle (acceptance criteria):
- * - Nothing here calls `createProvider`, `getUserMedia`, or `start()` on
- *   mount — the `TrackingProvider` is created lazily, only inside
- *   `handleEnable`, the click handler for the one "Enable camera"/"Retry"
- *   button that can ever call `start()`.
+ * - Ordinary controls never call `createProvider`, `getUserMedia`, or
+ *   `start()` on mount. The explicit `startOnMount` exception is used only
+ *   after a caller has activated a separate capability (issue #344 gesture
+ *   steering); it starts the same `handleEnable` lifecycle exactly once.
  * - `status` starts at `'idle'` (privacy notice + Enable camera button
  *   only) and moves to `'starting'` on click, `'active'` once the
  *   provider's `onFrame` channel proves tracking is actually producing
@@ -125,6 +132,7 @@ function statusMessage(status: CameraStatus): string | null {
  */
 function CameraControl({
   createProvider = createMediaPipeTrackingProvider,
+  startOnMount = false,
   isSecureContext = () => window.isSecureContext,
   onStatusChange,
   onFrame,
@@ -136,6 +144,7 @@ function CameraControl({
   const onStreamChangeRef = useRef(onStreamChange);
   onStreamChangeRef.current = onStreamChange;
   const providerRef = useRef<TrackingProvider | null>(null);
+  const startOnMountAttemptedRef = useRef(false);
   const [status, setStatus] = useState<CameraStatus>('idle');
   const [failure, setFailure] = useState<CameraFailureCategory | null>(null);
   const [showPermissionHint, setShowPermissionHint] = useState(false);
@@ -210,6 +219,19 @@ function CameraControl({
     setStatus('starting');
     getProvider().start();
   }
+
+  // Issue #344: the user has already explicitly activated gesture steering
+  // before this control mounts. Start that capability's camera lifecycle here
+  // while keeping the standalone camera control opt-in and permission-safe.
+  useEffect(() => {
+    if (startOnMount && status === 'idle' && !startOnMountAttemptedRef.current) {
+      startOnMountAttemptedRef.current = true;
+      handleEnable();
+    }
+    // `handleEnable` intentionally remains a local event/lifecycle handler;
+    // status is the guard that makes this mount-start happen only once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startOnMount, status]);
 
   function handleStop() {
     providerRef.current?.stop();

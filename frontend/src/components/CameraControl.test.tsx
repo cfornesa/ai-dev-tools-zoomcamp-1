@@ -116,6 +116,21 @@ describe('CameraControl', () => {
     expect(screen.queryByRole('button', { name: 'Enable camera' })).not.toBeInTheDocument();
   });
 
+  it('supports opt-in start on mount for an already-explicitly-activated capability', () => {
+    const fake = createFakeProvider();
+    render(
+      <CameraControl
+        createProvider={() => fake.provider}
+        isSecureContext={() => true}
+        startOnMount
+      />,
+    );
+
+    expect(fake.start).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('camera-status')).toHaveTextContent('Starting camera…');
+    expect(screen.queryByRole('button', { name: 'Enable camera' })).not.toBeInTheDocument();
+  });
+
   it('releases resources and returns to a stoppable-again state when Stop camera is pressed', async () => {
     const user = userEvent.setup({ delay: null });
     const fake = createFakeProvider();

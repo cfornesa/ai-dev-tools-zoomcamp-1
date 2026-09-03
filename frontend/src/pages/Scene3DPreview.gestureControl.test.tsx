@@ -17,9 +17,9 @@ import { getImmersiveHandMoveAxes } from './Scene3DPreview';
 
 // jsdom's `window.isSecureContext` does not implement the browser rule
 // that `http://localhost` counts secure -- it defaults to `false`, which
-// would otherwise route every "Enable camera" click in these tests into
-// CameraControl's insecure-context error path before ever creating a
-// provider. Matches CameraControl.test.tsx's own documented workaround.
+// would otherwise route the gesture activation lifecycle in these tests into
+// CameraControl's insecure-context error path before ever creating a provider.
+// Matches CameraControl.test.tsx's own documented workaround.
 beforeEach(() => {
   Object.defineProperty(window, 'isSecureContext', { configurable: true, value: true });
 });
@@ -170,9 +170,9 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
       'true',
     );
     expect(screen.getByTestId('gesture-camera-control')).toBeInTheDocument();
-    // Mounting the toggle never itself starts the camera -- matches
-    // CameraControl's own "no auto-start on mount" contract.
-    expect(fake.start).not.toHaveBeenCalled();
+    // The user explicitly activated steering before this control mounted, so
+    // its opt-in lifecycle starts the camera without a second Enable click.
+    expect(fake.start).toHaveBeenCalledTimes(1);
   });
 
   it('never mounts the camera-control region (or starts a camera) while the toggle is off', () => {
@@ -193,7 +193,7 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
-    await user.click(screen.getByRole('button', { name: /enable camera/i }));
+    expect(fake.start).toHaveBeenCalledTimes(1);
 
     // Two frames with a moved hand -- the first just seeds "previous
     // position" (the extractor's own signals require a prior frame to

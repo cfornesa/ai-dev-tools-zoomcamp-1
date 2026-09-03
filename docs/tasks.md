@@ -14620,3 +14620,29 @@ disable, and stop-camera evidence.
 
 The remaining open work is #344's physical-camera verification boundary and
 the parent reconciliation containers; no parent is engineered directly.
+
+## #344 engineering and paired QA handoff — 2026-09-04
+
+Implemented the finite lifecycle defect discovered during the #344
+transaction. `CameraControl` now supports an opt-in `startOnMount` path that
+is used only after the user explicitly activates `Steer the piece`; ordinary
+camera controls retain their permission-safe idle-on-mount behavior. The
+gesture provider is started exactly once, its existing status/error/stream
+callbacks remain authoritative, and disabling steering still unmounts the
+control and stops the provider.
+
+Evidence:
+
+- Focused paired QA: `CameraControl.test.tsx` and
+  `Scene3DPreview.gestureControl.test.tsx` — 2 files, 25/25 passed.
+- Regression QA: camera overlay and sound suites — 4 files, 58/58 passed.
+- Frontend lint, typecheck, production build, and `git diff --check` passed.
+  Lint retains only pre-existing warnings; the build retains its existing
+  large-chunk advisory.
+- Physical held-pinch, release, hand-loss, disable, and camera denial remain
+  manual Chrome evidence gates and are not claimed by synthetic tests.
+
+#344 remains open and is not reopened: its implementation lifecycle gap is
+resolved in this branch, while its remaining physical-input acceptance gate
+is handed back to the authorized Chrome session. No next issue is started
+until this issue's engineering and testing transaction is reconciled.

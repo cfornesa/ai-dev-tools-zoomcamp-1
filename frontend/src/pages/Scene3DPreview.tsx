@@ -990,6 +990,7 @@ function Scene3DPreview({
                   <CameraControl
                     onFrame={handleGestureFrame}
                     createProvider={createGestureCameraProvider}
+                    startOnMount={showGestureControl && gestureControlEnabled}
                     onStatusChange={(status) => {
                       setGestureCameraStatus(status);
                       if (status !== 'active') resetGestureSignals();

@@ -890,3 +890,19 @@ tests). Fixed-viewport browser evidence passed for all six authored-piece
 route boundaries in Chromium, Firefox, and WebKit. Readiness remains open
 only at #344's physical-camera verification boundary; no closed issue was
 reopened.
+
+## #344 engineering transaction — 2026-09-04
+
+The lifecycle gap identified by fresh Chrome evidence was implemented without
+reopening any issue. `CameraControl` has an opt-in `startOnMount` prop; only
+the already-explicitly-activated `Steer the piece` capability uses it. The
+provider start is guarded to occur once, while ordinary camera controls still
+wait for their explicit Enable camera action.
+
+Paired engineering/QA evidence: the focused camera and gesture suites passed
+25/25, the combined camera/gesture/overlay/sound regression suites passed
+58/58, and frontend lint, typecheck, production build, and diff checks passed.
+The remaining #344 gates are physical held-pinch movement, release/hand-loss/
+disable/stop safety, and denial/unavailable fallback in the authorized Chrome
+session. These remain open verification criteria, not a reason to invalidate
+the prior scoped closures or move on to another issue.

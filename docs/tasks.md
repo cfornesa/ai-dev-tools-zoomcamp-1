@@ -12613,6 +12613,26 @@ user gesture, changed Movement to FM Synth, and verified Ambient and Melodic
 remained Synth. This issue is permanently closed; later audio or route gaps
 must be new issues unless the owner explicitly authorizes reopening #345.
 
+### Post-#345 remaining-queue distillation — 2026-09-03
+
+The FIFO rotating queue was re-audited after #345 closed. No remaining open
+record is both independent and locally closable:
+
+- #355 requires the owner's authenticated session against the exact
+  republished manual 3D route.
+- #356 requires the owner to republish the intended non-empty public 2D
+  fixture at the fixed URL; #360 remains dependent on that fixture.
+- #344 requires physical held-pinch camera evidence that the current browser
+  harness cannot synthesize; no product defect is inferred from that
+  environment limitation.
+- #324/#320 are reconciliation/readiness parents, not implementation units,
+  and must wait for their child evidence.
+
+These are dependency/environment blockers, not reasons to reopen #345, #347,
+#351, or #361. The goal should resume with #355/#356 after the owner supplies
+the required published session/fixture, or with #344 after a reliable manual
+camera-evidence path is available. No new duplicate issue was created.
+
 ### #358 closure reconciliation
 
 Issue #358 closed as completed for the local manual 3D authoring transaction.

@@ -272,6 +272,14 @@ manual 3D smoke passed 3/3 after changing Movement to FM Synth while the
 other voices stayed Synth. Later audio or route gaps require new issues and
 must not reopen #345 without explicit owner authorization.
 
+Remaining queue distillation (2026-09-03): after #345 closure, #355 and #356
+remain deployment/session blockers, #360 depends on #356, and #344 remains
+blocked on physical held-pinch evidence unavailable to the browser harness.
+#324/#320 are reconciliation parents, not independent implementation units.
+Do not reopen any closed issue or invent a duplicate; resume the FIFO queue
+when the owner-authenticated published fixture/session or reliable manual
+camera evidence becomes available.
+
 Portable 2D responsive closure (2026-09-03): #357 is permanently closed for
 the extracted artifact's responsive action surface. The artifact now packages
 an accessible hamburger menu, fullscreen translucent overlay, stacked labeled

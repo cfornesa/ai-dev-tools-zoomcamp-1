@@ -28,7 +28,11 @@ import {
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
-import { buildThreeSceneGraph, disposeThreeSceneGraph } from '../render/threeSceneBuilder';
+import {
+  buildThreeSceneGraph,
+  disposeThreeSceneGraph,
+  updateThreeCameraAspect,
+} from '../render/threeSceneBuilder';
 import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
 import type { TrackingFrame } from '../tracking/types';
 import HandGestureGuideDialog from './HandGestureGuideDialog';
@@ -254,6 +258,7 @@ function Scene3DPreview({
   const canvasFrameRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const [renderError, setRenderError] = useState(false);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(containerRef);
@@ -520,6 +525,7 @@ function Scene3DPreview({
       const width = canvasFrame.clientWidth || 1;
       const height = canvasFrame.clientHeight || 1;
       renderer.setSize(width, height, false);
+      if (cameraRef.current) updateThreeCameraAspect(cameraRef.current, width, height);
     }
     resize();
 
@@ -533,6 +539,7 @@ function Scene3DPreview({
       resizeObserver?.disconnect();
       renderer.dispose();
       rendererRef.current = null;
+      cameraRef.current = null;
     };
   }, []);
 
@@ -546,6 +553,7 @@ function Scene3DPreview({
     const size = activeRenderer.getSize(new THREE.Vector2());
     const aspect = (size.x || 1) / (size.y || 1);
     const { scene: threeScene, camera } = buildThreeSceneGraph(scene, aspect);
+    cameraRef.current = camera;
 
     // Issue #271: mouse-drag/touch-drag orbit, scroll/pinch zoom, and
     // (via listenToKeyEvents) arrow-key pan, all out of the box.
@@ -729,6 +737,7 @@ function Scene3DPreview({
       }
       controls.dispose();
       disposeThreeSceneGraph(threeScene);
+      cameraRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rendererRef/renderError are refs/state read once per effect run, not reactive inputs the loop needs to resubscribe to independently of `scene`.
   }, [scene, renderError]);

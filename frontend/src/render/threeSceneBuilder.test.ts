@@ -2,7 +2,11 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { Scene3DDocument } from '../pages/scene3dTypes';
-import { buildThreeSceneGraph, disposeThreeSceneGraph } from './threeSceneBuilder';
+import {
+  buildThreeSceneGraph,
+  disposeThreeSceneGraph,
+  updateThreeCameraAspect,
+} from './threeSceneBuilder';
 
 function baseScene(overrides: Partial<Scene3DDocument> = {}): Scene3DDocument {
   return {
@@ -60,6 +64,16 @@ describe('buildThreeSceneGraph: camera', () => {
     camera.getWorldDirection(forward);
     const toTarget = new THREE.Vector3(1, 2, 3).sub(camera.position).normalize();
     expect(forward.dot(toTarget)).toBeGreaterThan(0.99);
+  });
+
+  it('updates the perspective projection after a responsive renderer resize', () => {
+    const { camera } = buildThreeSceneGraph(baseScene(), 4 / 3);
+    const updateProjectionMatrix = vi.spyOn(camera, 'updateProjectionMatrix');
+
+    updateThreeCameraAspect(camera, 375, 812);
+
+    expect(camera.aspect).toBeCloseTo(375 / 812);
+    expect(updateProjectionMatrix).toHaveBeenCalledTimes(1);
   });
 });
 

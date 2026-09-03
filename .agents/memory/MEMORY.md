@@ -47,3 +47,4 @@
 - [Stage command overlay browser checks](stage-command-overlay-browser-checks.md) — scope state-changing trigger locators and dialog groups to their current overlay structure; mobile submenus must stay within the stage.
 - [WebKit local runtime dependencies](webkit-local-runtime-dependencies.md) — Playwright WebKit may need distro-matched ABI libraries locally; CI's `install --with-deps` remains the authoritative browser gate.
 - [Fullscreen browser Escape dialog state](fullscreen-browser-escape-dialog-state.md) — Firefox/WebKit can retain the stage command dialog after Escape exits fullscreen; keep Chromium's hidden assertion strict.
+- [Responsive 3D preview proportions](responsive-3d-preview-proportions.md) — Keep renderer/camera/frame dimensions aligned so uniform spheres stay round; preserve intentional object transforms and verify mobile overflow/clipping. See #349/#348.

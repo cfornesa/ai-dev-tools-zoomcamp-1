@@ -168,6 +168,17 @@ function buildCamera(camera: Camera3D, aspect: number): THREE.PerspectiveCamera 
   return result;
 }
 
+/** Keep perspective projection aligned with the renderer after a responsive
+ * or fullscreen resize; otherwise round geometry can be stretched. */
+export function updateThreeCameraAspect(
+  camera: THREE.PerspectiveCamera,
+  width: number,
+  height: number,
+): void {
+  camera.aspect = width / Math.max(height, 1);
+  camera.updateProjectionMatrix();
+}
+
 /** Builds a fresh `THREE.Scene`/`THREE.PerspectiveCamera` pair from a
  * validated `scene3d` document. Always rebuilds from scratch (no partial
  * diffing) -- simple, deterministic, and cheap enough for an editor

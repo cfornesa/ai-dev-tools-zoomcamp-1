@@ -3017,6 +3017,10 @@ select.ai-proposal-field-full-width {
   padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   background: rgba(3, 7, 18, 0.78);
+  /* The closed page has no overlay scrollbar. When this intentionally
+     fullscreen disclosure is open, a scrollbar is allowed only if the
+     stacked content exceeds the viewport. */
+  overflow: auto;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -3374,14 +3378,14 @@ select.ai-proposal-field-full-width {
    disclosure panel, so its own content may grow when validation feedback is
    present, but the closed command card never needs a scrollbar. */
 .publication-status-controls-panel {
-  /* The publication trigger can be near the bottom of the stacked command
-     card. Open upward so Draft/Published remain inside the viewport instead
-     of placing the lower action below the fullscreen disclosure surface. */
-  position: absolute;
-  left: 0;
-  top: auto;
-  bottom: calc(100% + 8px);
+  /* Stay in document flow beneath the trigger. Opening upward made this
+     panel cover the authoring rows beneath it at the bottom of the stacked
+     command list. The fullscreen overlay may scroll only when this expanded
+     content genuinely exceeds the viewport. */
+  position: static;
+  margin-top: 0.45rem;
   width: min(320px, calc(100vw - 48px));
+  max-width: 100%;
   max-height: none;
   overflow: visible;
   padding: 10px;

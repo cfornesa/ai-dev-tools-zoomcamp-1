@@ -69,13 +69,13 @@ describe('PublishControl3D', () => {
     expect(statusControl).toBeVisible();
   });
 
-  it('anchors the compact publication panel above its trigger', () => {
+  it('keeps the compact publication panel in flow below its trigger', () => {
     const css = readFileSync(resolve(__dirname, '../index.css'), 'utf8');
     const panelRule = css.match(/\.publication-status-controls-panel\s*\{([\s\S]*?)\n\}/)?.[1];
 
     expect(panelRule).toBeDefined();
-    expect(panelRule).toMatch(/position:\s*absolute/);
-    expect(panelRule).toMatch(/bottom:\s*calc\(100% \+ 8px\)/);
+    expect(panelRule).toMatch(/position:\s*static/);
+    expect(panelRule).toMatch(/margin-top:\s*0\.45rem/);
   });
 
   it('keeps the compact confirmation action in the publication disclosure workflow', async () => {

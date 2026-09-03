@@ -212,6 +212,23 @@ test.describe('manual 3D editor stage chrome', () => {
     expect(publicationPanelBox!.x + publicationPanelBox!.width).toBeLessThanOrEqual(
       commandCardBox!.x + commandCardBox!.width,
     );
+    const publicationOverlap = await publicationPanel.evaluate((panel) => {
+      const panelBox = panel.getBoundingClientRect();
+      const card = panel.closest('.piece-stage-command-card');
+      if (!card) return true;
+      return [...card.querySelectorAll<HTMLElement>(':scope > [role="group"] > *')]
+        .filter((element) => element !== panel.parentElement && element.getClientRects().length > 0)
+        .some((element) => {
+          const box = element.getBoundingClientRect();
+          return (
+            panelBox.left < box.right &&
+            panelBox.right > box.left &&
+            panelBox.top < box.bottom &&
+            panelBox.bottom > box.top
+          );
+        });
+    });
+    expect(publicationOverlap).toBe(false);
     await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
     await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
     await toolbar.getByRole('button', { name: 'Published', exact: true }).click();

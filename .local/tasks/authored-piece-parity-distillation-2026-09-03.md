@@ -1129,6 +1129,20 @@ One concrete defect was confirmed on #383: the open publication panel measures
 at the available desktop viewport. It is recorded on #383 as a route-scoped
 follow-up. No closed issue was reopened and no duplicate issue was created.
 
+## #383 engineering reconciliation — 2026-09-03
+
+The confirmed publication-panel overlap was fixed in pushed commit `9766c1c`.
+The panel now stays in normal stacked flow below its trigger; only the open
+fullscreen overlay may scroll when expanded content exceeds the viewport. A
+CSS contract test and route-level non-overlap assertion were added.
+
+Verification passed: focused PublishControl3D tests 10/10, frontend
+typecheck, changed-file Prettier, and
+`BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa` 3/3 in
+Chromium, Firefox, and WebKit at 1280x900 and 375x812. GitHub comment
+5533390457 records the evidence. #383 remains open pending republish and
+exact deployed-route recheck; no closed issue was reopened.
+
 The FIFO deployment QA pass is therefore complete through #389, but no issue
 was closed because the exact deployed rendered gates are still unavailable in
 the connected Chrome session. #390 remains permanently closed. The next safe

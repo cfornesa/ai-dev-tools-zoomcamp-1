@@ -1,4 +1,4 @@
-/** Issues #325/#348: manual 2D controls stay in compact stage-local chrome. */
+/** Issues #325/#348/#362: manual 2D controls stay in compact stage-local chrome. */
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
@@ -125,6 +125,30 @@ test.describe('manual 2D editor stage chrome', () => {
       await expect(
         stageDialog.getByRole('button', { name: 'Publication status: Draft' }),
       ).toBeVisible();
+      const actionLabels = stageDialog.locator('.piece-stage-action-label');
+      await expect(actionLabels).not.toHaveCount(0);
+      for (let index = 0; index < (await actionLabels.count()); index += 1) {
+        await expect(actionLabels.nth(index)).toBeVisible();
+        await expect(actionLabels.nth(index).locator('..')).toHaveClass(/piece-stage-icon-button/);
+      }
+      const commandGeometry = await stageDialog
+        .locator('.piece-stage-command-card')
+        .evaluate((card) => {
+          const group = card.querySelector(':scope > [role="group"]');
+          if (!group) return { overflow: true, overlap: true };
+          const rows = Array.from(group.children)
+            .map((row) => row.getBoundingClientRect())
+            .filter((rect) => rect.width > 0 && rect.height > 0);
+          return {
+            overflow: card.scrollHeight > card.clientHeight,
+            overlap: rows.some((row, index) =>
+              rows
+                .slice(index + 1)
+                .some((other) => row.bottom > other.top && other.bottom > row.top),
+            ),
+          };
+        });
+      expect(commandGeometry).toEqual({ overflow: false, overlap: false });
     }
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(stageDialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();

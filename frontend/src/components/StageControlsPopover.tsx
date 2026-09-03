@@ -40,11 +40,11 @@ export default function StageControlsPopover({
         onClick={() => setOpen((current) => !current)}
       >
         <PieceStageIcon name="controls" />
+        {showVisibleLabel && <span className="piece-stage-action-label">{label}</span>}
         <span className="piece-stage-tooltip" role="tooltip">
           {label}
         </span>
       </button>
-      {showVisibleLabel && <span className="piece-stage-visible-label">{label}</span>}
       <div
         role="group"
         aria-label={label}

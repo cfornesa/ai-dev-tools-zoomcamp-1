@@ -40,8 +40,10 @@ describe('StageControlsPopover', () => {
     );
 
     expect(
-      screen.getByText('Publication status: Draft', { selector: '.piece-stage-visible-label' }),
-    ).toBeVisible();
+      screen
+        .getByRole('button', { name: 'Publication status: Draft' })
+        .querySelector('.piece-stage-action-label'),
+    ).toHaveTextContent('Publication status: Draft');
     expect(screen.getByRole('tooltip', { name: 'Publication status: Draft' })).toBeInTheDocument();
   });
 });

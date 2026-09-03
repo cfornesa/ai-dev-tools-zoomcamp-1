@@ -3003,7 +3003,9 @@ select.ai-proposal-field-full-width {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  align-self: flex-start;
   width: min(100%, 46rem);
+  height: max-content;
   max-height: none;
   margin: auto;
   overflow: visible;
@@ -3059,22 +3061,22 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-command-card .piece-stage-controls {
-  display: grid;
-  grid-template-columns: 2.75rem minmax(0, 1fr);
-  align-items: center;
-  gap: 0.7rem;
+  display: block;
 }
 
 .piece-stage-command-card .piece-stage-controls > .piece-stage-icon-button {
-  width: 2.75rem;
-  min-width: 2.75rem;
-  padding: 0;
+  width: 100%;
+  min-width: 0;
+  justify-content: flex-start;
 }
 
-.piece-stage-command-card .piece-stage-visible-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* A deliberately opened nested disclosure may be long, but the command card
+   must not become a second scrolling container. Keep that one expanded panel
+   independently scrollable so the surrounding action list remains a stable,
+   stacked surface. */
+.piece-stage-command-card .piece-stage-controls-panel:not(.publication-status-controls-panel) {
+  max-height: min(40vh, 20rem);
+  overflow: auto;
 }
 
 .piece-stage-command-card > [role='group'] > [role='group'] {
@@ -3385,29 +3387,16 @@ select.ai-proposal-field-full-width {
     text-overflow: ellipsis;
   }
 
-  .piece-stage-command-card .piece-stage-controls {
-    display: grid;
-    grid-template-columns: 2.3rem minmax(0, 1fr);
-    align-items: center;
-    gap: 0.6rem;
-  }
-
   .piece-stage-command-card .piece-stage-controls > .piece-stage-icon-button {
-    width: 2.3rem;
-    min-width: 2.3rem;
-    height: 2.3rem;
-    padding: 0;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    padding: 0.4rem 0.65rem;
   }
 
   .piece-stage-command-card .piece-stage-icon {
     width: 18px;
     height: 18px;
-  }
-
-  .piece-stage-command-card .piece-stage-visible-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .piece-stage-command-card > [role='group'] > [role='group'] {

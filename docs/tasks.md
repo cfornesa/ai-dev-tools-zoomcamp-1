@@ -14235,3 +14235,20 @@ anonymous public 3D route parity. #360 remains its distinct sphere-proportion
 child and #344 remains blocked on physical held-pinch evidence. The next
 transaction is groom #330, then engineering and QA together, reconciliation,
 and permanent closure before advancing.
+## Owner re-audit distillation follow-up — 2026-09-03
+
+The owner reports that the compact controls are absent, the editor still has
+the legacy bulky functional row, and publication cannot be toggled. Fresh
+connected-browser screenshots of the current deployed bundle
+`assets/index-CQvhOwx-.js` instead show the authenticated editor's hamburger
+inside the canvas and the anonymous public route's hamburger plus a stacked
+Screenshot/Download/Piece controls/Fullscreen overlay when opened. This is a
+real unresolved revision/cache/session discrepancy, not evidence that any
+closed issue should be reopened.
+
+New issue #379, “Pieces parity: reconcile owner-visible deployment with compact
+stage controls,” captures the exact editor and public URLs, fixed viewports,
+asset identity, rendered screenshot requirements, publication workflow, and
+the no-reopen boundary. It is the next groomed transaction. No product code
+will be changed until the failing owner-visible revision or reproducible
+implementation defect is identified.

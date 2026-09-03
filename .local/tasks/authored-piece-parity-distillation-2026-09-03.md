@@ -582,3 +582,19 @@ independent closure-ready task that can be honestly completed from the current
 external state, so activity pauses at these documented blockers. Resume with
 #330 after intentionally republishing the required fixture, or with #331
 after the embed fix is deployed; closed issues remain immutable.
+## Owner re-audit follow-up — 2026-09-03
+
+The owner reports that the compact controls are absent and that the legacy
+bulky editor row remains. Fresh connected-browser screenshots contradict that
+report for the currently served `assets/index-CQvhOwx-.js`: the authenticated
+editor shows a hamburger inside the canvas, and the anonymous public route
+shows the same trigger plus a stacked Screenshot/Download/Piece controls/
+Fullscreen overlay when opened. This is unresolved because the owner-visible
+revision, cache, viewport, or session state is not the same evidence boundary.
+
+Closed #347, #376, #377, and #378 remain immutable. A new criterion-ready
+issue #379 was created for deployment/session reconciliation, with one exact
+editor/public route boundary and fixed 1280x900/375x812 screenshot criteria.
+No product source or product tests were changed during this distillation pass.
+The next handoff is #379; engineering must wait until its failing revision or
+reproducible defect is identified.

@@ -14903,6 +14903,20 @@ Firefox, and WebKit at 1280x900 and 375x812, including the chrome-less wrapper
 and no camera request on load; GitHub comment 5533332709 records the handoff.
 #389 stays open for deployed evidence.
 
+### Fresh live Chrome recheck — 2026-09-03
+
+The exact authenticated owner route and public 2D route were reopened in the
+current signed-in Chrome session. Both intentionally show only the
+stage-associated hamburger while closed; opening the menu exposes the named
+controls. The owner route exposes an interactive Draft (Private) / Published
+switch. The reported complete absence of controls or publication transition
+was not reproduced in this current route/context.
+
+One concrete defect was confirmed on #383: the open publication panel measures
+320×136px, uses visible overflow, and overlaps the underlying authoring rows
+at the available desktop viewport. It is recorded on #383 as a route-scoped
+follow-up. No closed issue was reopened and no duplicate issue was created.
+
 The FIFO deployment QA pass is complete through #389, but none of these issues
 was closed because exact deployed rendered gates remain unavailable through
 connected Chrome. #390 remains permanently closed. Obtain deployed

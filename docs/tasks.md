@@ -13003,3 +13003,14 @@ all criteria pass. Because this is an external dependency blocker rather than
 a judgment blocker, the queue may rotate to an independent groomed issue
 after this handoff; #362 remains in the retry queue and must be closed before
 it is treated as complete.
+
+### #355 deployed verification handoff — 2026-09-03
+
+Fresh owner-capable Chrome inspection reached the exact manual 3D route at
+1280×900 and 375×812 on deployed asset `index-CecM7AFX.js`. The saved scene,
+owner shell, Scene outline, Inspector, fullscreen command, and Draft/Published
+disclosure loaded; Draft was disabled and Published was enabled without
+performing a state transition. Rendered inspection still shows inconsistent
+deployed command presentation, including glyph-only/blank authoring actions
+and non-unified Piece controls/publication rows. #355 remains open until the
+reviewed local commits are published and the final exact-route matrix passes.

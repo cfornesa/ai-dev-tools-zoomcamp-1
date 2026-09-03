@@ -56,7 +56,7 @@ open pending publication/review; no later issue may begin before its closure.
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Historical parity epic/container | OPEN, reopened false closure | Reconcile last | #320 |
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
 | [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
-| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | ENGINEERED / AWAITING PUBLISHED QA | Replit Pull/Sync + Republish; then exact fixed-route QA | Local mobile overlap fixed; published proof pending |
+| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | OPEN / IMPLEMENTATION DEFECT CONFIRMED | Engineer mobile stacked menu, then per-issue QA | Published mobile screenshot shows horizontal collision/scrollbar; no closure |
 | [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | ENGINEERED / AWAITING PUBLISHED QA | Replit Pull/Sync + Republish; then exact fixed-route QA | `52b87c9`; local 6/6 browser QA and full checks pass; published proof pending |
 | [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish; then exact fixed-route QA | Local responsive QA passed; published proof pending |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |
@@ -84,6 +84,18 @@ Issue #342 is retained as a completed narrow camera-view capability only; its
 route and downloaded-artifact consumers remain open. #346 is retained as a
 completed structured-2D sound foundation only; it does not prove consumer
 route or artifact parity.
+
+## Owner refinement: mobile overlay layout — 2026-09-03
+
+The owner confirms that the translucent overlay concept is correct but rejects
+the published mobile layout: at the fixed `375x812` viewport, controls remain
+on a desktop-style horizontal row, overlap, and create a visible scrollbar.
+This is within #347's shared stage-command boundary, not a new issue. The
+criterion is refined to require a vertically stacked mobile action list with
+one fully styled, keyboard-focusable action per row, no horizontal or vertical
+scrollbar in the command card at the fixed viewport, no control overlap, and a
+visible X close action. Desktop may remain compact/horizontal; route-specific
+verification remains #325–#337.
 
 ## Duplicate/already-covered report
 

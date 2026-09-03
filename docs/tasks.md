@@ -12103,6 +12103,17 @@ revision is published and #347/#348 are independently reconciled. Completion
 is not closure: an issue is complete only after its finite criteria, exact
 rendered evidence, and GitHub closed state are reconciled.
 
+## Owner refinement: mobile overlay layout — 2026-09-03
+
+The owner confirms that the translucent overlay concept is correct but rejects
+the published mobile layout: at `375x812`, controls remain in a desktop-style
+horizontal row, overlap, and create a visible scrollbar. This remains within
+#347's shared stage-command boundary. Its closure contract now explicitly
+requires a vertically stacked mobile action list with one fully styled,
+keyboard-focusable action per row, no horizontal or vertical scrollbar in the
+command card, no control overlap, and a visible X close action. Desktop may
+remain compact/horizontal; route-specific verification remains #325–#337.
+
 ## Replit release identity recheck — 2026-09-03
 
 The authenticated Replit `creatrweb` workspace was inspected read-only. It

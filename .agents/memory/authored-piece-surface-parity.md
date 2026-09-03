@@ -228,3 +228,10 @@ Pull/Sync and Republish are external mutations owned by the release operator;
 published status alone is not asset identity. #321's separate repository
 Compose identity issue was verified closed and should not be reopened for this
 deployment mismatch.
+Owner mobile-overlay refinement (2026-09-03): the translucent fullscreen
+overlay is the accepted interaction model, but the owner rejects a horizontal
+desktop-style action row on phones. At `375x812`, the shared command card must
+stack one action per row, remain fully styled and keyboard accessible, avoid
+all control overlap, and show no internal scrollbar. This refines #347 rather
+than creating a duplicate; desktop compact geometry and per-route evidence
+remain separate criteria.

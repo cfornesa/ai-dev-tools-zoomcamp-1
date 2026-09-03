@@ -1143,6 +1143,14 @@ Chromium, Firefox, and WebKit at 1280x900 and 375x812. GitHub comment
 5533390457 records the evidence. #383 remains open pending republish and
 exact deployed-route recheck; no closed issue was reopened.
 
+## #383 deployment recheck — 2026-09-03
+
+The exact owner route still serves `assets/index-CREpJGbM.js`, the pre-fix
+bundle. Its live publication panel still overlaps the authoring group. The
+reviewed fix is pushed as `9766c1c` and passes the local route transaction;
+this is a confirmed stale-deployment boundary. Republish `origin/main`, verify
+the asset changes, then repeat the live overlap and Draft/Published checks.
+
 The FIFO deployment QA pass is therefore complete through #389, but no issue
 was closed because the exact deployed rendered gates are still unavailable in
 the connected Chrome session. #390 remains permanently closed. The next safe

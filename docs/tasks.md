@@ -14931,6 +14931,15 @@ changed-file Prettier passed, and
 5533390457 records the evidence. #383 remains open pending republish and
 exact deployed-route recheck; no closed issue was reopened.
 
+### #383 deployment recheck — 2026-09-03
+
+The exact owner route still serves `assets/index-CREpJGbM.js`, the pre-fix
+bundle, and its live publication panel still overlaps the authoring group.
+The reviewed fix is pushed as `9766c1c` and passes the local route
+transaction. This is a confirmed stale-deployment boundary: republish
+`origin/main`, verify the asset changes, then repeat the live overlap and
+Draft/Published checks.
+
 The FIFO deployment QA pass is complete through #389, but none of these issues
 was closed because exact deployed rendered gates remain unavailable through
 connected Chrome. #390 remains permanently closed. Obtain deployed

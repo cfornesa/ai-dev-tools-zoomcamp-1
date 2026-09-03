@@ -3055,7 +3055,9 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-command-card > [role='group'] > .piece-stage-icon-button,
-.piece-stage-command-card > [role='group'] > .piece-stage-download > .piece-stage-icon-button {
+.piece-stage-command-card > [role='group'] > .piece-stage-download > .piece-stage-icon-button,
+.piece-stage-command-card > [role='group'] > .piece-stage-controls > .piece-stage-icon-button {
+  width: 100%;
   justify-content: flex-start;
   gap: 0.7rem;
 }
@@ -3068,6 +3070,14 @@ select.ai-proposal-field-full-width {
   width: 100%;
   min-width: 0;
   justify-content: flex-start;
+}
+
+/* The opened menu already provides the label and the row is a single
+   accessible target. A hover tooltip would duplicate that label and can
+   escape the card when the pointer rests over a row. Keep tooltips for the
+   closed stage trigger/other compact contexts, but not inside this menu. */
+.piece-stage-command-card .piece-stage-tooltip {
+  display: none;
 }
 
 /* A deliberately opened nested disclosure may be long, but the command card
@@ -3188,16 +3198,6 @@ select.ai-proposal-field-full-width {
   transform: translate(-50%, 0);
 }
 
-.piece-stage-visible-label {
-  align-self: center;
-  max-width: 12rem;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
 .piece-stage-toolbar .piece-stage-icon-button:hover,
 .piece-stage-toolbar .piece-stage-icon-button:focus-visible {
   border-color: #fff;
@@ -3219,14 +3219,6 @@ select.ai-proposal-field-full-width {
     min-height: 2.5rem;
     height: 2.5rem;
     padding: 0 0.5rem;
-  }
-
-  .piece-stage-action-label {
-    /* The SVG icon remains visible and the full accessible name/title remains
-       available to assistive technology and focus tooltips. Removing the
-       repeated short text on phones prevents the command card from becoming
-       a clipped pseudo-toolbar when several controls are present. */
-    display: none;
   }
 }
 

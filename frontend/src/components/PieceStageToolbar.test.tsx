@@ -57,6 +57,15 @@ describe('PieceStageToolbar', () => {
       within(menu).getByRole('tooltip', { name: 'Expand piece to fullscreen' }),
     ).toBeInTheDocument();
 
+    const menuRows = menu.querySelectorAll(
+      '.piece-stage-command-card > [role="group"] > .piece-stage-icon-button, .piece-stage-command-card > [role="group"] > .piece-stage-download > .piece-stage-icon-button, .piece-stage-command-card > [role="group"] > .piece-stage-controls > .piece-stage-icon-button',
+    );
+    expect(menuRows.length).toBeGreaterThan(0);
+    for (const row of menuRows) {
+      expect(row).toHaveClass('piece-stage-icon-button');
+      expect(row.querySelector('.piece-stage-action-label')).toBeVisible();
+    }
+
     await user.click(within(menu).getByRole('button', { name: 'Open download menu' }));
     await user.click(within(menu).getByRole('menuitem', { name: 'Download Full' }));
     expect(onDownload).toHaveBeenCalledWith('full');

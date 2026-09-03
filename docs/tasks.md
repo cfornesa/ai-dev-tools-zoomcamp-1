@@ -13481,6 +13481,15 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+### #369 atomicity reconciliation — 2026-09-03
+
+#369 was found to combine two independently testable Full-download behaviors
+before engineering began. It was closed as superseded, not reopened or
+partially implemented. The closure-sized replacements are #370 (opt-in
+steering lifecycle and cleanup) and #371 (camera-view visibility, opacity, and
+mirror composition). FIFO engineering begins with #370; each issue must finish
+engineering, QA, reconciliation, and permanent closure before the next begins.
+
 ### #368 transaction reconciliation — 2026-09-03
 
 - Engineering completed the immersive export option through

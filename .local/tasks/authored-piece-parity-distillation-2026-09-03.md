@@ -62,12 +62,16 @@ reopened.
    immersive-route downloaded 3D artifacts; Full/Non-Camera immersive mode,
    arrow travel, controls, privacy, and responsive extracted-browser evidence.
 6. [#369](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/369):
-   Full 3D artifact camera steering/composition; visible steering, bounded
-   camera-state proof, and Non-Camera omission.
-7. #330–#335: each public 3D, embed, immersive, Custom, and CMS route, one
+   superseded distillation umbrella; it is closed and must not be reopened.
+7. [#370](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/370):
+   Full-download opt-in steering lifecycle, camera gating, cleanup, and
+   manual-navigation restoration.
+8. [#371](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/371):
+   Full-download camera-view visibility, opacity, and mirror composition.
+9. #330–#335: each public 3D, embed, immersive, Custom, and CMS route, one
    URL/query per route transaction.
-8. #339/#341: AI/manual 3D publication workflows, one owner route each.
-9. #320/#324/#274: reconciliation containers only; never engineer directly.
+10. #339/#341: AI/manual 3D publication workflows, one owner route each.
+11. #320/#324/#274: reconciliation containers only; never engineer directly.
 
 ## Blocker and follow-up triage
 
@@ -77,18 +81,20 @@ reopened.
 | Public URL is authenticated and `Blank canvas` | Fixture/verification boundary | #356; obtain anonymous context and intended fixture. |
 | Full artifact has assets but no complete steering/camera-view contract | Implementation defect | New #369. |
 | Immersive consumer calls regular generator | Implementation defect | New #368. |
+| #369 combined two independent Full-download behaviors | Atomicity defect | Closed as superseded; new #370/#371 own the behaviors. |
 | Physical held-pinch proof | Verification boundary | Existing #344; do not block independent work. |
 | Docker extracted-browser QA, when daemon is unavailable | Workflow/infrastructure boundary | Existing documented workflow; rerun distillation at handoff if blocked. |
 
 ## Handoff
 
 Distillation and bulk grooming are complete. The next groomed issue is
-**#368**, locally actionable without the stale deployment or anonymous
-fixture. #369 follows. Engineering and testing must be one transaction per
-issue, followed by reconciliation and permanent closure or a terminally
-classified blocker before the next issue begins. Any new gap is a new linked
-issue; no closed issue is reopened without explicit owner authorization naming
-that exact issue.
+**#370**, locally actionable without the stale deployment or anonymous
+fixture. #371 follows. #369 is closed as a distillation umbrella and must not
+be reopened. Engineering and testing must be one transaction per issue,
+followed by reconciliation and permanent closure or a terminally classified
+blocker before the next issue begins. Any new gap is a new linked issue; no
+closed issue is reopened without explicit owner authorization naming that exact
+issue.
 
 ## #368 transaction reconciliation — 2026-09-03
 

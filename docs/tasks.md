@@ -14308,3 +14308,14 @@ The next FIFO candidate is #331, bounded to the anonymous embed route and
 deployment synchronization of local fix `6d1e38e`. #344 remains evidence-
 blocked on physical held-pinch behavior and #360 remains the separate
 sphere-proportion route task. Closed issues remain immutable.
+
+## #331 final closure and next-queue distillation — 2026-09-03
+
+#331 is permanently closed as `completed` for the anonymous chrome-less
+2D `/embed/p/:id` route. Fresh deployed inspection confirmed only the
+Preview/Scene canvas and Piece actions toolbar, the permitted Live camera and
+Demo signal disclosures, and Full/Non-Camera download variants; no site shell,
+owner controls, or sibling demo panel appeared. The local browser-QA retry was
+Docker-blocked, while the issue retains its prior 1/1 pass and exact deployed
+evidence. Post-closure distillation leaves #332 as the next FIFO task. No
+closed issue may be reopened; later contradictions require new linked issues.

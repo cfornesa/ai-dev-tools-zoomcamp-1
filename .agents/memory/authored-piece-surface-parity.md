@@ -657,3 +657,9 @@ menu, then restored to Draft. A local browser-QA attempt may be blocked when
 Docker is unavailable; record that as evidence context, never reopen the
 completed route issue. The next route boundary is #331's anonymous embed
 surface.
+
+Embedded 2D route completion (2026-09-03): #331 permanently closed after
+fresh exact deployed `/embed/p/:id` verification confirmed chrome-less stage
+content, shared controls, permitted camera/demo disclosures, and Full/
+Non-Camera download variants. The next boundary is #332; later contradictions
+must be new linked issues rather than reopenings.

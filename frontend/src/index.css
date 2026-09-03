@@ -3175,6 +3175,17 @@ select.ai-proposal-field-full-width {
   max-width: none;
 }
 
+/* The canvas sizing rule above intentionally scales artwork SVGs, but stage
+   command icons are flex children with their own compact dimensions. Keep the
+   command selector more specific so a canvas wrapper can never stretch an
+   icon and detach its visible label from the button hit target. */
+.piece-stage-toolbar .piece-stage-icon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  max-width: none;
+}
+
 /* Keep the stage actions visibly discoverable without requiring hover. The
    short labels are part of the control, while the longer tooltip remains an
    accessible clarification for keyboard and pointer users. */

@@ -146,9 +146,22 @@ test.describe('manual 2D editor stage chrome', () => {
                 .slice(index + 1)
                 .some((other) => row.bottom > other.top && other.bottom > row.top),
             ),
+            labelContainment: Array.from(card.querySelectorAll('.piece-stage-action-label')).every(
+              (label) => {
+                const button = label.closest('.piece-stage-icon-button');
+                if (!button) return false;
+                const buttonBox = button.getBoundingClientRect();
+                const labelBox = label.getBoundingClientRect();
+                return labelBox.left >= buttonBox.left && labelBox.right <= buttonBox.right;
+              },
+            ),
           };
         });
-      expect(commandGeometry).toEqual({ overflow: false, overlap: false });
+      expect(commandGeometry).toEqual({
+        overflow: false,
+        overlap: false,
+        labelContainment: true,
+      });
     }
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(stageDialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
@@ -267,6 +280,15 @@ test.describe('manual 2D editor stage chrome', () => {
           display: style.display,
           flexDirection: style.flexDirection,
           iconSizes,
+          labelContainment: Array.from(element.querySelectorAll('.piece-stage-action-label')).every(
+            (label) => {
+              const button = label.closest('.piece-stage-icon-button');
+              if (!button) return false;
+              const buttonBox = button.getBoundingClientRect();
+              const labelBox = label.getBoundingClientRect();
+              return labelBox.left >= buttonBox.left && labelBox.right <= buttonBox.right;
+            },
+          ),
         };
       });
     expect(runtimeLayout.display).toBe('flex');
@@ -276,6 +298,7 @@ test.describe('manual 2D editor stage chrome', () => {
       expect(icon.width).toBeLessThanOrEqual(20);
       expect(icon.height).toBeLessThanOrEqual(20);
     }
+    expect(runtimeLayout.labelContainment).toBe(true);
 
     await stageDialog.getByRole('button', { name: 'Close edit scene' }).click();
     await expect(authoringToolbar).toBeHidden();

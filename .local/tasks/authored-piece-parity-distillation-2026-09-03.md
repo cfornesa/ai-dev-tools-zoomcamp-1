@@ -268,3 +268,38 @@ trip passed and the fixture was restored to Draft. The earlier off-screen
 confirmation was corrected by #373, which was separately QA-closed. #355 is
 ready for permanent closure; public/anonymous and other route/artifact
 boundaries remain separate issues. No closed issue was reopened.
+
+## Distilled post-closure public icon sizing gap — 2026-09-03
+
+The anonymous public route recheck found a new implementation gap after #366
+was permanently closed. At 1280x900, the broad `.editor-scene-canvas svg`
+selector overrides the compact stage icon contract by specificity: the first
+toolbar icon computed at about 765px wide and its label began outside the same
+button. The 375x812 media rule masks this failure, so it cannot substitute for
+desktop evidence. This is not permission to reopen #366.
+
+Duplicate check: #366 owns its completed shared-row transaction, #356 owns
+exact deployed anonymous route/fixture proof, and #367 owns manual 3D
+authoring-only labels. None owns this residual local CSS interaction. The
+criterion-ready follow-up is [#374](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/374).
+
+## Active queue handoff after #355 — 2026-09-03
+
+Engineering and testing for #374 must be completed together as one transaction,
+followed by evidence reconciliation and permanent closure. Only then may the
+queue enter #356 or #367. Closed issues remain immutable; any later gap is a
+new linked issue.
+
+## #374 transaction reconciliation — 2026-09-03
+
+Engineering added a more-specific `.piece-stage-toolbar .piece-stage-icon`
+rule so the artwork SVG sizing selector cannot stretch command icons. Focused
+component tests passed 6/6. `make frontend-check` passed 191 files and 2,405
+tests with pre-existing lint warnings only. The Docker browser gate
+`BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa` passed
+6/6 across Chromium, Firefox, and WebKit, including icon-size and label-
+containment geometry at 1280x900 and 375x812. The initial browser failure was
+a test selector that included unlabeled nested controls; it was corrected to
+measure each visible action label against its owning button, then rerun
+successfully. #374 is complete for its fixed local boundary and is ready for
+permanent closure. #356 is the next transaction; no closed issue was reopened.

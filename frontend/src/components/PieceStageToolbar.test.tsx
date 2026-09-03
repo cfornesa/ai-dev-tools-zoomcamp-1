@@ -1,11 +1,20 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 import PieceStageToolbar from './PieceStageToolbar';
 import { THREE_D_STAGE_CAPABILITIES, TWO_D_STAGE_CAPABILITIES } from './pieceStageCapabilities';
 
 describe('PieceStageToolbar', () => {
+  it('keeps command icon sizing more specific than the canvas SVG sizing rule', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
+    expect(css).toMatch(
+      /\.piece-stage-toolbar \.piece-stage-icon\s*\{[^}]*width:\s*20px;[^}]*height:\s*20px;[^}]*max-width:\s*none;/s,
+    );
+  });
+
   it('keeps the shared action order and routes both download variants', async () => {
     const user = userEvent.setup();
     const onDownload = vi.fn();

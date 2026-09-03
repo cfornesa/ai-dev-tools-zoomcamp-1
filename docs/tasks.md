@@ -13447,6 +13447,38 @@ target is groomed: **#366**. Engineering and testing must be performed as one
 transaction for #366, followed by reconciliation and permanent GitHub closure
 before #367 or any route issue enters engineering.
 
+## Distilled post-closure public icon sizing gap — 2026-09-03
+
+After #366 was permanently closed, the exact anonymous public 2D route exposed
+a distinct residual CSS-specificity defect at 1280x900: the broad
+`.editor-scene-canvas svg` rule stretched stage-action SVGs to roughly 765px,
+so their labels escaped the button hit targets. The mobile media rule masked
+the same defect at 375x812. Existing #366 remains immutable; #356 remains the
+deployed public-route verification boundary. This new local implementation
+gap was deduplicated against the open/closed issue set and groomed as
+[#374](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1), with finite
+two-viewport geometry, accessibility, overflow, focused-test, browser-QA, and
+reconciliation criteria.
+
+The queue rotates to #374 as the sole engineering/testing transaction. Do not
+start #356 or #367 until #374 has been reconciled and permanently closed (or
+terminally handed off with a newly distilled issue); never reopen #366.
+
+## #374 transaction reconciliation — 2026-09-03
+
+The shared command icon rule now outranks the artwork SVG sizing rule, keeping
+icons compact and labels within their own button hit targets. The focused
+component test passed 6/6. `make frontend-check` passed 191 files and 2,405
+tests, with only pre-existing lint warnings. The Docker-backed browser gate
+`BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa` passed
+6/6 across Chromium, Firefox, and WebKit; its fixed 1280x900 and 375x812
+checks cover icon bounds, label containment, stacking, overlap, and ordinary
+scrollbar state. The first browser run exposed an over-broad test selector
+that included unlabeled nested child controls; that assertion was corrected
+and the rerun passed. #374 is complete for its local implementation boundary
+and is ready for permanent GitHub closure. #356 remains the next independent
+deployed public-route verification transaction. No closed issue was reopened.
+
 ## Current canonical pieces-parity distillation — 2026-09-03
 
 This section supersedes earlier historical notes that describe issues as

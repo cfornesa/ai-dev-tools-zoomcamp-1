@@ -12657,6 +12657,17 @@ The browser evidence and exact next actions were added to #355 and #356.
 The branch remains local and ahead of the deployed asset; no publish or
 publication-state mutation was performed during this audit.
 
+### Reviewed revision handoff — 2026-09-03
+
+The reviewed checkout is ready for the authorized Git handoff at
+`7c89801f6f0efa943077c7d205561070001b2e0f` (with the preceding implementation
+commits listed in repository history). Once this revision is pushed and
+republished, resume #355 first for the authenticated manual 3D route, then
+#356 for the anonymous intended public 2D fixture. Do not close either route
+verification issue from local evidence or reopen any closed implementation
+issue. The pre-existing `test-results/.last-run.json` change remains outside
+the handoff.
+
 ### #358 closure reconciliation
 
 Issue #358 closed as completed for the local manual 3D authoring transaction.

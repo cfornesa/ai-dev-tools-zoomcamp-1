@@ -13630,6 +13630,25 @@ reopening. Current next handoff is exactly #377 after grooming; engineering,
 QA, reconciliation, and closure must finish for that issue before #376 or
 #378 engineering begins.
 
+## #378 closure and next-queue reconciliation — 2026-09-03
+
+#378 is permanently closed as `completed` for its scoped anonymous public 2D
+control-discoverability transaction. Engineering and QA were completed as one
+issue transaction. The dedicated `frontend/e2e/public2dStageChrome.spec.ts`
+passed in Chromium, Firefox, and WebKit (3/3) against disposable PostgreSQL,
+Django, and Vite services. It verified the exact public route at 1280x900 and
+375x812, a recognizable hamburger, labeled Screenshot/Download/Piece
+controls/Fullscreen rows, functional screenshot and downloads, fullscreen,
+X/Escape focus restoration, anonymous privacy, contained vertical stacking,
+and no ordinary scrollbar or horizontal overflow. The deployed bundle was
+`assets/index-CQvhOwx-.js`.
+
+No closed issue was reopened. Any newly observed public 2D gap is a new linked
+criterion-ready issue. Before the next engineering transaction, run fresh
+bulk task-distillation and grooming across the remaining open backlog; then
+process exactly one selected issue through engineering, QA, reconciliation,
+and permanent closure before advancing.
+
 ## Canonical owner-reported parity distillation — 2026-09-03 (latest)
 
 The owner-visible end state remains unproven. Full CMS parity is limited to

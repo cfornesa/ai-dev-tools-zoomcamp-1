@@ -485,6 +485,24 @@ remains blocked on the intended public 3D fixture; #344 remains physically
 blocked. The next action is the #331 deployed verification after publishing
 `6d1e38e`.
 
+## #378 engineering, QA, reconciliation, and permanent closure — 2026-09-03
+
+The closure-sized public 2D transaction was implemented and verified without
+reopening any closed issue. `frontend/e2e/public2dStageChrome.spec.ts` creates
+and publishes a disposable non-empty 2D fixture, then verifies the anonymous
+exact public route at 1280x900 and 375x812. Browser QA passed in Chromium,
+Firefox, and WebKit (3/3). The check covered the recognizable hamburger,
+Screenshot, Download, Piece controls, Fullscreen, screenshot/download actions,
+native fullscreen where supported, X/Escape focus restoration, anonymous
+privacy, contained stacked rows, and absence of ordinary scrolling/overflow.
+
+The deployed route served `assets/index-CQvhOwx-.js`, matching the reviewed
+implementation. #378 is permanently closed as `completed` for this scoped
+public 2D control-discoverability contract. Any later public-route gap must be
+a new criterion-ready linked issue, never a reopening. The next step is a
+fresh bulk distillation/reconciliation of the remaining open backlog before
+choosing the next FIFO engineering transaction.
+
 ## #377 reconciliation after owner re-audit — 2026-09-03
 
 The exact authenticated owner route currently serves `assets/index-CQvhOwx-.js`.

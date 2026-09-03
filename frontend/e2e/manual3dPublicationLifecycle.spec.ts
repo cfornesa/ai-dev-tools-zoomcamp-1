@@ -87,7 +87,9 @@ test.describe('manual 3D publication lifecycle', () => {
     const anonymousPage = await anonymousContext.newPage();
     await anonymousPage.goto(`/p3d/${projectId}`);
     await expect(anonymousPage.getByTestId('scene3d-preview-canvas-frame')).toBeVisible();
-    await expect(anonymousPage.getByRole('button', { name: 'Open piece controls menu' })).toBeVisible();
+    await expect(
+      anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),
+    ).toBeVisible();
     await expect(anonymousPage.getByRole('button', { name: 'Logout' })).toHaveCount(0);
 
     const publishedPanel = toolbar.locator(

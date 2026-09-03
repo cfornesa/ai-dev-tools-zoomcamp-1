@@ -954,3 +954,12 @@ and WebKit. Exact deployed 1280x900/375x812 screenshots and deployed Draft
 round-trip evidence remain unavailable through the connected Chrome surface.
 GitHub QA comment 5532864370 records FAIL / verification-boundary. #383 stays
 open and terminally handed off; independent #384 is next.
+
+## #385 QA handoff — 2026-09-03
+
+The republished bundle is `assets/index-CREpJGbM.js`. The local fixed-viewport
+public 3D proportion/control transaction passed 3/3 across Chromium, Firefox,
+and WebKit. The exact supplied public 3D route currently returns unavailable
+because the fixture is Draft/private, and Chrome cannot emulate the required
+fixed viewports. QA comment 5532913000 records FAIL /
+verification-boundary. #385 remains open and handed off; #386 is next.

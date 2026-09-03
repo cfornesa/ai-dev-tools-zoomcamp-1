@@ -14739,3 +14739,14 @@ rendered screenshots and the deployed Draft round trip at both sizes remain
 unverified. QA result: FAIL / verification-boundary; GitHub comment 5532864370
 records the criterion matrix and exact next action. #383 remains open and
 terminally handed off; #384 is the next independent transaction.
+
+### #385 QA handoff — 2026-09-03
+
+The republished asset is `assets/index-CREpJGbM.js`. The fixed-viewport local
+3D public transaction `BROWSER_QA_E2E_SPEC=e2e/public3dProportions.spec.ts
+make browser-qa` passed 3/3 across Chromium, Firefox, and WebKit at 1280x900
+and 375x812. The exact supplied public 3D URL currently returns the
+unavailable state because its fixture is Draft/private; exact anonymous
+deployed screenshots and privacy restoration are therefore unverified. QA
+result: FAIL / verification-boundary; GitHub comment 5532913000 records the
+matrix. #385 remains open and terminally handed off; #386 is next.

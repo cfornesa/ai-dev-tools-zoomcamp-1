@@ -14750,3 +14750,18 @@ unavailable state because its fixture is Draft/private; exact anonymous
 deployed screenshots and privacy restoration are therefore unverified. QA
 result: FAIL / verification-boundary; GitHub comment 5532913000 records the
 matrix. #385 remains open and terminally handed off; #386 is next.
+
+### #386 engineering and QA handoff — 2026-09-03
+
+Added `frontend/e2e/public2dEmbedStageChrome.spec.ts` as the missing
+route-specific automation for the regular 2D embed. It creates one disposable
+fixture, publishes it, verifies only `/embed/p/:id` anonymously at 1280x900 and
+375x812, attaches rendered screenshots, checks named controls and download
+variants, then restores Draft and verifies the private fallback. The command
+`BROWSER_QA_E2E_SPEC=e2e/public2dEmbedStageChrome.spec.ts make browser-qa`
+passed 3/3 in Chromium, Firefox, and WebKit. The exact republished URL serves
+`assets/index-CREpJGbM.js` and is chrome-less with the expected controls, but
+the connected Chrome surface cannot emulate fixed viewports or provide a
+separate anonymous profile. QA result: FAIL / verification-boundary;
+GitHub comment 5532948496 records the matrix. #386 remains open and
+terminally handed off; #387 is next.

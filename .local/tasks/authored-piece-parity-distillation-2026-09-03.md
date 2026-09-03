@@ -963,3 +963,14 @@ and WebKit. The exact supplied public 3D route currently returns unavailable
 because the fixture is Draft/private, and Chrome cannot emulate the required
 fixed viewports. QA comment 5532913000 records FAIL /
 verification-boundary. #385 remains open and handed off; #386 is next.
+
+## #386 engineering and QA handoff — 2026-09-03
+
+Added the route-specific `public2dEmbedStageChrome.spec.ts` harness. It
+passed 3/3 across Chromium, Firefox, and WebKit at 1280x900 and 375x812,
+including chrome-less embed controls, screenshot attachments, download
+variants, and private fallback. The exact republished URL serves
+`assets/index-CREpJGbM.js` and is chrome-less with named controls; exact
+deployed fixed-viewport and anonymous-profile evidence remains unavailable
+through the connected Chrome surface. QA comment 5532948496 records FAIL /
+verification-boundary. #386 remains open and handed off; #387 is next.

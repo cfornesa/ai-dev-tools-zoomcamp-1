@@ -264,6 +264,13 @@ the local shared overlay contract. This does not prove the published manual
 3D route; #352 owns that new route-level task. Closed-task immutability and
 explicit owner authorization for reopening still apply.
 
+Public 2D closure boundary (2026-09-03): #353 is permanently closed for the
+repository-backed public 2D stage-controls integration after 47 focused tests,
+lint, typecheck, and build passed. Existing disposable anonymous coverage
+confirms the shared viewer contract. Exact republished fixture identity and a
+complete two-viewport rendered matrix were unavailable, so fresh #356 owns
+that deployed verification. Never reopen #353 for #356 or a later parity gap.
+
 Scoped completion correction (2026-09-03): the owner clarified that #347 is
 functionally complete after its significant shared PieceStageToolbar,
 StageControlsPopover, publication-disclosure, and focused-test work. Its

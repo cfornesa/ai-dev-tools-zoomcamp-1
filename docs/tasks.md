@@ -14193,3 +14193,31 @@ Closed #347–#375 remain immutable. Any later failure or broader parity gap is
 a new linked criterion-ready issue, never a reopening. The next handoff is
 exactly #377 after grooming; engineering, QA, reconciliation, and closure
 must finish for it before #376 or #378 engineering begins.
+## Post-#378 queue distillation — 2026-09-03
+
+Fresh GitHub/backlog reconciliation after permanently closing #378 leaves
+parent containers #274, #320, and #324 outside the FIFO engineering queue.
+#331 is the next oldest closure-sized route transaction, but its exact
+deployed anonymous embed route still shows the public metadata banner and
+`Preview` heading; the local fix is already in `6d1e38e`, making this a
+deployment synchronization blocker rather than a reason to reopen or broaden
+the issue. #344 remains blocked on physical held-pinch evidence and #360 on
+the intended published 3D fixture. The next independent groomed candidate is
+#328 (AI-assisted 3D owner editor route), to be handled through engineering,
+QA, reconciliation, and permanent closure as one transaction.
+## #328 closure and next-queue distillation — 2026-09-03
+
+#328 is permanently closed as `completed` for the authenticated AI-assisted
+3D owner route. Deployed asset `assets/index-CQvhOwx-.js` exposed the scoped
+shared stage controls, AI action, opt-in camera controls, and Draft/Published
+status. `BROWSER_QA_E2E_SPEC=e2e/ai3dStageChrome.spec.ts make browser-qa`
+passed 3/3 in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services; existing focused AI/editor checks were
+already reconciled. The historical re-audit text was not treated as a reopen.
+
+Fresh queue distillation leaves #331 deployment-blocked on its stale exact
+embed route; #330 is the next independent closure-sized candidate for
+anonymous public 3D route parity. #360 remains its distinct sphere-proportion
+child and #344 remains blocked on physical held-pinch evidence. The next
+transaction is groom #330, then engineering and QA together, reconciliation,
+and permanent closure before advancing.

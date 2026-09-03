@@ -530,3 +530,42 @@ publication confirmation, publication, and final restoration to private/Draft.
 The full frontend check passed: lint with existing warnings, formatting,
 typecheck, and 191 test files / 2,405 tests. #376 is now permanently closed;
 the next queue item is #378. No closed issue was reopened.
+## Fresh queue distillation after #378 — 2026-09-03
+
+The remaining open queue was re-read from GitHub after #378 closure. Parent
+containers #274, #320, and #324 remain reconciliation/release gates, not FIFO
+engineering units. #331 is the oldest closure-sized route transaction, but
+its exact deployed anonymous embed route still renders the public metadata
+banner and `Preview` heading; local chrome-less work is present in `6d1e38e`,
+so this is a deployment synchronization blocker rather than permission to
+reopen or broaden the issue. #344 remains blocked on physical held-pinch
+evidence and #360 remains dependent on the intended published 3D fixture.
+
+The next independent groomed candidate is #328, the AI-assisted 3D owner
+editor route. Its scope is one route, and its existing checklist can be
+reconciled against the current deployed asset before engineering begins. No
+closed issue was reopened; engineering and QA for #328 must remain one
+per-task transaction.
+## #328 engineering, QA, reconciliation, and permanent closure — 2026-09-03
+
+The AI-assisted 3D owner route was verified against deployed
+`assets/index-CQvhOwx-.js`. The shared stage toolbar exposed the scoped
+Screenshot, Full/Non-Camera download, immersive, sound, Piece controls with
+opt-in camera, steering, guide, AI action, Draft/Published, and Fullscreen
+controls. Route-specific browser QA passed 3/3 in Chromium, Firefox, and
+WebKit with `BROWSER_QA_E2E_SPEC=e2e/ai3dStageChrome.spec.ts make browser-qa`
+against disposable PostgreSQL/Django/Vite services. Existing focused AI/editor
+checks were already reconciled. #328 is permanently closed as `completed` for
+the authenticated `/ai-projects3d/:id` contract. No closed issue was reopened;
+later gaps require new linked criterion-ready issues.
+
+## Fresh queue distillation after #328 — 2026-09-03
+
+After #328 closure, the remaining queue was re-read. #331 remains the oldest
+open closure-sized route but is deployment-blocked because the exact published
+embed route still shows metadata and the Preview heading despite local fix
+`6d1e38e`. #330 is the next independent candidate: anonymous public 3D route
+parity, distinct from #360's sphere-proportion child. #344 remains blocked on
+physical held-pinch evidence. The next action is to groom #330, then process
+its engineering and QA together before permanent closure or a recorded
+dependency handoff.

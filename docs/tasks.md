@@ -15001,3 +15001,13 @@ implementation defect or duplicate issue was found. #274/#324 remain open
 reconciliation containers from prior history; this pass does not reopen or
 rewrite any issue. Closed #347–#349 and #390 remain immutable. The next FIFO
 handoff is #384.
+
+## #384 closure reconciliation — 2026-09-04
+
+#384 is permanently closed as `completed` for the exact anonymous public 2D
+route. Deployed asset `assets/index-UmUBnruG` passed the 1280×900 and 375×812
+rendered transactions with the stage-local hamburger, named controls,
+download entries, containment, and no owner metadata. The fixture was restored
+to Draft through the authenticated editor, and the anonymous route returned
+the unavailable/private state. GitHub comment 5533662175 records the complete
+criterion matrix. The next FIFO issue is #385; no closed issue was reopened.

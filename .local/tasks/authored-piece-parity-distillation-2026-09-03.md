@@ -1204,3 +1204,15 @@ Draft/private restoration. If that external browser boundary remains
 unavailable, record the blocker and continue to the next independent route
 issue without reopening any closed issue. Engineering and QA remain paired per
 issue after this handoff.
+
+## #384 closure reconciliation — 2026-09-04
+
+#384 is permanently closed as `completed` for the exact anonymous public 2D
+route. The deployed `assets/index-UmUBnruG` revision passed the 1280×900 and
+375×812 rendered transactions, including the stage-local hamburger, named
+Screenshot/Download/Piece controls/Fullscreen actions, Full/Non-Camera menu
+entries, containment, and absence of owner metadata. The fixture was restored
+to Draft through the authenticated editor and the anonymous route returned its
+unavailable/private state. GitHub comment 5533662175 records the criterion
+matrix. This closure does not imply completion of #385–#389; #385 is now the
+next FIFO transaction. No closed issue was reopened.

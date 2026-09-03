@@ -20,6 +20,28 @@ One or two sentences on what should be true when this is done.
 - **Durable memory link:** Link only when this task depends on a non-obvious
   reusable constraint recorded in `.agents/memory/`
 
+## Transaction ledger
+
+- **Phase:** DISTILL | GROOMED | ENGINEERING | QA | RECONCILIATION | CLOSED |
+  BLOCKED | DEPENDENCY-BLOCKED | HANDED-OFF
+- **Issue owner / current transaction:** One issue only; do not begin another
+  issue before this entry reaches a terminal status
+- **Implementation commit:** Required before QA advances
+- **Focused checks / full checks:** Exact commands and results
+- **QA matrix:** Criterion-by-criterion PASS/FAIL with route, fixture,
+  viewport, browser state, and published revision where applicable
+- **GitHub closure evidence:** Comment URL/ID and close timestamp, or blocker
+  status/owner/next action
+- **New gaps discovered:** In-scope fix, linked follow-up issue, blocker, or
+  non-actionable classification; no unresolved item may remain only in chat
+
+## Reopen rule
+
+A closed issue may be reopened only for new contradictory evidence against its
+own fixed contract. Record the exact contradiction and one next action; do not
+reuse the prior PASS matrix, broaden the issue, or reopen solely because a
+parent or sibling issue is incomplete.
+
 ## Discovery gate
 
 - [ ] Searched `docs/tasks.md`, `.local/tasks/`, and existing GitHub issues

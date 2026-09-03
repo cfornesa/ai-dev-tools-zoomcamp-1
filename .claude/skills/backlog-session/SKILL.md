@@ -7,6 +7,37 @@ description: Process every remaining open backlog issue for one project sequenti
 
 Use this skill when the user asks to work through a project backlog and its GitHub issues. A session is a complete run for one project: discover every remaining open backlog issue, process issues one at a time in dependency order, and leave every issue with a terminal status. Never claim the project batch is complete when a required gate was skipped.
 
+## Transaction ledger (mandatory)
+
+Maintain one explicit current-issue record with exactly one state:
+
+`GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`
+
+or
+
+`GROOMED → ENGINEERING/QA → BLOCKED|DEPENDENCY-BLOCKED|HANDED-OFF`.
+
+The record must contain the issue number, commit, focused checks, full checks,
+QA result, evidence boundary, GitHub comment, and final status. The
+orchestrator may select the next issue only after the current record reaches
+`CLOSED` or a documented terminal blocked/handoff state. A code commit, green
+focused test, QA PASS, or deployment publication is never itself a terminal
+state.
+
+New work discovered during engineering or QA is handled before advancing:
+classify it as in-scope (fix and retest this issue) or out-of-scope (reuse or
+create/link a criterion-ready issue, record the dependency, and keep the
+current issue's own finite criteria separate). Do not absorb an unrelated gap
+into the current issue and do not create a cosmetic duplicate solely to make
+the issue count larger.
+
+Production-readiness is a post-child assessment. It may classify missing
+evidence or create/link follow-up issues, but it does not reopen or re-engineer
+a child on its own. A child returns to the transaction only when a specific
+criterion failure is linked to that child and a new evidence boundary/action
+is recorded. Otherwise readiness leaves the child terminal and records the
+follow-up separately.
+
 ## Prerequisite phase gate
 
 Do not begin an engineering pass from a raw backlog. The task-distillation

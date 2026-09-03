@@ -7,6 +7,23 @@ description: Assess one project's complete backlog batch for local deployment, C
 
 Evaluate the whole selected project and its issue manifest, not only the latest commit or issue. This is an evidence assessment, not permission to broaden implementation scope.
 
+## No-loop handoff rule
+
+Run production-readiness only after the per-issue backlog-session
+transactions have been reconciled. Treat it as a read-only assessment of
+release evidence, not a second engineering pass. For each finding, choose one
+of these outcomes exactly once: `PASS`, `OPEN FOLLOW-UP`, `BLOCKED`, or
+`NON-ACTIONABLE`. Link an `OPEN FOLLOW-UP` to an existing/new criterion-ready
+issue and record its owner and next action; do not quietly send it back to an
+already closed child.
+
+Reopen a child only when the readiness finding names a failed criterion that
+belongs to that child's fixed route/workflow and provides new evidence at its
+contract boundary. If the finding concerns another route, a new fixture,
+deployment identity, or a broader parent judgment, keep the child terminal and
+record the finding on the correct route/reconciliation issue. Never use
+production-readiness to make a broad parent absorb unresolved child work.
+
 ## Scope gate
 
 Run this skill only after task distillation has produced a complete,

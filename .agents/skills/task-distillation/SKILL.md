@@ -7,6 +7,28 @@ description: Discover, deduplicate, groom, and reconcile all actionable backlog 
 
 Use this skill to turn a user request, review feedback, failures, or readiness findings into a reconciled project backlog. It is batch-aware and idempotent: do not create duplicate GitHub issues or memory topics when an existing record already covers the work.
 
+## One-way phase protocol
+
+Distillation is a backlog-definition phase, not a repair loop. It may run in a
+bulk pass, but it must end by naming exactly one next issue with a complete
+closure contract. The normal project order is:
+
+`DISTILL → GROOM → ENGINEER → QA → RECONCILE → CLOSE → next issue`
+
+Only `DISTILL` and `GROOM` may cover multiple issues in one pass. Once an
+issue is handed to engineering, all later phases are a single issue
+transaction. Do not start another issue, run another issue's tests, or begin
+production-readiness implementation while the current transaction lacks a
+terminal result.
+
+Reopening is an exception, not a phase. It requires new contradictory evidence
+at the same named route/workflow, fixture, viewport, browser state, and
+published revision boundary, or an owner-visible failure that has not been
+disproved at that boundary. When reopening, record the contradiction and one
+new next action; never recycle the same PASS evidence or silently return to
+engineering. A closed issue must not be reopened merely because a broader
+parent is unfinished or a later route needs its own work.
+
 ## Phase gate: distill before engineering
 
 This skill is a read/reconcile and backlog-definition phase. Do not implement

@@ -249,3 +249,18 @@ authenticated 3D and anonymous public 2D #347 checks; GitHub comment
 body retains legacy unchecked boxes because the connector rejected a body
 rewrite; do not treat those stale boxes as new work without reconciling them
 against the closure comment and this task record.
+
+Owner-reported parity reset (2026-09-03): the owner subsequently reported
+that the supplied editor/public routes still do not provide the requested
+usable parity. A fresh read-only audit found the private `/projects3d/:id`
+URL unavailable in the current anonymous browser session and the public
+`/p/:id` URL rendering the `Blank canvas` 2D fixture with a hamburger that
+opens only the permitted public controls. The expected authenticated editor
+authoring surface, Draft/Published reversal, expected public 3D fixture, and
+downloaded-runtime behavior were not proven. This reopens #347 as a false
+closure and keeps #348, #349, #325–#337, and #320/#324 open; no duplicate issue
+was created. Earlier closure comments that relied on a local/disposable run,
+DOM roles/bounds, or a different fixture/revision are not evidence against
+the owner's current report. The complete closure-ready manifest and
+dependency order are recorded in the final distillation section of
+`docs/tasks.md`.

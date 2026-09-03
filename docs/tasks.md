@@ -12159,3 +12159,81 @@ revision. Pull/Sync followed by Republish is the concrete next action owned by
 the release operator and remains an external state change. Issue #321 was
 separately verified as legitimately closed for its repository Compose identity
 contract and is not reopened by this deployment mismatch.
+
+## Owner-reported parity reset and complete distillation manifest — 2026-09-03
+
+The owner reports that the requested parity is still absent in the supplied
+published editor and public routes: the editor still shows the bulky authoring
+scheme outside the canvas, the Draft/Published reversal is not discoverable,
+and public pieces appear to have no usable controls. This report supersedes
+the prior #347 closure claim until the exact route, fixture, browser state,
+viewport, screenshot, and published asset are reconciled. #347 was reopened
+on GitHub with `state_reason=reopened`; no duplicate issue is created.
+
+### Distillation findings
+
+The prior false closures came from three boundary errors:
+
+1. Local/disposable-stack browser tests were treated as proof of published
+   production behavior.
+2. DOM roles, accessible names, and non-zero geometry were treated as proof of
+   visual discoverability, despite owner screenshots showing a different
+   rendered result.
+3. Shared-component or one-consumer evidence was transferred to other routes,
+   fixtures, and downloads without independently exercising each surface.
+
+The current read-only browser audit provides narrower evidence: the supplied
+private `/projects3d/:id` URL is unavailable in the current anonymous browser
+session; the supplied public `/p/:id` URL renders the `Blank canvas` 2D fixture
+and exposes a hamburger that opens only its permitted controls. This does not
+prove the expected authenticated editor or 3D public fixture, and it does not
+prove downloaded-runtime behavior. It is therefore classified as a live
+verification-boundary/fixture mismatch plus unresolved implementation parity,
+not as a pass.
+
+### Closure-ready issue manifest
+
+Every item below is an existing issue or reconciliation container. Each child
+must be processed as one per-issue engineering → focused QA → full relevant
+checks → exact-route/artifact evidence → GitHub closure transaction. No child
+may inherit another child's evidence.
+
+| Issue | Entry point / capability | Finite closure boundary | Dependencies / order | Current status and next action |
+| --- | --- | --- | --- | --- |
+| #347 | Shared PieceStageToolbar and publication trigger | Fixed `1280x900` and `375x812` screenshots show one stacked, readable, stage-local card; named controls, Draft/Published disclosure, Full/Non-Camera menu, keyboard operation, and no overlap/scrollbar pass in the reviewed published asset | First shared runtime-control transaction | **OPEN / reopened false closure**; publish the reviewed revision, inspect both exact consumer routes, and keep open until every checklist item is proven |
+| #348 | Shared editor authoring overlay on `/projects/:id`, `/ai-projects/:id`, `/projects3d/:id`, `/ai-projects3d/:id` | One compact stage-associated authoring disclosure contains the finite authoring actions; no page-level `Editor actions` row or clipping at both fixed viewports; manual 2D route is the focused consumer | After #347; route children remain separate | **OPEN / reopened**; verify the reviewed revision and then process one route child |
+| #349 | Responsive 3D preview on manual editor/public 3D fixture | Uniform sphere remains round; intentional non-uniform scale survives; at both fixed viewports no page overflow or clipped stage/inspector/action entry point | After #348 for route evidence | **OPEN**; exact authenticated/public 3D fixture and published revision required |
+| #325 | Manual 2D owner editor `/projects/:id` | Authenticated exact route proves authoring, runtime, publication, save, screenshot/download/fullscreen, and responsive rendered layout for one fixture | #347/#348 | **OPEN / reopened**; run exact published route matrix |
+| #326 | AI 2D owner editor `/ai-projects/:id` | Same finite owner-editor matrix for the AI 2D entry point, including AI panel boundary | #347/#348 | **OPEN / reopened**; run exact published route matrix |
+| #327 | Manual 3D owner editor `/projects3d/:id` | Exact supplied authenticated route proves 3D runtime controls, authoring, Draft↔Published, responsive projection, and download entry | #347/#348/#349 | **OPEN / reopened**; authenticated access and reviewed publication are prerequisites |
+| #328 | AI 3D owner editor `/ai-projects3d/:id` | Same finite owner-editor matrix for the AI 3D entry point | #347/#348/#349 | **OPEN / reopened**; run exact published route matrix |
+| #329 | Anonymous public 2D `/p/:id` | One published 2D fixture proves visible stage controls, opt-in camera/demo behavior, privacy, screenshot, and download | #347 | **OPEN / reopened**; reconcile current `Blank canvas` fixture and camera evidence |
+| #330 | Anonymous public 3D `/p3d/:id` | One published 3D fixture proves visible permitted controls, privacy, responsive rendering, and no owner controls | #347/#349 | **OPEN / reopened**; publish/verify the actual 3D fixture |
+| #331 | Anonymous 2D embed `/embed/p/:id` | Chrome-less exact embed proves stage-only controls, privacy, responsive layout, and permitted camera/demo behavior | #347 | **OPEN / reopened**; exact published embed verification |
+| #332 | Anonymous 3D embed `/embed/p3d/:id` | Chrome-less exact embed proves 3D controls, privacy, responsive rendering, and no owner controls | #347/#349 | **OPEN / reopened**; exact published embed verification |
+| #333 | Anonymous regular immersive `/immersive/p3d/:id` | Immersive stage proves controls, arrow travel, guide, privacy, and responsive rendered layout | #347/#349 | **OPEN / reopened**; exact published immersive verification |
+| #334 | Custom immersive `?embed=1` | Query-specific chrome-less surface proves its finite wrapper and control contract | #333 | **OPEN / reopened**; verify query variant independently |
+| #335 | CMS immersive `?embed=1&cms=1` | Query-specific CMS wrapper and control contract | #333 | **OPEN / reopened**; verify query variant independently |
+| #336 | Extracted standalone 2D artifact | Download one published fixture, extract/open it, and exercise runtime controls, privacy, screenshot, and camera/non-camera behavior | #329 | **OPEN**; execute artifact, not source-string inspection |
+| #337 | Extracted Full and Non-Camera 3D artifacts | Extract/open both variants and exercise their finite capability/privacy differences, including bundled/omitted camera runtime | #330/#332/#333 | **OPEN**; execute both artifacts and record asset contents/behavior |
+| #320 | Structured authored-piece parity release gate | Reconcile all child matrices, deployment identity, fixture state, and parent acceptance; never implement or close as one route | All children | **OPEN reconciliation container**; close only after every required child is terminal |
+| #324 | Production-readiness reconciliation container | Reconcile exact deployed editor/public/immersive/download evidence without duplicating child scope | #320 | **OPEN reconciliation container**; do not use as an engineering unit |
+| #274 | Historical parity epic | Reconcile superseded scope and links only; no implementation work | #320 | **OPEN historical container**; close only after #320 reconciliation |
+
+No new issue is warranted: every current owner-reported gap maps to an
+existing contract above. #342 and #346 remain closed because this audit did
+not produce route-specific evidence contradicting their separate camera/sound
+capability contracts; their evidence must not be reused as proof for the
+published parity children. #344 and #345 remain independent open capability
+issues and are not blockers for the shared layout transaction.
+
+### Distillation handoff
+
+The next and only engineering handoff is #347, with concrete preconditions:
+the reviewed revision is identified by an asset hash, an authenticated owner
+session exists for `/projects3d/:id`, a fresh anonymous context exists for
+`/p/:id`, and `1280x900` plus `375x812` screenshots/interactions are retained.
+Until that evidence exists, #347 is `OPEN` and the remaining children are
+queued or dependency-blocked as shown above. Product source and product-test
+files must not be changed during another distillation pass; after handoff,
+engineering and testing must finish #347 before any later issue begins.

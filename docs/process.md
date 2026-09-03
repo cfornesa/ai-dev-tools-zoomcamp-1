@@ -169,3 +169,45 @@ or review:
 | Durable unresolved constraint or blocker | `.agents/memory/<topic>.md` plus `MEMORY.md` | Rule, why it matters, and how to apply it |
 | Agent-wide entry point | `AGENTS.md` | How agents discover and use the loop |
 | Replit-specific operating reminder | `replit.md` | Short pointer to the canonical loop and environment boundaries |
+
+## Canonical issue transaction and anti-loop rules
+
+The project has one normal direction of travel:
+
+`distillation → grooming → engineering → testing/QA → reconciliation → GitHub closure`
+
+Distillation and grooming may be batched. Engineering and testing/QA may not:
+they are one transaction for one issue, and the next issue is not selected
+until the current issue is closed or has a documented terminal blocked,
+dependency-blocked, or handed-off status.
+
+At the start of a transaction, create a ledger entry containing the issue,
+fixed entry point/fixture, finite criteria, dependencies, evidence boundary,
+and exact checks. During engineering, each discovered item is classified before
+work continues:
+
+- in-scope criterion failure: fix within the current issue and rerun its checks;
+- independent actionable gap: reuse or create a criterion-ready issue and link
+  it, without expanding the current issue;
+- blocker: record class, owner/context, exact failed command/evidence, and next
+  action; skip only dependent issues;
+- non-actionable or verification boundary: record the reason and the required
+  external evidence.
+
+The final reconciliation is a required state transition, not a summary. It
+must record the commit, focused/full results, QA matrix, evidence location,
+backlog status, memory links, GitHub comment, and close action. “Implemented,”
+“tests pass,” “published,” and “QA PASS” are intermediate states.
+
+Production-readiness runs after the child transactions as an assessment. It
+does not start a hidden repair loop. It creates or links follow-up work when a
+finding is outside a child contract, and it reopens a child only for new
+contradictory evidence against that child's exact route/workflow, fixture,
+viewport, browser state, and revision boundary. A reopen must record the
+contradiction and one new action; the same evidence cannot alternate an issue
+between open and closed.
+
+Before selecting the next issue, the orchestrator must answer “closed or
+terminally handed off?” for the current ledger entry. If the answer is no, it
+must continue that issue or record its blocker; it may not advance merely to
+make progress appear elsewhere.

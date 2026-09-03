@@ -11952,3 +11952,15 @@ The shared stage-command issue passed exact published rendered QA at
 round trip and anonymous public download-menu inspection. GitHub #347 is now
 closed with `## QA: PASS`. Editor authoring controls and route/artifact
 verification remain explicitly open; the next issue is #348 only.
+
+## #348 engineering handoff — 2026-09-03
+
+The shared editor authoring panel was moved into the contextual stage overlay.
+The final mobile adjustment keeps the panel and its icon-only, labelled actions
+inside the phone viewport and inside the stage content bounds while preserving
+desktop right anchoring. Focused editor tests pass 37/37; `make check` passes
+888 backend tests, 2,398 frontend tests, lint, formatting, and type-checking.
+Docker-backed Chromium passes both manual 2D browser scenarios; Firefox and
+WebKit could not run because their Playwright executables are not installed.
+Commit `51e27b8` is pushed. #348 remains open until this revision is published
+and the exact deployed rendered evidence is reconciled against every criterion.

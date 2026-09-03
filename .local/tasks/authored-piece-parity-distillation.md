@@ -35,7 +35,7 @@ single issue is selected from this manifest.
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
 | [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
 | [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | COMPLETED / CLOSED after QA | Reconciled first | Shared component + fixed published evidence |
-| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | NEXT / OPEN | After #347 closure | Shared component + manual 2D QA |
+| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | ENGINEERED / AWAITING PUBLISHED QA | After #347 closure | Shared component + manual 2D QA |
 | [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN | Independent of #347; can follow current distillation | Manual 3D/public 3D QA |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | `/ai-projects/:id` AI 2D editor | OPEN | Shared implementation then route QA | Route QA |
@@ -82,7 +82,8 @@ route or artifact parity.
    bulky editor actions, and missing visible publication state. Current source
    and current live DOM show a partial hamburger implementation, but the
    fixed rendered parity contract remains unproven. Owner: engineering/QA.
-   Next action: process #347 as one transaction, then #348.
+   Next action: publish and verify #348's reviewed revision, then reconcile/close it
+   only if every criterion has exact evidence.
 2. `implementation-defect`: #349's prior screenshot shows a distorted sphere;
    camera-resize synchronization is implemented locally but needs exact live
    rendered proof. Owner: #349 QA. Next action: republish and inspect both

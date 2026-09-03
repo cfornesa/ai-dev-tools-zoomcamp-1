@@ -1156,3 +1156,15 @@ was closed because the exact deployed rendered gates are still unavailable in
 the connected Chrome session. #390 remains permanently closed. The next safe
 step is to obtain the required deployed anonymous/fixed-viewport evidence,
 then reconcile and close each issue individually in FIFO order.
+## Republished live route progress — 2026-09-03
+
+#383 is now permanently closed as completed after asset `assets/index-UmUBnruG.js`
+was verified live, the publication overlap fix was confirmed, and the
+authorized Draft → Published → Draft round trip restored the fixture.
+
+#384 was rechecked against the same deployed asset: the public 2D overlay is
+visible, stacked, and contained. Its anonymous-profile gate remains open.
+#385 was temporarily published and rechecked against the same asset; its
+public 3D overlay rendered the expected controls and the fixture was restored
+to Draft. Its anonymous-profile gate remains open. GitHub comments 5533485457
+and 5533492806 record the route evidence. No closed issue was reopened.

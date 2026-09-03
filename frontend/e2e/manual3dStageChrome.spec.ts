@@ -25,6 +25,7 @@ test.describe('manual 3D editor stage chrome', () => {
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(toolbar).toBeVisible();
+    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     for (const viewport of [
       { width: 1280, height: 900 },
       { width: 375, height: 812 },
@@ -33,16 +34,16 @@ test.describe('manual 3D editor stage chrome', () => {
       await expect(toolbar).toBeVisible();
       await expect(toolbar.locator('svg.piece-stage-icon')).toHaveCount(9);
       await expect(
-        toolbar.locator('.piece-stage-visible-label').filter({
-          hasText: 'Publication status: Draft',
-        }),
+        toolbar.getByRole('button', { name: 'Publication status: Draft' }),
       ).toBeVisible();
     }
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Piece controls' })).toBeVisible();
+    await expect(
+      toolbar.getByRole('button', { name: 'Piece controls', exact: true }),
+    ).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
     await expect(toolbar.getByRole('link', { name: 'View immersive piece' })).toHaveAttribute(

@@ -14291,3 +14291,20 @@ QA for the same build covered 1280x900 and 375x812. #380 (workflow) and #379
 (owner-visible reconciliation) are permanently closed as `completed`. No
 closed issue was reopened; later gaps require new linked criterion-ready
 issues.
+
+## #330 final closure and post-blocker distillation — 2026-09-03
+
+#330 is permanently closed as `completed` for its scoped anonymous public
+3D `/p3d/:id` route contract. The exact owner fixture was temporarily
+published, verified anonymously against `assets/index-xwmMEBBo.js` (byte-
+identical to the local build), and restored to Draft. The public route
+rendered the authored artwork and exposed the privacy boundary, hamburger
+overlay, Screenshot, Download with Full/Non-Camera ZIP, Immersive, Sound,
+Piece controls, Steer, Guide, and Fullscreen. The local browser-QA attempt
+was blocked only because Docker was unavailable; this does not reopen or
+leave #330 open. Post-blocker distillation found no new product defect.
+
+The next FIFO candidate is #331, bounded to the anonymous embed route and
+deployment synchronization of local fix `6d1e38e`. #344 remains evidence-
+blocked on physical held-pinch behavior and #360 remains the separate
+sphere-proportion route task. Closed issues remain immutable.

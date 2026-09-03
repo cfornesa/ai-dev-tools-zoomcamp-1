@@ -649,3 +649,11 @@ local build. Exact editor/public route inspection and Draft → Published →
 Draft verification then completed #379; workflow repair completed #380. Both
 are permanently closed. Future owner contradictions must be new linked work,
 not reopenings.
+
+Public 3D route completion (2026-09-03): #330 permanently closed after the
+exact published owner fixture was verified anonymously at `/p3d/:id` against
+the byte-identical deployed build, including the stage overlay and download
+menu, then restored to Draft. A local browser-QA attempt may be blocked when
+Docker is unavailable; record that as evidence context, never reopen the
+completed route issue. The next route boundary is #331's anonymous embed
+surface.

@@ -665,3 +665,14 @@ owner controls, or sibling demo panel appeared. The local browser-QA retry was
 Docker-blocked, while the issue retains its prior 1/1 pass and exact deployed
 evidence. Post-closure distillation leaves #332 as the next FIFO task. No
 closed issue may be reopened; later contradictions require new linked issues.
+
+## #332 final closure and next-queue distillation — 2026-09-03
+
+#332 is permanently closed as `completed` for the anonymous chrome-less 3D
+`/embed/p3d/:id` route. Fresh deployed verification after temporary fixture
+publication showed only the expected title/author/embed link and Preview
+stage, with no site shell or owner controls; the hamburger exposed Screenshot,
+Download, Immersive, Sound, Piece controls, Steer, Guide, and Fullscreen. The
+fixture was restored to Draft. Local browser-QA remained Docker-blocked, while
+the issue retains its prior 1/1 pass. The next FIFO task is #333; closed
+issues remain immutable.

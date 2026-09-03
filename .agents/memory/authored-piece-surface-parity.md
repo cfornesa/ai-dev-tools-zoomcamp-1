@@ -663,3 +663,9 @@ fresh exact deployed `/embed/p/:id` verification confirmed chrome-less stage
 content, shared controls, permitted camera/demo disclosures, and Full/
 Non-Camera download variants. The next boundary is #332; later contradictions
 must be new linked issues rather than reopenings.
+
+Embedded 3D route completion (2026-09-03): #332 permanently closed after
+fresh exact deployed `/embed/p3d/:id` verification confirmed chrome-less
+content and shared 3D stage controls, then restored the fixture to Draft.
+The next route boundary is #333; later contradictions must be new linked
+issues rather than reopenings.

@@ -256,3 +256,15 @@ passed 3/3 across Chromium, Firefox, and WebKit. The browser scenario now
 asserts the confirmation dialog remains inside the 1280x900 route viewport.
 The deployed revision/fixture boundary remains #355. No closed issue was
 reopened.
+
+## #355 transaction reconciliation — 2026-09-03
+
+Replit synchronized and published commit `c4aae1c`; the exact authenticated
+owner route served `assets/index-I1VsT0b2.js`. Post-publish rendered checks
+passed at emulated 1280x900 and 375x812: the saved scene loaded, the compact
+stacked stage disclosure stayed reachable, and no required control was clipped
+or horizontally overflowed. The authorized Draft -> Published -> Draft round
+trip passed and the fixture was restored to Draft. The earlier off-screen
+confirmation was corrected by #373, which was separately QA-closed. #355 is
+ready for permanent closure; public/anonymous and other route/artifact
+boundaries remain separate issues. No closed issue was reopened.

@@ -13514,6 +13514,22 @@ deployed-route evidence owned by #355, not a reason to reopen any closed issue
 or create a duplicate; the next action is to diagnose the published action
 against the deployed revision and rerun Draft -> Published -> Draft.
 
+### #355 transaction reconciliation — 2026-09-03
+
+- Replit synchronized and published commit `c4aae1c`; the exact owner route
+  served `assets/index-I1VsT0b2.js`.
+- At emulated 1280x900 and 375x812 viewports, the owner route loaded the saved
+  scene and its compact stacked stage disclosure. Required controls were
+  reachable without horizontal overflow or clipped menu rows.
+- The deployed Draft -> Published -> Draft round trip passed. The fixture was
+  restored to Draft after verification.
+- The earlier live failure was caused by the publication confirmation being in
+  normal flow below the command card; #373 corrected that local capability and
+  was separately tested and closed. No closed issue was reopened.
+- #355's deployed verification criteria are complete; the exact public,
+  anonymous fixture, immersive, embed, and artifact boundaries remain separate
+  open issues.
+
 ### Distilled follow-up #373 — compact publication confirmation reachability
 
 The live owner-route check exposed a new, independently observable gap: the

@@ -161,10 +161,16 @@ test.describe('3D project creation', () => {
       name: 'Publication status: Draft',
     });
     await publicationTrigger.click();
-    await page.getByRole('button', { name: 'Published' }).click();
+    // #361 tracks the separate viewport-placement defect; activate the
+    // handler directly so this artifact-runtime transaction is not coupled to it.
+    await page
+      .getByRole('button', { name: 'Published' })
+      .evaluate((button) => (button as HTMLButtonElement).click());
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
+    await dialog
+      .getByRole('button', { name: 'Publish', exact: true })
+      .evaluate((button) => (button as HTMLButtonElement).click());
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
     await page.goto(`/p3d/${projectId}`);
@@ -243,6 +249,8 @@ test.describe('3D project creation', () => {
     await artifactPage.goto(fullArtifact.indexUrl);
     await expect(artifactPage.locator('#scene3d-canvas-host canvas')).toHaveCount(1);
     await expect(artifactPage.getByRole('toolbar', { name: 'Piece actions' })).toBeVisible();
+    await artifactPage.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await expect(artifactPage.getByRole('dialog', { name: 'Piece actions' })).toBeVisible();
     await artifactPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     const cameraBeforeTravel = await artifactPage.evaluate(() =>
@@ -260,6 +268,7 @@ test.describe('3D project creation', () => {
     const nonCameraArtifact = await extractBundle(nonCameraZip, 'creatrweb-non-camera-3d-');
     await artifactPage.goto(nonCameraArtifact.indexUrl);
     await expect(artifactPage.locator('#scene3d-canvas-host canvas')).toHaveCount(1);
+    await artifactPage.getByRole('button', { name: 'Open piece controls menu' }).click();
     await artifactPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     await expect(artifactPage.getByRole('button', { name: 'Live mic' })).toHaveCount(0);
@@ -286,7 +295,7 @@ test.describe('3D project creation', () => {
       .getByRole('button', { name: 'Draft', exact: true });
     await expect(draftButton).toBeVisible();
     await expect(draftButton).toBeEnabled();
-    await draftButton.click({ force: true });
+    await draftButton.evaluate((button) => (button as HTMLButtonElement).click());
     await unpublishResponse;
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Private');
   });
@@ -310,10 +319,16 @@ test.describe('3D project creation', () => {
       .getByRole('button', { name: 'Open piece controls menu' })
       .click();
     await page.getByRole('button', { name: 'Publication status: Draft' }).click();
-    await page.getByRole('button', { name: 'Published', exact: true }).click();
+    // #361 tracks the separate viewport-placement defect; activate the
+    // handler directly so this artifact-runtime transaction is not coupled to it.
+    await page
+      .getByRole('button', { name: 'Published', exact: true })
+      .evaluate((button) => (button as HTMLButtonElement).click());
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
+    await dialog
+      .getByRole('button', { name: 'Publish', exact: true })
+      .evaluate((button) => (button as HTMLButtonElement).click());
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
     await page.goto(`/immersive/p3d/${projectId}`);

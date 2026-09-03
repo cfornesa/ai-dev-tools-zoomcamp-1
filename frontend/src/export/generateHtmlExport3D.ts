@@ -93,22 +93,46 @@ const PIECE_CSS = `html, body {
   left: 1rem;
   bottom: 1rem;
   z-index: 10;
-  display: flex;
+  display: grid;
   gap: .5rem;
 }
-#piece-toolbar button {
-  width: 3rem;
-  height: 3rem;
+#piece-menu-trigger, #piece-actions-dialog button {
+  min-height: 3rem;
+  min-width: 3rem;
+  padding: .5rem .75rem;
   border: 1px solid rgba(255,255,255,.28);
-  border-radius: 999px;
+  border-radius: .75rem;
   background: rgba(10,12,20,.76);
   color: #fff;
   cursor: pointer;
 }
-#piece-toolbar button:focus-visible {
+#piece-menu-trigger:focus-visible, #piece-actions-dialog button:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+#piece-actions-dialog {
+  position: fixed;
+  inset: 1rem;
+  z-index: 30;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1rem;
+  color: #fff;
+  background: rgba(10,12,20,.94);
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 1rem;
+}
+#piece-actions-dialog[hidden] { display: none; }
+#piece-actions-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+#piece-actions-dialog h2 { margin: 0; font-size: 1.25rem; }
+#piece-actions-dialog .piece-action-list { display: grid; gap: .75rem; }
+#piece-actions-dialog .piece-action-list > button { display: flex; align-items: center; justify-content: flex-start; gap: .75rem; width: 100%; text-align: left; }
+#piece-actions-dialog .piece-action-icon { width: 1.5rem; text-align: center; font-size: 1.25rem; }
+#piece-actions-dialog .piece-action-label { font-size: 1rem; }
+#piece-actions-dialog-close { width: 3rem; padding-inline: 0 !important; font-size: 1.5rem; }
 #piece-audio-controls {
   position: fixed;
   left: 1rem;
@@ -177,12 +201,18 @@ function buildIndexHtml(variant: Scene3DExportVariant): string {
 <body>
 <div id="scene3d-canvas-host"></div>
 <div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
-  <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot">⌗</button>
-  <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view">↺</button>
-  <button id="piece-sound" type="button" aria-label="Enable sound" title="Enable sound" aria-pressed="false">♪</button>
-  <button id="piece-audio-settings" type="button" aria-label="Piece controls" title="Piece controls" aria-expanded="false">☰</button>
-  <button id="piece-hand-guide-toggle" type="button" aria-label="Hand gesture guide" title="Hand gesture guide" aria-expanded="false">?</button>
-  <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
+  <button id="piece-menu-trigger" type="button" aria-label="Open piece controls menu" aria-expanded="false" aria-controls="piece-actions-dialog">☰</button>
+</div>
+<div id="piece-actions-dialog" role="dialog" aria-label="Piece actions" hidden>
+  <header><h2>Piece actions</h2><button id="piece-actions-dialog-close" type="button" aria-label="Close piece controls menu">×</button></header>
+  <div class="piece-action-list">
+    <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot"><span class="piece-action-icon" aria-hidden="true">⌗</span><span class="piece-action-label">Screenshot</span></button>
+    <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view"><span class="piece-action-icon" aria-hidden="true">↺</span><span class="piece-action-label">Reset view</span></button>
+    <button id="piece-sound" type="button" aria-label="Enable sound" title="Enable sound" aria-pressed="false"><span class="piece-action-icon" aria-hidden="true">♪</span><span class="piece-action-label">Sound</span></button>
+    <button id="piece-audio-settings" type="button" aria-label="Piece controls" title="Piece controls" aria-expanded="false"><span class="piece-action-icon" aria-hidden="true">☷</span><span class="piece-action-label">Piece controls</span></button>
+    <button id="piece-hand-guide-toggle" type="button" aria-label="Hand gesture guide" title="Hand gesture guide" aria-expanded="false"><span class="piece-action-icon" aria-hidden="true">?</span><span class="piece-action-label">Hand gesture guide</span></button>
+    <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen"><span class="piece-action-icon" aria-hidden="true">⛶</span><span class="piece-action-label">Fullscreen</span></button>
+  </div>
 </div>
 <div id="piece-hand-guide" role="dialog" aria-label="Hand gesture guide" hidden>
   <h2>Hand gesture guide</h2>
@@ -211,12 +241,25 @@ ${
 <script>
 (() => {
   const host = document.getElementById('scene3d-canvas-host');
+  const menuTrigger = document.getElementById('piece-menu-trigger');
+  const actionsDialog = document.getElementById('piece-actions-dialog');
+  const actionsClose = document.getElementById('piece-actions-dialog-close');
   const screenshot = document.getElementById('piece-screenshot');
   const resetView = document.getElementById('piece-reset-view');
   const fullscreen = document.getElementById('piece-fullscreen');
   const guideToggle = document.getElementById('piece-hand-guide-toggle');
   const guide = document.getElementById('piece-hand-guide');
   const guideClose = document.getElementById('piece-hand-guide-close');
+  function setMenuOpen(open) {
+    if (!actionsDialog || !menuTrigger) return;
+    actionsDialog.hidden = !open;
+    menuTrigger.setAttribute('aria-expanded', String(open));
+  }
+  menuTrigger?.addEventListener('click', () => setMenuOpen(Boolean(actionsDialog?.hidden)));
+  actionsClose?.addEventListener('click', () => setMenuOpen(false));
+  actionsDialog?.addEventListener('click', (event) => {
+    if (event.target === actionsDialog) setMenuOpen(false);
+  });
   const canvas = () => host && host.querySelector('canvas');
   screenshot?.addEventListener('click', () => {
     const current = canvas();

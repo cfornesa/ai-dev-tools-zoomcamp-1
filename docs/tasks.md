@@ -12387,7 +12387,7 @@ against the broader pieces-parity goal, but it does not reopen #347.
 | [#356](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/356) | Republished public 2D piece verification | Exact published `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` anonymously at 1280x900 and 375x812; fixture identity, controls, privacy, responsive rendered evidence | Discovered during #353 QA; current URL serves the wrong blank fixture; requires owner republish | OPEN / DEPENDENCY-BLOCKED; resume after intended fixture is published |
 | [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | Repository-backed extracted 2D runtime: bundled assets, no network-only dependency, capability/permission behavior, privacy exclusions, and browser execution | #353 shared public contract; responsive rendered geometry shifted to #357 | CLOSED / completed; do not reopen |
 | [#357](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/357) | Portable 2D artifact responsive controls | One Full extracted artifact at 1280x900 and 375x812; intended non-empty artwork, stacked stage overlay, no overlap/clipping/ordinary scrollbar, gesture-gated camera | Discovered during #350 QA; responsive artifact evidence now reconciled | CLOSED / completed; do not reopen |
-| [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | OPEN / GROOMED |
+| [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | CLOSED / completed; do not reopen |
 
 The next handoff is #355 only while its owner-session dependency is available;
 if that dependency remains blocked, #356 is next.
@@ -12545,6 +12545,39 @@ geometry boundary. #358 is the only new implementation defect from this audit;
 the other reported “missing controls” are either discoverability/entry-state
 observations already represented by those boundaries or are already present in
 the current published bundle after opening the hamburger.
+
+### #351 closure reconciliation — 2026-09-03
+
+Issue #351 is permanently closed as completed for the portable 3D runtime
+transaction. The downloaded Full and Non-Camera bundles now expose a closed
+hamburger entry and an accessible fullscreen action dialog with stacked,
+labeled controls. The dialog is responsive, has no closed-menu scrollbar, and
+allows an opened-only scroll region when expanded content exceeds a small
+viewport. Full retains sound, camera/hand, screenshot, fullscreen, and
+keyboard/pointer behavior; Non-Camera omits camera permission/UI, hand
+tracking, and MediaPipe while retaining non-camera behavior.
+
+The local published-fixture browser transaction passed 12/12 across Chromium,
+Firefox, and WebKit. It downloaded both ZIPs, extracted them into fresh
+directories, rendered each canvas, exercised the action menu and controls,
+proved keyboard travel/reset behavior, checked the Full/Non-Camera capability
+boundary, and returned the fixture to Draft. Focused export tests passed 7/7;
+frontend typecheck and formatting passed. The exact commands were
+`npm --prefix frontend run format`, `npm --prefix frontend run typecheck`,
+`npm --prefix frontend test -- --run src/export/generateHtmlExport3D.test.ts`,
+and `BROWSER_QA_E2E_SPEC=e2e/project3dLifecycle.spec.ts make browser-qa`.
+
+The browser setup exposed a separate 3D publication-panel viewport defect;
+that work is recorded as new atomic issue #361. It does not reopen #347 and
+does not invalidate #351's extracted-artifact evidence.
+
+### #361 discovery reconciliation — 2026-09-03
+
+During #351 QA, the owner/editor publication panel's Draft/Published action
+was outside the viewport in Chromium, Firefox, and WebKit. This is a new
+criterion-ready issue, not a reopening of #347 or #351. #361 owns the focused
+publication-panel placement and no-scroll behavior; its implementation and
+testing must occur as its own FIFO transaction.
 
 ### #358 closure reconciliation
 

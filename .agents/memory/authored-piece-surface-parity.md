@@ -245,6 +245,17 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Portable 3D artifact closure (2026-09-03): #351 is permanently closed for
+the extracted Full/Non-Camera runtime transaction. The generated ZIPs use a
+closed hamburger plus accessible stacked action dialog, with opened-only
+scrolling for expanded content; Full retains camera/hand and sound behavior,
+while Non-Camera excludes camera permission/UI, hand tracking, and MediaPipe.
+The local published-fixture browser matrix passed 12/12 across Chromium,
+Firefox, and WebKit, including extraction, rendering, controls, keyboard
+travel/reset, and capability-boundary checks. A separate publication-panel
+viewport failure discovered during that run is new issue #361; it must not
+reopen #347 or #351.
+
 Portable 2D responsive closure (2026-09-03): #357 is permanently closed for
 the extracted artifact's responsive action surface. The artifact now packages
 an accessible hamburger menu, fullscreen translucent overlay, stacked labeled

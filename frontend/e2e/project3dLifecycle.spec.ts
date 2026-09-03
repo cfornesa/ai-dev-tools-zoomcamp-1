@@ -41,9 +41,12 @@ async function expectThreeDStageChrome(page: Page) {
   const frame = page.getByTestId('scene3d-preview-canvas-frame');
   const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
   await expect(toolbar).toBeVisible();
+  // Issue #347: the shared stage command surface is intentionally closed by
+  // default. Enter through its hamburger before asserting contextual actions.
+  await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
   await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
-  await expect(toolbar.getByRole('button', { name: 'Piece controls' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Piece controls', exact: true })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
@@ -58,7 +61,7 @@ async function expectThreeDStageChrome(page: Page) {
   await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
   await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
 
-  await toolbar.getByRole('button', { name: 'Piece controls' }).click();
+  await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
   await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
 
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
@@ -149,6 +152,11 @@ test.describe('3D project creation', () => {
     await titleForm.getByRole('button', { name: 'Save' }).click();
     await expect(titleForm).toHaveCount(0);
 
+    await page
+      .getByTestId('scene3d-preview-canvas-frame')
+      .getByRole('toolbar', { name: 'Preview actions' })
+      .getByRole('button', { name: 'Open piece controls menu' })
+      .click();
     const publicationTrigger = page.getByRole('button', {
       name: 'Publication status: Draft',
     });
@@ -163,14 +171,17 @@ test.describe('3D project creation', () => {
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(toolbar).toBeVisible();
+    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Piece controls' })).toBeVisible();
+    await expect(
+      toolbar.getByRole('button', { name: 'Piece controls', exact: true }),
+    ).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
 
-    await toolbar.getByRole('button', { name: 'Piece controls' }).click();
+    await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     await toolbar.getByRole('button', { name: 'Open download menu' }).click();
     const fullMenuItem = toolbar.getByRole('menuitem', { name: 'Download Full ZIP' });
@@ -232,7 +243,7 @@ test.describe('3D project creation', () => {
     await artifactPage.goto(fullArtifact.indexUrl);
     await expect(artifactPage.locator('#scene3d-canvas-host canvas')).toHaveCount(1);
     await expect(artifactPage.getByRole('toolbar', { name: 'Piece actions' })).toBeVisible();
-    await artifactPage.getByRole('button', { name: 'Piece controls' }).click();
+    await artifactPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     const cameraBeforeTravel = await artifactPage.evaluate(() =>
       (window as unknown as { __exportGetCameraState: () => unknown }).__exportGetCameraState(),
@@ -249,7 +260,7 @@ test.describe('3D project creation', () => {
     const nonCameraArtifact = await extractBundle(nonCameraZip, 'creatrweb-non-camera-3d-');
     await artifactPage.goto(nonCameraArtifact.indexUrl);
     await expect(artifactPage.locator('#scene3d-canvas-host canvas')).toHaveCount(1);
-    await artifactPage.getByRole('button', { name: 'Piece controls' }).click();
+    await artifactPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     await expect(artifactPage.getByRole('button', { name: 'Live mic' })).toHaveCount(0);
     await expect(artifactPage.getByRole('button', { name: 'Camera theremin' })).toHaveCount(0);
@@ -260,6 +271,11 @@ test.describe('3D project creation', () => {
 
     await page.goto(`/projects3d/${projectId}`);
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
+    await page
+      .getByTestId('scene3d-preview-canvas-frame')
+      .getByRole('toolbar', { name: 'Preview actions' })
+      .getByRole('button', { name: 'Open piece controls menu' })
+      .click();
     await page.getByRole('button', { name: 'Publication status: Published' }).click();
     const unpublishResponse = page.waitForResponse(
       (response) =>
@@ -288,6 +304,11 @@ test.describe('3D project creation', () => {
     if (!projectId) return;
 
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
+    await page
+      .getByTestId('scene3d-preview-canvas-frame')
+      .getByRole('toolbar', { name: 'Preview actions' })
+      .getByRole('button', { name: 'Open piece controls menu' })
+      .click();
     await page.getByRole('button', { name: 'Publication status: Draft' }).click();
     await page.getByRole('button', { name: 'Published', exact: true }).click();
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
@@ -321,6 +342,18 @@ test.describe('3D project creation', () => {
         );
       });
     });
+
+    const keyboardButton = navigation.getByRole('button', { name: 'Move forward' });
+    await keyboardButton.focus();
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('aria-label'))).toBe(
+      'Move forward',
+    );
+    await page.keyboard.press('Space');
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { __touchKeyEvents: string[] }).__touchKeyEvents),
+      )
+      .toEqual(['keydown: ', 'keyup: ', 'keydown:ArrowUp', 'keyup:ArrowUp']);
 
     for (const [label, key] of directions) {
       const button = navigation.getByRole('button', { name: label });

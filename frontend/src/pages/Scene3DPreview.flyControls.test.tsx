@@ -154,6 +154,23 @@ describe('Scene3DPreview fly controls (issue #311)', () => {
     window.removeEventListener('keyup', listener);
   });
 
+  it('supports keyboard activation of the touch-navigation buttons', () => {
+    const keyEvents: KeyboardEvent[] = [];
+    const listener = (event: KeyboardEvent) => keyEvents.push(event);
+    window.addEventListener('keydown', listener);
+    window.addEventListener('keyup', listener);
+    render(<Scene3DPreview scene={baseScene()} flyControls />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move forward' }), { detail: 0 });
+
+    expect(keyEvents.map((event) => [event.type, event.key])).toEqual([
+      ['keydown', 'ArrowUp'],
+      ['keyup', 'ArrowUp'],
+    ]);
+    window.removeEventListener('keydown', listener);
+    window.removeEventListener('keyup', listener);
+  });
+
   it('holding ArrowUp moves the camera position and orbit target together', async () => {
     render(<Scene3DPreview scene={baseScene()} flyControls />);
     await tick(1);

@@ -1070,6 +1070,15 @@ function Scene3DPreview({
                   onPointerUp={() => releaseFlyKey(key)}
                   onPointerCancel={() => releaseFlyKey(key)}
                   onPointerLeave={() => releaseFlyKey(key)}
+                  onClick={(event) => {
+                    // Native button keyboard activation emits click with no
+                    // pointer detail. Pointer clicks already use the held
+                    // press/release handlers above, so avoid dispatching the
+                    // travel key twice for those clicks.
+                    if (event.detail !== 0) return;
+                    dispatchFlyKey(key, 'keydown');
+                    releaseFlyKey(key);
+                  }}
                 >
                   {glyph}
                 </button>
@@ -1093,6 +1102,11 @@ function Scene3DPreview({
                   onPointerUp={() => releaseFlyKey(key)}
                   onPointerCancel={() => releaseFlyKey(key)}
                   onPointerLeave={() => releaseFlyKey(key)}
+                  onClick={(event) => {
+                    if (event.detail !== 0) return;
+                    dispatchFlyKey(key, 'keydown');
+                    releaseFlyKey(key);
+                  }}
                 >
                   {glyph}
                 </button>

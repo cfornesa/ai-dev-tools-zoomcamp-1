@@ -11985,6 +11985,19 @@ reconciliation containers. The next action is to synchronize and publish the
 reviewed revision, then process #348 as one issue transaction; no route child
 may start until its predecessor is QA-reconciled and closed.
 
+## #343 immersive 3D d-pad — 2026-09-03
+
+Implemented keyboard activation for the existing immersive 3D touch d-pad in
+`frontend/src/pages/Scene3DPreview.tsx`, preserving pointer/touch hold and
+release behavior while adding WCAG-compatible native-button keyboard behavior.
+Focused React tests passed (8 tests), the full repository check passed (888
+backend tests passed, 22 skipped, and 2,399 frontend tests passed), and the
+Docker browser gate passed all 12 scenarios across Chromium, Firefox, and
+WebKit. The browser scenarios verified the six travel controls, pointer
+press/release key mapping, and Space-key activation of Move forward. #343 is
+ready for GitHub closure; route consumers #333–#335 remain open until their
+own exact route evidence is collected.
+
 ## Replit deployment identity recheck — 2026-09-03
 
 The authenticated Replit `creatrweb` workspace currently displays an older
@@ -11996,3 +12009,13 @@ external state changes and were not triggered during this audit; #320/#321
 remain the deployment-identity owners. After synchronization and publication,
 repeat the exact authenticated editor and anonymous public fixed-viewport QA
 before any issue closure.
+
+## #348 deployment blocker handoff and independent selection — 2026-09-03
+
+Replit still reports published checkpoint `8d8f70e` with `Republish`, while
+GitHub `main` is `9565974` and the live asset is `index-WKdMIR98.js`. #348 is
+therefore handed off as a deployment verification boundary and remains open.
+The required fresh distillation found #343 (immersive 3D touch d-pad) to be
+independent of that release gate, with an existing criterion-ready contract;
+#343 is the sole next engineering/QA transaction. No route or artifact issue
+may be started in parallel.

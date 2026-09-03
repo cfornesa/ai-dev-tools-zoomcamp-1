@@ -57,7 +57,7 @@ open pending publication/review; no later issue may begin before its closure.
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
 | [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
 | [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | COMPLETED / CLOSED after QA | Reconciled first | Shared component + fixed published evidence |
-| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | ENGINEERED / AWAITING PUBLISHED QA | After #347 closure | Shared component + manual 2D QA |
+| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | HANDED-OFF / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish required | Shared component + manual 2D QA |
 | [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN | Independent of #347; can follow current distillation | Manual 3D/public 3D QA |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | `/ai-projects/:id` AI 2D editor | OPEN | Shared implementation then route QA | Route QA |
@@ -76,7 +76,7 @@ open pending publication/review; no later issue may begin before its closure.
 | [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
 | [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
-| [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad | OPEN | Independent capability; before #333 route closure | Capability QA |
+| [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad | COMPLETED / READY TO CLOSE | Independent capability; before #333 route closure | Capability QA passed |
 | [#344](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/344) | Immersive 3D hand move/strafe | OPEN | Physical-input boundary; before affected route closure | Physical QA |
 | [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | OPEN, reopened | Audio dependency #306/#310 | Capability QA |
 
@@ -123,7 +123,7 @@ route or artifact parity.
    consume, including #343/#344 where their criteria require those controls.
    Skip only dependent route work; continue independent issues.
 6. `verification-boundary`: the Replit workspace/published checkpoint does not
-   match reviewed GitHub `main` (`8d8f70e` reported in Replit versus `2d239f9` in
+   match reviewed GitHub `main` (`8d8f70e` reported in Replit versus `9565974` in
    GitHub). Owner/context: Replit workspace and release operator. No new issue
    is warranted because #320/#321 own deployment identity. Next action: Pull/
    Sync the reviewed GitHub revision into the workspace, Republish, and verify
@@ -132,7 +132,9 @@ route or artifact parity.
 ## Handoff
 
 Distillation is complete only after this manifest, the linked GitHub issues,
-`docs/tasks.md`, and memory agree. The next engineering handoff is exactly
-#348, after #347's closure; engineering and testing must be
-performed and reconciled for one issue before another begins. Every issue
-stays open until its QA evidence is posted and the GitHub issue is closed.
+`docs/tasks.md`, and memory agree. #343's engineering and QA transaction is
+complete and ready for GitHub closure. #348 remains the next actionable
+independent handoff while it awaits Replit Pull/Sync and Republish. Engineering
+and testing must still be performed and reconciled for one issue before another
+begins. Every issue stays open until its QA evidence is posted and the GitHub
+issue is closed.

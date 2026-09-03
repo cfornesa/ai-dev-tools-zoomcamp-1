@@ -697,3 +697,9 @@ deployed inspection passed the regular immersive controls and safe fixture
 restoration, but fixed-viewport proof and browser-QA were blocked by Docker.
 Retry this independent route transaction when the harness is available; do
 not reopen closed route issues.
+
+Additional 2D editor audit (2026-09-03): the authenticated existing 2D
+editor shows the in-canvas hamburger, compact opened overlay, and Publication
+status disclosure with Draft available. Treat this as covered behavior; only
+fixed-viewport/session reconciliation remains, and closed #354/#356 remain
+immutable.

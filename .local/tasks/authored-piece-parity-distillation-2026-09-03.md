@@ -758,3 +758,13 @@ Classification is `verification-boundary` plus `workflow/infrastructure-defect`;
 no product defect was reproduced. Fresh distillation confirms #333 is
 independent of closed route issues and remains the sole next retry once the
 harness is available; no closed issue was reopened.
+
+## Additional 2D editor audit — 2026-09-03
+
+The authenticated existing 2D editor was inspected separately from #381's
+manual 3D boundary. Its Preview contains the in-canvas hamburger and no
+page-level duplicate functional rail. The opened overlay contains Screenshot,
+Download, Piece controls, Edit scene, Fullscreen, and a visible Publication
+status: Published disclosure with Draft available. This is covered behavior,
+not a new implementation defect or a reason to reopen closed #354/#356;
+fixed-viewport proof remains in the route-specific verification queue.

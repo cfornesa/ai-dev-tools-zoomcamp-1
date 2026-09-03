@@ -676,3 +676,37 @@ Download, Immersive, Sound, Piece controls, Steer, Guide, and Fullscreen. The
 fixture was restored to Draft. Local browser-QA remained Docker-blocked, while
 the issue retains its prior 1/1 pass. The next FIFO task is #333; closed
 issues remain immutable.
+
+## Fresh owner contradiction distillation — 2026-09-03
+
+The owner reports that the exact manual 3D editor still has the legacy bulky
+functional row, that Draft/Published switching is unavailable, and that the
+public 2D piece has no controls. This is actionable evidence, but it does not
+authorize reopening #347–#359 or any other closed issue.
+
+Current source audit found `PieceStageToolbar` mounted in the manual 3D,
+public 2D, regular embed, 3D embed, and immersive consumers. Current exact
+deployed inspection found the manual 3D hamburger and opened overlay with
+named actions plus `Publication status: Draft`, and the public 2D hamburger
+and opened overlay with Screenshot, Download, Piece controls, and Fullscreen.
+Therefore the discrepancy is classified as `verification-boundary` pending
+revision/asset, cache/session, viewport, or reproducible implementation
+reconciliation—not as permission to claim parity or to erase the owner's
+report.
+
+Duplicate/coverage report: the underlying implementation slices are already
+covered by permanently closed #347/#348 and their route children #352/#353/
+#354/#355/#356/#358/#359; #330–#332 cover different public/embed surfaces and
+are also permanently closed. No existing open issue owns this fresh
+owner-visible contradiction at the exact two reported boundaries. Two new
+criterion-ready issues were created: #381 for authenticated manual 3D editor
+state and #382 for anonymous public 2D stage controls. Each has one route,
+fixed viewports, finite rendered criteria, exact evidence boundaries, and a
+no-reopen rule.
+
+The next handoff is #381 only. Engineering must not begin until its rendered
+revision/session discrepancy is groomed; #382 follows as its own transaction.
+The report also confirms that broad parent #320 remains a reconciliation
+container, not an implementation unit. The root `examples/` directory is not
+present in this checkout; the maintained behavioral reference is
+`../augment-humankind/docs/piece-surface-parity.md` and its source helpers.

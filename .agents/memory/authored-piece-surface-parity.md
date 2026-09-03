@@ -669,3 +669,12 @@ fresh exact deployed `/embed/p3d/:id` verification confirmed chrome-less
 content and shared 3D stage controls, then restored the fixture to Draft.
 The next route boundary is #333; later contradictions must be new linked
 issues rather than reopenings.
+
+Fresh owner contradiction (2026-09-03): the owner reports that the exact
+manual 3D editor still shows the bulky legacy controls and lacks publication
+switching, while the public 2D piece shows no controls. Current source and
+connected-browser inspection show the intended hamburger/overlay flow, so
+this is a verification-boundary contradiction requiring exact revision,
+session, viewport, and rendered evidence. New route-specific issues #381
+(manual 3D owner editor) and #382 (public 2D viewer) own the re-audit. Closed
+#347–#359 remain immutable and must not be reopened.

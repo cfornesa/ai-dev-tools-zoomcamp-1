@@ -271,6 +271,13 @@ confirms the shared viewer contract. Exact republished fixture identity and a
 complete two-viewport rendered matrix were unavailable, so fresh #356 owns
 that deployed verification. Never reopen #353 for #356 or a later parity gap.
 
+Portable 2D closure boundary (2026-09-03): #350 is permanently closed for the
+repository-backed extracted 2D runtime after 105 focused tests and 51
+disposable artifact browser tests passed across Chromium, Firefox, and WebKit.
+The tests prove standalone execution, capability variants, gesture-gated
+camera behavior, privacy exclusions, and ZIP output. Fresh #357 owns the
+remaining responsive rendered-geometry evidence; never reopen #350 for it.
+
 Scoped completion correction (2026-09-03): the owner clarified that #347 is
 functionally complete after its significant shared PieceStageToolbar,
 StageControlsPopover, publication-disclosure, and focused-test work. Its

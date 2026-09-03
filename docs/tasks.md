@@ -12385,7 +12385,8 @@ against the broader pieces-parity goal, but it does not reopen #347.
 | [#355](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/355) | Republished manual 3D owner route verification | Exact published `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` with owner auth at 1280x900 and 375x812; deployed asset identity, piece load, compact controls, publication state, and rendered evidence | Discovered during #352 QA; requires owner-authenticated published session | OPEN / DEPENDENCY-BLOCKED; resume when owner session/deployment identity is available |
 | [#353](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/353) | Published anonymous public 2D piece | Repository-backed public 2D stage-controls integration: shared hamburger disclosure, permitted controls, privacy boundary, and accessibility wiring | #354 shared surface; exact republished fixture verification shifted to #356 | CLOSED / completed; do not reopen |
 | [#356](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/356) | Republished public 2D piece verification | Exact published `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` anonymously at 1280x900 and 375x812; fixture identity, controls, privacy, responsive rendered evidence | Discovered during #353 QA; current URL serves the wrong blank fixture; requires owner republish | OPEN / DEPENDENCY-BLOCKED; resume after intended fixture is published |
-| [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | One downloaded Full artifact served locally; runtime assets, rendered controls, capability/permission behavior, no overlap/ordinary scrollbar | After #353 provides a published 2D fixture | OPEN / GROOMED |
+| [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | Repository-backed extracted 2D runtime: bundled assets, no network-only dependency, capability/permission behavior, privacy exclusions, and browser execution | #353 shared public contract; responsive rendered geometry shifted to #357 | CLOSED / completed; do not reopen |
+| [#357](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/357) | Portable 2D artifact responsive controls | One Full extracted artifact at 1280x900 and 375x812; intended non-empty artwork, stacked stage overlay, no overlap/clipping/ordinary scrollbar, gesture-gated camera | Discovered during #350 QA; requires responsive artifact screenshots | OPEN / GROOMED; next transaction |
 | [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | OPEN / GROOMED |
 
 The next handoff is #355 only while its owner-session dependency is available;
@@ -12450,5 +12451,22 @@ verification boundary. #353 is permanently closed and must not be reopened.
 The live anonymous public URL exposes the expected shared controls, but serves
 the wrong `Blank canvas` fixture. Fresh #356 owns the remaining deployed
 fixture-identity and two-viewport evidence; no closed issue was reopened. Since
-#356 is dependency-blocked by republish state, the queue rotates to independent
-#350 next.
+#356 is dependency-blocked by republish state, #350 completed its extracted
+runtime transaction, and the queue rotates to fresh #357 next.
+
+### #350 closure reconciliation
+
+Issue #350 closed as completed for the repository-backed extracted 2D runtime.
+Focused export/runtime suites passed 105/105, and the disposable artifact
+browser suite passed 51/51 across Chromium, Firefox, and WebKit. The suite
+verified standalone execution, bundled/runtime dependencies, capability
+variants, gesture-gated camera lifecycle, privacy exclusions, and real ZIP
+output. Responsive rendered geometry was not directly evidenced, so fresh #357
+owns that finite follow-up; #350 remains permanently closed.
+
+### Post-#350 verification-boundary distillation — 2026-09-03
+
+The only remaining #350 boundary is rendered responsive geometry for the
+extracted artifact. It is represented by fresh #357 with its own artifact,
+viewport, screenshot, and interaction criteria. No closed issue was reopened;
+#357 is the next engineering/QA transaction.

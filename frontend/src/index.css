@@ -3102,6 +3102,23 @@ select.ai-proposal-field-full-width {
   grid-template-columns: 1fr !important;
 }
 
+/* Manual 3D's save and whole-scene AI actions are siblings of the authoring
+   disclosure in the named Editor actions group. Keep that group a vertical
+   list so their visible labels stay in the same hit target at every width. */
+.piece-stage-command-card > [role='group'] > [role='group'][aria-label='Editor actions'] {
+  display: flex;
+  flex-direction: column;
+}
+
+.piece-stage-command-card
+  > [role='group']
+  > [role='group'][aria-label='Editor actions']
+  > .piece-stage-icon-button {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 0.7rem;
+}
+
 .piece-stage-submenu-close {
   min-height: 2.25rem;
   padding: 0.35rem 0.65rem;
@@ -3267,11 +3284,16 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-controls-panel {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
+  /* Open disclosures participate in the command card's normal flow. An
+     absolute panel can begin below the viewport when the stacked menu is
+     already tall, which makes Firefox treat its controls as non-visible and
+     forces a second overlay scrollbar. */
+  position: relative;
+  left: auto;
+  top: auto;
   z-index: 30;
-  width: min(360px, calc(100vw - 32px));
+  width: min(360px, 100%);
+  margin-top: 0.4rem;
   max-height: min(70vh, 520px);
   overflow: auto;
   box-sizing: border-box;

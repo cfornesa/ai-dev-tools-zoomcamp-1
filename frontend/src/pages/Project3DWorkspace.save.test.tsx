@@ -82,6 +82,11 @@ describe('Project3DWorkspace Save action', () => {
     await screen.findByTestId('project3d-save-status');
     await screen.findByTestId('scene3d-preview-unavailable');
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+
+    expect(screen.getByRole('button', { name: 'Save scene' })).toHaveTextContent('Save scene');
+    expect(screen.getByRole('button', { name: 'Ask AI to improve this scene' })).toHaveTextContent(
+      'Ask AI to improve this scene',
+    );
     await user.click(screen.getByRole('button', { name: '3D authoring' }));
 
     expect(screen.getByRole('group', { name: '3D authoring actions' })).toBeInTheDocument();

@@ -43,6 +43,14 @@ test.describe('manual 3D editor stage chrome', () => {
       await expect(
         toolbar.getByRole('button', { name: 'Publication status: Draft' }),
       ).toBeVisible();
+      for (const [name, label] of [
+        ['Save scene', 'Save scene'],
+        ['Ask AI to improve this scene', 'Ask AI to improve this scene'],
+      ] as const) {
+        const action = toolbar.getByRole('button', { name, exact: true });
+        await expect(action).toBeVisible();
+        await expect(action.locator('.piece-stage-action-label')).toHaveText(label);
+      }
       const canvasMetrics = await frame.evaluate((element) => {
         const box = element.getBoundingClientRect();
         const canvas = element.querySelector('canvas');
@@ -139,6 +147,10 @@ test.describe('manual 3D editor stage chrome', () => {
     await expect(toolbar.getByLabel('Ambient instrument')).toHaveValue('synth');
     await expect(toolbar.getByLabel('Movement instrument')).toHaveValue('synth');
     await expect(toolbar.getByLabel('Melodic instrument')).toHaveValue('synth');
+    // The nested sound panel is deliberately bounded and scrollable. Firefox
+    // does not implicitly scroll a select before selectOption, so use the
+    // same scroll-to-control action a pointer/keyboard user would perform.
+    await toolbar.getByLabel('Movement instrument').scrollIntoViewIfNeeded();
     await toolbar.getByLabel('Movement instrument').selectOption('fmsynth');
     await expect(toolbar.getByLabel('Movement instrument')).toHaveValue('fmsynth');
     await expect(toolbar.getByLabel('Ambient instrument')).toHaveValue('synth');

@@ -582,6 +582,7 @@ function Project3DWorkspace() {
                       title={saveState.pending ? 'Saving scene' : 'Save scene'}
                     >
                       <span aria-hidden="true">▣</span>
+                      <span className="piece-stage-action-label">Save scene</span>
                     </button>
                     <button
                       type="button"
@@ -591,6 +592,7 @@ function Project3DWorkspace() {
                       title="Ask AI to improve this scene"
                     >
                       <span aria-hidden="true">✦</span>
+                      <span className="piece-stage-action-label">Ask AI to improve this scene</span>
                     </button>
                   </span>
                   <PublishControl3D id={id} project={project} setProject={setProject} compact />

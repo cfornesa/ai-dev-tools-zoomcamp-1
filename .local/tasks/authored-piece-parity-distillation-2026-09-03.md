@@ -438,3 +438,17 @@ by Replit `MERGE_CONFLICT` / `UNAUTHENTICATED`; and #360 dependent on #356.
 Closed issues remain immutable. No independent closure-ready issue is
 available until either the manual camera transaction or Replit synchronization
 state changes.
+
+## Post-publication reconciliation — 2026-09-03
+
+Replit synchronization and publication are now evidenced by the exact live
+asset `assets/index-CQvhOwx-.js`. Existing open #356 was reverified at the
+anonymous public route at 1280x900 and 375x812 and permanently closed as
+`completed`. No closed issue was reopened. The prior connector failure to add
+an issue comment was not worked around; the full evidence matrix is in
+`docs/tasks.md` and the correctly typed issue update completed closure.
+
+Fresh distillation must now reclassify #375 as deployment-unblocked and keep
+#360 dependency-blocked only until its own public 3D fixture criteria are
+verified. #344 remains independently blocked by physical held-pinch evidence;
+#331 remains a separate embed-route contract. Next groomed candidate: #375.

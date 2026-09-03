@@ -13513,6 +13513,24 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+## #356 transaction reconciliation — 2026-09-03
+
+The reviewed revision is now live at the exact anonymous public 2D route and
+serves `assets/index-CQvhOwx-.js`. The hamburger, Screenshot, Download, Piece
+controls, and Fullscreen actions were verified with the intended non-empty
+fixture at 1280x900 and 375x812. Mobile dialog geometry was 375px wide by
+812px high, with a 343px-wide contained action card; actions were vertically
+stacked, body overflow was hidden while open, and document scroll width was
+375px. Anonymous inspection found no owner publication controls.
+
+The issue-comment connector incorrectly classified the issue comment request
+as a pull-request mutation, so the evidence matrix is recorded here and the
+correctly typed issue update performed the final GitHub transition. #356 is
+permanently closed as `completed`; it will not be reopened. Any keyboard-label
+cleanup or newly discovered behavior is new linked work.
+
+Fresh post-closure distillation is required before selecting the next issue.
+
 ## #344 blocker reconciliation and fresh distillation — 2026-09-03
 
 Focused implementation checks for #344 passed 26/26, but the required

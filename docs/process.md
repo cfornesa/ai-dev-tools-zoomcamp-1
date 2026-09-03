@@ -242,3 +242,11 @@ This rule prevents both dishonest broad closures and needless reopen cycles.
 A linked follow-up's failure creates or updates the follow-up task; it does not
 reopen the completed parent/child unless the owner explicitly authorizes that
 specific reopening.
+
+### Closure evidence when GitHub comment tooling is unavailable
+
+If the issue-comment connector cannot safely target an issue, do not retry it
+through a pull-request or other indirect API. Record the complete evidence
+matrix in the local task ledger and use the correctly typed GitHub issue update
+operation for the final state transition. The issue remains permanently closed
+once its finite contract passes; any later gap is a new linked issue.

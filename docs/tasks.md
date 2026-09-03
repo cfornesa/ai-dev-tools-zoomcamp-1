@@ -12384,7 +12384,7 @@ against the broader pieces-parity goal, but it does not reopen #347.
 | [#352](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/352) | Published manual 3D owner editor | Repository-backed manual 3D owner-editor integration: canvas-associated authoring/publication overlay, existing editor/runtime actions, responsive stage behavior, and Draft/Published control wiring | #354/#349 for implementation evidence; exact republished owner-session verification shifted to #355 | CLOSED / completed; do not reopen |
 | [#355](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/355) | Republished manual 3D owner route verification | Exact published `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` with owner auth at 1280x900 and 375x812; deployed asset identity, piece load, compact controls, publication state, and rendered evidence | Discovered during #352 QA; requires owner-authenticated published session | OPEN / DEPENDENCY-BLOCKED; resume when owner session/deployment identity is available |
 | [#353](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/353) | Published anonymous public 2D piece | Repository-backed public 2D stage-controls integration: shared hamburger disclosure, permitted controls, privacy boundary, and accessibility wiring | #354 shared surface; exact republished fixture verification shifted to #356 | CLOSED / completed; do not reopen |
-| [#356](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/356) | Republished public 2D piece verification | Exact published `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` anonymously at 1280x900 and 375x812; fixture identity, controls, privacy, responsive rendered evidence | Discovered during #353 QA; requires exact republished fixture and screenshots | OPEN / GROOMED; next deployed-verification transaction |
+| [#356](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/356) | Republished public 2D piece verification | Exact published `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` anonymously at 1280x900 and 375x812; fixture identity, controls, privacy, responsive rendered evidence | Discovered during #353 QA; current URL serves the wrong blank fixture; requires owner republish | OPEN / DEPENDENCY-BLOCKED; resume after intended fixture is published |
 | [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | One downloaded Full artifact served locally; runtime assets, rendered controls, capability/permission behavior, no overlap/ordinary scrollbar | After #353 provides a published 2D fixture | OPEN / GROOMED |
 | [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | OPEN / GROOMED |
 
@@ -12431,8 +12431,9 @@ owns the fixed published route, owner session, two-viewport matrix, deployed
 asset identity, publication state, and rendered evidence. No prior closed issue
 was reopened. Because the owner session is a dependency blocker, #353 is the
 next independent public-surface task and is now closed; #355 remains open and
-returns to the queue when its dependency is cleared. Fresh #356 owns the exact
-republished public 2D verification boundary.
+returns to the queue when its dependency is cleared. #356 is also blocked by
+the wrong published fixture, so #350 is the next independent extracted-runtime
+task; #356 returns to the queue after the intended fixture is republished.
 
 ### #353 closure reconciliation
 
@@ -12443,3 +12444,11 @@ passed. Existing disposable anonymous 2D coverage confirms the shared public
 viewer control contract. Exact republished fixture identity and the complete
 two-viewport rendered matrix were not available, so fresh #356 owns that
 verification boundary. #353 is permanently closed and must not be reopened.
+
+### Post-#353 verification-boundary distillation — 2026-09-03
+
+The live anonymous public URL exposes the expected shared controls, but serves
+the wrong `Blank canvas` fixture. Fresh #356 owns the remaining deployed
+fixture-identity and two-viewport evidence; no closed issue was reopened. Since
+#356 is dependency-blocked by republish state, the queue rotates to independent
+#350 next.

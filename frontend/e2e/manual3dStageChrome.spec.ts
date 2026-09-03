@@ -70,7 +70,32 @@ test.describe('manual 3D editor stage chrome', () => {
         expect(overlaps).toBe(false);
       }
     }
+    const mobileCommandLayout = await toolbar
+      .getByRole('dialog')
+      .locator('.piece-stage-command-card')
+      .evaluate((card) => {
+        const group = card.querySelector(':scope > [role="group"]');
+        const groupStyle = group ? getComputedStyle(group) : null;
+        return {
+          direction: groupStyle?.flexDirection,
+          overflow: getComputedStyle(card).overflow,
+          scrollWidth: card.scrollWidth,
+          clientWidth: card.clientWidth,
+          scrollHeight: card.scrollHeight,
+          clientHeight: card.clientHeight,
+          scrollable: ['auto', 'scroll'].includes(getComputedStyle(card).overflowY),
+        };
+      });
+    expect(mobileCommandLayout.direction).toBe('column');
+    expect(mobileCommandLayout.overflow).toBe('visible');
+    expect(mobileCommandLayout.scrollWidth).toBe(mobileCommandLayout.clientWidth);
+    expect(mobileCommandLayout.scrollable).toBe(false);
     await page.setViewportSize({ width: 1280, height: 900 });
+    const desktopCommandLayout = await toolbar
+      .getByRole('dialog')
+      .locator('.piece-stage-command-card > [role="group"]')
+      .evaluate((element) => getComputedStyle(element).flexDirection);
+    expect(desktopCommandLayout).toBe('column');
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();

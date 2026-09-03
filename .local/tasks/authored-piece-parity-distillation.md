@@ -94,8 +94,14 @@ This is within #347's shared stage-command boundary, not a new issue. The
 criterion is refined to require a vertically stacked mobile action list with
 one fully styled, keyboard-focusable action per row, no horizontal or vertical
 scrollbar in the command card at the fixed viewport, no control overlap, and a
-visible X close action. Desktop may remain compact/horizontal; route-specific
-verification remains #325–#337.
+visible X close action. Route-specific verification remains #325–#337.
+
+The owner further prefers this stacked presentation at every viewport for
+visual cohesion. The shared #347 contract therefore supersedes the earlier
+desktop-horizontal allowance: at both `1280x900` and `375x812`, controls use
+the same one-action-per-row layout, with compact icons sized to sit cleanly
+beside their associated text. The card must remain free of scrollbars and
+overlap at both sizes.
 
 ## Duplicate/already-covered report
 

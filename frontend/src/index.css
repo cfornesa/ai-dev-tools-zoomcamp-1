@@ -2985,12 +2985,13 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-command-card {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   width: min(100%, 46rem);
-  max-height: 100%;
+  max-height: none;
   margin: auto;
-  overflow: auto;
+  overflow: visible;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 1.25rem;
   background: rgba(9, 14, 24, 0.94);
@@ -3019,11 +3020,52 @@ select.ai-proposal-field-full-width {
 
 .piece-stage-command-card > [role='group'] {
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0.65rem;
   min-width: 0;
   padding: 0.75rem 1rem 1rem;
+}
+
+.piece-stage-command-card > [role='group'] > .piece-stage-icon-button,
+.piece-stage-command-card > [role='group'] > .piece-stage-download,
+.piece-stage-command-card > [role='group'] > .piece-stage-controls,
+.piece-stage-command-card > [role='group'] > [role='group'] {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.piece-stage-command-card > [role='group'] > .piece-stage-icon-button,
+.piece-stage-command-card > [role='group'] > .piece-stage-download > .piece-stage-icon-button {
+  justify-content: flex-start;
+  gap: 0.7rem;
+}
+
+.piece-stage-command-card .piece-stage-controls {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.piece-stage-command-card .piece-stage-controls > .piece-stage-icon-button {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0;
+}
+
+.piece-stage-command-card .piece-stage-visible-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.piece-stage-command-card > [role='group'] > [role='group'] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
 }
 
 .piece-stage-submenu-close {
@@ -3233,8 +3275,11 @@ select.ai-proposal-field-full-width {
    full-width row beside the runtime piece controls before the author asks to
    edit the scene. */
 .editor-authoring-controls-panel {
-  left: auto;
-  right: 0;
+  /* The command card is intentionally stacked at every viewport size. Anchor
+     the authoring surface to the controls group's left edge so widening that
+     group cannot push the panel past the stage's right edge. */
+  left: 0;
+  right: auto;
   width: min(520px, calc(100vw - 32px));
 }
 
@@ -3250,12 +3295,69 @@ select.ai-proposal-field-full-width {
   box-shadow: none;
 }
 
-/* On a narrow stage, the contextual panel must grow from the controls button
-   toward the right edge of the stage rather than using `right: 0` against the
-   44px-wide button wrapper. Toolbar actions are already icon-only buttons with
-   aria-labels and focus tooltips, so preserve that compact representation on
-   mobile while keeping the editable color value available as a small control. */
+/* On a narrow stage, keep the contextual panel inside the viewport while the
+   shared command rows retain readable labels beside compact icons. */
 @media (max-width: 600px) {
+  /* Keep the shared command surface readable on phones. A wrapping desktop
+     row makes the action labels collide and forces an avoidable card
+     scrollbar; stack each action as a compact, full-width row instead. */
+  .piece-stage-command-card {
+    width: min(100%, 28rem);
+  }
+
+  .piece-stage-command-card > [role='group'] {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .piece-stage-command-card > [role='group'] > .piece-stage-icon-button,
+  .piece-stage-command-card > [role='group'] > .piece-stage-download > .piece-stage-icon-button {
+    min-height: 2.3rem;
+    height: auto;
+    justify-content: flex-start;
+    gap: 0.6rem;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .piece-stage-command-card .piece-stage-action-label {
+    display: inline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .piece-stage-command-card .piece-stage-controls {
+    display: grid;
+    grid-template-columns: 2.3rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .piece-stage-command-card .piece-stage-controls > .piece-stage-icon-button {
+    width: 2.3rem;
+    min-width: 2.3rem;
+    height: 2.3rem;
+    padding: 0;
+  }
+
+  .piece-stage-command-card .piece-stage-visible-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .piece-stage-command-card > [role='group'] > [role='group'] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .piece-stage-command-card > [role='group'] > [role='group'] > .piece-stage-icon-button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0.5rem;
+  }
+
   .editor-authoring-controls-panel {
     /* Anchor the contextual authoring surface to the trigger's left edge.
        The trigger can sit in a wrapped command row on phones; positioning the

@@ -230,17 +230,16 @@ test.describe('manual 2D editor stage chrome', () => {
       .locator('.piece-stage-command-card > [role="group"]')
       .evaluate((element) => {
         const style = getComputedStyle(element);
-        const box = element.getBoundingClientRect();
         return {
           display: style.display,
           flexDirection: style.flexDirection,
-          width: box.width,
-          height: box.height,
         };
       });
     expect(runtimeLayout.display).toBe('flex');
-    expect(runtimeLayout.flexDirection).toBe('row');
-    expect(runtimeLayout.width).toBeGreaterThan(runtimeLayout.height);
+    expect(runtimeLayout.flexDirection).toBe('column');
+
+    await stageDialog.getByRole('button', { name: 'Close edit scene' }).click();
+    await expect(authoringToolbar).toBeHidden();
 
     await stageDialog.getByRole('button', { name: 'Publication status: Draft' }).click();
     await expect(

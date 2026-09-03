@@ -12111,8 +12111,15 @@ horizontal row, overlap, and create a visible scrollbar. This remains within
 #347's shared stage-command boundary. Its closure contract now explicitly
 requires a vertically stacked mobile action list with one fully styled,
 keyboard-focusable action per row, no horizontal or vertical scrollbar in the
-command card, no control overlap, and a visible X close action. Desktop may
-remain compact/horizontal; route-specific verification remains #325–#337.
+command card, no control overlap, and a visible X close action. Route-specific
+verification remains #325–#337.
+
+The owner further prefers this stacked presentation at every viewport for
+visual cohesion. The shared #347 contract therefore supersedes the earlier
+desktop-horizontal allowance: at both `1280x900` and `375x812`, controls use
+the same one-action-per-row layout, with compact icons sized to sit cleanly
+beside their associated text. The card must remain free of scrollbars and
+overlap at both sizes.
 
 ## Replit release identity recheck — 2026-09-03
 

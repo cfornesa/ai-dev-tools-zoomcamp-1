@@ -235,3 +235,7 @@ stack one action per row, remain fully styled and keyboard accessible, avoid
 all control overlap, and show no internal scrollbar. This refines #347 rather
 than creating a duplicate; desktop compact geometry and per-route evidence
 remain separate criteria.
+Unified overlay decision (2026-09-03): the owner prefers the command card's
+stacked action-list presentation at desktop and mobile, not only at the phone
+breakpoint. Use compact icons beside their associated text, keep one action per
+row, and require no command-card scrollbar or overlap at both fixed viewports.

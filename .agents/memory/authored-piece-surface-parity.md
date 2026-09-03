@@ -766,3 +766,9 @@ zero Django warnings. Full `make check` and the frontend production build
 pass. Do not treat the development `.env` warning run as deployment evidence;
 production readiness still depends on #344's physical-camera verification,
 which remains blocked without reopening any closed route issue.
+
+Closure interpretation (2026-09-04): a prior issue closure remains valid for
+the scoped contract and evidence available in that transaction. Later owner
+reports or broader parity requirements do not retroactively invalidate that
+historical closure; they are new follow-up evidence and must be distilled into
+new work unless the owner explicitly authorizes reopening the named issue.

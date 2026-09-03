@@ -14751,6 +14751,21 @@ deployed screenshots and privacy restoration are therefore unverified. QA
 result: FAIL / verification-boundary; GitHub comment 5532913000 records the
 matrix. #385 remains open and terminally handed off; #386 is next.
 
+### #387 engineering and QA handoff — 2026-09-03
+
+Added `frontend/e2e/public3dEmbedStageChrome.spec.ts` for the regular 3D
+embed's independent fixed-viewport transaction. After correcting the owner
+viewport setup and the rendered Draft capitalization, the command
+`BROWSER_QA_E2E_SPEC=e2e/public3dEmbedStageChrome.spec.ts make browser-qa`
+passed 3/3 in Chromium, Firefox, and WebKit at 1280x900 and 375x812. It
+covers chrome-less controls, proportional geometry, screenshot attachments,
+and Draft restoration on a disposable fixture. The exact republished
+`/embed/p3d/...` URL serves `assets/index-CREpJGbM.js` but currently returns
+the unavailable state because the shared fixture is Draft/private. Exact
+deployed anonymous/fixed-viewport evidence remains unverified. QA result:
+FAIL / verification-boundary; GitHub comment 5533024956 records the matrix.
+#387 remains open and terminally handed off; #388 is next.
+
 ### #386 engineering and QA handoff — 2026-09-03
 
 Added `frontend/e2e/public2dEmbedStageChrome.spec.ts` as the missing

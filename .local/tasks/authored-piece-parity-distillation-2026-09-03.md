@@ -964,6 +964,17 @@ because the fixture is Draft/private, and Chrome cannot emulate the required
 fixed viewports. QA comment 5532913000 records FAIL /
 verification-boundary. #385 remains open and handed off; #386 is next.
 
+## #387 engineering and QA handoff — 2026-09-03
+
+Added the route-specific `public3dEmbedStageChrome.spec.ts` harness. After
+fixing viewport setup and Draft capitalization in the harness, it passed 3/3
+across Chromium, Firefox, and WebKit at 1280x900 and 375x812, including
+proportions, controls, screenshot attachments, and restoration. The exact
+republished embed route serves `assets/index-CREpJGbM.js` but returns
+unavailable because the shared fixture is Draft/private. QA comment
+5533024956 records FAIL / verification-boundary. #387 remains open and
+handed off; #388 is next.
+
 ## #386 engineering and QA handoff — 2026-09-03
 
 Added the route-specific `public2dEmbedStageChrome.spec.ts` harness. It

@@ -12983,3 +12983,20 @@ target is **#362**. Engineering and testing must be performed together for
 handoff) before another issue enters engineering. Completion means closure;
 there is no “move on and close later” state. No product source or product
 tests were changed during this distillation pass.
+
+### #362 engineering and QA handoff — 2026-09-03
+
+#362 is not closed. Commit `c241521` moves the StageControlsPopover visible
+label into the same icon-plus-text button hit target, makes the shared command
+rows full-width and stacked, and limits scrolling to deliberately opened
+nested panels. Focused component tests pass 7/7; frontend format, typecheck,
+and lint pass with only pre-existing lint warnings.
+
+The first Docker-backed browser run reached all six scenarios but the new
+overflow assertion failed in Chromium, Firefox, and WebKit. After the CSS
+sizing correction, the next run was blocked before browser startup because
+the disposable PostgreSQL container did not become ready. The issue comment
+records both runs and the retained log path. #362 therefore remains open as a
+verification handoff. The next action is to rerun the same browser gate,
+reconcile rendered evidence at 1280×900 and 375×812, and close #362 only if
+all criteria pass. No other issue may enter engineering first.

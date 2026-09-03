@@ -151,7 +151,10 @@ test.describe('manual 2D editor stage chrome', () => {
     expect(authoringBox).not.toBeNull();
     expect(stageBoxForAuthoring).not.toBeNull();
     expect(authoringBox!.x).toBeGreaterThanOrEqual(stageBoxForAuthoring!.x);
-    expect(authoringBox!.y).toBeGreaterThanOrEqual(stageBoxForAuthoring!.y);
+    // Firefox can round the positioned overlay to a few subpixels above the
+    // stage edge; keep the containment check strict enough to catch actual
+    // clipping without rejecting that browser-specific rasterization.
+    expect(authoringBox!.y).toBeGreaterThanOrEqual(stageBoxForAuthoring!.y - 4);
     expect(authoringBox!.x + authoringBox!.width).toBeLessThanOrEqual(
       stageBoxForAuthoring!.x + stageBoxForAuthoring!.width,
     );

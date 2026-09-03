@@ -243,3 +243,9 @@ Publication disclosure refinement (2026-09-03): the opened Draft/Published
 panel must be compact and stage-contained at both fixed viewports. An internal
 scrollbar is acceptable only for deliberately expanded disclosure content, not
 for the closed command card or an ordinary status toggle.
+Closure evidence (2026-09-03): published asset `index-CecM7AFX.js` passed the
+authenticated 3D and anonymous public 2D #347 checks; GitHub comment
+`5520431795` contains the matrix and issue #347 is closed. The original issue
+body retains legacy unchecked boxes because the connector rejected a body
+rewrite; do not treat those stale boxes as new work without reconciling them
+against the closure comment and this task record.

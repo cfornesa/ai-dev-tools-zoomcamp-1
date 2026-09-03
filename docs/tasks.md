@@ -12136,6 +12136,19 @@ tests passed/22 skipped and 2,399 frontend tests passed. The commit is pushed
 to `origin/main`. #347 remains open until the exact published routes are
 republished and fixed-viewport rendered evidence is reconciled.
 
+## #347 final closure reconciliation — 2026-09-03
+
+The exact published asset `index-CecM7AFX.js` was verified after republish.
+Authenticated 3D editor checks passed at `1280x900` and `375x812`, including
+the compact Draft/Published disclosure; anonymous public 2D checks passed at
+`375x812`, including visible stacked controls and Full/Non-Camera downloads
+without private editor controls. GitHub comment `5520431795` records the
+criterion matrix, and GitHub #347 is closed as completed. GitHub's connector
+accepted the closure/comment but rejected a follow-up rewrite of the original
+issue body's legacy unchecked boxes; the comment and this reconciliation are
+the current acceptance record. Remaining route/artifact verification stays in
+#325–#337.
+
 ## Replit release identity recheck — 2026-09-03
 
 The authenticated Replit `creatrweb` workspace was inspected read-only. It

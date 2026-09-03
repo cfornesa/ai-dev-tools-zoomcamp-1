@@ -12053,3 +12053,14 @@ runs and DOM/accessibility assertions were used as if they proved exact
 published rendered parity. They do not. Future closure requires the exact URL,
 fixture, viewport, browser state, screenshot, visible interaction, and
 deployed asset hash named by the issue contract.
+
+## #347 reopened engineering pass — 2026-09-03
+
+The shared overlay defect found in the exact live audit is fixed locally in
+`1f3cecb`: the open translucent overlay now covers its hamburger trigger, and
+mobile direct-action labels collapse to icons while retaining accessible names
+and focus tooltips. `make check` passed, focused component tests passed 5/5,
+and the isolated 3D stage gate passed 3/3 across Chromium, Firefox, and WebKit
+with mobile no-overlap geometry assertions. #347 remains open pending exact
+published verification. The separate 2D route run exposed #348's authoring
+panel escaping the mobile viewport at x=-110.8; it was not folded into #347.

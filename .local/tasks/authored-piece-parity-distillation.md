@@ -56,8 +56,8 @@ open pending publication/review; no later issue may begin before its closure.
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Historical parity epic/container | OPEN, reopened false closure | Reconcile last | #320 |
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
 | [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
-| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | REOPENED / FALSE CLOSURE | Fresh exact-route mobile audit contradicted prior closure | Shared component + fixed published evidence |
-| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | HANDED-OFF / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish required | Shared component + manual 2D QA |
+| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | ENGINEERED / AWAITING PUBLISHED QA | Replit Pull/Sync + Republish; then exact fixed-route QA | Local mobile overlap fixed; published proof pending |
+| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | OPEN / IMPLEMENTATION DEFECT CONFIRMED | Fix 2D authoring panel viewport escape, then publish | Local browser found mobile panel x=-110.8; exact published QA pending |
 | [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish; then exact fixed-route QA | Local responsive QA passed; published proof pending |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | `/ai-projects/:id` AI 2D editor | OPEN | Shared implementation then route QA | Route QA |
@@ -177,3 +177,14 @@ closed.
   published asset, requested mobile rendered geometry, or expected route
   fixture. Future closure requires exact-route screenshots and visible
   interaction evidence.
+
+## #347 engineering handoff after re-audit — 2026-09-03
+
+The confirmed shared defect is fixed locally in `1f3cecb`: the open overlay is
+above its trigger and mobile action labels collapse to icons without removing
+accessible names or focus tooltips. The focused component gate (5/5), full
+`make check`, and the isolated three-browser 3D stage gate (3/3) pass. #347 is
+not closed: exact published screenshots and visible interaction evidence are
+still required. The failed full 2D route scenario is not attributed to #347;
+it identified #348's separate mobile authoring-panel escape (observed x=-110.8)
+and is recorded as an implementation defect in #348.

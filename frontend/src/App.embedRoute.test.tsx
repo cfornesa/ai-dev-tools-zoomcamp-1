@@ -115,7 +115,8 @@ describe('/embed/p/:id (issue #292)', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Hand Follower' })).toBeInTheDocument();
+    expect(await screen.findByTestId('public-scene-canvas')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Hand Follower' })).not.toBeInTheDocument();
     expect(mockedGetPublicProject).toHaveBeenCalledWith('p1');
     expect(document.querySelector('.app-shell-header')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Public gallery' })).not.toBeInTheDocument();

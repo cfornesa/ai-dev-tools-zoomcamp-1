@@ -420,82 +420,89 @@ function PublicProjectViewer() {
   if (!project) return null;
 
   const provenance = project.remix_provenance;
+  const isEmbedRoute = window.location.pathname.startsWith('/embed/p/');
 
   return (
-    <div className="public-project-viewer" data-project-kind={provenance ? 'remix' : 'original'}>
-      <header>
-        <h2>{project.title}</h2>
-        {provenance && (
-          <span className="remix-badge" role="status" aria-label="Remix">
-            Remix
-          </span>
-        )}
-        {project.description && <p>{project.description}</p>}
-        <p className="public-project-attribution">By {project.owner}</p>
+    <div
+      className="public-project-viewer"
+      data-project-kind={provenance ? 'remix' : 'original'}
+      data-embed-route={isEmbedRoute ? 'true' : undefined}
+    >
+      {!isEmbedRoute && (
+        <header>
+          <h2>{project.title}</h2>
+          {provenance && (
+            <span className="remix-badge" role="status" aria-label="Remix">
+              Remix
+            </span>
+          )}
+          {project.description && <p>{project.description}</p>}
+          <p className="public-project-attribution">By {project.owner}</p>
 
-        {provenance &&
-          (provenance.source_public_id ? (
-            <p className="public-project-provenance" data-testid="provenance">
-              Remixed from{' '}
-              <Link to={`/p/${provenance.source_public_id}`}>{provenance.source_creator}</Link>
-            </p>
-          ) : (
-            <p className="public-project-provenance" data-testid="provenance">
-              Remixed from {provenance.source_creator}
-            </p>
-          ))}
+          {provenance &&
+            (provenance.source_public_id ? (
+              <p className="public-project-provenance" data-testid="provenance">
+                Remixed from{' '}
+                <Link to={`/p/${provenance.source_public_id}`}>{provenance.source_creator}</Link>
+              </p>
+            ) : (
+              <p className="public-project-provenance" data-testid="provenance">
+                Remixed from {provenance.source_creator}
+              </p>
+            ))}
 
-        {auth.status === 'signed-in' && project.allow_public_remix && (
+          {auth.status === 'signed-in' && project.allow_public_remix && (
+            <p>
+              <button type="button" onClick={handleFork} disabled={forkState === 'forking'}>
+                {forkState === 'forking' ? 'Forking…' : 'Fork this project'}
+              </button>
+            </p>
+          )}
+          {forkError && (
+            <p role="alert" aria-live="assertive">
+              {forkError}
+            </p>
+          )}
+
           <p>
-            <button type="button" onClick={handleFork} disabled={forkState === 'forking'}>
-              {forkState === 'forking' ? 'Forking…' : 'Fork this project'}
+            <button
+              type="button"
+              onClick={() => {
+                setShowEmbedSnippet((current) => !current);
+                setEmbedCopyStatus('idle');
+              }}
+              aria-expanded={showEmbedSnippet}
+              data-testid="toggle-embed-snippet"
+            >
+              {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
             </button>
           </p>
-        )}
-        {forkError && (
-          <p role="alert" aria-live="assertive">
-            {forkError}
-          </p>
-        )}
-
-        <p>
-          <button
-            type="button"
-            onClick={() => {
-              setShowEmbedSnippet((current) => !current);
-              setEmbedCopyStatus('idle');
-            }}
-            aria-expanded={showEmbedSnippet}
-            data-testid="toggle-embed-snippet"
-          >
-            {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
-          </button>
-        </p>
-        {showEmbedSnippet && id && (
-          <div className="public-project-embed-snippet" data-testid="embed-snippet-panel">
-            <label htmlFor="embed-snippet-textarea">Embed this piece on another site</label>
-            <textarea
-              id="embed-snippet-textarea"
-              readOnly
-              value={embedSnippetFor(id)}
-              onFocus={(event) => event.currentTarget.select()}
-            />
-            <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
-              Copy
-            </button>
-            {embedCopyStatus === 'copied' && (
-              <p role="status" aria-live="polite">
-                Copied!
-              </p>
-            )}
-            {embedCopyStatus === 'failed' && (
-              <p role="alert" aria-live="assertive">
-                Couldn't copy automatically -- select the text above and copy manually.
-              </p>
-            )}
-          </div>
-        )}
-      </header>
+          {showEmbedSnippet && id && (
+            <div className="public-project-embed-snippet" data-testid="embed-snippet-panel">
+              <label htmlFor="embed-snippet-textarea">Embed this piece on another site</label>
+              <textarea
+                id="embed-snippet-textarea"
+                readOnly
+                value={embedSnippetFor(id)}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+              <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
+                Copy
+              </button>
+              {embedCopyStatus === 'copied' && (
+                <p role="status" aria-live="polite">
+                  Copied!
+                </p>
+              )}
+              {embedCopyStatus === 'failed' && (
+                <p role="alert" aria-live="assertive">
+                  Couldn't copy automatically -- select the text above and copy manually.
+                </p>
+              )}
+            </div>
+          )}
+        </header>
+      )}
 
       <div className="editor-workspace">
         <section role="region" aria-label="Preview" data-panel="preview" className="editor-panel">

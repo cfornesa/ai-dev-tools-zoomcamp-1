@@ -2756,6 +2756,28 @@ select.ai-proposal-field-full-width {
   margin: 0 8px 8px 0;
 }
 
+/* Issue #331: the iframe entry point is a stage-only surface. Keep the
+   public viewer's shared renderer and toolbar, but remove the gallery
+   metadata/Preview panel chrome that belongs to `/p/:id`. */
+.public-project-viewer[data-embed-route='true'] {
+  min-height: 100vh;
+  padding: 0;
+}
+
+.public-project-viewer[data-embed-route='true'] .editor-workspace {
+  display: block;
+}
+
+.public-project-viewer[data-embed-route='true'] .editor-panel {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.public-project-viewer[data-embed-route='true'] .editor-panel > h3 {
+  display: none;
+}
+
 .immersive-project3d-viewer {
   padding: 0 24px 24px;
   box-sizing: border-box;

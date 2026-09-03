@@ -254,6 +254,14 @@ across Chromium, Firefox, and WebKit; frontend checks passed 191 files and
 2,402 tests. #371 remains the separate camera-view composition task. #370 is
 complete and permanently closed; do not reopen it.
 
+#371 closure evidence (2026-09-03): Full 3D downloads provide independent
+Camera view, Camera opacity, and Mirror camera controls with safe defaults;
+changing them affects only local video presentation. Stopping steering removes
+the stale preview, and Non-Camera downloads omit camera-view UI and paths.
+Browser QA passed 57/57 across Chromium, Firefox, and WebKit; frontend checks
+passed 191 files and 2,402 tests. #371 is complete and permanently closed;
+future parity gaps must be new linked issues.
+
 Current owner-report reconciliation (2026-09-03): a fresh anonymous visit to
 the exact public URL confirms the hamburger and permitted actions exist, but
 the opened live action labels are visibly detached from oversized rows and do

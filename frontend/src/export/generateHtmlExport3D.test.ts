@@ -142,6 +142,10 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('getUserMedia');
     expect(script).toContain('__exportSetActiveInput');
     expect(script).toContain('recognizeForVideo');
+    expect(script).toContain('camera-view-toggle');
+    expect(script).toContain('camera-view-opacity');
+    expect(script).toContain('camera-view-mirror');
+    expect(script).toContain('camera-view-video');
     expect(script).toContain('./runtime/mediapipe/vision_bundle.mjs');
     expect(script).toContain('./runtime/mediapipe/wasm');
     expect(script).toContain('./runtime/mediapipe/gesture_recognizer.task');
@@ -159,6 +163,7 @@ describe('generateScene3DBundle', () => {
     const zip = await JSZip.loadAsync(result.zipBlob);
     const html = await zip.files['index.html'].async('string');
     expect(html).not.toContain('camera-controls-host');
+    expect(html).not.toContain('camera-view-toggle');
     expect(html).not.toContain('piece-theremin');
     expect(html).toContain('piece-sound');
     const script = await zip.files['scripts/piece.js'].async('string');

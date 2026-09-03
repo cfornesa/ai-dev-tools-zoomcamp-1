@@ -136,6 +136,10 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
 (function () {
   "use strict";
 
+  var cameraViewEnabled = false;
+  var cameraViewOpacity = 0.35;
+  var cameraViewMirrored = true;
+
   var MEDIAPIPE_VERSION = ${JSON.stringify(MEDIAPIPE_TASKS_VISION_VERSION)};
   var VISION_BUNDLE_URL = ${JSON.stringify(visionBundleUrl)};
   var WASM_BASE_URL = ${JSON.stringify(wasmBaseUrl)};
@@ -253,6 +257,8 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
     var currentGesture = null;
     var handPresent = false;
 
+    var cameraViewVideo = null;
+
     var statusListeners = [];
     var errorListeners = [];
     var eventListeners = [];
@@ -287,6 +293,12 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
         video.pause();
         video.srcObject = null;
         video = null;
+      }
+      if (cameraViewVideo) {
+        cameraViewVideo.srcObject = null;
+        cameraViewVideo.style.display = "none";
+        cameraViewVideo.remove();
+        cameraViewVideo = null;
       }
       if (recognizer) {
         try {
@@ -331,6 +343,11 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
             }
             stream = acquiredStream;
             var videoElement = document.createElement("video");
+            videoElement.id = "camera-view-video";
+            videoElement.setAttribute("aria-label", "Local camera view");
+            videoElement.style.display = cameraViewEnabled ? "block" : "none";
+            videoElement.style.opacity = String(cameraViewOpacity);
+            videoElement.style.transform = cameraViewMirrored ? "scaleX(-1)" : "none";
             videoElement.muted = true;
             videoElement.playsInline = true;
             videoElement.srcObject = acquiredStream;
@@ -340,6 +357,8 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
                 function () {
                   if (myGeneration !== generation) return;
                   video = videoElement;
+                  cameraViewVideo = videoElement;
+                  document.body.appendChild(videoElement);
                   loadModel(myGeneration);
                 },
                 function () {
@@ -642,12 +661,44 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
     });
     stopBtn.style.display = "none";
 
+    var viewGroup = el("div", { "class": "camera-view-controls", role: "group", "aria-label": "Camera view composition" });
+    var viewLabel = el("label", {});
+    var viewToggle = el("input", { type: "checkbox", "data-testid": "camera-view-toggle" });
+    viewLabel.appendChild(viewToggle);
+    viewLabel.appendChild(document.createTextNode(" Camera view"));
+    var opacityLabel = el("label", { text: "Camera opacity" });
+    var opacityInput = el("input", { type: "range", min: "0", max: "1", step: "0.05", value: String(cameraViewOpacity), "data-testid": "camera-view-opacity", "aria-label": "Camera opacity" });
+    opacityLabel.appendChild(opacityInput);
+    var mirrorLabel = el("label", {});
+    var mirrorToggle = el("input", { type: "checkbox", "data-testid": "camera-view-mirror" });
+    mirrorToggle.checked = cameraViewMirrored;
+    mirrorLabel.appendChild(mirrorToggle);
+    mirrorLabel.appendChild(document.createTextNode(" Mirror camera"));
+    viewGroup.appendChild(viewLabel);
+    viewGroup.appendChild(opacityLabel);
+    viewGroup.appendChild(mirrorLabel);
+
     host.appendChild(heading);
     host.appendChild(notice);
     host.appendChild(statusEl);
     host.appendChild(errorEl);
     host.appendChild(enableBtn);
     host.appendChild(stopBtn);
+    host.appendChild(viewGroup);
+
+    function updateCameraView() {
+      cameraViewEnabled = viewToggle.checked;
+      cameraViewOpacity = Number(opacityInput.value);
+      cameraViewMirrored = mirrorToggle.checked;
+      if (cameraViewVideo) {
+        cameraViewVideo.style.display = cameraViewEnabled ? "block" : "none";
+        cameraViewVideo.style.opacity = String(cameraViewOpacity);
+        cameraViewVideo.style.transform = cameraViewMirrored ? "scaleX(-1)" : "none";
+      }
+    }
+    viewToggle.addEventListener("change", updateCameraView);
+    opacityInput.addEventListener("input", updateCameraView);
+    mirrorToggle.addEventListener("change", updateCameraView);
 
     function render(status) {
       if (status === "idle") statusEl.textContent = "";

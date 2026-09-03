@@ -335,6 +335,9 @@ describe('camera export runtime: lazy activation and pre-activation state', () =
     expect(cameraStatusEl().textContent).toBe('');
     expect(cameraStopButton().style.display).toBe('none');
     expect(cameraEnableButton().style.display).not.toBe('none');
+    expect(document.querySelector('[aria-label="Camera view composition"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="camera-view-toggle"]')).not.toBeChecked();
+    expect(document.querySelector('[data-testid="camera-view-mirror"]')).toBeChecked();
   });
 
   it('renders the demo controls host fully populated, independent of camera state', () => {

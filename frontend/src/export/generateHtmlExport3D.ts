@@ -176,6 +176,10 @@ const PIECE_CSS = `html, body {
 #piece-audio-controls #camera-controls-host { position: static; left: auto; bottom: auto; z-index: auto; min-width: 0; max-width: none; max-height: none; overflow: visible; padding: 0; color: inherit; background: transparent; border: 0; border-radius: 0; }
 #camera-controls-host:empty { display: none; }
 #camera-controls-host video { width: 100%; max-height: 10rem; object-fit: cover; border-radius: .5rem; }
+#camera-view-video { position: fixed; right: 1rem; bottom: 1rem; z-index: 8; width: min(20rem, calc(100vw - 2rem)); max-height: 12rem; object-fit: cover; pointer-events: none; border: 1px solid rgba(255,255,255,.35); border-radius: .75rem; transform-origin: center; }
+.camera-view-controls { display: grid; gap: .5rem; margin-top: .5rem; }
+.camera-view-controls label { display: flex !important; align-items: center; gap: .5rem; }
+.camera-view-controls input[type="range"] { width: 100%; }
 `;
 
 function buildReadme(immersive: boolean): string {

@@ -407,8 +407,19 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
               'aria-pressed',
               'false',
             );
+            const cameraView = page.getByTestId('camera-view-toggle');
+            const cameraOpacity = page.getByTestId('camera-view-opacity');
+            const cameraMirror = page.getByTestId('camera-view-mirror');
+            await expect(cameraView).not.toBeChecked();
+            await expect(cameraOpacity).toHaveValue('0.35');
+            await expect(cameraMirror).toBeChecked();
+            await cameraView.check();
+            await cameraOpacity.fill('0.6');
+            await cameraMirror.uncheck();
             await page.getByTestId('camera-enable').click();
             await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
+            await expect(page.locator('#camera-view-video')).toHaveCSS('opacity', '0.6');
+            await expect(page.locator('#camera-view-video')).toHaveCSS('transform', 'none');
             await expect(page.getByTestId('camera-stop')).toHaveText('Stop steering');
             await page.getByTestId('camera-stop').click();
             await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);

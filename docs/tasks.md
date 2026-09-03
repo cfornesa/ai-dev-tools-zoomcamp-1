@@ -12713,3 +12713,115 @@ passed 3/3 across Chromium, Firefox, and WebKit at 1280x900 and 375x812.
 Exact republished owner-route evidence remains separately tracked by #355.
 #359 is permanently closed; later geometry or deployment gaps must be new
 issues unless the owner explicitly authorizes reopening #359.
+
+## Canonical distillation correction after owner parity rejection — 2026-09-03
+
+This section supersedes the status language in earlier audit notes. Those
+notes are retained as an append-only history of the prior process failure, but
+their statements that #274, #324, #347, or other closed issues were reopened
+are not the current workflow or authorization. The owner has explicitly
+required that a closed issue remain closed unless the owner names that exact
+issue and authorizes reopening it in the current conversation. No such
+authorization was given for this audit. The GitHub state is authoritative:
+#347, #348, #350–#354, #357–#359, and #361 remain closed.
+
+The PHP `augment-humankind` repository is a read-only behavioral and visual
+reference. The product under implementation is Django/Python plus
+React/TypeScript. “Full CMS parity” is limited to the reference repository's
+pieces surfaces and maintained examples/fixtures: authored editor previews,
+public pieces, embeds, immersive pieces, and downloaded runtimes. It does not
+mean implementing the entire PHP CMS, blog, collections, administration, or
+unrelated content types.
+
+### Evidence boundary and root cause
+
+The current authenticated Chrome audit reached the exact manual 3D editor
+URL, but the deployed page serves `assets/index-CecM7AFX.js`. After loading,
+the stage exposes only the hamburger until opened; the opened deployed menu
+contains runtime controls, Editor actions, Fullscreen, and a Draft/Published
+disclosure, but it does not contain the checkout's newer `3D authoring`
+submenu. This is a deployed-revision verification boundary owned by #355,
+not proof that the local implementation is absent and not permission to
+reopen #347 or #358.
+
+The current anonymous audit of the exact `/p/` URL serves the `Blank canvas`
+fixture. Opening its hamburger exposes Screenshot, Download, Piece controls,
+and Fullscreen, with no owner controls, but the fixture is not the intended
+non-empty authored example. This is a fixture/revision verification boundary
+owned by #356; it is not evidence for closing #353 or reopening it.
+
+The local source confirms the intended separation: `PieceStageToolbar` owns
+the compact stage-associated disclosure; `Project3DWorkspace` passes manual
+3D authoring actions, save, and publication as editor controls;
+`AiProject3DWorkspace` passes its AI and publication controls; and public,
+embed, immersive, and extracted consumers receive only their permitted
+capabilities. Local source, DOM names, hidden menu buttons, or a different
+fixture cannot substitute for rendered evidence from the exact deployed
+consumer.
+
+### Complete pieces-parity manifest
+
+The following is the canonical current manifest for the scoped pieces goal.
+Each row is one existing GitHub record or an explicit reconciliation
+container. No row inherits another row's route, fixture, browser, or deployment
+evidence. Engineering and QA may begin only for the single next groomed row;
+they must finish one issue transaction, including GitHub closure or terminal
+blocker handoff, before another issue begins.
+
+| Issue | Surface/capability boundary | Current classification | Dependency/order and next action |
+| --- | --- | --- | --- |
+| #355 | Authenticated manual 3D owner route `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` | OPEN / verification-boundary | First after the reviewed revision is actually deployed; verify 1280×900 and 375×812 rendered screenshots, menu/authoring/publication interactions, asset identity, and no state mutation beyond the authorized round trip |
+| #356 | Anonymous public 2D route `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` | OPEN / dependency-blocked by fixture publication | Verify the intended non-empty fixture at both fixed viewports, public-only controls, privacy, and rendered discoverability after the owner publishes the intended fixture |
+| #325 | Authenticated manual 2D route `/projects/:id` excluding publication-only assertions | OPEN / route contract | After shared surface #354; run one owner fixture through named editor/runtime/save controls and responsive rendered evidence |
+| #326 | Authenticated AI 2D route `/ai-projects/:id` excluding publication-only assertions | OPEN / route contract | After shared surface #354; verify the AI editor's named controls and responsive rendered evidence on one owner fixture |
+| #328 | Authenticated AI 3D route `/ai-projects3d/:id` excluding publication-only assertions | OPEN / route contract | After #349 and shared surface evidence; verify AI editor controls, 3D stage, and responsive rendered evidence on one owner fixture |
+| #338 | Manual 2D publication workflow | OPEN / capability contract | Process independently of #325: Draft → Published → Draft on one authenticated fixture, then verify anonymous privacy |
+| #340 | AI 2D publication workflow | OPEN / capability contract | Process independently of #326 with the same finite state transition and privacy check |
+| #341 | Manual 3D publication workflow | OPEN / capability contract | Process independently of #355's deployment check; verify the API/UI state transition on one authenticated fixture and anonymous privacy |
+| #339 | AI 3D publication workflow | OPEN / capability contract | Process independently of #328 with the same finite state transition and anonymous privacy check |
+| #330 | Anonymous public 3D route `/p3d/:id` | OPEN / route contract | After #355/#349 and an intended published 3D fixture; verify public controls, privacy, responsive rendered geometry, and no owner actions |
+| #331 | Anonymous 2D embed `/embed/p/:id` | OPEN / route contract | After #356; verify chrome-less stage-only controls and privacy on the exact embed fixture |
+| #332 | Anonymous 3D embed `/embed/p3d/:id` | OPEN / route contract | After #330; verify chrome-less 3D controls, privacy, and responsive rendering |
+| #333 | Anonymous regular immersive 3D `/immersive/p3d/:id` | OPEN / route contract | After #330; verify immersive controls, guide, arrow travel, privacy, and responsive rendering |
+| #334 | Custom immersive query `/immersive/p3d/:id?embed=1` | OPEN / route variant | After #333; verify the Custom chrome-less wrapper and its finite controls independently |
+| #335 | CMS immersive query `/immersive/p3d/:id?embed=1&cms=1` | OPEN / route variant | After #333; verify the CMS wrapper and its finite controls independently |
+| #360 | Anonymous public 3D responsive proportions | OPEN / dependency-blocked by #330/#355 fixture evidence | Verify one intended public 3D fixture at both viewports; do not infer it from #359's editor evidence |
+| #344 | Physical held-pinch immersive camera movement | OPEN / verification-boundary | Attempt the documented physical-camera path; if host hardware remains unavailable, leave terminally blocked with the exact evidence boundary and do not infer a product defect |
+| #320 | Authored pieces release reconciliation | OPEN / parent container | Close only after all required child rows have terminal results and exact revision/privacy evidence; never engineer this parent |
+| #324 | Production-readiness reconciliation | OPEN / parent container | Reconcile child evidence after the route rows; never use this as a multi-route implementation issue |
+| #274 | Historical pieces parity epic | OPEN / historical parent | Reconcile links and scope only after the scoped child matrix; no PHP implementation and no direct engineering |
+
+### Duplicate, superseded, and closed-work report
+
+- #274, #320, and #324 are containers, not implementation units.
+- #349 is retained as the 3D responsive parent; #359 is its permanently
+  closed manual-editor child and #360 is its public-viewer child.
+- #348 is superseded by the fresh #354 shared editor-layout transaction;
+  neither is to be reopened.
+- #327, #329, #336, and #337 are historical/superseded records. Their route
+  or artifact follow-ups use the current open records above, not reopening.
+- #347, #350–#353, #357–#359, and #361 are permanently closed for their
+  explicitly scoped implementation or artifact transactions. Current owner
+  rejection, stale deployment, wrong fixture, or broader parity findings are
+  new evidence for the open consumer/release records above.
+- #355 and #356 already cover the two newly observed deployed gaps. No new
+  duplicate issue is warranted in this audit.
+
+### Blocker triage and handoff
+
+| Item | Class | Owner/context | Exact evidence boundary | Follow-up/next action |
+| --- | --- | --- | --- | --- |
+| Reviewed checkout not represented by deployed manual 3D asset | verification-boundary | Replit release operator / owner-controlled publication | Live asset `index-CecM7AFX.js` lacks the local 3D authoring submenu | Keep #355 open; synchronize/publish the reviewed revision, then run its exact route matrix |
+| Public fixed URL has the wrong `Blank canvas` fixture | dependency-blocked / fixture mismatch | Replit fixture/publication state | Anonymous `/p/...` is not the intended non-empty authored example | Keep #356 open; publish the intended fixture, then run its exact route matrix |
+| Physical camera evidence for held pinch | verification-boundary | Host/browser hardware capability | Browser automation cannot synthesize a real held-pinch camera session | Keep #344 terminally blocked if the supported hardware path remains unavailable; process independent routes first |
+| Earlier broad closure claims | workflow/process defect | Agent backlog reconciliation | Local/shared DOM and disposable tests were transferred to deployed routes | No issue reopen; this canonical correction and future per-route closure matrices are the remediation |
+
+### Handoff
+
+Distillation is complete. The next groomed issue is **#355**, but it is
+currently dependency-blocked until the reviewed `origin/main` revision is
+actually published and the authenticated owner route is available. If that
+external state remains unavailable, backlog-session may process the next
+independent route contract **#325** (or its explicitly groomed successor)
+without reopening or modifying any closed issue. Engineering and QA remain a
+single per-issue transaction; completion is the final GitHub closure step.

@@ -290,6 +290,27 @@ Do not reopen any closed issue or invent a duplicate; resume the FIFO queue
 when the owner-authenticated published fixture/session or reliable manual
 camera evidence becomes available.
 
+Canonical distillation correction (2026-09-03): the prior audit history used
+incorrect language about reopening #274, #324, and #347. Closed issues are
+immutable unless the owner explicitly names that exact issue and authorizes
+reopening it in the current conversation. No such authorization applies to
+this audit; those issues, plus #348, #350–#353, #357–#359, and #361, remain
+closed. Later owner rejection, stale deployment, wrong fixture, or broader
+pieces-parity evidence must be recorded against a new or already-open
+criterion-ready issue. The canonical current manifest is the final
+distillation section of `docs/tasks.md`.
+
+Fresh live audit (2026-09-03): authenticated manual 3D
+`/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` serves
+`assets/index-CecM7AFX.js`; its opened menu has runtime/editor/publication
+controls but not the local checkout's newer `3D authoring` submenu. Anonymous
+`/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` serves the `Blank canvas` fixture;
+its hamburger exposes permitted public controls, but it is not the intended
+non-empty example. These are #355 and #356's open deployment/fixture
+boundaries, respectively. The application remains Django/Python with a
+React/TypeScript frontend; the PHP repository is only the pieces parity
+reference, not an implementation target. No new duplicate issue was created.
+
 Portable 2D responsive closure (2026-09-03): #357 is permanently closed for
 the extracted artifact's responsive action surface. The artifact now packages
 an accessible hamburger menu, fullscreen translucent overlay, stacked labeled

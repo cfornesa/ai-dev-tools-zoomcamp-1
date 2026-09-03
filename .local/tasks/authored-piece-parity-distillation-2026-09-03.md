@@ -911,3 +911,20 @@ Post-engineering distillation found no new duplicate or independently closable
 task. The remaining physical-camera criteria stay on #344. The pushed branch
 must be synced and published before the owner performs the authorized Chrome
 gesture transaction; prior scoped closures remain valid and immutable.
+
+## Fresh owner parity report: atomic distillation — 2026-09-03
+
+Current Chrome inspection of the supplied public 2D and authenticated manual
+3D URLs found stage-local hamburger entry points and named controls after
+opening them, including `Publication status: Draft` on the owner route. The
+published asset was `assets/index-xwmMEBBo.js`, different from the current
+pushed local build, so exact published-revision parity remains unverified.
+This is new revision-sensitive evidence; it does not invalidate or reopen
+closed issues.
+
+Criterion-ready follow-ups created and linked under #324/#320: #383 owner
+manual 3D editor, #384 public 2D, #385 public 3D, #386 regular 2D embed, #387
+regular 3D embed, #388 immersive 3D, #389 CMS immersive 3D, and #390 extracted
+Full/Non-Camera downloads. #344 remains the independent physical-camera
+capability issue. The next groomed child is #383 after deployment sync; route
+transactions proceed FIFO, one engineering+QA transaction at a time.

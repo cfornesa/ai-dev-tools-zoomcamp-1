@@ -14652,3 +14652,51 @@ still the same finite #344 acceptance boundary, with no duplicate or smaller
 independent issue identified. The pushed branch must be synced and published
 before the owner performs the authorized Chrome gesture transaction. This
 handoff does not reopen or invalidate any prior scoped closure.
+
+## Fresh owner parity report: atomic distillation — 2026-09-03
+
+The owner-reported gaps were audited against the current checkout, GitHub
+state, the maintained `augment-humankind` pieces contract, and the exact
+published URLs. The current Chrome session served `assets/index-xwmMEBBo.js`,
+which differs from the current pushed local build. Both supplied URLs did
+show a stage hamburger; opening the public route exposed Screenshot,
+Download, Piece controls, and Fullscreen, while opening the owner route
+exposed the editor actions and `Publication status: Draft`. Therefore the
+report is retained as actionable revision-sensitive evidence, but the audit
+does not claim that the current published asset is the reviewed local
+revision, and it does not retroactively invalidate any closed issue.
+
+### Atomic issue manifest
+
+| Issue | Boundary | Status and next action |
+| --- | --- | --- |
+| #383 | Authenticated manual 3D editor route | PROPOSED; sync/publish reviewed revision, then inspect 1280x900 and 375x812 rendered controls and Draft round trip. |
+| #384 | Anonymous public 2D route | PROPOSED; publish one fixture, inspect stage controls/privacy at both fixed viewports, restore Draft. |
+| #385 | Anonymous public 3D route | PROPOSED; inspect proportional stage, controls/privacy at both fixed viewports, restore Draft. |
+| #386 | Anonymous regular 2D embed route | PROPOSED; inspect chrome-less stage controls and private fallback at both fixed viewports. |
+| #387 | Anonymous regular 3D embed route | PROPOSED; inspect chrome-less proportional stage controls and private fallback at both fixed viewports. |
+| #388 | Anonymous regular immersive 3D route | PROPOSED; inspect immersive controls, no load-time camera prompt, and private fallback at both fixed viewports. |
+| #389 | Anonymous CMS immersive 3D route | PROPOSED; inspect CMS wrapper/control parity, no load-time camera prompt, and private fallback at both fixed viewports. |
+| #390 | Extracted Full and Non-Camera downloads | PROPOSED; extract both deployed artifacts and exercise their independent control/privacy contracts at both fixed viewports. |
+| #344 | Physical immersive hand steering | OPEN; implementation lifecycle is tested, but real held-pinch/release/hand-loss/denial evidence remains owner-camera-bound. |
+| #320/#324 | Reconciliation containers | OPEN; do not engineer or close until every atomic child is terminal and reconciled. |
+
+### Duplicate and coverage report
+
+The closed #347, #376–#382, and other historical issues remain closed and
+valid for their own scoped transactions. They are not reopened. #383–#390
+are new revision-sensitive route/artifact transactions because the current
+owner report concerns exact deployed parity and the published asset differs
+from the pushed build. #344 remains the existing independent gesture
+capability issue; no duplicate was filed for it. #320 and #324 were rewritten
+as parent/roll-up containers with the atomic child links above.
+
+### Order, blockers, and closure boundary
+
+After deployment synchronization, process #383 first, then #384 through #390
+FIFO, one issue at a time with engineering and QA paired. The current blocker
+is a deployment/verification boundary, not a user-judgment blocker: the
+published asset identity must be reconciled before live claims. Physical
+camera behavior remains a separate owner-controlled verification boundary on
+#344. No actionable gap remains only in prose; every fresh route/artifact gap
+has a criterion-ready issue and exact next action.

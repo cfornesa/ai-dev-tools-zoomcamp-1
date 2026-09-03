@@ -14956,3 +14956,19 @@ visible, stacked, and contained; its anonymous-profile gate remains open.
 public 3D overlay rendered the expected controls and the fixture was restored
 to Draft. Its anonymous-profile gate remains open. GitHub comments 5533485457
 and 5533492806 record the route evidence. No closed issue was reopened.
+
+### Fresh republish continuation — 2026-09-03
+
+The exact #384 public 2D route was rechecked after republish. Its single
+stage-local hamburger opened the expected Screenshot, Download, Piece
+controls, and Fullscreen actions; the available rendered viewport reported no
+horizontal overflow. This remains an authenticated-session observation, so
+#384 stays open for its explicit anonymous privacy/restoration gate. GitHub
+comment 5533540348 records the result.
+
+The exact #385 public 3D route was then transactionally changed from Draft to
+Published, verified against `assets/index-UmUBnruG.js`, and restored to Draft.
+The published route rendered the artwork and the expected stage-local control
+set with no horizontal overflow in the available session. #385 remains open
+only for anonymous fixed-viewport evidence; GitHub comment 5533560098 records
+the result. The next FIFO candidate is #386. Closed issues remain immutable.

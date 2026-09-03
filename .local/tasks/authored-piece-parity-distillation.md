@@ -76,7 +76,7 @@ open pending publication/review; no later issue may begin before its closure.
 | [#339](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/339) | AI 3D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
 | [#340](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/340) | AI 2D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
 | [#341](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/341) | Manual 3D publication implementation | OPEN | Shared publication affordance | Local implementation QA |
-| [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad | COMPLETED / READY TO CLOSE | Independent capability; before #333 route closure | Capability QA passed |
+| [#343](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/343) | Immersive 3D touch d-pad | CLOSED / COMPLETED | Independent capability; before #333 route closure | Capability QA passed; GitHub closed |
 | [#344](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/344) | Immersive 3D hand move/strafe | OPEN | Physical-input boundary; before affected route closure | Physical QA |
 | [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D per-voice instrument selectors | OPEN, reopened | Audio dependency #306/#310 | Capability QA |
 
@@ -132,9 +132,9 @@ route or artifact parity.
 ## Handoff
 
 Distillation is complete only after this manifest, the linked GitHub issues,
-`docs/tasks.md`, and memory agree. #343's engineering and QA transaction is
-complete and ready for GitHub closure. #348 remains the next actionable
-independent handoff while it awaits Replit Pull/Sync and Republish. Engineering
-and testing must still be performed and reconciled for one issue before another
-begins. Every issue stays open until its QA evidence is posted and the GitHub
-issue is closed.
+`docs/tasks.md`, and memory agree. #343's engineering, QA, evidence, and
+GitHub closure transaction is complete. #348 remains deployment-blocked while
+#349 is the next independent engineering/QA handoff. Engineering and testing
+must still be performed and reconciled for one issue before another begins.
+Every issue stays open until its QA evidence is posted and the GitHub issue is
+closed.

@@ -11995,8 +11995,12 @@ backend tests passed, 22 skipped, and 2,399 frontend tests passed), and the
 Docker browser gate passed all 12 scenarios across Chromium, Firefox, and
 WebKit. The browser scenarios verified the six travel controls, pointer
 press/release key mapping, and Space-key activation of Move forward. #343 is
-ready for GitHub closure; route consumers #333–#335 remain open until their
-own exact route evidence is collected.
+closed on GitHub with QA comment 5519508148; route consumers #333–#335 remain
+open until their own exact route evidence is collected.
+
+The next independent transaction is #349 (responsive 3D projection and mobile
+clipping). #348 remains deployment-blocked pending Replit Pull/Sync and
+Republish; no dependent route task is being started in parallel.
 
 ## Replit deployment identity recheck — 2026-09-03
 

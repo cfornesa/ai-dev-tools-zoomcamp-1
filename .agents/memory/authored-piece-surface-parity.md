@@ -703,3 +703,10 @@ editor shows the in-canvas hamburger, compact opened overlay, and Publication
 status disclosure with Draft available. Treat this as covered behavior; only
 fixed-viewport/session reconciliation remains, and closed #354/#356 remain
 immutable.
+
+Replit identity recheck (2026-09-03): Replit reported `main` at `cfd16d1`
+while GitHub/local `main` was `d27e291`; the direct product-source diff was
+empty, with only docs/memory/task divergence. The deployed
+`index-xwmMEBBo.js` therefore contains the reviewed toolbar implementation.
+Keep owner-visible contradictions in #381/#382 until fixed-viewport/session
+evidence is available; do not reopen closed issues.

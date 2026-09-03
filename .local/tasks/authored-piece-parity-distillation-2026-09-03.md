@@ -759,6 +759,19 @@ no product defect was reproduced. Fresh distillation confirms #333 is
 independent of closed route issues and remains the sole next retry once the
 harness is available; no closed issue was reopened.
 
+## Replit revision identity recheck — 2026-09-03
+
+The authenticated Replit workspace reports its reconciled `main` at
+`cfd16d1`, while local/GitHub `main` is `d27e291`. A direct source diff for
+`frontend`, `backend`, `schema`, `.replit`, and `scripts` is empty between
+those revisions; the divergence contains only documentation/memory/task
+records. The published site loads `assets/index-xwmMEBBo.js`, and exact
+editor/public route inspection renders the requested hamburger/overlay flow.
+This explains deployment-history noise but does not dismiss the owner's
+contradictory visible report. Keep #381/#382 open for fixed-viewport/session
+reconciliation; do not create a duplicate product implementation issue or
+reopen closed issues.
+
 ## Additional 2D editor audit — 2026-09-03
 
 The authenticated existing 2D editor was inspected separately from #381's

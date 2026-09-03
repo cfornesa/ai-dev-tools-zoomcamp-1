@@ -726,3 +726,11 @@ Piece controls/Fullscreen, nested camera/demo disclosures, Full/Non-Camera
 downloads, and the anonymous privacy boundary. #382 is permanently closed for
 that route. Any later defect is a new issue; never reopen #382 or another
 closed issue. The next FIFO transaction is #333's regular immersive 3D route.
+
+Regular immersive 3D verification (2026-09-04): #333 passed the focused
+browser transaction in Chromium, Firefox, and WebKit at 1280×900 and 375×812.
+The test must open the hamburger before asserting action buttons, and flexible
+stacked rows must be validated by containment/minimum target size rather than
+the old icon-only fixed width. #333 is permanently closed for that route;
+later defects require new issues and must not reopen it. Remaining independent
+boundaries are #344's physical-camera evidence and #360's public 3D fixture.

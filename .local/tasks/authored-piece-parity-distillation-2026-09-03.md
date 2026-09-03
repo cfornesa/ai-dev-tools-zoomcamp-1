@@ -794,6 +794,17 @@ final state Draft. No closed issue was reopened. The next FIFO candidate is
 #382; engineering/QA/reconciliation/closure must finish for it before the
 next issue.
 
+## #333 closure reconciliation — 2026-09-04
+
+#333 is permanently closed as `completed` for the anonymous regular immersive
+3D route. `BROWSER_QA_E2E_SPEC=e2e/immersive3dStageChrome.spec.ts make
+browser-qa` passed 3/3 in Chromium, Firefox, and WebKit at 1280×900 and
+375×812. It verified the stage-local hamburger/stacked overlay, named
+immersive controls, Full/Non-Camera downloads, guide behavior, and no
+load-time camera prompt. The test was corrected to open the hamburger before
+checking hidden actions and to accept the current flexible row width. No
+closed issue was reopened. Remaining #344/#360 work is blocked independently.
+
 ## #382 closure reconciliation — 2026-09-04
 
 #382 is permanently closed as `completed` for its exact anonymous public 2D

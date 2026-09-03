@@ -14451,6 +14451,23 @@ separate open route or verification tasks.
 The next FIFO candidate is #382, the anonymous public 2D route audit. It must
 be completed, reconciled, and closed before any later issue is engineered.
 
+## #333 closure reconciliation — 2026-09-04
+
+#333 is permanently closed as `completed` for the anonymous regular immersive
+3D route. `BROWSER_QA_E2E_SPEC=e2e/immersive3dStageChrome.spec.ts make
+browser-qa` passed 3/3 in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services, exercising 1280×900 and 375×812. The test
+verified the published route, stage-local hamburger/stacked overlay, named
+Screenshot/Download/Sound/Piece controls/Steer/Guide/Fullscreen actions,
+Full/Non-Camera downloads, guide behavior, and no load-time camera prompt.
+Its setup/assertions were corrected to open the hamburger before inspecting
+hidden actions and to assert the current flexible row sizing rather than the
+deprecated icon-only fixed width. No closed issue was reopened.
+
+The next FIFO work remains the independently blocked physical-camera #344 and
+the fixture/deployment-dependent #360; no later issue is engineered until an
+independent criterion-ready transaction is available.
+
 ## #382 closure reconciliation — 2026-09-04
 
 #382 is permanently closed as `completed` for its exact anonymous public 2D

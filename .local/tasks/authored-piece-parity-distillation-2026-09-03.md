@@ -1023,3 +1023,84 @@ QA comment 5533168795 records the terminal blocker. End-of-blocker task
 distillation found no new duplicate or independently actionable product defect,
 so no follow-up issue was created. #344 remains open and blocked; no closed
 issue was reopened.
+## Fresh distillation reconciliation — 2026-09-03
+
+This audit preserves every prior closure as valid for its recorded scope. The
+latest owner report is new evidence about the requested end state, not a
+reason to reopen #347, #348, #349, #325–#337, or any other closed issue.
+
+### Evidence and classification
+
+- The exact authenticated owner 3D route currently serves the synchronized
+  build. Its stage-local hamburger opens named Screenshot, Download,
+  Immersive, Sound, Piece controls, Steer, Guide, 3D authoring, Save scene,
+  Ask AI, publication status, and Fullscreen actions. The Draft/Published
+  disclosure is present and interactive. The report that these controls are
+  absent is not reproduced in the authorized Chrome context; fixed deployed
+  1280x900/375x812 screenshots remain a verification boundary because that
+  session cannot emulate those viewports.
+- At the inspected desktop size, the publication disclosure's nested card
+  intrudes on the preceding authoring row. This is an actionable rendered
+  observation owned by open #383, not a reason to reopen shared issues.
+- The exact public 2D route currently shows its stage hamburger and named
+  Screenshot, Download, Piece controls, and Fullscreen. The prior “no buttons”
+  report is not reproduced in this current browser context; anonymous fixed-
+  viewport deployment evidence remains owned by #384.
+- The source contains structured-2D capability derivation and sound controls,
+  but no production consumer import was found and the ordinary 2D capability
+  constant remains sound-disabled. This is a grooming candidate, not yet a
+  new issue: the supplied 2D fixture does not declare enabled sound, and #346
+  deliberately closes only the shared foundation. Identify an enabled fixture
+  and exact consumer surface before filing any follow-up.
+- The maintained reference contract is the parity source. The implementation
+  remains Django/Python plus React/TypeScript; no PHP is in scope. No local
+  `examples/` directory exists in either inspected repository.
+
+### Complete open manifest and FIFO queue
+
+#383 is the sole groomed next issue: authenticated manual 3D deployment and
+fixed-viewport verification, including the observed publication-card overlap.
+The subsequent criterion-ready deployment issues are #384 anonymous public
+2D, #385 anonymous public 3D, #386 anonymous regular 2D embed, #387 anonymous
+regular 3D embed, #388 anonymous immersive 3D, and #389 anonymous CMS
+immersive 3D. #344 is an independent physical-input blocker. #320/#324/#274
+are parent/reconciliation containers. #390 is permanently closed and is not
+reopened. Each route issue owns only its named surface; no duplicate issue was
+created.
+
+### Handoff rule
+
+Distillation is complete. After #383 is reconciled, process #384–#389 in FIFO
+order, one issue at a time: engineering and QA together, then reconciliation
+and permanent closure before advancing. A dependency blocker receives
+best-effort checks plus end-of-blocker task distillation, then the next
+independent issue proceeds. No historical issue is reopened.
+## Deployment queue progress — 2026-09-03
+
+#383 received QA evidence comment 5533279486. Its local fixed-viewport
+transaction passed 3/3; the deployed fixed-viewport screenshot gate remains
+blocked by the connected Chrome limitation, and the observed publication-card
+intrusion remains recorded for the route transaction. Per the blocker rule,
+#383 was not falsely closed and #384 proceeded independently.
+
+#384 received QA evidence comment 5533279950. Its local public-2D fixed-
+viewport transaction passed 3/3 across Chromium, Firefox, and WebKit at
+1280x900 and 375x812. The current deployed route shows the named controls in
+the authorized browser, but exact deployed anonymous fixed-viewport captures
+remain blocked by the same Chrome limitation. #384 remains open at that
+verification boundary; #385 is the next independent FIFO issue.
+#385 received QA evidence comment 5533293398. Its local public-3D fixed-
+viewport transaction passed 3/3 across Chromium, Firefox, and WebKit at
+1280x900 and 375x812, including proportional sphere framing and reachable
+controls. The exact deployed anonymous transaction remains dependent on a
+published fixture; #385 stays open at that boundary.
+
+#386 received QA evidence comment 5533301188. Its local regular-2D-embed
+fixed-viewport transaction passed 3/3 across Chromium, Firefox, and WebKit,
+including chrome-less containment and public-only controls. Its exact deployed
+anonymous fixed-viewport capture remains unavailable through connected Chrome.
+
+#387 received QA evidence comment 5533310824. Its local regular-3D-embed
+fixed-viewport transaction passed 3/3 across Chromium, Firefox, and WebKit,
+including proportional geometry and public controls. Its exact deployed
+anonymous fixed-viewport capture remains the outstanding verification gate.

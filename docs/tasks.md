@@ -14833,3 +14833,62 @@ Automation cannot synthesize those physical camera signals. QA comment
 new duplicate or independently actionable product defect, so no follow-up
 issue was created. #344 remains open and terminally blocked; no closed issue
 was reopened.
+### Fresh task-distillation reconciliation — 2026-09-03
+
+This audit preserves every prior issue closure as valid for its recorded
+scope. The latest owner report is new evidence about the requested end state,
+not permission to reopen #347, #348, #349, #325–#337, or any other closed
+issue.
+
+The current authenticated owner 3D route renders the stage-local hamburger,
+named action overlay, and interactive Draft/Published disclosure from the
+synchronized build. The public 2D route also renders its hamburger and named
+permitted actions. These reports were not reproduced in the current browser
+context, while fixed 1280x900/375x812 deployed screenshots remain a browser
+verification boundary. One actionable rendered observation remains: the owner
+route's nested publication card intrudes on the preceding authoring row at the
+inspected desktop size; this belongs to open #383's exact route transaction.
+
+Source inspection found structured-2D capability derivation and sound controls
+with no production consumer import, while the ordinary 2D capability constant
+remains sound-disabled. This is held for grooming until an enabled 2D fixture
+and exact consumer surface are identified; no speculative or duplicate issue
+was filed. #346 remains permanently closed for its shared-foundation scope.
+
+The deployment queue is #383 authenticated manual 3D, #384 anonymous public
+2D, #385 anonymous public 3D, #386 anonymous 2D embed, #387 anonymous 3D
+embed, #388 immersive 3D, and #389 CMS immersive 3D. #344 is an independent
+physical-input blocker; #320/#324/#274 are parent/reconciliation containers;
+#390 remains permanently closed. #383 is the sole groomed next issue. After
+its reconciliation, process #384–#389 in FIFO order, one issue at a time,
+completing engineering and QA together, then reconciliation and permanent
+closure before advancing. A dependency blocker receives best-effort checks
+plus end-of-blocker distillation, then the next independent issue proceeds;
+no historical issue is reopened.
+### Deployment queue progress — 2026-09-03
+
+#383 received QA evidence comment 5533279486. Its local fixed-viewport
+transaction passed 3/3; exact deployed fixed-viewport screenshots remain
+blocked by the connected Chrome limitation, and the publication-card overlap
+is recorded inside the route transaction. It was not falsely closed, and the
+independent FIFO queue advanced to #384.
+
+#384 received QA evidence comment 5533279950. Its local public-2D fixed-
+viewport transaction passed 3/3 across Chromium, Firefox, and WebKit at
+1280x900 and 375x812. The current deployed route shows the named controls in
+the authorized browser, but exact deployed anonymous fixed-viewport captures
+remain blocked by the same Chrome limitation. #384 remains open at that
+verification boundary; #385 is next.
+#385 local public-3D fixed-viewport QA passed 3/3 across Chromium, Firefox,
+and WebKit at 1280x900 and 375x812, including proportional sphere framing and
+reachable controls; GitHub comment 5533293398 records the handoff. #385 stays
+open for the exact deployed anonymous transaction.
+
+#386 local regular-2D-embed fixed-viewport QA passed 3/3 across Chromium,
+Firefox, and WebKit with chrome-less containment and public-only controls;
+GitHub comment 5533301188 records the handoff. #386 stays open for deployed
+evidence.
+
+#387 local regular-3D-embed fixed-viewport QA passed 3/3 across Chromium,
+Firefox, and WebKit with proportional geometry and public controls; GitHub
+comment 5533310824 records the handoff. #387 stays open for deployed evidence.

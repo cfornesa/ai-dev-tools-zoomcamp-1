@@ -13506,6 +13506,14 @@ The active queue position after this verification-boundary transaction is
 earlier #368 handoff text above is historical and must not be treated as the
 current queue position; #368 is closed and immutable.
 
+The 1280x900 route recheck is now possible through supported Chrome viewport
+emulation, but #355 still fails its functional publication criterion: selecting
+Published opens the confirmation, while the enabled final Publish action leaves
+the dialog open and the status at Draft. The fixture was left Draft. This is
+deployed-route evidence owned by #355, not a reason to reopen any closed issue
+or create a duplicate; the next action is to diagnose the published action
+against the deployed revision and rerun Draft -> Published -> Draft.
+
 ## #339 transaction reconciliation — 2026-09-03
 
 #339's local AI 3D stage-local publication implementation passed 55/55 focused

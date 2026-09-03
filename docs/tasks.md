@@ -13071,3 +13071,29 @@ closure-ready issue.
 
 The next groomed engineering target is **#364**, the separately scoped
 extracted 3D runtime artifact transaction.
+
+### #364 engineering and QA handoff — 2026-09-03
+
+#364 remains open and is not complete. Engineering changed the generated 3D
+runtime so the command dialog grows with its stacked icon-plus-text actions
+instead of owning a scrollbar. Deliberately opened nested disclosures now
+own bounded scrolling: Piece controls, the hand-gesture guide, and camera
+controls. The generated menu also returns focus to its trigger and closes on
+Escape. Full and Non-Camera output structure remains unchanged, including the
+camera/privacy boundary and packaged runtime controls.
+
+Source-level 3D bundle tests pass 7/7; formatting and typecheck pass. The
+required Docker-backed extracted-artifact browser gate could not start because
+the Docker daemon was unavailable; log directory:
+`/var/folders/27/hv6xxv915g7bd2pg98vnwdx40000gq/T//creatrweb-browser-qa.Kqr9oA`.
+No rendered or functional browser evidence is claimed, and #364 must not be
+closed until the supported browser gate runs successfully at 1280×900 and
+375×812. No issue was reopened.
+
+Because this is an external dependency blocker, the queue rotates. The
+required end-of-blocker distillation found no duplicate or new issue: #364's
+scope remains the generated 3D artifact, while #362 owns shared live React
+presentation and #355/#356 own deployed route evidence. The next independent
+candidate is #339's local AI 3D publication contract; its stale browser
+selectors can be reconciled independently, but its engineering→QA transaction
+must remain separate from #364.

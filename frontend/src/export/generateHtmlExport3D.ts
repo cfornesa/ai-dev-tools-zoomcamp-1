@@ -117,8 +117,8 @@ const PIECE_CSS = `html, body {
   display: grid;
   align-content: start;
   gap: 1rem;
-  max-height: calc(100dvh - 2rem);
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   padding: 1rem;
   color: #fff;
   background: rgba(10,12,20,.94);
@@ -148,6 +148,7 @@ const PIECE_CSS = `html, body {
   border-radius: .75rem;
 }
 #piece-audio-controls[hidden] { display: none; }
+#piece-audio-controls { max-height: min(40vh, 20rem); overflow: auto; box-sizing: border-box; }
 #piece-audio-controls label { display: grid; gap: .25rem; font-size: .8rem; }
 #piece-hand-guide {
   position: fixed;
@@ -162,8 +163,9 @@ const PIECE_CSS = `html, body {
   border-radius: .75rem;
 }
 #piece-hand-guide[hidden] { display: none; }
+#piece-hand-guide { max-height: min(60vh, 28rem); overflow: auto; box-sizing: border-box; }
 #piece-hand-guide button { width: auto; height: auto; padding: .5rem .75rem; }
-#camera-controls-host { position: fixed; left: 1rem; bottom: 5.5rem; z-index: 10; display: grid; gap: .5rem; min-width: 15rem; max-width: min(22rem, calc(100vw - 2rem)); padding: .75rem; color: #fff; background: rgba(10,12,20,.9); border: 1px solid rgba(255,255,255,.28); border-radius: .75rem; }
+#camera-controls-host { position: fixed; left: 1rem; bottom: 5.5rem; z-index: 10; display: grid; gap: .5rem; min-width: 15rem; max-width: min(22rem, calc(100vw - 2rem)); max-height: min(40vh, 20rem); overflow: auto; box-sizing: border-box; padding: .75rem; color: #fff; background: rgba(10,12,20,.9); border: 1px solid rgba(255,255,255,.28); border-radius: .75rem; }
 #camera-controls-host:empty { display: none; }
 #camera-controls-host video { width: 100%; max-height: 10rem; object-fit: cover; border-radius: .5rem; }
 `;
@@ -250,15 +252,26 @@ ${
   const guideToggle = document.getElementById('piece-hand-guide-toggle');
   const guide = document.getElementById('piece-hand-guide');
   const guideClose = document.getElementById('piece-hand-guide-close');
+  let menuReturnFocus = null;
   function setMenuOpen(open) {
     if (!actionsDialog || !menuTrigger) return;
     actionsDialog.hidden = !open;
     menuTrigger.setAttribute('aria-expanded', String(open));
+    if (open) {
+      menuReturnFocus = document.activeElement;
+      actionsClose?.focus();
+    } else if (menuReturnFocus instanceof HTMLElement) {
+      menuReturnFocus.focus();
+      menuReturnFocus = null;
+    }
   }
   menuTrigger?.addEventListener('click', () => setMenuOpen(Boolean(actionsDialog?.hidden)));
   actionsClose?.addEventListener('click', () => setMenuOpen(false));
   actionsDialog?.addEventListener('click', (event) => {
     if (event.target === actionsDialog) setMenuOpen(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && actionsDialog && !actionsDialog.hidden) setMenuOpen(false);
   });
   const canvas = () => host && host.querySelector('canvas');
   screenshot?.addEventListener('click', () => {

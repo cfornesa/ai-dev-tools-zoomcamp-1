@@ -99,6 +99,7 @@ describe('generateScene3DBundle', () => {
     ]);
 
     const html = await zip.files['index.html'].async('string');
+    const styles = await zip.files['styles/piece.css'].async('string');
     expect(html).toContain('runtime/three.min.js');
     expect(html).toContain('scripts/piece.js');
     expect(html).toContain('scene3d-canvas-host');
@@ -114,12 +115,23 @@ describe('generateScene3DBundle', () => {
     expect(html).toContain('piece-hand-guide-toggle');
     expect(html).toContain('Hand gesture guide');
     expect(html).toContain('camera-controls-host');
+    expect(styles).toContain('max-height: none;');
+    expect(styles).toContain('overflow: visible;');
+    expect(styles).toContain(
+      '#piece-audio-controls { max-height: min(40vh, 20rem); overflow: auto;',
+    );
+    expect(styles).toContain('#piece-hand-guide { max-height: min(60vh, 28rem); overflow: auto;');
+    expect(styles).toContain(
+      'max-height: min(40vh, 20rem); overflow: auto; box-sizing: border-box; padding: .75rem',
+    );
 
     const script = await zip.files['scripts/piece.js'].async('string');
     expect(script).toContain('window.__SCENE3D_DATA__');
     expect(script).toContain('"id":"obj-1"');
     expect(script).toContain('piece-reset-view');
     expect(html).toContain('setGuideOpen');
+    expect(html).toContain("event.key === 'Escape'");
+    expect(html).toContain('menuReturnFocus.focus()');
     expect(script).toContain('piece-sound');
     expect(script).toContain('AudioContext');
     expect(script).toContain('piece-volume');

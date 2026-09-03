@@ -484,3 +484,19 @@ The fresh distillation found no duplicate or additional actionable gap. #360
 remains blocked on the intended public 3D fixture; #344 remains physically
 blocked. The next action is the #331 deployed verification after publishing
 `6d1e38e`.
+
+## #377 reconciliation after owner re-audit — 2026-09-03
+
+The exact authenticated owner route currently serves `assets/index-CQvhOwx-.js`.
+Fresh rendered checks at 1280x900 and 375x812 found the stage hamburger and a
+contained, stacked overlay containing the runtime and editor actions. The
+mobile dialog measured 375x812 with body overflow hidden and no horizontal
+overflow. This is supporting evidence only: the owner reports that the
+controls are not visible in the reviewed experience, and the deployed asset
+has not been reconciled to the reviewed revision/entry state.
+
+Therefore #377 remains open and dependency-blocked for visual reconciliation;
+it is not closed from source or DOM evidence. No closed issue was reopened.
+The next action is to compare the owner-visible session and exact published
+asset after the reviewed revision is republished, then complete #377 as one
+engineering-and-QA transaction if the discrepancy is resolved.

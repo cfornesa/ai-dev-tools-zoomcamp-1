@@ -14380,3 +14380,20 @@ The report also confirms that broad parent #320 remains a reconciliation
 container, not an implementation unit. The root `examples/` directory is not
 present in this checkout; the maintained behavioral reference is
 `../augment-humankind/docs/piece-surface-parity.md` and its source helpers.
+
+## #382 blocked transaction and fresh distillation — 2026-09-03
+
+#382 was processed as one anonymous public 2D route transaction. Current
+deployed evidence shows the closed in-canvas hamburger and opened translucent
+overlay with Screenshot, Download, Piece controls, and Fullscreen; nested
+camera/demo controls and Full/Non-Camera downloads are present, with no owner
+or legacy sibling panel. It remains open because fixed 1280×900 and 375×812
+rendered evidence could not be produced, and the focused browser command
+failed before startup with Docker unavailable.
+
+Blocker classification is `verification-boundary` plus
+`workflow/infrastructure-defect`; no product defect was reproduced. Fresh
+distillation confirms #382 is not a duplicate of closed #353/#356 and must
+not reopen them. #381 and #382 remain the two new route-specific owner-report
+reconciliations; #381 is the next retry candidate once the fixed-viewport
+harness exists, while the broader queue proceeds only with independent work.

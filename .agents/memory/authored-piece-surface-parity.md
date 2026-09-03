@@ -684,3 +684,10 @@ this is a verification-boundary contradiction requiring exact revision,
 session, viewport, and rendered evidence. New route-specific issues #381
 (manual 3D owner editor) and #382 (public 2D viewer) own the re-audit. Closed
 #347–#359 remain immutable and must not be reopened.
+
+Public 2D owner-report audit (2026-09-03): #382 remains open because the
+current exact route shows the intended hamburger/overlay and permitted
+controls, but fixed desktop/mobile rendered proof and the local browser
+harness are unavailable. Treat this as verification/workflow blocking, not
+as permission to reopen #353 or #356; retry #382 when the fixed-viewport
+harness exists.

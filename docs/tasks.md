@@ -14450,3 +14450,18 @@ separate open route or verification tasks.
 
 The next FIFO candidate is #382, the anonymous public 2D route audit. It must
 be completed, reconciled, and closed before any later issue is engineered.
+
+## #382 closure reconciliation — 2026-09-04
+
+#382 is permanently closed as `completed` for its exact anonymous public 2D
+route verification boundary. `BROWSER_QA_E2E_SPEC=e2e/public2dStageChrome.spec.ts
+make browser-qa` passed in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services. The scenario exercised 1280×900 and 375×812,
+the in-canvas hamburger and translucent stacked overlay, named Screenshot,
+Download, Piece controls, and Fullscreen actions, nested Live camera/Demo
+signal disclosures, Full/Non-Camera downloads, and the public-only privacy
+boundary with no legacy sibling panel. No closed issue was reopened.
+
+The next FIFO candidate is #333, the anonymous regular immersive 3D route.
+Its fixed-viewport browser transaction must finish, reconcile, and close
+before another issue is engineered.

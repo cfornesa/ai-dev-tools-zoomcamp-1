@@ -718,3 +718,11 @@ authoring controls, responsive canvas aspect geometry, and the authorized
 Draft → Published → Draft round trip. #381 is permanently closed for that
 boundary. Any later defect is a new issue; never reopen #381 or another closed
 issue. The next FIFO transaction is #382's anonymous public 2D route audit.
+
+Public 2D route verification (2026-09-04): #382 passed the focused browser
+transaction in Chromium, Firefox, and WebKit at 1280×900 and 375×812. It
+verified the in-canvas hamburger/stacked overlay, public Screenshot/Download/
+Piece controls/Fullscreen, nested camera/demo disclosures, Full/Non-Camera
+downloads, and the anonymous privacy boundary. #382 is permanently closed for
+that route. Any later defect is a new issue; never reopen #382 or another
+closed issue. The next FIFO transaction is #333's regular immersive 3D route.

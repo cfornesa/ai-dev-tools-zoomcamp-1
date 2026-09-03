@@ -793,3 +793,13 @@ actions, responsive canvas aspect geometry, and Draft → Published → Draft wi
 final state Draft. No closed issue was reopened. The next FIFO candidate is
 #382; engineering/QA/reconciliation/closure must finish for it before the
 next issue.
+
+## #382 closure reconciliation — 2026-09-04
+
+#382 is permanently closed as `completed` for its exact anonymous public 2D
+route verification boundary. `BROWSER_QA_E2E_SPEC=e2e/public2dStageChrome.spec.ts
+make browser-qa` passed in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services. It covered 1280×900 and 375×812, the
+in-canvas hamburger/stacked overlay, named public actions, nested camera/demo
+controls, Full/Non-Camera downloads, and the public-only privacy boundary.
+No closed issue was reopened. The next FIFO candidate is #333.

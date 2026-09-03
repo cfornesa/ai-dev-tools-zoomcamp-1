@@ -19,7 +19,7 @@
  * - **Lazy loading**: `@mediapipe/tasks-vision`'s ESM bundle is loaded via
  *   a dynamic `import()` of its exact CDN URL (`VISION_BUNDLE_URL` below),
  *   called only from inside `start()`'s pipeline — never at script
- *   evaluation time, never before the user clicks "Enable camera". Dynamic
+ *   evaluation time, never before the user clicks "Steer the piece". Dynamic
  *   `import()` is valid in a plain (non-`module`) `<script>` per spec, so
  *   this needs no `type="module"` script tag or bundler.
  * - **Pinned version**: `MEDIAPIPE_TASKS_VISION_VERSION` below is the exact
@@ -77,7 +77,7 @@
  * element; it never touches `#demo-controls-host` or disables any control
  * inside it. Every failure category below (and the idle/starting/stopped
  * states) leaves the demo controls exactly as usable as they were before
- * `Enable camera` was ever clicked — satisfying issue #56's "each failure
+ * `Steer the piece` was ever clicked — satisfying issue #56's "each failure
  * preserves usable demo controls" acceptance criterion structurally,
  * rather than by ad hoc per-branch bookkeeping.
  *
@@ -579,7 +579,7 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
   }
 
   // ---------------------------------------------------------------------
-  // UI wiring: privacy notice, Enable/Retry + Stop, visible + programmatic
+  // UI wiring: privacy notice, explicit opt-in Steer/Retry + Stop, visible + programmatic
   // active-state indicator, per-category error message. Mirrors
   // CameraControl.tsx's structure (Task 31), adapted to plain DOM.
   // ---------------------------------------------------------------------
@@ -614,19 +614,32 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
       return e;
     }
 
-    var heading = el("h2", { text: "Live camera" });
+    var heading = el("h2", { text: "Live camera steering" });
     var notice = el("p", {
       "class": "camera-privacy-notice",
       text:
         "Live camera hand tracking requires a secure connection (HTTPS) or localhost. " +
         "Video from your camera is processed locally in your browser for hand tracking " +
-        "-- it is never recorded, stored, or uploaded."
+        "-- it is never recorded, stored, or uploaded. Steering stays off until you " +
+        "explicitly enable it."
     });
     var statusEl = el("p", { role: "status", "aria-live": "polite", "data-testid": "camera-status" });
     var errorEl = el("p", { role: "alert", "aria-live": "assertive", "data-testid": "camera-error" });
     errorEl.style.display = "none";
-    var enableBtn = el("button", { type: "button", text: "Enable camera", "data-testid": "camera-enable" });
-    var stopBtn = el("button", { type: "button", text: "Stop camera", "data-testid": "camera-stop" });
+    var enableBtn = el("button", {
+      type: "button",
+      text: "Steer the piece",
+      "data-testid": "camera-enable",
+      "aria-label": "Steer the piece",
+      "aria-pressed": "false"
+    });
+    var stopBtn = el("button", {
+      type: "button",
+      text: "Stop steering",
+      "data-testid": "camera-stop",
+      "aria-label": "Stop steering",
+      "aria-pressed": "false"
+    });
     stopBtn.style.display = "none";
 
     host.appendChild(heading);
@@ -647,9 +660,11 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
       var showEnableOrRetry = status === "idle" || status === "stopped" || status === "error";
       var showStop = status === "starting" || status === "active";
       enableBtn.style.display = showEnableOrRetry ? "" : "none";
-      enableBtn.textContent = status === "error" ? "Retry" : "Enable camera";
+      enableBtn.textContent = status === "error" ? "Retry steering" : "Steer the piece";
+      enableBtn.setAttribute("aria-label", enableBtn.textContent);
+      enableBtn.setAttribute("aria-pressed", "false");
       stopBtn.style.display = showStop ? "" : "none";
-      enableBtn.setAttribute("aria-pressed", status === "active" ? "true" : "false");
+      stopBtn.setAttribute("aria-pressed", status === "active" ? "true" : "false");
 
       if (typeof window.__exportSetActiveInput === "function") {
         window.__exportSetActiveInput(status === "active" ? activeInputHandle : null);

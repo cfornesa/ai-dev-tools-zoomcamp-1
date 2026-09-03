@@ -13481,6 +13481,18 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+## #370 transaction reconciliation — 2026-09-03
+
+- Full 3D downloads now provide explicit steering lifecycle, failure recovery,
+  cleanup, and a camera-free Non-Camera variant. The opened command drawer is
+  bounded with scrolling confined to the drawer on short viewports.
+- QA passed: browser artifact QA 57/57 across Chromium, Firefox, and WebKit;
+  `make frontend-check` passed 191 files and 2,402 tests, with existing lint
+  warnings only.
+- Reconciliation found no new in-scope gap. #371 owns camera-view composition;
+  #355/#356 own deployed-route verification. No closed issue was reopened.
+- #370 is complete and must be permanently closed before #371 begins.
+
 ### Current owner-report reconciliation — 2026-09-03
 
 Fresh exact-route inspection found the public URL genuinely anonymous and its

@@ -353,6 +353,15 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
 
     for (const immersive of [false, true]) {
       for (const variant of ['full', 'non-camera'] as const) {
+        if (variant === 'full') {
+          await installCameraTestSeams(page, 'succeed');
+          await page.addInitScript(() => {
+            Object.defineProperty(window, 'isSecureContext', {
+              value: true,
+              configurable: true,
+            });
+          });
+        }
         const result = await generator.generateScene3DBundle(
           scene3d,
           `Browser QA ${immersive ? 'immersive' : 'regular'} ${variant}`,
@@ -388,6 +397,24 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
             dialog.getByRole('button', { name: 'Piece controls', exact: true }),
           ).toBeVisible();
           await expect(dialog.getByRole('button', { name: 'Enter fullscreen' })).toBeVisible();
+          if (variant === 'full') {
+            const cameraHost = page.getByRole('group', { name: 'Camera controls' });
+            await expect(cameraHost).toBeHidden();
+            await dialog.getByRole('button', { name: 'Piece controls', exact: true }).click();
+            await expect(cameraHost).toBeVisible();
+            await expect(page.getByTestId('camera-enable')).toHaveText('Steer the piece');
+            await expect(page.getByTestId('camera-enable')).toHaveAttribute(
+              'aria-pressed',
+              'false',
+            );
+            await page.getByTestId('camera-enable').click();
+            await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
+            await expect(page.getByTestId('camera-stop')).toHaveText('Stop steering');
+            await page.getByTestId('camera-stop').click();
+            await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);
+          } else {
+            await expect(page.getByRole('group', { name: 'Camera controls' })).toHaveCount(0);
+          }
           const geometry = await dialog.evaluate((element) => {
             const card = element as HTMLElement;
             const rows = [...card.querySelectorAll('.piece-action-list > button')].map((row) => {
@@ -400,7 +427,10 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
               width: innerWidth,
             };
           });
-          expect(geometry.overflow).toBe('visible');
+          // The command drawer is intentionally bounded and scrolls only while
+          // open; this keeps the page itself free of a persistent scrollbar on
+          // short desktop and mobile viewports.
+          expect(geometry.overflow).toBe('auto');
           expect(
             geometry.rows.every((row) => row.left >= 16 && row.right <= geometry.width - 16),
           ).toBe(true);
@@ -685,7 +715,7 @@ async function installCameraTestSeams(
 }
 
 test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, and fallback', () => {
-  test('starts inactive: Enable is offered, Stop is hidden, no getUserMedia call before any click', async ({
+  test('starts inactive: steering is off, Stop is hidden, no getUserMedia call before any click', async ({
     browser,
   }) => {
     const context = await browser.newContext();
@@ -702,7 +732,8 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     await expect(page.getByTestId('camera-status')).toHaveText('');
     await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
     await expect(page.getByTestId('camera-enable')).toBeVisible();
-    await expect(page.getByTestId('camera-enable')).toHaveText('Enable camera');
+    await expect(page.getByTestId('camera-enable')).toHaveText('Steer the piece');
+    await expect(page.getByTestId('camera-enable')).toHaveAttribute('aria-pressed', 'false');
 
     await context.close();
   });
@@ -719,7 +750,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
 
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-error')).toContainText(/camera access was denied/i);
-    await expect(page.getByTestId('camera-enable')).toHaveText('Retry');
+    await expect(page.getByTestId('camera-enable')).toHaveText('Retry steering');
 
     const demoButtons = page.locator('#demo-controls-host button');
     await expect(demoButtons.first()).toBeVisible();
@@ -762,7 +793,7 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     await context.close();
   });
 
-  test('successful Enable reaches "active", Stop tears it down, and Retry after a failure can succeed', async ({
+  test('successful steering reaches "active", Stop steering tears it down, and Retry can succeed', async ({
     browser,
   }) => {
     const context = await browser.newContext();
@@ -775,12 +806,15 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
     await page.getByTestId('camera-enable').click();
     await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
     await expect(page.getByTestId('camera-stop')).toBeVisible();
+    await expect(page.getByTestId('camera-stop')).toHaveText('Stop steering');
+    await expect(page.getByTestId('camera-stop')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('camera-enable')).toHaveCSS('display', 'none');
 
     await page.getByTestId('camera-stop').click();
     await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);
     await expect(page.getByTestId('camera-enable')).toBeVisible();
-    await expect(page.getByTestId('camera-enable')).toHaveText('Enable camera');
+    await expect(page.getByTestId('camera-enable')).toHaveText('Steer the piece');
+    await expect(page.getByTestId('camera-enable')).toHaveAttribute('aria-pressed', 'false');
 
     await context.close();
   });

@@ -232,13 +232,6 @@ export function buildStandaloneThreeRuntimeScript(
     }
 
     document.getElementById('piece-sound')?.addEventListener('click', toggleSound);
-    document.getElementById('piece-audio-settings')?.addEventListener('click', function () {
-      var panel = document.getElementById('piece-audio-controls');
-      var button = document.getElementById('piece-audio-settings');
-      if (!panel || !button) return;
-      panel.hidden = !panel.hidden;
-      button.setAttribute('aria-expanded', String(!panel.hidden));
-    });
     document.getElementById('piece-volume')?.addEventListener('input', function (event) {
       if (masterGain) masterGain.gain.value = Number(event.target.value) / 100;
     });

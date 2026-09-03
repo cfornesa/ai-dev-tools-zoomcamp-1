@@ -128,3 +128,18 @@ issue.
 - Independent local artifact work remains actionable: #370 is the next
   groomed transaction, followed by #371. These do not depend on the stale
   deployment or missing editor session.
+
+## #370 transaction reconciliation — 2026-09-03
+
+- Full 3D downloads now expose an explicit, inactive-by-default “Steer the
+  piece” lifecycle, preserve manual controls on failure, and provide “Stop
+  steering” cleanup. Non-Camera downloads omit camera UI and camera assets.
+- The Piece controls disclosure is wired by the exported shell, and the opened
+  command drawer is bounded with scrolling confined to that opened drawer on
+  short viewports.
+- QA passed: `BROWSER_QA_E2E_SPEC=e2e/exportArtifacts.spec.ts make browser-qa`
+  (57/57 across Chromium, Firefox, and WebKit) and `make frontend-check` (191
+  test files, 2,402 tests; existing lint warnings only).
+- Reconciliation found no new in-scope gap. #371 owns camera-view composition;
+  #355/#356 own deployed-route verification. No closed issue was reopened.
+- #370 is complete and must be permanently closed before #371 begins.

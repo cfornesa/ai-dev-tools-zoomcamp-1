@@ -245,6 +245,15 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+#370 closure evidence (2026-09-03): Full 3D downloads gate camera steering
+behind an explicit “Steer the piece” action, expose “Stop steering” cleanup and
+failure recovery, and keep Non-Camera downloads free of camera UI/assets. The
+Piece controls disclosure is owned by the exported shell and the opened drawer
+is bounded with local scrolling for short viewports. Browser QA passed 57/57
+across Chromium, Firefox, and WebKit; frontend checks passed 191 files and
+2,402 tests. #371 remains the separate camera-view composition task. #370 is
+complete and permanently closed; do not reopen it.
+
 Current owner-report reconciliation (2026-09-03): a fresh anonymous visit to
 the exact public URL confirms the hamburger and permitted actions exist, but
 the opened live action labels are visibly detached from oversized rows and do

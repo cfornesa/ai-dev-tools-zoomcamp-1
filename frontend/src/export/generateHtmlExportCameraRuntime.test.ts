@@ -322,7 +322,7 @@ describe('camera export runtime: lazy activation and pre-activation state', () =
     Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true });
   });
 
-  it('never calls getUserMedia or dynamically imports MediaPipe before Enable camera is clicked', () => {
+  it('never calls getUserMedia or dynamically imports MediaPipe before Steer the piece is clicked', () => {
     const getUserMedia = vi.fn();
     Object.defineProperty(window.navigator, 'mediaDevices', {
       value: { getUserMedia },
@@ -428,7 +428,7 @@ describe('camera export runtime: failure classification', () => {
 
     expectDemoControlsUsable();
     // Retry is offered (button relabeled), not just a dead end.
-    expect(cameraEnableButton().textContent).toBe('Retry');
+    expect(cameraEnableButton().textContent).toBe('Retry steering');
   });
 
   it('shows the model-failure message and keeps demo controls usable when the MediaPipe module/model fails to load', async () => {
@@ -450,7 +450,7 @@ describe('camera export runtime: failure classification', () => {
       );
       // The camera "Stop" control isn't left dangling in a starting state.
       expect(cameraStopButton().style.display).toBe('none');
-      expect(cameraEnableButton().textContent).toBe('Retry');
+      expect(cameraEnableButton().textContent).toBe('Retry steering');
       expectDemoControlsUsable();
     } finally {
       clearFakeMediaPipeModule();

@@ -169,7 +169,7 @@ describe('generateScene3DBundle', () => {
 
   it('marks immersive exports and preserves their explicit surface mode', async () => {
     const result = await generateScene3DBundle(validScene(), 'Immersive scene', {
-      variant: 'non-camera',
+      variant: 'full',
       immersive: true,
     });
     expect(result.ok).toBe(true);
@@ -182,6 +182,12 @@ describe('generateScene3DBundle', () => {
 
     expect(html).toContain('name="creatrweb-export-surface" content="immersive"');
     expect(html).toContain('<body data-piece-surface="immersive">');
+    expect(html.indexOf('id="camera-controls-host"')).toBeGreaterThan(
+      html.indexOf('id="piece-audio-controls"'),
+    );
+    expect(html).toContain(
+      '<div id="piece-actions-dialog" role="dialog" aria-label="Piece actions" hidden>',
+    );
     expect(readme).toContain('Surface mode: immersive (arrow-key travel).');
     expect(script).toContain('window.__EXPORT_SURFACE_MODE__ = "immersive"');
   });

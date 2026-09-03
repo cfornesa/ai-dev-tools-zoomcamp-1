@@ -123,8 +123,8 @@ const PIECE_CSS = `html, body {
   display: grid;
   align-content: start;
   gap: 1rem;
-  max-height: none;
-  overflow: visible;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
   padding: 1rem;
   color: #fff;
   background: rgba(10,12,20,.94);
@@ -153,6 +153,7 @@ const PIECE_CSS = `html, body {
   border: 1px solid rgba(255,255,255,.28);
   border-radius: .75rem;
 }
+#piece-actions-dialog > #piece-audio-controls { position: static; left: auto; bottom: auto; z-index: auto; width: auto; min-width: 0; max-width: none; max-height: none; overflow: visible; margin: 0 1rem 1rem; box-sizing: border-box; }
 #piece-audio-controls[hidden] { display: none; }
 #piece-audio-controls { max-height: min(40vh, 20rem); overflow: auto; box-sizing: border-box; }
 #piece-audio-controls label { display: grid; gap: .25rem; font-size: .8rem; }
@@ -172,6 +173,7 @@ const PIECE_CSS = `html, body {
 #piece-hand-guide { max-height: min(60vh, 28rem); overflow: auto; box-sizing: border-box; }
 #piece-hand-guide button { width: auto; height: auto; padding: .5rem .75rem; }
 #camera-controls-host { position: fixed; left: 1rem; bottom: 5.5rem; z-index: 10; display: grid; gap: .5rem; min-width: 15rem; max-width: min(22rem, calc(100vw - 2rem)); max-height: min(40vh, 20rem); overflow: auto; box-sizing: border-box; padding: .75rem; color: #fff; background: rgba(10,12,20,.9); border: 1px solid rgba(255,255,255,.28); border-radius: .75rem; }
+#piece-audio-controls #camera-controls-host { position: static; left: auto; bottom: auto; z-index: auto; min-width: 0; max-width: none; max-height: none; overflow: visible; padding: 0; color: inherit; background: transparent; border: 0; border-radius: 0; }
 #camera-controls-host:empty { display: none; }
 #camera-controls-host video { width: 100%; max-height: 10rem; object-fit: cover; border-radius: .5rem; }
 `;
@@ -225,6 +227,14 @@ function buildIndexHtml(variant: Scene3DExportVariant, immersive: boolean): stri
     <button id="piece-hand-guide-toggle" type="button" aria-label="Hand gesture guide" title="Hand gesture guide" aria-expanded="false"><span class="piece-action-icon" aria-hidden="true">?</span><span class="piece-action-label">Hand gesture guide</span></button>
     <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen"><span class="piece-action-icon" aria-hidden="true">⛶</span><span class="piece-action-label">Fullscreen</span></button>
   </div>
+  <div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
+    <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
+    <button id="piece-keyboard" type="button" aria-pressed="false">Keyboard notes</button>
+    ${variant === 'full' ? '<button id="piece-mic" type="button" aria-pressed="false">Live mic</button>' : ''}
+    ${variant === 'full' ? '<button id="piece-theremin" type="button" aria-pressed="false">Camera theremin</button>' : ''}
+    <p>Enable sound, then turn on keyboard notes to play A–L keys.</p>
+    ${variant === 'full' ? '<div id="camera-controls-host" role="group" aria-label="Camera controls"></div>' : ''}
+  </div>
 </div>
 <div id="piece-hand-guide" role="dialog" aria-label="Hand gesture guide" hidden>
   <h2>Hand gesture guide</h2>
@@ -237,18 +247,6 @@ function buildIndexHtml(variant: Scene3DExportVariant, immersive: boolean): stri
   </ol>
   <button id="piece-hand-guide-close" type="button">Close</button>
 </div>
-<div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
-  <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
-  <button id="piece-keyboard" type="button" aria-pressed="false">Keyboard notes</button>
-  ${variant === 'full' ? '<button id="piece-mic" type="button" aria-pressed="false">Live mic</button>' : ''}
-  ${variant === 'full' ? '<button id="piece-theremin" type="button" aria-pressed="false">Camera theremin</button>' : ''}
-  <p>Enable sound, then turn on keyboard notes to play A–L keys.</p>
-</div>
-${
-  variant === 'full'
-    ? '<div id="camera-controls-host" role="group" aria-label="Camera controls"></div>'
-    : ''
-}
 <script src="scripts/piece.js"></script>
 <script>
 (() => {
@@ -262,6 +260,8 @@ ${
   const guideToggle = document.getElementById('piece-hand-guide-toggle');
   const guide = document.getElementById('piece-hand-guide');
   const guideClose = document.getElementById('piece-hand-guide-close');
+  const audioSettings = document.getElementById('piece-audio-settings');
+  const audioPanel = document.getElementById('piece-audio-controls');
   let menuReturnFocus = null;
   function setMenuOpen(open) {
     if (!actionsDialog || !menuTrigger) return;
@@ -305,6 +305,11 @@ ${
   }
   guideToggle?.addEventListener('click', () => setGuideOpen(Boolean(guide?.hidden)));
   guideClose?.addEventListener('click', () => setGuideOpen(false));
+  audioSettings?.addEventListener('click', () => {
+    if (!audioPanel) return;
+    audioPanel.hidden = !audioPanel.hidden;
+    audioSettings.setAttribute('aria-expanded', String(!audioPanel.hidden));
+  });
 })();
 </script>
 </body>

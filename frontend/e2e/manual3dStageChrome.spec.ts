@@ -134,6 +134,16 @@ test.describe('manual 3D editor stage chrome', () => {
     await expect(
       toolbar.getByRole('button', { name: 'Piece controls', exact: true }),
     ).toBeVisible();
+    await toolbar.getByRole('button', { name: 'Enable sound' }).click();
+    await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+    await expect(toolbar.getByLabel('Ambient instrument')).toHaveValue('synth');
+    await expect(toolbar.getByLabel('Movement instrument')).toHaveValue('synth');
+    await expect(toolbar.getByLabel('Melodic instrument')).toHaveValue('synth');
+    await toolbar.getByLabel('Movement instrument').selectOption('fmsynth');
+    await expect(toolbar.getByLabel('Movement instrument')).toHaveValue('fmsynth');
+    await expect(toolbar.getByLabel('Ambient instrument')).toHaveValue('synth');
+    await expect(toolbar.getByLabel('Melodic instrument')).toHaveValue('synth');
+    await toolbar.getByRole('button', { name: 'Hide piece controls' }).click();
     await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
     await expect(toolbar.getByRole('link', { name: 'View immersive piece' })).toHaveAttribute(

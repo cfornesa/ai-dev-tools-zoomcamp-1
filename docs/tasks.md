@@ -12389,6 +12389,7 @@ against the broader pieces-parity goal, but it does not reopen #347.
 | [#357](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/357) | Portable 2D artifact responsive controls | One Full extracted artifact at 1280x900 and 375x812; intended non-empty artwork, stacked stage overlay, no overlap/clipping/ordinary scrollbar, gesture-gated camera | Discovered during #350 QA; responsive artifact evidence now reconciled | CLOSED / completed; do not reopen |
 | [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | CLOSED / completed; do not reopen |
 | [#361](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/361) | 3D publication menu viewport containment | Draft/Published actions remain visible and pointer-operable in the stacked stage disclosure across supported browsers without an ordinary menu scrollbar | Discovered and resolved during #351 QA | CLOSED / completed; do not reopen |
+| [#345](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/345) | 3D Piece controls: per-voice instrument selectors | Ambient, Movement, and Melodic selectors independently change supported voices only after explicit sound enablement | Existing implementation; browser smoke added in this transaction | CLOSED / completed; do not reopen |
 
 The next handoff is #355 only while its owner-session dependency is available;
 if that dependency remains blocked, #356 is next.
@@ -12595,6 +12596,22 @@ typecheck passed. The implementation and test restoration are committed in
 the next coherent commit after #351. #361 is permanently closed; any later
 publication-layout or deployed-route gap must be a new issue unless the owner
 explicitly authorizes reopening #361 in the current conversation.
+
+### #345 closure reconciliation — 2026-09-03
+
+Issue #345 is permanently closed as completed. The existing React 3D Piece
+controls expose labeled, keyboard-accessible Ambient, Movement, and Melodic
+instrument selectors with the finite shared instrument list and stable Synth
+defaults. Sound still requires an explicit user gesture before selectors are
+used; changing one selector updates only that voice and preserves the other
+voices and master sound controls.
+
+Focused audio/component tests passed 49/49, and
+`BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa` passed
+3/3 across Chromium, Firefox, and WebKit. The browser smoke enabled sound by
+user gesture, changed Movement to FM Synth, and verified Ambient and Melodic
+remained Synth. This issue is permanently closed; later audio or route gaps
+must be new issues unless the owner explicitly authorizes reopening #345.
 
 ### #358 closure reconciliation
 

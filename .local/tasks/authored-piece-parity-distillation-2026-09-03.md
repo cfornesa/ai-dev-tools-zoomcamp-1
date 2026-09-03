@@ -612,3 +612,15 @@ This confirms the requested interaction model for the currently inspectable
 revision but does not resolve the owner's contradictory observed state. #379
 remains open as a verification-boundary/deployment-session reconciliation
 task. No product source or product tests were changed from this evidence.
+## #379 deployment blocker escalation — 2026-09-03
+
+Authenticated Replit inspection reproduced the external cause: the Git panel
+reports `MERGE_CONFLICT`, an unexpected merge conflict, failed remote
+authentication, 16 incoming/1 outgoing changes, and an incomplete Pull. The
+published `index-CQvhOwx-.js` also differs from a fresh local build's hashed
+chunk graph. This is a workflow/infrastructure defect, not a product parity
+pass and not permission to reopen closed issues.
+
+The actionable blocker is split into criterion-ready [#380](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/380), which owns Replit
+remote authentication, branch reconciliation, and intentional republishing.
+#379 remains open and dependency-blocked on #380.

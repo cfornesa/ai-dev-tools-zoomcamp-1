@@ -14266,3 +14266,15 @@ The owner-visible contradiction remains unresolved and is tracked by open
 #379 as a verification-boundary/deployment-session reconciliation task. No
 closed issue was reopened and no product source change was made from this
 comparison alone.
+## #379 deployment blocker escalation — 2026-09-03
+
+Authenticated Replit inspection reproduced the deployment cause: its Git panel
+reports `MERGE_CONFLICT`, an unexpected merge conflict, failed remote
+authentication, 16 incoming/1 outgoing changes, and incomplete Pull. The
+published `index-CQvhOwx-.js` differs from a fresh local build's hashed chunk
+graph. This is a workflow/infrastructure defect, not product parity evidence
+and not permission to reopen closed issues.
+
+New criterion-ready [#380](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/380)
+owns Replit remote authentication, branch reconciliation, and intentional
+republishing. #379 remains open and dependency-blocked on #380.

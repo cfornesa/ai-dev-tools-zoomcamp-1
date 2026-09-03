@@ -636,3 +636,9 @@ continues to report the opposite state, so this remains an unresolved
 deployment/cache/session discrepancy tracked by new #379; do not close #379
 or alter closed issues until the differing owner-visible revision or a
 reproducible implementation defect is identified.
+Replit Git blocker (2026-09-03): the authenticated workspace Git panel
+reported `MERGE_CONFLICT`, failed remote authentication, 16 incoming/1
+outgoing changes, and incomplete Pull while the published asset's chunk graph
+did not match a fresh local build. This is tracked by new workflow issue #380;
+keep #379 open until remote auth, branch identity, and intentional publishing
+are reconciled. Never reopen closed parity issues for this state.

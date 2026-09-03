@@ -258,6 +258,8 @@ test.describe('HTML export: responsive piece action surface', () => {
         };
         return {
           card: card ? rect(card) : null,
+          cardOverflow: card ? getComputedStyle(card).overflow : null,
+          cardScrolls: card ? card.scrollHeight > card.clientHeight : true,
           actions: actions.map(rect),
           documentWidth: document.documentElement.scrollWidth,
           documentHeight: document.documentElement.scrollHeight,
@@ -266,6 +268,8 @@ test.describe('HTML export: responsive piece action surface', () => {
         };
       });
       expect(geometry.card).not.toBeNull();
+      expect(geometry.cardOverflow).toBe('visible');
+      expect(geometry.cardScrolls).toBe(false);
       expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
       expect(geometry.documentHeight).toBeLessThanOrEqual(geometry.viewportHeight);
       for (const action of geometry.actions) {

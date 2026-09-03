@@ -377,14 +377,14 @@ const EXPORT_STYLE = `
     #piece-toolbar button:hover, #piece-toolbar button:focus-visible, #piece-command-card button:hover, #piece-command-card button:focus-visible { background: rgba(21,26,40,.94); }
     #piece-command-overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 1rem; box-sizing: border-box; background: rgba(5,8,16,.72); }
     #piece-command-overlay[hidden] { display: none; }
-    #piece-command-card { width: min(32rem, 100%); max-height: calc(100vh - 2rem); overflow: auto; box-sizing: border-box; padding: 1rem; border: 1px solid rgba(255,255,255,.35); border-radius: 1rem; background: rgba(10,12,20,.96); color: #fff; box-shadow: 0 12px 36px rgba(0,0,0,.45); }
+    #piece-command-card { width: min(32rem, 100%); max-height: none; overflow: visible; box-sizing: border-box; padding: 1rem; border: 1px solid rgba(255,255,255,.35); border-radius: 1rem; background: rgba(10,12,20,.96); color: #fff; box-shadow: 0 12px 36px rgba(0,0,0,.45); }
     #piece-command-card header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
     #piece-command-card h2 { margin: 0; font-size: 1.15rem; }
     #piece-command-card header button { width: 2.75rem; padding: 0; font-size: 1.5rem; }
     #piece-action-list { display: flex; flex-direction: column; gap: .5rem; }
     #piece-action-list button { display: flex; align-items: center; justify-content: flex-start; gap: .65rem; width: 100%; padding: .5rem .7rem; text-align: left; }
     #piece-action-list button span:first-child { width: 1.3rem; text-align: center; font-size: 1.1rem; }
-    #piece-controls-panel { box-sizing: border-box; margin-top: .75rem; padding: .75rem; border: 1px solid rgba(255,255,255,.25); border-radius: .75rem; background: rgba(21,26,40,.78); color: #fff; }
+    #piece-controls-panel { box-sizing: border-box; max-height: min(40vh, 20rem); overflow: auto; margin-top: .75rem; padding: .75rem; border: 1px solid rgba(255,255,255,.25); border-radius: .75rem; background: rgba(21,26,40,.78); color: #fff; }
     #piece-controls-panel[hidden] { display: none; }
     #piece-controls-close { margin-bottom: .25rem; padding: .35rem .55rem; }
     #piece-controls-panel #motion-control, #piece-controls-panel #demo-controls-host, #piece-controls-panel #camera-controls-host { margin-top: .75rem; }

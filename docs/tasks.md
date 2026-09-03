@@ -13042,3 +13042,32 @@ ready; if it remains externally blocked, process the next independent
 closure-ready item, with #363 and #364 available as separate artifact tasks.
 Each item still requires its own engineering→QA→reconciliation→closure
 transaction.
+
+### #363 closure reconciliation — 2026-09-03
+
+#363 is closed as completed for the extracted structured 2D HTML runtime's
+responsive command surface. The generated command card now grows with its
+stacked actions instead of owning a scrollbar; only the deliberately opened
+nested Piece controls panel is bounded and scrollable. This applies to the
+generated camera and non-camera runtime variants without changing their
+functional controls, privacy boundary, screenshot/download behavior, or
+fullscreen behavior.
+
+Evidence: focused generator/runtime/publication tests passed 70/70; the
+Docker-backed `BROWSER_QA_E2E_SPEC=e2e/exportArtifacts.spec.ts make
+browser-qa` gate passed 54/54 across Chromium, Firefox, and WebKit; and
+`make frontend-check` passed lint (existing warnings only), formatting,
+typecheck, and 2,400/2,400 frontend tests. The exact source change is the
+issue-scoped commit recorded in the closure comment. A direct macOS
+Playwright attempt was not used as evidence because the host browser
+processes failed before scenarios; the supported Docker gate is authoritative.
+
+Implemented/verified here: generated 2D artifact card containment and nested
+control scrolling. Shifted to linked work: shared live React presentation
+#362, generated 3D artifacts #364, and live/deployed route contracts #355 and
+#356. No closed issue was reopened, and none of those linked gaps reopens
+#363. Completion is closure; the queue may now rotate to the next independent
+closure-ready issue.
+
+The next groomed engineering target is **#364**, the separately scoped
+extracted 3D runtime artifact transaction.

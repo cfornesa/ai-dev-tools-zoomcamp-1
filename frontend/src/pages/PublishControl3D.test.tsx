@@ -60,9 +60,11 @@ describe('PublishControl3D', () => {
   it('shows the publication state in the compact stage control', () => {
     render(<Harness initialProject={baseProject()} compact />);
 
-    expect(
-      screen.getByText('Publication status: Draft', { selector: '.piece-stage-visible-label' }),
-    ).toBeVisible();
+    const statusControl = screen.getByRole('button', { name: 'Publication status: Draft' });
+    expect(statusControl.querySelector('.piece-stage-action-label')).toHaveTextContent(
+      'Publication status: Draft',
+    );
+    expect(statusControl).toBeVisible();
   });
 
   it('exposes Draft/Published as visible, keyboard-actionable publication status controls', () => {

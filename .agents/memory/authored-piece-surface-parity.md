@@ -245,6 +245,16 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Deployed parity rejection audit (2026-09-03): authenticated Chrome can load
+the exact manual 3D owner route, but it serves stale asset
+`index-CecM7AFX.js`, which lacks the checkout's newer 3D authoring submenu;
+this is #355's deployment-verification boundary. Anonymous access to the
+exact public URL serves the `Blank canvas` fixture from that same asset; its
+hamburger exposes public controls, but not the intended non-empty piece; this
+is #356's fixture-verification boundary. Do not reopen closed implementation
+issues in response to this evidence. Require the reviewed revision to be
+published and verify the exact owner/public routes before claiming parity.
+
 Portable 3D artifact closure (2026-09-03): #351 is permanently closed for
 the extracted Full/Non-Camera runtime transaction. The generated ZIPs use a
 closed hamburger plus accessible stacked action dialog, with opened-only

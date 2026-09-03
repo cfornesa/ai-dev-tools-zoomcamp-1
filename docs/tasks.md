@@ -12633,6 +12633,30 @@ These are dependency/environment blockers, not reasons to reopen #345, #347,
 the required published session/fixture, or with #344 after a reliable manual
 camera-evidence path is available. No new duplicate issue was created.
 
+### Owner-reported deployed-parity rejection — 2026-09-03
+
+A fresh read-only audit was performed against the exact URLs supplied by the
+owner, using both the anonymous in-app browser and an authenticated Chrome
+session. The evidence explains, but does not excuse, the earlier over-broad
+closure claims:
+
+- Authenticated `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` loads, but
+  serves deployed asset `index-CecM7AFX.js`. It has the hamburger, runtime
+  controls, Editor actions, Fullscreen, and Draft/Published disclosure, but
+  does not contain the current checkout's newer 3D authoring submenu. Exact
+  deployed-revision verification remains #355.
+- Anonymous `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` serves the `Blank canvas`
+  fixture from the same deployed asset. Its opened hamburger exposes the
+  permitted public controls, but the fixture is not the intended non-empty
+  piece. Exact fixture/revision and responsive verification remains #356.
+- No closed issue was reopened. #349/#359/#351/#361 remain historical,
+  scope-closed implementation transactions; these current deployed gaps are
+  covered by the existing open verification records #355 and #356.
+
+The browser evidence and exact next actions were added to #355 and #356.
+The branch remains local and ahead of the deployed asset; no publish or
+publication-state mutation was performed during this audit.
+
 ### #358 closure reconciliation
 
 Issue #358 closed as completed for the local manual 3D authoring transaction.

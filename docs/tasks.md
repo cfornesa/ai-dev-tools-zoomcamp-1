@@ -13481,6 +13481,15 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+## #339 transaction reconciliation — 2026-09-03
+
+#339's local AI 3D stage-local publication implementation passed 55/55 focused
+tests and 3/3 browser engines (Chromium, Firefox, WebKit) through
+`BROWSER_QA_E2E_SPEC=e2e/ai3dStageChrome.spec.ts make browser-qa`. The local
+Draft/Published disclosure and responsive stage toolbar are verified; exact
+deployed verification remains #328. #339 is permanently closed. No closed
+issue was reopened.
+
 ## #372 transaction reconciliation — 2026-09-03
 
 Testing #341 exposed a new atomic defect: asynchronous sound activation could

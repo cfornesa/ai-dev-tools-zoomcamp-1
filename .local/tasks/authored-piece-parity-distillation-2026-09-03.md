@@ -204,3 +204,13 @@ QA remain paired per issue before permanent closure.
   private route is access-denied without the owner session. This is evidence
   of a deployment/fixture/session boundary, not authorization to reopen any
   closed issue.
+
+## #339 transaction reconciliation — 2026-09-03
+
+The AI 3D stage-local publication implementation passed its fixed local
+boundary: focused AI 3D/publication/preview tests passed 55/55, and
+`BROWSER_QA_E2E_SPEC=e2e/ai3dStageChrome.spec.ts make browser-qa` passed 3/3
+across Chromium, Firefox, and WebKit. The local Draft/Published disclosure,
+responsive stage toolbar, and removal of the standalone bundle control were
+verified. Exact deployed verification remains #328. #339 is permanently
+closed; no closed issue was reopened.

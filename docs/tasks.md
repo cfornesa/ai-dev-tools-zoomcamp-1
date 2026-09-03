@@ -13014,3 +13014,31 @@ performing a state transition. Rendered inspection still shows inconsistent
 deployed command presentation, including glyph-only/blank authoring actions
 and non-unified Piece controls/publication rows. #355 remains open until the
 reviewed local commits are published and the final exact-route matrix passes.
+
+## Artifact follow-up distillation — 2026-09-03
+
+The source audit found that downloaded runtimes are not covered by the shared
+React command-menu implementation. The structured 2D generator gives
+`#piece-command-card` `overflow:auto`, and the 3D generator gives
+`#piece-actions-dialog` `overflow-y:auto`. Both packages otherwise contain
+functional runtime controls, so this is not a reason to reopen the permanently
+closed artifact transactions; it is new artifact-specific presentation and
+behavioral evidence.
+
+- [#363](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/363)
+  owns the extracted structured 2D HTML artifact, including its Full/camera
+  variants and nested controls.
+- [#364](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/364)
+  owns extracted Full and Non-Camera 3D ZIPs, including packaged runtime
+  controls, local MediaPipe boundaries, and nested disclosure scrolling.
+
+These issues are deliberately separate: they have different generators,
+document families, artifact contents, and extraction/browser fixtures. Neither
+inherits live-route evidence from #355/#356 or shared-component evidence from
+#362. Closed artifact issues remain closed and immutable.
+
+The refreshed queue order is: finish the #362 browser-QA retry when Docker is
+ready; if it remains externally blocked, process the next independent
+closure-ready item, with #363 and #364 available as separate artifact tasks.
+Each item still requires its own engineering→QA→reconciliation→closure
+transaction.

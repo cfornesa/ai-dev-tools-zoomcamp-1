@@ -258,6 +258,14 @@ this app's Django/Python plus React/TypeScript translation; PHP and unrelated
 CMS features remain out of scope. Closed issues are immutable unless the owner
 explicitly authorizes reopening that exact issue in the current conversation.
 
+Artifact follow-up correction (2026-09-03): the generated structured 2D HTML
+still assigns `overflow:auto` to its main command card, and the generated 3D
+ZIP assigns `overflow-y:auto` to its main action dialog. These are separate
+artifact-family follow-ups #363 and #364, because extracted 2D HTML and
+extracted Full/Non-Camera 3D ZIPs have different generators, fixtures, and
+runtime capability boundaries. The shared React task #362 does not prove
+artifact parity, and closed artifact issues remain immutable.
+
 AI 2D publication capability closure (2026-09-03): issue #340 is permanently
 closed for the local stage-local publication implementation. Its real browser
 path passed 3/3 across Chromium, Firefox, and WebKit, including the hamburger

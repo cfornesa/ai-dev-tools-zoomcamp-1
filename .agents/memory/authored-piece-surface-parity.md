@@ -759,3 +759,10 @@ CMS immersive verification (2026-09-04): #335 passed 3/3 browsers for
 `/immersive/p3d/:id?embed=1&cms=1`, verifying the chrome-less CMS wrapper,
 hamburger-open controls, downloads, and responsive behavior. #335 is
 permanently closed; later gaps require new issues and must not reopen it.
+
+Production readiness (2026-09-04): the documented production-like
+`make deploy-check` passes with explicit non-secret production settings and
+zero Django warnings. Full `make check` and the frontend production build
+pass. Do not treat the development `.env` warning run as deployment evidence;
+production readiness still depends on #344's physical-camera verification,
+which remains blocked without reopening any closed route issue.

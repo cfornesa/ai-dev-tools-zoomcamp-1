@@ -14512,6 +14512,19 @@ No closed issue was reopened.
 
 Parent #320/#324/#274 remain reconciliation containers, not engineering tasks.
 
+## Production-readiness reconciliation — 2026-09-04
+
+The documented production-like `make deploy-check` passed with explicit
+non-secret production settings and zero Django warnings. The frontend
+production build passed, and the full `make check` passed: backend `888
+passed, 22 skipped`, frontend Vitest `2405 passed`, plus lint, formatting,
+and type-check gates. Fixed-viewport browser transactions passed in
+Chromium, Firefox, and WebKit for all six authored-piece route boundaries.
+The published 3D fixture was temporarily verified anonymously and restored
+to Draft. Production readiness remains open only at #344's physical-camera
+verification boundary; no closed route issue was reopened. Parent
+#274/#320/#324 remain reconciliation containers.
+
 ## #334 closure reconciliation — 2026-09-04
 
 #334 is permanently closed as `completed` for the anonymous custom immersive

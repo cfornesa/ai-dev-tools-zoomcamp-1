@@ -45,7 +45,9 @@ test.describe('regular immersive 3D stage chrome', () => {
       name: 'Preview actions',
     });
     await ownerToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await ownerToolbar.getByRole('button', { name: 'Publication status: Draft' }).scrollIntoViewIfNeeded();
+    await ownerToolbar
+      .getByRole('button', { name: 'Publication status: Draft' })
+      .scrollIntoViewIfNeeded();
     await ownerToolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
     await page.getByRole('button', { name: 'Published', exact: true }).click();
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
@@ -69,7 +71,9 @@ test.describe('regular immersive 3D stage chrome', () => {
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Piece controls', exact: true })).toBeVisible();
+    await expect(
+      toolbar.getByRole('button', { name: 'Piece controls', exact: true }),
+    ).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();

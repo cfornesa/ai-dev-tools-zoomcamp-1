@@ -852,3 +852,12 @@ Firefox, and WebKit at 1280×900 and 375×812. It verified proportional sphere
 frame/backing-canvas geometry, no horizontal overflow, and reachable public
 controls. The temporarily published fixture was restored to Draft. No closed
 issue was reopened.
+
+Production-readiness reconciliation (2026-09-04): the valid production-like
+`make deploy-check` passed with zero Django warnings using explicit non-secret
+production settings, `npm --prefix frontend run build` passed, and the full
+`make check` passed (`888` backend tests with `22` skips; `2405` frontend
+tests). Fixed-viewport browser evidence passed for all six authored-piece
+route boundaries in Chromium, Firefox, and WebKit. Readiness remains open
+only at #344's physical-camera verification boundary; no closed issue was
+reopened.

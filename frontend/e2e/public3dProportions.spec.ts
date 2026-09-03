@@ -44,7 +44,10 @@ test.describe('anonymous public 3D proportions', () => {
       .scrollIntoViewIfNeeded();
     await ownerToolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
     await ownerToolbar.getByRole('button', { name: 'Published', exact: true }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Publish', exact: true }).click();
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Publish', exact: true })
+      .click();
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
     const anonymousContext = await browser.newContext();
@@ -79,7 +82,9 @@ test.describe('anonymous public 3D proportions', () => {
     await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Piece controls', exact: true })).toBeVisible();
+    await expect(
+      toolbar.getByRole('button', { name: 'Piece controls', exact: true }),
+    ).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
     await anonymousContext.close();
   });

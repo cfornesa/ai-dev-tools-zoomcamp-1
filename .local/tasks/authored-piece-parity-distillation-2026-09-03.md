@@ -677,6 +677,22 @@ fixture was restored to Draft. Local browser-QA remained Docker-blocked, while
 the issue retains its prior 1/1 pass. The next FIFO task is #333; closed
 issues remain immutable.
 
+## #381 blocked transaction and fresh distillation — 2026-09-03
+
+#381 was processed as one route transaction. Current authenticated evidence
+at 962×921 shows the stage-local hamburger, stacked named controls, 3D
+authoring disclosure, and a successful Draft → Published → Draft round trip.
+It remains open because the required fixed 1280×900 and 375×812 rendered
+evidence was unavailable, and `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts
+make browser-qa` failed before startup with Docker unavailable.
+
+Blocker classification is `verification-boundary` plus
+`workflow/infrastructure-defect`; no product defect was reproduced. Fresh
+distillation rechecked duplicates and dependencies: no closed issue is being
+reopened, and #381 owns this exact owner route. The independent next FIFO
+candidate is #382, the anonymous public 2D route; #381 remains queued for its
+documented fixed-viewport/browser-harness retry.
+
 ## Fresh owner contradiction distillation — 2026-09-03
 
 The owner reports that the exact manual 3D editor still has the legacy bulky

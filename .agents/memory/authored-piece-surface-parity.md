@@ -670,6 +670,12 @@ content and shared 3D stage controls, then restored the fixture to Draft.
 The next route boundary is #333; later contradictions must be new linked
 issues rather than reopenings.
 
+Manual 3D owner audit (2026-09-03): #381 remains open because current
+authenticated evidence passed at 962×921, including Draft → Published → Draft,
+but the required fixed-viewport rendered proof and local browser harness were
+unavailable. Classify this as verification/workflow blocking, not a product
+failure; process independent #382 next and retry #381 when the harness exists.
+
 Fresh owner contradiction (2026-09-03): the owner reports that the exact
 manual 3D editor still shows the bulky legacy controls and lacks publication
 switching, while the public 2D piece shows no controls. Current source and

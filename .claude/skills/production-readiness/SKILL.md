@@ -17,18 +17,18 @@ of these outcomes exactly once: `PASS`, `OPEN FOLLOW-UP`, `BLOCKED`, or
 issue and record its owner and next action; do not quietly send it back to an
 already closed child.
 
-Reopen a child only when the readiness finding names a failed criterion that
-belongs to that child's fixed route/workflow and provides new evidence at its
-contract boundary. If the finding concerns another route, a new fixture,
-deployment identity, or a broader parent judgment, keep the child terminal and
-record the finding on the correct route/reconciliation issue. Never use
-production-readiness to make a broad parent absorb unresolved child work.
+Reopening is forbidden by default. Only explicit owner authorization naming
+the specific closed child permits reopening it. Otherwise, if the readiness
+finding concerns another route, a new fixture, deployment identity, or a
+broader parent judgment, keep the child terminal and create/link a new
+criterion-ready follow-up. Never use production-readiness to make a broad
+parent absorb unresolved child work.
 
 Readiness must respect scope-shifted completion. A functionally complete
 shared capability remains closed when its route/deployment/artifact evidence
 is explicitly owned by linked follow-up issues. Report that follow-up as
-`OPEN FOLLOW-UP` rather than reopening the child unless the finding directly
-fails the child's narrowed contract.
+`OPEN FOLLOW-UP` rather than reopening the child. Only explicit owner
+authorization naming that child permits reopening it.
 
 ## Scope gate
 

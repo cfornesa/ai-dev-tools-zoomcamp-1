@@ -254,8 +254,30 @@ linked queue issues (#325–#337, #348–#349, and #320/#324) and must not reope
 #347 merely because they remain incomplete. The durable closure format is
 `implemented/verified here` plus `shifted to linked work`; #347 is closed as
 completed in GitHub and the FIFO queue may rotate only after this terminal
-state is recorded. A linked issue can reopen it only with new contradictory
-evidence against the narrowed shared contract itself.
+state is recorded. A linked issue cannot reopen it; reopening would require
+the owner to explicitly authorize reopening #347 in the current conversation.
+
+Parity target boundary (2026-09-03): “full CMS parity” means only the PHP
+repository's pieces implementation as a behavioral/design reference and this
+app's Django/Python backend plus React/TypeScript frontend's eventual ability
+to create, render, publish, embed, immerse, and package pieces like the
+maintained examples/fixtures. PHP is not implemented in this repository. It
+does not mean the entire augment-humankind CMS. Groom each follow-up around
+one pieces surface or workflow and do not import blog, collection,
+site-administration, or unrelated content-type requirements.
+
+Fresh owner audit and replacement-task rule (2026-09-03): the supplied
+published manual 3D editor route currently renders an access/availability
+message in the available anonymous session; the supplied public 2D route
+initially exposes only its hamburger and reveals its stage controls only after
+activation. The owner also reports that the editor still uses the bulky
+out-of-canvas action scheme and lacks a visible Draft/Published transition.
+These observations are new parity evidence for the pieces subsystem. They
+must not reopen #347. New contracts were filed as #352 (manual 3D editor),
+#353 (public 2D), #350 (portable 2D), and #351 (portable 3D); legacy
+#327/#329/#336/#337 were superseded and closed not-planned. Reopening any
+closed task requires the owner's explicit authorization naming that issue in
+the current conversation.
 
 Scoped completion correction (2026-09-03): the owner clarified that #347 is
 functionally complete for the shared PieceStageToolbar/StageControlsPopover

@@ -32,11 +32,9 @@ into the current issue and do not create a cosmetic duplicate solely to make
 the issue count larger.
 
 Production-readiness is a post-child assessment. It may classify missing
-evidence or create/link follow-up issues, but it does not reopen or re-engineer
-a child on its own. A child returns to the transaction only when a specific
-criterion failure is linked to that child and a new evidence boundary/action
-is recorded. Otherwise readiness leaves the child terminal and records the
-follow-up separately.
+evidence or create/link follow-up issues, but it never reopens or re-engineers
+a closed child. Any later failure, including a failure of the broader parity
+goal, becomes a new criterion-ready issue linked to the closed child.
 
 An issue's completion is scoped completion, not parent-feature completion.
 When implementation reveals route, deployment, artifact, or readiness work
@@ -80,15 +78,16 @@ owner, blocker class, and next action.
 
 Closure integrity after owner review:
 
-- Treat a current owner-visible failure as a reopen signal. Reconcile the
-  exact route, fixture, viewport, browser state, and deployed asset before
-  accepting or defending a prior closure.
+- Treat a current owner-visible failure after closure as a new task signal.
+  Preserve the closed issue and distill a linked criterion-ready issue; never
+  reopen the completed issue.
 - Never close on DOM roles, accessible names, non-zero geometry, source
   matches, or shared-component tests alone when the issue includes visual or
   route-level criteria. Require inspected rendered evidence and the named
   interaction boundary.
 - If a closed issue has unchecked criteria or contradictory closure comments,
-  record it as a false closure, reopen it, and re-groom it before engineering.
+  preserve it as historical record and create a new corrective task with
+  explicit criteria. Never reopen or rewrite the closed issue.
 - Inspect `git status --short --branch` before editing. Classify pre-existing changes as unrelated, user-owned relevant work, or session work. Preserve unrelated and user-owned changes; do not commit them without clear authorization.
 - Do not add dependencies without the user's approval.
 - Use the authenticated GitHub connector for issue, comment, and PR operations. Do not use a local `gh` token as a substitute.
@@ -178,8 +177,9 @@ Before assigning a terminal status, verify that every blocker has a class, owner
 For parity work, the final status must state both dimensions when they differ:
 `implemented locally` versus `deployed and verified`. Do not inherit a child
 capability's local closure as evidence for a route, artifact, or parent release
-gate. If a live URL contradicts the checkout, reopen or keep the affected
-deployed-scope issue open and record the published asset/revision evidence.
+gate. If a live URL contradicts the checkout, preserve any already-closed
+issue and create a new deployed-scope task with the published asset/revision
+evidence.
 
 ## Batch completion pass
 

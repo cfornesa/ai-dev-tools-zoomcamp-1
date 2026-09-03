@@ -201,11 +201,12 @@ backlog status, memory links, GitHub comment, and close action. “Implemented,�
 
 Production-readiness runs after the child transactions as an assessment. It
 does not start a hidden repair loop. It creates or links follow-up work when a
-finding is outside a child contract, and it reopens a child only for new
-contradictory evidence against that child's exact route/workflow, fixture,
-viewport, browser state, and revision boundary. A reopen must record the
-contradiction and one new action; the same evidence cannot alternate an issue
-between open and closed.
+finding is outside a child contract. Closed issues remain closed by default;
+reopening is allowed only when the owner explicitly authorizes reopening that
+specific issue in the current conversation. Without that authorization, later
+contradictory evidence becomes a new criterion-ready task, linked to the
+closed issue for history. The same issue must never alternate between open and
+closed as a substitute for backlog distillation.
 
 Before selecting the next issue, the orchestrator must answer “closed or
 terminally handed off?” for the current ledger entry. If the answer is no, it
@@ -213,6 +214,17 @@ must continue that issue or record its blocker; it may not advance merely to
 make progress appear elsewhere.
 
 ## Scope-shifted completion
+
+### CMS pieces parity boundary
+
+The overarching parity goal is limited to the PHP repository's **pieces
+implementation** as a behavioral/design reference and this Django/Python
+backend plus React/TypeScript frontend's ability to create, render, publish,
+embed, immerse, and package pieces like the maintained examples/fixtures. PHP
+is never implemented in this repository. It does not require parity with
+unrelated augment-humankind CMS features such as blog, collections, site
+administration, or other content types. Every task must state which pieces
+surface or workflow it covers.
 
 Completion is evaluated against the current issue's contract, not against the
 entire parent feature. If engineering or QA finds route-specific, deployment,
@@ -227,5 +239,6 @@ passes. Its closure matrix must contain two explicit sections:
   dependency, owner, and next action.
 
 This rule prevents both dishonest broad closures and needless reopen cycles.
-A linked follow-up's failure does not reopen the completed parent/child unless
-it directly contradicts that issue's narrowed contract.
+A linked follow-up's failure creates or updates the follow-up task; it does not
+reopen the completed parent/child unless the owner explicitly authorizes that
+specific reopening.

@@ -35,12 +35,14 @@ One or two sentences on what should be true when this is done.
 - **New gaps discovered:** In-scope fix, linked follow-up issue, blocker, or
   non-actionable classification; no unresolved item may remain only in chat
 
-## Reopen rule
+## Closed-issue rule
 
-A closed issue may be reopened only for new contradictory evidence against its
-own fixed contract. Record the exact contradiction and one next action; do not
-reuse the prior PASS matrix, broaden the issue, or reopen solely because a
-parent or sibling issue is incomplete.
+A closed issue stays closed. New contradictory evidence, an owner-visible
+failure, or broader unmet parity becomes a new criterion-ready issue linked to
+the closed issue for history. Reopening is allowed only when the owner
+explicitly authorizes reopening that specific issue in the current
+conversation; do not reuse its prior evidence or silently broaden its
+contract.
 
 ## Scope-shift record before closure
 

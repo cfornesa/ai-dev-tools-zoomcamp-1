@@ -21,13 +21,13 @@ transaction. Do not start another issue, run another issue's tests, or begin
 production-readiness implementation while the current transaction lacks a
 terminal result.
 
-Reopening is an exception, not a phase. It requires new contradictory evidence
-at the same named route/workflow, fixture, viewport, browser state, and
-published revision boundary, or an owner-visible failure that has not been
-disproved at that boundary. When reopening, record the contradiction and one
-new next action; never recycle the same PASS evidence or silently return to
-engineering. A closed issue must not be reopened merely because a broader
-parent is unfinished or a later route needs its own work.
+Closed issues are immutable by default. Reopening is permitted only when the
+owner explicitly authorizes reopening that specific issue in the current
+conversation. Without that explicit authorization, later evidence—including
+contradictory route, visual, deployment, or parity evidence—must be preserved
+as history and distilled into a new criterion-ready issue linked to the closed
+issue. Never recycle the old evidence, rewrite the closed contract, or reopen
+an issue merely because a broader parent or later route remains unfinished.
 
 ## Scope-shift completion rule
 
@@ -131,19 +131,20 @@ must never treat implementation or QA as completion; each issue reaches
 
 ### User-visible rejection and closure integrity
 
-- A current owner-reported visual or functional failure reopens the affected
-  issue unless the exact report is disproven at the same route, fixture,
-  viewport, browser state, and published revision. Do not defend a closure
-  with an older comment, a different fixture, or a local/disposable run.
-- A closed GitHub state is not evidence that acceptance criteria passed. If
-  the body still contains unchecked criteria, contradictory evidence, or a
-  later owner rejection, record `reopened / false closure` and repair the
-  GitHub state before selecting engineering work.
+- A current owner-reported visual or functional failure after closure is a new
+  task signal by default. Preserve the closed issue, record the report, and
+  create or reuse a criterion-ready follow-up. Only explicit owner
+  authorization naming the closed issue permits reopening it.
+- A closed GitHub state is immutable historical evidence of its prior
+  transaction, not proof of the entire parent feature. If its body contains
+  unchecked criteria, contradictory comments, or a later owner rejection,
+  document the closure defect and create a new corrective issue unless the
+  owner explicitly authorizes reopening that issue.
 - Visual parity requires inspected rendered screenshots at the named fixed
   viewports plus the finite interactions in the issue. Accessible names,
   non-zero bounds, source strings, or shared-component tests are supporting
   evidence only and never close a route or artifact by themselves.
-- Preserve an issue's scope when reopening it. Split only independently
+- Preserve closed history. Split newly discovered work into independently
   closable route/workflow, fixture, or artifact contracts; do not create
   cosmetic duplicates merely to increase issue count.
 

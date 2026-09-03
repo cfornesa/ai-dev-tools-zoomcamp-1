@@ -19,13 +19,23 @@ decision, perform and record a fresh task-distillation reconciliation when that
 issue ends, before selecting the next issue. Recheck duplicates, dependency
 order, closure criteria, ownership, and follow-up issue coverage.
 
-User-visible closure reset: a current owner report that a feature is absent
-or visually unusable reopens the affected issue until the exact route, fixed
-viewport, browser state, fixture, and deployed asset disprove it. A closed
-GitHub state, DOM-role/bounds assertion, source match, or shared-component QA
-comment is not sufficient when rendered parity is in scope. A closed issue
-with unchecked or contradictory criteria is a false closure and must be
-reconciled before engineering resumes.
+Closed-issue rule: completed issues stay closed. A current owner report that a
+feature is absent or visually unusable is a new distillation signal, not an
+automatic reopen. Create or reuse a criterion-ready follow-up linked to the
+closed issue, preserving the original closure record. Reopening is permitted
+only when the owner explicitly authorizes reopening that specific issue in the
+current conversation. A closed GitHub state, DOM-role/bounds assertion, source
+match, or shared-component QA comment is not sufficient to claim broader
+parity; it is evidence only for the original issue's recorded scope.
+
+CMS pieces parity boundary: the overarching goal is parity with the PHP
+repository's pieces implementation as a behavioral/design reference, translated
+into this Django/Python backend and React/TypeScript frontend. PHP is not
+implemented here. The app must eventually create, render, publish, embed,
+immerse, and package pieces like the maintained examples/fixtures. It does not
+include unrelated augment-humankind CMS features such as blog, collections,
+site administration, or other content types. Each issue must name its single
+pieces surface or workflow.
 
 ## 1. Set up an empty project with a passing test
 Goal: Create the minimal Django and React/TypeScript project structure and prove the test toolchain works.
@@ -12201,21 +12211,21 @@ may inherit another child's evidence.
 | Issue | Entry point / capability | Finite closure boundary | Dependencies / order | Current status and next action |
 | --- | --- | --- | --- | --- |
 | #347 | Shared PieceStageToolbar and publication trigger | Shared component contract: capability-driven named controls, Draft/Published disclosure, Full/Non-Camera menu, keyboard operation, and responsive no-overlap/no-scrollbar styling in the reviewed implementation; focused shared tests pass 31/31 | Completed shared implementation slice; route/artifact/deployment evidence is explicitly shifted to linked issues | **CLOSED / completed**; do not reopen for linked route, artifact, deployment, or readiness work |
-| #348 | Shared editor authoring overlay on `/projects/:id`, `/ai-projects/:id`, `/projects3d/:id`, `/ai-projects3d/:id` | One compact stage-associated authoring disclosure contains the finite authoring actions; no page-level `Editor actions` row or clipping at both fixed viewports; manual 2D route is the focused consumer | After #347; route children remain separate | **OPEN / reopened**; verify the reviewed revision and then process one route child |
-| #349 | Responsive 3D preview on manual editor/public 3D fixture | Uniform sphere remains round; intentional non-uniform scale survives; at both fixed viewports no page overflow or clipped stage/inspector/action entry point | After #348 for route evidence | **OPEN**; exact authenticated/public 3D fixture and published revision required |
-| #325 | Manual 2D owner editor `/projects/:id` | Authenticated exact route proves authoring, runtime, publication, save, screenshot/download/fullscreen, and responsive rendered layout for one fixture | #347/#348 | **OPEN / reopened**; run exact published route matrix |
-| #326 | AI 2D owner editor `/ai-projects/:id` | Same finite owner-editor matrix for the AI 2D entry point, including AI panel boundary | #347/#348 | **OPEN / reopened**; run exact published route matrix |
-| #327 | Manual 3D owner editor `/projects3d/:id` | Exact supplied authenticated route proves 3D runtime controls, authoring, Draft↔Published, responsive projection, and download entry | #347/#348/#349 | **OPEN / reopened**; authenticated access and reviewed publication are prerequisites |
-| #328 | AI 3D owner editor `/ai-projects3d/:id` | Same finite owner-editor matrix for the AI 3D entry point | #347/#348/#349 | **OPEN / reopened**; run exact published route matrix |
-| #329 | Anonymous public 2D `/p/:id` | One published 2D fixture proves visible stage controls, opt-in camera/demo behavior, privacy, screenshot, and download | #347 | **OPEN / reopened**; reconcile current `Blank canvas` fixture and camera evidence |
+| #348 | Legacy shared editor authoring overlay record | Superseded by fresh #354; retained for historical traceability only | Replaced by #354 | **CLOSED / not planned**; do not reopen |
+| #349 | Responsive 3D preview on manual editor/public 3D fixture | Uniform sphere remains round; intentional non-uniform scale survives; at both fixed viewports no page overflow or clipped stage/inspector/action entry point | After #354 for route evidence | **OPEN**; exact authenticated/public 3D fixture and published revision required |
+| #325 | Manual 2D owner editor `/projects/:id` | Authenticated exact route proves authoring, runtime, publication, save, screenshot/download/fullscreen, and responsive rendered layout for one fixture | #354 | **OPEN / legacy route contract**; process only if not superseded by a fresh route task |
+| #326 | AI 2D owner editor `/ai-projects/:id` | Same finite owner-editor matrix for the AI 2D entry point, including AI panel boundary | #354 | **OPEN / legacy route contract**; process only if not superseded by a fresh route task |
+| #327 | Legacy manual 3D owner editor record | Superseded by fresh #352 with current published-route evidence boundary | Replaced by #352 | **CLOSED / not planned**; do not reopen |
+| #328 | AI 3D owner editor `/ai-projects3d/:id` | Same finite owner-editor matrix for the AI 3D entry point | #354/#349 | **OPEN / legacy route contract**; process only if not superseded by a fresh route task |
+| #329 | Legacy anonymous public 2D record | Superseded by fresh #353 with current published-route evidence boundary | Replaced by #353 | **CLOSED / not planned**; do not reopen |
 | #330 | Anonymous public 3D `/p3d/:id` | One published 3D fixture proves visible permitted controls, privacy, responsive rendering, and no owner controls | #347/#349 | **OPEN / reopened**; publish/verify the actual 3D fixture |
 | #331 | Anonymous 2D embed `/embed/p/:id` | Chrome-less exact embed proves stage-only controls, privacy, responsive layout, and permitted camera/demo behavior | #347 | **OPEN / reopened**; exact published embed verification |
 | #332 | Anonymous 3D embed `/embed/p3d/:id` | Chrome-less exact embed proves 3D controls, privacy, responsive rendering, and no owner controls | #347/#349 | **OPEN / reopened**; exact published embed verification |
 | #333 | Anonymous regular immersive `/immersive/p3d/:id` | Immersive stage proves controls, arrow travel, guide, privacy, and responsive rendered layout | #347/#349 | **OPEN / reopened**; exact published immersive verification |
 | #334 | Custom immersive `?embed=1` | Query-specific chrome-less surface proves its finite wrapper and control contract | #333 | **OPEN / reopened**; verify query variant independently |
 | #335 | CMS immersive `?embed=1&cms=1` | Query-specific CMS wrapper and control contract | #333 | **OPEN / reopened**; verify query variant independently |
-| #336 | Extracted standalone 2D artifact | Download one published fixture, extract/open it, and exercise runtime controls, privacy, screenshot, and camera/non-camera behavior | #329 | **OPEN**; execute artifact, not source-string inspection |
-| #337 | Extracted Full and Non-Camera 3D artifacts | Extract/open both variants and exercise their finite capability/privacy differences, including bundled/omitted camera runtime | #330/#332/#333 | **OPEN**; execute both artifacts and record asset contents/behavior |
+| #336 | Legacy extracted standalone 2D artifact record | Superseded by fresh #350 with executable extracted-artifact evidence boundary | Replaced by #350 | **CLOSED / not planned**; do not reopen |
+| #337 | Legacy extracted Full and Non-Camera 3D record | Superseded by fresh #351 with executable extracted-artifact evidence boundary | Replaced by #351 | **CLOSED / not planned**; do not reopen |
 | #320 | Structured authored-piece parity release gate | Reconcile all child matrices, deployment identity, fixture state, and parent acceptance; never implement or close as one route | All children | **OPEN reconciliation container**; close only after every required child is terminal |
 | #324 | Production-readiness reconciliation container | Reconcile exact deployed editor/public/immersive/download evidence without duplicating child scope | #320 | **OPEN reconciliation container**; do not use as an engineering unit |
 | #274 | Historical parity epic | Reconcile superseded scope and links only; no implementation work | #320 | **OPEN historical container**; close only after #320 reconciliation |
@@ -12340,5 +12350,44 @@ The #347 closure record must therefore use the two-part format
 the shifted route, deployment, artifact, or readiness work as complete, and it
 must not leave #347 open merely because those linked issues remain open. After
 this correction, the FIFO queue rotates to the next independently groomed
-issue; #347 is not reopened by a linked follow-up unless that follow-up
-directly contradicts the narrowed shared implementation contract.
+issue; #347 is not reopened by any follow-up. Reopening would require the
+owner to explicitly authorize reopening #347 in the current conversation.
+
+## Fresh parity distillation after owner rejection — 2026-09-03
+
+The owner reported that the published editor still shows the bulky action
+scheme outside the canvas, the supplied manual 3D editor route does not expose
+the expected saved piece in the current session, publication state cannot be
+changed visibly between Draft and Published, and the public piece appears to
+have no controls until its hamburger is opened. This is actionable evidence
+against the broader pieces-parity goal, but it does not reopen #347.
+
+### Duplicate and supersession report
+
+- #347 remains closed and immutable; its shared implementation closure is
+  historical and is not used as live-route proof.
+- Legacy route/artifact entries #327, #329, #336, and #337 were superseded
+  with comments and closed as not_planned; each replacement is a new task
+  with a fresh fixture, route/artifact boundary, and finite closure contract.
+- #354 (fresh shared editor-layout implementation), #349 (responsive 3D
+  projection), #325–#326/#328 (other owner routes), #330–#335 (other public
+  surfaces), and #320/#324 (release/readiness containers) remain distinct
+  queue records and were not reopened by this distillation.
+- No PHP implementation task was created. The PHP repository is reference
+  material only; product work remains in Django/Python and React/TypeScript.
+
+### New criterion-ready task manifest
+
+| Issue | Surface/workflow | Fixed closure boundary | Dependency/order | Status |
+| --- | --- | --- | --- | --- |
+| [#354](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/354) | Shared editor canvas authoring overlay | Manual 2D representative route; both fixed viewports; no page-level row, finite authoring controls, mutations, keyboard operation, no overlap/overflow | Fresh replacement for #348; first new engineering transaction | OPEN / GROOMED |
+| [#352](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/352) | Published manual 3D owner editor | Exact supplied route, authenticated owner fixture, 1280x900 and 375x812; route load, canvas-associated authoring overlay, Draft↔Published transition, existing editor/runtime actions, round sphere, no clipping | #354/#349 for implementation evidence | OPEN / GROOMED |
+| [#353](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/353) | Published anonymous public 2D piece | Exact supplied public route, fresh anonymous context, same two viewports; hamburger disclosure, permitted controls, privacy, keyboard/pointer behavior, rendered evidence | After #352 only if shared deployment/fixture dependency requires it | OPEN / GROOMED |
+| [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | One downloaded Full artifact served locally; runtime assets, rendered controls, capability/permission behavior, no overlap/ordinary scrollbar | After #353 provides a published 2D fixture | OPEN / GROOMED |
+| [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | OPEN / GROOMED |
+
+The next engineering handoff is #354 only. Distillation and grooming are
+complete for these five new tasks; engineering and QA remain per-task and must
+finish, reconcile, and close #354 before selecting #352. If a later report
+finds another gap after one of these closes, create another linked task unless
+the owner explicitly authorizes reopening that exact issue.

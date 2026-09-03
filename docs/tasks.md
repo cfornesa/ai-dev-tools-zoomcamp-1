@@ -11984,3 +11984,15 @@ correction, #325–#337 own route/artifact evidence, and #320/#324 remain
 reconciliation containers. The next action is to synchronize and publish the
 reviewed revision, then process #348 as one issue transaction; no route child
 may start until its predecessor is QA-reconciled and closed.
+
+## Replit deployment identity recheck — 2026-09-03
+
+The authenticated Replit `creatrweb` workspace currently displays an older
+published checkpoint (`8d8f70e`, approximately one hour old) and a `Republish`
+action, while GitHub `main` is at `2d239f9`. The live asset remains
+`index-WKdMIR98.js`. This is the concrete reason the reviewed #348 change is
+not visible at the supplied URLs. Workspace Pull/Sync and Republish are
+external state changes and were not triggered during this audit; #320/#321
+remain the deployment-identity owners. After synchronization and publication,
+repeat the exact authenticated editor and anonymous public fixed-viewport QA
+before any issue closure.

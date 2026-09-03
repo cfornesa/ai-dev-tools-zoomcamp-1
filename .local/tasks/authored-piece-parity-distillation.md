@@ -31,6 +31,12 @@ open pending publication/review; no later issue may begin before its closure.
   anonymous, and because the published asset is older than the pushed branch.
   This is a deployment identity and verification-boundary problem, not a basis
   for closing either #348 or the route children.
+- Replit's authenticated `creatrweb` workspace currently reports an older
+  published checkpoint (`8d8f70e`, approximately one hour old) and exposes a
+  `Republish` action. GitHub `main` is at `2d239f9`. The dashboard observation
+  is release evidence, not proof that the workspace source exactly matches
+  that commit; the next action is workspace Pull/Sync followed by Republish,
+  then asset-hash verification.
 - The public route's current measured document width is 947px at a 962px
   viewport. The authenticated editor's current `375x812` measurement has
   body/root width 360px, workspace width 326px, and no horizontal overflow;
@@ -116,6 +122,12 @@ route or artifact parity.
 5. `dependency-blocked`: #333–#335 depend on the immersive capabilities they
    consume, including #343/#344 where their criteria require those controls.
    Skip only dependent route work; continue independent issues.
+6. `verification-boundary`: the Replit workspace/published checkpoint does not
+   match reviewed GitHub `main` (`8d8f70e` reported in Replit versus `2d239f9` in
+   GitHub). Owner/context: Replit workspace and release operator. No new issue
+   is warranted because #320/#321 own deployment identity. Next action: Pull/
+   Sync the reviewed GitHub revision into the workspace, Republish, and verify
+   the resulting asset before #348 QA or any route closure.
 
 ## Handoff
 

@@ -12536,7 +12536,7 @@ reference; product implementation is Django/Python plus React/TypeScript.
 | Issue | Current behavior | Desired finite outcome | Order/status |
 | --- | --- | --- | --- |
 | [#358](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/358) | Published manual 3D editor has runtime/publication controls but no 3D authoring command set in its stage menu | Add named 3D authoring operations, working-scene/outline updates, save behavior, keyboard/focus/responsive evidence, and explicit N/A decisions for unsupported operations | After #357; implementation and QA reconciled | CLOSED / completed; do not reopen |
-| [#359](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/359) | Manual 3D editor sphere proportions | One authenticated editor route, two fixed viewports, uniform/non-uniform scale and responsive reachability | Child distilled from #349; next independent implementation transaction | OPEN / GROOMED; next |
+| [#359](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/359) | Manual 3D editor sphere proportions | One authenticated editor route, two fixed viewports, uniform/non-uniform scale and responsive reachability | Child distilled from #349; implementation and QA reconciled | CLOSED / completed; do not reopen |
 | [#360](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/360) | Public 3D viewer sphere proportions | One anonymous public route, two fixed viewports, intended published fixture and public-only controls | Child distilled from #349; dependency-blocked by #356 | OPEN / DEPENDENCY-BLOCKED |
 
 Existing #355 and #356 remain the exact deployed owner/public fixture
@@ -12575,3 +12575,19 @@ and created two criterion-ready children: #359 for the manual 3D editor and
 #360 for the public 3D viewer. #359 is the next independent groomed issue;
 #360 is dependency-blocked by #356's intended public fixture. No closed issue
 was reopened, and no PHP implementation work was introduced.
+
+### #359 closure reconciliation
+
+Issue #359 closed as completed for the authenticated manual 3D editor route.
+The preview frame now uses a fluid 16:9 aspect-ratio box instead of a fixed
+height while the renderer and perspective camera remain synchronized to the
+actual frame dimensions. The responsive fix does not rewrite scene object
+transforms, so intentional non-uniform scale remains data-driven.
+
+Focused Scene3DPreview/threeSceneBuilder tests passed 17/17; the full
+repository `make check` passed (backend 888 passed/22 skipped and frontend
+2,400/2,400, plus lint/format/typecheck); and the manual route browser matrix
+passed 3/3 across Chromium, Firefox, and WebKit at 1280x900 and 375x812.
+Exact republished owner-route evidence remains separately tracked by #355.
+#359 is permanently closed; later geometry or deployment gaps must be new
+issues unless the owner explicitly authorizes reopening #359.

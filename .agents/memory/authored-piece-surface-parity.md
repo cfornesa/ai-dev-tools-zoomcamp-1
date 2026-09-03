@@ -268,6 +268,15 @@ across Chromium/Firefox/WebKit. Exact republished owner-session verification
 remains #355; later gaps must be new tasks and must not reopen #358 without
 explicit owner authorization naming #358 in the current conversation.
 
+Manual 3D responsive closure (2026-09-03): #359 is permanently closed for
+the authenticated manual 3D editor route. The preview frame uses a fluid 16:9
+aspect-ratio box, and renderer/camera dimensions remain synchronized so uniform
+spheres are not deformed by responsive layout; object transforms are not
+rewritten. Evidence: 17 focused render tests, full `make check`, and 3/3
+Chromium/Firefox/WebKit route QA at 1280x900 and 375x812. Exact republished
+owner-route evidence remains #355. Later gaps must be new issues and must not
+reopen #359 without explicit owner authorization naming #359.
+
 Route atomicity distillation (2026-09-03): the former #349 contract combined
 authenticated manual 3D editor geometry and anonymous public 3D viewer
 geometry despite different entry points, fixtures, permissions, and deployed

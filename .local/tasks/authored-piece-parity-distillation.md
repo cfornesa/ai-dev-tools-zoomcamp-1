@@ -34,8 +34,8 @@ single issue is selected from this manifest.
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Historical parity epic/container | OPEN, reopened false closure | Reconcile last | #320 |
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
 | [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
-| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | OPEN | First implementation transaction | Shared component + one consumer QA |
-| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | OPEN | After #347 implementation handoff | Shared component + manual 2D QA |
+| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | COMPLETED / CLOSED after QA | Reconciled first | Shared component + fixed published evidence |
+| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | NEXT / OPEN | After #347 closure | Shared component + manual 2D QA |
 | [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN | Independent of #347; can follow current distillation | Manual 3D/public 3D QA |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | `/ai-projects/:id` AI 2D editor | OPEN | Shared implementation then route QA | Route QA |
@@ -102,6 +102,6 @@ route or artifact parity.
 
 Distillation is complete only after this manifest, the linked GitHub issues,
 `docs/tasks.md`, and memory agree. The next engineering handoff is exactly
-#347, after the owner/repository selects it; engineering and testing must be
+#348, after #347's closure; engineering and testing must be
 performed and reconciled for one issue before another begins. Every issue
 stays open until its QA evidence is posted and the GitHub issue is closed.

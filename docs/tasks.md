@@ -11944,3 +11944,11 @@ containers. The complete atomic manifest is
 implementation transaction, followed by #348, #349, then each route and
 artifact issue independently. No implementation or closure claim may use the
 old broad issue closures as evidence.
+
+## #347 closure reconciliation — 2026-09-03
+
+The shared stage-command issue passed exact published rendered QA at
+1280x900 and 375x812, including the authenticated 3D Draft → Published → Draft
+round trip and anonymous public download-menu inspection. GitHub #347 is now
+closed with `## QA: PASS`. Editor authoring controls and route/artifact
+verification remain explicitly open; the next issue is #348 only.

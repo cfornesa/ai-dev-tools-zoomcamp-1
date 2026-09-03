@@ -107,6 +107,21 @@ sound tests passed 37/37, and the manual 3D browser scenario passed 3/3 in
 Chromium, Firefox, and WebKit. #372 is ready for permanent closure; no closed
 issue was reopened.
 
+Current owner-report Chrome re-audit (2026-09-04): historical scoped closures
+remain valid and immutable. At 375×812, the authenticated manual 3D editor
+showed the stage-local hamburger, stacked labeled controls, and Draft status
+control; the reported bulky outside-canvas row and missing publication switch
+were not reproduced. The anonymous public 2D URL showed the stage-local
+hamburger and, when opened, compact Screenshot/Download/Piece controls/
+Fullscreen rows without a page-level rail. The temporary published 3D
+immersive route rendered and exposed gesture controls, then was restored to
+Draft. #344 remains the only active closure-sized transaction and is blocked
+solely because steering activation produced no camera stream or permission
+prompt; the next action is owner camera permission, followed by physical
+held-pinch/release/hand-loss/disable evidence. No duplicate issue was created
+because this pass found no reproduced actionable defect distinct from #344 or
+the reconciliation containers #274/#320/#324.
+
 ## #334 closure reconciliation — 2026-09-04
 
 #334 is permanently closed as `completed` for `/immersive/p3d/:id?embed=1`.
@@ -852,6 +867,13 @@ Firefox, and WebKit at 1280×900 and 375×812. It verified proportional sphere
 frame/backing-canvas geometry, no horizontal overflow, and reachable public
 controls. The temporarily published fixture was restored to Draft. No closed
 issue was reopened.
+
+Latest distillation note (2026-09-04): prior scoped closures remain valid and
+immutable. The current Chrome re-audit did not reproduce the reported bulky
+outside-canvas editor rail, missing Draft/Published control, or absent public
+controls at the exact routes and 375×812 viewport. #344 remains open only for
+physical-camera evidence after steering activation produced no camera stream
+or permission prompt; no new actionable defect or duplicate issue was found.
 
 Production-readiness reconciliation (2026-09-04): the valid production-like
 `make deploy-check` passed with zero Django warnings using explicit non-secret

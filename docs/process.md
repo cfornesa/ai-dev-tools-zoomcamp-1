@@ -23,10 +23,13 @@ Closure-ready atomicity
   stage containment, named controls, and that route's privacy/publication
   boundary. A local implementation commit, source-string match, or another
   route's browser pass cannot close the consumer route.
-- A current owner-visible failure supersedes a prior closure until the exact
-  route, fixture, viewport, browser state, and deployed asset disprove it.
-  Closed GitHub state and unchecked or contradictory comments must be
-  reconciled as a false closure before engineering resumes.
+- A current owner-visible failure is new follow-up evidence after a prior
+  closure. It does not retroactively invalidate the prior issue's scoped
+  contract or closure evidence. Inspect the exact route, fixture, viewport,
+  browser state, and deployed asset; classify the report as reproduced, not
+  reproduced, or a verification boundary, and create/link new work when
+  actionable. Never call a historical closure false or reopen it without the
+  owner's explicit authorization naming that issue.
 
 Phase gate
 

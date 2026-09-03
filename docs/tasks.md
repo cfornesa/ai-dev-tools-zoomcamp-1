@@ -14525,6 +14525,54 @@ to Draft. Production readiness remains open only at #344's physical-camera
 verification boundary; no closed route issue was reopened. Parent
 #274/#320/#324 remain reconciliation containers.
 
+## Canonical latest distillation override — 2026-09-04
+
+This section is the latest state after the Chrome re-audit. Earlier notes are
+historical transaction records and remain unchanged. Prior scoped closures are
+valid; they are not retroactively invalidated by the current owner report.
+
+The exact authenticated 3D editor at 375×812 currently renders the requested
+stage-local hamburger and stacked overlay, named controls, and a visible
+Draft/Published disclosure. The exact anonymous 2D URL currently renders its
+stage-local hamburger and, after activation, compact labeled
+Screenshot/Download/Piece controls/Fullscreen rows without a page-level
+control rail. These observations do not prove every authored-piece surface or
+downloaded artifact, but they do not reproduce the specific editor/public
+defects reported in this pass. No new implementation issue was filed.
+
+The exact immersive 3D route was temporarily published for #344, rendered the
+fixture, and was restored to Draft. Steering activation produced no camera
+stream and no browser permission prompt, so #344 remains an open
+`verification-boundary` transaction. Its next action is owner camera
+permission, followed by physical held-pinch, release, hand-loss, and disable
+evidence. No closed issue was reopened; #274/#320/#324 remain reconciliation
+containers.
+
+## Current owner-report distillation and Chrome re-audit — 2026-09-04
+
+Historical scoped closures remain valid for the contracts and evidence of
+their transactions. The current owner report is retained as new evidence and
+was not used to reopen any issue.
+
+| Boundary | Current evidence | Distillation result |
+| --- | --- | --- |
+| Authenticated `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` | Chrome owner session at 375×812 showed the sphere inside the Preview stage, a stage-local hamburger, a translucent stacked overlay, named controls, and an in-overlay `Publication status: Draft` control. | The reported outside-canvas bulky row and missing status control were not reproduced in this session; no new implementation issue created. |
+| Anonymous `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` | Chrome at 375×812 showed a stage-local hamburger. Opening it showed compact stacked Screenshot, Download, Piece controls, and Fullscreen actions with readable labels and no page-level control rail. | The reported absence of public controls was not reproduced; no new implementation issue created. |
+| Exact immersive 3D route | The route was unavailable while the fixture was Draft. Under the previously authorized temporary publish cycle it rendered the 3D scene and exposed the gesture controls; the fixture was restored to Draft. | Deployment/publication state is verified as reversible, but this does not close the physical-camera boundary. |
+| Physical hand steering (#344) | Steering activation on the published immersive route produced no camera stream or Chrome permission prompt. | `verification-boundary`; #344 remains open. Exact next action: owner enables camera permission for `animate.creatrweb.com`, then repeat held-pinch/release/hand-loss/disable evidence. |
+| Downloads and other consumers | No new contradictory evidence was produced in this pass; prior scoped closure records remain historical and immutable. | Already covered or requires its existing route/artifact transaction; no duplicate issue created. |
+
+Duplicate/coverage report: the open GitHub set remains #274, #320, #324,
+and #344. #274/#320/#324 are reconciliation containers. The current Chrome
+evidence does not establish a new actionable product defect distinct from
+those containers or #344, so no new issue was filed. The reported visual
+discrepancy remains a session/revision-sensitive follow-up signal and must be
+rechecked if it recurs; it does not invalidate or reopen any closed issue.
+
+Handoff: #344 is the only active closure-sized transaction. It remains
+terminally handed off on the browser-permission boundary; no independent
+implementation task was identified by this distillation pass.
+
 ## #334 closure reconciliation — 2026-09-04
 
 #334 is permanently closed as `completed` for the anonymous custom immersive
@@ -14547,6 +14595,13 @@ PostgreSQL/Django/Vite services, verifying the chrome-less CMS wrapper,
 stage-local hamburger/stacked overlay, named controls and downloads, and
 responsive behavior. The QA setup opens the hamburger before inspecting
 hidden actions. No closed issue was reopened.
+
+Latest distillation note (2026-09-04): prior scoped closures remain valid and
+immutable. The current Chrome re-audit did not reproduce the reported bulky
+outside-canvas editor rail, missing Draft/Published control, or absent public
+controls at the exact routes and 375×812 viewport. #344 remains open only for
+physical-camera evidence after steering activation produced no camera stream
+or permission prompt; no new actionable defect or duplicate issue was found.
 
 The remaining open work is #344's physical-camera verification boundary and
 the parent reconciliation containers; no parent is engineered directly.

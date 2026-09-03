@@ -135,6 +135,10 @@ must never treat implementation or QA as completion; each issue reaches
   task signal by default. Preserve the closed issue, record the report, and
   create or reuse a criterion-ready follow-up. Only explicit owner
   authorization naming the closed issue permits reopening it.
+- The later report does not retroactively invalidate the prior issue's scoped
+  contract or closure evidence. Record the historical closure as valid for its
+  transaction, then classify the new evidence as reproduced, not reproduced,
+  or a verification boundary and link new work only when actionable.
 - A closed GitHub state is immutable historical evidence of its prior
   transaction, not proof of the entire parent feature. If its body contains
   unchecked criteria, contradictory comments, or a later owner rejection,

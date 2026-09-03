@@ -772,3 +772,13 @@ the scoped contract and evidence available in that transaction. Later owner
 reports or broader parity requirements do not retroactively invalidate that
 historical closure; they are new follow-up evidence and must be distilled into
 new work unless the owner explicitly authorizes reopening the named issue.
+
+Current Chrome re-audit (2026-09-04): the reported editor/public control gaps
+were not reproduced in the exact authenticated/private and anonymous/public
+routes at 375×812. The editor showed the stage-local hamburger, stacked named
+controls, and Draft/Published disclosure; the public 2D route showed its
+stage-local hamburger and compact labeled actions when opened. Preserve the
+owner report as a session/revision-sensitive signal, but do not call prior
+scoped closures invalid. The exact immersive 3D route required the authorized
+temporary publication cycle and was restored to Draft. #344's camera stream
+boundary remains the only active verification blocker.

@@ -13501,6 +13501,11 @@ The issue remains open with the next action to rerun the same matrix in a
 browser session that can provide 1280x900 and then reconcile the deployed
 revision. No issue was reopened and no product source/tests were changed.
 
+The active queue position after this verification-boundary transaction is
+#355, followed by the independent anonymous/fixture transaction #356. The
+earlier #368 handoff text above is historical and must not be treated as the
+current queue position; #368 is closed and immutable.
+
 ## #339 transaction reconciliation — 2026-09-03
 
 #339's local AI 3D stage-local publication implementation passed 55/55 focused

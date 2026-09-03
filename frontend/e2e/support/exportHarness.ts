@@ -292,6 +292,7 @@ export type ExportGeneratorPage = {
     scene: Record<string, unknown>,
     title: string,
     variant: 'full' | 'non-camera',
+    immersive?: boolean,
   ) => Promise<GenerateScene3DBrowserResult>;
   close: () => Promise<void>;
 };
@@ -340,16 +341,21 @@ export async function createExportGeneratorPage(
         ).__exportHarness;
         return harness.generateHtmlExport(inputArg);
       }, input),
-    generateScene3DBundle: (scene, title, variant) =>
+    generateScene3DBundle: (scene, title, variant, immersive = false) =>
       page.evaluate(
-        async ({ scene: sceneArg, title: titleArg, variant: variantArg }) => {
+        async ({
+          scene: sceneArg,
+          title: titleArg,
+          variant: variantArg,
+          immersive: immersiveArg,
+        }) => {
           const harness = (
             window as unknown as {
               __exportHarness: {
                 generateScene3DBundle: (
                   scene: unknown,
                   title: string,
-                  options: { variant: 'full' | 'non-camera' },
+                  options: { variant: 'full' | 'non-camera'; immersive?: boolean },
                 ) => Promise<
                   { ok: true; zipBlob: Blob; filename: string } | { ok: false; reasons: string[] }
                 >;
@@ -358,6 +364,7 @@ export async function createExportGeneratorPage(
           ).__exportHarness;
           const result = await harness.generateScene3DBundle(sceneArg, titleArg, {
             variant: variantArg,
+            immersive: immersiveArg,
           });
           if (!result.ok) return result;
           const bytes = new Uint8Array(await result.zipBlob.arrayBuffer());
@@ -368,7 +375,7 @@ export async function createExportGeneratorPage(
           }
           return { ok: true as const, filename: result.filename, zipBase64: btoa(binary) };
         },
-        { scene, title, variant },
+        { scene, title, variant, immersive },
       ),
     close: () => context.close(),
   };

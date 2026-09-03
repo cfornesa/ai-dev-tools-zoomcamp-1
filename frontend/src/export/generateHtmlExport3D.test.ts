@@ -167,6 +167,39 @@ describe('generateScene3DBundle', () => {
     expect(fileNames(zip).some((name) => name.includes('mediapipe'))).toBe(false);
   });
 
+  it('marks immersive exports and preserves their explicit surface mode', async () => {
+    const result = await generateScene3DBundle(validScene(), 'Immersive scene', {
+      variant: 'non-camera',
+      immersive: true,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const zip = await JSZip.loadAsync(result.zipBlob);
+    const html = await zip.files['index.html'].async('string');
+    const readme = await zip.files['README.txt'].async('string');
+    const script = await zip.files['scripts/piece.js'].async('string');
+
+    expect(html).toContain('name="creatrweb-export-surface" content="immersive"');
+    expect(html).toContain('<body data-piece-surface="immersive">');
+    expect(readme).toContain('Surface mode: immersive (arrow-key travel).');
+    expect(script).toContain('window.__EXPORT_SURFACE_MODE__ = "immersive"');
+  });
+
+  it('keeps regular exports explicitly marked as regular', async () => {
+    const result = await generateScene3DBundle(validScene(), 'Regular scene', {
+      variant: 'non-camera',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const zip = await JSZip.loadAsync(result.zipBlob);
+    const html = await zip.files['index.html'].async('string');
+    const script = await zip.files['scripts/piece.js'].async('string');
+    expect(html).toContain('name="creatrweb-export-surface" content="regular"');
+    expect(script).toContain('window.__EXPORT_SURFACE_MODE__ = "regular"');
+  });
+
   it('embeds the exact scene document -- output reflects the input, no stale caching', async () => {
     const sceneA = validScene({ id: 'scene-a' });
     const sceneB = validScene({ id: 'scene-b', scene: { backgroundColor: '#ff00ff' } });

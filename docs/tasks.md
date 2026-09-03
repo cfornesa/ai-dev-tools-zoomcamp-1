@@ -13446,3 +13446,85 @@ Distillation and bulk grooming are complete. Exactly one next engineering
 target is groomed: **#366**. Engineering and testing must be performed as one
 transaction for #366, followed by reconciliation and permanent GitHub closure
 before #367 or any route issue enters engineering.
+
+## Current canonical pieces-parity distillation — 2026-09-03
+
+This section supersedes earlier historical notes that describe issues as
+reopened. Closed issues are immutable under the current owner rule: no issue
+may be reopened unless the owner explicitly authorizes reopening that exact
+issue in the current conversation. The current audit made no reopen request
+and performed no reopening. Any later gap is a new linked issue.
+
+Full CMS parity here means only the `augment-humankind` pieces
+implementation/examples, translated into this repository's Django/Python
+backend and React/TypeScript frontend. PHP and unrelated CMS features are
+out of scope.
+
+The complete manifest, duplicate report, blocker triage, and handoff are in
+`.local/tasks/authored-piece-parity-distillation-2026-09-03.md`.
+
+Fresh exact-route browser evidence found both supplied routes serving the
+legacy `assets/index-CecM7AFX.js`. The authenticated editor route exposed a
+hamburger and legacy opened controls with detached/missing visible labels;
+the public route was authenticated and rendered the `Blank canvas` 2D
+fixture. This does not prove anonymous privacy or the intended 3D fixture.
+Existing #355 and #356 own those deployment/fixture boundaries. No closed
+issue was reopened.
+
+The audit identified two distinct criterion-ready local artifact gaps and
+created new issues [#368](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/368)
+and [#369](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/369).
+#368 owns immersive navigation in downloaded 3D artifacts. #369 owns the
+Full artifact's missing user-facing camera steering/camera-view contract and
+the corresponding Non-Camera omission. Closed #364 remains closed.
+
+The next groomed issue is #368. Engineering and QA must be completed and
+reconciled as one issue transaction before #369 or any other issue begins.
+
+### #368 transaction reconciliation — 2026-09-03
+
+- Engineering completed the immersive export option through
+  `ImmersiveProject3DViewer`, the 3D ZIP generator, and the standalone runtime.
+  Immersive artifacts carry explicit surface metadata and README guidance;
+  regular artifacts remain explicitly marked regular.
+- QA passed: `BROWSER_QA_E2E_SPEC=e2e/exportArtifacts.spec.ts make browser-qa`
+  (57 scenarios across Chromium, Firefox, and WebKit), followed by
+  `make frontend-check` (191 files, 2,402 tests; existing lint warnings only).
+- Reconciliation found no new in-scope gap. Extracted Full-artifact camera
+  steering remains #369. Stale published-bundle verification remains #355/#356.
+- #368 is ready for permanent completion closure. Do not reopen it for #369,
+  deployment publication, or any later parity work.
+
+## Current canonical pieces-parity distillation — 2026-09-03
+
+This section supersedes earlier historical notes that describe issues as
+reopened. Closed issues are immutable under the current owner rule: no issue
+may be reopened unless the owner explicitly authorizes reopening that exact
+issue in the current conversation. The current audit made no reopen request
+and performed no reopening. Any later gap is a new linked issue.
+
+Full CMS parity here means only the `augment-humankind` pieces
+implementation/examples, translated into this repository's Django/Python
+backend and React/TypeScript frontend. PHP and unrelated CMS features are
+out of scope.
+
+The complete manifest, duplicate report, blocker triage, and handoff are in
+`.local/tasks/authored-piece-parity-distillation-2026-09-03.md`.
+
+Fresh exact-route browser evidence found both supplied routes serving the
+legacy `assets/index-CecM7AFX.js`. The authenticated editor route exposed a
+hamburger and legacy opened controls with detached/missing visible labels;
+the public route was authenticated and rendered the `Blank canvas` 2D
+fixture. This does not prove anonymous privacy or the intended 3D fixture.
+Existing #355 and #356 own those deployment/fixture boundaries. No closed
+issue was reopened.
+
+The audit identified two distinct criterion-ready local artifact gaps and
+created new issues [#368](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/368)
+and [#369](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/369).
+#368 owns immersive navigation in downloaded 3D artifacts. #369 owns the
+Full artifact's missing user-facing camera steering/camera-view contract and
+the corresponding Non-Camera omission. Closed #364 remains closed.
+
+The next groomed issue is #368. Engineering and QA must be completed and
+reconciled as one issue transaction before #369 or any other issue begins.

@@ -18,12 +18,14 @@
  * preview without needing to vendor OrbitControls.
  */
 export function buildStandaloneThreeRuntimeScript(
-  options: { includeCameraFeatures?: boolean } = {},
+  options: { includeCameraFeatures?: boolean; immersive?: boolean } = {},
 ): string {
   const includeCameraFeatures = options.includeCameraFeatures ?? true;
+  const immersive = options.immersive ?? false;
   const source = `
 (function () {
   var scene3d = window.__SCENE3D_DATA__;
+  window.__EXPORT_SURFACE_MODE__ = ${JSON.stringify(immersive ? 'immersive' : 'regular')};
 
   function applyTransform(target, transform) {
     target.position.set(transform.position.x, transform.position.y, transform.position.z);

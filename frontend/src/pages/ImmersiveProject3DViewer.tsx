@@ -134,7 +134,7 @@ function ImmersiveProject3DViewer() {
     const result = await generateScene3DBundle(
       readyProject.current_version.scene_json as unknown as Scene3DDocument,
       readyProject.title,
-      { variant },
+      { variant, immersive: true },
     );
     if (result.ok) triggerScene3DBundleDownload(result.zipBlob, result.filename);
   }

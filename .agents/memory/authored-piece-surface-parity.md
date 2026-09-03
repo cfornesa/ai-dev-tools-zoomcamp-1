@@ -245,6 +245,26 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Current distillation correction (2026-09-03): both supplied live routes still
+served the legacy `index-CecM7AFX.js`; the authenticated editor showed legacy
+opened controls with detached/missing labels, while the authenticated public
+fixture was `Blank canvas` rather than the intended non-empty 3D example.
+These are deployment/fixture boundaries owned by #355/#356, not reasons to
+reopen any closed issue. Local artifact inspection additionally found that
+MediaPipe asset presence does not establish downloaded camera steering or
+camera-view composition, and that the immersive viewer invokes the regular
+3D generator. New atomic follow-ups #368 and #369 own those two gaps.
+
+Current distillation correction (2026-09-03): both supplied live routes still
+served the legacy `index-CecM7AFX.js`; the authenticated editor showed legacy
+opened controls with detached/missing labels, while the authenticated public
+fixture was `Blank canvas` rather than the intended non-empty 3D example.
+These are deployment/fixture boundaries owned by #355/#356, not reasons to
+reopen any closed issue. Local artifact inspection additionally found that
+MediaPipe asset presence does not establish downloaded camera steering or
+camera-view composition, and that the immersive viewer invokes the regular
+3D generator. New atomic follow-ups #368 and #369 own those two gaps.
+
 Current distillation correction (2026-09-03): a fresh anonymous mobile audit
 of the deployed public 2D pieces route found the shared fullscreen dialog
 contained and scrollbar-free, but its command actions were stylistically

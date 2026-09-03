@@ -351,59 +351,70 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
       return route.abort('failed');
     });
 
-    for (const variant of ['full', 'non-camera'] as const) {
-      const result = await generator.generateScene3DBundle(
-        scene3d,
-        `Browser QA ${variant}`,
-        variant,
-      );
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      const zip = await JSZip.loadAsync(Buffer.from(result.zipBase64, 'base64'));
-      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'export-3d-e2e-'));
-      try {
-        for (const [name, entry] of Object.entries(zip.files)) {
-          if (entry.dir) continue;
-          const target = path.join(root, name);
-          fs.mkdirSync(path.dirname(target), { recursive: true });
-          fs.writeFileSync(target, await entry.async('nodebuffer'));
-        }
-        await page.goto(`file://${path.join(root, 'index.html')}`);
-        const menu = page.getByRole('button', { name: 'Open piece controls menu' });
-        await menu.click();
-        const dialog = page.getByRole('dialog', { name: 'Piece actions' });
-        await expect(dialog).toBeVisible();
-        await expect(dialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
-        await expect(
-          dialog.getByRole('button', { name: 'Piece controls', exact: true }),
-        ).toBeVisible();
-        await expect(dialog.getByRole('button', { name: 'Enter fullscreen' })).toBeVisible();
-        const geometry = await dialog.evaluate((element) => {
-          const card = element as HTMLElement;
-          const rows = [...card.querySelectorAll('.piece-action-list > button')].map((row) => {
-            const rect = row.getBoundingClientRect();
-            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
-          });
-          return {
-            overflow: getComputedStyle(card).overflow,
-            rows,
-            width: innerWidth,
-          };
-        });
-        expect(geometry.overflow).toBe('visible');
-        expect(
-          geometry.rows.every((row) => row.left >= 16 && row.right <= geometry.width - 16),
-        ).toBe(true);
-        for (let index = 1; index < geometry.rows.length; index += 1) {
-          expect(geometry.rows[index]!.top).toBeGreaterThanOrEqual(
-            geometry.rows[index - 1]!.bottom,
+    for (const immersive of [false, true]) {
+      for (const variant of ['full', 'non-camera'] as const) {
+        const result = await generator.generateScene3DBundle(
+          scene3d,
+          `Browser QA ${immersive ? 'immersive' : 'regular'} ${variant}`,
+          variant,
+          immersive,
+        );
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        const zip = await JSZip.loadAsync(Buffer.from(result.zipBase64, 'base64'));
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'export-3d-e2e-'));
+        try {
+          for (const [name, entry] of Object.entries(zip.files)) {
+            if (entry.dir) continue;
+            const target = path.join(root, name);
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            fs.writeFileSync(target, await entry.async('nodebuffer'));
+          }
+          await page.goto(`file://${path.join(root, 'index.html')}`);
+          await expect(page.locator('meta[name="creatrweb-export-surface"]')).toHaveAttribute(
+            'content',
+            immersive ? 'immersive' : 'regular',
           );
+          await expect(page.locator('body')).toHaveAttribute(
+            'data-piece-surface',
+            immersive ? 'immersive' : 'regular',
+          );
+          const menu = page.getByRole('button', { name: 'Open piece controls menu' });
+          await menu.click();
+          const dialog = page.getByRole('dialog', { name: 'Piece actions' });
+          await expect(dialog).toBeVisible();
+          await expect(dialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+          await expect(
+            dialog.getByRole('button', { name: 'Piece controls', exact: true }),
+          ).toBeVisible();
+          await expect(dialog.getByRole('button', { name: 'Enter fullscreen' })).toBeVisible();
+          const geometry = await dialog.evaluate((element) => {
+            const card = element as HTMLElement;
+            const rows = [...card.querySelectorAll('.piece-action-list > button')].map((row) => {
+              const rect = row.getBoundingClientRect();
+              return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+            });
+            return {
+              overflow: getComputedStyle(card).overflow,
+              rows,
+              width: innerWidth,
+            };
+          });
+          expect(geometry.overflow).toBe('visible');
+          expect(
+            geometry.rows.every((row) => row.left >= 16 && row.right <= geometry.width - 16),
+          ).toBe(true);
+          for (let index = 1; index < geometry.rows.length; index += 1) {
+            expect(geometry.rows[index]!.top).toBeGreaterThanOrEqual(
+              geometry.rows[index - 1]!.bottom,
+            );
+          }
+          await page.keyboard.press('Escape');
+          await expect(dialog).toBeHidden();
+          await expect(menu).toBeFocused();
+        } finally {
+          fs.rmSync(root, { recursive: true, force: true });
         }
-        await page.keyboard.press('Escape');
-        await expect(dialog).toBeHidden();
-        await expect(menu).toBeFocused();
-      } finally {
-        fs.rmSync(root, { recursive: true, force: true });
       }
     }
   });

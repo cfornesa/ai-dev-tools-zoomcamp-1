@@ -41,6 +41,12 @@ export type GenerateScene3DBundleResult =
 
 export type Scene3DExportVariant = 'full' | 'non-camera';
 
+export type Scene3DExportOptions = {
+  variant?: Scene3DExportVariant;
+  /** Preserve the immersive route's navigation contract in the artifact. */
+  immersive?: boolean;
+};
+
 /** Pinned to the exact same CDN URL/version `../generative/artPieceBundle.ts`'s
  * `LIBRARY_CDN.threejs` entry already vendors, matching this app's own
  * installed `three` dependency (`^0.160.0`). */
@@ -170,7 +176,8 @@ const PIECE_CSS = `html, body {
 #camera-controls-host video { width: 100%; max-height: 10rem; object-fit: cover; border-radius: .5rem; }
 `;
 
-const README = `EXPORT: 3D scene
+function buildReadme(immersive: boolean): string {
+  return `EXPORT: 3D scene
 
 Open index.html to run this piece -- no build step, no server, works
 straight from your file system or any static host.
@@ -188,19 +195,22 @@ runtime/ holds a vendored copy of Three.js, fetched once at export time.
 The Full variant also loads the pinned MediaPipe hand-tracking module/model
 only after the reader explicitly enables the camera; Non-Camera omits that
 feature and all camera permissions.
+Surface mode: ${immersive ? 'immersive (arrow-key travel)' : 'regular'}.
 `;
+}
 
-function buildIndexHtml(variant: Scene3DExportVariant): string {
+function buildIndexHtml(variant: Scene3DExportVariant, immersive: boolean): string {
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>3D scene</title>
 <meta name="creatrweb-export-variant" content="${variant}">
+<meta name="creatrweb-export-surface" content="${immersive ? 'immersive' : 'regular'}">
 <link rel="stylesheet" href="styles/piece.css">
 <script src="runtime/${THREE_RUNTIME_FILENAME}"></script>
 </head>
-<body>
+<body data-piece-surface="${immersive ? 'immersive' : 'regular'}">
 <div id="scene3d-canvas-host"></div>
 <div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
   <button id="piece-menu-trigger" type="button" aria-label="Open piece controls menu" aria-expanded="false" aria-controls="piece-actions-dialog">☰</button>
@@ -374,7 +384,7 @@ function slugifyFilename(title: string): string {
 export async function generateScene3DBundle(
   scene: Scene3DDocument,
   baseName: string,
-  options: { variant?: Scene3DExportVariant } = {},
+  options: Scene3DExportOptions = {},
 ): Promise<GenerateScene3DBundleResult> {
   const validation = validateScene3D(scene);
   if (!validation.valid) {
@@ -385,17 +395,18 @@ export async function generateScene3DBundle(
   }
 
   const variant = options.variant ?? 'full';
+  const immersive = options.immersive ?? false;
   const runtimeBytes = await fetchThreeRuntime();
   const mediapipeAssets = variant === 'full' ? await fetchMediaPipeAssets() : null;
 
   try {
     const zip = new JSZip();
-    zip.file('README.txt', README);
+    zip.file('README.txt', buildReadme(immersive));
     zip.file('styles/piece.css', PIECE_CSS);
-    zip.file('index.html', buildIndexHtml(variant));
+    zip.file('index.html', buildIndexHtml(variant, immersive));
     zip.file(
       'scripts/piece.js',
-      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript({ includeCameraFeatures: variant === 'full' })}${variant === 'full' ? `\n${buildStandaloneCameraScript({ visionBundleUrl: './runtime/mediapipe/vision_bundle.mjs', wasmBaseUrl: './runtime/mediapipe/wasm', modelUrl: `./${MEDIAPIPE_MODEL_PATH}` })}` : ''}`,
+      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript({ includeCameraFeatures: variant === 'full', immersive })}${variant === 'full' ? `\n${buildStandaloneCameraScript({ visionBundleUrl: './runtime/mediapipe/vision_bundle.mjs', wasmBaseUrl: './runtime/mediapipe/wasm', modelUrl: `./${MEDIAPIPE_MODEL_PATH}` })}` : ''}`,
     );
     zip.file(`runtime/${THREE_RUNTIME_FILENAME}`, runtimeBytes);
     mediapipeAssets?.forEach((bytes, path) => zip.file(path, bytes));

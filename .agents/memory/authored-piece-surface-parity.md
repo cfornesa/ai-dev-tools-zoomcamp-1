@@ -244,6 +244,15 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Shared editor overlay closure (2026-09-03): fresh issue #354 replaced the
+previously reopened #348. Its existing Django/React implementation passed
+focused editor/component tests 56/56, frontend lint/typecheck/build, and the
+Docker-backed manual2dStageChrome browser scenario 6/6 across Chromium,
+Firefox, and WebKit at 1280x900 and 375x812. It is closed as completed for
+the local shared overlay contract. This does not prove the published manual
+3D route; #352 owns that new route-level task. Closed-task immutability and
+explicit owner authorization for reopening still apply.
+
 Scoped completion correction (2026-09-03): the owner clarified that #347 is
 functionally complete after its significant shared PieceStageToolbar,
 StageControlsPopover, publication-disclosure, and focused-test work. Its

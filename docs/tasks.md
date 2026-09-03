@@ -12380,14 +12380,26 @@ against the broader pieces-parity goal, but it does not reopen #347.
 
 | Issue | Surface/workflow | Fixed closure boundary | Dependency/order | Status |
 | --- | --- | --- | --- | --- |
-| [#354](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/354) | Shared editor canvas authoring overlay | Manual 2D representative route; both fixed viewports; no page-level row, finite authoring controls, mutations, keyboard operation, no overlap/overflow | Fresh replacement for #348; first new engineering transaction | OPEN / GROOMED |
-| [#352](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/352) | Published manual 3D owner editor | Exact supplied route, authenticated owner fixture, 1280x900 and 375x812; route load, canvas-associated authoring overlay, Draft↔Published transition, existing editor/runtime actions, round sphere, no clipping | #354/#349 for implementation evidence | OPEN / GROOMED |
+| [#354](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/354) | Shared editor canvas authoring overlay | Manual 2D representative route; both fixed viewports; no page-level row, finite authoring controls, mutations, keyboard operation, no overlap/overflow | Fresh replacement for #348; local implementation and browser QA reconciled | CLOSED / completed |
+| [#352](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/352) | Published manual 3D owner editor | Exact supplied route, authenticated owner fixture, 1280x900 and 375x812; route load, canvas-associated authoring overlay, Draft↔Published transition, existing editor/runtime actions, round sphere, no clipping | #354/#349 for implementation evidence | OPEN / GROOMED; next transaction |
 | [#353](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/353) | Published anonymous public 2D piece | Exact supplied public route, fresh anonymous context, same two viewports; hamburger disclosure, permitted controls, privacy, keyboard/pointer behavior, rendered evidence | After #352 only if shared deployment/fixture dependency requires it | OPEN / GROOMED |
 | [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | One downloaded Full artifact served locally; runtime assets, rendered controls, capability/permission behavior, no overlap/ordinary scrollbar | After #353 provides a published 2D fixture | OPEN / GROOMED |
 | [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | OPEN / GROOMED |
 
-The next engineering handoff is #354 only. Distillation and grooming are
-complete for these five new tasks; engineering and QA remain per-task and must
-finish, reconcile, and close #354 before selecting #352. If a later report
+The next engineering handoff is #352 only. Distillation and grooming are
+complete for these five new tasks; #354 has completed its engineering, QA, and
+closure transaction. Engineering and QA must now finish, reconcile, and close
+#352 before selecting #353. If a later report
 finds another gap after one of these closes, create another linked task unless
 the owner explicitly authorizes reopening that exact issue.
+
+### #354 closure reconciliation
+
+Issue #354 closed as completed after its fresh shared-surface transaction.
+Focused editor/component tests passed 56/56; frontend lint, typecheck, and
+production build passed; and the Docker-backed manual2dStageChrome scenario
+passed 6/6 across Chromium, Firefox, and WebKit at 1280x900 and 375x812.
+The implementation was already present in the Django/React checkout, so this
+transaction required verification rather than a product-code change. This
+closure is local/shared-surface evidence only; #352 owns the exact published
+manual 3D route failure reported by the owner.

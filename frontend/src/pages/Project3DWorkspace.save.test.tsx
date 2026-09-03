@@ -74,6 +74,36 @@ beforeEach(() => {
 });
 
 describe('Project3DWorkspace Save action', () => {
+  it('exposes 3D authoring commands in the stage menu and makes object edits undoable', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByTestId('project3d-save-status');
+    await screen.findByTestId('scene3d-preview-unavailable');
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: '3D authoring' }));
+
+    expect(screen.getByRole('group', { name: '3D authoring actions' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add sphere' }));
+    await user.click(screen.getByRole('button', { name: 'Add plane' }));
+    await user.click(screen.getByRole('button', { name: 'Add group' }));
+    expect(screen.getByRole('button', { name: 'Sphere 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Plane 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Group: Group 1' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Sphere 1' }));
+    await user.click(screen.getByRole('button', { name: 'Duplicate selected object' }));
+    expect(screen.getByRole('button', { name: 'Sphere 1 copy' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Delete selected object' }));
+    expect(screen.queryByRole('button', { name: 'Sphere 1 copy' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByRole('button', { name: 'Sphere 1 copy' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Redo' }));
+    expect(screen.queryByRole('button', { name: 'Sphere 1 copy' })).not.toBeInTheDocument();
+  });
+
   it('starts with the Save button disabled and status "Saved as version 1"', async () => {
     mockedGetProject3D.mockResolvedValue(baseProject());
 

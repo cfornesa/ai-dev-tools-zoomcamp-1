@@ -26,13 +26,20 @@ test.describe('manual 3D editor stage chrome', () => {
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(toolbar).toBeVisible();
     await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await toolbar.getByRole('button', { name: '3D authoring' }).click();
+    await expect(toolbar.getByRole('group', { name: '3D authoring actions' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Add sphere' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Add plane' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Delete selected object' })).toBeDisabled();
+    await expect(toolbar.getByRole('button', { name: 'Duplicate selected object' })).toBeDisabled();
+    await expect(toolbar.getByRole('button', { name: 'Add group' })).toBeVisible();
     for (const viewport of [
       { width: 1280, height: 900 },
       { width: 375, height: 812 },
     ]) {
       await page.setViewportSize(viewport);
       await expect(toolbar).toBeVisible();
-      await expect(toolbar.locator('svg.piece-stage-icon')).toHaveCount(9);
+      await expect(toolbar.locator('svg.piece-stage-icon')).toHaveCount(10);
       await expect(
         toolbar.getByRole('button', { name: 'Publication status: Draft' }),
       ).toBeVisible();
@@ -102,6 +109,7 @@ test.describe('manual 3D editor stage chrome', () => {
     expect(mobileCommandLayout.overflow).toBe('visible');
     expect(mobileCommandLayout.scrollWidth).toBe(mobileCommandLayout.clientWidth);
     expect(mobileCommandLayout.scrollable).toBe(false);
+    await toolbar.getByRole('button', { name: /close 3d authoring/i }).click();
     await page.setViewportSize({ width: 1280, height: 900 });
     const desktopCommandLayout = await toolbar
       .getByRole('dialog')

@@ -3068,6 +3068,13 @@ select.ai-proposal-field-full-width {
   gap: 0.65rem;
 }
 
+/* 3D authoring is a named submenu, so its finite text actions remain one
+   per row at every viewport instead of inheriting the two-column compact
+   layout used by smaller icon-only groups. */
+.editor-authoring-command-group {
+  grid-template-columns: 1fr !important;
+}
+
 .piece-stage-submenu-close {
   min-height: 2.25rem;
   padding: 0.35rem 0.65rem;

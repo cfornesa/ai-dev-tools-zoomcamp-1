@@ -12,7 +12,7 @@ import {
   type Vec3,
 } from './scene3dTypes';
 
-type Selection =
+export type Outline3DSelection =
   | { kind: 'object'; id: string }
   | { kind: 'group'; id: string }
   | { kind: 'light'; id: string }
@@ -22,6 +22,7 @@ type Selection =
 type Props = {
   scene: Scene3DDocument;
   onChange: (next: Scene3DDocument) => void;
+  onSelectionChange?: (selection: Outline3DSelection) => void;
   // Issue #284: called with a group/object/light row's own display
   // name/label when its "Ask AI to change this" button is clicked --
   // mirrors LayersPanel.tsx's identically-named prop (#282) exactly.
@@ -136,8 +137,13 @@ const OBJECT_TYPE_DIMENSION_FIELDS: Record<Object3DType, (keyof Object3D)[]> = {
  * prop in memory -- no server save wiring here (that's a separate follow-
  * on once this UI's shape is concrete, filed alongside this issue).
  */
-function Outline3DInspector({ scene, onChange, onAskAiChange }: Props) {
-  const [selection, setSelection] = useState<Selection>(null);
+function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange }: Props) {
+  const [selection, setSelectionState] = useState<Outline3DSelection>(null);
+
+  function setSelection(next: Outline3DSelection) {
+    setSelectionState(next);
+    onSelectionChange?.(next);
+  }
 
   function updateObject(id: string, patch: Partial<Object3D>) {
     onChange({

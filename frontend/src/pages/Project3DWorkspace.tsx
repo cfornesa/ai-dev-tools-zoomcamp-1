@@ -20,7 +20,10 @@ import Outline3DInspector from './Outline3DInspector';
 import PublishControl3D from './PublishControl3D';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
-import type { Scene3DDocument } from './scene3dTypes';
+import type { Group3D, Object3D, Scene3DDocument, Transform3D } from './scene3dTypes';
+import { object3DLabel, type Object3DType } from './scene3dTypes';
+import { type Outline3DSelection } from './Outline3DInspector';
+import StageControlsPopover from '../components/StageControlsPopover';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
 type PreviewView = 'visual' | 'code';
@@ -142,6 +145,9 @@ function Project3DWorkspace() {
   // matching the 2D editor's `workingCopy`/`persistedVersion` convention)
   // can tell the user whether there's anything to save.
   const [persistedScene, setPersistedScene] = useState<Scene3DDocument | null>(null);
+  const [selectedOutlineItem, setSelectedOutlineItem] = useState<Outline3DSelection>(null);
+  const [undoStack, setUndoStack] = useState<Scene3DDocument[]>([]);
+  const [redoStack, setRedoStack] = useState<Scene3DDocument[]>([]);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
   const [saveState, setSaveState] = useState<SaveState>(IDLE_SAVE_STATE);
   // Issue #290: a standalone export/download action, always against the
@@ -255,6 +261,7 @@ function Project3DWorkspace() {
   }
 
   if (!workingScene || !id) return null; // unreachable once loadState === 'ready'
+  const currentScene = workingScene;
 
   // Shared by both save paths in this editor (the Code tab's on-blur save,
   // and #234's explicit outline/inspector Save button) -- syncs
@@ -265,6 +272,139 @@ function Project3DWorkspace() {
     setWorkingScene(scene);
     setPersistedScene(scene);
     setProject((current) => (current ? { ...current, current_version: version } : current));
+    setUndoStack([]);
+    setRedoStack([]);
+  }
+
+  function updateWorkingScene(next: Scene3DDocument) {
+    setWorkingScene((current) => {
+      if (!current || current === next) return next;
+      setUndoStack((history) => [...history, current]);
+      setRedoStack([]);
+      return next;
+    });
+  }
+
+  function createId(prefix: string, existing: string[]): string {
+    let index = 1;
+    while (existing.includes(`${prefix}-${index}`)) index += 1;
+    return `${prefix}-${index}`;
+  }
+
+  const identityTransform: Transform3D = {
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1, y: 1, z: 1 },
+    opacity: 1,
+  };
+
+  function addObject(type: Extract<Object3DType, 'sphere' | 'plane'>) {
+    const id = createId(
+      type,
+      currentScene.objects.map((object) => object.id),
+    );
+    const object: Object3D =
+      type === 'sphere'
+        ? {
+            id,
+            name: `Sphere ${currentScene.objects.filter((item) => item.type === 'sphere').length + 1}`,
+            type,
+            groupId: null,
+            transform: structuredClone(identityTransform),
+            material: { color: '#c44b4b' },
+            visible: true,
+            radius: 1,
+          }
+        : {
+            id,
+            name: `Plane ${currentScene.objects.filter((item) => item.type === 'plane').length + 1}`,
+            type,
+            groupId: null,
+            transform: structuredClone(identityTransform),
+            material: { color: '#7b7bd8' },
+            visible: true,
+            width: 4,
+            height: 4,
+          };
+    updateWorkingScene({ ...currentScene, objects: [...currentScene.objects, object] });
+    setSelectedOutlineItem({ kind: 'object', id });
+  }
+
+  function selectedObject(): Object3D | undefined {
+    return selectedOutlineItem?.kind === 'object'
+      ? currentScene.objects.find((object) => object.id === selectedOutlineItem.id)
+      : undefined;
+  }
+
+  function deleteSelected() {
+    if (selectedOutlineItem?.kind === 'object') {
+      updateWorkingScene({
+        ...currentScene,
+        objects: currentScene.objects.filter((object) => object.id !== selectedOutlineItem.id),
+      });
+      setSelectedOutlineItem(null);
+    } else if (selectedOutlineItem?.kind === 'group') {
+      updateWorkingScene({
+        ...currentScene,
+        groups: currentScene.groups.filter((group) => group.id !== selectedOutlineItem.id),
+        objects: currentScene.objects.map((object) =>
+          object.groupId === selectedOutlineItem.id ? { ...object, groupId: null } : object,
+        ),
+      });
+      setSelectedOutlineItem(null);
+    }
+  }
+
+  function duplicateSelected() {
+    const source = selectedObject();
+    if (!source) return;
+    const id = createId(
+      'object',
+      currentScene.objects.map((object) => object.id),
+    );
+    const duplicate: Object3D = {
+      ...structuredClone(source),
+      id,
+      name: `${object3DLabel(source, currentScene.objects)} copy`,
+      transform: {
+        ...source.transform,
+        position: { ...source.transform.position, x: source.transform.position.x + 1 },
+      },
+    };
+    updateWorkingScene({ ...currentScene, objects: [...currentScene.objects, duplicate] });
+    setSelectedOutlineItem({ kind: 'object', id });
+  }
+
+  function addGroup() {
+    const id = createId(
+      'group',
+      currentScene.groups.map((group) => group.id),
+    );
+    const group: Group3D = {
+      id,
+      name: `Group ${currentScene.groups.length + 1}`,
+      transform: structuredClone(identityTransform),
+      visible: true,
+      locked: false,
+    };
+    updateWorkingScene({ ...currentScene, groups: [...currentScene.groups, group] });
+    setSelectedOutlineItem({ kind: 'group', id });
+  }
+
+  function undo() {
+    const previous = undoStack.at(-1);
+    if (!previous) return;
+    setUndoStack((history) => history.slice(0, -1));
+    setRedoStack((history) => [...history, currentScene]);
+    setWorkingScene(previous);
+  }
+
+  function redo() {
+    const next = redoStack.at(-1);
+    if (!next) return;
+    setRedoStack((history) => history.slice(0, -1));
+    setUndoStack((history) => [...history, currentScene]);
+    setWorkingScene(next);
   }
 
   // Issue #234: validates client-side (the server's validate_scene3d
@@ -364,6 +504,74 @@ function Project3DWorkspace() {
               editorControls={
                 <>
                   <span role="group" aria-label="Editor actions" className="editor-tool-group">
+                    <StageControlsPopover
+                      label="3D authoring"
+                      panelClassName="editor-authoring-controls-panel"
+                    >
+                      <div
+                        role="group"
+                        aria-label="3D authoring actions"
+                        className="editor-authoring-command-group"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => addObject('sphere')}
+                          aria-label="Add sphere"
+                        >
+                          Add sphere
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => addObject('plane')}
+                          aria-label="Add plane"
+                        >
+                          Add plane
+                        </button>
+                        <button
+                          type="button"
+                          onClick={deleteSelected}
+                          disabled={!selectedObject()}
+                          aria-label="Delete selected object"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={duplicateSelected}
+                          disabled={!selectedObject()}
+                          aria-label="Duplicate selected object"
+                        >
+                          Duplicate
+                        </button>
+                        <button
+                          type="button"
+                          onClick={undo}
+                          disabled={undoStack.length === 0}
+                          aria-label="Undo"
+                        >
+                          Undo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={redo}
+                          disabled={redoStack.length === 0}
+                          aria-label="Redo"
+                        >
+                          Redo
+                        </button>
+                        <button type="button" onClick={addGroup} aria-label="Add group">
+                          Add group
+                        </button>
+                        <button
+                          type="button"
+                          onClick={deleteSelected}
+                          disabled={selectedOutlineItem?.kind !== 'group'}
+                          aria-label="Delete selected group"
+                        >
+                          Delete group
+                        </button>
+                      </div>
+                    </StageControlsPopover>
                     <button
                       type="button"
                       className="piece-stage-icon-button"
@@ -393,7 +601,8 @@ function Project3DWorkspace() {
         </section>
         <Outline3DInspector
           scene={workingScene}
-          onChange={setWorkingScene}
+          onChange={updateWorkingScene}
+          onSelectionChange={setSelectedOutlineItem}
           onAskAiChange={handleAskAiChangeItem}
         />
         <section aria-label="Tools" role="region" data-panel="tools" className="editor-panel">

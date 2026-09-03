@@ -26,9 +26,11 @@ the exact deployed target route must be inspected after publish, and private
 editor routes require authenticated browser evidence. Camera/microphone and
 native fullscreen remain explicit browser/OS verification boundaries.
 
-Linked backlog: #320, #325–#341. #274 and broad #323/#324 are closed as
-superseded/not-planned; their replacement issues are deliberately one route,
-surface, variant, or downloaded capability each.
+Linked backlog: #320, #325–#349. #274 and broad #324 are reconciliation
+containers, not implementation units; they were reopened on 2026-09-03 after
+the owner reported that their requested parity was still unmet. Replacement
+issues remain deliberately one route, surface, variant, or downloaded
+capability each.
 
 Deployment re-audit (2026-09-02): direct inspection of the supplied live URLs
 found that the published revision still serves the legacy structured UI. The
@@ -185,3 +187,13 @@ within mobile stage` (`4a9bd38`), and `Not pushed to remote`, while GitHub
 serve an older workspace snapshot. Require Pull/Sync to the reviewed GitHub
 revision before exact-route parity QA; publish status alone is not revision
 identity. Pull/Sync is a workspace mutation and requires explicit approval.
+
+Owner re-audit and distillation reset (2026-09-03): current published asset
+`index-WKdMIR98.js` contains a partial hamburger implementation and named
+controls in a closed overlay, but that is not proof of the requested rendered
+parity, fixed-viewport visual treatment, route coverage, or downloaded-runtime
+behavior. The owner still reports absent/unusable public controls, a bulky
+editor action scheme outside the canvas, and no discoverable Draft/Published
+switch. Reopened #274/#324 are historical reconciliation containers. The
+complete manifest is `.local/tasks/authored-piece-parity-distillation.md`; the
+next implementation handoff is #347 only.

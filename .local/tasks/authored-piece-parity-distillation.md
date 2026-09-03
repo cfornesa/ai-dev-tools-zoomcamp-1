@@ -2,8 +2,8 @@
 
 Date: 2026-09-03  
 Project: `cfornesa/ai-dev-tools-zoomcamp-1`  
-Status: DISTILLATION COMPLETE — #348 is the sole current handoff and remains
-open pending publication/review; no later issue may begin before its closure.
+Status: DISTILLATION COMPLETE — #347 is engineered and awaiting publication
+verification; no later issue may begin before its closure.
 
 ## Current-state evidence
 
@@ -56,7 +56,7 @@ open pending publication/review; no later issue may begin before its closure.
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Historical parity epic/container | OPEN, reopened false closure | Reconcile last | #320 |
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
 | [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
-| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | OPEN / IMPLEMENTATION DEFECT CONFIRMED | Engineer mobile stacked menu, then per-issue QA | Published mobile screenshot shows horizontal collision/scrollbar; no closure |
+| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | ENGINEERED / AWAITING PUBLISHED QA | Replit Pull/Sync + Republish; then exact fixed-route QA | `042be72`; local 2D 6/6 + 3D 3/3 browser QA and full checks pass; published proof pending |
 | [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | ENGINEERED / AWAITING PUBLISHED QA | Replit Pull/Sync + Republish; then exact fixed-route QA | `52b87c9`; local 6/6 browser QA and full checks pass; published proof pending |
 | [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish; then exact fixed-route QA | Local responsive QA passed; published proof pending |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |

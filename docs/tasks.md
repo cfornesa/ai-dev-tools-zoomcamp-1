@@ -12121,6 +12121,15 @@ the same one-action-per-row layout, with compact icons sized to sit cleanly
 beside their associated text. The card must remain free of scrollbars and
 overlap at both sizes.
 
+## #347 engineering handoff — 2026-09-03
+
+Commit `042be72` implements the unified stacked command card and keeps the
+authoring disclosure inside the stage. Local QA passed 2D `6/6` and 3D `3/3`
+across Chromium, Firefox, and WebKit; `make check` passed with 888 backend
+tests passed/22 skipped and 2,399 frontend tests passed. The commit is pushed
+to `origin/main`. #347 remains open until the exact published routes are
+republished and fixed-viewport rendered evidence is reconciled.
+
 ## Replit release identity recheck — 2026-09-03
 
 The authenticated Replit `creatrweb` workspace was inspected read-only. It

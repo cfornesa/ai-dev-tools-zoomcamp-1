@@ -14712,6 +14712,20 @@ stacks are running; local service output is therefore not a substitute for
 the exact published route. Next action remains sync/publish, then run #383's
 fixed-viewport rendered transaction.
 
+### #384 QA handoff — 2026-09-03
+
+The republished public 2D URL serves `assets/index-CREpJGbM.js` and, in the
+connected Chrome session, renders the artwork, stage hamburger, named
+Screenshot/Download/Piece controls/Fullscreen, and no publication control.
+The fixed-viewport local transaction
+`BROWSER_QA_E2E_SPEC=e2e/public2dStageChrome.spec.ts make browser-qa` passed
+3/3 across Chromium, Firefox, and WebKit at 1280x900 and 375x812. Exact
+deployed anonymous privacy/restoration and fixed-viewport screenshots could
+not be established because the Chrome session remains authenticated and
+cannot emulate fixed viewports. QA result: FAIL / verification-boundary;
+GitHub comment 5532894342 records the matrix. #384 remains open and
+terminally handed off; #385 is the next independent transaction.
+
 ### #383 QA handoff — 2026-09-03
 
 The reviewed revision is now published as `assets/index-CREpJGbM.js`. The

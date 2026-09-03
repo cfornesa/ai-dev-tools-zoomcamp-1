@@ -929,6 +929,16 @@ Full/Non-Camera downloads. #344 remains the independent physical-camera
 capability issue. The next groomed child is #383 after deployment sync; route
 transactions proceed FIFO, one engineering+QA transaction at a time.
 
+## #384 QA handoff — 2026-09-03
+
+Republished Chrome serves `assets/index-CREpJGbM.js` and the exact public 2D
+route exposes the stage hamburger and named permitted controls. The local
+fixed-viewport public-2D transaction passed 3/3 across Chromium, Firefox, and
+WebKit. Exact deployed anonymous/privacy and fixed-viewport screenshot gates
+remain unavailable because the connected Chrome session is authenticated and
+cannot emulate fixed viewports. QA comment 5532894342 records FAIL /
+verification-boundary. #384 remains open and handed off; #385 is next.
+
 Recheck: Chrome still serves `assets/index-xwmMEBBo.js` on the authenticated
 owner route, while the pushed local build has a different asset hash. Docker
 reports healthy services but multiple project stacks, so the exact published

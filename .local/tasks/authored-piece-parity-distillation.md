@@ -56,9 +56,9 @@ open pending publication/review; no later issue may begin before its closure.
 | [#274](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/274) | Historical parity epic/container | OPEN, reopened false closure | Reconcile last | #320 |
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
 | [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
-| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | COMPLETED / CLOSED after QA | Reconciled first | Shared component + fixed published evidence |
+| [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | REOPENED / FALSE CLOSURE | Fresh exact-route mobile audit contradicted prior closure | Shared component + fixed published evidence |
 | [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | HANDED-OFF / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish required | Shared component + manual 2D QA |
-| [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | ENGINEERED / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish; then exact fixed-route QA | Local responsive QA passed; published proof pending |
+| [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish; then exact fixed-route QA | Local responsive QA passed; published proof pending |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | `/ai-projects/:id` AI 2D editor | OPEN | Shared implementation then route QA | Route QA |
 | [#327](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/327) | `/projects3d/:id` manual 3D editor | OPEN | #347/#348/#349 then route QA | Route QA |
@@ -133,15 +133,17 @@ route or artifact parity.
 
 Distillation is complete only after this manifest, the linked GitHub issues,
 `docs/tasks.md`, and memory agree. #343's engineering, QA, evidence, and
-GitHub closure transaction is complete. #348 remains deployment-blocked while
-#349 was processed next and is now blocked only at its required published-asset
-verification boundary. Post-blocker distillation confirms no implementation
-defect or smaller local task remains inside #349. The next candidate is #344's
-single manual-camera evidence transaction, while route consumers and
-publication slices remain blocked on the same deployment handoff. Engineering
-and testing must still be performed and reconciled for one issue before
-another begins. Every issue stays open until its QA evidence is posted and the
-GitHub issue is closed.
+GitHub closure transaction is complete. #347 is reopened as a false closure
+after the exact live-route audit found mobile overlay clipping/overlap and
+insufficient authoring/public-surface evidence. #349 was processed next and
+remains deployment-blocked at its published-asset verification boundary.
+Post-blocker distillation confirms no smaller implementation issue remains
+inside #349. The next candidate is #347's shared overlay correction, followed
+by #348's editor authoring placement; route consumers and publication slices
+remain blocked on the same deployment handoff. Engineering and testing must
+still be performed and reconciled for one issue before another begins. Every
+issue stays open until its QA evidence is posted and the GitHub issue is
+closed.
 
 ## Post-blocker distillation — #349 — 2026-09-03
 
@@ -155,3 +157,23 @@ GitHub issue is closed.
   next independent candidate (#344) if its manual-camera evidence is
   available; otherwise continue with another non-dependent capability rather
   than closing #349 or halting the goal.
+
+## User-visible closure re-audit — 2026-09-03
+
+- #347 was reopened after the exact authenticated editor and public URL were
+  inspected in Chrome at the supplied routes and 375x812. The live hamburger
+  opens, but the rendered command card clips/overlaps controls; this directly
+  contradicts #347's visible compact/readable criterion.
+- The supplied public URL currently renders a blank 2D piece rather than the
+  expected published 3D sphere fixture. This is a route/fixture or deployment
+  identity boundary already covered by #330 and #320/#321; no duplicate issue
+  is warranted.
+- The live editor exposes no authoring-action surface in its rendered DOM at
+  the supplied 3D route. The four editor consumers remain owned by #325–#328
+  and shared authoring placement by #348; no broad parent issue is reopened as
+  an implementation unit.
+- Prior local/browser evidence was insufficient for the owner-visible claim:
+  it proved a disposable revision and accessible controls, not the exact
+  published asset, requested mobile rendered geometry, or expected route
+  fixture. Future closure requires exact-route screenshots and visible
+  interaction evidence.

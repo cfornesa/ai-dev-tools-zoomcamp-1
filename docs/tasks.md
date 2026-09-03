@@ -12034,3 +12034,22 @@ The required fresh distillation found #343 (immersive 3D touch d-pad) to be
 independent of that release gate, with an existing criterion-ready contract;
 #343 is the sole next engineering/QA transaction. No route or artifact issue
 may be started in parallel.
+
+## User-visible parity re-audit — 2026-09-03
+
+Fresh inspection of the exact supplied live routes invalidated the prior #347
+closure. The authenticated 3D editor has a hamburger, but at 375×812 its
+opened command card renders overlapping/clipped icon-label controls. The
+closed state exposes only the trigger, and the live 3D editor DOM contains no
+authoring-action surface for the requested editor operations. The supplied
+public URL renders a blank 2D piece rather than the expected published 3D
+sphere fixture. #347 was reopened with GitHub comment 5519595574; #348 and the
+route-specific #325–#337 issues remain open. This is not a new duplicate:
+shared overlay behavior belongs to #347, editor authoring placement to #348,
+the public 3D route to #330, and deployment identity to #320/#321.
+
+The investigation explains the prior false closures: local disposable browser
+runs and DOM/accessibility assertions were used as if they proved exact
+published rendered parity. They do not. Future closure requires the exact URL,
+fixture, viewport, browser state, screenshot, visible interaction, and
+deployed asset hash named by the issue contract.

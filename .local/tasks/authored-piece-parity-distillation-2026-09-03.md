@@ -319,3 +319,89 @@ This is an external Replit synchronization dependency, not a judgment
 blocker. Do not reopen or duplicate anything; return to #356 only after the
 reviewed commit is pulled and republished, and otherwise use the next
 independent criterion-ready open task.
+
+## Superseding exact-route distillation — 2026-09-03
+
+This is the current manifest. Earlier records are historical and are not
+instructions to reopen closed work. No closed issue was reopened in this pass.
+
+### Evidence
+
+1. The authenticated manual 2D owner fixture route
+   `/projects/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` opens a stage menu with
+   Screenshot, Download, Piece controls, Edit scene, Publication status:
+   Published, and Fullscreen. `EditorWorkspace` supplies `editorControls` and
+   `PublishControl`; the reported missing owner-2D controls are not a new
+   criterion-ready defect.
+2. The anonymous public fixture route
+   `https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`
+   serves `assets/index-I1VsT0b2.js`. At desktop width, opened action labels
+   are detached from oversized icon rows. The dialog is full viewport, body
+   overflow is hidden, and the document is taller than the viewport. This is
+   unmet existing #356 scope, not a new issue and not permission to reopen
+   #374.
+3. Replit reports the reviewed commit as not pulled even though Publish can
+   complete. Asset identity must be checked after the reviewed commit is
+   actually pulled; successful Publish alone is insufficient evidence.
+
+### Reconciled manifest
+
+- **#356 — dependency-blocked:** exact public 2D deployment/fixture and
+  responsive evidence. Next action: pull reviewed commit, republish, verify
+  asset identity, and run the fixed anonymous matrix.
+- **#349 — ready:** manual 3D sphere proportions and responsive reachability;
+  this is the next engineering/testing transaction.
+- **#344 — blocked:** physical held-pinch evidence remains unavailable; record
+  the manual-camera handoff and run fresh task-distillation afterward.
+- **#360 — dependency-blocked:** public 3D geometry waits on #356.
+- **#274/#320/#324 — containers:** reconciliation only; no direct engineering.
+
+Exit gate passed: every actionable gap is owned by an existing issue,
+classified as closed history/duplicate, or blocked with an exact next action.
+No new issue was justified. Handoff is exactly **#349**. Engineering and
+testing for #349 must be completed together, followed immediately by
+reconciliation and permanent GitHub closure before the next issue starts.
+
+## #349 transaction reconciliation — 2026-09-03
+
+Completed for the scoped manual 3D responsive-proportion boundary. Existing
+camera-aspect synchronization and the responsive 16:9 frame were verified to
+keep uniform primitives round while preserving intentional object transforms;
+stage controls remained contained and non-overlapping at 1280x900 and
+375x812. This is local implementation/browser closure only; it does not claim
+public deployed verification (#356/#360).
+
+- Focused renderer tests: 14/14 passed.
+- `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa`: 3/3
+  passed across Chromium, Firefox, and WebKit.
+- `make check`: backend 888 passed/22 skipped; frontend 191 files and 2,405
+  tests passed; lint, format, and type-check passed with existing warnings.
+- Implementation commits: `0a43b0b`, `134d5ba`.
+- #349 is ready for permanent GitHub completion closure; no closed issue was
+  reopened. Public/deployed gaps remain separate existing tasks.
+
+## Post-closure scope shift and fresh distillation — 2026-09-03
+
+#349 is permanently closed for its local renderer implementation and
+Chromium/Firefox/WebKit browser boundary. Its original contract also named
+exact deployed-route evidence, which could not be verified against the stale
+Replit workspace. That unverified boundary was not used to reopen #349 or
+#355; it was distilled into new linked issue
+[#375](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/375), whose
+criteria are limited to the authenticated manual 3D deployed route and whose
+dependency is pulling/publishing the reviewed revision.
+
+Fresh post-blocker reconciliation:
+
+- **#375:** dependency-blocked; deployed manual-3D sphere verification.
+- **#356:** dependency-blocked; deployed anonymous 2D stale-bundle and
+  responsive control verification.
+- **#360:** dependency-blocked on #356's intended public fixture.
+- **#344:** independent physical-camera blocker.
+- **#349/#355/#374:** permanently closed; no reopen authorized.
+
+No product source or tests were changed during this distillation. The next
+independent engineering candidate is #344; #375 is the next deployment-
+dependent verification candidate after Replit synchronization. Engineering
+and testing remain one issue at a time, followed immediately by
+reconciliation and permanent closure.

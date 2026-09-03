@@ -13513,6 +13513,99 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+## Current canonical distillation after exact-route re-audit — 2026-09-03
+
+This section supersedes prior handoff notes above. It is a distillation and
+grooming record only; no product source or product tests were changed, and no
+closed issue was reopened. Closed issues remain permanently closed unless the
+owner explicitly authorizes reopening that exact issue in the current
+conversation. Full CMS parity means only the `augment-humankind` pieces
+implementation/examples translated into this repository's Django/Python
+backend and React/TypeScript frontend; PHP remains reference-only.
+
+### Exact findings
+
+- The authenticated manual 2D owner route
+  (`/projects/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`) exposes one stage-local
+  hamburger. When opened, it contains Screenshot, Download, Piece controls,
+  Edit scene, Publication status: Published, and Fullscreen. Source inspection
+  confirms `EditorWorkspace` supplies both `editorControls` and `PublishControl`.
+  No new owner-2D implementation issue is justified by the reported missing
+  controls/status.
+- The anonymous public 2D route
+  (`/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`) is reachable anonymously and
+  exposes the hamburger, but deployed `assets/index-I1VsT0b2.js` still renders
+  desktop action labels detached from oversized icon rows. At the inspected
+  1280x720 viewport, the opened dialog filled the viewport, `body` reported
+  `overflow: hidden`, and the document measured 1280x1179. This fails #356;
+  #356 owns the exact deployment, screenshot, responsive, scrollbar, and
+  privacy boundary. Do not duplicate it or reopen #374.
+- Replit still reports the reviewed commit as not pulled. A publish can
+  complete from that stale workspace, so “Published” is not evidence that the
+  reviewed revision was deployed. This is an external workflow blocker for
+  #356. The next action is to pull the reviewed commit, republish, verify the
+  deployed asset identity, and run #356's 1280x900/375x812 checks.
+- The sphere deformation remains the existing criterion-ready #349 task.
+  Public 3D geometry remains #360 and is dependency-blocked on #356's intended
+  published fixture. #344 remains independent but physically blocked on real
+  held-pinch camera evidence.
+
+### Manifest and FIFO handoff
+
+| Issue | Distillation status | Next action |
+| --- | --- | --- |
+| #356 | `dependency-blocked` — stale Replit workspace/deployed asset | Pull, republish, verify asset, then run the anonymous route matrix |
+| #349 | `ready` — independent sphere/aspect transaction | Next engineering + QA transaction |
+| #344 | `blocked` — physical camera evidence unavailable | Record manual-camera handoff, then fresh distillation |
+| #360 | `dependency-blocked` on #356 | Do not start until #356 publishes the intended fixture |
+| #274, #320, #324 | `container` | Reconcile only after closure-sized children |
+
+Engineering and testing proceed one issue at a time: implementation, focused
+tests, required browser evidence, reconciliation, and GitHub closure for #349
+must finish before another issue starts. Distillation and grooming may be
+batched, but closure is the final step of each issue. The next groomed issue is
+exactly #349.
+
+## #349 transaction reconciliation — 2026-09-03
+
+Engineering and QA completed for the manual 3D responsive-proportion scope.
+The existing renderer aspect synchronization and responsive 16:9 frame keep
+uniform 3D primitives round while preserving intentional object transforms;
+the shared stage menu remains contained and non-overlapping at both fixed
+viewports. This closes only #349's local implementation and browser-evidence
+boundary. Public deployed verification remains #356/#360 and is not inherited
+from this closure.
+
+- Focused renderer tests: `npm --prefix frontend test -- --run
+  src/render/threeSceneBuilder.test.ts` — 14/14 passed.
+- Browser QA: `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make
+  browser-qa` — Chromium, Firefox, and WebKit 3/3 passed at 1280x900 and
+  375x812.
+- Aggregate gate: `make check` — backend 888 passed/22 skipped; frontend 191
+  files and 2,405 tests passed; lint, format, and type-check passed with
+  existing warnings only.
+- Implementation commits: `0a43b0b` (camera aspect synchronization) and
+  `134d5ba` (responsive 3D preview proportions).
+- No closed issue was reopened. Any later deployed or route-specific failure
+  is a new linked task, not a reopening of #349.
+
+### Closure reconciliation correction
+
+The original #349 contract included an exact deployed-route criterion that
+could not be verified while Replit served a stale workspace. #349 remains
+permanently closed for its implemented local/browser scope; the unverified
+deployed boundary is explicitly shifted to new linked issue
+[#375](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/375), which
+is dependency-blocked on pulling and publishing the reviewed revision. This
+does not reopen #349 or #355. #375 must not be engineered until its deployment
+dependency is resolved.
+
+The required fresh post-blocker distillation has been performed: #375 owns
+the manual-3D deployed sphere boundary, #356 owns the public-2D stale-bundle
+boundary, #360 remains dependent on #356, and #344 remains the independent
+physical-camera blocker. The next independent engineering candidate is #344;
+the next deployment-dependent verification candidate is #375.
+
 ## #356 dependency-blocker reconciliation — 2026-09-03
 
 The first post-#374 publish was performed from a stale Replit workspace. The

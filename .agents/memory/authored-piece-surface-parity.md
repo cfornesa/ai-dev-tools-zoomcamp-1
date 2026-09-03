@@ -260,6 +260,13 @@ controls interaction. This is a cross-browser control-state/test-contract
 defect, not an external dependency blocker; do not advance the queue or close
 the issue until engineering and QA reconcile it.
 
+AI 3D publication QA boundary (2026-09-03): #339 remains open because its
+browser scenario failed in Chromium, Firefox, and WebKit at the first action
+visibility assertion. The test expects actions in the closed toolbar, but the
+current shared contract intentionally places them in the hamburger dialog.
+Treat this as a stale acceptance contract requiring engineering/test
+reconciliation; do not close or transfer evidence.
+
 AI 2D responsive closure (2026-09-03): issue #326 is permanently closed for
 the authenticated `/ai-projects/:id` consumer. Live audit found its direct p5
 canvas retained an 800px inline width at 375px, causing horizontal document

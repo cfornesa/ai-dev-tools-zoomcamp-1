@@ -12895,3 +12895,11 @@ publication row, and fullscreen synchronization. Exact deployed
 closure makes no claim about AI, 3D, public, embed, immersive, downloads, or
 other closed issues; later gaps must use new/open linked work and must not
 reopen #338.
+
+### #339 QA handoff — 2026-09-03
+
+#339 remains open. Its AI 3D browser scenario failed in Chromium, Firefox, and
+WebKit because it still expects stage actions directly visible in the closed
+toolbar, while the current shared contract places them inside the hamburger
+dialog. This is a stale acceptance contract requiring engineering and QA
+reconciliation; no completion or evidence transfer is claimed.

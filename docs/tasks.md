@@ -13514,6 +13514,34 @@ deployed-route evidence owned by #355, not a reason to reopen any closed issue
 or create a duplicate; the next action is to diagnose the published action
 against the deployed revision and rerun Draft -> Published -> Draft.
 
+### Distilled follow-up #373 — compact publication confirmation reachability
+
+The live owner-route check exposed a new, independently observable gap: the
+compact publication panel is in normal flow below the stacked command menu, so
+the final Publish control begins below the 1280x900 viewport (observed y≈1030)
+and the confirmation cannot complete from the visible overlay. This is not a
+reason to reopen #347 or any other closed issue, and it is not duplicate route
+verification work. It is captured as [#373](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/373)
+with a fixed local component/fixture boundary. #373 is now the next
+closure-sized engineering transaction; #355 remains open for deployed
+revision reconciliation.
+
+### #373 transaction reconciliation — 2026-09-03
+
+- Engineering changed only the shared publication-panel CSS and its focused
+  regression/route coverage. The compact publication panel now uses its
+  trigger as the positioning context and opens upward.
+- Focused: `npm test -- --run src/pages/PublishControl3D.test.tsx
+  src/components/StageControlsPopover.test.tsx` — 12/12 passed.
+- Full frontend: `make frontend-check` — lint (existing warnings only), format,
+  typecheck, and 191 files/2,404 tests passed.
+- Browser QA: `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make
+  browser-qa` — 3/3 passed across Chromium, Firefox, and WebKit. The scenario
+  exercises Draft/Published disclosure and asserts the confirmation remains
+  inside the 1280x900 route viewport.
+- Shifted boundary: exact deployed revision verification remains #355; no
+  closed issue was reopened.
+
 ## #339 transaction reconciliation — 2026-09-03
 
 #339's local AI 3D stage-local publication implementation passed 55/55 focused

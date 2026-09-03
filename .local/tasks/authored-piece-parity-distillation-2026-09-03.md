@@ -232,3 +232,27 @@ session capable of 1280x900, followed by exact deployed revision
 reconciliation. No product source/tests changed, no closed issue was
 reopened, and the required post-blocker distillation found no duplicate or
 new implementation issue.
+
+## Distilled follow-up #373 — 2026-09-03
+
+The exact owner-route recheck found the compact publication confirmation below
+the visible command surface: the final Publish button measured at y≈1030 in
+the 1280x900 emulated viewport. Selecting Published opened the confirmation,
+but the final action could not complete from the visible overlay. Existing
+#355 owns deployed verification; no duplicate deployment issue is needed.
+This distinct local layout/workflow gap is now criterion-ready as #373: the
+publication panel must remain reachable at 1280x900 and 375x812, preserve
+accessible Draft/Published states, and exercise the existing API path. #373 is
+the next engineering transaction, followed by focused QA and a permanent
+closure decision before any subsequent issue.
+
+## #373 transaction reconciliation — 2026-09-03
+
+Engineering changed the shared publication-panel CSS so the compact panel is
+positioned from its trigger and opens upward. Focused tests passed 12/12;
+`make frontend-check` passed 191 files and 2,404 tests (existing lint warnings
+only); and `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa`
+passed 3/3 across Chromium, Firefox, and WebKit. The browser scenario now
+asserts the confirmation dialog remains inside the 1280x900 route viewport.
+The deployed revision/fixture boundary remains #355. No closed issue was
+reopened.

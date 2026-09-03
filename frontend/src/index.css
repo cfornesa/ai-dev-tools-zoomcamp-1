@@ -3344,6 +3344,8 @@ select.ai-proposal-field-full-width {
   /* The publication trigger can be near the bottom of the stacked command
      card. Open upward so Draft/Published remain inside the viewport instead
      of placing the lower action below the fullscreen disclosure surface. */
+  position: absolute;
+  left: 0;
   top: auto;
   bottom: calc(100% + 8px);
   width: min(320px, calc(100vw - 48px));

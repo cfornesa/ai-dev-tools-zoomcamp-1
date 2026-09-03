@@ -214,5 +214,20 @@ test.describe('manual 3D editor stage chrome', () => {
     );
     await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
     await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
+    await toolbar.getByRole('button', { name: 'Published', exact: true }).click();
+    const publishDialog = toolbar.getByRole('alertdialog');
+    await expect(publishDialog).toBeVisible();
+    const publishDialogBox = await publishDialog.boundingBox();
+    expect(publishDialogBox).not.toBeNull();
+    expect(publishDialogBox!.x).toBeGreaterThanOrEqual(frameBox!.x);
+    expect(publishDialogBox!.y).toBeGreaterThanOrEqual(frameBox!.y);
+    expect(publishDialogBox!.x + publishDialogBox!.width).toBeLessThanOrEqual(
+      frameBox!.x + frameBox!.width,
+    );
+    expect(publishDialogBox!.y + publishDialogBox!.height).toBeLessThanOrEqual(900);
+    await expect(publishDialog.getByRole('button', { name: 'Publish', exact: true })).toBeVisible();
+    await expect(publishDialog.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+    await publishDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(toolbar.getByRole('alertdialog')).toHaveCount(0);
   });
 });

@@ -2,6 +2,8 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import { ApiError } from '../api/client';
 import * as projects3dApi from '../api/projects3d';
@@ -65,6 +67,32 @@ describe('PublishControl3D', () => {
       'Publication status: Draft',
     );
     expect(statusControl).toBeVisible();
+  });
+
+  it('anchors the compact publication panel above its trigger', () => {
+    const css = readFileSync(resolve(__dirname, '../index.css'), 'utf8');
+    const panelRule = css.match(/\.publication-status-controls-panel\s*\{([\s\S]*?)\n\}/)?.[1];
+
+    expect(panelRule).toBeDefined();
+    expect(panelRule).toMatch(/position:\s*absolute/);
+    expect(panelRule).toMatch(/bottom:\s*calc\(100% \+ 8px\)/);
+  });
+
+  it('keeps the compact confirmation action in the publication disclosure workflow', async () => {
+    mockedPublishProject3D.mockResolvedValue(baseProject({ visibility: 'public' }));
+    const user = userEvent.setup();
+    render(<Harness initialProject={baseProject()} compact />);
+
+    await user.click(screen.getByRole('button', { name: 'Publication status: Draft' }));
+    const panel = screen.getByRole('group', { name: 'Publication status: Draft' });
+    await user.click(within(panel).getByRole('button', { name: 'Published' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Publish' }));
+
+    expect(mockedPublishProject3D).toHaveBeenCalledWith('p1');
+    expect(await screen.findByTestId('visibility-status-3d')).toHaveTextContent(
+      'Public (Published) — visible to anyone.',
+    );
   });
 
   it('exposes Draft/Published as visible, keyboard-actionable publication status controls', () => {

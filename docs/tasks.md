@@ -14822,3 +14822,14 @@ Draft/private and returns the unavailable state; exact deployed anonymous
 rendered evidence remains unverified. QA result: FAIL /
 verification-boundary; GitHub comment 5533098204 records the matrix. #389
 remains open and terminally handed off; #390 is next.
+### #344 physical-input QA handoff — 2026-09-03
+
+The authorized Chrome session reached the exact owner 3D route and activated
+`Steer the piece`; the rendered status confirmed that camera tracking is
+active locally. The remaining criteria require the owner to perform a real
+held pinch, release, hand loss, disable/stop, and denial/unavailable check.
+Automation cannot synthesize those physical camera signals. QA comment
+5533168795 records the blocked gate. End-of-blocker task distillation found no
+new duplicate or independently actionable product defect, so no follow-up
+issue was created. #344 remains open and terminally blocked; no closed issue
+was reopened.

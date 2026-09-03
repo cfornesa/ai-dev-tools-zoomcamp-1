@@ -691,3 +691,9 @@ controls, but fixed desktop/mobile rendered proof and the local browser
 harness are unavailable. Treat this as verification/workflow blocking, not
 as permission to reopen #353 or #356; retry #382 when the fixed-viewport
 harness exists.
+
+Regular immersive audit (2026-09-03): #333 remains open because exact
+deployed inspection passed the regular immersive controls and safe fixture
+restoration, but fixed-viewport proof and browser-QA were blocked by Docker.
+Retry this independent route transaction when the harness is available; do
+not reopen closed route issues.

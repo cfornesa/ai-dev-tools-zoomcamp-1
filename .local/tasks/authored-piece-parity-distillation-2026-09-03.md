@@ -743,3 +743,18 @@ distillation confirms #382 is not a duplicate of closed #353/#356 and must
 not reopen them. #381 and #382 remain the two new route-specific owner-report
 reconciliations; #381 is the next retry candidate once the fixed-viewport
 harness exists, while the broader queue proceeds only with independent work.
+
+## #333 blocked transaction and fresh distillation — 2026-09-03
+
+#333 was processed as one regular immersive 3D route transaction. Current
+deployed evidence shows the authored stage, immersive instructions, Custom/
+CMS entry points, touch d-pad, stage hamburger, Screenshot, Download, Sound,
+Piece controls, Steer, Guide, Fullscreen, and five-step guide; no load-time
+camera prompt occurred, and the fixture was restored to Draft. It remains
+open because fixed 1280×900/375×812 proof and the focused browser command
+were blocked before startup by unavailable Docker.
+
+Classification is `verification-boundary` plus `workflow/infrastructure-defect`;
+no product defect was reproduced. Fresh distillation confirms #333 is
+independent of closed route issues and remains the sole next retry once the
+harness is available; no closed issue was reopened.

@@ -13542,9 +13542,36 @@ held-pinch evidence. Existing AI, public 3D, embed, immersive, and downloaded
 route issues remain separate transactions.
 
 Closed #347–#375 remain immutable. Any later failure or broader parity gap is
-a new linked criterion-ready issue, never a reopening. The next handoff is
-exactly #377 after grooming; engineering, QA, reconciliation, and closure
-must finish for it before #376 or #378 engineering begins.
+a new linked criterion-ready issue, never a reopening.
+
+## #377 closure and #376 handoff — 2026-09-03
+
+#377 is permanently closed as `completed` after authenticated rendered Chrome
+QA on the exact manual 3D editor route at desktop and 375x812. The stage
+hamburger opened a contained, stacked translucent overlay with labeled runtime
+and editor actions, including 3D authoring, Save scene, Ask AI, and Publication
+status: Draft. Escape/X dismissal, mobile containment, hidden body overflow,
+and absence of a competing page-level action row were verified. The deployed
+asset was `assets/index-CQvhOwx-.js`. This closure is limited to #377's
+controls/layout contract and does not claim publication lifecycle, public
+viewer, embed, immersive, or download parity. No closed issue was reopened.
+
+The next FIFO issue is #376: the manual 3D Draft/Published round trip at the
+same exact owner route, with final restoration to Draft. Engineering and QA
+for #376 must complete as one transaction before #378 or any dependent route
+work begins.
+
+## #376 closure and #378 handoff — 2026-09-03
+
+#376 is permanently closed as `completed` after a dedicated manual 3D
+publication-lifecycle browser transaction. The test exercised the exact
+editor workflow at 1280x900 and 375x812, verified the visible Draft/Published
+disclosure and confirmation, published the disposable fixture, and restored it
+to private/Draft. Chromium, Firefox, and WebKit passed (3/3); the full
+frontend check passed (191 files, 2,405 tests). The deployed owner route also
+rendered the status control and explicit choices. This closure is limited to
+publication lifecycle; #378 remains the next independent public 2D route
+transaction. No closed issue was reopened.
 
 ## Canonical owner-reported parity distillation — latest 2026-09-03
 

@@ -500,3 +500,15 @@ it is not closed from source or DOM evidence. No closed issue was reopened.
 The next action is to compare the owner-visible session and exact published
 asset after the reviewed revision is republished, then complete #377 as one
 engineering-and-QA transaction if the discrepancy is resolved.
+
+## #376 engineering and QA — 2026-09-03
+
+Added the closure-sized browser transaction
+`frontend/e2e/manual3dPublicationLifecycle.spec.ts`. The first run exposed
+ambiguous test locators; after correcting those selectors, the disposable
+PostgreSQL/Django/Vite browser QA passed in Chromium, Firefox, and WebKit
+(3/3). It verified both required viewports, Draft/Published choices,
+publication confirmation, publication, and final restoration to private/Draft.
+The full frontend check passed: lint with existing warnings, formatting,
+typecheck, and 191 test files / 2,405 tests. #376 is now permanently closed;
+the next queue item is #378. No closed issue was reopened.

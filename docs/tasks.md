@@ -12064,3 +12064,16 @@ and the isolated 3D stage gate passed 3/3 across Chromium, Firefox, and WebKit
 with mobile no-overlap geometry assertions. #347 remains open pending exact
 published verification. The separate 2D route run exposed #348's authoring
 panel escaping the mobile viewport at x=-110.8; it was not folded into #347.
+
+## #348 engineering and QA handoff — 2026-09-03
+
+The focused 2D browser run found a real mobile defect: the contextual
+authoring panel escaped the stage at `x=-110.8`. Commit `52b87c9` anchors the
+panel to the stage's left edge at mobile widths and constrains it to the phone
+viewport. `BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa`
+passed 6/6 across Chromium, Firefox, and WebKit at `1280x900` and `375x812`.
+The full gate passed 888 backend tests, 2,399 frontend tests, lint, formatting,
+and type-checking. #348 is engineered and pushed, but remains OPEN until the
+reviewed revision is published and the exact authenticated route passes its
+rendered closure criteria. Task completion is not issue closure; the GitHub
+issue is closed only after that evidence is reconciled.

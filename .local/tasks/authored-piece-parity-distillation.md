@@ -46,7 +46,7 @@ open pending publication/review; no later issue may begin before its closure.
   `89e8706` (including `0a43b0b`) but has not yet been proven on the exact
   published revision. #349 remains open.
 - Full local checks passed on the current checkout: 888 backend tests passed,
-  22 skipped, and 2,398 frontend tests passed, with existing lint warnings.
+  22 skipped, and 2,399 frontend tests passed, with existing lint warnings.
   Local green checks cannot close deployed-route issues.
 
 ## Manifest and order
@@ -57,7 +57,7 @@ open pending publication/review; no later issue may begin before its closure.
 | [#320](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/320) | Parent release reconciliation | OPEN | After all children | Orchestrator |
 | [#324](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/324) | Historical multi-route verification container | OPEN, reopened false closure | Reconcile last; superseded by children | #325–#337 |
 | [#347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/347) | Shared stage command overlay and explicit publication affordance | ENGINEERED / AWAITING PUBLISHED QA | Replit Pull/Sync + Republish; then exact fixed-route QA | Local mobile overlap fixed; published proof pending |
-| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | OPEN / IMPLEMENTATION DEFECT CONFIRMED | Fix 2D authoring panel viewport escape, then publish | Local browser found mobile panel x=-110.8; exact published QA pending |
+| [#348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/348) | Shared editor authoring overlay/layout | ENGINEERED / AWAITING PUBLISHED QA | Replit Pull/Sync + Republish; then exact fixed-route QA | `52b87c9`; local 6/6 browser QA and full checks pass; published proof pending |
 | [#349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/349) | Responsive 3D projection and mobile clipping | OPEN / DEPLOYMENT-BLOCKED | Replit Pull/Sync + Republish; then exact fixed-route QA | Local responsive QA passed; published proof pending |
 | [#325](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/325) | `/projects/:id` manual 2D editor | OPEN | #347/#348 then route QA | Route QA |
 | [#326](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/326) | `/ai-projects/:id` AI 2D editor | OPEN | Shared implementation then route QA | Route QA |
@@ -188,3 +188,15 @@ not closed: exact published screenshots and visible interaction evidence are
 still required. The failed full 2D route scenario is not attributed to #347;
 it identified #348's separate mobile authoring-panel escape (observed x=-110.8)
 and is recorded as an implementation defect in #348.
+
+## #348 engineering and QA handoff — 2026-09-03
+
+The mobile 2D authoring overlay escaped the stage at `x=-110.8` in the focused
+browser run. Commit `52b87c9` anchors that panel to the stage's left edge at
+mobile widths and constrains it to `min(320px, calc(100vw - 48px))`. The
+corrected focused suite passed 6/6 scenarios across Chromium, Firefox, and
+WebKit at `1280x900` and `375x812`; `make check` passed 888 backend tests,
+2,399 frontend tests, lint, formatting, and type-checking. GitHub #348 remains
+open: completion is not closure, and closure requires the exact reviewed
+revision to be published and the fixed authenticated route to pass rendered
+desktop/mobile checks. The reviewed commit is pushed to `origin/main`.

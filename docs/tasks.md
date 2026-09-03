@@ -11964,3 +11964,23 @@ Docker-backed Chromium passes both manual 2D browser scenarios; Firefox and
 WebKit could not run because their Playwright executables are not installed.
 Commit `51e27b8` is pushed. #348 remains open until this revision is published
 and the exact deployed rendered evidence is reconciled against every criterion.
+
+## Fresh task-distillation investigation — 2026-09-03
+
+The supplied private 3D URL is intentionally unavailable in the anonymous
+in-app browser, but authenticated Chrome reaches it. Both the authenticated
+editor and anonymous public 2D URL currently serve `assets/index-WKdMIR98.js`,
+while the reviewed branch is at `0f5834b` (`51e27b8` contains the latest #348
+code fix). Live inspection shows the stage hamburger, named controls, and
+Draft/Published disclosure after opening the editor menu; the public route
+shows its permitted Screenshot, Download, Piece controls, and Fullscreen
+actions after opening its menu, while correctly omitting private authoring and
+publication controls. The remaining contradiction is stale deployment plus
+insufficient fixed-viewport rendered evidence for the reviewed revision—not
+permission to close the old broad issues or infer full PHP parity.
+
+No new duplicate issue is warranted: #348 owns the shared authoring-layout
+correction, #325–#337 own route/artifact evidence, and #320/#324 remain
+reconciliation containers. The next action is to synchronize and publish the
+reviewed revision, then process #348 as one issue transaction; no route child
+may start until its predecessor is QA-reconciled and closed.

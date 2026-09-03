@@ -196,4 +196,16 @@ behavior. The owner still reports absent/unusable public controls, a bulky
 editor action scheme outside the canvas, and no discoverable Draft/Published
 switch. Reopened #274/#324 are historical reconciliation containers. The
 complete manifest is `.local/tasks/authored-piece-parity-distillation.md`; the
-next implementation handoff is #347 only.
+next implementation handoff is #348 only.
+
+Deployment identity correction (2026-09-03): authenticated Chrome inspection of
+the supplied 3D editor and anonymous inspection of the supplied public 2D URL
+both served `assets/index-WKdMIR98.js`, while the reviewed checkout was at
+`0f5834b` with the #348 mobile containment fix in `51e27b8`. The live editor
+does expose the hamburger, named stage controls, and Draft/Published disclosure
+after opening the menu; the public viewer exposes its permitted controls after
+the same entry action and correctly omits private authoring/publication actions.
+The owner-visible mismatch is therefore partly explained by stale publication
+and browser authentication/state, but the requested visual parity is still
+unproven. Never close #348 or route children until the exact reviewed asset is
+published and fixed-viewport screenshots/interactions are reconciled.

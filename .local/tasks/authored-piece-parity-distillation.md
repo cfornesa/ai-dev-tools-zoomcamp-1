@@ -2,19 +2,35 @@
 
 Date: 2026-09-03  
 Project: `cfornesa/ai-dev-tools-zoomcamp-1`  
-Status: DISTILLATION ACTIVE — no new implementation may begin until the next
-single issue is selected from this manifest.
+Status: DISTILLATION COMPLETE — #348 is the sole current handoff and remains
+open pending publication/review; no later issue may begin before its closure.
 
 ## Current-state evidence
 
-- The exact authenticated editor URL currently serves `assets/index-WKdMIR98.js`.
-  At `375x812`, it has a visible stage hamburger (`Open piece controls menu`),
-  named controls inside the hidden overlay, and a visible `Visual`/`Code` tab.
-- The exact public URL currently serves the same asset. It has a visible stage
-  hamburger and named screenshot/download/Piece-controls/fullscreen actions in
-  the closed overlay, but those actions are not visible until the user opens
-  the menu. This does not prove the requested visual parity at the fixed
-  screenshots or prove downloaded-runtime behavior.
+- The exact authenticated editor URL currently serves
+  `assets/index-WKdMIR98.js`, not the latest reviewed source revision
+  (`0f5834b`, containing code revision `51e27b8`). At `375x812`, authenticated
+  Chrome shows the stage hamburger and, after opening it, named Screenshot,
+  Download, Immersive, Sound, Piece controls, Steer, Guide, Draft/Published,
+  Save, AI, and Fullscreen affordances. This disproves “no controls exist” for
+  that exact route/state, but does not prove the requested final authoring
+  layout because the deployed bundle predates the latest #348 correction.
+- The exact public URL currently serves the same asset. Its closed page shows a
+  stage hamburger; opening it renders Screenshot, Download, Piece controls,
+  and Fullscreen in a full-viewport translucent overlay. Piece controls then
+  exposes the camera and demo disclosures. Public absence of editor-only
+  Draft/Published/Save/AI controls is correct privacy behavior. This proves
+  the controls are discoverable through the requested entry point, but does not
+  prove downloaded-runtime behavior or every public/embed/immersive surface.
+- At `375x812`, the authenticated editor has no document horizontal overflow,
+  but the live overlay still reflects the older action composition. At the
+  current default public viewport the document width is 1265px in a 1280px
+  viewport. Exact screenshots and route-specific evidence remain required.
+- The current live/private-route evidence and the owner report differ because
+  the browser is authenticated in Chrome while the in-app browser is
+  anonymous, and because the published asset is older than the pushed branch.
+  This is a deployment identity and verification-boundary problem, not a basis
+  for closing either #348 or the route children.
 - The public route's current measured document width is 947px at a 962px
   viewport. The authenticated editor's current `375x812` measurement has
   body/root width 360px, workspace width 326px, and no horizontal overflow;
@@ -82,8 +98,10 @@ route or artifact parity.
    bulky editor actions, and missing visible publication state. Current source
    and current live DOM show a partial hamburger implementation, but the
    fixed rendered parity contract remains unproven. Owner: engineering/QA.
-   Next action: publish and verify #348's reviewed revision, then reconcile/close it
-   only if every criterion has exact evidence.
+   Next action: synchronize/publish the exact reviewed revision, then verify
+   #348's fixed rendered criteria and reconcile/close it only if every criterion
+   has exact evidence. No new product implementation may begin before that
+   handoff is resolved.
 2. `implementation-defect`: #349's prior screenshot shows a distorted sphere;
    camera-resize synchronization is implemented locally but needs exact live
    rendered proof. Owner: #349 QA. Next action: republish and inspect both

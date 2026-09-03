@@ -211,3 +211,21 @@ Before selecting the next issue, the orchestrator must answer “closed or
 terminally handed off?” for the current ledger entry. If the answer is no, it
 must continue that issue or record its blocker; it may not advance merely to
 make progress appear elsewhere.
+
+## Scope-shifted completion
+
+Completion is evaluated against the current issue's contract, not against the
+entire parent feature. If engineering or QA finds route-specific, deployment,
+artifact, or production-readiness work outside that contract, grooming must
+shift it to a linked criterion-ready issue before reconciliation. The current
+issue may then close as `completed` when every remaining in-scope criterion
+passes. Its closure matrix must contain two explicit sections:
+
+- `Implemented/verified here` — finite criteria, checks, and evidence that
+  justify closure;
+- `Shifted to linked work` — each unfinished/unverified portion, issue link,
+  dependency, owner, and next action.
+
+This rule prevents both dishonest broad closures and needless reopen cycles.
+A linked follow-up's failure does not reopen the completed parent/child unless
+it directly contradicts that issue's narrowed contract.

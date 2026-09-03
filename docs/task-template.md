@@ -42,6 +42,16 @@ own fixed contract. Record the exact contradiction and one next action; do not
 reuse the prior PASS matrix, broaden the issue, or reopen solely because a
 parent or sibling issue is incomplete.
 
+## Scope-shift record before closure
+
+- **Implemented/verified in this issue:** The finite criteria and evidence that
+  justify `COMPLETE`.
+- **Shifted out of scope:** Every unimplemented or unverified portion, linked
+  issue, dependency, owner, and next action. Do not leave this as “remaining
+  work” without an issue link.
+- **Closure decision:** `COMPLETE` only for the narrowed contract; parent,
+  route, deployment, artifact, or readiness status is recorded separately.
+
 ## Discovery gate
 
 - [ ] Searched `docs/tasks.md`, `.local/tasks/`, and existing GitHub issues

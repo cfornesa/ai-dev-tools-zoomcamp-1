@@ -24,6 +24,12 @@ deployment identity, or a broader parent judgment, keep the child terminal and
 record the finding on the correct route/reconciliation issue. Never use
 production-readiness to make a broad parent absorb unresolved child work.
 
+Readiness must respect scope-shifted completion. A functionally complete
+shared capability remains closed when its route/deployment/artifact evidence
+is explicitly owned by linked follow-up issues. Report that follow-up as
+`OPEN FOLLOW-UP` rather than reopening the child unless the finding directly
+fails the child's narrowed contract.
+
 ## Scope gate
 
 Run this skill only after task distillation has produced a complete,

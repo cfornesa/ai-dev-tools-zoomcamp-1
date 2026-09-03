@@ -38,6 +38,14 @@ criterion failure is linked to that child and a new evidence boundary/action
 is recorded. Otherwise readiness leaves the child terminal and records the
 follow-up separately.
 
+An issue's completion is scoped completion, not parent-feature completion.
+When implementation reveals route, deployment, artifact, or readiness work
+that is not part of the current contract, the PM must shift it to a linked
+criterion-ready issue before reconciliation. The current issue may then close
+as `completed` once all of its narrowed criteria pass, provided the closure
+matrix separately lists the shifted work and its next issue. Do not reopen the
+completed issue merely because that linked work is unfinished.
+
 ## Prerequisite phase gate
 
 Do not begin an engineering pass from a raw backlog. The task-distillation

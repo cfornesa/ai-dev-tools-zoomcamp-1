@@ -228,6 +228,54 @@ Pull/Sync and Republish are external mutations owned by the release operator;
 published status alone is not asset identity. #321's separate repository
 Compose identity issue was verified closed and should not be reopened for this
 deployment mismatch.
+
+Owner-reported parity reset (2026-09-03): the owner subsequently reported
+that the supplied editor/public routes still do not provide the requested
+usable parity. A fresh read-only audit found the private `/projects3d/:id`
+URL unavailable in the current anonymous browser session and the public
+`/p/:id` URL rendering the `Blank canvas` 2D fixture with a hamburger that
+opens only the permitted public controls. The expected authenticated editor
+authoring surface, Draft/Published reversal, expected public 3D fixture, and
+downloaded-runtime behavior were not proven. This reopens #347 as a false
+closure and keeps #348, #349, #325–#337, and #320/#324 open; no duplicate issue
+was created. Earlier closure comments that relied on a local/disposable run,
+DOM roles/bounds, or a different fixture/revision are not evidence against
+the owner's current report. The complete closure-ready manifest and
+dependency order are recorded in the final distillation section of
+`docs/tasks.md`.
+
+Scoped completion correction (2026-09-03): the owner clarified that #347 is
+functionally complete after its significant shared PieceStageToolbar,
+StageControlsPopover, publication-disclosure, and focused-test work. Its
+closure is intentionally scoped to that shared implementation contract. Exact
+route parity, editor authoring placement, responsive 3D projection, extracted
+artifact behavior, and Docker/browser/deployment readiness are shifted to the
+linked queue issues (#325–#337, #348–#349, and #320/#324) and must not reopen
+#347 merely because they remain incomplete. The durable closure format is
+`implemented/verified here` plus `shifted to linked work`; #347 is closed as
+completed in GitHub and the FIFO queue may rotate only after this terminal
+state is recorded. A linked issue can reopen it only with new contradictory
+evidence against the narrowed shared contract itself.
+
+Scoped completion correction (2026-09-03): the owner clarified that #347 is
+functionally complete for the shared PieceStageToolbar/StageControlsPopover
+implementation after its significant engineering and focused-test work.
+Unimplemented or unverified route, deployment, artifact, and readiness pieces
+are shifted to the linked #325–#337, #348, #349, and #320/#324 contracts.
+The #347 closure record must explicitly separate `implemented/verified here`
+from `shifted to linked work`; linked work does not reopen #347 unless it
+directly contradicts the narrowed shared implementation contract. This is the
+required FIFO rotating-queue behavior.
+
+Current transaction blocker (2026-09-03): #347's focused shared-component
+tests pass, but the required Docker-backed browser runner could not produce
+rendered evidence. The sandbox could not access Docker's socket; an approved
+host retry started the disposable PostgreSQL container, which never became
+ready, so no browser scenario ran. Classify this as a workflow/infrastructure
+verification boundary, keep #347 open, retain the runner logs, and rerun the
+same browser gate before closure. Do not convert the focused test result into
+visual or deployed parity evidence. A post-blocker distillation found no new
+duplicate issue; #320 already owns this release/runner blocker class.
 Owner mobile-overlay refinement (2026-09-03): the translucent fullscreen
 overlay is the accepted interaction model, but the owner rejects a horizontal
 desktop-style action row on phones. At `375x812`, the shared command card must

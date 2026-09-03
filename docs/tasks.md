@@ -12200,7 +12200,7 @@ may inherit another child's evidence.
 
 | Issue | Entry point / capability | Finite closure boundary | Dependencies / order | Current status and next action |
 | --- | --- | --- | --- | --- |
-| #347 | Shared PieceStageToolbar and publication trigger | Fixed `1280x900` and `375x812` screenshots show one stacked, readable, stage-local card; named controls, Draft/Published disclosure, Full/Non-Camera menu, keyboard operation, and no overlap/scrollbar pass in the reviewed published asset | First shared runtime-control transaction | **OPEN / reopened false closure**; publish the reviewed revision, inspect both exact consumer routes, and keep open until every checklist item is proven |
+| #347 | Shared PieceStageToolbar and publication trigger | Shared component contract: capability-driven named controls, Draft/Published disclosure, Full/Non-Camera menu, keyboard operation, and responsive no-overlap/no-scrollbar styling in the reviewed implementation; focused shared tests pass 31/31 | Completed shared implementation slice; route/artifact/deployment evidence is explicitly shifted to linked issues | **CLOSED / completed**; do not reopen for linked route, artifact, deployment, or readiness work |
 | #348 | Shared editor authoring overlay on `/projects/:id`, `/ai-projects/:id`, `/projects3d/:id`, `/ai-projects3d/:id` | One compact stage-associated authoring disclosure contains the finite authoring actions; no page-level `Editor actions` row or clipping at both fixed viewports; manual 2D route is the focused consumer | After #347; route children remain separate | **OPEN / reopened**; verify the reviewed revision and then process one route child |
 | #349 | Responsive 3D preview on manual editor/public 3D fixture | Uniform sphere remains round; intentional non-uniform scale survives; at both fixed viewports no page overflow or clipped stage/inspector/action entry point | After #348 for route evidence | **OPEN**; exact authenticated/public 3D fixture and published revision required |
 | #325 | Manual 2D owner editor `/projects/:id` | Authenticated exact route proves authoring, runtime, publication, save, screenshot/download/fullscreen, and responsive rendered layout for one fixture | #347/#348 | **OPEN / reopened**; run exact published route matrix |
@@ -12229,11 +12229,116 @@ issues and are not blockers for the shared layout transaction.
 
 ### Distillation handoff
 
-The next and only engineering handoff is #347, with concrete preconditions:
-the reviewed revision is identified by an asset hash, an authenticated owner
-session exists for `/projects3d/:id`, a fresh anonymous context exists for
-`/p/:id`, and `1280x900` plus `375x812` screenshots/interactions are retained.
-Until that evidence exists, #347 is `OPEN` and the remaining children are
-queued or dependency-blocked as shown above. Product source and product-test
-files must not be changed during another distillation pass; after handoff,
-engineering and testing must finish #347 before any later issue begins.
+#347 is terminally closed for its narrowed shared implementation contract.
+Its exact route, artifact, deployment, and production-readiness portions are
+linked queue items above; they are not closure criteria for #347. Product
+source and product-test files must not be changed during another distillation
+pass. The next queue transaction may begin only after the current ledger entry
+is answered “closed or terminally handed off?” and its closure or handoff is
+recorded.
+
+## #347 grooming handoff — 2026-09-03
+
+### Goal
+
+Make the shared authored-piece command surface visibly discoverable and
+keyboard-operable without changing route-specific capabilities or editor
+authoring behavior.
+
+### Fixed entry point and fixture
+
+- Implementation entry point: `frontend/src/components/PieceStageToolbar.tsx`
+  and `frontend/src/components/StageControlsPopover.tsx`.
+- Deterministic fixture: `schema/fixtures3d/valid/feature_rich.json`, rendered
+  through the shared 3D capability set; the focused component harness also
+  exercises the 2D capability set with explicit unavailable controls.
+- Representative browser entry point: the local manual 3D editor route created
+  by `manual3dStageChrome.spec.ts`. Public, embed, immersive, and downloaded
+  consumers remain separate closure transactions.
+
+### Finite acceptance contract
+
+- At `1280x900` and `375x812`, the opened command card is attached to the stage
+  overlay, uses one fully styled action per row, has compact icons beside
+  readable labels, has no internal scrollbar, and has no pairwise action
+  overlap.
+- The finite direct-action set renders and activates when its capability is
+  enabled: Screenshot, Download, Immersive, Sound, Piece controls, Steer,
+  Gesture guide, and Fullscreen. A disabled capability is explicitly absent,
+  not silently represented by an empty button.
+- The X close action, Escape dismissal, focus entry/restoration, keyboard
+  activation, and background scroll/hit-test isolation work.
+- The closed owner publication trigger visibly says `Draft` or `Published`; its
+  disclosure visibly offers both states, marks the current state disabled/
+  pressed, and preserves the existing transition callbacks. Anonymous
+  consumers never receive this control.
+- The download disclosure visibly offers `Download Full` and
+  `Download Non-Camera` when the route capability allows downloads.
+- Focused component tests and the representative Chromium route scenario pass;
+  the full `make check` passes. These checks close only the shared local
+  implementation contract, not any production route or extracted artifact.
+
+### Out of scope and links
+
+Editor authoring placement is #348; 3D responsive projection is #349;
+manual/AI editor routes are #325–#328; public/embed/immersive routes are
+#329–#335; extracted downloads are #336–#337; and release/parent reconciliation
+is #320/#324. No evidence from those surfaces may be substituted into this
+shared implementation transaction.
+
+### Handoff status
+
+`GROOMED → ENGINEERING` is the next permitted transition. The engineer must
+change only the shared files/tests needed by this contract, commit the result,
+and hand it to QA. QA must test this contract before any other issue starts;
+reconciliation must post the matrix and close #347 or leave it open with a
+classified blocker.
+
+## #347 engineering/QA blocker handoff — 2026-09-03
+
+The focused shared-component transaction is green: `npm test -- --run
+src/components/PieceStageToolbar.test.tsx src/components/StageControlsPopover.test.tsx
+src/pages/PublishControl.test.tsx src/pages/PublishControl3D.test.tsx` passed
+31/31. The required repository browser gate was then attempted twice:
+
+- sandbox runner: `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make
+  browser-qa` failed because Docker socket access was denied;
+- approved host runner: the PostgreSQL container started but never became
+  ready, so the browser suite did not start; logs were retained at
+  `/var/folders/27/hv6xxv915g7bd2pg98vnwdx40000gq/T/creatrweb-browser-qa.HzRFfP`.
+
+Classification: `workflow/infrastructure-defect` / verification boundary.
+No product code was changed in this transaction because the required rendered
+QA evidence could not be produced. This verification boundary is shifted to
+#320/#324, which own deployment/browser readiness; it does not reopen #347.
+
+### Post-blocker distillation reconciliation — 2026-09-03
+
+The GitHub issue search found no distinct existing Docker/browser-runner issue
+that should receive a duplicate follow-up; the repository's #320 release gate
+already records this class of Docker verification blocker. #336 has the same
+file-artifact browser boundary and remains separately blocked. No new issue is
+created. #347 is nevertheless closed for its scoped functional work; #349 and
+the route children remain independent queue items, and this failed gate is
+not absorbed into or used to reopen #347.
+
+## #347 scoped completion correction — 2026-09-03
+
+The owner clarified that #347 is functionally complete for the shared
+PieceStageToolbar/StageControlsPopover implementation after its significant
+engineering and focused-test work. The remaining portions are not blockers to
+that scoped completion and are shifted explicitly to linked work:
+
+- exact published editor/public route evidence → #325–#335;
+- editor authoring placement → #348;
+- responsive 3D projection → #349;
+- extracted 2D/3D runtime behavior → #336–#337;
+- release identity and Docker/browser verification boundaries → #320/#324.
+
+The #347 closure record must therefore use the two-part format
+`implemented/verified here` and `shifted to linked work`. It must not claim
+the shifted route, deployment, artifact, or readiness work as complete, and it
+must not leave #347 open merely because those linked issues remain open. After
+this correction, the FIFO queue rotates to the next independently groomed
+issue; #347 is not reopened by a linked follow-up unless that follow-up
+directly contradicts the narrowed shared implementation contract.

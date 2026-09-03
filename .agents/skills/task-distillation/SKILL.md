@@ -29,6 +29,18 @@ new next action; never recycle the same PASS evidence or silently return to
 engineering. A closed issue must not be reopened merely because a broader
 parent is unfinished or a later route needs its own work.
 
+## Scope-shift completion rule
+
+An issue may be completed when its own closure contract is functionally
+complete, even when the larger feature has route, deployment, artifact, or
+production-readiness work remaining. Before closing, explicitly narrow the
+issue contract, check every criterion that remains in scope, and link each
+unimplemented or unverified portion to an existing/new criterion-ready issue.
+The closure record must state `implemented/verified in this issue` and
+`shifted out of scope`; it must never leave an unchecked criterion disguised
+as complete or claim the shifted work as evidence. The linked follow-up becomes
+the next queue item according to dependency order.
+
 ## Phase gate: distill before engineering
 
 This skill is a read/reconcile and backlog-definition phase. Do not implement

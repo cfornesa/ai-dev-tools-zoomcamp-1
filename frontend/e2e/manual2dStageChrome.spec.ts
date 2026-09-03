@@ -187,13 +187,19 @@ test.describe('manual 2D editor stage chrome', () => {
 
     const mobileAuthoringBox = await authoringToolbar.boundingBox();
     const mobileStageBox = await stage.boundingBox();
+    const mobileAuthoringPanelBox = await stageDialog
+      .locator('.editor-authoring-controls-panel')
+      .boundingBox();
     expect(mobileAuthoringBox).not.toBeNull();
     expect(mobileStageBox).not.toBeNull();
+    expect(mobileAuthoringPanelBox).not.toBeNull();
     expect(mobileAuthoringBox!.x).toBeGreaterThanOrEqual(mobileStageBox!.x);
     expect(mobileAuthoringBox!.x + mobileAuthoringBox!.width).toBeLessThanOrEqual(
       mobileStageBox!.x + mobileStageBox!.width,
     );
     expect(mobileAuthoringBox!.width).toBeLessThanOrEqual(320);
+    expect(mobileAuthoringPanelBox!.x).toBeGreaterThanOrEqual(0);
+    expect(mobileAuthoringPanelBox!.x + mobileAuthoringPanelBox!.width).toBeLessThanOrEqual(375);
 
     await page.setViewportSize({ width: 1280, height: 900 });
 

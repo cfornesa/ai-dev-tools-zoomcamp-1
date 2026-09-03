@@ -3249,12 +3249,11 @@ select.ai-proposal-field-full-width {
    mobile while keeping the editable color value available as a small control. */
 @media (max-width: 600px) {
   .editor-authoring-controls-panel {
+    /* Shift the panel back to the stage's left content edge. The trigger is
+       in a wrapped command row, so centering against its narrow wrapper would
+       push the inner toolbar past the stage's right edge on phones. */
     left: auto;
-    /* The panel is absolutely positioned against the compact control wrapper,
-       while the command card provides the stage-width boundary. Shift it back
-       by the trigger's width so the capped panel grows toward that boundary
-       instead of overflowing when the editor control wraps to a new row. */
-    right: -2.5rem;
+    right: -3.5rem;
     width: min(320px, calc(100vw - 48px));
   }
 

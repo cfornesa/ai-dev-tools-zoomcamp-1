@@ -13168,3 +13168,36 @@ is **#365**. Engineering and testing must be performed together for #365,
 then reconciliation and permanent GitHub closure (or a classified blocker
 handoff) must occur before another issue enters engineering. Completion means
 closure; no closed issue may be reopened without explicit owner authorization.
+
+### #365 engineering and QA handoff — 2026-09-03
+
+#365 remains open. The current local React source already places the manual
+and AI 2D/3D authoring actions behind canvas-associated contextual stage
+menus; focused owner-editor tests pass 45/45 across the 2D and 3D action,
+save, and AI-improvement contracts. This is source/behavior evidence only and
+does not prove the exact deployed revision.
+
+The required route-level browser gate
+`BROWSER_QA_E2E_SPEC=e2e/manual2dStageChrome.spec.ts make browser-qa` was
+attempted and stopped before test startup because the Docker daemon was
+unavailable. Logs were retained at
+`/var/folders/27/hv6xxv915g7bd2pg98vnwdx40000gq/T//creatrweb-browser-qa.yQBanc`.
+The deployed manual 3D route still visibly shows unlabeled/compact authoring
+rows, so the local implementation cannot be treated as deployed parity until
+the reviewed revision is published and the fixed-viewport route matrix passes.
+
+End-of-blocker distillation found no duplicate: the new editor-authoring
+follow-up remains #365 because closed #348 is immutable; #362 owns shared
+runtime command presentation; #355 and #356 own exact deployed route/fixture
+verification; and #364 owns downloaded 3D artifacts. The Docker failure is
+already covered as a workflow/infrastructure blocker by #320 and does not
+warrant another issue. No closed issue was reopened. #365's next action is to
+restore Docker, run the manual and AI editor browser scenarios at 1280×900 and
+375×812, inspect screenshots/geometry, then reconcile and close only if every
+criterion passes.
+
+The current queue is externally blocked: #362, #364, and #365 all require
+the unavailable browser-QA infrastructure for their remaining gates, while
+#355/#356 also require the owner's authenticated/published deployment state.
+No independent closure-ready issue remains that can satisfy its own required
+evidence without those external states.

@@ -711,6 +711,12 @@ empty, with only docs/memory/task divergence. The deployed
 Keep owner-visible contradictions in #381/#382 until fixed-viewport/session
 evidence is available; do not reopen closed issues.
 
+Held-pinch verification (2026-09-04): #344's focused gesture suites passed
+26/26 tests, but the browser harness cannot synthesize physical camera hand
+movement. Keep #344 open as a verification-boundary blocker; do not infer a
+product defect or reopen closed work. After this fresh distillation, continue
+with #360's separate public-3D-fixture dependency review.
+
 Manual 3D owner-route verification (2026-09-04): #381 passed the focused
 browser transaction in Chromium, Firefox, and WebKit at 1280×900 and 375×812.
 It verified the stage-local hamburger/stacked overlay, named runtime and

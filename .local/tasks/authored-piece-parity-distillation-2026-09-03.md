@@ -782,6 +782,15 @@ status: Published disclosure with Draft available. This is covered behavior,
 not a new implementation defect or a reason to reopen closed #354/#356;
 fixed-viewport proof remains in the route-specific verification queue.
 
+## #344 blocker reconciliation and fresh distillation — 2026-09-04
+
+The focused gesture checks passed 2 files and 26 tests. Physical held-pinch
+camera evidence remains unavailable to the current automation, so #344 is
+blocked at its verification boundary, not failing from a reproduced product
+defect. Fresh distillation found no duplicate or separable implementation
+task. Proceed to the next queue review; #360 is dependency-blocked on its
+intended published 3D fixture.
+
 ## #381 closure reconciliation — 2026-09-04
 
 #381 is permanently closed as `completed` for its exact authenticated manual

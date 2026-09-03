@@ -14436,6 +14436,20 @@ status: Published disclosure with Draft available. This is covered behavior,
 not a new implementation defect or a reason to reopen closed #354/#356;
 fixed-viewport proof remains in the route-specific verification queue.
 
+## #344 blocker reconciliation and fresh distillation — 2026-09-04
+
+#344's implementation-level checks remain green: `npm --prefix frontend test
+-- --run src/pages/Scene3DPreview.gestureControl.test.tsx
+src/tracking/handSignals.test.ts` passed 2 files and 26 tests. The only
+unmet criterion is physical held-pinch camera evidence; the available browser
+automation cannot synthesize a real camera gesture stream. This is a
+verification-boundary blocker, not a reproduced product defect.
+
+Fresh task distillation found no duplicate or separable implementation task.
+The next queue candidate is #360, but it remains dependency-blocked until an
+intended published 3D fixture exists at its exact public route. The session
+therefore proceeds to #360's dependency review rather than looping on #344.
+
 ## #381 closure reconciliation — 2026-09-04
 
 #381 is permanently closed as `completed` for its exact authenticated manual

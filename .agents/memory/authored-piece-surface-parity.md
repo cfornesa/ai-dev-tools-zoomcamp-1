@@ -740,3 +740,11 @@ stacked rows must be validated by containment/minimum target size rather than
 the old icon-only fixed width. #333 is permanently closed for that route;
 later defects require new issues and must not reopen it. Remaining independent
 boundaries are #344's physical-camera evidence and #360's public 3D fixture.
+
+Public 3D proportions (2026-09-04): #360's corrected route is
+`/p3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`, not the separate 2D `/p/...`
+route. Its dedicated browser transaction passed 3/3 engines at 1280×900 and
+375×812, verifying proportional frame/backing-canvas geometry, no horizontal
+overflow, and public controls; the temporary publication was restored to
+Draft. #360 is permanently closed for that boundary. Later gaps require new
+issues and must not reopen it.

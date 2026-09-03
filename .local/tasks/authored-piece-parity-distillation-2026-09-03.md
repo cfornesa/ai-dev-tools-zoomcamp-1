@@ -823,3 +823,13 @@ PostgreSQL/Django/Vite services. It covered 1280×900 and 375×812, the
 in-canvas hamburger/stacked overlay, named public actions, nested camera/demo
 controls, Full/Non-Camera downloads, and the public-only privacy boundary.
 No closed issue was reopened. The next FIFO candidate is #333.
+
+## #360 closure reconciliation — 2026-09-04
+
+#360 is permanently closed as `completed` for the corrected anonymous public
+3D route `/p3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`. The dedicated
+`e2e/public3dProportions.spec.ts` browser transaction passed 3/3 in Chromium,
+Firefox, and WebKit at 1280×900 and 375×812. It verified proportional sphere
+frame/backing-canvas geometry, no horizontal overflow, and reachable public
+controls. The temporarily published fixture was restored to Draft. No closed
+issue was reopened.

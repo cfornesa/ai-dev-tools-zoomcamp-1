@@ -14496,3 +14496,18 @@ boundary with no legacy sibling panel. No closed issue was reopened.
 The next FIFO candidate is #333, the anonymous regular immersive 3D route.
 Its fixed-viewport browser transaction must finish, reconcile, and close
 before another issue is engineered.
+
+## #360 closure reconciliation — 2026-09-04
+
+#360 is permanently closed as `completed` for the corrected anonymous public
+3D route boundary. The dedicated `e2e/public3dProportions.spec.ts` transaction
+passed 3/3 in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services. It exercised 1280×900 and 375×812, confirmed
+the sphere frame and backing canvas remain proportional, asserted no
+page-level horizontal overflow, and verified the public hamburger and named
+stage controls. The fixed route is `/p3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`;
+the earlier 2D `/p/...` reference was corrected during grooming. The fixture
+was temporarily published for anonymous verification and restored to Draft.
+No closed issue was reopened.
+
+Parent #320/#324/#274 remain reconciliation containers, not engineering tasks.

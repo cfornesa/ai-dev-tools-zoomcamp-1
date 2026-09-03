@@ -244,6 +244,17 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Closure correction (2026-09-03): the owner explicitly confirmed that closed
+issues are immutable unless that exact issue is explicitly authorized for
+reopening in the current conversation. The later closure transaction closed
+#352 permanently for its repository-backed manual 3D owner-editor integration:
+44 focused tests and the disposable PostgreSQL browser gate passed in
+Chromium, Firefox, and WebKit at both required viewports. Exact republished
+owner-session verification was unavailable, so fresh criterion-ready #355 owns
+that deployed boundary. Do not reopen #352 or any other closed issue for later
+parity gaps; distill a linked task instead. Product implementation remains
+Django/Python plus React/TypeScript; PHP is reference-only.
+
 Shared editor overlay closure (2026-09-03): fresh issue #354 replaced the
 previously reopened #348. Its existing Django/React implementation passed
 focused editor/component tests 56/56, frontend lint/typecheck/build, and the

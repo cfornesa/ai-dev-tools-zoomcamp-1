@@ -27,21 +27,26 @@ test.describe('AI-assisted 3D editor stage chrome', () => {
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(toolbar).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Piece controls' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
-    await expect(toolbar.getByRole('link', { name: 'View immersive piece' })).toHaveAttribute(
+    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    const actions = toolbar.getByRole('dialog', { name: 'Preview actions' });
+    await expect(actions).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Open download menu' })).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Enable sound' })).toBeVisible();
+    await expect(
+      actions.getByRole('button', { name: 'Piece controls', exact: true }),
+    ).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
+    await expect(actions.getByRole('link', { name: 'View immersive piece' })).toHaveAttribute(
       'href',
       /\/immersive\/p3d\/.+$/,
     );
-    await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
     await expect(
-      toolbar.getByRole('button', { name: 'Ask AI to improve this scene' }),
+      actions.getByRole('button', { name: 'Ask AI to improve this scene' }),
     ).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Publication status: Draft' })).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Publication status: Draft' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
 
     const toolbarBox = await toolbar.boundingBox();
@@ -52,11 +57,11 @@ test.describe('AI-assisted 3D editor stage chrome', () => {
     expect(toolbarBox!.y).toBeGreaterThanOrEqual(frameBox!.y);
     expect(toolbarBox!.x + toolbarBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width);
 
-    await toolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
+    await actions.getByRole('button', { name: 'Publication status: Draft' }).click();
     await expect(
-      toolbar.getByRole('group', { name: 'Publication status', exact: true }),
+      actions.getByRole('group', { name: 'Publication status', exact: true }),
     ).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
-    await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
+    await expect(actions.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
+    await expect(actions.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
   });
 });

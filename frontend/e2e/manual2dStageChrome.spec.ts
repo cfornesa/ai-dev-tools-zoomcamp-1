@@ -140,7 +140,7 @@ test.describe('manual 2D editor stage chrome', () => {
             .map((row) => row.getBoundingClientRect())
             .filter((rect) => rect.width > 0 && rect.height > 0);
           return {
-            overflow: card.scrollHeight > card.clientHeight,
+            overflow: ['auto', 'scroll'].includes(getComputedStyle(card).overflow),
             overlap: rows.some((row, index) =>
               rows
                 .slice(index + 1)

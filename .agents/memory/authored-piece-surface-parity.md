@@ -256,6 +256,14 @@ travel/reset, and capability-boundary checks. A separate publication-panel
 viewport failure discovered during that run is new issue #361; it must not
 reopen #347 or #351.
 
+Publication panel closure (2026-09-03): #361 is permanently closed. The 3D
+publication disclosure opens upward from the stacked stage command card so
+Draft/Published stay within the viewport and remain normal pointer actions;
+the closed status surface has no ordinary scrollbar. The complete 3D browser
+lifecycle matrix passed 12/12 across Chromium, Firefox, and WebKit. Later
+publication-placement or deployed-route gaps require new issues and must not
+reopen #361 without explicit owner authorization.
+
 Portable 2D responsive closure (2026-09-03): #357 is permanently closed for
 the extracted artifact's responsive action surface. The artifact now packages
 an accessible hamburger menu, fullscreen translucent overlay, stacked labeled

@@ -12388,6 +12388,7 @@ against the broader pieces-parity goal, but it does not reopen #347.
 | [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | Repository-backed extracted 2D runtime: bundled assets, no network-only dependency, capability/permission behavior, privacy exclusions, and browser execution | #353 shared public contract; responsive rendered geometry shifted to #357 | CLOSED / completed; do not reopen |
 | [#357](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/357) | Portable 2D artifact responsive controls | One Full extracted artifact at 1280x900 and 375x812; intended non-empty artwork, stacked stage overlay, no overlap/clipping/ordinary scrollbar, gesture-gated camera | Discovered during #350 QA; responsive artifact evidence now reconciled | CLOSED / completed; do not reopen |
 | [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | CLOSED / completed; do not reopen |
+| [#361](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/361) | 3D publication menu viewport containment | Draft/Published actions remain visible and pointer-operable in the stacked stage disclosure across supported browsers without an ordinary menu scrollbar | Discovered and resolved during #351 QA | CLOSED / completed; do not reopen |
 
 The next handoff is #355 only while its owner-session dependency is available;
 if that dependency remains blocked, #356 is next.
@@ -12578,6 +12579,22 @@ was outside the viewport in Chromium, Firefox, and WebKit. This is a new
 criterion-ready issue, not a reopening of #347 or #351. #361 owns the focused
 publication-panel placement and no-scroll behavior; its implementation and
 testing must occur as its own FIFO transaction.
+
+### #361 closure reconciliation — 2026-09-03
+
+Issue #361 is permanently closed as completed. The publication disclosure now
+opens upward from the stacked stage command card, keeping Draft and Published
+inside the viewport when the trigger is near the card's lower edge. Its compact
+panel remains non-scrollable for normal status content; expanded disclosure
+scrolling remains reserved for deliberately larger content.
+
+The normal pointer-based 3D lifecycle browser suite passed 12/12 across
+Chromium, Firefox, and WebKit, including publish, public route navigation,
+artifact download/extraction, and return to Draft. Frontend formatting and
+typecheck passed. The implementation and test restoration are committed in
+the next coherent commit after #351. #361 is permanently closed; any later
+publication-layout or deployed-route gap must be a new issue unless the owner
+explicitly authorizes reopening #361 in the current conversation.
 
 ### #358 closure reconciliation
 

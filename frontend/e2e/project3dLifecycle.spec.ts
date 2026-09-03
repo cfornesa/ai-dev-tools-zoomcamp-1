@@ -161,16 +161,10 @@ test.describe('3D project creation', () => {
       name: 'Publication status: Draft',
     });
     await publicationTrigger.click();
-    // #361 tracks the separate viewport-placement defect; activate the
-    // handler directly so this artifact-runtime transaction is not coupled to it.
-    await page
-      .getByRole('button', { name: 'Published' })
-      .evaluate((button) => (button as HTMLButtonElement).click());
+    await page.getByRole('button', { name: 'Published' }).click();
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(dialog).toBeVisible();
-    await dialog
-      .getByRole('button', { name: 'Publish', exact: true })
-      .evaluate((button) => (button as HTMLButtonElement).click());
+    await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
     await page.goto(`/p3d/${projectId}`);
@@ -295,7 +289,7 @@ test.describe('3D project creation', () => {
       .getByRole('button', { name: 'Draft', exact: true });
     await expect(draftButton).toBeVisible();
     await expect(draftButton).toBeEnabled();
-    await draftButton.evaluate((button) => (button as HTMLButtonElement).click());
+    await draftButton.click();
     await unpublishResponse;
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Private');
   });
@@ -319,16 +313,10 @@ test.describe('3D project creation', () => {
       .getByRole('button', { name: 'Open piece controls menu' })
       .click();
     await page.getByRole('button', { name: 'Publication status: Draft' }).click();
-    // #361 tracks the separate viewport-placement defect; activate the
-    // handler directly so this artifact-runtime transaction is not coupled to it.
-    await page
-      .getByRole('button', { name: 'Published', exact: true })
-      .evaluate((button) => (button as HTMLButtonElement).click());
+    await page.getByRole('button', { name: 'Published', exact: true }).click();
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(dialog).toBeVisible();
-    await dialog
-      .getByRole('button', { name: 'Publish', exact: true })
-      .evaluate((button) => (button as HTMLButtonElement).click());
+    await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
     await page.goto(`/immersive/p3d/${projectId}`);

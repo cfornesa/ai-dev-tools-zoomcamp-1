@@ -3312,6 +3312,11 @@ select.ai-proposal-field-full-width {
    disclosure panel, so its own content may grow when validation feedback is
    present, but the closed command card never needs a scrollbar. */
 .publication-status-controls-panel {
+  /* The publication trigger can be near the bottom of the stacked command
+     card. Open upward so Draft/Published remain inside the viewport instead
+     of placing the lower action below the fullscreen disclosure surface. */
+  top: auto;
+  bottom: calc(100% + 8px);
   width: min(320px, calc(100vw - 48px));
   max-height: none;
   overflow: visible;

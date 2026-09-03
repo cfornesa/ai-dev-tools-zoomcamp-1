@@ -245,6 +245,14 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+AI 2D publication capability closure (2026-09-03): issue #340 is permanently
+closed for the local stage-local publication implementation. Its real browser
+path passed 3/3 across Chromium, Firefox, and WebKit, including the hamburger
+dialog, publish confirmation, and Published → Draft transition. The
+acceptance test now follows the current stacked dialog contract rather than
+obsolete fixed icon geometry. Deployed verification remains the immutable
+#326 boundary; later gaps do not reopen #340.
+
 AI 2D responsive closure (2026-09-03): issue #326 is permanently closed for
 the authenticated `/ai-projects/:id` consumer. Live audit found its direct p5
 canvas retained an 800px inline width at 375px, causing horizontal document

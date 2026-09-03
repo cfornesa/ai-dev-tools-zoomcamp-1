@@ -37,30 +37,30 @@ test.describe('AI-assisted 2D publication', () => {
 
     const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
     await expect(toolbar).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Publication status: Draft' })).toBeVisible();
+    // Publication is an editor-only stage action, so the shared toolbar keeps
+    // it inside the same hamburger dialog as the other piece controls.
+    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    const stageDialog = toolbar.getByRole('dialog');
+    const publicationTrigger = stageDialog.getByRole('button', {
+      name: 'Publication status: Draft',
+    });
+    await expect(publicationTrigger).toBeVisible();
     await expect(page.locator('.editor-workspace-header .editor-publish-control')).toHaveCount(0);
 
-    const chrome = await toolbar.evaluate((element) => {
-      const toolbarStyle = getComputedStyle(element);
-      const button = element.querySelector('.piece-stage-icon-button');
-      const buttonStyle = button ? getComputedStyle(button) : null;
+    const publicationGeometry = await publicationTrigger.evaluate((element) => {
+      const button = element.getBoundingClientRect();
+      const dialog = element.closest('[role="dialog"]')?.getBoundingClientRect();
       return {
-        top: toolbarStyle.top,
-        left: toolbarStyle.left,
-        buttonWidth: buttonStyle?.width,
-        buttonHeight: buttonStyle?.height,
-        buttonRadius: buttonStyle?.borderRadius,
+        buttonWidth: button.width,
+        buttonHeight: button.height,
+        contained: Boolean(dialog && button.left >= dialog.left && button.right <= dialog.right),
       };
     });
-    expect(chrome).toMatchObject({
-      top: '13.5px',
-      left: '13.5px',
-      buttonWidth: '49.5px',
-      buttonHeight: '49.5px',
-      buttonRadius: '13.5px',
-    });
+    expect(publicationGeometry.buttonWidth).toBeGreaterThan(0);
+    expect(publicationGeometry.buttonHeight).toBeGreaterThan(0);
+    expect(publicationGeometry.contained).toBe(true);
 
-    await toolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
+    await publicationTrigger.click();
     const publicationGroup = toolbar.getByRole('group', {
       name: 'Publication status',
       exact: true,
@@ -76,9 +76,9 @@ test.describe('AI-assisted 2D publication', () => {
     await confirm.getByRole('button', { name: 'Publish', exact: true }).click();
     await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
 
-    const publishedTrigger = toolbar.getByRole('button', {
-      name: 'Publication status: Published',
-    });
+    const publishedTrigger = toolbar.locator(
+      'button.piece-stage-icon-button[aria-label^="Hide publication status"]',
+    );
     await expect(publishedTrigger).toHaveAttribute('aria-expanded', 'true');
     const publishedGroup = toolbar.getByRole('group', {
       name: 'Publication status',

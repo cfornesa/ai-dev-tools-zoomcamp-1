@@ -12776,7 +12776,7 @@ blocker handoff, before another issue begins.
 | #326 | Authenticated AI 2D route `/ai-projects/:id` excluding publication-only assertions | CLOSED / completed | QA comment `5522027138`; AI route canvas containment verified at 375×812 in Chromium, Firefox, and WebKit; no evidence transferred to publication-only #340 or other routes |
 | #328 | Authenticated AI 3D route `/ai-projects3d/:id` excluding publication-only assertions | OPEN / route contract | After #349 and shared surface evidence; verify AI editor controls, 3D stage, and responsive rendered evidence on one owner fixture |
 | #338 | Manual 2D publication workflow | CLOSED / completed | QA comment `5522058043`; local stage-local publication capability passed 6/6 browser scenarios across Chromium, Firefox, and WebKit; deployed verification remains the immutable #325 boundary |
-| #340 | AI 2D publication workflow | OPEN / capability contract | Process independently of #326 with the same finite state transition and privacy check |
+| #340 | AI 2D publication workflow | CLOSED / completed | QA comment `5522108745`; local stage-local Draft/Published round trip passed 3/3 across Chromium, Firefox, and WebKit; deployed verification remains the immutable #326 boundary |
 | #341 | Manual 3D publication workflow | OPEN / capability contract | Process independently of #355's deployment check; verify the API/UI state transition on one authenticated fixture and anonymous privacy |
 | #339 | AI 3D publication workflow | OPEN / capability contract | Process independently of #328 with the same finite state transition and anonymous privacy check |
 | #330 | Anonymous public 3D route `/p3d/:id` | OPEN / route contract | After #355/#349 and an intended published 3D fixture; verify public controls, privacy, responsive rendered geometry, and no owner actions |
@@ -12840,6 +12840,21 @@ fullscreen, and publication tests passed 67/67. GitHub QA comment
 3D, public, embed, immersive, or downloaded surface is claimed. #325 is
 closed permanently for this scope; later gaps require new/open linked work
 and must not reopen it.
+
+### #340 closure reconciliation — 2026-09-03
+
+#340 is closed as completed for the local AI-assisted 2D publication
+capability only. The acceptance path opens the actual stage-local hamburger
+dialog, verifies the named Draft/Published control and absence of the legacy
+page-header control, completes publish confirmation and Published → Draft, and
+passes 3/3 in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite with
+`BROWSER_QA_E2E_SPEC=e2e/ai2dPublication.spec.ts make browser-qa`.
+The browser assertion was reconciled to the current stacked dialog contract:
+it measures the actual publication trigger and verifies dialog containment,
+not obsolete fixed icon geometry. Exact deployed `/ai-projects/:id`
+verification remains the already-closed #326 boundary. Later gaps must use
+new/open linked work and must not reopen #340.
 
 ### #326 closure reconciliation — 2026-09-03
 

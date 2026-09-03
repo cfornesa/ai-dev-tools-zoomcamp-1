@@ -782,3 +782,10 @@ owner report as a session/revision-sensitive signal, but do not call prior
 scoped closures invalid. The exact immersive 3D route required the authorized
 temporary publication cycle and was restored to Draft. #344's camera stream
 boundary remains the only active verification blocker.
+
+Steering lifecycle lesson (2026-09-04): on the deployed 3D editor, the
+`Steer the piece` toggle alone does not request or claim camera access; the
+user must separately open `Piece controls` and activate `Enable camera` before
+the stream and local hand tracking become active. Treat this as an explicit
+#344 lifecycle criterion to resolve or justify, and do not infer physical
+gesture behavior from the toggle state alone.

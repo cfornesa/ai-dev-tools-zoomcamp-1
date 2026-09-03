@@ -14603,5 +14603,20 @@ controls at the exact routes and 375×812 viewport. #344 remains open only for
 physical-camera evidence after steering activation produced no camera stream
 or permission prompt; no new actionable defect or duplicate issue was found.
 
+## #344 steering lifecycle distillation — 2026-09-04
+
+The live authenticated editor exposed a concrete in-scope lifecycle gap. The
+`Steer the piece` action alone changes to `Stop steering with gestures` but
+does not start or claim a camera stream. Opening `Piece controls` and selecting
+`Enable camera` is separately required; that action produced an active 640×480
+stream and the local-hand-tracking status. #344 remains open and was groomed
+with this finite lifecycle criterion, without reopening any closed issue.
+
+Classification: `implementation-defect` for the steering activation contract,
+plus `verification-boundary` for physical movement. Next action is to resolve
+or explicitly justify the activation lifecycle, then use the active Chrome
+camera session for real held-pinch forward/back/strafe, release, hand-loss,
+disable, and stop-camera evidence.
+
 The remaining open work is #344's physical-camera verification boundary and
 the parent reconciliation containers; no parent is engineered directly.

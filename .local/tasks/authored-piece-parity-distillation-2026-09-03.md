@@ -875,6 +875,13 @@ controls at the exact routes and 375×812 viewport. #344 remains open only for
 physical-camera evidence after steering activation produced no camera stream
 or permission prompt; no new actionable defect or duplicate issue was found.
 
+#344 steering lifecycle distillation (2026-09-04): clicking `Steer the piece`
+alone changes the control to `Stop steering with gestures` but does not start
+or claim a camera stream. The separate `Piece controls → Enable camera` action
+produced an active 640×480 stream and local-hand-tracking status. #344 was
+groomed with this explicit lifecycle criterion and remains open; physical
+held-pinch evidence is still a separate browser/user verification boundary.
+
 Production-readiness reconciliation (2026-09-04): the valid production-like
 `make deploy-check` passed with zero Django warnings using explicit non-secret
 production settings, `npm --prefix frontend run build` passed, and the full

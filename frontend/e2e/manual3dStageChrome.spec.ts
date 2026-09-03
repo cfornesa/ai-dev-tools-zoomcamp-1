@@ -78,6 +78,13 @@ test.describe('manual 3D editor stage chrome', () => {
         const groupStyle = group ? getComputedStyle(group) : null;
         return {
           direction: groupStyle?.flexDirection,
+          iconSizes: Array.from(card.querySelectorAll('svg.piece-stage-icon')).map((icon) => {
+            const iconStyle = getComputedStyle(icon);
+            return {
+              width: Number.parseFloat(iconStyle.width),
+              height: Number.parseFloat(iconStyle.height),
+            };
+          }),
           overflow: getComputedStyle(card).overflow,
           scrollWidth: card.scrollWidth,
           clientWidth: card.clientWidth,
@@ -87,6 +94,11 @@ test.describe('manual 3D editor stage chrome', () => {
         };
       });
     expect(mobileCommandLayout.direction).toBe('column');
+    expect(mobileCommandLayout.iconSizes.length).toBeGreaterThan(0);
+    for (const icon of mobileCommandLayout.iconSizes) {
+      expect(icon.width).toBeLessThanOrEqual(20);
+      expect(icon.height).toBeLessThanOrEqual(20);
+    }
     expect(mobileCommandLayout.overflow).toBe('visible');
     expect(mobileCommandLayout.scrollWidth).toBe(mobileCommandLayout.clientWidth);
     expect(mobileCommandLayout.scrollable).toBe(false);
@@ -148,6 +160,16 @@ test.describe('manual 3D editor stage chrome', () => {
     await expect(
       toolbar.getByRole('group', { name: 'Publication status', exact: true }),
     ).toBeVisible();
+    const publicationPanel = toolbar.locator('.publication-status-controls-panel');
+    const publicationPanelBox = await publicationPanel.boundingBox();
+    const commandCardBox = await toolbar.locator('.piece-stage-command-card').boundingBox();
+    expect(publicationPanelBox).not.toBeNull();
+    expect(commandCardBox).not.toBeNull();
+    expect(publicationPanelBox!.width).toBeLessThanOrEqual(320);
+    expect(publicationPanelBox!.x).toBeGreaterThanOrEqual(commandCardBox!.x);
+    expect(publicationPanelBox!.x + publicationPanelBox!.width).toBeLessThanOrEqual(
+      commandCardBox!.x + commandCardBox!.width,
+    );
     await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
     await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
   });

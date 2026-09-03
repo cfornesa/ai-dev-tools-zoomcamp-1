@@ -12121,6 +12121,12 @@ the same one-action-per-row layout, with compact icons sized to sit cleanly
 beside their associated text. The card must remain free of scrollbars and
 overlap at both sizes.
 
+The owner also reports that the opened publication-status disclosure is too
+large and obscures the interface. #347 therefore requires its Draft/Published
+disclosure to remain a compact, stage-contained panel at both fixed viewports;
+an internal scrollbar is permitted only if deliberately opened disclosure
+content exceeds that panel's finite height, never on the closed command card.
+
 ## #347 engineering handoff — 2026-09-03
 
 Commit `042be72` implements the unified stacked command card and keeps the

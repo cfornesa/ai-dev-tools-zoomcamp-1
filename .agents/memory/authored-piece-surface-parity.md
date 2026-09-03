@@ -239,3 +239,7 @@ Unified overlay decision (2026-09-03): the owner prefers the command card's
 stacked action-list presentation at desktop and mobile, not only at the phone
 breakpoint. Use compact icons beside their associated text, keep one action per
 row, and require no command-card scrollbar or overlap at both fixed viewports.
+Publication disclosure refinement (2026-09-03): the opened Draft/Published
+panel must be compact and stage-contained at both fixed viewports. An internal
+scrollbar is acceptable only for deliberately expanded disclosure content, not
+for the closed command card or an ordinary status toggle.

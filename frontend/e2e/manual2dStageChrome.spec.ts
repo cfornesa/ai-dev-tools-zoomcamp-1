@@ -230,13 +230,28 @@ test.describe('manual 2D editor stage chrome', () => {
       .locator('.piece-stage-command-card > [role="group"]')
       .evaluate((element) => {
         const style = getComputedStyle(element);
+        const iconSizes = Array.from(element.querySelectorAll('svg.piece-stage-icon')).map(
+          (icon) => {
+            const iconStyle = getComputedStyle(icon);
+            return {
+              width: Number.parseFloat(iconStyle.width),
+              height: Number.parseFloat(iconStyle.height),
+            };
+          },
+        );
         return {
           display: style.display,
           flexDirection: style.flexDirection,
+          iconSizes,
         };
       });
     expect(runtimeLayout.display).toBe('flex');
     expect(runtimeLayout.flexDirection).toBe('column');
+    expect(runtimeLayout.iconSizes.length).toBeGreaterThan(0);
+    for (const icon of runtimeLayout.iconSizes) {
+      expect(icon.width).toBeLessThanOrEqual(20);
+      expect(icon.height).toBeLessThanOrEqual(20);
+    }
 
     await stageDialog.getByRole('button', { name: 'Close edit scene' }).click();
     await expect(authoringToolbar).toBeHidden();
@@ -245,6 +260,16 @@ test.describe('manual 2D editor stage chrome', () => {
     await expect(
       stageDialog.getByRole('group', { name: 'Publication status', exact: true }),
     ).toBeVisible();
+    const publicationPanel = stageDialog.locator('.publication-status-controls-panel');
+    const publicationPanelBox = await publicationPanel.boundingBox();
+    const commandCardBox = await stageDialog.locator('.piece-stage-command-card').boundingBox();
+    expect(publicationPanelBox).not.toBeNull();
+    expect(commandCardBox).not.toBeNull();
+    expect(publicationPanelBox!.width).toBeLessThanOrEqual(320);
+    expect(publicationPanelBox!.x).toBeGreaterThanOrEqual(commandCardBox!.x);
+    expect(publicationPanelBox!.x + publicationPanelBox!.width).toBeLessThanOrEqual(
+      commandCardBox!.x + commandCardBox!.width,
+    );
     await expect(stageDialog.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
     await expect(stageDialog.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
   });

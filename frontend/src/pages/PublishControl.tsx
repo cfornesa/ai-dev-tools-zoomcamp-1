@@ -246,7 +246,11 @@ function PublishControl({
 
   if (compact) {
     return (
-      <StageControlsPopover label={`Publication status: ${statusLabel}`} showVisibleLabel>
+      <StageControlsPopover
+        label={`Publication status: ${statusLabel}`}
+        panelClassName="publication-status-controls-panel"
+        showVisibleLabel
+      >
         {publicationPanel}
       </StageControlsPopover>
     );

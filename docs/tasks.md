@@ -14252,3 +14252,17 @@ asset identity, rendered screenshot requirements, publication workflow, and
 the no-reopen boundary. It is the next groomed transaction. No product code
 will be changed until the failing owner-visible revision or reproducible
 implementation defect is identified.
+## #379 current rendered comparison — 2026-09-04
+
+Fresh exact-route inspection against deployed `assets/index-CQvhOwx-.js`
+shows the authenticated editor's 44x44 hamburger inside the Preview canvas,
+without a functional row outside the canvas; opening it reveals named actions
+and `Publication status: Draft`. A fresh anonymous public route shows the
+stage-local hamburger; opening it reveals Screenshot, Download, Piece
+controls, and Fullscreen in the translucent stacked overlay, without
+owner-only controls.
+
+The owner-visible contradiction remains unresolved and is tracked by open
+#379 as a verification-boundary/deployment-session reconciliation task. No
+closed issue was reopened and no product source change was made from this
+comparison alone.

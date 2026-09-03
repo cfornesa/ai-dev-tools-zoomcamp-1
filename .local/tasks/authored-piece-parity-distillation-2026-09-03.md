@@ -598,3 +598,17 @@ editor/public route boundary and fixed 1280x900/375x812 screenshot criteria.
 No product source or product tests were changed during this distillation pass.
 The next handoff is #379; engineering must wait until its failing revision or
 reproducible defect is identified.
+## #379 current connected-browser comparison — 2026-09-04
+
+Fresh rendered inspection against `assets/index-CQvhOwx-.js` found the
+authenticated editor's closed toolbar as a 44x44 hamburger inside the Preview
+canvas, with no visible functional row outside it. Opening the menu exposed
+the labeled actions and `Publication status: Draft`. A fresh anonymous public
+inspection found the same visible stage-local hamburger; opening it exposed
+Screenshot, Download, Piece controls, and Fullscreen in the translucent
+stacked overlay, with no owner-only controls.
+
+This confirms the requested interaction model for the currently inspectable
+revision but does not resolve the owner's contradictory observed state. #379
+remains open as a verification-boundary/deployment-session reconciliation
+task. No product source or product tests were changed from this evidence.

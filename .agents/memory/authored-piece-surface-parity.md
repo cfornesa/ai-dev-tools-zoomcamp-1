@@ -625,3 +625,14 @@ DOM roles/bounds, or a different fixture/revision are not evidence against
 the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
+Current owner-visible reconciliation (2026-09-03): the connected Chrome and
+in-app browser sessions now serve `assets/index-CQvhOwx-.js`. Rendered
+inspection shows the authenticated `/projects3d/:id` editor's 44x44 hamburger
+inside the Preview canvas, no functional row outside the canvas, and an opened
+overlay containing named actions plus Draft status. A fresh anonymous `/p/:id`
+session shows the stage-local hamburger and, when opened, Screenshot,
+Download, Piece controls, and Fullscreen without owner controls. The owner
+continues to report the opposite state, so this remains an unresolved
+deployment/cache/session discrepancy tracked by new #379; do not close #379
+or alter closed issues until the differing owner-visible revision or a
+reproducible implementation defect is identified.

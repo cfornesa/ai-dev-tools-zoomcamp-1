@@ -13481,6 +13481,21 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+### Current owner-report reconciliation — 2026-09-03
+
+Fresh exact-route inspection found the public URL genuinely anonymous and its
+hamburger functional, but rendered inspection still fails visual parity: the
+opened action labels are detached from the oversized button rows. The private
+editor URL is unavailable without the owner-authenticated browser session, so
+editor parity and Draft/Published reversal remain unproven. Both routes serve
+`assets/index-CecM7AFX.js`, not reviewed checkout `98b5301`.
+
+These are existing deployment/fixture boundaries: #355 owns authenticated
+manual-editor verification and #356 owns anonymous public fixture/control
+verification. No duplicate deployment issue is needed, and no closed issue
+was reopened. The next independent local engineering transaction is #370,
+then #371; #369 is closed as the superseded distillation umbrella.
+
 ### #369 atomicity reconciliation — 2026-09-03
 
 #369 was found to combine two independently testable Full-download behaviors

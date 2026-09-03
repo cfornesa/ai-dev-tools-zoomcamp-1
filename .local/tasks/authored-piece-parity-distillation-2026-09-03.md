@@ -111,3 +111,20 @@ issue.
   stale published bundle remains the separately owned #355/#356 boundary.
 - Closure: #368 is ready for permanent completion closure. It must not be
   reopened for #369, deployment publication, or any other follow-up.
+
+## Current owner-report reconciliation — 2026-09-03
+
+- Exact public URL inspection is anonymous (`Login` is present) and the
+  hamburger opens the permitted public actions. Rendered inspection still
+  fails the requested visual contract: action labels are detached from their
+  large button rows instead of staying in cohesive labeled controls.
+- Exact private editor inspection is unavailable without the owner session;
+  editor parity and Draft/Published reversal remain unproven.
+- Both exact routes serve `assets/index-CecM7AFX.js`, while the reviewed
+  checkout is `98b5301`; the live asset is not the reviewed revision.
+- Duplicate/ownership decision: #355 owns authenticated deployed editor
+  verification; #356 owns anonymous public fixture/control verification. No
+  new deployment duplicate is created. Closed #347–#368 remain immutable.
+- Independent local artifact work remains actionable: #370 is the next
+  groomed transaction, followed by #371. These do not depend on the stale
+  deployment or missing editor session.

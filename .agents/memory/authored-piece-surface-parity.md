@@ -245,6 +245,17 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Current owner-report reconciliation (2026-09-03): a fresh anonymous visit to
+the exact public URL confirms the hamburger and permitted actions exist, but
+the opened live action labels are visibly detached from oversized rows and do
+not satisfy the requested cohesive overlay styling. The exact private editor
+URL is unavailable without the owner-authenticated browser session. Both
+routes still serve `assets/index-CecM7AFX.js`, not reviewed checkout `98b5301`.
+These are existing #355/#356 deployment and fixture verification boundaries;
+do not create a duplicate or reopen closed work. #369 was superseded by
+atomic #370 (opt-in downloaded steering lifecycle) and #371 (downloaded
+camera-view composition); both remain separate from live-route verification.
+
 Current distillation correction (2026-09-03): both supplied live routes still
 served the legacy `index-CecM7AFX.js`; the authenticated editor showed legacy
 opened controls with detached/missing labels, while the authenticated public

@@ -370,7 +370,22 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
         );
         expect(result.ok).toBe(true);
         if (!result.ok) return;
+        expect(result.filename).toBe(
+          `browser-qa-${immersive ? 'immersive' : 'regular'}-${variant}.zip`,
+        );
         const zip = await JSZip.loadAsync(Buffer.from(result.zipBase64, 'base64'));
+        const manifest = Object.keys(zip.files).filter((name) => !zip.files[name]!.dir).sort();
+        expect(manifest).toContain('README.txt');
+        expect(manifest).toContain('index.html');
+        expect(manifest).toContain('scripts/piece.js');
+        expect(manifest).toContain('runtime/three.min.js');
+        if (variant === 'full') {
+          expect(manifest).toContain('runtime/mediapipe/vision_bundle.mjs');
+          expect(manifest).toContain('runtime/mediapipe/gesture_recognizer.task');
+          expect(manifest.some((name) => name.startsWith('runtime/mediapipe/wasm/'))).toBe(true);
+        } else {
+          expect(manifest.some((name) => name.startsWith('runtime/mediapipe/'))).toBe(false);
+        }
         const root = fs.mkdtempSync(path.join(os.tmpdir(), 'export-3d-e2e-'));
         try {
           for (const [name, entry] of Object.entries(zip.files)) {
@@ -393,6 +408,7 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
           const dialog = page.getByRole('dialog', { name: 'Piece actions' });
           await expect(dialog).toBeVisible();
           await expect(dialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+          await expect(dialog.getByRole('button', { name: /download/i })).toHaveCount(0);
           await expect(
             dialog.getByRole('button', { name: 'Piece controls', exact: true }),
           ).toBeVisible();

@@ -1008,3 +1008,8 @@ serves `assets/index-CREpJGbM.js` but the shared fixture is Draft/private and
 returns the unavailable state, so exact deployed anonymous/fixed-viewport
 evidence cannot yet close the issue. QA comment 5533098204 records FAIL /
 verification-boundary. #389 remains open and handed off; #390 is next.
+
+## #390 engineering, QA, reconciliation, and closure — 2026-09-03
+
+Expanded `exportArtifacts.spec.ts` with explicit Full and Non-Camera ZIP
+filename and extracted-manifest assertions. `BROWSER_QA_E2E_SPEC=e2e/exportArtifacts.spec.ts make browser-qa` passed 57/57 across Chromium, Firefox, and WebKit. The target transaction verified regular and immersive extracted entry points, camera asset/control separation, opt-in camera lifecycle, responsive fixed-viewport containment, screenshots, and no unjustified scrollbar. QA comment 5533150553 records PASS. This issue excludes live-route verification; all finite criteria are complete and #390 is closed as completed. No closed issue was reopened.

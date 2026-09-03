@@ -12903,3 +12903,83 @@ WebKit because it still expects stage actions directly visible in the closed
 toolbar, while the current shared contract places them inside the hamburger
 dialog. This is a stale acceptance contract requiring engineering and QA
 reconciliation; no completion or evidence transfer is claimed.
+
+## Fresh task-distillation audit after owner parity clarification — 2026-09-03
+
+This is the current canonical backlog handoff. It supersedes stale status
+prose above for queue selection while preserving every prior issue as history.
+
+The parity target is only the `augment-humankind` PHP repository's pieces
+implementation and maintained examples, translated into this repository's
+Django/Python backend and React/TypeScript frontend. PHP is read-only reference
+material. Blog, collections, administration, and unrelated CMS content are
+outside scope.
+
+The exact deployed public 2D route `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`
+was inspected anonymously at 375×812. It served `index-CecM7AFX.js`, had body
+client/scroll widths of 360/360 before opening the stage menu and 375/375
+after opening it, and its fullscreen dialog occupied 375×812 without an
+internal scrollbar. However, the command rows were not unified: Screenshot
+and Fullscreen had text labels, Download was compact, and `Piece controls`
+rendered as a 37px icon-only action. This is actionable shared presentation
+work, not evidence that any closed issue should be reopened. The wrong
+`Blank canvas` fixture remains the separate #356 deployment/fixture boundary.
+
+The manual 3D owner route was confirmed to expose its hamburger, runtime
+actions, editor actions, fullscreen, and Draft/Published disclosure after the
+menu is opened in the available owner-capable browser context. Its deployed
+revision still requires the authenticated two-viewport evidence owned by
+#355. DOM presence and a different fixture do not transfer route or visual
+closure evidence.
+
+### Current atomic manifest
+
+| Record | Atomic boundary | Status and next action |
+| --- | --- | --- |
+| #362 | Shared React command-menu presentation: every action labeled, icon-plus-text, one stacked row, no closed-dialog scrollbar | **NEXT GROOMED**; engineer and test this one transaction only |
+| #355 | Authenticated deployed manual 3D owner route | Open verification boundary; requires owner-authenticated exact-route evidence |
+| #356 | Anonymous deployed public 2D route and intended published fixture | Open dependency-blocked; requires the intended fixture to be published |
+| #349/#360 | Manual/public 3D responsive sphere proportions | Open geometry parent/route child; do not infer evidence across routes |
+| #339/#341 | AI/manual 3D local publication transactions | Open; each has its own browser failure and must be completed separately |
+| #328, #330–#335 | AI 3D, public 3D, embed, and immersive route contracts | Open; one route and fixture per issue |
+| #344 | Physical held-pinch camera verification | Open hardware boundary; terminally hand off only after the supported attempt |
+| #320, #324, #274 | Release/readiness/historical parents | Open containers; never engineer as child tasks |
+
+Closed issues, including #347 and all previously closed route or capability
+transactions, are immutable. Any broader parity gap, stale deployment, wrong
+fixture, or failed follow-up becomes a new linked issue. No issue is reopened
+without the owner's explicit authorization naming that exact issue in the
+current conversation.
+
+### Distilled breakdown and blockers
+
+- #362 is one shared capability transaction because one React component/style/
+  test boundary owns the command-menu presentation.
+- #349/#360 remain separate because editor and public routes have different
+  fixtures and different rendered closure evidence.
+- #355/#356 remain separate because owner authentication and public fixture
+  publication are different external preconditions.
+- #339/#341 remain separate because each has its own state transition and
+  browser failure surface.
+- #331–#335 remain one route/variant per issue; no parent may absorb them into
+  a multi-route engineering transaction.
+- Downloaded Full/Non-Camera behavior remains artifact-scoped work. It must
+  prove extracted runtime controls and overlays, not merely ZIP creation; if
+  the existing artifact record lacks a finite contract, create a new artifact
+  issue rather than reopening a closed one.
+
+Wrong fixture and missing authenticated deployment evidence are dependency
+blockers and do not halt independent work. The #339/#341 failures are not
+dependency blockers and must be resolved in their own engineering→QA
+transactions. If a dependency blocker is not a user judgment, run fresh
+task-distillation at the end of that blocked issue, record its prerequisite,
+and rotate to the next independent issue.
+
+### Handoff
+
+Distillation and grooming are complete. The next and only groomed engineering
+target is **#362**. Engineering and testing must be performed together for
+#362, followed by reconciliation and GitHub closure (or terminal blocker
+handoff) before another issue enters engineering. Completion means closure;
+there is no “move on and close later” state. No product source or product
+tests were changed during this distillation pass.

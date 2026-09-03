@@ -245,6 +245,19 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+Current distillation correction (2026-09-03): a fresh anonymous mobile audit
+of the deployed public 2D pieces route found the shared fullscreen dialog
+contained and scrollbar-free, but its command actions were stylistically
+inconsistent: Screenshot and Fullscreen had visible labels while `Piece
+controls` remained icon-only. This is new shared presentation work tracked by
+#362. It does not reopen #347 or any other closed issue. The current deployed
+3D owner route exposes the hamburger and Draft/Published disclosure after
+activation, but exact authenticated route evidence remains #355. “Full CMS
+parity” remains limited to the reference pieces implementation/examples and
+this app's Django/Python plus React/TypeScript translation; PHP and unrelated
+CMS features remain out of scope. Closed issues are immutable unless the owner
+explicitly authorizes reopening that exact issue in the current conversation.
+
 AI 2D publication capability closure (2026-09-03): issue #340 is permanently
 closed for the local stage-local publication implementation. Its real browser
 path passed 3/3 across Chromium, Firefox, and WebKit, including the hamburger

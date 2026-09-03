@@ -278,6 +278,18 @@ The tests prove standalone execution, capability variants, gesture-gated
 camera behavior, privacy exclusions, and ZIP output. Fresh #357 owns the
 remaining responsive rendered-geometry evidence; never reopen #350 for it.
 
+Fresh published audit (2026-09-03): the current authenticated 3D editor serves
+`assets/index-CecM7AFX.js`, matching the current local production build. Its
+hamburger opens the shared runtime/publication surface and shows Draft/Published
+status, but the 3D editor has no equivalent authoring command set for adding,
+duplicating, deleting, or undoing scene objects; fresh #358 owns that defect.
+The 2D editor does expose those authoring actions under Preview hamburger → Edit
+scene. The anonymous public URL currently exposes its permitted controls but
+serves the wrong `Blank canvas` fixture, so #356 remains a deployment/fixture
+blocker. Treat prior broad closures as scope-limited historical transactions;
+never reopen them, and never use local DOM/source evidence as exact deployed
+visual parity proof.
+
 Scoped completion correction (2026-09-03): the owner clarified that #347 is
 functionally complete after its significant shared PieceStageToolbar,
 StageControlsPopover, publication-disclosure, and focused-test work. Its

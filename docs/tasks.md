@@ -12470,3 +12470,52 @@ The only remaining #350 boundary is rendered responsive geometry for the
 extracted artifact. It is represented by fresh #357 with its own artifact,
 viewport, screenshot, and interaction criteria. No closed issue was reopened;
 #357 is the next engineering/QA transaction.
+
+## Fresh owner-reported parity distillation — 2026-09-03
+
+This audit was performed after the owner reported that prior closures did not
+reflect the actual published application. No closed issue was reopened. The
+PHP `augment-humankind` repository remains a read-only behavioral/style
+reference; product implementation is Django/Python plus React/TypeScript.
+
+### Evidence and root-cause findings
+
+- The authenticated Chrome session reached the exact published 3D editor URL
+  and served `assets/index-CecM7AFX.js`, matching the current local production
+  build. The initial visible surface contains only the hamburger trigger by
+  design. Opening it exposes Screenshot, Download, Immersive, Sound, Piece
+  controls, Steer, Gesture guide, Save scene, Ask AI, Draft/Published status,
+  and Fullscreen.
+- At `375x812`, the opened overlay is a fixed full-viewport dialog; its command
+  card is 343px wide, 552px tall, contains stacked non-overlapping rows, has
+  visible Draft/Published controls, and the card itself has `overflow: visible`.
+  The page behind it still has document height beyond the viewport, which is a
+  separate background-page scrolling concern rather than an internal command
+  card scrollbar.
+- The authenticated 2D editor likewise exposes authoring commands only after
+  Preview hamburger → Edit scene. Its stage menu contains Add circle,
+  Add rectangle, Add line, Add polygon, Undo, Redo, duplicate/delete, layer/
+  group actions, fill color, and Save; this is not equivalent to the current
+  3D editor menu, which exposes only Save scene and Ask AI.
+- The anonymous public URL currently exposes the shared hamburger and permitted
+  public controls, but serves the `Blank canvas` fixture. That is insufficient
+  evidence for the intended non-empty published piece or the requested visual
+  parity, so #356 remains dependency-blocked.
+- Earlier closure claims were too broad: shared-component DOM/source checks and
+  disposable local browser runs were treated as proof of exact deployed route
+  parity, and unchecked route criteria were carried forward. The corrective
+  rule is scope-closed issue + explicit shifted work, never an unchecked
+  criterion hidden behind a completed label.
+
+### New actionable item
+
+| Issue | Current behavior | Desired finite outcome | Order/status |
+| --- | --- | --- | --- |
+| [#358](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/358) | Published manual 3D editor has runtime/publication controls but no 3D authoring command set in its stage menu | Add named 3D authoring operations, working-scene/outline updates, save behavior, keyboard/focus/responsive evidence, and explicit N/A decisions for unsupported operations | After #357 or as the next independent implementation transaction; OPEN / GROOMED |
+
+Existing #355 and #356 remain the exact deployed owner/public fixture
+verification boundaries. #357 remains the extracted-artifact responsive
+geometry boundary. #358 is the only new implementation defect from this audit;
+the other reported “missing controls” are either discoverability/entry-state
+observations already represented by those boundaries or are already present in
+the current published bundle after opening the hamburger.

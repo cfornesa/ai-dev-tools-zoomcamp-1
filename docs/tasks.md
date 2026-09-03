@@ -13481,6 +13481,20 @@ the corresponding Non-Camera omission. Closed #364 remains closed.
 The next groomed issue is #368. Engineering and QA must be completed and
 reconciled as one issue transaction before #369 or any other issue begins.
 
+## #372 transaction reconciliation — 2026-09-03
+
+Testing #341 exposed a new atomic defect: asynchronous sound activation could
+race the Piece controls disclosure reset and leave the reopened panel hidden,
+especially in Firefox. #372 owns that follow-up. Engineering now resets the
+disclosure synchronously when sound toggling begins, so the later
+`soundEnabled` commit cannot hide a freshly reopened panel.
+
+- Focused Scene3DPreview/controls tests: 37/37 passed.
+- `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa`:
+  3/3 passed across Chromium, Firefox, and WebKit.
+- #372 is complete and must be permanently closed. No closed issue was
+  reopened or modified.
+
 ## Canonical override: owner-reported parity re-audit — 2026-09-03
 
 Use the later re-audit record above as the current state. The historical

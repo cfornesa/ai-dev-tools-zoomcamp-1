@@ -96,6 +96,17 @@ blocker before the next issue begins. Any new gap is a new linked issue; no
 closed issue is reopened without explicit owner authorization naming that exact
 issue.
 
+## #372 transaction reconciliation — 2026-09-03
+
+Testing #341 exposed a new atomic cross-browser defect: asynchronous sound
+activation could reset Piece controls after the user had reopened it. #372
+was created as the linked follow-up. Engineering now resets the disclosure
+once, synchronously when sound toggling begins, rather than deriving reset
+state from the later asynchronous `soundEnabled` commit. Focused controls and
+sound tests passed 37/37, and the manual 3D browser scenario passed 3/3 in
+Chromium, Firefox, and WebKit. #372 is ready for permanent closure; no closed
+issue was reopened.
+
 ## #368 transaction reconciliation — 2026-09-03
 
 - Engineering completed the immersive export option through

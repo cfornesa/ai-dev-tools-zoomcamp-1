@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 import PieceStageIcon from './PieceStageIcon';
 
@@ -24,7 +24,11 @@ export default function StageControlsPopover({
 }) {
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
+  // Reset synchronously after a key change. A passive effect can race a
+  // pointer/keyboard activation that immediately reopens the disclosure,
+  // leaving Firefox with a newly opened panel that is closed by the stale
+  // reset. Layout timing preserves the reset contract without that window.
+  useLayoutEffect(() => {
     setOpen(false);
   }, [resetKey]);
 

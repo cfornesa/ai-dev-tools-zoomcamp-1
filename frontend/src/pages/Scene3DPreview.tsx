@@ -268,6 +268,7 @@ function Scene3DPreview({
   const sonicEngineRef = useRef<SonicEngine | null>(null);
   if (sonicEngineRef.current === null) sonicEngineRef.current = createSonicEngine();
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundControlsResetKey, setSoundControlsResetKey] = useState(0);
   const [soundVolume, setSoundVolume] = useState(50);
   const [voiceInstruments, setVoiceInstruments] = useState<Record<SonicVoice, SonicInstrument>>({
     ambient: 'synth',
@@ -282,6 +283,11 @@ function Scene3DPreview({
   async function handleToggleSound() {
     const engine = sonicEngineRef.current;
     if (!engine) return;
+    // Reset the nested disclosure before the asynchronous audio transition.
+    // Deriving the reset key from `soundEnabled` lets a user reopen Piece
+    // controls while enable() is pending, only for the later state commit to
+    // hide that freshly reopened panel in some browsers.
+    setSoundControlsResetKey((current) => current + 1);
     if (soundEnabled) {
       engine.disable();
       setSoundEnabled(false);
@@ -837,7 +843,7 @@ function Scene3DPreview({
             ) : undefined
           }
           controlsControl={
-            <StageControlsPopover resetKey={soundEnabled ? 'sound-enabled' : 'sound-disabled'}>
+            <StageControlsPopover resetKey={soundControlsResetKey}>
               <div className="editor-tool-group">
                 <button
                   type="button"

@@ -219,3 +219,12 @@ rendered parity, not as closure evidence. The PHP contract still requires
 stage-local compact controls, explicit publication state, and functional
 capability/privacy parity across regular, embed, immersive, and downloaded
 surfaces. Reconcile #347/#348 and deployment identity before route children.
+
+Release identity recheck (2026-09-03): the authenticated Replit `creatrweb`
+workspace reported published checkpoint `8d8f70e` from approximately two hours
+earlier and still offered `Republish`, while GitHub `origin/main` was `54cbb8d`.
+The live `index-WKdMIR98.js` bundle is therefore not the reviewed revision.
+Pull/Sync and Republish are external mutations owned by the release operator;
+published status alone is not asset identity. #321's separate repository
+Compose identity issue was verified closed and should not be reopened for this
+deployment mismatch.

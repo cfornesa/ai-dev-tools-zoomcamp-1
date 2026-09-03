@@ -225,3 +225,15 @@ shared revision and reconcile #347/#348 on the supplied fixtures before route
 children are processed. Completion is not closure: no issue is complete until
 its finite criteria, exact rendered evidence, and GitHub closed state are all
 reconciled.
+
+## Replit release identity recheck — 2026-09-03
+
+The authenticated Replit `creatrweb` workspace was inspected read-only. It
+reports the last published checkpoint as `8d8f70e` from approximately two
+hours ago and still exposes `Republish`; GitHub `origin/main` is `54cbb8d`.
+This confirms that the live `index-WKdMIR98.js` bundle is not the reviewed
+revision. Pull/Sync followed by Republish is the concrete next action owned by
+the release operator. It is an external workspace mutation, so it is not
+performed by distillation or inferred from the dashboard's published label.
+Issue #321 was separately verified as legitimately closed for its repository
+Compose identity contract and is not reopened by this deployment mismatch.

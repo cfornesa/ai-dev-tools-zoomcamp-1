@@ -13304,6 +13304,43 @@ The queue now rotates to **#367**, the next independently groomed issue. It
 must receive its own engineering, QA, reconciliation, and permanent closure
 before any later issue begins engineering.
 
+### #367 engineering and QA handoff — 2026-09-03
+
+#367 is the current single manual-3D editor transaction. Its fixed local
+entry point is `/projects3d/:id`, with the saved sphere/plane/two-light
+fixture, Visual tab, and the canvas hamburger menu. It is limited to visible
+Save scene / Ask AI authoring labels, their existing behaviors, publication
+disclosure reachability, and disclosure geometry. It does not include AI 3D,
+2D routes, deployed publication, or any closed issue.
+
+### #367 closure reconciliation — 2026-09-03
+
+#367 is complete for its scoped local manual 3D authoring-menu capability.
+Save scene and Ask AI to improve this scene now render visible labels inside
+their icon buttons and remain in the canvas-associated Editor actions group.
+Opened disclosures now participate in normal command-card flow; only their
+bounded contents scroll, keeping nested controls reachable in Firefox as well
+as Chromium/WebKit.
+
+Evidence: focused manual-3D tests passed 7/7; the Docker browser gate
+`BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa` passed
+3/3 across Chromium, Firefox, and WebKit at 1280x900 and 375x812; and
+`make frontend-check` passed lint with existing warnings only, formatting,
+typecheck, and 2,400/2,400 tests. Commit `a3d5791` records the implementation.
+
+Implemented/verified here: named visible authoring labels, existing Save and
+Ask-AI interactions, canvas-menu placement, publication Draft/Published
+disclosure reachability, responsive containment, nested scroll behavior,
+pointer/keyboard interactions, and no main command-card scrollbar. Shifted to
+linked work: exact authenticated deployed manual-3D verification #355, shared
+menu follow-up already closed as #366, anonymous public 2D verification #356,
+AI/editor route slices, and remaining pieces parity work. Local evidence does
+not claim that Replit has published this commit. No closed issue was reopened.
+
+The queue now rotates to the next independently groomed open route/workflow
+issue only after its deployment or fixture dependency is satisfied; no later
+engineering transaction is started in this reconciliation step.
+
 ## Owner-rejection task-distillation reset — 2026-09-03
 
 This is the current canonical distillation manifest after the owner reported

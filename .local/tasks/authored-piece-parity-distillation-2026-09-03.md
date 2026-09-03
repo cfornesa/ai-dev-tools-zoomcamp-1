@@ -303,3 +303,19 @@ a test selector that included unlabeled nested controls; it was corrected to
 measure each visible action label against its owning button, then rerun
 successfully. #374 is complete for its fixed local boundary and is ready for
 permanent closure. #356 is the next transaction; no closed issue was reopened.
+
+## #356 dependency-blocker reconciliation — 2026-09-03
+
+The first post-#374 publish was performed from a stale Replit workspace. The
+anonymous fixed public route still served the old desktop geometry (roughly
+765px command SVGs and labels outside their buttons), while mobile remained
+masked by its narrow media rule. Replit Git still visibly marks `6dd9c2b` as
+not pulled after refresh/fetch, Sync Changes, Pull, and a visible terminal
+fast-forward attempt. #356 therefore remains open and is not closable yet.
+
+Fresh task-distillation/duplicate review found no new product task. #374 and
+#367 are closed and immutable, while #356 owns this deployed public boundary.
+This is an external Replit synchronization dependency, not a judgment
+blocker. Do not reopen or duplicate anything; return to #356 only after the
+reviewed commit is pulled and republished, and otherwise use the next
+independent criterion-ready open task.

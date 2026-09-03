@@ -12002,6 +12002,17 @@ The next independent transaction is #349 (responsive 3D projection and mobile
 clipping). #348 remains deployment-blocked pending Replit Pull/Sync and
 Republish; no dependent route task is being started in parallel.
 
+## #349 deployment-boundary reconciliation — 2026-09-03
+
+Local aspect synchronization and responsive browser QA are complete, but #349
+remains open because its closure criteria require the exact published editor
+and public URLs at 1280×900 and 375×812. Replit's published checkpoint is still
+`8d8f70e`, while the reviewed local branch is at `737d08a`; the live asset is
+therefore not evidence for this revision. Post-blocker distillation found no
+smaller implementation task inside #349 and selected #344's manual-camera
+evidence transaction as the next possible independent work, subject to its
+physical-input limitation.
+
 ## Replit deployment identity recheck — 2026-09-03
 
 The authenticated Replit `creatrweb` workspace currently displays an older

@@ -37,6 +37,39 @@ test.describe('manual 3D editor stage chrome', () => {
         toolbar.getByRole('button', { name: 'Publication status: Draft' }),
       ).toBeVisible();
     }
+    const mobileCommandGeometry = await toolbar
+      .locator('.piece-stage-command-card > [role="group"] .piece-stage-icon-button')
+      .evaluateAll((elements) => {
+        const card = elements[0]?.closest('.piece-stage-command-card')?.getBoundingClientRect();
+        const visibleElements = elements.filter(
+          (element) => element.getClientRects().length > 0 && !element.closest('[hidden]'),
+        );
+        return {
+          card: card ? { x: card.x, y: card.y, right: card.right, bottom: card.bottom } : null,
+          controls: visibleElements.map((element) => {
+            const box = element.getBoundingClientRect();
+            return { x: box.x, y: box.y, right: box.right, bottom: box.bottom };
+          }),
+        };
+      });
+    expect(mobileCommandGeometry.card).not.toBeNull();
+    expect(mobileCommandGeometry.controls.length).toBeGreaterThan(0);
+    for (const control of mobileCommandGeometry.controls) {
+      expect(control.x).toBeGreaterThanOrEqual(mobileCommandGeometry.card!.x);
+      expect(control.right).toBeLessThanOrEqual(mobileCommandGeometry.card!.right);
+      expect(control.y).toBeGreaterThanOrEqual(mobileCommandGeometry.card!.y);
+      expect(control.bottom).toBeLessThanOrEqual(mobileCommandGeometry.card!.bottom);
+    }
+    for (const [index, control] of mobileCommandGeometry.controls.entries()) {
+      for (const other of mobileCommandGeometry.controls.slice(index + 1)) {
+        const overlaps =
+          control.x < other.right &&
+          control.right > other.x &&
+          control.y < other.bottom &&
+          control.bottom > other.y;
+        expect(overlaps).toBe(false);
+      }
+    }
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();

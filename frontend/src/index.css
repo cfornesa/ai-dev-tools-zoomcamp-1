@@ -2969,7 +2969,11 @@ select.ai-proposal-field-full-width {
 .piece-stage-command-overlay {
   position: fixed;
   inset: 0;
-  z-index: 135;
+  /* The trigger sits in the stage toolbar at z-index 136 so it remains
+     discoverable when the menu is closed. Once the overlay opens, it must
+     cover that trigger instead of letting its glyph bleed through the first
+     action (especially on narrow screens). */
+  z-index: 140;
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -3149,7 +3153,11 @@ select.ai-proposal-field-full-width {
   }
 
   .piece-stage-action-label {
-    font-size: 0.66rem;
+    /* The SVG icon remains visible and the full accessible name/title remains
+       available to assistive technology and focus tooltips. Removing the
+       repeated short text on phones prevents the command card from becoming
+       a clipped pseudo-toolbar when several controls are present. */
+    display: none;
   }
 }
 

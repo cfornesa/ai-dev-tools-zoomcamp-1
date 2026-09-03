@@ -1809,6 +1809,19 @@ textarea:disabled {
   min-height: 400px;
 }
 
+/* Issue #326: the AI editor mounts the p5 canvas directly inside the stage
+   shell rather than inside `.editor-scene-canvas`. p5 preserves the scene's
+   logical 800px width through an inline style, which otherwise creates page
+   overflow at phone widths. Scale only this route's direct canvas to its
+   stage width while preserving the scene aspect ratio; the renderer keeps
+   its logical dimensions for drawing and input mapping. */
+.ai-editor-workspace .piece-stage-shell > canvas {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto !important;
+}
+
 /* CameraControl owns permission and this element is only the live frame source
    for the renderer's camera composite; the scene preview draws the pixels. */
 .ai-editor-camera-source {

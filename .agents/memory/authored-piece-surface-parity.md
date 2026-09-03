@@ -245,6 +245,15 @@ the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
 
+AI 2D responsive closure (2026-09-03): issue #326 is permanently closed for
+the authenticated `/ai-projects/:id` consumer. Live audit found its direct p5
+canvas retained an 800px inline width at 375px, causing horizontal document
+overflow. A route-scoped CSS rule scales the rendered canvas proportionally
+without changing logical scene dimensions, and `frontend/e2e/ai2dResponsive.spec.ts`
+passed at 375x812 in Chromium, Firefox, and WebKit. This is not evidence for
+AI 2D publication (#340), other routes, artifacts, or any closed issue; later
+parity gaps require new/open linked work and never reopen #326.
+
 Deployed parity rejection audit (2026-09-03): authenticated Chrome can load
 the exact manual 3D owner route, but it serves stale asset
 `index-CecM7AFX.js`, which lacks the checkout's newer 3D authoring submenu;

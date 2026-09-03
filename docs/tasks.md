@@ -12773,7 +12773,7 @@ blocker handoff, before another issue begins.
 | #355 | Authenticated manual 3D owner route `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` | OPEN / verification-boundary | First after the reviewed revision is actually deployed; verify 1280×900 and 375×812 rendered screenshots, menu/authoring/publication interactions, asset identity, and no state mutation beyond the authorized round trip |
 | #356 | Anonymous public 2D route `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` | OPEN / dependency-blocked by fixture publication | Verify the intended non-empty fixture at both fixed viewports, public-only controls, privacy, and rendered discoverability after the owner publishes the intended fixture |
 | #325 | Authenticated manual 2D route `/projects/:id` excluding publication-only assertions | CLOSED / completed | QA comment `5521948799`; exact authenticated route verified at 1280×900 and 375×812 against `index-CecM7AFX.js`; no evidence transferred to other routes |
-| #326 | Authenticated AI 2D route `/ai-projects/:id` excluding publication-only assertions | OPEN / route contract | After shared surface #354; verify the AI editor's named controls and responsive rendered evidence on one owner fixture |
+| #326 | Authenticated AI 2D route `/ai-projects/:id` excluding publication-only assertions | CLOSED / completed | QA comment `5522027138`; AI route canvas containment verified at 375×812 in Chromium, Firefox, and WebKit; no evidence transferred to publication-only #340 or other routes |
 | #328 | Authenticated AI 3D route `/ai-projects3d/:id` excluding publication-only assertions | OPEN / route contract | After #349 and shared surface evidence; verify AI editor controls, 3D stage, and responsive rendered evidence on one owner fixture |
 | #338 | Manual 2D publication workflow | OPEN / capability contract | Process independently of #325: Draft → Published → Draft on one authenticated fixture, then verify anonymous privacy |
 | #340 | AI 2D publication workflow | OPEN / capability contract | Process independently of #326 with the same finite state transition and privacy check |
@@ -12840,3 +12840,19 @@ fullscreen, and publication tests passed 67/67. GitHub QA comment
 3D, public, embed, immersive, or downloaded surface is claimed. #325 is
 closed permanently for this scope; later gaps require new/open linked work
 and must not reopen it.
+
+### #326 closure reconciliation — 2026-09-03
+
+#326 is closed as completed for the authenticated AI-assisted 2D editor
+consumer only. Live evidence exposed a concrete phone defect: the AI route
+mounted an 800px inline-sized p5 canvas directly under the stage shell,
+producing document width 830px at a 375px viewport. The route-scoped CSS fix
+scales that direct canvas proportionally to the stage width while preserving
+the renderer's logical dimensions. `frontend/e2e/ai2dResponsive.spec.ts`
+asserts document and canvas containment at 375×812; the isolated
+Docker-backed browser-QA run passed in Chromium, Firefox, and WebKit (3/3).
+Focused AI editor tests passed 9/9; format, lint (existing warnings only), and
+typecheck passed. GitHub QA comment `5522027138` records the exact boundary.
+This closure makes no claim about AI 2D publication #340, public/embed/
+immersive routes, 3D routes, downloaded artifacts, or any closed issue.
+Later gaps require new or existing open linked work and must not reopen #326.

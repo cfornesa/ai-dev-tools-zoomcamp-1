@@ -12386,19 +12386,21 @@ against the broader pieces-parity goal, but it does not reopen #347.
 | [#353](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/353) | Published anonymous public 2D piece | Repository-backed public 2D stage-controls integration: shared hamburger disclosure, permitted controls, privacy boundary, and accessibility wiring | #354 shared surface; exact republished fixture verification shifted to #356 | CLOSED / completed; do not reopen |
 | [#356](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/356) | Republished public 2D piece verification | Exact published `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` anonymously at 1280x900 and 375x812; fixture identity, controls, privacy, responsive rendered evidence | Discovered during #353 QA; current URL serves the wrong blank fixture; requires owner republish | OPEN / DEPENDENCY-BLOCKED; resume after intended fixture is published |
 | [#350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/350) | Extracted standalone 2D piece | Repository-backed extracted 2D runtime: bundled assets, no network-only dependency, capability/permission behavior, privacy exclusions, and browser execution | #353 shared public contract; responsive rendered geometry shifted to #357 | CLOSED / completed; do not reopen |
-| [#357](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/357) | Portable 2D artifact responsive controls | One Full extracted artifact at 1280x900 and 375x812; intended non-empty artwork, stacked stage overlay, no overlap/clipping/ordinary scrollbar, gesture-gated camera | Discovered during #350 QA; requires responsive artifact screenshots | OPEN / GROOMED; next transaction |
+| [#357](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/357) | Portable 2D artifact responsive controls | One Full extracted artifact at 1280x900 and 375x812; intended non-empty artwork, stacked stage overlay, no overlap/clipping/ordinary scrollbar, gesture-gated camera | Discovered during #350 QA; responsive artifact evidence now reconciled | CLOSED / completed; do not reopen |
 | [#351](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/351) | Extracted Full and Non-Camera 3D pieces | Two extracted artifacts from one published 3D fixture; rendered capability differences, bundled assets, controls, privacy, and responsive evidence | After #352 and #349 provide the published 3D fixture | OPEN / GROOMED |
 
 The next handoff is #355 only while its owner-session dependency is available;
 if that dependency remains blocked, #356 is next.
-#354 and #352 have completed their engineering, QA, reconciliation, and closure
-transactions. #355 is now dependency-blocked after a good-faith local and
+#354, #352, and #357 have completed their engineering, QA, reconciliation, and
+closure transactions. #355 is now dependency-blocked after a good-faith local and
 published-session check; the blocker was re-distilled into this deployed-only
 boundary and independently actionable #353 may proceed while it remains
 blocked. Resume #355 when the required owner session/deployment identity is
 available. If a later report finds another gap after one of these closes,
 create another linked task unless the owner explicitly authorizes reopening
-that exact issue.
+that exact issue. The next independent implementation transaction is #358;
+#355 and #356 remain blocked verification transactions and are not silently
+reopened or skipped from the manifest.
 
 ### #354 closure reconciliation
 
@@ -12470,6 +12472,28 @@ The only remaining #350 boundary is rendered responsive geometry for the
 extracted artifact. It is represented by fresh #357 with its own artifact,
 viewport, screenshot, and interaction criteria. No closed issue was reopened;
 #357 is the next engineering/QA transaction.
+
+### #357 closure reconciliation
+
+Issue #357 closed as completed after its standalone extracted-artifact
+responsive transaction. The implementation moved the artifact from a
+three-button canvas toolbar to an accessible hamburger entry point with a
+fullscreen translucent command overlay, stacked labeled actions, focus/Escape
+handling, body-scroll locking, and a separately scrollable Piece controls
+panel. The existing controls remain packaged in the downloaded artifact,
+including screenshot, fullscreen, motion/demo controls, and gesture-gated
+camera controls.
+
+Focused export/runtime tests passed 68/68; frontend typecheck and production
+build passed; lint passed with the repository's existing warnings; and the
+disposable browser-QA runner passed 54/54 across Chromium, Firefox, and WebKit.
+The browser matrix exercised 1280x900 and 375x812, verified stacked action
+geometry without overlap or document overflow while the menu was open, and
+verified that scrolling is confined to the opened controls panel. The
+pre-existing `test-results/.last-run.json` modification was preserved and not
+included in the issue commit. #357 is permanently closed; any later artifact
+parity gap must be a new linked issue unless the owner explicitly authorizes
+reopening #357 in the current conversation.
 
 ## Fresh owner-reported parity distillation — 2026-09-03
 

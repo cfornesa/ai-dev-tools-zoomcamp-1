@@ -236,13 +236,25 @@ URL unavailable in the current anonymous browser session and the public
 `/p/:id` URL rendering the `Blank canvas` 2D fixture with a hamburger that
 opens only the permitted public controls. The expected authenticated editor
 authoring surface, Draft/Published reversal, expected public 3D fixture, and
-downloaded-runtime behavior were not proven. This reopens #347 as a false
-closure and keeps #348, #349, #325–#337, and #320/#324 open; no duplicate issue
-was created. Earlier closure comments that relied on a local/disposable run,
+downloaded-runtime behavior were not all proven. This does not reopen #347 or
+any other closed issue; #347 remains permanently closed. New gaps belong to
+criterion-ready #352–#358 or future linked issues. Earlier closure comments
+that relied on a local/disposable run,
 DOM roles/bounds, or a different fixture/revision are not evidence against
 the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of
 `docs/tasks.md`.
+
+Portable 2D responsive closure (2026-09-03): #357 is permanently closed for
+the extracted artifact's responsive action surface. The artifact now packages
+an accessible hamburger menu, fullscreen translucent overlay, stacked labeled
+actions, focus/Escape handling, body-scroll locking, and a separately
+scrollable Piece controls panel while retaining screenshot, fullscreen,
+motion/demo, and gesture-gated camera functions. Closure evidence is 68
+focused export/runtime tests, frontend typecheck/build, and 54/54
+Chromium/Firefox/WebKit browser-QA scenarios at 1280x900 and 375x812. Later
+artifact parity gaps must be new issues; do not reopen #357 without explicit
+owner authorization naming #357 in the current conversation.
 
 Closure correction (2026-09-03): the owner explicitly confirmed that closed
 issues are immutable unless that exact issue is explicitly authorized for
@@ -373,9 +385,10 @@ URL unavailable in the current anonymous browser session and the public
 `/p/:id` URL rendering the `Blank canvas` 2D fixture with a hamburger that
 opens only the permitted public controls. The expected authenticated editor
 authoring surface, Draft/Published reversal, expected public 3D fixture, and
-downloaded-runtime behavior were not proven. This reopens #347 as a false
-closure and keeps #348, #349, #325–#337, and #320/#324 open; no duplicate issue
-was created. Earlier closure comments that relied on a local/disposable run,
+downloaded-runtime behavior were not all proven. This does not reopen #347 or
+any other closed issue; #347 remains permanently closed. New gaps belong to
+criterion-ready #352–#358 or future linked issues. Earlier closure comments
+that relied on a local/disposable run,
 DOM roles/bounds, or a different fixture/revision are not evidence against
 the owner's current report. The complete closure-ready manifest and
 dependency order are recorded in the final distillation section of

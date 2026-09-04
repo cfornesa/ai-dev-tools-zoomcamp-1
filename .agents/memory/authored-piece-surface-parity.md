@@ -805,3 +805,13 @@ containers such as #274/#324 as open with a `reopened` reason, but the current
 workflow does not reopen or rewrite closed issues. Any later gap is a new
 criterion-ready issue or an existing open route transaction; closed #347–#349
 and #390 remain immutable.
+
+Current user-report reconciliation (2026-09-04): a fresh check of the exact
+deployed `assets/index-UmUBnruG` bundle at the supplied 3D editor route showed
+the in-canvas hamburger and the full stacked editor/runtime overlay at
+1280×900 and 375×812, including the Draft/Published disclosure. The supplied
+2D public route was unavailable while its project was Draft; after a
+temporary Published transition it showed its stage-local controls at both
+fixed viewports, then was restored to Draft. This is a publication/session
+boundary, not a reproduced product defect. Prior closed issue transactions
+remain valid and immutable; do not reopen them because a later report differs.

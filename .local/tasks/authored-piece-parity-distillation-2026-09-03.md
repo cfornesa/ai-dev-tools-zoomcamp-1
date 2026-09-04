@@ -1302,3 +1302,14 @@ large-chunk advisory. The authorized Chrome route is prepared with steering
 active. #344 remains open only for owner-controlled physical held-pinch,
 release/hand-loss safe-stop, disable/stop-camera, and denial/unavailable
 evidence. No closed issue was reopened or closed on synthetic evidence.
+
+## #344 owner acceptance and closure — 2026-09-04
+
+The owner manually verified desktop Chrome held-pinch movement in all four
+directions, concurrent mouse dragging, and safe stop on hand removal. Pinch
+release alone did not stop movement; the owner accepted this additive behavior
+because the PHP reference does not provide pinch-to-move. #344 is permanently
+closed as `completed` for its desktop hand-steering scope. Mobile behavior is
+assumed, not a required criterion; #391 was closed as `not_planned` and must
+not be pursued unless the owner explicitly reports a mobile defect. No closed
+issue was reopened.

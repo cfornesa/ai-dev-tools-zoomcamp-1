@@ -15101,3 +15101,15 @@ with steering activated. #344 remains open only for owner-controlled physical
 held-pinch movement, release/hand-loss safe-stop, disable/stop-camera, and
 denial/unavailable evidence. No closed issue was reopened or closed on
 synthetic evidence.
+
+## #344 owner acceptance and closure — 2026-09-04
+
+The owner manually verified desktop Chrome held-pinch forward/back and
+left/right movement, mouse dragging concurrently with pinch steering, and
+safe stop on hand removal. Pinch release alone did not stop movement; the
+owner explicitly accepted that additive behavior because the PHP reference
+does not provide pinch-to-move. #344 is permanently closed as `completed` for
+its desktop hand-steering scope. Mobile behavior is assumed, not a required
+criterion; issue #391 was closed as `not_planned` and must not be pursued
+unless the owner explicitly reports a mobile defect. No closed issue was
+reopened.

@@ -15533,3 +15533,32 @@ are recorded in
 tests. Direct local Playwright auth checks passed 5/5 at 375×812, and the
 credential build scan passed 3/3. GitHub has no open issues; `main` and
 `origin/main` are synchronized and the worktree is clean.
+
+## 284. Distill additional end-user AI providers — open
+
+Status: DISTILLED; #404 is the next issue.
+
+The 2026-09-04 investigation confirmed that the application currently has a
+Mistral-only hosted scene provider, encrypted Mistral-only credentials, and
+Mistral-only model preferences. Existing Google OAuth is login support, not
+Gemini model access. Mistral Vibe is already documented as developer tooling
+and is non-actionable for this end-user provider request.
+
+Five criterion-ready issues were created in dependency order:
+
+- [#404](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/404) —
+  generalize provider selection and encrypted owner credentials.
+- [#405](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/405) —
+  add the Google Gemini scene provider; depends on #404.
+- [#406](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/406) —
+  add the DeepSeek scene provider; depends on #404.
+- [#407](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/407) —
+  add multi-vendor account settings and model selection; depends on #404–#406.
+- [#408](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/408) —
+  add the cross-vendor API/browser regression matrix; depends on #405–#407.
+
+The complete issue manifest, duplicate report, blocker triage, verification
+boundary, and next-issue handoff are recorded in
+`.local/tasks/vendor-support-distillation-2026-09-04.md`. Durable architecture
+guidance is recorded in
+`.agents/memory/multi-vendor-ai-provider-credentials.md`.

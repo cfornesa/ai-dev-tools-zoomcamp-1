@@ -1313,3 +1313,14 @@ closed as `completed` for its desktop hand-steering scope. Mobile behavior is
 assumed, not a required criterion; #391 was closed as `not_planned` and must
 not be pursued unless the owner explicitly reports a mobile defect. No closed
 issue was reopened.
+
+## Parent reconciliation closure — 2026-09-04
+
+The remaining open parent containers were reconciled after all scoped child
+transactions became terminal. #274's capability children and #320/#324's
+authored-piece route/artifact children are complete; #344 is complete for
+owner-verified desktop hand steering, and #391 is explicitly `not_planned`.
+The parent manifests and closure comments were updated, then #274, #320, and
+#324 were closed as `completed`. No closed child issue was reopened. Mobile
+gesture behavior remains assumed and becomes work only if the owner reports a
+specific defect through a new issue.

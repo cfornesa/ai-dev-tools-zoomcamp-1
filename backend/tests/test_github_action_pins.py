@@ -53,9 +53,7 @@ def test_install_git_hooks_activates_versioned_hook_directory():
     assert recipe[0] == "git config core.hooksPath .githooks"
 
 
-def test_installed_pre_commit_hook_runs_pin_check_in_disposable_checkout(
-    tmp_path: Path,
-):
+def prepare_disposable_checkout(tmp_path: Path, workflow: str) -> Path:
     checkout = tmp_path / "checkout"
     checkout.mkdir()
     (checkout / ".githooks").mkdir()
@@ -65,17 +63,7 @@ def test_installed_pre_commit_hook_runs_pin_check_in_disposable_checkout(
     shutil.copy2(HOOK, checkout / ".githooks" / "pre-commit")
     shutil.copy2(MAKEFILE, checkout / "Makefile")
     shutil.copy2(SCRIPT, checkout / "scripts" / SCRIPT.name)
-    (checkout / ".github" / "workflows" / "pinned.yml").write_text(
-        """\
-name: Pinned
-on: workflow_dispatch
-jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567 # v4
-"""
-    )
+    (checkout / ".github" / "workflows" / "test.yml").write_text(workflow)
 
     subprocess.run(["git", "init"], cwd=checkout, check=True, capture_output=True, text=True)
     subprocess.run(
@@ -95,8 +83,12 @@ jobs:
     )
     assert hooks_path.stdout.strip() == ".githooks"
 
+    return checkout
+
+
+def commit_in_disposable_checkout(checkout: Path) -> subprocess.CompletedProcess[str]:
     subprocess.run(["git", "add", "."], cwd=checkout, check=True, capture_output=True, text=True)
-    commit = subprocess.run(
+    return subprocess.run(
         [
             "git",
             "-c",
@@ -108,14 +100,61 @@ jobs:
             "exercise installed hook",
         ],
         cwd=checkout,
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
     )
 
+
+def test_installed_pre_commit_hook_runs_pin_check_in_disposable_checkout(
+    tmp_path: Path,
+):
+    checkout = prepare_disposable_checkout(
+        tmp_path,
+        """\
+name: Pinned
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567 # v4
+""",
+    )
+
+    commit = commit_in_disposable_checkout(checkout)
+
+    assert commit.returncode == 0
     hook_output = commit.stdout + commit.stderr
     assert "python scripts/check-github-action-pins.py" in hook_output
     assert "GitHub Action pin check passed (1 workflow files scanned)." in hook_output
+
+
+def test_installed_pre_commit_hook_rejects_mutable_action_in_disposable_checkout(
+    tmp_path: Path,
+):
+    checkout = prepare_disposable_checkout(
+        tmp_path,
+        """\
+name: Mutable
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+""",
+    )
+
+    commit = commit_in_disposable_checkout(checkout)
+
+    assert commit.returncode != 0
+    assert "GitHub Action pin check failed." in commit.stderr
+    assert (
+        ".github/workflows/test.yml:7: actions/checkout@v4 "
+        "must use a full 40-character commit SHA"
+    ) in commit.stderr
+    assert "Remediation: replace each mutable release tag or branch" in commit.stderr
 
 
 @pytest.fixture

@@ -117,6 +117,26 @@ manage.py runserver` and, in a second shell, `cd frontend && npm run dev`.
 CI runs on every push and pull request. See AGENTS.md's "Commands"
 section for the full list of `make`/`npm` targets.
 
+## Local commit checks
+
+The repository includes a local `pre-commit` hook that runs the same
+offline GitHub Action pin check used by CI. Enable it once after cloning:
+
+```bash
+make install-git-hooks
+```
+
+The hook calls `make check-github-action-pins`; it does not contact GitHub
+or duplicate the checker. The guarded push workflow also runs this target,
+so `make git-safe-push` remains protected when the hook has not been enabled.
+
+If the hook cannot run because local tooling is unavailable, run
+`python scripts/check-github-action-pins.py` directly and fix any reported
+mutable references before committing. To make one explicitly documented
+exception while repairing the local setup, use
+`SKIP_GITHUB_ACTION_PIN_CHECK=1 git commit ...`; this only skips the local
+hook and does not bypass the CI check.
+
 ## Safe Git pushes
 
 When pushing `main` from a Replit workspace, use the repository-local guarded

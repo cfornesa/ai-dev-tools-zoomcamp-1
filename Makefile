@@ -4,7 +4,8 @@
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
 git-safe-push browser-qa compose-preflight \
 e2e webkit-fullscreen dev run deploy-check migrate smoke-local smoke-hosted-git \
-check-live-provider-alert check-github-action-pins check-workflows
+check-live-provider-alert check-github-action-pins check-workflows \
+install-git-hooks
 
 # Run every backend and frontend check (same checks CI runs).
 check: check-workflows check-live-provider-alert backend-check frontend-check
@@ -140,5 +141,9 @@ smoke-hosted-git:
 
 # Refresh origin/main, classify history safely, and push only a fast-forward.
 # GIT_URL is read by a temporary credential helper and is never persisted.
-git-safe-push:
+git-safe-push: check-github-action-pins
 	GIT_URL=$${GIT_URL:-} scripts/git-safe-push.sh
+
+install-git-hooks:
+	git config core.hooksPath .githooks
+	printf 'Git hooks enabled from .githooks\n'

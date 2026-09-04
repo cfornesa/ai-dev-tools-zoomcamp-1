@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+if [ "${SKIP_GITHUB_ACTION_PIN_CHECK:-}" = "1" ]; then
+    printf '%s\n' \
+        'WARNING: skipping the GitHub Action pin check for this commit.' >&2
+    exit 0
+fi
+
+exec make check-github-action-pins

@@ -158,6 +158,26 @@ def test_published_smoke_waits_for_health_before_browser_routes():
     assert 'probe "/accounts/login/" "200"' in smoke
 
 
+def test_ci_runs_published_smoke_against_an_isolated_published_like_runtime():
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    job = workflow.split("  published-routing-disposable:", 1)[1].split(
+        "  hosted-git-safe-push:", 1
+    )[0]
+
+    assert "github.event_name != 'deployment_status'" in job
+    assert "services:" in job
+    assert "POSTGRES_DB: creatrweb_published_smoke" in job
+    assert "creatrweb_published_smoke" in job
+    assert "scripts/start-production.sh" in job
+    assert "FRONTEND_SERVE_MODE: preview" in job
+    assert "RUN_MIGRATIONS_ON_START: \"false\"" in job
+    assert "uv run python manage.py migrate --noinput" in job
+    assert "PUBLISHED_APP_URL: http://127.0.0.1:5000" in job
+    assert "run: scripts/smoke-published.sh" in job
+    assert "environment_url" not in job
+    assert "target_url" not in job
+
+
 def test_launcher_starts_vite_only_after_delayed_django_health(launcher_doubles):
     bin_dir, state_file = launcher_doubles
 

@@ -15124,3 +15124,86 @@ its desktop hand-steering scope. Mobile behavior is assumed, not a required
 criterion; issue #391 was closed as `not_planned` and must not be pursued
 unless the owner explicitly reports a mobile defect. No closed issue was
 reopened.
+
+## 272. List published 2D and 3D authored pieces in the public gallery
+
+Status: IMPLEMENTED LOCALLY — BROWSER QA BLOCKED
+
+GitHub issue: [#392](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/392)
+
+The owner reported that published pieces do not appear in the public gallery
+while checking the mobile gesture surface. Investigation found that the
+header's `/gallery` route calls only `GET /api/public/projects/`, the 2D
+`Project` gallery endpoint. Published `Project3D` records have public detail
+and publish endpoints from #296 but no gallery-list endpoint or frontend list
+adapter. Generated `ArtPiece` records remain a separate `/art-pieces/gallery`
+surface covered by #315/#319 and are not folded into this route.
+
+This is a new route/data-contract issue. Closed #46/#50, #296, #315, #320,
+and #324 remain immutable historical scopes and are not reopened.
+
+Closure contract: anonymous `/gallery`; one eligible published, non-deleted,
+versioned 2D fixture and one 3D fixture; mixed deterministic pagination;
+safe public card fields only; correct `/p/:id` and `/p3d/:id` links; immediate
+removal after unpublish; accessible loading/empty/error/thumbnail/pagination
+states; fixed 1280x900 and 375x812 browser evidence; focused backend/frontend
+checks plus `make check`. Generated `ArtPiece` routes, viewer controls,
+gesture behavior, embeds, immersive routes, and downloaded artifacts are out
+of scope.
+
+Implementation commit: `c2cc1c8`.
+
+Focused backend (33 passed), focused frontend/accessibility (18 passed),
+frontend full suite (2,407 passed), backend lint/typecheck, frontend
+typecheck/lint, and production build passed. The required disposable browser
+runner was invoked but is blocked because the Docker daemon is unavailable;
+#392 remains open pending browser QA at 1280x900 and 375x812.
+
+Next action: rerun
+`BROWSER_QA_E2E_SPEC=e2e/publicGalleryMixedPieces.spec.ts make browser-qa`
+with Docker available, inspect the retained screenshots, then reconcile the
+GitHub issue.
+
+## 273. Owner-reported authored-piece parity audit — 2026-09-03
+
+Status: #392 IMPLEMENTED LOCALLY — BROWSER QA BLOCKED; FOLLOW-UPS QUEUED
+
+The owner's new screenshots and report identify six independently observable
+boundaries. The audit found existing implementation or historical coverage in
+each area, but also found owner-visible gaps or contradictions that cannot
+reopen closed issues. New criterion-ready GitHub issues were filed:
+
+- [#392](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1): anonymous
+  `/gallery` must list published structured 2D and 3D authored pieces.
+- [#393](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1): owner 3D
+  thumbnails must reflect the current saved scene rather than a fallback.
+- [#394](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1): 3D
+  private/public state and controls must be visibly discoverable.
+- [#395](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1): 2D layer
+  selection must have an explicit, clearable deselection path.
+- [#396](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1): 3D outline
+  selection must have a clearable layer-equivalent interaction contract.
+- [#397](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1): 2D Preview
+  canvas and overlays must remain inside the designated panel box.
+- [#398](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1): manual 3D
+  Preview/outline/inspector/editor layout must be non-overlapping and
+  responsive with documented 2D parity differences.
+
+Duplicate/coverage decisions: closed #46/#50 and #134 cover the original 2D
+gallery and thumbnail backfill; closed #243 covers the original 3D thumbnail
+pipeline; closed #296/#376 cover 3D publication mechanics; closed #152/#183
+cover prior 2D bidirectional layer selection; closed #195/#304/#358 cover
+prior 3D outline/editor work; and closed #325/#338/#377 cover earlier route
+and layout transactions. All remain immutable. Generated `ArtPiece` routes
+remain under #315/#319 and are not mixed with structured authored pieces.
+
+Order rationale: #392 is the next independent public-gallery workflow and
+establishes the discoverability/data boundary. #393 and #394 can follow as
+owner-card/editor capability transactions. #395/#396 are independent editor
+selection transactions. #397 precedes #398 conceptually because the 2D
+Preview panel is the stated layout reference, but each has its own route and
+can be verified independently. Engineering must process one issue at a time.
+
+The complete evidence, fixed fixtures/viewports, finite closure criteria,
+commands, blockers, and handoff are recorded in
+`.local/tasks/public-gallery-published-pieces-distillation-2026-09-04.md`.

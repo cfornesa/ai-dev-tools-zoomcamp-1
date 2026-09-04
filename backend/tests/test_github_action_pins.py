@@ -52,6 +52,17 @@ def test_ci_workflow_validation_job_runs_pin_check():
     assert "        run: python scripts/check-github-action-pins.py" in lines[job_start:job_end]
 
 
+def test_ci_workflow_validation_job_runs_for_push_and_pull_request_events():
+    lines = CI_WORKFLOW.read_text().splitlines()
+    trigger_start = lines.index("on:")
+    job_start = lines.index("  workflow-validation:")
+    job_if = next(line for line in lines[job_start:] if line.startswith("    if:"))
+
+    assert "  push:" in lines[trigger_start:job_start]
+    assert "  pull_request:" in lines[trigger_start:job_start]
+    assert job_if == "    if: ${{ github.event_name != 'deployment_status' }}"
+
+
 def test_install_git_hooks_activates_versioned_hook_directory():
     makefile = MAKEFILE.read_text()
     lines = makefile.splitlines()

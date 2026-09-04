@@ -15021,3 +15021,13 @@ hamburger, all named public controls, containment, and no owner metadata. The
 fixture was restored to Draft and the anonymous route returned the
 unavailable/private state. GitHub comment 5533685789 records the complete
 criterion matrix. The next FIFO issue is #386; no closed issue was reopened.
+
+## #386 closure reconciliation — 2026-09-04
+
+#386 is permanently closed as `completed` for the exact anonymous regular 2D
+embed route. Deployed asset `assets/index-UmUBnruG` passed 1280×900 and
+375×812 rendered checks for the chrome-less stage-local hamburger, named
+controls, containment, and absence of site chrome. The fixture was restored to
+Draft and the anonymous embed returned the unavailable/private state. GitHub
+comment 5533699601 records the complete criterion matrix. The next FIFO issue
+is #387; no closed issue was reopened.

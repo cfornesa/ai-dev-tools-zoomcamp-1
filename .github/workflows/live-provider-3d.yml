@@ -119,7 +119,7 @@ jobs:
     needs: live-provider-3d
     # Manual runs are intentionally investigation-only. A single stable issue
     # also prevents recurring scheduled failures from creating an issue storm.
-    if: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.notification_probe == 'true')) && needs.live-provider-3d.result == 'failure' }}
+    if: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notification_probe)) && needs.live-provider-3d.result == 'failure' }}
     runs-on: ubuntu-latest
     permissions:
       issues: write

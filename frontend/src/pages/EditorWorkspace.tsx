@@ -3140,6 +3140,21 @@ function EditorWorkspace() {
                 position: 'relative',
                 width: '100%',
                 overflow: zoom > 1 ? 'hidden' : 'visible',
+                // Issue #397: centers the canvas via flexbox rather than the
+                // `left/top: 50%` + negative-margin trick this replaced.
+                // That trick only resolves correctly when its containing
+                // block (this viewport) has a *definite* height to compute
+                // the percentage `top` against -- but this viewport's own
+                // height is auto, sized by its content (this very canvas),
+                // an indeterminate/circular case where each browser resolves
+                // the percentage differently. The observed failure mode was
+                // the canvas rendering with a large, effectively-random
+                // vertical offset, escaping this viewport's box entirely and
+                // covering unrelated page content above the Preview panel.
+                // Flexbox centering has no such percentage-resolution step.
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <div className={previewView !== 'visual' ? 'editor-scene-visual-hidden' : undefined}>
@@ -3153,10 +3168,6 @@ function EditorWorkspace() {
                     position: 'relative',
                     width: canvasWidth * fitScale,
                     height: canvasHeight * fitScale,
-                    left: '50%',
-                    top: '50%',
-                    marginLeft: -(canvasWidth * fitScale) / 2,
-                    marginTop: -(canvasHeight * fitScale) / 2,
                     // Issue #156: the single CSS transform that implements
                     // zoom/pan — see this file's module doc comment and the
                     // issue's own "Implementation note" for why a `transform:

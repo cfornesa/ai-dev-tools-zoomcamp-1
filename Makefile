@@ -4,14 +4,14 @@
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
 git-safe-push browser-qa compose-preflight \
 e2e webkit-fullscreen dev run deploy-check migrate smoke-local smoke-hosted-git \
-	check-live-provider-alert check-workflows
+check-live-provider-alert check-github-action-pins check-workflows
 
 # Run every backend and frontend check (same checks CI runs).
 check: check-workflows check-live-provider-alert backend-check frontend-check
 
 backend-check: backend-lint backend-format-check backend-typecheck backend-test
 
-check-workflows:
+check-workflows: check-github-action-pins
 	@if command -v actionlint >/dev/null 2>&1; then \
 		actionlint; \
 	elif command -v docker >/dev/null 2>&1; then \
@@ -23,6 +23,9 @@ check-workflows:
 
 check-live-provider-alert:
 	python scripts/check-live-provider-alert.py
+
+check-github-action-pins:
+	python scripts/check-github-action-pins.py
 
 frontend-check: frontend-lint frontend-format-check frontend-typecheck frontend-test
 

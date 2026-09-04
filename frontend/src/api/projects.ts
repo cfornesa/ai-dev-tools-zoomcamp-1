@@ -190,6 +190,7 @@ export type PublicGalleryProject = {
   thumbnail_url: string | null;
   remix_provenance: RemixProvenance | null;
   published_at: string;
+  renderer: '2d' | '3d';
 };
 
 /** Task 50: one page of the public gallery. `next_cursor` is `null` exactly

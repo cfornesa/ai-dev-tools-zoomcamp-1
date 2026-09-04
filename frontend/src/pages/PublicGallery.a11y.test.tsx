@@ -27,6 +27,7 @@ function baseProject(
     thumbnail_url: '/api/public/projects/p1/thumbnail.png',
     remix_provenance: null,
     published_at: '2026-08-01T00:00:00Z',
+    renderer: '2d',
     ...overrides,
   };
 }

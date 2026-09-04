@@ -277,8 +277,18 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ["id", "title", "owner", "thumbnail_url", "remix_provenance", "published_at"]
+        fields = [
+            "id",
+            "title",
+            "owner",
+            "thumbnail_url",
+            "remix_provenance",
+            "published_at",
+            "renderer",
+        ]
         read_only_fields = fields
+
+    renderer = serializers.CharField(default="2d", read_only=True)
 
     def get_thumbnail_url(self, project: Project) -> str | None:
         if project.current_version_id is None:
@@ -287,6 +297,25 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
 
     def get_remix_provenance(self, project: Project) -> dict | None:
         return remix_provenance_data(project)
+
+
+class PublicProject3DListItemSerializer(serializers.ModelSerializer):
+    """The safe card payload for a published 3D authored piece."""
+
+    id = serializers.UUIDField(source="public_id", read_only=True)
+    owner = serializers.CharField(source="owner.username", read_only=True)
+    thumbnail_url = serializers.SerializerMethodField()
+    renderer = serializers.CharField(default="3d", read_only=True)
+
+    class Meta:
+        model = Project3D
+        fields = ["id", "title", "owner", "thumbnail_url", "published_at", "renderer"]
+        read_only_fields = fields
+
+    def get_thumbnail_url(self, project: Project3D) -> str | None:
+        if project.current_version_id is None:
+            return None
+        return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
 
 
 class SceneVersionListSerializer(serializers.ModelSerializer):

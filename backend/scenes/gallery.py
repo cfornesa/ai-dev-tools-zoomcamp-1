@@ -72,7 +72,7 @@ from datetime import datetime
 from django.db.models import Q, QuerySet
 from django.utils.dateparse import parse_datetime
 
-from scenes.models import Project
+from scenes.models import Project, Project3D
 
 DEFAULT_PAGE_SIZE = 24
 MAX_PAGE_SIZE = 60
@@ -126,6 +126,53 @@ def filter_after_cursor(
     """Keyset ("seek") filter: strictly-after the given (published_at, id) in
     the queryset's own `-published_at, -id` ordering — see this module's
     docstring for why this, rather than `OFFSET`, is duplicate/gap-safe."""
+    return queryset.filter(
+        Q(published_at__lt=published_at) | Q(published_at=published_at, id__lt=project_id)
+    )
+
+
+def eligible_projects3d() -> QuerySet[Project3D]:
+    """Published 3D projects eligible for the mixed public gallery."""
+    return (
+        Project3D.objects.filter(
+            visibility=Project3D.Visibility.PUBLIC,
+            current_version__isnull=False,
+            published_at__isnull=False,
+        )
+        .select_related("owner", "current_version")
+        .order_by("-published_at", "-id")
+    )
+
+
+def encode_gallery_cursor(published_at: datetime, renderer: str, project_id: int) -> str:
+    """Encode the global cursor used by the mixed 2D/3D listing."""
+    raw = f"gallery|{published_at.isoformat()}|{renderer}|{project_id}"
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
+
+
+def decode_gallery_cursor(cursor: str) -> tuple[datetime, str, int]:
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode("ascii")).decode("utf-8")
+        prefix, published_at_raw, renderer, project_id_raw = raw.rsplit("|", 3)
+        published_at = parse_datetime(published_at_raw)
+        project_id = int(project_id_raw)
+    except (binascii.Error, ValueError, UnicodeDecodeError) as exc:
+        raise InvalidCursor from exc
+    if prefix != "gallery" or published_at is None or renderer not in {"2d", "3d"}:
+        raise InvalidCursor
+    return published_at, renderer, project_id
+
+
+def filter_after_gallery_cursor(
+    queryset: QuerySet, published_at: datetime, renderer: str, project_id: int
+) -> QuerySet:
+    """Seek past a row in the global order (-published_at, renderer, -id)."""
+    renderer_rank = 0 if renderer == "2d" else 1
+    queryset_renderer_rank = 0 if queryset.model is Project else 1
+    if queryset_renderer_rank < renderer_rank:
+        return queryset.filter(published_at__lt=published_at)
+    if queryset_renderer_rank > renderer_rank:
+        return queryset.filter(published_at__lte=published_at)
     return queryset.filter(
         Q(published_at__lt=published_at) | Q(published_at=published_at, id__lt=project_id)
     )

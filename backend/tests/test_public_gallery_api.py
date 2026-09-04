@@ -17,7 +17,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from scenes.gallery import decode_cursor, encode_cursor
-from scenes.models import EditSessionDraft, Project, SceneVersion
+from scenes.models import EditSessionDraft, Project, Project3D, SceneVersion, SceneVersion3D
 
 BLANK_SCENE = json.loads(
     (
@@ -26,6 +26,15 @@ BLANK_SCENE = json.loads(
         / "fixtures"
         / "valid"
         / "blank.json"
+    ).read_text()
+)
+MINIMAL_SCENE_3D = json.loads(
+    (
+        Path(__file__).resolve().parent.parent.parent
+        / "schema"
+        / "fixtures3d"
+        / "valid"
+        / "minimal.json"
     ).read_text()
 )
 
@@ -85,6 +94,26 @@ def _publish_via_api(client, project):
     return response
 
 
+def _make_project3d(owner_user, *, title="A 3D study"):
+    project = Project3D.objects.create(owner=owner_user, title=title)
+    version = SceneVersion3D.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=copy.deepcopy(MINIMAL_SCENE_3D),
+        created_by=owner_user,
+    )
+    project.current_version = version
+    project.save(update_fields=["current_version"])
+    return project
+
+
+def _publish_3d_directly(project, when=None):
+    project.visibility = Project3D.Visibility.PUBLIC
+    project.published_at = when or timezone.now()
+    project.save(update_fields=["visibility", "published_at"])
+    return project
+
+
 def _unpublish_via_api(client, project):
     response = client.post(f"/api/projects/{project.public_id}/unpublish/")
     assert response.status_code == 200
@@ -105,6 +134,68 @@ def test_only_public_projects_appear(anon_client, owner):
     assert response.status_code == 200
     titles = [item["title"] for item in response.json()["results"]]
     assert titles == ["Public one"]
+
+
+@pytest.mark.django_db
+def test_mixed_gallery_includes_public_2d_and_3d_cards(anon_client, owner):
+    older_2d = _make_project(owner, title="2D card", description="d")
+    _publish_directly(older_2d, timezone.now() - timezone.timedelta(minutes=2))
+    newer_3d = _make_project3d(owner, title="3D card")
+    _publish_3d_directly(newer_3d, timezone.now() - timezone.timedelta(minutes=1))
+
+    response = anon_client.get(LIST_URL)
+
+    assert response.status_code == 200
+    assert [(item["title"], item["renderer"]) for item in response.json()["results"]] == [
+        ("3D card", "3d"),
+        ("2D card", "2d"),
+    ]
+    assert response.json()["results"][0]["id"] == str(newer_3d.public_id)
+    assert response.json()["results"][0]["thumbnail_url"].endswith("/thumbnail/")
+
+
+@pytest.mark.django_db
+def test_private_or_deleted_3d_projects_are_excluded(anon_client, owner):
+    private = _make_project3d(owner, title="Private 3D")
+    deleted = _make_project3d(owner, title="Deleted 3D")
+    _publish_3d_directly(deleted)
+    deleted.is_deleted = True
+    deleted.deleted_at = timezone.now()
+    deleted.save(update_fields=["is_deleted", "deleted_at"])
+
+    body = anon_client.get(LIST_URL).json()
+
+    assert body["results"] == []
+    assert private.visibility == Project3D.Visibility.PRIVATE
+
+
+@pytest.mark.django_db
+def test_mixed_pagination_has_no_duplicates_or_gaps(anon_client, owner):
+    base = timezone.now() - timezone.timedelta(hours=1)
+    expected = []
+    for index in range(4):
+        if index % 2:
+            project = _make_project3d(owner, title=f"Mixed {index}")
+            _publish_3d_directly(project, base + timezone.timedelta(minutes=index))
+        else:
+            project = _make_project(owner, title=f"Mixed {index}", description="d")
+            _publish_directly(project, base + timezone.timedelta(minutes=index))
+        expected.append(project.title)
+
+    seen = []
+    cursor = None
+    while True:
+        params = {"page_size": 2}
+        if cursor:
+            params["cursor"] = cursor
+        body = anon_client.get(LIST_URL, params).json()
+        seen.extend(item["title"] for item in body["results"])
+        if not body["has_more"]:
+            break
+        cursor = body["next_cursor"]
+
+    assert seen == ["Mixed 3", "Mixed 2", "Mixed 1", "Mixed 0"]
+    assert set(seen) == set(expected)
 
 
 @pytest.mark.django_db
@@ -313,11 +404,27 @@ def test_cursor_round_trips(owner):
 def test_anonymous_and_signed_in_requests_return_identical_fields(owner_client, anon_client, owner):
     project = _make_project(owner, title="Same for everyone", description="d")
     _publish_directly(project)
+    project3d = _make_project3d(owner, title="Same 3D for everyone")
+    _publish_3d_directly(project3d)
 
     anon_body = anon_client.get(LIST_URL).json()
     signed_in_body = owner_client.get(LIST_URL).json()  # requested by the project's own owner
 
     assert anon_body == signed_in_body
+
+
+@pytest.mark.django_db
+def test_3d_card_excludes_scene_and_owner_fields(anon_client, owner):
+    project = _make_project3d(owner, title="Safe 3D card")
+    _publish_3d_directly(project)
+
+    item = anon_client.get(LIST_URL).json()["results"][0]
+
+    assert set(item) == {"id", "title", "owner", "thumbnail_url", "published_at", "renderer"}
+    assert item["id"] == str(project.public_id)
+    assert item["renderer"] == "3d"
+    assert "scene_json" not in json.dumps(item)
+    assert "visibility" not in json.dumps(item)
 
 
 # --- Field exclusion: no private data anywhere in the response ---
@@ -362,10 +469,12 @@ def test_response_excludes_private_and_internal_fields(owner_client, anon_client
         "thumbnail_url",
         "remix_provenance",
         "published_at",
+        "renderer",
     }
 
     # Only the public_id-derived `id` -- no separate internal-pk field.
     assert item["id"] == str(project.public_id)
+    assert item["renderer"] == "2d"
 
     raw_body = json.dumps(body)
     # Description, tags, scene content, prompts, and camera/draft data are

@@ -20,6 +20,7 @@ function baseProject(
     thumbnail_url: '/api/public/projects/p1/thumbnail.png',
     remix_provenance: null,
     published_at: '2026-08-01T00:00:00Z',
+    renderer: '2d',
     ...overrides,
   };
 }
@@ -92,6 +93,23 @@ describe('PublicGallery card rendering', () => {
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(screen.getByText('By bob')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /preview of hand follower/i })).toBeInTheDocument();
+  });
+
+  it('renders 3D cards with the 3D viewer link and renderer label', async () => {
+    mockedListPublicGallery.mockResolvedValue({
+      results: [baseProject({ id: 'p3d-1', title: 'Sphere study', renderer: '3d' })],
+      next_cursor: null,
+      has_more: false,
+    });
+
+    renderPublicGallery();
+
+    expect(await screen.findByRole('heading', { name: 'Sphere study' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /sphere study/i })).toHaveAttribute(
+      'href',
+      '/p3d/p3d-1',
+    );
+    expect(screen.getByText('3D')).toBeInTheDocument();
   });
 
   it('renders nothing in the provenance slot when remix_provenance is absent', async () => {

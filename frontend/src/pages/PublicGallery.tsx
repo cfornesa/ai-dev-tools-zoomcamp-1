@@ -117,7 +117,7 @@ function PublicGallery() {
         <>
           <ul className="public-project-grid">
             {projects.map((project) => (
-              <li key={project.id}>
+              <li key={`${project.renderer}-${project.id}`}>
                 <PublicProjectCard project={project} />
               </li>
             ))}

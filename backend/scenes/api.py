@@ -24,10 +24,11 @@ from scenes.gallery import (
     DEFAULT_PAGE_SIZE,
     InvalidCursor,
     clamp_page_size,
-    decode_cursor,
+    decode_gallery_cursor,
     eligible_projects,
-    encode_cursor,
-    filter_after_cursor,
+    eligible_projects3d,
+    encode_gallery_cursor,
+    filter_after_gallery_cursor,
 )
 from scenes.models import (
     EditSessionDraft,
@@ -46,6 +47,7 @@ from scenes.serializers import (
     DraftUpsertSerializer,
     ProjectMetadataSerializer,
     ProjectSerializer,
+    PublicProject3DListItemSerializer,
     PublicProjectListItemSerializer,
     PublicProjectSerializer,
     SceneVersionCreateSerializer,
@@ -334,33 +336,56 @@ class PublicProjectListView(APIView):
         else:
             page_size = DEFAULT_PAGE_SIZE
 
-        queryset = eligible_projects()
+        queryset_2d = eligible_projects()
+        queryset_3d = eligible_projects3d()
 
         cursor = request.query_params.get("cursor")
         if cursor:
             try:
-                cursor_published_at, cursor_id = decode_cursor(cursor)
+                cursor_published_at, cursor_renderer, cursor_id = decode_gallery_cursor(cursor)
             except InvalidCursor:
                 return Response(
                     {"errors": {"cursor": ["Invalid or expired cursor."]}},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            queryset = filter_after_cursor(queryset, cursor_published_at, cursor_id)
+            queryset_2d = filter_after_gallery_cursor(
+                queryset_2d, cursor_published_at, cursor_renderer, cursor_id
+            )
+            queryset_3d = filter_after_gallery_cursor(
+                queryset_3d, cursor_published_at, cursor_renderer, cursor_id
+            )
 
-        # Fetch one extra row to learn whether another page exists without
-        # a separate COUNT query.
-        page = list(queryset[: page_size + 1])
-        has_more = len(page) > page_size
-        page = page[:page_size]
+        candidates = [
+            (project.published_at, "2d", project.id, project)
+            for project in queryset_2d[: page_size + 1]
+        ] + [
+            (project.published_at, "3d", project.id, project)
+            for project in queryset_3d[: page_size + 1]
+        ]
+        candidates.sort(
+            key=lambda item: (item[0], 0 if item[1] == "2d" else 1, item[2]),
+            reverse=True,
+        )
+        has_more = len(candidates) > page_size
+        page = candidates[:page_size]
 
         next_cursor = None
         if has_more and page:
-            last = page[-1]
-            next_cursor = encode_cursor(last.published_at, last.id)
+            published_at, renderer, project_id, _ = page[-1]
+            next_cursor = encode_gallery_cursor(published_at, renderer, project_id)
+
+        results = []
+        for _, renderer, _, project in page:
+            serializer = (
+                PublicProjectListItemSerializer
+                if renderer == "2d"
+                else PublicProject3DListItemSerializer
+            )
+            results.append(serializer(project).data)
 
         return Response(
             {
-                "results": PublicProjectListItemSerializer(page, many=True).data,
+                "results": results,
                 "next_cursor": next_cursor,
                 "has_more": has_more,
             }

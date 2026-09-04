@@ -44,6 +44,8 @@ function PublicProjectCard({ project }: { project: PublicGalleryProject }) {
   const titleId = `public-project-${project.id}-title`;
   const showFallback = !project.thumbnail_url || thumbnailFailed;
   const provenance = project.remix_provenance;
+  const viewerPath = project.renderer === '3d' ? `/p3d/${project.id}` : `/p/${project.id}`;
+  const rendererLabel = project.renderer === '3d' ? '3D' : '2D';
 
   return (
     <article
@@ -51,7 +53,7 @@ function PublicProjectCard({ project }: { project: PublicGalleryProject }) {
       className="public-project-card"
       data-project-kind={provenance ? 'remix' : 'original'}
     >
-      <Link to={`/p/${project.id}`} className="public-project-card-link">
+      <Link to={viewerPath} className="public-project-card-link">
         {showFallback ? (
           <div
             className="public-project-thumbnail-fallback"
@@ -70,6 +72,7 @@ function PublicProjectCard({ project }: { project: PublicGalleryProject }) {
         )}
 
         <h3 id={titleId}>{project.title}</h3>
+        <span className="renderer-badge">{rendererLabel}</span>
         {provenance && (
           <span className="remix-badge" role="status" aria-label="Remix">
             Remix

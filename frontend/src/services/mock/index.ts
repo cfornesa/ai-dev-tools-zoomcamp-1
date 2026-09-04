@@ -90,6 +90,7 @@ function toPublicGalleryProject(project: Project): PublicGalleryProject {
     thumbnail_url: project.thumbnail_url,
     remix_provenance: null,
     published_at: project.updated_at,
+    renderer: '2d',
   };
 }
 

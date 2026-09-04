@@ -4,12 +4,22 @@
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
 git-safe-push browser-qa compose-preflight \
 e2e webkit-fullscreen dev run deploy-check migrate smoke-local smoke-hosted-git \
-check-live-provider-alert
+	check-live-provider-alert check-workflows
 
 # Run every backend and frontend check (same checks CI runs).
-check: check-live-provider-alert backend-check frontend-check
+check: check-workflows check-live-provider-alert backend-check frontend-check
 
 backend-check: backend-lint backend-format-check backend-typecheck backend-test
+
+check-workflows:
+	@if command -v actionlint >/dev/null 2>&1; then \
+		actionlint; \
+	elif command -v docker >/dev/null 2>&1; then \
+		docker run --rm -v "$(CURDIR):/repo" -w /repo rhysd/actionlint:1.7.7; \
+	else \
+		echo "Workflow validation requires actionlint or Docker." >&2; \
+		exit 1; \
+	fi
 
 check-live-provider-alert:
 	python scripts/check-live-provider-alert.py

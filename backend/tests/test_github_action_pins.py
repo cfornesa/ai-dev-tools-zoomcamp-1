@@ -1,4 +1,6 @@
 import importlib.util
+import shutil
+import subprocess
 from pathlib import Path
 from types import ModuleType
 
@@ -49,6 +51,71 @@ def test_install_git_hooks_activates_versioned_hook_directory():
             recipe.append(line.removeprefix("\t"))
 
     assert recipe[0] == "git config core.hooksPath .githooks"
+
+
+def test_installed_pre_commit_hook_runs_pin_check_in_disposable_checkout(
+    tmp_path: Path,
+):
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    (checkout / ".githooks").mkdir()
+    (checkout / "scripts").mkdir()
+    (checkout / ".github" / "workflows").mkdir(parents=True)
+
+    shutil.copy2(HOOK, checkout / ".githooks" / "pre-commit")
+    shutil.copy2(MAKEFILE, checkout / "Makefile")
+    shutil.copy2(SCRIPT, checkout / "scripts" / SCRIPT.name)
+    (checkout / ".github" / "workflows" / "pinned.yml").write_text(
+        """\
+name: Pinned
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567 # v4
+"""
+    )
+
+    subprocess.run(["git", "init"], cwd=checkout, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["make", "install-git-hooks"],
+        cwd=checkout,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    hooks_path = subprocess.run(
+        ["git", "config", "--get", "core.hooksPath"],
+        cwd=checkout,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert hooks_path.stdout.strip() == ".githooks"
+
+    subprocess.run(["git", "add", "."], cwd=checkout, check=True, capture_output=True, text=True)
+    commit = subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Hook Integration Test",
+            "-c",
+            "user.email=hook-integration-test@example.invalid",
+            "commit",
+            "-m",
+            "exercise installed hook",
+        ],
+        cwd=checkout,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    hook_output = commit.stdout + commit.stderr
+    assert "python scripts/check-github-action-pins.py" in hook_output
+    assert "GitHub Action pin check passed (1 workflow files scanned)." in hook_output
 
 
 @pytest.fixture

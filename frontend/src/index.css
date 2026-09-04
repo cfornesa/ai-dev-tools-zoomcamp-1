@@ -535,6 +535,11 @@ code {
   object-fit: cover;
 }
 
+.project-card-thumbnail-3d,
+.project-card-thumbnail-fallback-3d {
+  aspect-ratio: 4 / 3;
+}
+
 .project-card-thumbnail-fallback {
   display: flex;
   align-items: center;

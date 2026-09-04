@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { deleteProject3D, type Project3D } from '../api/projects3d';
+import { deleteProject3D, getProject3D, type Project3D } from '../api/projects3d';
 import { originLabel } from './originLabel';
 
 function formatDate(iso: string): string {
@@ -38,7 +38,25 @@ function Project3DCard({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
-  const showFallback = !project.thumbnail_url || thumbnailFailed;
+  const [thumbnailIsFallback, setThumbnailIsFallback] = useState(
+    project.thumbnail_is_fallback ?? false,
+  );
+  const [thumbnailRetrying, setThumbnailRetrying] = useState(false);
+  const [thumbnailRetry, setThumbnailRetry] = useState(0);
+  const showFallback = !project.thumbnail_url || thumbnailFailed || thumbnailIsFallback;
+
+  async function handleThumbnailRetry() {
+    if (!project.thumbnail_url || thumbnailRetrying) return;
+    setThumbnailRetrying(true);
+    try {
+      const refreshed = await getProject3D(project.id);
+      setThumbnailIsFallback(refreshed.thumbnail_is_fallback ?? false);
+      setThumbnailFailed(false);
+      setThumbnailRetry((current) => current + 1);
+    } finally {
+      setThumbnailRetrying(false);
+    }
+  }
 
   // Issue #242: Project3D had no delete capability at all (API or UI) --
   // window.confirm is this codebase's existing destructive-action
@@ -63,18 +81,22 @@ function Project3DCard({
   return (
     <article aria-labelledby={titleId} className="project-card">
       {showFallback ? (
-        <div
-          className="project-card-thumbnail-fallback"
-          role="img"
-          aria-label={`No preview available for ${project.title}`}
-        >
-          No preview available
+        <div className="project-card-thumbnail-fallback project-card-thumbnail-fallback-3d">
+          <span role="img" aria-label={`No preview available for ${project.title}`}>
+            No preview available
+          </span>
+          {project.thumbnail_url && (
+            <button type="button" onClick={handleThumbnailRetry} disabled={thumbnailRetrying}>
+              {thumbnailRetrying ? 'Retrying…' : 'Retry thumbnail'}
+            </button>
+          )}
         </div>
       ) : (
         <img
           src={project.thumbnail_url ?? undefined}
           alt={`Preview of ${project.title}`}
-          className="project-card-thumbnail"
+          className="project-card-thumbnail project-card-thumbnail-3d"
+          key={`${project.thumbnail_url}-${thumbnailRetry}`}
           onError={() => setThumbnailFailed(true)}
         />
       )}

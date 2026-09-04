@@ -9,10 +9,11 @@ import Project3DCard from './Project3DCard';
 
 vi.mock('../api/projects3d', async () => {
   const actual = await vi.importActual<typeof import('../api/projects3d')>('../api/projects3d');
-  return { ...actual, deleteProject3D: vi.fn() };
+  return { ...actual, deleteProject3D: vi.fn(), getProject3D: vi.fn() };
 });
 
 const mockedDeleteProject3D = vi.mocked(projects3dApi.deleteProject3D);
+const mockedGetProject3D = vi.mocked(projects3dApi.getProject3D);
 
 function baseProject3D(overrides: Partial<Project3D> = {}): Project3D {
   return {
@@ -62,6 +63,31 @@ describe('Project3DCard: thumbnail (issue #243)', () => {
     expect(
       screen.getByRole('img', { name: 'No preview available for Untitled 3D scene' }),
     ).toBeInTheDocument();
+  });
+
+  it('offers a retry action for a stored fallback and shows the recovered thumbnail', async () => {
+    const user = userEvent.setup();
+    mockedGetProject3D.mockResolvedValue(
+      baseProject3D({
+        thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
+        thumbnail_is_fallback: false,
+      }),
+    );
+    renderCard(
+      baseProject3D({
+        thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
+        thumbnail_is_fallback: true,
+      }),
+    );
+
+    expect(screen.getByRole('img', { name: /no preview available/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retry thumbnail' }));
+
+    expect(await screen.findByRole('img', { name: /preview of untitled 3d scene/i })).toHaveAttribute(
+      'src',
+      '/api/projects3d/p3d-1/thumbnail/',
+    );
+    expect(mockedGetProject3D).toHaveBeenCalledWith('p3d-1');
   });
 });
 

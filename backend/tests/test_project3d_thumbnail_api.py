@@ -16,6 +16,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from scenes.models import Project3D, SceneVersion3D, Thumbnail3D
+from scenes.thumbnails import FALLBACK_PNG_BYTES
 
 FIXTURES3D = Path(__file__).resolve().parent.parent.parent / "schema" / "fixtures3d" / "valid"
 MINIMAL_SCENE3D = json.loads((FIXTURES3D / "minimal.json").read_text())
@@ -189,3 +190,27 @@ def test_thumbnail_row_is_never_duplicated_across_repeated_generation(owner_clie
     ensure_thumbnail_for_version3d(version_id)
 
     assert Thumbnail3D.objects.filter(scene_version_id=version_id).count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_thumbnail_endpoint_retries_a_stored_fallback(owner_client, project3d, monkeypatch):
+    version = project3d.current_version
+    fallback = Thumbnail3D.objects.create(
+        scene_version=version,
+        image_data=FALLBACK_PNG_BYTES,
+        width=320,
+        height=240,
+        is_fallback=True,
+    )
+    recovered = b"recovered-render"
+    monkeypatch.setattr(
+        "scenes.thumbnail_generation3d.render_card_thumbnail3d_png", lambda _scene: recovered
+    )
+
+    response = owner_client.get(_thumbnail_url(project3d))
+
+    assert response.status_code == 200
+    assert response.content == recovered
+    fallback.refresh_from_db()
+    assert fallback.is_fallback is False
+    assert fallback.image_data == recovered

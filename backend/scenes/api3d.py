@@ -106,6 +106,7 @@ class Project3DDetailView(APIView):
         project = _get_project3d_or_404(public_id)
         if not can(request.user, Action.PROJECT3D_READ, project):
             raise Http404
+        _retry_fallback_thumbnail(project)
         return Response(Project3DSerializer(project).data)
 
     def patch(self, request, public_id):
@@ -287,9 +288,18 @@ class Project3DThumbnailView(APIView):
             raise Http404
 
         thumbnail = Thumbnail3D.objects.filter(scene_version_id=project.current_version_id).first()
-        if thumbnail is None:
+        if thumbnail is None or thumbnail.is_fallback:
             thumbnail = ensure_thumbnail_for_version3d(project.current_version_id)
         if thumbnail is None:
             raise Http404
 
         return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)
+
+
+def _retry_fallback_thumbnail(project: Project3D) -> None:
+    """Replace a stored failed render when an owner refreshes the card."""
+    if project.current_version_id is None:
+        return
+    thumbnail = Thumbnail3D.objects.filter(scene_version_id=project.current_version_id).first()
+    if thumbnail and thumbnail.is_fallback:
+        ensure_thumbnail_for_version3d(project.current_version_id)

@@ -10,6 +10,7 @@ from scenes.models import (
     SceneVersion,
     SceneVersion3D,
     Template,
+    Thumbnail3D,
 )
 
 MAX_TAGS = 10
@@ -446,6 +447,7 @@ class Project3DSerializer(serializers.ModelSerializer):
     # (issue #296 widened `Action.PROJECT3D_READ` to allow it), so there is
     # still no separate public-only 3D thumbnail route needed.
     thumbnail_url = serializers.SerializerMethodField()
+    thumbnail_is_fallback = serializers.SerializerMethodField()
 
     class Meta:
         model = Project3D
@@ -455,6 +457,7 @@ class Project3DSerializer(serializers.ModelSerializer):
             "title",
             "visibility",
             "thumbnail_url",
+            "thumbnail_is_fallback",
             "current_version",
             "created_at",
             "updated_at",
@@ -465,6 +468,12 @@ class Project3DSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_thumbnail_is_fallback(self, project: Project3D) -> bool:
+        if project.current_version_id is None:
+            return False
+        thumbnail = Thumbnail3D.objects.filter(scene_version_id=project.current_version_id).first()
+        return bool(thumbnail and thumbnail.is_fallback)
 
 
 class Project3DMetadataSerializer(serializers.ModelSerializer):

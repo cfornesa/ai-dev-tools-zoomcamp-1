@@ -107,6 +107,14 @@ describe('Project3DCard: thumbnail (issue #243)', () => {
 });
 
 describe('Project3DCard', () => {
+  it('shows the current private/public visibility state', () => {
+    renderCard(baseProject3D({ visibility: 'private' }));
+    expect(screen.getByText('Private')).toHaveClass('visibility-badge');
+
+    renderCard(baseProject3D({ id: 'public-3d', visibility: 'public' }));
+    expect(screen.getByText('Public')).toHaveClass('visibility-badge');
+  });
+
   it('links Edit to the 3D manual editor route', () => {
     renderCard(baseProject3D({ id: 'abc-123' }));
 

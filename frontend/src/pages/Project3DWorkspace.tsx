@@ -437,6 +437,7 @@ function Project3DWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <EditableProject3DTitle id={id} project={project} setProject={setProject} />
+        {id && <PublishControl3D id={id} project={project} setProject={setProject} />}
         <p
           role="status"
           aria-live="polite"
@@ -595,7 +596,6 @@ function Project3DWorkspace() {
                       <span className="piece-stage-action-label">Ask AI to improve this scene</span>
                     </button>
                   </span>
-                  <PublishControl3D id={id} project={project} setProject={setProject} compact />
                 </>
               }
             />

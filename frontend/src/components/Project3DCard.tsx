@@ -19,7 +19,8 @@ function formatDate(iso: string): string {
  * the 3D counterpart to `ProjectCard.tsx` -- not a reuse of it directly,
  * since `Project3D` has no `visibility` field yet (issue #212 deferred
  * that metadata). Issue #243 added `thumbnail_url`, so this card now
- * mirrors `ProjectCard.tsx`'s image/fallback-on-null-or-error pattern
+ * mirrors `ProjectCard.tsx`'s image/fallback-on-null-or-error pattern and
+ * visibility badge now that Project3D has the same private/public field.
  * instead of always showing the static fallback.
  */
 function Project3DCard({
@@ -110,11 +111,12 @@ function Project3DCard({
         />
       )}
       <h3 id={titleId}>{project.title}</h3>
-      {originBadge && (
-        <p>
-          <span className="origin-badge">{originBadge}</span>
-        </p>
-      )}
+      <p>
+        <span className="visibility-badge">
+          {project.visibility === 'public' ? 'Public' : 'Private'}
+        </span>
+        {originBadge && <span className="origin-badge">{originBadge}</span>}
+      </p>
       <p>Last updated {formatDate(project.updated_at)}</p>
       <p>
         <Link className="shell-action" to={`/projects3d/${project.id}`}>

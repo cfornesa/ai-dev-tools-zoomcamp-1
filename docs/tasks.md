@@ -15229,3 +15229,25 @@ sandbox failures in git socket binding and startup subprocess tests. The
 required `BROWSER_QA_E2E_SPEC=e2e/project3dThumbnailCard.spec.ts make
 browser-qa` remains unavailable because Docker is not running. #393 remains
 open pending browser inspection of the owner card at 1280x900 and 375x812.
+
+## 275. Make 3D publication state and controls visibly discoverable
+
+Status: IMPLEMENTED LOCALLY — BROWSER QA/FULL GATE BLOCKED
+
+GitHub issue: [#394](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/394)
+
+The manual 3D editor now exposes the current Private/Public state and its
+publish/unpublish action in the editor header, matching the 2D editor's
+owner-facing entry point. The stage-local duplicate disclosure was removed,
+and owner 3D cards now show a visibility badge that mirrors the API state.
+The new browser scenario covers private → confirmation → public → private,
+card state, and the anonymous unpublished boundary at both required viewport
+sizes.
+
+Focused backend tests (29), focused frontend publication/card tests (22),
+frontend typecheck, and Playwright test discovery pass. `make check` reached
+888 passed and 22 skipped but retains the same five unrelated macOS sandbox
+failures in git socket binding and startup subprocess tests. The required
+`BROWSER_QA_E2E_SPEC=e2e/project3dPublicationDiscoverability.spec.ts make
+browser-qa` is blocked before setup because Docker is unavailable. #394
+remains open pending browser screenshots and interaction evidence.

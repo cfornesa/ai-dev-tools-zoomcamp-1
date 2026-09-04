@@ -135,3 +135,30 @@ Next action: with Docker or an equivalent disposable PostgreSQL browser
 runner available, execute the exact browser spec, inspect both card images,
 then close #393 only if every criterion passes. Per the owner's instruction,
 stop after this reconciliation and do not start #394–#398.
+
+## #394 transaction ledger — 2026-09-04
+
+State: `ENGINEERING/QA → BLOCKED`
+
+- Local change: moved the manual 3D `PublishControl3D` from the stage command
+  disclosure into the editor header, removed the duplicate stage instance,
+  and added the `Private`/`Public` owner-card badge.
+- Focused: backend publication/API suite 29 passed; frontend publication/card
+  suite 22 passed; frontend typecheck passed; the new Playwright scenario is
+  discoverable in Chromium, Firefox, and WebKit.
+- Browser QA: the required
+  `BROWSER_QA_E2E_SPEC=e2e/project3dPublicationDiscoverability.spec.ts make
+  browser-qa` was attempted and stopped before setup because Docker is
+  unavailable. This is a verification-boundary/workflow blocker, not a
+  publication test result.
+- Full gate: `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` reached
+  888 passed and 22 skipped, with the same four startup subprocess failures
+  and one loopback socket permission error on macOS. The initial plain
+  `make check` also hit the sandboxed uv-cache permission before rerun.
+- Evidence boundary: local implementation only; fixed 1280x900 and 375x812
+  rendered screenshots and deployed-state verification remain outstanding.
+
+Next action: rerun the exact browser runner with Docker available, inspect
+the desktop/mobile editor and owner-card evidence, then close #394 only if
+all publication, privacy, and containment criteria pass. Per the owner's
+instruction, stop after this reconciliation and do not start #395–#398.

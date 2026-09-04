@@ -15293,3 +15293,44 @@ restored (not rebuilt) afterward. The next FIFO/independent candidates
 (#392, #393, #394) should retry `make browser-qa` directly — if the
 disposable stack it builds hits the same registry timeout, prefer this
 `npm run dev` proxy path over reporting Docker itself as unavailable.
+
+Correction after actually running it: `make browser-qa` (`scripts/browser-qa.sh`)
+does not use Docker Compose or the long-lived containers at all — it starts
+its own disposable Postgres container, Django, and Vite directly, and worked
+without the registry-timeout issue described above (that issue was specific
+to rebuilding the separate, long-lived `ai-dev-tools-zoomcamp-1-frontend-1`
+Compose container). `make browser-qa` is therefore the correct path for
+#393/#394's own required verification commands, not the `npm run dev` proxy
+workaround.
+
+## 277. Public gallery mixed-pieces closure
+
+Status: COMPLETE
+
+GitHub issue: [#392](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/392)
+
+`BROWSER_QA_E2E_SPEC=e2e/publicGalleryMixedPieces.spec.ts make browser-qa`
+had never actually passed, independent of Docker availability: `publishFrom3D`
+still drove the stage-local toolbar publish control #394's already-merged
+`b590e0f` replaced with a header-level Draft/Published switch, and the spec's
+hardcoded fixture titles collided across the suite's three sequential
+Playwright browser projects (one shared disposable database per
+`browser-qa.sh` run), producing a Playwright strict-mode ambiguous-match
+failure once more than one browser project had run. Both were fixed in the
+spec itself (commit `a44e701`): the 3D publish helper now targets the header
+group directly, and fixture titles/gallery assertions are per-run-unique and
+id-scoped.
+
+`bash scripts/browser-qa.sh` (chromium/firefox/webkit) passed 3/3 at
+1280x900 and 375x812; retained screenshots show correctly contained mixed
+2D/3D cards, safe public fields, and the pagination end state. `make check`
+passed (893 backend/22 skipped, 2412/2412 frontend). GitHub comment
+[5535275453](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/392#issuecomment-5535275453)
+records the full criterion matrix. #392 is closed as `completed`.
+
+A related but out-of-scope regression was found and left for #394 to fix
+under its own transaction: `manual3dPublicationLifecycle.spec.ts`,
+`manual3dStageChrome.spec.ts`, and `project3dLifecycle.spec.ts` still
+reference the same removed stage-local `Publication status: Draft` toolbar
+button for the manual 3D editor route that `publishFrom3D` above had to stop
+using.

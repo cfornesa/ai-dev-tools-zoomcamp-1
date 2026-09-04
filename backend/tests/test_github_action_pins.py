@@ -36,6 +36,21 @@ def test_git_safe_push_requires_pin_check():
     assert "check-github-action-pins" in target_line.partition(":")[2].split()
 
 
+def test_install_git_hooks_activates_versioned_hook_directory():
+    makefile = MAKEFILE.read_text()
+    lines = makefile.splitlines()
+    target_index = lines.index("install-git-hooks:")
+    recipe = []
+
+    for line in lines[target_index + 1 :]:
+        if line and not line.startswith("\t"):
+            break
+        if line.startswith("\t"):
+            recipe.append(line.removeprefix("\t"))
+
+    assert recipe[0] == "git config core.hooksPath .githooks"
+
+
 @pytest.fixture
 def workflows_dir(tmp_path: Path) -> Path:
     directory = tmp_path / ".github" / "workflows"

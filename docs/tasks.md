@@ -15562,3 +15562,31 @@ boundary, and next-issue handoff are recorded in
 `.local/tasks/vendor-support-distillation-2026-09-04.md`. Durable architecture
 guidance is recorded in
 `.agents/memory/multi-vendor-ai-provider-credentials.md`.
+
+## 285. Distill editable draw.io layers and cross-surface support — open
+
+Status: DISTILLED; #409 is the next issue.
+
+The 2026-09-04 investigation confirmed that the application has a complete
+native layer system, but no draw.io/diagrams.net/mxGraph document model,
+dependency, editor adapter, object-level eraser, draw.io export, or draw.io
+viewer runtime. Native layer issues remain already-covered references and were
+not reopened.
+
+Five closure-sized issues were created:
+
+- [#409](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/409) —
+  define and persist a safe versioned draw.io document layer.
+- [#410](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/410) —
+  add draw.io editor tools and individual object interaction.
+- [#411](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/411) —
+  connect draw.io layers to outer layer controls.
+- [#412](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/412) —
+  render and package draw.io layers across public and download surfaces.
+- [#413](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/413) —
+  close compatibility, accessibility, and regression coverage.
+
+The complete manifest, duplicate report, blocker triage, dependency rationale,
+and verification boundaries are recorded in
+`.local/tasks/drawio-layer-distillation-2026-09-04.md`. The durable rule is
+recorded in `.agents/memory/drawio-layer-integration.md`.

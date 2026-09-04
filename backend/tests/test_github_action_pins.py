@@ -63,6 +63,51 @@ def test_ci_workflow_validation_job_runs_for_push_and_pull_request_events():
     assert job_if == "    if: ${{ github.event_name != 'deployment_status' }}"
 
 
+def workflow_job_lines(job_name: str) -> list[str]:
+    lines = CI_WORKFLOW.read_text().splitlines()
+    job_start = lines.index(f"  {job_name}:")
+    job_end = next(
+        (
+            index
+            for index, line in enumerate(lines[job_start + 1 :], start=job_start + 1)
+            if line.startswith("  ") and not line.startswith("    ")
+        ),
+        len(lines),
+    )
+    return lines[job_start:job_end]
+
+
+def test_required_ci_jobs_run_for_push_and_pull_request_events():
+    lines = CI_WORKFLOW.read_text().splitlines()
+    trigger_start = lines.index("on:")
+    first_job_start = lines.index("  workflow-validation:")
+    triggers = lines[trigger_start:first_job_start]
+
+    assert "  push:" in triggers
+    assert "  pull_request:" in triggers
+
+    for job_name in ("backend", "frontend", "e2e-browser"):
+        job_lines = workflow_job_lines(job_name)
+        assert "    if: ${{ github.event_name != 'deployment_status' }}" in job_lines
+
+
+def test_staging_smoke_job_remains_deployment_status_only():
+    job_lines = workflow_job_lines("staging-authenticated-smoke")
+    if_start = job_lines.index("    if: >-")
+    if_end = job_lines.index("      }}", if_start) + 1
+
+    assert job_lines[if_start:if_end] == [
+        "    if: >-",
+        "      ${{",
+        "        github.event_name == 'deployment_status' &&",
+        "        github.event.deployment_status.state == 'success' &&",
+        "        github.event.deployment_status.environment == 'staging' &&",
+        "        (github.event.deployment_status.environment_url != '' ||",
+        "          github.event.deployment_status.target_url != '')",
+        "      }}",
+    ]
+
+
 def test_install_git_hooks_activates_versioned_hook_directory():
     makefile = MAKEFILE.read_text()
     lines = makefile.splitlines()
@@ -182,8 +227,7 @@ jobs:
     assert commit.returncode != 0
     assert "GitHub Action pin check failed." in commit.stderr
     assert (
-        ".github/workflows/test.yml:7: actions/checkout@v4 "
-        "must use a full 40-character commit SHA"
+        ".github/workflows/test.yml:7: actions/checkout@v4 must use a full 40-character commit SHA"
     ) in commit.stderr
     assert "Remediation: replace each mutable release tag or branch" in commit.stderr
 

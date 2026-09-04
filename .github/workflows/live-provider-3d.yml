@@ -6,6 +6,12 @@ name: Live 3D provider smoke
 # dispatch manually only when provider/model drift needs checking.
 on:
   workflow_dispatch:
+    inputs:
+      notification_probe:
+        description: "Exercise the scheduled failure alert without contacting Mistral."
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: "17 3 * * 0"
 
@@ -39,8 +45,18 @@ jobs:
 
       - name: Verify provider secret is configured
         env:
+          NOTIFICATION_PROBE: ${{ inputs.notification_probe }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: |
+          if [ "$NOTIFICATION_PROBE" = "true" ]; then
+            printf '%s\n' \
+              "Mistral 3D smoke check: controlled notification probe failed before provider execution." \
+              "Provider/quota summary: probe only; Mistral requests sent: 0; quota consumed: 0." \
+              > "$RUNNER_TEMP/live-provider-3d-output"
+            echo "::error title=Controlled notification probe::The provider request was intentionally skipped."
+            exit 1
+          fi
+
           if [ -z "$MISTRAL_API_KEY" ]; then
             printf '%s\n' \
               "Mistral API key is not configured; the live 3D provider smoke check could not run." \
@@ -103,7 +119,7 @@ jobs:
     needs: live-provider-3d
     # Manual runs are intentionally investigation-only. A single stable issue
     # also prevents recurring scheduled failures from creating an issue storm.
-    if: ${{ github.event_name == 'schedule' && needs.live-provider-3d.result == 'failure' }}
+    if: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notification_probe == true)) && needs.live-provider-3d.result == 'failure' }}
     runs-on: ubuntu-latest
     permissions:
       issues: write

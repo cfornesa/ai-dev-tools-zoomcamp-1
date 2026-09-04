@@ -53,7 +53,11 @@ def test_install_git_hooks_activates_versioned_hook_directory():
     assert recipe[0] == "git config core.hooksPath .githooks"
 
 
-def prepare_disposable_checkout(tmp_path: Path, workflow: str) -> Path:
+def prepare_disposable_checkout(
+    tmp_path: Path,
+    workflow: str,
+    workflow_name: str = "test.yml",
+) -> Path:
     checkout = tmp_path / "checkout"
     checkout.mkdir()
     (checkout / ".githooks").mkdir()
@@ -63,7 +67,9 @@ def prepare_disposable_checkout(tmp_path: Path, workflow: str) -> Path:
     shutil.copy2(HOOK, checkout / ".githooks" / "pre-commit")
     shutil.copy2(MAKEFILE, checkout / "Makefile")
     shutil.copy2(SCRIPT, checkout / "scripts" / SCRIPT.name)
-    (checkout / ".github" / "workflows" / "test.yml").write_text(workflow)
+    workflow_path = checkout / ".github" / "workflows" / workflow_name
+    workflow_path.parent.mkdir(parents=True, exist_ok=True)
+    workflow_path.write_text(workflow)
 
     subprocess.run(["git", "init"], cwd=checkout, check=True, capture_output=True, text=True)
     subprocess.run(
@@ -155,6 +161,33 @@ jobs:
         "must use a full 40-character commit SHA"
     ) in commit.stderr
     assert "Remediation: replace each mutable release tag or branch" in commit.stderr
+
+
+def test_installed_pre_commit_hook_rejects_mutable_action_in_nested_workflow(
+    tmp_path: Path,
+):
+    checkout = prepare_disposable_checkout(
+        tmp_path,
+        """\
+name: Nested mutable
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+""",
+        workflow_name="nested/release.yaml",
+    )
+
+    commit = commit_in_disposable_checkout(checkout)
+
+    assert commit.returncode != 0
+    assert "GitHub Action pin check failed." in commit.stderr
+    assert (
+        ".github/workflows/nested/release.yaml:7: actions/checkout@v4 "
+        "must use a full 40-character commit SHA"
+    ) in commit.stderr
 
 
 @pytest.fixture

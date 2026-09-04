@@ -108,6 +108,32 @@ def test_staging_smoke_job_remains_deployment_status_only():
     ]
 
 
+def test_published_smoke_job_runs_after_successful_deployment_with_a_url():
+    job_lines = workflow_job_lines("published-smoke")
+    if_start = job_lines.index("    if: >-")
+    if_end = job_lines.index("      }}", if_start) + 1
+
+    assert job_lines[if_start:if_end] == [
+        "    if: >-",
+        "      ${{",
+        "        (github.event_name == 'deployment_status' &&",
+        "          github.event.deployment_status.state == 'success' &&",
+        "          (github.event.deployment_status.environment_url != '' ||",
+        "            github.event.deployment_status.target_url != '')) ||",
+        "        (github.event_name != 'deployment_status' && vars.PUBLISHED_APP_URL != '')",
+        "      }}",
+    ]
+
+
+def test_published_smoke_job_uses_repository_url_for_non_deployment_events():
+    job_lines = workflow_job_lines("published-smoke")
+
+    assert (
+        "        (github.event_name != 'deployment_status' && vars.PUBLISHED_APP_URL != '')"
+        in job_lines
+    )
+
+
 def test_install_git_hooks_activates_versioned_hook_directory():
     makefile = MAKEFILE.read_text()
     lines = makefile.splitlines()

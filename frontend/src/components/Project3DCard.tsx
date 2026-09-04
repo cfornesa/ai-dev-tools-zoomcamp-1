@@ -43,16 +43,20 @@ function Project3DCard({
   );
   const [thumbnailRetrying, setThumbnailRetrying] = useState(false);
   const [thumbnailRetry, setThumbnailRetry] = useState(0);
+  const [thumbnailRetryError, setThumbnailRetryError] = useState(false);
   const showFallback = !project.thumbnail_url || thumbnailFailed || thumbnailIsFallback;
 
   async function handleThumbnailRetry() {
     if (!project.thumbnail_url || thumbnailRetrying) return;
     setThumbnailRetrying(true);
+    setThumbnailRetryError(false);
     try {
       const refreshed = await getProject3D(project.id);
       setThumbnailIsFallback(refreshed.thumbnail_is_fallback ?? false);
       setThumbnailFailed(false);
       setThumbnailRetry((current) => current + 1);
+    } catch {
+      setThumbnailRetryError(true);
     } finally {
       setThumbnailRetrying(false);
     }
@@ -86,9 +90,14 @@ function Project3DCard({
             No preview available
           </span>
           {project.thumbnail_url && (
-            <button type="button" onClick={handleThumbnailRetry} disabled={thumbnailRetrying}>
-              {thumbnailRetrying ? 'Retrying…' : 'Retry thumbnail'}
-            </button>
+            <>
+              <button type="button" onClick={handleThumbnailRetry} disabled={thumbnailRetrying}>
+                {thumbnailRetrying ? 'Retrying…' : 'Retry thumbnail'}
+              </button>
+              {thumbnailRetryError && (
+                <span role="alert">Could not regenerate the preview. Please try again.</span>
+              )}
+            </>
           )}
         </div>
       ) : (

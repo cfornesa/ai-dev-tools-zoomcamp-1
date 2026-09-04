@@ -83,11 +83,26 @@ describe('Project3DCard: thumbnail (issue #243)', () => {
     expect(screen.getByRole('img', { name: /no preview available/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry thumbnail' }));
 
-    expect(await screen.findByRole('img', { name: /preview of untitled 3d scene/i })).toHaveAttribute(
-      'src',
-      '/api/projects3d/p3d-1/thumbnail/',
-    );
+    expect(
+      await screen.findByRole('img', { name: /preview of untitled 3d scene/i }),
+    ).toHaveAttribute('src', '/api/projects3d/p3d-1/thumbnail/');
     expect(mockedGetProject3D).toHaveBeenCalledWith('p3d-1');
+  });
+
+  it('keeps the safe fallback and reports a retry failure', async () => {
+    const user = userEvent.setup();
+    mockedGetProject3D.mockRejectedValueOnce(new Error('network down'));
+    renderCard(
+      baseProject3D({
+        thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
+        thumbnail_is_fallback: true,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Retry thumbnail' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not regenerate/i);
+    expect(screen.getByRole('img', { name: /no preview available/i })).toBeInTheDocument();
   });
 });
 

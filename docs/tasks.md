@@ -15402,3 +15402,33 @@ With #394 closed, the full owner-reported authored-piece parity audit batch
 from item 273 (#392-#398) has five of seven issues closed. #396 (3D outline
 selection parity with #395) and #397/#398 (2D/3D Preview panel layout
 containment) remain open and independent.
+
+## 280. Provide clearable 3D outline selection — implementation and closure
+
+Status: COMPLETE
+
+GitHub issue: [#396](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/396)
+
+No engineering existed for this issue yet; its own "Exact verification"
+named `e2e/manual3dOutlineSelection.spec.ts`, which did not exist either.
+Implemented in `Outline3DInspector.tsx`, mirroring #395's 2D layer-selection
+contract: a row click (camera/group/object/light) now toggles the
+same-target selection off instead of re-selecting it; the Inspector section
+gained an explicit "Clear selection" action, visible whenever something is
+selected; and a new effect clears the internal selection whenever it points
+at a group/object/light no longer present in `scene` -- previously, deleting
+the selected item left the Inspector panel broken (neither the deleted
+item's own panel nor the "no selection" placeholder rendered, since the
+component's local selection state was never derived from scene content).
+
+`bash scripts/browser-qa.sh` passed 3/3 (chromium/firefox/webkit) at
+1280x900 and 375x812. 5 new focused unit tests (25 total in the file) and
+`make check` (893 backend/22 skipped, 2417/2417 frontend) passed. GitHub
+comment
+[5535581616](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/396#issuecomment-5535581616)
+records the full criterion matrix. #396 is closed as `completed`.
+
+With #396 closed, item 273's audit batch has six of seven issues closed.
+#397 and #398 (2D/3D Preview panel layout containment) remain open and
+independent; #397 is next in FIFO order per item 273's stated ordering
+rationale.

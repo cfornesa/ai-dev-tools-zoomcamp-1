@@ -15089,3 +15089,15 @@ and inspector are authoring surfaces behind the stage overlay, not duplicate
 piece-runtime controls. No new issue is filed; closed #384–#390 remain valid
 for their own transactions and immutable. #344 is the next independent FIFO
 item, with only owner-controlled physical camera evidence remaining.
+
+## #344 non-human verification completion — 2026-09-04
+
+The non-human portion of #344 is complete on the current pushed revision:
+focused lifecycle QA passed 25/25, the four-file regression set passed 35/35,
+frontend typecheck passed, lint passed with only pre-existing warnings, and
+the production build passed with only the existing large-chunk advisory.
+The published immersive route was prepared in the authorized Chrome session
+with steering activated. #344 remains open only for owner-controlled physical
+held-pinch movement, release/hand-loss safe-stop, disable/stop-camera, and
+denial/unavailable evidence. No closed issue was reopened or closed on
+synthetic evidence.

@@ -42,12 +42,124 @@ jobs:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: |
           if [ -z "$MISTRAL_API_KEY" ]; then
+            printf '%s\n' \
+              "Mistral API key is not configured; the live 3D provider smoke check could not run." \
+              > "$RUNNER_TEMP/live-provider-3d-output"
             echo "::error title=Missing Mistral API key::Configure the MISTRAL_API_KEY GitHub Actions secret before running this workflow."
             exit 1
           fi
 
       - name: Run live 3D provider smoke check
+        id: smoke
         env:
           RUN_LIVE_MISTRAL_3D_SMOKE: "1"
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-        run: uv run pytest tests/test_live_provider_3d.py -q
+        run: |
+          set +e
+          output="$(uv run pytest tests/test_live_provider_3d.py -q 2>&1)"
+          status=$?
+
+          # Keep provider responses useful for diagnosis without allowing a
+          # misbehaving dependency or traceback to echo the API key.
+          safe_output="$(
+            printf '%s\n' "$output" |
+              python -c 'import os, sys; text = sys.stdin.read(); key = os.environ.get("MISTRAL_API_KEY", ""); print(text.replace(key, "[REDACTED]") if key else text, end="")'
+          )"
+          printf '%s\n' "$safe_output" > "$RUNNER_TEMP/live-provider-3d-output"
+          printf '%s\n' "$safe_output"
+          exit "$status"
+
+      - name: Prepare provider failure summary
+        id: failure-summary
+        if: always()
+        run: |
+          output_file="$RUNNER_TEMP/live-provider-3d-output"
+          if [ -s "$output_file" ]; then
+            summary="$(
+              grep -Ei \
+                'Mistral 3D smoke check|provider|quota|rate limit|FAILED|ERROR|AssertionError' \
+                "$output_file" |
+                tail -n 20 || true
+            )"
+            if [ -z "$summary" ]; then
+              summary="$(tail -n 20 "$output_file")"
+            fi
+          else
+            summary="The workflow failed before the provider smoke check produced output. Inspect the failed setup step for details."
+          fi
+
+          {
+            echo "failure_summary<<LIVE_PROVIDER_3D_FAILURE_SUMMARY"
+            printf '%s\n' "$summary" | head -c 6000
+            echo
+            echo "LIVE_PROVIDER_3D_FAILURE_SUMMARY"
+          } >> "$GITHUB_OUTPUT"
+
+    outputs:
+      failure_summary: ${{ steps.failure-summary.outputs.failure_summary }}
+
+  notify-maintainers:
+    name: Notify maintainers about scheduled provider drift
+    needs: live-provider-3d
+    # Manual runs are intentionally investigation-only. A single stable issue
+    # also prevents recurring scheduled failures from creating an issue storm.
+    if: ${{ github.event_name == 'schedule' && needs.live-provider-3d.result == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create or refresh provider drift issue
+        uses: actions/github-script@v7
+        env:
+          FAILURE_SUMMARY: ${{ needs.live-provider-3d.outputs.failure_summary }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = "Scheduled 3D provider smoke check failed";
+            const summary = process.env.FAILURE_SUMMARY || "No failure summary was captured.";
+            const runUrl = process.env.RUN_URL;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const body = [
+              "The scheduled live Mistral 3D compatibility check failed.",
+              "",
+              `Run: [${runUrl}](${runUrl})`,
+              "",
+              "Actionable provider/quota failure summary:",
+              "",
+              "```text",
+              summary.replaceAll("```", "'''"),
+              "```",
+              "",
+              "This issue is refreshed on later scheduled failures instead of creating duplicate alerts."
+            ].join("\n");
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              per_page: 100
+            });
+            const existing = openIssues.find(
+              (issue) => !issue.pull_request && issue.title === title
+            );
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body
+              });
+              core.info(`Refreshed existing provider drift issue #${existing.number}.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+                assignees: [owner]
+              });
+              core.info(`Created provider drift issue #${created.data.number}.`);
+            }

@@ -1179,6 +1179,16 @@ Draft and the anonymous embed returned its unavailable/private state. GitHub
 comment 5533699601 records the criterion matrix. The next FIFO transaction is
 #387. No closed issue was reopened.
 
+## #387 closure reconciliation — 2026-09-04
+
+#387 is permanently closed as `completed` for the exact anonymous regular 3D
+embed route. The deployed `assets/index-UmUBnruG` revision passed 1280×900
+and 375×812 rendered checks for the chrome-less stage-local hamburger, named
+controls, proportional 16:9 geometry, containment, and absence of site chrome.
+The fixture was restored to Draft and the anonymous embed returned its
+unavailable/private state. GitHub comment 5533727630 records the criterion
+matrix. The next FIFO transaction is #388. No closed issue was reopened.
+
 ## Fresh owner-report distillation — 2026-09-04
 
 This definition pass used the current checkout, the maintained

@@ -1,0 +1,105 @@
+import importlib.util
+from pathlib import Path
+from types import ModuleType
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = ROOT / "scripts" / "check-github-action-pins.py"
+
+
+def load_pin_checker() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("check_github_action_pins", SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+PIN_CHECKER = load_pin_checker()
+
+
+@pytest.fixture
+def workflows_dir(tmp_path: Path) -> Path:
+    directory = tmp_path / ".github" / "workflows"
+    directory.mkdir(parents=True)
+    return directory
+
+
+def write_workflow(workflows_dir: Path, name: str, content: str) -> None:
+    path = workflows_dir / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+
+
+def test_full_commit_pins_with_release_comments_are_allowed(workflows_dir: Path):
+    write_workflow(
+        workflows_dir,
+        "pinned.yml",
+        """\
+name: Pinned
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567 # v4
+      - uses: astral-sh/setup-uv@ABCDEF0123456789ABCDEF0123456789ABCDEF01 # v7.1.0
+""",
+    )
+
+    assert PIN_CHECKER.find_unpinned_actions(workflows_dir) == []
+
+
+def test_mutable_refs_and_missing_refs_report_file_and_line_diagnostics(
+    workflows_dir: Path,
+):
+    write_workflow(
+        workflows_dir,
+        "new.yaml",
+        """\
+name: Mutable references
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@main
+      - uses: actions/cache
+""",
+    )
+
+    errors = PIN_CHECKER.find_unpinned_actions(workflows_dir)
+
+    assert errors == [
+        ".github/workflows/new.yaml:7: actions/checkout@v4 must use a full 40-character commit SHA",
+        ".github/workflows/new.yaml:8: actions/setup-python@main "
+        "must use a full 40-character commit SHA",
+        ".github/workflows/new.yaml:9: actions/cache@<missing ref> "
+        "must use a full 40-character commit SHA",
+    ]
+
+
+def test_local_actions_and_uses_like_text_in_run_blocks_are_allowed(workflows_dir: Path):
+    write_workflow(
+        workflows_dir,
+        "local-actions.yml",
+        """\
+name: Local actions
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/check
+      - run: |
+          echo "uses: example/action@v4"
+          uses: another/action@main
+      - run: >
+          echo "uses: folded/action@v1"
+""",
+    )
+
+    assert PIN_CHECKER.find_unpinned_actions(workflows_dir) == []

@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "check-github-action-pins.py"
 HOOK = ROOT / ".githooks" / "pre-commit"
 MAKEFILE = ROOT / "Makefile"
+CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
 
 def load_pin_checker() -> ModuleType:
@@ -36,6 +37,19 @@ def test_git_safe_push_requires_pin_check():
     target_line = next(line for line in makefile.splitlines() if line.startswith("git-safe-push:"))
 
     assert "check-github-action-pins" in target_line.partition(":")[2].split()
+
+
+def test_ci_workflow_validation_job_runs_pin_check():
+    lines = CI_WORKFLOW.read_text().splitlines()
+    job_start = lines.index("  workflow-validation:")
+    job_end = next(
+        index
+        for index, line in enumerate(lines[job_start + 1 :], start=job_start + 1)
+        if line.startswith("  ") and not line.startswith("    ")
+    )
+
+    assert "      - name: Check GitHub Action pins" in lines[job_start:job_end]
+    assert "        run: python scripts/check-github-action-pins.py" in lines[job_start:job_end]
 
 
 def test_install_git_hooks_activates_versioned_hook_directory():

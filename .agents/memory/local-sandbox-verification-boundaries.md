@@ -29,3 +29,20 @@ browser verification when this boundary applies; state it explicitly in
 the QA comment/task entry and name the exact next action (a human, or an
 agent in an environment with real credentials/PostgreSQL, does the live
 check).
+
+**Docker exec/setns boundary:** In the September 4, 2026 Replit workspace,
+disposable PostgreSQL containers could initialize and report ready in
+`docker logs`, but every `docker exec` readiness probe failed with
+`OCI runtime exec ... error executing setns process`. This prevented
+`scripts/browser-qa.sh` from reaching Django/Vite startup; direct Playwright
+against the already-running workflow and the full local quality gate remained
+usable.
+
+**Why:** The failure was in the host container runtime rather than PostgreSQL
+or application code, so changing the browser harness would have hidden an
+environment boundary.
+
+**How to apply:** If this exact `setns` error recurs, retain the failed
+browser-run logs, classify it as a verification boundary, and use an
+agent-runnable non-Docker browser path only for criteria that do not require
+the disposable database fixture.

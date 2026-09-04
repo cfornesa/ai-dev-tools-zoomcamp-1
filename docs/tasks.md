@@ -15502,3 +15502,34 @@ selection, newly implemented), #397 (2D canvas containment fix), and #398
 (3D layout parity verification). No closed issue was reopened or rewritten;
 each transaction's evidence, commits, and GitHub comment stand as its own
 immutable record.
+
+## 283. Reconcile every local backlog record to a groomed GitHub issue — closure
+
+Status: COMPLETE
+
+The 2026-09-04 backlog session audited all 21 `.local/tasks/` records against
+this canonical ledger, repository history, and the complete GitHub issue set.
+Four genuinely unmapped implementation specifications were converted into
+criterion-ready issues #400–#403 and processed to closure:
+
+- [#400](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/400)
+  — auth shell, branded account pages, and signup reCAPTCHA.
+- [#401](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/401)
+  — environment-driven Google OAuth CSRF trusted origins.
+- [#402](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/402)
+  — safe defaults for omitted AI-created 3D primitive dimensions.
+- [#403](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/403)
+  — encrypted owner-scoped Mistral credentials.
+
+Existing issue ownership was reused for all other actionable records; no closed
+issue was reopened and no duplicate issue was created. The local
+`reset-main-to-origin.md` record is terminal operational recovery, not current
+product work. The complete manifest, duplicate report, dependency order,
+criterion matrices, verification results, and the Docker verification boundary
+are recorded in
+`.local/tasks/backlog-session-2026-09-04.md`.
+
+`make check` passed with 944 backend tests (22 skipped) and 2,417 frontend
+tests. Direct local Playwright auth checks passed 5/5 at 375×812, and the
+credential build scan passed 3/3. GitHub has no open issues; `main` and
+`origin/main` are synchronized and the worktree is clean.

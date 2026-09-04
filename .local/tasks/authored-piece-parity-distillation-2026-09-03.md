@@ -1257,3 +1257,15 @@ hamburger, named controls, containment, and no load-time camera prompt. The
 fixture was restored to Draft and the anonymous route returned its
 unavailable/private state. GitHub comment 5533742788 records the criterion
 matrix. The next FIFO transaction is #389. No closed issue was reopened.
+
+## #389 closure reconciliation — 2026-09-04
+
+#389 is permanently closed as `completed` for the exact anonymous CMS
+immersive 3D route. The deployed `assets/index-UmUBnruG` revision passed
+1280×900 and 375×812 rendered checks for the chrome-less stage-local
+hamburger, Screenshot/Download/Sound/Piece controls/Steer/Guide/Fullscreen,
+containment, no duplicate CMS chrome, and no load-time camera prompt. The
+fixture was restored from Published to Draft, and the anonymous CMS route
+returned its unavailable/private state. GitHub comment 5533801021 records the
+criterion matrix. The next independent FIFO transaction is #344; no closed
+issue was reopened.

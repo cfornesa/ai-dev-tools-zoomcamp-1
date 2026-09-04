@@ -110,3 +110,28 @@ Next action: rerun the exact browser runner with Docker available, inspect
 the fixed desktop/mobile evidence, and close #392 only if every criterion
 passes. Do not start #393–#398 engineering before #392 reaches a terminal
 status.
+
+## #393 transaction ledger — 2026-09-03
+
+State: `ENGINEERING/QA → BLOCKED`
+
+- Commits: `85c39d4`, `41acbc5` — explicit fallback metadata, fallback
+  regeneration on owner detail/thumbnail access, card retry/retry-error UI,
+  and 4:3 320x240 3D card framing.
+- Focused: backend thumbnail/API suite 28 passed; frontend 3D card suite 11
+  passed; frontend typecheck/lint and targeted formatting passed.
+- Full relevant checks: `make check` reached 888 passed/22 skipped but had
+  the same five unrelated macOS sandbox failures in git socket binding and
+  startup subprocess tests. These are classified as a host verification
+  boundary, not a thumbnail regression.
+- Browser QA: the required
+  `BROWSER_QA_E2E_SPEC=e2e/project3dThumbnailCard.spec.ts make browser-qa`
+  was attempted and stopped before setup because Docker is unavailable.
+- GitHub QA comment: pending this reconciliation call; #393 stays open.
+- Evidence boundary: implementation is local only; deployed owner-card and
+  fixed-viewport visual evidence remain unverified.
+
+Next action: with Docker or an equivalent disposable PostgreSQL browser
+runner available, execute the exact browser spec, inspect both card images,
+then close #393 only if every criterion passes. Per the owner's instruction,
+stop after this reconciliation and do not start #394–#398.

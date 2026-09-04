@@ -15207,3 +15207,25 @@ can be verified independently. Engineering must process one issue at a time.
 The complete evidence, fixed fixtures/viewports, finite closure criteria,
 commands, blockers, and handoff are recorded in
 `.local/tasks/public-gallery-published-pieces-distillation-2026-09-04.md`.
+
+## 274. Recover renderable current-scene 3D project thumbnails
+
+Status: IMPLEMENTED LOCALLY — BROWSER QA/FULL GATE BLOCKED
+
+GitHub issue: [#393](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/393)
+
+The owner-facing 3D card now distinguishes a stored fallback render, retries
+fallback generation on owner detail/thumbnail access, provides a visible
+retry and retry-error path, and uses a 4:3 thumbnail frame matching the
+320x240 server artifact contract. Saving already creates a new version-keyed
+thumbnail; the endpoint now also recovers stale fallback rows.
+
+Commits: `85c39d4`, `41acbc5`.
+
+Focused thumbnail/API tests pass (28), the focused 3D card suite passes (11),
+frontend typecheck/lint pass, and targeted formatting passes. `make check`
+reached 888 passed and 22 skipped but retains the same five unrelated macOS
+sandbox failures in git socket binding and startup subprocess tests. The
+required `BROWSER_QA_E2E_SPEC=e2e/project3dThumbnailCard.spec.ts make
+browser-qa` remains unavailable because Docker is not running. #393 remains
+open pending browser inspection of the owner card at 1280x900 and 375x812.

@@ -7,6 +7,16 @@ on:
   deployment_status:
 
 jobs:
+  workflow-validation:
+    name: Workflow validation
+    if: ${{ github.event_name != 'deployment_status' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check live provider alert contract
+        run: python scripts/check-live-provider-alert.py
+
   backend:
     name: Backend checks
     if: ${{ github.event_name != 'deployment_status' }}

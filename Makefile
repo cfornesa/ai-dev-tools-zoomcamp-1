@@ -3,12 +3,16 @@
 	backend-lint backend-format backend-format-check backend-typecheck backend-test \
 frontend-lint frontend-format frontend-format-check frontend-typecheck frontend-test \
 git-safe-push browser-qa compose-preflight \
-e2e webkit-fullscreen dev run deploy-check migrate smoke-local smoke-hosted-git
+e2e webkit-fullscreen dev run deploy-check migrate smoke-local smoke-hosted-git \
+check-live-provider-alert
 
 # Run every backend and frontend check (same checks CI runs).
-check: backend-check frontend-check
+check: check-live-provider-alert backend-check frontend-check
 
 backend-check: backend-lint backend-format-check backend-typecheck backend-test
+
+check-live-provider-alert:
+	python scripts/check-live-provider-alert.py
 
 frontend-check: frontend-lint frontend-format-check frontend-typecheck frontend-test
 

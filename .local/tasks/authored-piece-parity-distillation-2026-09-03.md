@@ -1247,3 +1247,13 @@ owner metadata. The fixture was restored to Draft and the anonymous route
 returned its unavailable/private state. GitHub comment 5533685789 records the
 criterion matrix. The next FIFO transaction is #386. No closed issue was
 reopened.
+
+## #388 closure reconciliation — 2026-09-04
+
+#388 is permanently closed as `completed` for the exact anonymous regular
+immersive 3D route. The deployed `assets/index-UmUBnruG` revision passed
+1280×900 and 375×812 rendered checks for the chrome-less stage-local
+hamburger, named controls, containment, and no load-time camera prompt. The
+fixture was restored to Draft and the anonymous route returned its
+unavailable/private state. GitHub comment 5533742788 records the criterion
+matrix. The next FIFO transaction is #389. No closed issue was reopened.

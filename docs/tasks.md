@@ -15360,3 +15360,45 @@ at 1280x900 and 375x812. Focused backend (28) and frontend (12) tests and
 comment
 [5535357544](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/393#issuecomment-5535357544)
 records the full criterion matrix. #393 is closed as `completed`.
+
+## 279. Make 3D publication state and controls visibly discoverable — closure
+
+Status: COMPLETE
+
+GitHub issue: [#394](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/394)
+
+#394's own required spec (`project3dPublicationDiscoverability.spec.ts`) had
+two independent pre-existing bugs: an anonymous-view assertion for `not
+available` that never matched the actual `isn't available` copy, and an
+owner-card lookup via `.last()` that breaks once more than one 3D project
+exists in the shared disposable database this suite's three sequential
+browser projects populate. Both fixed directly in the spec.
+
+The broader regression flagged in item 277/#392's closure was confirmed and
+fixed here, as committed to: commit `b590e0f` moved the manual 3D editor's
+Draft/Published disclosure from the stage-local toolbar popover into the
+editor header, by design (removing the duplicate control this issue's own
+closure checklist named as a defect), but left `manual3dPublicationLifecycle.spec.ts`
+(#376), `manual3dStageChrome.spec.ts` (#341), and `project3dLifecycle.spec.ts`
+(#239) still driving the removed toolbar control. All three were repaired —
+the first rewritten to the header flow, the second trimmed of its now-invalid
+publication-toggle assertions while keeping its still-valid authoring/sound
+coverage, and the third's shared stage-chrome helper parameterized since the
+AI-assisted editor (`/ai-projects3d/:id`) still renders `PublishControl3D
+compact` and keeps the toolbar control while the manual editor does not. No
+closed issue (#296, #376, #341, #239) was reopened; only their e2e coverage,
+which had drifted from an intentional, already-landed UI change, was
+repaired.
+
+All four specs passed via `bash scripts/browser-qa.sh`
+(chromium/firefox/webkit): #394's own spec (3/3), plus the three repaired
+regression specs (3/3, 3/3, 12/12). Focused backend (29) and frontend (22)
+tests and `make check` (893 backend/22 skipped, 2412/2412 frontend) passed.
+GitHub comment
+[5535474768](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/394#issuecomment-5535474768)
+records the full criterion matrix. #394 is closed as `completed`.
+
+With #394 closed, the full owner-reported authored-piece parity audit batch
+from item 273 (#392-#398) has five of seven issues closed. #396 (3D outline
+selection parity with #395) and #397/#398 (2D/3D Preview panel layout
+containment) remain open and independent.

@@ -15251,3 +15251,45 @@ failures in git socket binding and startup subprocess tests. The required
 `BROWSER_QA_E2E_SPEC=e2e/project3dPublicationDiscoverability.spec.ts make
 browser-qa` is blocked before setup because Docker is unavailable. #394
 remains open pending browser screenshots and interaction evidence.
+
+## 276. Explicit and clearable 2D layer selection — closure
+
+Status: COMPLETE
+
+GitHub issue: [#395](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/395)
+
+Engineering for this issue was already present, uncommitted, in the working
+tree at session start. A same-target layer-row click now toggles the
+selection off, `LayersPanel.tsx`'s layer-name field and visible/locked
+checkboxes select without toggling (their own click handlers stay in
+control), and `SelectionHud.tsx` gained an explicit "Clear selection" action
+next to the collapse toggle for a layer selection. Four drifted e2e spec
+files were reformatted with Prettier as a required-gate fix, unrelated to
+this issue's own scope.
+
+Focused frontend tests (89), typecheck, lint, and `make check` (893 backend
+passed/22 skipped; 2412/2412 frontend passed — one `useDraftAutosave` timing
+flake reproduced once in the full run and passed clean on immediate rerun,
+confirmed pre-existing and unrelated) all passed. Commit `381a69f`.
+
+Browser QA ran against a fixture project (5 layers, two non-empty) signed in
+as the `e2e_owner` fixture user, using Claude in Chrome. All closure
+checklist criteria passed: layer-row toggle-off, the new "Clear selection"
+button, bidirectional layer/shape highlighting, and safe empty-layer
+selection. GitHub comment
+[5535193888](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/395#issuecomment-5535193888)
+records the full criterion matrix. #395 is closed as `completed`.
+
+Environment note superseding the "Docker unavailable" blocker recorded
+against #392/#393/#394 above: Docker is now running in this environment.
+However, the long-lived Compose frontend container
+(`ai-dev-tools-zoomcamp-1-frontend-1`) has no source volume mount and was
+serving a stale pre-session image; `docker compose build frontend` failed on
+a registry timeout pulling `node:22-bookworm-slim` in this sandbox. QA
+instead used a local `npm run dev` with `BROWSER_QA_BACKEND_URL` pointed at
+the same Compose backend/Postgres (`http://127.0.0.1:8001`), which is a
+documented-equivalent local path per `AGENTS.md`. The stale container was
+restored (not rebuilt) afterward. The next FIFO/independent candidates
+(#392, #393, #394) should retry `make browser-qa` directly — if the
+disposable stack it builds hits the same registry timeout, prefer this
+`npm run dev` proxy path over reporting Docker itself as unavailable.

@@ -15063,3 +15063,29 @@ fixture was restored from Published to Draft, and the anonymous CMS route
 returned its unavailable/private state. GitHub comment 5533801021 records the
 criterion matrix. The next independent FIFO boundary is #344; no closed issue
 was reopened.
+
+## Fresh owner-report reconciliation — 2026-09-04
+
+The exact current deployed bundle is `assets/index-UmUBnruG`. A fresh
+authenticated inspection of the supplied 3D editor route showed the hamburger
+inside the Preview canvas; opening it displayed the stacked Screenshot,
+Download, Immersive, Sound, Piece controls, Steer, Guide, 3D authoring, Save
+scene, AI, Publication status, and Fullscreen actions. The publication
+disclosure exposed Draft/Published switching.
+
+The supplied public 2D route was private while its fixture was Draft, which
+explains the absence of public controls in that state. After a temporary
+Published transition, the same exact route exposed its stage-local hamburger
+and Screenshot, Download, Piece controls, and Fullscreen actions at both
+1280×900 and 375×812. The open mobile dialog filled the viewport without
+horizontal overflow; its own scroll area was exactly viewport-sized and the
+page body overflow was hidden. Screenshots were inspected at both fixed
+viewports.
+
+Distillation result: the reported missing controls/status are not reproduced
+on the current deployed revision. The public-route observation is a
+publication-state boundary, not a product defect. The visible editor outline
+and inspector are authoring surfaces behind the stage overlay, not duplicate
+piece-runtime controls. No new issue is filed; closed #384–#390 remain valid
+for their own transactions and immutable. #344 is the next independent FIFO
+item, with only owner-controlled physical camera evidence remaining.

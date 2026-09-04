@@ -15432,3 +15432,36 @@ With #396 closed, item 273's audit batch has six of seven issues closed.
 #397 and #398 (2D/3D Preview panel layout containment) remain open and
 independent; #397 is next in FIFO order per item 273's stated ordering
 rationale.
+
+## 281. Contain the 2D editor canvas inside the Preview panel — closure
+
+Status: COMPLETE
+
+GitHub issue: [#397](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/397)
+
+Root cause: `.editor-scene-canvas` centered itself with `left/top: 50%` plus
+matching negative pixel margins -- a technique that only resolves correctly
+when the containing block has a *definite* height. Its immediate parent is a
+plain wrapper div with `height: auto`, sized by its own content (this very
+canvas) -- an indeterminate/circular case each browser resolves
+inconsistently, producing the reported symptom exactly: the canvas rendering
+with an arbitrary vertical offset, escaping its `.editor-scene-canvas-viewport`
+box and covering the tabs/Preview heading/description above it. Reproduced
+live via Claude in Chrome against a project already created earlier this
+session for #395's QA, using `getBoundingClientRect()` comparisons to
+pinpoint the exact offending style pair. Fixed by switching to flexbox
+centering (`align-items`/`justify-content: center`) on the viewport
+container, which has no percentage-resolution race.
+
+The issue's own "Exact verification" named
+`e2e/manual2dCanvasContainment.spec.ts`, which did not exist; added it
+(commit `3a2eef3`). `bash scripts/browser-qa.sh` passed 3/3 twice in a row
+(chromium/firefox/webkit) at 1280x900 and 375x812. Focused
+`EditorWorkspace` tests (38) and `make check` (893 backend/22 skipped,
+2417/2417 frontend) passed. GitHub comment
+[5535799186](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/397#issuecomment-5535799186)
+records the full criterion matrix. #397 is closed as `completed`.
+
+With #397 closed, item 273's audit batch has all but #398 closed. #398 (3D
+Preview/outline/inspector/editor layout containment) is the last remaining
+open issue.

@@ -17,6 +17,7 @@
 - [Published-app checkpoint commits](published-app-checkpoint-commits.md) — Treat “Published your App” commits as disposable checkpoints during Git reconciliation; preserve meaningful ancestor work and drop checkpoint-only divergence.
 - [Ignored tracked task files](ignored-tracked-task-files.md) — Some tracked .local task files are ignored by default; force-stage the intended incoming version when resolving modify/delete conflicts.
 - [Replit production schema publishing](replit-production-schema-publishing.md) — Replit applies production schema diffs during Publish; Django migrations must stay out of build and startup commands.
+- [GitHub Actions needs failure gate](github-actions-needs-failure-gate.md) — dependent alert jobs need an explicit `always()` gate before checking a failed prerequisite result.
 - [Critical operational decisions](critical-actions.md) — Structured index of the security, deployment, database, authentication, and verification decisions that must not regress.
 - [p5.js getUserMedia polyfill](p5-getusermedia-polyfill.md) — Mocking navigator.mediaDevices.getUserMedia wrong crashes the bundle via p5.js's own load-time polyfill.
 - [Local e2e baseURL default](e2e-baseurl-port-default.md) — RESOLVED: Playwright's default baseURL now matches Vite's pinned :5000; historical note on issue #123.

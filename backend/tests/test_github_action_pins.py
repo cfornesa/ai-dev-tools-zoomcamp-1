@@ -6,6 +6,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "check-github-action-pins.py"
+HOOK = ROOT / ".githooks" / "pre-commit"
+MAKEFILE = ROOT / "Makefile"
 
 
 def load_pin_checker() -> ModuleType:
@@ -18,6 +20,20 @@ def load_pin_checker() -> ModuleType:
 
 
 PIN_CHECKER = load_pin_checker()
+
+
+def test_pre_commit_hook_delegates_to_pin_check_target():
+    hook = HOOK.read_text()
+
+    assert "exec make check-github-action-pins" in hook
+    assert "check-github-action-pins.py" not in hook
+
+
+def test_git_safe_push_requires_pin_check():
+    makefile = MAKEFILE.read_text()
+    target_line = next(line for line in makefile.splitlines() if line.startswith("git-safe-push:"))
+
+    assert "check-github-action-pins" in target_line.partition(":")[2].split()
 
 
 @pytest.fixture

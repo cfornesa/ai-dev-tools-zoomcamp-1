@@ -487,6 +487,29 @@ describe('EditorWorkspace scene outline: selection sync', () => {
     expect(shapeRow).toHaveAttribute('data-selected', 'true');
     expect(screen.getByTestId('selection-hud')).toHaveTextContent('Circle 1');
   });
+
+  it('provides explicit and repeatable ways to clear a layer selection', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add circle' }));
+
+    const layerRow = within(outlineList())
+      .getAllByRole('listitem')
+      .find(
+        (row) => row.dataset.outlineKind === 'layer' && within(row).queryByDisplayValue('Layer 2'),
+      )!;
+    const layerName = within(layerRow).getByRole('textbox', { name: 'Layer name for Layer 2' });
+
+    await user.click(layerName);
+    expect(screen.getByTestId('selection-hud')).toBeInTheDocument();
+    await user.click(layerRow);
+    expect(screen.queryByTestId('selection-hud')).not.toBeInTheDocument();
+
+    await user.click(layerName);
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByTestId('selection-hud')).not.toBeInTheDocument();
+    expect(layerRow).not.toHaveAttribute('data-selected');
+  });
 });
 
 describe('EditorWorkspace scene outline: friendly shape labels (Task 80 / issue #110)', () => {

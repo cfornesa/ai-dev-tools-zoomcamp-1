@@ -58,8 +58,9 @@ test.describe('anonymous CMS immersive 3D stage chrome', () => {
       });
       await anonymousPage.addInitScript(() => {
         window.addEventListener('camera-requested', () => {
-          void (window as unknown as { recordCameraRequest: () => Promise<void> })
-            .recordCameraRequest();
+          void (
+            window as unknown as { recordCameraRequest: () => Promise<void> }
+          ).recordCameraRequest();
         });
       });
       await anonymousPage.goto(`/immersive/p3d/${projectId}?embed=1&cms=1`);
@@ -93,7 +94,9 @@ test.describe('anonymous CMS immersive 3D stage chrome', () => {
           'Show hand gesture guide',
           'Expand piece to fullscreen',
         ]) {
-          await expect(dialog.getByRole('button', { name, exact: name === 'Piece controls' })).toBeVisible();
+          await expect(
+            dialog.getByRole('button', { name, exact: name === 'Piece controls' }),
+          ).toBeVisible();
         }
         const metrics = await frame.evaluate((element) => {
           const box = element.getBoundingClientRect();
@@ -104,7 +107,11 @@ test.describe('anonymous CMS immersive 3D stage chrome', () => {
             documentWidth: document.documentElement.scrollWidth,
             viewportWidth: innerWidth,
             cardInside: Boolean(
-              cardBox && cardBox.x >= 0 && cardBox.y >= 0 && cardBox.right <= innerWidth && cardBox.bottom <= innerHeight,
+              cardBox &&
+              cardBox.x >= 0 &&
+              cardBox.y >= 0 &&
+              cardBox.right <= innerWidth &&
+              cardBox.bottom <= innerHeight,
             ),
             cardOverflow: card ? getComputedStyle(card).overflowY : 'missing',
           };
@@ -130,7 +137,10 @@ test.describe('anonymous CMS immersive 3D stage chrome', () => {
       .getByRole('toolbar', { name: 'Preview actions' });
     await restoredToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await restoredToolbar.getByRole('button', { name: /Publication status: Published/ }).click();
-    await restoredToolbar.locator('.publication-status-controls-panel').getByRole('button', { name: 'Draft', exact: true }).click();
+    await restoredToolbar
+      .locator('.publication-status-controls-panel')
+      .getByRole('button', { name: 'Draft', exact: true })
+      .click();
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Draft (Private)');
   });
 });

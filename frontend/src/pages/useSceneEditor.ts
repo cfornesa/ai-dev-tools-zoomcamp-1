@@ -482,13 +482,20 @@ export function useSceneEditor(
   );
 
   const selectLayer = useCallback(
-    (id: string | null) => {
+    (id: string | null, toggle = true) => {
       if (id === null) {
+        setSelectedShapeId(null);
         setSelectedLayerId(null);
         setIsLayerSelection(false);
         return;
       }
       if (!workingCopy || !getLayers(workingCopy).some((layer) => layer.id === id)) return;
+      if (toggle && selectedLayerId === id && isLayerSelection) {
+        setSelectedShapeId(null);
+        setSelectedLayerId(null);
+        setIsLayerSelection(false);
+        return;
+      }
       setSelectedLayerId(id);
       setIsLayerSelection(true);
       // A layer selection also exposes its first selectable shape to the
@@ -499,7 +506,7 @@ export function useSceneEditor(
       );
       setSelectedShapeId(firstShape?.id ?? null);
     },
-    [workingCopy],
+    [isLayerSelection, selectedLayerId, workingCopy],
   );
 
   // Applies the outcome of a sceneOutline.ts mutation: on success, commits

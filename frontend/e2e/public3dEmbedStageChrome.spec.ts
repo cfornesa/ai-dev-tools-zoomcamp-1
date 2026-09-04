@@ -79,10 +79,10 @@ test.describe('anonymous regular 3D embed stage chrome', () => {
             viewportWidth: innerWidth,
             cardInside: Boolean(
               cardBox &&
-                cardBox.x >= 0 &&
-                cardBox.y >= 0 &&
-                cardBox.right <= innerWidth &&
-                cardBox.bottom <= innerHeight,
+              cardBox.x >= 0 &&
+              cardBox.y >= 0 &&
+              cardBox.right <= innerWidth &&
+              cardBox.bottom <= innerHeight,
             ),
             cardOverflow: card ? getComputedStyle(card).overflowY : 'missing',
           };

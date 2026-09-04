@@ -1276,6 +1276,12 @@ code {
   gap: 8px;
 }
 
+.editor-selection-hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .editor-selection-hud-title {
   margin: 0;
   font-weight: 600;

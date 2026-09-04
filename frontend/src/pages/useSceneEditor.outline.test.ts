@@ -87,6 +87,23 @@ describe('useSceneEditor layers', () => {
     expect(result.current.selectedShapeId).toBeNull();
   });
 
+  it('toggles the selected layer and clears the associated shape without mutating the scene', () => {
+    const { result } = renderSceneEditor();
+    act(() => result.current.addShape('circle'));
+    const before = result.current.workingCopy;
+    const layerId = result.current.shapes[0].layerId;
+
+    act(() => result.current.selectLayer(layerId));
+    expect(result.current.isLayerSelection).toBe(true);
+    expect(result.current.selectedShapeId).toBe(result.current.shapes[0].id);
+
+    act(() => result.current.selectLayer(layerId));
+    expect(result.current.isLayerSelection).toBe(false);
+    expect(result.current.selectedLayerId).toBeNull();
+    expect(result.current.selectedShapeId).toBeNull();
+    expect(result.current.workingCopy).toBe(before);
+  });
+
   it('surfaces a textual error and does not mutate scene state when deleting the last layer', () => {
     const single: SceneDocument = structuredClone(TWO_LAYER_SCENE);
     single.layers = [(single.layers as unknown[])[0]];

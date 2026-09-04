@@ -61,8 +61,9 @@ test.describe('anonymous immersive 3D stage chrome', () => {
       });
       await anonymousPage.addInitScript(() => {
         window.addEventListener('camera-requested', () => {
-          void (window as unknown as { recordCameraRequest: () => Promise<void> })
-            .recordCameraRequest();
+          void (
+            window as unknown as { recordCameraRequest: () => Promise<void> }
+          ).recordCameraRequest();
         });
       });
       await anonymousPage.goto(`/immersive/p3d/${projectId}`);
@@ -93,7 +94,9 @@ test.describe('anonymous immersive 3D stage chrome', () => {
           'Show hand gesture guide',
           'Expand piece to fullscreen',
         ]) {
-          await expect(dialog.getByRole('button', { name, exact: name === 'Piece controls' })).toBeVisible();
+          await expect(
+            dialog.getByRole('button', { name, exact: name === 'Piece controls' }),
+          ).toBeVisible();
         }
         const metrics = await frame.evaluate((element) => {
           const box = element.getBoundingClientRect();
@@ -107,10 +110,10 @@ test.describe('anonymous immersive 3D stage chrome', () => {
             viewportWidth: innerWidth,
             cardInside: Boolean(
               cardBox &&
-                cardBox.x >= 0 &&
-                cardBox.y >= 0 &&
-                cardBox.right <= innerWidth &&
-                cardBox.bottom <= innerHeight,
+              cardBox.x >= 0 &&
+              cardBox.y >= 0 &&
+              cardBox.right <= innerWidth &&
+              cardBox.bottom <= innerHeight,
             ),
             cardOverflow: card ? getComputedStyle(card).overflowY : 'missing',
           };

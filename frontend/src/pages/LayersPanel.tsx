@@ -112,6 +112,7 @@ type LayerNameFieldProps = {
   // space at its default browser input width — see
   // `.editor-outline-layer-name` in index.css.
   className?: string;
+  onSelect?: () => void;
 };
 
 /** An uncontrolled text field that commits a rename on blur/Enter — one
@@ -120,7 +121,7 @@ type LayerNameFieldProps = {
  * name (not the in-progress draft) means the field re-syncs to the
  * canonical name after an undo/redo without ever interrupting an
  * in-progress edit. */
-function LayerNameField({ layerId, name, onRename, className }: LayerNameFieldProps) {
+function LayerNameField({ layerId, name, onRename, className, onSelect }: LayerNameFieldProps) {
   return (
     <input
       key={name}
@@ -128,6 +129,7 @@ function LayerNameField({ layerId, name, onRename, className }: LayerNameFieldPr
       className={className}
       defaultValue={name}
       aria-label={`Layer name for ${name}`}
+      onClick={onSelect}
       onBlur={(event) => {
         const trimmed = event.target.value.trim();
         if (trimmed.length > 0 && trimmed !== name) onRename(layerId, trimmed);
@@ -699,7 +701,7 @@ function OutlineRowItem({
           // checkbox labels. Selecting here after the control's own click
           // preserves its local behavior while making the whole row
           // bidirectional with the canvas.
-          if ((event.target as HTMLElement).closest('button,summary')) return;
+          if ((event.target as HTMLElement).closest('button,summary,input')) return;
           sceneEditor.selectLayer(row.id);
         }}
         onKeyDown={(event) => {
@@ -730,6 +732,7 @@ function OutlineRowItem({
           name={row.name}
           onRename={sceneEditor.renameLayer}
           className="editor-outline-layer-name"
+          onSelect={() => sceneEditor.selectLayer(row.id, false)}
         />
         {/* Issue #168 (task 136): Visible/Locked converted from full-size
             toggle buttons to compact checkboxes at reduced text size, per
@@ -745,7 +748,7 @@ function OutlineRowItem({
           <input
             type="checkbox"
             checked={row.visible}
-            onClick={() => sceneEditor.selectLayer(row.id)}
+            onClick={() => sceneEditor.selectLayer(row.id, false)}
             onChange={() => sceneEditor.toggleLayerVisible(row.id)}
             aria-label={`Layer ${row.name} visible`}
             title={`Layer ${row.name} visible`}
@@ -756,7 +759,7 @@ function OutlineRowItem({
           <input
             type="checkbox"
             checked={row.locked}
-            onClick={() => sceneEditor.selectLayer(row.id)}
+            onClick={() => sceneEditor.selectLayer(row.id, false)}
             onChange={() => sceneEditor.toggleLayerLocked(row.id)}
             aria-label={`Layer ${row.name} locked`}
             title={`Layer ${row.name} locked`}

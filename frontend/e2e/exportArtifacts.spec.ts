@@ -374,7 +374,9 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
           `browser-qa-${immersive ? 'immersive' : 'regular'}-${variant}.zip`,
         );
         const zip = await JSZip.loadAsync(Buffer.from(result.zipBase64, 'base64'));
-        const manifest = Object.keys(zip.files).filter((name) => !zip.files[name]!.dir).sort();
+        const manifest = Object.keys(zip.files)
+          .filter((name) => !zip.files[name]!.dir)
+          .sort();
         expect(manifest).toContain('README.txt');
         expect(manifest).toContain('index.html');
         expect(manifest).toContain('scripts/piece.js');

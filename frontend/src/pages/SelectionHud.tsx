@@ -143,7 +143,12 @@ function SelectionHud({ sceneEditor }: { sceneEditor: SceneEditor }) {
         >
           <div className="editor-selection-hud-header">
             <p className="editor-selection-hud-title">{layer.name}</p>
-            <HudCollapseToggle collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+            <div className="editor-selection-hud-actions">
+              <button type="button" onClick={() => sceneEditor.selectShape(null)}>
+                Clear selection
+              </button>
+              <HudCollapseToggle collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+            </div>
           </div>
           {!collapsed && (
             <p role="status">

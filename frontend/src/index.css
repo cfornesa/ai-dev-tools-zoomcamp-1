@@ -1282,6 +1282,21 @@ code {
   gap: 6px;
 }
 
+/* Issue #396: the 3D outline Inspector's own header pairs its title with
+   an explicit Clear selection action, matching `.editor-selection-hud-header`'s
+   layout for the 2D Layers panel's equivalent affordance. */
+.outline3d-inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.outline3d-inspector-header h4 {
+  margin: 0;
+}
+
 .editor-selection-hud-title {
   margin: 0;
   font-weight: 600;

@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import {
   object3DLabel,
@@ -145,6 +145,32 @@ function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange 
     onSelectionChange?.(next);
   }
 
+  /** Issue #396: a row click toggles the same-target selection off, mirroring
+   * `LayersPanel.tsx`'s `selectLayer(id, toggle)` (issue #395). `toggle`
+   * defaults to `true` for row activation; the explicit "Clear selection"
+   * action below always clears regardless of what's currently selected. */
+  function selectOutlineItem(next: Exclude<Outline3DSelection, null>, toggle = true) {
+    const isSameTarget =
+      selection !== null &&
+      selection.kind === next.kind &&
+      ('id' in selection ? selection.id : undefined) === ('id' in next ? next.id : undefined);
+    setSelection(toggle && isSameTarget ? null : next);
+  }
+
+  // Issue #396: never leave stale inspector data pointing at a
+  // group/object/light that no longer exists in `scene` -- e.g. after this
+  // item is deleted, an undo, or a fresh scene loading in on reload. The
+  // camera is always present, so it never needs this check.
+  useEffect(() => {
+    if (!selection || selection.kind === 'camera') return;
+    const stillExists =
+      (selection.kind === 'object' && scene.objects.some((o) => o.id === selection.id)) ||
+      (selection.kind === 'group' && scene.groups.some((g) => g.id === selection.id)) ||
+      (selection.kind === 'light' && scene.lights.some((l) => l.id === selection.id));
+    if (!stillExists) setSelection(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene, selection]);
+
   function updateObject(id: string, patch: Partial<Object3D>) {
     onChange({
       ...scene,
@@ -209,7 +235,7 @@ function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange 
               type="button"
               aria-pressed={selection?.kind === 'camera'}
               aria-current={selection?.kind === 'camera' ? 'true' : undefined}
-              onClick={() => setSelection({ kind: 'camera' })}
+              onClick={() => selectOutlineItem({ kind: 'camera' })}
             >
               Camera
             </button>
@@ -232,7 +258,7 @@ function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange 
                 aria-current={
                   selection?.kind === 'group' && selection.id === group.id ? 'true' : undefined
                 }
-                onClick={() => setSelection({ kind: 'group', id: group.id })}
+                onClick={() => selectOutlineItem({ kind: 'group', id: group.id })}
               >
                 Group: {group.name}
               </button>
@@ -271,7 +297,7 @@ function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange 
                   aria-current={
                     selection?.kind === 'object' && selection.id === object.id ? 'true' : undefined
                   }
-                  onClick={() => setSelection({ kind: 'object', id: object.id })}
+                  onClick={() => selectOutlineItem({ kind: 'object', id: object.id })}
                 >
                   {object3DLabel(object, scene.objects)}
                 </button>
@@ -307,7 +333,7 @@ function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange 
                 aria-current={
                   selection?.kind === 'light' && selection.id === light.id ? 'true' : undefined
                 }
-                onClick={() => setSelection({ kind: 'light', id: light.id })}
+                onClick={() => selectOutlineItem({ kind: 'light', id: light.id })}
               >
                 {light3DLabel(light, scene.lights)}
               </button>
@@ -328,7 +354,14 @@ function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange 
       </section>
 
       <section aria-label="Inspector" role="region" data-panel="inspector3d">
-        <h4>Inspector</h4>
+        <div className="outline3d-inspector-header">
+          <h4>Inspector</h4>
+          {selection && (
+            <button type="button" onClick={() => setSelection(null)}>
+              Clear selection
+            </button>
+          )}
+        </div>
 
         {selection?.kind === 'camera' && (
           <div data-testid="camera-summary">

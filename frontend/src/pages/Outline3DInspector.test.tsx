@@ -191,6 +191,93 @@ describe('Outline3DInspector', () => {
     );
   });
 
+  // Issue #396: same-target toggle-off, an explicit Clear selection action,
+  // and no stale selection surviving a delete -- the 3D outline's parity
+  // with the 2D Layers panel's #395 fix.
+  describe('clearable selection (issue #396)', () => {
+    it('toggles a selected row off on a second activation, without mutating the scene', async () => {
+      const user = userEvent.setup();
+      const scene = baseScene();
+      const onChange = vi.fn();
+      render(<Outline3DInspector scene={scene} onChange={onChange} />);
+
+      const groupButton = screen.getByRole('button', { name: 'Group: Furniture' });
+      await user.click(groupButton);
+      expect(screen.getByTestId('group-inspector')).toBeInTheDocument();
+
+      await user.click(groupButton);
+      expect(screen.queryByTestId('group-inspector')).not.toBeInTheDocument();
+      expect(groupButton).not.toHaveAttribute('aria-current');
+      expect(groupButton.closest('li')).not.toHaveAttribute('data-selected');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('offers an explicit Clear selection action that returns to the no-selection state', async () => {
+      const user = userEvent.setup();
+      render(<Outline3DInspector scene={baseScene()} onChange={() => {}} />);
+
+      await user.click(screen.getByRole('button', { name: 'Sphere 1' }));
+      expect(screen.getByTestId('object-inspector')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Clear selection' }));
+      expect(screen.queryByTestId('object-inspector')).not.toBeInTheDocument();
+      expect(
+        screen.getByText('Select an item from the outline to edit its properties.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument();
+    });
+
+    it('has no Clear selection action when nothing is selected', () => {
+      render(<Outline3DInspector scene={baseScene()} onChange={() => {}} />);
+      expect(screen.queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument();
+    });
+
+    it('clears a stale selection when the selected object is deleted from the scene', () => {
+      const scene = baseScene();
+      const { rerender } = render(<Outline3DInspector scene={scene} onChange={() => {}} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sphere 1' }));
+      expect(screen.getByTestId('object-inspector')).toBeInTheDocument();
+
+      const withoutSphere = {
+        ...scene,
+        objects: scene.objects.filter((o) => o.id !== 'o2'),
+      };
+      rerender(<Outline3DInspector scene={withoutSphere} onChange={() => {}} />);
+
+      expect(screen.queryByTestId('object-inspector')).not.toBeInTheDocument();
+      expect(
+        screen.getByText('Select an item from the outline to edit its properties.'),
+      ).toBeInTheDocument();
+    });
+
+    it('reports the cleared selection to onSelectionChange after a delete', () => {
+      const scene = baseScene();
+      const onSelectionChange = vi.fn();
+      const { rerender } = render(
+        <Outline3DInspector
+          scene={scene}
+          onChange={() => {}}
+          onSelectionChange={onSelectionChange}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sphere 1' }));
+      onSelectionChange.mockClear();
+
+      const withoutSphere = { ...scene, objects: scene.objects.filter((o) => o.id !== 'o2') };
+      rerender(
+        <Outline3DInspector
+          scene={withoutSphere}
+          onChange={() => {}}
+          onSelectionChange={onSelectionChange}
+        />,
+      );
+
+      expect(onSelectionChange).toHaveBeenCalledWith(null);
+    });
+  });
+
   it('every row stays keyboard-operable (a native <button>, reachable and activatable via keyboard alone)', async () => {
     const user = userEvent.setup();
     render(<Outline3DInspector scene={baseScene()} onChange={() => {}} />);

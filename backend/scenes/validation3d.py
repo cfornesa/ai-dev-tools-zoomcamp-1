@@ -15,6 +15,7 @@ This is a genuinely separate document family from the 2D canonical scene
 
 import json
 import math
+from copy import deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,23 @@ _STRUCTURAL_VALIDATOR = Draft202012Validator(SCENE3D_SCHEMA)
 SUPPORTED_SCHEMA_VERSION = 1
 SUPPORTED_DOCUMENT_TYPE = "scene3d"
 
+# These fields are part of each primitive's schema branch. Keep this mapping
+# next to the validator so AI-output normalization and diagnostics cannot
+# drift from the canonical primitive vocabulary.
+PRIMITIVE_REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
+    "box": ("width", "height", "depth"),
+    "sphere": ("radius",),
+    "cylinder": ("radiusTop", "radiusBottom", "height"),
+    "plane": ("width", "height"),
+}
+
+PRIMITIVE_DEFAULT_DIMENSIONS: dict[str, dict[str, int]] = {
+    "box": {"width": 1, "height": 1, "depth": 1},
+    "sphere": {"radius": 1},
+    "cylinder": {"radiusTop": 1, "radiusBottom": 1, "height": 1},
+    "plane": {"width": 1, "height": 1},
+}
+
 
 @dataclass
 class Scene3DValidationError:
@@ -50,6 +68,37 @@ class Scene3DValidationResult:
     @property
     def valid(self) -> bool:
         return not self.errors
+
+
+def normalize_scene3d_ai_output(data: Any) -> Any:
+    """Fill only omitted primitive dimensions in an AI-created scene.
+
+    Mistral's non-strict structured-output mode can emit a recognized object
+    type without the type-specific fields that its JSON Schema branch
+    requires. A prompt such as "Render a red cube" has an unambiguous,
+    renderer-neutral unit-size interpretation, so fill those fields
+    deterministically before normal validation.
+
+    This deliberately does not repair unknown types, non-object entries,
+    explicit invalid values, or any other part of the document. The returned
+    scene is a deep copy so provider output is never mutated in place.
+    """
+    if not isinstance(data, dict) or not isinstance(data.get("objects"), list):
+        return data
+
+    normalized = deepcopy(data)
+    for obj in normalized["objects"]:
+        if not isinstance(obj, dict):
+            continue
+        object_type = obj.get("type")
+        if not isinstance(object_type, str):
+            continue
+        defaults = PRIMITIVE_DEFAULT_DIMENSIONS.get(object_type)
+        if defaults is None:
+            continue
+        for dimension_name, default in defaults.items():
+            obj.setdefault(dimension_name, default)
+    return normalized
 
 
 def _format_path(absolute_path) -> str:
@@ -84,6 +133,34 @@ def _check_structure(data: Any) -> list[Scene3DValidationError]:
                 message=error.message,
             )
         )
+    return errors
+
+
+def _check_missing_object_geometry(data: Any) -> list[Scene3DValidationError]:
+    """Report primitive-specific omissions more clearly than a oneOf error."""
+    objects = data.get("objects") if isinstance(data, dict) else None
+    if not isinstance(objects, list):
+        return []
+
+    errors: list[Scene3DValidationError] = []
+    for index, obj in enumerate(objects):
+        if not isinstance(obj, dict):
+            continue
+        object_type = obj.get("type")
+        if not isinstance(object_type, str):
+            continue
+        for dimension_name in PRIMITIVE_REQUIRED_FIELDS.get(object_type, ()):
+            if dimension_name not in obj:
+                errors.append(
+                    Scene3DValidationError(
+                        path=f"$.objects[{index}].{dimension_name}",
+                        rule="missingRequired",
+                        message=(
+                            f"Object type '{object_type}' requires the '{dimension_name}' "
+                            "dimension field."
+                        ),
+                    )
+                )
     return errors
 
 
@@ -239,6 +316,9 @@ def validate_scene3d(data: Any) -> Scene3DValidationResult:
         )
 
     structural_errors = _check_structure(data)
+    geometry_errors = _check_missing_object_geometry(data)
+    if geometry_errors:
+        structural_errors = geometry_errors + structural_errors
     if structural_errors:
         return Scene3DValidationResult(errors=structural_errors)
 

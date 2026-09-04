@@ -115,6 +115,74 @@ def test_create_scene3d_invalid_structured_output_is_rejected():
     assert result.error.category == AIErrorCategory.INVALID_STRUCTURED_OUTPUT
 
 
+def _minimal_object(object_type: str) -> dict:
+    return {
+        "id": f"obj-{object_type}",
+        "type": object_type,
+        "groupId": None,
+        "transform": {
+            "position": {"x": 0, "y": 0, "z": 0},
+            "rotation": {"x": 0, "y": 0, "z": 0},
+            "scale": {"x": 1, "y": 1, "z": 1},
+            "opacity": 1,
+        },
+        "material": {"color": "#ff0000"},
+        "visible": True,
+    }
+
+
+def test_create_scene3d_repairs_an_omitted_box_size_to_a_unit_cube():
+    scene = {**MINIMAL_SCENE_3D, "objects": [_minimal_object("box")]}
+    provider = _provider_with(lambda **kw: _fake_response(json.dumps(scene)))
+
+    result = provider.create_scene3d(AICreateScene3DRequest(prompt="Render a red cube"))
+
+    assert result.success
+    assert result.scene["objects"][0]["width"] == 1
+    assert result.scene["objects"][0]["height"] == 1
+    assert result.scene["objects"][0]["depth"] == 1
+
+
+def test_create_scene3d_preserves_explicit_box_dimensions():
+    obj = _minimal_object("box")
+    obj.update({"width": 2.5, "height": 3, "depth": 4})
+    scene = {**MINIMAL_SCENE_3D, "objects": [obj]}
+    provider = _provider_with(lambda **kw: _fake_response(json.dumps(scene)))
+
+    result = provider.create_scene3d(AICreateScene3DRequest(prompt="Render a large red box"))
+
+    assert result.success
+    assert result.scene["objects"][0]["width"] == 2.5
+    assert result.scene["objects"][0]["height"] == 3
+    assert result.scene["objects"][0]["depth"] == 4
+
+
+def test_create_scene3d_does_not_repair_an_explicit_invalid_dimension():
+    obj = _minimal_object("box")
+    obj.update({"width": 0, "height": 1, "depth": 1})
+    scene = {**MINIMAL_SCENE_3D, "objects": [obj]}
+    provider = _provider_with(lambda **kw: _fake_response(json.dumps(scene)))
+
+    result = provider.create_scene3d(AICreateScene3DRequest(prompt="Render a red cube"))
+
+    assert not result.success
+    assert result.error.category == AIErrorCategory.INVALID_STRUCTURED_OUTPUT
+
+
+def test_create_scene3d_prompt_requires_complete_primitive_dimensions():
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(MINIMAL_SCENE_3D))
+
+    _provider_with(handler).create_scene3d(AICreateScene3DRequest(prompt="a bare stage"))
+
+    content = captured["messages"][0]["content"]
+    for field in ('"width": 1', '"height": 1', '"depth": 1'):
+        assert field in content
+
+
 # --- edit_scene3d_with_patch -----------------------------------------------
 
 

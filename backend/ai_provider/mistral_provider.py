@@ -163,7 +163,7 @@ from scenes.patch import (
 )
 from scenes.patch3d import validate_patch_operations3d
 from scenes.validation import SCENE_SCHEMA
-from scenes.validation3d import SCENE3D_SCHEMA
+from scenes.validation3d import SCENE3D_SCHEMA, normalize_scene3d_ai_output
 
 # The model used for scene creation. Overridable via the MISTRAL_MODEL
 # environment variable (optional -- unlike MISTRAL_API_KEY, this has a
@@ -307,6 +307,12 @@ are the top-level fields).
 "cylinder", "plane" -- each requires its own specific dimension fields \
 (box: width/height/depth; sphere: radius; cylinder: radiusTop/ \
 radiusBottom/height; plane: width/height).
+- Never omit a type-specific dimension field. If the prompt does not specify \
+size, use these explicit unit defaults and include every field in the output: \
+box width=1, height=1, depth=1; sphere radius=1; cylinder radiusTop=1, \
+radiusBottom=1, height=1; plane width=1, height=1. For example, a valid box \
+always contains "type": "box", "width": 1, "height": 1, and "depth": 1 \
+alongside all common object fields.
 - Every light is an object requiring "id", "type", "color", and \
 "intensity" -- never a bare number or string. Its "type" must be exactly \
 one of: "directional", "point", "ambient". A "point" light additionally \
@@ -944,7 +950,8 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
                 AIProviderRejectionError("Mistral response JSON was not a scene object.")
             )
 
-        return usage, (lambda: scene)
+        normalized_scene = normalize_scene3d_ai_output(scene)
+        return usage, (lambda: normalized_scene)
 
     def _invoke_edit_3d(
         self, prompt: str, current_scene: dict[str, Any]

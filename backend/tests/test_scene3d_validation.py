@@ -18,6 +18,7 @@ import pytest
 from scenes.validation3d import (
     SUPPORTED_DOCUMENT_TYPE,
     SUPPORTED_SCHEMA_VERSION,
+    normalize_scene3d_ai_output,
     validate_scene3d,
 )
 
@@ -164,3 +165,72 @@ def test_named_object_is_accepted_for_every_object_type():
     result = validate_scene3d(data)
 
     assert result.valid, [e.message for e in result.errors]
+
+
+def _minimal_object(object_type: str) -> dict:
+    return {
+        "id": f"obj-{object_type}",
+        "type": object_type,
+        "groupId": None,
+        "transform": {
+            "position": {"x": 0, "y": 0, "z": 0},
+            "rotation": {"x": 0, "y": 0, "z": 0},
+            "scale": {"x": 1, "y": 1, "z": 1},
+            "opacity": 1,
+        },
+        "material": {"color": "#ff0000"},
+        "visible": True,
+    }
+
+
+@pytest.mark.parametrize(
+    ("object_type", "expected"),
+    [
+        ("box", {"width": 1, "height": 1, "depth": 1}),
+        ("sphere", {"radius": 1}),
+        ("cylinder", {"radiusTop": 1, "radiusBottom": 1, "height": 1}),
+        ("plane", {"width": 1, "height": 1}),
+    ],
+)
+def test_ai_normalization_fills_only_the_missing_dimensions(object_type, expected):
+    data = json.loads((FIXTURES_DIR / "valid/minimal.json").read_text())
+    data["objects"] = [_minimal_object(object_type)]
+
+    normalized = normalize_scene3d_ai_output(data)
+
+    for field, value in expected.items():
+        assert normalized["objects"][0][field] == value
+        assert field not in data["objects"][0]
+    assert validate_scene3d(normalized).valid
+
+
+def test_ai_normalization_preserves_explicit_dimensions_and_does_not_mutate_input():
+    data = json.loads((FIXTURES_DIR / "valid/minimal.json").read_text())
+    obj = _minimal_object("box")
+    obj.update({"width": 2.5, "height": 3, "depth": 4})
+    data["objects"] = [obj]
+
+    normalized = normalize_scene3d_ai_output(data)
+
+    assert normalized["objects"][0]["width"] == 2.5
+    assert normalized["objects"][0]["height"] == 3
+    assert normalized["objects"][0]["depth"] == 4
+    assert data["objects"][0]["width"] == 2.5
+    assert data["objects"][0]["height"] == 3
+    assert data["objects"][0]["depth"] == 4
+    assert validate_scene3d(normalized).valid
+
+
+def test_missing_box_dimensions_are_reported_precisely_without_normalization():
+    data = json.loads((FIXTURES_DIR / "valid/minimal.json").read_text())
+    data["objects"] = [_minimal_object("box")]
+
+    result = validate_scene3d(data)
+
+    assert result.valid is False
+    assert [error.path for error in result.errors[:3]] == [
+        "$.objects[0].width",
+        "$.objects[0].height",
+        "$.objects[0].depth",
+    ]
+    assert all(error.rule == "missingRequired" for error in result.errors[:3])

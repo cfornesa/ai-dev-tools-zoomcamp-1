@@ -141,6 +141,38 @@ def test_create_scene3d_invalid_output_is_rejected(owner_client, project, monkey
 
 
 @pytest.mark.django_db
+def test_create_scene3d_repairs_a_minimal_box_to_a_unit_cube(owner_client, project, monkeypatch):
+    scene = {
+        **MINIMAL_SCENE_3D,
+        "objects": [
+            {
+                "id": "obj-red-cube",
+                "type": "box",
+                "groupId": None,
+                "transform": {
+                    "position": {"x": 0, "y": 0, "z": 0},
+                    "rotation": {"x": 0, "y": 0, "z": 0},
+                    "scale": {"x": 1, "y": 1, "z": 1},
+                    "opacity": 1,
+                },
+                "material": {"color": "#ff0000"},
+                "visible": True,
+            }
+        ],
+    }
+    _use_provider(monkeypatch, _provider_returning(json.dumps(scene)))
+
+    response = owner_client.post(
+        _create_url(project), {"prompt": "Render a red cube"}, format="json"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["scene"]["objects"][0]["width"] == 1
+    assert response.json()["scene"]["objects"][0]["height"] == 1
+    assert response.json()["scene"]["objects"][0]["depth"] == 1
+
+
+@pytest.mark.django_db
 def test_create_scene3d_requires_authentication(project):
     response = APIClient().post(_create_url(project), {"prompt": "anything"}, format="json")
 

@@ -15465,3 +15465,40 @@ records the full criterion matrix. #397 is closed as `completed`.
 With #397 closed, item 273's audit batch has all but #398 closed. #398 (3D
 Preview/outline/inspector/editor layout containment) is the last remaining
 open issue.
+
+## 282. Restore 3D editor layout parity — closure (batch complete)
+
+Status: COMPLETE
+
+GitHub issue: [#398](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/398)
+
+No engineering defect was found. The 3D editor's canvas frame
+(`.scene3d-preview-canvas-frame`) is sized with `aspect-ratio: 16/9;
+width: 100%; height: auto`, not the percentage `left/top: 50%` plus
+negative-margin centering trick item 281/#397 found and fixed as the actual
+root cause on the 2D side -- so it was never exposed to that class of bug.
+Live inspection via Claude in Chrome at desktop width, and the issue's own
+missing required spec (`e2e/manual3dLayoutParity.spec.ts`, added in commit
+`219ae89`) exercising both required viewports, confirmed the
+Preview/outline/inspector regions stay consistently non-overlapping with no
+page-level horizontal overflow, the clearable outline selection (#396) and
+publication disclosure (#394) both work, and the editor's lack of a 2D-style
+Code view is documented as an intentional 3D-only difference rather than a
+gap.
+
+`bash scripts/browser-qa.sh` passed 3/3 twice in a row (chromium/firefox/
+webkit) at 1280x900 and 375x812. Focused `Project3DWorkspace`/
+`Outline3DInspector` tests (30) and `make check` (893 backend/22 skipped,
+2417/2417 frontend) passed. GitHub comment
+[5535855414](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/398#issuecomment-5535855414)
+records the full criterion matrix. #398 is closed as `completed`.
+
+**Batch complete.** All seven issues from item 273's owner-reported
+authored-piece parity audit (#392-#398) are now closed as `completed`:
+#392 (public gallery mixed-pieces listing), #393 (3D thumbnail recovery),
+#394 (3D publication discoverability, plus its downstream e2e regression
+fixes), #395 (2D clearable layer selection), #396 (3D clearable outline
+selection, newly implemented), #397 (2D canvas containment fix), and #398
+(3D layout parity verification). No closed issue was reopened or rewritten;
+each transaction's evidence, commits, and GitHub comment stand as its own
+immutable record.

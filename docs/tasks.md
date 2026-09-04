@@ -15334,3 +15334,29 @@ under its own transaction: `manual3dPublicationLifecycle.spec.ts`,
 reference the same removed stage-local `Publication status: Draft` toolbar
 button for the manual 3D editor route that `publishFrom3D` above had to stop
 using.
+
+## 278. Recover renderable current-scene 3D project thumbnails — closure
+
+Status: COMPLETE
+
+GitHub issue: [#393](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/393)
+
+The issue's own "Exact verification" named
+`BROWSER_QA_E2E_SPEC=e2e/project3dThumbnailCard.spec.ts make browser-qa`, but
+that spec file had never been written — engineering (`85c39d4`, `41acbc5`)
+landed with zero browser-level closure evidence, independent of Docker
+availability. Added `frontend/e2e/project3dThumbnailCard.spec.ts` (commit
+`a855dc7`): a sphere+plane scene must produce a real, correctly-sized
+(320x240) thumbnail; a schema-valid but geometrically degenerate scene
+(camera at its own target, reusing the exact input
+`tests/test_thumbnails3d.py`'s `test_camera_at_its_own_target_raises_render_error_not_a_crash`
+already exercises server-side) must show the explicit fallback with a
+working, non-crashing retry; and a changed current version must regenerate a
+non-stale thumbnail.
+
+`bash scripts/browser-qa.sh` passed 6/6 (chromium/firefox/webkit ×2 tests)
+at 1280x900 and 375x812. Focused backend (28) and frontend (12) tests and
+`make check` (893 backend/22 skipped, 2412/2412 frontend) all passed. GitHub
+comment
+[5535357544](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/393#issuecomment-5535357544)
+records the full criterion matrix. #393 is closed as `completed`.

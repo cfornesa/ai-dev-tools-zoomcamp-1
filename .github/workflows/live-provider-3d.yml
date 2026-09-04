@@ -1,0 +1,53 @@
+name: Live 3D provider smoke
+
+# This workflow is intentionally separate from pull-request CI. Each run makes
+# two real Mistral requests: one for explicit primitive dimensions and one for
+# the provider's unit-dimension defaults. Keep the schedule infrequent and
+# dispatch manually only when provider/model drift needs checking.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 0"
+
+# Do not allow a scheduled run and a manual run to spend provider quota in
+# parallel. Queued runs are not retried by this workflow.
+concurrency:
+  group: live-provider-3d-smoke
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  live-provider-3d:
+    name: Real Mistral 3D smoke check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install backend dependencies
+        run: uv sync --locked
+
+      - name: Verify provider secret is configured
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: |
+          if [ -z "$MISTRAL_API_KEY" ]; then
+            echo "::error title=Missing Mistral API key::Configure the MISTRAL_API_KEY GitHub Actions secret before running this workflow."
+            exit 1
+          fi
+
+      - name: Run live 3D provider smoke check
+        env:
+          RUN_LIVE_MISTRAL_3D_SMOKE: "1"
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: uv run pytest tests/test_live_provider_3d.py -q

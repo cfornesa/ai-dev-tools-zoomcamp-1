@@ -37,7 +37,15 @@ async function extractBundle(zip: JSZip, prefix: string) {
   return { directory, indexUrl: pathToFileURL(path.join(directory, 'index.html')).href };
 }
 
-async function expectThreeDStageChrome(page: Page) {
+// Issue #394 moved the manual editor's (`/projects3d/:id`) Draft/Published
+// disclosure out of this shared stage toolbar and into the editor header
+// (`PublishControl3D.tsx`'s non-`compact` branch) -- but the AI-assisted
+// editor (`/ai-projects3d/:id`) still renders `PublishControl3D compact`,
+// so the toolbar-based publication trigger only still exists there.
+async function expectThreeDStageChrome(
+  page: Page,
+  { hasStagePublicationTrigger }: { hasStagePublicationTrigger: boolean },
+) {
   const frame = page.getByTestId('scene3d-preview-canvas-frame');
   const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
   await expect(toolbar).toBeVisible();
@@ -53,13 +61,18 @@ async function expectThreeDStageChrome(page: Page) {
   const publicationTrigger = toolbar.getByRole('button', {
     name: 'Publication status: Draft',
   });
-  await expect(publicationTrigger).toBeVisible();
-  await publicationTrigger.click();
-  await expect(
-    toolbar.getByRole('group', { name: 'Publication status', exact: true }),
-  ).toBeVisible();
-  await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
-  await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
+  if (hasStagePublicationTrigger) {
+    await expect(publicationTrigger).toBeVisible();
+    await publicationTrigger.click();
+    await expect(
+      toolbar.getByRole('group', { name: 'Publication status', exact: true }),
+    ).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
+    await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
+  } else {
+    await expect(publicationTrigger).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeVisible();
+  }
 
   await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
   await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
@@ -91,7 +104,7 @@ test.describe('3D project creation', () => {
     // Project3DWorkspace.tsx has fetched the project and its current
     // version successfully (Project3DWorkspace.tsx).
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
-    await expectThreeDStageChrome(page);
+    await expectThreeDStageChrome(page, { hasStagePublicationTrigger: false });
     await expect(page.getByTestId('project3d-save-button')).toBeDisabled();
     await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Ask AI to improve this scene' })).toBeVisible();
@@ -124,7 +137,7 @@ test.describe('3D project creation', () => {
     // live canvas -- not the WebGL-unavailable fallback -- is what proves
     // the preview actually mounted and rendered.
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
-    await expectThreeDStageChrome(page);
+    await expectThreeDStageChrome(page, { hasStagePublicationTrigger: true });
     await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
 
     await page.reload();
@@ -152,16 +165,9 @@ test.describe('3D project creation', () => {
     await titleForm.getByRole('button', { name: 'Save' }).click();
     await expect(titleForm).toHaveCount(0);
 
-    await page
-      .getByTestId('scene3d-preview-canvas-frame')
-      .getByRole('toolbar', { name: 'Preview actions' })
-      .getByRole('button', { name: 'Open piece controls menu' })
-      .click();
-    const publicationTrigger = page.getByRole('button', {
-      name: 'Publication status: Draft',
-    });
-    await publicationTrigger.click();
-    await page.getByRole('button', { name: 'Published' }).click();
+    // Issue #394 moved this manual-editor Draft/Published disclosure into
+    // the editor header, outside the stage command surface entirely.
+    await page.getByRole('button', { name: 'Publish', exact: true }).click();
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
@@ -274,22 +280,14 @@ test.describe('3D project creation', () => {
 
     await page.goto(`/projects3d/${projectId}`);
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
-    await page
-      .getByTestId('scene3d-preview-canvas-frame')
-      .getByRole('toolbar', { name: 'Preview actions' })
-      .getByRole('button', { name: 'Open piece controls menu' })
-      .click();
-    await page.getByRole('button', { name: 'Publication status: Published' }).click();
+    // Same header relocation as the publish step above.
     const unpublishResponse = page.waitForResponse(
       (response) =>
         response.url().includes(`/api/projects3d/${projectId}/unpublish/`) && response.ok(),
     );
-    const draftButton = page
-      .locator('.piece-stage-controls-panel[aria-label="Publication status: Published"]')
-      .getByRole('button', { name: 'Draft', exact: true });
-    await expect(draftButton).toBeVisible();
-    await expect(draftButton).toBeEnabled();
-    await draftButton.click();
+    const unpublishButton = page.getByRole('button', { name: 'Unpublish', exact: true });
+    await expect(unpublishButton).toBeVisible();
+    await unpublishButton.click();
     await unpublishResponse;
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Private');
   });
@@ -307,13 +305,9 @@ test.describe('3D project creation', () => {
     if (!projectId) return;
 
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
-    await page
-      .getByTestId('scene3d-preview-canvas-frame')
-      .getByRole('toolbar', { name: 'Preview actions' })
-      .getByRole('button', { name: 'Open piece controls menu' })
-      .click();
-    await page.getByRole('button', { name: 'Publication status: Draft' }).click();
-    await page.getByRole('button', { name: 'Published', exact: true }).click();
+    // Issue #394 moved this manual-editor Draft/Published disclosure into
+    // the editor header, outside the stage command surface entirely.
+    await page.getByRole('button', { name: 'Publish', exact: true }).click();
     const dialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Publish', exact: true }).click();

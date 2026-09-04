@@ -37,10 +37,13 @@ test.describe('3D publication discoverability', () => {
     await expect(status).toContainText('Public');
 
     await page.goto('/');
-    const card = page
-      .locator('article')
-      .filter({ has: page.getByRole('link', { name: 'Edit' }) })
-      .last();
+    // Scoped by the exact project id (`Project3DCard.tsx`'s
+    // `#project3d-<id>-title`), not `.last()` -- this spec runs across
+    // three sequential Playwright browser projects against one shared
+    // disposable database per `browser-qa.sh` run, so an earlier browser
+    // project's own fixture project can outrank this run's card once
+    // gallery ordering isn't "most recently created last".
+    const card = page.locator('article', { has: page.locator(`#project3d-${projectId}-title`) });
     await expect(card.getByText('Public', { exact: true })).toBeVisible();
 
     await page.goto(`/projects3d/${projectId}`);
@@ -51,7 +54,9 @@ test.describe('3D publication discoverability', () => {
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
     await anonymousPage.goto(`/p3d/${projectId}`);
-    await expect(anonymousPage.getByRole('alert')).toContainText('not available');
+    // `PublicProject3DViewer.tsx`'s actual copy is "This project isn't
+    // available." -- the prior "not available" substring never matched it.
+    await expect(anonymousPage.getByRole('alert')).toContainText("isn't available");
     await anonymousContext.close();
   });
 });

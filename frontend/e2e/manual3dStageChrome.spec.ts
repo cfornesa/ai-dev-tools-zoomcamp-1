@@ -1,4 +1,12 @@
-/** Issue #341: independently verify manual 3D editor stage chrome. */
+/** Issue #341: independently verify manual 3D editor stage chrome.
+ *
+ * Issue #394 moved the Draft/Published publication disclosure out of this
+ * shared stage toolbar and into the editor header
+ * (`PublishControl3D.tsx`'s non-`compact` branch) to remove a duplicate
+ * publication control; `project3dPublicationDiscoverability.spec.ts` and
+ * `manual3dPublicationLifecycle.spec.ts` now own that coverage. This file
+ * keeps its remaining, still-current authoring/sound/icon-geometry
+ * assertions and only drops the publication-toggle-specific ones. */
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
@@ -39,10 +47,6 @@ test.describe('manual 3D editor stage chrome', () => {
     ]) {
       await page.setViewportSize(viewport);
       await expect(toolbar).toBeVisible();
-      await expect(toolbar.locator('svg.piece-stage-icon')).toHaveCount(10);
-      await expect(
-        toolbar.getByRole('button', { name: 'Publication status: Draft' }),
-      ).toBeVisible();
       for (const [name, label] of [
         ['Save scene', 'Save scene'],
         ['Ask AI to improve this scene', 'Ask AI to improve this scene'],
@@ -167,7 +171,10 @@ test.describe('manual 3D editor stage chrome', () => {
       toolbar.getByRole('button', { name: 'Ask AI to improve this scene' }),
     ).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Save scene' })).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Publication status: Draft' })).toBeVisible();
+    // Issue #394: no duplicate/competing publication control in this stage
+    // toolbar -- the owner-facing Draft/Published disclosure lives only in
+    // the editor header now.
+    await expect(toolbar.getByRole('button', { name: 'Publication status: Draft' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
 
     const chrome = await toolbar.evaluate((element) => {
@@ -198,53 +205,10 @@ test.describe('manual 3D editor stage chrome', () => {
     expect(toolbarBox!.y).toBeGreaterThanOrEqual(frameBox!.y);
     expect(toolbarBox!.x + toolbarBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width);
 
-    await toolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
-    await expect(
-      toolbar.getByRole('group', { name: 'Publication status', exact: true }),
-    ).toBeVisible();
-    const publicationPanel = toolbar.locator('.publication-status-controls-panel');
-    const publicationPanelBox = await publicationPanel.boundingBox();
-    const commandCardBox = await toolbar.locator('.piece-stage-command-card').boundingBox();
-    expect(publicationPanelBox).not.toBeNull();
-    expect(commandCardBox).not.toBeNull();
-    expect(publicationPanelBox!.width).toBeLessThanOrEqual(320);
-    expect(publicationPanelBox!.x).toBeGreaterThanOrEqual(commandCardBox!.x);
-    expect(publicationPanelBox!.x + publicationPanelBox!.width).toBeLessThanOrEqual(
-      commandCardBox!.x + commandCardBox!.width,
-    );
-    const publicationOverlap = await publicationPanel.evaluate((panel) => {
-      const panelBox = panel.getBoundingClientRect();
-      const card = panel.closest('.piece-stage-command-card');
-      if (!card) return true;
-      return [...card.querySelectorAll<HTMLElement>(':scope > [role="group"] > *')]
-        .filter((element) => element !== panel.parentElement && element.getClientRects().length > 0)
-        .some((element) => {
-          const box = element.getBoundingClientRect();
-          return (
-            panelBox.left < box.right &&
-            panelBox.right > box.left &&
-            panelBox.top < box.bottom &&
-            panelBox.bottom > box.top
-          );
-        });
-    });
-    expect(publicationOverlap).toBe(false);
-    await expect(toolbar.getByRole('button', { name: 'Draft', exact: true })).toBeDisabled();
-    await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
-    await toolbar.getByRole('button', { name: 'Published', exact: true }).click();
-    const publishDialog = toolbar.getByRole('alertdialog');
-    await expect(publishDialog).toBeVisible();
-    const publishDialogBox = await publishDialog.boundingBox();
-    expect(publishDialogBox).not.toBeNull();
-    expect(publishDialogBox!.x).toBeGreaterThanOrEqual(frameBox!.x);
-    expect(publishDialogBox!.y).toBeGreaterThanOrEqual(frameBox!.y);
-    expect(publishDialogBox!.x + publishDialogBox!.width).toBeLessThanOrEqual(
-      frameBox!.x + frameBox!.width,
-    );
-    expect(publishDialogBox!.y + publishDialogBox!.height).toBeLessThanOrEqual(900);
-    await expect(publishDialog.getByRole('button', { name: 'Publish', exact: true })).toBeVisible();
-    await expect(publishDialog.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
-    await publishDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(toolbar.getByRole('alertdialog')).toHaveCount(0);
+    // Publish/unpublish round-trip and its containment/geometry are now
+    // `manual3dPublicationLifecycle.spec.ts`'s and
+    // `project3dPublicationDiscoverability.spec.ts`'s responsibility, since
+    // issue #394 moved that control to the editor header, outside this
+    // stage toolbar entirely.
   });
 });

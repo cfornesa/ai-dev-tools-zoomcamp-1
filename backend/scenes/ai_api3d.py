@@ -41,10 +41,12 @@ from ai_provider.mistral_provider import (
     PATCH_APPLY_FAILED_PREFIX,
     RESPONSE_TOO_LARGE_PREFIX,
 )
+from ai_provider.registry import get_provider
 from scenes.ai_api import (
     MAX_MODEL_ID_CHARS,
     MAX_PROMPT_CHARS,
     MissingPersonalMistralCredential,
+    UnsupportedProvider,
     _current_count,
     _increment_and_check,
     _missing_key_response,
@@ -54,6 +56,7 @@ from scenes.ai_api import (
     _request_invalid_response,
     _resolve_persona_prompt,
     _stale_base_response,
+    _unsupported_provider_response,
     _validate_model_id,
 )
 from scenes.api3d import _get_project3d_or_404
@@ -195,6 +198,7 @@ class AICreateScene3DRequestSerializer(serializers.Serializer):
     prompt = serializers.CharField(
         max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
     )
+    vendor = serializers.CharField(max_length=32, required=False, default="mistral")
     model = serializers.CharField(
         max_length=MAX_MODEL_ID_CHARS,
         allow_blank=True,
@@ -207,11 +211,15 @@ class AICreateScene3DRequestSerializer(serializers.Serializer):
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
 
+    def validate_vendor(self, value: str) -> str:
+        return get_provider(value).vendor
+
 
 class AIEditScene3DRequestSerializer(serializers.Serializer):
     prompt = serializers.CharField(
         max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
     )
+    vendor = serializers.CharField(max_length=32, required=False, default="mistral")
     current_scene = serializers.JSONField()
     base_version_id = serializers.IntegerField(allow_null=True)
     model = serializers.CharField(
@@ -225,6 +233,9 @@ class AIEditScene3DRequestSerializer(serializers.Serializer):
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
+
+    def validate_vendor(self, value: str) -> str:
+        return get_provider(value).vendor
 
 
 class AICreateScene3DView(APIView):
@@ -247,6 +258,7 @@ class AICreateScene3DView(APIView):
             return _request_invalid_response(input_serializer.errors)
         prompt = input_serializer.validated_data["prompt"]
         model = input_serializer.validated_data.get("model") or None
+        vendor = input_serializer.validated_data.get("vendor", "mistral")
         persona_prompt = _resolve_persona_prompt(
             request.user, input_serializer.validated_data.get("persona_id")
         )
@@ -264,9 +276,11 @@ class AICreateScene3DView(APIView):
             return _quota_exceeded_response_3d()
 
         try:
-            provider = _provider_for_user(request.user, model, persona_prompt)
+            provider = _provider_for_user(request.user, model, persona_prompt, vendor)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
+        except UnsupportedProvider:
+            return _unsupported_provider_response()
         result = provider.create_scene3d(AICreateScene3DRequest(prompt=prompt))
 
         log_operation_result(result)
@@ -311,6 +325,7 @@ class AIEditScene3DView(APIView):
         current_scene = input_serializer.validated_data["current_scene"]
         base_version_id = input_serializer.validated_data["base_version_id"]
         model = input_serializer.validated_data.get("model") or None
+        vendor = input_serializer.validated_data.get("vendor", "mistral")
         persona_prompt = _resolve_persona_prompt(
             request.user, input_serializer.validated_data.get("persona_id")
         )
@@ -344,9 +359,11 @@ class AIEditScene3DView(APIView):
             return _edit_quota_exceeded_response_3d()
 
         try:
-            provider = _provider_for_user(request.user, model, persona_prompt)
+            provider = _provider_for_user(request.user, model, persona_prompt, vendor)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
+        except UnsupportedProvider:
+            return _unsupported_provider_response()
         outcome = provider.edit_scene3d_with_patch(
             AIEditScene3DRequest(prompt=prompt, current_scene=current_scene)
         )

@@ -2809,6 +2809,14 @@ function EditorWorkspace() {
     <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
       {sceneEditor.workingCopy?.documentType === 'drawio' ? (
         <span role="group" aria-label="Draw.io objects" className="editor-tool-group">
+          {(['rect', 'ellipse', 'line', 'text'] as const).map((type) => (
+            <ToolbarButton
+              key={`add-${type}`}
+              label={`Add draw.io ${type}`}
+              glyph={type === 'text' ? 'T' : type === 'line' ? '╱' : type === 'ellipse' ? '○' : '▭'}
+              onClick={() => sceneEditor.addDrawioObjectToActiveLayer(type)}
+            />
+          ))}
           {sceneEditor.drawioObjects.map((object) => (
             <ToolbarButton
               key={object.id}

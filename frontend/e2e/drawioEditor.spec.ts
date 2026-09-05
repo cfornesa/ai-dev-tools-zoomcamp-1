@@ -92,6 +92,7 @@ test.describe('Draw.io editor', () => {
       page.getByRole('button', { name: 'Move selected draw.io object right' }),
     ).toBeEnabled();
     await page.getByRole('button', { name: 'Move selected draw.io object right' }).click();
+    await page.getByRole('button', { name: 'Resize selected draw.io object larger' }).click();
     await page.getByRole('button', { name: 'Duplicate selected draw.io object' }).click();
     await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
 
@@ -115,6 +116,7 @@ test.describe('Draw.io editor', () => {
       .scene_json;
     expect(savedScene.documentType).toBe('drawio');
     expect(savedScene.drawio.objects).toHaveLength(3);
+    expect(savedScene.drawio.objects[0].width).toBe(130);
     expect(savedScene.drawio.layers.find((layer) => layer.id === 'layer-back')?.name).toBe(
       'Back Renamed',
     );

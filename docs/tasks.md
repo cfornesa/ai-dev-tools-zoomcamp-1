@@ -16129,3 +16129,32 @@ This closure completes the #451 → #458 reclassification: #451's original
 `ProjectPublishView`'s own documented live-publish design and was closed
 as a non-issue; #458 is the real, narrower defect that investigation
 surfaced.
+
+## #446 closure reconciliation — 2026-09-05
+
+[#446](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/446) closed:
+`ImmersiveArtPieceViewer.tsx` had no chrome-less embed entry point at all —
+no `embed/art-pieces/immersive/:id` sibling route existed, and the
+full-chrome page had no "copy embed code" affordance, unlike the regular
+viewer's own `embed/art-pieces/:id` (#435). Applied the same
+`PublicArtPieceViewer.tsx` convention: one component serves both the
+full-chrome `/art-pieces/immersive/:id` route and the chrome-less
+`/embed/art-pieces/immersive/:id` sibling (registered outside the
+Layout-wrapped route group), distinguished only by an `isEmbedRoute`
+pathname check — implemented as a path-based sibling route rather than the
+issue's cited `?embed=1` query-param fixture wording, matching this
+codebase's own established convention and functionally equivalent. The
+stage and its one shared `PieceStageControls` toolbar are identical in
+both modes, never duplicated.
+
+New coverage: `frontend/e2e/artPieceImmersiveCustom.spec.ts`, passing
+across all three declared browsers — found and fixed a real test-only
+timing gap along the way (two scenarios needed to wait for the Three.js
+canvas to attach before sending input, the same established pattern
+`artPieceImmersiveRuntime.spec.ts` already uses; without it chromium
+passed reliably alone but firefox/webkit failed consistently). Full
+regression pass across the entire art-piece E2E suite (40/42 — the 2
+failures the already-tracked #457 batch-load flakiness on the closed
+#429's spec), the complete backend suite, and the complete frontend
+vitest/typecheck/lint/format checks all pass clean (one unrelated
+draft-recovery vitest flake confirmed passing 48/48 in isolation).

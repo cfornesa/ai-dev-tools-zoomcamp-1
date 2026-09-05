@@ -150,6 +150,19 @@ async function createBlankProjectViaUI(page: Page): Promise<string> {
   return match[1];
 }
 
+async function openAuthoringControls(page: Page): Promise<void> {
+  const addCircle = page.getByRole('button', { name: 'Add circle' });
+  if (!(await addCircle.isVisible())) {
+    const pieceControlsMenu = page.getByRole('button', { name: 'Open piece controls menu' });
+    await expect(pieceControlsMenu).toBeVisible();
+    await pieceControlsMenu.click();
+    const editScene = page.getByRole('button', { name: 'Edit scene' });
+    await expect(editScene).toBeVisible();
+    await editScene.click();
+  }
+  await expect(addCircle).toBeVisible();
+}
+
 function versionRow(page: Page, sequence: number) {
   // A row's own change-label text can legitimately contain "version N"
   // as a substring for an unrelated N (e.g. a restore's auto-generated
@@ -547,6 +560,7 @@ test.describe('Local and server draft autosave', () => {
 
     await page.clock.install();
 
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
 
     // Just under the debounce window: nothing persisted yet.
@@ -571,6 +585,7 @@ test.describe('Local and server draft autosave', () => {
     if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
     await page.clock.install();
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
 
     const [syncResponse] = await Promise.all([
@@ -603,6 +618,7 @@ test.describe('Local and server draft autosave', () => {
     });
 
     await page.clock.install();
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
 
     const [syncResponse] = await Promise.all([
@@ -632,6 +648,7 @@ test.describe('Local and server draft autosave', () => {
     const sessionId = await readSessionId(page, projectId);
     if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
 
     const [pageHideSync] = await Promise.all([
@@ -682,6 +699,7 @@ test.describe('Local and server draft autosave', () => {
     // before `install()` is not retroactively captured by it (see this
     // file's module doc comment).
     await page.clock.install();
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
     await page.clock.fastForward(1700); // let the local debounce fire first
     expect(await readLocalDraft(page, projectId)).not.toBeNull();
@@ -706,6 +724,7 @@ test.describe('Local and server draft autosave', () => {
     const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
 
     await page.clock.install();
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
     await page.clock.fastForward(1700); // local debounce fires, seeding a local draft
     expect(await readLocalDraft(page, projectId)).not.toBeNull();
@@ -751,6 +770,7 @@ test.describe('Local and server draft autosave', () => {
     await expandAllCollapsibleSections(page);
 
     await page.clock.install();
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
     await page.clock.fastForward(1700);
     expect(await readLocalDraft(page, projectId)).not.toBeNull();
@@ -780,10 +800,19 @@ test.describe('Local and server draft autosave', () => {
     await expandAllCollapsibleSections(page);
 
     await page.clock.install();
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
     await page.clock.fastForward(1700);
     expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
+    // The stage authoring controls live in an intentionally modal command
+    // menu. Close that menu before exercising the page-level exit action so
+    // the test models the user's explicit dismissal rather than force-clicking
+    // through the modal surface.
+    await page
+      .getByRole('dialog', { name: 'Piece actions' })
+      .getByRole('button', { name: 'Close piece controls menu' })
+      .click();
     await page.getByRole('button', { name: 'Exit without saving' }).click();
     const dialog = page.getByRole('alertdialog', { name: 'Exit without saving?' });
     await expect(dialog).toBeVisible();
@@ -827,6 +856,7 @@ test.describe('beforeunload guard', () => {
     await expandAllCollapsibleSections(page);
 
     const dialogPromise = page.waitForEvent('dialog', { timeout: 5_000 });
+    await openAuthoringControls(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
     await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
 

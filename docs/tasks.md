@@ -16225,3 +16225,47 @@ This closes the last of the piece-readiness cluster's individual-artifact
 issues (#428-#438, #446-#448); remaining open work is #445 (release
 reconciliation), #449 (flat-piece spatial steering), and the account/
 admin/entitlement cluster (#420-#426, #439-#443).
+
+## #449 closure reconciliation — 2026-09-05
+
+[#449](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/449) closed:
+`enable-hand-steering` used to unconditionally report `unsupported-engine`
+for a Canvas2D/SVG piece, since neither engine has a native registerable
+spatial camera the way a Three.js/A-Frame snippet does. `artPieceSandbox.ts`
+now lazily builds a CSS 3D presentation of the flat piece's own existing,
+unmodified artwork on first activation and registers a synthetic camera
+adapter through the exact same `window.__registerArtPieceCamera` hook
+#432 already defines — so the shared steer-signal/reset-view handlers
+drive it identically to a real Three.js camera, with zero new steering
+mechanism or engine-specific branch past that one lazy setup step. Pose
+(x, y, z) maps to (rotateY, rotateX, zoom); the existing `clampSteerPose`
+radius bound (1.5-20) is reused unchanged, centered on a home pose of
+(0, 0, 5). Steer Off freezes the pose and restores pointer interactivity;
+Reset while steering stays on re-homes the pose but keeps the shell;
+Reset once steering is off disposes the shell entirely.
+
+`artPieceCapabilities.ts` updated so only `immersive` (walkable
+navigation, which still needs a real spatial scene) remains spatial-only
+— `hand_steering` is now available for every engine in the Studio/Editor
+capability picker. Two pre-existing #432 tests whose entire premise this
+issue reverses were updated accordingly.
+
+New coverage: `frontend/e2e/artPieceFlatSpatial.spec.ts` — both fixed
+engine fixtures (Canvas2D, SVG) at both viewports: no device permission
+on load/Guide, genuinely lazy shell creation, bounded real CSS-transform
+pose changes, pointer-interaction suspension/restoration, and the full
+Reset/dispose state machine. The webkit-only camera-grant failure is a
+fourth independent reproduction of the already-tracked #454
+`canvas.captureStream()` limitation. Full regression pass across the
+entire art-piece E2E suite (50/50), the complete backend suite, and the
+complete frontend vitest/typecheck/lint/format checks all pass clean.
+Filed [#459](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/459)
+as a follow-up: the Full ZIP export's Steer button still gates on
+Three.js/A-Frame for a flat piece, since this issue's own contract is
+scoped to the live regular viewer only.
+
+This closes the entire piece-readiness cluster's remaining artifact and
+capability issues (#428-#438, #446-#449). Remaining open work: #445
+(release reconciliation), the account/admin/entitlement cluster
+(#420-#426, #439-#443), #415/#419, and the WebKit/Playwright test-infra
+issues (#452-#457, #459).

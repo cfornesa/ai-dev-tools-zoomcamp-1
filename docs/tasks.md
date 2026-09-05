@@ -16566,3 +16566,38 @@ exactly). Full backend suite (1082 passed, 27 skipped) and complete
 frontend vitest suite (2439 passed) pass clean. #423 stays the
 transactional grant/revoke service and #422 the admin UI; this child
 owns only the read-only account-facing summary.
+
+
+## Current open-only distillation and agentic AI scope — 2026-09-05
+
+Status: DISTILLED; no implementation/closure performed in this pass.
+Current checkout e989ce1; 12 pre-existing open issues plus new #461–#463,
+15 total. Earlier audit inventories remain history; closed issues are not
+reopened. Canonical complete manifest, finite contracts, duplicates, blockers
+and dependency order: [open-issue distillation](open-issue-distillation-2026-09-05.md).
+
+- [#415](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/415) — Replit backend runtime: verify published ASGI routing and process lifecycle. BLOCKED / deployment; Operator: capture current disposable Replit process/signals and asset evidence.
+- [#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419) — Full browser gate: classify current-revision failures and reconcile owning issues. OPEN / verification container; CI/QA: run current complete matrix, classify actual failures and link owning issues.
+- [#440](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/440) — Account billing: create and display a PayPal sandbox subscription. PROPOSED / GROOMED; Engineer: reuse billing foundation for mocked checkout/status, then operator sandbox proof.
+- [#441](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/441) — Account sessions: list and revoke owner sessions safely. ACTIVE / preserve current work; Current engineer/QA: finish existing session changes and reconcile focused/full/browser checks.
+- [#442](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/442) — Account export: download an owner-scoped portable data archive. PROPOSED / GROOMED; Engineer: implement owner export allowlist and verify extracted artifact.
+- [#443](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/443) — Account deletion: deactivate access and apply an explicit retention contract. BLOCKED / policy; Operator: decide retention and active-subscription deletion policy before implementation.
+- [#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445) — Release candidate: reconcile exact merged artifact, Replit schema and pieces evidence. DEPENDENCY-BLOCKED; Release QA: reconcile current main/PR #417 and every child against exact deployed evidence.
+- [#454](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/454) — artPieceCameraRuntime.spec.ts: granted-camera scenario doesn't reach 'active' on WebKit. PROPOSED / GROOMED; Browser engineer: isolate WebKit camera promise/video/ack behavior.
+- [#455](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/455) — Generated regular viewer: full real hand-tracking (MediaPipe) for hand-steering. PROPOSED / GROOMED; Runtime engineer: integrate existing vision pipeline and generated camera registration.
+- [#457](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/457) — Studio /art-pieces: 'ready' handshake stalls while the generated preview iframe is off-screen. PROPOSED / GROOMED; Frontend engineer: implement bounded offscreen readiness without hiding errors.
+- [#459](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/459) — Full ZIP export's Steer button stays gated to Three.js/A-Frame for flat pieces. PROPOSED / GROOMED; Export engineer: port existing flat spatial shell to Full ZIP and execute extracted fixture.
+- [#460](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/460) — Login /accounts/login/: add optional LinkedIn sign-in via OpenID Connect. PROPOSED / GROOMED; Auth engineer: implement optional OIDC provider with existing identity safety.
+- [#461](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/461) — AI workflow service: run bounded plan–validate–revise proposals. PROPOSED / GROOMED; AI engineer: implement bounded run state machine with fake providers and concurrency tests.
+- [#462](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/462) — AI 2D editor /ai-projects/:id: create and edit layers through agent runs. DEPENDENCY-BLOCKED; AI frontend engineer: integrate shared run into 2D route after #461.
+- [#463](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/463) — AI 3D editor /ai-projects3d/:id: create and edit scene objects through agent runs. DEPENDENCY-BLOCKED; AI frontend engineer: reuse shared run/UI for 3D route after #461/#462.
+
+Exactly one next transaction: #441, preserving its pre-existing session
+implementation and completing its focused/full/browser QA before any other
+engineering. Agentic MVP is one bounded provider-neutral service (#461), then
+AI 2D (#462) and AI 3D (#463) route consumers; reuse existing validators,
+provider credentials, entitlements, drafts and Accept semantics. No new agent
+framework or autonomous publication is included. #443 retains its operator
+policy blocker; #415/#419/#445 retain independent release verification gates.
+
+Durable rule: [.agents/memory/agentic-ai-editing-boundary.md](../.agents/memory/agentic-ai-editing-boundary.md).

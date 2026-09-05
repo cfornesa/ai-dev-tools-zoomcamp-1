@@ -16386,3 +16386,33 @@ recorded as an explicit not-supported decision with reason, not a gap --
 no login button, no dead route, no follow-up issue. #445 remains the
 umbrella for LinkedIn's eventual real-credential deployment evidence,
 mirroring Google's #75 and GitHub's #420.
+
+## #421 closure reconciliation — 2026-09-05
+
+[#421](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/421) closed,
+third of the criterion-ready queue. Added a centralized, fail-closed
+application-admin authorization boundary, deliberately independent of
+Django's own `is_staff`/`is_superuser`: `ADMIN_IDENTITIES` (optional,
+empty by default) accepts a finite `email:<address>`/`username:<name>`
+syntax, normalizes emails to lowercase, and rejects any other shape at
+settings-load time naming only the malformed entry's position, never its
+contents. New `ApplicationAdmin` model (`scenes/models.py`) is the only
+thing the new `reconcile_admin_identities` management command creates or
+deletes -- granting/revoking it can never touch a separately managed
+Django staff/superuser flag. The command matches active users only; an
+email entry additionally requires a verified allauth `EmailAddress` for
+that exact address (an unverified claim never grants access, per #420's
+existing identity-linking spirit), a username entry requires an exact
+match (no near-match/case-fold surprises), and reruns are idempotent
+(same grant row, same timestamp) with config removal revoking only that
+row on the next run. `scenes.admin_authorization.is_application_admin`
+is the shared, fail-closed check `#422` (admin console) will call. New
+`tests/test_admin_identities.py` (9 tests covering exactly the fixture
+set the issue's own closure contract names) plus 4 new settings-load
+tests in `test_env_config.py`. Full backend suite (1015 passed, 26
+skipped) and lint/format/mypy all pass clean; the new migration
+(`0028_application_admin`) and the command itself were also verified
+against the disposable real-PostgreSQL stack, run twice with identical
+no-op output. Browser-level admin-route evidence is explicitly deferred
+to #422 per the narrowed contract (no admin UI exists yet to test
+against).

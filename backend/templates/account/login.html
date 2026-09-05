@@ -11,5 +11,5 @@
   <button type="submit">Login</button>
 </form>
 <form method="post" action="{% provider_login_url 'google' %}">{% csrf_token %}<button class="google" type="submit">Continue with Google</button></form>
-<p class="links">New here? <a href="{% url 'account_signup' %}">Create an account</a></p>
+<p class="links">New here? Continue with Google to create your account.</p>
 {% endblock %}

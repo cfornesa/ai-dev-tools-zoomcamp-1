@@ -406,16 +406,29 @@ function checkDrawioReferences(data: any): SceneValidationError[] {
   if (data.documentType !== 'drawio') return [];
   const document = data.drawio ?? {};
   const layers: Array<{ id: string }> = document.layers ?? [];
-  const objects: Array<{ id: string; layerId: string; parentId: string | null; type: string; text?: string }> =
-    document.objects ?? [];
+  const objects: Array<{
+    id: string;
+    layerId: string;
+    parentId: string | null;
+    type: string;
+    text?: string;
+  }> = document.objects ?? [];
   const layerIds = new Set(layers.map((layer) => layer.id));
   const objectIds = new Set(objects.map((object) => object.id));
   const errors: SceneValidationError[] = [];
   if (layerIds.size !== layers.length) {
-    errors.push({ path: '$.drawio.layers', rule: 'duplicateId', message: 'Draw.io layer IDs must be unique.' });
+    errors.push({
+      path: '$.drawio.layers',
+      rule: 'duplicateId',
+      message: 'Draw.io layer IDs must be unique.',
+    });
   }
   if (objectIds.size !== objects.length) {
-    errors.push({ path: '$.drawio.objects', rule: 'duplicateId', message: 'Draw.io object IDs must be unique.' });
+    errors.push({
+      path: '$.drawio.objects',
+      rule: 'duplicateId',
+      message: 'Draw.io object IDs must be unique.',
+    });
   }
   objects.forEach((object, index) => {
     if (!layerIds.has(object.layerId)) {

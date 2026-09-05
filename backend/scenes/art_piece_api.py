@@ -40,6 +40,7 @@ from ai_provider.art_piece_provider import (
     ArtPieceProvider,
 )
 from ai_provider.config import use_fake_ai_provider
+from scenes.entitlements import ART_DAILY_QUOTA_MAX_SUCCESSES, get_effective_cap
 from scenes.models import MistralCredential, MistralCredentialDecryptionError
 
 if TYPE_CHECKING:
@@ -58,7 +59,12 @@ _MODEL_ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9._-]{0,99})$")
 # distinct feature with its own cost profile.
 RATE_LIMIT_MAX_ATTEMPTS = 5
 RATE_LIMIT_WINDOW_SECONDS = 60
-DAILY_QUOTA_MAX_SUCCESSES = 20
+# DAILY_QUOTA_MAX_SUCCESSES (imported above as ART_DAILY_QUOTA_MAX_SUCCESSES)
+# is the "free" plan's default cap for ai_art_generate -- issue #423's
+# entitlement service now resolves the actual per-request cap; kept
+# available under its original name so every existing reference to it
+# (this module's own docstrings/tests) is unaffected.
+DAILY_QUOTA_MAX_SUCCESSES = ART_DAILY_QUOTA_MAX_SUCCESSES
 
 
 def _rate_limit_cache_key(user_id: int) -> str:
@@ -251,12 +257,12 @@ def _rate_limited_response() -> Response:
     )
 
 
-def _quota_exceeded_response() -> Response:
+def _quota_exceeded_response(limit: int = DAILY_QUOTA_MAX_SUCCESSES) -> Response:
     return Response(
         {
             "error": "quota_exceeded",
             "detail": (
-                f"The daily limit of {DAILY_QUOTA_MAX_SUCCESSES} generated art pieces has "
+                f"The daily limit of {limit} generated art pieces has "
                 "been reached for this account. Try again tomorrow (UTC)."
             ),
         },
@@ -294,8 +300,9 @@ class ArtPieceGenerateView(APIView):
         ):
             return _rate_limited_response()
 
-        if _current_count(_quota_cache_key(user_id)) >= DAILY_QUOTA_MAX_SUCCESSES:
-            return _quota_exceeded_response()
+        art_generate_cap = get_effective_cap(request.user, "ai_art_generate")
+        if _current_count(_quota_cache_key(user_id)) >= art_generate_cap:
+            return _quota_exceeded_response(art_generate_cap)
 
         try:
             provider = _provider_for_user(request.user, model)
@@ -348,8 +355,8 @@ class ArtPieceGenerateView(APIView):
             )
 
         quota_count = _increment_quota(_quota_cache_key(user_id), timeout=60 * 60 * 26)
-        if quota_count > DAILY_QUOTA_MAX_SUCCESSES:
-            return _quota_exceeded_response()
+        if quota_count > art_generate_cap:
+            return _quota_exceeded_response(art_generate_cap)
 
         return Response(
             {

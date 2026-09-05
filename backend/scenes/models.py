@@ -61,6 +61,57 @@ class ApplicationAdmin(models.Model):
         return f"Application admin grant for user {self.user_id}"
 
 
+class UserEntitlementPlan(models.Model):
+    """Which plan tier a user is on (issue #423).
+
+    An absent row means the default `"free"` plan -- see
+    `scenes.entitlements.get_user_plan_key`. `granted_by` is audit
+    metadata only (who last changed this, if anyone); it plays no role in
+    resolving the effective cap.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="entitlement_plan"
+    )
+    plan_key = models.CharField(max_length=32, default="free")
+    granted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.plan_key} plan for user {self.user_id}"
+
+
+class UserFeatureOverride(models.Model):
+    """An explicit allow/deny override for one named feature (issue #423),
+    layered on top of the user's plan. A deny override always wins over
+    the plan's cap; an allow override (or no override at all) defers to
+    it. `scenes.entitlements` is the only code that should create, change,
+    or delete these rows.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="feature_overrides"
+    )
+    feature_key = models.CharField(max_length=64)
+    allowed = models.BooleanField()
+    granted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "feature_key"], name="unique_user_feature_override"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.feature_key}={'allow' if self.allowed else 'deny'} for user {self.user_id}"
+
+
 class MistralCredential(models.Model):
     """One encrypted, owner-scoped Mistral key; plaintext never reaches a model field."""
 

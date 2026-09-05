@@ -105,6 +105,11 @@ from ai_provider.mistral_provider import (
 )
 from ai_provider.registry import get_provider, validate_model
 from scenes.api import _get_project_or_404, _require_or_404
+from scenes.entitlements import (
+    DAILY_QUOTA_MAX_SUCCESSES,
+    EDIT_DAILY_QUOTA_MAX_SUCCESSES,
+    get_effective_cap,
+)
 from scenes.models import (
     AIPersona,
     MistralCredential,
@@ -157,10 +162,13 @@ RATE_LIMIT_MAX_ATTEMPTS = 5
 RATE_LIMIT_WINDOW_SECONDS = 60
 
 # Daily quota: at most this many *successful* creations per user per UTC
-# day. Deliberately generous relative to the rate limit -- it exists to
-# bound provider cost over a day, not to police short bursts (the rate
-# limit already does that).
-DAILY_QUOTA_MAX_SUCCESSES = 50
+# day, by default (the "free" plan's cap). Deliberately generous relative
+# to the rate limit -- it exists to bound provider cost over a day, not
+# to police short bursts (the rate limit already does that). Issue #423:
+# the actual per-request cap now comes from `scenes.entitlements.
+# get_effective_cap` (plan + override), of which `DAILY_QUOTA_MAX_SUCCESSES`
+# (imported from there) is only the default/free-plan value, kept here
+# under its original name so every existing reference to it is unaffected.
 
 # Seconds until midnight UTC is recomputed per-request (see
 # _quota_cache_key's date-stamped key); this timeout just bounds how long
@@ -184,7 +192,8 @@ DAILY_QUOTA_RESET_TIMEOUT_SECONDS = 25 * 60 * 60
 # spend per day.
 EDIT_RATE_LIMIT_MAX_ATTEMPTS = 10
 EDIT_RATE_LIMIT_WINDOW_SECONDS = 60
-EDIT_DAILY_QUOTA_MAX_SUCCESSES = 50
+# EDIT_DAILY_QUOTA_MAX_SUCCESSES (imported above) is the "free" plan's
+# default cap for ai_scene_edit -- see the #423 note above.
 
 
 def _rate_limit_cache_key(user_id: int, *, operation: str = "create") -> str:
@@ -369,12 +378,12 @@ def _rate_limited_response() -> Response:
     )
 
 
-def _quota_exceeded_response() -> Response:
+def _quota_exceeded_response(limit: int = DAILY_QUOTA_MAX_SUCCESSES) -> Response:
     return Response(
         {
             "error": "quota_exceeded",
             "detail": (
-                f"The daily limit of {DAILY_QUOTA_MAX_SUCCESSES} AI-generated scenes "
+                f"The daily limit of {limit} AI-generated scenes "
                 "has been reached for this account. Try again tomorrow (UTC)."
             ),
         },
@@ -447,12 +456,12 @@ def _edit_rate_limited_response() -> Response:
     )
 
 
-def _edit_quota_exceeded_response() -> Response:
+def _edit_quota_exceeded_response(limit: int = EDIT_DAILY_QUOTA_MAX_SUCCESSES) -> Response:
     return Response(
         {
             "error": "quota_exceeded",
             "detail": (
-                f"The daily limit of {EDIT_DAILY_QUOTA_MAX_SUCCESSES} AI-edited scenes "
+                f"The daily limit of {limit} AI-edited scenes "
                 "has been reached for this account. Try again tomorrow (UTC)."
             ),
         },
@@ -677,8 +686,9 @@ class AICreateSceneView(APIView):
         ):
             return _rate_limited_response()
 
-        if _current_count(_quota_cache_key(user_id)) >= DAILY_QUOTA_MAX_SUCCESSES:
-            return _quota_exceeded_response()
+        create_scene_cap = get_effective_cap(request.user, "ai_scene_create")
+        if _current_count(_quota_cache_key(user_id)) >= create_scene_cap:
+            return _quota_exceeded_response(create_scene_cap)
 
         try:
             provider = _provider_for_user(request.user, model, persona_prompt, vendor)
@@ -698,8 +708,8 @@ class AICreateSceneView(APIView):
         quota_count = _increment_quota(
             _quota_cache_key(user_id), timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS
         )
-        if quota_count > DAILY_QUOTA_MAX_SUCCESSES:
-            return _quota_exceeded_response()
+        if quota_count > create_scene_cap:
+            return _quota_exceeded_response(create_scene_cap)
 
         return Response(
             {
@@ -810,8 +820,9 @@ class AIEditSceneView(APIView):
             return _edit_rate_limited_response()
 
         edit_quota_key = _quota_cache_key(user_id, operation="edit")
-        if _current_count(edit_quota_key) >= EDIT_DAILY_QUOTA_MAX_SUCCESSES:
-            return _edit_quota_exceeded_response()
+        edit_scene_cap = get_effective_cap(request.user, "ai_scene_edit")
+        if _current_count(edit_quota_key) >= edit_scene_cap:
+            return _edit_quota_exceeded_response(edit_scene_cap)
 
         try:
             provider = _provider_for_user(request.user, model, persona_prompt, vendor)
@@ -835,8 +846,8 @@ class AIEditSceneView(APIView):
             _quota_cache_key(user_id, operation="edit"),
             timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS,
         )
-        if quota_count > EDIT_DAILY_QUOTA_MAX_SUCCESSES:
-            return _edit_quota_exceeded_response()
+        if quota_count > edit_scene_cap:
+            return _edit_quota_exceeded_response(edit_scene_cap)
 
         return Response(
             {

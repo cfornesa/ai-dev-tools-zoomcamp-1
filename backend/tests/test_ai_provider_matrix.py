@@ -166,6 +166,28 @@ def test_missing_credential_is_consistent_for_every_vendor(owner, vendor, monkey
     assert expected_label in response.json()["detail"]
 
 
+@pytest.mark.django_db
+@pytest.mark.parametrize("vendor", ["mistral", "gemini", "deepseek"])
+def test_rate_limit_is_applied_before_provider_selection_for_every_vendor(owner, vendor):
+    project = Project.objects.create(owner=owner)
+    cache.set(
+        ai_api._rate_limit_cache_key(owner.id),
+        ai_api.RATE_LIMIT_MAX_ATTEMPTS,
+        timeout=ai_api.RATE_LIMIT_WINDOW_SECONDS,
+    )
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/projects/{project.public_id}/ai/create-scene/",
+        {"prompt": "rate-limit matrix", "vendor": vendor},
+        format="json",
+    )
+
+    assert response.status_code == 429
+    assert response.json()["error"] == "rate_limited"
+
+
 @pytest.mark.parametrize("vendor", ["mistral", "gemini", "deepseek"])
 @pytest.mark.parametrize(
     ("scenario", "succeeds", "category"),

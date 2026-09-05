@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 256238)
-Total output lines: 15675
+Warning: truncated output (original token count: 256351)
+Total output lines: 15682
 
 # Creatrweb Animation Studio Backlog
 
@@ -612,17 +612,7 @@ Verification: Added a `useEffect` that re-selects the first available target whe
 
 ## 86. Update publishingAndRemix/exportConfigDialog e2e specs off the removed settings route
 Goal: Both specs fill project metadata through the real, current in-editor UI.
-Description: `publishingAndRemix.spec.ts`'s `saveMeaningfulMetadata` and `exportConfigDialog.spec.ts`'s `fillMetadata` both still navigated to `/projects/:id/settings` and filled `#projec…226238 tokens truncated…ownloads, and responsive 16:9
-stage geometry. The QA setup now opens the hamburger before inspecting hidden
-actions, and the obsolete fixed `360px` height assertion is replaced by the
-responsive aspect contract. No closed issue was reopened.
-
-The next FIFO candidate is #335, the CMS immersive query variant.
-
-## #335 closure reconciliation — 2026-09-04
-
-#335 is permanently closed as `completed` for the anonymous CMS immersive 3D
-route `/immersive/p3d/:id?embed=1&cms=1`. Its focused browser transaction
+Description: `publishingAndRemix.spec.ts`'s `saveMeaningfulMetadata` and `exportConfigDialog.spec.ts`'s `fillMetadata` both still navigated to `/projects/:id/settings` and filled `#projec…226351 tokens truncated…3d/:id?embed=1&cms=1`. Its focused browser transaction
 passed 3/3 in Chromium, Firefox, and WebKit against disposable
 PostgreSQL/Django/Vite services, verifying the chrome-less CMS wrapper,
 stage-local hamburger/stacked overlay, named controls and downloads, and
@@ -1666,3 +1656,10 @@ Focused verification: 34 backend provider/matrix/3D tests passed, 58 frontend
 provider-hook/panel tests passed, frontend typecheck and format checks passed,
 and backend Ruff passed. Cross-vendor matrix issue #408 remains open until
 all create/edit failure modes and browser evidence are covered.
+
+The draw.io foundation now also has a dedicated, schema-bounded Canvas2D
+adapter selected by `documentType: "drawio"`. It renders only the approved
+rect/ellipse/line/text object types and visible layers; unsupported XML-like
+content is not interpreted. The standalone HTML export path explicitly
+reports draw.io as unavailable until issue #412's packaging contract exists.
+Focused draw.io renderer tests and frontend typecheck/format/lint checks pass.

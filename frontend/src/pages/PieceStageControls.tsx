@@ -18,6 +18,12 @@ type Props = {
   library: ArtPieceLibrary;
   source: string;
   title: string;
+  /** Issue #448: which downloadable ZIP shape `downloadPiece` below
+   * builds -- `PublicArtPieceViewer.tsx` never passes this (defaulting
+   * to the regular small-stage export), `ImmersiveArtPieceViewer.tsx`
+   * passes `'immersive'` so its own download buttons produce the
+   * full-viewport walkable export instead of the regular one. */
+  presentation?: 'regular' | 'immersive';
 };
 
 function PieceStageControls({
@@ -28,6 +34,7 @@ function PieceStageControls({
   library,
   source,
   title,
+  presentation = 'regular',
 }: Props) {
   const [open, setOpen] = useState(false);
   const [guide, setGuide] = useState(false);
@@ -145,7 +152,11 @@ function PieceStageControls({
     setDownloadError(null);
     try {
       const mode = label === 'non-camera' ? 'non-camera' : 'full';
-      const blob = await generateArtPieceBundle(library, source, { capabilities, mode });
+      const blob = await generateArtPieceBundle(library, source, {
+        capabilities,
+        mode,
+        presentation,
+      });
       triggerArtPieceBundleDownload(blob, `${title || 'art-piece'}-${label}.zip`);
       setOpen(false);
     } catch (error) {

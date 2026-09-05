@@ -50,9 +50,18 @@ import { buildStandaloneArtPieceRuntimeScript } from '../export/standaloneArtPie
 
 export type ArtPieceExportMode = 'full' | 'non-camera';
 
+/** Issue #448: `'regular'` (the default) is the small, fixed-height
+ * stage `PublicArtPieceViewer.tsx` downloads from; `'immersive'` is
+ * `ImmersiveArtPieceViewer.tsx`'s own walkable full-viewport
+ * presentation -- a full-height container plus arrow-key/drag/wheel
+ * navigation, in addition to (not instead of) the shared Screenshot/
+ * Sound/Camera/Steer/Fullscreen contract every export already has. */
+export type ArtPieceExportPresentation = 'regular' | 'immersive';
+
 export type ArtPieceExportOptions = {
   capabilities?: ArtPieceCapabilitySet;
   mode?: ArtPieceExportMode;
+  presentation?: ArtPieceExportPresentation;
 };
 
 export class ArtPieceBundleError extends Error {
@@ -62,7 +71,22 @@ export class ArtPieceBundleError extends Error {
   }
 }
 
-const PIECE_CSS = `html, body {
+/** Issue #436/#448: unlike the live-preview sandbox iframe (where a
+ * Three.js/A-Frame scene's absolute-positioned container legitimately
+ * fills the *entire* isolated document, since the stage toolbar lives in
+ * a completely separate parent document), this exported bundle renders
+ * the scene and its controls nav in one shared document. A full-page
+ * position: absolute; inset: 0 container painted above the nav (an
+ * absolutely-positioned element stacks above normal-flow siblings
+ * regardless of DOM order), intercepting every click aimed at it.
+ * Constraining the stage to a fixed-height box lets the controls render
+ * normally below it instead -- `'immersive'` presentation (#448) gets a
+ * taller box (matching `ImmersiveArtPieceViewer.tsx`'s own `height: 640`
+ * stage) than the regular small-preview export, but the same fixed-box
+ * containment approach either way. */
+function buildPieceCss(presentation: ArtPieceExportPresentation): string {
+  const stageHeight = presentation === 'immersive' ? '640px' : '480px';
+  return `html, body {
   margin: 0;
   padding: 0;
   background: #ffffff;
@@ -71,22 +95,13 @@ canvas {
   display: block;
   max-width: 100%;
 }
-/* Issue #436: unlike the live-preview sandbox iframe (where a Three.js/
- * A-Frame scene's absolute-positioned container legitimately fills the
- * *entire* isolated document, since the stage toolbar lives in a
- * completely separate parent document), this exported bundle renders
- * the scene and its controls nav in one shared document. A full-page
- * position: absolute; inset: 0 container painted above the nav (an
- * absolutely-positioned element stacks above normal-flow siblings
- * regardless of DOM order), intercepting every click aimed at it.
- * Constraining the stage to a fixed-height box lets the controls render
- * normally below it instead. */
 #art-piece-container, a-scene {
   position: relative;
   width: 100%;
-  height: 480px;
+  height: ${stageHeight};
 }
 `;
+}
 
 /** Mirrors `artPieceSandbox.ts`'s `LIBRARY_CDN`/pinned versions -- kept as
  * its own copy (not a shared import) since this module's needs differ
@@ -204,9 +219,13 @@ function buildDeviceIsolationScript(): string {
 function buildExportControls(
   capabilities: ArtPieceCapabilitySet,
   mode: ArtPieceExportMode,
+  presentation: ArtPieceExportPresentation,
+  library: ArtPieceLibrary,
 ): string {
   const includeCamera = mode === 'full' && capabilities.camera_view === true;
   const includeSteering = mode === 'full' && capabilities.hand_steering === true;
+  const includeNavigation =
+    presentation === 'immersive' && (library === 'threejs' || library === 'aframe');
   const buttons = [
     capabilities.screenshot !== false ? '<button data-action="screenshot">Screenshot</button>' : '',
     capabilities.sound === true
@@ -223,6 +242,9 @@ function buildExportControls(
       : '',
     capabilities.fullscreen !== false ? '<button data-action="fullscreen">Fullscreen</button>' : '',
     '<button data-action="reset">Reset view</button>',
+    // Issue #448: unconditional, matching PieceStageControls.tsx's own
+    // always-present "Show hand gesture guide" button.
+    '<button data-action="guide">Show hand gesture guide</button>',
   ].filter(Boolean);
   const statuses = [
     capabilities.sound === true
@@ -233,9 +255,22 @@ function buildExportControls(
       : '',
     includeCamera ? '<p id="art-piece-camera-status" role="status">Camera is off.</p>' : '',
     includeSteering ? '<p id="art-piece-steering-status" role="status">Steering is off.</p>' : '',
+    includeNavigation ? '<p id="art-piece-navigation-pose"></p>' : '',
   ].filter(Boolean);
+  const guideDialog = `<div id="art-piece-guide-dialog" role="dialog" aria-label="Hand gesture guide" aria-modal="true" hidden>
+  <h3>Hand gesture guide</h3>
+  <ol>
+    <li>Look around with an open hand.</li>
+    <li>Move your hand to orbit.</li>
+    <li>Pinch to zoom.</li>
+    <li>Release to stop.</li>
+    <li>Disable steering safely from Piece controls.</li>
+  </ol>
+  <button type="button" data-action="guide-close">Close</button>
+</div>`;
   return `<nav class="art-piece-controls" aria-label="Piece controls">${buttons.join('')}</nav>
 ${statuses.join('\n')}
+${guideDialog}
 <p id="art-piece-runtime-error" role="alert" hidden></p>`;
 }
 
@@ -246,6 +281,7 @@ function buildIndexHtml(
   options: ArtPieceExportOptions,
 ): string {
   const mode = options.mode ?? 'full';
+  const presentation = options.presentation ?? 'regular';
   const exportCode = mode === 'non-camera' ? stripCameraArtifacts(code) : code;
   const runtimeScriptTag = runtimeFilename
     ? `<script src="runtime/${runtimeFilename}"></script>\n`
@@ -259,7 +295,7 @@ function buildIndexHtml(
     // these aren't split further.
     body = exportCode;
   }
-  const controls = buildExportControls(options.capabilities ?? {}, mode);
+  const controls = buildExportControls(options.capabilities ?? {}, mode, presentation, library);
   // The runtime script (defines window.__registerArtPieceCamera among
   // other globals) must load before scripts/piece.js, which calls it --
   // same execution-order requirement buildArtPieceSandboxDocument
@@ -268,6 +304,7 @@ function buildIndexHtml(
     library,
     options.capabilities ?? {},
     mode,
+    presentation,
   );
   // Issue #437: must be the first script in the document -- before the
   // CDN/vendored runtime and before scripts/piece.js -- so no generated
@@ -348,7 +385,7 @@ export async function generateArtPieceBundle(
   try {
     const zip = new JSZip();
     zip.file('README.txt', README);
-    zip.file('styles/piece.css', PIECE_CSS);
+    zip.file('styles/piece.css', buildPieceCss(options.presentation ?? 'regular'));
     zip.file('index.html', buildIndexHtml(library, code, runtime?.filename, options));
     if (library === 'threejs') {
       zip.file(

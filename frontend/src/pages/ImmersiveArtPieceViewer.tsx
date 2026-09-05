@@ -336,6 +336,7 @@ function ImmersiveArtPieceViewer() {
           library={piece.engine}
           source={piece.current_version.source}
           title={piece.title}
+          presentation="immersive"
         />
       </div>
       {isSpatial && navigationPose && (

@@ -20,14 +20,23 @@
  * (not just its CDN URLs) should be mirrored here.
  */
 import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
-import type { ArtPieceExportMode } from '../generative/artPieceBundle';
+import type { ArtPieceExportMode, ArtPieceExportPresentation } from '../generative/artPieceBundle';
 
 const SPATIAL_LIBRARIES: ArtPieceLibrary[] = ['threejs', 'aframe'];
+
+/** Small, discrete per-keypress/per-drag-step deltas -- kept identical to
+ * `ImmersiveArtPieceViewer.tsx`'s own `KEY_STEP`/`DRAG_SENSITIVITY`/
+ * `ZOOM_STEP` constants, ported here the same hand-synced way the rest
+ * of this module already mirrors the live preview's runtime. */
+const NAV_KEY_STEP = 0.3;
+const NAV_DRAG_SENSITIVITY = 0.02;
+const NAV_ZOOM_STEP = 0.5;
 
 export function buildStandaloneArtPieceRuntimeScript(
   library: ArtPieceLibrary,
   capabilities: ArtPieceCapabilitySet,
   mode: ArtPieceExportMode,
+  presentation: ArtPieceExportPresentation = 'regular',
 ): string {
   const includeSound = capabilities.sound === true;
   const includeKeyboard = capabilities.keyboard === true;
@@ -41,6 +50,16 @@ export function buildStandaloneArtPieceRuntimeScript(
     mode === 'full' && capabilities.hand_steering === true && SPATIAL_LIBRARIES.includes(library);
   const includeFullscreen = capabilities.fullscreen !== false;
   const includeScreenshot = capabilities.screenshot !== false;
+  // Issue #448: the Guide dialog is static, capability-independent
+  // content (the same "Look around with an open hand..." steps the live
+  // preview always offers regardless of which capabilities are on) --
+  // unconditional, matching `PieceStageControls.tsx`'s own always-present
+  // "Show hand gesture guide" button.
+  const includeGuide = true;
+  // Walkable navigation: `ImmersiveArtPieceViewer.tsx`'s own presentation
+  // only, and only for an engine with a registerable spatial camera --
+  // the same boundary #432/#434 already draw for steering/navigation.
+  const includeNavigation = presentation === 'immersive' && SPATIAL_LIBRARIES.includes(library);
 
   return `<script>
 (function () {
@@ -86,8 +105,79 @@ export function buildStandaloneArtPieceRuntimeScript(
         if (registeredCamera.reset) registeredCamera.reset();
         else registeredCamera.setPose(initialCameraPose.x, initialCameraPose.y, initialCameraPose.z);
       }
+      if (typeof reportNavPose === 'function') reportNavPose();
       window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: 'reset-view', version: 1 } }));
     });
+  }
+
+  ${
+    includeGuide
+      ? `
+  var guideButton = byAction('guide');
+  var guideDialog = document.getElementById('art-piece-guide-dialog');
+  var guideCloseButton = byAction('guide-close');
+  if (guideButton && guideDialog) {
+    guideButton.addEventListener('click', function () { guideDialog.hidden = false; });
+  }
+  if (guideCloseButton && guideDialog) {
+    guideCloseButton.addEventListener('click', function () { guideDialog.hidden = true; });
+  }
+  `
+      : ''
+  }
+
+  ${
+    includeNavigation
+      ? `
+  // Walkable navigation: arrow-key travel, drag look, wheel zoom -- the
+  // exact same delta math and gesture mapping as
+  // ImmersiveArtPieceViewer.tsx's own navigate()/onKeyDown/onPointerMove/
+  // onWheel, applied directly to the registered camera adapter instead
+  // of round-tripping through postMessage (there is no parent window in
+  // a standalone export).
+  var navPoseEl = document.getElementById('art-piece-navigation-pose');
+  var navDragStart = null;
+  function reportNavPose() {
+    if (!registeredCamera || !navPoseEl) return;
+    var pose = registeredCamera.getPose();
+    navPoseEl.textContent = pose.x.toFixed(2) + ',' + pose.y.toFixed(2) + ',' + pose.z.toFixed(2);
+  }
+  function navigateBy(dx, dz) {
+    if (!registeredCamera) return;
+    var pose = registeredCamera.getPose();
+    registeredCamera.setPose(pose.x + (dx || 0), pose.y, pose.z + (dz || 0));
+    reportNavPose();
+  }
+  var navStage = document.getElementById('art-piece-container') || document.body;
+  navStage.tabIndex = navStage.tabIndex || 0;
+  navStage.setAttribute('aria-label', 'Immersive stage');
+  navStage.addEventListener('keydown', function (event) {
+    var step = ${NAV_KEY_STEP};
+    if (event.key === 'ArrowUp') navigateBy(0, -step);
+    else if (event.key === 'ArrowDown') navigateBy(0, step);
+    else if (event.key === 'ArrowLeft') navigateBy(-step, 0);
+    else if (event.key === 'ArrowRight') navigateBy(step, 0);
+    else return;
+    event.preventDefault();
+  });
+  navStage.addEventListener('pointerdown', function (event) {
+    navDragStart = { x: event.clientX, y: event.clientY };
+  });
+  window.addEventListener('pointermove', function (event) {
+    if (!navDragStart) return;
+    var dx = (event.clientX - navDragStart.x) * ${NAV_DRAG_SENSITIVITY};
+    var dy = (event.clientY - navDragStart.y) * ${NAV_DRAG_SENSITIVITY};
+    navDragStart = { x: event.clientX, y: event.clientY };
+    navigateBy(dx, dy);
+  });
+  window.addEventListener('pointerup', function () { navDragStart = null; });
+  navStage.addEventListener('wheel', function (event) {
+    event.preventDefault();
+    navigateBy(0, event.deltaY > 0 ? ${NAV_ZOOM_STEP} : -${NAV_ZOOM_STEP});
+  }, { passive: false });
+  reportNavPose();
+  `
+      : ''
   }
 
   ${

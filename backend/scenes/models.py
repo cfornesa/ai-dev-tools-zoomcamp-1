@@ -230,6 +230,28 @@ class BillingEvent(models.Model):
         return f"{self.event_type} ({self.outcome}) {self.paypal_event_id}"
 
 
+class IdentityLinkEvent(models.Model):
+    """Audit record of one account-identity link/unlink outcome (#426).
+
+    Deliberately minimal and redacted: provider name and action only --
+    never a token, uid, or other provider-supplied identity detail.
+    """
+
+    class Action(models.TextChoices):
+        LINK = "link", "Link"
+        UNLINK = "unlink", "Unlink"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="identity_link_events"
+    )
+    provider = models.CharField(max_length=32)
+    action = models.CharField(max_length=16, choices=Action.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.action} {self.provider} for user {self.user_id}"
+
+
 class MistralCredential(models.Model):
     """One encrypted, owner-scoped Mistral key; plaintext never reaches a model field."""
 

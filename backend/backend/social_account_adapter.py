@@ -21,10 +21,18 @@ class LinkedProvidersSocialAccountAdapter(DefaultSocialAccountAdapter):
         # uid has never signed in before) whose email matches an existing
         # user must never be silently auto-linked -- the email came from a
         # third-party provider and may not actually belong to whoever
-        # controls it there, and explicit, user-initiated account linking
-        # is #426's job, not this hook's. Fail closed with an actionable
-        # page instead of letting allauth's default signup-form redirect
-        # (or, worse, a duplicate-account integrity error) happen.
+        # controls it there. Fail closed with an actionable page instead
+        # of letting allauth's default signup-form redirect (or, worse, a
+        # duplicate-account integrity error) happen.
+        #
+        # Issue #426's one exception: a signed-in user explicitly linking
+        # a second provider (allauth's real `?process=connect` flow) whose
+        # email happens to equal their *own* already-registered email is
+        # not a conflict at all -- it is the expected, common case for
+        # linking. Only reject when the matching account belongs to
+        # someone else, which is exactly what "no email-only silent
+        # account merge" and "reject... linking an identity owned by
+        # another account" mean in #426's own acceptance criteria.
         if sociallogin.is_existing:
             return
         email = None
@@ -32,11 +40,17 @@ class LinkedProvidersSocialAccountAdapter(DefaultSocialAccountAdapter):
             email = sociallogin.email_addresses[0].email
         elif sociallogin.user.email:
             email = sociallogin.user.email
-        if email and get_user_model().objects.filter(email__iexact=email).exists():
-            response = render(
-                request,
-                "socialaccount/social_identity_conflict.html",
-                {"provider": sociallogin.account.provider},
-                status=409,
-            )
-            raise ImmediateHttpResponse(response)
+        if not email:
+            return
+        matching_user = get_user_model().objects.filter(email__iexact=email).first()
+        if matching_user is None:
+            return
+        if request.user.is_authenticated and matching_user.pk == request.user.pk:
+            return
+        response = render(
+            request,
+            "socialaccount/social_identity_conflict.html",
+            {"provider": sociallogin.account.provider},
+            status=409,
+        )
+        raise ImmediateHttpResponse(response)

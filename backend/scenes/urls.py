@@ -1,5 +1,6 @@
 from django.urls import path
 
+from scenes.account_identities_api import AccountIdentitiesView, AccountIdentityUnlinkView
 from scenes.admin_settings_api import AdminPlansView, AdminSiteSettingsView
 from scenes.ai_api import AIAcceptProposalView, AICreateSceneView, AIEditSceneView
 from scenes.ai_api3d import AIAcceptProposal3DView, AICreateScene3DView, AIEditScene3DView
@@ -58,6 +59,12 @@ urlpatterns = [
     path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
     path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
+    path("account/identities/", AccountIdentitiesView.as_view(), name="account-identities"),
+    path(
+        "account/identities/<str:provider>/",
+        AccountIdentityUnlinkView.as_view(),
+        name="account-identity-unlink",
+    ),
     path("account/mistral-credential/", MistralCredentialView.as_view(), name="mistral-credential"),
     path(
         "account/provider-credentials/",

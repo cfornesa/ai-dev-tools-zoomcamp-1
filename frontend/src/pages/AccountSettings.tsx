@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import {
   type AIPersona,
   type MistralModelPreference,
@@ -79,6 +81,9 @@ function AccountSettings() {
     <section className="content-panel account-settings">
       <div className="centered-state">
         <h2>Account settings</h2>
+        <p>
+          <Link to="/account/settings/identities">Manage linked sign-in methods</Link>
+        </p>
         <p>AI generation uses your own Mistral API key. We never show or recover a saved key.</p>
         <p role="status" aria-live="polite">
           {configured === null

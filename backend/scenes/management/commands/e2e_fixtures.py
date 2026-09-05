@@ -57,6 +57,7 @@ E2E_USERS = {
 
 def _get_or_create_user(username: str, email: str):
     from allauth.account.models import EmailAddress
+    from allauth.socialaccount.models import SocialAccount
 
     User = get_user_model()
     user, _created = User.objects.update_or_create(
@@ -70,6 +71,13 @@ def _get_or_create_user(username: str, email: str):
         user=user,
         email=email,
         defaults={"verified": True, "primary": True},
+    )
+    # Issue #426: every real user of this app arrived via at least one
+    # OAuth provider -- give every fixture user the same deterministic
+    # "google" SocialAccount so accountIdentities.spec.ts has something
+    # real to list, exactly matching production shape.
+    SocialAccount.objects.update_or_create(
+        user=user, provider="google", defaults={"uid": f"e2e-google-uid-{username}"}
     )
     return user
 

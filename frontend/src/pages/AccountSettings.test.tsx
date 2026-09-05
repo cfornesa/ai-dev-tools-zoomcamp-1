@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -45,7 +46,11 @@ beforeEach(() => {
 describe('AccountSettings', () => {
   it('shows only a non-sensitive configured status', async () => {
     mockedFetch.mockResolvedValue({ configured: true });
-    render(<AccountSettings />);
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
 
     expect(await screen.findByText('Mistral key: configured')).toBeInTheDocument();
     expect(screen.getByLabelText(/^mistral api key$/i, { selector: 'input' })).toHaveValue('');
@@ -57,7 +62,11 @@ describe('AccountSettings', () => {
     mockedFetch.mockResolvedValue({ configured: false });
     mockedSaveProvider.mockResolvedValue({ vendor: 'gemini', configured: true });
     const user = userEvent.setup();
-    render(<AccountSettings />);
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
 
     const input = await screen.findByLabelText(/google gemini api key/i);
     await user.type(input, 'gemini-user-key-12345');
@@ -79,7 +88,11 @@ describe('AccountSettings', () => {
     mockedSave.mockResolvedValue({ configured: true });
     mockedRemove.mockResolvedValue();
     const user = userEvent.setup();
-    render(<AccountSettings />);
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
 
     const input = await screen.findByLabelText(/^mistral api key$/i, { selector: 'input' });
     await user.type(input, 'sk-user-key-12345');
@@ -97,7 +110,11 @@ describe('AccountSettings', () => {
 
   it('links to Mistral model documentation', async () => {
     mockedFetch.mockResolvedValue({ configured: false });
-    render(<AccountSettings />);
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
 
     const link = await screen.findByRole('link', { name: /mistral's model documentation/i });
     expect(link).toHaveAttribute('href', expect.stringContaining('mistral.ai'));
@@ -115,7 +132,11 @@ describe('AccountSettings', () => {
     });
     mockedDeleteModel.mockResolvedValue();
     const user = userEvent.setup();
-    render(<AccountSettings />);
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
 
     expect(await screen.findByText('No saved models yet.')).toBeInTheDocument();
 
@@ -143,7 +164,11 @@ describe('AccountSettings', () => {
     });
     mockedDeletePersona.mockResolvedValue();
     const user = userEvent.setup();
-    render(<AccountSettings />);
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
 
     expect(await screen.findByText('No Personas yet.')).toBeInTheDocument();
 
@@ -164,7 +189,11 @@ describe('AccountSettings', () => {
     mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
     mockedUpdateRetryPreference.mockResolvedValue({ auto_retry_enabled: true, max_retries: 5 });
     const user = userEvent.setup();
-    render(<AccountSettings />);
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
 
     const toggle = await screen.findByLabelText(/automatically retry failed ai generations/i);
     expect(toggle).not.toBeChecked();

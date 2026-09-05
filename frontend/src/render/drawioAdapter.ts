@@ -22,6 +22,7 @@ type DrawioObject = {
   y: number;
   width: number;
   height: number;
+  rotation?: number;
   text?: string;
   fill?: string | null;
   stroke?: string | null;
@@ -39,22 +40,19 @@ function readDrawio(scene: SceneDocument): { layers: DrawioLayer[]; objects: Dra
 }
 
 function paint(ctx: CanvasRenderingContext2D, object: DrawioObject): void {
+  ctx.save();
+  ctx.translate(object.x + object.width / 2, object.y + object.height / 2);
+  ctx.rotate(((object.rotation ?? 0) * Math.PI) / 180);
+  const x = -object.width / 2;
+  const y = -object.height / 2;
   if (object.fill) {
     ctx.fillStyle = object.fill;
     if (object.type === 'ellipse') {
       ctx.beginPath();
-      ctx.ellipse(
-        object.x + object.width / 2,
-        object.y + object.height / 2,
-        object.width / 2,
-        object.height / 2,
-        0,
-        0,
-        Math.PI * 2,
-      );
+      ctx.ellipse(0, 0, object.width / 2, object.height / 2, 0, 0, Math.PI * 2);
       ctx.fill();
     } else if (object.type === 'rect') {
-      ctx.fillRect(object.x, object.y, object.width, object.height);
+      ctx.fillRect(x, y, object.width, object.height);
     }
   }
   if (object.stroke) {
@@ -62,30 +60,23 @@ function paint(ctx: CanvasRenderingContext2D, object: DrawioObject): void {
     ctx.lineWidth = 1;
     if (object.type === 'ellipse') {
       ctx.beginPath();
-      ctx.ellipse(
-        object.x + object.width / 2,
-        object.y + object.height / 2,
-        object.width / 2,
-        object.height / 2,
-        0,
-        0,
-        Math.PI * 2,
-      );
+      ctx.ellipse(0, 0, object.width / 2, object.height / 2, 0, 0, Math.PI * 2);
       ctx.stroke();
     } else if (object.type === 'rect') {
-      ctx.strokeRect(object.x, object.y, object.width, object.height);
+      ctx.strokeRect(x, y, object.width, object.height);
     } else if (object.type === 'line') {
       ctx.beginPath();
-      ctx.moveTo(object.x, object.y);
-      ctx.lineTo(object.x + object.width, object.y + object.height);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + object.width, y + object.height);
       ctx.stroke();
     }
   }
   if (object.type === 'text' && object.text) {
     ctx.fillStyle = object.fill ?? '#111111';
     ctx.font = '16px sans-serif';
-    ctx.fillText(object.text, object.x, object.y + Math.max(16, object.height));
+    ctx.fillText(object.text, x, y + Math.max(16, object.height));
   }
+  ctx.restore();
 }
 
 export function createDrawioScenePreview(container: HTMLElement): ScenePreview {

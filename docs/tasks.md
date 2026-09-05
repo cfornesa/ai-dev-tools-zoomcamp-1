@@ -34,10 +34,19 @@ clean) and committed/pushed directly to `main` as commit `71c8290`.
   diagnostics`, `inferenceFps` ~15 vs required >20) is a host-CPU-load
   benchmark unrelated to this fix, covered by #419/#445's hardware-
   boundary scope, not claimed fixed here.
+- **#450 (CLOSED, completed):** same stage-popover restructuring also
+  gated `responsiveShell.spec.ts`'s `publishProjectViaUI`. Fixed by
+  reusing `openPieceControlsMenu`. Also fixed a pre-existing, previously
+  unreachable bug: the visibility check looked for a bare `Public`
+  substring, which never matches `PublishControl.tsx`'s real text
+  (`"Published (public) — ..."`) case-sensitively; corrected to
+  `'Published (public)'`. Commit `53c7680`. Verified 24/27 across
+  chromium/firefox/webkit; the 3 failures are unrelated WebKit-only
+  tablet tab-order timeouts in scenarios that never touch publishing,
+  filed as [#452](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/452).
 - Remaining browser-suite work stays open under #419 (fixture/race
-  reconciliation, plus the classified camera-fps hardware boundary above)
-  and #450 (responsive-gallery Publish fixture) — neither was claimed
-  fixed by the above.
+  reconciliation, plus the classified camera-fps hardware boundary from
+  #444) and the newly filed #452 (WebKit tablet tab-order).
 - PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
   duplicates the content now on `main` via commit `71c8290`; left open
   pending full CI green, per repository owner's condition.

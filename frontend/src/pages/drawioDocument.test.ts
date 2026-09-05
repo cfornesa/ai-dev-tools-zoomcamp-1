@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { baseScene } from '../render/testSceneFixtures';
 import {
+  deleteDrawioLayer,
   deleteDrawioObject,
   duplicateDrawioObject,
   hitTestDrawioObjectAt,
@@ -9,12 +10,17 @@ import {
   rotateDrawioObject,
 } from './drawioDocument';
 
-function scene(locked = false) {
-  return baseScene({
+function scene(locked = false, withSecondLayer = false) {
+  const result = baseScene({
     documentType: 'drawio',
     drawio: {
       formatVersion: 1,
-      layers: [{ id: 'd', name: 'Draw', order: 0, visible: true, locked }],
+      layers: [
+        { id: 'd', name: 'Draw', order: 0, visible: true, locked },
+        ...(withSecondLayer
+          ? [{ id: 'other', name: 'Other', order: 1, visible: true, locked: false }]
+          : []),
+      ],
       objects: [
         {
           id: 'r',
@@ -31,6 +37,7 @@ function scene(locked = false) {
       ],
     },
   });
+  return result;
 }
 
 function objects(result: { scene: { drawio?: unknown } }) {
@@ -60,6 +67,13 @@ describe('draw.io object mutations', () => {
   it('rotates a selected object within the supported bounds', () => {
     const rotated = rotateDrawioObject(scene(), 'r', 15);
     expect(rotated.ok && objects(rotated)[0].rotation).toBe(15);
+  });
+
+  it('refuses to delete a layer that still contains objects', () => {
+    expect(deleteDrawioLayer(scene(false, true), 'd')).toEqual({
+      ok: false,
+      error: 'This draw.io layer still has objects. Delete them before deleting the layer.',
+    });
   });
 
   it('hit-tests only visible supported objects', () => {

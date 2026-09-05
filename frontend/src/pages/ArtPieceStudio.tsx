@@ -25,6 +25,7 @@ import {
   parseArtPieceSandboxMessage,
   ART_PIECE_IFRAME_SANDBOX,
 } from '../generative/artPieceSandbox';
+import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
 
 type GenerationPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
@@ -214,6 +215,16 @@ function ArtPieceStudio() {
         capabilities: sanitizeCapabilities(capabilities, resultLibrary),
       });
       setSavedPiece(piece);
+      // Issue #438: capture a real thumbnail from the preview iframe
+      // that's already rendered right now -- best-effort, since the
+      // backend already stored a safe fallback at creation time.
+      if (iframeRef.current && piece.current_version) {
+        void captureAndUploadArtPieceThumbnail(
+          iframeRef.current,
+          piece.public_id,
+          piece.current_version.id,
+        );
+      }
     } catch {
       setSaveError('Could not save this art piece. Please try again.');
     }

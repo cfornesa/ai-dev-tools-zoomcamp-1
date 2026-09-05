@@ -1,15 +1,33 @@
-"""Issue #314 persistence, privacy, and thumbnail endpoints for art pieces."""
+"""Issue #314 persistence, privacy, and thumbnail endpoints for art pieces.
+
+## Issue #438: why thumbnails are captured by the browser, not Django
+
+Unlike the canonical scene-JSON projects (`scenes/thumbnails.py`), an art
+piece's `source` is opaque, arbitrary AI-generated Canvas2D/SVG/Three.js/
+A-Frame code -- there is no structured schema for Django to rasterize
+directly the way `scenes/thumbnails.py` draws `schema/scene.schema.json`
+shape geometry with Pillow. The only way to know what a piece actually
+looks like is to execute it, which this module must never do (`_capabilities`'s
+"never sanitize/execute a device call" boundary applies just as much to
+"never execute this in the request/response cycle"). So the *browser*
+renders the piece in the same sandboxed iframe it already uses for the
+live preview, captures a screenshot, crops it to
+`THUMBNAIL_WIDTH`x`THUMBNAIL_HEIGHT`, and uploads the resulting PNG bytes
+through `ArtPieceThumbnailUploadView` below. Until that upload happens (or
+if it never succeeds -- a crashed generation, a network failure, a closed
+tab), `regenerate_thumbnail` stores the same neutral, artwork-derived-content-free
+`FALLBACK_PNG_BYTES` placeholder `scenes/thumbnails.py` already defines for
+its own failure path, marked `is_fallback=True` so callers can tell a real
+capture from a placeholder.
+"""
 
 from __future__ import annotations
-
-import hashlib
-from io import BytesIO
 
 from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.utils import timezone
-from PIL import Image, ImageDraw
 from rest_framework import serializers, status
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -64,44 +82,44 @@ def _capabilities(value):
     return {key: value.get(key, False) for key in CAPABILITY_KEYS}
 
 
-def _thumbnail_bytes(source: str) -> bytes:
-    digest = hashlib.sha256(source.encode()).digest()
-    image = Image.new("RGB", (THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT), (digest[0], digest[1], digest[2]))
-    draw = ImageDraw.Draw(image)
-    for index in range(0, 32, 4):
-        color = (digest[index] ^ 255, digest[index + 1] ^ 255, digest[index + 2] ^ 255)
-        x0 = digest[index] % 280
-        y0 = digest[index + 1] % 200
-        x1 = x0 + 40 + digest[index + 2] % 40
-        y1 = y0 + 40 + digest[index + 3] % 40
-        draw.ellipse(
-            (x0, y0, min(x1, THUMBNAIL_WIDTH), min(y1, THUMBNAIL_HEIGHT)),
-            fill=color,
-        )
-    output = BytesIO()
-    image.save(output, format="PNG", optimize=True)
-    return output.getvalue()
-
-
 def regenerate_thumbnail(version: ArtPieceVersion) -> ArtPieceThumbnail:
-    try:
-        image_data = _thumbnail_bytes(version.source)
-        is_fallback = False
-    except Exception:
-        image_data = FALLBACK_PNG_BYTES
-        is_fallback = True
+    """Resets `version`'s thumbnail to the neutral fallback placeholder.
+
+    Called synchronously on piece/version creation (no browser capture
+    exists yet) and by `ArtPieceRegenerateThumbnailView` when the frontend
+    reports its own capture attempt failed or timed out. A real capture
+    only ever arrives through `ArtPieceThumbnailUploadView.post` below.
+    """
     with transaction.atomic():
         locked_version = ArtPieceVersion.objects.select_for_update().get(pk=version.pk)
         thumbnail, _ = ArtPieceThumbnail.objects.update_or_create(
             version=locked_version,
             defaults={
-                "image_data": image_data,
+                "image_data": FALLBACK_PNG_BYTES,
                 "width": THUMBNAIL_WIDTH,
                 "height": THUMBNAIL_HEIGHT,
-                "is_fallback": is_fallback,
+                "is_fallback": True,
             },
         )
     return thumbnail
+
+
+class ArtPieceThumbnailUploadSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+
+    def validate_image(self, value):
+        pil_image = getattr(value, "image", None)
+        if pil_image is None:
+            raise serializers.ValidationError("Uploaded file is not a valid image.")
+        if pil_image.format != "PNG":
+            raise serializers.ValidationError("Thumbnail must be a PNG image.")
+        if pil_image.size != (THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT):
+            raise serializers.ValidationError(
+                f"Thumbnail must be exactly {THUMBNAIL_WIDTH}x{THUMBNAIL_HEIGHT} pixels "
+                f"(got {pil_image.size[0]}x{pil_image.size[1]})."
+            )
+        value.seek(0)
+        return value
 
 
 def _version_data(version: ArtPieceVersion, *, public: bool):
@@ -325,6 +343,12 @@ class PublicArtPieceThumbnailView(APIView):
 
 
 class ArtPieceRegenerateThumbnailView(APIView):
+    """Resets the piece's current-version thumbnail to the neutral
+    fallback placeholder -- used when the frontend's own browser capture
+    attempt failed or timed out (issue #438's "invalid/timeout capture
+    stores an explicitly marked fallback" criterion). A real capture only
+    ever arrives through `ArtPieceThumbnailUploadView` below."""
+
     def post(self, request, public_id):
         piece = _piece_or_404(public_id)
         if not can(request.user, Action.ART_PIECE_WRITE, piece):
@@ -337,5 +361,52 @@ class ArtPieceRegenerateThumbnailView(APIView):
                 "thumbnail_url": f"/api/art-pieces/{piece.public_id}/thumbnail.png",
                 "width": thumbnail.width,
                 "height": thumbnail.height,
+                "is_fallback": thumbnail.is_fallback,
+            }
+        )
+
+
+class ArtPieceThumbnailUploadView(APIView):
+    """Accepts a real, browser-captured thumbnail for one specific
+    immutable version (issue #438). Always keyed to `version_id` from the
+    URL, never to "the piece's current version" -- each `ArtPieceVersion`
+    owns exactly one `ArtPieceThumbnail` row (`OneToOneField`), so a
+    stale or late-arriving upload for an older version can never land on
+    a newer version's row: there is no shared "current" pointer this
+    write could race against, only that one version's own row."""
+
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, public_id, version_id):
+        piece = _piece_or_404(public_id)
+        if not can(request.user, Action.ART_PIECE_WRITE, piece):
+            raise Http404
+        try:
+            version = piece.versions.get(pk=version_id)
+        except (ArtPieceVersion.DoesNotExist, ValueError, TypeError) as exc:
+            raise Http404 from exc
+
+        serializer = ArtPieceThumbnailUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        uploaded = serializer.validated_data["image"]
+
+        with transaction.atomic():
+            locked_version = ArtPieceVersion.objects.select_for_update().get(pk=version.pk)
+            thumbnail, _ = ArtPieceThumbnail.objects.update_or_create(
+                version=locked_version,
+                defaults={
+                    "image_data": uploaded.read(),
+                    "content_type": "image/png",
+                    "width": THUMBNAIL_WIDTH,
+                    "height": THUMBNAIL_HEIGHT,
+                    "is_fallback": False,
+                },
+            )
+        return Response(
+            {
+                "thumbnail_url": f"/api/art-pieces/{piece.public_id}/thumbnail.png",
+                "width": thumbnail.width,
+                "height": thumbnail.height,
+                "is_fallback": thumbnail.is_fallback,
             }
         )

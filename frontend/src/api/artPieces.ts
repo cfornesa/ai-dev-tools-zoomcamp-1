@@ -175,8 +175,31 @@ export function createArtPieceVersion(
   });
 }
 
-export function regenerateArtPieceThumbnail(
-  publicId: string,
-): Promise<{ thumbnail_url: string; width: number; height: number }> {
+export type ArtPieceThumbnailResponse = {
+  thumbnail_url: string;
+  width: number;
+  height: number;
+  is_fallback: boolean;
+};
+
+export function regenerateArtPieceThumbnail(publicId: string): Promise<ArtPieceThumbnailResponse> {
   return apiFetch(`/api/art-pieces/${publicId}/thumbnail/regenerate/`, { method: 'POST' });
+}
+
+/** Issue #438: uploads a real, browser-captured thumbnail for one
+ * specific immutable version -- see
+ * `generative/artPieceThumbnailCapture.ts` for how `image` is produced.
+ * Always keyed to `versionId`, never to "the current version", so a
+ * stale/late upload can never land on a newer version's thumbnail. */
+export function uploadArtPieceThumbnail(
+  publicId: string,
+  versionId: number,
+  image: Blob,
+): Promise<ArtPieceThumbnailResponse> {
+  const formData = new FormData();
+  formData.append('image', image, 'thumbnail.png');
+  return apiFetch(`/api/art-pieces/${publicId}/versions/${versionId}/thumbnail/`, {
+    method: 'POST',
+    body: formData,
+  });
 }

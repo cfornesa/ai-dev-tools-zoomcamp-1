@@ -25,6 +25,7 @@ import {
   parseArtPieceSandboxMessage,
   ART_PIECE_IFRAME_SANDBOX,
 } from '../generative/artPieceSandbox';
+import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
 
 type RevisionPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
@@ -228,6 +229,12 @@ function ArtPieceEditor() {
       });
       setVersions((current) => [...current, version]);
       setPiece((current) => (current ? { ...current, current_version: version } : current));
+      // Issue #438: the revision preview iframe is still rendered right
+      // now (handleSaveVersion is only reachable from revisePhase ===
+      // 'ready') -- capture a real thumbnail from it before clearing it.
+      if (iframeRef.current) {
+        void captureAndUploadArtPieceThumbnail(iframeRef.current, id, version.id);
+      }
       setReviseCode(null);
       setRevisePhase('idle');
       setPrompt('');
@@ -239,15 +246,54 @@ function ArtPieceEditor() {
   }
 
   async function handleRegenerateThumbnail() {
-    if (!id) return;
+    if (!id || !piece || !piece.current_version) return;
     setRegeneratingThumbnail(true);
     setThumbnailError(null);
+    const versionId = piece.current_version.id;
+    // Issue #438: unlike Studio's save flow (whose preview iframe is
+    // already on screen), the editor has no standing preview of the
+    // *current* version to capture from -- render one off-screen just
+    // long enough to capture it, then discard it. Visually hidden
+    // (opacity/position, not `display: none`) so the sandboxed document
+    // still actually loads and renders in every browser.
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('sandbox', ART_PIECE_IFRAME_SANDBOX);
+    iframe.style.position = 'fixed';
+    iframe.style.top = '0';
+    iframe.style.left = '0';
+    iframe.style.width = '320px';
+    iframe.style.height = '240px';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    iframe.srcdoc = buildArtPieceSandboxDocument(piece.current_version.source, piece.engine);
+    document.body.appendChild(iframe);
     try {
-      await regenerateArtPieceThumbnail(id);
+      await new Promise<void>((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+          window.removeEventListener('message', onReady);
+          reject(new Error('Timed out waiting for the piece to render.'));
+        }, 8000);
+        function onReady(event: MessageEvent) {
+          if (event.source !== iframe.contentWindow) return;
+          const parsed = parseArtPieceSandboxMessage(event.data);
+          if (!parsed) return;
+          window.clearTimeout(timeoutId);
+          window.removeEventListener('message', onReady);
+          if (parsed.status === 'ready') resolve();
+          else reject(new Error(parsed.message));
+        }
+        window.addEventListener('message', onReady);
+      });
+      const captured = await captureAndUploadArtPieceThumbnail(iframe, id, versionId);
+      if (!captured) {
+        await regenerateArtPieceThumbnail(id);
+      }
       setThumbnailBust(Date.now());
     } catch {
+      await regenerateArtPieceThumbnail(id).catch(() => undefined);
       setThumbnailError('Could not regenerate the thumbnail. Please try again.');
     } finally {
+      document.body.removeChild(iframe);
       setRegeneratingThumbnail(false);
     }
   }

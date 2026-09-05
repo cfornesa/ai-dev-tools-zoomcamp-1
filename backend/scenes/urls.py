@@ -42,6 +42,7 @@ from scenes.art_piece_persistence import (
     ArtPieceDetailView,
     ArtPieceListCreateView,
     ArtPieceRegenerateThumbnailView,
+    ArtPieceThumbnailUploadView,
     ArtPieceThumbnailView,
     ArtPieceVersionListCreateView,
     PublicArtPieceDetailView,
@@ -190,6 +191,11 @@ urlpatterns = [
         "art-pieces/<uuid:public_id>/thumbnail/regenerate/",
         ArtPieceRegenerateThumbnailView.as_view(),
         name="art-piece-thumbnail-regenerate",
+    ),
+    path(
+        "art-pieces/<uuid:public_id>/versions/<int:version_id>/thumbnail/",
+        ArtPieceThumbnailUploadView.as_view(),
+        name="art-piece-thumbnail-upload",
     ),
     path("public/art-pieces/", PublicArtPieceListView.as_view(), name="public-art-piece-list"),
     path(

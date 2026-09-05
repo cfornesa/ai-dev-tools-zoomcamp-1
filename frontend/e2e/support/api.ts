@@ -43,6 +43,21 @@ export async function apiPost(
   return context.request.post(path, { data, headers });
 }
 
+/** Issue #438: a multipart-body counterpart to `apiPost` --
+ * `ArtPieceThumbnailUploadView` only accepts `multipart/form-data`
+ * (`MultiPartParser`), which Playwright's `data` option can't produce
+ * (it JSON-encodes plain objects). `multipart` fields may be strings or
+ * `{ name, mimeType, buffer }` file descriptors, matching Playwright's
+ * own `APIRequestContext.post` `multipart` option shape. */
+export async function apiPostMultipart(
+  context: BrowserContext,
+  path: string,
+  multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>,
+): Promise<APIResponse> {
+  const headers = await csrfHeaders(context);
+  return context.request.post(path, { multipart, headers });
+}
+
 export async function apiDelete(context: BrowserContext, path: string): Promise<APIResponse> {
   const headers = await csrfHeaders(context);
   return context.request.delete(path, { headers });

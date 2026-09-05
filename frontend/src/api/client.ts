@@ -39,7 +39,15 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     const csrfToken = readCookie('csrftoken');
     if (csrfToken) headers.set('X-CSRFToken', csrfToken);
   }
-  if (options.body !== undefined && !headers.has('Content-Type')) {
+  // A FormData body (issue #438's thumbnail upload) must NOT get an
+  // explicit Content-Type here -- the browser sets its own
+  // multipart/form-data value with the required boundary parameter, which
+  // this call has no way to reproduce itself.
+  if (
+    options.body !== undefined &&
+    !headers.has('Content-Type') &&
+    !(options.body instanceof FormData)
+  ) {
     headers.set('Content-Type', 'application/json');
   }
 

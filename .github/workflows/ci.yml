@@ -378,6 +378,12 @@ jobs:
         working-directory: backend
         run: uv run --env-file .env python manage.py migrate --noinput
 
+      - name: Verify shared quota across worker processes
+        working-directory: backend
+        env:
+          POSTGRES_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/creatrweb_e2e
+        run: uv run pytest tests/test_shared_quota_cache.py -q
+
       - name: Start Django and Vite
         run: |
           (cd backend && uv run --env-file .env python manage.py runserver 0.0.0.0:8000) > /tmp/django-e2e.log 2>&1 &

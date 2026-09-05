@@ -2754,16 +2754,47 @@ function EditorWorkspace() {
   // a page-level row that recreates the bulky public-surface layout.
   const editorToolbar = (
     <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
-      <span role="group" aria-label="Add shape" className="editor-tool-group">
-        {ADD_SHAPE_TYPES.map(({ type, label, glyph }) => (
+      {sceneEditor.workingCopy?.documentType === 'drawio' ? (
+        <span role="group" aria-label="Draw.io objects" className="editor-tool-group">
+          {sceneEditor.drawioObjects.map((object) => (
+            <ToolbarButton
+              key={object.id}
+              label={`Select ${object.type} ${object.id}`}
+              glyph={sceneEditor.selectedDrawioObject?.id === object.id ? '●' : '○'}
+              onClick={() => sceneEditor.selectShape(object.id)}
+            />
+          ))}
           <ToolbarButton
-            key={type}
-            label={label}
-            glyph={glyph}
-            onClick={() => sceneEditor.addShape(type)}
+            label="Move selected draw.io object right"
+            glyph="→"
+            onClick={() => sceneEditor.moveSelectedDrawioObject(10, 0)}
+            disabled={!sceneEditor.selectedDrawioObject}
           />
-        ))}
-      </span>
+          <ToolbarButton
+            label="Duplicate selected draw.io object"
+            glyph="⧉"
+            onClick={() => sceneEditor.duplicateSelectedDrawioObject()}
+            disabled={!sceneEditor.selectedDrawioObject}
+          />
+          <ToolbarButton
+            label="Delete selected draw.io object"
+            glyph="✕"
+            onClick={() => sceneEditor.deleteSelectedDrawioObject()}
+            disabled={!sceneEditor.selectedDrawioObject}
+          />
+        </span>
+      ) : (
+        <span role="group" aria-label="Add shape" className="editor-tool-group">
+          {ADD_SHAPE_TYPES.map(({ type, label, glyph }) => (
+            <ToolbarButton
+              key={type}
+              label={label}
+              glyph={glyph}
+              onClick={() => sceneEditor.addShape(type)}
+            />
+          ))}
+        </span>
+      )}
       <span role="group" aria-label="History" className="editor-tool-group">
         <ToolbarButton
           label="Undo"

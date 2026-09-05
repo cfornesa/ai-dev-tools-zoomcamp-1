@@ -17,6 +17,7 @@ export type DrawioObject = {
   fill?: string | null;
   stroke?: string | null;
 };
+export type DrawioObjectType = DrawioObject['type'];
 
 export type DrawioLayer = {
   id: string;
@@ -31,6 +32,36 @@ export type DrawioMutation =
 
 export function getDrawioLayers(scene: SceneDocument): DrawioLayer[] {
   return read(scene)?.layers ?? [];
+}
+
+export function addDrawioObject(
+  scene: SceneDocument,
+  type: DrawioObjectType,
+  layerId?: string,
+): DrawioMutation {
+  return edit(scene, (document) => {
+    const layer =
+      document.layers.find((candidate) => candidate.id === layerId) ??
+      [...document.layers].sort((a, b) => a.order - b.order)[0];
+    if (!layer) return 'A draw.io document must have an active layer.';
+    if (!layer.visible || layer.locked) return 'The active draw.io layer is hidden or locked.';
+    const id = `draw-object-${document.objects.length + 1}`;
+    const object: DrawioObject = {
+      id,
+      type,
+      layerId: layer.id,
+      parentId: null,
+      x: 40 + (document.objects.length % 8) * 24,
+      y: 40 + (document.objects.length % 8) * 24,
+      width: type === 'line' ? 120 : 100,
+      height: type === 'line' ? 1 : 70,
+      fill: type === 'line' ? null : '#3366cc',
+      stroke: '#111827',
+    };
+    if (type === 'text') object.text = 'Text';
+    document.objects.push(object);
+    return null;
+  });
 }
 
 export function hitTestDrawioObjectAt(

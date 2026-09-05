@@ -1,5 +1,33 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-05 backlog session — #418 and #427 closed
+
+The working tree's uncommitted #404-#409/#414-#416 implementation (below)
+was verified (backend 982 passed, frontend 2428 passed, lint/typecheck
+clean) and committed/pushed directly to `main` as commit `71c8290`.
+
+- **#418 (CLOSED, completed):** verified `.github/workflows/ci.yml`'s
+  PR/push Chromium-smoke vs. manual/schedule full-matrix selection,
+  superseded-run cancellation (many `cancelled` runs observed for the same
+  PR ref), failure-artifact upload (`browser-e2e-diagnostics`), and
+  `actionlint`/`check-github-action-pins.py`/`--list` all pass. Its own
+  contract excludes fixing product-behavior failures in the full suite.
+- **#427 (CLOSED, completed):** root cause was `projectLifecycle.spec.ts`
+  never opening the stage-local "Edit scene" popover
+  (`PieceStageToolbar`/`StageControlsPopover` in `EditorWorkspace.tsx`)
+  before resolving Add circle/Undo/Redo/Save, causing 30s timeouts. Fixed
+  with a shared `openEditScene`/`closeEditScene` helper
+  (`frontend/e2e/support/openEditScene.ts`), commit `d80210f`. Verified
+  8/8 scenarios pass across chromium/firefox/webkit (24/24 total) against
+  a disposable PostgreSQL-backed stack.
+- Remaining browser-suite work stays open under #419 (fixture/race
+  reconciliation), #444 (publishing/remix stage-local entry points), and
+  #450 (responsive-gallery Publish fixture) — none of these were claimed
+  fixed by the above.
+- PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
+  duplicates the content now on `main` via commit `71c8290`; left open
+  pending full CI green, per repository owner's condition.
+
 ## 2026-09-05 backlog implementation continuation
 
 The earlier 2026-09-04 report was an audit snapshot. This continuation is

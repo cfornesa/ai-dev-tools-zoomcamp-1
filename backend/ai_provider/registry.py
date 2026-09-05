@@ -20,8 +20,8 @@ class ProviderDefinition:
 
 PROVIDERS: dict[str, ProviderDefinition] = {
     "mistral": ProviderDefinition("mistral", "Mistral", "mistral-small-latest", True),
-    "gemini": ProviderDefinition("gemini", "Google Gemini", "gemini-2.5-flash", False),
-    "deepseek": ProviderDefinition("deepseek", "DeepSeek", "deepseek-chat", False),
+    "gemini": ProviderDefinition("gemini", "Google Gemini", "gemini-2.5-flash", True),
+    "deepseek": ProviderDefinition("deepseek", "DeepSeek", "deepseek-chat", True),
 }
 
 MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$")

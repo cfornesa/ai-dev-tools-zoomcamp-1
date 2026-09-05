@@ -44,6 +44,7 @@ function drawioScene() {
           y: 40,
           width: 120,
           height: 80,
+          rotation: 0,
         },
         {
           id: 'object-front',
@@ -54,6 +55,7 @@ function drawioScene() {
           y: 80,
           width: 100,
           height: 60,
+          rotation: 0,
         },
       ],
     },
@@ -89,17 +91,25 @@ test.describe('Draw.io editor', () => {
 
     await page.getByRole('button', { name: 'Add draw.io text', exact: true }).press('Enter');
     await expect(
-      page.getByRole('button', { name: 'Select text draw-object-3', exact: true }),
+      page
+        .getByTestId('scene-canvas-viewport')
+        .getByRole('button', { name: 'Select text draw-object-3', exact: true }),
     ).toBeVisible();
     await page
       .getByRole('button', { name: 'Delete selected draw.io object', exact: true })
       .press('Enter');
-    await page.getByRole('button', { name: 'Select rect object-back', exact: true }).click();
+    await page
+      .getByTestId('scene-canvas-viewport')
+      .getByRole('button', { name: 'Select rect object-back', exact: true })
+      .click();
     await expect(
       page.getByRole('button', { name: 'Move selected draw.io object right' }),
     ).toBeEnabled();
     await page.getByRole('button', { name: 'Move selected draw.io object right' }).click();
     await page.getByRole('button', { name: 'Resize selected draw.io object larger' }).click();
+    await page
+      .getByRole('button', { name: 'Rotate selected draw.io object clockwise' })
+      .press('Enter');
     await page.getByRole('button', { name: 'Duplicate selected draw.io object' }).click();
     await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
     await page.locator('button.piece-stage-command-close').click();
@@ -107,6 +117,12 @@ test.describe('Draw.io editor', () => {
     const layers = page.getByRole('region', { name: 'Layers' });
     await expect(layers.getByRole('textbox', { name: 'Layer name for Back' })).toBeVisible();
     await expect(layers.getByRole('textbox', { name: 'Layer name for Front' })).toBeVisible();
+    await layers.getByRole('button', { name: 'Select ellipse object-front' }).click();
+    await page.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Move selected draw.io object right' }),
+    ).toBeEnabled();
+    await page.locator('button.piece-stage-command-close').click();
     const backLayer = layers.getByRole('textbox', { name: 'Layer name for Back' });
     await backLayer.fill('Back Renamed', { force: true });
     await backLayer.press('Enter');
@@ -128,7 +144,10 @@ test.describe('Draw.io editor', () => {
     await layers.getByRole('button', { name: 'Lock Back Renamed' }).click();
     await expect(layers.getByRole('button', { name: 'Unlock Back Renamed' })).toBeVisible();
     await page.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await page.getByRole('button', { name: 'Select rect object-back', exact: true }).click();
+    await page
+      .getByTestId('scene-canvas-viewport')
+      .getByRole('button', { name: 'Select rect object-back', exact: true })
+      .click();
     await expect(
       page.getByRole('button', { name: 'Move selected draw.io object right' }),
     ).toBeDisabled();
@@ -147,6 +166,7 @@ test.describe('Draw.io editor', () => {
     expect(savedScene.documentType).toBe('drawio');
     expect(savedScene.drawio.objects).toHaveLength(3);
     expect(savedScene.drawio.objects[0].width).toBe(130);
+    expect(savedScene.drawio.objects[0].rotation).toBe(15);
     expect(savedScene.drawio.layers).toHaveLength(2);
     expect(savedScene.drawio.layers.find((layer) => layer.id === 'layer-back')?.locked).toBe(false);
     expect(savedScene.drawio.layers.find((layer) => layer.id === 'layer-back')?.name).toBe(

@@ -287,6 +287,13 @@ remains open only for endpoint-level multi-worker sixth-request proof and
 deployment availability checks; CI run 481 is queued for clean-host
 confirmation.
 
+## Final implementation reconciliation — 2026-09-05
+
+#414 is now closed after the row-locking PostgreSQL cache, readiness failure
+path, and two-worker API proof passed. GitHub now has 12 completed issues and
+one open issue: #415, retained solely for published Uvicorn/process-signal
+and branch-parity verification.
+
 The following #410 increment adds bounded object rotation to the shared schema,
 Canvas2D adapter, editor mutation path, and toolbar, and exposes Draw.io
 objects in their owning outline layers. Focused tests and Chromium acceptance

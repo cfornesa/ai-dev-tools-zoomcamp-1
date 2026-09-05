@@ -86,6 +86,7 @@ import {
   deleteDrawioLayer,
   duplicateDrawioObject,
   addDrawioLayer,
+  addDrawioObject,
   moveDrawioLayer,
   moveDrawioObject,
   resizeDrawioObject,
@@ -93,6 +94,7 @@ import {
   renameDrawioLayer,
   toggleDrawioLayerFlag,
   type DrawioObject,
+  type DrawioObjectType,
 } from './drawioDocument';
 
 /**
@@ -1017,6 +1019,7 @@ export function useSceneEditor(
       }
       setOutlineError(null);
       commit(outcome.scene);
+      if (outcome.selectedId) setSelectedShapeId(outcome.selectedId);
     },
     [commit],
   );
@@ -1535,6 +1538,22 @@ export function useSceneEditor(
     if (!workingCopy || !selectedDrawioObject) return;
     applyDrawioMutation(duplicateDrawioObject(workingCopy, selectedDrawioObject.id));
   }, [applyDrawioMutation, selectedDrawioObject, workingCopy]);
+  const addDrawioObjectToActiveLayer = useCallback(
+    (type: DrawioObjectType) => {
+      if (!workingCopy || workingCopy.documentType !== 'drawio') return;
+      const outcome = addDrawioObject(workingCopy, type, selectedLayerId ?? undefined);
+      if (!outcome.ok) {
+        setOutlineError(outcome.error);
+        return;
+      }
+      const added =
+        outcome.scene.drawio && typeof outcome.scene.drawio === 'object'
+          ? ((outcome.scene.drawio as { objects?: DrawioObject[] }).objects ?? []).at(-1)
+          : undefined;
+      applyDrawioMutation(added ? { ...outcome, selectedId: added.id } : outcome);
+    },
+    [applyDrawioMutation, selectedLayerId, workingCopy],
+  );
   const deleteSelectedDrawioObject = useCallback(() => {
     if (!workingCopy || !selectedDrawioObject) return;
     applyDrawioMutation(deleteDrawioObject(workingCopy, selectedDrawioObject.id));
@@ -1560,6 +1579,7 @@ export function useSceneEditor(
     duplicateSelected,
     deleteSelected,
     moveSelectedDrawioObject,
+    addDrawioObjectToActiveLayer,
     resizeSelectedDrawioObject,
     duplicateSelectedDrawioObject,
     deleteSelectedDrawioObject,

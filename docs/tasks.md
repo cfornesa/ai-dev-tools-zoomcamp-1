@@ -16063,3 +16063,28 @@ suite (36/38 — the 2 failures were the already-tracked #457 batch-load
 flakiness on the closed #429's spec, confirmed passing in isolation), the
 complete backend suite (986 passed), and the complete frontend
 vitest/typecheck/lint/format checks all pass clean.
+
+## #451 closure reconciliation — 2026-09-05
+
+[#451](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/451) closed
+as a documented non-issue, not implemented as written: its premise (public
+project detail endpoints should return a frozen "published snapshot"
+version rather than the live current version) directly conflicts with
+`ProjectPublishView`'s own docstring and `docs/plan.md`'s stated design —
+publishing has never snapshotted a version for either `Project` or
+`Project3D`; a public project always shows whatever is currently saved,
+by deliberate, pre-existing decision. Implementing #451's acceptance
+criteria would have reversed that design across both project families
+rather than fixed a defect. User decision: reclassify and close.
+
+The evidence behind #451 *was* real, just narrower: the cited deployed URL
+routes to the **authoring workspace** (`Project3DWorkspace.tsx`), not the
+public viewer (`PublicProject3DViewer.tsx`) — and none of the four
+authoring workspace components (`EditorWorkspace.tsx`,
+`Project3DWorkspace.tsx`, `AiEditorWorkspace.tsx`, `AiProject3DWorkspace.tsx`)
+check ownership before rendering Edit/Publish/Unpublish controls, since
+`PROJECT_READ`/`PROJECT3D_READ` deliberately allow the underlying fetch to
+succeed for any visitor once a project is public. Writes remain correctly
+owner-gated server-side regardless. Filed the narrower, criterion-ready
+fix separately as
+[#458](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/458).

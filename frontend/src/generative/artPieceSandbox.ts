@@ -61,15 +61,14 @@ export type ArtPieceSandboxMessage =
  * edit -- see `artPieceSandbox.test.ts`. */
 export const ART_PIECE_IFRAME_SANDBOX = 'allow-scripts';
 
-/** Issue #430: the `<iframe>`'s own `allow` (Permissions Policy)
+/** Issue #430/#431: the `<iframe>`'s own `allow` (Permissions Policy)
  * attribute -- distinct from the CSP `<meta>` tag this module injects
- * into the document. `getUserMedia` for the microphone capability is
- * gated by Permissions Policy, not CSP; without this, a sandboxed
- * iframe's own `navigator.mediaDevices.getUserMedia` call rejects with a
- * permissions-policy violation before it can even prompt. Camera is
- * intentionally not delegated here -- #431 owns that capability and its
- * own explicit `allow` scope. */
-export const ART_PIECE_IFRAME_ALLOW = 'microphone';
+ * into the document. `getUserMedia` for the microphone and camera
+ * capabilities is gated by Permissions Policy, not CSP; without this, a
+ * sandboxed iframe's own `navigator.mediaDevices.getUserMedia` call
+ * rejects with a permissions-policy violation before it can even
+ * prompt. */
+export const ART_PIECE_IFRAME_ALLOW = 'microphone; camera';
 
 /** Issue #199 (Three.js/A-Frame extension): these two libraries need
  * their own runtime loaded via a pinned CDN `<script>` this module
@@ -178,8 +177,63 @@ const LISTENER_SCRIPT = `
       micStream = null;
     }
   }
+  // Issue #431: camera composition. cameraOverlay is a real <video>
+  // element -- never intercepts pointer input (pointer-events: none) and
+  // sits on top of the artwork at an adjustable opacity, matching the
+  // acceptance criterion's "visibly composites overlay/background"
+  // requirement rather than an invisible/decorative element.
+  var CAMERA_OVERLAY_ID = 'art-piece-camera-overlay';
+  var cameraStream = null;
+  var cameraOpacity = 0.5;
+  function getCameraOverlay() {
+    var video = document.getElementById(CAMERA_OVERLAY_ID);
+    if (!video) {
+      video = document.createElement('video');
+      video.id = CAMERA_OVERLAY_ID;
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.style.position = 'fixed';
+      video.style.inset = '0';
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.objectFit = 'cover';
+      video.style.pointerEvents = 'none';
+      video.style.opacity = String(cameraOpacity);
+      document.body.appendChild(video);
+    }
+    return video;
+  }
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function (track) { track.stop(); });
+      cameraStream = null;
+    }
+    var video = document.getElementById(CAMERA_OVERLAY_ID);
+    if (video) video.remove();
+  }
+  // Issue #431: composite the camera overlay into a screenshot in the
+  // same stacking order it renders live (artwork first, camera on top at
+  // its current opacity) -- a plain canvas.toDataURL() would silently
+  // drop the camera the acceptance criterion requires be visible in the
+  // captured PNG.
+  function compositeScreenshot(baseCanvas) {
+    var video = document.getElementById(CAMERA_OVERLAY_ID);
+    if (!cameraStream || !video || !video.videoWidth) return baseCanvas.toDataURL('image/png');
+    var composite = document.createElement('canvas');
+    composite.width = baseCanvas.width;
+    composite.height = baseCanvas.height;
+    var compositeContext = composite.getContext('2d');
+    compositeContext.drawImage(baseCanvas, 0, 0);
+    compositeContext.save();
+    compositeContext.globalAlpha = cameraOpacity;
+    compositeContext.drawImage(video, 0, 0, composite.width, composite.height);
+    compositeContext.restore();
+    return composite.toDataURL('image/png');
+  }
   window.addEventListener('pagehide', function () {
     stopMicrophone();
+    stopCamera();
     if (audioCtx) { try { audioCtx.close(); } catch (e) {} }
   });
   // Keyboard notes: a real, audible tone per key, gated on Sound already
@@ -219,7 +273,7 @@ const LISTENER_SCRIPT = `
   // code may opt into them, but never receives arbitrary parent messages.
   window.addEventListener('message', function (event) {
     var data = event && event.data;
-    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'enable-microphone', 'disable-microphone', 'enable-camera', 'enable-hand-steering', 'reset-view'];
+    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'enable-microphone', 'disable-microphone', 'enable-camera', 'disable-camera', 'set-camera-opacity', 'enable-hand-steering', 'reset-view'];
     if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
     try {
       if (data.type === 'screenshot') {
@@ -232,8 +286,7 @@ const LISTENER_SCRIPT = `
           }, '*');
         }
         if (canvas && canvas.toBlob) {
-          var image = canvas.toDataURL('image/png');
-          reportScreenshot(image, filename);
+          reportScreenshot(compositeScreenshot(canvas), filename);
         } else {
           var svg = document.querySelector('svg');
           if (!svg) throw new Error('The generated piece has no capturable artwork.');
@@ -253,7 +306,7 @@ const LISTENER_SCRIPT = `
               rasterCanvas.height = svgHeight;
               var rasterContext = rasterCanvas.getContext('2d');
               rasterContext.drawImage(svgImage, 0, 0, svgWidth, svgHeight);
-              reportScreenshot(rasterCanvas.toDataURL('image/png'), filename);
+              reportScreenshot(compositeScreenshot(rasterCanvas), filename);
             } catch (rasterError) {
               report('error', (rasterError && rasterError.message) || 'The generated piece could not be captured as an image.');
             }
@@ -288,6 +341,35 @@ const LISTENER_SCRIPT = `
       } else if (data.type === 'disable-microphone') {
         stopMicrophone();
         reportState('microphone', { active: false });
+      } else if (data.type === 'enable-camera') {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          reportState('camera', { active: false, error: 'unavailable' });
+        } else {
+          navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
+            cameraStream = stream;
+            var overlay = getCameraOverlay();
+            overlay.srcObject = stream;
+            var track = stream.getVideoTracks()[0];
+            if (track) {
+              track.addEventListener('ended', function () {
+                stopCamera();
+                reportState('camera', { active: false, error: 'ended' });
+              });
+            }
+            reportState('camera', { active: true, opacity: cameraOpacity });
+          }).catch(function () {
+            reportState('camera', { active: false, error: 'denied' });
+          });
+        }
+      } else if (data.type === 'disable-camera') {
+        stopCamera();
+        reportState('camera', { active: false });
+      } else if (data.type === 'set-camera-opacity') {
+        var requestedOpacity = typeof data.value === 'number' ? data.value : NaN;
+        cameraOpacity = isNaN(requestedOpacity) ? cameraOpacity : Math.max(0, Math.min(1, requestedOpacity));
+        var existingOverlay = document.getElementById(CAMERA_OVERLAY_ID);
+        if (existingOverlay) existingOverlay.style.opacity = String(cameraOpacity);
+        reportState('camera', { active: !!cameraStream, opacity: cameraOpacity });
       } else {
         window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: data.type, version: 1 } }));
       }

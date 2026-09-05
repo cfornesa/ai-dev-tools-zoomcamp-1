@@ -39,6 +39,10 @@ function PieceStageControls({
   const [microphoneState, setMicrophoneState] = useState<
     'off' | 'active' | 'denied' | 'unavailable'
   >('off');
+  const [cameraState, setCameraState] = useState<
+    'off' | 'active' | 'denied' | 'unavailable' | 'ended'
+  >('off');
+  const [cameraOpacity, setCameraOpacity] = useState(0.5);
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(stageRef);
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -55,6 +59,7 @@ function PieceStageControls({
         error?: string;
         key?: string;
         frequency?: number;
+        opacity?: number;
       } | null;
       if (data?.source !== 'art-piece-sandbox') return;
       if (data.status === 'error') {
@@ -89,6 +94,17 @@ function PieceStageControls({
       }
       if (data.status === 'note' && typeof data.key === 'string') {
         setLastNote(data.key);
+      }
+      // Issue #431: same acknowledged-state convention as sound/
+      // microphone -- 'ended' covers a real device disconnect/stream
+      // termination mid-session, distinct from an explicit disable.
+      if (data.status === 'camera') {
+        if (data.active) setCameraState('active');
+        else if (data.error === 'denied') setCameraState('denied');
+        else if (data.error === 'unavailable') setCameraState('unavailable');
+        else if (data.error === 'ended') setCameraState('ended');
+        else setCameraState('off');
+        if (typeof data.opacity === 'number') setCameraOpacity(data.opacity);
       }
     }
     window.addEventListener('message', onMessage);
@@ -235,9 +251,39 @@ function PieceStageControls({
             </div>
           )}
           {capabilities.camera_view && (
-            <button type="button" onClick={() => command('enable-camera')}>
-              Enable camera view
-            </button>
+            <div role="group" aria-label="Camera view">
+              <button
+                type="button"
+                aria-pressed={cameraState === 'active'}
+                onClick={() =>
+                  command(cameraState === 'active' ? 'disable-camera' : 'enable-camera')
+                }
+              >
+                {cameraState === 'active' ? 'Disable camera view' : 'Enable camera view'}
+              </button>
+              <p data-testid="camera-status">
+                {cameraState === 'active' && 'Camera is active.'}
+                {cameraState === 'denied' && 'Camera access was denied.'}
+                {cameraState === 'unavailable' && 'Camera is unavailable in this browser.'}
+                {cameraState === 'ended' && 'Camera stream ended unexpectedly.'}
+                {cameraState === 'off' && 'Camera is off.'}
+              </p>
+              <label htmlFor="art-piece-camera-opacity">Camera overlay opacity</label>
+              <input
+                id="art-piece-camera-opacity"
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={cameraOpacity}
+                disabled={cameraState !== 'active'}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setCameraOpacity(value);
+                  command('set-camera-opacity', { value });
+                }}
+              />
+            </div>
           )}
           {capabilities.hand_steering && (
             <button type="button" onClick={() => command('enable-hand-steering')}>

@@ -40,7 +40,7 @@ from ai_provider.art_piece_provider import (
     ArtPieceProvider,
 )
 from ai_provider.config import use_fake_ai_provider
-from scenes.entitlements import ART_DAILY_QUOTA_MAX_SUCCESSES, get_effective_cap
+from scenes.entitlements import get_effective_cap
 from scenes.models import MistralCredential, MistralCredentialDecryptionError
 
 if TYPE_CHECKING:
@@ -59,12 +59,14 @@ _MODEL_ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9._-]{0,99})$")
 # distinct feature with its own cost profile.
 RATE_LIMIT_MAX_ATTEMPTS = 5
 RATE_LIMIT_WINDOW_SECONDS = 60
-# DAILY_QUOTA_MAX_SUCCESSES (imported above as ART_DAILY_QUOTA_MAX_SUCCESSES)
-# is the "free" plan's default cap for ai_art_generate -- issue #423's
-# entitlement service now resolves the actual per-request cap; kept
-# available under its original name so every existing reference to it
-# (this module's own docstrings/tests) is unaffected.
-DAILY_QUOTA_MAX_SUCCESSES = ART_DAILY_QUOTA_MAX_SUCCESSES
+# The actual per-request cap comes from `scenes.entitlements
+# .get_effective_cap` (issues #423/#422); this is only the seeded "free"
+# plan's fallback value, kept so this response-formatting helper's
+# default parameter documents a concrete number. Issue #422 consolidates
+# every feature (including ai_art_generate) onto one admin-editable
+# `daily_ai_requests` number per plan, replacing this endpoint's
+# previously-separate 20/day default.
+DAILY_QUOTA_MAX_SUCCESSES = 50
 
 
 def _rate_limit_cache_key(user_id: int) -> str:

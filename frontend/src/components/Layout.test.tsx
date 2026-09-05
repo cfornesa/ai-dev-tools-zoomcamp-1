@@ -76,7 +76,7 @@ describe('Layout: authentication control and attribution', () => {
     const user = userEvent.setup();
     renderWithAuth({
       status: 'signed-in',
-      user: { username: 'alice', email: 'alice@example.com' },
+      user: { username: 'alice', email: 'alice@example.com', is_application_admin: false },
       logout,
     });
 
@@ -186,7 +186,7 @@ describe('Layout: mobile hamburger menu', () => {
     setInnerWidth(MOBILE_HEADER_BREAKPOINT_PX - 1);
     renderWithAuth({
       status: 'signed-in',
-      user: { username: 'alice', email: 'alice@example.com' },
+      user: { username: 'alice', email: 'alice@example.com', is_application_admin: false },
       logout: vi.fn(),
     });
 

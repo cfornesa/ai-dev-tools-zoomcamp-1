@@ -27,6 +27,7 @@ const ImmersiveArtPieceViewer = lazy(() => import('./pages/ImmersiveArtPieceView
 const Templates = lazy(() => import('./pages/Templates'));
 const CreateChooser = lazy(() => import('./pages/CreateChooser'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
+const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 
 /** Task 94 (issue #94): `/projects/:id/settings` no longer exists as a
  * standalone page (project-metadata editing is now the editor's own
@@ -77,6 +78,7 @@ function App() {
               <Route path="art-pieces/p/:id" element={<PublicArtPieceViewer />} />
               <Route path="art-pieces/immersive/:id" element={<ImmersiveArtPieceViewer />} />
               <Route path="account/settings" element={<AccountSettings />} />
+              <Route path="admin/settings" element={<AdminSettings />} />
               <Route path="projects/:id" element={<EditorWorkspace />} />
               {/* Issue #223: the 2D AI-assisted editor -- a distinct route
                   over the same Project/SceneVersion document family as

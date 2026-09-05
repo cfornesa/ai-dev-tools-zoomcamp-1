@@ -330,7 +330,7 @@ describe('PublicProjectViewer Fork action (Task 51)', () => {
   it('hides the Fork button when the project has remixing turned off, even when signed in', async () => {
     mockedUseAuth.mockReturnValue({
       status: 'signed-in',
-      user: { username: 'carol', email: 'carol@example.com' },
+      user: { username: 'carol', email: 'carol@example.com', is_application_admin: false },
     });
     mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: false }));
 
@@ -343,7 +343,7 @@ describe('PublicProjectViewer Fork action (Task 51)', () => {
   it('shows the Fork button for a signed-in visitor when remixing is allowed', async () => {
     mockedUseAuth.mockReturnValue({
       status: 'signed-in',
-      user: { username: 'carol', email: 'carol@example.com' },
+      user: { username: 'carol', email: 'carol@example.com', is_application_admin: false },
     });
     mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: true }));
 
@@ -356,7 +356,7 @@ describe('PublicProjectViewer Fork action (Task 51)', () => {
   it('forks and navigates to the new private project on success', async () => {
     mockedUseAuth.mockReturnValue({
       status: 'signed-in',
-      user: { username: 'carol', email: 'carol@example.com' },
+      user: { username: 'carol', email: 'carol@example.com', is_application_admin: false },
     });
     mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: true }));
     mockedForkProject.mockResolvedValue({
@@ -387,7 +387,7 @@ describe('PublicProjectViewer Fork action (Task 51)', () => {
   it('shows an error and re-enables the button if forking fails', async () => {
     mockedUseAuth.mockReturnValue({
       status: 'signed-in',
-      user: { username: 'carol', email: 'carol@example.com' },
+      user: { username: 'carol', email: 'carol@example.com', is_application_admin: false },
     });
     mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: true }));
     mockedForkProject.mockRejectedValue(new ApiError(404, null));

@@ -105,11 +105,7 @@ from ai_provider.mistral_provider import (
 )
 from ai_provider.registry import get_provider, validate_model
 from scenes.api import _get_project_or_404, _require_or_404
-from scenes.entitlements import (
-    DAILY_QUOTA_MAX_SUCCESSES,
-    EDIT_DAILY_QUOTA_MAX_SUCCESSES,
-    get_effective_cap,
-)
+from scenes.entitlements import get_effective_cap
 from scenes.models import (
     AIPersona,
     MistralCredential,
@@ -161,14 +157,12 @@ _MODEL_ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9._-]{0,99})$")
 RATE_LIMIT_MAX_ATTEMPTS = 5
 RATE_LIMIT_WINDOW_SECONDS = 60
 
-# Daily quota: at most this many *successful* creations per user per UTC
-# day, by default (the "free" plan's cap). Deliberately generous relative
-# to the rate limit -- it exists to bound provider cost over a day, not
-# to police short bursts (the rate limit already does that). Issue #423:
-# the actual per-request cap now comes from `scenes.entitlements.
-# get_effective_cap` (plan + override), of which `DAILY_QUOTA_MAX_SUCCESSES`
-# (imported from there) is only the default/free-plan value, kept here
-# under its original name so every existing reference to it is unaffected.
+# Daily quota: the actual per-request cap comes from `scenes.entitlements
+# .get_effective_cap` (plan + override, issues #423/#422) -- the seeded
+# "free" plan's `daily_ai_requests` (`scenes/migrations/0030_admin_settings
+# .py`) is the fallback value below, kept only so this response-formatting
+# helper's default parameter documents a concrete number.
+DAILY_QUOTA_MAX_SUCCESSES = 50
 
 # Seconds until midnight UTC is recomputed per-request (see
 # _quota_cache_key's date-stamped key); this timeout just bounds how long
@@ -192,8 +186,9 @@ DAILY_QUOTA_RESET_TIMEOUT_SECONDS = 25 * 60 * 60
 # spend per day.
 EDIT_RATE_LIMIT_MAX_ATTEMPTS = 10
 EDIT_RATE_LIMIT_WINDOW_SECONDS = 60
-# EDIT_DAILY_QUOTA_MAX_SUCCESSES (imported above) is the "free" plan's
-# default cap for ai_scene_edit -- see the #423 note above.
+# EDIT_DAILY_QUOTA_MAX_SUCCESSES is the "free" plan's fallback cap for
+# ai_scene_edit -- see the #423/#422 note above DAILY_QUOTA_MAX_SUCCESSES.
+EDIT_DAILY_QUOTA_MAX_SUCCESSES = 50
 
 
 def _rate_limit_cache_key(user_id: int, *, operation: str = "create") -> str:

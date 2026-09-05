@@ -3,6 +3,7 @@ import { ApiError, apiFetch } from './client';
 export type CurrentUser = {
   username: string;
   email: string;
+  is_application_admin: boolean;
 };
 
 /** Returns the signed-in user, or null if nobody is signed in. */

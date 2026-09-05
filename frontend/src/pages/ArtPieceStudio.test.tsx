@@ -25,7 +25,7 @@ beforeEach(() => {
   window.localStorage.clear();
   mockedUseAuth.mockReturnValue({
     status: 'signed-in',
-    user: { username: 'alice', email: 'a@example.com' },
+    user: { username: 'alice', email: 'a@example.com', is_application_admin: false },
   });
 });
 

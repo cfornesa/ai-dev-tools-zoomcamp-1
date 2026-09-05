@@ -188,8 +188,22 @@ def test_two_worker_api_clients_return_existing_429_on_sixth_request():
     """The actual create-scene endpoint enforces the shared worker limit."""
     from django.contrib.auth import get_user_model
 
-    from scenes.models import Project
+    from scenes.models import Plan, Project
 
+    # Issue #422/#423: the create-scene endpoint's quota cap now comes
+    # from a `Plan` row rather than a hardcoded constant. `transaction=True`
+    # flushes migration-seeded data from this database (Django does not
+    # restore data-migration rows after a flush unless
+    # `serialized_rollback=True`), so seed the one plan this test's
+    # default-tier user actually needs, on the same database its worker
+    # processes will read from.
+    Plan.objects.using("postgres_test").get_or_create(
+        plan_key="free",
+        defaults={
+            "daily_ai_requests": 50,
+            "feature_keys": ["ai_scene_create", "ai_scene_edit", "ai_art_generate"],
+        },
+    )
     user = (
         get_user_model()
         .objects.db_manager("postgres_test")

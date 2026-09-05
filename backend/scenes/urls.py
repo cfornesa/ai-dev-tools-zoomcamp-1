@@ -1,5 +1,6 @@
 from django.urls import path
 
+from scenes.admin_settings_api import AdminPlansView, AdminSiteSettingsView
 from scenes.ai_api import AIAcceptProposalView, AICreateSceneView, AIEditSceneView
 from scenes.ai_api3d import AIAcceptProposal3DView, AICreateScene3DView, AIEditScene3DView
 from scenes.ai_preferences_api import (
@@ -53,6 +54,8 @@ from scenes.credentials_api import MistralCredentialView
 from scenes.provider_credentials_api import ProviderCredentialView
 
 urlpatterns = [
+    path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
+    path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
     path("account/mistral-credential/", MistralCredentialView.as_view(), name="mistral-credential"),
     path(
         "account/provider-credentials/",

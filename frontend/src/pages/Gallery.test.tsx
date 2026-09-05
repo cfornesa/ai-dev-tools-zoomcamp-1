@@ -80,7 +80,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedUseAuth.mockReturnValue({
     status: 'signed-in',
-    user: { username: 'alice', email: 'alice@example.com' },
+    user: { username: 'alice', email: 'alice@example.com', is_application_admin: false },
   });
   // Default to no 3D projects; individual tests override when they need
   // to assert 3D-specific rendering.

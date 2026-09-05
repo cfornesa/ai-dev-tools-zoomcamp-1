@@ -1,4 +1,4 @@
-"""Entitlement service: plans, per-user overrides, effective caps (issue #423).
+"""Entitlement service: plans, per-user overrides, effective caps (issues #423/#422).
 
 Resolves how many successful uses of a named feature a user may make per
 day, from exactly two inputs: their plan tier (`UserEntitlementPlan`,
@@ -15,43 +15,17 @@ single: transactional, idempotent state, not authorization.
 Billing synchronization (#424) must call `set_user_plan` to reflect a
 subscription change, never write `UserEntitlementPlan` rows directly, so
 every plan transition goes through the same idempotent, audited path
-regardless of who initiated it.
+regardless of who initiated it. Plan *definitions* themselves (which
+features a plan grants, its daily cap, active state, PayPal plan id) are
+`scenes.models.Plan` rows, admin-editable through `scenes.admin_settings`
+(#422) -- this module only ever reads them, never writes them.
 """
 
 from django.db import transaction
 
-from scenes.models import UserEntitlementPlan, UserFeatureOverride
-
-# Daily quota: at most this many *successful* creations per user per UTC
-# day, before any plan/override is considered. These are the exact
-# pre-#423 production defaults (Task 50/71's own reasoning: generous
-# relative to the short-burst rate limiter, which is a separate,
-# unaffected anti-abuse mechanism each endpoint keeps on its own) --
-# becoming the "free" plan's per-feature capacity is this issue's whole
-# point: the same numbers, now resolved through one plan+override
-# service instead of being hardcoded directly into each view.
-DAILY_QUOTA_MAX_SUCCESSES = 50  # ai_scene_create
-EDIT_DAILY_QUOTA_MAX_SUCCESSES = 50  # ai_scene_edit
-ART_DAILY_QUOTA_MAX_SUCCESSES = 20  # ai_art_generate
+from scenes.models import Plan, UserEntitlementPlan, UserFeatureOverride
 
 DEFAULT_PLAN = "free"
-
-# Fixture plan registry. Fixture capacities, not commercial prices --
-# billing synchronization (#424) decides what a real "paid" plan means
-# and updates it through `set_user_plan`, never by editing this dict at
-# runtime or writing plan rows directly.
-PLANS: dict[str, dict[str, int]] = {
-    "free": {
-        "ai_scene_create": DAILY_QUOTA_MAX_SUCCESSES,
-        "ai_scene_edit": EDIT_DAILY_QUOTA_MAX_SUCCESSES,
-        "ai_art_generate": ART_DAILY_QUOTA_MAX_SUCCESSES,
-    },
-    "paid": {
-        "ai_scene_create": DAILY_QUOTA_MAX_SUCCESSES * 4,
-        "ai_scene_edit": EDIT_DAILY_QUOTA_MAX_SUCCESSES * 4,
-        "ai_art_generate": ART_DAILY_QUOTA_MAX_SUCCESSES * 4,
-    },
-}
 FEATURE_KEYS = frozenset({"ai_scene_create", "ai_scene_edit", "ai_art_generate"})
 
 
@@ -60,21 +34,31 @@ def get_user_plan_key(user) -> str:
     return plan.plan_key if plan else DEFAULT_PLAN
 
 
+def _active_plan(plan_key: str) -> Plan | None:
+    plan = Plan.objects.filter(plan_key=plan_key, active=True).first()
+    if plan is not None:
+        return plan
+    if plan_key != DEFAULT_PLAN:
+        return Plan.objects.filter(plan_key=DEFAULT_PLAN, active=True).first()
+    return None
+
+
 def get_effective_cap(user, feature_key: str) -> int:
     """The number of successful `feature_key` uses this user may make per
-    day. Unknown feature keys and an explicit deny override both fail
-    closed to 0 -- never an exception a caller might mishandle as
-    "allowed" -- so a typo'd feature key denies access rather than
-    silently granting an unbounded one.
+    day. Unknown feature keys, an explicit deny override, a plan that
+    doesn't grant this feature, and a missing/inactive plan definition
+    (e.g. a not-yet-seeded database) all fail closed to 0 -- never an
+    exception a caller might mishandle as "allowed".
     """
     if feature_key not in FEATURE_KEYS:
         return 0
     override = UserFeatureOverride.objects.filter(user=user, feature_key=feature_key).first()
     if override is not None and not override.allowed:
         return 0
-    plan_key = get_user_plan_key(user)
-    plan_caps = PLANS.get(plan_key, PLANS[DEFAULT_PLAN])
-    return plan_caps.get(feature_key, 0)
+    plan = _active_plan(get_user_plan_key(user))
+    if plan is None or feature_key not in plan.feature_keys:
+        return 0
+    return plan.daily_ai_requests
 
 
 def resolve_effective_entitlements(user) -> dict[str, int]:
@@ -88,7 +72,7 @@ def set_user_plan(user, plan_key: str, *, granted_by=None) -> UserEntitlementPla
     """Idempotent plan transition: rerunning with the same `plan_key`
     changes nothing observable. Never touches `UserFeatureOverride` rows,
     saved projects/versions/credentials, or sessions."""
-    if plan_key not in PLANS:
+    if not Plan.objects.filter(plan_key=plan_key).exists():
         raise ValueError(f"Unknown plan key: {plan_key!r}")
     plan, _ = UserEntitlementPlan.objects.select_for_update().get_or_create(user=user)
     plan.plan_key = plan_key

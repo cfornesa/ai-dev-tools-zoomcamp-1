@@ -58,7 +58,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedUseAuth.mockReturnValue({
     status: 'signed-in',
-    user: { username: 'alice', email: 'alice@example.com' },
+    user: { username: 'alice', email: 'alice@example.com', is_application_admin: false },
   });
   mockedListProjects3D.mockResolvedValue([]);
 });

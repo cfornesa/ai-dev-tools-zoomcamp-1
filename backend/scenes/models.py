@@ -112,6 +112,63 @@ class UserFeatureOverride(models.Model):
         return f"{self.feature_key}={'allow' if self.allowed else 'deny'} for user {self.user_id}"
 
 
+class SiteSettings(models.Model):
+    """Singleton site-wide settings (issue #422): always exactly one row.
+
+    `revision` backs optimistic concurrency in `scenes.admin_settings`: a
+    caller must present the revision it last read, or the update is
+    rejected as a conflict rather than silently overwriting a concurrent
+    change.
+    """
+
+    site_title = models.CharField(max_length=200, default="Creatrweb Animation Studio")
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+
+    def __str__(self) -> str:
+        return f"Site settings (revision {self.revision})"
+
+    @classmethod
+    def get_solo(cls) -> "SiteSettings":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class Plan(models.Model):
+    """A named entitlement plan tier (issue #422), the persisted source
+    `scenes.entitlements` resolves caps from -- replacing the static
+    dict #423 originally shipped with, without changing that module's
+    own function signatures or fail-closed semantics.
+
+    `paypal_plan_id` is read (never written) by billing synchronization
+    (#424) and checkout (#440) to map a PayPal subscription plan back to
+    one of these rows; it is not validated as a real PayPal id here.
+    """
+
+    plan_key = models.CharField(max_length=32, unique=True)
+    daily_ai_requests = models.PositiveIntegerField()
+    # Which of scenes.entitlements.FEATURE_KEYS this plan grants at all --
+    # a feature key absent here has an effective cap of 0 on this plan,
+    # independent of `daily_ai_requests`. Validated against the live
+    # feature-key registry (never a bare model-level choices list) by
+    # `scenes.admin_settings.update_plan`, which is the only code that
+    # should write this field.
+    feature_keys = models.JSONField(default=list)
+    active = models.BooleanField(default=True)
+    paypal_plan_id = models.CharField(max_length=64, blank=True, default="")
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+
+    def __str__(self) -> str:
+        return f"{self.plan_key} plan (daily_ai_requests={self.daily_ai_requests})"
+
+
 class MistralCredential(models.Model):
     """One encrypted, owner-scoped Mistral key; plaintext never reaches a model field."""
 

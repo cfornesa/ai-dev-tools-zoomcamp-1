@@ -27,6 +27,7 @@ export type E2EState =
       owner: FixtureUser;
       other: FixtureUser;
       empty: FixtureUser;
+      admin: FixtureUser;
     }
   | {
       available: false;

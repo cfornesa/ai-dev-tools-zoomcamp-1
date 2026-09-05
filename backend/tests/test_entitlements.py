@@ -15,7 +15,7 @@ from django.contrib.auth import get_user_model
 from django.db import connections
 
 from scenes import entitlements
-from scenes.models import ApplicationAdmin, UserEntitlementPlan, UserFeatureOverride
+from scenes.models import ApplicationAdmin, Plan, UserEntitlementPlan, UserFeatureOverride
 
 
 def _rebind_default_to_postgres():
@@ -39,16 +39,26 @@ FEATURE = "ai_scene_create"
 
 
 @pytest.fixture(autouse=True)
-def fixed_plan_registry(monkeypatch):
+def fixed_plan_registry(db):
     """The issue's own fixed fixture: free cap 5, paid cap 20 for every
-    feature -- deterministic and independent of the real production
-    defaults (50/50/20) `scenes.entitlements.PLANS` otherwise carries."""
-    monkeypatch.setattr(
-        entitlements,
-        "PLANS",
-        {
-            "free": dict.fromkeys(entitlements.FEATURE_KEYS, 5),
-            "paid": dict.fromkeys(entitlements.FEATURE_KEYS, 20),
+    feature -- deterministic and independent of the real seeded
+    production defaults (`scenes/migrations/0031_seed_default_plans.py`).
+    Migrations already seed `free`/`paid` rows; overwrite their caps for
+    this test module only, every feature key granted on both."""
+    Plan.objects.update_or_create(
+        plan_key="free",
+        defaults={
+            "daily_ai_requests": 5,
+            "feature_keys": sorted(entitlements.FEATURE_KEYS),
+            "active": True,
+        },
+    )
+    Plan.objects.update_or_create(
+        plan_key="paid",
+        defaults={
+            "daily_ai_requests": 20,
+            "feature_keys": sorted(entitlements.FEATURE_KEYS),
+            "active": True,
         },
     )
 
@@ -216,6 +226,15 @@ def test_concurrent_plan_transitions_for_the_same_user_do_not_corrupt_state():
     or an IntegrityError -- select_for_update() serializes the writers.
     """
     _rebind_default_to_postgres()
+    # `transaction=True` flushes the target databases before this test
+    # runs, which does not restore data-migration-seeded rows (only
+    # `serialized_rollback=True` would) -- seed the plans this test
+    # actually needs directly, on the now-postgres-bound connection.
+    for plan_key in ("free", "paid"):
+        Plan.objects.get_or_create(
+            plan_key=plan_key,
+            defaults={"daily_ai_requests": 5, "feature_keys": sorted(entitlements.FEATURE_KEYS)},
+        )
     user = _make_user("alice")
     admin = _make_user("admin")
     errors: list[Exception] = []

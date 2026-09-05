@@ -47,6 +47,11 @@ E2E_USERS = {
     "owner": ("e2e_owner", "e2e-owner@example.test"),
     "other": ("e2e_other", "e2e-other@example.test"),
     "empty": ("e2e_empty", "e2e-empty@example.test"),
+    # Issue #422: a fixture with a persisted `ApplicationAdmin` grant, for
+    # `adminSettings.spec.ts` -- every other fixture user stays a
+    # deliberately ordinary, non-admin user (e.g. "other" stands in for
+    # the issue's own "ordinary user B" in that suite).
+    "admin": ("e2e_admin", "e2e-admin@example.test"),
 }
 
 
@@ -106,10 +111,14 @@ class Command(BaseCommand):
             raise CommandError(f"Unknown action: {action}")
 
     def _create(self, as_json: bool):
+        from scenes.models import ApplicationAdmin
+
         with transaction.atomic():
             owner = _get_or_create_user(*E2E_USERS["owner"])
             other = _get_or_create_user(*E2E_USERS["other"])
             empty = _get_or_create_user(*E2E_USERS["empty"])
+            admin = _get_or_create_user(*E2E_USERS["admin"])
+            ApplicationAdmin.objects.get_or_create(user=admin)
 
         payload = {
             "available": True,
@@ -117,6 +126,7 @@ class Command(BaseCommand):
             "owner": {"username": owner.username, "email": owner.email},
             "other": {"username": other.username, "email": other.email},
             "empty": {"username": empty.username, "email": empty.email},
+            "admin": {"username": admin.username, "email": admin.email},
         }
 
         if as_json:
@@ -127,7 +137,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS(
                     "Created/reset E2E fixture users: "
-                    f"{owner.username}, {other.username}, {empty.username}"
+                    f"{owner.username}, {other.username}, {empty.username}, {admin.username}"
                 )
             )
 

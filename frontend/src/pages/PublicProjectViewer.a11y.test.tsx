@@ -108,7 +108,7 @@ describe('PublicProjectViewer accessibility', () => {
   it('has no axe violations for a remixed project with a signed-in visitor and a visible Fork button', async () => {
     mockedUseAuth.mockReturnValue({
       status: 'signed-in',
-      user: { username: 'bob', email: 'bob@example.com' },
+      user: { username: 'bob', email: 'bob@example.com', is_application_admin: false },
     });
     mockedGetPublicProject.mockResolvedValue(
       basePublicProject({
@@ -124,7 +124,7 @@ describe('PublicProjectViewer accessibility', () => {
   it('has no axe violations with a fork error shown', async () => {
     mockedUseAuth.mockReturnValue({
       status: 'signed-in',
-      user: { username: 'bob', email: 'bob@example.com' },
+      user: { username: 'bob', email: 'bob@example.com', is_application_admin: false },
     });
     mockedGetPublicProject.mockResolvedValue(basePublicProject({ allow_public_remix: true }));
     mockedForkProject.mockRejectedValue(new Error('boom'));

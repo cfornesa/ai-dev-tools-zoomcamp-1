@@ -75,4 +75,12 @@ def whoami(request):
     """
     if not request.user.is_authenticated:
         return JsonResponse({"detail": "Authentication required."}, status=401)
-    return JsonResponse({"username": request.user.username, "email": request.user.email})
+    from scenes.admin_authorization import is_application_admin
+
+    return JsonResponse(
+        {
+            "username": request.user.username,
+            "email": request.user.email,
+            "is_application_admin": is_application_admin(request.user),
+        }
+    )

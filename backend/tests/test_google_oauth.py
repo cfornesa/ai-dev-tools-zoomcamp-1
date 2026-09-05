@@ -35,7 +35,11 @@ def test_protected_route_allows_authenticated_user(client):
     response = client.get(reverse("whoami"))
 
     assert response.status_code == 200
-    assert response.json() == {"username": "alice", "email": "alice@example.com"}
+    assert response.json() == {
+        "username": "alice",
+        "email": "alice@example.com",
+        "is_application_admin": False,
+    }
 
 
 @pytest.mark.django_db

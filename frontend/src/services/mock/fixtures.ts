@@ -22,6 +22,7 @@ import type { Template } from '../../api/templates';
 export const MOCK_USER: CurrentUser = {
   username: 'mock_user',
   email: 'mock.user@example.com',
+  is_application_admin: false,
 };
 
 const now = new Date().toISOString();

@@ -87,6 +87,13 @@ test.describe('Draw.io editor', () => {
     await page.getByRole('button', { name: 'Open piece controls menu' }).click();
     await page.getByRole('button', { name: 'Edit scene', exact: true }).click();
 
+    await page.getByRole('button', { name: 'Add draw.io text', exact: true }).press('Enter');
+    await expect(
+      page.getByRole('button', { name: 'Select text draw-object-3', exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole('button', { name: 'Delete selected draw.io object', exact: true })
+      .press('Enter');
     await page.getByRole('button', { name: 'Select rect object-back', exact: true }).click();
     await expect(
       page.getByRole('button', { name: 'Move selected draw.io object right' }),

@@ -43,6 +43,12 @@ function PieceStageControls({
     'off' | 'active' | 'denied' | 'unavailable' | 'ended'
   >('off');
   const [cameraOpacity, setCameraOpacity] = useState(0.5);
+  const [steeringState, setSteeringState] = useState<
+    'off' | 'active' | 'camera-required' | 'no-camera-registered' | 'unsupported-engine'
+  >('off');
+  const [steeringPose, setSteeringPose] = useState<{ x: number; y: number; z: number } | null>(
+    null,
+  );
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(stageRef);
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -60,6 +66,7 @@ function PieceStageControls({
         key?: string;
         frequency?: number;
         opacity?: number;
+        pose?: { x: number; y: number; z: number };
       } | null;
       if (data?.source !== 'art-piece-sandbox') return;
       if (data.status === 'error') {
@@ -105,6 +112,17 @@ function PieceStageControls({
         else if (data.error === 'ended') setCameraState('ended');
         else setCameraState('off');
         if (typeof data.opacity === 'number') setCameraOpacity(data.opacity);
+      }
+      // Issue #432: activation is gated (engine/camera/registration) --
+      // each rejection reason is its own distinct, actionable state, not
+      // a generic "off" that hides why steering never actually started.
+      if (data.status === 'steering') {
+        if (data.active) setSteeringState('active');
+        else if (data.error === 'camera-required') setSteeringState('camera-required');
+        else if (data.error === 'no-camera-registered') setSteeringState('no-camera-registered');
+        else if (data.error === 'unsupported-engine') setSteeringState('unsupported-engine');
+        else if (!data.error) setSteeringState('off');
+        if (data.pose) setSteeringPose(data.pose);
       }
     }
     window.addEventListener('message', onMessage);
@@ -286,9 +304,34 @@ function PieceStageControls({
             </div>
           )}
           {capabilities.hand_steering && (
-            <button type="button" onClick={() => command('enable-hand-steering')}>
-              Steer the piece
-            </button>
+            <div role="group" aria-label="Hand steering">
+              <button
+                type="button"
+                aria-pressed={steeringState === 'active'}
+                onClick={() =>
+                  command(
+                    steeringState === 'active' ? 'disable-hand-steering' : 'enable-hand-steering',
+                  )
+                }
+              >
+                {steeringState === 'active' ? 'Stop steering' : 'Steer the piece'}
+              </button>
+              <p data-testid="steering-status">
+                {steeringState === 'active' && 'Steering is active.'}
+                {steeringState === 'camera-required' && 'Turn on Camera view before steering.'}
+                {steeringState === 'no-camera-registered' &&
+                  'This piece has no steerable camera to control yet.'}
+                {steeringState === 'unsupported-engine' &&
+                  'Hand steering is only available for 3D pieces.'}
+                {steeringState === 'off' && 'Steering is off.'}
+              </p>
+              {steeringPose && (
+                <p data-testid="steering-pose">
+                  {steeringPose.x.toFixed(2)},{steeringPose.y.toFixed(2)},
+                  {steeringPose.z.toFixed(2)}
+                </p>
+              )}
+            </div>
           )}
           <button type="button" onClick={() => command('reset-view')}>
             Reset view

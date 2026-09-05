@@ -125,9 +125,11 @@ function buildCsp(library: ArtPieceLibrary): string {
  * (document order = execution order for synchronous inline scripts), so
  * even a snippet that throws synchronously during its own top-level
  * evaluation is still caught. */
-const LISTENER_SCRIPT = `
+function buildListenerScript(library: ArtPieceLibrary): string {
+  return `
 <script>
 (function () {
+  var pieceLibrary = ${JSON.stringify(library)};
   function report(status, message) {
     try {
       window.parent.postMessage(
@@ -231,6 +233,41 @@ const LISTENER_SCRIPT = `
     compositeContext.restore();
     return composite.toDataURL('image/png');
   }
+  // Issue #432: hand-steering ownership and Reset. Full real hand-
+  // landmark detection (MediaPipe running inside this sandbox) is
+  // explicitly deferred to a separate, approved follow-up -- see
+  // #455 -- since it needs a backend system-prompt change so generated
+  // Three.js/A-Frame snippets register a controllable camera, plus a
+  // CDN-loaded vision model inside this CSP-locked sandbox. This scoped
+  // pass implements the real, testable half: activation gating,
+  // ownership of exactly one registered camera adapter, bounded pose
+  // changes, and Reset -- driven by a documented steer-signal command
+  // any real or synthetic signal source can call through the same path,
+  // so swapping in real landmarks later changes nothing about this
+  // lifecycle. A piece opts in by calling
+  // window.__registerArtPieceCamera({ getPose, setPose, reset })
+  // itself; this runtime never reaches into an arbitrary Three.js/
+  // A-Frame scene uninvited.
+  var steeringActive = false;
+  var registeredCamera = null;
+  var initialCameraPose = null;
+  window.__registerArtPieceCamera = function (adapter) {
+    registeredCamera = adapter;
+    try {
+      initialCameraPose = adapter.getPose();
+    } catch (e) {
+      initialCameraPose = null;
+    }
+  };
+  var STEER_MIN_RADIUS = 1.5;
+  var STEER_MAX_RADIUS = 20;
+  function clampSteerPose(pose) {
+    var radius = Math.sqrt(pose.x * pose.x + pose.y * pose.y + pose.z * pose.z);
+    if (radius === 0) return pose;
+    var clampedRadius = Math.max(STEER_MIN_RADIUS, Math.min(STEER_MAX_RADIUS, radius));
+    var scale = clampedRadius / radius;
+    return { x: pose.x * scale, y: pose.y * scale, z: pose.z * scale };
+  }
   window.addEventListener('pagehide', function () {
     stopMicrophone();
     stopCamera();
@@ -272,8 +309,16 @@ const LISTENER_SCRIPT = `
   // Versioned, allowlisted commands are surfaced as DOM events. Generated
   // code may opt into them, but never receives arbitrary parent messages.
   window.addEventListener('message', function (event) {
+    // Issue #432 hardening: the untrusted generated snippet runs in this
+    // exact window and could otherwise call window.postMessage({source:
+    // 'art-piece-parent', ...}, '*') on itself to spoof a trusted parent
+    // command (e.g. silently self-activating the camera/microphone with
+    // no real user gesture at all) -- the data-shape check alone never
+    // verified who actually sent it. Only the real parent frame's window
+    // reference can pass this identity check.
+    if (event.source !== window.parent) return;
     var data = event && event.data;
-    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'enable-microphone', 'disable-microphone', 'enable-camera', 'disable-camera', 'set-camera-opacity', 'enable-hand-steering', 'reset-view'];
+    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'enable-microphone', 'disable-microphone', 'enable-camera', 'disable-camera', 'set-camera-opacity', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'reset-view'];
     if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
     try {
       if (data.type === 'screenshot') {
@@ -370,6 +415,46 @@ const LISTENER_SCRIPT = `
         var existingOverlay = document.getElementById(CAMERA_OVERLAY_ID);
         if (existingOverlay) existingOverlay.style.opacity = String(cameraOpacity);
         reportState('camera', { active: !!cameraStream, opacity: cameraOpacity });
+      } else if (data.type === 'enable-hand-steering') {
+        if (pieceLibrary !== 'threejs' && pieceLibrary !== 'aframe') {
+          reportState('steering', { active: false, error: 'unsupported-engine' });
+        } else if (!cameraStream) {
+          reportState('steering', { active: false, error: 'camera-required' });
+        } else if (!registeredCamera) {
+          reportState('steering', { active: false, error: 'no-camera-registered' });
+        } else {
+          steeringActive = true;
+          reportState('steering', { active: true });
+        }
+      } else if (data.type === 'disable-hand-steering') {
+        steeringActive = false;
+        reportState('steering', { active: false });
+      } else if (data.type === 'steer-signal') {
+        if (!steeringActive || !registeredCamera) {
+          reportState('steering', { active: steeringActive, error: 'not-ready' });
+        } else {
+          var currentPose = registeredCamera.getPose();
+          var dx = typeof data.dx === 'number' ? data.dx : 0;
+          var dy = typeof data.dy === 'number' ? data.dy : 0;
+          var dz = typeof data.dz === 'number' ? data.dz : 0;
+          var nextPose = clampSteerPose({
+            x: currentPose.x + dx,
+            y: currentPose.y + dy,
+            z: currentPose.z + dz
+          });
+          registeredCamera.setPose(nextPose.x, nextPose.y, nextPose.z);
+          reportState('steering', { active: true, pose: nextPose });
+        }
+      } else if (data.type === 'reset-view') {
+        if (registeredCamera && initialCameraPose) {
+          registeredCamera.reset
+            ? registeredCamera.reset()
+            : registeredCamera.setPose(initialCameraPose.x, initialCameraPose.y, initialCameraPose.z);
+          reportState('steering', { active: steeringActive, pose: initialCameraPose });
+        }
+        // Always also dispatched for pieces that handle their own reset
+        // via the DOM event instead of the camera-registration API.
+        window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: data.type, version: 1 } }));
       } else {
         window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: data.type, version: 1 } }));
       }
@@ -378,6 +463,7 @@ const LISTENER_SCRIPT = `
 })();
 </script>
 `;
+}
 
 /** Builds the full sandboxed document for `srcdoc`. `snippet` is the raw,
  * unmodified string `POST /api/ai/art-pieces/generate/` returned -- this
@@ -421,7 +507,7 @@ export function buildArtPieceSandboxDocument(
   a-scene { position: absolute; inset: 0; }
 </style>
 ${cdnScriptTag}
-${LISTENER_SCRIPT}
+${buildListenerScript(library)}
 </head>
 <body>
 ${body}

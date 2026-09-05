@@ -234,7 +234,9 @@ test.describe('AI create/edit proposals', () => {
   test('create: each configured provider uses its own deterministic model selection', async ({
     page,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    // Keep this three-request matrix isolated from the primary owner's
+    // rate-limit budget used by the failure-mode scenarios below.
+    await loginViaUI(page, fixtures.other.email, fixtures.password);
     await createBlankProjectViaUI(page);
     await expandAllCollapsibleSections(page);
     await setAIScenario(page, 'success');

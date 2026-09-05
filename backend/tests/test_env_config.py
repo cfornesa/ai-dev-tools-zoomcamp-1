@@ -131,6 +131,10 @@ def test_production_defaults_enable_reviewed_security_and_delivery(monkeypatch):
     assert settings_module.SECURE_HSTS_SECONDS == 31536000
     assert settings_module.SECURE_HSTS_INCLUDE_SUBDOMAINS is True
     assert settings_module.EMAIL_BACKEND.endswith("smtp.EmailBackend")
+    assert settings_module.CACHES["default"]["BACKEND"] == (
+        "django.core.cache.backends.db.DatabaseCache"
+    )
+    assert settings_module.CACHES["default"]["LOCATION"] == "django_cache"
 
 
 def test_production_rejects_wildcard_hosts(monkeypatch):

@@ -13,6 +13,7 @@ POSTGRES_IMAGE="${BROWSER_QA_POSTGRES_IMAGE:-postgres:16}"
 RUN_FULL_E2E="${BROWSER_QA_FULL_E2E:-0}"
 RUN_RUNTIME_BENCH="${BROWSER_QA_RUNTIME_BENCH:-0}"
 E2E_SPEC="${BROWSER_QA_E2E_SPEC:-}"
+PLAYWRIGHT_PROJECT="${BROWSER_QA_PLAYWRIGHT_PROJECT:-}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/creatrweb-browser-qa.XXXXXX")"
 ENV_FILE="$WORK_DIR/.env"
 POSTGRES_CONTAINER="creatrweb-browser-qa-$$"
@@ -61,6 +62,9 @@ command -v lsof >/dev/null || fail "lsof is required"
 [[ "$RUN_RUNTIME_BENCH" == 0 || "$RUN_RUNTIME_BENCH" == 1 ]] || fail "BROWSER_QA_RUNTIME_BENCH must be 0 or 1"
 if [[ -n "$E2E_SPEC" && "$E2E_SPEC" == -* ]]; then
   fail "BROWSER_QA_E2E_SPEC must be a Playwright spec path, not an option"
+fi
+if [[ -n "$PLAYWRIGHT_PROJECT" && "$PLAYWRIGHT_PROJECT" != chromium && "$PLAYWRIGHT_PROJECT" != firefox && "$PLAYWRIGHT_PROJECT" != webkit ]]; then
+  fail "BROWSER_QA_PLAYWRIGHT_PROJECT must be chromium, firefox, or webkit"
 fi
 
 if [[ -z "$FRONTEND_PORT" ]]; then
@@ -143,9 +147,17 @@ export UV_CACHE_DIR="${UV_CACHE_DIR:-$WORK_DIR/uv-cache}"
 log "Running Layers browser acceptance suite against $E2E_BASE_URL"
 if [[ -n "$E2E_SPEC" ]]; then
   log "Running selected browser acceptance spec: $E2E_SPEC"
-  (cd frontend && npx playwright test "$E2E_SPEC")
+  if [[ -n "$PLAYWRIGHT_PROJECT" ]]; then
+    (cd frontend && npx playwright test "$E2E_SPEC" --project="$PLAYWRIGHT_PROJECT")
+  else
+    (cd frontend && npx playwright test "$E2E_SPEC")
+  fi
 else
-  (cd frontend && npx playwright test e2e/layersPanel.spec.ts)
+  if [[ -n "$PLAYWRIGHT_PROJECT" ]]; then
+    (cd frontend && npx playwright test e2e/layersPanel.spec.ts --project="$PLAYWRIGHT_PROJECT")
+  else
+    (cd frontend && npx playwright test e2e/layersPanel.spec.ts)
+  fi
 fi
 if [[ "$RUN_FULL_E2E" == 1 ]]; then
   log "Running full browser acceptance suite"

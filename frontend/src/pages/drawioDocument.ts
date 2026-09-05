@@ -13,6 +13,7 @@ export type DrawioObject = {
   y: number;
   width: number;
   height: number;
+  rotation?: number;
   text?: string;
   fill?: string | null;
   stroke?: string | null;
@@ -222,6 +223,21 @@ export function resizeDrawioObject(
     if (width <= 0 || height <= 0) return 'Draw.io object dimensions must be positive.';
     object.width = width;
     object.height = height;
+    return null;
+  });
+}
+
+export function rotateDrawioObject(
+  scene: SceneDocument,
+  id: string,
+  delta: number,
+): DrawioMutation {
+  return edit(scene, (document) => {
+    const object = document.objects[objectIndex(document, id)];
+    if (!object) return 'The selected draw.io object no longer exists.';
+    if (!unlocked(document, object)) return 'The selected object is hidden or locked.';
+    if (!Number.isFinite(delta)) return 'Draw.io rotation must be finite.';
+    object.rotation = Math.max(-360, Math.min(360, (object.rotation ?? 0) + delta));
     return null;
   });
 }

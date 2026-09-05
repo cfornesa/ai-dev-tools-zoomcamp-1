@@ -22,11 +22,17 @@ class ProviderDefinition:
 PROVIDERS: dict[str, ProviderDefinition] = {
     "mistral": ProviderDefinition("mistral", "Mistral", "mistral-small-latest", True),
     "gemini": ProviderDefinition(
-        "gemini", "Google Gemini", "gemini-2.5-flash", True,
+        "gemini",
+        "Google Gemini",
+        "gemini-2.5-flash",
+        True,
         ("gemini-2.5-flash", "gemini-2.5-pro"),
     ),
     "deepseek": ProviderDefinition(
-        "deepseek", "DeepSeek", "deepseek-chat", True,
+        "deepseek",
+        "DeepSeek",
+        "deepseek-chat",
+        True,
         ("deepseek-chat", "deepseek-reasoner"),
     ),
 }

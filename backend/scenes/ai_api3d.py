@@ -86,6 +86,7 @@ def _increment_quota(cache_key: str, *, timeout: int) -> int:
         cache.add(cache_key, 0, timeout=timeout)
         return cache.incr(cache_key)
 
+
 _ACCEPTABLE_AI_ORIGINS_3D = (SceneVersion3D.Origin.AI_CREATE, SceneVersion3D.Origin.AI_EDIT)
 
 _CATEGORY_TO_RESPONSE = {
@@ -384,9 +385,7 @@ class AIEditScene3DView(APIView):
         if not result.success:
             return _edit_error_response(result)
 
-        quota_count = _increment_quota(
-            edit_quota_key, timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS
-        )
+        quota_count = _increment_quota(edit_quota_key, timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS)
         if quota_count > EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D:
             return _edit_quota_exceeded_response_3d()
 

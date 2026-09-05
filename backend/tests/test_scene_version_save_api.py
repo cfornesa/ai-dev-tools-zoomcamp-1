@@ -111,9 +111,7 @@ def test_drawio_scene_survives_save_reload_and_restore(owner_client, project):
     owner_client.post(
         _versions_url(project), {"scene_json": BLANK_SCENE, "origin": "manual"}, format="json"
     )
-    reloaded = owner_client.get(
-        f"{_versions_url(project)}{first_body['id']}/"
-    )
+    reloaded = owner_client.get(f"{_versions_url(project)}{first_body['id']}/")
     assert reloaded.status_code == 200
     assert reloaded.json()["scene_json"] == drawio_scene
 

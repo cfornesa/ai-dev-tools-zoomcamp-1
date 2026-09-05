@@ -19,8 +19,7 @@ def _run_shared_quota_worker(rate_key, daily_key, gate, result_queue):
     gate.wait()
     try:
         rate_results = [
-            _increment_and_check(rate_key, limit=5, window_seconds=60)
-            for _ in range(3)
+            _increment_and_check(rate_key, limit=5, window_seconds=60) for _ in range(3)
         ]
         daily_results = [increment_scene_quota(daily_key, timeout=3600) for _ in range(3)]
         result_queue.put((rate_results, daily_results))
@@ -191,8 +190,10 @@ def test_two_worker_api_clients_return_existing_429_on_sixth_request():
 
     from scenes.models import Project
 
-    user = get_user_model().objects.db_manager("postgres_test").create_user(
-        username="process-api-quota-user"
+    user = (
+        get_user_model()
+        .objects.db_manager("postgres_test")
+        .create_user(username="process-api-quota-user")
     )
     project = Project.objects.using("postgres_test").create(owner=user)
     connections["postgres_test"].close()

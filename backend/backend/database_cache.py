@@ -51,9 +51,9 @@ class AtomicDatabaseCache(DatabaseCache):
                     raise ValueError(f"Key '{key}' does not contain an integer")
 
                 new_value = value + delta
-                encoded = base64.b64encode(
-                    pickle.dumps(new_value, self.pickle_protocol)
-                ).decode("latin1")
+                encoded = base64.b64encode(pickle.dumps(new_value, self.pickle_protocol)).decode(
+                    "latin1"
+                )
                 cursor.execute(
                     f"UPDATE {table} SET {quote_name('value')} = %s "
                     f"WHERE {quote_name('cache_key')} = %s",

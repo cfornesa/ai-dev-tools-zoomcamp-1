@@ -320,9 +320,7 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
             )
             if errors:
                 detail = "; ".join(f"[{error.index}] {error.message}" for error in errors[:5])
-                raise AIProviderRejectionError(
-                    f"invalid_patch:{worst_reason(errors)} {detail}"
-                )
+                raise AIProviderRejectionError(f"invalid_patch:{worst_reason(errors)} {detail}")
             scene = apply_patch(request.current_scene, operations)
         except PatchError as exc:
             error = AIProviderRejectionError(f"patch_apply_failed: {exc}")

@@ -100,8 +100,7 @@ django_pid=$!
 # is still binding its port; those are expected during normal startup.
 startup_deadline=$((SECONDS + startup_timeout_seconds))
 while true; do
-  django_state="$(ps -o stat= -p "$django_pid" 2>/dev/null || true)"
-  if [[ -z "$django_state" || "$django_state" == Z* ]]; then
+  if ! kill -0 "$django_pid" 2>/dev/null; then
     if wait "$django_pid"; then
       django_status=$?
     else
@@ -133,18 +132,16 @@ frontend_pid=$!
 
 # Fail fast if either service exits, while EXIT cleanup stops its companion.
 # The bash 4.3+ "wait" flag that blocks on the first of several pids isn't
-# available on macOS's stock /bin/bash (3.2), so poll each pid's process
-# state instead, matching the health-check loop above.
+# available on macOS's stock /bin/bash (3.2), so poll child liveness instead,
+# matching the health-check loop above.
 set +e
 while true; do
-  django_state="$(ps -o stat= -p "$django_pid" 2>/dev/null || true)"
-  if [[ -z "$django_state" || "$django_state" == Z* ]]; then
+  if ! kill -0 "$django_pid" 2>/dev/null; then
     wait "$django_pid"
     status=$?
     break
   fi
-  frontend_state="$(ps -o stat= -p "$frontend_pid" 2>/dev/null || true)"
-  if [[ -z "$frontend_state" || "$frontend_state" == Z* ]]; then
+  if ! kill -0 "$frontend_pid" 2>/dev/null; then
     wait "$frontend_pid"
     status=$?
     break

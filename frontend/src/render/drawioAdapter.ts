@@ -96,7 +96,9 @@ export function createDrawioScenePreview(container: HTMLElement): ScenePreview {
     ) {
       const validation = validateScene(scene);
       if (!validation.valid || scene.documentType !== 'drawio') {
-        throw new SceneRenderError('Scene is not a valid supported draw.io document.');
+        throw new SceneRenderError(
+          validation.errors[0]?.message ?? 'Scene is not a valid supported draw.io document.',
+        );
       }
       const { layers, objects } = readDrawio(scene);
       const canvasConfig = (scene.canvas ?? {}) as {

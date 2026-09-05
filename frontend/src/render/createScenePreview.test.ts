@@ -33,6 +33,13 @@ describe('resolveSceneRendererId', () => {
     expect(resolveSceneRendererId(undefined)).toBe('p5');
     expect(resolveSceneRendererId({ renderer: { preferred: 'webgl' } })).toBe('p5');
   });
+
+  it('keeps native scenes on a native renderer instead of claiming Draw.io interoperability', () => {
+    const nativeScene = baseScene({ renderer: { preferred: 'canvas2d' } });
+
+    expect(nativeScene.documentType).not.toBe('drawio');
+    expect(resolveSceneRendererId(nativeScene)).toBe('canvas2d');
+  });
 });
 
 describe('createScenePreview', () => {

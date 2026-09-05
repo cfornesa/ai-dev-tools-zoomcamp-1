@@ -110,6 +110,24 @@ clean) and committed/pushed directly to `main` as commit `71c8290`.
   Added `frontend/e2e/artPieceSteeringRuntime.spec.ts`. Commit `a436dfa`.
   Verified 9/9 across chromium/firefox/webkit; regression-checked all
   four other art-piece specs against the security hardening.
+- **#434 (CLOSED, completed):** `ImmersiveArtPieceViewer.tsx` rendered
+  only an iframe and static, always-false instructions -- no keyboard/
+  drag/wheel handler existed at all. Added a `navigate-signal` sandbox
+  command reusing #432's bounded-pose mechanism (no camera/hand-steering
+  gating, since walkable navigation needs no device permission), wired
+  real arrow-key travel + drag look + wheel zoom, and reused the full
+  `PieceStageControls` toolbar (previously absent on this route). Found
+  and fixed a real architectural bug along the way: a cross-document
+  iframe captures pointer/wheel input entirely within itself and never
+  bubbles to an outer listener regardless of what element that listener
+  is attached to -- spatial pieces' iframe is now `pointer-events: none`
+  so the stage div actually receives navigation input. Added
+  `frontend/e2e/artPieceImmersiveRuntime.spec.ts`. Commit `65b3fd3`.
+  Verified 8/9 across chromium/firefox/webkit (arrow-key/drag/reset/
+  fallback/privacy all pass on all three); the webkit-only wheel-zoom
+  failure is isolated to `page.mouse.wheel()`'s known Playwright/WebKit
+  synthesis gap, filed as
+  [#456](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/456).
 - PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
   duplicates the content now on `main` via commit `71c8290`; left open
   pending full CI green, per repository owner's condition.

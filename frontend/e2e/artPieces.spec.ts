@@ -13,10 +13,21 @@ test.describe('Generated art pieces (#315)', () => {
     fixture = requireE2EFixtures();
   });
 
-  test('owner management and published regular viewer are usable', async ({ page, context }) => {
+  test('owner management and published regular viewer are usable', async ({
+    page,
+    context,
+  }, testInfo) => {
+    // Issue #453: running all three declared browser projects in one
+    // `playwright test` invocation shares the same backend database
+    // across projects (global setup/teardown scope fixture users to the
+    // whole invocation, not per-project) -- a bare, non-project-scoped
+    // title left three same-titled "Browser piece" links on
+    // /art-pieces/manage by the third project, tripping a strict-mode
+    // violation on the un-scoped getByText('Browser piece') assertion.
+    const title = `Browser piece (${testInfo.project.name})`;
     await loginViaUI(page, fixture.owner.email, fixture.password);
     const created = await apiPost(context, '/api/art-pieces/', {
-      title: 'Browser piece',
+      title,
       description: 'A browser-visible piece',
       prompt: 'blue circle',
       engine: 'canvas2d',
@@ -39,9 +50,9 @@ test.describe('Generated art pieces (#315)', () => {
     expect(published.status()).toBe(200);
     await page.goto('/art-pieces/manage');
     await expect(page.getByRole('heading', { name: 'Your art pieces' })).toBeVisible();
-    await expect(page.getByText('Browser piece')).toBeVisible();
+    await expect(page.getByText(title, { exact: true })).toBeVisible();
     await page.goto(`/art-pieces/p/${piece.public_id}`);
-    await expect(page.getByRole('heading', { name: 'Browser piece' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await expect(page.getByTitle('Art piece preview')).toBeVisible();
     await expect(page.getByRole('toolbar', { name: 'Piece actions' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
@@ -50,7 +61,14 @@ test.describe('Generated art pieces (#315)', () => {
     const screenshotDownload = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Take screenshot' }).click();
     const screenshot = await screenshotDownload;
-    expect(screenshot.suggestedFilename()).toMatch(/browser-piece-screenshot-\d+\.png$/);
+    const titleSlug = title
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    expect(screenshot.suggestedFilename()).toMatch(
+      new RegExp(`^${titleSlug}-screenshot-\\d+\\.png$`),
+    );
     const screenshotBytes = fs.readFileSync((await screenshot.path())!);
     expect(screenshotBytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
     expect(screenshotBytes.readUInt32BE(16)).toBe(320);
@@ -59,7 +77,7 @@ test.describe('Generated art pieces (#315)', () => {
     const bundleDownload = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Download full piece' }).click();
     const fullBundle = await bundleDownload;
-    expect(fullBundle.suggestedFilename()).toBe('Browser piece-full.zip');
+    expect(fullBundle.suggestedFilename()).toBe(`${title}-full.zip`);
     const fullZip = await JSZip.loadAsync(fs.readFileSync((await fullBundle.path())!));
     const fullHtml = await fullZip.files['index.html'].async('string');
     expect(fullHtml).toContain('data-action="camera"');
@@ -78,7 +96,7 @@ test.describe('Generated art pieces (#315)', () => {
     await page.getByRole('button', { name: 'Show hand gesture guide' }).click();
     await expect(page.getByRole('dialog', { name: 'Hand gesture guide' })).toContainText('Look');
     await page.getByRole('link', { name: 'View immersive piece' }).click();
-    await expect(page.getByRole('heading', { name: 'Browser piece' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await expect(page.getByTitle('Immersive art piece preview')).toBeVisible();
     await page.getByRole('link', { name: 'Back to regular viewer' }).click();
     await expect(page.getByTitle('Art piece preview')).toBeVisible();

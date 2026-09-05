@@ -61,6 +61,8 @@ function AIProposalPanel({
     setPrompt,
     model,
     setModel,
+    vendor,
+    setVendor,
     personaId,
     setPersonaId,
     phase,
@@ -182,6 +184,20 @@ function AIProposalPanel({
       </div>
 
       <form aria-label={MODE_LABELS[mode]} onSubmit={handleSubmit}>
+        <div className="behavior-card-field ai-proposal-field-full-width">
+          <label htmlFor="ai-proposal-vendor">AI provider</label>
+          <select
+            id="ai-proposal-vendor"
+            className="ai-proposal-field-full-width"
+            value={vendor}
+            disabled={pending}
+            onChange={(event) => setVendor(event.target.value as typeof vendor)}
+          >
+            <option value="mistral">Mistral</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="deepseek">DeepSeek</option>
+          </select>
+        </div>
         <div className="behavior-card-field">
           <label htmlFor="ai-proposal-prompt">
             {mode === 'create'
@@ -203,7 +219,9 @@ function AIProposalPanel({
             existing `model_invalid` validation error, surfaced through
             the same error UI as every other validation error below. */}
         <div className="behavior-card-field ai-proposal-field-full-width">
-          <label htmlFor="ai-proposal-model">Mistral model (optional)</label>
+          <label htmlFor="ai-proposal-model">
+            {vendor === 'mistral' ? 'Mistral' : vendor} model (optional)
+          </label>
           {savedModels.length === 0 ? (
             <p className="ai-proposal-empty-preference">
               No saved models yet — add one in <a href="/account/settings">Account settings</a> to

@@ -1944,6 +1944,32 @@ function EditorWorkspace() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (isTypingTarget(event.target)) return;
+      if (sceneEditor.selectedDrawioObject) {
+        const step = event.shiftKey ? 10 : 1;
+        if (
+          event.key === 'ArrowRight' ||
+          event.key === 'ArrowLeft' ||
+          event.key === 'ArrowUp' ||
+          event.key === 'ArrowDown'
+        ) {
+          event.preventDefault();
+          sceneEditor.moveSelectedDrawioObject(
+            event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0,
+            event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0,
+          );
+          return;
+        }
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
+          event.preventDefault();
+          sceneEditor.duplicateSelectedDrawioObject();
+          return;
+        }
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          event.preventDefault();
+          sceneEditor.deleteSelectedDrawioObject();
+          return;
+        }
+      }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
         if (!sceneEditor.selectedShape) return;
         event.preventDefault();

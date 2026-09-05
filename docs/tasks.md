@@ -15905,3 +15905,40 @@ tracked in [#454](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/454
 regression pass across all other art-piece E2E specs, the backend art-piece
 persistence suite, and the complete frontend vitest/typecheck/lint/format
 checks all pass clean.
+
+## #428 closure reconciliation — 2026-09-05
+
+[#428](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/428) closed:
+`ArtPieceStudio.tsx`'s own `handleSave` never sent a `capabilities` object at
+all — every piece created through the real Studio UI silently persisted the
+server's empty-dict default, no matter what a user might have wanted to
+enable. Every prior art-piece E2E spec seeded its fixture via a direct
+`apiPost`, masking this gap entirely. Added a Capabilities fieldset to the
+Studio (Screenshot, Download, Fullscreen, Sound, Keyboard, Microphone, Camera
+view, Hand steering, Immersive settings), disabling hand-steering/immersive
+with a visible reason for non-spatial libraries (Canvas2D/SVG), and wired the
+sanitized selection into the save request.
+
+Verification found and fixed two further real defects: (1) the server's
+`_capabilities()` validator coerced any truthy non-boolean value via
+Python's `bool()`, so `{"sound": "false"}` silently persisted as `true`
+instead of being rejected, contradicting the issue's own acceptance
+criteria — now rejects non-boolean values outright; (2) the fake AI
+provider (`AI_PROVIDER=fake`) always returned the same Canvas2D snippet
+regardless of the requested library, making it impossible to drive the real
+generate flow through to a spatial (Three.js) piece — now returns
+library-shaped fake code per library.
+
+New coverage: `frontend/e2e/artPieceCapabilities.spec.ts`, driving the real
+generate → configure → save flow (not API-seeded) at both viewports for a
+flat and a spatial library, plus server-validation, cross-user-denial, and
+failure-recovery scenarios. Discovered and filed (not silently absorbed) an
+unrelated fragility: the sandbox's `ready` handshake depends on nested
+`requestAnimationFrame` inside the cross-origin preview iframe, which
+Chromium throttles indefinitely while that iframe sits scrolled out of the
+viewport — tracked separately as
+[#457](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/457), with
+the new spec working around it via a realistic `scrollIntoViewIfNeeded()`
+call rather than depending on a fix. Full regression pass across every other
+art-piece E2E spec, the complete backend suite (982 passed), and the
+complete frontend vitest/typecheck/lint/format checks all pass clean.

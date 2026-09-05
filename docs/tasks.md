@@ -128,6 +128,19 @@ clean) and committed/pushed directly to `main` as commit `71c8290`.
   failure is isolated to `page.mouse.wheel()`'s known Playwright/WebKit
   synthesis gap, filed as
   [#456](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/456).
+- **#435 (CLOSED, completed):** added `embed/art-pieces/:id` as a
+  Layout-sibling route (matching `embed/p/:id`'s existing convention);
+  `PublicArtPieceViewer.tsx` now serves both the full-chrome and
+  chrome-less routes via an `isEmbedRoute` check, plus a new "Embed"
+  copy-snippet UI on the regular page. Found and fixed a real
+  containment bug: a default iframe border (unset) added to the
+  content-box iframe's 100%-width box, overflowing the stage by the
+  border's width -- fixed with `border: 'none'`/`display: 'block'` on
+  both this route's and #434's immersive iframe (same root cause,
+  bundled here rather than reopening #434). Added
+  `frontend/e2e/artPieceEmbed.spec.ts`. Commit `2dde2d8`. Verified 9/9
+  across chromium/firefox/webkit; all six other art-piece specs
+  regression-checked (13/13 on chromium).
 - PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
   duplicates the content now on `main` via commit `71c8290`; left open
   pending full CI green, per repository owner's condition.

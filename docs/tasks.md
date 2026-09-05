@@ -15942,3 +15942,38 @@ the new spec working around it via a realistic `scrollIntoViewIfNeeded()`
 call rather than depending on a fix. Full regression pass across every other
 art-piece E2E spec, the complete backend suite (982 passed), and the
 complete frontend vitest/typecheck/lint/format checks all pass clean.
+
+## #429 closure reconciliation — 2026-09-05
+
+[#429](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/429) closed:
+`ArtPieceManagement.tsx` linked every saved piece straight to the
+public-only viewer, which 404s for anything not Published, and no owner
+edit route existed at all — the Studio's own `handleSave` always created a
+brand new piece, never a new version on an existing one. Added
+`ArtPieceEditor.tsx` at `/art-pieces/:id/edit`: edit title/description,
+regenerate a revision against the piece's own locked-in engine and save it
+as a new immutable version (prior versions and their source untouched),
+inspect version history with a current-version marker, regenerate the
+thumbnail, and soft-delete behind an accessible `alertdialog` confirmation
+(reusing `useAlertDialogFocus`, matching `VersionHistoryPanel.tsx`'s own
+delete-confirm convention — as its own component mounted only while the
+confirm state is true, since the hook's focus effect needs to run on that
+component's own mount, not the always-mounted editor's). Updated
+`ArtPieceManagement.tsx` so every card's title routes to the editor and
+only Published pieces additionally expose a public-viewer link.
+
+Added the missing owner-detail/version/delete/thumbnail-regenerate API
+wrappers to `api/artPieces.ts`, and extracted the capability
+constants/sanitizer #428 added into `ArtPieceStudio.tsx` out to
+`generative/artPieceCapabilities.ts` so both pages share one definition of
+which capabilities need a spatial (Three.js/A-Frame) engine. No backend
+changes were needed: `ArtPieceDetailView`/`ArtPieceVersionListCreateView`
+already 404 identically for a nonexistent, soft-deleted, or not-owned
+piece via existing `can()`/`ArtPieceManager` filtering, and the
+version-create path already uses `select_for_update` with an
+auto-incrementing sequence, so concurrent version saves already can't
+overwrite each other. New coverage: `frontend/e2e/artPieceOwnerEditing.spec.ts`
+(7 scenarios, including both viewports for the core edit/revise flow). Full
+regression pass across every other art-piece E2E spec (24 total), the
+complete backend suite (982 passed), and the complete frontend
+vitest/typecheck/lint/format checks all pass clean.

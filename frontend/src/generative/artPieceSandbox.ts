@@ -61,6 +61,16 @@ export type ArtPieceSandboxMessage =
  * edit -- see `artPieceSandbox.test.ts`. */
 export const ART_PIECE_IFRAME_SANDBOX = 'allow-scripts';
 
+/** Issue #430: the `<iframe>`'s own `allow` (Permissions Policy)
+ * attribute -- distinct from the CSP `<meta>` tag this module injects
+ * into the document. `getUserMedia` for the microphone capability is
+ * gated by Permissions Policy, not CSP; without this, a sandboxed
+ * iframe's own `navigator.mediaDevices.getUserMedia` call rejects with a
+ * permissions-policy violation before it can even prompt. Camera is
+ * intentionally not delegated here -- #431 owns that capability and its
+ * own explicit `allow` scope. */
+export const ART_PIECE_IFRAME_ALLOW = 'microphone';
+
 /** Issue #199 (Three.js/A-Frame extension): these two libraries need
  * their own runtime loaded via a pinned CDN `<script>` this module
  * injects -- never a URL the AI supplies (`art_piece_provider.py`'s
@@ -130,6 +140,63 @@ const LISTENER_SCRIPT = `
       // throws, there is nothing else this sandbox can do to report it.
     }
   }
+  // Issue #430: reports acknowledged runtime state (not just command
+  // receipt) for sound/microphone, so the parent -- and this suite's own
+  // E2E spec -- observe what the sandbox actually did, never a spoofed
+  // "success" for a command that had no real effect.
+  function reportState(status, extra) {
+    try {
+      var payload = { source: ${JSON.stringify(ART_PIECE_SANDBOX_MESSAGE_SOURCE)}, status: status };
+      for (var key in extra) { if (Object.prototype.hasOwnProperty.call(extra, key)) payload[key] = extra[key]; }
+      window.parent.postMessage(payload, '*');
+    } catch (e) {}
+  }
+  // Sound only ever starts from an explicit "toggle-sound" activation
+  // (never on load), per #430's own acceptance criterion. The
+  // AudioContext is created lazily on first activation so a piece that
+  // never touches Sound never even requests one.
+  var audioCtx = null;
+  var masterGain = null;
+  var soundOn = false;
+  var micStream = null;
+  var NOTE_FREQUENCIES = {
+    a: 220.0, s: 246.94, d: 261.63, f: 293.66, g: 329.63, h: 349.23, j: 392.0, k: 440.0
+  };
+  function ensureAudio() {
+    if (!audioCtx) {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new Ctx();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.2;
+      masterGain.connect(audioCtx.destination);
+    }
+    return audioCtx;
+  }
+  function stopMicrophone() {
+    if (micStream) {
+      micStream.getTracks().forEach(function (track) { track.stop(); });
+      micStream = null;
+    }
+  }
+  window.addEventListener('pagehide', function () {
+    stopMicrophone();
+    if (audioCtx) { try { audioCtx.close(); } catch (e) {} }
+  });
+  // Keyboard notes: a real, audible tone per key, gated on Sound already
+  // being on -- distinct from any application logic the generated
+  // snippet may separately bind to its own keyboard handling.
+  window.addEventListener('keydown', function (event) {
+    if (!soundOn || !audioCtx) return;
+    var frequency = NOTE_FREQUENCIES[(event.key || '').toLowerCase()];
+    if (!frequency) return;
+    var oscillator = audioCtx.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = frequency;
+    oscillator.connect(masterGain);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.2);
+    reportState('note', { key: event.key, frequency: frequency });
+  });
   window.addEventListener('error', function (event) {
     report('error', (event && event.message) || 'The generated piece threw an error.');
   });
@@ -152,7 +219,7 @@ const LISTENER_SCRIPT = `
   // code may opt into them, but never receives arbitrary parent messages.
   window.addEventListener('message', function (event) {
     var data = event && event.data;
-    var allowed = ['screenshot', 'toggle-sound', 'enable-microphone', 'enable-camera', 'enable-hand-steering', 'reset-view'];
+    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'enable-microphone', 'disable-microphone', 'enable-camera', 'enable-hand-steering', 'reset-view'];
     if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
     try {
       if (data.type === 'screenshot') {
@@ -196,6 +263,31 @@ const LISTENER_SCRIPT = `
           };
           svgImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
         }
+      } else if (data.type === 'toggle-sound') {
+        ensureAudio();
+        soundOn = !soundOn;
+        if (soundOn) { audioCtx.resume(); } else { audioCtx.suspend(); }
+        reportState('sound', { enabled: soundOn, volume: masterGain.gain.value });
+      } else if (data.type === 'set-volume') {
+        ensureAudio();
+        var requestedVolume = typeof data.value === 'number' ? data.value : NaN;
+        var clampedVolume = isNaN(requestedVolume) ? masterGain.gain.value : Math.max(0, Math.min(1, requestedVolume));
+        masterGain.gain.value = clampedVolume;
+        reportState('sound', { enabled: soundOn, volume: clampedVolume });
+      } else if (data.type === 'enable-microphone') {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          reportState('microphone', { active: false, error: 'unavailable' });
+        } else {
+          navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (stream) {
+            micStream = stream;
+            reportState('microphone', { active: true });
+          }).catch(function () {
+            reportState('microphone', { active: false, error: 'denied' });
+          });
+        }
+      } else if (data.type === 'disable-microphone') {
+        stopMicrophone();
+        reportState('microphone', { active: false });
       } else {
         window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: data.type, version: 1 } }));
       }

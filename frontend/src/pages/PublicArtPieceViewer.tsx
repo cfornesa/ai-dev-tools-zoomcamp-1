@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { getPublicArtPiece, type ArtPiece } from '../api/artPieces';
 import {
+  ART_PIECE_IFRAME_ALLOW,
   ART_PIECE_IFRAME_SANDBOX,
   buildArtPieceSandboxDocument,
 } from '../generative/artPieceSandbox';
@@ -37,6 +38,7 @@ function PublicArtPieceViewer() {
           ref={iframeRef}
           title="Art piece preview"
           sandbox={ART_PIECE_IFRAME_SANDBOX}
+          allow={ART_PIECE_IFRAME_ALLOW}
           srcDoc={buildArtPieceSandboxDocument(piece.current_version.source, piece.engine)}
           style={{ width: '100%', height: 480 }}
         />

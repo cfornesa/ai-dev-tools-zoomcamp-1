@@ -33,6 +33,12 @@ function PieceStageControls({
   const [guide, setGuide] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const [soundOn, setSoundOn] = useState(false);
+  const [volume, setVolume] = useState(0.2);
+  const [lastNote, setLastNote] = useState<string | null>(null);
+  const [microphoneState, setMicrophoneState] = useState<
+    'off' | 'active' | 'denied' | 'unavailable'
+  >('off');
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(stageRef);
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -43,11 +49,18 @@ function PieceStageControls({
         message?: string;
         data?: string;
         filename?: string;
+        enabled?: boolean;
+        volume?: number;
+        active?: boolean;
+        error?: string;
+        key?: string;
+        frequency?: number;
       } | null;
-      if (data?.source === 'art-piece-sandbox' && data.status === 'error') {
+      if (data?.source !== 'art-piece-sandbox') return;
+      if (data.status === 'error') {
         setScreenshotError(data.message || 'The art piece could not complete that action.');
       }
-      if (data?.source === 'art-piece-sandbox' && data.status === 'screenshot' && data.data) {
+      if (data.status === 'screenshot' && data.data) {
         try {
           const [header, encoded] = data.data.split(',', 2);
           const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
@@ -60,11 +73,28 @@ function PieceStageControls({
           setScreenshotError('Screenshot failed: the captured artwork was not a valid image.');
         }
       }
+      // Issue #430: these reflect the sandbox's *acknowledged* runtime
+      // state (posted only after the AudioContext/getUserMedia call
+      // actually succeeded or failed), never an optimistic update made
+      // just because a command was sent.
+      if (data.status === 'sound') {
+        if (typeof data.enabled === 'boolean') setSoundOn(data.enabled);
+        if (typeof data.volume === 'number') setVolume(data.volume);
+      }
+      if (data.status === 'microphone') {
+        if (data.active) setMicrophoneState('active');
+        else if (data.error === 'denied') setMicrophoneState('denied');
+        else if (data.error === 'unavailable') setMicrophoneState('unavailable');
+        else setMicrophoneState('off');
+      }
+      if (data.status === 'note' && typeof data.key === 'string') {
+        setLastNote(data.key);
+      }
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, [iframeRef]);
-  function command(type: string) {
+  function command(type: string, extra?: Record<string, unknown>) {
     if (type === 'screenshot') setScreenshotError(null);
     iframeRef.current?.contentWindow?.postMessage(
       {
@@ -72,6 +102,7 @@ function PieceStageControls({
         version: ART_PIECE_BRIDGE_VERSION,
         type,
         filename: screenshotFilename(title || 'art-piece'),
+        ...extra,
       },
       '*',
     );
@@ -105,7 +136,12 @@ function PieceStageControls({
           </button>
         )}
         {capabilities.sound && (
-          <button type="button" aria-label="Mute sound" onClick={() => command('toggle-sound')}>
+          <button
+            type="button"
+            aria-pressed={soundOn}
+            aria-label={soundOn ? 'Mute sound' : 'Unmute sound'}
+            onClick={() => command('toggle-sound')}
+          >
             ♪
           </button>
         )}
@@ -148,12 +184,55 @@ function PieceStageControls({
               </button>
             </div>
           )}
-          {capabilities.sound && <p>Sound controls available.</p>}
-          {capabilities.keyboard && <p>Keyboard notes available.</p>}
+          {capabilities.sound && (
+            <div role="group" aria-label="Sound">
+              <p data-testid="sound-status">
+                {soundOn ? `Sound is on at ${Math.round(volume * 100)}% volume.` : 'Sound is off.'}
+              </p>
+              <label htmlFor="art-piece-volume">Sound volume</label>
+              <input
+                id="art-piece-volume"
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={volume}
+                disabled={!soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setVolume(value);
+                  command('set-volume', { value });
+                }}
+              />
+            </div>
+          )}
+          {capabilities.keyboard && (
+            <p data-testid="keyboard-note-status">
+              {soundOn
+                ? lastNote
+                  ? `Last note played: ${lastNote}.`
+                  : 'Keyboard notes available. Press A-K over the piece to play a note.'
+                : 'Turn on Sound to play keyboard notes.'}
+            </p>
+          )}
           {capabilities.microphone && (
-            <button type="button" onClick={() => command('enable-microphone')}>
-              Enable microphone
-            </button>
+            <div role="group" aria-label="Microphone">
+              <button
+                type="button"
+                aria-pressed={microphoneState === 'active'}
+                onClick={() =>
+                  command(microphoneState === 'active' ? 'disable-microphone' : 'enable-microphone')
+                }
+              >
+                {microphoneState === 'active' ? 'Disable microphone' : 'Enable microphone'}
+              </button>
+              <p data-testid="microphone-status">
+                {microphoneState === 'active' && 'Microphone is active.'}
+                {microphoneState === 'denied' && 'Microphone access was denied.'}
+                {microphoneState === 'unavailable' && 'Microphone is unavailable in this browser.'}
+                {microphoneState === 'off' && 'Microphone is off.'}
+              </p>
+            </div>
           )}
           {capabilities.camera_view && (
             <button type="button" onClick={() => command('enable-camera')}>

@@ -83,9 +83,14 @@ import {
 import { parseCanvasBackgroundColorEdit, parseCanvasOpacityEdit } from './canvasSettingsFields';
 import {
   deleteDrawioObject,
+  deleteDrawioLayer,
   duplicateDrawioObject,
+  moveDrawioLayer,
   moveDrawioObject,
   resizeDrawioObject,
+  getDrawioLayers,
+  renameDrawioLayer,
+  toggleDrawioLayerFlag,
   type DrawioObject,
 } from './drawioDocument';
 
@@ -307,7 +312,15 @@ export function useSceneEditor(
   const shapes = getEditableShapes(workingCopy ? rawShapes(workingCopy) : []);
   const selectedShape = shapes.find((s) => s.id === selectedShapeId) ?? null;
   const groups = useMemo(() => (workingCopy ? getGroups(workingCopy) : []), [workingCopy]);
-  const layers = useMemo(() => (workingCopy ? getLayers(workingCopy) : []), [workingCopy]);
+  const layers = useMemo(
+    () =>
+      workingCopy?.documentType === 'drawio'
+        ? getDrawioLayers(workingCopy)
+        : workingCopy
+          ? getLayers(workingCopy)
+          : [],
+    [workingCopy],
+  );
   const selectedGroup = groups.find((g) => g.id === selectedShapeId) ?? null;
   const drawioObjects = useMemo(
     () =>
@@ -985,6 +998,18 @@ export function useSceneEditor(
   // one undo step on success and never touches scene state on failure —
   // it just surfaces `outlineError`.
 
+  const applyDrawioMutation = useCallback(
+    (outcome: ReturnType<typeof moveDrawioObject>) => {
+      if (!outcome.ok) {
+        setOutlineError(outcome.error);
+        return;
+      }
+      setOutlineError(null);
+      commit(outcome.scene);
+    },
+    [commit],
+  );
+
   const addLayer = useCallback(() => {
     if (!workingCopy) return;
     applyOutcome(addLayerOp(workingCopy));
@@ -993,7 +1018,9 @@ export function useSceneEditor(
   const renameLayer = useCallback(
     (layerId: string, name: string) => {
       if (!workingCopy) return;
-      applyOutcome(renameLayerOp(workingCopy, layerId, name));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(renameDrawioLayer(workingCopy, layerId, name));
+      } else applyOutcome(renameLayerOp(workingCopy, layerId, name));
     },
     [workingCopy, applyOutcome],
   );
@@ -1026,7 +1053,9 @@ export function useSceneEditor(
   const deleteLayer = useCallback(
     (layerId: string) => {
       if (!workingCopy) return;
-      applyOutcome(deleteLayerOp(workingCopy, layerId));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(deleteDrawioLayer(workingCopy, layerId));
+      } else applyOutcome(deleteLayerOp(workingCopy, layerId));
     },
     [workingCopy, applyOutcome],
   );
@@ -1034,7 +1063,9 @@ export function useSceneEditor(
   const moveLayer = useCallback(
     (layerId: string, direction: 'up' | 'down') => {
       if (!workingCopy) return;
-      applyOutcome(moveLayerOp(workingCopy, layerId, direction));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(moveDrawioLayer(workingCopy, layerId, direction));
+      } else applyOutcome(moveLayerOp(workingCopy, layerId, direction));
     },
     [workingCopy, applyOutcome],
   );
@@ -1042,7 +1073,9 @@ export function useSceneEditor(
   const toggleLayerVisible = useCallback(
     (layerId: string) => {
       if (!workingCopy) return;
-      applyOutcome(toggleLayerFlag(workingCopy, layerId, 'visible'));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(toggleDrawioLayerFlag(workingCopy, layerId, 'visible'));
+      } else applyOutcome(toggleLayerFlag(workingCopy, layerId, 'visible'));
     },
     [workingCopy, applyOutcome],
   );
@@ -1050,7 +1083,9 @@ export function useSceneEditor(
   const toggleLayerLocked = useCallback(
     (layerId: string) => {
       if (!workingCopy) return;
-      applyOutcome(toggleLayerFlag(workingCopy, layerId, 'locked'));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(toggleDrawioLayerFlag(workingCopy, layerId, 'locked'));
+      } else applyOutcome(toggleLayerFlag(workingCopy, layerId, 'locked'));
     },
     [workingCopy, applyOutcome],
   );
@@ -1469,18 +1504,6 @@ export function useSceneEditor(
   );
 
   const clearGraphError = useCallback(() => setGraphError(null), []);
-
-  const applyDrawioMutation = useCallback(
-    (outcome: ReturnType<typeof moveDrawioObject>) => {
-      if (!outcome.ok) {
-        setOutlineError(outcome.error);
-        return;
-      }
-      setOutlineError(null);
-      commit(outcome.scene);
-    },
-    [commit],
-  );
 
   const moveSelectedDrawioObject = useCallback(
     (dx: number, dy: number) => {

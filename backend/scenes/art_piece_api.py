@@ -85,6 +85,16 @@ def _current_count(cache_key: str) -> int:
     return cache.get(cache_key, 0)
 
 
+def _increment_quota(cache_key: str, *, timeout: int) -> int:
+    """Atomically record one successful art-piece result in shared cache state."""
+    cache.add(cache_key, 0, timeout=timeout)
+    try:
+        return cache.incr(cache_key)
+    except ValueError:
+        cache.add(cache_key, 0, timeout=timeout)
+        return cache.incr(cache_key)
+
+
 def _validate_model_id(value: str) -> str:
     if value and not _MODEL_ID_PATTERN.match(value):
         raise serializers.ValidationError(
@@ -294,11 +304,9 @@ class ArtPieceGenerateView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        cache.set(
-            _quota_cache_key(user_id),
-            _current_count(_quota_cache_key(user_id)) + 1,
-            timeout=60 * 60 * 26,
-        )
+        quota_count = _increment_quota(_quota_cache_key(user_id), timeout=60 * 60 * 26)
+        if quota_count > DAILY_QUOTA_MAX_SUCCESSES:
+            return _quota_exceeded_response()
 
         return Response(
             {

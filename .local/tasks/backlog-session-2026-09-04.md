@@ -234,14 +234,15 @@ is now evidence-based rather than a blanket retention of all original
 blockers.
 ## Current evidence reconciliation — 2026-09-05
 
-The authoritative GitHub state is now 9 completed issues (#404–#410, #412,
-and #416) and 4 open issues (#411, #413–#415). #408 closed after the expanded 38-test
+The authoritative GitHub state is now 10 completed issues (#404–#412 and
+#416) and 3 open issues (#413–#415). #408 closed after the expanded 38-test
 deterministic create/edit matrix across Mistral, Gemini, and DeepSeek. #416
 closed after the Google-only policy was documented, enforced, and verified by
 desktop/mobile browser tests. Draw.io browser coverage now passes object
 move/resize/duplicate, layer rename, save, and reload; #411 remains open
-because layer drag/drop and fixed-viewport rendered evidence are still
-incomplete. #412 then closed after focused
+because layer drag/drop and fixed-viewport rendered evidence were still
+incomplete. #411 then closed after the ordered-layer mutation was corrected
+and fixed-viewport drag/z-order evidence passed. #412 then closed after focused
 backend/frontend coverage and a real Chromium flow verified published
 public, embed, thumbnail, and full-download behavior for a supported Draw.io
 scene.
@@ -272,5 +273,5 @@ its real two-worker runtime proof remains outstanding.
 The following #410 increment adds bounded object rotation to the shared schema,
 Canvas2D adapter, editor mutation path, and toolbar, and exposes Draw.io
 objects in their owning outline layers. Focused tests and Chromium acceptance
-pass; #410 is now closed and #411 remains the separate outer-layer parity
-gate.
+pass; #410 and #411 are now closed, with #413 remaining as the integrated
+Draw.io regression/accessibility gate.

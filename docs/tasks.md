@@ -16451,3 +16451,36 @@ endpoint was needed to close this service slice, per the narrowed
 contract -- #422 (admin console), #439 (account display), and #424
 (billing sync) now have `scenes.entitlements`'s functions to call
 directly instead of writing plan/override state themselves.
+
+## #422 closure reconciliation — 2026-09-05
+
+[#422](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/422) closed,
+fifth of the criterion-ready queue. Gave application-admins (#421) one
+protected `/admin/settings` console over site title and each entitlement
+plan's (#423) policy, atomically and with optimistic concurrency. New
+`SiteSettings` (singleton) and `Plan` models replace #423's static
+`PLANS` dict as the persisted source `scenes/entitlements.py` resolves
+caps from -- an in-scope extension of #423's own service, not a
+reopening: its function signatures, fail-closed semantics, and every one
+of its tests still pass. New `scenes/admin_settings.py` (service) and
+`admin_settings_api.py` (`GET/PATCH /api/admin/settings/` and
+`/api/admin/plans/`, 401 anonymous/403 non-admin) validate every field
+atomically and use a `revision` token -- a stale expected revision is
+rejected as a 409 conflict without changing anything. `whoami` now
+reports `is_application_admin` so `AdminSettings.tsx` can gate its own
+route (redirect a confirmed non-admin, matching #458's convention).
+Consolidated the three AI features' previously-separate daily caps
+(create/edit 50, art 20) onto one admin-editable `daily_ai_requests`
+number per plan, seeded free=50/paid=200 by a data migration -- every
+existing quota/rate-limit test still passes unmodified since each reads
+the live module constant rather than a hardcoded literal. New
+`tests/test_admin_settings.py` (18 tests, the issue's own fixed fixture:
+admin A, ordinary user B, `site_title`, free/paid `daily_ai_requests`)
+and `frontend/e2e/adminSettings.spec.ts` (15 scenarios, 3 browsers, both
+viewports, driven by a new "admin" E2E fixture user granted
+`ApplicationAdmin`). Full backend suite (1044 passed, 27 skipped),
+complete frontend vitest suite (2431 passed), and
+`authPolicy.spec.ts`/`projectLifecycle.spec.ts`/`aiAndRecovery.spec.ts`/
+`test_shared_quota_cache.py`'s real-PostgreSQL two-worker tests were all
+regression-checked against the Plan-backed cap resolution in the hot
+path -- all pass clean.

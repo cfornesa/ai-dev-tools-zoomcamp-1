@@ -104,7 +104,7 @@ from ai_provider.mistral_provider import (
     RESPONSE_TOO_LARGE_PREFIX,
     MistralSceneProvider,
 )
-from ai_provider.registry import get_provider
+from ai_provider.registry import get_provider, validate_model
 from scenes.api import _get_project_or_404, _require_or_404
 from scenes.models import (
     AIPersona,
@@ -266,6 +266,13 @@ class AICreateSceneRequestSerializer(serializers.Serializer):
     def validate_vendor(self, value: str) -> str:
         return get_provider(value).vendor
 
+    def validate(self, attrs):
+        try:
+            attrs["model"] = validate_model(attrs["vendor"], attrs.get("model"))
+        except ValueError as exc:
+            raise serializers.ValidationError({"model": str(exc)}) from exc
+        return attrs
+
 
 class AIEditSceneRequestSerializer(serializers.Serializer):
     """Task 50's edit-scene request body.
@@ -302,6 +309,13 @@ class AIEditSceneRequestSerializer(serializers.Serializer):
 
     def validate_vendor(self, value: str) -> str:
         return get_provider(value).vendor
+
+    def validate(self, attrs):
+        try:
+            attrs["model"] = validate_model(attrs["vendor"], attrs.get("model"))
+        except ValueError as exc:
+            raise serializers.ValidationError({"model": str(exc)}) from exc
+        return attrs
 
 
 # category -> (http status, error code). PROVIDER_REJECTION is handled
@@ -598,12 +612,13 @@ def _request_invalid_response(errors: dict) -> Response:
     return Response({"error": error, "detail": errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def _missing_key_response() -> Response:
+def _missing_key_response(vendor: str = "mistral") -> Response:
+    label = get_provider(vendor).label
     return Response(
         {
             "error": "personal_key_required",
             "detail": (
-                "Configure your personal Mistral API key in Account settings "
+                f"Configure your personal {label} API key in Account settings "
                 "before generating AI scenes."
             ),
         },
@@ -655,7 +670,7 @@ class AICreateSceneView(APIView):
         try:
             provider = _provider_for_user(request.user, model, persona_prompt, vendor)
         except MissingPersonalMistralCredential:
-            return _missing_key_response()
+            return _missing_key_response(vendor)
         except UnsupportedProvider:
             return _unsupported_provider_response()
         result = provider.create_scene(AICreateSceneRequest(prompt=prompt))
@@ -788,7 +803,7 @@ class AIEditSceneView(APIView):
         try:
             provider = _provider_for_user(request.user, model, persona_prompt, vendor)
         except MissingPersonalMistralCredential:
-            return _missing_key_response()
+            return _missing_key_response(vendor)
         except UnsupportedProvider:
             return _unsupported_provider_response()
         outcome = provider.edit_scene_with_patch(

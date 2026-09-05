@@ -137,8 +137,7 @@ active Chrome session could not be re-inspected because macOS is currently
 locked; the production baseline remains `https://animate.creatrweb.com/` and
 the reconciliation branch is not deployed there.
 
-GitHub now has 9 completed issues and 4 open issues. #411 remains open for
-the remaining draw.io layer parity evidence; #413
+GitHub now has 10 completed issues and 3 open issues. #413
 remains open for the integrated draw.io regression/accessibility gate. #412
 closed after focused backend/frontend coverage and a real Chromium flow
 verified published public, embed, thumbnail, and full-download behavior.
@@ -161,4 +160,5 @@ and unsupported-object UX evidence passed. #414 now uses atomic daily quota incr
 
 The latest editor increment adds bounded Draw.io rotation and stable object
 selection rows in the layer outline; focused tests and Chromium acceptance
-pass. #411 remains the next Draw.io interaction gate for outer-layer parity.
+pass. #411 is now closed after ordered-layer drag/drop and fixed-viewport
+z-order evidence passed; #413 is the remaining integrated Draw.io gate.

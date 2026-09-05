@@ -56,7 +56,12 @@ def _capabilities(value):
     unknown = set(value) - CAPABILITY_KEYS
     if unknown:
         raise serializers.ValidationError(f"Unsupported capabilities: {', '.join(sorted(unknown))}")
-    return {key: bool(value.get(key, False)) for key in CAPABILITY_KEYS}
+    non_boolean = [key for key, entry in value.items() if not isinstance(entry, bool)]
+    if non_boolean:
+        raise serializers.ValidationError(
+            f"Capabilities must be true/false: {', '.join(sorted(non_boolean))}"
+        )
+    return {key: value.get(key, False) for key in CAPABILITY_KEYS}
 
 
 def _thumbnail_bytes(source: str) -> bytes:

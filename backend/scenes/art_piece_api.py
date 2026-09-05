@@ -138,18 +138,61 @@ def get_art_piece_provider() -> ArtPieceProvider:
         from ai_provider.art_piece_provider import ArtPieceResult
         from ai_provider.interface import AIUsageMetadata
 
+        # Issue #428: distinct, library-shaped fake code per requested
+        # library -- rather than always returning the same Canvas2D
+        # snippet regardless of `library` -- so `make e2e`'s
+        # AI_PROVIDER=fake path can drive the real Studio generate flow
+        # for a spatial engine (Three.js/A-Frame) and reach a live
+        # `window.__registerArtPieceCamera` registration, exactly like a
+        # real Mistral response would for that library. Each snippet
+        # matches the shape `artPieceSandbox.ts`'s `buildArtPieceSandboxDocument`
+        # expects for that library (self-contained markup for
+        # canvas2d/svg/aframe; plain JS for threejs).
+        _FAKE_CODE_BY_LIBRARY = {
+            "canvas2d": (
+                '<canvas id="art-piece-canvas" width="800" height="600"></canvas>'
+                "<script>const c=document.getElementById('art-piece-canvas');"
+                "const ctx=c.getContext('2d');ctx.fillStyle='teal';"
+                "ctx.fillRect(0,0,800,600);</script>"
+            ),
+            "svg": (
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">'
+                '<rect width="800" height="600" fill="teal" /></svg>'
+            ),
+            "threejs": (
+                "var scene = new THREE.Scene();"
+                "var camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);"
+                "camera.position.set(0, 0, 5);camera.lookAt(0, 0, 0);"
+                "var renderer = new THREE.WebGLRenderer();"
+                "var container = document.getElementById('art-piece-container');"
+                "renderer.setSize(container.clientWidth || 320, container.clientHeight || 240);"
+                "container.appendChild(renderer.domElement);"
+                "var geometry = new THREE.BoxGeometry(1, 1, 1);"
+                "var material = new THREE.MeshBasicMaterial({ color: 0x2a9d8f });"
+                "var cube = new THREE.Mesh(geometry, material);scene.add(cube);"
+                "window.__registerArtPieceCamera({"
+                "getPose: function () { return { x: camera.position.x,"
+                " y: camera.position.y, z: camera.position.z }; },"
+                "setPose: function (x, y, z) { camera.position.set(x, y, z);"
+                " camera.lookAt(0, 0, 0); },"
+                "reset: function () { camera.position.set(0, 0, 5);"
+                " camera.lookAt(0, 0, 0); } });"
+                "function animate() { requestAnimationFrame(animate);"
+                " cube.rotation.y += 0.01; renderer.render(scene, camera); }animate();"
+            ),
+            "aframe": (
+                '<a-scene><a-box position="0 1 -3" rotation="0 45 0" color="#2a9d8f">'
+                "</a-box><a-camera></a-camera></a-scene>"
+            ),
+        }
+
         class _FakeArtPieceProvider:
             def generate(self, prompt: str, library: str) -> ArtPieceResult:
                 return ArtPieceResult(
                     usage=AIUsageMetadata(
                         prompt_tokens=10, completion_tokens=20, estimated_cost_usd=0.0001
                     ),
-                    code=(
-                        '<canvas id="art-piece-canvas"></canvas>'
-                        "<script>const c=document.getElementById('art-piece-canvas');"
-                        "c.width=800;c.height=600;const ctx=c.getContext('2d');"
-                        "ctx.fillStyle='teal';ctx.fillRect(0,0,800,600);</script>"
-                    ),
+                    code=_FAKE_CODE_BY_LIBRARY.get(library, _FAKE_CODE_BY_LIBRARY["canvas2d"]),
                 )
 
         return _FakeArtPieceProvider()  # type: ignore[return-value]

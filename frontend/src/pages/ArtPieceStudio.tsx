@@ -6,6 +6,7 @@ import {
   generateArtPiece,
   updateArtPiece,
   type ArtPiece,
+  type ArtPieceCapabilitySet,
   type ArtPieceErrorBody,
   type ArtPieceLibrary,
 } from '../api/artPieces';
@@ -23,6 +24,43 @@ import {
 type GenerationPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
 const AI_MODEL_STORAGE_KEY = 'gesture-studio:ai-model-preference';
+
+// Issue #428: hand-steering and immersive navigation need a registered
+// engine camera (`window.__registerArtPieceCamera`) -- only the Three.js
+// and A-Frame sandbox documents ever call it (see
+// `artPieceSandbox.ts`'s `pieceLibrary` gate). Mirrors the same set
+// `ImmersiveArtPieceViewer.tsx` and `standaloneArtPieceRuntimeSource.ts`
+// each already hold independently.
+const SPATIAL_LIBRARIES = new Set<ArtPieceLibrary>(['threejs', 'aframe']);
+
+const CAPABILITY_OPTIONS: Array<{
+  key: keyof ArtPieceCapabilitySet;
+  label: string;
+  spatialOnly?: boolean;
+}> = [
+  { key: 'screenshot', label: 'Screenshot' },
+  { key: 'download', label: 'Download' },
+  { key: 'fullscreen', label: 'Fullscreen' },
+  { key: 'sound', label: 'Sound' },
+  { key: 'keyboard', label: 'Keyboard' },
+  { key: 'microphone', label: 'Microphone' },
+  { key: 'camera_view', label: 'Camera view' },
+  { key: 'hand_steering', label: 'Hand steering', spatialOnly: true },
+  { key: 'immersive', label: 'Immersive settings', spatialOnly: true },
+];
+
+/** Drops any capability that `library` cannot support -- defense in depth
+ * alongside disabling those checkboxes in the UI, so a stale selection
+ * carried over from a previous library choice can never reach the save
+ * request. */
+function sanitizeCapabilities(
+  capabilities: ArtPieceCapabilitySet,
+  library: ArtPieceLibrary,
+): ArtPieceCapabilitySet {
+  if (SPATIAL_LIBRARIES.has(library)) return capabilities;
+  const { hand_steering: _handSteering, immersive: _immersive, ...rest } = capabilities;
+  return rest;
+}
 
 function readStoredModel(): string {
   try {
@@ -96,6 +134,10 @@ function ArtPieceStudio() {
   const [description, setDescription] = useState('');
   const [savedPiece, setSavedPiece] = useState<ArtPiece | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Issue #428: no device/audio activation is ever implied by default --
+  // every capability starts unselected, for every new piece and every
+  // fresh generation.
+  const [capabilities, setCapabilities] = useState<ArtPieceCapabilitySet>({});
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -136,6 +178,9 @@ function ArtPieceStudio() {
     setPhase('pending');
     setError(null);
     setCode(null);
+    setCapabilities({});
+    setSavedPiece(null);
+    setSaveError(null);
 
     try {
       const result = await generateArtPiece(
@@ -198,11 +243,16 @@ function ArtPieceStudio() {
         prompt,
         engine: resultLibrary,
         source: code,
+        capabilities: sanitizeCapabilities(capabilities, resultLibrary),
       });
       setSavedPiece(piece);
     } catch {
       setSaveError('Could not save this art piece. Please try again.');
     }
+  }
+
+  function toggleCapability(key: keyof ArtPieceCapabilitySet) {
+    setCapabilities((current) => ({ ...current, [key]: !current[key] }));
   }
 
   async function handleStatusChange(nextStatus: ArtPiece['status']) {
@@ -311,6 +361,26 @@ function ArtPieceStudio() {
             srcDoc={sandboxDoc}
             style={{ width: '100%', height: 480, border: '1px solid #ccc' }}
           />
+          {phase === 'ready' && !savedPiece && (
+            <fieldset data-testid="art-piece-capabilities">
+              <legend>Capabilities</legend>
+              {CAPABILITY_OPTIONS.map(({ key, label, spatialOnly }) => {
+                const unsupported = spatialOnly && !SPATIAL_LIBRARIES.has(resultLibrary);
+                return (
+                  <label key={key} data-testid={`art-piece-capability-${key}`}>
+                    <input
+                      type="checkbox"
+                      checked={!unsupported && Boolean(capabilities[key])}
+                      disabled={unsupported}
+                      onChange={() => toggleCapability(key)}
+                    />
+                    {label}
+                    {unsupported && ' (Three.js/A-Frame only)'}
+                  </label>
+                );
+              })}
+            </fieldset>
+          )}
           {phase === 'ready' && (
             <>
               <button type="button" onClick={handleSave} data-testid="art-piece-save">

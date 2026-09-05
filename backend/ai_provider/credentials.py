@@ -26,3 +26,18 @@ def decrypt_mistral_key(ciphertext: bytes) -> str:
         except (InvalidToken, UnicodeDecodeError):
             continue
     raise ValueError("Could not decrypt Mistral credential.")
+
+
+def encrypt_provider_key(plaintext: str) -> bytes:
+    """Encrypt a provider credential using the same deployment root key."""
+    return _fernets()[0].encrypt(plaintext.encode("utf-8"))
+
+
+def decrypt_provider_key(ciphertext: bytes) -> str:
+    """Decrypt a provider credential, trying the configured rotation keys."""
+    for fernet in _fernets():
+        try:
+            return fernet.decrypt(ciphertext).decode("utf-8")
+        except (InvalidToken, UnicodeDecodeError):
+            continue
+    raise ValueError("Could not decrypt provider credential.")

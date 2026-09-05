@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 256351)
-Total output lines: 15682
+Warning: truncated output (original token count: 256379)
+Total output lines: 15684
 
 # Creatrweb Animation Studio Backlog
 
@@ -960,8 +960,7 @@ and, if so, close that gap; otherwise document the actual precedence between
 `[userenv]` and Replit Secrets so it does not need to be re-derived.
 Description: A 2026-08-23 production-readiness audit found `[userenv.production]`
 is empty, so it does not override `[userenv.shared]`'s dev-unsafe DEBUG/
-ALLOWED_HOSTS values. If those values reach the …206351 tokens truncated…o not reopen or duplicate anything; return to #356 only after the
-reviewed commit is pulled and republished, and otherwise use the next
+ALLOWED_HOSTS values. If those values reach the …206379 tokens truncated… otherwise use the next
 independent criterion-ready open task.
 
 ### Reopened Chrome route revalidation — 2026-09-03
@@ -2678,6 +2677,8 @@ all create/edit failure modes and browser evidence are covered.
 The draw.io foundation now also has a dedicated, schema-bounded Canvas2D
 adapter selected by `documentType: "drawio"`. It renders only the approved
 rect/ellipse/line/text object types and visible layers; unsupported XML-like
-content is not interpreted. The standalone HTML export path explicitly
-reports draw.io as unavailable until issue #412's packaging contract exists.
-Focused draw.io renderer tests and frontend typecheck/format/lint checks pass.
+content is not interpreted. The standalone HTML export path now packages the
+validated draw.io source with a dependency-free runtime using the same bounded
+object semantics. Focused draw.io renderer/export tests and frontend
+typecheck/format/lint checks pass. Public/embed deployment verification and
+thumbnail parity remain part of #412.

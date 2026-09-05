@@ -16184,3 +16184,44 @@ named Screenshot/Sound/Camera/Steer/Guide/Reset/Fullscreen contract from
 #434 through the shared embed route. Full regression pass across the
 sibling embed/immersive specs, the complete backend suite, and the
 complete frontend vitest/typecheck/lint/format checks all pass clean.
+
+## #448 closure reconciliation — 2026-09-05
+
+[#448](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/448) closed:
+`artPieceBundle.ts` had no immersive presentation mode at all — the
+downloadable ZIP from `/art-pieces/immersive/:id` packaged the exact same
+small, regular-preview export as the non-immersive viewer, so
+`ImmersiveArtPieceViewer.tsx`'s own walkable arrow-key/drag/wheel
+navigation never survived into the extracted artifact. Added
+`ArtPieceExportPresentation` ('regular'/'immersive') threaded through
+`generateArtPieceBundle` — `PieceStageControls.tsx` gains a `presentation`
+prop, `buildPieceCss` gives the immersive presentation a taller (640px)
+stage matching the live viewer, and `standaloneArtPieceRuntimeSource.ts`
+ports the exact navigation delta math `ImmersiveArtPieceViewer.tsx` uses,
+applied directly to the registered camera adapter (no parent window
+exists in a standalone export). Also ported the "Show hand gesture guide"
+dialog into the standalone runtime — previously entirely absent from
+every export despite being one of this issue's own named required
+controls. The Non-Camera immersive variant needed no new isolation code:
+#437's device-isolation guard and markup-only stripping are already
+presentation-agnostic.
+
+New coverage: `frontend/e2e/artPieceImmersiveZip.spec.ts` — downloads real
+Full and Non-Camera immersive ZIPs, extracts them, and executes (not
+greps) them offline at both viewports from both `file://` and a
+disposable localhost server: real arrow-key navigation moves the
+registered camera pose, Reset returns to the registration pose, all six
+named controls (Screenshot/Sound/Camera/Steer/Guide/Fullscreen) work
+under the Full contract with no recursive Download, and the Non-Camera
+variant keeps navigation/sound while a direct video-access attempt is
+refused. The one webkit-only camera sub-assertion failure is a third
+independent reproduction of the already-tracked #454
+`canvas.captureStream()` limitation, linked there rather than re-filed.
+Full regression pass across the entire art-piece E2E suite (47/47), the
+complete backend suite, and the complete frontend
+vitest/typecheck/lint/format checks all pass clean.
+
+This closes the last of the piece-readiness cluster's individual-artifact
+issues (#428-#438, #446-#448); remaining open work is #445 (release
+reconciliation), #449 (flat-piece spatial steering), and the account/
+admin/entitlement cluster (#420-#426, #439-#443).

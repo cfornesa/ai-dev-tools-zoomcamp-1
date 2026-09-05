@@ -525,7 +525,11 @@ def get_ai_provider() -> AISceneProvider:
         from ai_provider.e2e_provider import build_e2e_provider
         from ai_provider.e2e_scenario import get_current_scenario
 
-        return build_e2e_provider(get_current_scenario())
+        return build_e2e_provider(
+            get_current_scenario(),
+            vendor=_current_ai_vendor.get(),
+            model=_current_ai_model.get(),
+        )
     user = _current_ai_user.get()
     if user is None or not getattr(user, "is_authenticated", False):
         raise MissingPersonalMistralCredential

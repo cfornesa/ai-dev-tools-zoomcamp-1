@@ -20,9 +20,23 @@ clean) and committed/pushed directly to `main` as commit `71c8290`.
   (`frontend/e2e/support/openEditScene.ts`), commit `d80210f`. Verified
   8/8 scenarios pass across chromium/firefox/webkit (24/24 total) against
   a disposable PostgreSQL-backed stack.
+- **#444 (CLOSED, completed):** same stage-menu restructuring also gated
+  `publishingAndRemix.spec.ts`'s Publication status trigger and the
+  public/anonymous viewer's own stage chrome/camera disclosure. Fixed via
+  `openPieceControlsMenu`/`closePieceControlsMenu` added to the shared
+  helper, plus two latent bugs surfaced once reachable: an unanchored
+  substring match colliding with `StageControlsPopover`'s own "Close X"
+  button, and an `isVisible()` check racing page mount right after
+  `goto()`. Also corrected a stale `flexDirection: 'row'` assertion (now
+  `column`, matching `manual2dStageChrome.spec.ts`'s already-current
+  design) and several heading locators. Commit `20e4767`. Verified 23/24
+  chromium scenarios pass; the one failure (`10-second synthetic camera
+  diagnostics`, `inferenceFps` ~15 vs required >20) is a host-CPU-load
+  benchmark unrelated to this fix, covered by #419/#445's hardware-
+  boundary scope, not claimed fixed here.
 - Remaining browser-suite work stays open under #419 (fixture/race
-  reconciliation), #444 (publishing/remix stage-local entry points), and
-  #450 (responsive-gallery Publish fixture) — none of these were claimed
+  reconciliation, plus the classified camera-fps hardware boundary above)
+  and #450 (responsive-gallery Publish fixture) — neither was claimed
   fixed by the above.
 - PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
   duplicates the content now on `main` via commit `71c8290`; left open

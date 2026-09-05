@@ -77,6 +77,22 @@ clean) and committed/pushed directly to `main` as commit `71c8290`.
   of static copy. Added `frontend/e2e/artPieceSoundRuntime.spec.ts`.
   Commit `1105096`. Verified 9/9 across chromium/firefox/webkit; existing
   `artPieces.spec.ts`/`artPieceSvgCapture.spec.ts` unaffected.
+- **#431 (CLOSED, completed):** `enable-camera` similarly had no runtime
+  consumer -- implemented a real video-only `getUserMedia` driving a
+  `<video>` overlay (`pointer-events: none`, adjustable opacity via
+  `set-camera-opacity`), a device-`ended` track listener distinct from
+  explicit disable, and `compositeScreenshot()` so a screenshot rasterizes
+  the camera on top of the artwork in the same stacking order it renders
+  live (reused by both canvas2d and #433's SVG path).
+  `ART_PIECE_IFRAME_ALLOW` widened to `microphone; camera`. Added
+  `frontend/e2e/artPieceCameraRuntime.spec.ts`. Commit `17c7612`. Verified
+  5/6 (chromium/firefox full lifecycle + all-three disabled-capability
+  scenario); the one webkit-only granted-camera timeout is isolated to
+  this suite's own `captureStream()` fake-stream mock, not the product
+  code (identical implementation passes with real acknowledged state on
+  chromium/firefox) -- filed as
+  [#454](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/454)
+  rather than fixed here.
 - PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
   duplicates the content now on `main` via commit `71c8290`; left open
   pending full CI green, per repository owner's condition.

@@ -39,6 +39,33 @@ function embedSnippetFor(publicId: string): string {
   return `<iframe src="${src}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
 }
 
+/**
+ * Issue #447: the "CMS" embed variant -- the *same* chrome-less
+ * `embed/art-pieces/immersive/:id` route and runtime as the Custom
+ * snippet above (there is no separate CMS-specific server route or
+ * component; "one shared immersive runtime" is this issue's own
+ * requirement), wrapped the way a CMS block/oEmbed typically needs: a
+ * responsive, aspect-ratio-locked container (the padding-bottom trick,
+ * since `aspect-ratio` support varies across older CMS theme CSS resets)
+ * with the iframe absolutely positioned to fill it, instead of the
+ * Custom snippet's fixed 800x600 pixel box a host page would have to
+ * resize by hand. Because it's the exact same iframe element and `src`,
+ * resizing the wrapper (a CMS theme's responsive column width changing,
+ * e.g. on window resize) never reloads or remounts the iframe -- the
+ * piece's running state (camera pose, active sound, navigation) is
+ * preserved by construction, not by anything this snippet does
+ * specially.
+ */
+function cmsEmbedSnippetFor(publicId: string): string {
+  const src = `${window.location.origin}/embed/art-pieces/immersive/${publicId}`;
+  return (
+    '<div style="position:relative;width:100%;padding-bottom:75%;height:0;overflow:hidden;">' +
+    `<iframe src="${src}" frameborder="0" allowfullscreen ` +
+    'style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe>' +
+    '</div>'
+  );
+}
+
 function ImmersiveArtPieceViewer() {
   const { id } = useParams<{ id: string }>();
   const [piece, setPiece] = useState<ArtPiece | null>(null);
@@ -49,7 +76,7 @@ function ImmersiveArtPieceViewer() {
   const [navigationError, setNavigationError] = useState<
     'unsupported-engine' | 'no-camera-registered' | null
   >(null);
-  const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
+  const [embedVariant, setEmbedVariant] = useState<'none' | 'custom' | 'cms'>('none');
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const stageRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -63,9 +90,10 @@ function ImmersiveArtPieceViewer() {
   }, [id]);
 
   async function handleCopyEmbedSnippet() {
-    if (!id) return;
+    if (!id || embedVariant === 'none') return;
     try {
-      await navigator.clipboard.writeText(embedSnippetFor(id));
+      const snippet = embedVariant === 'cms' ? cmsEmbedSnippetFor(id) : embedSnippetFor(id);
+      await navigator.clipboard.writeText(snippet);
       setEmbedCopyStatus('copied');
     } catch {
       setEmbedCopyStatus('failed');
@@ -212,27 +240,44 @@ function ImmersiveArtPieceViewer() {
             <button
               type="button"
               onClick={() => {
-                setShowEmbedSnippet((current) => !current);
+                setEmbedVariant((current) => (current === 'custom' ? 'none' : 'custom'));
                 setEmbedCopyStatus('idle');
               }}
-              aria-expanded={showEmbedSnippet}
+              aria-expanded={embedVariant === 'custom'}
               data-testid="toggle-immersive-embed-snippet"
             >
-              {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
+              {embedVariant === 'custom' ? 'Hide embed code' : 'Embed'}
+            </button>{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setEmbedVariant((current) => (current === 'cms' ? 'none' : 'cms'));
+                setEmbedCopyStatus('idle');
+              }}
+              aria-expanded={embedVariant === 'cms'}
+              data-testid="toggle-immersive-cms-embed-snippet"
+            >
+              {embedVariant === 'cms' ? 'Hide CMS embed code' : 'CMS embed'}
             </button>
           </p>
-          {showEmbedSnippet && id && (
+          {embedVariant !== 'none' && id && (
             <div
               className="immersive-art-piece-embed-snippet"
-              data-testid="immersive-embed-snippet-panel"
+              data-testid={
+                embedVariant === 'cms'
+                  ? 'immersive-cms-embed-snippet-panel'
+                  : 'immersive-embed-snippet-panel'
+              }
             >
               <label htmlFor="immersive-art-piece-embed-snippet-textarea">
-                Embed this immersive piece on another site
+                {embedVariant === 'cms'
+                  ? 'Embed this immersive piece in a CMS block (responsive wrapper)'
+                  : 'Embed this immersive piece on another site'}
               </label>
               <textarea
                 id="immersive-art-piece-embed-snippet-textarea"
                 readOnly
-                value={embedSnippetFor(id)}
+                value={embedVariant === 'cms' ? cmsEmbedSnippetFor(id) : embedSnippetFor(id)}
                 onFocus={(event) => event.currentTarget.select()}
               />
               <button type="button" onClick={() => void handleCopyEmbedSnippet()}>

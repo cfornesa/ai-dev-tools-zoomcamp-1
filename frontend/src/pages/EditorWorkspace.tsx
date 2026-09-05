@@ -2843,6 +2843,12 @@ function EditorWorkspace() {
             disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
           />
           <ToolbarButton
+            label="Rotate selected draw.io object clockwise"
+            glyph="↻"
+            onClick={() => sceneEditor.rotateSelectedDrawioObject(15)}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
+          />
+          <ToolbarButton
             label="Duplicate selected draw.io object"
             glyph="⧉"
             onClick={() => sceneEditor.duplicateSelectedDrawioObject()}

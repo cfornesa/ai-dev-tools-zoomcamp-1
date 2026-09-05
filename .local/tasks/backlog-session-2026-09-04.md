@@ -234,14 +234,14 @@ is now evidence-based rather than a blanket retention of all original
 blockers.
 ## Current evidence reconciliation — 2026-09-05
 
-The authoritative GitHub state is now 8 completed issues (#404–#412 and
-#416) and 4 open issues (#413–#415). #408 closed after the expanded 38-test
+The authoritative GitHub state is now 9 completed issues (#404–#410, #412,
+and #416) and 4 open issues (#411, #413–#415). #408 closed after the expanded 38-test
 deterministic create/edit matrix across Mistral, Gemini, and DeepSeek. #416
 closed after the Google-only policy was documented, enforced, and verified by
 desktop/mobile browser tests. Draw.io browser coverage now passes object
-move/resize/duplicate, layer rename, save, and reload; #410/#411 remain open
-because creation/reorder/visibility/locking/deletion and fixed-viewport
-rendered evidence were still incomplete. #412 then closed after focused
+move/resize/duplicate, layer rename, save, and reload; #411 remains open
+because layer drag/drop and fixed-viewport rendered evidence are still
+incomplete. #412 then closed after focused
 backend/frontend coverage and a real Chromium flow verified published
 public, embed, thumbnail, and full-download behavior for a supported Draw.io
 scene.
@@ -263,13 +263,14 @@ by invoking `python3`, removing the separate missing-`python` blocker.
 The next implementation increment advanced #410: validated active-layer
 creation tools now cover the approved Draw.io rectangle, ellipse, line, and
 text subset, and Chromium verifies keyboard creation/deletion alongside the
-existing object and save/reload flow. #410 remains open for rotation,
-bidirectional canvas/outline selection, and unsupported-object UX evidence.
+existing object and save/reload flow. #410 was subsequently closed after
+rotation, bidirectional canvas/outline selection, and unsupported-object UX
+evidence were added.
 #414's daily quota writes are now atomic in the 2D, 3D, and art-piece paths;
 its real two-worker runtime proof remains outstanding.
 
 The following #410 increment adds bounded object rotation to the shared schema,
 Canvas2D adapter, editor mutation path, and toolbar, and exposes Draw.io
 objects in their owning outline layers. Focused tests and Chromium acceptance
-pass; unsupported-object messaging and complete pointer/outline parity remain
-open acceptance work.
+pass; #410 is now closed and #411 remains the separate outer-layer parity
+gate.

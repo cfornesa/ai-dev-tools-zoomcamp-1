@@ -169,6 +169,67 @@ class Plan(models.Model):
         return f"{self.plan_key} plan (daily_ai_requests={self.daily_ai_requests})"
 
 
+class Subscription(models.Model):
+    """A user's PayPal subscription state (issue #424).
+
+    Server-to-server synchronization only -- checkout/status UI is #440.
+    `paypal_subscription_id` is PayPal's own stable identifier for this
+    subscription; `scenes.billing` is the only code that should write
+    this model, always through a `BillingEvent` in the same transaction.
+    """
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        CANCELLED = "cancelled", "Cancelled"
+        SUSPENDED = "suspended", "Suspended"
+        EXPIRED = "expired", "Expired"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="subscriptions"
+    )
+    paypal_subscription_id = models.CharField(max_length=64, unique=True)
+    plan_key = models.CharField(max_length=32)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
+    # The last day this subscription's paid plan remains in effect.
+    # Cancellation does not clear this (paid features stay through it);
+    # a failed payment never advances it; a refund only ever reverses the
+    # period it names -- see scenes/billing.py's own policy docstring.
+    paid_through = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.paypal_subscription_id} ({self.status}) for user {self.user_id}"
+
+
+class BillingEvent(models.Model):
+    """Idempotency and audit ledger for one PayPal webhook event (#424).
+
+    Keyed by PayPal's own per-delivery `event_id` -- a duplicate/replayed
+    delivery is detected here before any state changes, never by
+    re-deriving it from subscription state. Deliberately never stores the
+    raw webhook payload (which can include billing details): only the
+    minimal fields needed for audit and duplicate detection.
+    """
+
+    class Outcome(models.TextChoices):
+        APPLIED = "applied", "Applied"
+        IGNORED = "ignored", "Ignored"
+        REJECTED = "rejected", "Rejected"
+
+    paypal_event_id = models.CharField(max_length=64, unique=True)
+    event_type = models.CharField(max_length=64)
+    subscription = models.ForeignKey(
+        Subscription, on_delete=models.SET_NULL, null=True, related_name="events"
+    )
+    outcome = models.CharField(max_length=16, choices=Outcome.choices)
+    detail = models.CharField(max_length=200, blank=True, default="")
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.event_type} ({self.outcome}) {self.paypal_event_id}"
+
+
 class MistralCredential(models.Model):
     """One encrypted, owner-scoped Mistral key; plaintext never reaches a model field."""
 

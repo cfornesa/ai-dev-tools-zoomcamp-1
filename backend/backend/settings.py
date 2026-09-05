@@ -213,6 +213,29 @@ if bool(GITHUB_OAUTH_CLIENT_ID) != bool(GITHUB_OAUTH_CLIENT_SECRET):
     )
 GITHUB_OAUTH_ENABLED = bool(GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET)
 
+# PayPal subscription billing (issue #424) is optional, same all-or-none
+# pattern as GitHub above: PAYPAL_CLIENT_ID/PAYPAL_CLIENT_SECRET/
+# PAYPAL_WEBHOOK_ID must all be set together to enable it, or all left
+# unset to keep it disabled (the webhook endpoint 404s -- see
+# scenes.paypal_gate, mirroring backend.oauth_gates). No merchant
+# credentials are required to engineer or test this service -- see #445.
+PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', '').strip()
+PAYPAL_CLIENT_SECRET = os.environ.get('PAYPAL_CLIENT_SECRET', '').strip()
+PAYPAL_WEBHOOK_ID = os.environ.get('PAYPAL_WEBHOOK_ID', '').strip()
+_paypal_fields_set = [bool(PAYPAL_CLIENT_ID), bool(PAYPAL_CLIENT_SECRET), bool(PAYPAL_WEBHOOK_ID)]
+if any(_paypal_fields_set) and not all(_paypal_fields_set):
+    raise ImproperlyConfigured(
+        "PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, and PAYPAL_WEBHOOK_ID must either "
+        "all be set (to enable PayPal billing) or all be left unset (to keep it "
+        "disabled). Only some of the three are currently set."
+    )
+PAYPAL_ENABLED = all(_paypal_fields_set)
+# "sandbox" (default) or "live" -- which PayPal API base URL the real
+# adapter (scenes/paypal_adapter.py) calls.
+PAYPAL_MODE = os.environ.get('PAYPAL_MODE', 'sandbox').strip()
+if PAYPAL_MODE not in ('sandbox', 'live'):
+    raise ImproperlyConfigured("PAYPAL_MODE must be 'sandbox' or 'live'.")
+
 # Environment-configured application-admin identities (issue #421). Empty by
 # default (grants nobody). See backend.admin_identities for the finite
 # `email:`/`username:` syntax and scenes.management.commands

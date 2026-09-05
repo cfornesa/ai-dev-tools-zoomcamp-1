@@ -50,12 +50,14 @@ from scenes.art_piece_persistence import (
     PublicArtPieceListView,
     PublicArtPieceThumbnailView,
 )
+from scenes.billing_api import PayPalWebhookView
 from scenes.credentials_api import MistralCredentialView
 from scenes.provider_credentials_api import ProviderCredentialView
 
 urlpatterns = [
     path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
     path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
+    path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
     path("account/mistral-credential/", MistralCredentialView.as_view(), name="mistral-credential"),
     path(
         "account/provider-credentials/",

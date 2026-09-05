@@ -37,6 +37,10 @@ ALL_SETTINGS_ENV_VARS = REQUIRED_ENV_VARS + [
     "GITHUB_OAUTH_CLIENT_ID",
     "GITHUB_OAUTH_CLIENT_SECRET",
     "ADMIN_IDENTITIES",
+    "PAYPAL_CLIENT_ID",
+    "PAYPAL_CLIENT_SECRET",
+    "PAYPAL_WEBHOOK_ID",
+    "PAYPAL_MODE",
 ]
 
 VALID_ENV = {
@@ -282,4 +286,47 @@ def test_admin_identities_rejects_malformed_entries(monkeypatch, malformed):
     env["ADMIN_IDENTITIES"] = malformed
 
     with pytest.raises(ImproperlyConfigured, match="ADMIN_IDENTITIES entry"):
+        _reload_settings(monkeypatch, env)
+
+
+def test_paypal_disabled_by_default_when_unset(monkeypatch):
+    """PayPal billing (issue #424) is off unless explicitly configured."""
+    settings_module = _reload_settings(monkeypatch, VALID_ENV)
+
+    assert settings_module.PAYPAL_ENABLED is False
+    assert settings_module.PAYPAL_MODE == "sandbox"
+
+
+def test_paypal_enabled_when_all_three_variables_set(monkeypatch):
+    env = dict(VALID_ENV)
+    env["PAYPAL_CLIENT_ID"] = "test-client-id"
+    env["PAYPAL_CLIENT_SECRET"] = "test-client-secret"
+    env["PAYPAL_WEBHOOK_ID"] = "test-webhook-id"
+
+    settings_module = _reload_settings(monkeypatch, env)
+
+    assert settings_module.PAYPAL_ENABLED is True
+
+
+@pytest.mark.parametrize(
+    "partial_env",
+    [
+        {"PAYPAL_CLIENT_ID": "only-the-id"},
+        {"PAYPAL_CLIENT_ID": "id", "PAYPAL_CLIENT_SECRET": "secret"},
+        {"PAYPAL_WEBHOOK_ID": "only-the-webhook-id"},
+    ],
+)
+def test_paypal_partial_config_raises_clear_error(monkeypatch, partial_env):
+    env = dict(VALID_ENV)
+    env.update(partial_env)
+
+    with pytest.raises(ImproperlyConfigured, match="PAYPAL_CLIENT_ID"):
+        _reload_settings(monkeypatch, env)
+
+
+def test_paypal_mode_rejects_unknown_value(monkeypatch):
+    env = dict(VALID_ENV)
+    env["PAYPAL_MODE"] = "production"
+
+    with pytest.raises(ImproperlyConfigured, match="PAYPAL_MODE"):
         _reload_settings(monkeypatch, env)

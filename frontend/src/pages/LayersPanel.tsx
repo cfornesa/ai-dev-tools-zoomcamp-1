@@ -1337,7 +1337,9 @@ function LayersPanel({
         )}
       </div>
 
-      {sceneEditor.outline.length === 0 ? (
+      {sceneEditor.workingCopy?.documentType === 'drawio' ? (
+        <DrawioLayerRows sceneEditor={sceneEditor} onRowSelect={onRowSelect} />
+      ) : sceneEditor.outline.length === 0 ? (
         <p>No layers yet.</p>
       ) : (
         <ul aria-label="Scene outline" className="editor-outline-list">
@@ -1386,6 +1388,64 @@ function LayersPanel({
         </ul>
       )}
     </div>
+  );
+}
+
+function DrawioLayerRows({
+  sceneEditor,
+  onRowSelect,
+}: {
+  sceneEditor: SceneEditor;
+  onRowSelect?: (id: string) => void;
+}) {
+  return (
+    <ul aria-label="Draw.io layers" className="editor-outline-list">
+      {[...sceneEditor.layers]
+        .sort((a, b) => a.order - b.order)
+        .map((layer) => (
+          <li key={layer.id} className="editor-outline-row editor-outline-row-layer">
+            <button
+              type="button"
+              className="editor-outline-layer-name"
+              aria-label={`Select draw.io layer ${layer.name}`}
+              onClick={() => {
+                sceneEditor.selectLayer(layer.id);
+                onRowSelect?.(layer.id);
+              }}
+            >
+              {layer.name}
+            </button>
+            <button
+              type="button"
+              aria-label={`Move ${layer.name} up`}
+              onClick={() => sceneEditor.moveLayer(layer.id, 'up')}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              aria-label={`Move ${layer.name} down`}
+              onClick={() => sceneEditor.moveLayer(layer.id, 'down')}
+            >
+              ↓
+            </button>
+            <button
+              type="button"
+              aria-label={`${layer.visible ? 'Hide' : 'Show'} ${layer.name}`}
+              onClick={() => sceneEditor.toggleLayerVisible(layer.id)}
+            >
+              {layer.visible ? 'Hide' : 'Show'}
+            </button>
+            <button
+              type="button"
+              aria-label={`${layer.locked ? 'Unlock' : 'Lock'} ${layer.name}`}
+              onClick={() => sceneEditor.toggleLayerLocked(layer.id)}
+            >
+              {layer.locked ? 'Unlock' : 'Lock'}
+            </button>
+          </li>
+        ))}
+    </ul>
   );
 }
 

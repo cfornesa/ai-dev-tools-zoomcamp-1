@@ -10,6 +10,7 @@ skip themselves otherwise), matching every other PostgreSQL-only suite
 in this project (tests/test_health.py, tests/test_project_scene_version_models.py).
 """
 
+import copy
 import json
 import threading
 from pathlib import Path
@@ -64,6 +65,63 @@ def project(owner):
 
 def _versions_url(project):
     return f"/api/projects/{project.public_id}/versions/"
+
+
+def _drawio_scene():
+    scene = copy.deepcopy(BLANK_SCENE)
+    scene.update(
+        {
+            "documentType": "drawio",
+            "drawio": {
+                "formatVersion": 1,
+                "layers": [
+                    {"id": "layer-a", "name": "Main", "order": 0, "visible": True, "locked": False}
+                ],
+                "objects": [
+                    {
+                        "id": "object-a",
+                        "type": "rect",
+                        "layerId": "layer-a",
+                        "parentId": None,
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 50,
+                    }
+                ],
+            },
+        }
+    )
+    return scene
+
+
+@pytest.mark.django_db
+def test_drawio_scene_survives_save_reload_and_restore(owner_client, project):
+    drawio_scene = _drawio_scene()
+    first = owner_client.post(
+        _versions_url(project),
+        {"scene_json": drawio_scene, "origin": "manual"},
+        format="json",
+    )
+    assert first.status_code == 201
+    first_body = first.json()
+
+    # Move the project away from the draw.io version, then restore the exact
+    # immutable snapshot through the real restore endpoint.
+    owner_client.post(
+        _versions_url(project), {"scene_json": BLANK_SCENE, "origin": "manual"}, format="json"
+    )
+    reloaded = owner_client.get(
+        f"{_versions_url(project)}{first_body['id']}/"
+    )
+    assert reloaded.status_code == 200
+    assert reloaded.json()["scene_json"] == drawio_scene
+
+    restored = owner_client.post(
+        f"/api/projects/{project.public_id}/versions/{first_body['id']}/restore/"
+    )
+    assert restored.status_code == 201
+    assert restored.json()["scene_json"] == drawio_scene
 
 
 @pytest.mark.django_db

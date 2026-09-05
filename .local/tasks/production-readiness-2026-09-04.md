@@ -110,3 +110,15 @@ layer/editor suite passes 45 tests. The active Chrome production shell at
 `https://animate.creatrweb.com/` remains healthy and authenticated, but it is
 not evidence that this branch is deployed; no workflow run is associated with
 the branch head, so deployment parity remains unverified.
+
+## Browser-QA follow-up — 2026-09-05
+
+The disposable PostgreSQL harness was exercised against the AI/recovery spec.
+Chromium proved provider/model selection and PostgreSQL draft-sync
+concurrency, but the full spec was not marked passed: autosave scenarios
+timed out before finding the stage-authoring control. This is an
+E2E/editor-surface integration blocker, not evidence of production parity.
+The harness now accepts `BROWSER_QA_PLAYWRIGHT_PROJECT` (`chromium`,
+`firefox`, or `webkit`) to isolate browser failures. The active Chrome
+production shell remains healthy at `https://animate.creatrweb.com/`, but the
+branch is not deployed there.

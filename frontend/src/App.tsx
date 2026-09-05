@@ -129,6 +129,17 @@ function App() {
                 Download, Sound, Piece controls, Steer, Guide, Fullscreen)
                 fully functional, since that belongs to the embed too. */}
             <Route path="embed/art-pieces/:id" element={<PublicArtPieceViewer />} />
+            {/* Issue #446: the immersive counterpart of `embed/art-pieces/:id`
+                above -- chrome-less, sibling to the Layout-wrapped
+                `art-pieces/immersive/:id` route. Reuses
+                `ImmersiveArtPieceViewer.tsx` unchanged in topology (it
+                reads no Layout context); the component's own
+                `isEmbedRoute` check hides its page-level title/
+                instructions/embed-button/back-link on this route while
+                keeping the piece's own stage and shared `PieceStageControls`
+                toolbar fully functional, since that belongs to the embed
+                too. */}
+            <Route path="embed/art-pieces/immersive/:id" element={<ImmersiveArtPieceViewer />} />
             {/* Issue #311: the immersive first-person free-fly view --
                 chrome-less like the embed routes above (this is a focused,
                 full-page viewing experience, opened in a new tab from

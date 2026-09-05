@@ -25,6 +25,20 @@ const KEY_STEP = 0.3;
 const DRAG_SENSITIVITY = 0.02;
 const ZOOM_STEP = 0.5;
 
+/** Issue #446: `PublicArtPieceViewer.tsx`'s own `embed/art-pieces/:id`
+ * convention, adapted for the immersive route -- one component serves
+ * both the full-chrome `/art-pieces/immersive/:id` route and the
+ * chrome-less `/embed/art-pieces/immersive/:id` sibling route
+ * (registered outside the Layout-wrapped route group in App.tsx, so no
+ * app-shell nav/header ever renders there either). Only this
+ * component's own header/instructions/back-link markup differs; the
+ * stage and its one shared `PieceStageControls` toolbar are identical in
+ * both modes -- no duplicated wrapper controls. */
+function embedSnippetFor(publicId: string): string {
+  const src = `${window.location.origin}/embed/art-pieces/immersive/${publicId}`;
+  return `<iframe src="${src}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
+}
+
 function ImmersiveArtPieceViewer() {
   const { id } = useParams<{ id: string }>();
   const [piece, setPiece] = useState<ArtPiece | null>(null);
@@ -35,6 +49,8 @@ function ImmersiveArtPieceViewer() {
   const [navigationError, setNavigationError] = useState<
     'unsupported-engine' | 'no-camera-registered' | null
   >(null);
+  const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
+  const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const stageRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const dragRef = useRef<{ x: number; y: number } | null>(null);
@@ -45,6 +61,16 @@ function ImmersiveArtPieceViewer() {
       .then(setPiece)
       .catch(() => setUnavailable(true));
   }, [id]);
+
+  async function handleCopyEmbedSnippet() {
+    if (!id) return;
+    try {
+      await navigator.clipboard.writeText(embedSnippetFor(id));
+      setEmbedCopyStatus('copied');
+    } catch {
+      setEmbedCopyStatus('failed');
+    }
+  }
 
   function navigate(delta: { dx?: number; dy?: number; dz?: number }) {
     iframeRef.current?.contentWindow?.postMessage(
@@ -156,27 +182,74 @@ function ImmersiveArtPieceViewer() {
 
   const isSpatial = SPATIAL_LIBRARIES.has(piece.engine);
   const immersiveHref = `/art-pieces/immersive/${piece.public_id}`;
+  const isEmbedRoute = window.location.pathname.startsWith('/embed/art-pieces/immersive/');
 
   return (
-    <section className="immersive-art-piece-viewer" aria-labelledby="immersive-art-piece-heading">
-      <header>
-        <h2 id="immersive-art-piece-heading">{piece.title}</h2>
-        {isSpatial ? (
-          <p role="note">
-            Drag to look around, scroll to zoom, and use the arrow keys to travel through the piece.
-            Use Reset in Piece controls to return home.
+    <section
+      className="immersive-art-piece-viewer"
+      aria-labelledby={isEmbedRoute ? undefined : 'immersive-art-piece-heading'}
+      data-embed-route={isEmbedRoute || undefined}
+    >
+      {!isEmbedRoute && (
+        <header>
+          <h2 id="immersive-art-piece-heading">{piece.title}</h2>
+          {isSpatial ? (
+            <p role="note">
+              Drag to look around, scroll to zoom, and use the arrow keys to travel through the
+              piece. Use Reset in Piece controls to return home.
+            </p>
+          ) : (
+            <p role="note" data-testid="navigation-unsupported">
+              Walkable navigation isn't available for this piece's renderer.
+            </p>
+          )}
+          {navigationError === 'no-camera-registered' && (
+            <p role="status" data-testid="navigation-status">
+              This piece hasn't set up a walkable camera yet.
+            </p>
+          )}
+          <p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowEmbedSnippet((current) => !current);
+                setEmbedCopyStatus('idle');
+              }}
+              aria-expanded={showEmbedSnippet}
+              data-testid="toggle-immersive-embed-snippet"
+            >
+              {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
+            </button>
           </p>
-        ) : (
-          <p role="note" data-testid="navigation-unsupported">
-            Walkable navigation isn't available for this piece's renderer.
-          </p>
-        )}
-        {navigationError === 'no-camera-registered' && (
-          <p role="status" data-testid="navigation-status">
-            This piece hasn't set up a walkable camera yet.
-          </p>
-        )}
-      </header>
+          {showEmbedSnippet && id && (
+            <div
+              className="immersive-art-piece-embed-snippet"
+              data-testid="immersive-embed-snippet-panel"
+            >
+              <label htmlFor="immersive-art-piece-embed-snippet-textarea">
+                Embed this immersive piece on another site
+              </label>
+              <textarea
+                id="immersive-art-piece-embed-snippet-textarea"
+                readOnly
+                value={embedSnippetFor(id)}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+              <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
+                Copy
+              </button>
+              {embedCopyStatus === 'copied' && (
+                <p role="status" aria-live="polite">
+                  Copied!
+                </p>
+              )}
+              {embedCopyStatus === 'failed' && (
+                <p role="alert">Could not copy automatically -- select and copy the text above.</p>
+              )}
+            </div>
+          )}
+        </header>
+      )}
       <div
         ref={stageRef}
         className="art-piece-stage immersive-art-piece-stage"
@@ -225,7 +298,7 @@ function ImmersiveArtPieceViewer() {
           {navigationPose.x.toFixed(2)},{navigationPose.y.toFixed(2)},{navigationPose.z.toFixed(2)}
         </p>
       )}
-      <Link to={`/art-pieces/p/${piece.public_id}`}>Back to regular viewer</Link>
+      {!isEmbedRoute && <Link to={`/art-pieces/p/${piece.public_id}`}>Back to regular viewer</Link>}
     </section>
   );
 }

@@ -39,8 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  function signOutLocally() {
+    setAuthResult({ status: 'signed-out', user: null });
+  }
+
   return (
-    <AuthContext.Provider value={{ ...authResult, logout, logoutError }}>
+    <AuthContext.Provider value={{ ...authResult, logout, logoutError, signOutLocally }}>
       {children}
     </AuthContext.Provider>
   );

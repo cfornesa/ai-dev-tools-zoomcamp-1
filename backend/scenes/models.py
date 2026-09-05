@@ -252,6 +252,30 @@ class IdentityLinkEvent(models.Model):
         return f"{self.action} {self.provider} for user {self.user_id}"
 
 
+class SessionMetadata(models.Model):
+    """Owner-facing metadata for one Django session (issue #441).
+
+    Django's own `Session` model stores only an opaque `session_key` and
+    encoded `session_data` -- nothing a user could recognize their own
+    device by, and no owner field to query by at all. This is a thin,
+    separately-maintained side table keyed 1:1 by `session_key`,
+    populated at login (`scenes.account_session_signals`) and read
+    (never written) by `scenes.account_sessions`. The literal
+    `session_key` itself is never exposed to the client -- see that
+    module's own docstring for why.
+    """
+
+    session_key = models.CharField(max_length=40, unique=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="session_metadata"
+    )
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"Session metadata for user {self.user_id}"
+
+
 class MistralCredential(models.Model):
     """One encrypted, owner-scoped Mistral key; plaintext never reaches a model field."""
 

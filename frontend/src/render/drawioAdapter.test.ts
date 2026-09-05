@@ -48,4 +48,16 @@ describe('draw.io renderer boundary', () => {
     expect(preview.getCanvasElement()).not.toBeNull();
     expect(preview.getCanvasElement()?.width).toBeGreaterThan(0);
   });
+
+  it('reports a specific validation reason for unsupported draw.io input', () => {
+    const invalid = JSON.parse(JSON.stringify(drawioScene())) as ReturnType<typeof drawioScene>;
+    const drawio = invalid.drawio as { objects: Array<Record<string, unknown>> };
+    drawio.objects[0].script = 'alert(1)';
+    const preview = createScenePreview(
+      document.body.appendChild(document.createElement('div')),
+      'drawio',
+    );
+    previews.push(preview);
+    expect(() => preview.render(invalid)).toThrow(/script|unknown|additional/i);
+  });
 });

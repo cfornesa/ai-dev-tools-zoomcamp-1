@@ -49,9 +49,15 @@ from scenes.art_piece_persistence import (
     PublicArtPieceThumbnailView,
 )
 from scenes.credentials_api import MistralCredentialView
+from scenes.provider_credentials_api import ProviderCredentialView
 
 urlpatterns = [
     path("account/mistral-credential/", MistralCredentialView.as_view(), name="mistral-credential"),
+    path(
+        "account/provider-credentials/",
+        ProviderCredentialView.as_view(),
+        name="provider-credentials",
+    ),
     path(
         "account/mistral-model-preferences/",
         MistralModelPreferenceListCreateView.as_view(),

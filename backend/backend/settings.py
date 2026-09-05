@@ -182,7 +182,7 @@ if DEBUG:
 else:
     CACHES = {
         "default": {
-            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "BACKEND": "backend.database_cache.AtomicDatabaseCache",
             "LOCATION": "django_cache",
             "TIMEOUT": None,
         }

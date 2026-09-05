@@ -318,3 +318,53 @@ jobs:
 
 
 def test_mutable_refs_and_missing_refs_report_file_and_line_diagnostics(
+    workflows_dir: Path,
+):
+    write_workflow(
+        workflows_dir,
+        "new.yaml",
+        """\
+name: Mutable references
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@main
+      - uses: actions/cache
+""",
+    )
+
+    errors = PIN_CHECKER.find_unpinned_actions(workflows_dir)
+
+    assert errors == [
+        ".github/workflows/new.yaml:7: actions/checkout@v4 must use a full 40-character commit SHA",
+        ".github/workflows/new.yaml:8: actions/setup-python@main "
+        "must use a full 40-character commit SHA",
+        ".github/workflows/new.yaml:9: actions/cache@<missing ref> "
+        "must use a full 40-character commit SHA",
+    ]
+
+
+def test_local_actions_and_uses_like_text_in_run_blocks_are_allowed(workflows_dir: Path):
+    write_workflow(
+        workflows_dir,
+        "local-actions.yml",
+        """\
+name: Local actions
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/check
+      - run: |
+          echo "uses: example/action@v4"
+          uses: another/action@main
+      - run: >
+          echo "uses: folded/action@v1"
+""",
+    )
+
+    assert PIN_CHECKER.find_unpinned_actions(workflows_dir) == []

@@ -280,6 +280,13 @@ interoperability. The authoritative state is now 11 completed issues and 2
 open issues: #414 still needs real two-worker production-cache evidence, and
 #415 still needs exact published process-lifecycle evidence.
 
+The isolated PostgreSQL runtime check exposed that Django's stock
+DatabaseCache.incr was not atomic. Production now uses AtomicDatabaseCache
+with PostgreSQL row locking; the corrected two-process test passes 4/4. #414
+remains open only for endpoint-level multi-worker sixth-request proof and
+deployment availability checks; CI run 481 is queued for clean-host
+confirmation.
+
 The following #410 increment adds bounded object rotation to the shared schema,
 Canvas2D adapter, editor mutation path, and toolbar, and exposes Draw.io
 objects in their owning outline layers. Focused tests and Chromium acceptance

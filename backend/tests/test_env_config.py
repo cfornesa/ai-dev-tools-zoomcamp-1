@@ -132,7 +132,7 @@ def test_production_defaults_enable_reviewed_security_and_delivery(monkeypatch):
     assert settings_module.SECURE_HSTS_INCLUDE_SUBDOMAINS is True
     assert settings_module.EMAIL_BACKEND.endswith("smtp.EmailBackend")
     assert settings_module.CACHES["default"]["BACKEND"] == (
-        "django.core.cache.backends.db.DatabaseCache"
+        "backend.database_cache.AtomicDatabaseCache"
     )
     assert settings_module.CACHES["default"]["LOCATION"] == "django_cache"
 

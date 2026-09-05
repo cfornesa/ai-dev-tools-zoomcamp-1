@@ -16158,3 +16158,29 @@ failures the already-tracked #457 batch-load flakiness on the closed
 #429's spec), the complete backend suite, and the complete frontend
 vitest/typecheck/lint/format checks all pass clean (one unrelated
 draft-recovery vitest flake confirmed passing 48/48 in isolation).
+
+## #447 closure reconciliation — 2026-09-05
+
+[#447](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/447) closed:
+the CMS embed reuses the exact same `embed/art-pieces/immersive/:id` route
+and runtime #446 built — no separate CMS-specific server route or
+component exists ("one shared immersive runtime" was this issue's own
+requirement). Added a second copy-snippet option (`cmsEmbedSnippetFor`)
+wrapping the same iframe in a responsive, aspect-ratio-locked container
+(the padding-bottom trick) instead of the Custom snippet's fixed 800x600
+pixel box, matching how a CMS block/oEmbed typically needs to embed
+third-party content. Because it's the exact same iframe element and
+`src`, a CMS theme's responsive column-width resize never reloads or
+remounts it — the piece's running state (camera pose, active sound,
+navigation) is preserved by construction, verified with a real viewport
+resize against the live embed route. The immersive page's embed toggle
+is now two buttons (Embed / CMS embed), showing exactly one snippet panel
+at a time.
+
+New coverage: `frontend/e2e/artPieceImmersiveCms.spec.ts`, passing across
+all three declared browsers — snippet distinctness, resize-survives-state,
+and the full published/private/unpublished/deleted lifecycle plus the
+named Screenshot/Sound/Camera/Steer/Guide/Reset/Fullscreen contract from
+#434 through the shared embed route. Full regression pass across the
+sibling embed/immersive specs, the complete backend suite, and the
+complete frontend vitest/typecheck/lint/format checks all pass clean.

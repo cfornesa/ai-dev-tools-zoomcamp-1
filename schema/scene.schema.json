@@ -164,6 +164,7 @@
         "y": { "type": "number", "minimum": -100000, "maximum": 100000 },
         "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 100000 },
         "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 100000 },
+        "rotation": { "type": "number", "minimum": -360, "maximum": 360 },
         "text": { "type": "string", "maxLength": 1000 },
         "fill": { "anyOf": [{ "$ref": "#/$defs/color" }, { "type": "null" }] },
         "stroke": { "anyOf": [{ "$ref": "#/$defs/color" }, { "type": "null" }] }

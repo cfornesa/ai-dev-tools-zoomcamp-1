@@ -57,3 +57,4 @@
 - [Draw.io layer integration](drawio-layer-integration.md) — Keep draw.io as a separately versioned object document inside the native outer layer stack; do not flatten it into native one-shape-per-layer content.
 - [Production readiness gaps](production-readiness-gaps.md) — AI quotas need shared production state, published runtime needs WSGI/ASGI, and signup policy must be explicit across plan and UI.
 - [Auth, admin, and entitlement boundaries](auth-admin-entitlements-boundaries.md) — GitHub OAuth/admin identities/entitlements/admin settings/PayPal billing/account identity link-unlink (#420-#426, all closed 2026-09-05); key design decisions for anything touching this boundary next.
+- [Agentic AI editing boundary](agentic-ai-editing-boundary.md) — reuse validated provider/proposal services with bounded owner-scoped runs, explicit Accept, cancellation and quota accounting; keep raw generated code outside the agent tool surface.

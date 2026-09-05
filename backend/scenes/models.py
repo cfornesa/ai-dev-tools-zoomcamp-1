@@ -71,6 +71,41 @@ class MistralCredential(models.Model):
             ) from exc
 
 
+class ProviderCredential(models.Model):
+    """Encrypted owner-scoped credential keyed by a validated vendor."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="provider_credentials"
+    )
+    vendor = models.CharField(max_length=32)
+    encrypted_key = models.BinaryField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "vendor"], name="unique_provider_credential")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.vendor} credential for user {self.owner_id}"
+
+    def set_key(self, plaintext: str) -> None:
+        from ai_provider.credentials import encrypt_provider_key
+
+        self.encrypted_key = encrypt_provider_key(plaintext)
+
+    def get_key(self) -> str:
+        from ai_provider.credentials import decrypt_provider_key
+
+        try:
+            return decrypt_provider_key(bytes(self.encrypted_key))
+        except Exception as exc:
+            raise MistralCredentialDecryptionError(
+                "The saved provider credential is unavailable. Please replace it."
+            ) from exc
+
+
 class MistralModelPreference(models.Model):
     """A user's own self-declared Mistral model slug (issue #259), looked up
     from Mistral's own model documentation -- never a live models-list API

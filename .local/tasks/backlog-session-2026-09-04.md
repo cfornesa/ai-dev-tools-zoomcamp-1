@@ -267,3 +267,9 @@ existing object and save/reload flow. #410 remains open for rotation,
 bidirectional canvas/outline selection, and unsupported-object UX evidence.
 #414's daily quota writes are now atomic in the 2D, 3D, and art-piece paths;
 its real two-worker runtime proof remains outstanding.
+
+The following #410 increment adds bounded object rotation to the shared schema,
+Canvas2D adapter, editor mutation path, and toolbar, and exposes Draw.io
+objects in their owning outline layers. Focused tests and Chromium acceptance
+pass; unsupported-object messaging and complete pointer/outline parity remain
+open acceptance work.

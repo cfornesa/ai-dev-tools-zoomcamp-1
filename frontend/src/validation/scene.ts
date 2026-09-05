@@ -399,6 +399,50 @@ function checkReferences(data: any): SceneValidationError[] {
   return errors;
 }
 
+// The schema bounds the supported draw.io vocabulary; this mirrors the
+// server-side reference checks so malformed imports fail consistently.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function checkDrawioReferences(data: any): SceneValidationError[] {
+  if (data.documentType !== 'drawio') return [];
+  const document = data.drawio ?? {};
+  const layers: Array<{ id: string }> = document.layers ?? [];
+  const objects: Array<{ id: string; layerId: string; parentId: string | null; type: string; text?: string }> =
+    document.objects ?? [];
+  const layerIds = new Set(layers.map((layer) => layer.id));
+  const objectIds = new Set(objects.map((object) => object.id));
+  const errors: SceneValidationError[] = [];
+  if (layerIds.size !== layers.length) {
+    errors.push({ path: '$.drawio.layers', rule: 'duplicateId', message: 'Draw.io layer IDs must be unique.' });
+  }
+  if (objectIds.size !== objects.length) {
+    errors.push({ path: '$.drawio.objects', rule: 'duplicateId', message: 'Draw.io object IDs must be unique.' });
+  }
+  objects.forEach((object, index) => {
+    if (!layerIds.has(object.layerId)) {
+      errors.push({
+        path: `$.drawio.objects[${index}].layerId`,
+        rule: 'danglingReference',
+        message: `layerId '${object.layerId}' does not match any draw.io layer.`,
+      });
+    }
+    if (object.parentId !== null && !objectIds.has(object.parentId)) {
+      errors.push({
+        path: `$.drawio.objects[${index}].parentId`,
+        rule: 'danglingReference',
+        message: `parentId '${object.parentId}' does not match any draw.io object.`,
+      });
+    }
+    if (object.type === 'text' && !object.text?.trim()) {
+      errors.push({
+        path: `$.drawio.objects[${index}].text`,
+        rule: 'invalidValue',
+        message: 'Text objects require non-empty text.',
+      });
+    }
+  });
+  return errors;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function groupNestingDepth(
   groupId: string,
@@ -608,6 +652,7 @@ export function validateScene(data: unknown): SceneValidationResult {
   }
 
   const referenceErrors = checkReferences(data);
+  referenceErrors.push(...checkDrawioReferences(data));
   if (referenceErrors.length > 0) {
     return { valid: false, errors: referenceErrors };
   }

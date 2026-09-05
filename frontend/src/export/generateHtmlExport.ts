@@ -44,6 +44,7 @@ import { buildStandaloneCameraScript } from './standaloneCameraSource';
 import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
 import { buildStandaloneCanvas2DRuntimeScript } from './standaloneCanvas2DRuntimeSource';
 import { buildStandaloneSvgRuntimeScript } from './standaloneSvgRuntimeSource';
+import { buildStandaloneDrawioRuntimeScript } from './standaloneDrawioRuntimeSource';
 
 /** Exact p5.js version pinned for the export's CDN `<script>` tag --
  * matches `frontend/package.json`'s own pinned `p5` dependency
@@ -209,10 +210,6 @@ function slugifyFilename(title: string): string {
  */
 export function checkExportBlockingReasons(input: GenerateHtmlExportInput): string[] {
   const reasons: string[] = [];
-
-  if (resolveSceneRendererId(input.scene) === 'drawio') {
-    reasons.push('Draw.io HTML export is not available for this supported document yet.');
-  }
 
   reasons.push(...checkRendererCompatibility(input.scene, exportRendererIdFor(input.scene)));
 
@@ -431,7 +428,8 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   // for these renderers specifically. See standaloneCanvas2DRuntimeSource.ts/
   // standaloneSvgRuntimeSource.ts's module doc comments.
   const sceneRendererId = resolveSceneRendererId(input.scene);
-  const usesCdnFreeRenderer = sceneRendererId === 'canvas2d' || sceneRendererId === 'svg';
+  const usesCdnFreeRenderer =
+    sceneRendererId === 'canvas2d' || sceneRendererId === 'svg' || sceneRendererId === 'drawio';
 
   const html = `<!doctype html>
 <html lang="en">
@@ -463,7 +461,9 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
       ? buildStandaloneCanvas2DRuntimeScript()
       : sceneRendererId === 'svg'
         ? buildStandaloneSvgRuntimeScript()
-        : buildStandaloneRuntimeScript()
+        : sceneRendererId === 'drawio'
+          ? buildStandaloneDrawioRuntimeScript()
+          : buildStandaloneRuntimeScript()
   }</script>
   ${includesCamera ? `<script>${buildStandaloneCameraScript()}</script>` : ''}
   ${renderStageToolbarScript()}

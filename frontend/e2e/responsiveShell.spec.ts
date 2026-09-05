@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
+import { openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -44,11 +45,33 @@ async function publishProjectViaUI(
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Publish', exact: true }).click();
+  // Issue #450: mirrors publishingAndRemix.spec.ts's own `choosePublished`
+  // -- the "Publish" action moved behind the stage's "Publication status"
+  // disclosure, itself nested behind "Open piece controls menu" (#444).
+  // An anchored, case-insensitive regex matches the trigger's closed
+  // ("Publication status: Draft") and open ("Hide publication status:
+  // draft") accessible names while excluding the popover's own "Close
+  // publication status: draft" button, which an unanchored substring
+  // match would otherwise also hit.
+  await openPieceControlsMenu(page);
+  const toolbar = page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
+  const trigger = toolbar.getByRole('button', {
+    name: /^(publication status: draft|hide publication status: draft)$/i,
+  });
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  await toolbar
+    .getByRole('group', { name: 'Publication status', exact: true })
+    .getByRole('button', { name: 'Published', exact: true })
+    .click();
   const dialog = page.getByRole('alertdialog', { name: /Publish/ });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
-  await expect(page.getByTestId('visibility-status')).toContainText('Public');
+  // Issue #450: the actual rendered text is "Published (public) — visible
+  // to anyone..." (PublishControl.tsx) -- a bare "Public" never matches
+  // case-sensitively (it's "Published"/lowercase "(public)"), so this
+  // pre-existing assertion never actually observed a real pass. Matches
+  // publishingAndRemix.spec.ts's own working `confirmPublish` assertion.
+  await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
 }
 
 const NARROW_VIEWPORT = { width: 375, height: 800 };

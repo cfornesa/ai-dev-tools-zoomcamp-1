@@ -1399,10 +1399,16 @@ function DrawioLayerRows({
   onRowSelect?: (id: string) => void;
 }) {
   return (
-    <ul aria-label="Draw.io layers" className="editor-outline-list">
-      {[...sceneEditor.layers]
-        .sort((a, b) => a.order - b.order)
-        .map((layer) => (
+    <>
+      <div role="group" aria-label="Draw.io layer actions" className="editor-tool-group">
+        <button type="button" onClick={() => sceneEditor.addLayer()}>
+          Add draw.io layer
+        </button>
+      </div>
+      <ul aria-label="Draw.io layers" className="editor-outline-list">
+        {[...sceneEditor.layers]
+          .sort((a, b) => a.order - b.order)
+          .map((layer) => (
           <li key={layer.id} className="editor-outline-row editor-outline-row-layer">
             <LayerNameField
               layerId={layer.id}
@@ -1442,9 +1448,20 @@ function DrawioLayerRows({
             >
               {layer.locked ? 'Unlock' : 'Lock'}
             </button>
+            <button
+              type="button"
+              aria-label={`Delete draw.io layer ${layer.name}`}
+              onClick={() => {
+                sceneEditor.selectLayer(layer.id);
+                sceneEditor.deleteLayer(layer.id);
+              }}
+            >
+              ×
+            </button>
           </li>
-        ))}
-    </ul>
+          ))}
+      </ul>
+    </>
   );
 }
 

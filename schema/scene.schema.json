@@ -23,6 +23,11 @@
       "description": "Document format version. V1 validators only accept the value 1; any other value is an unsupported schema version and is rejected before any other validation runs.",
       "const": 1
     },
+    "documentType": {
+      "description": "Optional discriminator. Missing is the legacy native scene form; drawio requires the bounded draw.io subset below.",
+      "enum": ["native", "drawio"]
+    },
+    "drawio": { "$ref": "#/$defs/drawioDocument" },
     "id": { "$ref": "#/$defs/id" },
     "canvas": {
       "type": "object",
@@ -109,7 +114,61 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "required": ["documentType"], "properties": { "documentType": { "const": "drawio" } } },
+      "then": { "required": ["drawio"] }
+    },
+    {
+      "if": { "required": ["documentType"], "properties": { "documentType": { "const": "native" } } },
+      "then": { "not": { "required": ["drawio"] } }
+    }
+  ],
   "$defs": {
+    "drawioDocument": {
+      "description": "Safe, versioned interchange subset. XML, HTML, scripts, external URLs, plugins, and arbitrary mxGraph attributes are intentionally not representable.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formatVersion", "layers", "objects"],
+      "properties": {
+        "formatVersion": { "const": 1 },
+        "layers": {
+          "type": "array", "maxItems": 128,
+          "items": { "$ref": "#/$defs/drawioLayer" }
+        },
+        "objects": {
+          "type": "array", "maxItems": 2000,
+          "items": { "$ref": "#/$defs/drawioObject" }
+        }
+      }
+    },
+    "drawioLayer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "order", "visible", "locked"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "order": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "visible": { "type": "boolean" }, "locked": { "type": "boolean" }
+      }
+    },
+    "drawioObject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "type", "layerId", "parentId", "x", "y", "width", "height"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["rect", "ellipse", "line", "text"] },
+        "layerId": { "$ref": "#/$defs/id" },
+        "parentId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+        "x": { "type": "number", "minimum": -100000, "maximum": 100000 },
+        "y": { "type": "number", "minimum": -100000, "maximum": 100000 },
+        "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 100000 },
+        "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 100000 },
+        "text": { "type": "string", "maxLength": 1000 },
+        "fill": { "anyOf": [{ "$ref": "#/$defs/color" }, { "type": "null" }] },
+        "stroke": { "anyOf": [{ "$ref": "#/$defs/color" }, { "type": "null" }] }
+      }
+    },
     "id": {
       "description": "Stable identifier for any object with identity in the scene (shape, group, layer, binding, graph node, graph connection).",
       "type": "string",

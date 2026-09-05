@@ -253,3 +253,9 @@ passes, and production-like `check --deploy` reports zero issues. #414/#415
 remain open because two-worker production storage and exact deployed
 process-lifecycle evidence still require the published environment; #413
 continues as the integrated draw.io regression/accessibility gate.
+
+The full frontend check passed (lint, formatting, typecheck, and 2,424 tests).
+The backend suite reached 978 passed and 24 skipped; one Git-safe-push test
+could not bind its loopback fixture socket under the restricted host sandbox.
+The Makefile's repository check scripts were made portable on this macOS host
+by invoking `python3`, removing the separate missing-`python` blocker.

@@ -64,6 +64,19 @@ clean) and committed/pushed directly to `main` as commit `71c8290`.
   fixture-isolation bug while verifying; filed as
   [#453](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/453)
   rather than fixed here.
+- **#430 (CLOSED, completed):** `artPieceSandbox.ts` previously only
+  dispatched an unconsumed DOM event for `toggle-sound`/
+  `enable-microphone` -- implemented a real lazily-created
+  `AudioContext`+`GainNode` (sound only starts on explicit activation,
+  never on load), `set-volume`, a real keyboard-to-tone map, and a
+  genuinely separate audio-only `getUserMedia` for the microphone
+  (independent of camera, #431). Added `ART_PIECE_IFRAME_ALLOW`
+  (`microphone`) to `PublicArtPieceViewer.tsx`'s iframe -- getUserMedia
+  in a sandboxed iframe is gated by Permissions Policy, not CSP.
+  `PieceStageControls.tsx` now renders real pressed/status state instead
+  of static copy. Added `frontend/e2e/artPieceSoundRuntime.spec.ts`.
+  Commit `1105096`. Verified 9/9 across chromium/firefox/webkit; existing
+  `artPieces.spec.ts`/`artPieceSvgCapture.spec.ts` unaffected.
 - PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
   duplicates the content now on `main` via commit `71c8290`; left open
   pending full CI green, per repository owner's condition.

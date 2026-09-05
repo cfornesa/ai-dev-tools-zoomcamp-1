@@ -12,8 +12,12 @@ import {
 import { fetchAIRetryPreference, updateAIRetryPreference } from '../api/aiRetryPreference';
 import { ApiError } from '../api/client';
 import {
+  type ProviderCredentialStatus,
+  fetchProviderCredentials,
   fetchMistralCredential,
+  removeProviderCredential,
   removeMistralCredential,
+  saveProviderCredential,
   saveMistralCredential,
 } from '../api/credentials';
 
@@ -112,10 +116,114 @@ function AccountSettings() {
         {message && <p role="status">{message}</p>}
         {error && <p role="alert">{error}</p>}
       </div>
+      <ProviderCredentialCards />
       <SavedMistralModels />
       <AIPersonas />
       <AIRetrySettings />
     </section>
+  );
+}
+
+function ProviderCredentialCards() {
+  const [providers, setProviders] = useState<ProviderCredentialStatus[]>([]);
+  const [keys, setKeys] = useState<Record<string, string>>({});
+  const [busyVendor, setBusyVendor] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.resolve(fetchProviderCredentials())
+      .then((data) => setProviders(data?.providers ?? []))
+      .catch(() => setError('Could not load provider credential status.'));
+  }, []);
+
+  async function save(vendor: ProviderCredentialStatus['vendor']) {
+    const key = keys[vendor] ?? '';
+    setBusyVendor(vendor);
+    setError(null);
+    try {
+      await saveProviderCredential(vendor, key);
+      setProviders((current) =>
+        current.map((provider) =>
+          provider.vendor === vendor ? { ...provider, configured: true } : provider,
+        ),
+      );
+      setKeys((current) => ({ ...current, [vendor]: '' }));
+    } catch {
+      setError(`Could not save your ${vendor} key.`);
+    } finally {
+      setBusyVendor(null);
+    }
+  }
+
+  async function remove(vendor: ProviderCredentialStatus['vendor']) {
+    setBusyVendor(vendor);
+    setError(null);
+    try {
+      await removeProviderCredential(vendor);
+      setProviders((current) =>
+        current.map((provider) =>
+          provider.vendor === vendor ? { ...provider, configured: false } : provider,
+        ),
+      );
+    } catch {
+      setError(`Could not remove your ${vendor} key.`);
+    } finally {
+      setBusyVendor(null);
+    }
+  }
+
+  if (providers.length === 0 && !error) return null;
+  return (
+    <div className="centered-state account-settings-section" aria-labelledby="provider-credentials">
+      <h3 id="provider-credentials">AI provider credentials</h3>
+      <p>Keys are encrypted for your account and are never shown again after saving.</p>
+      <div className="account-settings-list">
+        {providers.map((provider) => (
+          <div key={provider.vendor} className="account-settings-section">
+            <h4>{provider.label}</h4>
+            <p role="status">
+              {provider.configured
+                ? `${provider.label} key: configured`
+                : `${provider.label} key: not configured`}
+            </p>
+            <label htmlFor={`${provider.vendor}-key`}>{provider.label} API key</label>
+            <input
+              id={`${provider.vendor}-key`}
+              type="password"
+              autoComplete="off"
+              value={keys[provider.vendor] ?? ''}
+              onChange={(event) =>
+                setKeys((current) => ({ ...current, [provider.vendor]: event.target.value }))
+              }
+              disabled={busyVendor !== null}
+            />
+            <button
+              type="button"
+              className="shell-action"
+              onClick={() => void save(provider.vendor)}
+              disabled={busyVendor !== null || (keys[provider.vendor] ?? '').length < 10}
+            >
+              {busyVendor === provider.vendor
+                ? 'Saving…'
+                : provider.configured
+                  ? 'Replace key'
+                  : 'Save key'}
+            </button>
+            {provider.configured && (
+              <button
+                type="button"
+                className="shell-action"
+                onClick={() => void remove(provider.vendor)}
+                disabled={busyVendor !== null}
+              >
+                Remove key
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {error && <p role="alert">{error}</p>}
+    </div>
   );
 }
 

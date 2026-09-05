@@ -3,7 +3,7 @@ import multiprocessing
 import pytest
 from django.conf import settings
 from django.core.cache import cache
-from django.db import close_old_connections
+from django.db import close_old_connections, connections
 from django.test import TestCase, override_settings
 
 from scenes.ai_api import _increment_and_check
@@ -30,7 +30,7 @@ def _run_shared_quota_worker(rate_key, daily_key, gate, result_queue):
 postgres_cache_settings = override_settings(
     CACHES={
         "default": {
-            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "BACKEND": "backend.database_cache.AtomicDatabaseCache",
             "LOCATION": "django_cache",
             "TIMEOUT": None,
         }
@@ -38,10 +38,25 @@ postgres_cache_settings = override_settings(
 )
 
 
+class _CacheOnPostgresRouter:
+    def db_for_read(self, model, **hints):
+        if model._meta.app_label == "django_cache":
+            return "postgres_test"
+        return None
+
+    def db_for_write(self, model, **hints):
+        if model._meta.app_label == "django_cache":
+            return "postgres_test"
+        return None
+
+    def allow_relation(self, obj1, obj2, **hints):
+        return True
+
+
 @override_settings(
     CACHES={
         "default": {
-            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "BACKEND": "backend.database_cache.AtomicDatabaseCache",
             "LOCATION": "django_cache",
             "TIMEOUT": None,
         }
@@ -71,8 +86,9 @@ class SharedQuotaCacheTests(TestCase):
     "postgres_test" not in settings.DATABASES,
     reason="POSTGRES_TEST_DATABASE_URL is not set; skipping multi-process PostgreSQL test.",
 )
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 @postgres_cache_settings
+@override_settings(DATABASE_ROUTERS=[_CacheOnPostgresRouter()])
 def test_two_worker_database_cache_enforces_rate_window_and_daily_counter():
     """Independent worker processes must share the same quota state.
 
@@ -81,8 +97,6 @@ def test_two_worker_database_cache_enforces_rate_window_and_daily_counter():
     reaches six without lost updates. This is the deployment-specific proof
     that LocMemCache could never provide.
     """
-    from tests._postgres_routing import route_default_to_postgres_test
-
     rate_key = "ai-quota:process-shared:rate"
     daily_key = "ai-quota:process-shared:daily"
     context = multiprocessing.get_context("fork")
@@ -96,13 +110,16 @@ def test_two_worker_database_cache_enforces_rate_window_and_daily_counter():
         for _ in range(2)
     ]
 
-    with route_default_to_postgres_test():
-        cache.delete(rate_key)
-        cache.delete(daily_key)
-        for worker in workers:
-            worker.start()
-        for worker in workers:
-            worker.join(timeout=30)
+    cache.delete(rate_key)
+    cache.delete(daily_key)
+    # Never let forked workers inherit a live psycopg socket from the parent.
+    # Each worker must establish its own PostgreSQL connection.
+    connections["postgres_test"].close()
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(timeout=30)
+    connections["postgres_test"].close()
 
     assert all(worker.exitcode == 0 for worker in workers)
     results = [result_queue.get(timeout=5) for _ in workers]
@@ -111,7 +128,6 @@ def test_two_worker_database_cache_enforces_rate_window_and_daily_counter():
 
     assert len(rate_results) == 6
     assert sum(rate_results) == 5
-    with route_default_to_postgres_test():
-        assert cache.get(rate_key) == 6
-        assert cache.get(daily_key) == 6
+    assert cache.get(rate_key) == 6
+    assert cache.get(daily_key) == 6
     assert sorted(daily_results) == list(range(1, 7))

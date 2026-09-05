@@ -35,6 +35,12 @@ const MODE_LABELS: Record<ProposalMode, string> = {
   edit: 'Propose an edit',
 };
 
+const PROVIDER_MODELS = {
+  mistral: [],
+  gemini: ['gemini-2.5-flash', 'gemini-2.5-pro'],
+  deepseek: ['deepseek-chat', 'deepseek-reasoner'],
+} as const;
+
 /**
  * Task 48: the AI proposal UI — prompt entry, pending, success (visual
  * preview + summary), and the three documented error states, plus
@@ -191,7 +197,11 @@ function AIProposalPanel({
             className="ai-proposal-field-full-width"
             value={vendor}
             disabled={pending}
-            onChange={(event) => setVendor(event.target.value as typeof vendor)}
+            onChange={(event) => {
+              const nextVendor = event.target.value as typeof vendor;
+              setVendor(nextVendor);
+              setModel(nextVendor === 'mistral' ? '' : PROVIDER_MODELS[nextVendor][0]);
+            }}
           >
             <option value="mistral">Mistral</option>
             <option value="gemini">Google Gemini</option>
@@ -222,7 +232,21 @@ function AIProposalPanel({
           <label htmlFor="ai-proposal-model">
             {vendor === 'mistral' ? 'Mistral' : vendor} model (optional)
           </label>
-          {savedModels.length === 0 ? (
+          {vendor !== 'mistral' ? (
+            <select
+              id="ai-proposal-model"
+              className="ai-proposal-field-full-width"
+              value={model || PROVIDER_MODELS[vendor][0]}
+              disabled={pending}
+              onChange={(event) => setModel(event.target.value)}
+            >
+              {PROVIDER_MODELS[vendor].map((providerModel) => (
+                <option key={providerModel} value={providerModel}>
+                  {providerModel}
+                </option>
+              ))}
+            </select>
+          ) : savedModels.length === 0 ? (
             <p className="ai-proposal-empty-preference">
               No saved models yet — add one in <a href="/account/settings">Account settings</a> to
               pick from a list here.

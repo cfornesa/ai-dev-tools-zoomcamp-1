@@ -7,6 +7,12 @@ import type { Scene3DDocument } from './scene3dTypes';
 import { useAIProposal3D, type ProposalMode3D } from './useAIProposal3D';
 import { useSavedAIPreferences } from './useSavedAIPreferences';
 
+const PROVIDER_MODELS = {
+  mistral: [],
+  gemini: ['gemini-2.5-flash', 'gemini-2.5-pro'],
+  deepseek: ['deepseek-chat', 'deepseek-reasoner'],
+} as const;
+
 type AIProposalPanel3DProps = {
   projectId: string;
   workingCopy: Scene3DDocument | null;
@@ -154,7 +160,11 @@ function AIProposalPanel3D({
             className="ai-proposal-field-full-width"
             value={vendor}
             disabled={pending}
-            onChange={(event) => setVendor(event.target.value as typeof vendor)}
+            onChange={(event) => {
+              const nextVendor = event.target.value as typeof vendor;
+              setVendor(nextVendor);
+              setModel(nextVendor === 'mistral' ? '' : PROVIDER_MODELS[nextVendor][0]);
+            }}
           >
             <option value="mistral">Mistral</option>
             <option value="gemini">Google Gemini</option>
@@ -165,7 +175,21 @@ function AIProposalPanel3D({
           <label htmlFor="ai-proposal-3d-model">
             {vendor === 'mistral' ? 'Mistral' : vendor} model (optional)
           </label>
-          {savedModels.length === 0 ? (
+          {vendor !== 'mistral' ? (
+            <select
+              id="ai-proposal-3d-model"
+              className="ai-proposal-field-full-width"
+              value={model || PROVIDER_MODELS[vendor][0]}
+              disabled={pending}
+              onChange={(event) => setModel(event.target.value)}
+            >
+              {PROVIDER_MODELS[vendor].map((providerModel) => (
+                <option key={providerModel} value={providerModel}>
+                  {providerModel}
+                </option>
+              ))}
+            </select>
+          ) : savedModels.length === 0 ? (
             <p className="ai-proposal-empty-preference">
               No saved models yet — add one in <a href="/account/settings">Account settings</a> to
               pick from a list here.

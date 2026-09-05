@@ -162,3 +162,15 @@ The latest editor increment adds bounded Draw.io rotation and stable object
 selection rows in the layer outline; focused tests and Chromium acceptance
 pass. #411 is now closed after ordered-layer drag/drop and fixed-viewport
 z-order evidence passed; #413 is the remaining integrated Draw.io gate.
+
+## Current readiness reconciliation — 2026-09-05
+
+#413 is now closed: focused validation/accessibility/export/renderer coverage
+passed (116 frontend tests and 70 backend tests with 2 PostgreSQL-gated skips),
+and Chromium verified editor, public, embed, thumbnail, and download behavior.
+GitHub now has 11 completed issues and 2 open issues. #414 remains open for
+real two-worker shared-cache proof; #415 remains open for exact deployed ASGI
+process/signal proof. The production baseline remains
+https://animate.creatrweb.com/; because the active Mac session is locked and
+the reconciliation branch is not deployed there, no production-readiness
+claim is made from that baseline.

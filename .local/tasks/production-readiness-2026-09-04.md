@@ -101,3 +101,12 @@ draw.io validation (52 tests), frontend scene validation (48 tests), and
 frontend typecheck pass. Production readiness remains open because dependent
 provider/draw.io work (#407–#413), full `make check`, approved deployment
 process verification, and remote branch handoff are still outstanding.
+
+The draw.io chain has since advanced: a dedicated safe preview adapter,
+editor object mutations, outer-layer controls, and a dependency-free
+standalone HTML export runtime are implemented on the reconciliation branch.
+Focused draw.io renderer/export/mutation tests pass, and the native
+layer/editor suite passes 45 tests. The active Chrome production shell at
+`https://animate.creatrweb.com/` remains healthy and authenticated, but it is
+not evidence that this branch is deployed; no workflow run is associated with
+the branch head, so deployment parity remains unverified.

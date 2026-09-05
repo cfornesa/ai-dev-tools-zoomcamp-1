@@ -44,6 +44,7 @@ import { buildStandaloneCameraScript } from './standaloneCameraSource';
 import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
 import { buildStandaloneCanvas2DRuntimeScript } from './standaloneCanvas2DRuntimeSource';
 import { buildStandaloneSvgRuntimeScript } from './standaloneSvgRuntimeSource';
+import { buildStandaloneDrawioRuntimeScript } from './standaloneDrawioRuntimeSource';
 
 /** Exact p5.js version pinned for the export's CDN `<script>` tag --
  * matches `frontend/package.json`'s own pinned `p5` dependency
@@ -162,7 +163,10 @@ export class ExportGenerationBlockedError extends Error {
  * this is the one place that translates between them. */
 export function exportRendererIdFor(scene: SceneDocument): RendererId {
   const resolved = resolveSceneRendererId(scene);
-  return resolved === 'p5' ? 'p5js' : resolved;
+  // Draw.io has a live editor/viewer adapter, but the standalone export
+  // runtime is intentionally not claimed until issue #412 adds its explicit
+  // safe packaging contract.
+  return resolved === 'p5' || resolved === 'drawio' ? 'p5js' : resolved;
 }
 
 /** Turns `title` into a filesystem-safe, lowercase, hyphenated basename.
@@ -424,7 +428,8 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
   // for these renderers specifically. See standaloneCanvas2DRuntimeSource.ts/
   // standaloneSvgRuntimeSource.ts's module doc comments.
   const sceneRendererId = resolveSceneRendererId(input.scene);
-  const usesCdnFreeRenderer = sceneRendererId === 'canvas2d' || sceneRendererId === 'svg';
+  const usesCdnFreeRenderer =
+    sceneRendererId === 'canvas2d' || sceneRendererId === 'svg' || sceneRendererId === 'drawio';
 
   const html = `<!doctype html>
 <html lang="en">
@@ -456,7 +461,9 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
       ? buildStandaloneCanvas2DRuntimeScript()
       : sceneRendererId === 'svg'
         ? buildStandaloneSvgRuntimeScript()
-        : buildStandaloneRuntimeScript()
+        : sceneRendererId === 'drawio'
+          ? buildStandaloneDrawioRuntimeScript()
+          : buildStandaloneRuntimeScript()
   }</script>
   ${includesCamera ? `<script>${buildStandaloneCameraScript()}</script>` : ''}
   ${renderStageToolbarScript()}

@@ -81,6 +81,22 @@ import {
   type NumericShapeField,
 } from './shapeStyleFields';
 import { parseCanvasBackgroundColorEdit, parseCanvasOpacityEdit } from './canvasSettingsFields';
+import {
+  deleteDrawioObject,
+  deleteDrawioLayer,
+  duplicateDrawioObject,
+  addDrawioLayer,
+  addDrawioObject,
+  moveDrawioLayer,
+  moveDrawioObject,
+  resizeDrawioObject,
+  rotateDrawioObject,
+  getDrawioLayers,
+  renameDrawioLayer,
+  toggleDrawioLayerFlag,
+  type DrawioObject,
+  type DrawioObjectType,
+} from './drawioDocument';
 
 /**
  * Task 23: shape add/select/duplicate/delete, plus this editor's in-session
@@ -300,8 +316,27 @@ export function useSceneEditor(
   const shapes = getEditableShapes(workingCopy ? rawShapes(workingCopy) : []);
   const selectedShape = shapes.find((s) => s.id === selectedShapeId) ?? null;
   const groups = useMemo(() => (workingCopy ? getGroups(workingCopy) : []), [workingCopy]);
-  const layers = useMemo(() => (workingCopy ? getLayers(workingCopy) : []), [workingCopy]);
+  const layers = useMemo(
+    () =>
+      workingCopy?.documentType === 'drawio'
+        ? getDrawioLayers(workingCopy)
+        : workingCopy
+          ? getLayers(workingCopy)
+          : [],
+    [workingCopy],
+  );
   const selectedGroup = groups.find((g) => g.id === selectedShapeId) ?? null;
+  const drawioObjects = useMemo(
+    () =>
+      workingCopy?.documentType === 'drawio' &&
+      workingCopy.drawio &&
+      typeof workingCopy.drawio === 'object'
+        ? (((workingCopy.drawio as { objects?: unknown }).objects ?? []) as DrawioObject[])
+        : [],
+    [workingCopy],
+  );
+  const selectedDrawioObject =
+    drawioObjects.find((object) => object.id === selectedShapeId) ?? null;
   // Issue #79: true only while the shape currently in vertex edit mode is
   // still the single active selection *and* still a `path` — the extra
   // `selectedShape?.type === 'path'` check is a belt-and-suspenders
@@ -468,17 +503,18 @@ export function useSceneEditor(
       const groups = getGroups(workingCopy);
       const group = groups.find((g) => g.id === id);
       const isGroup = !!group;
-      if (isShape || isGroup) {
+      const drawioObject = drawioObjects.find((object) => object.id === id);
+      if (isShape || isGroup || drawioObject) {
         setSelectedShapeId(id);
         // Keep the owning layer selected with the item. This is intentionally
         // additive: the item remains the single canvas/HUD selection while
         // the layer row gets the complete selected-block treatment.
         const shape = getEditableShapes(rawShapes(workingCopy)).find((s) => s.id === id);
-        setSelectedLayerId(shape?.layerId ?? group?.layerId ?? null);
+        setSelectedLayerId(shape?.layerId ?? group?.layerId ?? drawioObject?.layerId ?? null);
         setIsLayerSelection(false);
       }
     },
-    [workingCopy],
+    [drawioObjects, workingCopy],
   );
 
   const selectLayer = useCallback(
@@ -489,7 +525,11 @@ export function useSceneEditor(
         setIsLayerSelection(false);
         return;
       }
-      if (!workingCopy || !getLayers(workingCopy).some((layer) => layer.id === id)) return;
+      if (!workingCopy) return;
+      const isDrawioLayer =
+        workingCopy.documentType === 'drawio' &&
+        getDrawioLayers(workingCopy).some((layer) => layer.id === id);
+      if (!isDrawioLayer && !getLayers(workingCopy).some((layer) => layer.id === id)) return;
       if (toggle && selectedLayerId === id && isLayerSelection) {
         setSelectedShapeId(null);
         setSelectedLayerId(null);
@@ -504,7 +544,13 @@ export function useSceneEditor(
       const firstShape = getEditableShapes(rawShapes(workingCopy)).find(
         (shape) => shape.layerId === id,
       );
-      setSelectedShapeId(firstShape?.id ?? null);
+      const firstDrawioObject =
+        isDrawioLayer && workingCopy.drawio && typeof workingCopy.drawio === 'object'
+          ? ((workingCopy.drawio as { objects?: DrawioObject[] }).objects ?? []).find(
+              (object) => object.layerId === id,
+            )
+          : undefined;
+      setSelectedShapeId(firstShape?.id ?? firstDrawioObject?.id ?? null);
     },
     [isLayerSelection, selectedLayerId, workingCopy],
   );
@@ -966,17 +1012,33 @@ export function useSceneEditor(
   // one undo step on success and never touches scene state on failure —
   // it just surfaces `outlineError`.
 
+  const applyDrawioMutation = useCallback(
+    (outcome: ReturnType<typeof moveDrawioObject>) => {
+      if (!outcome.ok) {
+        setOutlineError(outcome.error);
+        return;
+      }
+      setOutlineError(null);
+      commit(outcome.scene);
+      if (outcome.selectedId) setSelectedShapeId(outcome.selectedId);
+    },
+    [commit],
+  );
+
   const addLayer = useCallback(() => {
     if (!workingCopy) return;
-    applyOutcome(addLayerOp(workingCopy));
-  }, [workingCopy, applyOutcome]);
+    if (workingCopy.documentType === 'drawio') applyDrawioMutation(addDrawioLayer(workingCopy));
+    else applyOutcome(addLayerOp(workingCopy));
+  }, [workingCopy, applyOutcome, applyDrawioMutation]);
 
   const renameLayer = useCallback(
     (layerId: string, name: string) => {
       if (!workingCopy) return;
-      applyOutcome(renameLayerOp(workingCopy, layerId, name));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(renameDrawioLayer(workingCopy, layerId, name));
+      } else applyOutcome(renameLayerOp(workingCopy, layerId, name));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const renameShape = useCallback(
@@ -1007,33 +1069,41 @@ export function useSceneEditor(
   const deleteLayer = useCallback(
     (layerId: string) => {
       if (!workingCopy) return;
-      applyOutcome(deleteLayerOp(workingCopy, layerId));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(deleteDrawioLayer(workingCopy, layerId));
+      } else applyOutcome(deleteLayerOp(workingCopy, layerId));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const moveLayer = useCallback(
     (layerId: string, direction: 'up' | 'down') => {
       if (!workingCopy) return;
-      applyOutcome(moveLayerOp(workingCopy, layerId, direction));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(moveDrawioLayer(workingCopy, layerId, direction));
+      } else applyOutcome(moveLayerOp(workingCopy, layerId, direction));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const toggleLayerVisible = useCallback(
     (layerId: string) => {
       if (!workingCopy) return;
-      applyOutcome(toggleLayerFlag(workingCopy, layerId, 'visible'));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(toggleDrawioLayerFlag(workingCopy, layerId, 'visible'));
+      } else applyOutcome(toggleLayerFlag(workingCopy, layerId, 'visible'));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const toggleLayerLocked = useCallback(
     (layerId: string) => {
       if (!workingCopy) return;
-      applyOutcome(toggleLayerFlag(workingCopy, layerId, 'locked'));
+      if (workingCopy.documentType === 'drawio') {
+        applyDrawioMutation(toggleDrawioLayerFlag(workingCopy, layerId, 'locked'));
+      } else applyOutcome(toggleLayerFlag(workingCopy, layerId, 'locked'));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const toggleGroupVisible = useCallback(
@@ -1117,6 +1187,20 @@ export function useSceneEditor(
   const moveLayerBySteps = useCallback(
     (layerId: string, direction: 'up' | 'down', steps: number) => {
       if (!workingCopy || steps <= 0) return;
+      if (workingCopy.documentType === 'drawio') {
+        let current = workingCopy;
+        for (let i = 0; i < steps; i += 1) {
+          const outcome = moveDrawioLayer(current, layerId, direction);
+          if (!outcome.ok) {
+            setOutlineError(outcome.error);
+            return;
+          }
+          current = outcome.scene;
+        }
+        setOutlineError(null);
+        if (current !== workingCopy) commit(current);
+        return;
+      }
       let current = workingCopy;
       for (let i = 0; i < steps; i += 1) {
         const outcome = moveLayerOp(current, layerId, direction);
@@ -1451,6 +1535,53 @@ export function useSceneEditor(
 
   const clearGraphError = useCallback(() => setGraphError(null), []);
 
+  const moveSelectedDrawioObject = useCallback(
+    (dx: number, dy: number) => {
+      if (!workingCopy || !selectedDrawioObject) return;
+      applyDrawioMutation(moveDrawioObject(workingCopy, selectedDrawioObject.id, dx, dy));
+    },
+    [applyDrawioMutation, selectedDrawioObject, workingCopy],
+  );
+  const resizeSelectedDrawioObject = useCallback(
+    (width: number, height: number) => {
+      if (!workingCopy || !selectedDrawioObject) return;
+      applyDrawioMutation(resizeDrawioObject(workingCopy, selectedDrawioObject.id, width, height));
+    },
+    [applyDrawioMutation, selectedDrawioObject, workingCopy],
+  );
+  const duplicateSelectedDrawioObject = useCallback(() => {
+    if (!workingCopy || !selectedDrawioObject) return;
+    applyDrawioMutation(duplicateDrawioObject(workingCopy, selectedDrawioObject.id));
+  }, [applyDrawioMutation, selectedDrawioObject, workingCopy]);
+  const rotateSelectedDrawioObject = useCallback(
+    (delta: number) => {
+      if (!workingCopy || !selectedDrawioObject) return;
+      applyDrawioMutation(rotateDrawioObject(workingCopy, selectedDrawioObject.id, delta));
+    },
+    [applyDrawioMutation, selectedDrawioObject, workingCopy],
+  );
+  const addDrawioObjectToActiveLayer = useCallback(
+    (type: DrawioObjectType) => {
+      if (!workingCopy || workingCopy.documentType !== 'drawio') return;
+      const outcome = addDrawioObject(workingCopy, type, selectedLayerId ?? undefined);
+      if (!outcome.ok) {
+        setOutlineError(outcome.error);
+        return;
+      }
+      const added =
+        outcome.scene.drawio && typeof outcome.scene.drawio === 'object'
+          ? ((outcome.scene.drawio as { objects?: DrawioObject[] }).objects ?? []).at(-1)
+          : undefined;
+      applyDrawioMutation(added ? { ...outcome, selectedId: added.id } : outcome);
+    },
+    [applyDrawioMutation, selectedLayerId, workingCopy],
+  );
+  const deleteSelectedDrawioObject = useCallback(() => {
+    if (!workingCopy || !selectedDrawioObject) return;
+    applyDrawioMutation(deleteDrawioObject(workingCopy, selectedDrawioObject.id));
+    setSelectedShapeId(null);
+  }, [applyDrawioMutation, selectedDrawioObject, workingCopy]);
+
   return {
     // Task 40: exposed so read-only presentational components (e.g.
     // `RandomnessIndicator.tsx`) can read scene-level fields
@@ -1462,11 +1593,19 @@ export function useSceneEditor(
     selectedLayerId,
     isLayerSelection,
     selectedShape,
+    drawioObjects,
+    selectedDrawioObject,
     selectShape,
     selectLayer,
     addShape,
     duplicateSelected,
     deleteSelected,
+    moveSelectedDrawioObject,
+    addDrawioObjectToActiveLayer,
+    resizeSelectedDrawioObject,
+    rotateSelectedDrawioObject,
+    duplicateSelectedDrawioObject,
+    deleteSelectedDrawioObject,
     undo,
     redo,
     canUndo: past.length > 0,

@@ -7,6 +7,7 @@ routing works, a request returns 200).
 
 import logging
 
+from django.core.cache import cache
 from django.db import connections
 from django.db.utils import OperationalError
 from django.http import JsonResponse
@@ -30,15 +31,36 @@ def database_is_available(using: str = "default") -> bool:
     return True
 
 
+def cache_is_available() -> bool:
+    """Return whether the configured cache can round-trip a short-lived value."""
+    key = "__creatrweb_health_check__"
+    try:
+        cache.set(key, True, timeout=5)
+        return cache.get(key) is True
+    except Exception:
+        # Health responses must not expose backend connection details.
+        logger.exception("Cache health check failed")
+        return False
+    finally:
+        try:
+            cache.delete(key)
+        except Exception:
+            logger.exception("Cache health-check cleanup failed")
+
+
 def health(request):
     """Report application and database availability, without connection details."""
     db_ok = database_is_available()
+    cache_ok = cache_is_available()
+    checks_ok = db_ok and cache_ok
+    payload = {
+        "status": "ok" if checks_ok else "error",
+        "database": "ok" if db_ok else "unavailable",
+    }
+    payload["cache"] = "ok" if cache_ok else "unavailable"
     return JsonResponse(
-        {
-            "status": "ok" if db_ok else "error",
-            "database": "ok" if db_ok else "unavailable",
-        },
-        status=200 if db_ok else 503,
+        payload,
+        status=200 if checks_ok else 503,
     )
 
 

@@ -81,6 +81,7 @@ import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
 import { normalizeSceneLayers } from '../validation/scene';
 import { buildOutline, isEffectivelyLocked } from './sceneOutline';
+import { hitTestDrawioObjectAt } from './drawioDocument';
 import type { TrackingFrame } from '../tracking/types';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
@@ -1944,6 +1945,32 @@ function EditorWorkspace() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (isTypingTarget(event.target)) return;
+      if (sceneEditor.selectedDrawioObject) {
+        const step = event.shiftKey ? 10 : 1;
+        if (
+          event.key === 'ArrowRight' ||
+          event.key === 'ArrowLeft' ||
+          event.key === 'ArrowUp' ||
+          event.key === 'ArrowDown'
+        ) {
+          event.preventDefault();
+          sceneEditor.moveSelectedDrawioObject(
+            event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0,
+            event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0,
+          );
+          return;
+        }
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
+          event.preventDefault();
+          sceneEditor.duplicateSelectedDrawioObject();
+          return;
+        }
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          event.preventDefault();
+          sceneEditor.deleteSelectedDrawioObject();
+          return;
+        }
+      }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
         if (!sceneEditor.selectedShape) return;
         event.preventDefault();
@@ -2446,8 +2473,18 @@ function EditorWorkspace() {
   function handleCanvasClick(event: ReactMouseEvent<HTMLDivElement>) {
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
-    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
-    sceneEditor.selectShape(hit ? hit.id : null);
+    if (workingCopy?.documentType === 'drawio') {
+      const hit = hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y);
+      sceneEditor.selectShape(hit?.id ?? null);
+    } else {
+      const hit = hitTestTopmostShapeAt(
+        sceneEditor.shapes,
+        pointer.x,
+        pointer.y,
+        sceneEditor.groups,
+      );
+      sceneEditor.selectShape(hit ? hit.id : null);
+    }
   }
 
   // Issue #111: tracks `hoveredShapeId` for the hover affordance, using the
@@ -2457,7 +2494,10 @@ function EditorWorkspace() {
   function handleCanvasPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
-    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
+    const hit =
+      workingCopy?.documentType === 'drawio'
+        ? hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y)
+        : hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
     setHoveredShapeId((current) => {
       const nextId = hit ? hit.id : null;
       return current === nextId ? current : nextId;
@@ -2534,6 +2574,12 @@ function EditorWorkspace() {
     if (event.button !== 0) return;
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
+    if (workingCopy?.documentType === 'drawio') {
+      const drawioHit = hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y);
+      sceneEditor.selectShape(drawioHit?.id ?? null);
+      if (!drawioHit && zoom > 1) beginPanGesture(event.clientX, event.clientY);
+      return;
+    }
     const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
     if (!hit) {
       // Issue #156: reuses this exact hit-test-then-branch structure
@@ -2752,18 +2798,81 @@ function EditorWorkspace() {
   // piece-stage toolbar at every width. These actions remain distinct from
   // runtime controls, but are compact overlays over the artwork instead of
   // a page-level row that recreates the bulky public-surface layout.
+  const selectedDrawioObjectBlocked =
+    sceneEditor.selectedDrawioObject !== null &&
+    !sceneEditor.layers.some(
+      (layer) =>
+        layer.id === sceneEditor.selectedDrawioObject?.layerId && layer.visible && !layer.locked,
+    );
+
   const editorToolbar = (
     <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
-      <span role="group" aria-label="Add shape" className="editor-tool-group">
-        {ADD_SHAPE_TYPES.map(({ type, label, glyph }) => (
+      {sceneEditor.workingCopy?.documentType === 'drawio' ? (
+        <span role="group" aria-label="Draw.io objects" className="editor-tool-group">
+          {(['rect', 'ellipse', 'line', 'text'] as const).map((type) => (
+            <ToolbarButton
+              key={`add-${type}`}
+              label={`Add draw.io ${type}`}
+              glyph={type === 'text' ? 'T' : type === 'line' ? '╱' : type === 'ellipse' ? '○' : '▭'}
+              onClick={() => sceneEditor.addDrawioObjectToActiveLayer(type)}
+            />
+          ))}
+          {sceneEditor.drawioObjects.map((object) => (
+            <ToolbarButton
+              key={object.id}
+              label={`Select ${object.type} ${object.id}`}
+              glyph={sceneEditor.selectedDrawioObject?.id === object.id ? '●' : '○'}
+              onClick={() => sceneEditor.selectShape(object.id)}
+            />
+          ))}
           <ToolbarButton
-            key={type}
-            label={label}
-            glyph={glyph}
-            onClick={() => sceneEditor.addShape(type)}
+            label="Move selected draw.io object right"
+            glyph="→"
+            onClick={() => sceneEditor.moveSelectedDrawioObject(10, 0)}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
           />
-        ))}
-      </span>
+          <ToolbarButton
+            label="Resize selected draw.io object larger"
+            glyph="↘"
+            onClick={() => {
+              const object = sceneEditor.selectedDrawioObject;
+              if (object) {
+                sceneEditor.resizeSelectedDrawioObject(object.width + 10, object.height + 10);
+              }
+            }}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
+          />
+          <ToolbarButton
+            label="Rotate selected draw.io object clockwise"
+            glyph="↻"
+            onClick={() => sceneEditor.rotateSelectedDrawioObject(15)}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
+          />
+          <ToolbarButton
+            label="Duplicate selected draw.io object"
+            glyph="⧉"
+            onClick={() => sceneEditor.duplicateSelectedDrawioObject()}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
+          />
+          <ToolbarButton
+            label="Delete selected draw.io object"
+            glyph="✕"
+            onClick={() => sceneEditor.deleteSelectedDrawioObject()}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
+          />
+        </span>
+      ) : (
+        <span role="group" aria-label="Add shape" className="editor-tool-group">
+          {ADD_SHAPE_TYPES.map(({ type, label, glyph }) => (
+            <ToolbarButton
+              key={type}
+              label={label}
+              glyph={glyph}
+              onClick={() => sceneEditor.addShape(type)}
+            />
+          ))}
+        </span>
+      )}
       <span role="group" aria-label="History" className="editor-tool-group">
         <ToolbarButton
           label="Undo"
@@ -2842,7 +2951,9 @@ function EditorWorkspace() {
         <span className="editor-header-break" aria-hidden="true" />
         {workingCopy && (
           <span className="editor-renderer-badge" data-testid="editor-renderer-badge">
-            {RENDERER_LABELS[exportRendererIdFor(workingCopy)]}
+            {resolveSceneRendererId(workingCopy) === 'drawio'
+              ? 'Draw.io'
+              : RENDERER_LABELS[exportRendererIdFor(workingCopy)]}
           </span>
         )}
         <span className="editor-header-break" aria-hidden="true" />

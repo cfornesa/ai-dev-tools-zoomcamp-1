@@ -4,7 +4,17 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1-5"
   deployment_status:
+
+# A pull request can receive several commits while CI is queued on a busy
+# runner pool. Keep only the newest revision's run: older revisions cannot be
+# the candidate for merge or deployment once a newer commit exists.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   workflow-validation:
@@ -378,6 +388,12 @@ jobs:
         working-directory: backend
         run: uv run --env-file .env python manage.py migrate --noinput
 
+      - name: Verify shared quota across worker processes
+        working-directory: backend
+        env:
+          POSTGRES_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/creatrweb_e2e
+        run: uv run pytest tests/test_shared_quota_cache.py -q
+
       - name: Start Django and Vite
         run: |
           (cd backend && uv run --env-file .env python manage.py runserver 0.0.0.0:8000) > /tmp/django-e2e.log 2>&1 &
@@ -402,7 +418,21 @@ jobs:
           --project=webkit
           --grep "keeps the fullscreen command synchronized after browser Escape"
 
+      - name: Run browser acceptance smoke suite
+        if: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'schedule' }}
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:5000
+        run: >-
+          npm run test:e2e --
+          e2e/authPolicy.spec.ts
+          e2e/projectLifecycle.spec.ts
+          e2e/publishingAndRemix.spec.ts
+          e2e/responsiveShell.spec.ts
+          --project=chromium
+
       - name: Run full browser acceptance suite
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:5000

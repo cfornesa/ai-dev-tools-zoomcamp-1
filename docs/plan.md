@@ -102,6 +102,7 @@ All graph bindings consume normalized signals, such as `primaryHand.indexTip.x`,
 
 - Require accounts for saving projects, publishing, forking, and using server-side AI generation.
 - Support Google OAuth only in V1.
+- Password signup is disabled in V1; new accounts are created through Google sign-in.
 - Request minimal profile/email scopes.
 - Use HTTPS, strict redirect URI configuration, and authorization-code flow with PKCE where applicable.
 

@@ -41,6 +41,13 @@ if [[ ! "$frontend_port" =~ ^[0-9]+$ ]] || (( frontend_port < 1 || frontend_port
   exit 2
 fi
 
+backend_serve_mode="${BACKEND_SERVE_MODE:-dev}"
+if [[ "$backend_serve_mode" != "dev" && "$backend_serve_mode" != "asgi" ]]; then
+  printf 'Invalid BACKEND_SERVE_MODE: %s (must be "dev" or "asgi")\n' \
+    "$backend_serve_mode" >&2
+  exit 2
+fi
+
 startup_timeout_seconds="${STARTUP_TIMEOUT_SECONDS:-60}"
 if [[ ! "$startup_timeout_seconds" =~ ^[0-9]+$ ]] || (( startup_timeout_seconds < 1 )); then
   printf 'Invalid STARTUP_TIMEOUT_SECONDS: %s\n' "$startup_timeout_seconds" >&2
@@ -80,7 +87,12 @@ if [[ "${RUN_MIGRATIONS_ON_START:-false}" == "true" ]]; then
   fi
 fi
 
-(cd "$backend_dir" && exec uv run python manage.py runserver 0.0.0.0:8000) &
+if [[ "$backend_serve_mode" == "asgi" ]]; then
+  (cd "$backend_dir" && exec uv run --with 'uvicorn==0.46.0' uvicorn backend.main:app \
+    --host 0.0.0.0 --port 8000) &
+else
+  (cd "$backend_dir" && exec uv run python manage.py runserver 0.0.0.0:8000) &
+fi
 django_pid=$!
 
 # Do not start Vite until Django can serve the same health endpoint that the
@@ -88,8 +100,7 @@ django_pid=$!
 # is still binding its port; those are expected during normal startup.
 startup_deadline=$((SECONDS + startup_timeout_seconds))
 while true; do
-  django_state="$(ps -o stat= -p "$django_pid" 2>/dev/null || true)"
-  if [[ -z "$django_state" || "$django_state" == Z* ]]; then
+  if ! kill -0 "$django_pid" 2>/dev/null; then
     if wait "$django_pid"; then
       django_status=$?
     else
@@ -121,18 +132,16 @@ frontend_pid=$!
 
 # Fail fast if either service exits, while EXIT cleanup stops its companion.
 # The bash 4.3+ "wait" flag that blocks on the first of several pids isn't
-# available on macOS's stock /bin/bash (3.2), so poll each pid's process
-# state instead, matching the health-check loop above.
+# available on macOS's stock /bin/bash (3.2), so poll child liveness instead,
+# matching the health-check loop above.
 set +e
 while true; do
-  django_state="$(ps -o stat= -p "$django_pid" 2>/dev/null || true)"
-  if [[ -z "$django_state" || "$django_state" == Z* ]]; then
+  if ! kill -0 "$django_pid" 2>/dev/null; then
     wait "$django_pid"
     status=$?
     break
   fi
-  frontend_state="$(ps -o stat= -p "$frontend_pid" 2>/dev/null || true)"
-  if [[ -z "$frontend_state" || "$frontend_state" == Z* ]]; then
+  if ! kill -0 "$frontend_pid" 2>/dev/null; then
     wait "$frontend_pid"
     status=$?
     break

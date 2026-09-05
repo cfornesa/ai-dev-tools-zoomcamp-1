@@ -171,6 +171,57 @@ def _check_forbidden_node_types(data: dict) -> list[SceneValidationError]:
     return errors
 
 
+def _check_drawio_references(data: dict) -> list[SceneValidationError]:
+    """Validate cross-object references in the bounded draw.io subset."""
+    if data.get("documentType") != "drawio":
+        return []
+    document = data.get("drawio", {})
+    layers = document.get("layers", [])
+    objects = document.get("objects", [])
+    layer_ids = {layer["id"] for layer in layers}
+    object_ids = {obj["id"] for obj in objects}
+    errors: list[SceneValidationError] = []
+    if len(layer_ids) != len(layers):
+        errors.append(
+            SceneValidationError(
+                "$.drawio.layers", "duplicateId", "Draw.io layer IDs must be unique."
+            )
+        )
+    if len(object_ids) != len(objects):
+        errors.append(
+            SceneValidationError(
+                "$.drawio.objects", "duplicateId", "Draw.io object IDs must be unique."
+            )
+        )
+    for index, obj in enumerate(objects):
+        if obj["layerId"] not in layer_ids:
+            errors.append(
+                SceneValidationError(
+                    f"$.drawio.objects[{index}].layerId",
+                    "danglingReference",
+                    f"layerId '{obj['layerId']}' does not match any draw.io layer.",
+                )
+            )
+        parent_id = obj.get("parentId")
+        if parent_id is not None and parent_id not in object_ids:
+            errors.append(
+                SceneValidationError(
+                    f"$.drawio.objects[{index}].parentId",
+                    "danglingReference",
+                    f"parentId '{parent_id}' does not match any draw.io object.",
+                )
+            )
+        if obj.get("type") == "text" and not obj.get("text", "").strip():
+            errors.append(
+                SceneValidationError(
+                    f"$.drawio.objects[{index}].text",
+                    "invalidValue",
+                    "Text objects require non-empty text.",
+                )
+            )
+    return errors
+
+
 def _duplicate_ids(items: list[dict], collection: str) -> list[SceneValidationError]:
     seen: set[str] = set()
     errors = []
@@ -625,6 +676,7 @@ def validate_scene(data: Any) -> SceneValidationResult:
         return SceneValidationResult(errors=non_finite_errors)
 
     reference_errors = _check_references(data)
+    reference_errors += _check_drawio_references(data)
     if reference_errors:
         return SceneValidationResult(errors=reference_errors)
 

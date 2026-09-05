@@ -15696,3 +15696,33 @@ concurrency, but the AI/recovery suite remains open because autosave scenarios
 time out before finding the stage-authoring control. Production parity is
 still unverified because `https://animate.creatrweb.com/` is not running this
 branch.
+
+## Task-distillation continuation — 2026-09-05
+
+The browser-test throughput blocker was implemented first. PR #417 now uses a
+bounded Chromium smoke set for ordinary pushes/PRs, retains the WebKit
+fullscreen regression, and reserves the complete cross-browser suite for
+manual dispatch or the weekday schedule. The smoke list is discoverable as 43
+tests across auth, lifecycle, publishing/remix, and responsive-shell specs.
+
+The current-revision full-run evidence was classified as a new workflow/fixture
+investigation rather than reopening closed #193: CI run #496 was cancelled
+before terminal completion after repeated 30-second timeouts and PostgreSQL
+duplicate-key errors in cache/draft paths. This is tracked by
+[#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419).
+
+The requested account/product expansion was decomposed into closure-sized
+issues: [#420](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/420)
+for Google/GitHub OAuth, [#425](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/425)
+for LinkedIn/Bluesky feasibility, [#421](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/421)
+for configured admin identities, [#423](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/423)
+for atomic tiers/entitlements, [#422](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/422)
+for the admin settings console, [#424](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/424)
+for PayPal synchronization, and [#426](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/426)
+for account self-service and identity security. The complete manifest and
+dependency rationale are in
+`.local/tasks/task-distillation-2026-09-05.md`.
+
+Status: DISTILLED. Exactly one next issue is groomed: #418. #419 and #420–#426
+remain open or dependency-blocked; #415 remains open for published Replit
+process verification.

@@ -16,6 +16,7 @@ from urllib.parse import urlsplit
 
 from django.core.exceptions import ImproperlyConfigured
 
+from backend.admin_identities import parse_admin_identities
 from backend.database import parse_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -211,6 +212,12 @@ if bool(GITHUB_OAUTH_CLIENT_ID) != bool(GITHUB_OAUTH_CLIENT_SECRET):
         "disabled). Only one of the two is currently set."
     )
 GITHUB_OAUTH_ENABLED = bool(GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET)
+
+# Environment-configured application-admin identities (issue #421). Empty by
+# default (grants nobody). See backend.admin_identities for the finite
+# `email:`/`username:` syntax and scenes.management.commands
+# .reconcile_admin_identities for how this becomes a persisted grant.
+ADMIN_IDENTITIES = parse_admin_identities(os.environ.get('ADMIN_IDENTITIES', ''))
 
 # Root key used only to encrypt user-owned Mistral credentials. Keep this in
 # deployment configuration and rotate it deliberately (rotation invalidates

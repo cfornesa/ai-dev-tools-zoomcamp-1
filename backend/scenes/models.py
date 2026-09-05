@@ -42,6 +42,25 @@ class ProjectManager(models.Manager):
         return super().get_queryset().filter(is_deleted=False)
 
 
+class ApplicationAdmin(models.Model):
+    """A user granted application-admin authorization (issue #421).
+
+    Deliberately independent of Django's own `is_staff`/`is_superuser`:
+    `scenes.management.commands.reconcile_admin_identities` is the only
+    thing that ever creates or deletes rows here, driven purely by the
+    `ADMIN_IDENTITIES` environment variable. A row's existence *is* the
+    grant -- there is no separate boolean to fall out of sync with it.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="application_admin_grant"
+    )
+    granted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"Application admin grant for user {self.user_id}"
+
+
 class MistralCredential(models.Model):
     """One encrypted, owner-scoped Mistral key; plaintext never reaches a model field."""
 

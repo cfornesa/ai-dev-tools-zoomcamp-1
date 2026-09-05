@@ -36,6 +36,7 @@ ALL_SETTINGS_ENV_VARS = REQUIRED_ENV_VARS + [
     "EMAIL_PORT",
     "GITHUB_OAUTH_CLIENT_ID",
     "GITHUB_OAUTH_CLIENT_SECRET",
+    "ADMIN_IDENTITIES",
 ]
 
 VALID_ENV = {
@@ -245,4 +246,40 @@ def test_github_oauth_partial_config_raises_clear_error(monkeypatch, partial_env
     env.update(partial_env)
 
     with pytest.raises(ImproperlyConfigured, match="GITHUB_OAUTH_CLIENT_ID"):
+        _reload_settings(monkeypatch, env)
+
+
+def test_admin_identities_empty_by_default(monkeypatch):
+    """ADMIN_IDENTITIES (issue #421) is optional and grants nobody by default."""
+    settings_module = _reload_settings(monkeypatch, VALID_ENV)
+
+    assert settings_module.ADMIN_IDENTITIES == frozenset()
+
+
+def test_admin_identities_parses_normalized_email_and_username(monkeypatch):
+    env = dict(VALID_ENV)
+    env["ADMIN_IDENTITIES"] = " email:Owner@Example.com , username:site-admin ,,"
+
+    settings_module = _reload_settings(monkeypatch, env)
+
+    assert settings_module.ADMIN_IDENTITIES == frozenset(
+        {("email", "owner@example.com"), ("username", "site-admin")}
+    )
+
+
+@pytest.mark.parametrize(
+    "malformed",
+    [
+        "not-a-valid-entry",
+        "email:",
+        "username:",
+        "phone:5551234567",
+        "email:valid@example.com,not-a-valid-entry",
+    ],
+)
+def test_admin_identities_rejects_malformed_entries(monkeypatch, malformed):
+    env = dict(VALID_ENV)
+    env["ADMIN_IDENTITIES"] = malformed
+
+    with pytest.raises(ImproperlyConfigured, match="ADMIN_IDENTITIES entry"):
         _reload_settings(monkeypatch, env)

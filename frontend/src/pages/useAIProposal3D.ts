@@ -182,6 +182,7 @@ export function useAIProposal3D(projectId: string | undefined) {
   const [mode, setModeState] = useState<ProposalMode3D>('create');
   const [prompt, setPrompt] = useState('');
   const [model, setModelState] = useState(readStoredModel);
+  const [vendor, setVendor] = useState<'mistral' | 'gemini' | 'deepseek'>('mistral');
   const setModel = useCallback((next: string) => {
     setModelState(next);
     persistModel(next);
@@ -277,13 +278,23 @@ export function useAIProposal3D(projectId: string | undefined) {
       for (;;) {
         try {
           if (mode === 'create') {
-            const result = await createAIScene3D(
-              projectId,
-              trimmed,
-              controller.signal,
-              trimmedModel,
-              personaId ?? undefined,
-            );
+            const result =
+              vendor === 'mistral'
+                ? await createAIScene3D(
+                    projectId,
+                    trimmed,
+                    controller.signal,
+                    trimmedModel,
+                    personaId ?? undefined,
+                  )
+                : await createAIScene3D(
+                    projectId,
+                    trimmed,
+                    controller.signal,
+                    trimmedModel,
+                    personaId ?? undefined,
+                    vendor,
+                  );
             if (!mountedRef.current || abortControllerRef.current !== controller) return;
             setProposal({
               mode: 'create',
@@ -295,15 +306,27 @@ export function useAIProposal3D(projectId: string | undefined) {
             });
             setPhase('success');
           } else {
-            const result = await editAIScene3D(
-              projectId,
-              trimmed,
-              currentScene as SceneDocument3D,
-              baseVersionId,
-              controller.signal,
-              trimmedModel,
-              personaId ?? undefined,
-            );
+            const result =
+              vendor === 'mistral'
+                ? await editAIScene3D(
+                    projectId,
+                    trimmed,
+                    currentScene as SceneDocument3D,
+                    baseVersionId,
+                    controller.signal,
+                    trimmedModel,
+                    personaId ?? undefined,
+                  )
+                : await editAIScene3D(
+                    projectId,
+                    trimmed,
+                    currentScene as SceneDocument3D,
+                    baseVersionId,
+                    controller.signal,
+                    trimmedModel,
+                    personaId ?? undefined,
+                    vendor,
+                  );
             if (!mountedRef.current || abortControllerRef.current !== controller) return;
             setProposal({
               mode: 'edit',
@@ -332,7 +355,7 @@ export function useAIProposal3D(projectId: string | undefined) {
         }
       }
     },
-    [projectId, prompt, mode, model, personaId, retryPreference],
+    [projectId, prompt, mode, model, personaId, vendor, retryPreference],
   );
 
   const retryGeneration = useCallback(
@@ -398,6 +421,8 @@ export function useAIProposal3D(projectId: string | undefined) {
     setPrompt,
     model,
     setModel,
+    vendor,
+    setVendor,
     personaId,
     setPersonaId,
     phase,

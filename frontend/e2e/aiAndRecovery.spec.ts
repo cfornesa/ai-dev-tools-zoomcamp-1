@@ -231,6 +231,35 @@ test.describe('AI create/edit proposals', () => {
     await expect(page.locator('.version-history-item')).toHaveCount(2);
   });
 
+  test('create: each configured provider uses its own deterministic model selection', async ({
+    page,
+  }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await createBlankProjectViaUI(page);
+    await expandAllCollapsibleSections(page);
+    await setAIScenario(page, 'success');
+
+    for (const [vendor, model] of [
+      ['mistral', ''],
+      ['gemini', 'gemini-2.5-flash'],
+      ['deepseek', 'deepseek-chat'],
+    ] as const) {
+      await page.getByLabel('AI provider').selectOption(vendor);
+      if (model) {
+        await expect(page.getByLabel(`${vendor} model (optional)`)).toHaveValue(model);
+      }
+      await page
+        .getByRole('textbox', { name: 'Describe the scene you want to generate' })
+        .fill(`Deterministic ${vendor} proposal.`);
+      await page.getByRole('button', { name: 'Generate scene' }).click();
+      await expect(page.getByTestId('ai-proposal-success')).toBeVisible();
+      await page.getByTestId('ai-reject-button').click();
+      await expect(page.getByTestId('ai-proposal-success')).toHaveCount(0);
+    }
+
+    await expect(page.locator('.version-history-item')).toHaveCount(1);
+  });
+
   test('create: invalid structured output, quota, and timeout each surface their own error state and create no version', async ({
     page,
   }) => {

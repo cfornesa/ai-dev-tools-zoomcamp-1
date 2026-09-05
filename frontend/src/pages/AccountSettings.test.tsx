@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,6 +14,9 @@ vi.mock('../api/aiRetryPreference');
 const mockedFetch = vi.mocked(credentialsApi.fetchMistralCredential);
 const mockedSave = vi.mocked(credentialsApi.saveMistralCredential);
 const mockedRemove = vi.mocked(credentialsApi.removeMistralCredential);
+const mockedFetchProviders = vi.mocked(credentialsApi.fetchProviderCredentials);
+const mockedSaveProvider = vi.mocked(credentialsApi.saveProviderCredential);
+const mockedRemoveProvider = vi.mocked(credentialsApi.removeProviderCredential);
 
 const mockedFetchModels = vi.mocked(aiPreferencesApi.fetchMistralModelPreferences);
 const mockedCreateModel = vi.mocked(aiPreferencesApi.createMistralModelPreference);
@@ -30,6 +33,13 @@ beforeEach(() => {
   mockedFetchModels.mockResolvedValue([]);
   mockedFetchPersonas.mockResolvedValue([]);
   mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
+  mockedFetchProviders.mockResolvedValue({
+    providers: [
+      { vendor: 'mistral', label: 'Mistral', implemented: true, configured: false },
+      { vendor: 'gemini', label: 'Google Gemini', implemented: true, configured: false },
+      { vendor: 'deepseek', label: 'DeepSeek', implemented: true, configured: false },
+    ],
+  });
 });
 
 describe('AccountSettings', () => {
@@ -43,6 +53,27 @@ describe('AccountSettings', () => {
     expect(screen.getByRole('button', { name: /remove key/i })).toHaveClass('shell-action');
   });
 
+  it('shows named vendor cards and clears non-Mistral keys after saving', async () => {
+    mockedFetch.mockResolvedValue({ configured: false });
+    mockedSaveProvider.mockResolvedValue({ vendor: 'gemini', configured: true });
+    const user = userEvent.setup();
+    render(<AccountSettings />);
+
+    const input = await screen.findByLabelText(/google gemini api key/i);
+    await user.type(input, 'gemini-user-key-12345');
+    const geminiCard = input.closest('.account-settings-section');
+    expect(geminiCard).not.toBeNull();
+    await user.click(
+      within(geminiCard as HTMLElement).getByRole('button', { name: /^save key$/i }),
+    );
+
+    expect(mockedSaveProvider).toHaveBeenCalledWith('gemini', 'gemini-user-key-12345');
+    expect(input).toHaveValue('');
+    expect(screen.getByText('DeepSeek key: not configured')).toBeInTheDocument();
+    expect(screen.getByLabelText(/deepseek api key/i)).toHaveValue('');
+    expect(mockedRemoveProvider).not.toHaveBeenCalled();
+  });
+
   it('submits a key, clears the input, and supports removal', async () => {
     mockedFetch.mockResolvedValue({ configured: false });
     mockedSave.mockResolvedValue({ configured: true });
@@ -52,7 +83,9 @@ describe('AccountSettings', () => {
 
     const input = await screen.findByLabelText(/^mistral api key$/i, { selector: 'input' });
     await user.type(input, 'sk-user-key-12345');
-    await user.click(screen.getByRole('button', { name: /save key/i }));
+    await user.click(
+      within(input.closest('form') as HTMLFormElement).getByRole('button', { name: /save key/i }),
+    );
 
     expect(mockedSave).toHaveBeenCalledWith('sk-user-key-12345');
     expect(input).toHaveValue('');

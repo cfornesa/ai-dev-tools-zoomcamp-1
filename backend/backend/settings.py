@@ -167,6 +167,27 @@ elif SECURE_HSTS_SECONDS < 0:
 # deployment boundary" section and AGENTS.md for the full picture.
 DATABASE_URL = get_required_env('DATABASE_URL')
 
+# AI quota and rate-limit state must be shared by every production worker.
+# Django's database cache uses the configured PostgreSQL database and needs no
+# additional service or dependency. Development and test settings retain the
+# deterministic process-local default; production refuses to fall back to it.
+CACHES: dict[str, dict[str, object]]
+if DEBUG:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "gesture-reactive-studio-dev",
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "backend.database_cache.AtomicDatabaseCache",
+            "LOCATION": "django_cache",
+            "TIMEOUT": None,
+        }
+    }
+
 # Google OAuth (Task 12). Required and validated at settings-load time,
 # like every other secret here. Real values are provisioned per Task 75;
 # until then this fails fast with a clear message just like a missing
@@ -277,7 +298,12 @@ SOCIALACCOUNT_PROVIDERS = {
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
-ACCOUNT_FORMS = {"signup": "backend.forms.RecaptchaSignupForm"}
+ACCOUNT_FORMS = {'signup': 'backend.forms.RecaptchaSignupForm'}
+# V1 is Google-only. Google verifies the email during the OAuth flow, while
+# the local allauth signup route remains present only to show a clear policy
+# message to old bookmarks and to avoid contradictory account copy.
+ACCOUNT_ADAPTER = "backend.account_adapter.GoogleOnlyAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "backend.social_account_adapter.GoogleSocialAccountAdapter"
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'

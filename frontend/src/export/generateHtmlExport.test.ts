@@ -246,6 +246,42 @@ describe('generateHtmlExport: svg renderer (issue #207)', () => {
   });
 });
 
+describe('generateHtmlExport: draw.io renderer (issue #412)', () => {
+  it('packages the validated draw.io source with its dependency-free runtime', () => {
+    const result = generateHtmlExport(
+      baseInput({
+        scene: baseScene({
+          documentType: 'drawio',
+          drawio: {
+            formatVersion: 1,
+            layers: [{ id: 'draw-layer', name: 'Draw', order: 0, visible: true, locked: false }],
+            objects: [
+              {
+                id: 'draw-rect',
+                type: 'rect',
+                layerId: 'draw-layer',
+                parentId: null,
+                x: 10,
+                y: 10,
+                width: 50,
+                height: 40,
+                fill: '#ff0000',
+                stroke: null,
+              },
+            ],
+          },
+        }),
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.html).not.toContain(P5_CDN_URL);
+      expect(result.html).toContain('Draw.io scene');
+      expect(result.html).toContain('draw-rect');
+    }
+  });
+});
+
 describe('generateHtmlExport: embedded runtime script validity', () => {
   it('embeds a syntactically valid runtime script', () => {
     const result = generateHtmlExport(baseInput());

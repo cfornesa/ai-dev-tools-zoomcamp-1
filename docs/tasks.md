@@ -1,5 +1,41 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-05 backlog implementation continuation
+
+The earlier 2026-09-04 report was an audit snapshot. This continuation is
+implementation work: #414, #415, #416, #404, and the #409 foundation now have
+code and focused tests in the working tree.
+
+- #414: production selects Django's shared database cache and migration
+  `0026_create_django_cache_table`; development/tests retain isolated locmem.
+- #415: production exports `BACKEND_SERVE_MODE=asgi` and launches pinned
+  Uvicorn; local startup remains Django `runserver`.
+- #416: local password signup is closed with an explicit Google-only policy;
+  verified first-time Google social signup remains enabled.
+- #404: finite Mistral/Gemini/DeepSeek registry and encrypted owner/vendor
+  credential metadata endpoint were added without exposing plaintext.
+- #409: the canonical schema now carries a versioned bounded draw.io subset,
+  with mirrored client/server duplicate-ID and reference validation.
+- #405/#406: Gemini and DeepSeek now have dependency-free server adapters for
+  validated 2D/3D create/edit operations, with deterministic fake-client
+  contract tests and owner credential routing.
+- #407: account settings now expose named vendor credential cards, and 2D/3D
+  AI proposal panels send a selected validated vendor/model pair.
+
+The quota implementation was subsequently hardened: Django's stock database
+cache increment was found to be read/modify/write under a real two-process
+PostgreSQL run. `backend.database_cache.AtomicDatabaseCache` now uses a
+PostgreSQL row lock, and `/health/` performs a cache round-trip so an
+unavailable quota backend returns 503. The isolated worker test passes; CI
+run 485 remains queued for clean-host confirmation.
+
+Focused evidence: backend provider/auth/draw.io/cache tests pass; backend
+scene validation tests pass (52); frontend scene validation tests pass (48)
+and frontend typecheck passes. Full `make check` remains unavailable in this
+managed host because its first target invokes an unavailable `python` binary;
+startup subprocess/socket tests remain host-boundary failures documented in
+the readiness report.
+
 Status convention: Each completed item is marked `Status: COMPLETE` only after
 its acceptance evidence is reconciled and the corresponding GitHub issue is
 closed. Passing implementation or QA alone is not completion. Work that is
@@ -15606,6 +15642,18 @@ existing multi-vendor (#404–#408) and draw.io (#409–#413) queues:
 - [#416](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/416) —
   choose and enforce an explicit signup authentication policy.
 
+## Current backlog-session status — 2026-09-04
+
+The authenticated backlog-session reconciliation discovered all 13 issues
+#404–#416 open on GitHub and processed them in dependency order. #404 and #409
+are `BLOCKED` on missing implementations; #405–#408 and #410–#413 are
+`DEPENDENCY-BLOCKED` on those foundations; #414 is blocked on the shared
+production-state infrastructure choice; #415 is blocked on the production
+WSGI/ASGI and signal-contract choice; and #416 is blocked on the owner’s
+signup-policy decision. Required QA comments were posted to every issue.
+See `.local/tasks/backlog-session-2026-09-04.md` for the complete manifest,
+transaction ledger, commands, evidence boundaries, and next actions.
+
 Existing project creation, AI recovery, native 2D/3D, publishing, export,
 authentication, responsive, provider, and draw.io contracts were classified
 as already covered or separately queued. Deployed parity, real-camera
@@ -15617,3 +15665,72 @@ The complete manifest, duplicate report, blocker triage, dependency rationale,
 and evidence boundaries are recorded in
 `.local/tasks/gap-audit-2026-09-04.md`. Durable operational guidance is
 recorded in `.agents/memory/production-readiness-gaps.md`.
+
+## Implementation continuation — 2026-09-05
+
+The earlier audit wording above is historical and is superseded by the active
+implementation transaction. Provider selection now has live Gemini and
+DeepSeek adapters, owner-scoped encrypted credentials, provider-specific model
+validation, 2D/3D routing, and actionable missing-key responses. The settings
+and AI proposal panels expose the three providers and use the matching model
+catalog. Deterministic routing/isolation coverage was added in
+`backend/tests/test_ai_provider_matrix.py`.
+
+Focused verification: 34 backend provider/matrix/3D tests passed, 58 frontend
+provider-hook/panel tests passed, frontend typecheck and format checks passed,
+and backend Ruff passed. Cross-vendor matrix issue #408 remains open until
+all create/edit failure modes and browser evidence are covered.
+
+The draw.io foundation now also has a dedicated, schema-bounded Canvas2D
+adapter selected by `documentType: "drawio"`. It renders only the approved
+rect/ellipse/line/text object types and visible layers; unsupported XML-like
+content is not interpreted. The standalone HTML export path now packages the
+validated draw.io source with a dependency-free runtime using the same bounded
+object semantics. Focused draw.io renderer/export tests and frontend
+typecheck/format/lint checks pass. Public/embed deployment verification and
+thumbnail parity remain part of #412.
+
+The disposable browser harness now accepts a validated per-project selector.
+Chromium browser QA proved cross-provider model selection and server-draft
+concurrency, but the AI/recovery suite remains open because autosave scenarios
+time out before finding the stage-authoring control. Production parity is
+still unverified because `https://animate.creatrweb.com/` is not running this
+branch.
+
+## Task-distillation continuation — 2026-09-05
+
+The browser-test throughput blocker was implemented first. PR #417 now uses a
+bounded Chromium smoke set for ordinary pushes/PRs, retains the WebKit
+fullscreen regression, and reserves the complete cross-browser suite for
+manual dispatch or the weekday schedule. The smoke list is discoverable as 43
+tests across auth, lifecycle, publishing/remix, and responsive-shell specs.
+
+The current-revision full-run evidence was classified as a new workflow/fixture
+investigation rather than reopening closed #193: CI run #496 was cancelled
+before terminal completion after repeated 30-second timeouts and PostgreSQL
+duplicate-key errors in cache/draft paths. This is tracked by
+[#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419).
+
+The requested account/product expansion was decomposed into closure-sized
+issues: [#420](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/420)
+for Google/GitHub OAuth, [#425](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/425)
+for LinkedIn/Bluesky feasibility, [#421](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/421)
+for configured admin identities, [#423](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/423)
+for atomic tiers/entitlements, [#422](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/422)
+for the admin settings console, [#424](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/424)
+for PayPal synchronization, and [#426](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/426)
+for account self-service and identity security. The complete manifest and
+dependency rationale are in
+`.local/tasks/task-distillation-2026-09-05.md`.
+
+Status: DISTILLED. Exactly one next issue is groomed: #418. #419 and #420–#426
+remain open or dependency-blocked; #415 remains open for published Replit
+process verification.
+
+The pasted Chromium smoke result refined the browser blocker: 15 editor,
+publishing, and remix failures were caused by stale direct locators waiting for
+controls now behind the stage-local `Edit scene` popover; 15 later scenarios
+were skipped by the resulting failure cascade. This is tracked separately in
+[#427](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/427), linked
+to the shared overlay contract #348 and the broader full-suite investigation
+#419. Closed #113 and #193 remain historical and were not reopened.

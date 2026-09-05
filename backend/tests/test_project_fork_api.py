@@ -54,7 +54,7 @@ def anon_client():
     return APIClient()
 
 
-def _make_public_project(owner, *, allow_public_remix=True, title="Hand Follower"):
+def _make_public_project(owner, *, allow_public_remix=True, title="Hand Follower", scene=None):
     project = Project.objects.create(
         owner=owner,
         title=title,
@@ -62,7 +62,7 @@ def _make_public_project(owner, *, allow_public_remix=True, title="Hand Follower
         allow_public_remix=allow_public_remix,
         published_at=None,
     )
-    scene = copy.deepcopy(BLANK_SCENE)
+    scene = copy.deepcopy(scene if scene is not None else BLANK_SCENE)
     version = SceneVersion.objects.create(
         project=project, sequence=1, scene_json=scene, origin=SceneVersion.Origin.MANUAL
     )
@@ -173,6 +173,43 @@ def test_fork_scene_is_an_independent_copy(visitor_client, owner):
     source.refresh_from_db()
     assert source.current_version.sequence == 1
     assert SceneVersion.objects.filter(project=source).count() == 1
+
+
+@pytest.mark.django_db
+def test_drawio_fork_preserves_supported_document_and_layer_metadata(visitor_client, owner):
+    drawio_scene = copy.deepcopy(BLANK_SCENE)
+    drawio_scene.update(
+        {
+            "documentType": "drawio",
+            "drawio": {
+                "formatVersion": 1,
+                "layers": [
+                    {"id": "layer-a", "name": "Main", "order": 0, "visible": True, "locked": True}
+                ],
+                "objects": [
+                    {
+                        "id": "object-a",
+                        "type": "ellipse",
+                        "layerId": "layer-a",
+                        "parentId": None,
+                        "x": 12,
+                        "y": 24,
+                        "width": 80,
+                        "height": 40,
+                    }
+                ],
+            },
+        }
+    )
+    source = _make_public_project(owner, scene=drawio_scene)
+
+    response = visitor_client.post(_fork_url(source))
+    assert response.status_code == 201
+    forked = Project.objects.get(public_id=response.json()["id"])
+    forked_scene = forked.current_version.scene_json
+    assert forked_scene["documentType"] == "drawio"
+    assert forked_scene["drawio"] == drawio_scene["drawio"]
+    assert forked_scene["id"] != drawio_scene["id"]
 
 
 @pytest.mark.django_db

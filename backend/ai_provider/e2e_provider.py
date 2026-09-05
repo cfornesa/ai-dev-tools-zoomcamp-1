@@ -265,8 +265,10 @@ class E2ETestProvider(AISceneProvider, AIScene3DProvider):
     _E2EFakeClient3D(...))` for both 3D methods.
     """
 
-    def __init__(self, scenario: str):
+    def __init__(self, scenario: str, vendor: str = "mistral", model: str | None = None):
         self.scenario = scenario
+        self.vendor = vendor
+        self.model = model
         self._create_provider = FakeAISceneProvider(
             _CREATE_SCENARIO_MAP.get(scenario, FakeAIProviderScenario.SUCCESS)
         )
@@ -292,8 +294,10 @@ class E2ETestProvider(AISceneProvider, AIScene3DProvider):
         return self._provider_3d.edit_scene3d_with_patch(request)
 
 
-def build_e2e_provider(scenario: str) -> E2ETestProvider:
-    return E2ETestProvider(scenario)
+def build_e2e_provider(
+    scenario: str, vendor: str = "mistral", model: str | None = None
+) -> E2ETestProvider:
+    return E2ETestProvider(scenario, vendor=vendor, model=model)
 
 
 # Re-exported for callers that want to raise these directly in future

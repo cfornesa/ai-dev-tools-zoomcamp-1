@@ -228,7 +228,7 @@ jobs:
 
     assert commit.returncode == 0
     hook_output = commit.stdout + commit.stderr
-    assert "python scripts/check-github-action-pins.py" in hook_output
+    assert "python3 scripts/check-github-action-pins.py" in hook_output
     assert "GitHub Action pin check passed (1 workflow files scanned)." in hook_output
 
 

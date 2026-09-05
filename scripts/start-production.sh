@@ -11,6 +11,7 @@
 set -Eeuo pipefail
 
 export FRONTEND_SERVE_MODE=preview
+export BACKEND_SERVE_MODE=asgi
 # Production schema changes are applied by Replit's publish/schema-diff flow.
 # Running migrations on every autoscale instance delays port availability and
 # can create overlapping startup work during scale-out.

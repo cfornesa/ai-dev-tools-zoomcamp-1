@@ -39,7 +39,7 @@ export type RenderableCameraOverlay = {
 /** Renderer ids `schema/scene.schema.json`'s `renderer.preferred` enum
  * accepts. Kept in sync with that enum by
  * `createScenePreview.test.ts`'s own registry-completeness assertion. */
-export type SceneRendererId = 'p5' | 'canvas2d' | 'svg';
+export type SceneRendererId = 'p5' | 'canvas2d' | 'svg' | 'drawio';
 
 export type ScenePreview = {
   /** Validates and draws `scene`, then draws `trails` (Task 61,

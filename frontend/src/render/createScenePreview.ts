@@ -13,8 +13,9 @@ import { createCanvas2DScenePreview } from './canvas2dAdapter';
 import { createP5ScenePreview } from './p5Adapter';
 import type { ScenePreview, SceneRendererId } from './scenePreview';
 import { createSVGScenePreview } from './svgAdapter';
+import { createDrawioScenePreview } from './drawioAdapter';
 
-const RECOGNIZED_RENDERER_IDS: readonly SceneRendererId[] = ['p5', 'canvas2d', 'svg'];
+const RECOGNIZED_RENDERER_IDS: readonly SceneRendererId[] = ['p5', 'canvas2d', 'svg', 'drawio'];
 
 /** Reads `scene.renderer.preferred`, tolerating a scene that hasn't been
  * schema-validated yet (this runs before `render()`'s own validation) --
@@ -23,6 +24,7 @@ const RECOGNIZED_RENDERER_IDS: readonly SceneRendererId[] = ['p5', 'canvas2d', '
  * `buildScenePlan`'s schema validation inside `render()` itself. */
 export function resolveSceneRendererId(scene: unknown): SceneRendererId {
   if (scene && typeof scene === 'object') {
+    if ((scene as Record<string, unknown>).documentType === 'drawio') return 'drawio';
     const renderer = (scene as Record<string, unknown>).renderer;
     if (renderer && typeof renderer === 'object') {
       const preferred = (renderer as Record<string, unknown>).preferred;
@@ -45,5 +47,7 @@ export function createScenePreview(
       return createSVGScenePreview(container);
     case 'p5':
       return createP5ScenePreview(container);
+    case 'drawio':
+      return createDrawioScenePreview(container);
   }
 }

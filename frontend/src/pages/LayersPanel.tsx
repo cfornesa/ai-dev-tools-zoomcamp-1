@@ -1337,7 +1337,9 @@ function LayersPanel({
         )}
       </div>
 
-      {sceneEditor.outline.length === 0 ? (
+      {sceneEditor.workingCopy?.documentType === 'drawio' ? (
+        <DrawioLayerRows sceneEditor={sceneEditor} onRowSelect={onRowSelect} />
+      ) : sceneEditor.outline.length === 0 ? (
         <p>No layers yet.</p>
       ) : (
         <ul aria-label="Scene outline" className="editor-outline-list">
@@ -1386,6 +1388,144 @@ function LayersPanel({
         </ul>
       )}
     </div>
+  );
+}
+
+function DrawioLayerRows({
+  sceneEditor,
+  onRowSelect,
+}: {
+  sceneEditor: SceneEditor;
+  onRowSelect?: (id: string) => void;
+}) {
+  const [draggedLayerId, setDraggedLayerId] = useState<string | null>(null);
+  const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
+  const orderedLayers = [...sceneEditor.layers].sort((a, b) => a.order - b.order);
+
+  function dropLayer(targetId: string, after: boolean) {
+    if (!draggedLayerId || draggedLayerId === targetId) return;
+    const sourceIndex = orderedLayers.findIndex((layer) => layer.id === draggedLayerId);
+    const targetIndex = orderedLayers.findIndex((layer) => layer.id === targetId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+    const insertionIndex = targetIndex + (after ? 1 : 0);
+    const adjustedIndex = insertionIndex > sourceIndex ? insertionIndex - 1 : insertionIndex;
+    if (adjustedIndex > sourceIndex) {
+      sceneEditor.moveLayerBySteps(draggedLayerId, 'down', adjustedIndex - sourceIndex);
+    } else if (adjustedIndex < sourceIndex) {
+      sceneEditor.moveLayerBySteps(draggedLayerId, 'up', sourceIndex - adjustedIndex);
+    }
+  }
+
+  return (
+    <>
+      <div role="group" aria-label="Draw.io layer actions" className="editor-tool-group">
+        <button type="button" onClick={() => sceneEditor.addLayer()}>
+          Add draw.io layer
+        </button>
+      </div>
+      <ul aria-label="Draw.io layers" className="editor-outline-list">
+        {orderedLayers.map((layer) => (
+          <li
+            key={layer.id}
+            data-drawio-layer-id={layer.id}
+            draggable={!layer.locked}
+            className={`editor-outline-row editor-outline-row-layer${
+              dragOverLayerId === layer.id ? ' editor-outline-row-drag-over' : ''
+            }`}
+            onDragStart={(event) => {
+              if (layer.locked) {
+                event.preventDefault();
+                return;
+              }
+              setDraggedLayerId(layer.id);
+              event.dataTransfer.effectAllowed = 'move';
+              event.dataTransfer.setData('text/plain', layer.id);
+            }}
+            onDragOver={(event) => {
+              if (!draggedLayerId || draggedLayerId === layer.id) return;
+              event.preventDefault();
+              setDragOverLayerId(layer.id);
+            }}
+            onDragLeave={() => setDragOverLayerId(null)}
+            onDrop={(event) => {
+              event.preventDefault();
+              const rect = event.currentTarget.getBoundingClientRect();
+              dropLayer(layer.id, event.clientY >= rect.top + rect.height / 2);
+              setDraggedLayerId(null);
+              setDragOverLayerId(null);
+            }}
+            onDragEnd={() => {
+              setDraggedLayerId(null);
+              setDragOverLayerId(null);
+            }}
+          >
+            <LayerNameField
+              layerId={layer.id}
+              name={layer.name}
+              onRename={sceneEditor.renameLayer}
+              className="editor-outline-layer-name"
+              onSelect={() => {
+                sceneEditor.selectLayer(layer.id);
+                onRowSelect?.(layer.id);
+              }}
+            />
+            <button
+              type="button"
+              aria-label={`Move ${layer.name} up`}
+              onClick={() => sceneEditor.moveLayer(layer.id, 'up')}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              aria-label={`Move ${layer.name} down`}
+              onClick={() => sceneEditor.moveLayer(layer.id, 'down')}
+            >
+              ↓
+            </button>
+            <button
+              type="button"
+              aria-label={`${layer.visible ? 'Hide' : 'Show'} ${layer.name}`}
+              onClick={() => sceneEditor.toggleLayerVisible(layer.id)}
+            >
+              {layer.visible ? 'Hide' : 'Show'}
+            </button>
+            <button
+              type="button"
+              aria-label={`${layer.locked ? 'Unlock' : 'Lock'} ${layer.name}`}
+              onClick={() => sceneEditor.toggleLayerLocked(layer.id)}
+            >
+              {layer.locked ? 'Unlock' : 'Lock'}
+            </button>
+            <button
+              type="button"
+              aria-label={`Delete draw.io layer ${layer.name}`}
+              onClick={() => {
+                sceneEditor.selectLayer(layer.id);
+                sceneEditor.deleteLayer(layer.id);
+              }}
+            >
+              ×
+            </button>
+            <ul aria-label={`Objects in ${layer.name}`} className="editor-outline-list">
+              {sceneEditor.drawioObjects
+                .filter((object) => object.layerId === layer.id)
+                .map((object) => (
+                  <li key={object.id} className="editor-outline-row editor-outline-row-shape">
+                    <button
+                      type="button"
+                      aria-label={`Select ${object.type} ${object.id}`}
+                      onClick={() => sceneEditor.selectShape(object.id)}
+                    >
+                      {object.type} {object.id}
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

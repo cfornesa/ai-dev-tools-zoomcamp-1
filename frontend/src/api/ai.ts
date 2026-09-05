@@ -67,7 +67,8 @@ export type AIErrorCode =
   | 'oversized_patch'
   | 'patch_apply_failed'
   | 'request_invalid'
-  | 'personal_key_required';
+  | 'personal_key_required'
+  | 'provider_unavailable';
 
 export type AIErrorBody = {
   error: AIErrorCode;
@@ -83,6 +84,7 @@ export function createAIScene(
   signal?: AbortSignal,
   model?: string,
   personaId?: number,
+  vendor?: 'mistral' | 'gemini' | 'deepseek',
 ): Promise<AICreateSceneResponse> {
   return apiFetch<AICreateSceneResponse>(`/api/projects/${projectId}/ai/create-scene/`, {
     method: 'POST',
@@ -90,6 +92,7 @@ export function createAIScene(
       prompt,
       ...(model ? { model } : {}),
       ...(personaId ? { persona_id: personaId } : {}),
+      ...(vendor && vendor !== 'mistral' ? { vendor } : {}),
     }),
     signal,
   });
@@ -103,6 +106,7 @@ export function editAIScene(
   signal?: AbortSignal,
   model?: string,
   personaId?: number,
+  vendor?: 'mistral' | 'gemini' | 'deepseek',
 ): Promise<AIEditSceneResponse> {
   return apiFetch<AIEditSceneResponse>(`/api/projects/${projectId}/ai/edit-scene/`, {
     method: 'POST',
@@ -112,6 +116,7 @@ export function editAIScene(
       base_version_id: baseVersionId,
       ...(model ? { model } : {}),
       ...(personaId ? { persona_id: personaId } : {}),
+      ...(vendor && vendor !== 'mistral' ? { vendor } : {}),
     }),
     signal,
   });

@@ -16285,3 +16285,19 @@ assertion that referenced the old literal (heading text, screenshot
 filename slug, ZIP filename) derives from the same variable instead.
 Verified passing 3/3 in one multi-project invocation; full frontend
 vitest/typecheck checks pass clean.
+
+## #452 closure reconciliation — 2026-09-05
+
+[#452](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/452) closed:
+determined to be a genuine WebKit platform default, not an app regression
+— WebKit's default OS-level "Full Keyboard Access" setting excludes `<a>`
+links from the Tab order entirely (confirmed empirically via
+`document.activeElement` inspection: one `Tab` press jumps straight past
+every header link to the first non-link tabbable control), and a real
+button placed right after a programmatically-focused link also doesn't
+reliably receive focus from a follow-up literal Tab keypress in WebKit.
+Test-only fix: `expectTabOrder` verifies every control via `.focus()`
+(reachability, visibility, in-viewport position) on WebKit only;
+chromium/firefox are unaffected and still exercise the real keyboard Tab
+sequence. Verified 27/27 passing across all three declared browsers in
+one invocation; full frontend vitest/typecheck checks pass clean.

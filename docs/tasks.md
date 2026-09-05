@@ -15879,3 +15879,29 @@ were skipped by the resulting failure cascade. This is tracked separately in
 [#427](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/427), linked
 to the shared overlay contract #348 and the broader full-suite investigation
 #419. Closed #113 and #193 remain historical and were not reopened.
+
+## #436 closure reconciliation — 2026-09-05
+
+[#436](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/436) closed:
+the generated Full ZIP export's runtime controls (sound, camera, hand-steering,
+reset) previously dispatched unconsumed `art-piece-command` CustomEvents —
+decorative buttons with no real behavior in the extracted bundle. Added
+`frontend/src/export/standaloneArtPieceRuntimeSource.ts`, a standalone
+(no-postMessage) port of the sandbox's real audio/camera/steering runtime, and
+wired it into `frontend/src/generative/artPieceBundle.ts` ahead of
+`scripts/piece.js`. Verification found and fixed a real CSS stacking bug: the
+Three.js container's `position:absolute;inset:0` (safe in the sandbox, where
+canvas and controls live in separate documents) intercepted every click meant
+for the controls `<nav>` in this single-document export; bounded it to
+`position:relative; height:480px` instead.
+
+New coverage: `frontend/e2e/artPieceFullZipRuntime.spec.ts`, downloading a real
+Full ZIP, extracting it, and driving it from both `file://` and a disposable
+localhost static server with the network otherwise disabled, at two viewports.
+Chromium and firefox pass in full; webkit's granted-camera sub-assertion hits
+the same pre-existing `canvas.captureStream()` fake-camera limitation already
+tracked in [#454](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/454)
+(linked there as a second independent reproduction, not re-filed). Full
+regression pass across all other art-piece E2E specs, the backend art-piece
+persistence suite, and the complete frontend vitest/typecheck/lint/format
+checks all pass clean.

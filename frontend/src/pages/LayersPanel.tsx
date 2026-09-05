@@ -1409,56 +1409,71 @@ function DrawioLayerRows({
         {[...sceneEditor.layers]
           .sort((a, b) => a.order - b.order)
           .map((layer) => (
-          <li key={layer.id} className="editor-outline-row editor-outline-row-layer">
-            <LayerNameField
-              layerId={layer.id}
-              name={layer.name}
-              onRename={sceneEditor.renameLayer}
-              className="editor-outline-layer-name"
-              onSelect={() => {
-                sceneEditor.selectLayer(layer.id);
-                onRowSelect?.(layer.id);
-              }}
-            />
-            <button
-              type="button"
-              aria-label={`Move ${layer.name} up`}
-              onClick={() => sceneEditor.moveLayer(layer.id, 'up')}
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              aria-label={`Move ${layer.name} down`}
-              onClick={() => sceneEditor.moveLayer(layer.id, 'down')}
-            >
-              ↓
-            </button>
-            <button
-              type="button"
-              aria-label={`${layer.visible ? 'Hide' : 'Show'} ${layer.name}`}
-              onClick={() => sceneEditor.toggleLayerVisible(layer.id)}
-            >
-              {layer.visible ? 'Hide' : 'Show'}
-            </button>
-            <button
-              type="button"
-              aria-label={`${layer.locked ? 'Unlock' : 'Lock'} ${layer.name}`}
-              onClick={() => sceneEditor.toggleLayerLocked(layer.id)}
-            >
-              {layer.locked ? 'Unlock' : 'Lock'}
-            </button>
-            <button
-              type="button"
-              aria-label={`Delete draw.io layer ${layer.name}`}
-              onClick={() => {
-                sceneEditor.selectLayer(layer.id);
-                sceneEditor.deleteLayer(layer.id);
-              }}
-            >
-              ×
-            </button>
-          </li>
+            <li key={layer.id} className="editor-outline-row editor-outline-row-layer">
+              <LayerNameField
+                layerId={layer.id}
+                name={layer.name}
+                onRename={sceneEditor.renameLayer}
+                className="editor-outline-layer-name"
+                onSelect={() => {
+                  sceneEditor.selectLayer(layer.id);
+                  onRowSelect?.(layer.id);
+                }}
+              />
+              <button
+                type="button"
+                aria-label={`Move ${layer.name} up`}
+                onClick={() => sceneEditor.moveLayer(layer.id, 'up')}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                aria-label={`Move ${layer.name} down`}
+                onClick={() => sceneEditor.moveLayer(layer.id, 'down')}
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                aria-label={`${layer.visible ? 'Hide' : 'Show'} ${layer.name}`}
+                onClick={() => sceneEditor.toggleLayerVisible(layer.id)}
+              >
+                {layer.visible ? 'Hide' : 'Show'}
+              </button>
+              <button
+                type="button"
+                aria-label={`${layer.locked ? 'Unlock' : 'Lock'} ${layer.name}`}
+                onClick={() => sceneEditor.toggleLayerLocked(layer.id)}
+              >
+                {layer.locked ? 'Unlock' : 'Lock'}
+              </button>
+              <button
+                type="button"
+                aria-label={`Delete draw.io layer ${layer.name}`}
+                onClick={() => {
+                  sceneEditor.selectLayer(layer.id);
+                  sceneEditor.deleteLayer(layer.id);
+                }}
+              >
+                ×
+              </button>
+              <ul aria-label={`Objects in ${layer.name}`} className="editor-outline-list">
+                {sceneEditor.drawioObjects
+                  .filter((object) => object.layerId === layer.id)
+                  .map((object) => (
+                    <li key={object.id} className="editor-outline-row editor-outline-row-shape">
+                      <button
+                        type="button"
+                        aria-label={`Select ${object.type} ${object.id}`}
+                        onClick={() => sceneEditor.selectShape(object.id)}
+                      >
+                        {object.type} {object.id}
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            </li>
           ))}
       </ul>
     </>

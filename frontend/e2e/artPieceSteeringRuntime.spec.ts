@@ -60,11 +60,6 @@ function animate() {
 animate();
 `;
 
-const FLAT_RED_RECTANGLE =
-  '<canvas id="art-piece-canvas" width="320" height="240"></canvas>' +
-  '<script>var c=document.getElementById("art-piece-canvas");' +
-  'var x=c.getContext("2d");x.fillStyle="#dc2626";x.fillRect(0,0,320,240);</script>';
-
 /** Mocks a granted camera (steering's own prerequisite, per its
  * activation gate) exactly like `artPieceCameraRuntime.spec.ts`'s own
  * `mockCamera` -- scoped to the sandboxed iframe only, same rationale. */
@@ -225,38 +220,14 @@ test.describe('Generated regular viewer: hand-steering ownership and Reset (#432
     await expect(page.getByTestId('steering-status')).toContainText('Steering is off.');
   });
 
-  test('steering reports unsupported-engine for flat renderers', async ({ page, context }) => {
-    await loginViaUI(page, fixture.owner.email, fixture.password);
-    await mockGrantedCamera(context);
-    const created = await apiPost(context, '/api/art-pieces/', {
-      title: 'Flat renderer steering fixture',
-      description: 'A published Canvas2D piece with hand steering enabled but unsupported.',
-      prompt: 'red rectangle',
-      engine: 'canvas2d',
-      capabilities: {
-        screenshot: false,
-        download: false,
-        fullscreen: false,
-        camera_view: true,
-        hand_steering: true,
-      },
-      source: FLAT_RED_RECTANGLE,
-    });
-    expect(created.status()).toBe(201);
-    const piece = (await created.json()) as { public_id: string };
-    const published = await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
-      status: 'published',
-    });
-    expect(published.status()).toBe(200);
-
-    await page.goto(`/art-pieces/p/${piece.public_id}`);
-    await page.getByRole('button', { name: 'Piece controls' }).click();
-    await page.getByRole('button', { name: 'Enable camera view' }).click();
-    await page.getByRole('button', { name: 'Steer the piece' }).click();
-    await expect(page.getByTestId('steering-status')).toContainText(
-      'Hand steering is only available for 3D pieces.',
-    );
-  });
+  // Issue #449 reverses this suite's own prior "unsupported-engine for
+  // flat renderers" assertion -- a flat Canvas2D/SVG piece now gets a
+  // lazily-built CSS 3D presentation of its own existing artwork and a
+  // synthetic registered camera, so steering produces real bounded pose
+  // changes for every engine. See frontend/e2e/artPieceFlatSpatial.spec.ts
+  // for that dedicated coverage (lazy shell creation, bounded Look/Move/
+  // Orbit/Zoom, Reset/dispose semantics, and pointer-interaction
+  // suspension/restoration).
 
   test('hand steering controls are absent when the capability is disabled', async ({
     page,

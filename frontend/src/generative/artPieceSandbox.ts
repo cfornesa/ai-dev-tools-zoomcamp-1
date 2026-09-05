@@ -268,6 +268,60 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     var scale = clampedRadius / radius;
     return { x: pose.x * scale, y: pose.y * scale, z: pose.z * scale };
   }
+  // Issue #449: Canvas2D/SVG pieces have no native spatial camera to
+  // register the way a Three.js/A-Frame snippet does -- this lazily
+  // builds a CSS 3D presentation of the *existing*, unmodified canvas/svg
+  // element (never touching its own drawing code) and registers a
+  // synthetic camera adapter through the exact same
+  // window.__registerArtPieceCamera hook, so the shared steer-signal/
+  // reset-view handlers below drive it identically to a real Three.js
+  // camera -- no separate steering mechanism, no engine-specific branch
+  // past this one lazy setup step. Pose (x, y, z) maps to (rotateY,
+  // rotateX, zoom) the same way an orbiting camera's position would;
+  // clampSteerPose's existing radius bound (1.5-20, unchanged for
+  // Three.js/A-Frame) is reused as-is, centered on the flat piece's own
+  // home pose (0, 0, 5) -- the same starting radius the reference
+  // Three.js fixture's own camera.position.set(0, 0, 5) uses.
+  var flatShellArtwork = null;
+  var flatShellOriginalStyle = null;
+  var flatShellPose = { x: 0, y: 0, z: 5 };
+  function applyFlatShellPose(x, y, z) {
+    if (!flatShellArtwork) return;
+    var rotateY = x * 15;
+    var rotateX = -y * 15;
+    var zoom = 5 / z;
+    flatShellArtwork.style.transform =
+      'rotateY(' + rotateY + 'deg) rotateX(' + rotateX + 'deg) scale(' + zoom + ')';
+  }
+  function ensureFlatSpatialShell() {
+    if (registeredCamera) return true;
+    var artwork = document.querySelector('canvas') || document.querySelector('svg');
+    if (!artwork) return false;
+    flatShellArtwork = artwork;
+    flatShellOriginalStyle = artwork.getAttribute('style');
+    document.body.style.perspective = '800px';
+    artwork.style.transformOrigin = 'center center';
+    artwork.style.transition = 'none';
+    flatShellPose = { x: 0, y: 0, z: 5 };
+    applyFlatShellPose(0, 0, 5);
+    window.__registerArtPieceCamera({
+      getPose: function () { return flatShellPose; },
+      setPose: function (x, y, z) {
+        flatShellPose = { x: x, y: y, z: z };
+        applyFlatShellPose(x, y, z);
+      }
+    });
+    return true;
+  }
+  function disposeFlatSpatialShell() {
+    if (flatShellArtwork) {
+      if (flatShellOriginalStyle === null) flatShellArtwork.removeAttribute('style');
+      else flatShellArtwork.setAttribute('style', flatShellOriginalStyle);
+    }
+    flatShellArtwork = null;
+    registeredCamera = null;
+    initialCameraPose = null;
+  }
   window.addEventListener('pagehide', function () {
     stopMicrophone();
     stopCamera();
@@ -416,10 +470,16 @@ function buildListenerScript(library: ArtPieceLibrary): string {
         if (existingOverlay) existingOverlay.style.opacity = String(cameraOpacity);
         reportState('camera', { active: !!cameraStream, opacity: cameraOpacity });
       } else if (data.type === 'enable-hand-steering') {
-        if (pieceLibrary !== 'threejs' && pieceLibrary !== 'aframe') {
-          reportState('steering', { active: false, error: 'unsupported-engine' });
-        } else if (!cameraStream) {
+        if (!cameraStream) {
           reportState('steering', { active: false, error: 'camera-required' });
+        } else if (pieceLibrary !== 'threejs' && pieceLibrary !== 'aframe') {
+          if (!ensureFlatSpatialShell()) {
+            reportState('steering', { active: false, error: 'no-camera-registered' });
+          } else {
+            steeringActive = true;
+            flatShellArtwork.style.pointerEvents = 'none';
+            reportState('steering', { active: true });
+          }
         } else if (!registeredCamera) {
           reportState('steering', { active: false, error: 'no-camera-registered' });
         } else {
@@ -428,6 +488,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
         }
       } else if (data.type === 'disable-hand-steering') {
         steeringActive = false;
+        if (flatShellArtwork) flatShellArtwork.style.pointerEvents = 'auto';
         reportState('steering', { active: false });
       } else if (data.type === 'steer-signal') {
         if (!steeringActive || !registeredCamera) {
@@ -477,6 +538,14 @@ function buildListenerScript(library: ArtPieceLibrary): string {
             ? registeredCamera.reset()
             : registeredCamera.setPose(initialCameraPose.x, initialCameraPose.y, initialCameraPose.z);
           reportState('steering', { active: steeringActive, pose: initialCameraPose });
+        }
+        // Issue #449: "Reset while steering on preserves activation" (the
+        // shell and its synthetic camera stay registered, just re-homed
+        // above); "Reset after steering off returns to exact framed
+        // presentation and disposes the shell" -- only tear the shell
+        // down once steering is confirmed off, never mid-activation.
+        if (!steeringActive && flatShellArtwork) {
+          disposeFlatSpatialShell();
         }
         // Always also dispatched for pieces that handle their own reset
         // via the DOM event instead of the camera-registration API.

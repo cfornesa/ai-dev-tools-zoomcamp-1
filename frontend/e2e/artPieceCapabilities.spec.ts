@@ -51,18 +51,22 @@ test.describe('Generated studio /art-pieces: capability contract (#428)', () => 
       await loginViaUI(page, fixture.owner.email, fixture.password);
       await generate(page, 'canvas2d', 'a red rectangle');
 
-      // Spatial-only capabilities are visibly unavailable with a reason,
-      // and cannot be checked.
+      // Issue #449: only walkable immersive navigation is spatial-only --
+      // hand steering now works for every engine (a lazily-built CSS 3D
+      // presentation of the flat piece's own artwork), so its checkbox
+      // is enabled here too.
       const handSteering = page.getByTestId('art-piece-capability-hand_steering');
       const immersive = page.getByTestId('art-piece-capability-immersive');
-      await expect(handSteering).toContainText('Three.js/A-Frame only');
+      await expect(handSteering).not.toContainText('Three.js/A-Frame only');
       await expect(immersive).toContainText('Three.js/A-Frame only');
-      await expect(handSteering.locator('input')).toBeDisabled();
+      await expect(handSteering.locator('input')).toBeEnabled();
       await expect(immersive.locator('input')).toBeDisabled();
 
       await page.getByTestId('art-piece-capability-screenshot').locator('input').check();
       await page.getByTestId('art-piece-capability-download').locator('input').check();
       await page.getByTestId('art-piece-capability-sound').locator('input').check();
+      await page.getByTestId('art-piece-capability-hand_steering').locator('input').check();
+      await page.getByTestId('art-piece-capability-camera_view').locator('input').check();
 
       const title = `Capability contract flat fixture ${viewport.width}`;
       await page.getByLabel('Piece title').fill(title);
@@ -86,8 +90,8 @@ test.describe('Generated studio /art-pieces: capability contract (#428)', () => 
         sound: true,
         keyboard: false,
         microphone: false,
-        camera_view: false,
-        hand_steering: false,
+        camera_view: true,
+        hand_steering: true,
         fullscreen: false,
         screenshot: true,
         download: true,

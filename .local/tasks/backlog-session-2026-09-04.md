@@ -180,3 +180,29 @@ product tests were changed in this session.
 No failed full-suite gate is unclassified. Session completion and the required
 production-readiness assessment follow this reconciliation; because required
 issues remain blocked, the project cannot be called production-ready.
+
+## Rerun reconciliation — 2026-09-04
+
+Fresh GitHub search still returns exactly open issues #404–#416; no duplicate,
+new follow-up, or changed dependency was found. The active Chrome session
+again rendered the authenticated production shell at
+`https://animate.creatrweb.com/`.
+
+Fresh checks:
+
+- `python3 scripts/check-github-action-pins.py`: PASS.
+- `python3 scripts/check-live-provider-alert.py`: PASS; no live provider call.
+- `cd frontend && npm test -- --run src/validation/scene.test.ts`: PASS,
+  48/48.
+- Focused backend command covering #414–#416 and related API contracts: 132
+  passed, 4 failed. All four failures are the same managed-sandbox
+  `scripts/start.sh` subprocess timeout cases in `test_startup_configuration.py`;
+  the authorization, AI, art-piece, OAuth, and reCAPTCHA tests passed.
+- `make check`: reproducibly blocked at the first target because the Makefile
+  invokes `python`, which is unavailable; the backend cache boundary remains
+  handled only by the writable-cache override.
+
+Rerun transaction result is unchanged: #404/#409/#414/#415/#416 remain
+`BLOCKED`, #405–#408/#410–#413 remain `DEPENDENCY-BLOCKED`, and all 13 issues
+retain their existing QA comments and next actions. No issue was reopened or
+closed, and no product code/tests were changed.

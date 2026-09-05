@@ -15977,3 +15977,46 @@ overwrite each other. New coverage: `frontend/e2e/artPieceOwnerEditing.spec.ts`
 regression pass across every other art-piece E2E spec (24 total), the
 complete backend suite (982 passed), and the complete frontend
 vitest/typecheck/lint/format checks all pass clean.
+
+## #437 closure reconciliation — 2026-09-05
+
+[#437](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/437) closed:
+the Non-Camera ZIP export's `stripCameraArtifacts` blanket-replaced the bare
+word "camera" (and "webcam"/"mediapipe"/"hand-tracking") anywhere in
+generated source with the literal text "non-camera" — corrupting ordinary
+Three.js code that names its own perspective-camera variable `camera`:
+`var camera = new THREE.PerspectiveCamera()` became `var non-camera = ...`,
+a `SyntaxError` at parse time. Its device-access neutralization was also a
+narrow textual match on `mediaDevices.getUserMedia`, defeated by aliased or
+computed access.
+
+Replaced both with a real enforcement mechanism: `buildDeviceIsolationScript`
+patches the actual `navigator.mediaDevices.getUserMedia` function object
+(and legacy vendor-prefixed names) via `Object.defineProperty`, before any
+other script in the document runs, to reject any request whose constraints
+ask for video while passing audio-only requests through — so the Microphone
+capability (which this export mode still supports) keeps working regardless
+of how generated code reaches the API: direct call, computed property
+lookup, or a captured local reference. `stripCameraArtifacts` itself is
+narrowed to only drop an externally-referenced mediapipe/camera `<script>`
+tag or bare `@mediapipe/...` import specifier — both tag/specifier-anchored
+patterns that can never match a bare JS identifier.
+
+Rewrote the one existing unit test that asserted `html.not.toContain
+('getUserMedia')` (the "absence of marker strings" anti-pattern the issue
+itself calls out), added tests for the literal regression (an ordinary
+`camera` variable survives byte-for-byte), guard load ordering, and full
+mode never installing the guard. New coverage:
+`frontend/e2e/artPieceNonCameraZip.spec.ts` — downloads a real Non-Camera
+ZIP, extracts it, and executes (not greps) it at both viewports and from
+both `file://` and a disposable localhost server, asserting a real rendered
+pixel, zero uncaught page errors, and that a direct call, a locally aliased
+reference, a fully computed property lookup, and the legacy three-argument
+form are all refused for video while audio-only still resolves. Found and
+fixed a guard-robustness gap along the way: a plain `=` assignment silently
+no-ops on a non-writable property in non-strict mode — the guard now uses
+`Object.defineProperty` with `writable: true`. Full regression pass across
+every other art-piece E2E spec (2 pre-existing #429 failures traced to the
+already-tracked #457 batch-load rAF flakiness, confirmed passing in
+isolation), the complete backend suite, and the complete frontend
+vitest/typecheck/lint/format checks all pass clean.

@@ -16357,3 +16357,32 @@ callback/conflict flows) plus 3 new settings-load tests in
 backend/frontend lint/format/typecheck all pass clean. Real GitHub App
 credential/callback verification against a live account remains a
 deployment boundary under #445, mirroring Google's own historical #75.
+
+## #425 closure reconciliation — 2026-09-05
+
+[#425](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/425) closed
+as a decision-only task (no product code changed), second of the
+auth/admin/entitlement criterion-ready queue. Reviewed LinkedIn's current
+"Sign In with LinkedIn using OpenID Connect" documentation (OIDC discovery
+document, `openid profile email` scopes, pairwise stable `sub`) and
+AT Protocol's canonical OAuth spec (`atproto.com/specs/oauth`,
+`docs.bsky.app`). **LinkedIn: selected for implementation** -- via
+allauth's generic `openid_connect` provider against LinkedIn's OIDC
+issuer, explicitly *not* allauth's bundled `linkedin_oauth2` provider
+(targets LinkedIn's deprecated `r_liteprofile`/`r_emailaddress` product).
+LinkedIn's own docs flag `email`/`email_verified` as optional/possibly
+absent, so the implementation must fail closed on a missing email rather
+than crash or create an unlinkable account. Filed
+[#460](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/460) as
+the criterion-ready implementation issue, reusing #420's exact
+optional-provider/gate/identity-linking pattern unchanged. **Bluesky/AT
+Protocol: not supported at this time** -- architectural mismatch with
+every other provider integrated here (per-account/per-PDS dynamic
+authorization-server discovery instead of one fixed issuer, no
+`client_secret` at all, mandatory DPoP token binding, no established
+Django/allauth library support) plus a non-standard "transitional" email
+claim unsuitable for the existing email-based identity-linking policy;
+recorded as an explicit not-supported decision with reason, not a gap --
+no login button, no dead route, no follow-up issue. #445 remains the
+umbrella for LinkedIn's eventual real-credential deployment evidence,
+mirroring Google's #75 and GitHub's #420.

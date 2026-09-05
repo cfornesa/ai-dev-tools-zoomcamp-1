@@ -33,6 +33,30 @@ export function getDrawioLayers(scene: SceneDocument): DrawioLayer[] {
   return read(scene)?.layers ?? [];
 }
 
+export function hitTestDrawioObjectAt(
+  scene: SceneDocument,
+  x: number,
+  y: number,
+): DrawioObject | null {
+  const document = read(scene);
+  if (!document) return null;
+  const visible = new Set(
+    document.layers.filter((layer) => layer.visible).map((layer) => layer.id),
+  );
+  return (
+    [...document.objects]
+      .reverse()
+      .find(
+        (object) =>
+          visible.has(object.layerId) &&
+          x >= object.x &&
+          x <= object.x + object.width &&
+          y >= object.y &&
+          y <= object.y + object.height,
+      ) ?? null
+  );
+}
+
 export function addDrawioLayer(scene: SceneDocument): DrawioMutation {
   return edit(scene, (document) => {
     const id = `draw-layer-${document.layers.length + 1}`;

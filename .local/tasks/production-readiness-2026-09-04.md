@@ -152,3 +152,9 @@ The complete frontend check passed (2,424 tests). The backend suite reached
 restricted host's inability to bind a loopback socket. The repository Makefile
 was corrected to use `python3` for its check scripts because this macOS host
 does not expose a `python` executable.
+
+The latest backlog increment adds keyboard-operable validated Draw.io creation
+for the approved rectangle, ellipse, line, and text subset; Chromium browser
+acceptance passes. #410 remains open for rotation, bidirectional selection,
+and unsupported-object UX. #414 now uses atomic daily quota increments across
+2D, 3D, and art-piece paths, but still needs real two-worker deployed proof.

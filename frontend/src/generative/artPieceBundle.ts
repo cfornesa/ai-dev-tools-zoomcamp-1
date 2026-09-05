@@ -108,12 +108,89 @@ const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, { url: string; filename: stri
   },
 };
 
+/**
+ * Issue #437: this used to also blanket-replace the bare word "camera"
+ * (and "webcam"/"mediapipe"/"hand-tracking") anywhere in the generated
+ * source with the literal text "non-camera" -- which corrupts perfectly
+ * ordinary Three.js code that (like the reference fixture itself) simply
+ * names its own perspective-camera variable `camera`: `var camera = new
+ * THREE.PerspectiveCamera()` became `var non-camera = ...`, a
+ * `SyntaxError` at parse time (`non-camera` isn't a legal identifier).
+ * Regex text replacement can never reliably distinguish "the identifier
+ * `camera`" from "a device-access call" in arbitrary generated
+ * JavaScript, and it does nothing at all against aliased or computed
+ * access (`navigator['mediaDevices']['getUserMedia']`, or capturing the
+ * function into a local variable first) -- see `buildDeviceIsolationScript`
+ * below for the actual enforcement mechanism, which patches the real
+ * `getUserMedia` function object itself before any generated code runs,
+ * so no textual disguise can route around it.
+ *
+ * What's left here is markup-only and narrowly tag-anchored -- dropping
+ * an externally-referenced `<script src="...mediapipe...">`/`<script
+ * src="...camera...">` tag (should a future generator ever emit one, see
+ * #455's planned full MediaPipe integration) or a bare `@mediapipe/...`
+ * import specifier -- neither of which can ever match inside a bare JS
+ * identifier or string literal a normal Three.js/Canvas2D piece uses.
+ */
 function stripCameraArtifacts(code: string): string {
   return code
     .replace(/<script[^>]*?(?:mediapipe|camera)[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/(?:navigator\.)?mediaDevices\.getUserMedia/gi, 'undefined')
-    .replace(/@mediapipe\/[\w/-]+/gi, '')
-    .replace(/\b(?:camera|webcam|mediapipe|hand[_-]?tracking)\b/gi, 'non-camera');
+    .replace(/@mediapipe\/[\w/-]+/gi, '');
+}
+
+/**
+ * The actual enforcement for a "Non-Camera ZIP": overrides
+ * `navigator.mediaDevices.getUserMedia` (and the legacy
+ * `navigator.getUserMedia`/vendor-prefixed names) to reject any request
+ * whose constraints ask for video, before rejecting through to the real
+ * implementation for an audio-only request -- so the Microphone control
+ * (which this export mode still supports) keeps working while camera
+ * access is unconditionally refused. Because this patches the actual
+ * function objects `navigator`/`navigator.mediaDevices` expose, it holds
+ * regardless of how calling code reaches them: a direct call, a computed
+ * property lookup (`navigator['mediaDevices']['getUserMedia']`), or a
+ * reference captured into a local variable first -- all of those resolve
+ * through the same patched property. It must run before any other
+ * `<script>` in the document (this export mode's own generated code
+ * included), which is why `buildIndexHtml` places it first in `<head>`.
+ */
+function buildDeviceIsolationScript(): string {
+  return `<script>
+(function () {
+  var deniedError = function () {
+    return new DOMException('Camera access is disabled in this export.', 'NotAllowedError');
+  };
+  var nativeGetUserMedia =
+    navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+      ? navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
+      : null;
+  function guardedGetUserMedia(constraints) {
+    if (constraints && constraints.video) return Promise.reject(deniedError());
+    if (nativeGetUserMedia) return nativeGetUserMedia(constraints);
+    return Promise.reject(deniedError());
+  }
+  if (!navigator.mediaDevices) navigator.mediaDevices = {};
+  // A plain "=" assignment silently no-ops (in non-strict mode, with no
+  // thrown error at all) if the browser's own getUserMedia property
+  // happens to be non-writable -- defineProperty always succeeds as long
+  // as the property is configurable, which every browser's own
+  // implementation is.
+  Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+    configurable: true,
+    writable: true,
+    value: guardedGetUserMedia,
+  });
+  ['getUserMedia', 'webkitGetUserMedia', 'mozGetUserMedia'].forEach(function (legacyName) {
+    Object.defineProperty(navigator, legacyName, {
+      configurable: true,
+      writable: true,
+      value: function (constraints, onSuccess, onError) {
+        guardedGetUserMedia(constraints).then(onSuccess, onError);
+      },
+    });
+  });
+})();
+</script>`;
 }
 
 /** Issue #436: real controls (a click actually calls the standalone
@@ -192,13 +269,17 @@ function buildIndexHtml(
     options.capabilities ?? {},
     mode,
   );
+  // Issue #437: must be the first script in the document -- before the
+  // CDN/vendored runtime and before scripts/piece.js -- so no generated
+  // code ever runs against the unpatched, real getUserMedia first.
+  const deviceIsolationScript = mode === 'non-camera' ? `${buildDeviceIsolationScript()}\n` : '';
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>Art piece</title>
 <link rel="stylesheet" href="styles/piece.css">
-${runtimeScriptTag}${runtimeControlsScript}
+${deviceIsolationScript}${runtimeScriptTag}${runtimeControlsScript}
 </head>
 <body>
 ${body}

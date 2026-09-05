@@ -75,7 +75,7 @@ describe('generateArtPieceBundle', () => {
     expect(html).not.toContain('data-action="download"');
   });
 
-  it('non-camera mode removes camera/hand surface and keeps screenshot controls', async () => {
+  it('non-camera mode removes camera/hand UI, drops an external mediapipe script tag, and installs the device-isolation guard -- without touching the rest of the source', async () => {
     const source =
       '<script src="https://cdn.example/mediapipe.js"></script><script>navigator.mediaDevices.getUserMedia({video:true});</script>';
     const blob = await generateArtPieceBundle('canvas2d', source, {
@@ -84,11 +84,46 @@ describe('generateArtPieceBundle', () => {
     });
     const zip = await JSZip.loadAsync(blob);
     const html = await zip.files['index.html'].async('string');
+    // The only markup this mode ever removes is an externally-referenced
+    // mediapipe/camera <script> tag -- never a bare JS identifier or
+    // call. The generated getUserMedia call itself is left completely
+    // intact; `guardedGetUserMedia` runtime override below is what
+    // actually stops it, not text surgery on the call site.
     expect(html).not.toContain('mediapipe.js');
-    expect(html).not.toContain('getUserMedia');
+    expect(html).toContain('navigator.mediaDevices.getUserMedia({video:true});');
+    expect(html).toContain('guardedGetUserMedia');
     expect(html).not.toContain('data-action="camera"');
     expect(html).not.toContain('data-action="hand"');
     expect(html).toContain('data-action="screenshot"');
+  });
+
+  it('never mangles an ordinary Three.js `camera` variable -- the exact regression this issue fixes', async () => {
+    // Applying the old blanket word-replacement to this exact line
+    // produced `var non-camera = ...`, a SyntaxError at parse time.
+    const source =
+      'var camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100); camera.position.set(0, 0, 5);';
+    const blob = await generateArtPieceBundle('threejs', source, { mode: 'non-camera' });
+    const zip = await JSZip.loadAsync(blob);
+    expect(await zip.files['scripts/piece.js'].async('string')).toBe(source);
+  });
+
+  it('the device-isolation guard loads before the vendored runtime and before scripts/piece.js', async () => {
+    const blob = await generateArtPieceBundle('threejs', THREEJS_CODE, { mode: 'non-camera' });
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    const guardIndex = html.indexOf('guardedGetUserMedia');
+    const runtimeIndex = html.indexOf('runtime/three.min.js');
+    const pieceScriptIndex = html.indexOf('scripts/piece.js');
+    expect(guardIndex).toBeGreaterThan(-1);
+    expect(guardIndex).toBeLessThan(runtimeIndex);
+    expect(guardIndex).toBeLessThan(pieceScriptIndex);
+  });
+
+  it('full mode never installs the device-isolation guard', async () => {
+    const blob = await generateArtPieceBundle('canvas2d', CANVAS2D_CODE, { mode: 'full' });
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    expect(html).not.toContain('guardedGetUserMedia');
   });
 
   it('threejs: splits the code into scripts/piece.js, provides a container div, and vendors the runtime', async () => {

@@ -1,0 +1,77 @@
+# Production-readiness assessment — 2026-09-04
+
+Project: `cfornesa/ai-dev-tools-zoomcamp-1`
+
+This is the post-transaction assessment for the 13-issue backlog manifest in
+`backlog-session-2026-09-04.md`. It is read-only with respect to product code.
+The active Chrome session was used for the production check at
+`https://animate.creatrweb.com/`.
+
+## Results by dimension
+
+| Dimension | Result | Evidence / limitation |
+| --- | --- | --- |
+| Local web-app deployment | BLOCKED | Frontend checks pass; backend lint/format/mypy pass. Backend full suite is 915 passed, 24 skipped, 4 startup failures, 1 socket-test error under the managed sandbox. The documented disposable browser stack was not available in this run, and aggregate `make check` is blocked by the unavailable `python` executable plus the default uv-cache permission boundary. |
+| Approved-browser and CI verification | BLOCKED | The production Chrome session rendered the authenticated shell, but no current full disposable-stack Playwright/browser-readiness run or current CI run was executed. DOM/AX production evidence is supporting evidence only. |
+| Intended functionality against backlog | BLOCKED | All 13 discovered issues remain open: #404/#409/#414/#415/#416 blocked; #405–#408/#410–#413 dependency-blocked. No acceptance criterion was silently omitted or treated as complete. |
+| Replit publication | OPEN FOLLOW-UP | `animate.creatrweb.com` is reachable and renders the current authenticated home/gallery shell with 2D/3D projects, account settings, logout, and create controls. Exact published revision parity for the open queues is not established; follow-up is owned by the existing issue queue, not by reopening closed children. |
+| Production readiness | BLOCKED | Required backlog issues, full-suite gates, and deployment/server/policy decisions remain unresolved. |
+
+## Evidence separation
+
+Local: `python3 scripts/check-github-action-pins.py` and
+`python3 scripts/check-live-provider-alert.py` passed. Frontend lint (with
+existing warnings), format, typecheck, and 2,417 tests passed. Backend ruff,
+format, and mypy passed; the full backend run had 915 passed, 24 skipped, 4
+startup failures, and 1 socket-test error. The failures are classified as the
+managed macOS subprocess/socket verification boundary, not as product fixes
+for this session.
+
+Approved-browser/CI: no new full browser gate was available in this run. The
+active Chrome session visibly rendered the production app at the exact URL
+`https://animate.creatrweb.com/`; this does not establish CI or deployed
+revision parity for unimplemented features.
+
+Production: the published shell is reachable and authenticated in Chrome.
+No live provider calls, credential changes, database writes, or deployment
+mutations were performed. The deployed revision was not identified, so route,
+artifact, and parity claims for the open issues remain an evidence boundary.
+
+## Remaining issues and exact next actions
+
+- #404: blocked by missing vendor-neutral implementation. Engineer foundation,
+  then rerun focused/full checks.
+- #405/#406: dependency-blocked by #404. Implement each provider after the
+  foundation is reconciled.
+- #407: dependency-blocked by #404–#406. Implement settings/model selection
+  after both adapters are stable.
+- #408: dependency-blocked by #405–#407. Add the cross-vendor matrix last.
+- #409: blocked by missing draw.io representation/implementation. Decide the
+  supported safe format and engineer persistence/validation.
+- #410/#411: dependency-blocked by #409 and each prior draw.io contract.
+- #412: dependency-blocked by #409–#411. Implement shared viewer/export
+  semantics and verify exact deployed surfaces.
+- #413: dependency-blocked by #409–#412. Run the integrated accessibility and
+  regression gate.
+- #414: blocked until the owner/operator chooses supported shared production
+  quota state (shared cache or transactional DB-backed strategy).
+- #415: blocked until the owner/operator confirms the production WSGI/ASGI
+  server, worker model, and Replit signal contract.
+- #416: blocked until the owner selects Google-only or verified-password
+  signup, then the policy can be implemented and tested.
+
+## Reconciliation and omission audit
+
+GitHub open-issue search and `docs/tasks.md` agree on exactly #404–#416. No
+duplicate or silently omitted issue was found. All 13 issues have a terminal
+backlog-session status and a QA comment beginning `## QA: FAIL`; none was
+closed, reopened, or re-engineered during readiness. Newly discovered
+actionable follow-ups: zero; created/reused/pending authorization: 0/0/0.
+No failed full-suite gate remains unclassified.
+
+## Repository handoff boundary
+
+The documentation changes are in the worktree but could not be committed in
+this managed run: `git commit` failed because the environment denied creation
+of `.git/index.lock`. No product code or tests were modified. The pre-existing
+`test-results/.last-run.json` change remains un-staged and untouched.

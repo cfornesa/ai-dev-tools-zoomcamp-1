@@ -16020,3 +16020,46 @@ every other art-piece E2E spec (2 pre-existing #429 failures traced to the
 already-tracked #457 batch-load rAF flakiness, confirmed passing in
 isolation), the complete backend suite, and the complete frontend
 vitest/typecheck/lint/format checks all pass clean.
+
+## #438 closure reconciliation — 2026-09-05
+
+[#438](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/438) closed:
+`art_piece_persistence.py`'s `_thumbnail_bytes` drew hash-derived colored
+ellipses from the source *string* and marked `is_fallback=False` — a
+thumbnail with no relationship whatsoever to a piece's actual rendered
+artwork. Unlike the canonical scene-JSON projects (`scenes/thumbnails.py`,
+which deliberately rasterizes server-side from structured shape geometry
+with Pillow), an art piece's source is opaque AI-generated code with no
+schema Django could ever draw from directly — executing it is the only way
+to know what it looks like, and Django must never do that.
+
+Real capture now happens entirely in the browser, in the same sandboxed
+preview iframe already used for the live preview:
+`generative/artPieceThumbnailCapture.ts` requests a screenshot via the
+existing sandbox postMessage protocol, crops it to an exact 320x240
+aspect-preserving "cover" crop, and uploads the PNG through a new
+`ArtPieceThumbnailUploadView` (multipart, owner-only, validates PNG format
+and exact dimensions) — always keyed to the specific `version_id` from the
+URL rather than "the current version", so a stale/late upload can never
+land on a newer version's row (each `ArtPieceVersion` owns exactly one
+`ArtPieceThumbnail` row by construction). Wired into three trigger points:
+`ArtPieceStudio.tsx`'s save (captures from the already-rendered preview),
+`ArtPieceEditor.tsx`'s revision save (same), and its "Regenerate thumbnail"
+button (renders the current version off-screen just long enough to
+capture it). `regenerate_thumbnail()` now only ever resets to the neutral
+`FALLBACK_PNG_BYTES` placeholder — used at creation time and when a
+capture attempt fails or times out.
+
+Fixed a related gap found along the way: `apiFetch` always defaulted to
+`Content-Type: application/json` when a body was set, which would have
+broken this feature's multipart upload — it now skips that default for a
+`FormData` body. New coverage:
+`frontend/e2e/artPieceThumbnailCapture.spec.ts` (5 scenarios, proving real
+capture, crop dimensions, fallback-then-retry, and per-version isolation
+via served thumbnail bytes) and a rewritten/expanded
+`test_art_piece_persistence.py` (12 tests, including the stale-version
+concurrency proof). Full regression pass across the entire art-piece E2E
+suite (36/38 — the 2 failures were the already-tracked #457 batch-load
+flakiness on the closed #429's spec, confirmed passing in isolation), the
+complete backend suite (986 passed), and the complete frontend
+vitest/typecheck/lint/format checks all pass clean.

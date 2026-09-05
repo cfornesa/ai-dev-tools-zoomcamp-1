@@ -16301,3 +16301,25 @@ Test-only fix: `expectTabOrder` verifies every control via `.focus()`
 chromium/firefox are unaffected and still exercise the real keyboard Tab
 sequence. Verified 27/27 passing across all three declared browsers in
 one invocation; full frontend vitest/typecheck checks pass clean.
+
+## #456 closure reconciliation — 2026-09-05
+
+[#456](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/456) closed:
+determined to be a genuine Playwright/WebKit engine limitation, not a
+product bug — isolated diagnostics showed a document-level capture-phase
+`wheel` listener on the real navigated immersive-viewer page saw zero
+events after `page.mouse.wheel(0, 100)`, despite the identical mouse-move
+sequence correctly firing `mousemove` and `elementFromPoint` confirming
+correct hit-testing on the stage element, while the exact same call
+against a minimal `page.setContent()` throwaway page did deliver a real
+event with the correct `deltaY`. This rules out product-code registration
+timing, hit-testing, and mouse-position bugs, isolating the gap to
+WebKit's own wheel-event synthesis specifically on a real navigated page.
+Test-only fix: `artPieceImmersiveRuntime.spec.ts`'s wheel-zoom step
+dispatches a synthetic `WheelEvent` directly at the stage element on
+WebKit only, exercising the same `onWheel`/`navigate()` product code path
+a real wheel event would; chromium/firefox continue using the real
+`page.mouse.wheel()`. Verified 9/9 passing across all three declared
+browsers in one invocation, plus the sibling immersive/flat-spatial
+suites (13/13) and the complete backend and frontend vitest/typecheck/
+lint/format checks all pass clean.

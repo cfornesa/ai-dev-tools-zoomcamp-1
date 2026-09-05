@@ -14,7 +14,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import {
   updateProjectMetadata,
@@ -66,6 +66,8 @@ import {
   type ShapeType,
 } from './sceneShapes';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
+import { resourceOwnershipStatus } from '../auth/resourceOwnership';
+import { useAuth } from '../auth/useAuth';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import {
   applyCameraOverlayAction,
@@ -985,6 +987,7 @@ function localizePreviewError(message: string): { pointer: string; detail: strin
 function EditorWorkspace() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const auth = useAuth();
   const {
     loadState,
     project,
@@ -2135,6 +2138,21 @@ function EditorWorkspace() {
         </button>
       </div>
     );
+  }
+
+  // Issue #458: PROJECT_READ deliberately lets any visitor -- signed out
+  // included -- fetch a *published* project's detail response, so a
+  // successful load here doesn't mean the viewer owns it. Redirect
+  // anyone but the actual owner to the read-only public viewer instead
+  // of rendering Edit/Publish/Save controls; a private project already
+  // 404s for a non-owner before reaching this point.
+  // `useAuth()` resolving is not itself a reason to block rendering --
+  // treat "still pending" as "not yet confirmed non-owner" so the real
+  // owner's fast common case (auth resolves in one quick request) never
+  // shows an extra loading flash; a genuine non-owner is still redirected
+  // the moment auth resolves.
+  if (resourceOwnershipStatus(auth, project?.owner) === false && id) {
+    return <Navigate to={`/p/${id}`} replace />;
   }
 
   // Task 44: the project and its persisted version have loaded, but the

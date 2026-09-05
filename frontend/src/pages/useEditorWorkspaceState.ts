@@ -74,7 +74,18 @@ export function useEditorWorkspaceState(id: string | undefined) {
         setLoadState('ready');
       } catch (err) {
         if (cancelled) return;
-        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        // Issue #458: every owner-only project/version read in this app
+        // 404s for a non-owner (`_require_or_404` -- the same convention
+        // `AiEditorWorkspace.tsx`/`Project3DWorkspace.tsx`/
+        // `AiProject3DWorkspace.tsx` already check for their own
+        // equivalent fetches), never 401/403 -- this previously left a
+        // private project's SceneVersion 404 (or a public project's
+        // owner-only version read for a non-owner) misclassified as a
+        // generic "Something went wrong" error instead of "access-denied".
+        if (
+          err instanceof ApiError &&
+          (err.status === 401 || err.status === 403 || err.status === 404)
+        ) {
           setLoadState('access-denied');
         } else {
           setLoadState('error');

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
+import { resourceOwnershipStatus } from '../auth/resourceOwnership';
+import { useAuth } from '../auth/useAuth';
 import {
   getProject3D,
   updateProjectMetadata3D,
@@ -34,6 +36,7 @@ type PreviewView = 'visual' | 'code';
  */
 function AiProject3DWorkspace() {
   const { id } = useParams<{ id: string }>();
+  const auth = useAuth();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<Project3D | null>(null);
   const [scene, setScene] = useState<Scene3DDocument | null>(null);
@@ -144,6 +147,21 @@ function AiProject3DWorkspace() {
         Something went wrong loading this project. Please try again.
       </p>
     );
+  }
+
+  // Issue #458: PROJECT3D_READ deliberately lets any visitor -- signed
+  // out included -- fetch a *published* project's detail response, so a
+  // successful load here doesn't mean the viewer owns it. Redirect
+  // anyone but the actual owner to the read-only public viewer instead
+  // of rendering Edit/Publish/Save controls; a private project already
+  // 404s for a non-owner before reaching this point.
+  // `useAuth()` resolving is not itself a reason to block rendering --
+  // treat "still pending" as "not yet confirmed non-owner" so the real
+  // owner's fast common case (auth resolves in one quick request) never
+  // shows an extra loading flash; a genuine non-owner is still redirected
+  // the moment auth resolves.
+  if (resourceOwnershipStatus(auth, project?.owner) === false && id) {
+    return <Navigate to={`/p3d/${id}`} replace />;
   }
 
   if (!scene || !id) return null; // unreachable once loadState === 'ready'

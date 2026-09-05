@@ -1025,7 +1025,7 @@ export function useSceneEditor(
     if (!workingCopy) return;
     if (workingCopy.documentType === 'drawio') applyDrawioMutation(addDrawioLayer(workingCopy));
     else applyOutcome(addLayerOp(workingCopy));
-  }, [workingCopy, applyOutcome]);
+  }, [workingCopy, applyOutcome, applyDrawioMutation]);
 
   const renameLayer = useCallback(
     (layerId: string, name: string) => {
@@ -1034,7 +1034,7 @@ export function useSceneEditor(
         applyDrawioMutation(renameDrawioLayer(workingCopy, layerId, name));
       } else applyOutcome(renameLayerOp(workingCopy, layerId, name));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const renameShape = useCallback(
@@ -1069,7 +1069,7 @@ export function useSceneEditor(
         applyDrawioMutation(deleteDrawioLayer(workingCopy, layerId));
       } else applyOutcome(deleteLayerOp(workingCopy, layerId));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const moveLayer = useCallback(
@@ -1079,7 +1079,7 @@ export function useSceneEditor(
         applyDrawioMutation(moveDrawioLayer(workingCopy, layerId, direction));
       } else applyOutcome(moveLayerOp(workingCopy, layerId, direction));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const toggleLayerVisible = useCallback(
@@ -1089,7 +1089,7 @@ export function useSceneEditor(
         applyDrawioMutation(toggleDrawioLayerFlag(workingCopy, layerId, 'visible'));
       } else applyOutcome(toggleLayerFlag(workingCopy, layerId, 'visible'));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const toggleLayerLocked = useCallback(
@@ -1099,7 +1099,7 @@ export function useSceneEditor(
         applyDrawioMutation(toggleDrawioLayerFlag(workingCopy, layerId, 'locked'));
       } else applyOutcome(toggleLayerFlag(workingCopy, layerId, 'locked'));
     },
-    [workingCopy, applyOutcome],
+    [workingCopy, applyOutcome, applyDrawioMutation],
   );
 
   const toggleGroupVisible = useCallback(

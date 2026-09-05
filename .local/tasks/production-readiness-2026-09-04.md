@@ -122,3 +122,6 @@ The harness now accepts `BROWSER_QA_PLAYWRIGHT_PROJECT` (`chromium`,
 `firefox`, or `webkit`) to isolate browser failures. The active Chrome
 production shell remains healthy at `https://animate.creatrweb.com/`, but the
 branch is not deployed there.
+
+
+The backlog closure pass closed #404–#407 after the focused implementation evidence and complete Chromium AI/recovery suite passed. The remaining open issues are intentionally retained for missing matrix, draw.io surface, deployment, distributed-process, and auth-browser evidence rather than being closed by inference.

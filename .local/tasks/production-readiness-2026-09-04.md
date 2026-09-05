@@ -137,8 +137,8 @@ active Chrome session could not be re-inspected because macOS is currently
 locked; the production baseline remains `https://animate.creatrweb.com/` and
 the reconciliation branch is not deployed there.
 
-GitHub now has 8 completed issues and 4 open issues. #410–#411 remain open for
-the remaining draw.io editor interaction and layer parity evidence; #413
+GitHub now has 9 completed issues and 4 open issues. #411 remains open for
+the remaining draw.io layer parity evidence; #413
 remains open for the integrated draw.io regression/accessibility gate. #412
 closed after focused backend/frontend coverage and a real Chromium flow
 verified published public, embed, thumbnail, and full-download behavior.
@@ -155,11 +155,10 @@ does not expose a `python` executable.
 
 The latest backlog increment adds keyboard-operable validated Draw.io creation
 for the approved rectangle, ellipse, line, and text subset; Chromium browser
-acceptance passes. #410 remains open for rotation, bidirectional selection,
-and unsupported-object UX. #414 now uses atomic daily quota increments across
+acceptance passes. #410 is now closed after rotation, bidirectional selection,
+and unsupported-object UX evidence passed. #414 now uses atomic daily quota increments across
 2D, 3D, and art-piece paths, but still needs real two-worker deployed proof.
 
 The latest editor increment adds bounded Draw.io rotation and stable object
 selection rows in the layer outline; focused tests and Chromium acceptance
-pass. Remaining #410 evidence covers unsupported-object messaging and full
-pointer/outline parity.
+pass. #411 remains the next Draw.io interaction gate for outer-layer parity.

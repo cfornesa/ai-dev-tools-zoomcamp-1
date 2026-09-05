@@ -85,6 +85,7 @@ import {
   deleteDrawioObject,
   deleteDrawioLayer,
   duplicateDrawioObject,
+  addDrawioLayer,
   moveDrawioLayer,
   moveDrawioObject,
   resizeDrawioObject,
@@ -521,7 +522,11 @@ export function useSceneEditor(
         setIsLayerSelection(false);
         return;
       }
-      if (!workingCopy || !getLayers(workingCopy).some((layer) => layer.id === id)) return;
+      if (!workingCopy) return;
+      const isDrawioLayer =
+        workingCopy.documentType === 'drawio' &&
+        getDrawioLayers(workingCopy).some((layer) => layer.id === id);
+      if (!isDrawioLayer && !getLayers(workingCopy).some((layer) => layer.id === id)) return;
       if (toggle && selectedLayerId === id && isLayerSelection) {
         setSelectedShapeId(null);
         setSelectedLayerId(null);
@@ -536,7 +541,13 @@ export function useSceneEditor(
       const firstShape = getEditableShapes(rawShapes(workingCopy)).find(
         (shape) => shape.layerId === id,
       );
-      setSelectedShapeId(firstShape?.id ?? null);
+      const firstDrawioObject =
+        isDrawioLayer && workingCopy.drawio && typeof workingCopy.drawio === 'object'
+          ? ((workingCopy.drawio as { objects?: DrawioObject[] }).objects ?? []).find(
+              (object) => object.layerId === id,
+            )
+          : undefined;
+      setSelectedShapeId(firstShape?.id ?? firstDrawioObject?.id ?? null);
     },
     [isLayerSelection, selectedLayerId, workingCopy],
   );
@@ -1012,7 +1023,8 @@ export function useSceneEditor(
 
   const addLayer = useCallback(() => {
     if (!workingCopy) return;
-    applyOutcome(addLayerOp(workingCopy));
+    if (workingCopy.documentType === 'drawio') applyDrawioMutation(addDrawioLayer(workingCopy));
+    else applyOutcome(addLayerOp(workingCopy));
   }, [workingCopy, applyOutcome]);
 
   const renameLayer = useCallback(

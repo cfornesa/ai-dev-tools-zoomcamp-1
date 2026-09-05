@@ -270,6 +270,16 @@ evidence were added.
 #414's daily quota writes are now atomic in the 2D, 3D, and art-piece paths;
 its real two-worker runtime proof remains outstanding.
 
+## Current closure reconciliation — 2026-09-05
+
+The integrated Draw.io gate #413 is now closed after 116 focused frontend
+tests, 70 focused backend tests (2 PostgreSQL-gated skips), and Chromium
+editor/public/embed/thumbnail/download acceptance. A native-renderer
+regression explicitly proves native scenes do not claim Draw.io
+interoperability. The authoritative state is now 11 completed issues and 2
+open issues: #414 still needs real two-worker production-cache evidence, and
+#415 still needs exact published process-lifecycle evidence.
+
 The following #410 increment adds bounded object rotation to the shared schema,
 Canvas2D adapter, editor mutation path, and toolbar, and exposes Draw.io
 objects in their owning outline layers. Focused tests and Chromium acceptance

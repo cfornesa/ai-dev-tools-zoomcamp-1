@@ -108,6 +108,31 @@ def test_production_wrapper_selects_preview_mode_via_the_shared_launcher():
     assert "FRONTEND_SERVE_MODE=preview" in wrapper
     assert "RUN_MIGRATIONS_ON_START=false" in wrapper
     assert 'exec "$(dirname "${BASH_SOURCE[0]}")/start.sh"' in wrapper
+    assert "BACKEND_SERVE_MODE=asgi" in wrapper
+
+
+def test_production_launcher_uses_pinned_asgi_server():
+    launcher = (ROOT / "scripts" / "start.sh").read_text()
+
+    assert 'backend_serve_mode="${BACKEND_SERVE_MODE:-dev}"' in launcher
+    assert "uv run --with 'uvicorn==0.46.0' uvicorn backend.main:app" in launcher
+    assert "--host 0.0.0.0 --port 8000" in launcher
+    assert "manage.py runserver" in launcher
+
+
+def test_launcher_rejects_invalid_backend_serve_mode(launcher_doubles):
+    bin_dir, state_file = launcher_doubles
+
+    result = run_launcher(
+        bin_dir,
+        state_file,
+        BACKEND_SERVE_MODE="bogus",
+        HEALTH_AFTER="1",
+        STARTUP_TIMEOUT_SECONDS="5",
+    )
+
+    assert result.returncode == 2
+    assert "Invalid BACKEND_SERVE_MODE: bogus" in result.stderr
 
 
 def test_production_environment_disables_runtime_migrations():

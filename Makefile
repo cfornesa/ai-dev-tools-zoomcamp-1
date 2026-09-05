@@ -23,10 +23,10 @@ check-workflows: check-github-action-pins
 	fi
 
 check-live-provider-alert:
-	python scripts/check-live-provider-alert.py
+	python3 scripts/check-live-provider-alert.py
 
 check-github-action-pins:
-	python scripts/check-github-action-pins.py
+	python3 scripts/check-github-action-pins.py
 
 frontend-check: frontend-lint frontend-format-check frontend-typecheck frontend-test
 

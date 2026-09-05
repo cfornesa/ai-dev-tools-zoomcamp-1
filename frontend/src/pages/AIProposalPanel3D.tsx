@@ -49,6 +49,8 @@ function AIProposalPanel3D({
     setPrompt,
     model,
     setModel,
+    vendor,
+    setVendor,
     personaId,
     setPersonaId,
     phase,
@@ -146,7 +148,23 @@ function AIProposalPanel3D({
           />
         </div>
         <div className="behavior-card-field ai-proposal-field-full-width">
-          <label htmlFor="ai-proposal-3d-model">Mistral model (optional)</label>
+          <label htmlFor="ai-proposal-3d-vendor">AI provider</label>
+          <select
+            id="ai-proposal-3d-vendor"
+            className="ai-proposal-field-full-width"
+            value={vendor}
+            disabled={pending}
+            onChange={(event) => setVendor(event.target.value as typeof vendor)}
+          >
+            <option value="mistral">Mistral</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="deepseek">DeepSeek</option>
+          </select>
+        </div>
+        <div className="behavior-card-field ai-proposal-field-full-width">
+          <label htmlFor="ai-proposal-3d-model">
+            {vendor === 'mistral' ? 'Mistral' : vendor} model (optional)
+          </label>
           {savedModels.length === 0 ? (
             <p className="ai-proposal-empty-preference">
               No saved models yet — add one in <a href="/account/settings">Account settings</a> to

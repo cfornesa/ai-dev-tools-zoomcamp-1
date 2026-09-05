@@ -61,14 +61,13 @@ exist" from "not yours", matching every other project-scoped endpoint in
   successful, schema-validated result. A timeout, provider failure, or
   invalid-output rejection never consumes it, so retrying a failed
   request is always safe and never erodes the day's allowance.
-- Both counters live in Django's cache (`django.core.cache.cache`; the
-  default backend is per-process `LocMemCache` unless a shared cache is
-  configured) keyed per user. This is sufficient for a single-process
-  deployment/test run; a multi-process production deployment should
-  point `CACHES` at a shared backend (e.g. the database or Redis) for
-  the limits to hold across workers -- tracked as a future
-  infrastructure concern, not something this task adds a new dependency
-  for.
+- Both counters live in Django's cache (`django.core.cache.cache`) keyed per
+  user. Development and offline tests intentionally use per-process
+  `LocMemCache`; production settings select the PostgreSQL-backed
+  `DatabaseCache` at the `django_cache` table so every production worker
+  observes the same counters without adding a service dependency. A
+  production settings test and shared-cache atomicity tests guard this
+  boundary.
 """
 
 from __future__ import annotations

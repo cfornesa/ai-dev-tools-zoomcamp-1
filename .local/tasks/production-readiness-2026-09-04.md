@@ -137,8 +137,12 @@ active Chrome session could not be re-inspected because macOS is currently
 locked; the production baseline remains `https://animate.creatrweb.com/` and
 the reconciliation branch is not deployed there.
 
-GitHub now has 7 completed issues and 6 open issues. #410–#413 remain open for
-draw.io interaction/public/embed/export/accessibility evidence. #414 remains
+GitHub now has 8 completed issues and 4 open issues. #410–#411 remain open for
+the remaining draw.io editor interaction and layer parity evidence; #413
+remains open for the integrated draw.io regression/accessibility gate. #412
+closed after focused backend/frontend coverage and a real Chromium flow
+verified published public, embed, thumbnail, and full-download behavior.
+#414 remains
 open for two-worker shared-cache proof, and #415 remains open for exact
 published ASGI/process-signal proof. These are verification boundaries, not
 reasons to retain already-completed local capability issues.

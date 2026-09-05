@@ -81,6 +81,7 @@ import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
 import { normalizeSceneLayers } from '../validation/scene';
 import { buildOutline, isEffectivelyLocked } from './sceneOutline';
+import { hitTestDrawioObjectAt } from './drawioDocument';
 import type { TrackingFrame } from '../tracking/types';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
@@ -2472,8 +2473,18 @@ function EditorWorkspace() {
   function handleCanvasClick(event: ReactMouseEvent<HTMLDivElement>) {
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
-    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
-    sceneEditor.selectShape(hit ? hit.id : null);
+    if (workingCopy?.documentType === 'drawio') {
+      const hit = hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y);
+      sceneEditor.selectShape(hit?.id ?? null);
+    } else {
+      const hit = hitTestTopmostShapeAt(
+        sceneEditor.shapes,
+        pointer.x,
+        pointer.y,
+        sceneEditor.groups,
+      );
+      sceneEditor.selectShape(hit ? hit.id : null);
+    }
   }
 
   // Issue #111: tracks `hoveredShapeId` for the hover affordance, using the
@@ -2483,7 +2494,10 @@ function EditorWorkspace() {
   function handleCanvasPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
-    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
+    const hit =
+      workingCopy?.documentType === 'drawio'
+        ? hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y)
+        : hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
     setHoveredShapeId((current) => {
       const nextId = hit ? hit.id : null;
       return current === nextId ? current : nextId;
@@ -2560,6 +2574,12 @@ function EditorWorkspace() {
     if (event.button !== 0) return;
     const pointer = canvasPointFromClient(event.clientX, event.clientY);
     if (!pointer) return;
+    if (workingCopy?.documentType === 'drawio') {
+      const drawioHit = hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y);
+      sceneEditor.selectShape(drawioHit?.id ?? null);
+      if (!drawioHit && zoom > 1) beginPanGesture(event.clientX, event.clientY);
+      return;
+    }
     const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
     if (!hit) {
       // Issue #156: reuses this exact hit-test-then-branch structure

@@ -16544,3 +16544,25 @@ backend suite (1075 passed, 27 skipped), complete frontend vitest suite
 (2436 passed), and `authPolicy.spec.ts`/`projectLifecycle.spec.ts`
 regression-checked against the extended fixture shape -- all pass
 clean.
+
+## #439 closure reconciliation — 2026-09-05
+
+[#439](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/439) closed.
+Added a read-only entitlement summary to the existing `/account/
+settings` page: new `GET /api/account/entitlements/`
+(`scenes/account_entitlements.py`, kept separate from
+`scenes.entitlements` itself to avoid a circular import with
+`ai_api.py`/`art_piece_api.py`) returns the caller's own effective plan,
+per-feature cap/used/remaining (#423's `get_effective_cap` plus the live
+quota-cache counter, read-only), and the shared UTC-midnight reset
+window -- entirely server-resolved. `EntitlementsSummary.tsx` renders it
+with accessible loading/unauthorized/retry states, embedded at the top
+of `AccountSettings.tsx`. New `tests/test_account_entitlements.py` (7
+tests: free/paid caps, live usage without side effects, feature
+override reflected, remaining never negative, no cross-user leak) and
+`frontend/e2e/accountEntitlements.spec.ts` (12 scenarios, 3 browsers,
+both viewports, asserting the rendered fields match the API response
+exactly). Full backend suite (1082 passed, 27 skipped) and complete
+frontend vitest suite (2439 passed) pass clean. #423 stays the
+transactional grant/revoke service and #422 the admin UI; this child
+owns only the read-only account-facing summary.

@@ -45,17 +45,19 @@ function drawioScene() {
           width: 120,
           height: 80,
           rotation: 0,
+          fill: '#ff0000',
         },
         {
           id: 'object-front',
           type: 'ellipse',
           layerId: 'layer-front',
           parentId: null,
-          x: 220,
-          y: 80,
+          x: 60,
+          y: 60,
           width: 100,
           height: 60,
           rotation: 0,
+          fill: '#0000ff',
         },
       ],
     },
@@ -135,6 +137,29 @@ test.describe('Draw.io editor', () => {
     await newLayer.press('Enter');
     await expect(layers.getByRole('textbox', { name: 'Layer name for Annotations' })).toBeVisible();
     await layers.getByRole('button', { name: 'Move Front up' }).click();
+    const frontLayerRow = layers.locator('li[data-drawio-layer-id="layer-front"]');
+    const backLayerRow = layers.locator('li[data-drawio-layer-id="layer-back"]');
+    const frontBox = await frontLayerRow.boundingBox();
+    const backBox = await backLayerRow.boundingBox();
+    expect(frontBox).not.toBeNull();
+    expect(backBox).not.toBeNull();
+    if (frontBox && backBox)
+      await frontLayerRow.dragTo(backLayerRow, {
+        sourcePosition: { x: frontBox.width / 2, y: frontBox.height / 2 },
+        targetPosition: { x: backBox.width / 2, y: backBox.height - 2 },
+      });
+    await expect(layers.locator('li[data-drawio-layer-id]').first()).toHaveAttribute(
+      'data-drawio-layer-id',
+      'layer-back',
+    );
+    const overlapPixel = await page
+      .locator('canvas[aria-label="Draw.io scene preview"]')
+      .evaluate((element): number[] | null => {
+        const context = (element as HTMLCanvasElement).getContext('2d');
+        return context ? Array.from(context.getImageData(90, 90, 1, 1).data) : null;
+      });
+    expect(overlapPixel).not.toBeNull();
+    expect(overlapPixel?.[0]).toBeGreaterThan(overlapPixel?.[2] ?? 0);
     await layers.getByRole('button', { name: 'Hide Front' }).click();
     await layers.getByRole('button', { name: 'Show Front' }).click();
     await layers.getByRole('button', { name: 'Delete draw.io layer Annotations' }).click();

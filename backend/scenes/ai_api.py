@@ -102,12 +102,14 @@ from ai_provider.mistral_provider import (
     RESPONSE_TOO_LARGE_PREFIX,
     MistralSceneProvider,
 )
+from ai_provider.registry import get_provider
 from scenes.api import _get_project_or_404, _require_or_404
 from scenes.models import (
     AIPersona,
     MistralCredential,
     MistralCredentialDecryptionError,
     Project,
+    ProviderCredential,
     SceneVersion,
 )
 from scenes.patch import PatchErrorReason
@@ -240,6 +242,7 @@ class AICreateSceneRequestSerializer(serializers.Serializer):
     prompt = serializers.CharField(
         max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
     )
+    vendor = serializers.CharField(max_length=32, required=False, default="mistral")
     model = serializers.CharField(
         max_length=MAX_MODEL_ID_CHARS,
         allow_blank=True,
@@ -257,6 +260,9 @@ class AICreateSceneRequestSerializer(serializers.Serializer):
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
+
+    def validate_vendor(self, value: str) -> str:
+        return get_provider(value).vendor
 
 
 class AIEditSceneRequestSerializer(serializers.Serializer):
@@ -277,6 +283,7 @@ class AIEditSceneRequestSerializer(serializers.Serializer):
     prompt = serializers.CharField(
         max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
     )
+    vendor = serializers.CharField(max_length=32, required=False, default="mistral")
     current_scene = serializers.JSONField()
     base_version_id = serializers.IntegerField(allow_null=True)
     model = serializers.CharField(
@@ -290,6 +297,9 @@ class AIEditSceneRequestSerializer(serializers.Serializer):
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
+
+    def validate_vendor(self, value: str) -> str:
+        return get_provider(value).vendor
 
 
 # category -> (http status, error code). PROVIDER_REJECTION is handled
@@ -454,6 +464,7 @@ _current_ai_user: ContextVar[object | None] = ContextVar("current_ai_user", defa
 # parameter, for the exact same reason `_current_ai_user` is one -- see
 # `get_ai_provider`'s own docstring.
 _current_ai_model: ContextVar[str | None] = ContextVar("current_ai_model", default=None)
+_current_ai_vendor: ContextVar[str] = ContextVar("current_ai_vendor", default="mistral")
 # Issue #260: the resolved, owner-scoped text of the caller's selected
 # Persona (or `None` for "no persona selected"), threaded through the same
 # contextvar pattern as `_current_ai_model` and for the same reason.
@@ -464,6 +475,10 @@ _current_ai_persona_prompt: ContextVar[str | None] = ContextVar(
 
 class MissingPersonalMistralCredential(Exception):
     """Raised before any provider call when the owner has no usable key."""
+
+
+class UnsupportedProvider(Exception):
+    """Raised when a catalogued provider has no live adapter yet."""
 
 
 def get_ai_provider() -> AISceneProvider:
@@ -498,11 +513,19 @@ def get_ai_provider() -> AISceneProvider:
     user = _current_ai_user.get()
     if user is None or not getattr(user, "is_authenticated", False):
         raise MissingPersonalMistralCredential
-    credential = MistralCredential.objects.filter(user=cast("User", user)).first()
-    if credential is None:
+    vendor = _current_ai_vendor.get()
+    definition = get_provider(vendor)
+    if not definition.implemented:
+        raise UnsupportedProvider
+    owner = cast("User", user)
+    generic = ProviderCredential.objects.filter(owner=owner, vendor=vendor).first()
+    credential = (
+        MistralCredential.objects.filter(user=owner).first() if vendor == "mistral" else None
+    )
+    if generic is None and credential is None:
         raise MissingPersonalMistralCredential
     try:
-        key = credential.get_key()
+        key = generic.get_key() if generic is not None else credential.get_key()
     except MistralCredentialDecryptionError as exc:
         raise MissingPersonalMistralCredential from exc
     return MistralSceneProvider(
@@ -523,7 +546,9 @@ def _resolve_persona_prompt(user, persona_id: int | None) -> str | None:
     return persona.prompt_text if persona else None
 
 
-def _provider_for_user(user, model: str | None = None, persona_prompt: str | None = None):
+def _provider_for_user(
+    user, model: str | None = None, persona_prompt: str | None = None, vendor: str = "mistral"
+):
     """Issue #198: `model` is the caller's validated, optional request-body
     value (blank/`None` means "server default", see `get_ai_provider`).
     Issue #260 adds `persona_prompt`, the already-resolved, owner-scoped
@@ -536,12 +561,14 @@ def _provider_for_user(user, model: str | None = None, persona_prompt: str | Non
     user_token = _current_ai_user.set(user)
     model_token = _current_ai_model.set(model or None)
     persona_token = _current_ai_persona_prompt.set(persona_prompt or None)
+    vendor_token = _current_ai_vendor.set(vendor)
     try:
         return get_ai_provider()
     finally:
         _current_ai_user.reset(user_token)
         _current_ai_model.reset(model_token)
         _current_ai_persona_prompt.reset(persona_token)
+        _current_ai_vendor.reset(vendor_token)
 
 
 def _request_invalid_response(errors: dict) -> Response:
@@ -568,6 +595,13 @@ def _missing_key_response() -> Response:
     )
 
 
+def _unsupported_provider_response() -> Response:
+    return Response(
+        {"error": "provider_unavailable", "detail": "That AI provider is not enabled yet."},
+        status=status.HTTP_501_NOT_IMPLEMENTED,
+    )
+
+
 class AICreateSceneView(APIView):
     """POST /api/projects/<public_id>/ai/create-scene/
 
@@ -586,6 +620,7 @@ class AICreateSceneView(APIView):
             return _request_invalid_response(input_serializer.errors)
         prompt = input_serializer.validated_data["prompt"]
         model = input_serializer.validated_data.get("model") or None
+        vendor = input_serializer.validated_data.get("vendor", "mistral")
         persona_prompt = _resolve_persona_prompt(
             request.user, input_serializer.validated_data.get("persona_id")
         )
@@ -602,9 +637,11 @@ class AICreateSceneView(APIView):
             return _quota_exceeded_response()
 
         try:
-            provider = _provider_for_user(request.user, model, persona_prompt)
+            provider = _provider_for_user(request.user, model, persona_prompt, vendor)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
+        except UnsupportedProvider:
+            return _unsupported_provider_response()
         result = provider.create_scene(AICreateSceneRequest(prompt=prompt))
 
         # Minimal metadata only -- no prompt text, no scene content, no
@@ -699,6 +736,7 @@ class AIEditSceneView(APIView):
         current_scene = input_serializer.validated_data["current_scene"]
         base_version_id = input_serializer.validated_data["base_version_id"]
         model = input_serializer.validated_data.get("model") or None
+        vendor = input_serializer.validated_data.get("vendor", "mistral")
         persona_prompt = _resolve_persona_prompt(
             request.user, input_serializer.validated_data.get("persona_id")
         )
@@ -732,9 +770,11 @@ class AIEditSceneView(APIView):
             return _edit_quota_exceeded_response()
 
         try:
-            provider = _provider_for_user(request.user, model, persona_prompt)
+            provider = _provider_for_user(request.user, model, persona_prompt, vendor)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
+        except UnsupportedProvider:
+            return _unsupported_provider_response()
         outcome = provider.edit_scene_with_patch(
             AIEditSceneRequest(prompt=prompt, current_scene=current_scene)
         )

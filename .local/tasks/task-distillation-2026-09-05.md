@@ -19,6 +19,7 @@ new workflow/fixture investigation under #419, not a reopening of closed #193.
 |---|---|---|---|---|
 | [#418](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/418) | Fast PR Chromium smoke plus scheduled/manual full browser matrix | none | open; implementation pushed, CI pending | Verify PR smoke, cancellation, artifacts, and full-run dispatch contract |
 | [#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419) | Stabilize current-revision full E2E fixtures, cache/draft races, and timeouts | #418 | dependency-blocked | Reproduce named failures after #418 has terminal evidence |
+| [#427](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/427) | Update E2E entry points for the stage-local Edit scene authoring surface | #348; informs #419 | open; workflow/infrastructure-defect | Open Edit scene before resolving authoring/publication controls, then rerun smoke |
 | [#420](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/420) | Extensible Google/GitHub OAuth and safe identity linking | #416 closed; #75 credential boundary | open | Groom provider registry and callback security transaction |
 | [#425](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/425) | Evaluate and optionally add LinkedIn/Bluesky providers | #420 | dependency-blocked | Verify current provider protocols and email/linking feasibility |
 | [#421](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/421) | Environment-configured admin identities | none; shared by #422/#423 | open | Define exact parsing, reconciliation, and fail-closed authorization |
@@ -33,6 +34,10 @@ new workflow/fixture investigation under #419, not a reopening of closed #193.
 - #193 is closed historical full-browser reconciliation; it is not reopened.
   Its old failure list does not cover the current cache/draft duplicate-key
   evidence or the current revision's timeout pattern, so #419 is new work.
+- #113 is closed historical coverage for collapsed nested sections; it is not
+  reopened. The pasted run exposed a different stale test contract: Add circle
+  and publication controls are now behind the stage-local Edit scene popover.
+  That narrow harness issue is #427 and is linked to shared overlay work #348.
 - #416 is closed with Google-only signup policy; #420 extends provider login
   and explicitly excludes password signup.
 - Existing auth shell, CSRF, OAuth dependency, encrypted credential, shared
@@ -47,6 +52,9 @@ new workflow/fixture investigation under #419, not a reopening of closed #193.
 
 - #418: workflow/infrastructure concern addressed by the pushed fast smoke/full
   split; CI run #497 is the authoritative terminal evidence still pending.
+- #427: workflow/infrastructure-defect; the product's stage-local control is
+  intentionally closed until activated, while the E2E helper assumes direct
+  visibility. Exact next action is the shared helper/spec update in #427.
 - #419: workflow/infrastructure-defect until fresh reproductions distinguish
   fixture/harness races from product defects. Required evidence is a fresh
   PostgreSQL run, named specs, and the full CI matrix.

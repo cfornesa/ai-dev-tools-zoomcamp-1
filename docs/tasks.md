@@ -15726,3 +15726,11 @@ dependency rationale are in
 Status: DISTILLED. Exactly one next issue is groomed: #418. #419 and #420–#426
 remain open or dependency-blocked; #415 remains open for published Replit
 process verification.
+
+The pasted Chromium smoke result refined the browser blocker: 15 editor,
+publishing, and remix failures were caused by stale direct locators waiting for
+controls now behind the stage-local `Edit scene` popover; 15 later scenarios
+were skipped by the resulting failure cascade. This is tracked separately in
+[#427](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/427), linked
+to the shared overlay contract #348 and the broader full-suite investigation
+#419. Closed #113 and #193 remain historical and were not reopened.

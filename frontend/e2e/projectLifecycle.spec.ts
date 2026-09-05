@@ -57,6 +57,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
+import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -68,7 +69,15 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * version history throughout) never have to remember to do it themselves.
  * Unlike `aiAndRecovery.spec.ts`, nothing here seeds a local draft ahead
  * of an uninstalled fake clock, so there's no real-timer race to worry
- * about baking this into the helper itself. */
+ * about baking this into the helper itself.
+ *
+ * Issue #427: shape authoring, Undo/Redo, and Save also moved behind the
+ * stage-local "Edit scene" popover. Deliberately not opened here -- unlike
+ * the collapsible sections, several scenarios (e.g. the authorization
+ * check) never touch a shape and must not have the popover's modal
+ * overlay left open over the Preview panel. Callers that do add/save a
+ * shape call `openEditScene`/`closeEditScene` themselves around that
+ * block; see `openEditScene.ts`. */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
   await page.getByRole('button', { name: 'More creation options' }).click();
@@ -123,6 +132,7 @@ test.describe('Project lifecycle', () => {
     // Add one shape (a blank-canvas project starts with none — see
     // schema/fixtures/valid/blank.json) and edit its style through the
     // Inspector, the real Task 60 shape-styling UI.
+    await openEditScene(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
     const positionX = page.locator('#shape-style-positionX');
     await expect(positionX).toBeVisible();
@@ -166,6 +176,7 @@ test.describe('Project lifecycle', () => {
       await page.context().clearCookies();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
       await createBlankProjectViaUI(page);
+      await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
 
       const geometry = await page.evaluate(() => {
@@ -229,6 +240,7 @@ test.describe('Project lifecycle', () => {
     // clone with no mutable link back — scenes/api.py).
     await clonePositionX.fill('777');
     await clonePositionX.blur();
+    await openEditScene(page);
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
@@ -253,6 +265,7 @@ test.describe('Project lifecycle', () => {
     await createBlankProjectViaUI(page); // version 1
 
     async function addShapeAndSave() {
+      await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       // SaveControl.tsx (issue #95 follow-up) is a single-click Save with
       // no change-label field by design -- every version created here
@@ -263,6 +276,11 @@ test.describe('Project lifecycle', () => {
 
     await addShapeAndSave(); // version 2
     await addShapeAndSave(); // version 3
+
+    // The rest of this scenario interacts with Version History, outside
+    // the stage -- close the popover first so its modal overlay doesn't
+    // intercept those clicks (issue #427).
+    await closeEditScene(page);
 
     // Sequence metadata + latest marker: versions 1-3 all present, only
     // version 3 (the current one) carries the "Latest" marker.

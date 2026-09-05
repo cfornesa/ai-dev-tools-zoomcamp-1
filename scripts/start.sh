@@ -41,6 +41,13 @@ if [[ ! "$frontend_port" =~ ^[0-9]+$ ]] || (( frontend_port < 1 || frontend_port
   exit 2
 fi
 
+backend_serve_mode="${BACKEND_SERVE_MODE:-dev}"
+if [[ "$backend_serve_mode" != "dev" && "$backend_serve_mode" != "asgi" ]]; then
+  printf 'Invalid BACKEND_SERVE_MODE: %s (must be "dev" or "asgi")\n' \
+    "$backend_serve_mode" >&2
+  exit 2
+fi
+
 startup_timeout_seconds="${STARTUP_TIMEOUT_SECONDS:-60}"
 if [[ ! "$startup_timeout_seconds" =~ ^[0-9]+$ ]] || (( startup_timeout_seconds < 1 )); then
   printf 'Invalid STARTUP_TIMEOUT_SECONDS: %s\n' "$startup_timeout_seconds" >&2
@@ -80,7 +87,12 @@ if [[ "${RUN_MIGRATIONS_ON_START:-false}" == "true" ]]; then
   fi
 fi
 
-(cd "$backend_dir" && exec uv run python manage.py runserver 0.0.0.0:8000) &
+if [[ "$backend_serve_mode" == "asgi" ]]; then
+  (cd "$backend_dir" && exec uv run --with 'uvicorn==0.46.0' uvicorn backend.main:app \
+    --host 0.0.0.0 --port 8000) &
+else
+  (cd "$backend_dir" && exec uv run python manage.py runserver 0.0.0.0:8000) &
+fi
 django_pid=$!
 
 # Do not start Vite until Django can serve the same health endpoint that the

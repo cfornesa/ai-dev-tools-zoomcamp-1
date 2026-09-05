@@ -90,6 +90,7 @@ import {
   moveDrawioLayer,
   moveDrawioObject,
   resizeDrawioObject,
+  rotateDrawioObject,
   getDrawioLayers,
   renameDrawioLayer,
   toggleDrawioLayerFlag,
@@ -1538,6 +1539,13 @@ export function useSceneEditor(
     if (!workingCopy || !selectedDrawioObject) return;
     applyDrawioMutation(duplicateDrawioObject(workingCopy, selectedDrawioObject.id));
   }, [applyDrawioMutation, selectedDrawioObject, workingCopy]);
+  const rotateSelectedDrawioObject = useCallback(
+    (delta: number) => {
+      if (!workingCopy || !selectedDrawioObject) return;
+      applyDrawioMutation(rotateDrawioObject(workingCopy, selectedDrawioObject.id, delta));
+    },
+    [applyDrawioMutation, selectedDrawioObject, workingCopy],
+  );
   const addDrawioObjectToActiveLayer = useCallback(
     (type: DrawioObjectType) => {
       if (!workingCopy || workingCopy.documentType !== 'drawio') return;
@@ -1581,6 +1589,7 @@ export function useSceneEditor(
     moveSelectedDrawioObject,
     addDrawioObjectToActiveLayer,
     resizeSelectedDrawioObject,
+    rotateSelectedDrawioObject,
     duplicateSelectedDrawioObject,
     deleteSelectedDrawioObject,
     undo,

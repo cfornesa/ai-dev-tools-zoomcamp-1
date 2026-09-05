@@ -612,7 +612,1025 @@ Verification: Added a `useEffect` that re-selects the first available target whe
 
 ## 86. Update publishingAndRemix/exportConfigDialog e2e specs off the removed settings route
 Goal: Both specs fill project metadata through the real, current in-editor UI.
-Description: `publishingAndRemix.spec.ts`'s `saveMeaningfulMetadata` and `exportConfigDialog.spec.ts`'s `fillMetadata` both still navigated to `/projects/:id/settings` and filled `#projec…226351 tokens truncated…3d/:id?embed=1&cms=1`. Its focused browser transaction
+Description: `publishingAndRemix.spec.ts`'s `saveMeaningfulMetadata` and `exportConfigDialog.spec.ts`'s `fillMetadata` both still navigated to `/projects/:id/settings` and filled `#project-title` there — a route and field issue #94 removed when it folded project details into the editor (title editing moved to the header's inline `EditableProjectTitle`; description/tags/remix/attribution moved to the always-visible "Details" panel, `EditorDetailsPanel.tsx`). Reachable only after backlog task 83/issue #113's collapsed-section fix let these scenarios run far enough to hit it.
+Status: COMPLETE
+GitHub issue: #118
+Verification: Both helpers now click "Edit title", fill `#editor-title-input`, and fill the Details panel's existing fields directly, with no reference to the dead route. Restoring this also surfaced three further pre-existing, unrelated bugs in `publishingAndRemix.spec.ts`, all now fixed: two CSRF-cookie setup calls visited `/` (this app's React SPA shell, which Django serves with no template-rendered CSRF token) instead of a real Django page like `/accounts/login/`; a fork-provenance assertion hardcoded `/versions/1/` assuming a pristine database instead of reading the fork's own `current_version` id; and a shape assertion read `shape.style.positionX` instead of the real `shape.transform.x` path. All 4 `exportConfigDialog.spec.ts` scenarios and 10/11 `publishingAndRemix.spec.ts` scenarios now pass; the remaining one is a distinct pre-existing bug tracked as issue #119 (public-viewer camera controls don't render when `navigator.mediaDevices` is entirely undefined).
+
+## 87. Fix stale graph node/connection counts and a reload-closed "Show logic" toggle in interactionRuntime.spec.ts
+Goal: `interactionRuntime.spec.ts`'s two remaining scenarios pass with graph state matching what each test actually builds.
+Description: Two scenarios failed with graph state that looked inconsistent with the test's own steps — both turned out to be test bugs rather than app bugs. "graph authoring..." hardcoded stale connection/node counts (4/8) against a scenario that actually authors 5 connections and 9 nodes. "deterministic randomness..." reopens "Show logic" once, then triggers a mid-test `saveAndReload` — but "Show logic" is a plain `useState` toggle in `EditorWorkspace.tsx`, not a `CollapsibleSection`, so `expandAllCollapsibleSections` can't (and doesn't) reopen it after the reload silently closes it, hiding the graph fragment the test goes on to check. Discovered while restoring backlog task 83/issue #113.
+Status: COMPLETE
+GitHub issue: #117
+Verification: Corrected the hardcoded counts to 5 connections/9 nodes, and added a second `openLogicPanel(page)` call after `saveAndReload` in the randomness scenario. All 7/7 scenarios in `interactionRuntime.spec.ts` now pass.
+
+## 88. Fix public-viewer camera "unsupported browser" scenario (issue #119)
+Goal: Confirm whether `mediapipeProvider.ts`'s "no `navigator.mediaDevices`" detection is a real app bug or a test-mocking limitation, and fix whichever it is.
+Description: `publishingAndRemix.spec.ts`'s "mocked unsupported browser" scenario timed out waiting for "Enable camera" after simulating a missing `getUserMedia` via `addInitScript`. Root cause found: this app depends on `p5.js`, whose bundled code polyfills `navigator.mediaDevices.getUserMedia` at module-load time whenever it reads as `undefined` (`if (navigator.mediaDevices.getUserMedia === undefined) { navigator.mediaDevices.getUserMedia = function ... }`, see `node_modules/p5/lib/p5.js`). The mock's `Object.defineProperty(..., { value: undefined })` left the property non-writable by default, so p5's own assignment threw an uncaught strict-mode `TypeError` during the bundle's module evaluation — an exception before React ever mounted, which looked like the whole page hanging. Confirmed with a standalone Playwright script that captured `page.on('pageerror')`: `Cannot assign to read only property 'getUserMedia' of object '#<MediaDevices>'`, `document.body.innerText` empty. Not an app bug — `mediapipeProvider.ts`'s `defaultIsSupported()` was already correct (see the Task 88 Vitest addition below), and `CameraControl.tsx` never touches `navigator.mediaDevices` before the "Enable camera" click.
+Status: COMPLETE
+GitHub issue: #119
+Verification: Changed the e2e mock to an accessor property on the real, still-native `mediaDevices` object: a getter that always reports `undefined` (so `defaultIsSupported()` sees a permanently missing method) paired with a no-op setter that silently absorbs p5's polyfill assignment instead of letting it throw. All 11/11 `publishingAndRemix.spec.ts` scenarios now pass locally against a real PostgreSQL-backed Django + Vite stack, including the previously-failing scenario: "Enable camera" is clickable, clicking it shows the "doesn't support" `camera-error`, and "Retry" appears. The earlier diagnosis's Vitest addition (`mediapipeProvider.test.ts`, exercising the real unmocked `defaultIsSupported()`) is unchanged and still passes.
+
+## 89. Fix scripts/smoke-local.sh empty-array unbound-variable failure on macOS bash
+Goal: `make smoke-local` runs cleanly on any bash version, including macOS's stock 3.2.
+Description: `scripts/smoke-local.sh` declared `fixture_environment=()` (an empty array) and later expanded it via `"${fixture_environment[@]}" uv run ...` — expanding an empty array with `set -u` (nounset) triggers "unbound variable" on bash < 4.4, including macOS's Apple-shipped 3.2.57 (unchanged since ~2007). CI never caught this since its runners use a modern bash. Discovered while verifying backlog task 76/issue #97's "External local track" by actually running `make smoke-local` against a real local Django+Vite+PostgreSQL stack.
+Status: COMPLETE
+GitHub issue: #120
+Verification: Replaced the array expansion with a plain if/else branching on `staging_smoke` that avoids arrays entirely. `bash -n scripts/smoke-local.sh` and a full `BASE_URL=http://localhost:5000 make smoke-local` run now pass end to end (health, anonymous `/api/whoami/` 401, login form, authenticated `/api/whoami/` 200); the `STAGING_SMOKE=1` branch CI's own staging job exercises is unchanged in behavior.
+
+## 90. Diagnose flaky concurrent-restore result in projectLifecycle.spec.ts
+Goal: Determine whether the two-tabs concurrent-restore scenario's intermittent 404 (instead of the expected 201) on one of two simultaneous restore requests is a real backend race or a test-timing issue, and fix whichever it is.
+Description: Found while manually verifying backlog task 81/issue #111 by running `E2E_BASE_URL=http://localhost:5000 npx playwright test interactionRuntime.spec.ts projectLifecycle.spec.ts` against a real local PostgreSQL-backed Django + Vite stack: 13/14 passed, but `projectLifecycle.spec.ts`'s "concurrent saves and restores from two tabs of the same session serialize to one consistent state" (around line 355/424) failed consistently across two consecutive runs with `expect(restoreA.status()).toBe(201)` receiving 404 instead. Unrelated to issue #111's canvas/pointer scope — no version-restore or concurrency code was touched by that task.
+Status: COMPLETE
+GitHub issue: #121
+Verification: Not a backend race — a test bug. The scenario hardcoded
+`versions/1/restore/`, assuming the freshly-created project's first version
+has database primary key `1`. `SceneVersion.id` is a table-wide
+auto-increment shared across every project, not a per-project counter (that
+role belongs to the separate `sequence` field), so `id === 1` only holds when
+no other version row exists anywhere in the database yet. This scenario runs
+fourth in `projectLifecycle.spec.ts`'s describe block, after three earlier
+tests already create their own projects/versions, so the assumption failed
+consistently once real prior rows existed. Fixed by looking up the actual id
+via `GET /api/projects/:id/` (`current_version`) right after project
+creation instead of assuming `1`. Verified against a real local
+PostgreSQL-backed Django + Vite stack (`AI_PROVIDER=fake`, fixture users via
+`e2e_fixtures create --json`, cleaned up after): `projectLifecycle.spec.ts`
+alone is 7/7, and `interactionRuntime.spec.ts projectLifecycle.spec.ts`
+together (the exact command that originally surfaced the flake) is 14/14.
+`make check` (580 backend tests, frontend lint/typecheck) is green; the one
+`format:check` failure it reports (`EditorWorkspace.tsx`,
+`EditorWorkspace.transform.test.tsx`) is pre-existing and confirmed
+unrelated by reproducing it against `main` before this change via
+`git stash`. Filed separately per the discovery-gate convention as backlog
+task 91 (issue #122).
+
+## 91. Fix Prettier drift in EditorWorkspace.tsx and EditorWorkspace.transform.test.tsx
+Goal: `make frontend-format-check`/`make check` pass again on `main`.
+Description: `frontend/src/pages/EditorWorkspace.tsx` and `frontend/src/pages/EditorWorkspace.transform.test.tsx` have drifted from the repo's configured Prettier style — a hint paragraph in `EditorWorkspace.tsx` and an assertion in the test file are each wrapped across extra lines Prettier would collapse. Discovered while verifying backlog task 90/issue #121; confirmed pre-existing and unrelated by reproducing the same failure against `main` via `git stash` before that task's fix was applied.
+Status: COMPLETE
+GitHub issue: #122
+
+Resolution: Ran `npx prettier --write` (from `frontend/`) on both files —
+purely whitespace/line-wrapping, no behavior change. `make check` (580
+backend tests; frontend lint, format:check, typecheck, and 1520 frontend
+tests) is green.
+
+## 92. Fix local Playwright default baseURL still targeting :5173, not :5000
+Goal: `make e2e` / bare `npx playwright test`, run exactly per AGENTS.md's documented local steps with no extra env vars, passes without most scenarios silently self-skipping.
+Description: Discovered while verifying backlog task 76/issue #97's readiness in this session — running the documented local e2e workflow with no extra env vars fails 3 `responsiveShell.spec.ts` scenarios (`net::ERR_CONNECTION_REFUSED at http://localhost:5173/`) and skips nearly everything else, because `frontend/playwright.config.ts` and `frontend/e2e/support/global-setup.ts` both still hardcode a `http://localhost:5173` fallback when `E2E_BASE_URL` is unset. Issue #103 fixed this for CI's `e2e-responsive` job by setting `E2E_BASE_URL` in that job's `env:` block, but incorrectly assumed local `make e2e` "shouldn't need to" set it since `npm run dev` is pinned to :5000 — the fallback literal itself was never updated. Workaround confirmed this session: `E2E_BASE_URL=http://localhost:5000 npx playwright test` passes (103/109, with 4 flaky-in-parallel-but-pass-in-isolation).
+Status: COMPLETE
+GitHub issue: #123
+Verification: Changed both `http://localhost:5173` fallback literals (`frontend/playwright.config.ts`'s `baseURL` and `frontend/e2e/support/global-setup.ts`'s health probe) to `http://localhost:5000`, matching the Vite dev server's permanently pinned port. `npx playwright test --list` confirms the config is still syntactically valid (109 tests, 10 files). Verified against a real local PostgreSQL-backed Django + Vite stack, run exactly per AGENTS.md's documented steps with no `E2E_BASE_URL` override: `responsiveShell.spec.ts` alone is 7/7 (previously 3 scenarios failed with `ERR_CONNECTION_REFUSED` at :5173); the full `make e2e` is 102 passed / 5 failed / 2 skipped, with zero connection-refused or self-skip failures. The 5 failures all pass individually in isolation (`aiAndRecovery.spec.ts:266`, `projectLifecycle.spec.ts:355`, `responsiveShell.spec.ts:134`) or are already tracked separately (`aiAndRecovery.spec.ts:792`/`:929`, backlog task 93/issue #124) — matching this task's own original note that the workaround run was "103/109, with 4 flaky-in-parallel-but-pass-in-isolation," so this is pre-existing parallel-run flakiness, not a regression from this change.
+
+## 93. Fix draft recovery prompt suppression when a stale/no-diff server draft outraces a real local draft
+Goal: `useDraftRecovery.ts`'s local/server conflict resolution never silently discards a real, different local draft just because the timestamp-winning candidate happens to look like a no-op.
+Description: Discovered while verifying backlog task 76/issue #97's readiness in this session — `e2e/aiAndRecovery.spec.ts:792` and `:929` fail reproducibly (not flaky, confirmed in isolation): the "Recover unsaved work?" prompt never appears. Root cause traced to `useDraftRecovery.ts`'s effect: `pickNewer(local, server)` picks only the later-timestamped candidate and discards the other entirely; when the server draft (written after the local one in both failing tests) has a content-identical diff against the persisted scene, its `changeSummary` computes to `NO_SCENE_CHANGES_SUMMARY`, and the `!winner || winner.changeSummary === NO_SCENE_CHANGES_SUMMARY` check then treats the whole comparison as "nothing to recover" — silently dropping the real local draft that was never itself evaluated.
+Status: COMPLETE
+GitHub issue: #124
+Verification: In `frontend/src/pages/useDraftRecovery.ts`, moved the
+`changeSummary === NO_SCENE_CHANGES_SUMMARY` no-op check to apply per-candidate
+(`realLocal`/`realServer`) before `pickNewer`, instead of only to whichever
+candidate wins the timestamp race — so a genuinely different candidate is
+never discarded just because it happened to lose that race against a no-op
+one. Added two regression cases to `useDraftRecovery.test.ts`: issue #124's
+exact scenario (older real local draft, newer no-op server draft, still
+prompts with the local candidate) and issue #112's original case (both
+candidates genuinely no-op, still resolves to `'none'`) run under the new
+code path. `npx vitest run src/pages/useDraftRecovery.test.ts` is 18/18;
+the full frontend suite (`npm test`) is 104 files / 1522 tests, all green;
+`npm run typecheck`, `prettier --check`, and `oxlint` are clean on both
+changed files. Verified against a real local PostgreSQL-backed Django
+(`AI_PROVIDER=fake`) + Vite stack, run exactly per AGENTS.md's documented
+steps: `E2E_BASE_URL=http://localhost:5000 npx playwright test -g "Discard
+clears both|local/server conflict: the genuinely newer"` — both previously-
+failing scenarios (`aiAndRecovery.spec.ts:792`, `:929`) now pass. The full
+`aiAndRecovery.spec.ts` file is 20/21 (one unrelated pre-existing flake,
+`:266`, confirmed passing in isolation — already noted as pre-existing
+parallel-run flakiness in task 92/issue #123's own verification).
+
+## Completed execution task archive
+
+This is the canonical repository record for completed execution work. The
+entries are ordered by completion. GitHub issues may add discussion or
+acceptance evidence, but task specifications live here.
+
+### 1. Task #1 — Set up the imported project
+Status: COMPLETE
+
+Specification: Assess the imported application before changing it, confirm the
+intended outcome with the project owner, then configure the existing stack to
+run on Replit without restructuring it. Document the resulting workflow and
+any required setup.
+
+### 2. Task #3 — Rename product branding to Creatrweb Animation Studio
+Status: COMPLETE
+
+Specification: Replace user-facing product branding in the application shell,
+browser title, and standalone export attribution with “Creatrweb Animation
+Studio.” Keep gesture-recognition terminology, URLs, persisted keys, schemas,
+database models, and internal package identifiers unchanged.
+
+### 3. Task #2 — Keep animation previews from failing in automated checks
+Status: COMPLETE
+
+Specification: Make the frontend unit suite reliable when p5 creates and
+cleans up canvases in JSDOM. Preserve the existing renderer and runtime
+coverage while ensuring the configured Node 22 test command passes.
+
+### 4. Task #4 — Keep the browser tab title aligned with the product brand
+Status: COMPLETE
+
+Specification: Add a focused static-shell assertion that the browser document
+title is “Creatrweb Animation Studio,” preventing divergence between the
+visible header and browser tab branding.
+
+### 5. Task #6 — Improve shell spacing and empty project layout
+Status: COMPLETE — delivered by Task #8 after this draft was superseded.
+
+Specification: Give the shell, signed-out home state, signed-in empty state,
+and populated project gallery clearer spacing, consistent action styling, a
+bordered content region, centered status content, and responsive accessible
+coverage. The delivered implementation is recorded in Task #8 and GitHub issue
+#84.
+
+### 6. Task #7 — Sync backlog and close credentials issue
+Status: COMPLETE
+
+Specification: Reconcile the repository backlog with completed session work
+and securely provisioned credentials without exposing, rotating, copying, or
+committing any secret. Close the credentials issue only with a non-sensitive
+completion note.
+
+### 7. Task #5 — Prevent draft changes from leaking when switching projects
+Status: COMPLETE
+
+Specification: Keep project-scoped browser drafts isolated during project
+switches by cancelling or safely scoping pending autosave writes. The full
+frontend suite must pass so one project’s draft cannot overwrite or obscure
+another’s.
+
+### 8. Task #8 — Improve shell spacing and empty states
+Status: COMPLETE
+
+Specification: Style `Public gallery` and `Sign in with Google` as accessible
+button-like actions without changing their destinations. Increase shell
+spacing; render signed-out and signed-in empty states in a reasonably sized,
+bordered, horizontally and vertically centered region; show the exact empty
+message `You have not created any projects.`; and keep populated project cards
+within the same padded region. Preserve authentication, routing, project
+creation, ownership, loading, and error behavior. GitHub issue: #84.
+
+### 9. Task #9 — Catch narrow-screen shell regressions before they reach users
+Status: COMPLETE
+
+Specification: Add a browser-level narrow-width check that verifies the title,
+navigation, motion controls, bordered panel, sign-in action, and signed-in
+empty gallery remain visible, usable, centered where applicable, and free of
+horizontal overflow.
+
+### 10. Task #10 — Run narrow-screen browser checks in a fully provisioned CI environment
+Status: COMPLETE
+
+Specification: Run the responsive-shell Playwright coverage at a 375px
+viewport in CI using the required browser runtime and PostgreSQL-backed
+fixtures, so signed-out and empty-gallery scenarios execute instead of being
+skipped.
+
+### 11. Task #11 — Keep the frontend format check green before merges
+Status: COMPLETE
+
+Specification: Format the affected frontend tests and verify the frontend
+format check passes, keeping CI failures focused on meaningful regressions.
+
+## Follow-up issues filed during V1 hardening (not originally numbered tasks)
+These were filed as separately groomed follow-ups during audits/reviews of Tasks 60-71. They remain independent backlog items and are not prerequisites for the completed credentials task:
+- #76 Support reparenting shapes/groups across layers and groups in the scene outline
+- #77 Support multi-shape simultaneous drag, resize, and rotate in the preview
+- #78 Add snapping and alignment guides for canvas manipulation
+- #79 Support per-vertex editing of path/polygon shapes
+- #80 Enforce locked layer and group flags against shape mutations
+- #81 Make role=radio button groups keyboard-navigable via arrow keys app-wide
+- #82 Build onboarding hints for templates (dismissible, replayable, stop-after-success)
+- #83 Wire the behavior runtime into the live editor preview
+
+## Follow-up issues filed after V1 hardening (Task 84 onward)
+Same convention as above: independently groomed follow-ups, not prerequisites for other backlog items unless noted. Task 84 itself is recorded under "Task #8" in the archive above (see GitHub issue #84); it's cross-referenced here only for numbering continuity.
+- #84 Improve shell spacing and centered home/project empty states — Status: COMPLETE (see Task #8 above)
+- #85 Add README.md with local and Replit deployment commands — Status: COMPLETE
+- #86 Stabilize local Vite dev server port to prevent Google OAuth redirect_uri_mismatch — Status: COMPLETE
+- #87 Replace frontend/README.md stock Vite template with project-specific content — Status: COMPLETE (implemented on branch `local-render-test`; closed on GitHub, still pending merge to `main`)
+- #88 Restructure README.md 'Run locally' into copy-pasteable per-terminal command blocks — Status: COMPLETE
+- #89/#90 Mobile-responsive header: hamburger nav, consistent button styles, and centered empty states — Status: COMPLETE (renumbered #89→#90 by the project owner to free #89 for the dev-startup task below; implemented on branch `local-render-test`, including a follow-up fix reworking the header into a simple centered vertical stack after the initial single-row layout overlapped at common desktop widths — a deliberate deviation from #90's written "nav between motion control and heading" criterion, made per live review; closed on GitHub, still pending merge to `main`). A related, smaller consistency pass on the same branch also styled Account settings' form buttons, added a header "Home" link, styled the templates page's "Use this template" button, and added an app-wide base `<button>` style so editor-workspace buttons (previously unstyled, relying on native browser rendering) match — none filed as separate numbered issues.
+- #91 Unified single-command local dev startup (one terminal, resilient shutdown) — Status: COMPLETE
+- #92 Fix pre-existing make check failures (ruff format, mypy) — Status: COMPLETE
+- #93 Scene canvas has no visible shape rendering: shapes, selection, and handles are all unstyled/invisible — Status: COMPLETE (implemented on branch `local-render-test`). `.editor-scene-shape` now renders each shape's real geometry as SVG (circle/rect/line/closed-path fill+stroke, matching `sceneShapes.ts`'s translate-then-rotate convention), with a visible dashed selection-highlight outline independent of the shape's own colors; `.editor-shape-handle` and its move/resize/rotate/group/vertex variants got real knob styling. The Tools/Preview/Inspector narrow-viewport split was reworked so Preview is never one of the mutually-exclusive tabs — it stays permanently visible, and only Tools/Inspector alternate via a two-way switcher — satisfying the hard requirement at every width (covered by a new parameterized test at 320/480/768/1023px). Confirmed via the existing Task-83/issue-83 live-preview-runtime test that demo-signal input already visibly drives shape movement (through `p5Adapter`'s render path, independent of the static `.editor-scene-shape` overlay), so no separate follow-up bug was needed there. Added a base style for native `input`/`select`/`textarea`, mirroring the earlier `<button>` fix. Not sub-tasked into separate issues/PRs — the full suggested scope landed in one pass.
+- #94 Unify editor workspace: fold project details into the editor, reposition Preview, accordion Tools sections, inline title edit, remove dead `thumbnail_choice`, prominent Publish — Status: COMPLETE (implemented on branch `local-render-test`, all seven points landed in one pass rather than sub-tasked). `EditorWorkspace.tsx` gained a fourth "Details" panel (`EditorDetailsPanel.tsx`: description/tags/allow-remix/export-attribution, reusing `updateProjectMetadata`/`validateProjectMetadataForPrivateSave`), and the old standalone `/projects/:id/settings` page (`ProjectMetadataForm.tsx`) was deleted, with its meaningful test coverage ported into `EditorDetailsPanel.test.tsx`/`PublishControl.test.tsx`/`EditorWorkspace.test.tsx`'s new inline-title-editing describe block; the route now redirects to the project's editor (`ProjectSettingsRedirect` in `App.tsx`) rather than 404ing any existing bookmark. Preview is now first in DOM order (not just visually) in the `.editor-workspace` flex container, at every viewport width, ahead of Details/Tools/Inspector. Tools' and Inspector's sub-sections are wrapped in a new `CollapsibleSection.tsx` (independent `aria-expanded`/`aria-controls` open/closed state per section, matching the pre-existing "Show logic" pattern; `EditorWorkspace.accordion.test.tsx` proves collapsing one section leaves another untouched). The project title is inline-editable in the header (`EditableProjectTitle`, writing through the same `updateProjectMetadata` PATCH). `thumbnail_choice`/`THUMBNAIL_CHOICES` were removed end-to-end — model field + migration (`scenes/migrations/0017_remove_project_thumbnail_choice.py`), serializer fields, the frontend `Project`/`PublicProject` types, and every test fixture referencing it. A prominent `Publish`/`Unpublish` control (`PublishControl.tsx`, `.shell-action`-styled Publish button) sits in the editor header next to "Exit without saving", ported unchanged from the old settings page's publish flow/confirmation dialog. `ProjectCard.tsx`'s two links ("Open in editor"/"Edit details") collapsed into one "Edit" link to the unified editor (styled as a `.shell-action` button, per live review, rather than left a plain inline text link).
+- #95 Editor workspace isn't mobile-friendly: header layout, icon affordances, accordion defaults, demo-controls alignment — Status: COMPLETE (implemented on branch `local-render-test`, all eight points landed in one pass). `Layout.tsx`'s shell header wraps the heading + (mobile-only) hamburger in a new `.app-shell-header-row`, centered at desktop and split left/right below the 767px mobile-header breakpoint. `EditorWorkspace.tsx`'s header now reflows via forced-wrap `.editor-header-break` spans (flex `flex-basis: 100%` line breaks) into four stacked rows — title+pencil / saved-status / visibility / Publish+X — below 1024px, and via `order` overrides into "title, Publish, X" on one row with "saved-status, visibility" on a second at >=1024px; `PublishControl.tsx` now renders `display: contents` so its visibility line and Publish/Unpublish action become independent header-level flex items instead of one fused block. "Edit title"/"Exit without saving" are icon-only buttons (pencil/✕) with the same `aria-label`s as before, so existing accessible-name-based test queries were unaffected. The Preview canvas's `<canvas>`/SVG overlays get `max-width: 100%` (and `height: auto !important` for the p5-created canvas, whose inline pixel dimensions `p5Adapter.ts` still owns) so they no longer overflow `.editor-panel` at narrow widths. `.demo-signal-slider` is now a 3-column CSS grid (label / slider / value) so every slider starts at the same x-position regardless of label length. `CollapsibleSection.tsx`'s `defaultOpen` flipped from `true` to `false`; the former single "Camera & demo controls" section split into independent "Camera" and "Demo signal controls" sections in `EditorWorkspace.tsx`, and `DemoControlsPanel.tsx` gained "Controls"/"Sensitivity"/"Gesture details" `<h5>` subheadings. Every `EditorWorkspace*.test.tsx` suite that depended on the old always-open accordion default now calls a new shared `frontend/src/testUtils/expandCollapsibleSections.ts` helper after mount; `EditorWorkspace.accordion.test.tsx` was rewritten to assert the opposite default (closed) and independence in the opposite direction (expanding one section leaves another still closed).
+- #99 `scripts/start.sh` uses bash-4.3+ `wait -n`, which fails on macOS's stock bash 3.2 — Status: COMPLETE. Replaced `wait -n "$django_pid" "$frontend_pid"` with a portable polling loop matching the existing health-check loop's style; `tests/test_startup_configuration.py` updated to assert the new implementation. Verified live on macOS's stock `/bin/bash` 3.2.57 against a real PostgreSQL-backed Django + Vite pair (health check passes, Vite starts) and confirmed killing the Vite child brings Django down via the `cleanup` trap within 2s with no orphaned processes. Re-verified in the current Replit shell (`GNU bash 5.2.37`) with a child-failure simulation: the launcher detected the Vite exit status and terminated non-zero. Focused startup tests pass. Delivered on [PR #102](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/102).
+- #100 `test_google_oauth.py`: 3 tests fail with `DisallowedHost` (400) instead of expected response; creatweb/creatrweb domain typo — Status: COMPLETE. Fixed the `creatweb`→`creatrweb` typo across `AGENTS.md`, `backend/backend/settings.py`'s error message, and `tests/test_env_config.py`/`tests/test_google_oauth.py`'s fixtures/assertions, and added the missing `ALLOWED_HOSTS` overrides the three origin tests needed. `make check` is green, the published routing smoke check passes, and the project owner confirmed a real Google OAuth sign-in round trip through the deployed `https://animate.creatrweb.com` app. Delivered on [PR #102](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/102).
+- #103 Responsive shell E2E job fails: Playwright defaults to :5173 but CI starts Vite on :5000 — Status: COMPLETE. Root cause part 1: the job's `Start Django and Vite`/`Wait for both servers` steps correctly use port 5000, but the job never set `E2E_BASE_URL`, so `frontend/playwright.config.ts` and `frontend/e2e/support/global-setup.ts` both fell back to their default of `http://localhost:5173`, where nothing listens — explaining both the direct `net::ERR_CONNECTION_REFUSED` failures and the self-skipped signed-in tests (global-setup's own reachability probe against the wrong port marked the server unreachable). Fixed by adding `env: E2E_BASE_URL: http://localhost:5000` to the "Run responsive shell checks at 375px" step in `.github/workflows/ci.yml`. Root cause part 2, found only once the base-URL fix let the job actually connect: because this job had never successfully run against a live server, three later header refactors (hamburger mobile nav behind a toggle per issue #90, a new "Home" nav link, and removal of the `.app-shell-auth` wrapper class) had silently drifted out of sync with `frontend/e2e/responsiveShell.spec.ts`, which predates all three. Updated the spec to match the shipped, intentional behavior: open the hamburger ("Open menu" button) before asserting nav visibility/tab order below the 768px mobile-header breakpoint, added "Home" to every expected tab-order sequence, and replaced the dead `.app-shell-auth` locator with the individual "Account settings" link / "Logout" button locators the tablet-width test already used. Verified locally end-to-end against a real PostgreSQL-backed Django + Vite pair (`AI_PROVIDER=fake`, `E2E_BASE_URL=http://localhost:5000 npx playwright test e2e/responsiveShell.spec.ts`): all 7 scenarios pass. `make frontend-lint`/`typecheck`/`format-check` all green. Local `make e2e` was unaffected by the CI-side base-URL fix since it always runs on the fixed :5000 Vite port already, but does now exercise the corrected spec. Confirmed green in actual CI on commit 25c0ced: [run 32606135290](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/32606135290), "Responsive shell E2E" job passed all 7 scenarios in 1m25s. [Issue #103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/103) closed.
+- #106 mypy fails on `tests/test_git_safe_push.py`: `BaseServer` has no attribute `repository_root` — Status: COMPLETE (stale `PROPOSED` status corrected during the 2026-08-23 production-readiness review; the issue was already closed on GitHub — `git log --grep 106` shows it fixed by commit 252aa7f, "Fix mypy attr-defined error in test_git_safe_push.py" — and `uv run mypy .`/`make check` are confirmed clean on the current `main` tip). [Issue #106](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/106).
+
+## 94. Stop autosave from resurrecting drafts after an explicit save
+Goal: Prevent stale local or server autosave work from recreating a draft after
+an explicit version save has deleted it.
+Description: Reconcile the save callback with both draft controllers so a
+pre-save working-copy snapshot cannot be written after the authoritative save.
+Preserve the saved version and surface cleanup failures. Cover save, autosave,
+page-hide, navigation, AI accept, restore, and unmount races in browser and
+component tests.
+Status: COMPLETE
+GitHub issue: [#125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/125)
+Execution plan: `.local/tasks/editor-draft-resurrection.md`
+Evidence: The 2026-08-23 deployment sequence recorded `POST /versions/` 201,
+`DELETE /draft/<session>/` 204, then a later `PUT /draft/<session>/` 200.
+Resolution: Added a `markClean`/`isClean` baseline gate to
+`DraftServerSyncController`/`DraftAutosaveController` so periodic, debounced,
+page-hide, and meaningful-action writes all skip while the working copy
+matches the last persisted/cleared state, and resume automatically on a real
+edit. `onRestored`/`onAccepted` now clear both drafts like an explicit Save
+instead of re-syncing a server draft. `make check` green (backend 580
+passed/22 skipped, frontend 1543 passed). QA verdict: PASS (commit a52dfec,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/125#issuecomment-5384873605).
+Closed.
+
+## 95. Prevent duplicated shapes from appearing after editor load or recovery
+Goal: Isolate and eliminate shape duplication that makes the editor unusable.
+Description: Determine whether duplicate shapes enter persisted scene JSON,
+are introduced by local/server draft recovery, or are rendered by duplicate
+visual/selection overlays. Enforce one-to-one shape IDs and rendered instances
+through load, recovery, save, reload, undo/redo, selection, Inspector, outline,
+and hit-testing without silently dropping legitimate shapes.
+Status: COMPLETE
+GitHub issue: [#126](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/126)
+Execution plan: `.local/tasks/editor-duplicate-shapes.md`
+Evidence: The latest browser session had no thrown JavaScript exception, so this
+is explicitly an investigation task; the report of duplicated shapes must be
+reproduced and classified before choosing a fix.
+Resolution: Classified as category (c) — the SVG shape-body overlay in
+`EditorWorkspace.tsx` and the p5 canvas both painted a shape's body while
+behavior playback was active, producing a frozen copy plus a live copy.
+Fixed with a `!hasActiveBehaviors` render guard. Category (b) (recovery/
+restore/AI-accept merge duplication) was investigated and ruled out — all
+replace `workingCopy` wholesale. Category (a) had no reproducible path but
+was hardened defensively with a `validateScene` gate on the local IndexedDB
+draft write, matching every other persistence path. `make check` green
+(backend 580 passed/22 skipped, frontend 1554 passed). QA verdict: PASS
+(commit d0b8dfe,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/126#issuecomment-5385108975).
+Closed.
+
+## 96. Give the editor a dedicated Layers panel with drag-and-drop ordering
+Goal: Give users a clear, persistent view of stacking order and direct control
+over valid layer, group, and shape reordering.
+Description: Replace the compact outline placement with a visually distinct
+responsive Layers panel. Show readable hierarchy, visibility, locks, and
+stacking order; provide pointer drag-and-drop with insertion feedback and
+keyboard reorder parity; and keep the canonical scene state synchronized with
+rendering, selection, Inspector, save, undo/redo, and recovery.
+Status: COMPLETE
+GitHub issue: [#127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/127)
+Execution plan: `.local/tasks/editor-dedicated-layers-panel.md`
+Evidence: Issue #110 improved labels and hierarchy, but the current outline is
+still not a dedicated Layers panel with direct drag-and-drop stacking control.
+Resolution: `SceneOutlinePanel.tsx` renamed to `LayersPanel.tsx` and promoted
+to its own `role="region" aria-label="Layers"` landmark in
+`EditorWorkspace.tsx` (removed from the Tools `CollapsibleSection`), with a
+matching `'layers'` tab in `EditorPanelSwitcher.tsx`/`EditorPanelName` for
+the narrow (<1024px) layout. Pointer drag-and-drop (native HTML5 DnD, no new
+dependency) reorders/reparents shapes, groups, and layers with a before/
+after/into insertion indicator and a rejected-drop affordance for locked
+rows and invalid targets, routed entirely through the existing
+`moveItem`/`moveLayer`/`moveItemToLayer`/`moveItemToGroup` mutations in
+`sceneOutline.ts`/`useSceneEditor.ts` (two new orchestration-only helpers,
+`moveItemBySteps`/`moveLayerBySteps`, apply those same pure functions
+repeatedly against one local candidate scene before a single `commit()`, so
+a drag to an arbitrary position still lands as one undo step). Existing
+keyboard controls (Move up/down, the target-select Move-to-layer/group
+pair) are unchanged. Component tests
+(`EditorWorkspace.layers.test.tsx`, renamed/extended from
+`EditorWorkspace.outline.test.tsx`) cover pointer reorder/reparent, keyboard
+parity, locked-row rejection, and no-duplicate/missing rows across add/
+remove/reorder/reparent/undo/redo. New Playwright coverage
+(`frontend/e2e/layersPanel.spec.ts` — `editor.spec.ts`, named in the
+original issue, does not exist in this repo) exercises pointer + keyboard
+reorder against a real browser, asserting both canvas z-order and
+persisted order after save/reload; confirmed discoverable via
+`npx playwright test --list` but not executed live (no local PostgreSQL in
+this environment). `make check` green (backend 580 passed/22 skipped,
+frontend 1564 passed). QA verdict: PASS (commit fd90790,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/127#issuecomment-5385221079).
+Closed.
+
+## 97. Make Publish honor metadata entered in the editor
+Goal: Ensure entering a meaningful description and title through the editor
+results in a reliable, understandable publishing flow.
+Description: Reconcile the Details panel's local metadata state with the
+header Publish action. Chosen behavior (see execution plan for rationale):
+Publish auto-persists pending Details-panel metadata (description, tags,
+allow-remix, export-attribution) via the same `updateProjectMetadata` PATCH
+before validating and opening the confirmation dialog, rather than blocking
+and telling the user to save separately. Preserve input and surface
+validation or network errors from that persist step without data loss. Cover
+title/description edits, confirmation cancel, retry, public visibility, and
+public metadata in browser tests.
+Status: COMPLETE
+GitHub issue: [#128](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/128)
+Execution plan: `.local/tasks/editor-publish-metadata-flow.md`
+Evidence: `EditorDetailsPanel.tsx` stores the description locally, but
+`PublishControl.tsx` validates `project.description`; entering text without the
+separate metadata save can therefore leave Publish validating the old value.
+Resolution: `EditorDetailsPanel.tsx` exposes an imperative ref handle
+(`getPendingDetails()`/`save()`) reflecting live-typed values and reusing its
+own "Save changes" persist path; `EditorWorkspace.tsx`'s `persistPendingDetails`
+diffs all four fields against `project` and skips a no-op PATCH;
+`PublishControl.tsx`'s `handlePublishClick` persists first, then validates and
+opens the confirm dialog, blocking on 400/network errors while preserving
+typed values and staying retryable. Server-side validation/authorization
+untouched. `make check` green (backend 580 passed/22 skipped, frontend 1573
+passed). QA verdict: PASS (commit b12e951,
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/128#issuecomment-5385258122).
+Closed.
+
+## 98. Clarify and document .replit's [userenv] DEBUG/ALLOWED_HOSTS scope for production
+Goal: Determine whether `.replit`'s `[userenv.shared]` (`DJANGO_DEBUG = "true"`,
+`DJANGO_ALLOWED_HOSTS = "*"`) can apply to the published autoscale deployment
+and, if so, close that gap; otherwise document the actual precedence between
+`[userenv]` and Replit Secrets so it does not need to be re-derived.
+Description: A 2026-08-23 production-readiness audit found `[userenv.production]`
+is empty, so it does not override `[userenv.shared]`'s dev-unsafe DEBUG/
+ALLOWED_HOSTS values. If those values reach the …206351 tokens truncated…o not reopen or duplicate anything; return to #356 only after the
+reviewed commit is pulled and republished, and otherwise use the next
+independent criterion-ready open task.
+
+### Reopened Chrome route revalidation — 2026-09-03
+
+The reopened authenticated Chrome session now reaches the supplied owner route
+and shows the current compact stage disclosure. Opening the menu exposed
+Screenshot, Download, Immersive, Sound, Piece controls, Steer, Guide, editor
+actions, Publication status: Draft, and Fullscreen. Opening the publication
+control exposed the Draft (Private) explanation and Draft/Published choices.
+At 375x812, the rendered menu and publication drawer fit the viewport without
+horizontal overflow; a clean screenshot after moving the pointer away showed
+no clipped required controls. The live asset observed was
+`assets/index-CecM7AFX.js`.
+
+The Chrome window could not establish the required 1280x900 viewport: its
+maximum observed viewport was 962x865, even after requesting 1280x900. Because
+#355 explicitly requires both fixed viewports and exact deployed revision
+reconciliation, this is a verification-boundary result, not closure evidence.
+The issue remains open with the next action to rerun the same matrix in a
+browser session that can provide 1280x900 and then reconcile the deployed
+revision. No issue was reopened and no product source/tests were changed.
+
+The active queue position after this verification-boundary transaction is
+#355, followed by the independent anonymous/fixture transaction #356. The
+earlier #368 handoff text above is historical and must not be treated as the
+current queue position; #368 is closed and immutable.
+
+The 1280x900 route recheck is now possible through supported Chrome viewport
+emulation, but #355 still fails its functional publication criterion: selecting
+Published opens the confirmation, while the enabled final Publish action leaves
+the dialog open and the status at Draft. The fixture was left Draft. This is
+deployed-route evidence owned by #355, not a reason to reopen any closed issue
+or create a duplicate; the next action is to diagnose the published action
+against the deployed revision and rerun Draft -> Published -> Draft.
+
+### #355 transaction reconciliation — 2026-09-03
+
+- Replit synchronized and published commit `c4aae1c`; the exact owner route
+  served `assets/index-I1VsT0b2.js`.
+- At emulated 1280x900 and 375x812 viewports, the owner route loaded the saved
+  scene and its compact stacked stage disclosure. Required controls were
+  reachable without horizontal overflow or clipped menu rows.
+- The deployed Draft -> Published -> Draft round trip passed. The fixture was
+  restored to Draft after verification.
+- The earlier live failure was caused by the publication confirmation being in
+  normal flow below the command card; #373 corrected that local capability and
+  was separately tested and closed. No closed issue was reopened.
+- #355's deployed verification criteria are complete; the exact public,
+  anonymous fixture, immersive, embed, and artifact boundaries remain separate
+  open issues.
+
+### Distilled follow-up #373 — compact publication confirmation reachability
+
+The live owner-route check exposed a new, independently observable gap: the
+compact publication panel is in normal flow below the stacked command menu, so
+the final Publish control begins below the 1280x900 viewport (observed y≈1030)
+and the confirmation cannot complete from the visible overlay. This is not a
+reason to reopen #347 or any other closed issue, and it is not duplicate route
+verification work. It is captured as [#373](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/373)
+with a fixed local component/fixture boundary. #373 is now the next
+closure-sized engineering transaction; #355 remains open for deployed
+revision reconciliation.
+
+### #373 transaction reconciliation — 2026-09-03
+
+- Engineering changed only the shared publication-panel CSS and its focused
+  regression/route coverage. The compact publication panel now uses its
+  trigger as the positioning context and opens upward.
+- Focused: `npm test -- --run src/pages/PublishControl3D.test.tsx
+  src/components/StageControlsPopover.test.tsx` — 12/12 passed.
+- Full frontend: `make frontend-check` — lint (existing warnings only), format,
+  typecheck, and 191 files/2,404 tests passed.
+- Browser QA: `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make
+  browser-qa` — 3/3 passed across Chromium, Firefox, and WebKit. The scenario
+  exercises Draft/Published disclosure and asserts the confirmation remains
+  inside the 1280x900 route viewport.
+- Shifted boundary: exact deployed revision verification remains #355; no
+  closed issue was reopened.
+
+## #339 transaction reconciliation — 2026-09-03
+
+#339's local AI 3D stage-local publication implementation passed 55/55 focused
+tests and 3/3 browser engines (Chromium, Firefox, WebKit) through
+`BROWSER_QA_E2E_SPEC=e2e/ai3dStageChrome.spec.ts make browser-qa`. The local
+Draft/Published disclosure and responsive stage toolbar are verified; exact
+deployed verification remains #328. #339 is permanently closed. No closed
+issue was reopened.
+
+## #372 transaction reconciliation — 2026-09-03
+
+Testing #341 exposed a new atomic defect: asynchronous sound activation could
+race the Piece controls disclosure reset and leave the reopened panel hidden,
+especially in Firefox. #372 owns that follow-up. Engineering now resets the
+disclosure synchronously when sound toggling begins, so the later
+`soundEnabled` commit cannot hide a freshly reopened panel.
+
+- Focused Scene3DPreview/controls tests: 37/37 passed.
+- `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts make browser-qa`:
+  3/3 passed across Chromium, Firefox, and WebKit.
+- #372 is complete and must be permanently closed. No closed issue was
+  reopened or modified.
+
+## Canonical override: owner-reported parity re-audit — 2026-09-03
+
+Use the later re-audit record above as the current state. The historical
+“next issue is #368” text immediately preceding this note is retained for
+traceability and is not the current handoff. Current handoff is #355, with
+#356 independently ready once its intended non-empty fixture is published.
+Closed issues remain immutable; PHP remains reference-only; no product source
+or tests were changed during this distillation pass.
+
+## Current owner-reported parity re-audit — 2026-09-03 (canonical)
+
+This is the current distillation record; earlier “next issue” notes remain
+history. Full parity means only the `augment-humankind` pieces
+implementation/examples, translated into this repository's Django/Python
+backend and React/TypeScript frontend. PHP is reference-only.
+
+Closed issues are immutable. No issue was reopened in this audit, and none may
+be reopened without explicit owner authorization naming that exact issue in
+the current conversation. Distillation/grooming may be bulk; engineering and
+QA are one issue at a time, followed by reconciliation and permanent closure.
+New gaps are new linked issues, never additions to closed work.
+
+| Boundary | Finding | Owner |
+| --- | --- | --- |
+| Authenticated manual 3D editor | Anonymous route is access-denied; owner controls and Draft/Published behavior remain unverified. | #355, open |
+| Anonymous public 2D piece | Route is anonymous but renders `Blank canvas`; at 375x812 the opened menu has oversized rows, detached labels, and a detached download tooltip. | #356, open |
+| Public 3D geometry | Route-specific geometry verification. | #360, open |
+| Remaining routes | AI 3D: #328/#339; public/embed/immersive: #330–#335. | Existing open issues |
+| Physical held-pinch evidence | Synthetic proof remains unavailable. | #344, independent blocker |
+| Reconciliation | Parent containers, not implementation units. | #274/#320/#324 |
+| Download artifacts | #350/#351/#368/#370/#371 are closed; deployed consumers remain owned by route verification. | Closed, immutable |
+
+The exact live routes serve `assets/index-CecM7AFX.js`, not reviewed checkout
+`a66c8965f4805e67c6aa1c78423df6c65bf6bab3`. Local React source and artifact
+tests therefore cannot close deployed-route evidence. No duplicate issue is
+needed: #355 owns the private boundary, #356 the public fixture/control
+boundary, and #360 public 3D geometry. Closed #347–#371, including #359,
+#368, #370, and #371, remain permanently closed.
+
+Handoff: #355 is next groomed but blocked by the absent owner-authenticated
+session and stale published asset. Exact unblock: authenticate the owner
+session, republish the reviewed revision, then capture 1280x900 and 375x812
+screenshots plus asset identity. #356 is independently groomed but needs the
+intended non-empty fixture published. No product source or tests were changed
+during this distillation pass.
+
+## #370 transaction reconciliation — 2026-09-03
+
+- Full 3D downloads now provide explicit steering lifecycle, failure recovery,
+  cleanup, and a camera-free Non-Camera variant. The opened command drawer is
+  bounded with scrolling confined to the drawer on short viewports.
+- QA passed: browser artifact QA 57/57 across Chromium, Firefox, and WebKit;
+  `make frontend-check` passed 191 files and 2,402 tests, with existing lint
+  warnings only.
+- Reconciliation found no new in-scope gap. #371 owns camera-view composition;
+  #355/#356 own deployed-route verification. No closed issue was reopened.
+- #370 is complete and must be permanently closed before #371 begins.
+
+## #371 transaction reconciliation — 2026-09-03
+
+- Full 3D downloads now provide independent Camera view, Camera opacity, and
+  Mirror camera controls, with safe defaults and local-only presentation
+  updates. Stopping steering removes the stale preview; Non-Camera omits all
+  camera-view controls and camera paths.
+- QA passed: browser artifact QA 57/57 across Chromium, Firefox, and WebKit;
+  `make frontend-check` passed 191 files and 2,402 tests, with existing lint
+  warnings only.
+- Reconciliation found no new in-scope gap. #355/#356 own deployed-route
+  verification. No closed issue was reopened.
+- #371 is complete and must be permanently closed; future gaps are new linked
+  issues, never reopenings.
+
+### Current owner-report reconciliation — 2026-09-03
+
+Fresh exact-route inspection found the public URL genuinely anonymous and its
+hamburger functional, but rendered inspection still fails visual parity: the
+opened action labels are detached from the oversized button rows. The private
+editor URL is unavailable without the owner-authenticated browser session, so
+editor parity and Draft/Published reversal remain unproven. Both routes serve
+`assets/index-CecM7AFX.js`, not reviewed checkout `98b5301`.
+
+These are existing deployment/fixture boundaries: #355 owns authenticated
+manual-editor verification and #356 owns anonymous public fixture/control
+verification. No duplicate deployment issue is needed, and no closed issue
+was reopened. The next independent local engineering transaction is #370,
+then #371; #369 is closed as the superseded distillation umbrella.
+
+### #369 atomicity reconciliation — 2026-09-03
+
+#369 was found to combine two independently testable Full-download behaviors
+before engineering began. It was closed as superseded, not reopened or
+partially implemented. The closure-sized replacements are #370 (opt-in
+steering lifecycle and cleanup) and #371 (camera-view visibility, opacity, and
+mirror composition). FIFO engineering begins with #370; each issue must finish
+engineering, QA, reconciliation, and permanent closure before the next begins.
+
+### #368 transaction reconciliation — 2026-09-03
+
+- Engineering completed the immersive export option through
+  `ImmersiveProject3DViewer`, the 3D ZIP generator, and the standalone runtime.
+  Immersive artifacts carry explicit surface metadata and README guidance;
+  regular artifacts remain explicitly marked regular.
+- QA passed: `BROWSER_QA_E2E_SPEC=e2e/exportArtifacts.spec.ts make browser-qa`
+  (57 scenarios across Chromium, Firefox, and WebKit), followed by
+  `make frontend-check` (191 files, 2,402 tests; existing lint warnings only).
+- Reconciliation found no new in-scope gap. Extracted Full-artifact camera
+  steering remains #369. Stale published-bundle verification remains #355/#356.
+- #368 is ready for permanent completion closure. Do not reopen it for #369,
+  deployment publication, or any later parity work.
+
+## Current canonical pieces-parity distillation — 2026-09-03 (superseded by the owner re-audit below)
+
+This section supersedes earlier historical notes that describe issues as
+reopened. Closed issues are immutable under the current owner rule: no issue
+may be reopened unless the owner explicitly authorizes reopening that exact
+issue in the current conversation. The current audit made no reopen request
+and performed no reopening. Any later gap is a new linked issue.
+
+Full CMS parity here means only the `augment-humankind` pieces
+implementation/examples, translated into this repository's Django/Python
+backend and React/TypeScript frontend. PHP and unrelated CMS features are
+out of scope.
+
+The complete manifest, duplicate report, blocker triage, and handoff are in
+`.local/tasks/authored-piece-parity-distillation-2026-09-03.md`.
+
+Fresh exact-route browser evidence found both supplied routes serving the
+legacy `assets/index-CecM7AFX.js`. The authenticated editor route exposed a
+hamburger and legacy opened controls with detached/missing visible labels;
+the public route was authenticated and rendered the `Blank canvas` 2D
+fixture. This does not prove anonymous privacy or the intended 3D fixture.
+Existing #355 and #356 own those deployment/fixture boundaries. No closed
+issue was reopened.
+
+The audit identified two distinct criterion-ready local artifact gaps and
+created new issues [#368](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/368)
+and [#369](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/369).
+#368 owns immersive navigation in downloaded 3D artifacts. #369 owns the
+Full artifact's missing user-facing camera steering/camera-view contract and
+the corresponding Non-Camera omission. Closed #364 remains closed.
+
+Historical handoff was #368. Engineering and QA were required as one issue
+transaction before #369 or any other issue began.
+
+## Current owner-reported parity distillation — latest 2026-09-03
+
+This latest audit supersedes the historical text above. Full CMS parity is
+limited to the augment-humankind pieces implementation/examples, translated
+into this repository's Django/Python backend and React/TypeScript frontend;
+PHP and unrelated CMS features remain reference-only and out of scope.
+
+The owner reports missing or unusable editor controls, bulky controls outside
+the canvas, no understandable Draft/Published workflow, and absent public
+controls. Exact deployed inspection found stage entry points in the current
+bundle, but prior closures relied on DOM/source/local evidence that did not
+establish consistent rendered parity. No closed issue was reopened.
+
+New corrective issues, each with a single route/workflow contract:
+
+- #376: deployed manual 3D Draft/Published lifecycle.
+- #377: deployed manual 3D canvas-associated controls and layout.
+- #378: deployed anonymous public 2D control discoverability.
+
+#331 has local embed fix commit `6d1e38e`, but published QA still showed the
+pre-fix metadata/Preview shell, so it remains deployment-blocked. #360 remains
+blocked on the intended public 3D fixture; #344 remains blocked by physical
+held-pinch evidence. Existing AI, public 3D, embed, immersive, and downloaded
+route issues remain separate transactions.
+
+Closed #347–#375 remain immutable. Any later failure or broader parity gap is
+a new linked criterion-ready issue, never a reopening. The next handoff is
+exactly #377 after grooming; engineering, QA, reconciliation, and closure
+must finish for it before #376 or #378 engineering begins.
+## Post-#378 queue distillation — 2026-09-03
+
+Fresh GitHub/backlog reconciliation after permanently closing #378 leaves
+parent containers #274, #320, and #324 outside the FIFO engineering queue.
+#331 is the next oldest closure-sized route transaction, but its exact
+deployed anonymous embed route still shows the public metadata banner and
+`Preview` heading; the local fix is already in `6d1e38e`, making this a
+deployment synchronization blocker rather than a reason to reopen or broaden
+the issue. #344 remains blocked on physical held-pinch evidence and #360 on
+the intended published 3D fixture. The next independent groomed candidate is
+#328 (AI-assisted 3D owner editor route), to be handled through engineering,
+QA, reconciliation, and permanent closure as one transaction.
+## #328 closure and next-queue distillation — 2026-09-03
+
+#328 is permanently closed as `completed` for the authenticated AI-assisted
+3D owner route. Deployed asset `assets/index-CQvhOwx-.js` exposed the scoped
+shared stage controls, AI action, opt-in camera controls, and Draft/Published
+status. `BROWSER_QA_E2E_SPEC=e2e/ai3dStageChrome.spec.ts make browser-qa`
+passed 3/3 in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services; existing focused AI/editor checks were
+already reconciled. The historical re-audit text was not treated as a reopen.
+
+Fresh queue distillation leaves #331 deployment-blocked on its stale exact
+embed route; #330 is the next independent closure-sized candidate for
+anonymous public 3D route parity. #360 remains its distinct sphere-proportion
+child and #344 remains blocked on physical held-pinch evidence. The next
+transaction is groom #330, then engineering and QA together, reconciliation,
+and permanent closure before advancing.
+## Owner re-audit distillation follow-up — 2026-09-03
+
+The owner reports that the compact controls are absent, the editor still has
+the legacy bulky functional row, and publication cannot be toggled. Fresh
+connected-browser screenshots of the current deployed bundle
+`assets/index-CQvhOwx-.js` instead show the authenticated editor's hamburger
+inside the canvas and the anonymous public route's hamburger plus a stacked
+Screenshot/Download/Piece controls/Fullscreen overlay when opened. This is a
+real unresolved revision/cache/session discrepancy, not evidence that any
+closed issue should be reopened.
+
+New issue #379, “Pieces parity: reconcile owner-visible deployment with compact
+stage controls,” captures the exact editor and public URLs, fixed viewports,
+asset identity, rendered screenshot requirements, publication workflow, and
+the no-reopen boundary. It is the next groomed transaction. No product code
+will be changed until the failing owner-visible revision or reproducible
+implementation defect is identified.
+## #379 current rendered comparison — 2026-09-04
+
+Fresh exact-route inspection against deployed `assets/index-CQvhOwx-.js`
+shows the authenticated editor's 44x44 hamburger inside the Preview canvas,
+without a functional row outside the canvas; opening it reveals named actions
+and `Publication status: Draft`. A fresh anonymous public route shows the
+stage-local hamburger; opening it reveals Screenshot, Download, Piece
+controls, and Fullscreen in the translucent stacked overlay, without
+owner-only controls.
+
+The owner-visible contradiction remains unresolved and is tracked by open
+#379 as a verification-boundary/deployment-session reconciliation task. No
+closed issue was reopened and no product source change was made from this
+comparison alone.
+## #379 deployment blocker escalation — 2026-09-03
+
+Authenticated Replit inspection reproduced the deployment cause: its Git panel
+reports `MERGE_CONFLICT`, an unexpected merge conflict, failed remote
+authentication, 16 incoming/1 outgoing changes, and incomplete Pull. The
+published `index-CQvhOwx-.js` differs from a fresh local build's hashed chunk
+graph. This is a workflow/infrastructure defect, not product parity evidence
+and not permission to reopen closed issues.
+
+New criterion-ready [#380](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/380)
+owns Replit remote authentication, branch reconciliation, and intentional
+republishing. #379 remains open and dependency-blocked on #380.
+## #380/#379 final deployment reconciliation — 2026-09-03
+
+Replit Git synchronization was repaired and `main` reconciled to
+`origin/main` at `cfd16d1`. The reviewed revision was republished; the custom
+domain now serves `assets/index-xwmMEBBo.js`, byte-identical to the fresh local
+build. Exact editor verification confirmed the stage-local controls and
+Draft/Published panel, including a live Published → Draft restoration. Exact
+anonymous public verification confirmed the hamburger and permitted
+Screenshot, Download, Piece controls, and Fullscreen overlay. Fixed-viewport
+QA for the same build covered 1280x900 and 375x812. #380 (workflow) and #379
+(owner-visible reconciliation) are permanently closed as `completed`. No
+closed issue was reopened; later gaps require new linked criterion-ready
+issues.
+
+## #330 final closure and post-blocker distillation — 2026-09-03
+
+#330 is permanently closed as `completed` for its scoped anonymous public
+3D `/p3d/:id` route contract. The exact owner fixture was temporarily
+published, verified anonymously against `assets/index-xwmMEBBo.js` (byte-
+identical to the local build), and restored to Draft. The public route
+rendered the authored artwork and exposed the privacy boundary, hamburger
+overlay, Screenshot, Download with Full/Non-Camera ZIP, Immersive, Sound,
+Piece controls, Steer, Guide, and Fullscreen. The local browser-QA attempt
+was blocked only because Docker was unavailable; this does not reopen or
+leave #330 open. Post-blocker distillation found no new product defect.
+
+The next FIFO candidate is #331, bounded to the anonymous embed route and
+deployment synchronization of local fix `6d1e38e`. #344 remains evidence-
+blocked on physical held-pinch behavior and #360 remains the separate
+sphere-proportion route task. Closed issues remain immutable.
+
+## #331 final closure and next-queue distillation — 2026-09-03
+
+#331 is permanently closed as `completed` for the anonymous chrome-less
+2D `/embed/p/:id` route. Fresh deployed inspection confirmed only the
+Preview/Scene canvas and Piece actions toolbar, the permitted Live camera and
+Demo signal disclosures, and Full/Non-Camera download variants; no site shell,
+owner controls, or sibling demo panel appeared. The local browser-QA retry was
+Docker-blocked, while the issue retains its prior 1/1 pass and exact deployed
+evidence. Post-closure distillation leaves #332 as the next FIFO task. No
+closed issue may be reopened; later contradictions require new linked issues.
+
+## #332 final closure and next-queue distillation — 2026-09-03
+
+#332 is permanently closed as `completed` for the anonymous chrome-less 3D
+`/embed/p3d/:id` route. Fresh deployed verification after temporary fixture
+publication showed only the expected title/author/embed link and Preview
+stage, with no site shell or owner controls; the hamburger exposed Screenshot,
+Download, Immersive, Sound, Piece controls, Steer, Guide, and Fullscreen. The
+fixture was restored to Draft. Local browser-QA remained Docker-blocked, while
+the issue retains its prior 1/1 pass. The next FIFO task is #333; closed
+issues remain immutable.
+
+## #381 blocked transaction and fresh distillation — 2026-09-03
+
+#381 was processed as one route transaction. Current authenticated evidence
+at 962×921 shows the stage-local hamburger, stacked named controls, 3D
+authoring disclosure, and a successful Draft → Published → Draft round trip.
+It remains open because the required fixed 1280×900 and 375×812 rendered
+evidence was unavailable, and `BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts
+make browser-qa` failed before startup with Docker unavailable.
+
+Blocker classification is `verification-boundary` plus
+`workflow/infrastructure-defect`; no product defect was reproduced. Fresh
+distillation rechecked duplicates and dependencies: no closed issue is being
+reopened, and #381 owns this exact owner route. The independent next FIFO
+candidate is #382, the anonymous public 2D route; #381 remains queued for its
+documented fixed-viewport/browser-harness retry.
+
+## Fresh owner contradiction distillation — 2026-09-03
+
+The owner reports that the exact manual 3D editor still has the legacy bulky
+functional row, that Draft/Published switching is unavailable, and that the
+public 2D piece has no controls. This is actionable evidence, but it does not
+authorize reopening #347–#359 or any other closed issue.
+
+Current source audit found `PieceStageToolbar` mounted in the manual 3D,
+public 2D, regular embed, 3D embed, and immersive consumers. Current exact
+deployed inspection found the manual 3D hamburger and opened overlay with
+named actions plus `Publication status: Draft`, and the public 2D hamburger
+and opened overlay with Screenshot, Download, Piece controls, and Fullscreen.
+Therefore the discrepancy is classified as `verification-boundary` pending
+revision/asset, cache/session, viewport, or reproducible implementation
+reconciliation—not as permission to claim parity or to erase the owner's
+report.
+
+Duplicate/coverage report: the underlying implementation slices are already
+covered by permanently closed #347/#348 and their route children #352/#353/
+#354/#355/#356/#358/#359; #330–#332 cover different public/embed surfaces and
+are also permanently closed. No existing open issue owns this fresh
+owner-visible contradiction at the exact two reported boundaries. Two new
+criterion-ready issues were created: #381 for authenticated manual 3D editor
+state and #382 for anonymous public 2D stage controls. Each has one route,
+fixed viewports, finite rendered criteria, exact evidence boundaries, and a
+no-reopen rule.
+
+The next handoff is #381 only. Engineering must not begin until its rendered
+revision/session discrepancy is groomed; #382 follows as its own transaction.
+The report also confirms that broad parent #320 remains a reconciliation
+container, not an implementation unit. The root `examples/` directory is not
+present in this checkout; the maintained behavioral reference is
+`../augment-humankind/docs/piece-surface-parity.md` and its source helpers.
+
+## #382 blocked transaction and fresh distillation — 2026-09-03
+
+#382 was processed as one anonymous public 2D route transaction. Current
+deployed evidence shows the closed in-canvas hamburger and opened translucent
+overlay with Screenshot, Download, Piece controls, and Fullscreen; nested
+camera/demo controls and Full/Non-Camera downloads are present, with no owner
+or legacy sibling panel. It remains open because fixed 1280×900 and 375×812
+rendered evidence could not be produced, and the focused browser command
+failed before startup with Docker unavailable.
+
+Blocker classification is `verification-boundary` plus
+`workflow/infrastructure-defect`; no product defect was reproduced. Fresh
+distillation confirms #382 is not a duplicate of closed #353/#356 and must
+not reopen them. #381 and #382 remain the two new route-specific owner-report
+reconciliations; #381 is the next retry candidate once the fixed-viewport
+harness exists, while the broader queue proceeds only with independent work.
+
+## #333 blocked transaction and fresh distillation — 2026-09-03
+
+#333 was processed as one regular immersive 3D route transaction. Current
+deployed evidence shows the authored stage, immersive instructions, Custom/
+CMS entry points, touch d-pad, stage hamburger, Screenshot, Download, Sound,
+Piece controls, Steer, Guide, Fullscreen, and five-step guide; no load-time
+camera prompt occurred, and the fixture was restored to Draft. It remains
+open because fixed 1280×900/375×812 proof and the focused browser command
+were blocked before startup by unavailable Docker.
+
+Classification is `verification-boundary` plus `workflow/infrastructure-defect`;
+no product defect was reproduced. Fresh distillation confirms #333 is
+independent of closed route issues and remains the sole next retry once the
+harness is available; no closed issue was reopened.
+
+## Replit revision identity recheck — 2026-09-03
+
+The authenticated Replit workspace reports its reconciled `main` at
+`cfd16d1`, while local/GitHub `main` is `d27e291`. A direct source diff for
+`frontend`, `backend`, `schema`, `.replit`, and `scripts` is empty between
+those revisions; the divergence contains only documentation/memory/task
+records. The published site loads `assets/index-xwmMEBBo.js`, and exact
+editor/public route inspection renders the requested hamburger/overlay flow.
+This explains deployment-history noise but does not dismiss the owner's
+contradictory visible report. Keep #381/#382 open for fixed-viewport/session
+reconciliation; do not create a duplicate product implementation issue or
+reopen closed issues.
+
+## Additional 2D editor audit — 2026-09-03
+
+The authenticated existing 2D editor was inspected separately from #381's
+manual 3D boundary. Its Preview contains the in-canvas hamburger and no
+page-level duplicate functional rail. The opened overlay contains Screenshot,
+Download, Piece controls, Edit scene, Fullscreen, and a visible Publication
+status: Published disclosure with Draft available. This is covered behavior,
+not a new implementation defect or a reason to reopen closed #354/#356;
+fixed-viewport proof remains in the route-specific verification queue.
+
+## #344 blocker reconciliation and fresh distillation — 2026-09-04
+
+#344's implementation-level checks remain green: `npm --prefix frontend test
+-- --run src/pages/Scene3DPreview.gestureControl.test.tsx
+src/tracking/handSignals.test.ts` passed 2 files and 26 tests. The only
+unmet criterion is physical held-pinch camera evidence; the available browser
+automation cannot synthesize a real camera gesture stream. This is a
+verification-boundary blocker, not a reproduced product defect.
+
+Fresh task distillation found no duplicate or separable implementation task.
+The next queue candidate is #360, but it remains dependency-blocked until an
+intended published 3D fixture exists at its exact public route. The session
+therefore proceeds to #360's dependency review rather than looping on #344.
+
+## #381 closure reconciliation — 2026-09-04
+
+#381 is permanently closed as `completed` for its exact authenticated manual
+3D owner-route verification boundary. The focused browser transaction passed
+in Chromium, Firefox, and WebKit (`BROWSER_QA_E2E_SPEC=e2e/manual3dStageChrome.spec.ts
+make browser-qa`) against disposable PostgreSQL/Django/Vite services. The
+scenario exercised both 1280×900 and 375×812 viewports, the stage-local
+hamburger and stacked overlay, named runtime and authoring actions, responsive
+canvas aspect geometry, and Draft → Published → Draft with final state Draft.
+No closed issue was reopened. Remaining public/immersive/deployment gaps are
+separate open route or verification tasks.
+
+The next FIFO candidate is #382, the anonymous public 2D route audit. It must
+be completed, reconciled, and closed before any later issue is engineered.
+
+## #333 closure reconciliation — 2026-09-04
+
+#333 is permanently closed as `completed` for the anonymous regular immersive
+3D route. `BROWSER_QA_E2E_SPEC=e2e/immersive3dStageChrome.spec.ts make
+browser-qa` passed 3/3 in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services, exercising 1280×900 and 375×812. The test
+verified the published route, stage-local hamburger/stacked overlay, named
+Screenshot/Download/Sound/Piece controls/Steer/Guide/Fullscreen actions,
+Full/Non-Camera downloads, guide behavior, and no load-time camera prompt.
+Its setup/assertions were corrected to open the hamburger before inspecting
+hidden actions and to assert the current flexible row sizing rather than the
+deprecated icon-only fixed width. No closed issue was reopened.
+
+The next FIFO work remains the independently blocked physical-camera #344 and
+the fixture/deployment-dependent #360; no later issue is engineered until an
+independent criterion-ready transaction is available.
+
+## #382 closure reconciliation — 2026-09-04
+
+#382 is permanently closed as `completed` for its exact anonymous public 2D
+route verification boundary. `BROWSER_QA_E2E_SPEC=e2e/public2dStageChrome.spec.ts
+make browser-qa` passed in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services. The scenario exercised 1280×900 and 375×812,
+the in-canvas hamburger and translucent stacked overlay, named Screenshot,
+Download, Piece controls, and Fullscreen actions, nested Live camera/Demo
+signal disclosures, Full/Non-Camera downloads, and the public-only privacy
+boundary with no legacy sibling panel. No closed issue was reopened.
+
+The next FIFO candidate is #333, the anonymous regular immersive 3D route.
+Its fixed-viewport browser transaction must finish, reconcile, and close
+before another issue is engineered.
+
+## #360 closure reconciliation — 2026-09-04
+
+#360 is permanently closed as `completed` for the corrected anonymous public
+3D route boundary. The dedicated `e2e/public3dProportions.spec.ts` transaction
+passed 3/3 in Chromium, Firefox, and WebKit against disposable
+PostgreSQL/Django/Vite services. It exercised 1280×900 and 375×812, confirmed
+the sphere frame and backing canvas remain proportional, asserted no
+page-level horizontal overflow, and verified the public hamburger and named
+stage controls. The fixed route is `/p3d/f3863d2f-d3a5-41ad-9883-7b8441af6217`;
+the earlier 2D `/p/...` reference was corrected during grooming. The fixture
+was temporarily published for anonymous verification and restored to Draft.
+No closed issue was reopened.
+
+## Parent reconciliation closure — 2026-09-04
+
+The remaining open parent containers were reconciled after all scoped child
+transactions became terminal. #274's capability children and #320/#324's
+authored-piece route/artifact children are complete; #344 is complete for
+owner-verified desktop hand steering, and #391 is explicitly `not_planned`.
+The parent manifests and closure comments were updated, then #274, #320, and
+#324 were closed as `completed`. No closed child issue was reopened. Mobile
+gesture behavior remains assumed and becomes work only if the owner reports a
+specific defect through a new issue.
+
+Parent #320/#324/#274 remain reconciliation containers, not engineering tasks.
+
+## Production-readiness reconciliation — 2026-09-04
+
+The documented production-like `make deploy-check` passed with explicit
+non-secret production settings and zero Django warnings. The frontend
+production build passed, and the full `make check` passed: backend `888
+passed, 22 skipped`, frontend Vitest `2405 passed`, plus lint, formatting,
+and type-check gates. Fixed-viewport browser transactions passed in
+Chromium, Firefox, and WebKit for all six authored-piece route boundaries.
+The published 3D fixture was temporarily verified anonymously and restored
+to Draft. Production readiness remains open only at #344's physical-camera
+verification boundary; no closed route issue was reopened. Parent
+#274/#320/#324 remain reconciliation containers.
+
+## Canonical latest distillation override — 2026-09-04
+
+This section is the latest state after the Chrome re-audit. Earlier notes are
+historical transaction records and remain unchanged. Prior scoped closures are
+valid; they are not retroactively invalidated by the current owner report.
+
+The exact authenticated 3D editor at 375×812 currently renders the requested
+stage-local hamburger and stacked overlay, named controls, and a visible
+Draft/Published disclosure. The exact anonymous 2D URL currently renders its
+stage-local hamburger and, after activation, compact labeled
+Screenshot/Download/Piece controls/Fullscreen rows without a page-level
+control rail. These observations do not prove every authored-piece surface or
+downloaded artifact, but they do not reproduce the specific editor/public
+defects reported in this pass. No new implementation issue was filed.
+
+The exact immersive 3D route was temporarily published for #344, rendered the
+fixture, and was restored to Draft. Steering activation produced no camera
+stream and no browser permission prompt, so #344 remains an open
+`verification-boundary` transaction. Its next action is owner camera
+permission, followed by physical held-pinch, release, hand-loss, and disable
+evidence. No closed issue was reopened; #274/#320/#324 remain reconciliation
+containers.
+
+## Current owner-report distillation and Chrome re-audit — 2026-09-04
+
+Historical scoped closures remain valid for the contracts and evidence of
+their transactions. The current owner report is retained as new evidence and
+was not used to reopen any issue.
+
+| Boundary | Current evidence | Distillation result |
+| --- | --- | --- |
+| Authenticated `/projects3d/f3863d2f-d3a5-41ad-9883-7b8441af6217` | Chrome owner session at 375×812 showed the sphere inside the Preview stage, a stage-local hamburger, a translucent stacked overlay, named controls, and an in-overlay `Publication status: Draft` control. | The reported outside-canvas bulky row and missing status control were not reproduced in this session; no new implementation issue created. |
+| Anonymous `/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2` | Chrome at 375×812 showed a stage-local hamburger. Opening it showed compact stacked Screenshot, Download, Piece controls, and Fullscreen actions with readable labels and no page-level control rail. | The reported absence of public controls was not reproduced; no new implementation issue created. |
+| Exact immersive 3D route | The route was unavailable while the fixture was Draft. Under the previously authorized temporary publish cycle it rendered the 3D scene and exposed the gesture controls; the fixture was restored to Draft. | Deployment/publication state is verified as reversible, but this does not close the physical-camera boundary. |
+| Physical hand steering (#344) | Steering activation on the published immersive route produced no camera stream or Chrome permission prompt. | `verification-boundary`; #344 remains open. Exact next action: owner enables camera permission for `animate.creatrweb.com`, then repeat held-pinch/release/hand-loss/disable evidence. |
+| Downloads and other consumers | No new contradictory evidence was produced in this pass; prior scoped closure records remain historical and immutable. | Already covered or requires its existing route/artifact transaction; no duplicate issue created. |
+
+Duplicate/coverage report: the open GitHub set remains #274, #320, #324,
+and #344. #274/#320/#324 are reconciliation containers. The current Chrome
+evidence does not establish a new actionable product defect distinct from
+those containers or #344, so no new issue was filed. The reported visual
+discrepancy remains a session/revision-sensitive follow-up signal and must be
+rechecked if it recurs; it does not invalidate or reopen any closed issue.
+
+Handoff: #344 is the only active closure-sized transaction. It remains
+terminally handed off on the browser-permission boundary; no independent
+implementation task was identified by this distillation pass.
+
+## #334 closure reconciliation — 2026-09-04
+
+#334 is permanently closed as `completed` for the anonymous custom immersive
+3D route `/immersive/p3d/:id?embed=1`. Its focused browser transaction passed
+3/3 in Chromium, Firefox, and WebKit against disposable PostgreSQL/Django/Vite
+services. It verified the chrome-less route, stage-local hamburger/stacked
+overlay, named controls and Full/Non-Camera downloads, and responsive 16:9
+stage geometry. The QA setup now opens the hamburger before inspecting hidden
+actions, and the obsolete fixed `360px` height assertion is replaced by the
+responsive aspect contract. No closed issue was reopened.
+
+The next FIFO candidate is #335, the CMS immersive query variant.
+
+## #335 closure reconciliation — 2026-09-04
+
+#335 is permanently closed as `completed` for the anonymous CMS immersive 3D
+route `/immersive/p3d/:id?embed=1&cms=1`. Its focused browser transaction
 passed 3/3 in Chromium, Firefox, and WebKit against disposable
 PostgreSQL/Django/Vite services, verifying the chrome-less CMS wrapper,
 stage-local hamburger/stacked overlay, named controls and downloads, and

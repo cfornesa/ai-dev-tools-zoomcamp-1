@@ -67,7 +67,7 @@ test.describe('Draw.io editor', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('selects and mutates objects while preserving layer controls and lock guards', async ({
+  test('mutates objects, renames a layer, and preserves saved draw.io state', async ({
     page,
     context,
   }) => {

@@ -33,6 +33,20 @@ export function getDrawioLayers(scene: SceneDocument): DrawioLayer[] {
   return read(scene)?.layers ?? [];
 }
 
+export function addDrawioLayer(scene: SceneDocument): DrawioMutation {
+  return edit(scene, (document) => {
+    const id = `draw-layer-${document.layers.length + 1}`;
+    document.layers.push({
+      id,
+      name: `Layer ${document.layers.length + 1}`,
+      order: document.layers.length,
+      visible: true,
+      locked: false,
+    });
+    return null;
+  });
+}
+
 export function renameDrawioLayer(scene: SceneDocument, id: string, name: string): DrawioMutation {
   return edit(scene, (document) => {
     const layer = document.layers.find((candidate) => candidate.id === id);

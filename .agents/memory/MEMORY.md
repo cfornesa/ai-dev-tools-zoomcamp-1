@@ -56,3 +56,4 @@
 - [Multi-vendor AI provider credentials](multi-vendor-ai-provider-credentials.md) — Preserve shared validated scene contracts and encrypted owner-scoped keys when adding Gemini/DeepSeek; Mistral Vibe remains developer tooling unless scope changes.
 - [Draw.io layer integration](drawio-layer-integration.md) — Keep draw.io as a separately versioned object document inside the native outer layer stack; do not flatten it into native one-shape-per-layer content.
 - [Production readiness gaps](production-readiness-gaps.md) — AI quotas need shared production state, published runtime needs WSGI/ASGI, and signup policy must be explicit across plan and UI.
+- [Auth, admin, and entitlement boundaries](auth-admin-entitlements-boundaries.md) — GitHub OAuth/admin identities/entitlements/admin settings/PayPal billing/account identity link-unlink (#420-#426, all closed 2026-09-05); key design decisions for anything touching this boundary next.

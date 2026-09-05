@@ -16515,3 +16515,32 @@ lint/format/mypy all pass clean. Server-to-server only, per the narrowed
 contract -- no checkout/status UI (#440) exists yet to browser-test
 against, and a real PayPal sandbox transaction remains a separately
 recorded deployment boundary under #445.
+
+## #426 closure reconciliation — 2026-09-05
+
+[#426](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/426) closed,
+final item of the `.agents/memory/auth-admin-entitlements-boundaries.md`
+criterion-ready queue (`#420, #425, #421, #423, #422, #424, #426` --
+all seven now closed). Gave a signed-in user their own `/account/
+settings/identities` page over allauth's own `SocialAccount` records.
+Linking is entirely allauth's real `?process=connect` OAuth flow (no new
+link endpoint) -- fixed a cross-user gap this issue's own scope
+surfaced in `LinkedProvidersSocialAccountAdapter.pre_social_login`
+(#420): a signed-in user linking a second provider whose email equals
+their *own* already-registered email is the expected common case, not a
+conflict, while a match against a *different* existing user still gets
+the #420 409 page. New `GET/DELETE /api/account/identities/`
+(`scenes/account_identities.py`/`_api.py`) lists and unlinks only the
+caller's own identities, blocking removal of the last *usable*
+sign-in method (a provider an admin has since disabled site-wide never
+counts as usable, so it's always removable). New `IdentityLinkEvent`
+audits both link (via allauth's own `social_account_added` signal,
+wired in `scenes/apps.py`) and unlink outcomes -- provider and action
+only, never a token/uid. New `tests/test_account_identities.py` (12
+tests) and `frontend/e2e/accountIdentities.spec.ts` (15 scenarios, 3
+browsers, both viewports) -- every E2E fixture user now also carries a
+linked "google" `SocialAccount`, matching real production shape. Full
+backend suite (1075 passed, 27 skipped), complete frontend vitest suite
+(2436 passed), and `authPolicy.spec.ts`/`projectLifecycle.spec.ts`
+regression-checked against the extended fixture shape -- all pass
+clean.

@@ -215,7 +215,8 @@ continuation. #414 now has a production database-cache backend and migration;
 Google-only signup policy that still permits first-time Google social signup;
 #404 has a finite provider registry and encrypted owner/vendor credential API;
 and #409 has a bounded versioned draw.io subset with mirrored client/server
-validation. Focused tests for these changes pass. The five issues are not
+validation. #405/#406 now have dependency-free Gemini/DeepSeek adapters and
+#407 has vendor settings and 2D/3D selector wiring. Focused tests for these changes pass. The five issues are not
 being treated as status-only blockers while implementation proceeds; remaining
 acceptance evidence and dependent provider/draw.io features still require
 follow-on work before issue closure.

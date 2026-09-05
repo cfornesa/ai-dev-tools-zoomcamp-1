@@ -93,6 +93,23 @@ clean) and committed/pushed directly to `main` as commit `71c8290`.
   chromium/firefox) -- filed as
   [#454](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/454)
   rather than fixed here.
+- **#432 (CLOSED, completed, scoped):** owner-approved scope decision --
+  full real MediaPipe hand-tracking inside the sandbox needs a backend
+  system-prompt change plus a CDN-loaded vision model, deferred to
+  [#455](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/455).
+  Implemented the real, testable lifecycle instead:
+  `window.__registerArtPieceCamera({ getPose, setPose, reset })` opt-in
+  hook, activation gating (engine/camera/registration, each its own
+  acknowledged rejection reason), a `steer-signal` command applying a
+  radius-clamped pose delta, and a real `reset-view`. Also discovered and
+  fixed a security gap present since #430: the sandbox's message
+  listener never verified `event.source`, so the untrusted generated
+  snippet could self-post a spoofed `{source: 'art-piece-parent', ...}`
+  message to silently self-trigger camera/microphone activation with no
+  real user gesture -- added `event.source !== window.parent` rejection.
+  Added `frontend/e2e/artPieceSteeringRuntime.spec.ts`. Commit `a436dfa`.
+  Verified 9/9 across chromium/firefox/webkit; regression-checked all
+  four other art-piece specs against the security hardening.
 - PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
   duplicates the content now on `main` via commit `71c8290`; left open
   pending full CI green, per repository owner's condition.

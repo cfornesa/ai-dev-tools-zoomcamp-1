@@ -3,6 +3,7 @@ import { baseScene } from '../render/testSceneFixtures';
 import {
   deleteDrawioObject,
   duplicateDrawioObject,
+  hitTestDrawioObjectAt,
   moveDrawioObject,
   resizeDrawioObject,
 } from './drawioDocument';
@@ -50,5 +51,10 @@ describe('draw.io object mutations', () => {
 
   it('rejects mutation in hidden/locked layers', () => {
     expect(moveDrawioObject(scene(true), 'r', 1, 1).ok).toBe(false);
+  });
+
+  it('hit-tests only visible supported objects', () => {
+    expect(hitTestDrawioObjectAt(scene(), 5, 5)?.id).toBe('r');
+    expect(hitTestDrawioObjectAt(scene(), 50, 50)).toBeNull();
   });
 });

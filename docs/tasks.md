@@ -16416,3 +16416,38 @@ against the disposable real-PostgreSQL stack, run twice with identical
 no-op output. Browser-level admin-route evidence is explicitly deferred
 to #422 per the narrowed contract (no admin UI exists yet to test
 against).
+
+## #423 closure reconciliation — 2026-09-05
+
+[#423](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/423) closed,
+fourth of the criterion-ready queue. Added one transactional entitlement
+service (`scenes/entitlements.py`) resolving effective daily capacity
+from a user's plan tier (`UserEntitlementPlan`, absent row = "free", the
+pre-existing default) plus any explicit per-feature override
+(`UserFeatureOverride`, deny always wins, allow/no-override defers to the
+plan) -- `get_effective_cap` fails closed to 0 for an unknown feature key
+or an explicit deny, and `set_user_plan`/`set_feature_override`/
+`clear_feature_override` are `@transaction.atomic` and
+`select_for_update()`-serialized. Wired into the three named AI endpoints
+(`AICreateSceneView`, `AIEditSceneView`, `ArtPieceGenerateView`), which
+now call `get_effective_cap(request.user, ...)` instead of a hardcoded
+module constant; the pre-existing production defaults (50/50/20) are
+unchanged, only now resolved through one shared service instead of being
+duplicated three times, verified by rerunning every existing quota/
+rate-limit test suite unmodified (all still pass). New
+`tests/test_entitlements.py` (12 tests) uses the issue's own fixed
+fixture (free cap 5, paid cap 20, `ai_scene_create`/`ai_scene_edit`/
+`ai_art_generate`, explicit allow/deny override, user-B sentinel) via an
+autouse `PLANS` monkeypatch, including a real-PostgreSQL concurrent-
+transition test (two real threads racing `set_user_plan`, `select_for_
+update()` serializes them to exactly one surviving row) that SQLite
+cannot prove and correctly self-skips without `POSTGRES_TEST_DATABASE_URL`.
+Full backend suite (1026 passed, 27 skipped) and lint/format/mypy all
+pass clean; `tests/test_shared_quota_cache.py`'s existing two-worker/
+two-process tests were re-run against real PostgreSQL to confirm the
+entitlement-service integration doesn't disturb the underlying atomic
+cache counter's cross-worker guarantees. No browser UI or new HTTP
+endpoint was needed to close this service slice, per the narrowed
+contract -- #422 (admin console), #439 (account display), and #424
+(billing sync) now have `scenes.entitlements`'s functions to call
+directly instead of writing plan/override state themselves.

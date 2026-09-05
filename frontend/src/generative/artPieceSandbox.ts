@@ -101,7 +101,14 @@ function buildCsp(library: ArtPieceLibrary): string {
   const scriptSrc = cdnUrl
     ? `script-src 'unsafe-inline'${unsafeEval} ${ALLOWED_CDN_ORIGIN};`
     : "script-src 'unsafe-inline';";
-  return `default-src 'none'; ${scriptSrc} style-src 'unsafe-inline';`;
+  // Issue #433: SVG screenshot capture rasterizes the serialized SVG
+  // markup through an in-sandbox `Image`/`data:` URL (see the
+  // `screenshot` command handler below) so every library downloads a
+  // real PNG, not raw SVG text the parent's `atob`-based decoder can't
+  // read. `img-src data:` is scoped to that one same-sandbox rasterization
+  // step -- it does not let generated code fetch a remote image, since
+  // `data:` is not a network origin.
+  return `default-src 'none'; ${scriptSrc} style-src 'unsafe-inline'; img-src data:;`;
 }
 
 /** This function's own code -- never the AI's output -- registers the
@@ -164,7 +171,30 @@ const LISTENER_SCRIPT = `
           var svg = document.querySelector('svg');
           if (!svg) throw new Error('The generated piece has no capturable artwork.');
           var svgText = new XMLSerializer().serializeToString(svg);
-          reportScreenshot('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText), filename.replace('.png', '.svg'));
+          var svgViewBox = svg.viewBox && svg.viewBox.baseVal;
+          var svgWidth = (svgViewBox && svgViewBox.width) || (svg.width && svg.width.baseVal && svg.width.baseVal.value) || svg.getBoundingClientRect().width || 300;
+          var svgHeight = (svgViewBox && svgViewBox.height) || (svg.height && svg.height.baseVal && svg.height.baseVal.value) || svg.getBoundingClientRect().height || 150;
+          // Issue #433: rasterize to a real PNG instead of returning raw
+          // SVG markup -- the parent's screenshot handler decodes every
+          // library's payload with atob(), which cannot read the
+          // percent-encoded SVG text this used to send.
+          var svgImage = new Image();
+          svgImage.onload = function () {
+            try {
+              var rasterCanvas = document.createElement('canvas');
+              rasterCanvas.width = svgWidth;
+              rasterCanvas.height = svgHeight;
+              var rasterContext = rasterCanvas.getContext('2d');
+              rasterContext.drawImage(svgImage, 0, 0, svgWidth, svgHeight);
+              reportScreenshot(rasterCanvas.toDataURL('image/png'), filename);
+            } catch (rasterError) {
+              report('error', (rasterError && rasterError.message) || 'The generated piece could not be captured as an image.');
+            }
+          };
+          svgImage.onerror = function () {
+            report('error', 'The generated piece could not be captured as an image.');
+          };
+          svgImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
         }
       } else {
         window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: data.type, version: 1 } }));

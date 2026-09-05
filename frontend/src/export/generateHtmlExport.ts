@@ -162,7 +162,10 @@ export class ExportGenerationBlockedError extends Error {
  * this is the one place that translates between them. */
 export function exportRendererIdFor(scene: SceneDocument): RendererId {
   const resolved = resolveSceneRendererId(scene);
-  return resolved === 'p5' ? 'p5js' : resolved;
+  // Draw.io has a live editor/viewer adapter, but the standalone export
+  // runtime is intentionally not claimed until issue #412 adds its explicit
+  // safe packaging contract.
+  return resolved === 'p5' || resolved === 'drawio' ? 'p5js' : resolved;
 }
 
 /** Turns `title` into a filesystem-safe, lowercase, hyphenated basename.
@@ -206,6 +209,10 @@ function slugifyFilename(title: string): string {
  */
 export function checkExportBlockingReasons(input: GenerateHtmlExportInput): string[] {
   const reasons: string[] = [];
+
+  if (resolveSceneRendererId(input.scene) === 'drawio') {
+    reasons.push('Draw.io HTML export is not available for this supported document yet.');
+  }
 
   reasons.push(...checkRendererCompatibility(input.scene, exportRendererIdFor(input.scene)));
 

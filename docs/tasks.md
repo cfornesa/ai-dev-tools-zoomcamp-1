@@ -16323,3 +16323,37 @@ a real wheel event would; chromium/firefox continue using the real
 browsers in one invocation, plus the sibling immersive/flat-spatial
 suites (13/13) and the complete backend and frontend vitest/typecheck/
 lint/format checks all pass clean.
+
+## #420 closure reconciliation — 2026-09-05
+
+[#420](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/420) closed,
+first of the `.agents/memory/auth-admin-entitlements-boundaries.md`
+criterion-ready queue (`#420, #425, #421, #423, #422, #424, #426`):
+extended the Google-only django-allauth login policy to support GitHub as
+a second, environment-gated provider through one explicit registry.
+`GITHUB_OAUTH_CLIENT_ID`/`GITHUB_OAUTH_CLIENT_SECRET` are optional
+(unlike Google's required pair); setting only one is a startup
+configuration error naming both variables, and leaving both unset keeps
+GitHub fully disabled -- today's exact Google-only behavior.
+`allauth.socialaccount.providers.github` stays permanently installed (so
+the provider registry/adapter work the instant real credentials are
+set), but new `backend/backend/oauth_gates.py` gates its login/callback
+routes closed (404) at request time whenever disabled, registered ahead
+of `include("allauth.urls")` so it intercepts before allauth's
+identically-named routes -- avoiding both a raw
+`SocialApp.DoesNotExist` 500 and any INSTALLED_APPS-toggling/URL-cache
+complexity in tests. `login.html` now loops over allauth's own
+`{% get_providers %}` instead of a hardcoded Google button, so the UI
+naturally shows only configured providers. `GoogleOnlyAccountAdapter`/
+`GoogleSocialAccountAdapter` renamed to `SocialOnlySignupAccountAdapter`/
+`LinkedProvidersSocialAccountAdapter`; the latter's `pre_social_login`
+now fails a brand-new provider identity closed (409, no silent merge)
+when its email matches an existing account, deferring explicit account
+linking to #426. New `backend/tests/test_github_oauth.py` (9 tests,
+disabled-by-default 404s, enabled-via-`override_settings` login/
+callback/conflict flows) plus 3 new settings-load tests in
+`test_env_config.py`. Full backend suite (999 passed, 26 skipped),
+`authPolicy.spec.ts` (6/6, all 3 browsers, unaffected), and complete
+backend/frontend lint/format/typecheck all pass clean. Real GitHub App
+credential/callback verification against a live account remains a
+deployment boundary under #445, mirroring Google's own historical #75.

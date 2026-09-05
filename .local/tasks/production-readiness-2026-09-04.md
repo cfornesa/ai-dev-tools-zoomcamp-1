@@ -175,6 +175,11 @@ https://animate.creatrweb.com/; because the active Mac session is locked and
 the reconciliation branch is not deployed there, no production-readiness
 claim is made from that baseline.
 
+#414 is now closed after real two-worker PostgreSQL API verification. Overall
+backlog state is 12 completed and one open (#415). Production readiness still
+requires the published branch-parity and process/signal evidence owned by
+#415.
+
 The isolated PostgreSQL runtime check found and fixed a real distributed-quota
 race: Django's stock DatabaseCache.incr was read/modify/write. Production now
 selects AtomicDatabaseCache, which row-locks each counter increment. Two

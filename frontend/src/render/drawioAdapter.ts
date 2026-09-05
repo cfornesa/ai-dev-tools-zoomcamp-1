@@ -121,8 +121,10 @@ export function createDrawioScenePreview(container: HTMLElement): ScenePreview {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       const visible = new Set(layers.filter((layer) => layer.visible).map((layer) => layer.id));
+      const layerOrder = new Map(layers.map((layer) => [layer.id, layer.order]));
       [...objects]
         .filter((object) => visible.has(object.layerId))
+        .sort((a, b) => (layerOrder.get(b.layerId) ?? 0) - (layerOrder.get(a.layerId) ?? 0))
         .forEach((object) => paint(ctx, object));
     },
     destroy() {

@@ -100,6 +100,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
+import { openEditScene, openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -129,7 +130,15 @@ function shapeListItem(page: Page) {
 }
 
 async function openCameraAndDemoControls(page: Page) {
-  const disclosure = page.getByRole('button', { name: 'Piece controls' });
+  // Issue #444: the public/anonymous viewer's stage controls (same as the
+  // editor's) are nested behind "Open piece controls menu" -- open it
+  // before "Piece controls" (the camera/demo disclosure) is reachable.
+  // An anchored, case-insensitive regex matches this trigger's closed
+  // ("Piece controls") and open ("Hide piece controls") accessible names
+  // while excluding the surrounding "Close piece controls menu" buttons,
+  // which an unanchored substring match would otherwise also hit.
+  await openPieceControlsMenu(page);
+  const disclosure = page.getByRole('button', { name: /^(piece controls|hide piece controls)$/i });
   await expect(disclosure).toBeVisible();
   if ((await disclosure.getAttribute('aria-expanded')) === 'false') {
     await disclosure.click();
@@ -137,6 +146,7 @@ async function openCameraAndDemoControls(page: Page) {
 }
 
 async function expectPublicStageChrome(page: Page) {
+  await openPieceControlsMenu(page);
   const toolbar = page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
   await expect(toolbar).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
@@ -157,7 +167,11 @@ async function expectPublicStageChrome(page: Page) {
     };
   });
   expect(layout.display).toBe('flex');
-  expect(layout.flexDirection).toBe('row');
+  // Issue #444: the group is now the vertical list of rows inside the
+  // "Piece actions" modal dialog (same design manual2dStageChrome.spec.ts
+  // already asserts as `column`), not an inline horizontal toolbar --
+  // still wider than tall since each row spans the dialog's full width.
+  expect(layout.flexDirection).toBe('column');
   expect(layout.width).toBeGreaterThan(layout.height);
 }
 
@@ -166,8 +180,20 @@ function pieceActionsToolbar(page: Page) {
 }
 
 async function choosePublished(page: Page): Promise<void> {
+  // Issue #444: the "Publication status" disclosure (PublishControl.tsx)
+  // is itself nested behind the stage's "Open piece controls menu", same
+  // as Edit scene -- open it first or the trigger below is never visible.
+  await openPieceControlsMenu(page);
   const toolbar = pieceActionsToolbar(page);
-  const trigger = toolbar.getByRole('button', { name: 'Publication status: Draft' });
+  // Issue #444: StageControlsPopover's trigger toggles its own accessible
+  // name between "Publication status: Draft" (closed) and "Hide
+  // publication status: draft" (open) -- an anchored, case-insensitive
+  // regex matches exactly one of those two states while excluding the
+  // panel's own "Close publication status: draft" button (an unanchored
+  // substring match would hit that button too, a strict-mode violation).
+  const trigger = toolbar.getByRole('button', {
+    name: /^(publication status: draft|hide publication status: draft)$/i,
+  });
   if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
   await toolbar
     .getByRole('group', { name: 'Publication status', exact: true })
@@ -176,8 +202,11 @@ async function choosePublished(page: Page): Promise<void> {
 }
 
 async function chooseDraft(page: Page): Promise<void> {
+  await openPieceControlsMenu(page);
   const toolbar = pieceActionsToolbar(page);
-  const trigger = toolbar.getByRole('button', { name: 'Publication status: Published' });
+  const trigger = toolbar.getByRole('button', {
+    name: /^(publication status: published|hide publication status: published)$/i,
+  });
   if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
   await toolbar
     .getByRole('group', { name: 'Publication status', exact: true })
@@ -251,6 +280,7 @@ test.describe('Publishing', () => {
 
     // Add a distinguishing shape and save version 2, so "the current
     // saved version" is something concrete to check for publicly.
+    await openEditScene(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
     const positionX = page.locator('#shape-style-positionX');
     await expect(positionX).toBeVisible();
@@ -306,9 +336,9 @@ test.describe('Publishing', () => {
     //    surface precedent of asserting content via the API response
     //    alongside the rendered page).
     await anonPage.goto(`/p/${projectId}`);
-    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
-      'A meaningful public title',
-    );
+    await expect(
+      anonPage.getByRole('heading', { level: 2, name: 'A meaningful public title' }),
+      ).toBeVisible();
     await expect(anonPage.getByTestId('public-scene-canvas')).toBeVisible();
 
     const publicDetail = await apiGet(anonContext, `/api/public/projects/${projectId}/`);
@@ -383,9 +413,9 @@ test.describe('Publishing', () => {
     );
 
     await anonPage.goto(`/p/${projectId}`);
-    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
-      'Typed straight into Publish',
-    );
+    await expect(
+      anonPage.getByRole('heading', { level: 2, name: 'Typed straight into Publish' }),
+      ).toBeVisible();
 
     await anonContext.close();
   });
@@ -613,6 +643,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     // the canvas background/any other default color -- this is what the
     // persisted-rendering pixel check and the "granted camera + populated
     // scene" scenario both need a non-empty scene for.
+    await openEditScene(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
     const circleFillInput = page.locator('#shape-style-fill');
     await circleFillInput.fill(circleFill);
@@ -650,9 +681,9 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await anonPage.goto(`/p/${publicProjectId}`);
     await expectPublicStageChrome(anonPage);
     await openCameraAndDemoControls(anonPage);
-    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
-      'Anonymous viewer fixture project',
-    );
+    await expect(
+      anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+      ).toBeVisible();
 
     // CameraControl never auto-requests the camera: its status paragraph
     // is absent (idle state renders no status text at all -- see
@@ -778,9 +809,9 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${publicProjectId}`);
     await openCameraAndDemoControls(anonPage);
-    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
-      'Anonymous viewer fixture project',
-    );
+    await expect(
+      anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+      ).toBeVisible();
 
     const canvas = anonPage.getByTestId('public-scene-canvas').locator('canvas');
     await expect(canvas).toBeVisible();
@@ -812,9 +843,9 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${emptyScenePublicProjectId}`);
-    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
-      'Anonymous viewer empty-scene fixture project',
-    );
+    await expect(
+      anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer empty-scene fixture project' }),
+      ).toBeVisible();
 
     await expect(anonPage.getByTestId('public-scene-canvas').locator('canvas')).toBeVisible();
     await expect(anonPage.getByRole('alert')).toHaveCount(0);
@@ -909,9 +940,9 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await anonPage.goto(`/p/${publicProjectId}`);
     await openCameraAndDemoControls(anonPage);
 
-    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveText(
-      'Anonymous viewer fixture project',
-    );
+    await expect(
+      anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+      ).toBeVisible();
     await expect(anonPage.getByRole('alert')).toContainText("Couldn't render the preview");
 
     // The rest of the page stays usable -- header, camera, and demo
@@ -1215,6 +1246,7 @@ test.describe('Remix and fork', () => {
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
     const sourceId = await createBlankProjectViaUI(ownerPage); // version 1
 
+    await openEditScene(ownerPage);
     await ownerPage.getByRole('button', { name: 'Add circle' }).click();
     const ownerPositionX = ownerPage.locator('#shape-style-positionX');
     await ownerPositionX.fill('100');
@@ -1267,6 +1299,7 @@ test.describe('Remix and fork', () => {
 
     // A save on the source *after* the fork must never change that
     // recorded source version.
+    await openEditScene(ownerPage);
     await ownerPage.getByRole('button', { name: 'Add circle' }).click();
     await ownerPage.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(ownerPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 3/);
@@ -1285,6 +1318,7 @@ test.describe('Remix and fork', () => {
     await expect(forkPositionX).toHaveValue('100'); // deep-copied from the source's shape
     await forkPositionX.fill('999');
     await forkPositionX.blur();
+    await openEditScene(visitorPage);
     await visitorPage.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(visitorPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 

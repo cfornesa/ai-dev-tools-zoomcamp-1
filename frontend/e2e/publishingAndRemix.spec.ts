@@ -338,7 +338,7 @@ test.describe('Publishing', () => {
     await anonPage.goto(`/p/${projectId}`);
     await expect(
       anonPage.getByRole('heading', { level: 2, name: 'A meaningful public title' }),
-      ).toBeVisible();
+    ).toBeVisible();
     await expect(anonPage.getByTestId('public-scene-canvas')).toBeVisible();
 
     const publicDetail = await apiGet(anonContext, `/api/public/projects/${projectId}/`);
@@ -415,7 +415,7 @@ test.describe('Publishing', () => {
     await anonPage.goto(`/p/${projectId}`);
     await expect(
       anonPage.getByRole('heading', { level: 2, name: 'Typed straight into Publish' }),
-      ).toBeVisible();
+    ).toBeVisible();
 
     await anonContext.close();
   });
@@ -683,7 +683,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await openCameraAndDemoControls(anonPage);
     await expect(
       anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
-      ).toBeVisible();
+    ).toBeVisible();
 
     // CameraControl never auto-requests the camera: its status paragraph
     // is absent (idle state renders no status text at all -- see
@@ -811,7 +811,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await openCameraAndDemoControls(anonPage);
     await expect(
       anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
-      ).toBeVisible();
+    ).toBeVisible();
 
     const canvas = anonPage.getByTestId('public-scene-canvas').locator('canvas');
     await expect(canvas).toBeVisible();
@@ -844,8 +844,11 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const anonPage = await anonContext.newPage();
     await anonPage.goto(`/p/${emptyScenePublicProjectId}`);
     await expect(
-      anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer empty-scene fixture project' }),
-      ).toBeVisible();
+      anonPage.getByRole('heading', {
+        level: 2,
+        name: 'Anonymous viewer empty-scene fixture project',
+      }),
+    ).toBeVisible();
 
     await expect(anonPage.getByTestId('public-scene-canvas').locator('canvas')).toBeVisible();
     await expect(anonPage.getByRole('alert')).toHaveCount(0);
@@ -942,7 +945,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
 
     await expect(
       anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
-      ).toBeVisible();
+    ).toBeVisible();
     await expect(anonPage.getByRole('alert')).toContainText("Couldn't render the preview");
 
     // The rest of the page stays usable -- header, camera, and demo

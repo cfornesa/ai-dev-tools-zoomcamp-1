@@ -134,8 +134,10 @@ export function deleteDrawioLayer(scene: SceneDocument, id: string): DrawioMutat
     if (index < 0) return 'The selected draw.io layer no longer exists.';
     if (document.layers.length === 1) return 'A draw.io document must keep at least one layer.';
     if (document.layers[index].locked) return 'The selected draw.io layer is locked.';
+    if (document.objects.some((object) => object.layerId === id)) {
+      return 'This draw.io layer still has objects. Delete them before deleting the layer.';
+    }
     document.layers.splice(index, 1);
-    document.objects = document.objects.filter((object) => object.layerId !== id);
     return null;
   });
 }
@@ -146,13 +148,14 @@ export function moveDrawioLayer(
   direction: 'up' | 'down',
 ): DrawioMutation {
   return edit(scene, (document) => {
-    const index = document.layers.findIndex((layer) => layer.id === id);
+    const orderedLayers = [...document.layers].sort((a, b) => a.order - b.order);
+    const index = orderedLayers.findIndex((layer) => layer.id === id);
     if (index < 0) return 'The selected draw.io layer no longer exists.';
     const otherIndex = direction === 'up' ? index - 1 : index + 1;
-    if (otherIndex < 0 || otherIndex >= document.layers.length) return null;
-    [document.layers[index].order, document.layers[otherIndex].order] = [
-      document.layers[otherIndex].order,
-      document.layers[index].order,
+    if (otherIndex < 0 || otherIndex >= orderedLayers.length) return null;
+    [orderedLayers[index].order, orderedLayers[otherIndex].order] = [
+      orderedLayers[otherIndex].order,
+      orderedLayers[index].order,
     ];
     return null;
   });

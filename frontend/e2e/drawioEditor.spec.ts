@@ -87,7 +87,7 @@ test.describe('Draw.io editor', () => {
     await page.getByRole('button', { name: 'Open piece controls menu' }).click();
     await page.getByRole('button', { name: 'Edit scene', exact: true }).click();
 
-    await page.getByRole('button', { name: 'Select rect object-back' }).click();
+    await page.getByRole('button', { name: 'Select rect object-back', exact: true }).click();
     await expect(
       page.getByRole('button', { name: 'Move selected draw.io object right' }),
     ).toBeEnabled();
@@ -95,6 +95,7 @@ test.describe('Draw.io editor', () => {
     await page.getByRole('button', { name: 'Resize selected draw.io object larger' }).click();
     await page.getByRole('button', { name: 'Duplicate selected draw.io object' }).click();
     await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
+    await page.locator('button.piece-stage-command-close').click();
 
     const layers = page.getByRole('region', { name: 'Layers' });
     await expect(layers.getByRole('textbox', { name: 'Layer name for Back' })).toBeVisible();
@@ -105,6 +106,28 @@ test.describe('Draw.io editor', () => {
     await expect(
       layers.getByRole('textbox', { name: 'Layer name for Back Renamed' }),
     ).toBeVisible();
+    await layers.getByRole('button', { name: 'Add draw.io layer' }).click();
+    const newLayer = layers.getByRole('textbox', { name: 'Layer name for Layer 3' });
+    await newLayer.fill('Annotations');
+    await newLayer.press('Enter');
+    await expect(layers.getByRole('textbox', { name: 'Layer name for Annotations' })).toBeVisible();
+    await layers.getByRole('button', { name: 'Move Front up' }).click();
+    await layers.getByRole('button', { name: 'Hide Front' }).click();
+    await layers.getByRole('button', { name: 'Show Front' }).click();
+    await layers.getByRole('button', { name: 'Delete draw.io layer Annotations' }).click();
+    await expect(layers.getByRole('textbox', { name: 'Layer name for Annotations' })).toHaveCount(
+      0,
+    );
+    await layers.getByRole('button', { name: 'Lock Back Renamed' }).click();
+    await expect(layers.getByRole('button', { name: 'Unlock Back Renamed' })).toBeVisible();
+    await page.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await page.getByRole('button', { name: 'Select rect object-back', exact: true }).click();
+    await expect(
+      page.getByRole('button', { name: 'Move selected draw.io object right' }),
+    ).toBeDisabled();
+    await page.locator('button.piece-stage-command-close').click();
+    await layers.getByRole('button', { name: 'Unlock Back Renamed' }).click();
+    await page.getByRole('button', { name: 'Open piece controls menu' }).click();
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version \d+/);
     const project = (await (await apiGet(context, `/api/projects/${id}/`)).json()) as {
@@ -117,6 +140,8 @@ test.describe('Draw.io editor', () => {
     expect(savedScene.documentType).toBe('drawio');
     expect(savedScene.drawio.objects).toHaveLength(3);
     expect(savedScene.drawio.objects[0].width).toBe(130);
+    expect(savedScene.drawio.layers).toHaveLength(2);
+    expect(savedScene.drawio.layers.find((layer) => layer.id === 'layer-back')?.locked).toBe(false);
     expect(savedScene.drawio.layers.find((layer) => layer.id === 'layer-back')?.name).toBe(
       'Back Renamed',
     );

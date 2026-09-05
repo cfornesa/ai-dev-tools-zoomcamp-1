@@ -15,7 +15,7 @@ def test_registry_is_finite_and_validates_extension_entries():
         "gemini",
         "deepseek",
     }
-    assert get_provider(" GEMINI ").implemented is False
+    assert get_provider(" GEMINI ").implemented is True
     assert validate_model("mistral", "mistral-large-latest") == "mistral-large-latest"
     with pytest.raises(ValueError):
         get_provider("unknown")
@@ -48,7 +48,7 @@ def test_provider_credentials_are_owner_scoped_and_redacted():
     assert gemini == {
         "vendor": "gemini",
         "label": "Google Gemini",
-        "implemented": False,
+        "implemented": True,
         "configured": True,
     }
     assert "gemini-secret-key-123" not in status_response.content.decode()

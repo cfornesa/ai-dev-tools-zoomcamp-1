@@ -81,6 +81,13 @@ import {
   type NumericShapeField,
 } from './shapeStyleFields';
 import { parseCanvasBackgroundColorEdit, parseCanvasOpacityEdit } from './canvasSettingsFields';
+import {
+  deleteDrawioObject,
+  duplicateDrawioObject,
+  moveDrawioObject,
+  resizeDrawioObject,
+  type DrawioObject,
+} from './drawioDocument';
 
 /**
  * Task 23: shape add/select/duplicate/delete, plus this editor's in-session
@@ -302,6 +309,17 @@ export function useSceneEditor(
   const groups = useMemo(() => (workingCopy ? getGroups(workingCopy) : []), [workingCopy]);
   const layers = useMemo(() => (workingCopy ? getLayers(workingCopy) : []), [workingCopy]);
   const selectedGroup = groups.find((g) => g.id === selectedShapeId) ?? null;
+  const drawioObjects = useMemo(
+    () =>
+      workingCopy?.documentType === 'drawio' &&
+      workingCopy.drawio &&
+      typeof workingCopy.drawio === 'object'
+        ? (((workingCopy.drawio as { objects?: unknown }).objects ?? []) as DrawioObject[])
+        : [],
+    [workingCopy],
+  );
+  const selectedDrawioObject =
+    drawioObjects.find((object) => object.id === selectedShapeId) ?? null;
   // Issue #79: true only while the shape currently in vertex edit mode is
   // still the single active selection *and* still a `path` — the extra
   // `selectedShape?.type === 'path'` check is a belt-and-suspenders
@@ -468,17 +486,18 @@ export function useSceneEditor(
       const groups = getGroups(workingCopy);
       const group = groups.find((g) => g.id === id);
       const isGroup = !!group;
-      if (isShape || isGroup) {
+      const drawioObject = drawioObjects.find((object) => object.id === id);
+      if (isShape || isGroup || drawioObject) {
         setSelectedShapeId(id);
         // Keep the owning layer selected with the item. This is intentionally
         // additive: the item remains the single canvas/HUD selection while
         // the layer row gets the complete selected-block treatment.
         const shape = getEditableShapes(rawShapes(workingCopy)).find((s) => s.id === id);
-        setSelectedLayerId(shape?.layerId ?? group?.layerId ?? null);
+        setSelectedLayerId(shape?.layerId ?? group?.layerId ?? drawioObject?.layerId ?? null);
         setIsLayerSelection(false);
       }
     },
-    [workingCopy],
+    [drawioObjects, workingCopy],
   );
 
   const selectLayer = useCallback(
@@ -1451,6 +1470,42 @@ export function useSceneEditor(
 
   const clearGraphError = useCallback(() => setGraphError(null), []);
 
+  const applyDrawioMutation = useCallback(
+    (outcome: ReturnType<typeof moveDrawioObject>) => {
+      if (!outcome.ok) {
+        setOutlineError(outcome.error);
+        return;
+      }
+      setOutlineError(null);
+      commit(outcome.scene);
+    },
+    [commit],
+  );
+
+  const moveSelectedDrawioObject = useCallback(
+    (dx: number, dy: number) => {
+      if (!workingCopy || !selectedDrawioObject) return;
+      applyDrawioMutation(moveDrawioObject(workingCopy, selectedDrawioObject.id, dx, dy));
+    },
+    [applyDrawioMutation, selectedDrawioObject, workingCopy],
+  );
+  const resizeSelectedDrawioObject = useCallback(
+    (width: number, height: number) => {
+      if (!workingCopy || !selectedDrawioObject) return;
+      applyDrawioMutation(resizeDrawioObject(workingCopy, selectedDrawioObject.id, width, height));
+    },
+    [applyDrawioMutation, selectedDrawioObject, workingCopy],
+  );
+  const duplicateSelectedDrawioObject = useCallback(() => {
+    if (!workingCopy || !selectedDrawioObject) return;
+    applyDrawioMutation(duplicateDrawioObject(workingCopy, selectedDrawioObject.id));
+  }, [applyDrawioMutation, selectedDrawioObject, workingCopy]);
+  const deleteSelectedDrawioObject = useCallback(() => {
+    if (!workingCopy || !selectedDrawioObject) return;
+    applyDrawioMutation(deleteDrawioObject(workingCopy, selectedDrawioObject.id));
+    setSelectedShapeId(null);
+  }, [applyDrawioMutation, selectedDrawioObject, workingCopy]);
+
   return {
     // Task 40: exposed so read-only presentational components (e.g.
     // `RandomnessIndicator.tsx`) can read scene-level fields
@@ -1462,11 +1517,17 @@ export function useSceneEditor(
     selectedLayerId,
     isLayerSelection,
     selectedShape,
+    drawioObjects,
+    selectedDrawioObject,
     selectShape,
     selectLayer,
     addShape,
     duplicateSelected,
     deleteSelected,
+    moveSelectedDrawioObject,
+    resizeSelectedDrawioObject,
+    duplicateSelectedDrawioObject,
+    deleteSelectedDrawioObject,
     undo,
     redo,
     canUndo: past.length > 0,

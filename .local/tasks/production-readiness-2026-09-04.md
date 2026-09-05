@@ -123,5 +123,22 @@ The harness now accepts `BROWSER_QA_PLAYWRIGHT_PROJECT` (`chromium`,
 production shell remains healthy at `https://animate.creatrweb.com/`, but the
 branch is not deployed there.
 
+The backlog closure pass closed #404–#407 after the focused implementation
+evidence and complete Chromium AI/recovery suite passed. The remaining open
+issues are intentionally retained for missing matrix, draw.io surface,
+deployment, distributed-process, and auth-browser evidence rather than being
+closed by inference.
+## Current readiness reconciliation — 2026-09-05
 
-The backlog closure pass closed #404–#407 after the focused implementation evidence and complete Chromium AI/recovery suite passed. The remaining open issues are intentionally retained for missing matrix, draw.io surface, deployment, distributed-process, and auth-browser evidence rather than being closed by inference.
+Local readiness advanced: 57 focused backend tests passed, the frontend build
+passed, the draw.io and Google-only browser acceptance flows passed, and
+production-like `manage.py check --deploy` passed with zero warnings. The
+active Chrome session could not be re-inspected because macOS is currently
+locked; the production baseline remains `https://animate.creatrweb.com/` and
+the reconciliation branch is not deployed there.
+
+GitHub now has 7 completed issues and 6 open issues. #410–#413 remain open for
+draw.io interaction/public/embed/export/accessibility evidence. #414 remains
+open for two-worker shared-cache proof, and #415 remains open for exact
+published ASGI/process-signal proof. These are verification boundaries, not
+reasons to retain already-completed local capability issues.

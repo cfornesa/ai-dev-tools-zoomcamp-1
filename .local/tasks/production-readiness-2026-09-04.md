@@ -158,3 +158,8 @@ for the approved rectangle, ellipse, line, and text subset; Chromium browser
 acceptance passes. #410 remains open for rotation, bidirectional selection,
 and unsupported-object UX. #414 now uses atomic daily quota increments across
 2D, 3D, and art-piece paths, but still needs real two-worker deployed proof.
+
+The latest editor increment adds bounded Draw.io rotation and stable object
+selection rows in the layer outline; focused tests and Chromium acceptance
+pass. Remaining #410 evidence covers unsupported-object messaging and full
+pointer/outline parity.

@@ -46,7 +46,24 @@ clean) and committed/pushed directly to `main` as commit `71c8290`.
   filed as [#452](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/452).
 - Remaining browser-suite work stays open under #419 (fixture/race
   reconciliation, plus the classified camera-fps hardware boundary from
-  #444) and the newly filed #452 (WebKit tablet tab-order).
+  #444) and the newly filed #452 (WebKit tablet tab-order). #419's full
+  CI cross-browser matrix run is deferred to the end-of-session
+  production-readiness pass, per repository owner's direction (avoid
+  burning time/tokens on CI waits for individual issues).
+- **#433 (CLOSED, completed):** `artPieceSandbox.ts`'s SVG screenshot
+  path sent raw percent-encoded SVG markup, but `PieceStageControls.tsx`
+  unconditionally `atob()`-decodes every library's payload (a base64
+  decoder that throws on percent-encoded text). Fixed by rasterizing the
+  SVG through an in-sandbox `Image` + offscreen `<canvas>` (matching
+  Canvas2D's own `toDataURL('image/png')` path), with a narrowly scoped
+  `img-src data:` CSP addition. Added the issue's required
+  `frontend/e2e/artPieceSvgCapture.spec.ts`. Commit `37cb051`. Verified
+  3/3 across chromium/firefox/webkit, backend
+  `test_art_piece_persistence.py` (8/8), full vitest (2428/2428).
+  Discovered an unrelated pre-existing `artPieces.spec.ts` cross-browser
+  fixture-isolation bug while verifying; filed as
+  [#453](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/453)
+  rather than fixed here.
 - PR #417 (branch `codex/backlog-readiness-reconciliation-2026-09-04`)
   duplicates the content now on `main` via commit `71c8290`; left open
   pending full CI green, per repository owner's condition.

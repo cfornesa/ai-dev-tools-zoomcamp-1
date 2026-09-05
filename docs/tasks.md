@@ -16269,3 +16269,19 @@ capability issues (#428-#438, #446-#449). Remaining open work: #445
 (release reconciliation), the account/admin/entitlement cluster
 (#420-#426, #439-#443), #415/#419, and the WebKit/Playwright test-infra
 issues (#452-#457, #459).
+
+## #453 closure reconciliation — 2026-09-05
+
+[#453](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/453) closed:
+`artPieces.spec.ts`'s own fixture used a bare, non-project-scoped title
+("Browser piece") — since global setup/teardown scope fixture users to
+the whole `playwright test` invocation (not per browser project) and all
+projects share the same backend database, running all three declared
+projects in one invocation left three same-titled links on
+`/art-pieces/manage` by the third project, tripping a strict-mode
+violation on the un-scoped `getByText('Browser piece')` assertion.
+Test-only fix: the title now includes `testInfo.project.name`, and every
+assertion that referenced the old literal (heading text, screenshot
+filename slug, ZIP filename) derives from the same variable instead.
+Verified passing 3/3 in one multi-project invocation; full frontend
+vitest/typecheck checks pass clean.

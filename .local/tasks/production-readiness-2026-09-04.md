@@ -89,3 +89,15 @@ therefore remain authoritative: local deployment, approved-browser/CI,
 intended functionality, and overall production readiness are blocked, while
 the reachable production shell remains an open follow-up for exact revision
 parity. No new issue or memory topic was needed.
+
+## Implementation continuation — 2026-09-05
+
+The prior readiness snapshot is historical. Implementation has since landed
+in the working tree for the five previously blocked foundations: shared
+production quota storage (#414), production ASGI launch (#415), explicit
+Google-only signup (#416), vendor-neutral encrypted credentials (#404), and a
+bounded versioned draw.io document subset (#409). Focused backend tests,
+draw.io validation (52 tests), frontend scene validation (48 tests), and
+frontend typecheck pass. Production readiness remains open because dependent
+provider/draw.io work (#407–#413), full `make check`, approved deployment
+process verification, and remote branch handoff are still outstanding.

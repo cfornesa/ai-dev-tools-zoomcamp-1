@@ -46,6 +46,7 @@
 import JSZip from 'jszip';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
+import { buildStandaloneArtPieceRuntimeScript } from '../export/standaloneArtPieceRuntimeSource';
 
 export type ArtPieceExportMode = 'full' | 'non-camera';
 
@@ -65,16 +66,25 @@ const PIECE_CSS = `html, body {
   margin: 0;
   padding: 0;
   background: #ffffff;
-  height: 100%;
-  overflow: hidden;
 }
 canvas {
   display: block;
   max-width: 100%;
 }
-a-scene {
-  position: absolute;
-  inset: 0;
+/* Issue #436: unlike the live-preview sandbox iframe (where a Three.js/
+ * A-Frame scene's absolute-positioned container legitimately fills the
+ * *entire* isolated document, since the stage toolbar lives in a
+ * completely separate parent document), this exported bundle renders
+ * the scene and its controls nav in one shared document. A full-page
+ * position: absolute; inset: 0 container painted above the nav (an
+ * absolutely-positioned element stacks above normal-flow siblings
+ * regardless of DOM order), intercepting every click aimed at it.
+ * Constraining the stage to a fixed-height box lets the controls render
+ * normally below it instead. */
+#art-piece-container, a-scene {
+  position: relative;
+  width: 100%;
+  height: 480px;
 }
 `;
 
@@ -106,52 +116,50 @@ function stripCameraArtifacts(code: string): string {
     .replace(/\b(?:camera|webcam|mediapipe|hand[_-]?tracking)\b/gi, 'non-camera');
 }
 
+/** Issue #436: real controls (a click actually calls the standalone
+ * runtime's function and reflects its real outcome), not the previous
+ * fire-and-forget `art-piece-command` events nothing in the exported
+ * bundle ever consumed. Each togglable control gets an initial
+ * `aria-pressed="false"` and its own status paragraph, matching the
+ * live preview's `PieceStageControls.tsx` naming so this stays
+ * recognizable as the same runtime contract, ported to a standalone
+ * document. */
 function buildExportControls(
   capabilities: ArtPieceCapabilitySet,
   mode: ArtPieceExportMode,
 ): string {
+  const includeCamera = mode === 'full' && capabilities.camera_view === true;
+  const includeSteering = mode === 'full' && capabilities.hand_steering === true;
   const buttons = [
     capabilities.screenshot !== false ? '<button data-action="screenshot">Screenshot</button>' : '',
-    capabilities.sound ? '<button data-action="sound">Mute sound</button>' : '',
-    capabilities.hand_steering && mode === 'full'
-      ? '<button data-action="hand">Hand steering</button>'
+    capabilities.sound === true
+      ? '<button data-action="sound" aria-pressed="false">Unmute sound</button>'
       : '',
-    capabilities.camera_view && mode === 'full'
-      ? '<button data-action="camera">Camera view</button>'
+    capabilities.microphone === true
+      ? '<button data-action="microphone" aria-pressed="false">Enable microphone</button>'
+      : '',
+    includeCamera
+      ? '<button data-action="camera" aria-pressed="false">Enable camera view</button>'
+      : '',
+    includeSteering
+      ? '<button data-action="hand" aria-pressed="false">Steer the piece</button>'
       : '',
     capabilities.fullscreen !== false ? '<button data-action="fullscreen">Fullscreen</button>' : '',
     '<button data-action="reset">Reset view</button>',
   ].filter(Boolean);
+  const statuses = [
+    capabilities.sound === true
+      ? '<p id="art-piece-sound-status" role="status">Sound is off.</p>'
+      : '',
+    capabilities.microphone === true
+      ? '<p id="art-piece-microphone-status" role="status">Microphone is off.</p>'
+      : '',
+    includeCamera ? '<p id="art-piece-camera-status" role="status">Camera is off.</p>' : '',
+    includeSteering ? '<p id="art-piece-steering-status" role="status">Steering is off.</p>' : '',
+  ].filter(Boolean);
   return `<nav class="art-piece-controls" aria-label="Piece controls">${buttons.join('')}</nav>
-<script>
-(function () {
-  var controls = document.querySelector('.art-piece-controls');
-  function canvas() { return document.querySelector('canvas'); }
-  function filename() { return 'art-piece-screenshot-' + Date.now() + '.png'; }
-  function save(blob, name) {
-    var url = URL.createObjectURL(blob); var a = document.createElement('a');
-    a.href = url; a.download = name; a.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 0);
-  }
-  if (!controls) return;
-  controls.addEventListener('click', function (event) {
-    var action = event.target && event.target.getAttribute('data-action');
-    if (action === 'screenshot') {
-      var target = canvas();
-      if (target && target.toBlob) target.toBlob(function (blob) { if (blob) save(blob, filename()); });
-      else {
-        var svg = document.querySelector('svg');
-        if (svg) save(new Blob([new XMLSerializer().serializeToString(svg)], {type: 'image/svg+xml'}), filename().replace('.png', '.svg'));
-      }
-    } else if (action === 'fullscreen') {
-      document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
-    } else if (action === 'reset') {
-      window.dispatchEvent(new CustomEvent('art-piece-command', {detail: {type: 'reset-view', version: 1}}));
-    } else if (action === 'sound' || action === 'camera' || action === 'hand') {
-      window.dispatchEvent(new CustomEvent('art-piece-command', {detail: {type: action, version: 1}}));
-    }
-  });
-})();
-</script>`;
+${statuses.join('\n')}
+<p id="art-piece-runtime-error" role="alert" hidden></p>`;
 }
 
 function buildIndexHtml(
@@ -167,8 +175,7 @@ function buildIndexHtml(
     : '';
   let body: string;
   if (library === 'threejs') {
-    body =
-      '<div id="art-piece-container" style="position:absolute;inset:0;"></div>\n<script src="scripts/piece.js"></script>';
+    body = '<div id="art-piece-container"></div>\n<script src="scripts/piece.js"></script>';
   } else {
     // canvas2d, svg, aframe: natural content already includes whatever
     // markup/script it needs -- see this module's doc comment for why
@@ -176,13 +183,23 @@ function buildIndexHtml(
     body = exportCode;
   }
   const controls = buildExportControls(options.capabilities ?? {}, mode);
+  // The runtime script (defines window.__registerArtPieceCamera among
+  // other globals) must load before scripts/piece.js, which calls it --
+  // same execution-order requirement buildArtPieceSandboxDocument
+  // already relies on for its own listener/snippet ordering.
+  const runtimeControlsScript = buildStandaloneArtPieceRuntimeScript(
+    library,
+    options.capabilities ?? {},
+    mode,
+  );
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>Art piece</title>
 <link rel="stylesheet" href="styles/piece.css">
-${runtimeScriptTag}</head>
+${runtimeScriptTag}${runtimeControlsScript}
+</head>
 <body>
 ${body}
 ${controls}

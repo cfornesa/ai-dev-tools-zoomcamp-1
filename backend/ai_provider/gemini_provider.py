@@ -38,6 +38,7 @@ from ai_provider.interface3d import (
     execute3d,
 )
 from scenes.patch import PatchError, apply_patch, validate_patch_operations, worst_reason
+from scenes.patch3d import validate_patch_operations3d
 from scenes.validation import SCENE_SCHEMA
 from scenes.validation3d import SCENE3D_SCHEMA
 
@@ -54,6 +55,13 @@ class GeminiResponse:
 @dataclass(frozen=True)
 class GeminiEditResult:
     result: AIOperationResult
+    patch: list[dict[str, Any]] | None = None
+    change_summary: str | None = None
+
+
+@dataclass(frozen=True)
+class GeminiEdit3DResult:
+    result: AIOperationResult3D
     patch: list[dict[str, Any]] | None = None
     change_summary: str | None = None
 
@@ -184,6 +192,15 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
             error=AIError(category=category, message=str(exc)),
         )
 
+    @staticmethod
+    def _error3d(operation, exc, usage=None):
+        result = GeminiSceneProvider._error(operation, exc, usage)
+        return AIOperationResult3D(
+            operation=result.operation,
+            usage=result.usage,
+            error=result.error,
+        )
+
     def _json(self, response: GeminiResponse) -> dict[str, Any]:
         try:
             value = json.loads(response.text)
@@ -261,23 +278,60 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
         return GeminiEditResult(result, operations)
 
     def create_scene3d(self, request: AICreateScene3DRequest) -> AIOperationResult3D:
-        response = self._call(_CREATE_INSTRUCTIONS, request.prompt, SCENE3D_SCHEMA)
+        try:
+            response = self._call(_CREATE_INSTRUCTIONS, request.prompt, SCENE3D_SCHEMA)
+        except (
+            AIProviderTimeoutError,
+            AIProviderCancelledError,
+            AIProviderQuotaError,
+            AIProviderRejectionError,
+        ) as exc:
+            return self._error3d(AIOperation.CREATE_SCENE, exc)
         return execute3d(
             AIOperation.CREATE_SCENE, self._usage(response), lambda: self._json(response)
         )
 
     def edit_scene3d(self, request: AIEditScene3DRequest) -> AIOperationResult3D:
-        response = self._call(
-            _EDIT_INSTRUCTIONS,
-            json.dumps({"prompt": request.prompt, "scene": request.current_scene}),
-            {"type": "array", "items": {"type": "object"}},
-        )
+        return self.edit_scene3d_with_patch(request).result
+
+    def edit_scene3d_with_patch(self, request: AIEditScene3DRequest) -> GeminiEdit3DResult:
+        try:
+            response = self._call(
+                _EDIT_INSTRUCTIONS,
+                json.dumps({"prompt": request.prompt, "scene": request.current_scene}),
+                {"type": "array", "items": {"type": "object"}},
+            )
+        except (
+            AIProviderTimeoutError,
+            AIProviderCancelledError,
+            AIProviderQuotaError,
+            AIProviderRejectionError,
+        ) as exc:
+            return GeminiEdit3DResult(self._error3d(AIOperation.EDIT_SCENE, exc))
         usage = self._usage(response)
         try:
             operations = json.loads(response.text)
             if not isinstance(operations, list):
                 raise ValueError("patch must be an array")
+            if not operations:
+                raise AIProviderRejectionError("empty_patch: Gemini proposed no changes.")
+            errors = validate_patch_operations3d(
+                operations, scene=request.current_scene, prompt=request.prompt
+            )
+            if errors:
+                detail = "; ".join(f"[{error.index}] {error.message}" for error in errors[:5])
+                raise AIProviderRejectionError(
+                    f"invalid_patch:{worst_reason(errors)} {detail}"
+                )
             scene = apply_patch(request.current_scene, operations)
-        except (TypeError, ValueError, KeyError) as exc:
-            raise AIProviderRejectionError("Gemini returned an invalid 3D edit patch.") from exc
-        return execute3d(AIOperation.EDIT_SCENE, usage, lambda: scene)
+        except PatchError as exc:
+            error = AIProviderRejectionError(f"patch_apply_failed: {exc}")
+            return GeminiEdit3DResult(self._error3d(AIOperation.EDIT_SCENE, error, usage))
+        except AIProviderRejectionError as exc:
+            return GeminiEdit3DResult(self._error3d(AIOperation.EDIT_SCENE, exc, usage))
+        except (TypeError, ValueError, KeyError):
+            error = AIProviderRejectionError("Gemini returned an invalid 3D edit patch.")
+            return GeminiEdit3DResult(self._error3d(AIOperation.EDIT_SCENE, error, usage))
+        return GeminiEdit3DResult(
+            execute3d(AIOperation.EDIT_SCENE, usage, lambda: scene), operations
+        )

@@ -87,6 +87,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ai_provider.config import use_fake_ai_provider
+from ai_provider.deepseek_provider import DeepSeekSceneProvider
+from ai_provider.gemini_provider import GeminiSceneProvider
 from ai_provider.interface import (
     AICreateSceneRequest,
     AIEditSceneRequest,
@@ -525,9 +527,23 @@ def get_ai_provider() -> AISceneProvider:
     if generic is None and credential is None:
         raise MissingPersonalMistralCredential
     try:
-        key = generic.get_key() if generic is not None else credential.get_key()
+        if generic is not None:
+            key = generic.get_key()
+        else:
+            assert credential is not None
+            key = credential.get_key()
     except MistralCredentialDecryptionError as exc:
         raise MissingPersonalMistralCredential from exc
+    if vendor == "gemini":
+        return GeminiSceneProvider(
+            api_key=key,
+            model=_current_ai_model.get() or "gemini-2.5-flash",
+        )
+    if vendor == "deepseek":
+        return DeepSeekSceneProvider(
+            api_key=key,
+            model=_current_ai_model.get() or "deepseek-chat",
+        )
     return MistralSceneProvider(
         api_key=key,
         model=_current_ai_model.get() or None,

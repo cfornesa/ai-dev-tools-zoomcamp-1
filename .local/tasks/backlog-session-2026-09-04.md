@@ -259,3 +259,11 @@ The backend suite reached 978 passed and 24 skipped; one Git-safe-push test
 could not bind its loopback fixture socket under the restricted host sandbox.
 The Makefile's repository check scripts were made portable on this macOS host
 by invoking `python3`, removing the separate missing-`python` blocker.
+
+The next implementation increment advanced #410: validated active-layer
+creation tools now cover the approved Draw.io rectangle, ellipse, line, and
+text subset, and Chromium verifies keyboard creation/deletion alongside the
+existing object and save/reload flow. #410 remains open for rotation,
+bidirectional canvas/outline selection, and unsupported-object UX evidence.
+#414's daily quota writes are now atomic in the 2D, 3D, and art-piece paths;
+its real two-worker runtime proof remains outstanding.

@@ -278,7 +278,7 @@ class AICreateScene3DView(APIView):
         try:
             provider = _provider_for_user(request.user, model, persona_prompt, vendor)
         except MissingPersonalMistralCredential:
-            return _missing_key_response()
+            return _missing_key_response(vendor)
         except UnsupportedProvider:
             return _unsupported_provider_response()
         result = provider.create_scene3d(AICreateScene3DRequest(prompt=prompt))
@@ -361,7 +361,7 @@ class AIEditScene3DView(APIView):
         try:
             provider = _provider_for_user(request.user, model, persona_prompt, vendor)
         except MissingPersonalMistralCredential:
-            return _missing_key_response()
+            return _missing_key_response(vendor)
         except UnsupportedProvider:
             return _unsupported_provider_response()
         outcome = provider.edit_scene3d_with_patch(

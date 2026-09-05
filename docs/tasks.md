@@ -16566,3 +16566,93 @@ exactly). Full backend suite (1082 passed, 27 skipped) and complete
 frontend vitest suite (2439 passed) pass clean. #423 stays the
 transactional grant/revoke service and #422 the admin UI; this child
 owns only the read-only account-facing summary.
+
+
+## Current open-only distillation and agentic AI scope — 2026-09-05
+
+Status: DISTILLED; no implementation/closure performed in this pass.
+Current checkout e989ce1; 12 pre-existing open issues plus new #461–#463 and
+#465, 16 total. Earlier audit inventories remain history; closed issues are not
+reopened. Canonical complete manifest, finite contracts, duplicates, blockers
+and dependency order: [open-issue distillation](open-issue-distillation-2026-09-05.md).
+
+- [#415](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/415) — Replit backend runtime: verify published ASGI routing and process lifecycle. BLOCKED / deployment; Operator: capture current disposable Replit process/signals and asset evidence.
+- [#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419) — Full browser gate: classify current-revision failures and reconcile owning issues. OPEN / verification container; CI/QA: run current complete matrix, classify actual failures and link owning issues.
+- [#440](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/440) — Account billing: create and display a PayPal sandbox subscription. PROPOSED / GROOMED; Engineer: reuse billing foundation for mocked checkout/status, then operator sandbox proof.
+- [#441](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/441) — Account sessions: list and revoke owner sessions safely. ACTIVE / preserve current work; Current engineer/QA: finish existing session changes and reconcile focused/full/browser checks.
+- [#442](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/442) — Account export: download an owner-scoped portable data archive. PROPOSED / GROOMED; Engineer: implement owner export allowlist and verify extracted artifact.
+- [#443](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/443) — Account deletion: deactivate access and apply an explicit retention contract. BLOCKED / policy; Operator: decide retention and active-subscription deletion policy before implementation.
+- [#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445) — Release candidate: reconcile exact merged artifact, Replit schema and pieces evidence. DEPENDENCY-BLOCKED; Release QA: reconcile current main/PR #417 and every child against exact deployed evidence.
+- [#465](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/465) — Public viewer `/p/:id`: classify and stabilize the synthetic-camera frame-budget failure. PROPOSED / GROOMED; browser/runtime engineer: reproduce the desktop 24.31-FPS result with fixed runner metadata, then classify runtime, E2E benchmark, or runner-capacity cause without weakening the 30-FPS delivery contract by assertion alone.
+- [#454](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/454) — artPieceCameraRuntime.spec.ts: granted-camera scenario doesn't reach 'active' on WebKit. PROPOSED / GROOMED; Browser engineer: isolate WebKit camera promise/video/ack behavior.
+- [#455](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/455) — Generated regular viewer: full real hand-tracking (MediaPipe) for hand-steering. PROPOSED / GROOMED; Runtime engineer: integrate existing vision pipeline and generated camera registration.
+- [#457](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/457) — Studio /art-pieces: 'ready' handshake stalls while the generated preview iframe is off-screen. PROPOSED / GROOMED; Frontend engineer: implement bounded offscreen readiness without hiding errors.
+- [#459](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/459) — Full ZIP export's Steer button stays gated to Three.js/A-Frame for flat pieces. PROPOSED / GROOMED; Export engineer: port existing flat spatial shell to Full ZIP and execute extracted fixture.
+- [#460](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/460) — Login /accounts/login/: add optional LinkedIn sign-in via OpenID Connect. PROPOSED / GROOMED; Auth engineer: implement optional OIDC provider with existing identity safety.
+- [#461](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/461) — AI workflow service: run bounded plan–validate–revise proposals. PROPOSED / GROOMED; AI engineer: implement bounded run state machine with fake providers and concurrency tests.
+- [#462](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/462) — AI 2D editor /ai-projects/:id: create and edit layers through agent runs. DEPENDENCY-BLOCKED; AI frontend engineer: integrate shared run into 2D route after #461.
+- [#463](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/463) — AI 3D editor /ai-projects3d/:id: create and edit scene objects through agent runs. DEPENDENCY-BLOCKED; AI frontend engineer: reuse shared run/UI for 3D route after #461/#462.
+
+Exactly one next transaction: #441, preserving its pre-existing session
+implementation and completing its focused/full/browser QA before any other
+engineering. Agentic MVP is one bounded provider-neutral service (#461), then
+AI 2D (#462) and AI 3D (#463) route consumers; reuse existing validators,
+provider credentials, entitlements, drafts and Accept semantics. No new agent
+framework or autonomous publication is included. #443 retains its operator
+policy blocker; #415/#419/#445 retain independent release verification gates.
+#465 is #419's bounded current-run child and is eligible only after #441's
+transaction reaches a terminal state.
+
+Durable rule: [.agents/memory/agentic-ai-editing-boundary.md](../.agents/memory/agentic-ai-editing-boundary.md).
+
+### Latest Browser E2E distillation — #465
+
+The owner-provided Chromium command selected `authPolicy`, project lifecycle,
+publishing/remix, and responsive-shell E2E specs. It passed 42/43 scenarios;
+the sole failure was `/p/:id`'s ten-second synthetic-camera desktop
+diagnostic: 244 animation frames in 10,036.6 ms (24.31 FPS), matching 244
+inference calls, with zero long tasks, against the existing >=30 FPS
+assertion. This is current evidence after the historical #192 real-camera
+closure, so #192 remains closed and is linked only for context.
+
+Status: DISTILLED. New [#465](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/465)
+is the only necessary child issue: its fixed `/p/:id` fixture, desktop/narrow
+viewports, visible Enable/Stop camera states, runner-metadata capture,
+classification matrix, focused/full verification, screenshots, and explicit
+hardware boundary are all in the issue. #419 remains the full-browser
+reconciliation container and #445 the release/hardware evidence container.
+No source or test behavior was changed in this distillation pass.
+
+## #441 closure reconciliation — 2026-09-05
+
+[#441](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/441) closed.
+The pre-existing uncommitted transaction (`scenes/account_sessions.py`,
+`scenes/account_sessions_api.py`, `scenes/account_session_signals.py`,
+migration `0034_session_metadata`, `AccountSessions.tsx`/`.test.tsx`,
+`api/accountSessions.ts`, `accountSessions.spec.ts`) was finished and
+reconciled rather than restarted. Sessions are identified to the client only
+by a one-way `public_id` hash of the real Django `session_key`, never the key
+itself; ownership comes from a new `SessionMetadata` side table populated at
+login, never from decoding session payloads. Revoking a foreign or
+already-gone `public_id` is a safe, idempotent no-op.
+
+Two defects surfaced during QA and were fixed in-scope before closure:
+1. `AccountSessions.tsx` revoked the caller's own current session
+   server-side but never updated the shared `AuthContext`, so navigating to
+   `/` after revoke still rendered the stale signed-in shell (a failed
+   projects fetch) instead of the sign-in prompt. Fixed by adding
+   `AuthContext.signOutLocally()` (no extra network round-trip, since the
+   session was already revoked) and calling it from `confirmRevoke`.
+2. `accountSessions.spec.ts` itself accumulated real server-side sessions
+   across its own sequential tests (closing a `BrowserContext` never signs
+   its session out), producing nondeterministic session counts on any repeat
+   run. Fixed with an explicit `revokeAllSessions`/`afterEach` cleanup
+   helper in the spec.
+
+Focused backend tests: `tests/test_account_sessions.py`, 8/8 passed. Full
+`make check` (backend 1090 passed/27 skipped, frontend 2443 passed,
+lint/format/typecheck) passed clean. Browser QA:
+`frontend/e2e/accountSessions.spec.ts`, all 6 scenarios x 3 browsers
+(chromium/firefox/webkit) = 18/18 passed, at both 1280x900 and 375x812,
+against a real PostgreSQL-backed Django + Vite stack. Shipped in
+[PR #466](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/466).

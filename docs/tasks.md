@@ -16088,3 +16088,44 @@ succeed for any visitor once a project is public. Writes remain correctly
 owner-gated server-side regardless. Filed the narrower, criterion-ready
 fix separately as
 [#458](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/458).
+
+## #458 closure reconciliation — 2026-09-05
+
+[#458](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/458) closed:
+none of the four authoring workspaces (`EditorWorkspace.tsx`,
+`Project3DWorkspace.tsx`, `AiEditorWorkspace.tsx`, `AiProject3DWorkspace.tsx`)
+checked ownership before rendering. `PROJECT_READ`/`PROJECT3D_READ`
+deliberately let any visitor — signed out included — fetch a *published*
+project's detail response, so a non-owner (or fully anonymous visitor)
+navigating straight to an authoring URL for a published project saw the
+full Edit/Publish/Unpublish/Save UI, most severely for the 3D family
+(`Project3DWorkspace.tsx` had no ownership check at all and bundles the
+current version directly in one response). Writes remained correctly
+owner-gated server-side throughout.
+
+Added `auth/resourceOwnership.ts`: a shared check comparing a detail
+response's `owner` username against the signed-in user, treating "auth
+still resolving" as "not yet confirmed non-owner" rather than blocking
+render — a deliberate tradeoff avoiding the need to retrofit an
+`AuthContext.Provider` into roughly 50 existing workspace test files that
+mock none of this today, while still redirecting a genuine non-owner the
+instant auth resolves. Wired into all four workspaces, redirecting a
+confirmed non-owner to that family's public read-only viewer. Found and
+fixed a related pre-existing bug along the way: `useEditorWorkspaceState.ts`
+classified only 401/403 as `access-denied`, missing the 404 convention
+every owner-only read in this app actually uses (`_require_or_404`) — the
+same convention the *other* three workspaces' own inline fetch logic
+already checked for correctly. New coverage:
+`frontend/e2e/authoringOwnershipGate.spec.ts` (all four routes × signed-out
+and non-owner, plus private-project and owner-still-works regressions).
+Full regression pass across `projectLifecycle.spec.ts` (8/8) and
+`publishingAndRemix.spec.ts` (23/24 — the one failure a pre-existing,
+unrelated FPS/timing benchmark flake), the complete backend suite
+(unaffected, no backend changes), and the complete frontend
+vitest/typecheck/lint/format checks all pass clean.
+
+This closure completes the #451 → #458 reclassification: #451's original
+"publish should freeze a snapshot" premise conflicted with
+`ProjectPublishView`'s own documented live-publish design and was closed
+as a non-issue; #458 is the real, narrower defect that investigation
+surfaced.

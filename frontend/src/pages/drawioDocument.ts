@@ -18,10 +18,75 @@ export type DrawioObject = {
   stroke?: string | null;
 };
 
-type DrawioLayer = { id: string; locked: boolean; visible: boolean };
+export type DrawioLayer = {
+  id: string;
+  name: string;
+  order: number;
+  locked: boolean;
+  visible: boolean;
+};
 type DrawioDocument = { layers: DrawioLayer[]; objects: DrawioObject[]; formatVersion: 1 };
 export type DrawioMutation =
   { ok: true; scene: SceneDocument; selectedId?: string } | { ok: false; error: string };
+
+export function getDrawioLayers(scene: SceneDocument): DrawioLayer[] {
+  return read(scene)?.layers ?? [];
+}
+
+export function renameDrawioLayer(scene: SceneDocument, id: string, name: string): DrawioMutation {
+  return edit(scene, (document) => {
+    const layer = document.layers.find((candidate) => candidate.id === id);
+    if (!layer) return 'The selected draw.io layer no longer exists.';
+    if (layer.locked) return 'The selected draw.io layer is locked.';
+    const trimmed = name.trim();
+    if (!trimmed) return 'Layer names cannot be blank.';
+    layer.name = trimmed;
+    return null;
+  });
+}
+
+export function toggleDrawioLayerFlag(
+  scene: SceneDocument,
+  id: string,
+  flag: 'visible' | 'locked',
+): DrawioMutation {
+  return edit(scene, (document) => {
+    const layer = document.layers.find((candidate) => candidate.id === id);
+    if (!layer) return 'The selected draw.io layer no longer exists.';
+    layer[flag] = !layer[flag];
+    return null;
+  });
+}
+
+export function deleteDrawioLayer(scene: SceneDocument, id: string): DrawioMutation {
+  return edit(scene, (document) => {
+    const index = document.layers.findIndex((layer) => layer.id === id);
+    if (index < 0) return 'The selected draw.io layer no longer exists.';
+    if (document.layers.length === 1) return 'A draw.io document must keep at least one layer.';
+    if (document.layers[index].locked) return 'The selected draw.io layer is locked.';
+    document.layers.splice(index, 1);
+    document.objects = document.objects.filter((object) => object.layerId !== id);
+    return null;
+  });
+}
+
+export function moveDrawioLayer(
+  scene: SceneDocument,
+  id: string,
+  direction: 'up' | 'down',
+): DrawioMutation {
+  return edit(scene, (document) => {
+    const index = document.layers.findIndex((layer) => layer.id === id);
+    if (index < 0) return 'The selected draw.io layer no longer exists.';
+    const otherIndex = direction === 'up' ? index - 1 : index + 1;
+    if (otherIndex < 0 || otherIndex >= document.layers.length) return null;
+    [document.layers[index].order, document.layers[otherIndex].order] = [
+      document.layers[otherIndex].order,
+      document.layers[index].order,
+    ];
+    return null;
+  });
+}
 
 function read(scene: SceneDocument): DrawioDocument | null {
   if (scene.documentType !== 'drawio' || !scene.drawio || typeof scene.drawio !== 'object')

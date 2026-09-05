@@ -399,20 +399,10 @@ test.describe('Concurrency (PostgreSQL)', () => {
   }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-
-    // This one scenario in the "Concurrency" describe needs the fake AI
-    // provider (to generate a real proposal to race Accept against); the
-    // sibling draft-sync concurrency test below does not, so this check is
-    // scoped to just this test rather than the whole describe block's
-    // `beforeAll` -- same probe `requireFakeAIProviderMode` documents at
-    // the top of the "AI create/edit proposals" describe above.
-    const aiProviderFakeModeActive = await probeFakeAIProviderMode(context, page);
-    test.skip(
-      !aiProviderFakeModeActive,
-      'The target dev server was not started with AI_PROVIDER=fake -- see AGENTS.md and this ' +
-        "file's own module doc comment.",
-    );
+    // Keep this provider-backed race on the fixture budget used by the
+    // provider matrix so the owner's earlier AI cases cannot make the
+    // concurrency proof silently skip on rate limiting.
+    await loginViaUI(page, fixtures.other.email, fixtures.password);
 
     const projectId = await createBlankProjectViaUI(page); // version 1
 
@@ -449,7 +439,7 @@ test.describe('Concurrency (PostgreSQL)', () => {
     // race past.
     const otherContext = await browser.newContext();
     const otherPage = await otherContext.newPage();
-    await loginViaUI(otherPage, fixtures.owner.email, fixtures.password);
+    await loginViaUI(otherPage, fixtures.other.email, fixtures.password);
 
     const [first, second] = await Promise.all([
       apiPost(context, `/api/projects/${projectId}/ai/accept-proposal/`, acceptPayload),

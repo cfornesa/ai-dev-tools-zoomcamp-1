@@ -10,6 +10,9 @@
   <label for="id_password">Password</label>{{ form.password }}{{ form.password.errors }}
   <button type="submit">Login</button>
 </form>
-<form method="post" action="{% provider_login_url 'google' %}">{% csrf_token %}<button class="google" type="submit">Continue with Google</button></form>
+{% get_providers as socialaccount_providers %}
+{% for provider in socialaccount_providers %}
+<form method="post" action="{% provider_login_url provider.id %}">{% csrf_token %}<button class="{{ provider.id }}" type="submit">Continue with {{ provider.name }}</button></form>
+{% endfor %}
 <p class="links">New here? Continue with Google to create your account.</p>
 {% endblock %}

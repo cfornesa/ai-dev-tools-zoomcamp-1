@@ -197,6 +197,21 @@ else:
 GOOGLE_OAUTH_CLIENT_ID = get_required_env('GOOGLE_OAUTH_CLIENT_ID')
 GOOGLE_OAUTH_CLIENT_SECRET = get_required_env('GOOGLE_OAUTH_CLIENT_SECRET')
 
+# GitHub OAuth (issue #420) is optional: unlike Google, it is not required
+# for the site to function, so it is off by default and enabled only when
+# both variables are explicitly set. Setting only one is a malformed
+# configuration and fails fast, just like a missing required variable
+# would, rather than silently starting with a half-configured provider.
+GITHUB_OAUTH_CLIENT_ID = os.environ.get('GITHUB_OAUTH_CLIENT_ID', '').strip()
+GITHUB_OAUTH_CLIENT_SECRET = os.environ.get('GITHUB_OAUTH_CLIENT_SECRET', '').strip()
+if bool(GITHUB_OAUTH_CLIENT_ID) != bool(GITHUB_OAUTH_CLIENT_SECRET):
+    raise ImproperlyConfigured(
+        "GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET must either both "
+        "be set (to enable GitHub sign-in) or both be left unset (to keep it "
+        "disabled). Only one of the two is currently set."
+    )
+GITHUB_OAUTH_ENABLED = bool(GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET)
+
 # Root key used only to encrypt user-owned Mistral credentials. Keep this in
 # deployment configuration and rotate it deliberately (rotation invalidates
 # existing encrypted credentials unless they are re-encrypted during a
@@ -248,6 +263,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.github',
     'scenes',
 ]
 
@@ -293,17 +309,33 @@ SOCIALACCOUNT_PROVIDERS = {
         'OAUTH_PKCE_ENABLED': True,
     },
 }
+if GITHUB_OAUTH_ENABLED:
+    # GitHub's own minimal-scope equivalent: `user:email` reads the
+    # account's (possibly private) verified email address, with no other
+    # GitHub API access. Omitting this key entirely (the disabled case)
+    # leaves the provider unconfigured — see backend.oauth_gates, which
+    # gates the login/callback routes closed regardless.
+    SOCIALACCOUNT_PROVIDERS['github'] = {
+        'APP': {
+            'client_id': GITHUB_OAUTH_CLIENT_ID,
+            'secret': GITHUB_OAUTH_CLIENT_SECRET,
+            'key': '',
+        },
+        'SCOPE': ['user:email'],
+    }
 
 # Google already verifies the account's email before we ever see it.
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_FORMS = {'signup': 'backend.forms.RecaptchaSignupForm'}
-# V1 is Google-only. Google verifies the email during the OAuth flow, while
-# the local allauth signup route remains present only to show a clear policy
-# message to old bookmarks and to avoid contradictory account copy.
-ACCOUNT_ADAPTER = "backend.account_adapter.GoogleOnlyAccountAdapter"
-SOCIALACCOUNT_ADAPTER = "backend.social_account_adapter.GoogleSocialAccountAdapter"
+# V1 supports Google (required) and GitHub (optional, environment-gated)
+# sign-in only. Both providers verify the email during their OAuth flow,
+# while the local allauth signup route remains present only to show a
+# clear policy message to old bookmarks and to avoid contradictory account
+# copy.
+ACCOUNT_ADAPTER = "backend.account_adapter.SocialOnlySignupAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "backend.social_account_adapter.LinkedProvidersSocialAccountAdapter"
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'

@@ -34,6 +34,8 @@ ALL_SETTINGS_ENV_VARS = REQUIRED_ENV_VARS + [
     "DJANGO_SECURE_HSTS_PRELOAD",
     "EMAIL_BACKEND",
     "EMAIL_PORT",
+    "GITHUB_OAUTH_CLIENT_ID",
+    "GITHUB_OAUTH_CLIENT_SECRET",
 ]
 
 VALID_ENV = {
@@ -204,3 +206,43 @@ def test_malformed_database_url_raises_clear_error(monkeypatch, bad_url, expecte
         _reload_settings(monkeypatch, env)
 
     assert expected_message in str(exc_info.value)
+
+
+def test_github_oauth_disabled_by_default_when_unset(monkeypatch):
+    """GitHub sign-in (issue #420) is off unless explicitly configured."""
+    settings_module = _reload_settings(monkeypatch, VALID_ENV)
+
+    assert settings_module.GITHUB_OAUTH_ENABLED is False
+    assert "github" not in settings_module.SOCIALACCOUNT_PROVIDERS
+
+
+def test_github_oauth_enabled_when_both_variables_set(monkeypatch):
+    env = dict(VALID_ENV)
+    env["GITHUB_OAUTH_CLIENT_ID"] = "test-github-client-id"
+    env["GITHUB_OAUTH_CLIENT_SECRET"] = "test-github-client-secret"
+
+    settings_module = _reload_settings(monkeypatch, env)
+
+    assert settings_module.GITHUB_OAUTH_ENABLED is True
+    assert settings_module.SOCIALACCOUNT_PROVIDERS["github"]["APP"]["client_id"] == (
+        "test-github-client-id"
+    )
+    assert settings_module.SOCIALACCOUNT_PROVIDERS["github"]["APP"]["secret"] == (
+        "test-github-client-secret"
+    )
+
+
+@pytest.mark.parametrize(
+    "partial_env",
+    [
+        {"GITHUB_OAUTH_CLIENT_ID": "only-the-id-set"},
+        {"GITHUB_OAUTH_CLIENT_SECRET": "only-the-secret-set"},
+    ],
+)
+def test_github_oauth_partial_config_raises_clear_error(monkeypatch, partial_env):
+    """Setting only one of the two GitHub variables is a startup config error."""
+    env = dict(VALID_ENV)
+    env.update(partial_env)
+
+    with pytest.raises(ImproperlyConfigured, match="GITHUB_OAUTH_CLIENT_ID"):
+        _reload_settings(monkeypatch, env)

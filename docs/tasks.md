@@ -16484,3 +16484,34 @@ complete frontend vitest suite (2431 passed), and
 `test_shared_quota_cache.py`'s real-PostgreSQL two-worker tests were all
 regression-checked against the Plan-backed cap resolution in the hot
 path -- all pass clean.
+
+## #424 closure reconciliation — 2026-09-05
+
+[#424](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/424) closed,
+sixth of the criterion-ready queue. Added server-to-server PayPal
+subscription synchronization: optional, all-or-none
+`PAYPAL_CLIENT_ID`/`SECRET`/`WEBHOOK_ID` (mirrors GitHub's #420 gate
+pattern exactly, webhook route 404s while disabled), new
+`Subscription`/`BillingEvent` models, `scenes/billing.py` (idempotent
+event processing keyed by PayPal's own per-delivery `event_id`, every
+state change atomic alongside its audit record through #423's
+`set_user_plan`), and `scenes/paypal_adapter.py` (isolates the two real
+PayPal API calls so tests substitute `verify_webhook_signature` directly
+-- no real PayPal account or sandbox credentials touched by the suite).
+**Adopted policy**, recorded since no live operator was available to
+confirm otherwise: cancellation retains the paid plan only through
+`paid_through` (no immediate downgrade); a failed payment (`SUSPENDED`)
+never advances/shortens `paid_through` and doesn't downgrade access on
+its own; a refund only reverses the period it names and can only move
+`paid_through` earlier, never later. Cross-user protection is
+structural: a subscription's owning user is resolved from `custom_id`
+only the first time its `paypal_subscription_id` is seen, and every
+later event is tied to that same user regardless of what it claims. New
+`tests/test_paypal_webhooks.py` (13 tests: forged/malformed/unknown-plan
+rejection before mutation, duplicate-event idempotency, cross-user
+protection, and the full cancellation/suspension/expiration/refund
+policy matrix). Full backend suite (1063 passed, 27 skipped) and
+lint/format/mypy all pass clean. Server-to-server only, per the narrowed
+contract -- no checkout/status UI (#440) exists yet to browser-test
+against, and a real PayPal sandbox transaction remains a separately
+recorded deployment boundary under #445.

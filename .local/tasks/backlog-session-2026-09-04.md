@@ -206,3 +206,16 @@ Rerun transaction result is unchanged: #404/#409/#414/#415/#416 remain
 `BLOCKED`, #405–#408/#410–#413 remain `DEPENDENCY-BLOCKED`, and all 13 issues
 retain their existing QA comments and next actions. No issue was reopened or
 closed, and no product code/tests were changed.
+
+## Implementation continuation — 2026-09-05
+
+The audit classification above is superseded by implementation work in this
+continuation. #414 now has a production database-cache backend and migration;
+#415 has a production-only pinned Uvicorn launcher; #416 has an explicit
+Google-only signup policy that still permits first-time Google social signup;
+#404 has a finite provider registry and encrypted owner/vendor credential API;
+and #409 has a bounded versioned draw.io subset with mirrored client/server
+validation. Focused tests for these changes pass. The five issues are not
+being treated as status-only blockers while implementation proceeds; remaining
+acceptance evidence and dependent provider/draw.io features still require
+follow-on work before issue closure.

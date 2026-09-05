@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 
 import scenes.ai_api as ai_api
 from ai_provider.deepseek_provider import DeepSeekSceneProvider
+from ai_provider.e2e_provider import build_e2e_provider
 from ai_provider.gemini_provider import GeminiSceneProvider
 from ai_provider.mistral_provider import MistralSceneProvider
 from scenes.models import Project, ProviderCredential
@@ -79,3 +80,17 @@ def test_provider_specific_model_is_rejected_before_provider_call(owner, project
 
     assert response.status_code == 400
     assert response.json()["error"] == "model_invalid"
+
+
+@pytest.mark.parametrize(
+    ("vendor", "model"),
+    [
+        ("mistral", "mistral-small-latest"),
+        ("gemini", "gemini-2.5-flash"),
+        ("deepseek", "deepseek-chat"),
+    ],
+)
+def test_fake_provider_keeps_selected_vendor_and_model_metadata(vendor, model):
+    provider = build_e2e_provider("success", vendor=vendor, model=model)
+    assert provider.vendor == vendor
+    assert provider.model == model

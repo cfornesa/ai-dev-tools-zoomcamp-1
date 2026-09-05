@@ -220,3 +220,8 @@ validation. #405/#406 now have dependency-free Gemini/DeepSeek adapters and
 being treated as status-only blockers while implementation proceeds; remaining
 acceptance evidence and dependent provider/draw.io features still require
 follow-on work before issue closure.
+
+
+## Closure reconciliation — 2026-09-05
+
+This implementation transaction closed #404, #405, #406, and #407 on GitHub after focused backend/frontend evidence and the complete Chromium AI/recovery browser suite passed (24/24). #408 remains open for the broader per-vendor failure matrix; #409–#413 remain open for draw.io persistence, browser interaction, public/embed/export parity, and accessibility evidence; and #414–#416 remain open where production deployment, distributed-cache/process lifecycle, or auth-browser evidence is still required. The open/closed split is now evidence-based rather than a blanket retention of all original blockers.

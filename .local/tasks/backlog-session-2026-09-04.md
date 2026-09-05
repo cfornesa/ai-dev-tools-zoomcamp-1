@@ -234,18 +234,22 @@ is now evidence-based rather than a blanket retention of all original
 blockers.
 ## Current evidence reconciliation — 2026-09-05
 
-The authoritative GitHub state is now 7 completed issues (#404–#409 and
-#416) and 6 open issues (#410–#415). #408 closed after the expanded 38-test
+The authoritative GitHub state is now 8 completed issues (#404–#412 and
+#416) and 4 open issues (#413–#415). #408 closed after the expanded 38-test
 deterministic create/edit matrix across Mistral, Gemini, and DeepSeek. #416
 closed after the Google-only policy was documented, enforced, and verified by
 desktop/mobile browser tests. Draw.io browser coverage now passes object
 move/resize/duplicate, layer rename, save, and reload; #410/#411 remain open
 because creation/reorder/visibility/locking/deletion and fixed-viewport
-rendered evidence are still incomplete.
+rendered evidence were still incomplete. #412 then closed after focused
+backend/frontend coverage and a real Chromium flow verified published
+public, embed, thumbnail, and full-download behavior for a supported Draw.io
+scene.
 
 The production launcher regression discovered during readiness testing was
 fixed using child-liveness checks; `test_startup_configuration.py` is now
 17/17. The broader focused set is 57 passed, the frontend production build
 passes, and production-like `check --deploy` reports zero issues. #414/#415
 remain open because two-worker production storage and exact deployed
-process-lifecycle evidence still require the published environment.
+process-lifecycle evidence still require the published environment; #413
+continues as the integrated draw.io regression/accessibility gate.

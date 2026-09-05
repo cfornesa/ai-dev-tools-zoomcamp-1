@@ -75,3 +75,17 @@ The documentation changes are in the worktree but could not be committed in
 this managed run: `git commit` failed because the environment denied creation
 of `.git/index.lock`. No product code or tests were modified. The pre-existing
 `test-results/.last-run.json` change remains un-staged and untouched.
+
+## Rerun evidence — 2026-09-04
+
+The second assessment found no state change: GitHub still lists exactly
+#404–#416 open, the remote reconciliation branch remains 3 commits ahead of
+`main`, and the production Chrome shell at `https://animate.creatrweb.com/`
+still renders successfully. Fresh pins/live-provider checks passed; scene
+validation passed 48/48; the focused backend set passed 132/136 with the same
+four sandbox launcher timeouts; and `make check` still fails immediately on
+the unavailable `python` executable. The readiness classifications above
+therefore remain authoritative: local deployment, approved-browser/CI,
+intended functionality, and overall production readiness are blocked, while
+the reachable production shell remains an open follow-up for exact revision
+parity. No new issue or memory topic was needed.

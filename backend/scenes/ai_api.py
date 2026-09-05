@@ -227,6 +227,16 @@ def _current_count(cache_key: str) -> int:
     return cache.get(cache_key, 0)
 
 
+def _increment_quota(cache_key: str, *, timeout: int) -> int:
+    """Atomically record one successful result in shared cache state."""
+    cache.add(cache_key, 0, timeout=timeout)
+    try:
+        return cache.incr(cache_key)
+    except ValueError:
+        cache.add(cache_key, 0, timeout=timeout)
+        return cache.incr(cache_key)
+
+
 def _validate_model_id(value: str) -> str:
     """Shared `model` field validator for both AI request serializers --
     issue #198. Blank means "use the server default" (today's unchanged
@@ -685,11 +695,11 @@ class AICreateSceneView(APIView):
         if not result.success:
             return _error_response(result)
 
-        cache.set(
-            _quota_cache_key(user_id),
-            _current_count(_quota_cache_key(user_id)) + 1,
-            timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS,
+        quota_count = _increment_quota(
+            _quota_cache_key(user_id), timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS
         )
+        if quota_count > DAILY_QUOTA_MAX_SUCCESSES:
+            return _quota_exceeded_response()
 
         return Response(
             {
@@ -821,11 +831,12 @@ class AIEditSceneView(APIView):
         if not result.success:
             return _edit_error_response(result)
 
-        cache.set(
+        quota_count = _increment_quota(
             _quota_cache_key(user_id, operation="edit"),
-            _current_count(_quota_cache_key(user_id, operation="edit")) + 1,
             timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS,
         )
+        if quota_count > EDIT_DAILY_QUOTA_MAX_SUCCESSES:
+            return _edit_quota_exceeded_response()
 
         return Response(
             {

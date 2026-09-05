@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1-5"
   deployment_status:
 
 # A pull request can receive several commits while CI is queued on a busy
@@ -415,7 +418,21 @@ jobs:
           --project=webkit
           --grep "keeps the fullscreen command synchronized after browser Escape"
 
+      - name: Run browser acceptance smoke suite
+        if: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'schedule' }}
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:5000
+        run: >-
+          npm run test:e2e --
+          e2e/authPolicy.spec.ts
+          e2e/projectLifecycle.spec.ts
+          e2e/publishingAndRemix.spec.ts
+          e2e/responsiveShell.spec.ts
+          --project=chromium
+
       - name: Run full browser acceptance suite
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:5000

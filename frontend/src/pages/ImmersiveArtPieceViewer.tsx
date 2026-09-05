@@ -198,7 +198,17 @@ function ImmersiveArtPieceViewer() {
           // that capture to actually receive anything. Flat renderers
           // have no navigation to capture, so they keep normal
           // interactivity in case a generated piece responds to hover.
-          style={{ width: '100%', height: 640, pointerEvents: isSpatial ? 'none' : 'auto' }}
+          // Issue #435: same default-iframe-border containment fix as
+          // PublicArtPieceViewer.tsx -- a browser's default iframe
+          // border adds to a content-box iframe's rendered size beyond
+          // its 100% width, overflowing the stage by the border's width.
+          style={{
+            display: 'block',
+            width: '100%',
+            height: 640,
+            border: 'none',
+            pointerEvents: isSpatial ? 'none' : 'auto',
+          }}
         />
         <PieceStageControls
           stageRef={stageRef}

@@ -117,6 +117,16 @@ function App() {
                 chrome-less, sibling to the Layout-wrapped `p3d/:id` route,
                 for embedding a published 3D piece in an `<iframe>`. */}
             <Route path="embed/p3d/:id" element={<PublicProject3DViewer />} />
+            {/* Issue #435: the art-pieces counterpart of `embed/p/:id`
+                above -- chrome-less, sibling to the Layout-wrapped
+                `art-pieces/p/:id` route. Reuses `PublicArtPieceViewer.tsx`
+                unchanged in topology (it reads no Layout context); the
+                component's own `isEmbedRoute` check hides its page-level
+                title/description/embed-button/back-link on this route
+                while keeping the piece's own stage toolbar (Screenshot,
+                Download, Sound, Piece controls, Steer, Guide, Fullscreen)
+                fully functional, since that belongs to the embed too. */}
+            <Route path="embed/art-pieces/:id" element={<PublicArtPieceViewer />} />
             {/* Issue #311: the immersive first-person free-fly view --
                 chrome-less like the embed routes above (this is a focused,
                 full-page viewing experience, opened in a new tab from

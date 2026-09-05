@@ -16,8 +16,9 @@ export function buildStandaloneDrawioRuntimeScript(): string {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   var drawio = scene.drawio || { layers: [], objects: [] };
   var visible = {};
-  (drawio.layers || []).forEach(function (layer) { if (layer.visible) visible[layer.id] = true; });
-  (drawio.objects || []).forEach(function (o) {
+  var layerOrder = {};
+  (drawio.layers || []).forEach(function (layer) { if (layer.visible) visible[layer.id] = true; layerOrder[layer.id] = layer.order; });
+  (drawio.objects || []).slice().sort(function (a, b) { return (layerOrder[b.layerId] || 0) - (layerOrder[a.layerId] || 0); }).forEach(function (o) {
     if (!visible[o.layerId]) return;
     if (o.type === "rect") {
       if (o.fill) { ctx.fillStyle = o.fill; ctx.fillRect(o.x, o.y, o.width, o.height); }

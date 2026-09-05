@@ -1187,6 +1187,20 @@ export function useSceneEditor(
   const moveLayerBySteps = useCallback(
     (layerId: string, direction: 'up' | 'down', steps: number) => {
       if (!workingCopy || steps <= 0) return;
+      if (workingCopy.documentType === 'drawio') {
+        let current = workingCopy;
+        for (let i = 0; i < steps; i += 1) {
+          const outcome = moveDrawioLayer(current, layerId, direction);
+          if (!outcome.ok) {
+            setOutlineError(outcome.error);
+            return;
+          }
+          current = outcome.scene;
+        }
+        setOutlineError(null);
+        if (current !== workingCopy) commit(current);
+        return;
+      }
       let current = workingCopy;
       for (let i = 0; i < steps; i += 1) {
         const outcome = moveLayerOp(current, layerId, direction);

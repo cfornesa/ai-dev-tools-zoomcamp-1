@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 255944)
-Total output lines: 15655
+Warning: truncated output (original token count: 256029)
+Total output lines: 15660
 
 # Creatrweb Animation Studio Backlog
 
@@ -19,6 +19,11 @@ code and focused tests in the working tree.
   credential metadata endpoint were added without exposing plaintext.
 - #409: the canonical schema now carries a versioned bounded draw.io subset,
   with mirrored client/server duplicate-ID and reference validation.
+- #405/#406: Gemini and DeepSeek now have dependency-free server adapters for
+  validated 2D/3D create/edit operations, with deterministic fake-client
+  contract tests and owner credential routing.
+- #407: account settings now expose named vendor credential cards, and 2D/3D
+  AI proposal panels send a selected validated vendor/model pair.
 
 Focused evidence: backend provider/auth/draw.io/cache tests pass; backend
 scene validation tests pass (52); frontend scene validation tests pass (48)
@@ -5256,7 +5261,7 @@ Make live camera tracking responsive and usable by reducing camera and MediaPipe
 - **Evidence (2026-08-28, real non-seam benchmark — the actual root cause measured):** Commit `0866fc6` adds `frontend/e2e/benchmark/cameraInference.bench.ts`, the first #192 measurement that doesn't stub `GestureRecognizer.recognizeForVideo` — it loads the real `@mediapipe/tasks-vision` module/Wasm/model against a real, canvas-`captureStream()`-sourced `MediaStreamTrack` (no physical camera). Reproduced across 3 runs: the GPU delegate **creates successfully** (no exception) but a single inference call took ~5.1-5.8 **seconds**, versus ~24.6-24.8ms average for CPU on identical input — ~200x slower, with nothing to catch since creation never throws. `mediapipeProvider.ts` and its standalone-export port (`standaloneCameraSource.ts`) now default to `delegate: 'CPU'`, falling back to `'GPU'` only if CPU creation itself throws. All gates re-verified green after the flip: `make check`, full frontend suite, and a second real-Chromium `browser-qa` run (24/24, no regression). QA comment posted on #192.
 - **Closure (2026-08-28):** Asked the repository owner explicitly whether to waive the remaining real-camera/`animate.creatrweb.com` production confirmation (this agent has no physical camera and no Replit deployment access) given how directly the measured root cause explains the reported symptom. The owner chose "waive and close now" — the same kind of deliberate, informed waiver already recorded for #195, not an agent's own determination that this evidence is sufficient by default. Closing QA:PASS comment posted; issue closed.
 - **Reopened (2026-08-28, same day):** the repository owner reported the live public viewer's camera still nonfunctional, with production access logs and a `scripts/start.sh` startup error pasted as evidence. Investigation: (1) fetched and byte-diffed the live production JS assets against this session's local post-fix build — **identical**, confirming the CPU-delegate fix is genuinely deployed; (2) visited the live public viewer directly via browser tooling — page and demo controls render correctly, "Enable camera" correctly reaches the existing permission-denied/Retry state when this tooling's own sandbox blocks device capture (same standing "no real camera" boundary as before, revealed nothing new); (3) the pasted `scripts/start.sh` "wait: pid ... not a child of this shell" / "exited with status 127" log lines are a real, **distinct, now-fixed** bug (filed and fixed as [#202](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/202), commit `8df580d`) — a trap/wait race on ordinary Replit autoscale stop cycles, not tied to this deploy specifically, and very likely unrelated to the camera symptom (the camera is client-side JS with no dependency on the API calls the logs show all succeeding). No further camera-specific code defect was found. Reopened rather than re-asserting resolution, per [[camera-synthetic-verification-gap]]'s standing rule — a fresh contradicting production report outweighs an agent's own confidence in supporting (but indirect) evidence.
-- **Evidence (2026-08-28, second real root cause found and fixed — the actual "nonfunctional" explanation):** Using a connected real Chrome browser with a genuine physical webcam (Anker PowerConf C200), reproduced live against `https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`: the `<video>` element was confirmed genuinely live (advancing `currentTime`, real non-black pixel content), but the rendered `<canvas>` stayed byte-identical across 5 one-second samples — a **frozen, sometimes permanently empty, overlay**, not a slow one. Root cause: `EditorWorkspace.tsx` (for a behaviorless scene) and `PublicProjectViewer.tsx` (no runtime loop at all) only redraw the camera overlay rea…55944 tokens truncated…ccount settings page as tasks 227-230/#259-262 — implementing
+- **Evidence (2026-08-28, second real root cause found and fixed — the actual "nonfunctional" explanation):** Using a connected real Chrome browser with a genuine physical webcam (Anker PowerConf C200), reproduced live against `https://animate.creatrweb.com/p/7b2ecd2b-0a46-4031-b4a2-bb6b9cd74df2`: the `<video>` element was confirmed genuinely live (advancing `curr…56029 tokens truncated…ccount settings page as tasks 227-230/#259-262 — implementing
 after those (already shipped) avoids merge friction.
 
 ## 234. 3D AI proposal panel shows no visual preview before Accept/Reject

@@ -15617,3 +15617,16 @@ The complete manifest, duplicate report, blocker triage, dependency rationale,
 and evidence boundaries are recorded in
 `.local/tasks/gap-audit-2026-09-04.md`. Durable operational guidance is
 recorded in `.agents/memory/production-readiness-gaps.md`.
+
+
+## Current backlog-session status — 2026-09-04
+
+The authenticated backlog-session reconciliation discovered all 13 issues
+#404–#416 open on GitHub and processed them in dependency order. #404 and #409
+are `BLOCKED` on missing implementations; #405–#408 and #410–#413 are
+`DEPENDENCY-BLOCKED` on those foundations; #414 is blocked on the shared
+production-state infrastructure choice; #415 is blocked on the production
+WSGI/ASGI and signal-contract choice; and #416 is blocked on the owner’s
+signup-policy decision. Required QA comments were posted to every issue.
+See `.local/tasks/backlog-session-2026-09-04.md` for the complete manifest,
+transaction ledger, commands, evidence boundaries, and next actions.

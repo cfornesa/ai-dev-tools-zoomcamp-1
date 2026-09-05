@@ -146,3 +146,9 @@ verified published public, embed, thumbnail, and full-download behavior.
 open for two-worker shared-cache proof, and #415 remains open for exact
 published ASGI/process-signal proof. These are verification boundaries, not
 reasons to retain already-completed local capability issues.
+
+The complete frontend check passed (2,424 tests). The backend suite reached
+978 passed and 24 skipped, with one Git-safe-push fixture blocked by the
+restricted host's inability to bind a loopback socket. The repository Makefile
+was corrected to use `python3` for its check scripts because this macOS host
+does not expose a `python` executable.

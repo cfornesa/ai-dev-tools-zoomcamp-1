@@ -1,15 +1,20 @@
 """Deterministic cross-vendor routing and isolation checks for issue #408."""
 
+import json
+from pathlib import Path
+
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 import scenes.ai_api as ai_api
 from ai_provider.deepseek_provider import DeepSeekSceneProvider
 from ai_provider.e2e_provider import build_e2e_provider
 from ai_provider.gemini_provider import GeminiSceneProvider
+from ai_provider.interface import AIEditSceneRequest, AIErrorCategory
 from ai_provider.mistral_provider import MistralSceneProvider
-from scenes.models import Project, ProviderCredential
+from scenes.models import Project, ProviderCredential, SceneVersion
 
 
 @pytest.fixture
@@ -20,6 +25,13 @@ def owner(db):
 @pytest.fixture
 def project(owner):
     return Project.objects.create(owner=owner)
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.mark.django_db
@@ -94,3 +106,84 @@ def test_fake_provider_keeps_selected_vendor_and_model_metadata(vendor, model):
     provider = build_e2e_provider("success", vendor=vendor, model=model)
     assert provider.vendor == vendor
     assert provider.model == model
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("vendor", ["mistral", "gemini", "deepseek"])
+@pytest.mark.parametrize(
+    ("scenario", "expected_status", "expected_error"),
+    [
+        ("success", 200, None),
+        ("invalid_structured_output", 422, "invalid_structured_output"),
+        ("quota_exceeded", 429, "provider_quota_exceeded"),
+        ("timeout", 504, "timeout"),
+    ],
+)
+def test_fake_create_matrix_is_vendor_neutral_and_never_persists(
+    owner, vendor, scenario, expected_status, expected_error, monkeypatch
+):
+    """Exercise the same deterministic create contract for every vendor.
+
+    The fake switch is process-local and the scenario travels only through
+    the test header, so this covers routing/error normalization without
+    opening a live provider connection or weakening production behavior.
+    """
+    monkeypatch.setenv("AI_PROVIDER", "fake")
+    project = Project.objects.create(owner=owner)
+    client = APIClient()
+    client.force_authenticate(owner)
+    response = client.post(
+        f"/api/projects/{project.public_id}/ai/create-scene/",
+        {"prompt": f"matrix {vendor} {scenario}", "vendor": vendor},
+        format="json",
+        HTTP_X_E2E_AI_SCENARIO=scenario,
+    )
+
+    assert response.status_code == expected_status
+    assert response.json().get("error") == expected_error
+    assert SceneVersion.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("vendor", ["mistral", "gemini", "deepseek"])
+def test_missing_credential_is_consistent_for_every_vendor(owner, vendor, monkeypatch):
+    monkeypatch.delenv("AI_PROVIDER", raising=False)
+    project = Project.objects.create(owner=owner)
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/projects/{project.public_id}/ai/create-scene/",
+        {"prompt": "missing credential matrix", "vendor": vendor},
+        format="json",
+    )
+
+    assert response.status_code == 424
+    assert response.json()["error"] == "personal_key_required"
+    expected_label = {"mistral": "Mistral", "gemini": "Google Gemini", "deepseek": "DeepSeek"}[
+        vendor
+    ]
+    assert expected_label in response.json()["detail"]
+
+
+@pytest.mark.parametrize("vendor", ["mistral", "gemini", "deepseek"])
+@pytest.mark.parametrize(
+    ("scenario", "succeeds", "category"),
+    [
+        ("success", True, None),
+        ("invalid_structured_output", False, AIErrorCategory.INVALID_STRUCTURED_OUTPUT),
+        ("quota_exceeded", False, AIErrorCategory.QUOTA_EXCEEDED),
+        ("timeout", False, AIErrorCategory.TIMEOUT),
+    ],
+)
+def test_fake_edit_matrix_is_vendor_neutral(vendor, scenario, succeeds, category):
+    fixture = Path(__file__).resolve().parents[2] / "schema/fixtures/valid/blank.json"
+    scene = json.loads(fixture.read_text())
+    outcome = build_e2e_provider(
+        scenario, vendor=vendor, model="matrix-model"
+    ).edit_scene_with_patch(AIEditSceneRequest("change the background", scene))
+
+    assert outcome.result.success is succeeds
+    if category is not None:
+        assert outcome.result.error is not None
+        assert outcome.result.error.category is category

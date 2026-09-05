@@ -15590,3 +15590,30 @@ The complete manifest, duplicate report, blocker triage, dependency rationale,
 and verification boundaries are recorded in
 `.local/tasks/drawio-layer-distillation-2026-09-04.md`. The durable rule is
 recorded in `.agents/memory/drawio-layer-integration.md`.
+
+## 286. Explore additional project-goal gaps — open
+
+Status: DISTILLED; #414 is the next issue in this new gap queue.
+
+The 2026-09-04 exploratory audit found three actionable gaps beyond the
+existing multi-vendor (#404–#408) and draw.io (#409–#413) queues:
+
+- [#414](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/414) —
+  use shared production storage for AI quotas and rate limits.
+- [#415](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/415) —
+  run a supported production WSGI or ASGI server instead of Django
+  `runserver`.
+- [#416](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/416) —
+  choose and enforce an explicit signup authentication policy.
+
+Existing project creation, AI recovery, native 2D/3D, publishing, export,
+authentication, responsive, provider, and draw.io contracts were classified
+as already covered or separately queued. Deployed parity, real-camera
+behavior, live-provider calls, and an unproven transitive advisory were
+classified as verification or maintenance boundaries rather than new product
+issues.
+
+The complete manifest, duplicate report, blocker triage, dependency rationale,
+and evidence boundaries are recorded in
+`.local/tasks/gap-audit-2026-09-04.md`. Durable operational guidance is
+recorded in `.agents/memory/production-readiness-gaps.md`.

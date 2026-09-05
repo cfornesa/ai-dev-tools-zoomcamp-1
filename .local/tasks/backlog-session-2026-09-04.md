@@ -221,7 +221,31 @@ being treated as status-only blockers while implementation proceeds; remaining
 acceptance evidence and dependent provider/draw.io features still require
 follow-on work before issue closure.
 
-
 ## Closure reconciliation — 2026-09-05
 
-This implementation transaction closed #404, #405, #406, and #407 on GitHub after focused backend/frontend evidence and the complete Chromium AI/recovery browser suite passed (24/24). #408 remains open for the broader per-vendor failure matrix; #409–#413 remain open for draw.io persistence, browser interaction, public/embed/export parity, and accessibility evidence; and #414–#416 remain open where production deployment, distributed-cache/process lifecycle, or auth-browser evidence is still required. The open/closed split is now evidence-based rather than a blanket retention of all original blockers.
+This implementation transaction closed #404, #405, #406, and #407 on GitHub
+after focused backend/frontend evidence and the complete Chromium AI/recovery
+browser suite passed (24/24). #408 remains open for the broader per-vendor
+failure matrix; #409–#413 remain open for draw.io persistence, browser
+interaction, public/embed/export parity, and accessibility evidence; and
+#414–#416 remain open where production deployment, distributed-cache/process
+lifecycle, or auth-browser evidence is still required. The open/closed split
+is now evidence-based rather than a blanket retention of all original
+blockers.
+## Current evidence reconciliation — 2026-09-05
+
+The authoritative GitHub state is now 7 completed issues (#404–#409 and
+#416) and 6 open issues (#410–#415). #408 closed after the expanded 38-test
+deterministic create/edit matrix across Mistral, Gemini, and DeepSeek. #416
+closed after the Google-only policy was documented, enforced, and verified by
+desktop/mobile browser tests. Draw.io browser coverage now passes object
+move/resize/duplicate, layer rename, save, and reload; #410/#411 remain open
+because creation/reorder/visibility/locking/deletion and fixed-viewport
+rendered evidence are still incomplete.
+
+The production launcher regression discovered during readiness testing was
+fixed using child-liveness checks; `test_startup_configuration.py` is now
+17/17. The broader focused set is 57 passed, the frontend production build
+passes, and production-like `check --deploy` reports zero issues. #414/#415
+remain open because two-worker production storage and exact deployed
+process-lifecycle evidence still require the published environment.

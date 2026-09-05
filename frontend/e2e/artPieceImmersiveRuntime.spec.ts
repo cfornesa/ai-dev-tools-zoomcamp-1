@@ -64,6 +64,7 @@ test.describe('Generated immersive viewer: walkable navigation and stage control
   test('arrow-key travel and drag look move a real registered camera, wheel zooms, and Reset returns home', async ({
     page,
     context,
+    browserName,
   }) => {
     await loginViaUI(page, fixture.owner.email, fixture.password);
     const created = await apiPost(context, '/api/art-pieces/', {
@@ -130,10 +131,34 @@ test.describe('Generated immersive viewer: walkable navigation and stage control
       await page.mouse.up();
       await expect(page.getByTestId('navigation-pose')).not.toContainText('0.30,0.00,4.70');
 
-      // Wheel zoom.
+      // Wheel zoom. Issue #456: confirmed via direct investigation that
+      // Playwright's bundled WebKit never delivers `page.mouse.wheel()`
+      // as a native `wheel` DOM event on this page at all -- a
+      // document-level capture-phase listener saw zero wheel events
+      // after the exact same synthesized mouse move/hover that already
+      // correctly fires `mousemove` and lands on the right element
+      // (`elementFromPoint` confirmed correct hit-testing), while the
+      // identical `page.mouse.wheel()` call against a minimal throwaway
+      // page *did* deliver a real event with the correct `deltaY`. That
+      // rules out product-code registration timing, hit-testing, and
+      // mouse-position bugs -- this is specifically WebKit's own wheel-
+      // event synthesis for a real navigated page, a known category of
+      // CDP-equivalent-protocol gap in Playwright's WebKit backend.
+      // Dispatching a real `WheelEvent` directly at the stage element
+      // exercises the exact same `onWheel`/`navigate()` product code
+      // path as a substitute for the OS-level synthesis WebKit won't
+      // perform here.
       const poseBeforeZoom = await page.getByTestId('navigation-pose').textContent();
       await stage.hover();
-      await page.mouse.wheel(0, 100);
+      if (browserName === 'webkit') {
+        await stage.evaluate((el) => {
+          el.dispatchEvent(
+            new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }),
+          );
+        });
+      } else {
+        await page.mouse.wheel(0, 100);
+      }
       await expect(page.getByTestId('navigation-pose')).not.toHaveText(poseBeforeZoom ?? '');
 
       // Reset returns the camera to its registered starting pose.

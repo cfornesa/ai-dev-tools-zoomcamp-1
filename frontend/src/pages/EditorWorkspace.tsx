@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 46828)
-Total output lines: 4088
-
 import {
   lazy,
   Suspense,
@@ -1589,7 +1586,1095 @@ function EditorWorkspace() {
     const { width, height } = canvasSizeRef.current;
     return {
       source: cameraVideoRef.current,
-      geometry:…11828 tokens truncated…TMLDivElement>) => {
+      geometry: clampCameraOverlayGeometry(cameraGeometryRef.current, width, height),
+      opacity: cameraOverlayOpacity,
+      mirrored: cameraOverlayMirrored,
+      layerOrder: effectiveCameraLayerOrder,
+    };
+  };
+  const getCameraOverlayRef = useRef(getCameraOverlay);
+  getCameraOverlayRef.current = getCameraOverlay;
+  // Issue #78: same "latest value" pattern as `sceneEditorRef` above, so
+  // the window-level drag listeners always read whichever snap preference
+  // is current *right now* rather than whatever it was when the gesture
+  // began. This is also exactly how "toggling mid-gesture" is decided: a
+  // gesture already in progress simply picks up the new setting on its
+  // very next pointermove frame — the acceptance criterion explicitly
+  // allows either behavior here, and this is the simplest one to build.
+  const snapSettingsRef = useRef(snapSettings);
+  snapSettingsRef.current = snapSettings;
+  // In-progress drag gesture, or null when nothing is being dragged. Not
+  // React state: updating it never needs to trigger a re-render itself —
+  // the live shape mutation each pointermove performs (via
+  // `sceneEditor.updateSelectedTransform`) already re-renders the
+  // component through `workingCopy` changing.
+  // Issue #77: a drag gesture is either the Task 26 single-shape kind
+  // (`mode: 'single'`) or, when it started on a member of a 2+-item
+  // `multiSelectedIds` selection, a group gesture (`mode: 'group'`) that
+  // carries a snapshot of every selected shape plus their combined
+  // bounding box, both fixed at gesture start (see `sceneShapes.ts`'s
+  // `applyGroupDrag` doc comment on why fixed-snapshot recomputation is
+  // used instead of accumulating a delta frame over frame).
+  // Issue #79: a third gesture kind, `mode: 'vertex'` — dragging one point
+  // of a single selected `path` shape while vertex edit mode is active.
+  // Deliberately carries no `kind: HandleKind` (there's no move/resize/
+  // rotate distinction for a single point) and, like the single/group
+  // modes above, snapshots its `startShape` once at gesture start so a
+  // long drag stays numerically stable and Escape-to-cancel is trivial
+  // (see `applyShapeDrag`'s own doc comment in sceneShapes.ts).
+  // Issue #156: a fourth gesture kind, `mode: 'pan'` — dragging on empty
+  // canvas background (no shape hit) while zoomed beyond 100% shifts the
+  // visible viewport instead of manipulating any shape. Carries the pan
+  // offset (raw screen pixels) at gesture start and the pointer's starting
+  // client position, so `onMove` below only ever needs the pointer's
+  // client-space delta (never `clientToCanvasPoint`'s scene-space
+  // conversion — pan is a view-space concept, not a scene one).
+  type DragState =
+    | { mode: 'single'; kind: HandleKind; startShape: Shape; startPointer: Point }
+    | {
+        mode: 'group';
+        kind: HandleKind;
+        startShapes: Shape[];
+        bounds: Bounds;
+        startPointer: Point;
+      }
+    | { mode: 'vertex'; startShape: PathShape; pointIndex: number; startPointer: Point }
+    | { mode: 'pan'; startPan: Point; startClientX: number; startClientY: number };
+  const dragRef = useRef<DragState | null>(null);
+  // Lazily built once (see the `if` below) and reused for every gesture,
+  // so `window.addEventListener`/`removeEventListener` always agree on the
+  // exact same function identity — including the unmount cleanup effect
+  // further down, which must be able to remove listeners left behind by a
+  // gesture still in progress when the workspace unmounts.
+  const dragHandlers = useRef<{
+    onMove: (event: PointerEvent) => void;
+    onUp: (event: PointerEvent) => void;
+    onKey: (event: KeyboardEvent) => void;
+  } | null>(null);
+  if (!dragHandlers.current) {
+    const onMove = (event: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      if (drag.mode === 'pan') {
+        // Issue #156: pan is tracked in raw client-pixel deltas (never
+        // `clientToCanvasPoint`'s scene-space conversion — panning moves
+        // the *view*, not any scene coordinate), then clamped against the
+        // clipping viewport's actual current size so the zoomed content
+        // never scrolls past its own overflow.
+        const dx = event.clientX - drag.startClientX;
+        const dy = event.clientY - drag.startClientY;
+        const nextPan = { x: drag.startPan.x + dx, y: drag.startPan.y + dy };
+        const viewportRect = viewportRef.current?.getBoundingClientRect();
+        setPan(
+          viewportRect
+            ? clampPanValue(nextPan, zoomRef.current, viewportRect, {
+                width: canvasSizeRef.current.width * fitScaleRef.current,
+                height: canvasSizeRef.current.height * fitScaleRef.current,
+              })
+            : nextPan,
+        );
+        return;
+      }
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const { width, height } = canvasSizeRef.current;
+      const renderedPointer = clientToCanvasPoint(
+        rect,
+        event.clientX,
+        event.clientY,
+        width,
+        height,
+      );
+      if (drag.mode === 'group') {
+        const updated = applyGroupDrag(
+          drag.kind,
+          drag.startShapes,
+          drag.bounds,
+          drag.startPointer,
+          renderedPointer,
+        );
+        sceneEditorRef.current.updateMultiSelectedTransform(updated);
+        return;
+      }
+      if (drag.mode === 'vertex') {
+        // Issue #79: single-vertex drag is deliberately unsnapped — no
+        // `applyMoveSnap`/`applyResizeSnap` call here, matching this
+        // task's own "Out of scope" (snapping stays whole-shape-only,
+        // issue #78).
+        const pointer = renderedPointToShapePoint(
+          drag.startShape,
+          renderedPointer,
+          sceneEditorRef.current.groups,
+        );
+        const updated = applyVertexDrag(drag.startShape, drag.pointIndex, pointer);
+        sceneEditorRef.current.updateSelectedTransform(updated);
+        return;
+      }
+      const pointer = renderedPointToShapePoint(
+        drag.startShape,
+        renderedPointer,
+        sceneEditorRef.current.groups,
+      );
+      const updated = applyShapeDrag(drag.kind, drag.startShape, drag.startPointer, pointer);
+      const snap = snapSettingsRef.current;
+      // Issue #78: snapping only applies to the single-shape gesture path
+      // (already guaranteed here — `drag.mode === 'group'` returned above)
+      // and only to move/box-resize, never rotate (no grid/alignment
+      // analogue for rotation exists in this task's scope).
+      if (drag.kind === 'move' && (snap.gridEnabled || snap.guidesEnabled)) {
+        const siblingBounds = sceneEditorRef.current.shapes
+          .filter((s) => s.id !== drag.startShape.id)
+          .map((s) => shapeBounds(s, sceneEditorRef.current.groups));
+        const result = applyMoveSnap(updated, siblingBounds, {
+          gridEnabled: snap.gridEnabled,
+          guidesEnabled: snap.guidesEnabled,
+        });
+        setActiveGuides(result.guides);
+        sceneEditorRef.current.updateSelectedTransform(result.shape);
+        return;
+      }
+      if (drag.kind === 'resize' && snap.gridEnabled) {
+        const snapped = applyResizeSnap(drag.startShape, drag.startPointer, updated, {
+          gridEnabled: true,
+        });
+        sceneEditorRef.current.updateSelectedTransform(snapped);
+        return;
+      }
+      sceneEditorRef.current.updateSelectedTransform(updated);
+    };
+    const onUp = (event: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      event.preventDefault();
+      stopDragListening();
+      dragRef.current = null;
+      // Issue #156: a pan gesture never touches the scene (no
+      // `beginTransform()` was ever called for it either — see
+      // `beginPanGesture` below), so there's no transform to commit and no
+      // guide overlay it could have set.
+      if (drag.mode === 'pan') return;
+      setActiveGuides({ x: null, y: null });
+      sceneEditorRef.current.commitTransform();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      const drag = dragRef.current;
+      if (event.key !== 'Escape' || !drag) return;
+      event.preventDefault();
+      stopDragListening();
+      dragRef.current = null;
+      if (drag.mode === 'pan') {
+        // Escape-to-cancel a pan gesture restores the pre-gesture offset,
+        // matching every other gesture kind's own Escape-cancel behavior.
+        setPan(drag.startPan);
+        return;
+      }
+      setActiveGuides({ x: null, y: null });
+      sceneEditorRef.current.cancelTransform();
+    };
+    function stopDragListening() {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('keydown', onKey);
+    }
+    dragHandlers.current = { onMove, onUp, onKey };
+  }
+
+  // Removes any drag listeners still attached if the workspace unmounts
+  // mid-gesture (e.g. navigating away while dragging).
+  useEffect(() => {
+    return () => {
+      const handlers = dragHandlers.current;
+      if (!handlers) return;
+      window.removeEventListener('pointermove', handlers.onMove);
+      window.removeEventListener('pointerup', handlers.onUp);
+      window.removeEventListener('keydown', handlers.onKey);
+    };
+  }, []);
+
+  // Task 25: mounts a p5.js instance (instance mode, never global) into a
+  // dedicated child div that React never re-renders into — see the div's
+  // own comment below for why.
+  //
+  // Task 83 (issue #83): this is a *callback* ref, not a plain `useRef` +
+  // `useEffect(fn, [])` pair (what this used to be), plus the
+  // `previewMounted` state flag it sets below — that old pairing had a
+  // real timing bug this task's own "does the live preview actually mount
+  // a canvas" testing surfaced: the mount div only exists in the DOM once
+  // `loadState` reaches `'ready'` *and* `useDraftRecovery`'s own async
+  // check has resolved (a SEPARATE, later commit — its own
+  // IndexedDB/server round trip means it practically never lands in the
+  // same commit as `loadState` first turning `'ready'`), so an effect with
+  // `[]` deps (the old code) or even `[workingCopy, hasActiveBehaviors]`
+  // deps (this task's own first attempt) can both end up running on a
+  // commit *before* the div — and therefore `previewRef.current` — has
+  // ever existed, with nothing in either dependency array changing again
+  // once it finally does. The old `[]`-deps code silently no-opped forever
+  // in that case (`if (!previewMountRef.current) return;`), so the p5
+  // preview was never created for any project loaded the normal (async)
+  // way — nothing exercised this before, since no earlier test asserted an
+  // actual `<canvas>` element or a `p5Adapter.render()` call appeared, only
+  // DOM text/structure. A callback ref sidesteps "which commit was the div
+  // actually attached during": React invokes it with the real node the
+  // *instant* it's attached (whichever commit that turns out to be), and
+  // with `null` the instant it's detached (on unmount) — exactly once
+  // each. `previewMounted` then gives every *effect* that needs to know
+  // "does a preview exist yet" (the plain render-on-change effect just
+  // below) a real, effect-dependency-array-visible signal for that moment,
+  // rather than an untracked ref read.
+  const [previewMounted, setPreviewMounted] = useState(false);
+  const previewMountCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      previewRef.current = createScenePreview(node, resolveSceneRendererId(workingCopyRef.current));
+      setPreviewMounted(true);
+    } else {
+      previewRef.current?.destroy();
+      previewRef.current = null;
+      setPreviewMounted(false);
+    }
+  }, []);
+
+  // Task 83 (issue #83): whenever the working copy has any behavior-card
+  // bindings or graph nodes, the live preview runs the real behavior
+  // runtime continuously (see `usePreviewRuntime.ts`'s own doc comment for
+  // the "when does the runtime run" decision) instead of the plain
+  // render-on-change effect below. `hasActiveBehaviors` is recomputed every
+  // render from the current `workingCopy` (cheap — two array-length reads),
+  // so a binding/graph edit flips it (and therefore which code path is
+  // driving the preview) on the very next render, no save/reload needed.
+  const hasActiveBehaviors = sceneHasActiveBehaviors(workingCopy);
+  usePreviewRuntime({
+    previewRef,
+    scene: hasActiveBehaviors ? workingCopy : null,
+    getTrackingFrame: () => trackingSourceRef.current.consumeFrame(),
+    reducedMotion: reducedMotion.effective,
+    onRenderError: setPreviewError,
+    // Task 110 (issue #141): see the plain render effect's identical
+    // comment below for why this must match `cameraStatus === 'active'`.
+    transparentBackground: cameraStatus === 'active',
+    getCameraOverlay,
+  });
+
+  // Re-renders the p5 preview whenever the working copy changes. A scene
+  // that fails the adapter's validation (see p5Adapter.ts/sceneDrawPlan.ts)
+  // throws before any draw call rather than drawing something wrong or
+  // stale; that's surfaced here instead of crashing the workspace. Only
+  // runs while `usePreviewRuntime` above is inactive (no bindings/graph) —
+  // once a scene gains a binding or graph node, that hook's own rAF loop
+  // takes over rendering entirely, so the two never fight over the same
+  // canvas in the same frame.
+  //
+  // Issue #192 follow-up: a plain callback, not inlined into the effect
+  // below, so `useCameraOverlayRedrawLoop` can call the exact same render
+  // logic every animation frame while the camera is active and no behavior
+  // runtime is already doing that job. Without this, a behaviorless scene's
+  // camera overlay only ever redrew reactively (once per relevant state
+  // change) and froze at whatever single frame happened to be available at
+  // that moment for the rest of the session -- reproduced live against
+  // production with a real camera; see that hook's doc comment for the full
+  // finding.
+  const redrawPreview = useCallback(() => {
+    if (!previewRef.current || !workingCopy || hasActiveBehaviors) return;
+    try {
+      // Task 110 (issue #141): a transparent background while the camera
+      // overlay is showing -- see p5Adapter.ts's `render` doc comment for
+      // why an opaque background fill would otherwise hide the overlay
+      // entirely, regardless of its own CSS opacity.
+      previewRef.current.render(
+        workingCopy,
+        [],
+        [],
+        cameraStatus === 'active',
+        getCameraOverlayRef.current(),
+      );
+      setPreviewError(null);
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : 'Could not render this scene.');
+    }
+  }, [workingCopy, hasActiveBehaviors, cameraStatus]);
+
+  useEffect(() => {
+    if (!previewMounted) return;
+    redrawPreview();
+  }, [
+    previewMounted,
+    redrawPreview,
+    cameraLayerOrder,
+    cameraGeometry,
+    cameraOverlayOpacity,
+    cameraOverlayMirrored,
+  ]);
+
+  useCameraOverlayRedrawLoop(!hasActiveBehaviors && cameraStatus === 'active', redrawPreview);
+
+  // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes — the standard
+  // shortcuts for this editor's in-session undo/redo policy (see
+  // useSceneEditor.ts for the full policy writeup). Ignored while typing in
+  // a text field so it doesn't fight the browser's own undo there.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || isTypingTarget(event.target)) return;
+      const key = event.key.toLowerCase();
+      if (key === 'z' && event.shiftKey) {
+        event.preventDefault();
+        sceneEditor.redo();
+      } else if (key === 'z') {
+        event.preventDefault();
+        sceneEditor.undo();
+      } else if (key === 'y') {
+        event.preventDefault();
+        sceneEditor.redo();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sceneEditor]);
+
+  // Task 114 (issue #149): Ctrl/Cmd+D duplicates the selected shape, and
+  // Delete/Backspace deletes it -- the same keyboard-only entry points the
+  // toolbar's "Duplicate selected shape"/"Delete selected shape" buttons
+  // already call (`sceneEditor.duplicateSelected()`/`deleteSelected()`).
+  // Ignored while typing in a text field, matching the undo/redo listener's
+  // `isTypingTarget` use above, and Delete/Backspace is ignored outright
+  // while vertex edit mode is active since that mode's own listener below
+  // already owns Delete/Backspace for vertex deletion.
+  // `duplicateSelected()`/`deleteSelected()` already no-op with nothing
+  // selected and surface `lockError` on a locked layer/group on their own,
+  // but `selectedShape` is checked here too so `preventDefault()` is never
+  // called (and the browser's own bookmark/back-navigation shortcuts stay
+  // live) when there is nothing to act on.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (isTypingTarget(event.target)) return;
+      if (sceneEditor.selectedDrawioObject) {
+        const step = event.shiftKey ? 10 : 1;
+        if (
+          event.key === 'ArrowRight' ||
+          event.key === 'ArrowLeft' ||
+          event.key === 'ArrowUp' ||
+          event.key === 'ArrowDown'
+        ) {
+          event.preventDefault();
+          sceneEditor.moveSelectedDrawioObject(
+            event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0,
+            event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0,
+          );
+          return;
+        }
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
+          event.preventDefault();
+          sceneEditor.duplicateSelectedDrawioObject();
+          return;
+        }
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          event.preventDefault();
+          sceneEditor.deleteSelectedDrawioObject();
+          return;
+        }
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
+        if (!sceneEditor.selectedShape) return;
+        event.preventDefault();
+        sceneEditor.duplicateSelected();
+        return;
+      }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (sceneEditor.vertexEditActive || !sceneEditor.selectedShape) return;
+        event.preventDefault();
+        sceneEditor.deleteSelected();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sceneEditor]);
+
+  // Issue #156: Ctrl/Cmd+"+"/"-" zoom in/out and Ctrl/Cmd+0 resets to
+  // 100%/centered — the keyboard-accelerator counterpart to the +/- zoom
+  // buttons and Ctrl/Cmd+scroll-wheel below. Ignored while typing in a
+  // text field, matching every other shortcut listener's `isTypingTarget`
+  // guard in this file. `applyZoomChange` is a plain function declaration
+  // further down this component (hoisted to the top of the function body,
+  // so it's already callable here) that owns the shared clamp-then-
+  // `setZoom`/`setPan` logic every zoom entry point (these shortcuts, the
+  // wheel listener above, and the +/- buttons in the render below) goes
+  // through.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || isTypingTarget(event.target)) return;
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        applyZoomChange(zoomRef.current + ZOOM_STEP);
+      } else if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        applyZoomChange(zoomRef.current - ZOOM_STEP);
+      } else if (event.key === '0') {
+        event.preventDefault();
+        applyZoomChange(1);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // Issue #79: vertex edit mode's two keyboard affordances that aren't
+  // already covered by the generic drag-cancel/undo-redo listeners above:
+  // Escape exits the mode outright when no point drag is in progress
+  // (`dragRef.current` is null — a drag in progress is instead cancelled
+  // by `dragHandlers.current.onKey` above, which restores the pre-drag
+  // point and creates no undo step, matching Task 26's own drag-cancel
+  // exactly), and Delete/Backspace removes the currently selected vertex.
+  // Both are no-ops while vertex edit mode isn't active, and both ignore
+  // a typing target so they never fight a text field (matching
+  // `isTypingTarget`'s use in the undo/redo listener above).
+  //
+  // This listener is only added/removed when `vertexEditActive` itself
+  // flips (not on every render — reading `sceneEditorRef.current` inside
+  // the handler, the same "latest value" ref pattern `dragHandlers.current`
+  // uses above, keeps it current without that). This matters for
+  // correctness, not just performance: if this listener were torn down and
+  // re-added on every render (e.g. depending on the whole `sceneEditor`
+  // object, which is a new reference every render), it would always end up
+  // registered *after* `dragHandlers.current.onKey` by the time a drag is
+  // mid-gesture (each pointermove re-renders and would re-register it) —
+  // so on Escape, the drag-cancel listener would run first, null out
+  // `dragRef.current`, and this listener would then wrongly see "no drag in
+  // progress" and exit vertex edit mode entirely instead of just cancelling
+  // the drag. Registering this listener once per mode-activation, ahead of
+  // `dragHandlers.current.onKey` (which is only ever added later, at
+  // pointerdown), keeps the ordering — and the `dragRef.current` check —
+  // reliable.
+  useEffect(() => {
+    if (!sceneEditor.vertexEditActive) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (isTypingTarget(event.target)) return;
+      const editor = sceneEditorRef.current;
+      if (event.key === 'Escape') {
+        if (dragRef.current) return; // handled by the drag-cancel listener instead
+        event.preventDefault();
+        editor.exitVertexEditMode();
+        return;
+      }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (editor.selectedVertexIndex === null) return;
+        event.preventDefault();
+        editor.deleteVertexAt(editor.selectedVertexIndex);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sceneEditor.vertexEditActive]);
+
+  // Issue #163 (task 131): Escape dismisses the canvas-overlaid selection
+  // HUD (`SelectionHud.tsx`, rendered in the Preview panel below) by
+  // clearing the active selection outright — `SelectionHud` itself renders
+  // purely from `selectedShape`/`selectedGroup` with no listener of its
+  // own, so clearing the selection is all this needs to do. Deliberately
+  // defers to the two more specific Escape handlers above when either
+  // claims it: an in-progress drag gesture (cancelled without touching
+  // selection by `dragHandlers.current.onKey`) and vertex edit mode (which
+  // exits the mode first, per the effect just above, rather than
+  // deselecting the shape entirely) — both are checked here via the same
+  // "latest value" ref pattern the rest of this component's keydown
+  // listeners already use, so this can be registered once (`[]` deps)
+  // rather than torn down/re-added on every selection change.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || isTypingTarget(event.target)) return;
+      if (dragRef.current) return; // handled by the drag-cancel listener instead
+      const editor = sceneEditorRef.current;
+      if (editor.vertexEditActive) return; // handled by the vertex-edit listener instead
+      if (!editor.selectedShape && !editor.selectedGroup) return;
+      event.preventDefault();
+      editor.selectShape(null);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  if (loadState === 'loading') {
+    return (
+      <p role="status" aria-live="polite">
+        Loading editor…
+      </p>
+    );
+  }
+
+  if (loadState === 'access-denied') {
+    return (
+      <div>
+        <p role="alert" aria-live="assertive">
+          You don't have access to this project.
+        </p>
+        <p>
+          <Link to="/">Back to your projects</Link>
+        </p>
+      </div>
+    );
+  }
+
+  if (loadState === 'no-scene') {
+    return (
+      <div>
+        <p role="alert" aria-live="assertive">
+          This project has no valid scene to load.
+        </p>
+        <p>
+          <Link to="/">Back to your projects</Link>
+        </p>
+      </div>
+    );
+  }
+
+  if (loadState === 'error') {
+    return (
+      <div>
+        <p role="alert" aria-live="assertive">
+          Something went wrong loading this project. Please try again.
+        </p>
+        <button type="button" onClick={() => retry()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Task 44: the project and its persisted version have loaded, but the
+  // recovery check (local + server draft, reconciled) hasn't resolved
+  // yet — the interactive editor must not render until it has, so a
+  // reopened project with a valid draft never flashes the persisted
+  // version before the recovery prompt appears.
+  if (draftRecovery.status === 'checking') {
+    return (
+      <p role="status" aria-live="polite">
+        Checking for recovered work…
+      </p>
+    );
+  }
+
+  if (draftRecovery.status === 'prompt' && draftRecovery.candidate) {
+    return (
+      <DraftRecoveryPrompt
+        candidate={draftRecovery.candidate}
+        onRecover={handleRecoverDraft}
+        onDiscard={handleDiscardDraft}
+        onCancel={handleCancelDraftPrompt}
+      />
+    );
+  }
+
+  const shapeCount = Array.isArray(workingCopy?.shapes) ? workingCopy.shapes.length : 0;
+  const canvas = (workingCopy?.canvas as { width?: number; height?: number } | undefined) ?? {
+    width: 800,
+    height: 600,
+  };
+  const canvasWidth = canvas.width ?? 800;
+  const canvasHeight = canvas.height ?? 600;
+  canvasSizeRef.current = { width: canvasWidth, height: canvasHeight };
+
+  const updateCameraGeometry = (next: CameraOverlayGeometry, status = true) => {
+    const clamped = clampCameraOverlayGeometry(next, canvasWidth, canvasHeight);
+    cameraGeometryRef.current = clamped;
+    setCameraGeometry(clamped);
+    if (status)
+      setCameraOverlayStatus(
+        `Camera overlay: ${Math.round(clamped.width * canvasWidth)} by ${Math.round(clamped.height * canvasHeight)} pixels.`,
+      );
+  };
+
+  const handleCameraTrackingFrame = (frame: TrackingFrame) => {
+    const handFor = (handId: string) =>
+      frame.hands.find((hand) => hand.id === handId) ?? frame.hands[0];
+    const indexTip = (hand: (typeof frame.hands)[number] | undefined) => hand?.landmarks[8];
+
+    for (const event of frame.events) {
+      if (event.type === 'pinchStart' && !cameraTrackingGestureRef.current) {
+        const hand = handFor(event.handId);
+        const tip = indexTip(hand);
+        if (hand && tip) {
+          cameraTrackingGestureRef.current = { handId: hand.id, x: tip.x, y: tip.y };
+        }
+      } else if (
+        (event.type === 'pinchEnd' || event.type === 'handDisappear') &&
+        cameraTrackingGestureRef.current?.handId === event.handId
+      ) {
+        cameraTrackingGestureRef.current = null;
+      }
+    }
+
+    const gesture = cameraTrackingGestureRef.current;
+    if (!gesture) return;
+    const hand = handFor(gesture.handId);
+    const tip = indexTip(hand);
+    if (!tip) return;
+    const { width, height } = canvasSizeRef.current;
+    const next = applyCameraOverlayAction(
+      cameraGeometryRef.current,
+      {
+        type: 'move',
+        delta: { x: (tip.x - gesture.x) * width, y: (tip.y - gesture.y) * height },
+      },
+      width,
+      height,
+      snapSettings.gridEnabled,
+    );
+    updateCameraGeometry(next);
+    cameraTrackingGestureRef.current = { handId: hand?.id ?? gesture.handId, x: tip.x, y: tip.y };
+  };
+
+  const beginCameraGesture = (event: ReactPointerEvent, kind: 'move' | 'resize') => {
+    event.stopPropagation();
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    cameraGestureRef.current = kind;
+    cameraGestureStartRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      geometry: cameraGeometryRef.current,
+    };
+  };
+
+  const moveCameraGesture = (event: ReactPointerEvent) => {
+    const kind = cameraGestureRef.current;
+    if (!kind) return;
+    event.stopPropagation();
+    const start = cameraGestureStartRef.current;
+    const next =
+      kind === 'move'
+        ? applyCameraOverlayAction(
+            start.geometry,
+            {
+              type: 'move',
+              delta: { x: event.clientX - start.x, y: event.clientY - start.y },
+            },
+            canvasWidth,
+            canvasHeight,
+            snapSettings.gridEnabled,
+          )
+        : applyCameraOverlayAction(
+            start.geometry,
+            { type: 'resize', deltaX: event.clientX - start.x },
+            canvasWidth,
+            canvasHeight,
+          );
+    updateCameraGeometry(next);
+  };
+
+  const endCameraGesture = (event: ReactPointerEvent) => {
+    if (!cameraGestureRef.current) return;
+    event.stopPropagation();
+    cameraGestureRef.current = null;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  };
+
+  const handleCameraKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 0.05 : 0.02;
+    let next = cameraGeometryRef.current;
+    if (event.key === 'ArrowLeft')
+      next = applyCameraOverlayAction(
+        next,
+        { type: 'move', delta: { x: -canvasWidth * step, y: 0 } },
+        canvasWidth,
+        canvasHeight,
+        snapSettings.gridEnabled,
+      );
+    else if (event.key === 'ArrowRight')
+      next = applyCameraOverlayAction(
+        next,
+        { type: 'move', delta: { x: canvasWidth * step, y: 0 } },
+        canvasWidth,
+        canvasHeight,
+        snapSettings.gridEnabled,
+      );
+    else if (event.key === 'ArrowUp')
+      next = applyCameraOverlayAction(
+        next,
+        { type: 'move', delta: { x: 0, y: -canvasHeight * step } },
+        canvasWidth,
+        canvasHeight,
+        snapSettings.gridEnabled,
+      );
+    else if (event.key === 'ArrowDown')
+      next = applyCameraOverlayAction(
+        next,
+        { type: 'move', delta: { x: 0, y: canvasHeight * step } },
+        canvasWidth,
+        canvasHeight,
+        snapSettings.gridEnabled,
+      );
+    else if (event.key === '+' || event.key === '=')
+      next = applyCameraOverlayAction(
+        next,
+        { type: 'resize', deltaX: canvasWidth * step },
+        canvasWidth,
+        canvasHeight,
+      );
+    else if (event.key === '-' || event.key === '_')
+      next = applyCameraOverlayAction(
+        next,
+        { type: 'resize', deltaX: -canvasWidth * step },
+        canvasWidth,
+        canvasHeight,
+      );
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+    updateCameraGeometry(next);
+  };
+
+  const effectiveCameraLayerOrder =
+    cameraLayerOrder ??
+    Math.max(
+      0,
+      ...(Array.isArray(workingCopy?.layers)
+        ? workingCopy.layers.map((layer) => Number((layer as { order?: number }).order) || 0)
+        : [0]),
+    ) + 1;
+  const renderedCameraGeometry = clampCameraOverlayGeometry(
+    cameraGeometry,
+    canvasWidth,
+    canvasHeight,
+  );
+
+  const getCameraExport = (): CameraOverlayExport | null => {
+    if (cameraStatus !== 'active') return null;
+    if (!cameraStream || !cameraVideoRef.current) {
+      throw new Error(
+        'Camera frame is unavailable. Keep the camera active and try exporting again.',
+      );
+    }
+    try {
+      return {
+        frameDataUrl: captureCameraStill(cameraVideoRef.current),
+        geometry: clampCameraOverlayGeometry(cameraGeometryRef.current, canvasWidth, canvasHeight),
+        opacity: cameraOverlayOpacity,
+        mirrored: cameraOverlayMirrored,
+        layerOrder: effectiveCameraLayerOrder,
+      };
+    } catch (captureError) {
+      throw new Error(
+        captureError instanceof Error
+          ? captureError.message
+          : 'Camera frame capture failed. Keep the camera active and try again.',
+      );
+    }
+  };
+
+  // Task 111 (issue #142): the selection/hover outline overlay below draws
+  // in the scene's real draw order, matching `render/sceneDrawPlan.ts`'s
+  // `buildScenePlan` (issue #194: layers in *descending* `order`, then
+  // each layer's own top-level items in `buildOutline`'s existing order)
+  // -- `sceneEditor.shapes`' raw array order stopped being equivalent to
+  // that once every shape got its own independent layer (previously most
+  // shapes shared one layer, where array order and draw order
+  // coincided). Recomputed from `buildOutline`, the same source of truth
+  // the outline panel itself uses (with its per-layer chunks reversed to
+  // match #194's render-order flip), rather than a second, possibly-
+  // diverging draw-order implementation. A plain computed value (not
+  // `useMemo`) since this section of the component already runs after
+  // several conditional early returns above (`loadState` guards),
+  // matching `canvasWidth`/`canvasHeight` just above.
+  const shapesInDrawOrder = (() => {
+    if (!workingCopy) return sceneEditor.shapes;
+    // Issue #194: `sceneDrawPlan.ts` now draws layers in *descending*
+    // `order`, while `buildOutline()` still lists them ascending
+    // top-to-bottom (matching the panel). Chunk the flat row list back
+    // into per-layer groups at each 'layer' row boundary, then reverse
+    // the order of those *chunks* only -- each chunk's own internal
+    // group/shape ordering (unaffected by #194) stays exactly as
+    // `buildOutline` produced it.
+    const rows = buildOutline(workingCopy);
+    const layerChunks: (typeof rows)[] = [];
+    let current: typeof rows = [];
+    for (const row of rows) {
+      if (row.kind === 'layer') {
+        if (current.length > 0) layerChunks.push(current);
+        current = [];
+      } else {
+        current.push(row);
+      }
+    }
+    if (current.length > 0) layerChunks.push(current);
+    const orderedIds = layerChunks
+      .reverse()
+      .flatMap((chunk) => chunk.filter((row) => row.kind === 'shape').map((row) => row.id));
+    const byId = new Map(sceneEditor.shapes.map((shape) => [shape.id, shape]));
+    return orderedIds
+      .map((id) => byId.get(id))
+      .filter((shape): shape is (typeof sceneEditor.shapes)[number] => shape !== undefined);
+  })();
+
+  // Layer selection highlights the shapes that are actually visible after
+  // layer/group/shape visibility cascades, matching the layer HUD count and
+  // the outline's inherited visibility state rather than only a shape's own
+  // flag.
+  const visibleShapeIds = new Set(
+    workingCopy
+      ? buildOutline(workingCopy)
+          .filter((row) => row.kind === 'shape' && row.inheritedVisible)
+          .map((row) => row.id)
+      : [],
+  );
+
+  // Issue #78: the visible grid-line overlay's coordinates, at the fixed
+  // 20-scene-unit spacing — only computed when grid snapping is on (the
+  // "when disabled, no grid overlay renders" acceptance criterion).
+  const gridLinesX: number[] = [];
+  const gridLinesY: number[] = [];
+  if (snapSettings.gridEnabled) {
+    for (let x = 0; x <= canvasWidth; x += GRID_SIZE) gridLinesX.push(x);
+    for (let y = 0; y <= canvasHeight; y += GRID_SIZE) gridLinesY.push(y);
+  }
+
+  // Issue #93 hard requirement: at every viewport width, it must be
+  // possible to see Preview's live state while using Details/Tools/
+  // Inspector — narrower than 1024px may no longer make Preview one of a
+  // set of mutually-exclusive tabs. Preview is therefore never hidden;
+  // only Details/Tools/Inspector alternate via the switcher below the
+  // breakpoint (issue #94 adds Details alongside the two this already
+  // covered).
+  function panelHidden(panel: EditorPanelName): boolean {
+    if (panel === 'preview') return false;
+    return isNarrow && activePanel !== panel;
+  }
+
+  // Shared by every pointer-to-scene conversion below (click-to-select,
+  // drag start, and handle drag start) so they all agree on the same
+  // canvas-local point for a given client position — including when the
+  // canvas element is CSS-scaled smaller than its logical `canvasWidth`/
+  // `canvasHeight` (see `clientToCanvasPoint`'s own comment).
+  function canvasPointFromClient(clientX: number, clientY: number): Point | null {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    return clientToCanvasPoint(rect, clientX, clientY, canvasWidth, canvasHeight);
+  }
+
+  // Issue #156: the single entry point every zoom-changing affordance (the
+  // +/- toolbar buttons below, the Ctrl/Cmd+"+"/"-"/0 keyboard shortcuts
+  // above, and the Ctrl/Cmd+scroll-wheel listener registered in
+  // `viewportCallbackRef` above) goes through — clamps the new zoom to
+  // [MIN_ZOOM, MAX_ZOOM], and either resets pan to centered (at/below
+  // 100%, where there is no overflow to pan into) or re-clamps the
+  // existing pan against the new zoom level (so zooming back down never
+  // leaves the view stuck panned past the now-smaller overflow).
+  function applyZoomChange(nextRaw: number) {
+    const next = clampZoomValue(nextRaw);
+    setZoom(next);
+    setPan((current) => {
+      if (next <= 1) return { x: 0, y: 0 };
+      const rect = viewportRef.current?.getBoundingClientRect();
+      return rect
+        ? clampPanValue(current, next, rect, {
+            width: canvasSizeRef.current.width * fitScaleRef.current,
+            height: canvasSizeRef.current.height * fitScaleRef.current,
+          })
+        : current;
+    });
+  }
+
+  function handleCanvasClick(event: ReactMouseEvent<HTMLDivElement>) {
+    const pointer = canvasPointFromClient(event.clientX, event.clientY);
+    if (!pointer) return;
+    if (workingCopy?.documentType === 'drawio') {
+      const hit = hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y);
+      sceneEditor.selectShape(hit?.id ?? null);
+    } else {
+      const hit = hitTestTopmostShapeAt(
+        sceneEditor.shapes,
+        pointer.x,
+        pointer.y,
+        sceneEditor.groups,
+      );
+      sceneEditor.selectShape(hit ? hit.id : null);
+    }
+  }
+
+  // Issue #111: tracks `hoveredShapeId` for the hover affordance, using the
+  // exact same topmost-shape hit test `handleCanvasClick`/
+  // `handleCanvasPointerDown` already use, so "what lights up on hover" and
+  // "what a click/drag would act on" never disagree.
+  function handleCanvasPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const pointer = canvasPointFromClient(event.clientX, event.clientY);
+    if (!pointer) return;
+    const hit =
+      workingCopy?.documentType === 'drawio'
+        ? hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y)
+        : hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
+    setHoveredShapeId((current) => {
+      const nextId = hit ? hit.id : null;
+      return current === nextId ? current : nextId;
+    });
+  }
+
+  function handleCanvasPointerLeave() {
+    setHoveredShapeId(null);
+  }
+
+  // Starts a Task 26 (single-shape) or issue #77 (group) move/resize/
+  // rotate gesture: snapshots the pre-gesture scene and registers the
+  // window-level listeners `dragHandlers` built once above.
+  function beginTransformGesture(next: DragState) {
+    const handlers = dragHandlers.current;
+    if (!handlers) return;
+    dragRef.current = next;
+    sceneEditor.beginTransform();
+    window.addEventListener('pointermove', handlers.onMove);
+    window.addEventListener('pointerup', handlers.onUp);
+    window.addEventListener('keydown', handlers.onKey);
+  }
+
+  // Issue #156: starts a pan gesture — deliberately NOT `beginTransformGesture`
+  // (no `sceneEditor.beginTransform()` call, since panning never touches the
+  // scene/`workingCopy` at all, only this component's own `pan` view state).
+  // Registers the exact same window-level listeners so Escape-to-cancel and
+  // "keep tracking outside the canvas element's own bounds" behave exactly
+  // like every other gesture kind.
+  function beginPanGesture(clientX: number, clientY: number) {
+    const handlers = dragHandlers.current;
+    if (!handlers) return;
+    dragRef.current = { mode: 'pan', startPan: pan, startClientX: clientX, startClientY: clientY };
+    window.addEventListener('pointermove', handlers.onMove);
+    window.addEventListener('pointerup', handlers.onUp);
+    window.addEventListener('keydown', handlers.onKey);
+  }
+
+  // Issue #77: the shapes/bounds a group gesture would act on right now,
+  // derived fresh every render from `multiSelectedIds` — `null` below the
+  // 2-item threshold, which is exactly when the canvas must fall back to
+  // Task 26's single-shape handles/gesture untouched (see the render
+  // below and the acceptance criteria's "0 or 1 ... behaves exactly as it
+  // does today").
+  const groupSelection =
+    sceneEditor.multiSelectedShapes.length >= 2 ? sceneEditor.multiSelectedShapes : null;
+  const groupBounds = groupSelection ? getCombinedBounds(groupSelection, sceneEditor.groups) : null;
+  // Task 80 (issue #80): "no handles at all" for an effectively-locked
+  // shape/selection (see this issue's "Handle visibility" acceptance
+  // criterion) — precomputed here so both the render below and the
+  // pointer-down guards (which fire before `beginTransformGesture`, so the
+  // whole gesture never starts rather than being rejected mid-drag) agree
+  // on the same lock state. A multi-shape group selection is locked as a
+  // whole if *any* member is effectively locked, matching issue #77's
+  // "whole gesture" semantics.
+  const isSelectedShapeLocked =
+    !!sceneEditor.selectedShape &&
+    !!sceneEditor.workingCopy &&
+    isEffectivelyLocked(sceneEditor.workingCopy, sceneEditor.selectedShape.id);
+  const isGroupSelectionLocked =
+    !!groupSelection &&
+    !!sceneEditor.workingCopy &&
+    groupSelection.some((s) => isEffectivelyLocked(sceneEditor.workingCopy!, s.id));
+
+  // Dragging a shape's body is the "move" gesture (per the acceptance
+  // criteria: "dragging the shape body or its move handle"). If the hit
+  // shape is a member of the current 2+-item multi-selection, this starts
+  // a *group* gesture over the whole resolved selection instead of a
+  // single-shape one. Otherwise it behaves exactly as it always has:
+  // starting on a shape other than the current selection selects it
+  // first (matching `handleCanvasClick`'s own click-to-select) and
+  // manipulates just that one shape, never touching `multiSelectedIds`.
+  function handleCanvasPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
+    const pointer = canvasPointFromClient(event.clientX, event.clientY);
+    if (!pointer) return;
+    if (workingCopy?.documentType === 'drawio') {
+      const drawioHit = hitTestDrawioObjectAt(workingCopy, pointer.x, pointer.y);
+      sceneEditor.selectShape(drawioHit?.id ?? null);
+      if (!drawioHit && zoom > 1) beginPanGesture(event.clientX, event.clientY);
+      return;
+    }
+    const hit = hitTestTopmostShapeAt(sceneEditor.shapes, pointer.x, pointer.y, sceneEditor.groups);
+    if (!hit) {
+      // Issue #156: reuses this exact hit-test-then-branch structure
+      // (rather than a second, separate hit-test) to distinguish "no shape
+      // under the pointer" from "a shape's body" — dragging empty canvas
+      // background pans the view instead, but only once zoomed beyond
+      // 100% (at 100%/no pan there is nothing to pan into, and this must
+      // stay a no-op there so a plain click-to-deselect, handled by the
+      // sibling `onClick`, behaves identically to before this issue).
+      if (zoom > 1) {
+        beginPanGesture(event.clientX, event.clientY);
+      }
+      return;
+    }
+    if (groupSelection && groupBounds && groupSelection.some((s) => s.id === hit.id)) {
+      // Task 80 (issue #80): the guard runs before the gesture starts — a
+      // locked member blocks the whole group gesture, not just its own
+      // movement (issue #77's "whole gesture" semantics extended to locks).
+      if (
+        !sceneEditor.checkUnlocked(
+          groupSelection.map((s) => s.id),
+          "One or more selected shapes are on a locked layer or group and can't be moved. Unlock them first.",
+        )
+      ) {
+        return;
+      }
+      beginTransformGesture({
+        mode: 'group',
+        kind: 'move',
+        startShapes: groupSelection,
+        bounds: groupBounds,
+        startPointer: pointer,
+      });
+      return;
+    }
+    if (hit.id !== sceneEditor.selectedShapeId) {
+      sceneEditor.selectShape(hit.id);
+    }
+    // Task 80 (issue #80): clicking/dragging a locked shape's body still
+    // selects it (the `selectShape` call above already ran) but doesn't
+    // begin a move gesture — the guard runs after selection, before the
+    // drag starts.
+    if (
+      !sceneEditor.checkUnlocked(
+        [hit.id],
+        "This shape is on a locked layer or group and can't be moved. Unlock it first.",
+      )
+    ) {
+      return;
+    }
+    beginTransformGesture({
+      mode: 'single',
+      kind: 'move',
+      startShape: hit,
+      startPointer: renderedPointToShapePoint(hit, pointer, sceneEditor.groups),
+    });
+  }
+
+  // A single-shape resize/rotate handle is only ever rendered for the
+  // current single selection (see the render below), so there's no
+  // separate hit-test or selection step here — just start manipulating
+  // the already-selected shape. `stopPropagation` keeps this from also
+  // bubbling into `handleCanvasPointerDown`, which would otherwise
+  // hit-test the same point against shape bodies underneath the handle.
+  function handleHandlePointerDown(kind: HandleKind) {
+    return (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+      event.stopPropagation();
+      const shape = sceneEditor.selectedShape;
+      if (!shape) return;
+      if (
+        !sceneEditor.checkUnlocked(
+          [shape.id],
+          "This shape is on a locked layer or group and can't be transformed. Unlock it first.",
+        )
+      ) {
+        return;
+      }
+      const pointer = canvasPointFromClient(event.clientX, event.clientY);
+      if (!pointer) return;
+      beginTransformGesture({
+        mode: 'single',
+        kind,
+        startShape: shape,
+        startPointer: renderedPointToShapePoint(shape, pointer, sceneEditor.groups),
+      });
+    };
+  }
+
+  // Issue #77: the combined bounding-box handle's pointer-down — same
+  // `stopPropagation` rationale as `handleHandlePointerDown` above, just
+  // starting a group gesture over the whole resolved multi-selection
+  // instead of the single selected shape.
+  function handleGroupHandlePointerDown(kind: HandleKind) {
+    return (event: ReactPointerEvent<HTMLDivElement>) => {
       if (event.button !== 0) return;
       event.stopPropagation();
       if (!groupSelection || !groupBounds) return;
@@ -1713,6 +2798,13 @@ function EditorWorkspace() {
   // piece-stage toolbar at every width. These actions remain distinct from
   // runtime controls, but are compact overlays over the artwork instead of
   // a page-level row that recreates the bulky public-surface layout.
+  const selectedDrawioObjectBlocked =
+    sceneEditor.selectedDrawioObject !== null &&
+    !sceneEditor.layers.some(
+      (layer) =>
+        layer.id === sceneEditor.selectedDrawioObject?.layerId && layer.visible && !layer.locked,
+    );
+
   const editorToolbar = (
     <div role="toolbar" aria-label="Editor actions" className="editor-toolbar">
       {sceneEditor.workingCopy?.documentType === 'drawio' ? (
@@ -1729,7 +2821,7 @@ function EditorWorkspace() {
             label="Move selected draw.io object right"
             glyph="→"
             onClick={() => sceneEditor.moveSelectedDrawioObject(10, 0)}
-            disabled={!sceneEditor.selectedDrawioObject}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
           />
           <ToolbarButton
             label="Resize selected draw.io object larger"
@@ -1740,19 +2832,19 @@ function EditorWorkspace() {
                 sceneEditor.resizeSelectedDrawioObject(object.width + 10, object.height + 10);
               }
             }}
-            disabled={!sceneEditor.selectedDrawioObject}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
           />
           <ToolbarButton
             label="Duplicate selected draw.io object"
             glyph="⧉"
             onClick={() => sceneEditor.duplicateSelectedDrawioObject()}
-            disabled={!sceneEditor.selectedDrawioObject}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
           />
           <ToolbarButton
             label="Delete selected draw.io object"
             glyph="✕"
             onClick={() => sceneEditor.deleteSelectedDrawioObject()}
-            disabled={!sceneEditor.selectedDrawioObject}
+            disabled={!sceneEditor.selectedDrawioObject || selectedDrawioObjectBlocked}
           />
         </span>
       ) : (

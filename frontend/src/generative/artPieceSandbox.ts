@@ -318,7 +318,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     // reference can pass this identity check.
     if (event.source !== window.parent) return;
     var data = event && event.data;
-    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'enable-microphone', 'disable-microphone', 'enable-camera', 'disable-camera', 'set-camera-opacity', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'reset-view'];
+    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'enable-microphone', 'disable-microphone', 'enable-camera', 'disable-camera', 'set-camera-opacity', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'navigate-signal', 'reset-view'];
     if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
     try {
       if (data.type === 'screenshot') {
@@ -444,6 +444,32 @@ function buildListenerScript(library: ArtPieceLibrary): string {
           });
           registeredCamera.setPose(nextPose.x, nextPose.y, nextPose.z);
           reportState('steering', { active: true, pose: nextPose });
+        }
+      } else if (data.type === 'navigate-signal') {
+        // Issue #434: walkable immersive navigation (arrow-key travel,
+        // drag/touch look, zoom) shares the exact same bounded-pose
+        // mechanism #432 built for hand-steering, applied to a
+        // registered camera via the user's own keyboard/pointer input
+        // instead of a hand-tracking gesture -- never gated on camera_
+        // view/hand_steering, since it needs no device permission at
+        // all. Same honest engine-support boundary as steering: a flat
+        // Canvas2D/SVG piece has no registerable spatial camera.
+        if (pieceLibrary !== 'threejs' && pieceLibrary !== 'aframe') {
+          reportState('navigation', { active: false, error: 'unsupported-engine' });
+        } else if (!registeredCamera) {
+          reportState('navigation', { active: false, error: 'no-camera-registered' });
+        } else {
+          var navCurrentPose = registeredCamera.getPose();
+          var navDx = typeof data.dx === 'number' ? data.dx : 0;
+          var navDy = typeof data.dy === 'number' ? data.dy : 0;
+          var navDz = typeof data.dz === 'number' ? data.dz : 0;
+          var navNextPose = clampSteerPose({
+            x: navCurrentPose.x + navDx,
+            y: navCurrentPose.y + navDy,
+            z: navCurrentPose.z + navDz
+          });
+          registeredCamera.setPose(navNextPose.x, navNextPose.y, navNextPose.z);
+          reportState('navigation', { active: true, pose: navNextPose });
         }
       } else if (data.type === 'reset-view') {
         if (registeredCamera && initialCameraPose) {

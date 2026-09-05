@@ -13,6 +13,7 @@ import Home from './pages/Home';
 const AiEditorWorkspace = lazy(() => import('./pages/AiEditorWorkspace'));
 const AiProject3DWorkspace = lazy(() => import('./pages/AiProject3DWorkspace'));
 const ArtPieceStudio = lazy(() => import('./pages/ArtPieceStudio'));
+const ArtPieceEditor = lazy(() => import('./pages/ArtPieceEditor'));
 const PublicArtPieceGallery = lazy(() => import('./pages/PublicArtPieceGallery'));
 const PublicArtPieceViewer = lazy(() => import('./pages/PublicArtPieceViewer'));
 const ArtPieceManagement = lazy(() => import('./pages/ArtPieceManagement'));
@@ -71,6 +72,7 @@ function App() {
                   this slice. */}
               <Route path="art-pieces" element={<ArtPieceStudio />} />
               <Route path="art-pieces/manage" element={<ArtPieceManagement />} />
+              <Route path="art-pieces/:id/edit" element={<ArtPieceEditor />} />
               <Route path="art-pieces/gallery" element={<PublicArtPieceGallery />} />
               <Route path="art-pieces/p/:id" element={<PublicArtPieceViewer />} />
               <Route path="art-pieces/immersive/:id" element={<ImmersiveArtPieceViewer />} />

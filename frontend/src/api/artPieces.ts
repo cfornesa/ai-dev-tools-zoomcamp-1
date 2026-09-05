@@ -142,3 +142,41 @@ export function listPublicArtPieces(): Promise<ArtPiece[]> {
 export function getPublicArtPiece(publicId: string): Promise<ArtPiece> {
   return apiFetch<ArtPiece>(`/api/public/art-pieces/${publicId}/`);
 }
+
+/** Issue #429: the owner-only counterpart of `getPublicArtPiece` --
+ * `scenes/art_piece_persistence.py`'s `ArtPieceDetailView.get` 404s (no
+ * existence-leaking 403) for anything the caller doesn't own, exactly
+ * like `getPublicArtPiece` 404s for anything unpublished. Includes
+ * `prompt`/`owner_id`/`published_at`, and each version's `source` and
+ * `generation_metadata` -- fields the public shape omits. */
+export function getArtPiece(publicId: string): Promise<ArtPiece> {
+  return apiFetch<ArtPiece>(`/api/art-pieces/${publicId}/`);
+}
+
+export function deleteArtPiece(publicId: string): Promise<void> {
+  return apiFetch<void>(`/api/art-pieces/${publicId}/`, { method: 'DELETE' });
+}
+
+export function listArtPieceVersions(publicId: string): Promise<ArtPieceVersion[]> {
+  return apiFetch<ArtPieceVersion[]>(`/api/art-pieces/${publicId}/versions/`);
+}
+
+/** Saves a new, immutable version on an existing piece (a "revision") --
+ * distinct from `createArtPiece`, which always creates a brand new piece.
+ * The new version becomes the piece's `current_version`; every prior
+ * version, and its `source`, is retained unchanged. */
+export function createArtPieceVersion(
+  publicId: string,
+  input: { source: string; capabilities?: ArtPieceCapabilitySet },
+): Promise<ArtPieceVersion> {
+  return apiFetch<ArtPieceVersion>(`/api/art-pieces/${publicId}/versions/`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function regenerateArtPieceThumbnail(
+  publicId: string,
+): Promise<{ thumbnail_url: string; width: number; height: number }> {
+  return apiFetch(`/api/art-pieces/${publicId}/thumbnail/regenerate/`, { method: 'POST' });
+}

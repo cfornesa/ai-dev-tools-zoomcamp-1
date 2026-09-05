@@ -12,6 +12,11 @@ import {
 } from '../api/artPieces';
 import { useAuth } from '../auth/useAuth';
 import {
+  CAPABILITY_OPTIONS,
+  SPATIAL_LIBRARIES,
+  sanitizeCapabilities,
+} from '../generative/artPieceCapabilities';
+import {
   generateArtPieceBundle,
   triggerArtPieceBundleDownload,
 } from '../generative/artPieceBundle';
@@ -24,43 +29,6 @@ import {
 type GenerationPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
 const AI_MODEL_STORAGE_KEY = 'gesture-studio:ai-model-preference';
-
-// Issue #428: hand-steering and immersive navigation need a registered
-// engine camera (`window.__registerArtPieceCamera`) -- only the Three.js
-// and A-Frame sandbox documents ever call it (see
-// `artPieceSandbox.ts`'s `pieceLibrary` gate). Mirrors the same set
-// `ImmersiveArtPieceViewer.tsx` and `standaloneArtPieceRuntimeSource.ts`
-// each already hold independently.
-const SPATIAL_LIBRARIES = new Set<ArtPieceLibrary>(['threejs', 'aframe']);
-
-const CAPABILITY_OPTIONS: Array<{
-  key: keyof ArtPieceCapabilitySet;
-  label: string;
-  spatialOnly?: boolean;
-}> = [
-  { key: 'screenshot', label: 'Screenshot' },
-  { key: 'download', label: 'Download' },
-  { key: 'fullscreen', label: 'Fullscreen' },
-  { key: 'sound', label: 'Sound' },
-  { key: 'keyboard', label: 'Keyboard' },
-  { key: 'microphone', label: 'Microphone' },
-  { key: 'camera_view', label: 'Camera view' },
-  { key: 'hand_steering', label: 'Hand steering', spatialOnly: true },
-  { key: 'immersive', label: 'Immersive settings', spatialOnly: true },
-];
-
-/** Drops any capability that `library` cannot support -- defense in depth
- * alongside disabling those checkboxes in the UI, so a stale selection
- * carried over from a previous library choice can never reach the save
- * request. */
-function sanitizeCapabilities(
-  capabilities: ArtPieceCapabilitySet,
-  library: ArtPieceLibrary,
-): ArtPieceCapabilitySet {
-  if (SPATIAL_LIBRARIES.has(library)) return capabilities;
-  const { hand_steering: _handSteering, immersive: _immersive, ...rest } = capabilities;
-  return rest;
-}
 
 function readStoredModel(): string {
   try {

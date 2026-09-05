@@ -27,7 +27,10 @@ function ArtPieceManagement() {
           {pieces.map((piece) => (
             <li key={piece.public_id}>
               <img src={piece.current_version?.thumbnail_url} alt="" width="160" height="120" />
-              <Link to={`/art-pieces/p/${piece.public_id}`}>{piece.title}</Link>{' '}
+              <Link to={`/art-pieces/${piece.public_id}/edit`}>{piece.title}</Link>{' '}
+              {piece.status === 'published' && (
+                <Link to={`/art-pieces/p/${piece.public_id}`}>View public page</Link>
+              )}{' '}
               <span>{piece.status}</span>
               <select
                 aria-label={`Status for ${piece.title}`}

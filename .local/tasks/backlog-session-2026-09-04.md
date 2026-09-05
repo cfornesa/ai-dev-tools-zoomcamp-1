@@ -108,3 +108,75 @@ capabilities that depend on authenticated requests.
 
 The final GitHub audit reports zero open issues for the repository. The working
 tree remains clean and `main` equals `origin/main`.
+
+## Current backlog-session reconciliation — 2026-09-04
+
+The earlier historical session above is superseded for the current run: the
+authenticated GitHub audit found 13 open issues, #404–#416. Discovery found no
+duplicates or unlinked actionable records; the three existing distilled
+queues are preserved. Pre-existing worktree state is `M test-results/.last-run.json`
+and is unrelated/user-owned; no session files were mixed into it.
+
+### Complete manifest and transaction ledger
+
+| Issue | URL | Backlog entry | Dependencies | Scope | Status | Blocker class / follow-up | Owner / next action |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| #404 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/404) | vendor foundation | none | vendor registry, encrypted owner credentials, routing/redaction | blocked | implementation-defect; no follow-up needed | Engineer #404, then rerun focused/full checks |
+| #405 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/405) | Gemini provider | #404 | Gemini 2D/3D adapter | dependency-blocked | #404 | Engineer after #404 closes |
+| #406 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/406) | DeepSeek provider | #404 | DeepSeek 2D/3D adapter | dependency-blocked | #404 | Engineer after #404 closes |
+| #407 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/407) | multi-vendor settings | #404–#406 | settings cards and provider/model selection | dependency-blocked | #404–#406 | Engineer after both adapters close |
+| #408 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/408) | cross-vendor matrix | #405–#407 | deterministic API/browser regression matrix | dependency-blocked | #405–#407 | Engineer after integrated vendor workflow |
+| #409 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/409) | draw.io foundation | none | safe versioned draw.io document persistence | blocked | implementation-defect; no follow-up needed | Decide supported representation and engineer #409 |
+| #410 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/410) | draw.io object tools | #409 | object selection/manipulation | dependency-blocked | #409 | Engineer after #409 closes |
+| #411 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/411) | draw.io outer layers | #409–#410 | layer controls and persistence | dependency-blocked | #409–#410 | Engineer after object contract |
+| #412 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/412) | draw.io surfaces | #409–#411 | public/embed/thumbnail/download rendering | dependency-blocked | #409–#411 | Engineer after layer contract |
+| #413 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/413) | draw.io regression gate | #409–#412 | integrated accessibility/compatibility evidence | dependency-blocked | #409–#412 | Engineer after all draw.io surfaces |
+| #414 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/414) | shared AI quotas | none | distributed quota/rate-limit state | blocked | infrastructure decision; no new issue needed | Owner/operator chooses supported shared backend |
+| #415 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/415) | production server | none | WSGI/ASGI launcher and lifecycle | blocked | deployment/server decision; no new issue needed | Owner/operator confirms server/signal contract |
+| #416 | [GitHub](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/416) | signup policy | none | explicit authentication policy | blocked | product/security decision; no new issue needed | Owner selects Google-only or verified-password signup |
+
+Transaction records: #404 and #409 reached `GROOMED → ENGINEERING/QA →
+BLOCKED` with no commit because the requested foundations are absent and were
+not implemented in this reconciliation; #405–#408 and #410–#413 reached
+`GROOMED → ENGINEERING/QA → DEPENDENCY-BLOCKED`; #414–#416 reached
+`GROOMED → ENGINEERING/QA → BLOCKED`. Focused/full checks, QA result, evidence
+boundary, GitHub QA comment, and next action are recorded in each issue's
+2026-09-04 comment (comments #5548205342 through #5548209732). No code or
+product tests were changed in this session.
+
+### Automation and QA evidence
+
+- `python3 scripts/check-github-action-pins.py`: PASS.
+- `python3 scripts/check-live-provider-alert.py`: PASS; no live provider call.
+- Frontend check: PASS — lint (existing warnings only), format, typecheck, and
+  2,417 tests.
+- Backend lint, format, and mypy: PASS with `UV_CACHE_DIR` redirected to a
+  writable task cache.
+- Backend full suite: 915 passed, 24 skipped, 4 startup failures, and 1
+  socket-test error. The failures are the documented managed-sandbox
+  subprocess/socket verification boundary, not evidence for closing any open
+  issue.
+- Aggregate `make check`: BLOCKED before completion because the Makefile calls
+  an unavailable `python` executable; the backend cache boundary also affects
+  the default command.
+- Production Chrome evidence: `https://animate.creatrweb.com/` rendered the
+  authenticated home/gallery shell with account settings, logout, 2D/3D
+  project lists, and project creation controls. This is production evidence
+  only; it does not prove any of #404–#416.
+
+### Batch rollup
+
+| Count | Value |
+| --- | ---: |
+| Discovered open issues | 13 |
+| Completed | 0 |
+| Blocked | 5 |
+| Dependency-blocked | 8 |
+| Handed-off | 0 |
+| Missing terminal status | 0 |
+| New actionable follow-ups | 0 |
+| Created / reused / pending authorization | 0 / 0 / 0 |
+
+No failed full-suite gate is unclassified. Session completion and the required
+production-readiness assessment follow this reconciliation; because required
+issues remain blocked, the project cannot be called production-ready.

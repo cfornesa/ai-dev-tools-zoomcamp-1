@@ -6,6 +6,7 @@ import {
   hitTestDrawioObjectAt,
   moveDrawioObject,
   resizeDrawioObject,
+  rotateDrawioObject,
 } from './drawioDocument';
 
 function scene(locked = false) {
@@ -33,8 +34,11 @@ function scene(locked = false) {
 }
 
 function objects(result: { scene: { drawio?: unknown } }) {
-  return (result.scene.drawio as { objects: Array<{ id: string; x: number; width: number }> })
-    .objects;
+  return (
+    result.scene.drawio as {
+      objects: Array<{ id: string; x: number; width: number; rotation?: number }>;
+    }
+  ).objects;
 }
 
 describe('draw.io object mutations', () => {
@@ -51,6 +55,11 @@ describe('draw.io object mutations', () => {
 
   it('rejects mutation in hidden/locked layers', () => {
     expect(moveDrawioObject(scene(true), 'r', 1, 1).ok).toBe(false);
+  });
+
+  it('rotates a selected object within the supported bounds', () => {
+    const rotated = rotateDrawioObject(scene(), 'r', 15);
+    expect(rotated.ok && objects(rotated)[0].rotation).toBe(15);
   });
 
   it('hit-tests only visible supported objects', () => {

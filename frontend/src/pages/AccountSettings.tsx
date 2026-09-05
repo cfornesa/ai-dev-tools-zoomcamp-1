@@ -22,6 +22,7 @@ import {
   saveProviderCredential,
   saveMistralCredential,
 } from '../api/credentials';
+import EntitlementsSummary from './EntitlementsSummary';
 
 const MIN_MAX_RETRIES = 1;
 const MAX_MAX_RETRIES = 10;
@@ -81,6 +82,7 @@ function AccountSettings() {
     <section className="content-panel account-settings">
       <div className="centered-state">
         <h2>Account settings</h2>
+        <EntitlementsSummary />
         <p>
           <Link to="/account/settings/identities">Manage linked sign-in methods</Link>
         </p>

@@ -1404,17 +1404,16 @@ function DrawioLayerRows({
         .sort((a, b) => a.order - b.order)
         .map((layer) => (
           <li key={layer.id} className="editor-outline-row editor-outline-row-layer">
-            <button
-              type="button"
+            <LayerNameField
+              layerId={layer.id}
+              name={layer.name}
+              onRename={sceneEditor.renameLayer}
               className="editor-outline-layer-name"
-              aria-label={`Select draw.io layer ${layer.name}`}
-              onClick={() => {
+              onSelect={() => {
                 sceneEditor.selectLayer(layer.id);
                 onRowSelect?.(layer.id);
               }}
-            >
-              {layer.name}
-            </button>
+            />
             <button
               type="button"
               aria-label={`Move ${layer.name} up`}

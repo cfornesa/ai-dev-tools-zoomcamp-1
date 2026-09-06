@@ -16705,7 +16705,7 @@ project — proven today by diagnosing #467's incident through it.
 
 | Issue | Scope | Dependencies | Status | Testing owner |
 | --- | --- | --- | --- | --- |
-| [#415](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/415) | Replit ASGI routing/process lifecycle | none | Partially closable now | Live-production checks (Claude in Chrome); SIGTERM/signal checks need a disposable deployment (operator) |
+| [#415](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/415) | Replit ASGI routing/process lifecycle | none | CLOSED 2026-09-06 | Closed — see below |
 | [#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419) | Full browser gate reconciliation | none | OPEN | Automatable (`make e2e`/CI) |
 | [#440](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/440) | PayPal sandbox subscription | none | PROPOSED/GROOMED | Owner must create sandbox app credentials first; then Claude in Chrome |
 | [#442](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/442) | Account data export | none | PROPOSED/GROOMED | Claude in Chrome, with per-download owner go-ahead |
@@ -16722,13 +16722,33 @@ project — proven today by diagnosing #467's incident through it.
 | [#465](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/465) | Camera FPS runner-capacity flake | none | PROPOSED/GROOMED | CI-runner capacity investigation, not browser-testable |
 | [#467](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/467) | Post-publish schema verification | none | OPEN | Claude in Chrome/curl, next Replit publish |
 
+### #415 closure — 2026-09-06
+
+[#415](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/415) closed.
+Both remaining acceptance criteria closed without operator-provisioned
+infrastructure: (a) launcher/routing confirmation used Claude in Chrome
+against the already-published live production revision (`/health/`,
+anonymous `/api/whoami/`, frontend rendering) plus Replit's own Deployments
+Logs panel, which directly showed `INFO: Uvicorn running on
+http://0.0.0.0:8000` (not `manage.py runserver`) and Vite's preview-mode
+startup line; (b) SIGTERM/child-cleanup/no-orphans was closed by a new
+deterministic local test
+(`tests/test_startup_configuration.py::test_launcher_terminates_children_and_leaves_no_orphans_on_sigterm`,
+sending a real SIGTERM to a live `scripts/start.sh` process with real
+long-running doubled children) *and* corroborated by real, directly-observed
+production log lines from an earlier natural Replit restart cycle
+(`system: received signal terminated` → `INFO: Shutting down` → `INFO:
+Finished server process [61]` → exit status 143, followed by a clean
+subsequent boot) — read-only observation of a signal Replit's own platform
+sent, not one this session injected into shared production. Full backend
+suite: 1091 passed/27 skipped; `make check` passed clean. See the QA comment
+on the issue for the complete criterion matrix.
+
 ### Next groomed issue
 
-**#415** is the next issue for backlog-session: independent (no blocking
-dependency), partially closable immediately using this session's proven
-Claude-in-Chrome access to the live production Replit deployment (health,
-whoami, frontend proxy, launcher confirmation), with only the SIGTERM/
-signal-lifecycle portion remaining genuinely operator-blocked pending a
-disposable deployment. Do not use PR #417's SHA for any of this issue's
-evidence — use current `main`.
+**#457** (Studio `/art-pieces`: 'ready' handshake stalls while the generated
+preview iframe is off-screen) is the next issue for backlog-session:
+independent (no blocking dependency), no external credential or hardware
+required, and testable via Claude in Chrome or Playwright by scrolling the
+preview iframe off-screen and observing the handshake.
 

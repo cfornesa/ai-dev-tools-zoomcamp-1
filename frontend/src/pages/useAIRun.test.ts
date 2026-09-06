@@ -5,7 +5,7 @@ import * as aiRunsApi from '../api/aiRuns';
 import type { AIRun } from '../api/aiRuns';
 import { ApiError } from '../api/client';
 import * as projectsApi from '../api/projects';
-import type { SceneDocument, SceneVersion } from '../api/projects';
+import { getSceneVersion, type SceneDocument, type SceneVersion } from '../api/projects';
 import { useAIRun } from './useAIRun';
 
 vi.mock('../api/aiRuns');
@@ -70,13 +70,13 @@ beforeEach(() => {
 
 describe('useAIRun', () => {
   it('starts idle with no stored run', async () => {
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
     expect(result.current.run).toBeNull();
   });
 
   it('rejects an empty prompt client-side without starting a run', async () => {
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
 
     await act(async () => {
@@ -100,7 +100,7 @@ describe('useAIRun', () => {
         }),
       );
 
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
     act(() => result.current.setPrompt('a red circle'));
 
@@ -120,7 +120,7 @@ describe('useAIRun', () => {
       makeRun({ id: 42, status: 'awaiting_review', candidate_scene: VALID_SCENE }),
     );
 
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
 
     await waitFor(() => expect(result.current.run?.status).toBe('awaiting_review'));
     expect(mockedGet).toHaveBeenCalledWith(42);
@@ -133,7 +133,7 @@ describe('useAIRun', () => {
       makeRun({ id: 7, status: 'awaiting_review', candidate_scene: VALID_SCENE }),
     );
 
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
 
     await waitFor(() => expect(result.current.run?.status).toBe('awaiting_review'));
     expect(mockedAdvance).not.toHaveBeenCalled();
@@ -143,7 +143,7 @@ describe('useAIRun', () => {
     window.localStorage.setItem('gesture-studio:ai-run:p1', '9');
     mockedGet.mockResolvedValue(makeRun({ id: 9, status: 'accepted' }));
 
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
 
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
     expect(result.current.run).toBeNull();
@@ -155,7 +155,7 @@ describe('useAIRun', () => {
     mockedAdvance.mockResolvedValue(makeRun({ status: 'running' }));
     mockedCancel.mockResolvedValue(makeRun({ status: 'cancelled' }));
 
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
     act(() => result.current.setPrompt('a red circle'));
     await act(async () => {
@@ -193,7 +193,7 @@ describe('useAIRun', () => {
     };
     mockedGetSceneVersion.mockResolvedValue(version);
 
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
     act(() => result.current.setPrompt('a red circle'));
     await act(async () => {
@@ -218,7 +218,7 @@ describe('useAIRun', () => {
     );
     mockedAccept.mockRejectedValue(new ApiError(409, { error: 'stale_base', detail: 'stale' }));
 
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
     act(() => result.current.setPrompt('a red circle'));
     await act(async () => {
@@ -239,7 +239,7 @@ describe('useAIRun', () => {
     mockedStart.mockResolvedValue(makeRun({ status: 'running' }));
     mockedAdvance.mockResolvedValue(makeRun({ status: 'failed', error_reason: 'timeout' }));
 
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
     act(() => result.current.setPrompt('a red circle'));
     await act(async () => {
@@ -254,7 +254,7 @@ describe('useAIRun', () => {
   });
 
   it('requires a selection when target mode is edit-selection', async () => {
-    const { result } = renderHook(() => useAIRun('p1'));
+    const { result } = renderHook(() => useAIRun<SceneVersion>('project', 'p1', getSceneVersion));
     await waitFor(() => expect(result.current.reconnecting).toBe(false));
     act(() => {
       result.current.setTargetMode('edit-selection');

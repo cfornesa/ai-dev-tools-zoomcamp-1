@@ -1,13 +1,57 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
-import type { SceneDocument, SceneVersion } from '../api/projects';
+import { getSceneVersion, type SceneDocument, type SceneVersion } from '../api/projects';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview, SceneRendererId } from '../render/scenePreview';
-import AIRunPanel from './AIRunPanel';
+import AIRunPanel, { type AIRunSelectableObject } from './AIRunPanel';
+import { buildOutline } from './sceneOutline';
 import { useAIProposal, type ProposalMode } from './useAIProposal';
 import { useAIRun } from './useAIRun';
 import { useSavedAIPreferences } from './useSavedAIPreferences';
+
+/** Issue #462/#463: the 2D-specific candidate-preview renderer passed to
+ * the shared `AIRunPanel` -- mounts its own p5 instance against the
+ * run's `candidate_scene`, the same lifecycle `AIProposalPanel`'s own
+ * one-shot preview below already uses, just scoped to one candidate
+ * scene rather than a live `proposal`. */
+function AIRunCandidatePreview2D({ scene }: { scene: SceneDocument }) {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<ScenePreview | null>(null);
+  const rendererRef = useRef<SceneRendererId | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!mountRef.current) return;
+    const rendererId = resolveSceneRendererId(scene);
+    const preview = createScenePreview(mountRef.current, rendererId);
+    previewRef.current = preview;
+    rendererRef.current = rendererId;
+    try {
+      preview.render(scene);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not render this candidate.');
+    }
+    return () => {
+      preview.destroy();
+      previewRef.current = null;
+      rendererRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-renders whenever `scene` identity changes
+  }, [scene]);
+
+  return (
+    <>
+      <div ref={mountRef} aria-hidden="true" />
+      {error && (
+        <p role="alert" aria-live="assertive">
+          {error}
+        </p>
+      )}
+    </>
+  );
+}
 
 type WorkflowMode = 'one-shot' | 'agent';
 
@@ -93,8 +137,21 @@ function AIProposalPanel({
   // mounted (an in-progress agent run must keep polling even while this
   // panel happens to render the one-shot form), and only one is visible
   // at a time via `workflowMode`.
-  const aiRun = useAIRun(projectId);
+  const aiRun = useAIRun<SceneVersion>('project', projectId, getSceneVersion);
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>('one-shot');
+
+  // Issue #462's own acceptance criterion: "Resolve selection to stable
+  // IDs rather than trusting text mentions" -- reuses the same outline
+  // rows the Layers panel is built from (`sceneOutline.ts`), restricted
+  // to `shape` rows only. This is also what makes an unsupported draw.io
+  // graph node "explicitly unavailable rather than flattened or silently
+  // altered" for a scoped edit: `buildOutline` never emits graph nodes at
+  // all, so one can never be selected here in the first place.
+  const aiRunSelectableObjects: AIRunSelectableObject[] = workingCopy
+    ? buildOutline(workingCopy)
+        .filter((row) => row.kind === 'shape')
+        .map((row) => ({ id: row.id, label: row.label, disabled: row.inheritedLocked }))
+    : [];
 
   // Carries vendor/model/persona over when switching between the one-shot
   // and agent flows -- a snapshot at the moment of the switch (the same
@@ -222,7 +279,15 @@ function AIProposalPanel({
       </div>
 
       {workflowMode === 'agent' && (
-        <AIRunPanel aiRun={aiRun} workingCopy={workingCopy} onAccepted={onAccepted} />
+        <AIRunPanel
+          aiRun={aiRun}
+          workingCopy={workingCopy}
+          onAccepted={onAccepted}
+          selectableObjects={aiRunSelectableObjects}
+          renderCandidatePreview={(scene) => (
+            <AIRunCandidatePreview2D scene={scene as SceneDocument} />
+          )}
+        />
       )}
 
       {workflowMode === 'one-shot' && (

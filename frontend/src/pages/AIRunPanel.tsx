@@ -1,17 +1,40 @@
-import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
-import type { SceneDocument, SceneVersion } from '../api/projects';
-import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
-import type { ScenePreview, SceneRendererId } from '../render/scenePreview';
-import { buildOutline } from './sceneOutline';
 import type { UseAIRunResult } from './useAIRun';
 import { useSavedAIPreferences } from './useSavedAIPreferences';
 
-type AIRunPanelProps = {
-  aiRun: UseAIRunResult;
-  workingCopy: SceneDocument | null;
-  onAccepted: (version: SceneVersion) => void;
+/** One selectable object/shape for "Edit selected ..." mode -- built by the
+ * caller from its own document family's outline (2D: `sceneOutline.ts`'s
+ * `buildOutline`; 3D: `scene3dTypes.ts`'s `object3DLabel` over
+ * `scene.objects`), so this shared panel never needs to know either scene
+ * shape. `disabled` renders the option present-but-unselectable (e.g. a
+ * locked 2D layer) rather than omitting it -- explicit unavailability,
+ * never a silent gap. */
+export type AIRunSelectableObject = { id: string; label: string; disabled?: boolean };
+
+type AIRunPanelProps<TVersion> = {
+  aiRun: UseAIRunResult<TVersion>;
+  workingCopy: Record<string, unknown> | null;
+  onAccepted: (version: TVersion) => void;
+  /** Precomputed by the caller from `workingCopy` -- see
+   * `AIRunSelectableObject`'s doc comment. Only consulted while
+   * `targetMode === 'edit-selection'`. */
+  selectableObjects: AIRunSelectableObject[];
+  /** Renders the awaiting-review candidate -- 2D mounts its own p5
+   * instance; 3D renders the existing `Scene3DPreview` directly (which
+   * already reacts to its own `scene` prop changing, per
+   * `AIProposalPanel3D.tsx`'s identical usage) -- so this panel never
+   * imports either renderer itself. */
+  renderCandidatePreview: (candidateScene: Record<string, unknown>) => ReactNode;
+  /** "Edit selected layer/object" (2D) vs "Edit selected object" (3D) --
+   * the only copy difference between the two document families' otherwise
+   * identical target-mode radiogroup. */
+  editSelectionLabel?: string;
+  /** Shown under the selection `<select>` when `selectableObjects` is
+   * empty -- 2D says "objects"; 3D can be more specific ("no objects" vs
+   * lights/camera not being offered at all). */
+  noSelectableObjectsMessage?: string;
 };
 
 // Issue #461's own server-side defaults, mirrored here purely for display
@@ -21,22 +44,29 @@ type AIRunPanelProps = {
 const MAX_PROVIDER_ATTEMPTS_DISPLAY = 3;
 const MAX_REPAIR_ATTEMPTS_DISPLAY = 2;
 
-const TARGET_MODE_LABELS = {
-  create: 'Create piece',
-  'edit-selection': 'Edit selected layer/object',
-  'edit-whole': 'Edit whole scene',
-} as const;
-
 /**
- * Issue #462: the "Agent workflow" action alongside `AIProposalPanel`'s
- * one-shot Create/Edit -- a bounded, persisted plan-validate-revise run
- * (issue #461's `AIRun`) that shows real attempt/repair progress and an
- * intermediate preview before anything is saved. `aiRun` is the whole
- * `useAIRun` hook result, owned by the parent panel so vendor/model/
- * persona can be carried over from (and back to) the one-shot flow when
- * the user switches between them.
+ * Issue #462/#463: the "Agent workflow" action alongside the one-shot
+ * Create/Edit panels (2D `AIProposalPanel.tsx`, 3D `AIProposalPanel3D.tsx`)
+ * -- a bounded, persisted plan-validate-revise run (issue #461's `AIRun`)
+ * that shows real attempt/repair progress and an intermediate preview
+ * before anything is saved. `aiRun` is the whole `useAIRun` hook result
+ * (issue #463: the one shared run orchestrator for both 2D and 3D), owned
+ * by the parent panel so vendor/model/persona can be carried over from
+ * (and back to) the one-shot flow when the user switches between them.
+ * This component itself is document-family-agnostic -- see
+ * `AIRunPanelProps`' doc comments for the two injection seams (selectable
+ * objects, candidate preview) that make one file serve both routes
+ * without a second orchestrator or a duplicated progress/review UI.
  */
-function AIRunPanel({ aiRun, workingCopy, onAccepted }: AIRunPanelProps) {
+function AIRunPanel<TVersion>({
+  aiRun,
+  workingCopy,
+  onAccepted,
+  selectableObjects,
+  renderCandidatePreview,
+  editSelectionLabel = 'Edit selected layer/object',
+  noSelectableObjectsMessage = 'No editable objects in this scene yet.',
+}: AIRunPanelProps<TVersion>) {
   const {
     targetMode,
     setTargetMode,
@@ -65,45 +95,6 @@ function AIRunPanel({ aiRun, workingCopy, onAccepted }: AIRunPanelProps) {
 
   const { models: savedModels, personas: savedPersonas } = useSavedAIPreferences();
 
-  const previewMountRef = useRef<HTMLDivElement>(null);
-  const previewRef = useRef<ScenePreview | null>(null);
-  const previewRendererRef = useRef<SceneRendererId | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!previewMountRef.current) return;
-    const preview = createScenePreview(previewMountRef.current, 'p5');
-    previewRef.current = preview;
-    previewRendererRef.current = 'p5';
-    return () => {
-      preview.destroy();
-      previewRef.current = null;
-      previewRendererRef.current = null;
-    };
-  }, []);
-
-  const candidateScene = run?.candidate_scene ?? null;
-
-  useEffect(() => {
-    if (!candidateScene) {
-      setPreviewError(null);
-      return;
-    }
-    const rendererId = resolveSceneRendererId(candidateScene);
-    if (previewMountRef.current && previewRendererRef.current !== rendererId) {
-      previewRef.current?.destroy();
-      previewRef.current = createScenePreview(previewMountRef.current, rendererId);
-      previewRendererRef.current = rendererId;
-    }
-    if (!previewRef.current) return;
-    try {
-      previewRef.current.render(candidateScene);
-      setPreviewError(null);
-    } catch (err) {
-      setPreviewError(err instanceof Error ? err.message : 'Could not render this candidate.');
-    }
-  }, [candidateScene]);
-
   const targetModeRoving = useRovingRadioGroup(
     [
       { value: 'create' as const, disabled: starting || run !== null },
@@ -114,17 +105,11 @@ function AIRunPanel({ aiRun, workingCopy, onAccepted }: AIRunPanelProps) {
     setTargetMode,
   );
 
-  // Issue #462's own acceptance criterion: "Resolve selection to stable
-  // IDs rather than trusting text mentions" -- reuses the same outline
-  // rows the Layers panel is built from (`sceneOutline.ts`), restricted
-  // to `shape` rows only. This is also what makes an unsupported draw.io
-  // graph node "explicitly unavailable rather than flattened or silently
-  // altered" for a scoped edit: `buildOutline` never emits graph nodes at
-  // all, so one can never be selected here in the first place.
-  const selectableShapes =
-    targetMode === 'edit-selection' && workingCopy
-      ? buildOutline(workingCopy).filter((row) => row.kind === 'shape')
-      : [];
+  const targetModeLabels: Record<typeof targetMode, string> = {
+    create: 'Create piece',
+    'edit-selection': editSelectionLabel,
+    'edit-whole': 'Edit whole scene',
+  };
 
   async function handleAccept() {
     const version = await accept();
@@ -153,7 +138,7 @@ function AIRunPanel({ aiRun, workingCopy, onAccepted }: AIRunPanelProps) {
               onClick={() => setTargetMode(value)}
               {...targetModeRoving.getRadioProps(value)}
             >
-              {TARGET_MODE_LABELS[value]}
+              {targetModeLabels[value]}
             </button>
           ))}
         </div>
@@ -169,17 +154,15 @@ function AIRunPanel({ aiRun, workingCopy, onAccepted }: AIRunPanelProps) {
               onChange={(event) => setSelectedShapeId(event.target.value || null)}
             >
               <option value="">Select an object…</option>
-              {selectableShapes.map((row) =>
-                row.kind === 'shape' ? (
-                  <option key={row.id} value={row.id} disabled={row.inheritedLocked}>
-                    {row.label}
-                    {row.inheritedLocked ? ' (locked)' : ''}
-                  </option>
-                ) : null,
-              )}
+              {selectableObjects.map((entry) => (
+                <option key={entry.id} value={entry.id} disabled={entry.disabled}>
+                  {entry.label}
+                  {entry.disabled ? ' (locked)' : ''}
+                </option>
+              ))}
             </select>
-            {selectableShapes.length === 0 && (
-              <p className="ai-proposal-empty-preference">No editable objects in this scene yet.</p>
+            {selectableObjects.length === 0 && (
+              <p className="ai-proposal-empty-preference">{noSelectableObjectsMessage}</p>
             )}
           </div>
         )}
@@ -334,17 +317,9 @@ function AIRunPanel({ aiRun, workingCopy, onAccepted }: AIRunPanelProps) {
           <p role="status" aria-live="polite">
             Nothing has been saved yet — review, then Accept or Stop.
           </p>
-          <div
-            ref={previewMountRef}
-            data-testid="ai-run-preview-canvas"
-            className="ai-proposal-preview"
-            aria-hidden="true"
-          />
-          {previewError && (
-            <p role="alert" aria-live="assertive">
-              {previewError}
-            </p>
-          )}
+          <div data-testid="ai-run-preview-canvas" className="ai-proposal-preview">
+            {run.candidate_scene && renderCandidatePreview(run.candidate_scene)}
+          </div>
           {run.change_summary && <p data-testid="ai-run-change-summary">{run.change_summary}</p>}
 
           <div className="editor-tool-group">

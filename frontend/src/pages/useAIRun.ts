@@ -10,11 +10,32 @@ import {
   type AIRunErrorBody,
   type AIRunErrorCode,
   type AIRunScope,
+  type AIRunTargetType,
 } from '../api/aiRuns';
 import { ApiError } from '../api/client';
-import { getSceneVersion, type SceneDocument, type SceneVersion } from '../api/projects';
 
 export type AIRunTargetMode = 'create' | 'edit-selection' | 'edit-whole';
+
+/** A scene document, 2D or 3D -- `SceneDocument`/`SceneDocument3D` are both
+ * literally `Record<string, unknown>` aliases (see `api/projects.ts`/
+ * `api/projects3d.ts`), so this hook -- which never reads scene fields
+ * itself, only checks presence -- can stay target-agnostic without a
+ * generic type parameter here. */
+type AnySceneDocument = Record<string, unknown>;
+
+/** How a caller (the 2D or 3D panel) fetches the real, full version object
+ * once `accept()` knows the server-side `accepted_version_id` -- injected
+ * rather than hardcoded so this one hook (issue #461/#462's "shared run
+ * service") serves both document families without a second orchestrator
+ * (issue #463's own acceptance criterion). 2D fetches it directly
+ * (`getSceneVersion`); 3D has no equivalent standalone endpoint, so it
+ * refetches the project and reads `current_version` (already the full
+ * nested object per `api/projects3d.ts`'s `Project3D` type) -- either way
+ * this hook only ever awaits the promise it's given. */
+export type FetchAcceptedVersion<TVersion> = (
+  projectId: string,
+  versionId: number,
+) => Promise<TVersion>;
 
 export type AIRunClientError = { code: AIRunErrorCode | 'network'; message: string };
 
@@ -113,8 +134,17 @@ function isAbortError(err: unknown): boolean {
  * The advance loop (`runAdvanceLoop`) is guarded by `loopTokenRef`: start/
  * stop/dismiss/a new run all bump the token, so a stale loop from a
  * superseded run can never apply its result to the current one.
+ *
+ * Issue #463: `targetType`/`fetchAcceptedVersion` make this one hook the
+ * shared run orchestrator for both the 2D and 3D agent workflows -- see
+ * `FetchAcceptedVersion`'s doc comment above for why that one seam is
+ * injected rather than duplicated per document family.
  */
-export function useAIRun(projectId: string | undefined) {
+export function useAIRun<TVersion>(
+  targetType: AIRunTargetType,
+  projectId: string | undefined,
+  fetchAcceptedVersion: FetchAcceptedVersion<TVersion>,
+) {
   const [targetMode, setTargetMode] = useState<AIRunTargetMode>('create');
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -215,7 +245,10 @@ export function useAIRun(projectId: string | undefined) {
   }, [projectId]);
 
   const start = useCallback(
-    async (workingCopy: SceneDocument | null, currentVersionId: number | null): Promise<void> => {
+    async (
+      workingCopy: AnySceneDocument | null,
+      currentVersionId: number | null,
+    ): Promise<void> => {
       if (!projectId) return;
       const trimmed = prompt.trim();
       if (!trimmed) {
@@ -244,8 +277,8 @@ export function useAIRun(projectId: string | undefined) {
       const scope: AIRunScope = targetMode === 'edit-selection' ? 'selection' : 'whole_scene';
       try {
         const started = await startAIRun({
-          target_type: 'project',
-          project_id: projectId,
+          target_type: targetType,
+          ...(targetType === 'project' ? { project_id: projectId } : { project3d_id: projectId }),
           operation: targetMode === 'create' ? 'create' : 'edit_patch',
           scope,
           selected_target_ids: scope === 'selection' && selectedShapeId ? [selectedShapeId] : [],
@@ -268,7 +301,17 @@ export function useAIRun(projectId: string | undefined) {
         if (mountedRef.current) setStarting(false);
       }
     },
-    [projectId, prompt, targetMode, selectedShapeId, vendor, model, personaId, runAdvanceLoop],
+    [
+      targetType,
+      projectId,
+      prompt,
+      targetMode,
+      selectedShapeId,
+      vendor,
+      model,
+      personaId,
+      runAdvanceLoop,
+    ],
   );
 
   /** Stops an in-progress run (Stop) or discards an awaiting-review
@@ -289,7 +332,7 @@ export function useAIRun(projectId: string | undefined) {
     }
   }, [run, projectId]);
 
-  const accept = useCallback(async (): Promise<SceneVersion | null> => {
+  const accept = useCallback(async (): Promise<TVersion | null> => {
     if (!run || !projectId) return null;
     setAccepting(true);
     setAcceptError(null);
@@ -299,7 +342,7 @@ export function useAIRun(projectId: string | undefined) {
       setRun(accepted);
       if (accepted.status === 'accepted' && accepted.accepted_version_id !== null) {
         persistRunId(projectId, null);
-        return await getSceneVersion(projectId, accepted.accepted_version_id);
+        return await fetchAcceptedVersion(projectId, accepted.accepted_version_id);
       }
       // A failed re-validation or stale base at Accept time -- the run's
       // own `error_reason` (surfaced via the `run.status === 'failed'`
@@ -314,7 +357,7 @@ export function useAIRun(projectId: string | undefined) {
     } finally {
       if (mountedRef.current) setAccepting(false);
     }
-  }, [run, projectId]);
+  }, [run, projectId, fetchAcceptedVersion]);
 
   /** Clears a terminal run (accepted/cancelled/failed/expired) back to the
    * entry form -- e.g. after reading a failure, or starting a fresh run
@@ -355,4 +398,4 @@ export function useAIRun(projectId: string | undefined) {
   };
 }
 
-export type UseAIRunResult = ReturnType<typeof useAIRun>;
+export type UseAIRunResult<TVersion = unknown> = ReturnType<typeof useAIRun<TVersion>>;

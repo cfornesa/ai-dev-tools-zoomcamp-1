@@ -16882,3 +16882,66 @@ session -- a persistent run state machine (`/api/ai/runs/` start/detail/
 advance/cancel), lease-based concurrency control, and fake-provider coverage
 across ~7 scenarios for both 2D and 3D.
 
+## Issue #461 closure -- AI workflow service, 2026-09-06
+
+Status: COMPLETED and CLOSED. Implemented in
+[PR #473](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/473)
+(branch `feat/ai-workflow-service-461`), merged commit history on top of
+`3a14391`.
+
+- `backend/scenes/models.py`: new `AIRun` model -- finite states
+  (`running`/`awaiting_review`/`accepted`/`cancelled`/`failed`/`expired`),
+  owner/project-family/base-version/input-digest/selection/provider/model/
+  persona binding, `start_request_id` idempotency, advance-lease fields.
+  New defaults `AI_RUN_DEFAULT_BUDGET_SECONDS=120`,
+  `AI_RUN_MAX_PROVIDER_ATTEMPTS=3`, `AI_RUN_MAX_REPAIR_ATTEMPTS=2`,
+  `AI_RUN_ADVANCE_LEASE_SECONDS=30`. Migration `0035_ai_run.py`.
+- `backend/scenes/ai_runs.py` (new): `start_run`/`advance_run`/
+  `cancel_run`/`accept_run`. `advance_run` performs at most one provider
+  call per invocation, released between two separate `transaction.atomic()`
+  blocks (never holds a DB transaction open during the provider call);
+  a short-lived `advance_lease_token` makes two concurrent `advance` calls
+  on the same run resolve to exactly one provider call. `accept_run`
+  reuses `AIAcceptProposalView`'s exact `select_for_update()` +
+  deterministic-idempotency-key + `IntegrityError`-fallback shape (a
+  `uuid5`-derived `ai_request_id`) to create exactly one
+  `SceneVersion`/`SceneVersion3D`.
+- `backend/scenes/ai_runs_api.py` (new): owner-scoped `POST /api/ai/runs/`,
+  `GET /api/ai/runs/<id>/`, `POST .../advance/`, `.../cancel/`,
+  `.../accept/`. A foreign/nonexistent run 404s identically; `GET` never
+  triggers a provider call.
+- No new dependency, no new agent framework/queue, no new UI route (that
+  stays #462/#463's scope, unblocked by this closure).
+- `backend/tests/test_ai_runs.py` (new, 20 tests): 2D/3D create happy
+  path; invalid-then-repaired-success; repeated-invalid and repeated-
+  timeout each exhaust attempts to `failed`; wall-clock deadline expiry
+  with zero provider calls; selection-scope prompt augmentation and
+  out-of-scope-patch-is-repairable; accept creates exactly one version
+  and charges quota once; duplicate accept is idempotent; stale base at
+  accept fails the run and creates no version; cancel blocks further
+  advance/accept (both from `running` and from `awaiting_review`); API
+  auth/ownership (401/404); full API lifecycle; `GET` detail never calls
+  the provider; PostgreSQL-gated genuine concurrent-advance-lease test.
+
+Verification: `uv run mypy .` clean (206 files); `uv run ruff check .` /
+`ruff format --check .` clean; `uv run --env-file .env pytest` 1118
+passed/28 skipped; `make check` (full backend+frontend gate) passed --
+backend 1118/28 skip, frontend 2446 tests passed, lint/format/typecheck
+clean. Backend-only issue per its own acceptance criteria -- no browser/
+live evidence applicable.
+
+QA: PASS, full criterion matrix posted on
+[issue #461](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/461#issuecomment-5556910685).
+Issue closed.
+
+### Next groomed issue
+
+**#462** (AI 2D editor `/ai-projects/:id`: create and edit layers through
+agent runs) is now dependency-unblocked by #461's closure and is the next
+backlog-session candidate. #463 remains dependency-blocked on #462. All
+other blockers/verification-boundaries recorded in the prior distillation
+pass (#419 evidence-in-progress, #440/#460 credential-blocked, #443
+policy-blocked, #455 manual-only, #465 blocked on #419, #467 needs the next
+Replit publish, PR #464 left open for the owner's own timing decision)
+are unchanged by this closure.
+

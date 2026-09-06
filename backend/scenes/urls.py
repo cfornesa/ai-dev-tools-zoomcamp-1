@@ -14,6 +14,13 @@ from scenes.ai_preferences_api import (
     MistralModelPreferenceListCreateView,
 )
 from scenes.ai_retry_preference_api import AIRetryPreferenceView
+from scenes.ai_runs_api import (
+    AIRunAcceptView,
+    AIRunAdvanceView,
+    AIRunCancelView,
+    AIRunDetailView,
+    AIRunListCreateView,
+)
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
@@ -191,6 +198,16 @@ urlpatterns = [
         AIAcceptProposalView.as_view(),
         name="ai-accept-proposal",
     ),
+    # Issue #461: deliberately not project-scoped in the URL -- a run's
+    # target is identified in its own request body at `start`, and every
+    # later action addresses the run itself by its own id, not by
+    # project. Never returns 404 to a non-owner via a different code path
+    # than "run doesn't exist" -- see scenes/ai_runs_api.py's docstring.
+    path("ai/runs/", AIRunListCreateView.as_view(), name="ai-run-list-create"),
+    path("ai/runs/<int:pk>/", AIRunDetailView.as_view(), name="ai-run-detail"),
+    path("ai/runs/<int:pk>/advance/", AIRunAdvanceView.as_view(), name="ai-run-advance"),
+    path("ai/runs/<int:pk>/cancel/", AIRunCancelView.as_view(), name="ai-run-cancel"),
+    path("ai/runs/<int:pk>/accept/", AIRunAcceptView.as_view(), name="ai-run-accept"),
     # Issue #199: deliberately not project-scoped -- see art_piece_api.py's
     # module docstring for why.
     path(

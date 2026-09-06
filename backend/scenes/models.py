@@ -19,7 +19,7 @@ enforces the same way, so no trigger is needed for those.
 
 import json
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -1163,3 +1163,151 @@ class ArtPieceThumbnail(models.Model):
 
     def __str__(self) -> str:
         return f"art-piece-thumbnail({self.version_id})"
+
+
+# Issue #461: how long a run may take end to end (from `start` to a
+# terminal-for-review state) before an `advance` call must expire it
+# rather than attempt another provider call.
+AI_RUN_DEFAULT_BUDGET_SECONDS = 120
+AI_RUN_MAX_PROVIDER_ATTEMPTS = 3
+AI_RUN_MAX_REPAIR_ATTEMPTS = 2
+# How long one `advance` call's exclusive lease on a run lasts before a
+# later `advance` call may reclaim it as abandoned (e.g. a crashed worker
+# never released it) -- generous relative to a real provider call's
+# expected latency, short relative to `AI_RUN_DEFAULT_BUDGET_SECONDS`.
+AI_RUN_ADVANCE_LEASE_SECONDS = 30
+# How long a run's row (and its held candidate) is retained after
+# reaching a terminal state, purely as documented data-retention policy --
+# nothing in this issue's own scope schedules the actual deletion job.
+AI_RUN_RETENTION_SECONDS = 7 * 24 * 60 * 60
+
+
+class AIRun(models.Model):
+    """A persisted, bounded, owner-scoped plan-validate-revise AI run
+    (issue #461).
+
+    Deliberately not a queue/worker system: each `advance` call performs
+    at most one provider call and returns, checkpointing progress to this
+    row so the caller (or a UI polling loop, out of this issue's scope --
+    see #462/#463) can call `advance` again. This keeps every request
+    short and means a provider call is never made while holding a
+    database transaction open -- the same non-negotiable invariant
+    `ai_api.py`'s one-shot endpoints already follow, just spread across
+    more than one request/response cycle here.
+
+    A run never mutates `Project`/`Project3D`'s persisted scene or
+    `current_version` itself -- `candidate_scene_json`/`candidate_patch`
+    are this row's own fields, previewed by the caller and only ever
+    turned into a real `SceneVersion`/`SceneVersion3D` by `accept_run`,
+    which reuses `AIAcceptProposalView`'s exact transaction shape
+    (`scenes.ai_runs.accept_run`).
+    """
+
+    class Status(models.TextChoices):
+        RUNNING = "running", "Running"
+        AWAITING_REVIEW = "awaiting_review", "Awaiting review"
+        ACCEPTED = "accepted", "Accepted"
+        CANCELLED = "cancelled", "Cancelled"
+        FAILED = "failed", "Failed"
+        EXPIRED = "expired", "Expired"
+
+    TERMINAL_STATUSES = (Status.ACCEPTED, Status.CANCELLED, Status.FAILED, Status.EXPIRED)
+
+    class TargetType(models.TextChoices):
+        PROJECT = "project", "2D project"
+        PROJECT3D = "project3d", "3D project"
+
+    class Operation(models.TextChoices):
+        CREATE = "create", "Create"
+        EDIT_PATCH = "edit_patch", "Edit (patch)"
+
+    class Scope(models.TextChoices):
+        WHOLE_SCENE = "whole_scene", "Whole scene"
+        SELECTION = "selection", "Selection"
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ai_runs"
+    )
+    target_type = models.CharField(max_length=20, choices=TargetType.choices)
+    project = models.ForeignKey(
+        Project, null=True, blank=True, on_delete=models.CASCADE, related_name="ai_runs"
+    )
+    project3d = models.ForeignKey(
+        Project3D, null=True, blank=True, on_delete=models.CASCADE, related_name="ai_runs"
+    )
+    operation = models.CharField(max_length=20, choices=Operation.choices)
+    scope = models.CharField(max_length=20, choices=Scope.choices, default=Scope.WHOLE_SCENE)
+    # Selected object/layer ids for a `selection`-scoped edit -- empty for
+    # `whole_scene`. Never trusted alone: `scenes.ai_runs` also feeds these
+    # ids into the same prompt-reference patch-scope check
+    # `scenes/patch.py` already enforces for the one-shot edit flow.
+    selected_target_ids = models.JSONField(default=list, blank=True)
+    prompt = models.TextField()
+    vendor = models.CharField(max_length=32, default="mistral")
+    model_id = models.CharField(max_length=100, blank=True, default="")
+    persona_id = models.PositiveIntegerField(null=True, blank=True)
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RUNNING)
+    base_version_id = models.PositiveIntegerField(null=True, blank=True)
+    # sha256 of the target's scene_json at the moment this run started --
+    # an extra, content-addressed staleness signal alongside
+    # `base_version_id`, per this issue's own "input scene digest" wording.
+    input_digest = models.CharField(max_length=64)
+
+    attempts = models.PositiveIntegerField(default=0)
+    repairs = models.PositiveIntegerField(default=0)
+
+    candidate_scene_json = models.JSONField(null=True, blank=True)
+    candidate_patch = models.JSONField(null=True, blank=True)
+    change_summary = models.TextField(blank=True, default="")
+    plan_summary = models.TextField(blank=True, default="")
+    validation_summary = models.TextField(blank=True, default="")
+    error_reason = models.CharField(max_length=64, blank=True, default="")
+
+    usage_prompt_tokens = models.PositiveIntegerField(default=0)
+    usage_completion_tokens = models.PositiveIntegerField(default=0)
+    usage_cost_usd = models.FloatField(default=0.0)
+    # Set exactly once, the moment this run's daily-quota successful-use
+    # counter is incremented (the first time a candidate reaches
+    # awaiting_review) -- guards against a later repair/re-advance ever
+    # charging a second time for the same run.
+    charged = models.BooleanField(default=False)
+    accepted_version_id = models.PositiveIntegerField(null=True, blank=True)
+
+    # One active `advance` lease at a time -- see `scenes.ai_runs.advance_run`.
+    advance_lease_token = models.UUIDField(null=True, blank=True)
+    advance_lease_expires_at = models.DateTimeField(null=True, blank=True)
+
+    # Client-supplied idempotency key for `start` -- a duplicate `start`
+    # (same owner, same key) returns the existing run instead of creating
+    # a second one. Unlike `SceneVersion.ai_request_id`, this is optional:
+    # omitting it just disables start-deduplication for that call.
+    start_request_id = models.UUIDField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deadline_at = models.DateTimeField()
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "start_request_id"],
+                condition=models.Q(start_request_id__isnull=False),
+                name="unique_ai_run_start_request_id_per_owner",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["owner", "-created_at"], name="ai_run_owner_recent_idx"),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"AIRun({self.pk}) {self.status} for user {self.owner_id}"
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.status in self.TERMINAL_STATUSES
+
+    def default_deadline(self) -> datetime:
+        return timezone.now() + timedelta(seconds=AI_RUN_DEFAULT_BUDGET_SECONDS)

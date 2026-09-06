@@ -7,20 +7,29 @@ import { requireE2EFixtures } from './support/prerequisites.js';
 /**
  * Issue #432: `enable-hand-steering`/`reset-view` used to only reach an
  * unconsumed `art-piece-command` DOM event -- no runtime ever controlled
- * the generated engine's camera. Real camera-based hand-landmark
- * detection (MediaPipe running inside this CSP-locked sandbox) is a
- * separately approved follow-up -- filed as #455 -- since it needs a
- * backend system-prompt change (so generated Three.js/A-Frame snippets
- * register a camera) plus a CDN-loaded vision model inside the sandbox.
- * This suite verifies the real, testable half #432 actually ships: a
- * documented `window.__registerArtPieceCamera({ getPose, setPose, reset
- * })` opt-in hook, activation gating (engine/camera/registration),
- * bounded pose changes driven by a `steer-signal` command (standing in
- * for a future real gesture source, sent from the parent page exactly
- * like a real signal source eventually would -- never self-posted from
- * inside the untrusted sandbox, which the sandbox's own `event.source
- * !== window.parent` hardening now rejects), and Reset -- exercised
- * end-to-end against a real fixture piece that adopts the hook.
+ * the generated engine's camera. This suite verifies the real, testable
+ * half #432 shipped: a documented `window.__registerArtPieceCamera({
+ * getPose, setPose, reset })` opt-in hook, activation gating (engine/
+ * camera/registration), bounded pose changes driven by a `steer-signal`
+ * command, and Reset -- exercised end-to-end against a real fixture piece
+ * that adopts the hook.
+ *
+ * Issue #455 later wired a *real* signal source: enabling hand-steering
+ * now also lazily loads MediaPipe's `GestureRecognizer` (from the same
+ * pinned CDN as the Three.js/A-Frame library scripts) inside the sandbox
+ * and drives `steer-signal`'s exact same bounded-pose path from actual
+ * palm-position/pinch-distance deltas read off the camera feed already
+ * active for the overlay. This suite's mocked camera stream (a plain
+ * canvas.captureStream()) never contains a real hand, so the recognizer
+ * finds nothing to act on and this suite's own `steer-signal` assertions
+ * are unaffected either way -- they only check that the model *starts*
+ * loading (`hand-tracking-model-status` below), never that it finishes,
+ * since finishing depends on live network access to jsdelivr/
+ * storage.googleapis.com this suite doesn't want as a flakiness source.
+ * Verifying the recognizer actually drives real gestures needs a real
+ * hand in front of a real camera -- out of scope for browser automation,
+ * done instead as a live manual session per this repo's own convention
+ * for hardware the agent cannot simulate.
  */
 
 /** A deterministic Three.js fixture whose camera sits at [0, 0, 5] and
@@ -175,6 +184,14 @@ test.describe('Generated regular viewer: hand-steering ownership and Reset (#432
     const stopButton = page.getByRole('button', { name: 'Stop steering' });
     await expect(stopButton).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('steering-status')).toContainText('Steering is active.');
+
+    // Issue #455: activating steering also starts loading the real
+    // hand-tracking model in the background -- asserting only that
+    // loading *starts* (never that it finishes, which needs live network
+    // access this suite doesn't want as a flakiness source).
+    await expect(page.getByTestId('hand-tracking-model-status')).toContainText(
+      /Preparing hand tracking|Hand tracking is ready|Hand tracking could not be prepared/,
+    );
 
     // A self-post from inside the sandbox impersonating the parent must
     // be rejected -- the hardening this issue adds specifically for

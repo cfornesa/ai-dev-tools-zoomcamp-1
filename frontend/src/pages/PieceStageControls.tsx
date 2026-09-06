@@ -56,6 +56,13 @@ function PieceStageControls({
   const [steeringPose, setSteeringPose] = useState<{ x: number; y: number; z: number } | null>(
     null,
   );
+  // Issue #455: the real hand-tracking model's own preparation status --
+  // distinct from `steeringState`, since steering can already be "active"
+  // while the model is still downloading (the first frame it can drive
+  // arrives once loading finishes).
+  const [handTrackingModelState, setHandTrackingModelState] = useState<
+    'idle' | 'loading' | 'ready' | 'failed'
+  >('idle');
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(stageRef);
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -74,6 +81,7 @@ function PieceStageControls({
         frequency?: number;
         opacity?: number;
         pose?: { x: number; y: number; z: number };
+        modelStatus?: string;
       } | null;
       if (data?.source !== 'art-piece-sandbox') return;
       if (data.status === 'error') {
@@ -130,6 +138,15 @@ function PieceStageControls({
         else if (data.error === 'unsupported-engine') setSteeringState('unsupported-engine');
         else if (!data.error) setSteeringState('off');
         if (data.pose) setSteeringPose(data.pose);
+      }
+      // Issue #455: the real hand-tracking model's own load lifecycle,
+      // reported separately from `steeringState` above -- steering can
+      // read as "active" (activation succeeded) while the model backing
+      // it is still downloading.
+      if (data.status === 'hand-tracking-model') {
+        if (data.modelStatus === 'loading') setHandTrackingModelState('loading');
+        else if (data.modelStatus === 'ready') setHandTrackingModelState('ready');
+        else if (data.modelStatus === 'failed') setHandTrackingModelState('failed');
       }
     }
     window.addEventListener('message', onMessage);
@@ -336,6 +353,15 @@ function PieceStageControls({
                   'Hand steering is only available for 3D pieces.'}
                 {steeringState === 'off' && 'Steering is off.'}
               </p>
+              {steeringState === 'active' && (
+                <p data-testid="hand-tracking-model-status">
+                  {handTrackingModelState === 'loading' &&
+                    'Preparing hand tracking… keep your hand in view once it is ready.'}
+                  {handTrackingModelState === 'ready' && 'Hand tracking is ready.'}
+                  {handTrackingModelState === 'failed' &&
+                    'Hand tracking could not be prepared. Steering will not respond to gestures.'}
+                </p>
+              )}
               {steeringPose && (
                 <p data-testid="steering-pose">
                   {steeringPose.x.toFixed(2)},{steeringPose.y.toFixed(2)},

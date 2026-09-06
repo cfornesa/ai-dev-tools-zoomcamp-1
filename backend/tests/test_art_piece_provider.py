@@ -84,6 +84,24 @@ def test_aframe_system_prompt_warns_flat_shapes_can_be_edge_on_to_the_camera():
     assert "floor" in content or "ground" in content
 
 
+def test_threejs_system_prompt_tells_the_model_to_register_a_steerable_camera():
+    """Issue #455: real hand-gesture steering needs a piece to opt into
+    `window.__registerArtPieceCamera(...)` (the hook `artPieceSandbox.ts`'s
+    trusted wrapper code already drives) -- A-Frame's own system prompt
+    can never ask for this (it forbids all custom JavaScript), so this is
+    Three.js-only. Without this instruction, a generated piece has no
+    controllable camera and hand-steering has nothing to steer."""
+    client = _CapturingClient()
+    provider = ArtPieceProvider(client=client)
+
+    provider.generate("a spinning cube", "threejs")
+
+    system_message = next(m for m in client.chat.last_kwargs["messages"] if m["role"] == "system")
+    content = system_message["content"]
+    assert "__registerArtPieceCamera" in content
+    assert "getPose" in content and "setPose" in content
+
+
 def test_client_property_builds_a_real_client_from_the_real_sdk_import_path():
     """Exercises the actual `from mistralai.client import Mistral` import
     -- no mock, no injected client. This is the exact statement that used

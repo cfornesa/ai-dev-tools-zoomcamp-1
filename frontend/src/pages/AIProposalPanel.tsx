@@ -4,8 +4,12 @@ import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import type { SceneDocument, SceneVersion } from '../api/projects';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview, SceneRendererId } from '../render/scenePreview';
+import AIRunPanel from './AIRunPanel';
 import { useAIProposal, type ProposalMode } from './useAIProposal';
+import { useAIRun } from './useAIRun';
 import { useSavedAIPreferences } from './useSavedAIPreferences';
+
+type WorkflowMode = 'one-shot' | 'agent';
 
 type AIProposalPanelProps = {
   projectId: string;
@@ -83,6 +87,33 @@ function AIProposalPanel({
     retryGeneration,
     canRetryGeneration,
   } = useAIProposal(projectId);
+
+  // Issue #462: the persisted "Agent workflow" run, offered alongside the
+  // one-shot flow above rather than replacing it -- both hooks are always
+  // mounted (an in-progress agent run must keep polling even while this
+  // panel happens to render the one-shot form), and only one is visible
+  // at a time via `workflowMode`.
+  const aiRun = useAIRun(projectId);
+  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>('one-shot');
+
+  // Carries vendor/model/persona over when switching between the one-shot
+  // and agent flows -- a snapshot at the moment of the switch (the same
+  // pattern `seed` below uses to carry a prompt into this panel), not a
+  // continuous two-way binding, since the two flows otherwise keep
+  // entirely independent state.
+  function handleWorkflowModeChange(next: WorkflowMode) {
+    if (next === workflowMode) return;
+    if (next === 'agent') {
+      aiRun.setVendor(vendor);
+      aiRun.setModel(model);
+      aiRun.setPersonaId(personaId);
+    } else {
+      setVendor(aiRun.vendor);
+      setModel(aiRun.model);
+      setPersonaId(aiRun.personaId);
+    }
+    setWorkflowMode(next);
+  }
 
   const { models: savedModels, personas: savedPersonas } = useSavedAIPreferences();
 
@@ -166,227 +197,261 @@ function AIProposalPanel({
     <div className="ai-proposal-panel">
       <h4>AI assistant</h4>
 
-      <div role="radiogroup" aria-label="AI action" className="editor-tool-group">
+      {/* Issue #462: offered alongside the one-shot flow below, not in
+          place of it -- "Agent workflow" is a bounded, persisted
+          plan-validate-revise run with real progress and an intermediate
+          preview; the one-shot flow stays the fast path for a single
+          create/edit. */}
+      <div role="radiogroup" aria-label="AI workflow" className="editor-tool-group">
         <button
           type="button"
           role="radio"
-          aria-checked={mode === 'create'}
-          disabled={pending || acceptState.pending}
-          onClick={() => setMode('create')}
-          {...modeRoving.getRadioProps('create')}
+          aria-checked={workflowMode === 'one-shot'}
+          onClick={() => handleWorkflowModeChange('one-shot')}
         >
-          Create
+          One-shot
         </button>
         <button
           type="button"
           role="radio"
-          aria-checked={mode === 'edit'}
-          disabled={pending || acceptState.pending}
-          onClick={() => setMode('edit')}
-          {...modeRoving.getRadioProps('edit')}
+          aria-checked={workflowMode === 'agent'}
+          onClick={() => handleWorkflowModeChange('agent')}
         >
-          Edit
+          Agent workflow
         </button>
       </div>
 
-      <form aria-label={MODE_LABELS[mode]} onSubmit={handleSubmit}>
-        <div className="behavior-card-field ai-proposal-field-full-width">
-          <label htmlFor="ai-proposal-vendor">AI provider</label>
-          <select
-            id="ai-proposal-vendor"
-            className="ai-proposal-field-full-width"
-            value={vendor}
-            disabled={pending}
-            onChange={(event) => {
-              const nextVendor = event.target.value as typeof vendor;
-              setVendor(nextVendor);
-              setModel(nextVendor === 'mistral' ? '' : PROVIDER_MODELS[nextVendor][0]);
-            }}
-          >
-            <option value="mistral">Mistral</option>
-            <option value="gemini">Google Gemini</option>
-            <option value="deepseek">DeepSeek</option>
-          </select>
-        </div>
-        <div className="behavior-card-field">
-          <label htmlFor="ai-proposal-prompt">
-            {mode === 'create'
-              ? 'Describe the scene you want to generate'
-              : 'Describe the change you want to make'}
-          </label>
-          <textarea
-            id="ai-proposal-prompt"
-            value={prompt}
-            disabled={pending}
-            onChange={(event) => setPrompt(event.target.value)}
-          />
-        </div>
-        {/* Issue #198/#262: optional, defaults to the server's own model.
+      {workflowMode === 'agent' && (
+        <AIRunPanel aiRun={aiRun} workingCopy={workingCopy} onAccepted={onAccepted} />
+      )}
+
+      {workflowMode === 'one-shot' && (
+        <>
+          <div role="radiogroup" aria-label="AI action" className="editor-tool-group">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={mode === 'create'}
+              disabled={pending || acceptState.pending}
+              onClick={() => setMode('create')}
+              {...modeRoving.getRadioProps('create')}
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={mode === 'edit'}
+              disabled={pending || acceptState.pending}
+              onClick={() => setMode('edit')}
+              {...modeRoving.getRadioProps('edit')}
+            >
+              Edit
+            </button>
+          </div>
+
+          <form aria-label={MODE_LABELS[mode]} onSubmit={handleSubmit}>
+            <div className="behavior-card-field ai-proposal-field-full-width">
+              <label htmlFor="ai-proposal-vendor">AI provider</label>
+              <select
+                id="ai-proposal-vendor"
+                className="ai-proposal-field-full-width"
+                value={vendor}
+                disabled={pending}
+                onChange={(event) => {
+                  const nextVendor = event.target.value as typeof vendor;
+                  setVendor(nextVendor);
+                  setModel(nextVendor === 'mistral' ? '' : PROVIDER_MODELS[nextVendor][0]);
+                }}
+              >
+                <option value="mistral">Mistral</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="deepseek">DeepSeek</option>
+              </select>
+            </div>
+            <div className="behavior-card-field">
+              <label htmlFor="ai-proposal-prompt">
+                {mode === 'create'
+                  ? 'Describe the scene you want to generate'
+                  : 'Describe the change you want to make'}
+              </label>
+              <textarea
+                id="ai-proposal-prompt"
+                value={prompt}
+                disabled={pending}
+                onChange={(event) => setPrompt(event.target.value)}
+              />
+            </div>
+            {/* Issue #198/#262: optional, defaults to the server's own model.
             Sourced from the user's saved Mistral models (Account
             settings, #261) rather than free text -- the selected value is
             still remembered per browser via `useAIProposal`'s own
             localStorage key. A malformed id is caught by the server's
             existing `model_invalid` validation error, surfaced through
             the same error UI as every other validation error below. */}
-        <div className="behavior-card-field ai-proposal-field-full-width">
-          <label htmlFor="ai-proposal-model">
-            {vendor === 'mistral' ? 'Mistral' : vendor} model (optional)
-          </label>
-          {vendor !== 'mistral' ? (
-            <select
-              id="ai-proposal-model"
-              className="ai-proposal-field-full-width"
-              value={model || PROVIDER_MODELS[vendor][0]}
-              disabled={pending}
-              onChange={(event) => setModel(event.target.value)}
-            >
-              {PROVIDER_MODELS[vendor].map((providerModel) => (
-                <option key={providerModel} value={providerModel}>
-                  {providerModel}
-                </option>
-              ))}
-            </select>
-          ) : savedModels.length === 0 ? (
-            <p className="ai-proposal-empty-preference">
-              No saved models yet — add one in <a href="/account/settings">Account settings</a> to
-              pick from a list here.
-            </p>
-          ) : (
-            <select
-              id="ai-proposal-model"
-              className="ai-proposal-field-full-width"
-              value={model}
-              disabled={pending}
-              onChange={(event) => setModel(event.target.value)}
-            >
-              <option value="">Uses the account default</option>
-              {savedModels.map((saved) => (
-                <option key={saved.id} value={saved.slug}>
-                  {saved.label ? `${saved.label} (${saved.slug})` : saved.slug}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        {/* Issue #257/#262: an optional Persona layers additive style/tone
-            guidance on top of the mandatory technical system prompt --
-            never a replacement for it (#260). */}
-        <div className="behavior-card-field ai-proposal-field-full-width">
-          <label htmlFor="ai-proposal-persona">Persona (optional)</label>
-          {savedPersonas.length === 0 ? (
-            <p className="ai-proposal-empty-preference">
-              No Personas yet — add one in <a href="/account/settings">Account settings</a> to pick
-              from a list here.
-            </p>
-          ) : (
-            <select
-              id="ai-proposal-persona"
-              className="ai-proposal-field-full-width"
-              value={personaId ?? ''}
-              disabled={pending}
-              onChange={(event) =>
-                setPersonaId(event.target.value === '' ? null : Number(event.target.value))
-              }
-            >
-              <option value="">No persona</option>
-              {savedPersonas.map((persona) => (
-                <option key={persona.id} value={persona.id}>
-                  {persona.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        <button type="submit" disabled={pending || prompt.trim().length === 0}>
-          {pending ? 'Generating…' : mode === 'create' ? 'Generate scene' : 'Propose edit'}
-        </button>
-        {pending && (
-          <button type="button" onClick={cancelGeneration} data-testid="ai-cancel-generation">
-            Cancel
-          </button>
-        )}
-      </form>
-
-      {pending && (
-        <p role="status" aria-live="polite" data-testid="ai-pending-status">
-          {attemptCount > 1
-            ? `Contacting the AI assistant… (attempt ${attemptCount})`
-            : 'Contacting the AI assistant…'}
-        </p>
-      )}
-
-      {(phase === 'validation-error' || phase === 'quota-error' || phase === 'provider-error') &&
-        genError && (
-          <div role="alert" aria-live="assertive" data-testid={`ai-error-${phase}`}>
-            <p>{genError.message}</p>
-            {attemptCount > 1 && <p>Failed after {attemptCount} attempts.</p>}
-            {genError.code === 'personal_key_required' && (
-              <p>
-                <a href="/account/settings">
-                  Configure your personal Mistral key in Account settings
-                </a>
-              </p>
-            )}
-            {canRetryGeneration && (
-              <button
-                type="button"
-                data-testid="ai-retry-generation"
-                onClick={() => void retryGeneration(workingCopy, currentVersionId)}
-              >
-                Retry
-              </button>
-            )}
-          </div>
-        )}
-
-      {phase === 'success' && proposal && (
-        <section aria-label="AI proposal preview" data-testid="ai-proposal-success">
-          <p role="status" aria-live="polite">
-            Proposal ready. Nothing has been saved yet — review, then Accept or Reject.
-          </p>
-          <div
-            ref={previewMountRef}
-            data-testid="ai-proposal-preview-canvas"
-            className="ai-proposal-preview"
-            aria-hidden="true"
-          />
-          {previewError && (
-            <p role="alert" aria-live="assertive">
-              {previewError}
-            </p>
-          )}
-          <p data-testid="ai-proposal-summary">{proposal.summary}</p>
-
-          <div className="editor-tool-group">
-            <button
-              type="button"
-              onClick={handleAccept}
-              disabled={acceptState.pending}
-              data-testid="ai-accept-button"
-            >
-              {acceptState.pending ? 'Accepting…' : 'Accept'}
-            </button>
-            <button
-              type="button"
-              onClick={reject}
-              disabled={acceptState.pending}
-              data-testid="ai-reject-button"
-            >
-              Reject
-            </button>
-          </div>
-
-          {acceptState.error && (
-            <div role="alert" aria-live="assertive" data-testid="ai-accept-error">
-              <p>{acceptState.error.message}</p>
-              {acceptState.error.kind === 'auth' && (
-                <p>
-                  <a href="/accounts/login/">Sign in again</a>
+            <div className="behavior-card-field ai-proposal-field-full-width">
+              <label htmlFor="ai-proposal-model">
+                {vendor === 'mistral' ? 'Mistral' : vendor} model (optional)
+              </label>
+              {vendor !== 'mistral' ? (
+                <select
+                  id="ai-proposal-model"
+                  className="ai-proposal-field-full-width"
+                  value={model || PROVIDER_MODELS[vendor][0]}
+                  disabled={pending}
+                  onChange={(event) => setModel(event.target.value)}
+                >
+                  {PROVIDER_MODELS[vendor].map((providerModel) => (
+                    <option key={providerModel} value={providerModel}>
+                      {providerModel}
+                    </option>
+                  ))}
+                </select>
+              ) : savedModels.length === 0 ? (
+                <p className="ai-proposal-empty-preference">
+                  No saved models yet — add one in <a href="/account/settings">Account settings</a>{' '}
+                  to pick from a list here.
                 </p>
+              ) : (
+                <select
+                  id="ai-proposal-model"
+                  className="ai-proposal-field-full-width"
+                  value={model}
+                  disabled={pending}
+                  onChange={(event) => setModel(event.target.value)}
+                >
+                  <option value="">Uses the account default</option>
+                  {savedModels.map((saved) => (
+                    <option key={saved.id} value={saved.slug}>
+                      {saved.label ? `${saved.label} (${saved.slug})` : saved.slug}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
+            {/* Issue #257/#262: an optional Persona layers additive style/tone
+            guidance on top of the mandatory technical system prompt --
+            never a replacement for it (#260). */}
+            <div className="behavior-card-field ai-proposal-field-full-width">
+              <label htmlFor="ai-proposal-persona">Persona (optional)</label>
+              {savedPersonas.length === 0 ? (
+                <p className="ai-proposal-empty-preference">
+                  No Personas yet — add one in <a href="/account/settings">Account settings</a> to
+                  pick from a list here.
+                </p>
+              ) : (
+                <select
+                  id="ai-proposal-persona"
+                  className="ai-proposal-field-full-width"
+                  value={personaId ?? ''}
+                  disabled={pending}
+                  onChange={(event) =>
+                    setPersonaId(event.target.value === '' ? null : Number(event.target.value))
+                  }
+                >
+                  <option value="">No persona</option>
+                  {savedPersonas.map((persona) => (
+                    <option key={persona.id} value={persona.id}>
+                      {persona.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <button type="submit" disabled={pending || prompt.trim().length === 0}>
+              {pending ? 'Generating…' : mode === 'create' ? 'Generate scene' : 'Propose edit'}
+            </button>
+            {pending && (
+              <button type="button" onClick={cancelGeneration} data-testid="ai-cancel-generation">
+                Cancel
+              </button>
+            )}
+          </form>
+
+          {pending && (
+            <p role="status" aria-live="polite" data-testid="ai-pending-status">
+              {attemptCount > 1
+                ? `Contacting the AI assistant… (attempt ${attemptCount})`
+                : 'Contacting the AI assistant…'}
+            </p>
           )}
-        </section>
+
+          {(phase === 'validation-error' ||
+            phase === 'quota-error' ||
+            phase === 'provider-error') &&
+            genError && (
+              <div role="alert" aria-live="assertive" data-testid={`ai-error-${phase}`}>
+                <p>{genError.message}</p>
+                {attemptCount > 1 && <p>Failed after {attemptCount} attempts.</p>}
+                {genError.code === 'personal_key_required' && (
+                  <p>
+                    <a href="/account/settings">
+                      Configure your personal Mistral key in Account settings
+                    </a>
+                  </p>
+                )}
+                {canRetryGeneration && (
+                  <button
+                    type="button"
+                    data-testid="ai-retry-generation"
+                    onClick={() => void retryGeneration(workingCopy, currentVersionId)}
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            )}
+
+          {phase === 'success' && proposal && (
+            <section aria-label="AI proposal preview" data-testid="ai-proposal-success">
+              <p role="status" aria-live="polite">
+                Proposal ready. Nothing has been saved yet — review, then Accept or Reject.
+              </p>
+              <div
+                ref={previewMountRef}
+                data-testid="ai-proposal-preview-canvas"
+                className="ai-proposal-preview"
+                aria-hidden="true"
+              />
+              {previewError && (
+                <p role="alert" aria-live="assertive">
+                  {previewError}
+                </p>
+              )}
+              <p data-testid="ai-proposal-summary">{proposal.summary}</p>
+
+              <div className="editor-tool-group">
+                <button
+                  type="button"
+                  onClick={handleAccept}
+                  disabled={acceptState.pending}
+                  data-testid="ai-accept-button"
+                >
+                  {acceptState.pending ? 'Accepting…' : 'Accept'}
+                </button>
+                <button
+                  type="button"
+                  onClick={reject}
+                  disabled={acceptState.pending}
+                  data-testid="ai-reject-button"
+                >
+                  Reject
+                </button>
+              </div>
+
+              {acceptState.error && (
+                <div role="alert" aria-live="assertive" data-testid="ai-accept-error">
+                  <p>{acceptState.error.message}</p>
+                  {acceptState.error.kind === 'auth' && (
+                    <p>
+                      <a href="/accounts/login/">Sign in again</a>
+                    </p>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+        </>
       )}
     </div>
   );

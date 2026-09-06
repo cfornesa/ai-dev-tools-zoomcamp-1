@@ -17169,12 +17169,77 @@ API call) remains a documented follow-up once #440 adds a PayPal API
 client -- not a blocker for this issue's own closure, whose criteria
 only require the local state-transition/retention contract.
 
-### Next: issue #455 (real MediaPipe hand-tracking)
+### Issue #455 closure — 2026-09-06: real MediaPipe hand-tracking
 
 Per the repository owner's explicit instruction, #455 (full real
-hand-tracking for the generated ArtPiece sandbox) is next, despite being
-marked "manual-only: real hardware" in the prior distillation --
-verification will use Claude in Chrome with real camera permissions the
-owner has granted, rather than the synthetic Playwright seam #465 already
-covers.
+hand-tracking for the generated ArtPiece sandbox) was implemented and
+shipped in [PR #478](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/478)
+(merged `54744f8`), despite being marked "manual-only: real hardware" in
+the prior distillation.
+
+Backend: `backend/ai_provider/art_piece_provider.py`'s `_THREEJS_SYSTEM_PROMPT`
+now instructs the model to call `window.__registerArtPieceCamera({ getPose,
+setPose })` itself using its own camera variable. A-Frame gets no prompt
+change -- its own prompt forbids all custom JavaScript -- so
+`frontend/src/generative/artPieceSandbox.ts`'s trusted wrapper code instead
+auto-detects `sceneEl.camera` once A-Frame finishes loading and registers it
+via the same hook.
+
+Frontend sandbox: enabling hand-steering now lazily loads MediaPipe's
+`GestureRecognizer` (`@mediapipe/tasks-vision@1.0.1`, matching the main
+app's own `mediapipeProvider.ts` pin) from the same pinned CDN origin as
+the Three.js/A-Frame `LIBRARY_CDN` scripts, and runs it against the camera
+feed already active for the overlay (no second `getUserMedia` stream).
+Real palm-center delta (pan) and thumb/index pinch-distance delta (zoom)
+drive the exact same bounded `applySteerDelta`/`steer-signal` path #432
+built (refactored into one shared function so the synthetic and real
+signal sources share one code path). Model preparation status
+(loading/ready/failed) is now real, surfaced in `PieceStageControls.tsx`.
+CSP gained narrow, previously-absent `connect-src` (jsdelivr +
+`storage.googleapis.com` for the model file), `worker-src blob:`, and
+`'wasm-unsafe-eval'` -- `default-src 'none'` had silently blocked every
+fetch before this, mirroring the existing `LIBRARY_CDN`/`buildCsp` pattern.
+Camera loss (explicit disable or track ending) now also stops the
+tracking loop and clears steering activation.
+
+**Note on a later distillation comment**: #455's own checkbox acceptance
+criteria explicitly ask for CDN-loaded `@mediapipe/tasks-vision` "mirroring
+the existing `LIBRARY_CDN`/`buildCsp` allowlist pattern" -- exactly what
+shipped. A later "Current open-issue distillation — 2026-09-05" comment on
+the issue instead suggested "a trusted bundled runtime/asset path... rather
+than mandating a second CDN-only implementation or broad CSP relaxation."
+Bundling the WASM runtime + gesture-recognizer model (several MB of binary
+assets) with zero network fetch is a materially larger, differently-shaped
+effort than the checkbox criteria describe. Flagged transparently on the
+issue rather than resolved unilaterally; a follow-up to the bundled
+approach remains an open owner decision, not filed as a new issue absent
+that decision.
+
+Verification: `backend/tests/test_art_piece_provider.py` (new regression
+test, 7/7 pass); `frontend/src/generative/artPieceSandbox.test.ts` (CSP
+assertions updated, 3 new tests, 16/16 pass); `frontend/src/pages/
+ArtPieceStudio.test.tsx` (one CSP-shape assertion updated, 12/12 pass);
+`make check` (backend 1136 passed/29 skipped, frontend 199 files/2471
+tests, lint/format/typecheck clean); `frontend/e2e/
+artPieceSteeringRuntime.spec.ts` (updated, asserts real model-loading
+starts on activation) ran live against a real disposable Django+
+PostgreSQL+Vite stack on chromium, 2/2 passed. Confirmed via `git stash`
+against clean `main` that 15 firefox/webkit/chromium e2e failures seen in
+a broader run (`artPieceCameraRuntime`, `artPieceFlatSpatial`,
+`artPieceNonCameraZip`, `handGestureGuide`, and this spec itself)
+reproduce identically without this branch's changes -- pre-existing,
+tracked separately as #465 (camera FPS flake)/#474 (firefox-401 boundary).
+Merged PR's only CI failure was that same #465 camera-FPS flake. QA:
+PASS, full criterion matrix posted on
+[issue #455](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/455#issuecomment-5557903280).
+Issue closed.
+
+**Verification boundary carried forward**: a real hand in front of a real
+camera actually steering a generated piece needs a live joint session
+(Claude in Chrome, real camera permissions the repository owner has
+granted) -- browser automation's mocked camera stream contains no real
+hand for the recognizer to act on. This session has not yet happened;
+scheduling it is the next step, separate from #455's own closure (whose
+criteria are about the pipeline being wired for real input, which is
+verified).
 

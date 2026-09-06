@@ -350,15 +350,24 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     report('error', (reason && reason.message) || String(reason) || 'An unhandled promise rejection occurred.');
   });
   window.addEventListener('load', function () {
-    // Two animation frames: one to let the snippet's own first paint
-    // happen, one more so a same-frame synchronous throw from that first
-    // paint has already been caught by the error listener above before
-    // this reports success.
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
+    // Issue #457: two deferred ticks, one to let the snippet's own first
+    // paint happen, one more so a same-tick synchronous throw from that
+    // first paint has already been caught by the error listener above
+    // before this reports success -- using setTimeout, not
+    // requestAnimationFrame. Chromium throttles requestAnimationFrame
+    // for a cross-origin iframe that isn't intersecting the viewport
+    // (confirmed: the first callback fires but a nested second one never
+    // does, even after 6+ seconds), which is exactly how this sandbox
+    // renders on /art-pieces -- below the fold behind the
+    // Library/prompt/Generate form. setTimeout has no such
+    // visibility-based throttling and still defers past the current
+    // synchronous execution twice, preserving the same ordering
+    // guarantee without depending on this iframe ever actually painting.
+    setTimeout(function () {
+      setTimeout(function () {
         report('ready', '');
-      });
-    });
+      }, 0);
+    }, 0);
   });
   // Versioned, allowlisted commands are surfaced as DOM events. Generated
   // code may opt into them, but never receives arbitrary parent messages.

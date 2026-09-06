@@ -23,9 +23,9 @@ async function generateRevision(page: Page, prompt: string): Promise<void> {
   await page.getByLabel('Describe the revision you want to generate').fill(prompt);
   await page.getByRole('button', { name: 'Generate revision' }).click();
   await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();
-  // #457: the same cross-origin-iframe requestAnimationFrame throttling
-  // documented for the Studio's own generate flow applies here too.
-  await page.getByTestId('art-piece-editor-preview').scrollIntoViewIfNeeded();
+  // #457 fixed: the shared sandbox's ready handshake now defers via
+  // setTimeout, not requestAnimationFrame, so this reaches ready promptly
+  // even off-screen -- no scrollIntoViewIfNeeded() workaround needed.
   await expect(page.getByTestId('art-piece-editor-save-version')).toBeVisible();
 }
 

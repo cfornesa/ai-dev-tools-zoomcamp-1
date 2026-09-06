@@ -5,13 +5,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as aiPreferencesApi from '../api/aiPreferences';
 import * as aiApi from '../api/ai';
 import * as aiRetryPreferenceApi from '../api/aiRetryPreference';
+import * as aiRunsApi from '../api/aiRuns';
+import type { AIRun } from '../api/aiRuns';
 import { ApiError } from '../api/client';
+import * as projectsApi from '../api/projects';
 import type { SceneDocument, SceneVersion } from '../api/projects';
 import AIProposalPanel from './AIProposalPanel';
 
 vi.mock('../api/ai');
 vi.mock('../api/aiPreferences');
 vi.mock('../api/aiRetryPreference');
+vi.mock('../api/aiRuns');
+vi.mock('../api/projects', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/projects')>();
+  return { ...actual, getSceneVersion: vi.fn() };
+});
 
 const mockedCreateAIScene = vi.mocked(aiApi.createAIScene);
 const mockedEditAIScene = vi.mocked(aiApi.editAIScene);
@@ -19,6 +27,9 @@ const mockedAcceptAIProposal = vi.mocked(aiApi.acceptAIProposal);
 const mockedFetchModels = vi.mocked(aiPreferencesApi.fetchMistralModelPreferences);
 const mockedFetchPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
 const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
+const mockedStartAIRun = vi.mocked(aiRunsApi.startAIRun);
+const mockedAdvanceAIRun = vi.mocked(aiRunsApi.advanceAIRun);
+const mockedGetSceneVersion = vi.mocked(projectsApi.getSceneVersion);
 
 const VALID_SCENE: SceneDocument = {
   schemaVersion: 1,
@@ -522,5 +533,134 @@ describe('AIProposalPanel keyboard operability', () => {
     await userEvent.keyboard('{Enter}');
 
     await waitFor(() => expect(mockedAcceptAIProposal).toHaveBeenCalledTimes(1));
+  });
+});
+
+function makeRun(overrides: Partial<AIRun> = {}): AIRun {
+  return {
+    id: 1,
+    status: 'running',
+    target_type: 'project',
+    project_id: 'p1',
+    project3d_id: null,
+    operation: 'create',
+    scope: 'whole_scene',
+    selected_target_ids: [],
+    attempts: 0,
+    repairs: 0,
+    candidate_scene: null,
+    candidate_patch: null,
+    change_summary: '',
+    plan_summary: '',
+    validation_summary: '',
+    error_reason: '',
+    usage: { prompt_tokens: 0, completion_tokens: 0, estimated_cost_usd: 0 },
+    accepted_version_id: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    deadline_at: '2026-01-01T00:02:00Z',
+    cancelled_at: null,
+    ...overrides,
+  };
+}
+
+// Issue #462: the "Agent workflow" toggle offered alongside the one-shot
+// flow every test above exercises -- switching to it must never disturb
+// that flow's own DOM/behavior (already proven by every passing test
+// above, all of which stay in the default 'one-shot' workflow).
+describe('AIProposalPanel Agent workflow', () => {
+  it('toggles to the Agent workflow form and back without disturbing the one-shot fields', async () => {
+    renderPanel();
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red circle');
+
+    await userEvent.click(screen.getByRole('radio', { name: /agent workflow/i }));
+    expect(screen.getByTestId('ai-run-form')).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /^create$/i })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: /one-shot/i }));
+    expect(screen.getByLabelText(/describe the scene/i)).toHaveValue('a red circle');
+  });
+
+  it('starts an agent run, advances to an awaiting-review preview, and accepts it', async () => {
+    mockedStartAIRun.mockResolvedValue(makeRun({ status: 'running' }));
+    mockedAdvanceAIRun.mockResolvedValueOnce(
+      makeRun({
+        status: 'awaiting_review',
+        attempts: 1,
+        candidate_scene: VALID_SCENE,
+        change_summary: 'Generated a scene.',
+      }),
+    );
+    const acceptedVersion = makeVersion({ id: 9 });
+    const { onAccepted } = renderPanel();
+    // acceptAIRun itself isn't exercised by this test's mocks, so accept()
+    // must resolve via the run's own accepted_version_id + a
+    // getSceneVersion fetch -- set up both.
+    vi.mocked(aiRunsApi.acceptAIRun).mockResolvedValue(
+      makeRun({ status: 'accepted', accepted_version_id: 9, candidate_scene: VALID_SCENE }),
+    );
+    mockedGetSceneVersion.mockResolvedValue(acceptedVersion);
+
+    await userEvent.click(screen.getByRole('radio', { name: /agent workflow/i }));
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red circle');
+    await userEvent.click(screen.getByTestId('ai-run-start'));
+
+    expect(mockedStartAIRun).toHaveBeenCalledWith(
+      expect.objectContaining({ target_type: 'project', project_id: 'p1', operation: 'create' }),
+    );
+
+    await screen.findByTestId('ai-run-preview');
+    expect(screen.getByTestId('ai-run-change-summary')).toHaveTextContent('Generated a scene.');
+
+    await userEvent.click(screen.getByTestId('ai-run-accept'));
+
+    await waitFor(() => expect(onAccepted).toHaveBeenCalledWith(acceptedVersion));
+  });
+
+  it('offers only shape objects (never a locked one) when editing a selection', async () => {
+    const sceneWithShapes: SceneDocument = {
+      ...VALID_SCENE,
+      layers: [
+        { id: 'layer-locked', name: 'Locked layer', order: 0, visible: true, locked: true },
+        { id: 'layer-open', name: 'Open layer', order: 1, visible: true, locked: false },
+      ],
+      shapes: [
+        {
+          id: 'shape-locked',
+          type: 'circle',
+          layerId: 'layer-locked',
+          groupId: null,
+          transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+          style: { fill: '#000000', stroke: null, strokeWidth: 0 },
+          radius: 10,
+        },
+        {
+          id: 'shape-open',
+          type: 'rect',
+          layerId: 'layer-open',
+          groupId: null,
+          transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 },
+          style: { fill: '#000000', stroke: null, strokeWidth: 0 },
+          width: 10,
+          height: 10,
+        },
+      ],
+    };
+    render(
+      <AIProposalPanel
+        projectId="p1"
+        workingCopy={sceneWithShapes}
+        currentVersionId={1}
+        onAccepted={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('radio', { name: /agent workflow/i }));
+    await userEvent.click(screen.getByRole('radio', { name: /edit selected layer\/object/i }));
+
+    const openOption = screen.getByRole('option', { name: /Rectangle/i });
+    expect(openOption).not.toBeDisabled();
+    const lockedOption = screen.getByRole('option', { name: /Circle.*locked/i });
+    expect(lockedOption).toBeDisabled();
   });
 });

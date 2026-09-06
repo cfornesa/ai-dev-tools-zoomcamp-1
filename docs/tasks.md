@@ -16934,7 +16934,7 @@ QA: PASS, full criterion matrix posted on
 [issue #461](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/461#issuecomment-5556910685).
 Issue closed.
 
-### Next groomed issue
+### Next groomed issue (superseded by #462's own closure below)
 
 **#462** (AI 2D editor `/ai-projects/:id`: create and edit layers through
 agent runs) is now dependency-unblocked by #461's closure and is the next
@@ -16944,4 +16944,76 @@ pass (#419 evidence-in-progress, #440/#460 credential-blocked, #443
 policy-blocked, #455 manual-only, #465 blocked on #419, #467 needs the next
 Replit publish, PR #464 left open for the owner's own timing decision)
 are unchanged by this closure.
+
+## Issue #462 closure -- AI 2D editor Agent workflow, 2026-09-06
+
+Status: COMPLETED and CLOSED. Implemented in
+[PR #475](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/475)
+(branch `feat/ai-2d-agent-workflow-462`), merged on top of `25677f1`.
+
+- `frontend/src/pages/AIProposalPanel.tsx`: a new "AI workflow" toggle
+  (One-shot / Agent workflow) offered alongside the existing one-shot
+  Create/Edit flow, never replacing it. Switching carries the current
+  vendor/model/persona over as a snapshot in both directions.
+- `frontend/src/api/aiRuns.ts` (new): typed wrappers for issue #461's
+  `/api/ai/runs/` start/detail/advance/cancel/accept endpoints.
+- `frontend/src/pages/useAIRun.ts` (new): owns the run lifecycle --
+  `start`, a client-driven `advance` loop (one provider call per
+  invocation, 350ms poll, longer backoff on `rate_limited`), `stop`
+  (cancel), `accept` (fetches the real `SceneVersion` via the existing
+  `getSceneVersion` once `accepted_version_id` is set), and `dismiss`.
+  Reload reconnection: the active run id is persisted to `localStorage`
+  per project and looked up via `GET` (never a provider call) before
+  rendering the entry form, so a plain reload can never spend an extra
+  attempt.
+- `frontend/src/pages/AIRunPanel.tsx` (new): Create piece / Edit selected
+  layer-object / Edit whole scene, a selection dropdown built from the
+  existing `sceneOutline.ts` (`buildOutline`) restricted to shape rows
+  (locked-layer shapes shown disabled, never omitted or silently
+  editable; a draw.io graph node is never offered at all since
+  `buildOutline` never emits one), real attempt/repair counters and the
+  server's own concise summaries (no fabricated progress, no hidden
+  reasoning trace), an intermediate preview, Accept/Stop/Reject, and a
+  stale-base "Rebase and retry" affordance.
+- Tests: `frontend/src/pages/useAIRun.test.ts` (new, 11 tests),
+  `AIProposalPanel.test.tsx` (+3 tests), `frontend/e2e/aiAgent2d.spec.ts`
+  (new, 4 scenarios: full create-and-accept; edit-selection against a
+  fixture with a locked background layer; repeated-invalid-output
+  reaching terminal `failed`; reload reconnection to `awaiting_review`
+  without another attempt).
+
+Verification: `npx vitest run` -- 198 files / 2460 tests passed.
+`cd frontend && npm run test:e2e -- e2e/aiAgent2d.spec.ts --project=chromium`
+-- 4/4 pass; repeated across all configured browsers -- **chromium 4/4,
+webkit 4/4 pass**; `firefox` fails at test setup with a 401 from a raw
+`context.request.post()` immediately after `loginViaUI`, reproduced
+identically against an already-merged, unrelated spec
+(`drawioEditor.spec.ts`) on this same local macOS environment, confirming
+it predates this issue -- filed as
+[issue #474](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/474)
+(local Playwright/Firefox harness limitation, not a product defect) rather
+than blocking closure on it. `make check` (full backend+frontend gate)
+passed. 1280x900 and 375x812 rendered-screenshot verification performed
+live against the real dev stack (`AI_PROVIDER=fake`) after the initial QA
+pass flagged it as outstanding -- both viewports render the toggle and
+full Agent workflow form correctly with no horizontal overflow; keyboard
+behavior reuses the already-tested `useRovingRadioGroup` hook unchanged.
+
+QA: PASS (criterion matrix +
+follow-up verification posted on
+[issue #462](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/462#issuecomment-5557191800)).
+Issue closed.
+
+### Next groomed issue
+
+**#463** (AI 3D editor `/ai-projects3d/:id`: create and edit scene objects
+through agent runs) is now dependency-unblocked by #462's closure and is
+the next backlog-session candidate -- the 3D counterpart of #462, reusing
+the same `AIRun`/`useAIRun`-shaped approach against the 3D document family
+(`Project3D`/`SceneVersion3D`, `target_type=project3d`) and its own
+outline/selection primitives. All other blockers/verification-boundaries
+recorded in the prior distillation pass are unchanged by this closure,
+plus the new [issue #474](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/474)
+(local Firefox E2E harness 401, verification-boundary, not yet confirmed
+whether it reproduces on CI's Linux Firefox build).
 

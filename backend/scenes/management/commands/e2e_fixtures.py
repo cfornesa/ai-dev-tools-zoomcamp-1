@@ -52,6 +52,13 @@ E2E_USERS = {
     # deliberately ordinary, non-admin user (e.g. "other" stands in for
     # the issue's own "ordinary user B" in that suite).
     "admin": ("e2e_admin", "e2e-admin@example.test"),
+    # Issue #443: a fixture reserved for `accountDeletion.spec.ts`'s own
+    # destructive test -- deleting an account renames/anonymizes its
+    # `username`/`email` (see `scenes.account_deletion.delete_account`),
+    # so this user must never be shared with any other spec the way
+    # owner/other/empty/admin are (a shared fixture consumed by a
+    # deletion test would break every later spec in the same run).
+    "deletable": ("e2e_deletable", "e2e-deletable@example.test"),
 }
 
 
@@ -126,6 +133,7 @@ class Command(BaseCommand):
             other = _get_or_create_user(*E2E_USERS["other"])
             empty = _get_or_create_user(*E2E_USERS["empty"])
             admin = _get_or_create_user(*E2E_USERS["admin"])
+            deletable = _get_or_create_user(*E2E_USERS["deletable"])
             ApplicationAdmin.objects.get_or_create(user=admin)
 
         payload = {
@@ -135,6 +143,7 @@ class Command(BaseCommand):
             "other": {"username": other.username, "email": other.email},
             "empty": {"username": empty.username, "email": empty.email},
             "admin": {"username": admin.username, "email": admin.email},
+            "deletable": {"username": deletable.username, "email": deletable.email},
         }
 
         if as_json:
@@ -145,7 +154,8 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS(
                     "Created/reset E2E fixture users: "
-                    f"{owner.username}, {other.username}, {empty.username}, {admin.username}"
+                    f"{owner.username}, {other.username}, {empty.username}, "
+                    f"{admin.username}, {deletable.username}"
                 )
             )
 
@@ -156,6 +166,22 @@ class Command(BaseCommand):
 
         User = get_user_model()
         usernames = [username for username, _email in E2E_USERS.values()]
+
+        def _owned_by_a_fixture_user(relation: str = "") -> Q:
+            # Issue #443: `accountDeletion.spec.ts`'s destructive test
+            # against the "deletable" fixture renames its `username` (see
+            # `scenes.account_deletion.delete_account`'s anonymization),
+            # so by cleanup time that row no longer matches `usernames`
+            # directly -- but everything it still owns must be found and
+            # cleared the same way as every other fixture user's data.
+            # This command never runs against a real deployment (guarded
+            # above and in the module docstring), so matching the
+            # anonymization scheme's own prefix here only ever catches
+            # this fixture's own renamed row.
+            prefix = f"{relation}__" if relation else ""
+            return Q(**{f"{prefix}username__in": usernames}) | Q(
+                **{f"{prefix}username__startswith": "deleted-user-"}
+            )
 
         # CASCADE on Project.owner (scenes/models.py) removes every
         # project/version/draft/activity row these users own along with
@@ -203,10 +229,12 @@ class Command(BaseCommand):
         # worth guarding against here.
         with transaction.atomic():
             ForkProvenance.objects.filter(
-                Q(source_project__owner__username__in=usernames)
-                | Q(source_version__project__owner__username__in=usernames)
+                _owned_by_a_fixture_user("source_project__owner")
+                | _owned_by_a_fixture_user("source_version__project__owner")
             ).delete()
-            Project.all_objects.filter(owner__username__in=usernames).update(current_version=None)
+            Project.all_objects.filter(_owned_by_a_fixture_user("owner")).update(
+                current_version=None
+            )
             # Issue #239: Project3D.current_version is PROTECT (scenes/models.py)
             # just like Project.current_version above -- once a fixture owner has
             # any Project3D, deleting the user without nulling this first raises
@@ -217,10 +245,14 @@ class Command(BaseCommand):
             # parent/fork_source_version/immutable-snapshot trigger (3D has no
             # fork feature), so this is a plain update with none of Project's
             # surrounding trigger complexity.
-            Project3D.all_objects.filter(owner__username__in=usernames).update(current_version=None)
+            Project3D.all_objects.filter(_owned_by_a_fixture_user("owner")).update(
+                current_version=None
+            )
             # Issue #314: ArtPiece.current_version is also PROTECT, so clear
             # it before the fixture users' generated pieces cascade away.
-            ArtPiece.all_objects.filter(owner__username__in=usernames).update(current_version=None)
+            ArtPiece.all_objects.filter(_owned_by_a_fixture_user("owner")).update(
+                current_version=None
+            )
             if connection.vendor == "postgresql":
                 with connection.cursor() as cursor:
                     cursor.execute(
@@ -242,11 +274,13 @@ class Command(BaseCommand):
                         "WITH doomed AS ("
                         "  SELECT id FROM scenes_sceneversion WHERE project_id IN ("
                         "    SELECT id FROM scenes_project WHERE owner_id IN ("
-                        "      SELECT id FROM auth_user WHERE username = ANY(%s)"
+                        "      SELECT id FROM auth_user WHERE username = ANY(%s) "
+                        "        OR username LIKE 'deleted-user-%%'"
                         "    )"
                         "  )"
                         "), fixture_user_ids AS ("
-                        "  SELECT id FROM auth_user WHERE username = ANY(%s)"
+                        "  SELECT id FROM auth_user WHERE username = ANY(%s) "
+                        "    OR username LIKE 'deleted-user-%%'"
                         ") "
                         "UPDATE scenes_sceneversion SET "
                         "  parent_id = CASE WHEN parent_id IN (SELECT id FROM doomed) "
@@ -266,7 +300,7 @@ class Command(BaseCommand):
                         "ALTER TABLE scenes_sceneversion "
                         "ENABLE TRIGGER scenes_sceneversion_prevent_snapshot_mutation_trigger"
                     )
-            deleted_count, _ = User.objects.filter(username__in=usernames).delete()
+            deleted_count, _ = User.objects.filter(_owned_by_a_fixture_user()).delete()
 
         if as_json:
             self.stdout.write(json.dumps({"deleted": deleted_count}))

@@ -93,6 +93,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       other: { username: string; email: string };
       empty: { username: string; email: string };
       admin: { username: string; email: string };
+      deletable: { username: string; email: string };
     };
     writeE2EState(fixtures);
   } catch (err) {

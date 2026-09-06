@@ -92,6 +92,9 @@ function AccountSettings() {
         <p>
           <Link to="/account/settings/export">Export your data</Link>
         </p>
+        <p>
+          <Link to="/account/settings/delete">Delete your account</Link>
+        </p>
         <p>AI generation uses your own Mistral API key. We never show or recover a saved key.</p>
         <p role="status" aria-live="polite">
           {configured === null

@@ -16830,3 +16830,55 @@ a substantially larger implementation than the issues closed so far this
 session. #462/#463 remain dependency-blocked on it. #465 stays blocked on
 #419's still-in-progress fresh evidence above.
 
+## Backlog distillation — post-merge reconciliation, 2026-09-06
+
+Status: DISTILLED. `main` at `ac03bd2` after merging PR #468 (#457), #469
+(#442), #470 (#459), #471 (#454) in sequence -- all four merged cleanly with
+no conflicts (each branched independently off `main`, touching disjoint
+files). `make check` on the merged `main` passes clean: 197 test files, 2446
+tests, 0 failures. CI on the final merge commit (run 34008908594) and the
+dedicated full-3-browser-suite run for #419 (run 34007651127, branch
+`ci-full-suite-419`) were both still in progress at the time of this
+reconciliation -- recorded as open verification items to recheck, not
+failures; local `make check` is this repo's primary evidence standard and
+already passed clean on the exact merged revision.
+
+### PR #464 disposition
+
+Confirmed still cleanly mergeable against current `main` (`git merge-tree`
+against the merge-base shows no real conflict markers, only prose
+occurrences of the word "conflict" in its own doc content). Docs-only, still
+in DRAFT state. No action taken on it this pass -- left for the repository
+owner's own decision on timing, per earlier session guidance.
+
+### 11 open issues, no duplicates
+
+| Issue | Status | Blocker class | Owner / next action |
+| --- | --- | --- | --- |
+| [#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419) | Evidence gathering in progress | verification-boundary | CI/QA: full-suite run 34007651127 in progress; classify any failures against its own acceptance criteria once complete |
+| [#440](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/440) | PROPOSED/GROOMED | dependency-blocked (credential) | Owner: create a real PayPal sandbox app (`PAYPAL_CLIENT_ID`/`SECRET` empty in `.env.example`) before engineering |
+| [#443](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/443) | BLOCKED | policy decision | Owner: decide retention/active-subscription-deletion policy before engineering |
+| [#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445) | DEPENDENCY-BLOCKED | verification-boundary | Release QA: reconcile remaining children once closed; checklist updated this pass |
+| [#455](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/455) | PROPOSED/GROOMED | non-actionable (manual-only) | Owner: real webcam + real hand gesture evidence required; no automation substitutes |
+| [#460](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/460) | PROPOSED/GROOMED | dependency-blocked (credential) | Owner: register a real LinkedIn OAuth app before engineering |
+| [#461](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/461) | PROPOSED/GROOMED, closure-ready | none | AI engineer: implement bounded run state machine with fake-provider tests -- **next backlog-session issue** |
+| [#462](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/462) | DEPENDENCY-BLOCKED | dependency (#461) | AI frontend engineer: after #461 |
+| [#463](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/463) | DEPENDENCY-BLOCKED | dependency (#461, #462) | AI frontend engineer: after #461/#462 |
+| [#465](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/465) | PROPOSED/GROOMED | dependency-blocked (#419 evidence) / CI-runner-capacity | CI/runtime engineer: classify once #419's fresh run completes |
+| [#467](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/467) | OPEN | verification-boundary | Owner: re-run `/health/` + table check via Claude in Chrome after the *next* Replit publish |
+
+No new actionable gaps discovered this pass beyond what's already linked
+above. Every blocked item already has a class, owner, and next action from
+prior grooming passes this session.
+
+### Next groomed issue
+
+**#461** (AI workflow service: run bounded plan-validate-revise proposals) is
+the next issue for backlog-session, per the repository owner's explicit
+direction. Independent (no dependency), no credential blocker (reuses the
+existing `AI_PROVIDER=fake` pattern), closure contract already complete from
+prior grooming. Substantially larger in scope than every issue closed this
+session -- a persistent run state machine (`/api/ai/runs/` start/detail/
+advance/cancel), lease-based concurrency control, and fake-provider coverage
+across ~7 scenarios for both 2D and 3D.
+

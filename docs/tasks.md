@@ -16777,13 +16777,56 @@ feature rather than weakening its original guarantee. `make check` passed
 clean (1099 backend/2445 frontend); e2e 6/6 across chromium/firefox/webkit.
 Shipped in [PR #469](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/469).
 
+### #459 closure — 2026-09-06
+
+[#459](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/459) closed.
+Ported the CSS-3D flat-spatial-shell steering approach `artPieceSandbox.ts`
+already implements for the live preview (`ensureFlatSpatialShell`/
+`applyFlatShellPose`/`disposeFlatSpatialShell`) into
+`standaloneArtPieceRuntimeSource.ts`'s Full ZIP export runtime, hand-synced
+since there is no way to import a `<script>` tag's textual contents across a
+build boundary. `includeSteering` no longer requires a spatial library; the
+Non-Camera ZIP variant needed no change (its exclusion was already
+`mode === 'full'`-gated, library-agnostic). New `artPieceFlatZip.spec.ts`
+extracts a real Full ZIP and drives real execution (a genuine CSS `transform`
+change via the export's own `window.__steerArtPiece` hook), not string
+matching. `make check` passed clean; e2e 3/3 across chromium/firefox/webkit,
+plus no regression on the existing Three.js and Non-Camera specs. Shipped in
+[PR #470](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/470).
+
+### #454 closure — 2026-09-06
+
+[#454](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/454) closed.
+Root-caused via temporary diagnostics (added, used, removed): WebKit does not
+treat `navigator.mediaDevices` as a stable object in this sandboxed
+opaque-origin iframe -- each access can return a fresh instance, so the
+mock's original instance-level `Object.defineProperty` patch never survived
+to the sandbox script's own later access. `'unavailable'` silently fell
+through to a real headless native call; `'granted'` could never resolve;
+`'denied'` looked correct only by coincidence (a real ungranted call also
+rejects). Fixed by patching `MediaDevices.prototype.getUserMedia` instead
+(shared by every instance) and switching from accumulating
+`context.addInitScript` calls on one context (a second, related WebKit
+timing hazard also found) to one fresh `BrowserContext` per mock outcome via
+`storageState`. Verified 6/6 consecutive runs on `--project=webkit` alone,
+plus chromium/firefox unaffected. Durable lesson recorded in
+`.agents/memory/webkit-mediadevices-instance-instability.md`. Shipped in
+[PR #471](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/471).
+
+### Full-suite evidence in progress for #419
+
+A manually-triggered full browser-matrix CI run (all 3 browsers, complete
+`e2e/` directory) is in progress on a dedicated throwaway branch
+(`ci-full-suite-419`, isolated from `main`'s own CI concurrency group so
+routine pushes to `main` don't cancel it) to gather the fresh-revision
+evidence #419 requires. Not yet complete as of this reconciliation.
+
 ### Next groomed issue
 
-**#459** (Full ZIP export's Steer button stays gated to Three.js/A-Frame for
-flat pieces) is the next issue for backlog-session: independent (its only
-dependency, #449, is closed), no external credential or hardware required.
-Ports the CSS-3D flat-spatial-shell steering approach `artPieceSandbox.ts`
-already implements for the live preview into
-`frontend/src/export/standaloneArtPieceRuntimeSource.ts`'s Full ZIP export
-runtime.
+**#461** (AI workflow service: run bounded plan-validate-revise proposals) is
+the next independent, closure-ready issue -- no credential blocker for its
+core logic (the existing `AI_PROVIDER=fake` pattern covers it), though it is
+a substantially larger implementation than the issues closed so far this
+session. #462/#463 remain dependency-blocked on it. #465 stays blocked on
+#419's still-in-progress fresh evidence above.
 

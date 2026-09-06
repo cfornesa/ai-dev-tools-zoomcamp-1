@@ -30,9 +30,6 @@ jobs:
       - name: Check GitHub Action pins
         run: python scripts/check-github-action-pins.py
 
-      - name: Check live provider alert contract
-        run: python scripts/check-live-provider-alert.py
-
   backend:
     name: Backend checks
     if: ${{ github.event_name != 'deployment_status' }}

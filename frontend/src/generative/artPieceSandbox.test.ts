@@ -147,6 +147,25 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain('window.__registerArtPieceCamera');
   });
 
+  it("#480: A-Frame auto-registration moves the wrapping entity (not the camera element's own local object3D) when the camera is nested", () => {
+    // Regression for #480: sceneEl.camera.position is the raw THREE.Camera's
+    // *local* offset (near (0,0,0), or A-Frame's own default eye-height for
+    // a bare <a-camera>) -- never the authored world position. The fix
+    // walks up to the camera element's parent and, when that parent isn't
+    // <a-scene> itself (i.e. the system prompt's own recommended wrapping-
+    // entity pattern), registers *that* entity's object3D instead, since
+    // it's the one actually carrying the authored position/rotation.
+    const doc = buildArtPieceSandboxDocument(
+      '<a-scene id="art-piece-scene" embedded></a-scene>',
+      'aframe',
+    );
+    expect(doc).not.toContain('camObj.position');
+    expect(doc).toContain('cameraEl.parentEl');
+    expect(doc).toContain("wrappingEl.tagName !== 'A-SCENE'");
+    expect(doc).toContain('wrappingEl.object3D');
+    expect(doc).toContain('cameraEl.object3D');
+  });
+
   it('the CDN script loads before the listener script, which loads before the snippet, for every library', () => {
     const jsSnippet = 'THREE.foo();';
     const doc = buildArtPieceSandboxDocument(jsSnippet, 'threejs');

@@ -279,4 +279,113 @@ test.describe('Generated regular viewer: hand-steering ownership and Reset (#432
     await expect(page.getByRole('button', { name: /steer/i })).toHaveCount(0);
     await expect(page.getByTestId('steering-status')).toHaveCount(0);
   });
+
+  // Issue #480: sceneEl.camera.position (A-Frame's raw THREE.Camera's own
+  // *local* offset) is never the entity's authored/world position -- the
+  // trusted wrapper's auto-registration must instead move whichever
+  // entity actually carries the authored placement: the camera element
+  // itself for a bare <a-camera>, or its wrapping <a-entity> for the
+  // system prompt's own recommended nested pattern. Verified end-to-end
+  // via navigate-signal/reset-view directly (no camera permission needed
+  // for either command), matching this issue's own live-browser
+  // reproduction.
+  async function waitForAframeReady(page: Page): Promise<void> {
+    await page
+      .frameLocator('iframe[title="Art piece preview"]')
+      .locator('canvas.a-canvas')
+      .waitFor({ state: 'attached' });
+  }
+
+  type SandboxPoseMessage = { status: string; pose?: { x: number; y: number; z: number } };
+
+  // `navigate-signal`'s acknowledged `{status: 'navigation', pose}` response
+  // is never wired into PieceStageControls.tsx's displayed steering-pose
+  // testid (only `{status: 'steering'}` is) -- a separate, pre-existing UI
+  // gap, not part of #480's own bug. Read the raw postMessage response
+  // directly instead of depending on that display, mirroring exactly how
+  // this issue's own live-browser reproduction verified the fix.
+  async function sendCommandAndAwaitPose(
+    page: Page,
+    type: string,
+    extra?: Record<string, unknown>,
+  ): Promise<{ x: number; y: number; z: number } | undefined> {
+    const pose = await page.evaluate(
+      ({ type, extra }) => {
+        return new Promise<{ x: number; y: number; z: number } | undefined>((resolve) => {
+          const iframe = document.querySelector<HTMLIFrameElement>(
+            'iframe[title="Art piece preview"]',
+          );
+          function onMessage(event: MessageEvent) {
+            const data = event.data as SandboxPoseMessage | null;
+            if (!data || (data.status !== 'steering' && data.status !== 'navigation')) return;
+            window.removeEventListener('message', onMessage);
+            resolve(data.pose);
+          }
+          window.addEventListener('message', onMessage);
+          iframe?.contentWindow?.postMessage(
+            { source: 'art-piece-parent', version: 1, type, ...extra },
+            '*',
+          );
+        });
+      },
+      { type, extra },
+    );
+    return pose;
+  }
+
+  test.describe('A-Frame auto-camera-registration pose accuracy (#480)', () => {
+    for (const [label, source] of [
+      [
+        'bare <a-camera> with no wrapping entity',
+        '<a-scene id="art-piece-scene" embedded><a-box position="0 1 0" color="#4CC3D9"></a-box><a-camera position="0 1.6 4" rotation="0 0 0"></a-camera><a-light type="ambient" color="#ffffff"></a-light></a-scene>',
+      ],
+      [
+        "camera wrapped in a positioned entity (the system prompt's own recommended pattern)",
+        '<a-scene id="art-piece-scene" embedded><a-box position="0 1 0" color="#4CC3D9"></a-box><a-entity position="0 1.6 4" rotation="0 0 0"><a-camera></a-camera></a-entity><a-light type="ambient" color="#ffffff"></a-light></a-scene>',
+      ],
+    ] as const) {
+      test(`${label}: registers the authored position, applies bounded deltas relative to it, and resets exactly`, async ({
+        page,
+        context,
+      }) => {
+        await loginViaUI(page, fixture.owner.email, fixture.password);
+        const created = await apiPost(context, '/api/art-pieces/', {
+          title: `A-Frame pose fixture (${label})`,
+          description: "A published A-Frame piece verifying #480's pose-frame fix.",
+          prompt: 'blue box',
+          engine: 'aframe',
+          capabilities: {
+            screenshot: false,
+            download: false,
+            fullscreen: false,
+            camera_view: true,
+            hand_steering: true,
+          },
+          source,
+        });
+        expect(created.status()).toBe(201);
+        const piece = (await created.json()) as { public_id: string };
+        const published = await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
+          status: 'published',
+        });
+        expect(published.status()).toBe(200);
+
+        await page.goto(`/art-pieces/p/${piece.public_id}`);
+        await waitForAframeReady(page);
+
+        const initialPose = await sendCommandAndAwaitPose(page, 'reset-view');
+        expect(initialPose).toEqual({ x: 0, y: 1.6, z: 4 });
+
+        const movedPose = await sendCommandAndAwaitPose(page, 'navigate-signal', {
+          dx: 1,
+          dy: 0,
+          dz: 0,
+        });
+        expect(movedPose).toEqual({ x: 1, y: 1.6, z: 4 });
+
+        const resetPose = await sendCommandAndAwaitPose(page, 'reset-view');
+        expect(resetPose).toEqual({ x: 0, y: 1.6, z: 4 });
+      });
+    }
+  });
 });

@@ -1,5 +1,6 @@
 from django.urls import path
 
+from scenes.account_deletion_api import AccountDeletionView
 from scenes.account_entitlements_api import AccountEntitlementsView
 from scenes.account_export_api import AccountDataExportView
 from scenes.account_identities_api import AccountIdentitiesView, AccountIdentityUnlinkView
@@ -71,6 +72,7 @@ urlpatterns = [
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
     path("account/entitlements/", AccountEntitlementsView.as_view(), name="account-entitlements"),
     path("account/export/", AccountDataExportView.as_view(), name="account-data-export"),
+    path("account/delete/", AccountDeletionView.as_view(), name="account-delete"),
     path("account/sessions/", AccountSessionsView.as_view(), name="account-sessions"),
     path(
         "account/sessions/<str:public_id>/",

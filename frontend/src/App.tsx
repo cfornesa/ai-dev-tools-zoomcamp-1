@@ -30,6 +30,7 @@ const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const AccountIdentities = lazy(() => import('./pages/AccountIdentities'));
 const AccountSessions = lazy(() => import('./pages/AccountSessions'));
 const AccountDataExport = lazy(() => import('./pages/AccountDataExport'));
+const AccountDeletion = lazy(() => import('./pages/AccountDeletion'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 
 /** Task 94 (issue #94): `/projects/:id/settings` no longer exists as a
@@ -84,6 +85,7 @@ function App() {
               <Route path="account/settings/identities" element={<AccountIdentities />} />
               <Route path="account/settings/sessions" element={<AccountSessions />} />
               <Route path="account/settings/export" element={<AccountDataExport />} />
+              <Route path="account/settings/delete" element={<AccountDeletion />} />
               <Route path="admin/settings" element={<AdminSettings />} />
               <Route path="projects/:id" element={<EditorWorkspace />} />
               {/* Issue #223: the 2D AI-assisted editor -- a distinct route

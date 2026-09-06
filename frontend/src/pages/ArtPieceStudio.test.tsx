@@ -127,10 +127,15 @@ describe('ArtPieceStudio (issue #199)', () => {
 
     // Changing the dropdown after a result exists must not retroactively
     // rebuild the sandbox for the new (unrelated) library against the
-    // old code -- the previewed SVG markup must not gain a CDN script.
+    // old code -- the previewed SVG markup must not gain Three.js's CDN
+    // <script> tag. (Every library's CSP now allows the jsdelivr origin
+    // unconditionally, for hand-steering's MediaPipe module -- see #455 --
+    // so a bare "no cdn.jsdelivr.net anywhere" check no longer
+    // distinguishes a stale svg srcdoc from a rebuilt threejs one; the
+    // absence of Three.js's own CDN <script> tag still does.)
     await userEvent.selectOptions(screen.getByLabelText(/library/i), 'threejs');
     expect(iframe.srcdoc).toContain('<svg id="art-piece-svg">');
-    expect(iframe.srcdoc).not.toContain('cdn.jsdelivr.net');
+    expect(iframe.srcdoc).not.toContain('<script src="https://cdn.jsdelivr.net/npm/three');
   });
 
   it('sends a typed model id and persists it across a fresh mount', async () => {

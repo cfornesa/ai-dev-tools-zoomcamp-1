@@ -146,7 +146,13 @@ WebSocket/EventSource, never load a texture or asset from a URL, never access \
 window.top/window.parent/document.cookie/localStorage/sessionStorage, never define or call \
 eval()/Function()/setTimeout with a string argument, never create another <script> element.
 - Prefer requestAnimationFrame for any animation, and make sure the loop is self-terminating or \
-bounded -- never an infinitely recursive synchronous call that could hang the page."""
+bounded -- never an infinitely recursive synchronous call that could hang the page.
+- After creating your camera, register it exactly once so the viewer can steer it with real hand \
+gestures: `window.__registerArtPieceCamera({ getPose: function () { return { x: camera.position.x, \
+y: camera.position.y, z: camera.position.z }; }, setPose: function (x, y, z) { \
+camera.position.set(x, y, z); camera.lookAt(0, 0, 0); } });` -- replace `camera` with whatever \
+variable name you gave your camera. Always include this call; omitting it leaves hand-gesture \
+steering with nothing to control."""
 
 # Issue #199 (A-Frame extension): like SVG, this is declarative markup
 # only -- A-Frame's own built-in geometry/material/animation components

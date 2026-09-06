@@ -66,12 +66,18 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).not.toMatch(/document\.cookie/);
   });
 
-  it('canvas2d/svg get the strict CSP with no external script host', () => {
+  it("canvas2d/svg get the strict CSP, with jsdelivr/googleapis allowed only for hand-steering's vision model", () => {
     const canvasDoc = buildArtPieceSandboxDocument(SNIPPET, 'canvas2d');
     const svgDoc = buildArtPieceSandboxDocument('<svg id="art-piece-svg"></svg>', 'svg');
     for (const doc of [canvasDoc, svgDoc]) {
-      expect(doc).toMatch(/script-src 'unsafe-inline';/);
-      expect(doc).not.toContain('cdn.jsdelivr.net');
+      expect(doc).not.toContain('<script src="https://cdn.jsdelivr.net');
+      expect(doc).toMatch(
+        /script-src 'unsafe-inline' 'wasm-unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/,
+      );
+      expect(doc).toMatch(
+        /connect-src https:\/\/cdn\.jsdelivr\.net https:\/\/storage\.googleapis\.com;/,
+      );
+      expect(doc).toContain('worker-src blob:;');
     }
   });
 
@@ -79,7 +85,9 @@ describe('buildArtPieceSandboxDocument', () => {
     const jsSnippet = "THREE.foo(); document.getElementById('art-piece-container');";
     const doc = buildArtPieceSandboxDocument(jsSnippet, 'threejs');
     expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/three@0.160.0');
-    expect(doc).toMatch(/script-src 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net;/);
+    expect(doc).toMatch(
+      /script-src 'unsafe-inline' 'wasm-unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/,
+    );
     expect(doc).toContain('id="art-piece-container"');
     expect(doc).toContain(`<script>${jsSnippet}</script>`);
   });
@@ -94,13 +102,49 @@ describe('buildArtPieceSandboxDocument', () => {
     const scene = '<a-scene id="art-piece-scene" embedded><a-box></a-box></a-scene>';
     const doc = buildArtPieceSandboxDocument(scene, 'aframe');
     expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2');
-    expect(doc).toMatch(/script-src 'unsafe-inline' 'unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/);
+    expect(doc).toMatch(
+      /script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/,
+    );
     expect(doc).toContain(scene);
   });
 
   it("threejs's CSP does not grant 'unsafe-eval' -- only A-Frame needs it", () => {
     const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
     expect(doc).not.toMatch(/'unsafe-eval'/);
+  });
+
+  it('#455: enabling hand steering loads the pinned MediaPipe vision bundle and gesture-recognizer model', () => {
+    const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
+    expect(doc).toContain("MEDIAPIPE_VISION_VERSION = '1.0.1'");
+    expect(doc).toContain('/vision_bundle.mjs');
+    expect(doc).toContain('cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@');
+    expect(doc).toContain(
+      'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task',
+    );
+    expect(doc).toContain('ensureHandTracking()');
+  });
+
+  it('#455: steer-signal and the real hand-tracking loop share one bounded-pose path', () => {
+    const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
+    expect(doc).toContain('function applySteerDelta(dx, dy, dz)');
+    expect(doc).toContain('applySteerDelta(data.dx, data.dy, data.dz)');
+    expect(doc).toContain('applySteerDelta(dx, dy, dz)');
+  });
+
+  it("#455: the trusted wrapper's A-Frame auto-camera-registration is guarded by pieceLibrary === 'aframe'", () => {
+    // The listener script's source text is identical for every library
+    // (it's one shared template) -- what actually differs at runtime is
+    // the `pieceLibrary === 'aframe'` guard around this block, since
+    // A-Frame's own system prompt forbids the generated markup from ever
+    // calling window.__registerArtPieceCamera itself (unlike Three.js).
+    const doc = buildArtPieceSandboxDocument(
+      '<a-scene id="art-piece-scene" embedded></a-scene>',
+      'aframe',
+    );
+    expect(doc).toContain("pieceLibrary === 'aframe'");
+    expect(doc).toContain("document.querySelector('a-scene')");
+    expect(doc).toContain('sceneEl.camera');
+    expect(doc).toContain('window.__registerArtPieceCamera');
   });
 
   it('the CDN script loads before the listener script, which loads before the snippet, for every library', () => {

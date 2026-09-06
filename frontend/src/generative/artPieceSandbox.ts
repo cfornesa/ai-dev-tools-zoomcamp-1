@@ -107,9 +107,26 @@ function buildCsp(library: ArtPieceLibrary): string {
   // needs no such allowance, so this stays scoped to A-Frame only
   // rather than widening the CSP for every library.
   const unsafeEval = library === 'aframe' ? " 'unsafe-eval'" : '';
+  // Issue #455: real hand-steering loads `@mediapipe/tasks-vision`'s ESM
+  // bundle from the same pinned CDN as the library scripts above, plus
+  // its WASM runtime and the gesture-recognizer model file it fetches at
+  // startup -- the model happens to be hosted on
+  // `storage.googleapis.com` (Google's own model CDN), a second, narrow
+  // origin distinct from `ALLOWED_CDN_ORIGIN`. `script-src` covers the
+  // ESM bundle fetch itself; `connect-src` (absent before this issue,
+  // which meant `default-src 'none'` silently blocked every fetch) covers
+  // the WASM binary and model file; `worker-src blob:` covers the Worker
+  // MediaPipe's WASM runtime spins up via a Blob URL; `'wasm-unsafe-eval'`
+  // is required for WebAssembly compilation under a strict CSP that
+  // doesn't otherwise allow 'unsafe-eval' (Three.js pieces). Hand-steering
+  // is available to every library (Canvas2D/SVG via the flat spatial
+  // shell), so these allowances apply unconditionally, not only when
+  // `cdnUrl` is set.
+  const MEDIAPIPE_MODEL_ORIGIN = 'https://storage.googleapis.com';
   const scriptSrc = cdnUrl
-    ? `script-src 'unsafe-inline'${unsafeEval} ${ALLOWED_CDN_ORIGIN};`
-    : "script-src 'unsafe-inline';";
+    ? `script-src 'unsafe-inline'${unsafeEval} 'wasm-unsafe-eval' ${ALLOWED_CDN_ORIGIN};`
+    : `script-src 'unsafe-inline' 'wasm-unsafe-eval' ${ALLOWED_CDN_ORIGIN};`;
+  const connectSrc = `connect-src ${ALLOWED_CDN_ORIGIN} ${MEDIAPIPE_MODEL_ORIGIN};`;
   // Issue #433: SVG screenshot capture rasterizes the serialized SVG
   // markup through an in-sandbox `Image`/`data:` URL (see the
   // `screenshot` command handler below) so every library downloads a
@@ -117,7 +134,7 @@ function buildCsp(library: ArtPieceLibrary): string {
   // read. `img-src data:` is scoped to that one same-sandbox rasterization
   // step -- it does not let generated code fetch a remote image, since
   // `data:` is not a network origin.
-  return `default-src 'none'; ${scriptSrc} style-src 'unsafe-inline'; img-src data:;`;
+  return `default-src 'none'; ${scriptSrc} ${connectSrc} worker-src blob:; style-src 'unsafe-inline'; img-src data:;`;
 }
 
 /** This function's own code -- never the AI's output -- registers the
@@ -213,6 +230,15 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     }
     var video = document.getElementById(CAMERA_OVERLAY_ID);
     if (video) video.remove();
+    // Issue #455: hand-steering reads frames from this same camera feed --
+    // losing the camera (an explicit disable, or the track ending on its
+    // own) must stop that loop too, not leave it spinning against a
+    // removed <video> element.
+    stopHandTrackingLoop();
+    if (steeringActive) {
+      steeringActive = false;
+      reportState('steering', { active: false, error: 'camera-required' });
+    }
   }
   // Issue #431: composite the camera overlay into a screenshot in the
   // same stacking order it renders live (artwork first, camera on top at
@@ -268,6 +294,125 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     var scale = clampedRadius / radius;
     return { x: pose.x * scale, y: pose.y * scale, z: pose.z * scale };
   }
+  // Shared by the 'steer-signal'/'navigate-signal' command handlers below
+  // and, since #455, the real hand-tracking loop -- one bounded-pose
+  // application path regardless of which signal source drove it.
+  function applySteerDelta(dx, dy, dz) {
+    if (!steeringActive || !registeredCamera) {
+      reportState('steering', { active: steeringActive, error: 'not-ready' });
+      return;
+    }
+    var currentPose = registeredCamera.getPose();
+    var nextPose = clampSteerPose({
+      x: currentPose.x + (typeof dx === 'number' ? dx : 0),
+      y: currentPose.y + (typeof dy === 'number' ? dy : 0),
+      z: currentPose.z + (typeof dz === 'number' ? dz : 0)
+    });
+    registeredCamera.setPose(nextPose.x, nextPose.y, nextPose.z);
+    reportState('steering', { active: true, pose: nextPose });
+  }
+  // Issue #455: real hand-landmark detection driving applySteerDelta above
+  // with actual gesture-derived deltas, replacing the purely-synthetic
+  // 'steer-signal' command as the piece's real signal source. Loaded
+  // lazily -- only once hand-steering is first enabled -- from the exact
+  // CDN origin/version the main app's own mediapipeProvider.ts already
+  // pins (at mediapipe/tasks-vision, version 1.0.1), so a piece that never
+  // touches steering never pays for the model download. Runs on the same
+  // camera video element enable-camera already created for the overlay --
+  // never a second getUserMedia stream -- matching the existing
+  // "camera-required" gate this feature already had before real tracking
+  // existed to drive it.
+  var MEDIAPIPE_VISION_VERSION = '1.0.1';
+  var MEDIAPIPE_WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + MEDIAPIPE_VISION_VERSION + '/wasm';
+  var MEDIAPIPE_BUNDLE_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + MEDIAPIPE_VISION_VERSION + '/vision_bundle.mjs';
+  var GESTURE_RECOGNIZER_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task';
+  var handTracking = { recognizer: null, loading: false, rafId: null, prevPalm: null, prevPinch: null };
+  function reportModelStatus(modelStatus, extra) {
+    var payload = { modelStatus: modelStatus };
+    for (var key in extra) { if (Object.prototype.hasOwnProperty.call(extra, key)) payload[key] = extra[key]; }
+    reportState('hand-tracking-model', payload);
+  }
+  // Palm center: the mean of the five MediaPipe hand-landmark points that
+  // sit at the base of each finger/the wrist (0, 5, 9, 13, 17) -- stable
+  // across an open or closed hand, unlike a single fingertip landmark.
+  function palmCenter(landmarks) {
+    var ids = [0, 5, 9, 13, 17];
+    var x = 0, y = 0;
+    for (var i = 0; i < ids.length; i++) { x += landmarks[ids[i]].x; y += landmarks[ids[i]].y; }
+    return { x: x / ids.length, y: y / ids.length };
+  }
+  // Thumb tip (4) to index fingertip (8) distance, in MediaPipe's own
+  // normalized [0, 1] image-space coordinates -- shrinking (a pinch
+  // closing) drives zoom-in, growing (opening) drives zoom-out.
+  function pinchDistance(landmarks) {
+    var thumb = landmarks[4], index = landmarks[8];
+    var dx = thumb.x - index.x, dy = thumb.y - index.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  var HAND_PAN_SENSITIVITY = 6;
+  var HAND_ZOOM_SENSITIVITY = 20;
+  function handleHandTrackingResult(result) {
+    if (!result.landmarks || !result.landmarks.length) {
+      handTracking.prevPalm = null;
+      handTracking.prevPinch = null;
+      return;
+    }
+    var landmarks = result.landmarks[0];
+    var palm = palmCenter(landmarks);
+    var pinch = pinchDistance(landmarks);
+    if (handTracking.prevPalm) {
+      var dx = (palm.x - handTracking.prevPalm.x) * HAND_PAN_SENSITIVITY;
+      var dy = (palm.y - handTracking.prevPalm.y) * HAND_PAN_SENSITIVITY;
+      var dz = handTracking.prevPinch === null ? 0 : (pinch - handTracking.prevPinch) * HAND_ZOOM_SENSITIVITY;
+      applySteerDelta(dx, dy, dz);
+    }
+    handTracking.prevPalm = palm;
+    handTracking.prevPinch = pinch;
+  }
+  function handTrackingLoop() {
+    if (!steeringActive || !handTracking.recognizer) return;
+    var video = document.getElementById(CAMERA_OVERLAY_ID);
+    if (video && video.readyState >= 2) {
+      try {
+        handleHandTrackingResult(handTracking.recognizer.recognizeForVideo(video, performance.now()));
+      } catch (e) {
+        // A single bad frame should not stop tracking for the rest of
+        // the session.
+      }
+    }
+    handTracking.rafId = requestAnimationFrame(handTrackingLoop);
+  }
+  function stopHandTrackingLoop() {
+    if (handTracking.rafId !== null) {
+      cancelAnimationFrame(handTracking.rafId);
+      handTracking.rafId = null;
+    }
+    handTracking.prevPalm = null;
+    handTracking.prevPinch = null;
+  }
+  function ensureHandTracking() {
+    if (handTracking.recognizer) { handTrackingLoop(); return; }
+    if (handTracking.loading) return;
+    handTracking.loading = true;
+    reportModelStatus('loading');
+    import(/* @vite-ignore */ MEDIAPIPE_BUNDLE_URL).then(function (visionModule) {
+      return visionModule.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL).then(function (fileset) {
+        return visionModule.GestureRecognizer.createFromOptions(fileset, {
+          baseOptions: { modelAssetPath: GESTURE_RECOGNIZER_MODEL_URL, delegate: 'CPU' },
+          runningMode: 'VIDEO',
+          numHands: 1
+        });
+      });
+    }).then(function (recognizer) {
+      handTracking.recognizer = recognizer;
+      handTracking.loading = false;
+      reportModelStatus('ready');
+      handTrackingLoop();
+    }).catch(function (err) {
+      handTracking.loading = false;
+      reportModelStatus('failed', { error: String((err && err.message) || err) });
+    });
+  }
   // Issue #449: Canvas2D/SVG pieces have no native spatial camera to
   // register the way a Three.js/A-Frame snippet does -- this lazily
   // builds a CSS 3D presentation of the *existing*, unmodified canvas/svg
@@ -322,9 +467,38 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     registeredCamera = null;
     initialCameraPose = null;
   }
+  // Issue #455: A-Frame generated markup can never call
+  // window.__registerArtPieceCamera itself -- its own system prompt
+  // forbids any custom JavaScript, unlike Three.js's. This trusted wrapper
+  // code (never AI-generated) auto-detects the scene's active camera once
+  // A-Frame finishes initializing it and registers it the same way a
+  // Three.js snippet would register its own, so the shared steer-signal/
+  // hand-tracking path above drives it identically either way.
+  if (pieceLibrary === 'aframe') {
+    document.addEventListener('DOMContentLoaded', function () {
+      var sceneEl = document.querySelector('a-scene');
+      if (!sceneEl) return;
+      function registerAframeCamera() {
+        var camObj = sceneEl.camera;
+        if (!camObj) return;
+        window.__registerArtPieceCamera({
+          getPose: function () {
+            return { x: camObj.position.x, y: camObj.position.y, z: camObj.position.z };
+          },
+          setPose: function (x, y, z) {
+            camObj.position.set(x, y, z);
+            camObj.lookAt(0, 0, 0);
+          }
+        });
+      }
+      if (sceneEl.hasLoaded) registerAframeCamera();
+      else sceneEl.addEventListener('loaded', registerAframeCamera);
+    });
+  }
   window.addEventListener('pagehide', function () {
     stopMicrophone();
     stopCamera();
+    stopHandTrackingLoop();
     if (audioCtx) { try { audioCtx.close(); } catch (e) {} }
   });
   // Keyboard notes: a real, audible tone per key, gated on Sound already
@@ -488,33 +662,27 @@ function buildListenerScript(library: ArtPieceLibrary): string {
             steeringActive = true;
             flatShellArtwork.style.pointerEvents = 'none';
             reportState('steering', { active: true });
+            ensureHandTracking();
           }
         } else if (!registeredCamera) {
           reportState('steering', { active: false, error: 'no-camera-registered' });
         } else {
           steeringActive = true;
           reportState('steering', { active: true });
+          ensureHandTracking();
         }
       } else if (data.type === 'disable-hand-steering') {
         steeringActive = false;
+        stopHandTrackingLoop();
         if (flatShellArtwork) flatShellArtwork.style.pointerEvents = 'auto';
         reportState('steering', { active: false });
       } else if (data.type === 'steer-signal') {
-        if (!steeringActive || !registeredCamera) {
-          reportState('steering', { active: steeringActive, error: 'not-ready' });
-        } else {
-          var currentPose = registeredCamera.getPose();
-          var dx = typeof data.dx === 'number' ? data.dx : 0;
-          var dy = typeof data.dy === 'number' ? data.dy : 0;
-          var dz = typeof data.dz === 'number' ? data.dz : 0;
-          var nextPose = clampSteerPose({
-            x: currentPose.x + dx,
-            y: currentPose.y + dy,
-            z: currentPose.z + dz
-          });
-          registeredCamera.setPose(nextPose.x, nextPose.y, nextPose.z);
-          reportState('steering', { active: true, pose: nextPose });
-        }
+        // Issue #455: a real hand-tracking frame calls applySteerDelta
+        // directly (see handleHandTrackingResult above) -- this command
+        // remains for a still-valid external/synthetic signal source
+        // (this suite's own deterministic e2e replay fixtures), sharing
+        // the exact same bounded-pose path.
+        applySteerDelta(data.dx, data.dy, data.dz);
       } else if (data.type === 'navigate-signal') {
         // Issue #434: walkable immersive navigation (arrow-key travel,
         // drag/touch look, zoom) shares the exact same bounded-pose

@@ -17297,6 +17297,70 @@ was changed in this session beyond a temporary, fully-reverted diagnostic
 edit to `artPieceSandbox.ts`'s camera `.catch()` handler used to surface
 the real `SecurityError` (confirmed via `git status`/`git diff` clean
 afterward). Neither issue is duplicated by any existing open issue
-(checked via `gh issue list` search). Next action: the repository owner
-reviews both scoped issues before implementation on either proceeds.
+(checked via `gh issue list` search).
+
+### Issue #480 closure — 2026-09-06
+
+Fixed in [PR #481](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/481)
+(merged `7203c5f`). Root cause confirmed live before writing any fix:
+`sceneEl.camera.position` is A-Frame's raw `THREE.Camera` object's own
+*local* offset (near `(0,0,0)`, or A-Frame's default eye-height for a
+bare `<a-camera>`), never the entity's authored/world position -- which
+for the system prompt's own recommended wrapping-entity pattern lives one
+level higher still, on the wrapping entity. Fix: walk from the camera
+element to its parent and register whichever entity actually carries the
+placement (the camera element itself when it's a direct child of
+`<a-scene>`, its wrapping entity otherwise).
+
+Verification: live-verified against both authoring patterns in real
+Chrome via `navigate-signal`/`reset-view` (neither needs camera
+permission) before writing coverage; `frontend/src/generative/
+artPieceSandbox.test.ts` gained a regression test (20/20 pass);
+`frontend/e2e/artPieceSteeringRuntime.spec.ts` gained an `A-Frame
+auto-camera-registration pose accuracy (#480)` describe block covering
+both patterns end-to-end, 8/8 pass on chromium/firefox/webkit; `make
+check` passed (backend 1136/29 skip, frontend 199 files/2472 tests).
+Merged PR's only CI failure was the already-tracked #465 camera-FPS
+flake. QA: PASS, full criterion matrix posted on
+[issue #480](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/480#issuecomment-5558182346).
+Issue closed (GitHub auto-closed it via the PR's "Fixes #480" body text).
+
+### Issue #479 architecture decision — 2026-09-06
+
+Repository owner decision (via `AskUserQuestion`): move camera capture
+*and* MediaPipe hand-tracking entirely into the trusted parent frame,
+rather than relaying live video frames into the sandboxed iframe. The
+sandbox never touches raw video or the camera API at all going forward --
+it only receives derived data (steering pose deltas via the existing
+`steer-signal` command, and the uncomposited artwork screenshot it
+already produces). Recorded in full on
+[issue #479](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/479#issuecomment-5558168337),
+including the exact implementation shape: camera capture moves into
+`PieceStageControls.tsx`; the live camera overlay becomes a parent-side
+`<video>` positioned over the iframe via CSS instead of an
+iframe-injected element; screenshot compositing (artwork + camera) moves
+to the parent, using the sandbox's still-unchanged uncomposited artwork
+capture; MediaPipe's `GestureRecognizer` runs in the parent against the
+main app's own existing bundled `@mediapipe/tasks-vision` dependency
+(matching `Scene3DPreview.tsx`'s own established pattern, not a second
+CDN-loaded copy), posting `steer-signal` into the sandbox exactly as any
+external signal source always could; the sandbox's own internal
+MediaPipe-loading code added in #455 is removed entirely, along with the
+CSP relaxation (`connect-src`/`worker-src`/`wasm-unsafe-eval`) that
+shipped with it -- resolving the CDN-vs-bundled tension recorded in
+[[art-piece-sandbox-mediapipe-cdn-vs-bundled]] by making the question moot
+(MediaPipe no longer loads inside the sandbox's trust boundary at all).
+
+Scope narrowed to the live React viewer surface only (the sandboxed
+iframe + `PieceStageControls.tsx` shared by `/art-pieces/p/:id`, embed,
+immersive, and the editor's own live preview -- one atomic issue despite
+covering multiple routes, matching how #431/#432/#455 were themselves
+scoped). Two other independently hand-synced camera implementations
+per #454's own findings -- the standalone Full ZIP export and the
+standalone Immersive ZIP export -- are explicitly out of scope and filed
+as their own follow-ups: [#482](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/482)
+and [#483](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/483),
+neither blocking #479 but intended to follow it so they can reuse the
+same design decisions. Next action: implement #479 under this decided
+architecture.
 

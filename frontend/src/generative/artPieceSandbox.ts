@@ -479,15 +479,37 @@ function buildListenerScript(library: ArtPieceLibrary): string {
       var sceneEl = document.querySelector('a-scene');
       if (!sceneEl) return;
       function registerAframeCamera() {
+        // Issue #480: sceneEl.camera is A-Frame's raw underlying
+        // THREE.Camera object -- its own .position is a *local* offset
+        // within its own Object3D hierarchy (effectively always near
+        // (0,0,0) in practice, or A-Frame's own default eye-height "0 1.6
+        // 0" when the <a-camera> itself carries no position attribute).
+        // The system prompt's own recommended authoring pattern wraps
+        // <a-camera> in a positioned <a-entity> (e.g. <a-entity
+        // position="0 1.6 4"><a-camera></a-camera></a-entity>) precisely
+        // so that wrapping entity, not the camera element itself, carries
+        // the actual placement -- confirmed live: for that pattern the
+        // camera element's own object3D stays at A-Frame's default local
+        // eye-height regardless of the wrapper's position. For a bare
+        // <a-camera position="..."> directly under <a-scene> (no
+        // wrapper), the camera element's own object3D is exactly what
+        // carries that authored position instead. Move whichever entity
+        // actually carries the placement, one level up if the camera
+        // isn't a direct child of the scene.
         var camObj = sceneEl.camera;
-        if (!camObj) return;
+        if (!camObj || !camObj.el || !camObj.el.object3D) return;
+        var cameraEl = camObj.el;
+        var wrappingEl = cameraEl.parentEl;
+        var placedObject3D = (wrappingEl && wrappingEl.tagName !== 'A-SCENE')
+          ? wrappingEl.object3D
+          : cameraEl.object3D;
         window.__registerArtPieceCamera({
           getPose: function () {
-            return { x: camObj.position.x, y: camObj.position.y, z: camObj.position.z };
+            return { x: placedObject3D.position.x, y: placedObject3D.position.y, z: placedObject3D.position.z };
           },
           setPose: function (x, y, z) {
-            camObj.position.set(x, y, z);
-            camObj.lookAt(0, 0, 0);
+            placedObject3D.position.set(x, y, z);
+            placedObject3D.lookAt(0, 0, 0);
           }
         });
       }

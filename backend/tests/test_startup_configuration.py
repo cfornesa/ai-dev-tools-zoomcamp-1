@@ -1,6 +1,8 @@
 import os
+import signal
 import subprocess
 import textwrap
+import time
 from pathlib import Path
 
 import pytest
@@ -22,6 +24,7 @@ def launcher_doubles(tmp_path):
             if [[ "${DJANGO_EXITS_EARLY:-}" == "1" ]]; then
               exit "${DJANGO_EXIT_STATUS:-1}"
             fi
+            echo $$ > "${STATE_FILE}.django-pid"
             exec sleep 30
             """
         )
@@ -51,6 +54,10 @@ def launcher_doubles(tmp_path):
             #!/usr/bin/env bash
             date +%s%N > "${STATE_FILE}.vite-started"
             printf '%s\\n' "$*" > "${STATE_FILE}.npm-args"
+            if [[ "${VITE_SLEEP:-}" == "1" ]]; then
+              echo $$ > "${STATE_FILE}.frontend-pid"
+              exec sleep 30
+            fi
             exit 1
             """
         )
@@ -293,3 +300,75 @@ def test_launcher_reports_django_exit_before_starting_vite(launcher_doubles):
     assert result.returncode != 0
     assert "Django exited before becoming healthy (status 7)" in result.stderr
     assert not (state_file.parent / "startup-state.vite-started").exists()
+
+
+def test_launcher_terminates_children_and_leaves_no_orphans_on_sigterm(launcher_doubles):
+    """Issue #415: the published deployment process must not leave orphaned
+    Django/Vite children behind when the platform sends SIGTERM (a normal
+    autoscale stop/restart) -- this is exactly `scripts/start.sh`'s own
+    `cleanup()` trap contract, reproduced here against the real script and
+    real (short-lived, doubled) child processes rather than asserted from
+    source text alone, since sending a live signal to shared production is
+    explicitly out of scope for this repository's own verification policy.
+    """
+    bin_dir, state_file = launcher_doubles
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "PATH": f"{bin_dir}:{environment['PATH']}",
+            "PORT": "5001",
+            "STATE_FILE": str(state_file),
+            "RUN_MIGRATIONS_ON_START": "false",
+            "HEALTH_AFTER": "1",
+            "STARTUP_TIMEOUT_SECONDS": "5",
+            "VITE_SLEEP": "1",
+        }
+    )
+
+    process = subprocess.Popen(
+        ["bash", str(LAUNCHER)],
+        cwd=ROOT,
+        env=environment,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        django_pid_file = state_file.parent / "startup-state.django-pid"
+        frontend_pid_file = state_file.parent / "startup-state.frontend-pid"
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline and not frontend_pid_file.exists():
+            time.sleep(0.1)
+        assert django_pid_file.exists(), "Django double never recorded its pid"
+        assert frontend_pid_file.exists(), "Vite double never recorded its pid"
+
+        django_pid = int(django_pid_file.read_text().strip())
+        frontend_pid = int(frontend_pid_file.read_text().strip())
+
+        def alive(pid: int) -> bool:
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                return False
+            return True
+
+        assert alive(django_pid), "Django double exited before it could be signaled"
+        assert alive(frontend_pid), "Vite double exited before it could be signaled"
+
+        process.send_signal(signal.SIGTERM)
+        process.wait(timeout=10)
+
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and (alive(django_pid) or alive(frontend_pid)):
+            time.sleep(0.1)
+
+        assert not alive(django_pid), (
+            "Django child survived the launcher's SIGTERM cleanup -- an orphaned process"
+        )
+        assert not alive(frontend_pid), (
+            "Vite child survived the launcher's SIGTERM cleanup -- an orphaned process"
+        )
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()

@@ -17243,3 +17243,60 @@ scheduling it is the next step, separate from #455's own closure (whose
 criteria are about the pipeline being wired for real input, which is
 verified).
 
+### Live verification session, 2026-09-06: two new gaps found, #455 stays closed
+
+The live joint session above happened (real Chrome via Claude in Chrome,
+real webcam, a fresh local disposable stack) and found two real gaps --
+neither reopens #455 (its own scoped closure evidence remains valid);
+both are new, linked follow-up issues per this repo's closure-integrity
+convention.
+
+**[Issue #479](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/479)
+(severe, blocks real hand-steering entirely)**: `getUserMedia()` throws
+`SecurityError: Invalid security origin` inside
+`artPieceSandbox.ts`'s sandboxed `<iframe sandbox="allow-scripts">` (no
+`allow-same-origin`, by deliberate design) for every real user in every
+real browser -- confirmed live, not inferred. The iframe's own
+`allow="microphone; camera"` Permissions Policy attribute cannot override
+this stricter, separate opaque-origin restriction. Confirmed independently
+that the exact same `getUserMedia` call succeeds at the top-level page
+(detected the real webcam). Every prior "camera works" verification
+(#430/#431/#432/#436/#448/#449/#454/#455) exclusively used a Playwright
+`canvas.captureStream()` mock monkeypatched onto
+`MediaDevices.prototype.getUserMedia`, which bypasses this real browser
+restriction entirely -- none of those closures' evidence was ever a real,
+unmocked camera call reaching the real sandbox. Practical effect: "Enable
+camera view" (#431) cannot succeed for any real user today, which
+transitively blocks "Steer the piece" (#432/#455) since `enable-hand-
+steering` requires `cameraStream` to already be truthy. This is what
+blocked today's own planned live #455 verification. A real fix needs
+genuine architecture work (the opaque-origin isolation is a deliberate,
+load-bearing security boundary that must not be weakened by adding
+`allow-same-origin`) -- candidate shapes (frame/derived-signal relay from
+the trusted parent frame) are recorded on the issue, not prescribed.
+See [[sandboxed-iframe-opaque-origin-blocks-getusermedia]].
+
+**[Issue #480](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/480)
+(moderate, independent, real regression in #455's own code)**: the A-Frame
+trusted-wrapper camera auto-registration added in #455 reads/writes
+`sceneEl.camera.position` (A-Frame's raw `THREE.Camera` object's *local*
+offset, effectively always near `(0,0,0)`) instead of `sceneEl.camera.el.
+object3D.position` (the entity's actual authored/world position). Verified
+live via `navigate-signal`/`reset-view` sent directly (no camera needed --
+these commands are ungated on camera permission) against two published
+A-Frame fixtures (bare `<a-camera position="...">` and the wrapping-entity
+form the A-Frame system prompt itself recommends): both reported/reset to
+`(0,0,0)` instead of the authored `(0, 1.6, 4)`. Three.js's own
+registration and the shared `applySteerDelta`/`steer-signal`/
+`navigate-signal` bounded-pose mechanism were re-verified live in the same
+session and work correctly. See [[aframe-camera-local-vs-world-position]].
+
+Both issues were scoped via a `task-distillation` pass at the repository
+owner's explicit request, before any fix was attempted -- no product code
+was changed in this session beyond a temporary, fully-reverted diagnostic
+edit to `artPieceSandbox.ts`'s camera `.catch()` handler used to surface
+the real `SecurityError` (confirmed via `git status`/`git diff` clean
+afterward). Neither issue is duplicated by any existing open issue
+(checked via `gh issue list` search). Next action: the repository owner
+reviews both scoped issues before implementation on either proceeds.
+

@@ -16656,3 +16656,25 @@ lint/format/typecheck) passed clean. Browser QA:
 (chromium/firefox/webkit) = 18/18 passed, at both 1280x900 and 375x812,
 against a real PostgreSQL-backed Django + Vite stack. Shipped in
 [PR #466](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/466).
+
+## Production incident: post-publish schema sync gap — 2026-09-06
+
+After republishing to Replit following #466's merge, `/health/` returned
+`{"status": "error", "database": "ok", "cache": "unavailable"}` (503).
+Direct inspection of the production database (Replit's Database panel, via
+Claude in Chrome) found `django_cache` and `scenes_sessionmetadata`
+(migration 0034) both missing; `django_migrations` for `scenes` topped out
+at `0025`, nine migrations behind — the first Publish attempted since
+0026-0034 were committed (2026-09-05), following the last successful
+publish (2026-09-04 09:28 UTC).
+
+A second Publish with zero code changes resolved it: `/health/` returned
+fully `ok`, and both tables now exist. `django_migrations` still shows
+`0025` as newest even after the fix — confirmed Replit's schema-diff/apply
+mechanism creates real DDL directly and never touches Django's migration
+ledger in either direction. Full record:
+[.agents/memory/replit-migrations-ledger-not-updated-by-publish.md](../.agents/memory/replit-migrations-ledger-not-updated-by-publish.md).
+Follow-up: [#467](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/467)
+(make post-publish `/health/`+table verification the documented standard
+practice; no source change required unless the existing
+`scripts/smoke-published.sh` retry timeout proves insufficient).

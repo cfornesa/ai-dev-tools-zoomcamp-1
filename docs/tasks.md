@@ -16678,3 +16678,57 @@ Follow-up: [#467](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/467
 (make post-publish `/health/`+table verification the documented standard
 practice; no source change required unless the existing
 `scripts/smoke-published.sh` retry timeout proves insufficient).
+
+## Backlog distillation — 2026-09-06
+
+Status: DISTILLED. Checkout `main` at 69590cd. 16 open issues, no duplicates.
+Grooming comments posted to every open issue this pass, folding in a new
+testing-capability finding: Claude in Chrome has verified, working access to
+both the live production app (real authenticated session) and the Replit
+workspace dashboard (Deployments log, read-only Database SQL panel) for this
+project — proven today by diagnosing #467's incident through it.
+
+### PR disposition
+
+- **PR #417** (`codex/backlog-readiness-reconciliation-2026-09-04`):
+  confirmed superseded. Every file it introduces already exists on `main`
+  via commit `71c8290`; merging it would regress ~14,265 lines shipped
+  since its branch diverged. Recommended disposition: close as superseded,
+  not merge. Posted to #445. Awaiting the repository owner's explicit
+  sign-off to close the PR.
+- **PR #464** (`codex/open-issue-distillation-2026-09-05`, docs-only):
+  confirmed clean and mergeable (test-merged locally, no conflicts; CI
+  green apart from the known #465 flake). Still in DRAFT state, not yet
+  merged.
+
+### Manifest and dependency order
+
+| Issue | Scope | Dependencies | Status | Testing owner |
+| --- | --- | --- | --- | --- |
+| [#415](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/415) | Replit ASGI routing/process lifecycle | none | Partially closable now | Live-production checks (Claude in Chrome); SIGTERM/signal checks need a disposable deployment (operator) |
+| [#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419) | Full browser gate reconciliation | none | OPEN | Automatable (`make e2e`/CI) |
+| [#440](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/440) | PayPal sandbox subscription | none | PROPOSED/GROOMED | Owner must create sandbox app credentials first; then Claude in Chrome |
+| [#442](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/442) | Account data export | none | PROPOSED/GROOMED | Claude in Chrome, with per-download owner go-ahead |
+| [#443](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/443) | Account deletion/retention | operator policy decision | BLOCKED | N/A — policy decision, not a testing question |
+| [#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445) | Release-candidate reconciliation | all children below | DEPENDENCY-BLOCKED | Mixed, once children close |
+| [#454](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/454) | WebKit camera scenario | none | PROPOSED/GROOMED | NOT Claude-in-Chrome-testable (Chrome only); local/CI WebKit |
+| [#455](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/455) | Real MediaPipe hand-tracking | none | PROPOSED/GROOMED | Manual only — real webcam + real hand required |
+| [#457](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/457) | Offscreen iframe handshake | none | PROPOSED/GROOMED | Claude in Chrome or Playwright |
+| [#459](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/459) | ZIP export gating | none | PROPOSED/GROOMED | Claude in Chrome, with per-download owner go-ahead |
+| [#460](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/460) | LinkedIn OIDC sign-in | none | PROPOSED/GROOMED | Owner must create OAuth app credentials first; then Claude in Chrome |
+| [#461](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/461) | AI workflow service | none | PROPOSED/GROOMED | Automatable (`AI_PROVIDER=fake`) for core logic; Claude in Chrome for UI |
+| [#462](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/462) | AI 2D editor consumer | #461 | DEPENDENCY-BLOCKED | Same split as #461 |
+| [#463](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/463) | AI 3D editor consumer | #461, #462 | DEPENDENCY-BLOCKED | Same split as #461 |
+| [#465](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/465) | Camera FPS runner-capacity flake | none | PROPOSED/GROOMED | CI-runner capacity investigation, not browser-testable |
+| [#467](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/467) | Post-publish schema verification | none | OPEN | Claude in Chrome/curl, next Replit publish |
+
+### Next groomed issue
+
+**#415** is the next issue for backlog-session: independent (no blocking
+dependency), partially closable immediately using this session's proven
+Claude-in-Chrome access to the live production Replit deployment (health,
+whoami, frontend proxy, launcher confirmation), with only the SIGTERM/
+signal-lifecycle portion remaining genuinely operator-blocked pending a
+disposable deployment. Do not use PR #417's SHA for any of this issue's
+evidence — use current `main`.
+

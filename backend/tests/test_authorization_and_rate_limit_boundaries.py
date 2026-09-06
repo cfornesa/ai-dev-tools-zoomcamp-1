@@ -45,14 +45,20 @@ correct per this repo's own convention (see AGENTS.md).
 
 ## export (out of scope by construction, not by oversight)
 
-Per Task 55/56's architecture, export HTML generation happens entirely in
-the browser (`frontend/src/export/`) from data the editor already holds --
-there is no `POST /api/.../export/` (or any other export-shaped) Django
-view or URL. `test_no_export_endpoint_exists` below asserts this stays
-true: `scenes/urls.py` registers no path containing "export", so there is
-no server-side authorization surface for this row of the matrix to test.
-Publishing/fetching a project (which an exported scene's data ultimately
-comes from) is already covered by the publish/project rows above.
+Per Task 55/56's architecture, scene/piece export HTML generation happens
+entirely in the browser (`frontend/src/export/`) from data the editor
+already holds -- there is no `POST /api/.../export/` (or any other
+export-shaped) Django view or URL for *that* flow.
+`test_no_scene_or_piece_export_endpoint_exists` below asserts this stays
+true, scoped to exclude `account/export/` (issue #442's owner-scoped data
+export, a deliberately different feature that does have a real
+authenticated server endpoint -- its own authorization boundary,
+including anonymous rejection and cross-user isolation, is covered by
+`tests/test_account_export.py`, not this file). If a future change ever
+adds a server-side *scene or piece* export endpoint, this assertion will
+force this task's matrix to be revisited for it. Publishing/fetching a
+project (which an exported scene's data ultimately comes from) is already
+covered by the publish/project rows above.
 
 ## What THIS file adds (genuinely new cells)
 
@@ -457,14 +463,19 @@ def test_private_template_denial_is_byte_identical_to_missing_template(other_cli
 # --- export: confirm this matrix row has no backend endpoint to audit ------
 
 
-def test_no_export_endpoint_exists():
+def test_no_scene_or_piece_export_endpoint_exists():
     """Task 55/56's export flow is entirely client-side (browser-generated
     HTML from data already loaded into the editor) -- see
     `frontend/src/export/`. There is deliberately no
-    `POST/GET .../export/...` Django view or URL for this task to test
-    authorization on. This test pins that architectural fact: if a future
-    change ever adds a server-side export endpoint, this assertion will
-    force this task's matrix to be revisited for it.
+    `POST/GET .../export/...` Django view or URL for *that* flow. This
+    test pins that architectural fact: if a future change ever adds a
+    server-side scene/piece export endpoint, this assertion will force
+    this task's matrix to be revisited for it.
+
+    Issue #442's `account/export/` is excluded on purpose -- a genuinely
+    different, already-authorized feature (owner-scoped account data
+    export), not Task 55/56's scene/piece HTML export. See
+    `tests/test_account_export.py` for its own authorization coverage.
     """
     resolver = get_resolver()
 
@@ -479,7 +490,9 @@ def test_no_export_endpoint_exists():
         return found
 
     every_path = _walk(resolver.url_patterns)
-    export_paths = [p for p in every_path if "export" in p.lower()]
+    export_paths = [
+        p for p in every_path if "export" in p.lower() and "account/export" not in p.lower()
+    ]
     assert export_paths == [], f"Unexpected export endpoint(s) found: {export_paths}"
 
 

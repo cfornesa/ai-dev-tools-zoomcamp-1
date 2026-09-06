@@ -1,6 +1,7 @@
 from django.urls import path
 
 from scenes.account_entitlements_api import AccountEntitlementsView
+from scenes.account_export_api import AccountDataExportView
 from scenes.account_identities_api import AccountIdentitiesView, AccountIdentityUnlinkView
 from scenes.account_sessions_api import AccountSessionRevokeView, AccountSessionsView
 from scenes.admin_settings_api import AdminPlansView, AdminSiteSettingsView
@@ -62,6 +63,7 @@ urlpatterns = [
     path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
     path("account/entitlements/", AccountEntitlementsView.as_view(), name="account-entitlements"),
+    path("account/export/", AccountDataExportView.as_view(), name="account-data-export"),
     path("account/sessions/", AccountSessionsView.as_view(), name="account-sessions"),
     path(
         "account/sessions/<str:public_id>/",

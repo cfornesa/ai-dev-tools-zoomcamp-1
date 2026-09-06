@@ -17004,7 +17004,7 @@ follow-up verification posted on
 [issue #462](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/462#issuecomment-5557191800)).
 Issue closed.
 
-### Next groomed issue
+### Next groomed issue (superseded by #463's own closure below)
 
 **#463** (AI 3D editor `/ai-projects3d/:id`: create and edit scene objects
 through agent runs) is now dependency-unblocked by #462's closure and is
@@ -17016,4 +17016,84 @@ recorded in the prior distillation pass are unchanged by this closure,
 plus the new [issue #474](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/474)
 (local Firefox E2E harness 401, verification-boundary, not yet confirmed
 whether it reproduces on CI's Linux Firefox build).
+
+## Issue #463 closure -- AI 3D editor Agent workflow, 2026-09-06
+
+Status: COMPLETED and CLOSED -- the final issue in the #461/#462/#463 AI
+workflow chain. Implemented in
+[PR #476](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/476)
+(branch `feat/ai-3d-agent-workflow-463`), merged on top of `27530a8`.
+
+- Per the issue's own explicit acceptance criterion ("reuse shared run
+  service ... without a second orchestrator"), this issue **generalized**
+  #462's implementation rather than duplicating it:
+  - `frontend/src/pages/useAIRun.ts`: now takes `targetType`
+    (`'project'`/`'project3d'`) and an injected `fetchAcceptedVersion`
+    callback instead of being hardcoded to the 2D document family. 2D
+    fetches the accepted version via the existing `getSceneVersion`; 3D
+    refetches the project and reads its already-nested `current_version`
+    (`api/projects3d.ts`'s own documented `Project3D` shape) -- no new
+    backend/frontend endpoint needed for this.
+  - `frontend/src/pages/AIRunPanel.tsx`: now takes caller-supplied
+    `selectableObjects` and a `renderCandidatePreview` render-prop instead
+    of hardcoding 2D's scene shape/outline and p5 preview internally.
+  - `frontend/src/pages/AIProposalPanel3D.tsx`: wires the same
+    `useAIRun`/`AIRunPanel` in exactly like `AIProposalPanel.tsx` does for
+    2D, supplying `scene.objects` (via `scene3dTypes.ts`'s
+    `object3DLabel`) for selection and the existing `Scene3DPreview` for
+    the candidate preview -- no `useAIRun3D.ts` or `AIRunPanel3D.tsx` was
+    created.
+- `backend/tests/test_ai_runs.py` (+4 tests): 3D-specific coverage for
+  this issue's own fixture scenarios -- invalid-material-then-repair via
+  a selection-scoped 3D edit, exactly-one `SceneVersion3D` created on
+  accept, and a concurrent-owner-update stale-base failure at accept. The
+  run state machine itself (`scenes/ai_runs.py`) needed no 3D-specific
+  code change -- it was already target-type-generic since #461.
+- Tests: `frontend/src/pages/AIProposalPanel3D.test.tsx` (+3 tests, 12
+  total), `frontend/e2e/aiAgent3d.spec.ts` (new, 4 scenarios: full
+  create-and-accept with a real Three.js preview; edit-selection against
+  a fixture with a cube and a sphere; repeated-invalid-output reaching
+  terminal `failed`; reload reconnection to `awaiting_review` without
+  another attempt). `frontend/e2e/aiAgent2d.spec.ts` (2D) also rerun to
+  confirm the shared-hook/shared-panel refactor didn't regress #462.
+
+Verification: `uv run pytest tests/test_ai_runs.py -q` -- 23 passed
+(including the PostgreSQL-gated concurrency test). `npx vitest run` --
+198 files / 2463 tests passed. `cd frontend && npm run test:e2e --
+e2e/aiAgent3d.spec.ts --project=chromium` -- 4/4 pass; repeated across all
+configured browsers -- **chromium 4/4, webkit 4/4 pass**; `firefox` hits
+the same pre-existing local harness limitation already tracked in
+[issue #474](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/474),
+not re-litigated here. `make check` (full backend+frontend gate) passed.
+1280x900 and 375x812 rendered verification performed live against the
+real dev stack (`AI_PROVIDER=fake`) -- the Agent workflow toggle and full
+form (with the 3D-specific "Edit selected object" label) render correctly
+at both viewports with no horizontal overflow.
+
+QA: PASS (criterion matrix posted on
+[issue #463](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/463#issuecomment-5557372580)).
+Issue closed.
+
+### AI workflow chain (#461/#462/#463) complete
+
+All three issues in the "AI workflow service" chain from the 2026-09-06
+distillation pass are now closed: #461 (backend run state machine),
+#462 (2D frontend consumer), #463 (3D frontend consumer, generalizing
+#462's implementation rather than duplicating it). No further
+backlog-session work is queued from this chain.
+
+Remaining open backlog, unchanged by this closure (see the prior
+distillation passes for full detail): #419 (full-browser gate evidence,
+in progress), #440/#460 (credential-blocked: PayPal, LinkedIn), #443
+(policy-blocked: retention decision), #445 (release-candidate
+reconciliation, depends on children), #455 (manual-only: real hardware),
+#465 (camera-FPS flake, depends on #419's evidence -- reproduced again
+during #462/#463 QA on both PRs #475/#476, still the same known cause),
+#467 (needs the next Replit publish), #474 (new: local Firefox E2E
+harness 401, verification-boundary). PR #464 (docs-only, draft) remains
+open for the owner's own timing decision.
+
+A fresh task-distillation pass is recommended before selecting further
+backlog-session work, to confirm none of these blockers have cleared and
+to check for any newly-opened issues since the 2026-09-06 manifest.
 

@@ -17097,3 +17097,84 @@ A fresh task-distillation pass is recommended before selecting further
 backlog-session work, to confirm none of these blockers have cleared and
 to check for any newly-opened issues since the 2026-09-06 manifest.
 
+## Owner policy/taste decisions and follow-up closures, 2026-09-06
+
+The repository owner made two out-of-band decisions this session, each
+unblocking a previously-stuck backlog item:
+
+### Removed the shared-secret live Mistral 3D smoke-check workflow (#472)
+
+Decision: `MISTRAL_API_KEY` is not a shared/environment-level credential
+in this app's architecture -- every real AI request already uses a
+decrypted, owner-scoped **personal** key (`MistralCredentialView`), the
+same model Gemini/DeepSeek already follow with no equivalent scheduled
+check of their own. `.github/workflows/live-provider-3d.yml` (a scheduled
+job requiring a repo-level `MISTRAL_API_KEY` GitHub Actions secret that
+was never configured) and its CI contract check
+(`scripts/check-live-provider-alert.py`) were removed in commit
+`713b6d3`. `backend/tests/test_live_provider_3d.py` remains as an
+opt-in, manually-invoked local diagnostic (a maintainer's own exported
+key, never a repo secret). Issue #472 (the recurring auto-filed failure
+alert) closed as resolved -- its root cause no longer exists.
+
+### Issue #443 closure -- account deletion, retention policy decided
+
+Status: COMPLETED and CLOSED. Implemented in
+[PR #477](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/477)
+(branch `feat/account-deletion-443`), merged on top of `713b6d3`.
+
+Retention policy (repository owner decision): creative content is
+soft-deleted immediately and hard-purged after a 30-day grace period (new
+`manage.py purge_deleted_content` command); an active subscription is
+cancelled at the end of the current billing period (`paid_through`
+preserved, matching the existing webhook state transition); billing/audit
+rows (`Subscription`/`BillingEvent`/`IdentityLinkEvent`) are retained
+indefinitely and anonymized only via the `User` row itself (deactivated,
+scrubbed, never deleted -- avoiding every CASCADE FK a literal
+`User.delete()` would trigger). Identities (`SocialAccount`,
+allauth's `EmailAddress`) and personal AI provider credentials are erased
+outright, along with every session.
+
+`backend/scenes/account_deletion.py`/`account_deletion_api.py` (new):
+`POST /api/account/delete/`, reauthentication (password re-check, skipped
+for OAuth-only accounts) plus an explicit typed "DELETE" confirmation,
+one atomic transaction locked on the user row (two concurrent requests
+can never both proceed). `backend/scenes/management/commands/
+purge_deleted_content.py` (new): the grace-period hard-purge job
+(`--grace-days`, `--dry-run`). `frontend/src/pages/AccountDeletion.tsx` +
+`api/accountDeletion.ts` (new): the confirmation UI at
+`/account/settings/delete`, reactively syncing the client-side auth
+context on success (`auth.signOutLocally()`) rather than relying on a
+route change alone.
+
+`e2e_fixtures.py` gained a 5th fixture user (`deletable`, never shared
+with any other spec since deletion permanently renames/anonymizes it)
+and its cleanup query now also matches the anonymization scheme's own
+`deleted-user-` username prefix.
+
+Verification: `backend/tests/test_account_deletion.py` (new, 15 tests,
+including a PostgreSQL-gated genuine-concurrency test) and
+`frontend/src/pages/AccountDeletion.test.tsx` (new, 5 tests) all pass;
+`frontend/e2e/accountDeletion.spec.ts` (new, 5 scenarios) passes on
+**chromium and webkit**, both individually and combined in one
+invocation; 1280x900/375x812 rendered verification performed live
+against a real dev stack, including a full end-to-end deletion through
+the browser. `make check` passed (backend 1162/2 skip, frontend 199
+files / 2468 tests). QA: PASS, full criterion matrix posted on
+[issue #443](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/443#issuecomment-5557692327).
+Issue closed.
+
+Real PayPal-side subscription cancellation (an actual cancel-subscription
+API call) remains a documented follow-up once #440 adds a PayPal API
+client -- not a blocker for this issue's own closure, whose criteria
+only require the local state-transition/retention contract.
+
+### Next: issue #455 (real MediaPipe hand-tracking)
+
+Per the repository owner's explicit instruction, #455 (full real
+hand-tracking for the generated ArtPiece sandbox) is next, despite being
+marked "manual-only: real hardware" in the prior distillation --
+verification will use Claude in Chrome with real camera permissions the
+owner has granted, rather than the synthetic Playwright seam #465 already
+covers.
+

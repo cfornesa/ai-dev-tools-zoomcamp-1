@@ -16744,11 +16744,46 @@ sent, not one this session injected into shared production. Full backend
 suite: 1091 passed/27 skipped; `make check` passed clean. See the QA comment
 on the issue for the complete criterion matrix.
 
+### #457 closure — 2026-09-06
+
+[#457](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/457) closed.
+`artPieceSandbox.ts`'s ready handshake now defers via `setTimeout` instead of
+nested `requestAnimationFrame` calls, preserving the same two-tick same-tick-
+synchronous-throw protection without depending on Chromium's iframe-
+visibility throttling. Removed the now-obsolete `scrollIntoViewIfNeeded()`
+workaround from `artPieceCapabilities.spec.ts`, `artPieceOwnerEditing.spec.ts`,
+and `artPieceThumbnailCapture.spec.ts` (all three had it for the same shared
+sandbox script). Added a deterministic throwing-snippet fixture to the
+`AI_PROVIDER=fake` provider proving a real crash still reports `crashed`,
+never a false `ready`, while off-screen — passes on chromium/firefox; skipped
+on WebKit with a documented, isolated engine quirk unrelated to this fix's
+own coverage (which passes there). `make check` passed clean (1091 backend/
+2444 frontend). Shipped in
+[PR #468](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/468).
+
+### #442 closure — 2026-09-06
+
+[#442](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/442) closed.
+New `GET /api/account/export/` assembles one JSON document of everything the
+caller owns (profile, identities, entitlement/subscription status, AI
+credential *configuration* only, every Project/Project3D/ArtPiece with full
+version history including soft-deleted rows) with cross-user isolation and no
+key material, session tokens, or payment payloads. New
+`/account/settings/export` page triggers a real browser download via a
+client-side blob. Updated a pre-existing authorization-pin test (Task 55/56's
+`test_no_export_endpoint_exists`, guarding against a *scene/piece* export
+endpoint) to explicitly exclude this genuinely different, already-tested
+feature rather than weakening its original guarantee. `make check` passed
+clean (1099 backend/2445 frontend); e2e 6/6 across chromium/firefox/webkit.
+Shipped in [PR #469](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/469).
+
 ### Next groomed issue
 
-**#457** (Studio `/art-pieces`: 'ready' handshake stalls while the generated
-preview iframe is off-screen) is the next issue for backlog-session:
-independent (no blocking dependency), no external credential or hardware
-required, and testable via Claude in Chrome or Playwright by scrolling the
-preview iframe off-screen and observing the handshake.
+**#459** (Full ZIP export's Steer button stays gated to Three.js/A-Frame for
+flat pieces) is the next issue for backlog-session: independent (its only
+dependency, #449, is closed), no external credential or hardware required.
+Ports the CSS-3D flat-spatial-shell steering approach `artPieceSandbox.ts`
+already implements for the live preview into
+`frontend/src/export/standaloneArtPieceRuntimeSource.ts`'s Full ZIP export
+runtime.
 

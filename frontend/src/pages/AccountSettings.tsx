@@ -86,6 +86,9 @@ function AccountSettings() {
         <p>
           <Link to="/account/settings/identities">Manage linked sign-in methods</Link>
         </p>
+        <p>
+          <Link to="/account/settings/sessions">Manage active sessions</Link>
+        </p>
         <p>AI generation uses your own Mistral API key. We never show or recover a saved key.</p>
         <p role="status" aria-live="polite">
           {configured === null

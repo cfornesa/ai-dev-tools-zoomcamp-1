@@ -42,7 +42,7 @@ from ai_provider.interface3d import (
 )
 from ai_provider.mistral_provider import AIEditScene3DPatchResult, AIEditScenePatchResult
 from scenes import ai_runs
-from scenes.models import AIRun, Project, Project3D, SceneVersion
+from scenes.models import AIRun, Project, Project3D, SceneVersion, SceneVersion3D
 from tests._postgres_routing import close_thread_connections, route_default_to_postgres_test
 
 _BLANK_SCENE_PATH = (
@@ -222,6 +222,119 @@ def test_3d_create_run_reaches_awaiting_review(monkeypatch, owner, project3d):
 
     assert run.status == AIRun.Status.AWAITING_REVIEW
     assert run.candidate_scene_json == MINIMAL_SCENE_3D
+
+
+@pytest.mark.django_db
+def test_3d_edit_selection_invalid_material_then_repaired(monkeypatch, owner, project3d):
+    """Issue #463's own fixture: a fake invalid material/geometry response
+    (simulating the provider's structured 3D output failing schema
+    validation), then a repaired, valid result -- proves the exact same
+    repairable-failure path 2D edit runs already go through
+    (`test_invalid_output_then_successful_repair`) also works for a
+    selection-scoped 3D edit, without any 3D-specific branch in
+    `ai_runs.py` itself."""
+    base = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=1,
+        scene_json=MINIMAL_SCENE_3D,
+        created_by=owner,
+        origin=SceneVersion3D.Origin.MANUAL,
+    )
+    project3d.current_version = base
+    project3d.save(update_fields=["current_version"])
+
+    repaired_scene = copy.deepcopy(MINIMAL_SCENE_3D)
+    _install_fake_provider(monkeypatch, [AIErrorCategory.INVALID_STRUCTURED_OUTPUT, repaired_scene])
+
+    run = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT3D,
+        target=project3d,
+        operation=AIRun.Operation.EDIT_PATCH,
+        scope=AIRun.Scope.SELECTION,
+        selected_target_ids=["cube-1"],
+        prompt="make the cube blue",
+    )
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.RUNNING
+    assert run.repairs == 1
+    assert "cube-1" in ai_runs._augmented_prompt(run)
+
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    assert run.candidate_scene_json == repaired_scene
+
+
+@pytest.mark.django_db
+def test_3d_accept_creates_exactly_one_scene_version_3d(monkeypatch, owner, project3d):
+    _install_fake_provider(monkeypatch, [MINIMAL_SCENE_3D])
+    run = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT3D,
+        target=project3d,
+        operation=AIRun.Operation.CREATE,
+        prompt="a small cube",
+    )
+    run = ai_runs.advance_run(run)
+
+    run, version = ai_runs.accept_run(run)
+
+    assert run.status == AIRun.Status.ACCEPTED
+    assert isinstance(version, SceneVersion3D)
+    assert version.origin == SceneVersion3D.Origin.AI_CREATE
+    project3d.refresh_from_db()
+    assert project3d.current_version_id == version.id
+    assert SceneVersion3D.objects.filter(project=project3d).count() == 1
+
+
+@pytest.mark.django_db
+def test_3d_stale_base_at_accept_fails_the_run_and_creates_no_version(
+    monkeypatch, owner, project3d
+):
+    """Issue #463's own fixture: a concurrent owner update changes the
+    base version between a 3D run's start and its Accept -- must fail
+    exactly like the 2D counterpart
+    (`test_stale_base_at_accept_fails_the_run_and_creates_no_version`),
+    with an explicit `stale_base` reason and no new version created."""
+    base = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=1,
+        scene_json=MINIMAL_SCENE_3D,
+        created_by=owner,
+        origin=SceneVersion3D.Origin.MANUAL,
+    )
+    project3d.current_version = base
+    project3d.save(update_fields=["current_version"])
+
+    edited_scene = copy.deepcopy(MINIMAL_SCENE_3D)
+    _install_fake_provider(monkeypatch, [edited_scene])
+    run = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT3D,
+        target=project3d,
+        operation=AIRun.Operation.EDIT_PATCH,
+        prompt="edit it",
+    )
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+
+    # A concurrent owner update (e.g. a manual save from another tab)
+    # moved current_version since this run started.
+    other_version = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=2,
+        scene_json=MINIMAL_SCENE_3D,
+        created_by=owner,
+        origin=SceneVersion3D.Origin.MANUAL,
+    )
+    project3d.current_version = other_version
+    project3d.save(update_fields=["current_version"])
+
+    run, version = ai_runs.accept_run(run)
+    assert run.status == AIRun.Status.FAILED
+    assert run.error_reason == "stale_base"
+    assert version is None
+    assert SceneVersion3D.objects.filter(project=project3d).count() == 2
 
 
 # --- Invalid-then-repair, repeated-invalid, timeout -------------------------

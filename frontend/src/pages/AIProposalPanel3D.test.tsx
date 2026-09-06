@@ -1,23 +1,36 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as ai3dApi from '../api/ai3d';
 import * as aiPreferencesApi from '../api/aiPreferences';
 import * as aiRetryPreferenceApi from '../api/aiRetryPreference';
+import * as aiRunsApi from '../api/aiRuns';
+import type { AIRun } from '../api/aiRuns';
 import { ApiError } from '../api/client';
+import * as projects3dApi from '../api/projects3d';
+import type { Project3D, SceneVersion3D } from '../api/projects3d';
 import AIProposalPanel3D from './AIProposalPanel3D';
 import type { Scene3DDocument } from './scene3dTypes';
 
 vi.mock('../api/ai3d');
 vi.mock('../api/aiPreferences');
 vi.mock('../api/aiRetryPreference');
+vi.mock('../api/aiRuns');
+vi.mock('../api/projects3d', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/projects3d')>();
+  return { ...actual, getProject3D: vi.fn() };
+});
 
 const mockedCreateAIScene3D = vi.mocked(ai3dApi.createAIScene3D);
 const mockedEditAIScene3D = vi.mocked(ai3dApi.editAIScene3D);
 const mockedFetchModels = vi.mocked(aiPreferencesApi.fetchMistralModelPreferences);
 const mockedFetchPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
 const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
+const mockedStartAIRun = vi.mocked(aiRunsApi.startAIRun);
+const mockedAdvanceAIRun = vi.mocked(aiRunsApi.advanceAIRun);
+const mockedAcceptAIRun = vi.mocked(aiRunsApi.acceptAIRun);
+const mockedGetProject3D = vi.mocked(projects3dApi.getProject3D);
 
 const VALID_SCENE_3D: Scene3DDocument = {
   schemaVersion: 1,
@@ -243,5 +256,158 @@ describe('AIProposalPanel3D seed prop (issue #283)', () => {
     expect((screen.getByLabelText(/describe the change/i) as HTMLTextAreaElement).value).toBe(
       'Improve this scene: ',
     );
+  });
+});
+
+function makeRun(overrides: Partial<AIRun> = {}): AIRun {
+  return {
+    id: 1,
+    status: 'running',
+    target_type: 'project3d',
+    project_id: null,
+    project3d_id: 'p1',
+    operation: 'create',
+    scope: 'whole_scene',
+    selected_target_ids: [],
+    attempts: 0,
+    repairs: 0,
+    candidate_scene: null,
+    candidate_patch: null,
+    change_summary: '',
+    plan_summary: '',
+    validation_summary: '',
+    error_reason: '',
+    usage: { prompt_tokens: 0, completion_tokens: 0, estimated_cost_usd: 0 },
+    accepted_version_id: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    deadline_at: '2026-01-01T00:02:00Z',
+    cancelled_at: null,
+    ...overrides,
+  };
+}
+
+const SCENE_WITH_CUBE: Scene3DDocument = {
+  ...VALID_SCENE_3D,
+  objects: [
+    {
+      id: 'obj-cube',
+      type: 'box',
+      groupId: null,
+      transform: {
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 },
+        opacity: 1,
+      },
+      material: { color: '#ff0000' },
+      visible: true,
+      width: 1,
+      height: 1,
+      depth: 1,
+    },
+  ],
+};
+
+// Issue #463: the Agent workflow toggle -- offered alongside the one-shot
+// flow every test above exercises, reusing the exact same `useAIRun`/
+// `AIRunPanel` this session's 2D counterpart (#462) already ships, not a
+// second orchestrator or a duplicated progress/review UI.
+describe('AIProposalPanel3D Agent workflow (issue #463)', () => {
+  it('toggles to the Agent workflow form and back without disturbing the one-shot fields', async () => {
+    render(
+      <AIProposalPanel3D
+        projectId="p1"
+        workingCopy={SCENE_WITH_CUBE}
+        currentVersionId={1}
+        onAccepted={vi.fn()}
+      />,
+    );
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red cube');
+
+    await userEvent.click(screen.getByRole('radio', { name: /agent workflow/i }));
+    expect(screen.getByTestId('ai-run-form')).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /^create$/i })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: /one-shot/i }));
+    expect(screen.getByLabelText(/describe the scene/i)).toHaveValue('a red cube');
+  });
+
+  it('offers scene objects (e.g. the cube) as selectable for "Edit selected object"', async () => {
+    render(
+      <AIProposalPanel3D
+        projectId="p1"
+        workingCopy={SCENE_WITH_CUBE}
+        currentVersionId={1}
+        onAccepted={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('radio', { name: /agent workflow/i }));
+    await userEvent.click(screen.getByRole('radio', { name: /edit selected object/i }));
+
+    expect(screen.getByRole('option', { name: /Box 1/i })).toBeInTheDocument();
+  });
+
+  it('starts an agent run, advances to an awaiting-review preview, and accepts it', async () => {
+    mockedStartAIRun.mockResolvedValue(makeRun({ status: 'running' }));
+    mockedAdvanceAIRun.mockResolvedValueOnce(
+      makeRun({
+        status: 'awaiting_review',
+        attempts: 1,
+        candidate_scene: SCENE_WITH_CUBE,
+        change_summary: 'Generated a scene.',
+      }),
+    );
+    const onAccepted = vi.fn();
+    mockedAcceptAIRun.mockResolvedValue(
+      makeRun({ status: 'accepted', accepted_version_id: 9, candidate_scene: SCENE_WITH_CUBE }),
+    );
+    const acceptedVersion: SceneVersion3D = {
+      id: 9,
+      sequence: 1,
+      origin: 'ai_create',
+      scene_json: SCENE_WITH_CUBE,
+      created_by: 'alice',
+      created_at: '2026-01-01T00:00:00Z',
+    };
+    mockedGetProject3D.mockResolvedValue({
+      id: 'p1',
+      owner: 'alice',
+      title: 'Untitled',
+      visibility: 'private',
+      thumbnail_url: null,
+      current_version: acceptedVersion,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    } satisfies Project3D);
+
+    render(
+      <AIProposalPanel3D
+        projectId="p1"
+        workingCopy={SCENE_WITH_CUBE}
+        currentVersionId={1}
+        onAccepted={onAccepted}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('radio', { name: /agent workflow/i }));
+    await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red cube');
+    await userEvent.click(screen.getByTestId('ai-run-start'));
+
+    expect(mockedStartAIRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target_type: 'project3d',
+        project3d_id: 'p1',
+        operation: 'create',
+      }),
+    );
+
+    await screen.findByTestId('ai-run-preview');
+    expect(screen.getByTestId('ai-run-change-summary')).toHaveTextContent('Generated a scene.');
+
+    await userEvent.click(screen.getByTestId('ai-run-accept'));
+
+    await waitFor(() => expect(onAccepted).toHaveBeenCalledWith(acceptedVersion));
   });
 });

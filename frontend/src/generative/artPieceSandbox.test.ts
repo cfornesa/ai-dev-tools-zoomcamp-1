@@ -38,6 +38,20 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain(SNIPPET);
   });
 
+  it('#457: the ready handshake defers via setTimeout, not requestAnimationFrame, which Chromium throttles for an off-screen cross-origin iframe', () => {
+    const doc = buildArtPieceSandboxDocument(SNIPPET);
+    const loadHandlerIndex = doc.indexOf("addEventListener('load'");
+    const readyReportIndex = doc.indexOf("report('ready', '')");
+    expect(loadHandlerIndex).toBeGreaterThan(-1);
+    expect(readyReportIndex).toBeGreaterThan(loadHandlerIndex);
+    // Still two deferred ticks, matching the same-tick synchronous-throw
+    // protection the prior requestAnimationFrame-based version had -- but
+    // via setTimeout, which Chromium doesn't throttle by iframe visibility.
+    const between = doc.slice(loadHandlerIndex, readyReportIndex);
+    expect(between).not.toContain('requestAnimationFrame(');
+    expect(between.match(/setTimeout\(function \(\)/g)).toHaveLength(2);
+  });
+
   it('embeds the versioned, allowlisted parent command bridge', () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET);
     expect(doc).toContain("data.source !== 'art-piece-parent'");

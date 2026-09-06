@@ -67,7 +67,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
     await page.getByLabel('Describe the art piece you want to generate').fill('a red rectangle');
     await page.getByRole('button', { name: 'Generate' }).click();
     await expect(page.getByTestId('art-piece-preview')).toBeVisible();
-    await page.getByTestId('art-piece-preview').scrollIntoViewIfNeeded();
+    // #457 fixed: no scrollIntoViewIfNeeded() workaround needed anymore.
     await expect(page.getByTestId('art-piece-save')).toBeVisible();
     await page.getByLabel('Piece title').fill('Thumbnail capture Studio fixture');
     await page.getByTestId('art-piece-save').click();
@@ -122,7 +122,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       .fill('a blue rectangle instead');
     await page.getByRole('button', { name: 'Generate revision' }).click();
     await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();
-    await page.getByTestId('art-piece-editor-preview').scrollIntoViewIfNeeded();
+    // #457 fixed: no scrollIntoViewIfNeeded() workaround needed anymore.
     await expect(page.getByTestId('art-piece-editor-save-version')).toBeVisible();
     await page.getByTestId('art-piece-editor-save-version').click();
     await expect(page.getByTestId('art-piece-editor-save-version')).toHaveCount(0);

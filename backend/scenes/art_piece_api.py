@@ -194,13 +194,25 @@ def get_art_piece_provider() -> ArtPieceProvider:
             ),
         }
 
+        # Issue #457: a deterministic way for `frontend/e2e/artPieceCapabilities.spec.ts`
+        # to drive a piece that throws synchronously on load, proving the
+        # sandbox's error-before-ready ordering still holds after switching
+        # its readiness handshake from requestAnimationFrame to setTimeout --
+        # without needing a real Mistral response that happens to be broken.
+        _THROWING_SNIPPET_MARKER = "__e2e_throwing_snippet__"
+        _THROWING_CODE = "<script>throw new Error('e2e synchronous throw fixture');</script>"
+
         class _FakeArtPieceProvider:
             def generate(self, prompt: str, library: str) -> ArtPieceResult:
+                if _THROWING_SNIPPET_MARKER in prompt:
+                    code = _THROWING_CODE
+                else:
+                    code = _FAKE_CODE_BY_LIBRARY.get(library, _FAKE_CODE_BY_LIBRARY["canvas2d"])
                 return ArtPieceResult(
                     usage=AIUsageMetadata(
                         prompt_tokens=10, completion_tokens=20, estimated_cost_usd=0.0001
                     ),
-                    code=_FAKE_CODE_BY_LIBRARY.get(library, _FAKE_CODE_BY_LIBRARY["canvas2d"]),
+                    code=code,
                 )
 
         return _FakeArtPieceProvider()  # type: ignore[return-value]

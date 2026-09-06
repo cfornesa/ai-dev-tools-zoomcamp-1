@@ -46,8 +46,12 @@ export function buildStandaloneArtPieceRuntimeScript(
   // fixture (camera+steering enabled) has real code to exercise, and so
   // a non-camera export never even defines a getUserMedia call path.
   const includeCamera = mode === 'full' && capabilities.camera_view === true;
-  const includeSteering =
-    mode === 'full' && capabilities.hand_steering === true && SPATIAL_LIBRARIES.includes(library);
+  // Issue #459: a flat (Canvas2D/SVG) piece gets the same lazily-built
+  // CSS 3D shell `artPieceSandbox.ts`'s live preview already implements
+  // for #449 -- no engine restriction here anymore, only the mode/
+  // capability gate every other control shares.
+  const includeSteering = mode === 'full' && capabilities.hand_steering === true;
+  const isSpatialLibrary = SPATIAL_LIBRARIES.includes(library);
   const includeFullscreen = capabilities.fullscreen !== false;
   const includeScreenshot = capabilities.screenshot !== false;
   // Issue #448: the Guide dialog is static, capability-independent
@@ -106,6 +110,20 @@ export function buildStandaloneArtPieceRuntimeScript(
         else registeredCamera.setPose(initialCameraPose.x, initialCameraPose.y, initialCameraPose.z);
       }
       if (typeof reportNavPose === 'function') reportNavPose();
+      // Issue #459: "reset while steering on" only re-homes the shell
+      // (already done above via registeredCamera.setPose); "reset while
+      // steering off" tears it down -- same rule #449 established for the
+      // live preview. Guarded with typeof since these only exist when
+      // hand_steering is enabled for this export at all.
+      if (
+        typeof steeringActive !== 'undefined' &&
+        !steeringActive &&
+        typeof flatShellArtwork !== 'undefined' &&
+        flatShellArtwork &&
+        typeof disposeFlatSpatialShell === 'function'
+      ) {
+        disposeFlatSpatialShell();
+      }
       window.dispatchEvent(new CustomEvent('art-piece-command', { detail: { type: 'reset-view', version: 1 } }));
     });
   }
@@ -396,11 +414,66 @@ export function buildStandaloneArtPieceRuntimeScript(
     var scale = clamped / radius;
     return { x: pose.x * scale, y: pose.y * scale, z: pose.z * scale };
   }
+  ${
+    isSpatialLibrary
+      ? ''
+      : `
+  // Issue #459: a Canvas2D/SVG export has no native spatial camera to
+  // register the way a Three.js/A-Frame snippet does -- lazily build a
+  // CSS 3D presentation of the existing, unmodified canvas/svg element
+  // (never touching its own drawing code) and register a synthetic
+  // camera adapter through the same window.__registerArtPieceCamera
+  // hook, so the shared clampSteerPose/__steerArtPiece/reset logic below
+  // drives it identically to a real spatial camera. Ported verbatim from
+  // artPieceSandbox.ts's own ensureFlatSpatialShell (#449).
+  var flatShellArtwork = null;
+  var flatShellOriginalStyle = null;
+  var flatShellPose = { x: 0, y: 0, z: 5 };
+  function applyFlatShellPose(x, y, z) {
+    if (!flatShellArtwork) return;
+    var rotateY = x * 15;
+    var rotateX = -y * 15;
+    var zoom = 5 / z;
+    flatShellArtwork.style.transform =
+      'rotateY(' + rotateY + 'deg) rotateX(' + rotateX + 'deg) scale(' + zoom + ')';
+  }
+  function ensureFlatSpatialShell() {
+    if (registeredCamera) return true;
+    var artwork = document.querySelector('canvas') || document.querySelector('svg');
+    if (!artwork) return false;
+    flatShellArtwork = artwork;
+    flatShellOriginalStyle = artwork.getAttribute('style');
+    document.body.style.perspective = '800px';
+    artwork.style.transformOrigin = 'center center';
+    artwork.style.transition = 'none';
+    flatShellPose = { x: 0, y: 0, z: 5 };
+    applyFlatShellPose(0, 0, 5);
+    window.__registerArtPieceCamera({
+      getPose: function () { return flatShellPose; },
+      setPose: function (x, y, z) {
+        flatShellPose = { x: x, y: y, z: z };
+        applyFlatShellPose(x, y, z);
+      }
+    });
+    return true;
+  }
+  function disposeFlatSpatialShell() {
+    if (flatShellArtwork) {
+      if (flatShellOriginalStyle === null) flatShellArtwork.removeAttribute('style');
+      else flatShellArtwork.setAttribute('style', flatShellOriginalStyle);
+    }
+    flatShellArtwork = null;
+    registeredCamera = null;
+    initialCameraPose = null;
+  }
+  `
+  }
   var steerButton = byAction('hand');
   if (steerButton) {
     steerButton.addEventListener('click', function () {
       if (steeringActive) {
         steeringActive = false;
+        ${isSpatialLibrary ? '' : "if (flatShellArtwork) flatShellArtwork.style.pointerEvents = 'auto';"}
         steerButton.setAttribute('aria-pressed', 'false');
         steerButton.textContent = 'Steer the piece';
         setStatus('art-piece-steering-status', 'Steering is off.');
@@ -410,9 +483,21 @@ export function buildStandaloneArtPieceRuntimeScript(
         setStatus('art-piece-steering-status', 'Turn on Camera view before steering.');
         return;
       }
+      ${
+        isSpatialLibrary
+          ? `
       if (!registeredCamera) {
         setStatus('art-piece-steering-status', "This piece hasn't set up a walkable camera yet.");
         return;
+      }
+      `
+          : `
+      if (!ensureFlatSpatialShell()) {
+        setStatus('art-piece-steering-status', "This piece hasn't set up a walkable camera yet.");
+        return;
+      }
+      flatShellArtwork.style.pointerEvents = 'none';
+      `
       }
       steeringActive = true;
       steerButton.setAttribute('aria-pressed', 'true');

@@ -15,6 +15,11 @@
  * `allauth.account.forms.LoginForm` (`login` / "Email", `password` /
  * "Password") rather than guessed -- see this task's own investigation
  * notes in the PR/issue comment.
+ *
+ * After the heading is visible, it forces one authenticated /api/whoami/
+ * round-trip through the same APIRequestContext the api helpers use, so
+ * Firefox's lagging shared cookie jar resolves before any spec makes a raw
+ * API call.
  */
 import { expect, type Page } from '@playwright/test';
 
@@ -31,4 +36,20 @@ export async function loginViaUI(page: Page, email: string, password: string): P
   await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible({
     timeout: 15000,
   });
+  // Issue #474: on Firefox specifically, an APIRequestContext call made
+  // immediately after this UI login can 401 even though the page's own
+  // session is already authenticated -- Firefox's shared cookie jar for
+  // context.request lags the page's own cookie jar by a beat right after
+  // a cross-navigation login. Force one authenticated round-trip through
+  // the exact same context.request path every apiPost/apiGet/etc. call
+  // uses, so any lag resolves here once instead of intermittently in
+  // whatever spec happens to call the API next.
+  const sessionCheck = await page.context().request.get('/api/whoami/');
+  if (sessionCheck.status() !== 200) {
+    throw new Error(
+      `loginViaUI: post-login session check got HTTP ${sessionCheck.status()} from ` +
+        '/api/whoami/, expected 200 -- the session cookie is not yet visible to ' +
+        "this BrowserContext's APIRequestContext.",
+    );
+  }
 }

@@ -276,6 +276,17 @@ function PieceStageControls({
   }
 
   function handleEnableCamera() {
+    // Issue #479: if this browser has no getUserMedia at all, report the
+    // specific "unavailable" state before attempting the camera/tracking
+    // pipeline. Without this guard, the provider's generic unsupported-
+    // browser error would be categorized as "denied" in the UI.
+    if (
+      typeof navigator.mediaDevices === 'undefined' ||
+      typeof navigator.mediaDevices.getUserMedia !== 'function'
+    ) {
+      setCameraState('unavailable');
+      return;
+    }
     handSignalExtractorRef.current = createHandSignalExtractor();
     prevHandSignalsRef.current = null;
     getTrackingProvider().start();

@@ -593,6 +593,33 @@ describe('createMediaPipeTrackingProvider failure routing', () => {
     }
   });
 
+  it('issue #479: default isSupported() treats a present but getUserMedia-less navigator.mediaDevices as unsupported', () => {
+    // Complements the issue #119 test above: some browsers expose
+    // `navigator.mediaDevices` but not `getUserMedia`; the default feature
+    // check must reject this before any call is attempted.
+    const originalDescriptor = Object.getOwnPropertyDescriptor(navigator, 'mediaDevices');
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: undefined },
+    });
+    try {
+      const getUserMedia = vi.fn();
+      const provider = createMediaPipeTrackingProvider({ getUserMedia });
+      const errors: TrackingProviderError[] = [];
+      provider.onError((error) => errors.push(error));
+
+      provider.start();
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].message).toMatch(/not supported/i);
+      expect(getUserMedia).not.toHaveBeenCalled();
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(navigator, 'mediaDevices', originalDescriptor);
+      }
+    }
+  });
+
   it('routes a camera permission/hardware failure to onError', async () => {
     const cause = new Error('Permission denied');
     const harness = createHarness({ getUserMedia: vi.fn().mockRejectedValue(cause) });

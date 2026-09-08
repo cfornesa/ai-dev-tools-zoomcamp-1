@@ -71,24 +71,44 @@ animate();
 
 /** Mocks a granted camera (steering's own prerequisite, per its
  * activation gate) exactly like `artPieceCameraRuntime.spec.ts`'s own
- * `mockCamera` -- scoped to the sandboxed iframe only, same rationale. */
+ * `mockCamera`.
+ *
+ * Issue #479: real camera capture and hand-tracking now run entirely in
+ * the trusted parent frame (`PieceStageControls.tsx`), not the sandboxed
+ * iframe, so the mock must apply to the top-level window as well. We
+ * patch `MediaDevices.prototype.getUserMedia` (not the instance) because
+ * WebKit hands out fresh `navigator.mediaDevices` instances in the
+ * sandboxed iframe; the prototype is the only shared surface -- see
+ * `.agents/memory/webkit-mediadevices-instance-instability.md`. */
 async function mockGrantedCamera(context: BrowserContext): Promise<void> {
   await context.addInitScript(() => {
-    if (window.self === window.top) return;
+    const mockGetUserMedia = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const context2d = canvas.getContext('2d')!;
+      context2d.fillStyle = '#2563eb';
+      context2d.fillRect(0, 0, 32, 32);
+      const stream = (
+        canvas as HTMLCanvasElement & { captureStream(fps?: number): MediaStream }
+      ).captureStream(5);
+      return Promise.resolve(stream);
+    };
+    const mediaDevicesProto = Object.getPrototypeOf(window.navigator.mediaDevices) as {
+      getUserMedia?: () => Promise<MediaStream>;
+    };
+    Object.defineProperty(mediaDevicesProto, 'getUserMedia', {
+      configurable: true,
+      value: mockGetUserMedia,
+    });
+    // Patch the instance as well; some Chromium builds expose getUserMedia
+    // as an own property of navigator.mediaDevices, so the prototype patch
+    // alone does not affect live accesses. See artPieceCameraRuntime.spec.ts
+    // mockCamera for the matching rationale.
     Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
       configurable: true,
-      value: () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 32;
-        canvas.height = 32;
-        const context2d = canvas.getContext('2d')!;
-        context2d.fillStyle = '#2563eb';
-        context2d.fillRect(0, 0, 32, 32);
-        const stream = (
-          canvas as HTMLCanvasElement & { captureStream(fps?: number): MediaStream }
-        ).captureStream(5);
-        return Promise.resolve(stream);
-      },
+      writable: true,
+      value: mockGetUserMedia,
     });
   });
 }

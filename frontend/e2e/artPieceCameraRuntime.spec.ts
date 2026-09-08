@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-import { expect, test, type BrowserContext } from '@playwright/test';
+import { chromium, expect, test, type BrowserContext } from '@playwright/test';
 
 import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -22,19 +22,24 @@ const CANVAS_RED_SQUARE =
   '<script>var c=document.getElementById("art-piece-canvas");' +
   'var x=c.getContext("2d");x.fillStyle="#dc2626";x.fillRect(0,0,320,240);</script>';
 
-/** Mocks `navigator.mediaDevices.getUserMedia` for the sandboxed iframe
- * only (`window.self !== window.top` -- see the identical convention and
- * rationale in `artPieceSoundRuntime.spec.ts`'s `mockMicrophone`: the
- * top-level app calls the real API directly elsewhere and breaks if it's
- * mocked globally). The granted stream is a synthetic solid-blue video
- * track from an offscreen `<canvas>.captureStream()` -- distinguishable
- * from the fixture's own red artwork in a composited screenshot. */
+/** Mocks `navigator.mediaDevices.getUserMedia` in every frame where the
+ * init script runs -- including the trusted parent frame.
+ *
+ * Issue #479: real camera capture and hand-tracking now run entirely in
+ * the parent frame (`PieceStageControls.tsx`), not the sandboxed iframe,
+ * so the mock must apply to the top-level window as well. We still patch
+ * `MediaDevices.prototype` (not the instance) because the sandboxed
+ * iframe can still access its own `navigator.mediaDevices` on WebKit and
+ * the prototype surface is the only one that survives WebKit's instance
+ * churn -- see `.agents/memory/webkit-mediadevices-instance-instability.md`.
+ * The granted stream is a synthetic solid-blue video track from an
+ * offscreen `<canvas>.captureStream()` -- distinguishable from the
+ * fixture's own red artwork in a composited screenshot. */
 async function mockCamera(
   context: BrowserContext,
   outcome: 'granted' | 'denied' | 'unavailable',
 ): Promise<void> {
   await context.addInitScript((outcomeArg: string) => {
-    if (window.self === window.top) return;
     // Issue #454: WebKit does not treat `navigator.mediaDevices` as a
     // stable, cacheable object reference the way Chromium/Firefox do --
     // in this sandboxed, opaque-origin iframe specifically, each access
@@ -53,27 +58,54 @@ async function mockCamera(
       getUserMedia?: () => Promise<MediaStream>;
     };
     if (outcomeArg === 'unavailable') {
+      // Issue #479: the parent frame now checks `getUserMedia` before any
+      // call, so the mock must make it appear missing. p5.js polyfills
+      // `navigator.mediaDevices.getUserMedia` at load time if it sees
+      // `undefined`; a plain non-writable `value: undefined` would make
+      // that assignment throw and crash the bundle. An accessor with a
+      // no-op setter absorbs p5's assignment while keeping the getter
+      // returning `undefined`. The prototype patch is kept so the same
+      // simulation survives WebKit's fresh `MediaDevices` instances.
       Object.defineProperty(mediaDevicesProto, 'getUserMedia', {
         configurable: true,
         value: undefined,
       });
+      Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+        configurable: true,
+        get() {
+          return undefined;
+        },
+        set() {
+          // absorb p5.js's load-time polyfill assignment
+        },
+      });
       return;
     }
+    const mockGetUserMedia = () => {
+      if (outcomeArg !== 'granted') return Promise.reject(new Error('Permission denied'));
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const context2d = canvas.getContext('2d')!;
+      context2d.fillStyle = '#2563eb';
+      context2d.fillRect(0, 0, 32, 32);
+      const stream = (
+        canvas as HTMLCanvasElement & { captureStream(fps?: number): MediaStream }
+      ).captureStream(5);
+      return Promise.resolve(stream);
+    };
     Object.defineProperty(mediaDevicesProto, 'getUserMedia', {
       configurable: true,
-      value: () => {
-        if (outcomeArg !== 'granted') return Promise.reject(new Error('Permission denied'));
-        const canvas = document.createElement('canvas');
-        canvas.width = 32;
-        canvas.height = 32;
-        const context2d = canvas.getContext('2d')!;
-        context2d.fillStyle = '#2563eb';
-        context2d.fillRect(0, 0, 32, 32);
-        const stream = (
-          canvas as HTMLCanvasElement & { captureStream(fps?: number): MediaStream }
-        ).captureStream(5);
-        return Promise.resolve(stream);
-      },
+      value: mockGetUserMedia,
+    });
+    // Some browsers (this Chromium build) expose getUserMedia as an own
+    // property of navigator.mediaDevices, so the prototype patch alone
+    // does not affect live accesses. Patching the instance as well covers
+    // that case without hurting engines that use the prototype.
+    Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+      configurable: true,
+      writable: true,
+      value: mockGetUserMedia,
     });
   }, outcome);
 }
@@ -178,9 +210,13 @@ test.describe('Generated regular viewer: camera composition and capture (#431)',
         const disableButton = phasePage.getByRole('button', { name: 'Disable camera view' });
         await expect(disableButton).toHaveAttribute('aria-pressed', 'true');
         await expect(phasePage.getByTestId('camera-status')).toContainText('Camera is active.');
+        // Issue #479: the live camera overlay is now rendered by the
+        // trusted parent frame (`PieceStageControls.tsx`'s own `<video>`),
+        // not by the sandboxed iframe -- which no longer calls getUserMedia
+        // at all. Verify that parent-frame overlay is non-interactive so
+        // the artwork underneath remains reachable.
         const overlayPointerEvents = await phasePage
-          .frameLocator('iframe[title="Art piece preview"]')
-          .locator('#art-piece-camera-overlay')
+          .locator('.art-piece-stage > video')
           .evaluate((element) => getComputedStyle(element).pointerEvents);
         expect(overlayPointerEvents).toBe('none');
 
@@ -232,5 +268,67 @@ test.describe('Generated regular viewer: camera composition and capture (#431)',
     ).toBeVisible();
     await expect(page.getByRole('button', { name: /camera view/i })).toHaveCount(0);
     await expect(page.getByTestId('camera-status')).toHaveCount(0);
+  });
+
+  test('real unmocked getUserMedia reaches active through the parent frame (issue #479)', async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'Chromium-only: relies on --use-fake-device-for-media-stream.',
+    );
+
+    await loginViaUI(page, fixture.owner.email, fixture.password);
+    const created = await apiPost(context, '/api/art-pieces/', {
+      title: 'Camera real-pipeline fixture',
+      description: 'A published piece used to verify the real Chromium camera pipeline.',
+      prompt: 'red square',
+      engine: 'canvas2d',
+      capabilities: {
+        screenshot: false,
+        camera_view: true,
+        sound: false,
+        microphone: false,
+        download: false,
+        fullscreen: false,
+      },
+      source: CANVAS_RED_SQUARE,
+    });
+    expect(created.status()).toBe(201);
+    const piece = (await created.json()) as { public_id: string };
+    const published = await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
+      status: 'published',
+    });
+    expect(published.status()).toBe(200);
+
+    const storageState = await context.storageState();
+
+    // Chromium's fake camera drives the real permission/device pipeline
+    // without any JavaScript monkeypatch. This is intentionally a separate
+    // browser launch rather than a new context, because the fake-device
+    // flags must be provided at process startup.
+    const fakeBrowser = await chromium.launch({
+      args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+    });
+    try {
+      const fakeContext = await fakeBrowser.newContext({ storageState });
+      const fakePage = await fakeContext.newPage();
+      await fakePage.goto(`/art-pieces/p/${piece.public_id}`);
+      await expect(
+        fakePage.getByRole('heading', { name: 'Camera real-pipeline fixture' }),
+      ).toBeVisible();
+      await fakePage.getByRole('button', { name: 'Piece controls' }).click();
+      await fakePage.getByRole('button', { name: 'Enable camera view' }).click();
+      await expect(fakePage.getByTestId('camera-status')).toContainText('Camera is active.');
+
+      const testInfo = test.info();
+      const screenshotPath = testInfo.outputPath('camera-real-pipeline.png');
+      await fakePage.screenshot({ path: screenshotPath });
+      await testInfo.attach('camera-real-pipeline', { path: screenshotPath });
+    } finally {
+      await fakeBrowser.close();
+    }
   });
 });

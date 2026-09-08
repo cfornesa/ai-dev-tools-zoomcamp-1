@@ -281,3 +281,20 @@ harness flake), and any other currently-open issue ready for engineering
 without further owner input. #440/#460 stay excluded (credential-blocked)
 and #467/#465/#419 stay excluded (owner/CI-evidence actions, not
 engineering).
+
+## 2026-09-08 (stage-4 QA on #491, Opencode Desktop's first engineered batch)
+
+Opencode Desktop (implementation-complex substitution, stage 2b) delivered
+#491 (unified public gallery with type filter) across 6 commits. QA
+(qa-self-review, Sonnet 5) verified all 10 acceptance criteria against a
+local disposable stack: backend 48/48, frontend 24/24, e2e 2/2, `make
+check` green (203 files/2505 tests). Independently re-derived and traced
+the #493 same-instant cursor fix by hand before trusting its regression
+test (page_size=1, three same-instant items across all three kinds,
+asserting exact walk order — genuinely adversarial, not shape-only) rather
+than accepting the commit message's "fixes #493" claim on its word.
+Re-generated and visually inspected the rendered screenshot evidence
+myself rather than reusing the diff's own claim. Two discovery-gate
+follow-ups (#493, #494) both filed correctly with matching GitHub issues
+and `docs/tasks.md` entries. #491 closed. `docs/tasks.md` item 293
+reconciled.

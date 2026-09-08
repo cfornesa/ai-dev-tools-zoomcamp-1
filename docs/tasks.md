@@ -17509,7 +17509,7 @@ distillation pass.
 
 ## 293. Unify authored and generated work in the public gallery
 
-Status: PROPOSED / GROOMED — owner direction selected in #486.
+Status: COMPLETE — closed 2026-09-08. QA: PASS.
 
 GitHub issue: [#491](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/491)
 
@@ -17520,6 +17520,22 @@ preserve both legacy public APIs and route `/art-pieces/gallery` through a
 backward-compatible generated-filter shim. Routing: stage 2b complex because
 the closure-sized surface depends on cross-model query, order, cursor, and API
 business logic. #485 remains the exactly-one-next engineering transaction.
+
+Implemented by Opencode Desktop (stage 2b `implementation-complex`
+substitution recorded): `GET /api/public/gallery/` added
+(`backend/scenes/api.py`/`gallery.py`/`art_piece_persistence.py`/
+`serializers.py`), `/gallery` reworked with the type filter
+(`frontend/src/pages/PublicGallery.tsx`), `/art-pieces/gallery` now
+redirects to `/gallery?type=generated`. Two discovery-gate follow-ups
+filed during the work: [#493](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/493)
+(mixed-gallery cursor kind-rank gap, fixed in the same diff and verified
+by a genuinely adversarial same-instant regression test) and
+[#494](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/494)
+(dev mock-backend `/gallery` route gap, correctly left out of this
+issue's scope). QA (stage 4) verified all 10 criteria locally — backend
+48/48, frontend 24/24, e2e 2/2, `make check` green, rendered Chromium
+evidence at 1280×900/375×812 re-generated and inspected independently.
+Exact published-deployment evidence remains tracked under #445.
 
 ## 294. Stabilize loginViaUI's post-login heading observation
 

@@ -17391,7 +17391,7 @@ inspected rendered screenshots at both viewports. Second QA pass:
 
 ## 288. Omit absent emissive values from live structured-3D materials
 
-Status: PROPOSED / GROOMED.
+Status: IMPLEMENTED (commit `0eb4067`) — QA (stage 4) NOT YET RUN.
 
 GitHub issue: [#487](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/487)
 
@@ -17401,9 +17401,17 @@ materials that omit the optional field. Preserve configured emissive,
 opacity, transparency, and plane-side behavior; verify the exact public route
 renders without the warning. Routing: stage 2a mechanical frontend.
 
+Fixed in `frontend/src/render/threeSceneBuilder.ts` (spreads `emissive` only
+when the scene material defines it); `threeSceneBuilder.test.ts` gained a
+red-before/green-after regression, and `e2e/public3dMaterialWarnings.spec.ts`
+publishes a sphere+plane fixture and asserts zero emissive-undefined console
+warnings on the anonymous public route, with a rendered screenshot attached.
+No GitHub comment/QA verdict has been posted yet — flagged in the 2026-09-08
+production-readiness pass as an un-reconciled stage-4 gap, not a code defect.
+
 ## 289. Omit absent emissive values from the extracted 3D ZIP runtime
 
-Status: PROPOSED / DEPENDENCY-BLOCKED by #487 pattern/order.
+Status: IMPLEMENTED (commit `5e9a721`) — QA (stage 4) NOT YET RUN.
 
 GitHub issue: [#488](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/488)
 
@@ -17411,6 +17419,13 @@ GitHub issue: [#488](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/
 defect. Fix and execute the extracted Full ZIP fixture; source-string tests or
 #487's live-route evidence cannot close this artifact. Routing: stage 2a
 mechanical frontend/export.
+
+Fixed in `frontend/src/export/standaloneThreeRuntimeSource.ts`;
+`generateHtmlExport3D.test.ts` extracts and evaluates the generated
+`buildMaterial` against a stub `THREE` (red-before/green-after), and
+`e2e/exportArtifacts.spec.ts` gained a real Full-ZIP generate/extract/open
+scenario asserting zero emissive-undefined warnings with a screenshot. Same
+un-reconciled stage-4 gap as #487 above.
 
 ## 290. Decide generated public art-piece gallery discoverability
 
@@ -17427,7 +17442,8 @@ contracts; closed #392/#313 remain immutable.
 
 ## 291. Give content-hashed production assets immutable caching
 
-Status: PROPOSED / GROOMED — PUBLISHED VERIFICATION REQUIRED.
+Status: IMPLEMENTED (commit `f2549ff`) — QA (stage 4) NOT YET RUN;
+PUBLISHED VERIFICATION STILL REQUIRED.
 
 GitHub issue: [#489](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/489)
 
@@ -17437,6 +17453,17 @@ while serving hashed assets with a one-year immutable policy. Use current
 runtime/configuration when possible; stop and re-distill before adding a
 package, vendor, or core server replacement. Routing: stage 2a deployment/
 frontend-serving; exact deployment header matrix is mandatory for closure.
+
+Fixed via a `configurePreviewServer` Vite plugin (no new dependency) setting
+`Cache-Control` per request path ahead of `sirv`/the HTML fallback. Verified
+locally during the 2026-09-08 production-readiness pass:
+`npm run build && npm run preview -- --port 4173`, then
+`curl -sSI http://localhost:4173/assets/<hashed>.js` returned
+`public, max-age=31536000, immutable`, and `curl -sSI http://localhost:4173/`
+returned `no-cache`, matching the issue's contract. The exact published
+header matrix (this issue's own mandatory closure evidence) remains open —
+production is currently several commits behind this fix (see the
+2026-09-08 production-readiness report). No QA verdict has been posted yet.
 
 ## 292. Reconcile duplicate upstream and Django HSTS policies
 

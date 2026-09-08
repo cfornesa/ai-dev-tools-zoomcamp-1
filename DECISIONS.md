@@ -225,3 +225,38 @@ authoritative CI evidence landed — its noisier local-sandbox results are
 non-authoritative per [[local-sandbox-verification-boundaries]] and
 [[full-browser-readiness-gate]]; CI is authoritative for this dimension going
 forward for this batch.
+
+## 2026-09-08 (stage-4 QA on #487/#488/#489 + stage-5 re-run)
+
+Owner authorized proceeding with QA on #487/#488/#489 plus live
+re-verification of #489/#490 against the republished site, then a
+production-readiness re-run. All in one pass, Sonnet 5 (same
+already-authorized substitution for the mandatory Opus 5 on stage 5).
+
+- **#487/#488: QA PASS, closed.** All criteria verified locally
+  (unit + Chromium e2e + `make check`); no gaps.
+- **#489: QA PASS at the application layer, stays open.** Live
+  re-verification against the republished site found a new platform
+  boundary: Replit's Google Frontend edge injects a `Set-Cookie:
+  GAESA=...` affinity cookie on every response, which downgrades
+  `Cache-Control: public` to `private` per GFE's standard behavior —
+  `max-age`/`immutable` are correct, but the literal "public" criterion
+  cannot be met from this repo. Same root cause as #490. Recorded as
+  durable memory:
+  `.agents/memory/replit-google-frontend-header-rewriting.md`.
+- **#490: re-verified live, unchanged.** Duplicate HSTS still present on
+  `/health/`/`/accounts/login/` after the republish; root cause
+  independently reconfirmed to be the same GFE edge.
+- Pushed the full batch (`GIT_URL=... make git-safe-push`, fast-forwarded
+  to `58efc5e`). Three consecutive CI runs on three consecutive pushed
+  commits all show identical results: everything green except the
+  already-tracked #419/#465 camera-FPS flake — no new failures anywhere.
+- Refreshed #445's own child-issue checklist (stale since 2026-09-05,
+  named issues now closed) to the current 12-issue open manifest; kept
+  the historical list rather than deleting it.
+- Updated production-readiness report posted on
+  [#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445#issuecomment-5589671853):
+  the batch is now engineering-complete and CI-verified; what remains is
+  three owner decisions (GFE platform-boundary disposition for #489/#490,
+  #479's mic-evidence gap, and finalizing #465's flake classification
+  off three consistent reproductions), not further engineering.

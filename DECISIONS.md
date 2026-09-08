@@ -46,3 +46,10 @@ ownership and read cadence.
   `per-service-kickoff-prompts.md` now specifies Opus 5 at `Low` effort and
   reframes the non-negotiable as the model tier rather than token spend. The
   `Max`/`xhigh` reconciliation gap logged above is closed.
+- `per-service-kickoff-prompts.md` restructured into a dispatch layer: a
+  routing table (function / service / model / effort / what to invoke) plus one
+  section per stage. The inlined prompt bodies were removed in favor of
+  pointers to the `PROMPT.md` files, which are already paste-ready with the
+  same `[REPO]`/`[ISSUE]` placeholders — this closes the duplication/drift risk
+  flagged when the split landed. Filename kept as-is despite the content shift,
+  since AGENTS.md, DECISIONS.md, and two skills reference it by name.

@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
+import type { Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { previewCachePolicy } from './src/vitePreviewCachePolicy.js';
 
 // Deliberately '127.0.0.1', not 'localhost': Django's runserver only ever
 // binds IPv4 (127.0.0.1:8000). On a machine where 'localhost' resolves to
@@ -15,9 +17,44 @@ import react from '@vitejs/plugin-react';
 // listening on ::1 on this machine.
 const backendProxyTarget = process.env.BROWSER_QA_BACKEND_URL ?? 'http://127.0.0.1:8000';
 
+/**
+ * Vite preview-server plugin implementing the production cache policy for
+ * issue #489.
+ *
+ * Production serves `frontend/dist/` via `vite preview` (see
+ * `scripts/start-production.sh` → `scripts/start.sh`). This plugin's
+ * `configurePreviewServer` hook runs before Vite's static (sirv) and HTML
+ * fallback middleware, so it can set Cache-Control based on the request URL:
+ *
+ * - `/api/*`, `/accounts/*`, `/health/*` are left untouched; those requests
+ *   are proxied to Django and Django owns the headers (criterion 5).
+ * - `/assets/*` files whose names contain a Vite content hash are served with
+ *   `public, max-age=31536000, immutable` (criterion 3).
+ * - Everything else (`/`, client-route fallbacks, non-hashed assets) is
+ *   `no-cache`, so a fresh deployment is always picked up (criteria 2 & 4).
+ *
+ * Vite's HTML fallback middleware will overwrite the header back to
+ * `no-cache` for HTML responses, which is exactly what we want.
+ *
+ * This hook only runs for `vite preview`; `npm run dev` is unaffected.
+ */
+const previewCachePolicyPlugin = (): Plugin => ({
+  name: 'creatrweb-preview-cache-policy',
+  configurePreviewServer(server) {
+    server.middlewares.use((req, res, next) => {
+      const pathname = new URL(req.url ?? '/', 'http://localhost').pathname;
+      const policy = previewCachePolicy(pathname);
+      if (policy !== null) {
+        res.setHeader('Cache-Control', policy);
+      }
+      next();
+    });
+  },
+});
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), previewCachePolicyPlugin()],
   server: {
     host: true,
     port: 5000,

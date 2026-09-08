@@ -98,3 +98,26 @@ ownership and read cadence.
   "the final production-readiness pass," now recorded with fresh same-day
   evidence there rather than re-run locally. #445 (release-candidate
   container) remains blocked on #419; #485 itself is unaffected and closed.
+
+## 2026-09-08 (stage-2a backlog run)
+
+- **#479 camera architecture decision (owner-selected):** Option A — parent
+  frame owns real camera/mic capture and MediaPipe tracking, relaying only
+  derived signals into the opaque-origin sandbox; `allow-same-origin` stays
+  prohibited. Owner confirmed via the options gallery this session; the
+  already-merged PR #484 implements exactly this shape, so no re-derivation
+  was needed. Real-device (webcam/hand/mic) evidence remains the owner's live
+  session per `.agents/memory/camera-synthetic-verification-gap.md`.
+- **#482/#483 topology decision:** the Full and Immersive art-piece ZIP
+  runtimes are single top-level documents (no sandbox attribute, no iframe),
+  so #479's opaque-origin defect cannot occur there; the parent-frame relay
+  is recorded N/A with unit + unmocked-extracted evidence.
+- **#490 platform boundary:** the upstream Replit/Google-Frontend HSTS field
+  cannot be configured or suppressed from the repo, and Django's field cannot
+  be dropped without breaking the fail-closed production gate — exact vendor
+  action handoff recorded in settings.py; owner decision on aligning the
+  policy (incl. `preload`) remains open.
+- Provenance for this run: stage 2a executed as a substitution of the
+  rostered Opencode Go run (frontend via implementation-mechanical-frontend
+  subagents, backend via implementation-mechanical-backend), recorded here
+  because no backlog-session ledger file was active this session.

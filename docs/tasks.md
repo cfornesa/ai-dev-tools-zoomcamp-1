@@ -17650,3 +17650,28 @@ real schema tables with real row counts, and `AGENTS.md` updated
 (owner-approved diff) to state `django_migrations` is never a valid
 post-publish signal, naming `/health/` + direct table inspection as the
 correct check instead.
+
+## 299. Fix production AI-generation quota (missing Plan seed data)
+
+Status: COMPLETE — fixed 2026-09-08, no code change (data-only fix).
+
+Discovered while live-verifying #465 via Claude in Chrome: the production
+account's daily AI art-generation quota resolved to 0 with no error
+anywhere. Root cause: `scenes_plan` had 0 rows in production —
+`0031_seed_default_plans.py`'s data seed never applied, a residual gap
+inside the already-documented 2026-09-06 missing-migrations incident
+(`0026`-`0034`) that the second-republish fix at the time didn't catch,
+since `0031` is pure data with no schema component for Replit's
+schema-diff to detect. Also discovered `scenes_applicationadmin` had 0
+rows for an unrelated, mundane reason: `reconcile_admin_identities` had
+simply never been run (it's a plain command, not migration-driven).
+
+Fixed both, owner-executed in Replit's Shell against production
+`DATABASE_URL` (idempotent `get_or_create` seed matching the migration's
+own logic, plus `manage.py reconcile_admin_identities` after setting
+`ADMIN_IDENTITIES`). Live-verified: `/admin/settings` now loads, `free`
+plan shows 50/day with `ai_art_generate` included, account settings shows
+"0/50 used (50 remaining)". No republish was needed — pure data fix
+against the already-running production database. Extended
+`.agents/memory/replit-migrations-ledger-not-updated-by-publish.md` with
+the precise pure-data-migration risk pattern this revealed.

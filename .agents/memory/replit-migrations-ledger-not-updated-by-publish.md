@@ -59,3 +59,46 @@ success from the "Published your App" git checkpoint commit or from
 `django_migrations` row counts. If `/health/` reports an error, check
 Replit's Deployments -> Logs for the real traceback and the Database panel's
 table list directly, rather than guessing.
+
+**2026-09-08 refinement — a pure-data migration in the same "fixed" batch
+stayed silently broken:** `0031_seed_default_plans.py` (in the exact
+`0026`-`0034` range this topic already documents as missing on 2026-09-06)
+was still never applied, discovered when a production account's daily AI
+art-generation quota resolved to 0 with no error anywhere — `Plan` rows
+simply didn't exist, and `scenes.entitlements.get_effective_cap()` fails
+closed to 0 by design for a missing plan, so there was no crash or 503 to
+notice. Root cause, confirmed by reading the migration files directly:
+`0031` is **pure `RunPython` with no accompanying schema change** — the
+`Plan` *table* was created by a separate migration (`0030`, `CreateModel`).
+Every other migration in the `0026`-`0034` range either creates a model or
+runs `RunSQL` DDL, and all of those landed correctly (confirmed via direct
+table inspection) once the 2026-09-06 second-republish "fix" ran. Only the
+one migration with **zero structural diff for Replit's schema-diff to
+detect** was skipped — silently, since a data-only migration produces no
+symptom the standard `/health/` + table-existence check would catch.
+
+Two earlier pure-data `RunPython` migrations (`0002`, `0005` — Postgres
+trigger functions; `0010` — built-in template seeding) all applied
+successfully in production, so this is **not** "data migrations never run
+in production" as a blanket rule — those three predate the `0026`-`0034`
+incident entirely and were seeded through whatever process was current at
+that point in the project's history. The specific, narrower, and now
+confirmed risk is: **within a migration range already found missing by the
+`django_cache`-style symptom check, a pure-data migration with no schema
+component can remain unapplied even after the schema portions are
+confirmed fixed**, because nothing about checking `/health/` or the
+tables that *did* throw errors would ever surface it.
+
+**How to apply, updated:** when reconciling a previously-identified
+"missing migrations" range (per this topic's original incident), don't
+stop at confirming the tables that caused a visible error now exist —
+walk every migration file in that exact numeric range and separately
+confirm each one that is `RunPython`-only (no `CreateModel`/schema
+operation) actually produced its expected data (row counts, specific
+values), since Replit's schema-diff has no way to detect that this class
+of migration needs re-running once the underlying tables already exist.
+Fixed this occurrence via a direct, idempotent data-only command run
+against production with `DATABASE_URL` borrowed for one shell command
+(mirroring the migration's own `get_or_create` logic) — not a blanket
+`manage.py migrate`, which risks erroring on DDL operations elsewhere in
+the same unsynced `django_migrations` ledger.

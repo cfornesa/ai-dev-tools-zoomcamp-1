@@ -60,13 +60,16 @@ export function buildStandaloneThreeRuntimeScript(
 
   function buildMaterial(object) {
     var opacity = object.material.opacity == null ? 1 : object.material.opacity;
-    return new THREE.MeshStandardMaterial({
+    var options = {
       color: new THREE.Color(object.material.color),
-      emissive: object.material.emissive ? new THREE.Color(object.material.emissive) : undefined,
       opacity: opacity,
       transparent: opacity < 1,
       side: object.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide,
-    });
+    };
+    if (object.material.emissive) {
+      options.emissive = new THREE.Color(object.material.emissive);
+    }
+    return new THREE.MeshStandardMaterial(options);
   }
 
   function buildObjectMesh(object) {

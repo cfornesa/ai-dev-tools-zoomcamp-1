@@ -72,7 +72,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import JSZip from 'jszip';
-import { expect, test, type Browser, type Page, type Route } from '@playwright/test';
+import { expect, test, type Browser, type Page, type Route, type TestInfo } from '@playwright/test';
 
 import {
   assertNoLeaks,
@@ -216,6 +216,20 @@ async function openExportInIsolatedContext(
 async function openExportPieceControls(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Open piece controls menu' }).click();
   await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+}
+
+/** Issue #488 criterion 3: capture the extracted Full 3D ZIP render so the
+ * screenshot itself can be inspected, not just the absence-of-warning
+ * assertion. Each Playwright suite keeps its own copy of this helper per
+ * repo convention. */
+async function attachRenderedScreenshot(
+  testInfo: TestInfo,
+  page: Page,
+  label: string,
+): Promise<void> {
+  const screenshotPath = testInfo.outputPath(`${label}.png`);
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  await testInfo.attach(label, { path: screenshotPath });
 }
 
 test.describe('HTML export: responsive piece action surface', () => {
@@ -476,6 +490,126 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
         }
       }
     }
+  });
+
+  test('extracted Full 3D ZIP runtime renders a no-emissive object with zero Three.js emissive warnings (Non-Camera N/A: shared material construction)', async ({
+    page,
+  }, testInfo) => {
+    const threePath = path.join(process.cwd(), 'node_modules/three/build/three.min.js');
+    if (!fs.existsSync(threePath)) {
+      throw new Error(`Real Three.js build not found at ${threePath}`);
+    }
+    const realThree = fs.readFileSync(threePath, 'utf8');
+
+    // Remove any route handler left over from earlier scenarios in this
+    // describe, then install one that fulfills the Three.js CDN URL with the
+    // real npm build so the extracted artifact executes genuine Three.js.
+    await generator.page.unroute('**/*');
+    await generator.page.route('**/*', (route) => {
+      const url = route.request().url();
+      if (url === generator.constants.THREE_CDN_URL) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/javascript',
+          body: realThree,
+        });
+      }
+      if (url.startsWith('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@')) {
+        return route.fulfill({ status: 200, body: '/* browser QA fake MediaPipe asset */' });
+      }
+      if (url.startsWith('https://storage.googleapis.com/mediapipe-models/')) {
+        return route.fulfill({ status: 200, body: '/* browser QA fake MediaPipe model */' });
+      }
+      if (url.startsWith('file://')) {
+        return route.continue();
+      }
+      return route.abort('failed');
+    });
+
+    const result = await generator.generateScene3DBundle(
+      scene3d,
+      'Full 3D emissive warning check',
+      'full',
+      false,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const zip = await JSZip.loadAsync(Buffer.from(result.zipBase64, 'base64'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'export-3d-emissive-'));
+    try {
+      for (const [name, entry] of Object.entries(zip.files)) {
+        if (entry.dir) continue;
+        const target = path.join(root, name);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, await entry.async('nodebuffer'));
+      }
+
+      const messages: string[] = [];
+      page.on('console', (msg) => messages.push(msg.text()));
+      page.on('pageerror', (err) => messages.push(err.message));
+
+      await page.goto(`file://${path.join(root, 'index.html')}`);
+      await expect(page.locator('#scene3d-canvas-host canvas')).toBeVisible();
+
+      // Allow one animation frame so the runtime's first render tick has
+      // a chance to emit any Three.js material warnings.
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => resolve());
+          }),
+      );
+
+      const emissiveWarnings = messages.filter(
+        (m) => m.includes("parameter 'emissive'") || m.includes('has value of undefined'),
+      );
+      expect(emissiveWarnings).toEqual([]);
+
+      await attachRenderedScreenshot(testInfo, page, 'extracted-3d-no-emissive');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+
+    // Non-Camera N/A decision: material construction is shared between Full
+    // and Non-Camera variants, so a second extracted execution is not required
+    // unless the generated scripts actually differ. Record that decision by
+    // proving the buildMaterial source is byte-identical in both variants.
+    const nonCameraResult = await generator.generateScene3DBundle(
+      scene3d,
+      'Non-Camera 3D emissive source check',
+      'non-camera',
+      false,
+    );
+    expect(nonCameraResult.ok).toBe(true);
+    if (!nonCameraResult.ok) return;
+
+    function extractBuildMaterial(source: string): string {
+      const start = source.indexOf('function buildMaterial(object) {');
+      if (start === -1) throw new Error('buildMaterial not found');
+      let braceDepth = 0;
+      let foundOpen = false;
+      let end = start;
+      for (let i = start; i < source.length; i += 1) {
+        if (source[i] === '{') {
+          braceDepth += 1;
+          foundOpen = true;
+        } else if (source[i] === '}') {
+          braceDepth -= 1;
+        }
+        if (foundOpen && braceDepth === 0) {
+          end = i + 1;
+          break;
+        }
+      }
+      return source.slice(start, end);
+    }
+
+    const fullZip = await JSZip.loadAsync(Buffer.from(result.zipBase64, 'base64'));
+    const nonCameraZip = await JSZip.loadAsync(Buffer.from(nonCameraResult.zipBase64, 'base64'));
+    const fullScript = await fullZip.file('scripts/piece.js')!.async('string');
+    const nonCameraScript = await nonCameraZip.file('scripts/piece.js')!.async('string');
+    expect(extractBuildMaterial(fullScript)).toBe(extractBuildMaterial(nonCameraScript));
   });
 });
 

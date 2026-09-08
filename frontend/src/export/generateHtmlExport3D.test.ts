@@ -259,6 +259,86 @@ describe('generateScene3DBundle', () => {
   });
 });
 
+describe('generated standalone runtime source', () => {
+  async function loadBuildMaterialFromBundle(scene: Scene3DDocument) {
+    const result = await generateScene3DBundle(scene, 'emissive-test');
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('unexpected bundle failure');
+
+    const zip = await JSZip.loadAsync(result.zipBlob);
+    const script = await zip.file('scripts/piece.js')!.async('string');
+    const start = script.indexOf('function buildMaterial(object) {');
+    if (start === -1) throw new Error('buildMaterial not found in generated script');
+
+    let braceDepth = 0;
+    let foundOpen = false;
+    let end = start;
+    for (let i = start; i < script.length; i += 1) {
+      if (script[i] === '{') {
+        braceDepth += 1;
+        foundOpen = true;
+      } else if (script[i] === '}') {
+        braceDepth -= 1;
+      }
+      if (foundOpen && braceDepth === 0) {
+        end = i + 1;
+        break;
+      }
+    }
+    const src = script.slice(start, end);
+
+    const THREE = {
+      Color: class {
+        v: string;
+        constructor(value: string) {
+          this.v = value;
+        }
+      },
+      MeshStandardMaterial: class {
+        o: Record<string, unknown>;
+        constructor(options: Record<string, unknown>) {
+          this.o = options;
+        }
+      },
+      DoubleSide: 2,
+      FrontSide: 0,
+    };
+
+    const buildMaterial = new Function('THREE', src + '; return buildMaterial;')(THREE) as (
+      object: unknown,
+    ) => { o: Record<string, unknown> };
+    return { buildMaterial, THREE };
+  }
+
+  it('omits emissive from MeshStandardMaterial options when the object material has no emissive', async () => {
+    const { buildMaterial, THREE } = await loadBuildMaterialFromBundle(validScene());
+    const material = buildMaterial({
+      type: 'box',
+      material: { color: '#ff0000' },
+    });
+
+    expect(Object.keys(material.o)).not.toContain('emissive');
+    expect(Object.hasOwn(material.o, 'emissive')).toBe(false);
+    expect(material.o.color).toBeInstanceOf(THREE.Color);
+    expect((material.o.color as { v: string }).v).toBe('#ff0000');
+    expect(material.o.opacity).toBe(1);
+    expect(material.o.transparent).toBe(false);
+    expect(material.o.side).toBe(THREE.FrontSide);
+  });
+
+  it('includes emissive in MeshStandardMaterial options when configured', async () => {
+    const { buildMaterial, THREE } = await loadBuildMaterialFromBundle(validScene());
+    const material = buildMaterial({
+      type: 'plane',
+      material: { color: '#ff0000', emissive: '#440011' },
+    });
+
+    expect(material.o.emissive).toBeInstanceOf(THREE.Color);
+    expect((material.o.emissive as { v: string }).v).toBe('#440011');
+    expect(material.o.side).toBe(THREE.DoubleSide);
+  });
+});
+
 describe('triggerScene3DBundleDownload', () => {
   it('is the shared downloadBlob helper (issue #285), not a fourth hand-rolled copy', async () => {
     const { downloadBlob } = await import('./downloadBlob');

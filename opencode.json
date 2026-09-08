@@ -43,7 +43,7 @@
     "implementation-complex": {
       "mode": "subagent",
       "description": "Auth, data layer, schema, migrations — DISPATCH.md Pass 2b",
-      "model": "ollama-cloud/qwen3-coder-next:cloud"
+      "model": "ollama-cloud/kimi-k3"
     }
   }
 }

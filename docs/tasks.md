@@ -17404,15 +17404,16 @@ mechanical frontend/export.
 
 ## 290. Decide generated public art-piece gallery discoverability
 
-Status: BLOCKED / OWNER PRODUCT-DESIGN DECISION.
+Status: COMPLETE — UNIFIED DIRECTION SELECTED; implementation continues in #491.
 
 GitHub issue: [#486](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/486)
 
 `/art-pieces/gallery` is valid but absent from anonymous desktop/mobile
-navigation. #486 records the required Unified, Sibling, Gateway, and landing-
-page Reframe gallery. The owner must select a direction; task distillation
-then creates exactly one unconditional stage 2a or 2b implementation issue.
-Do not reopen closed #392/#313 or merge persistence models by default.
+navigation. On 2026-09-08 the repository owner selected the Unified direction:
+one coherent `/gallery` catalog with a visible type filter. The criterion-ready
+stage 2b implementation is [#491](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/491).
+Existing gallery routes/APIs remain stable through additive and compatibility
+contracts; closed #392/#313 remain immutable.
 
 ## 291. Give content-hashed production assets immutable caching
 
@@ -17447,3 +17448,17 @@ dependency order, blocker triage, verification boundaries, and provenance are
 in `docs/deployment-audit-distillation-2026-09-08.md`. Exactly one next
 engineering transaction is #485. No product code or tests changed in this
 distillation pass.
+
+## 293. Unify authored and generated work in the public gallery
+
+Status: PROPOSED / GROOMED — owner direction selected in #486.
+
+GitHub issue: [#491](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/491)
+
+Make `/gallery` the single anonymous catalog for published 2D, 3D, and
+generated pieces, with visible All/Authored/Generated filtering. Add an
+additive, discriminated, keyset-paginated `/api/public/gallery/` contract;
+preserve both legacy public APIs and route `/art-pieces/gallery` through a
+backward-compatible generated-filter shim. Routing: stage 2b complex because
+the closure-sized surface depends on cross-model query, order, cursor, and API
+business logic. #485 remains the exactly-one-next engineering transaction.

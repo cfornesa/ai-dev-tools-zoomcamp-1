@@ -113,7 +113,9 @@ function buildMaterial(object: SceneObject3D): THREE.MeshStandardMaterial {
   const opacity = object.material.opacity ?? 1;
   return new THREE.MeshStandardMaterial({
     color: new THREE.Color(object.material.color),
-    emissive: object.material.emissive ? new THREE.Color(object.material.emissive) : undefined,
+    ...(object.material.emissive
+      ? { emissive: new THREE.Color(object.material.emissive) }
+      : undefined),
     opacity,
     transparent: opacity < 1,
     side: object.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide,

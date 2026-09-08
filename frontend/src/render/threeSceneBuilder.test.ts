@@ -260,6 +260,41 @@ describe('buildThreeSceneGraph: objects', () => {
     expect(material.transparent).toBe(true);
     expect(material.emissive.getHexString()).toBe('440011');
   });
+
+  it('issue #487: omits emissive from the constructor when the material does not define it', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const scene = baseScene({
+      objects: [
+        {
+          id: 'obj-no-emissive',
+          type: 'sphere',
+          groupId: null,
+          transform: identityTransform,
+          material: { color: '#00aa55' },
+          visible: true,
+          radius: 1,
+        },
+      ],
+    });
+
+    const { scene: threeScene } = buildThreeSceneGraph(scene, 1);
+    const material = (threeScene.getObjectByName('obj-no-emissive') as THREE.Mesh)
+      .material as THREE.MeshStandardMaterial;
+
+    const emissiveWarnings = warnSpy.mock.calls.filter(
+      ([message]) =>
+        typeof message === 'string' &&
+        (message.includes("parameter 'emissive'") || message.includes('has value of undefined')),
+    );
+    expect(emissiveWarnings).toHaveLength(0);
+    expect(material.color.getHexString()).toBe('00aa55');
+    expect(material.emissive.getHexString()).toBe('000000');
+    expect(material.opacity).toBeCloseTo(1);
+    expect(material.transparent).toBe(false);
+    expect(material.side).toBe(THREE.FrontSide);
+
+    warnSpy.mockRestore();
+  });
 });
 
 describe('buildThreeSceneGraph: groups', () => {

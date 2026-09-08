@@ -534,7 +534,9 @@ inside the skill, states that a Claude run is a substitution to flag, and
 keeps a body that stays paste-ready for handing to that service directly.
 `.agents/skills/_shared/HANDOFF-CONTRACT.md` is the single source of truth for
 the stage map, advisory routing, provenance, handoff artifacts, and the
-untrusted-external-input rules.
+untrusted-external-input rules. `DISPATCH.md` at the repo root is the routing
+index: which skill covers which function, and the service, model, and effort
+each stage is rostered to.
 
 **Skills already in the repo are never deleted.** A skill that predates this
 system is a decision someone made about how this codebase should be worked on.

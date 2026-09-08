@@ -1,4 +1,4 @@
-# Per-Service Dispatch
+# DISPATCH — per-stage routing for the multi-service loop
 
 > **What this file is:** the routing layer for the multi-service loop — which
 > skill to invoke, for which function, on which service, with which model and

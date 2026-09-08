@@ -39,7 +39,7 @@ for the stage map and provenance rules.
 It is never delegated to another service or to a lesser Claude model: Opus 5
 is mandatory for this gate regardless of how small the batch looks. Effort is
 budget-constrained to `Low` by owner decision, matching
-`per-service-kickoff-prompts.md`. If Opus 5 itself is
+`DISPATCH.md`. If Opus 5 itself is
 unavailable, Rule 6 applies — stop and say so rather than running the gate on
 a cheaper model.
 

@@ -62,3 +62,10 @@ ownership and read cadence.
   body for manual delegation. `AGENTS.md` Section 9, the handoff contract,
   `backlog-session`, and the dispatch file were updated together; no
   `PROMPT.md` references remain.
+- Renamed `per-service-kickoff-prompts.md` to `DISPATCH.md` (via `git mv`, so
+  history follows). The old name described neither its content nor its use
+  once the prompts became skills. Live references in `production-readiness`
+  and durable memory were updated; the earlier entries in this file keep the
+  old name, since this log is append-only history.
+- `AGENTS.md` Section 9 now points at `DISPATCH.md` as the routing index, so
+  the file is reachable from the orchestrator rather than only by name.

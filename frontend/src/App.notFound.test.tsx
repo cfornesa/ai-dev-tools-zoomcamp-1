@@ -47,13 +47,22 @@ describe('unknown routes (issue #485)', () => {
     expect(screen.getByText(/that address does not exist or is unavailable/i)).toBeInTheDocument();
 
     const recoveryNav = screen.getByRole('navigation', { name: 'Recovery navigation' });
-    const homeLink = within(recoveryNav).getByRole('link', { name: 'Home' });
+    const homeLink = within(recoveryNav).getByRole('link', { name: /return to the home page/i });
     expect(homeLink).toHaveAttribute('href', '/');
     expect(homeLink).toHaveClass('shell-action');
 
-    const galleryLink = within(recoveryNav).getByRole('link', { name: 'Public gallery' });
+    const galleryLink = within(recoveryNav).getByRole('link', {
+      name: /browse the public gallery/i,
+    });
     expect(galleryLink).toHaveAttribute('href', '/gallery');
     expect(galleryLink).toHaveClass('shell-action');
+
+    // QA (issue #485): the recovery links must carry distinct accessible
+    // names -- bare "Home"/"Public gallery" duplicated the shell nav's
+    // identically-named links and made the page ambiguous for assistive
+    // tech (and tripped Playwright's strict mode in the real browser run).
+    expect(screen.getAllByRole('link', { name: /^home$/i })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: /^public gallery$/i })).toHaveLength(1);
   });
 
   it('does not match known route patterns like /p/:id for genuinely unknown deep paths', async () => {

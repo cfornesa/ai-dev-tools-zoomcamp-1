@@ -47,6 +47,19 @@ as `completed` once all of its narrowed criteria pass, provided the closure
 matrix separately lists the shifted work and its next issue. Do not reopen the
 completed issue merely because that linked work is unfinished.
 
+## Supported execution profiles
+
+This orchestration task is platform-portable. The recommended default is
+Claude Sonnet at Medium effort. It is also expected to work as a first-class
+dispatch with Codex Luna at Medium, Antigravity Gemini 3.8 Flash, or
+Antigravity's Sonnet implementation.
+
+Choosing one of these supported profiles is not a substitution. Record the
+actual platform, model, and effort in the session provenance, then apply the
+same ledger, handoff, and completion requirements without weakening them for a
+faster model. The Luna restriction on the separate `issue-scoping` stage does
+not apply to this orchestration task.
+
 ## Multi-service stage routing
 
 This skill is the loop **orchestrator**. It owns the transaction ledger, the

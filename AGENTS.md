@@ -477,8 +477,8 @@ At session start, before any build work:
 
 1. Read `DECISIONS.md`. Surface any open REVIEW REQUIRED items. Wait for
    sign-off.
-2. Read `MEMORY.md`. Surface any PENDING CONFIRMATION entries. Wait for
-   confirmation or rejection.
+2. Read `.agents/memory/MEMORY.md`. Surface any PENDING CONFIRMATION entries.
+   Wait for confirmation or rejection.
 3. Only then proceed.
 
 ## 7. Core Constraints (always binding)
@@ -505,7 +505,7 @@ Base skill set, shared by every adaptation:
 | `design-workflow` | `DESIGN.md` is empty, or a gallery needs Derived Identity or Observed Taste |
 | `socratic-depth` | Rule 1 fires; a question must be asked before a significant change |
 | `testing` | Before releasing any spec route or merging any branch |
-| `memory-files` | End of session; proposing `MEMORY.md` or `DECISIONS.md` updates |
+| `memory-files` | End of session; proposing `.agents/memory/MEMORY.md` or `DECISIONS.md` updates |
 
 Loop skills, added by this repo's multi-service adaptation
 (`LOOP-AGENTS.md` Section 2):
@@ -552,24 +552,26 @@ which survives; do not merge them silently or assume the shipped one wins.
 > of the current exchange.
 
 ## 10. Memory & Decision Files
-At the end of every session, propose (don't silently write) 1–3 entries for
-`MEMORY.md`, `DECISIONS.md`, and `CONSTRAINTS.md` — or, for Case E repos,
-follow the existing active/archive convention already in place rather than
-appending to the top-level file indefinitely.
+At the end of every session, propose (don't silently write) 1–3 updates for
+`.agents/memory/MEMORY.md`, `DECISIONS.md`, and `CONSTRAINTS.md`. This Case E
+repo uses `.agents/memory/MEMORY.md` plus linked topic pages as its memory
+system; do not create a second root-level `MEMORY.md`. Follow any existing
+active/archive convention rather than imposing a parallel one.
 
 **File ownership and read cadence:**
 
 | File | Written by | Read every session |
 |---|---|---|
 | `AGENTS.md` | Human only | Yes |
-| `MEMORY.md` | Agent (on confirmation) | Yes |
+| `.agents/memory/MEMORY.md` | Agent (on confirmation) | Yes |
 | `DECISIONS.md` | Agent | Yes |
 | `CONSTRAINTS.md` | Agent (on statement) | Yes |
 | `DESIGN.md` | Human + agent | Only when design work occurs |
 
-At the end of an interactive session, propose 1–3 `MEMORY.md` entries plus any
-`DESIGN.md` Observed Taste entries. Ask before writing either. If the proposal
-step is skipped, log it as an unresolved checkpoint in `DECISIONS.md`.
+At the end of an interactive session, propose 1–3 `.agents/memory/` topic and
+index updates plus any `DESIGN.md` Observed Taste entries. Ask before writing
+either. If the proposal step is skipped, log it as an unresolved checkpoint in
+`DECISIONS.md`.
 
 Where a repo's process file defines its own extension-file mapping, that table
 lives in `LOOP-AGENTS.md` Section 4 (or `GRAPH-AGENTS.md` Section 7), not here.
@@ -577,9 +579,10 @@ lives in `LOOP-AGENTS.md` Section 4 (or `GRAPH-AGENTS.md` Section 7), not here.
 ## 11. AGENTS.md Safeguard
 Never edit this file without explicit human instruction. Any change is
 proposed as a clearly marked diff, waits for approval, and is then logged in
-`DECISIONS.md` and summarized in `MEMORY.md`. A non-empty `AGENTS.md` is the
-standing instruction set — "populate", "update", or "fill in" applied to a
-non-empty `AGENTS.md` means propose an append, never a replacement.
+`DECISIONS.md` and summarized in `.agents/memory/MEMORY.md`. A non-empty
+`AGENTS.md` is the standing instruction set — "populate", "update", or "fill
+in" applied to a non-empty `AGENTS.md` means propose an append, never a
+replacement.
 
 ## 12. Post-Session Eval
 

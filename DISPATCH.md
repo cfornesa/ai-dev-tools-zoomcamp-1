@@ -1,13 +1,14 @@
 # DISPATCH — per-stage routing for the multi-service loop
 
-> **What this file is:** the routing layer for the multi-service loop — which
-> skill to invoke, for which function, on which service, with which model and
-> effort. Every stage is an invocable skill; this file is the index that says
-> which one, and which service and model it is rostered to.
+> **What this file is:** a registry of agentic dispatches for the multi-service
+> loop. Each entry names the task/skill to invoke and carries enough routing,
+> ownership, boundary, and handoff context to choose the right dispatch. It is
+> not a prompt library and does not provide prose prompts to paste into a model.
 >
 > Usable in either `ai-dev-tools-zoomcamp-1` or `augment-humankind-react-node`
 > — both have the roster finalized in `LOOP-AGENTS.md` Section 2/4 and
-> `GRAPH-AGENTS.md` Section 5. Fill in `[REPO]` and `[ISSUE]` per session.
+> `GRAPH-AGENTS.md` Section 5. Invoke the named task on the selected platform;
+> repository and issue context comes from the active session or handoff.
 >
 > Each stage is scoped to exactly one job. Don't let a service drift into
 > another stage's work; the receiving stage validates the handoff artifact and
@@ -30,12 +31,24 @@
 | 5 | Production-readiness gate | Claude | **Opus 5 (mandatory)** | Low | skill `production-readiness` |
 | 6 | Batch reconciliation and handoff | Claude | Sonnet 5 | Medium | skill `session-completion` |
 
-Every row is invoked the same way: call the named skill. The **Service** and
-**Model** columns say who the stage is rostered to — Claude names that owner
-when it runs the stage itself and flags the run as a substitution in the
-ledger. To delegate a stage instead, hand that skill's body to its rostered
-service with `[REPO]` and `[ISSUE]` filled in; those services cannot invoke a
-skill themselves.
+Every row is dispatched by invoking the named task/skill. The **Service** and
+**Model** columns identify the recommended default or the stage's rostered
+owner; the stage detail supplies the context needed to route and validate the
+handoff. If a platform cannot invoke the skill by name, attach the skill as
+task context without converting `DISPATCH.md` into a prompt catalog.
+
+Rows 0a and 0b are portable orchestration dispatches rather than roster-locked
+loop stages. Their recommended default is Claude Sonnet at Medium effort. The
+following are equally supported execution profiles and do **not** count as
+substitutions:
+
+- Codex with Luna at Medium reasoning effort;
+- Antigravity with Gemini 3.8 Flash; and
+- Antigravity with its Sonnet implementation.
+
+Record the actual platform/model/effort for provenance. The Stage 1 restriction
+against Luna applies only to `issue-scoping`; it does not apply to
+`task-distillation` or `backlog-session`.
 
 Two rows are not substitutable: stage 3 cannot be satisfied by the model that
 wrote the diff, and stage 5 never leaves Opus 5.

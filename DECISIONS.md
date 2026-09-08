@@ -6,6 +6,15 @@ ownership and read cadence.
 ## 2026-09-08
 
 - Roster finalized for ai-dev-tools-zoomcamp-1 — see LOOP-AGENTS.md Section 4 and GRAPH-AGENTS.md Section 5.
+- Corrected the adapted orchestrator to use this Case E repo's canonical
+  `.agents/memory/MEMORY.md` index and linked topic pages; a parallel root
+  `MEMORY.md` must not be created. The root file was already absent, so no
+  deletion was necessary.
+- `task-distillation` and `backlog-session` are portable orchestration
+  dispatches. Claude Sonnet at Medium effort remains the recommended default;
+  Codex Luna at Medium, Antigravity Gemini 3.8 Flash, and Antigravity's Sonnet
+  implementation are equally supported alternatives and are not recorded as
+  substitutions. Numbered loop-stage routing remains unchanged.
 
 ## 2026-09-07
 

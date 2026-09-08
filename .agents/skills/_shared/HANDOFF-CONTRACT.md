@@ -20,6 +20,14 @@ Backlog definition (`task-distillation`), loop orchestration
 (`backlog-session`), and batch reconciliation (`session-completion`) sit
 around this map rather than inside it.
 
+`task-distillation` and `backlog-session` are portable orchestration
+dispatches. Claude Sonnet at Medium effort is the recommended default, while
+Codex Luna at Medium, Antigravity Gemini 3.8 Flash, and Antigravity's Sonnet
+implementation are first-class supported alternatives. Using one of those
+alternatives is not a roster substitution. Record the actual execution
+profile as provenance. This portability does not change the roster or
+substitution rules for numbered stages 1–5.
+
 Every stage is a skill in both mirrors (`.claude/skills/<name>/SKILL.md` and
 `.agents/skills/<name>/SKILL.md`), so Claude invokes any stage by name. The
 stages rostered to non-Claude services name their rostered owner and model

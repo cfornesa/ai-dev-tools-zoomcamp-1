@@ -7,6 +7,18 @@ description: Discover, deduplicate, groom, and reconcile all actionable backlog 
 
 Use this skill to turn a user request, review feedback, failures, or readiness findings into a reconciled project backlog. It is batch-aware and idempotent: do not create duplicate GitHub issues or memory topics when an existing record already covers the work.
 
+## Supported execution profiles
+
+This backlog-definition task is platform-portable. The recommended default is
+Claude Sonnet at Medium effort. It is also expected to work as a first-class
+dispatch with Codex Luna at Medium, Antigravity Gemini 3.8 Flash, or
+Antigravity's Sonnet implementation.
+
+Choosing one of these supported profiles is not a substitution. Record the
+actual platform, model, and effort in the manifest provenance and keep the same
+distillation, reconciliation, and exit criteria on every profile. The Luna
+restriction on the separate `issue-scoping` stage does not apply here.
+
 ## One-way phase protocol
 
 Distillation is a backlog-definition phase, not a repair loop. It may run in a

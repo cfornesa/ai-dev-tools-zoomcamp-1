@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import JSZip from 'jszip';
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -359,6 +359,123 @@ test.describe('Generated immersive ZIP: preserve walkable presentation in extrac
         }
       });
       expect(videoAccessResult).toBe('rejected:NotAllowedError');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('real Chromium fake-device camera reaches active in the extracted Immersive ZIP (issue #483)', async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'Chromium-only: relies on --use-fake-device-for-media-stream.',
+    );
+
+    await loginViaUI(page, fixture.owner.email, fixture.password);
+    const created = await apiPost(context, '/api/art-pieces/', {
+      title: 'Immersive ZIP real-camera fixture',
+      description:
+        'A published piece used to verify real camera access in the extracted Immersive ZIP.',
+      prompt: 'teal cube',
+      engine: 'threejs',
+      capabilities: {
+        screenshot: true,
+        sound: false,
+        camera_view: true,
+        hand_steering: true,
+        fullscreen: true,
+        download: true,
+      },
+      source: THREEJS_STEERABLE_CUBE,
+    });
+    expect(created.status()).toBe(201);
+    const piece = (await created.json()) as { public_id: string };
+    const published = await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
+      status: 'published',
+    });
+    expect(published.status()).toBe(200);
+
+    await page.goto(`/art-pieces/immersive/${piece.public_id}`);
+    await expect(
+      page.getByRole('heading', { name: 'Immersive ZIP real-camera fixture' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Open download menu' }).click();
+    const zipDownload = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download full piece' }).click();
+    const zipFile = await zipDownload;
+    const zip = await JSZip.loadAsync(fs.readFileSync((await zipFile.path())!));
+
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'art-piece-immersive-zip-real-camera-e2e-'));
+    try {
+      for (const [name, entry] of Object.entries(zip.files)) {
+        if (entry.dir) continue;
+        const target = path.join(root, name);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, await entry.async('nodebuffer'));
+      }
+
+      // Chromium's fake camera drives the real permission/device pipeline
+      // without any JavaScript monkeypatch. The flags must be provided at
+      // process startup, so launch a separate browser for the extracted
+      // file:// page.
+      const fakeBrowser = await chromium.launch({
+        args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+      });
+      try {
+        const fakeContext = await fakeBrowser.newContext();
+        const fakePage = await fakeContext.newPage();
+
+        const messages: string[] = [];
+        fakePage.on('console', (msg) => messages.push(msg.text()));
+        fakePage.on('pageerror', (err) => messages.push(err.message));
+
+        await fakePage.goto(`file://${path.join(root, 'index.html')}`);
+        await expect(fakePage.getByRole('button', { name: 'Screenshot' })).toBeVisible();
+
+        // Enable the camera view; the top-level document calls
+        // navigator.mediaDevices.getUserMedia directly (no sandboxed iframe),
+        // so the fake-device stream is accepted.
+        await fakePage.getByRole('button', { name: 'Enable camera view' }).click();
+        await expect(fakePage.getByRole('button', { name: 'Disable camera view' })).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        );
+        await expect(fakePage.locator('#art-piece-camera-status')).toContainText(
+          'Camera is active.',
+        );
+
+        // Hand-steering UI is gated on camera view being active and
+        // activates its own status in the same top-level document.
+        await fakePage.getByRole('button', { name: 'Steer the piece' }).click();
+        await expect(fakePage.getByRole('button', { name: 'Stop steering' })).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        );
+        await expect(fakePage.locator('#art-piece-steering-status')).toContainText(
+          'Steering is active.',
+        );
+
+        // No #479-style security-origin denial or other unexpected console
+        // noise from the real device pipeline.
+        const unexpected = messages.filter(
+          (m) =>
+            m.includes("parameter 'emissive'") ||
+            m.includes('SecurityError') ||
+            m.includes('Invalid security origin') ||
+            /camera.*denied/i.test(m),
+        );
+        expect(unexpected).toEqual([]);
+
+        const testInfo = test.info();
+        const screenshotPath = testInfo.outputPath('immersive-zip-real-camera.png');
+        await fakePage.screenshot({ path: screenshotPath, fullPage: true });
+        await testInfo.attach('immersive-zip-real-camera', { path: screenshotPath });
+      } finally {
+        await fakeBrowser.close();
+      }
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

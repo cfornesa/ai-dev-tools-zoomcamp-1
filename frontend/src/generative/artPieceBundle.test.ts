@@ -160,6 +160,44 @@ describe('generateArtPieceBundle', () => {
     expect(html).toContain('navigator.mediaDevices.getUserMedia');
   });
 
+  it('#483: Immersive ZIP camera runtime runs in the top-level document with immersive navigation markers, not inside a sandboxed iframe', async () => {
+    // Issue #483 criterion 1: the Immersive ZIP export shares the same
+    // top-level document topology as the Full ZIP (#482). The immersive
+    // presentation adds walkable navigation and a taller stage, but it
+    // does not introduce a sandboxed iframe or parent-frame relay.
+    // Camera access therefore still calls navigator.mediaDevices.getUserMedia
+    // directly from the top-level document.
+    const blob = await generateArtPieceBundle('aframe', AFRAME_CODE, {
+      capabilities: {
+        screenshot: true,
+        sound: false,
+        camera_view: true,
+        hand_steering: true,
+        fullscreen: true,
+      },
+      mode: 'full',
+      presentation: 'immersive',
+    });
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    const lowerHtml = html.toLowerCase();
+
+    // No sandboxed iframe wrapping the piece: the bundle is one document.
+    expect(lowerHtml).not.toContain('sandbox=');
+    expect(lowerHtml).not.toContain('<iframe');
+
+    // Camera and steering controls, and the actual getUserMedia call, are
+    // embedded as inline scripts in the same top-level document -- not
+    // relayed from a parent frame.
+    expect(html).toContain('data-action="camera"');
+    expect(html).toContain('data-action="hand"');
+    expect(html).toContain('navigator.mediaDevices.getUserMedia');
+
+    // Immersive-specific marker: walkable navigation pose status, present
+    // only when presentation is 'immersive' and the library is spatial.
+    expect(html).toContain('art-piece-navigation-pose');
+  });
+
   it('threejs: splits the code into scripts/piece.js, provides a container div, and vendors the runtime', async () => {
     const blob = await generateArtPieceBundle('threejs', THREEJS_CODE);
     const zip = await JSZip.loadAsync(blob);

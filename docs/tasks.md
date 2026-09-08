@@ -17472,3 +17472,15 @@ preserve both legacy public APIs and route `/art-pieces/gallery` through a
 backward-compatible generated-filter shim. Routing: stage 2b complex because
 the closure-sized surface depends on cross-model query, order, cursor, and API
 business logic. #485 remains the exactly-one-next engineering transaction.
+
+## 294. Stabilize loginViaUI's post-login heading observation
+
+Status: PROPOSED — harness observation race, two occurrences this session.
+
+GitHub issue: [#492](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/492)
+
+The shared `loginViaUI` helper intermittently times out waiting for the
+post-login "Your projects" heading (Chromium on `drawioEditor.spec.ts`,
+Firefox on `artPieceSteeringRuntime.spec.ts`); retries pass. Harness-only
+fix in `frontend/e2e/support/auth.ts`; product auth is correct. Reconcile
+with #474 (not reproducible) and #419's gate when fixed.

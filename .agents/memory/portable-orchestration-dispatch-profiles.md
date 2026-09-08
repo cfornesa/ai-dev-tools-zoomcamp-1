@@ -17,4 +17,3 @@ The restriction against Luna in `DISPATCH.md` applies only to the separate
 
 `DISPATCH.md` is a registry of agentic dispatches with routing and handoff
 context. It is not a library of prompts to paste into models.
-

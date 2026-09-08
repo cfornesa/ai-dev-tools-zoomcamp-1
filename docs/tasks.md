@@ -17539,7 +17539,7 @@ Exact published-deployment evidence remains tracked under #445.
 
 ## 294. Stabilize loginViaUI's post-login heading observation
 
-Status: PROPOSED — harness observation race, two occurrences this session.
+Status: COMPLETE — closed 2026-09-08. QA: PASS.
 
 GitHub issue: [#492](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/492)
 
@@ -17548,6 +17548,32 @@ post-login "Your projects" heading (Chromium on `drawioEditor.spec.ts`,
 Firefox on `artPieceSteeringRuntime.spec.ts`); retries pass. Harness-only
 fix in `frontend/e2e/support/auth.ts`; product auth is correct. Reconcile
 with #474 (not reproducible) and #419's gate when fixed.
+
+Fixed in commit `ee1c5b8`: the post-login heading assertion now waits up
+to 15s (Playwright's global default is 5s with `retries: 0`), matching
+the exact plain-timeout failure mode observed; the global expect timeout
+was deliberately left untouched. QA re-verified independently:
+`drawioEditor.spec.ts --project=chromium --repeat-each=10` (10/10) and
+`artPieceSteeringRuntime.spec.ts --project=firefox --repeat-each=10`
+(40/40), zero timeouts, `make check` green.
+
+### 295. Firefox `context.request` 401 immediately after `loginViaUI`
+
+Status: COMPLETE — closed 2026-09-08. QA: PASS.
+
+GitHub issue: [#474](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/474)
+
+Fixed in commit `878d907`, same file: `loginViaUI` now forces one
+authenticated `/api/whoami/` round-trip through the shared
+`APIRequestContext` right after the heading assertion, with a hard
+failure (not a retry loop or `sleep()`) if that round-trip itself isn't
+200 — resolving Firefox's cookie-jar-sync lag at one central point
+instead of intermittently in whichever spec calls the API next. QA
+re-verified independently: `drawioEditor.spec.ts --project=firefox
+--repeat-each=10` (10/10, the exact original repro), no 401s, the
+diagnostic guard never fired, `make check` green. Whether this also
+reproduces on CI's Linux Firefox build remains unconfirmed (CI only runs
+chromium by default) — not required for this issue's own closure.
 
 ## 295. Fix kind-rank loss in the mixed-gallery keyset cursor
 

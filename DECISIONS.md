@@ -311,3 +311,26 @@ nothing engineering-blocked remains for closed work; owner is
 deliberately holding the Replit republish until #492/#474 also land, to
 batch one republish rather than several — an intentional state, not a
 readiness gap.
+
+## 2026-09-08 (stage-4 QA on #492/#474, second Opencode Desktop batch)
+
+Rewrote both dispatch prompts to be fully prescriptive (exact code, not
+"investigate whether") after the first, more open-ended prompts produced
+no diff. Opencode Desktop (`implementation-mechanical-frontend`)
+delivered both exactly as specified: `ee1c5b8` (#492, 15s timeout on the
+post-login heading assertion) and `878d907` (#474, forced
+`/api/whoami/` round-trip after login, hard-failing rather than masking
+the race). QA re-verified both independently against a local disposable
+stack (not the reporting session's claimed results): 10/10 and 40/40
+repeats for #492, 10/10 for #474's exact original repro, `make check`
+green (203 files/2505 tests), `oxlint` showing exactly the 14 pre-existing
+warnings claimed, none in the touched file. Both closed.
+
+Noted and resolved: the reporting session flagged commits `95fdd10`/
+`6b4684d` as "not authored by me" — these are this session's own earlier
+#491 QA/readiness work, not an external actor; no actual conflict, two
+sessions legitimately working the same repo in parallel on independent
+issues.
+
+This is now 12 local commits ahead of `origin/main`
+(`ee1c5b8`..`878d907` plus this doc reconciliation), ready to push.

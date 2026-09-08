@@ -161,6 +161,23 @@ production-safe `DJANGO_DEBUG`/`DJANGO_ALLOWED_HOSTS` values as
 defense-in-depth regardless of that precedence. See
 `.agents/memory/replit-userenv-scope.md`.
 
+**After any Replit Publish that includes new migrations**,
+`django_migrations` is never a valid success signal — Replit's schema-diff
+mechanism creates real tables/columns directly and does not write to that
+table, in success or failure (see
+`.agents/memory/replit-migrations-ledger-not-updated-by-publish.md`; #238,
+#467). The correct check is `/health/` plus direct inspection of the actual
+production tables (Replit's Database panel, or a query against
+`information_schema.tables`) — confirm the specific tables the new
+migrations added actually exist, not just that `/health/` returns "ok"
+(a missing table can 503 `/health/` itself, as #467 documents, but a
+successful publish's own tables should still be checked directly rather
+than inferred). Run
+`PUBLISHED_APP_URL=<published-url> scripts/smoke-published.sh`
+immediately after every such publish — not assumed from the "Published your
+App" git checkpoint commit — before treating a migration-bearing release as
+verified.
+
 For an external non-production deployment, create `backend/.env` from
 `backend/.env.example`, set its own PostgreSQL `DATABASE_URL`, then run
 (from the repo root; the `make` targets below `cd` into `backend/` or

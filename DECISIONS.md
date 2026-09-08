@@ -406,3 +406,14 @@ Refreshed #445's child checklist to the final 7-issue open manifest
 (#419, #440, #445, #460, #465, #467, #494 — all owner/credential/CI-
 evidence-gated, none engineering-blocked). Final readiness verdict:
 this batch is READY for the owner's planned bulk Replit republish.
+
+## 2026-09-08 (#467 closed: AGENTS.md updated with owner approval)
+
+Owner approved the proposed diff (presented in chat, not applied silently
+per Section 11's AGENTS.md safeguard) documenting that `django_migrations`
+is never a valid post-publish success signal and naming `/health/` +
+direct table inspection as the correct check. All three of #467's
+criteria now satisfied: `scripts/smoke-published.sh` was actually run
+after today's publish (not assumed from the checkpoint commit), AGENTS.md
+now states the guidance, and no script timeout extension was needed (the
+existing retry loop completed cleanly). Closing #467.

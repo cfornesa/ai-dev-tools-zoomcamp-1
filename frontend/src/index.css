@@ -2759,6 +2759,24 @@ select.ai-proposal-field-full-width {
   margin-left: 6px;
 }
 
+/* Issue #491: the unified gallery's type badge and generated-piece engine
+   label need a small gap so they don't read as one continuous word in
+   screenshots (e.g. "Generatedaframe"). They share the pill style used by
+   .remix-badge above. */
+.renderer-badge,
+.engine-label {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.engine-label {
+  margin-left: 6px;
+}
+
 /* Task 51 (issue #53): the public project viewer's own chrome
    (`PublicProjectViewer.tsx`) — `.public-project-viewer`/
    `.public-project-attribution` had no CSS rule at all before this

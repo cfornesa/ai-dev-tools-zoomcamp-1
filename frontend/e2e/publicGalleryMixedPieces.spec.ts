@@ -169,6 +169,13 @@ test.describe('mixed public gallery', () => {
           }),
         ).toHaveAttribute('href', `/art-pieces/p/${artPieceId}`);
 
+        // Issue #491: rendered evidence must show the All filter state with
+        // all three card kinds visible.
+        await anonymousPage.screenshot({
+          path: testInfo.outputPath(`gallery-all-${viewport.width}.png`),
+          fullPage: true,
+        });
+
         // Issue #491: the Authored filter hides generated pieces; the
         // Generated filter shows only generated pieces.
         await anonymousPage
@@ -186,7 +193,7 @@ test.describe('mixed public gallery', () => {
         await expect(cardGenerated).toBeVisible();
 
         await anonymousPage.screenshot({
-          path: testInfo.outputPath(`gallery-${viewport.width}.png`),
+          path: testInfo.outputPath(`gallery-generated-${viewport.width}.png`),
           fullPage: true,
         });
       }

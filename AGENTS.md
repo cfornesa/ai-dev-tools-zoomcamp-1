@@ -514,6 +514,10 @@ Loop skills, added by this repo's multi-service adaptation
 |---|---|
 | `task-distillation` | Turning a request, review, failure, or readiness finding into a reconciled backlog; before any engineering pass begins |
 | `backlog-session` | Working through the project backlog and its GitHub issues; orchestrates the per-issue loop and owns the transaction ledger |
+| `issue-scoping` | Stage 1 — drafting one criterion-ready issue from a groomed backlog item |
+| `implementation-mechanical` | Stage 2a — implementing an issue routed as mechanical/boilerplate |
+| `implementation-complex` | Stage 2b — implementing auth, data-layer, migration, or schema/business-logic work |
+| `second-opinion-review` | Stage 3 — independent fresh-eyes review of a diff from a different model family |
 | `qa-self-review` | Stage 4 — a diff is ready for QA, whatever service produced it |
 | `production-readiness` | Stage 5 — assessing a reconciled backlog batch for deployment and release readiness |
 | `session-completion` | End of a backlog run; batch reconciliation, rollup, and handoff |
@@ -522,13 +526,15 @@ Skills live at `.claude/skills/<name>/SKILL.md` with an identical mirror at
 `.agents/skills/<name>/SKILL.md`. Adaptations add skills on top of this set;
 they never remove one.
 
-Stages rostered to non-Claude services are **not** skills — those services
-cannot invoke one. They live as portable prompt documents at
-`.agents/skills/<stage>/PROMPT.md` (`issue-scoping`,
-`implementation-mechanical`, `implementation-complex`,
-`second-opinion-review`), with `.agents/skills/_shared/HANDOFF-CONTRACT.md`
-as the single source of truth for the stage map, advisory routing,
-provenance, handoff artifacts, and the untrusted-external-input rules.
+Every loop stage is a skill, including the four rostered to non-Claude
+services (`issue-scoping`, `implementation-mechanical`,
+`implementation-complex`, `second-opinion-review`). Those services cannot
+invoke a skill, so each of those four names its rostered service and model
+inside the skill, states that a Claude run is a substitution to flag, and
+keeps a body that stays paste-ready for handing to that service directly.
+`.agents/skills/_shared/HANDOFF-CONTRACT.md` is the single source of truth for
+the stage map, advisory routing, provenance, handoff artifacts, and the
+untrusted-external-input rules.
 
 **Skills already in the repo are never deleted.** A skill that predates this
 system is a decision someone made about how this codebase should be worked on.

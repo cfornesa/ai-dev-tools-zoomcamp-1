@@ -164,7 +164,7 @@ Run these passes for every manifest issue, labeling artifacts with the issue num
 
 ### PM pass — groom
 
-Scoping itself is stage 1 (`.agents/skills/issue-scoping/PROMPT.md`, Codex);
+Scoping itself is stage 1 ([issue-scoping](../issue-scoping/SKILL.md), Codex);
 this pass grooms the issue it produced and validates that its contract is
 complete enough to hand to an implementation stage. Read the issue, relevant
 `tasks.md`, `docs/process.md`, `docs/team/pm.md`, and any required project
@@ -188,10 +188,11 @@ If grooming discovers distinct actionable work outside the current issue, reuse 
 
 ### Engineer pass — implement
 
-Delegated to stage 2. Select by the issue's routing hint:
-`.agents/skills/implementation-mechanical/PROMPT.md` (Opencode Go) or
-`.agents/skills/implementation-complex/PROMPT.md` (Ollama Cloud). When Claude
-substitutes, follow that same document and flag the substitution.
+Delegated to stage 2. Select by the issue's routing hint: the
+[implementation-mechanical](../implementation-mechanical/SKILL.md) skill
+(Opencode Go) or [implementation-complex](../implementation-complex/SKILL.md)
+(Ollama Cloud). When Claude substitutes, invoke that same skill and flag the
+substitution.
 
 The orchestrator's responsibilities around this pass:
 
@@ -212,9 +213,9 @@ The orchestrator's responsibilities around this pass:
   dependency, and mark the current issue `handed-off` or `dependency-blocked`.
   A code change does not complete an issue until its verification is rerun.
 - Optional stage 3 runs here, before QA:
-  `.agents/skills/second-opinion-review/PROMPT.md`. Record it as run (with the
-  service and model) or `not run`. It cannot be satisfied by the model that
-  wrote the diff.
+  [second-opinion-review](../second-opinion-review/SKILL.md). Record it as run
+  (with the service and model) or `not run`. It cannot be satisfied by the
+  model that wrote the diff.
 
 ### QA pass — verify
 

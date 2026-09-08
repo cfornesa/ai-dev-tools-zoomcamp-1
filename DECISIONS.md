@@ -53,3 +53,12 @@ ownership and read cadence.
   same `[REPO]`/`[ISSUE]` placeholders — this closes the duplication/drift risk
   flagged when the split landed. Filename kept as-is despite the content shift,
   since AGENTS.md, DECISIONS.md, and two skills reference it by name.
+- Converted the four external-stage `PROMPT.md` documents into properly scoped
+  skills (`issue-scoping`, `implementation-mechanical`,
+  `implementation-complex`, `second-opinion-review`) in both mirrors, so every
+  loop function is invoked by name rather than pasted. Those services still
+  cannot invoke a skill, so each skill names its rostered service and model,
+  states that a Claude run is a substitution to flag, and keeps a paste-ready
+  body for manual delegation. `AGENTS.md` Section 9, the handoff contract,
+  `backlog-session`, and the dispatch file were updated together; no
+  `PROMPT.md` references remain.

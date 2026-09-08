@@ -9,16 +9,22 @@ file owns the mechanics of the handoff.
 
 | # | Stage | Rostered owner | Document |
 | --- | --- | --- | --- |
-| 1 | Issue scoping / spec drafting | Codex (via ChatGPT Plus) | `.agents/skills/issue-scoping/PROMPT.md` |
-| 2a | Implementation — mechanical / boilerplate | Opencode Go | `.agents/skills/implementation-mechanical/PROMPT.md` |
-| 2b | Implementation — complex logic | Ollama Cloud | `.agents/skills/implementation-complex/PROMPT.md` |
-| 3 | Second-opinion patch review (optional) | Mistral Vibe | `.agents/skills/second-opinion-review/PROMPT.md` |
-| 4 | QA self-review | Claude (Sonnet 5, Medium) | `qa-self-review` skill |
-| 5 | Production-readiness gate | Claude (Opus 5, owner-budgeted effort) | `production-readiness` skill |
+| 1 | Issue scoping / spec drafting | Codex (via ChatGPT Plus) | skill `issue-scoping` |
+| 2a | Implementation — mechanical / boilerplate | Opencode Go | skill `implementation-mechanical` |
+| 2b | Implementation — complex logic | Ollama Cloud | skill `implementation-complex` |
+| 3 | Second-opinion patch review (optional) | Mistral Vibe | skill `second-opinion-review` |
+| 4 | QA self-review | Claude (Sonnet 5, Medium) | skill `qa-self-review` |
+| 5 | Production-readiness gate | Claude (Opus 5, owner-budgeted effort) | skill `production-readiness` |
 
 Backlog definition (`task-distillation`), loop orchestration
 (`backlog-session`), and batch reconciliation (`session-completion`) sit
 around this map rather than inside it.
+
+Every stage is a skill in both mirrors (`.claude/skills/<name>/SKILL.md` and
+`.agents/skills/<name>/SKILL.md`), so Claude invokes any stage by name. The
+stages rostered to non-Claude services name their rostered owner and model
+inside the skill, and their bodies stay paste-ready for handing to that
+service directly — those services cannot invoke a skill themselves.
 
 ## Routing is advisory
 

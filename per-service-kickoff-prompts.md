@@ -1,9 +1,9 @@
 # Per-Service Dispatch
 
 > **What this file is:** the routing layer for the multi-service loop — which
-> agent to call, for which function, on which service, with which model and
-> effort. It does not contain the prompts themselves. Each stage's prompt is
-> one paste-ready file (external services) or one invocable skill (Claude).
+> skill to invoke, for which function, on which service, with which model and
+> effort. Every stage is an invocable skill; this file is the index that says
+> which one, and which service and model it is rostered to.
 >
 > Usable in either `ai-dev-tools-zoomcamp-1` or `augment-humankind-react-node`
 > — both have the roster finalized in `LOOP-AGENTS.md` Section 2/4 and
@@ -22,21 +22,23 @@
 |---|---|---|---|---|---|
 | 0a | Backlog definition — discover, dedupe, groom, order | Claude | Sonnet 5 | Medium | skill `task-distillation` |
 | 0b | Loop orchestration — ledger, manifest, reconciliation | Claude | Sonnet 5 | Medium | skill `backlog-session` |
-| 1 | Issue scoping / spec drafting | Codex (ChatGPT Plus) | GPT-5.6 Sol | Medium | paste `.agents/skills/issue-scoping/PROMPT.md` |
-| 2a | Implementation — mechanical / boilerplate | Opencode Go | kimi-k2.5 (frontend) / qwen3.6-plus (backend) | — | paste `.agents/skills/implementation-mechanical/PROMPT.md` |
-| 2b | Implementation — complex logic | Ollama Cloud | qwen3-coder:cloud | — | paste `.agents/skills/implementation-complex/PROMPT.md` |
-| 3 | Second-opinion patch review (optional) | Mistral Vibe | devstral-2 | — | paste `.agents/skills/second-opinion-review/PROMPT.md` |
+| 1 | Issue scoping / spec drafting | Codex (ChatGPT Plus) | GPT-5.6 Sol | Medium | skill `issue-scoping` |
+| 2a | Implementation — mechanical / boilerplate | Opencode Go | kimi-k2.5 (frontend) / qwen3.6-plus (backend) | — | skill `implementation-mechanical` |
+| 2b | Implementation — complex logic | Ollama Cloud | qwen3-coder:cloud | — | skill `implementation-complex` |
+| 3 | Second-opinion patch review (optional) | Mistral Vibe | devstral-2 | — | skill `second-opinion-review` |
 | 4 | QA self-review | Claude | Sonnet 5 | Medium | skill `qa-self-review` |
 | 5 | Production-readiness gate | Claude | **Opus 5 (mandatory)** | Low | skill `production-readiness` |
 | 6 | Batch reconciliation and handoff | Claude | Sonnet 5 | Medium | skill `session-completion` |
 
-Stages 0a–0b and 4–6 run inside a Claude session by invoking the named skill.
-Stages 1–3 run in another service's own interface: open that stage's
-`PROMPT.md`, fill in `[REPO]` and `[ISSUE]`, paste it, and bring the result
-back. Routing is advisory — Claude may run a stage whose service produced no
-output, following that same `PROMPT.md` and flagging the substitution in the
-ledger. Two exceptions are not substitutable: stage 3 cannot be satisfied by
-the model that wrote the diff, and stage 5 never leaves Opus 5.
+Every row is invoked the same way: call the named skill. The **Service** and
+**Model** columns say who the stage is rostered to — Claude names that owner
+when it runs the stage itself and flags the run as a substitution in the
+ledger. To delegate a stage instead, hand that skill's body to its rostered
+service with `[REPO]` and `[ISSUE]` filled in; those services cannot invoke a
+skill themselves.
+
+Two rows are not substitutable: stage 3 cannot be satisfied by the model that
+wrote the diff, and stage 5 never leaves Opus 5.
 
 ---
 
@@ -55,7 +57,7 @@ roster is already owned by Opencode Go and Ollama Cloud.
 
 **Function:** turn one groomed backlog item into one criterion-ready GitHub
 issue, actionable by a service with no access to your conversation.
-**Prompt:** `.agents/skills/issue-scoping/PROMPT.md`
+**Invoke:** skill `issue-scoping`
 **Hands off:** the issue itself, including its routing hint (2a or 2b).
 
 ---
@@ -69,7 +71,7 @@ provenance.
 
 **Function:** implement strictly within a stage-1 issue whose routing hint is
 mechanical, plus focused regression coverage.
-**Prompt:** `.agents/skills/implementation-mechanical/PROMPT.md`
+**Invoke:** skill `implementation-mechanical`
 **Hands off:** a diff scoped to that issue, plus the exact commands run.
 **Stops at:** complex logic (that is a routing handoff to 2b, not a blocker),
 anything in the Irreversible Decisions table, a new dependency, a public
@@ -85,7 +87,7 @@ is what auth, data-layer, and schema/business-logic translation need.
 
 **Function:** implement a stage-1 issue whose routing hint is complex logic —
 auth, data layer, migrations, schema and business-logic translation.
-**Prompt:** `.agents/skills/implementation-complex/PROMPT.md`
+**Invoke:** skill `implementation-complex`
 **Hands off:** a diff scoped to that issue, plus the exact commands run.
 **Stops at:** any disagreement between a cited source-of-truth document and
 the current code (Rule 1 question — that specific conflict is in the
@@ -103,7 +105,7 @@ the entire point of this stage.
 **Function:** review a stage-2 diff against the issue's acceptance criteria
 with fresh eyes, looking for the assumptions the diff's own author carried
 into its self-review. Findings only; it fixes nothing.
-**Prompt:** `.agents/skills/second-opinion-review/PROMPT.md`
+**Invoke:** skill `second-opinion-review`
 **Hands off:** findings, which stage 4 must disposition explicitly.
 **Not substitutable:** if Mistral Vibe did not run, stage 3 is recorded as
 `not run` — never "covered by QA". A Claude review of a Claude-authored diff

@@ -205,3 +205,23 @@ Repository owner pushed the 10-commit batch (`989795e`..`7546cd2`) to
 un-CI'd" blocker recorded above. CI run `34256163552` started immediately
 (`gh run watch` monitoring in background). Local supplementary full e2e run
 also continuing in parallel; both will be reconciled once CI completes.
+
+## 2026-09-08 (CI evidence for the pushed batch)
+
+CI run [34256163552](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34256163552)
+completed for the pushed batch (`7546cd2`, later `6edf17b`): Backend checks,
+Frontend checks, Workflow validation, and the disposable published-routing
+smoke check all **passed**. `Browser acceptance E2E` failed on exactly one
+test — `publishingAndRemix.spec.ts`'s "10-second synthetic camera
+diagnostics" (`inferenceFps` ~15-20 vs required >20) — the same
+already-tracked, already-classified CI-runner-capacity flake from #419/#465,
+not a regression from this batch. This resolves the "unpushed, un-CI'd"
+readiness blocker: the full #479/#482/#483/#487/#488/#489/#490 batch now has
+real, clean CI evidence.
+
+The local single-worker supplementary full e2e run (819 tests, started
+during the stage-5 pass) was stopped partway (320/819, 37 failures) once
+authoritative CI evidence landed — its noisier local-sandbox results are
+non-authoritative per [[local-sandbox-verification-boundaries]] and
+[[full-browser-readiness-gate]]; CI is authoritative for this dimension going
+forward for this batch.

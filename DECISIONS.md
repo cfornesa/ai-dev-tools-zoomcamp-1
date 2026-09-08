@@ -121,3 +121,38 @@ ownership and read cadence.
   rostered Opencode Go run (frontend via implementation-mechanical-frontend
   subagents, backend via implementation-mechanical-backend), recorded here
   because no backlog-session ledger file was active this session.
+
+## 2026-09-08 (stage-4 QA pass on the stage-2a run above)
+
+Ran `qa-self-review` against a local disposable PostgreSQL + Django
+(`AI_PROVIDER=fake`) + Vite stack for the four diffs from the stage-2a run
+above (`c272473`, `74ef304`, `234fcaf`, `9df2168`). Full `make check` green
+(backend 1141 passed/29 skipped, frontend 2494/2494, lint/format/typecheck
+clean). Verdicts posted as GitHub comments, not set here (this skill does not
+close issues):
+
+- **#479: `QA: PASS`.** 7/7 chromium (`artPieceCameraRuntime.spec.ts` +
+  `artPieceSteeringRuntime.spec.ts`), including the new unmocked
+  fake-device `getUserMedia` scenario through the parent frame. One open
+  gap flagged, not blocking: the issue's own microphone criterion has no
+  independent unmocked evidence in this diff — `PieceStageControls.tsx`'s
+  `enable-microphone` path still appears to go through the sandbox
+  (unlike camera, which moved to the parent frame), so it likely still
+  carries #479's own root cause. Owner should confirm or file as a
+  follow-up before closing #479.
+- **#482/#483: `QA: PASS`.** 2/2 and 3/3 chromium respectively, including
+  each issue's new unmocked fake-device camera scenario. Topology N/A
+  finding (single top-level document, no sandboxed iframe) verified
+  directly against the generated bundle's own markup, not taken from the
+  commit message.
+- **#490: `QA: PASS` for the delivered application-layer scope.**
+  `test_hsts_header.py` 5/5, real assertions against `SecurityMiddleware`
+  behavior. Issue is **not fully closable yet** — the actual upstream
+  duplicate field is a platform boundary outside repo control (matches the
+  issue's own dependency note deferring published evidence to #445); kept
+  open pending that or an owner decision to accept the upstream policy
+  as-is.
+
+No product code was changed during this QA pass (per the skill's own
+"do not modify product code" rule). Local Django/Vite dev servers used for
+verification were stopped afterward.

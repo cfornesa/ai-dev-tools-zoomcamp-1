@@ -197,3 +197,11 @@ Key findings:
 Overall verdict: **not yet production-ready** — three concrete blockers
 recorded above and on #445. No product code changed; `docs/tasks.md`
 reconciled (commit `f545773`).
+
+## 2026-09-08 (post-readiness: batch pushed)
+
+Repository owner pushed the 10-commit batch (`989795e`..`7546cd2`) to
+`origin/main` after the stage-5 report was posted, resolving the "unpushed,
+un-CI'd" blocker recorded above. CI run `34256163552` started immediately
+(`gh run watch` monitoring in background). Local supplementary full e2e run
+also continuing in parallel; both will be reconciled once CI completes.

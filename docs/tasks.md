@@ -17532,3 +17532,15 @@ post-login "Your projects" heading (Chromium on `drawioEditor.spec.ts`,
 Firefox on `artPieceSteeringRuntime.spec.ts`); retries pass. Harness-only
 fix in `frontend/e2e/support/auth.ts`; product auth is correct. Reconcile
 with #474 (not reproducible) and #419's gate when fixed.
+
+## 295. Fix kind-rank loss in the mixed-gallery keyset cursor
+
+Status: PROPOSED — latent duplicate/gap-safety bug discovered during #491 stage 2b.
+
+GitHub issue: [#493](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/493)
+
+`filter_after_gallery_cursor` drops the kind-rank component of the global
+order when the cursor's rank equals the queryset's rank, so a same-instant
+2D+3D publish can be gapped out of an `/api/public/projects/` walk. Routing:
+stage 2b complex; reconcile with #491's unified three-kind cursor rather than
+landing two overlapping cursor changes.

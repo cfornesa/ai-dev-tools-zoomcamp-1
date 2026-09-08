@@ -148,10 +148,10 @@ test.describe('mixed public gallery', () => {
         await expect(card3d).toBeVisible();
         await expect(cardGenerated).toBeVisible();
 
-        await expect(card2d.getByText('2D')).toBeVisible();
-        await expect(card3d.getByText('3D')).toBeVisible();
-        await expect(cardGenerated.getByText('Generated')).toBeVisible();
-        await expect(cardGenerated.getByText('canvas2d')).toBeVisible();
+        await expect(card2d.locator('.renderer-badge')).toHaveText('2D');
+        await expect(card3d.locator('.renderer-badge')).toHaveText('3D');
+        await expect(cardGenerated.locator('.renderer-badge')).toHaveText('Generated');
+        await expect(cardGenerated.locator('.engine-label')).toHaveText('canvas2d');
 
         await expect(
           anonymousPage.getByRole('link', {

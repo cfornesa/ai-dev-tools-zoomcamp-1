@@ -17635,3 +17635,18 @@ Playwright's Chromium binary; the real-pipeline test was re-run and passed
 reliably: 1/1, then 5/5 on `--repeat-each=5` (2.4s each), plus the full
 file 4/4 and camera/steering's own 7/7 non-regression check, all
 independently re-verified. Issue closed.
+
+## 298. Post-Replit-publish schema verification
+
+Status: COMPLETE — closed 2026-09-08.
+
+GitHub issue: [#467](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/467)
+
+Superseded the OPEN/verification-boundary rows in the 2026-09-05/09-06
+manifests above. Closed after the day's bulk republish: `scripts/
+smoke-published.sh` actually run (not assumed from the checkpoint commit),
+live table inspection via Replit's dashboard (Claude in Chrome) confirmed
+real schema tables with real row counts, and `AGENTS.md` updated
+(owner-approved diff) to state `django_migrations` is never a valid
+post-publish signal, naming `/health/` + direct table inspection as the
+correct check instead.

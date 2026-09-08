@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext } from '@playwright/test';
+import { chromium, expect, test, type BrowserContext } from '@playwright/test';
 
 import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -22,38 +22,50 @@ const CANVAS_RED_RECTANGLE =
   '<script>var c=document.getElementById("art-piece-canvas");' +
   'var x=c.getContext("2d");x.fillStyle="#dc2626";x.fillRect(0,0,320,240);</script>';
 
-/** Mocks `navigator.mediaDevices.getUserMedia` for every frame in this
- * context (including the sandboxed, opaque-origin `srcDoc` iframe --
- * `context.addInitScript` targets frame creation, not same-origin
- * script access) -- mirrors `publishingAndRemix.spec.ts`'s own
- * `installMediaPipeTestSeam` convention for camera, adapted to
- * audio-only and to a minimal fake stream shape the sandbox's own
- * `stopMicrophone()` (`stream.getTracks().forEach(t => t.stop())`) can
- * consume without needing a real `MediaStream`. */
+/** Mocks `navigator.mediaDevices.getUserMedia` in every frame where the
+ * init script runs -- including the trusted parent frame.
+ *
+ * Issue #479: real microphone capture now runs entirely in the parent
+ * frame (`PieceStageControls.tsx`), not the sandboxed iframe, so the mock
+ * must apply to the top-level window as well. We still patch
+ * `MediaDevices.prototype` (not the instance) because the sandboxed
+ * iframe can still access its own `navigator.mediaDevices` on WebKit and
+ * the prototype surface is the only one that survives WebKit's instance
+ * churn -- see `.agents/memory/webkit-mediadevices-instance-instability.md`.
+ * The granted stream is a minimal fake audio stream shape the UI's
+ * `handleDisableMicrophone()` (`stream.getTracks().forEach(t => t.stop())`)
+ * can consume without needing a real `MediaStream`. */
 async function mockMicrophone(
   context: BrowserContext,
   outcome: 'granted' | 'denied' | 'unavailable',
 ): Promise<void> {
   await context.addInitScript((outcomeArg: string) => {
-    // Scoped to the sandboxed iframe only (`window.self !== window.top`)
-    // -- the top-level app's own unrelated code may call
-    // `navigator.mediaDevices.getUserMedia` directly (without an
-    // existence guard) elsewhere on the page, so overriding it there too
-    // would break rendering outside the art-piece sandbox entirely.
-    if (window.self === window.top) return;
+    const mediaDevicesProto = Object.getPrototypeOf(window.navigator.mediaDevices) as {
+      getUserMedia?: () => Promise<MediaStream>;
+    };
     if (outcomeArg === 'unavailable') {
-      Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+      Object.defineProperty(mediaDevicesProto, 'getUserMedia', {
         configurable: true,
         value: undefined,
       });
       return;
     }
+    const mockGetUserMedia = () => {
+      if (outcomeArg !== 'granted') return Promise.reject(new Error('Permission denied'));
+      return Promise.resolve({ getTracks: () => [{ stop: () => {} }] } as unknown as MediaStream);
+    };
+    Object.defineProperty(mediaDevicesProto, 'getUserMedia', {
+      configurable: true,
+      value: mockGetUserMedia,
+    });
+    // Some browsers (this Chromium build) expose getUserMedia as an own
+    // property of navigator.mediaDevices, so the prototype patch alone
+    // does not affect live accesses. Patching the instance as well covers
+    // that case without hurting engines that use the prototype.
     Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
       configurable: true,
-      value: () =>
-        outcomeArg === 'granted'
-          ? Promise.resolve({ getTracks: () => [{ stop: () => {} }] })
-          : Promise.reject(new Error('Permission denied')),
+      writable: true,
+      value: mockGetUserMedia,
     });
   }, outcome);
 }
@@ -237,5 +249,69 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
     await expect(page.getByTestId('keyboard-note-status')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /microphone/i })).toHaveCount(0);
     await expect(page.getByTestId('microphone-status')).toHaveCount(0);
+  });
+
+  test('real unmocked getUserMedia reaches active through the parent frame (issue #479)', async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'Chromium-only: relies on --use-fake-device-for-media-stream.',
+    );
+
+    await loginViaUI(page, fixture.owner.email, fixture.password);
+    const created = await apiPost(context, '/api/art-pieces/', {
+      title: 'Microphone real-pipeline fixture',
+      description: 'A published piece used to verify the real Chromium microphone pipeline.',
+      prompt: 'red rectangle',
+      engine: 'canvas2d',
+      capabilities: {
+        screenshot: false,
+        camera_view: false,
+        sound: false,
+        microphone: true,
+        download: false,
+        fullscreen: false,
+      },
+      source: CANVAS_RED_RECTANGLE,
+    });
+    expect(created.status()).toBe(201);
+    const piece = (await created.json()) as { public_id: string };
+    const published = await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
+      status: 'published',
+    });
+    expect(published.status()).toBe(200);
+
+    const storageState = await context.storageState();
+
+    // Chromium's fake microphone drives the real permission/device pipeline
+    // without any JavaScript monkeypatch. This is intentionally a separate
+    // browser launch rather than a new context, because the fake-device
+    // flags must be provided at process startup.
+    const fakeBrowser = await chromium.launch({
+      args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+    });
+    try {
+      const fakeContext = await fakeBrowser.newContext({ storageState });
+      const fakePage = await fakeContext.newPage();
+      await fakePage.goto(`/art-pieces/p/${piece.public_id}`);
+      await expect(
+        fakePage.getByRole('heading', { name: 'Microphone real-pipeline fixture' }),
+      ).toBeVisible();
+      await fakePage.getByRole('button', { name: 'Piece controls' }).click();
+      await fakePage.getByRole('button', { name: 'Enable microphone' }).click();
+      await expect(fakePage.getByTestId('microphone-status')).toContainText(
+        'Microphone is active.',
+      );
+
+      const testInfo = test.info();
+      const screenshotPath = testInfo.outputPath('microphone-real-pipeline.png');
+      await fakePage.screenshot({ path: screenshotPath });
+      await testInfo.attach('microphone-real-pipeline', { path: screenshotPath });
+    } finally {
+      await fakeBrowser.close();
+    }
   });
 });

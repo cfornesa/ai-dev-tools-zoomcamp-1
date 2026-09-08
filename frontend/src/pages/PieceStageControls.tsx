@@ -96,6 +96,7 @@ function PieceStageControls({
   const cameraStateRef = useRef<'off' | 'active' | 'denied' | 'unavailable' | 'ended'>('off');
   const steeringActiveRef = useRef(false);
   const commandRef = useRef<(type: string, extra?: Record<string, unknown>) => void>(() => {});
+  const micStreamRef = useRef<MediaStream | null>(null);
   cameraOpacityRef.current = cameraOpacity;
   cameraStateRef.current = cameraState;
   steeringActiveRef.current = steeringState === 'active';
@@ -136,12 +137,6 @@ function PieceStageControls({
       if (data.status === 'sound') {
         if (typeof data.enabled === 'boolean') setSoundOn(data.enabled);
         if (typeof data.volume === 'number') setVolume(data.volume);
-      }
-      if (data.status === 'microphone') {
-        if (data.active) setMicrophoneState('active');
-        else if (data.error === 'denied') setMicrophoneState('denied');
-        else if (data.error === 'unavailable') setMicrophoneState('unavailable');
-        else setMicrophoneState('off');
       }
       if (data.status === 'note' && typeof data.key === 'string') {
         setLastNote(data.key);
@@ -300,12 +295,42 @@ function PieceStageControls({
     command('set-camera-active', { active: false });
   }
 
-  // Releases the camera/tracking provider if this control (or its owning
-  // route) unmounts while active, e.g. navigating away mid-session --
-  // mirrors `CameraControl.tsx`'s identical unmount cleanup.
+  // Issue #479: real microphone capture runs in the trusted parent frame
+  // for the same opaque-origin SecurityError reason camera does -- the
+  // sandboxed iframe can never call getUserMedia itself.
+  function handleEnableMicrophone() {
+    if (
+      typeof navigator.mediaDevices === 'undefined' ||
+      typeof navigator.mediaDevices.getUserMedia !== 'function'
+    ) {
+      setMicrophoneState('unavailable');
+      return;
+    }
+    navigator.mediaDevices
+      .getUserMedia({ audio: true, video: false })
+      .then((stream) => {
+        micStreamRef.current = stream;
+        setMicrophoneState('active');
+      })
+      .catch(() => {
+        setMicrophoneState('denied');
+      });
+  }
+
+  function handleDisableMicrophone() {
+    micStreamRef.current?.getTracks().forEach((track) => track.stop());
+    micStreamRef.current = null;
+    setMicrophoneState('off');
+  }
+
+  // Releases the camera/tracking provider and microphone stream if this
+  // control (or its owning route) unmounts while active, e.g. navigating
+  // away mid-session -- mirrors `CameraControl.tsx`'s identical unmount
+  // cleanup.
   useEffect(() => {
     return () => {
       trackingProviderRef.current?.stop();
+      micStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
   async function downloadPiece(label: string) {
@@ -448,8 +473,8 @@ function PieceStageControls({
               <button
                 type="button"
                 aria-pressed={microphoneState === 'active'}
-                onClick={() =>
-                  command(microphoneState === 'active' ? 'disable-microphone' : 'enable-microphone')
+                onClick={
+                  microphoneState === 'active' ? handleDisableMicrophone : handleEnableMicrophone
                 }
               >
                 {microphoneState === 'active' ? 'Disable microphone' : 'Enable microphone'}

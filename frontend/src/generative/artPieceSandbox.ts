@@ -68,15 +68,15 @@ export const ART_PIECE_IFRAME_SANDBOX = 'allow-scripts';
  * iframe's own `navigator.mediaDevices.getUserMedia` call rejects with a
  * permissions-policy violation before it can even prompt.
  *
- * No longer includes `camera`: issue #479 found that `getUserMedia`
- * unconditionally throws `SecurityError: Invalid security origin` in any
- * document with an opaque origin (which this sandboxed iframe always
- * has) regardless of Permissions Policy -- a stricter, separate
- * restriction Permissions Policy cannot override. Real camera capture and
- * hand-tracking now happen entirely in the trusted parent frame
- * (`PieceStageControls.tsx`), which has a real origin and needs no
- * iframe `allow` delegation at all. */
-export const ART_PIECE_IFRAME_ALLOW = 'microphone';
+ * No longer includes `camera` or `microphone`: issue #479 found that
+ * `getUserMedia` unconditionally throws `SecurityError: Invalid security
+ * origin` in any document with an opaque origin (which this sandboxed
+ * iframe always has) regardless of Permissions Policy or audio/video kind
+ * -- a stricter, separate restriction Permissions Policy cannot override.
+ * Real camera capture, hand-tracking, and microphone capture now happen
+ * entirely in the trusted parent frame (`PieceStageControls.tsx`), which
+ * has a real origin and needs no iframe `allow` delegation at all. */
+export const ART_PIECE_IFRAME_ALLOW = '';
 
 /** Issue #199 (Three.js/A-Frame extension): these two libraries need
  * their own runtime loaded via a pinned CDN `<script>` this module
@@ -171,7 +171,6 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   var audioCtx = null;
   var masterGain = null;
   var soundOn = false;
-  var micStream = null;
   var NOTE_FREQUENCIES = {
     a: 220.0, s: 246.94, d: 261.63, f: 293.66, g: 329.63, h: 349.23, j: 392.0, k: 440.0
   };
@@ -184,12 +183,6 @@ function buildListenerScript(library: ArtPieceLibrary): string {
       masterGain.connect(audioCtx.destination);
     }
     return audioCtx;
-  }
-  function stopMicrophone() {
-    if (micStream) {
-      micStream.getTracks().forEach(function (track) { track.stop(); });
-      micStream = null;
-    }
   }
   // Issue #479: real camera capture and hand-tracking now live entirely
   // in the trusted parent frame (PieceStageControls.tsx) -- this sandbox
@@ -358,7 +351,6 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     });
   }
   window.addEventListener('pagehide', function () {
-    stopMicrophone();
     if (audioCtx) { try { audioCtx.close(); } catch (e) {} }
   });
   // Keyboard notes: a real, audible tone per key, gated on Sound already
@@ -415,7 +407,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     // reference can pass this identity check.
     if (event.source !== window.parent) return;
     var data = event && event.data;
-    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'enable-microphone', 'disable-microphone', 'set-camera-active', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'navigate-signal', 'reset-view'];
+    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'set-camera-active', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'navigate-signal', 'reset-view'];
     if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
     try {
       if (data.type === 'screenshot') {
@@ -473,20 +465,6 @@ function buildListenerScript(library: ArtPieceLibrary): string {
         var clampedVolume = isNaN(requestedVolume) ? masterGain.gain.value : Math.max(0, Math.min(1, requestedVolume));
         masterGain.gain.value = clampedVolume;
         reportState('sound', { enabled: soundOn, volume: clampedVolume });
-      } else if (data.type === 'enable-microphone') {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          reportState('microphone', { active: false, error: 'unavailable' });
-        } else {
-          navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (stream) {
-            micStream = stream;
-            reportState('microphone', { active: true });
-          }).catch(function () {
-            reportState('microphone', { active: false, error: 'denied' });
-          });
-        }
-      } else if (data.type === 'disable-microphone') {
-        stopMicrophone();
-        reportState('microphone', { active: false });
       } else if (data.type === 'set-camera-active') {
         // Issue #479: the parent frame owns the real camera stream now
         // (getUserMedia unconditionally throws SecurityError from inside

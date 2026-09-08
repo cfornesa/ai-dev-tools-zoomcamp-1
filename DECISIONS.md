@@ -78,3 +78,23 @@ ownership and read cadence.
   old name, since this log is append-only history.
 - `AGENTS.md` Section 9 now points at `DISPATCH.md` as the routing index, so
   the file is reachable from the orchestrator rather than only by name.
+- Ran the full loop on issue #485 (accessible not-found view): stage 4
+  (`qa-self-review`) caught a real desktop-viewport accessible-name collision
+  between the not-found page's own recovery links and `Layout`'s persistent
+  nav that the unit suite's scoped assertions couldn't see — first verdict
+  `QA: FAIL`, returned to stage 2a, fixed in commit `afde244`, re-verified
+  independently including inspected rendered screenshots, second verdict
+  `QA: PASS`. Issue closed; durable lesson recorded at
+  `.agents/memory/recovery-link-accessible-name-collision.md`.
+- Stage 5 (`production-readiness`) ran on Claude Sonnet 5 instead of the
+  mandatory Opus 5. Per this skill's own Rule 6 instruction, flagged the
+  mismatch and stopped for owner confirmation before proceeding; owner
+  explicitly authorized the substitution rather than switching model tier.
+  Recorded as a flagged substitution, not a silent downgrade. Finding:
+  CI's `Browser acceptance E2E` job is currently red on `main` (same-day
+  run, commit `adfe702`) with concurrent-request duplicate-key races
+  (`django_cache_pkey`, `unique_draft_scope`, `unique_creation_request_per_owner`)
+  — an already-groomed, already-open defect (#419), previously deferred to
+  "the final production-readiness pass," now recorded with fresh same-day
+  evidence there rather than re-run locally. #445 (release-candidate
+  container) remains blocked on #419; #485 itself is unaffected and closed.

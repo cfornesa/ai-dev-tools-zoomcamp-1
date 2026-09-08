@@ -17366,18 +17366,28 @@ architecture.
 
 ## 287. Unknown SPA routes must render an accessible recovery view
 
-Status: PROPOSED / GROOMED — exactly one next issue.
+Status: COMPLETE — closed 2026-09-08.
 
 GitHub issue: [#485](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/485)
 
 The live deployment rendered a completely blank viewport for
 `/definitely-not-a-real-route` at 1280×900 and 375×812 and logged `No routes
-matched location`. Add one catch-all React route with a semantic `Page not
-found` view, Home/Public gallery recovery links, focused component coverage,
-and a direct-deep-link Chromium check. The static SPA fallback's HTTP 200 is
-explicitly out of scope. Routing: stage 2a mechanical frontend. Exact contract
-and commands are in #485 and
-`docs/deployment-audit-distillation-2026-09-08.md`.
+matched location`. Added one catch-all React route (`frontend/src/App.tsx`)
+rendering a `NotFound` page (`frontend/src/pages/NotFound.tsx`) with a
+semantic `Page not found` heading and Home/Public gallery recovery links,
+plus focused component coverage (`App.notFound.test.tsx`) and a
+direct-deep-link Chromium spec (`e2e/notFound.spec.ts`) at 1280×900 and
+375×812. The static SPA fallback's HTTP 200 stayed explicitly out of scope.
+
+QA's first pass (stage 4) caught a real defect the unit suite couldn't see:
+the not-found page's own bare "Home"/"Public gallery" links duplicated the
+`Layout` shell's always-visible desktop nav links by accessible name,
+producing a Playwright strict-mode violation and an ambiguous target for
+assistive tech at the desktop viewport. Fixed by renaming the recovery links
+to "Return to the home page" / "Browse the public gallery"
+(commit `afde244`); re-verified with an independent Chromium re-run and
+inspected rendered screenshots at both viewports. Second QA pass:
+`QA: PASS`. See issue comments for both verdicts.
 
 ## 288. Omit absent emissive values from live structured-3D materials
 

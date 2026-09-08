@@ -171,3 +171,14 @@ OS-level per-device-category permission grants before assuming a code
 defect -- and don't accept a second session's "it passed for me" without
 reproducing it, since TCC grants can be scoped per-process-identity in ways
 that don't transfer between sessions even on the same machine.
+
+**2026-09-08 resolved, same session:** the owner confirmed the microphone
+TCC grant had already been made; a re-run of the identical test passed
+reliably (1/1, then 5/5 on `--repeat-each=5`, ~2.4s each — matching
+camera's own timing). #479 closed. The earlier failed run was not a false
+report from either party -- it was a real state at the moment it ran, most
+likely a timing gap between the grant and this session's own process
+picking it up (or a fresh Chromium binary instance not yet reflecting a
+grant made against a prior one). Re-running once more after a reported
+grant, rather than treating one failure as final, resolved it without
+further investigation needed.

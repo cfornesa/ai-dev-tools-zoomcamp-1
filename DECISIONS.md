@@ -366,3 +366,14 @@ microphone evidence still outstanding, next action recorded on the issue
 and in `docs/tasks.md` item 297. Extended the memory topic with this
 finding rather than creating a new one, since it's the same lesson one
 level down (audio, not video).
+
+## 2026-09-08 (stage-5 re-run after #479 code acceptance)
+
+Sixth consecutive CI run (`34275855571`, commit `3e90e27`) identical to
+the prior five. Updated readiness report posted on
+[#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445#issuecomment-5591605352):
+#479's application code is accepted and safe to include in the eventual
+bulk republish regardless of the mic-verification outcome (strict
+architectural improvement, no regression risk), but the issue itself
+stays open pending either a real microphone TCC grant on this machine or
+an explicit owner waiver (mirroring #192's own precedent).

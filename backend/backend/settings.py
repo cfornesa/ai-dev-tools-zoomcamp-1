@@ -122,6 +122,18 @@ USE_X_FORWARDED_HOST = True
 # Deployment security is enabled automatically whenever DEBUG is off. Each
 # flag remains overridable so an operator can make the policy explicit in
 # environment configuration, but production refuses unsafe combinations.
+#
+# HSTS ownership note (issue #490): behind Replit's custom-domain route an
+# upstream Strict-Transport-Security field (max-age=63072000; includeSubDomains)
+# is prepended by the Replit/Google-Frontend edge after Django's response leaves
+# the application. Per RFC 6797 §8.1 browsers process only the FIRST field, so
+# Django's preload directive is effective only where Django is the TLS edge
+# (e.g. external local deployments). The upstream field cannot be configured or
+# suppressed from this repository (no .replit header-configuration surface;
+# grep confirmed). Changing Django's defaults to align with the upstream field
+# is an owner/vendor decision — not made here.
+# backend/tests/test_hsts_header.py proves Django emits exactly one field at the
+# application layer; the upstream duplicate is outside this codebase's control.
 SECURE_SSL_REDIRECT = get_bool_env("DJANGO_SECURE_SSL_REDIRECT", default=not DEBUG)
 SESSION_COOKIE_SECURE = get_bool_env("DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)
 CSRF_COOKIE_SECURE = get_bool_env("DJANGO_CSRF_COOKIE_SECURE", default=not DEBUG)

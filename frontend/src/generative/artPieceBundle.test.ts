@@ -126,6 +126,40 @@ describe('generateArtPieceBundle', () => {
     expect(html).not.toContain('guardedGetUserMedia');
   });
 
+  it('#482: Full ZIP camera runtime runs in the top-level document, not inside a sandboxed iframe', async () => {
+    // Issue #482 criterion 1: the Full ZIP export's document topology is
+    // DIFFERENT from the live React preview's opaque-origin sandboxed
+    // iframe. The extracted artifact is a single, self-contained top-level
+    // HTML page (no CSP, no sandboxing, no server -- see safeEmbed.ts and
+    // artPieceBundle.ts doc comments). Camera access therefore calls
+    // navigator.mediaDevices.getUserMedia directly from the top-level
+    // document; #479's parent-frame relay does not apply to this surface.
+    const blob = await generateArtPieceBundle('canvas2d', CANVAS2D_CODE, {
+      capabilities: {
+        screenshot: true,
+        sound: false,
+        camera_view: true,
+        hand_steering: true,
+        fullscreen: true,
+      },
+      mode: 'full',
+    });
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    const lowerHtml = html.toLowerCase();
+
+    // No sandboxed iframe wrapping the piece: the bundle is one document.
+    expect(lowerHtml).not.toContain('sandbox=');
+    expect(lowerHtml).not.toContain('<iframe');
+
+    // Camera and steering controls, and the actual getUserMedia call, are
+    // embedded as inline scripts in the same top-level document -- not
+    // relayed from a parent frame.
+    expect(html).toContain('data-action="camera"');
+    expect(html).toContain('data-action="hand"');
+    expect(html).toContain('navigator.mediaDevices.getUserMedia');
+  });
+
   it('threejs: splits the code into scripts/piece.js, provides a container div, and vendors the runtime', async () => {
     const blob = await generateArtPieceBundle('threejs', THREEJS_CODE);
     const zip = await JSZip.loadAsync(blob);

@@ -349,6 +349,10 @@ Documents
 - `docs/process.md` - how work is organized
 
 
+## Implementation Delegation
+For Opencode Desktop, Opencode Go, and/or Ollama Cloud models only. When implementing an issue, classify it first: frontend/React paths → delegate to implementation-mechanical-frontend via the Task tool; backend/API paths → delegate to implementation-mechanical-backend; anything touching auth, data layer, schema, or migrations → delegate to implementation-complex. Do not implement directly in the primary agent — always delegate to the matching subagent per DISPATCH.md.
+
+
 <!-- ===== BEGIN CREATRWEB ORCHESTRATOR ===== -->
 
 ## Creatrweb Agentic Workflow System

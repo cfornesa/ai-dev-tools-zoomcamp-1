@@ -17391,7 +17391,7 @@ inspected rendered screenshots at both viewports. Second QA pass:
 
 ## 288. Omit absent emissive values from live structured-3D materials
 
-Status: IMPLEMENTED (commit `0eb4067`) — QA (stage 4) NOT YET RUN.
+Status: COMPLETE — closed 2026-09-08. QA: PASS.
 
 GitHub issue: [#487](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/487)
 
@@ -17406,12 +17406,12 @@ when the scene material defines it); `threeSceneBuilder.test.ts` gained a
 red-before/green-after regression, and `e2e/public3dMaterialWarnings.spec.ts`
 publishes a sphere+plane fixture and asserts zero emissive-undefined console
 warnings on the anonymous public route, with a rendered screenshot attached.
-No GitHub comment/QA verdict has been posted yet — flagged in the 2026-09-08
-production-readiness pass as an un-reconciled stage-4 gap, not a code defect.
+QA (stage 4) ran 2026-09-08: all criteria verified locally (18/18 unit,
+1/1 Chromium e2e, `make check` green); issue closed.
 
 ## 289. Omit absent emissive values from the extracted 3D ZIP runtime
 
-Status: IMPLEMENTED (commit `5e9a721`) — QA (stage 4) NOT YET RUN.
+Status: COMPLETE — closed 2026-09-08. QA: PASS.
 
 GitHub issue: [#488](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/488)
 
@@ -17424,8 +17424,9 @@ Fixed in `frontend/src/export/standaloneThreeRuntimeSource.ts`;
 `generateHtmlExport3D.test.ts` extracts and evaluates the generated
 `buildMaterial` against a stub `THREE` (red-before/green-after), and
 `e2e/exportArtifacts.spec.ts` gained a real Full-ZIP generate/extract/open
-scenario asserting zero emissive-undefined warnings with a screenshot. Same
-un-reconciled stage-4 gap as #487 above.
+scenario asserting zero emissive-undefined warnings with a screenshot. QA
+(stage 4) ran 2026-09-08: all criteria verified locally (11/11 unit, 1/1
+Chromium e2e, Non-Camera N/A recorded, `make check` green); issue closed.
 
 ## 290. Decide generated public art-piece gallery discoverability
 
@@ -17442,8 +17443,8 @@ contracts; closed #392/#313 remain immutable.
 
 ## 291. Give content-hashed production assets immutable caching
 
-Status: IMPLEMENTED (commit `f2549ff`) — QA (stage 4) NOT YET RUN;
-PUBLISHED VERIFICATION STILL REQUIRED.
+Status: QA: PASS (application-layer) — BLOCKED ON A NEWLY DISCOVERED
+PLATFORM BOUNDARY, not yet closable as originally worded.
 
 GitHub issue: [#489](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/489)
 
@@ -17460,14 +17461,25 @@ locally during the 2026-09-08 production-readiness pass:
 `npm run build && npm run preview -- --port 4173`, then
 `curl -sSI http://localhost:4173/assets/<hashed>.js` returned
 `public, max-age=31536000, immutable`, and `curl -sSI http://localhost:4173/`
-returned `no-cache`, matching the issue's contract. The exact published
-header matrix (this issue's own mandatory closure evidence) remains open —
-production is currently several commits behind this fix (see the
-2026-09-08 production-readiness report). No QA verdict has been posted yet.
+returned `no-cache`, matching the issue's contract. After the batch was
+published, live `curl -I` against the republished origin showed the
+hashed JS/CSS assets serving `private, max-age=31536000, immutable`
+instead of `public, ...` — `max-age`/`immutable` correct, but `public` is
+silently downgraded. Root cause: Replit's Google Frontend edge injects its
+own `Set-Cookie: GAESA=...` affinity cookie on every response through the
+domain (confirmed even on `/health/`, app-code-independent), and GFE's
+standard behavior downgrades `Cache-Control: public` to `private` whenever
+a response carries `Set-Cookie`. Same upstream edge already responsible for
+#490's HSTS duplication; no `.replit` header-configuration surface exists
+to suppress it. See [[replit-google-frontend-header-rewriting]]. QA posted
+2026-09-08: application-layer code is correct and fully verified; issue
+stays open pending an owner decision on accepting the platform's `private`
+substitution as the practical policy.
 
 ## 292. Reconcile duplicate upstream and Django HSTS policies
 
-Status: PROPOSED / GROOMED — POSSIBLE PLATFORM VERIFICATION BOUNDARY.
+Status: QA: PASS (application-layer) — CONFIRMED PLATFORM BOUNDARY, live
+re-verified against the republished site 2026-09-08.
 
 GitHub issue: [#490](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/490)
 
@@ -17477,6 +17489,14 @@ the later `preload` directive ineffective. Document one owner/policy, emit one
 field across the fixed endpoint matrix, and preserve production fail-closed
 checks. Routing: stage 2a backend/deployment configuration; hand off exact
 vendor action if the upstream field cannot be configured in-repo.
+
+Re-verified live after the 2026-09-08 batch republish: `/health/` and
+`/accounts/login/` still emit both fields; `/` still emits only the
+upstream field. Root cause independently reconfirmed to be Replit's Google
+Frontend edge — the same edge responsible for #489's Cache-Control
+downgrade, see [[replit-google-frontend-header-rewriting]]. No code change
+can close this from the repo; owner decision on accepting the upstream
+policy as final remains the exact next action.
 
 ### 2026-09-08 deployment distillation handoff
 

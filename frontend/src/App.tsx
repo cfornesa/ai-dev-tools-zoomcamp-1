@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-
 import { AuthProvider } from './auth/AuthContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
+import NotFound from './pages/NotFound';
 
 /** Task 130 (issue #162): these routes pull in the app's heaviest
  * dependencies (p5.js, React Flow, JSZip/export, the AI proposal stack) --
@@ -111,6 +112,12 @@ function App() {
                   `/projects/:id/settings` working, landing on the same
                   project's unified editor instead of a dead route. */}
               <Route path="projects/:id/settings" element={<ProjectSettingsRedirect />} />
+              {/* Issue #485: catch-all for unknown SPA paths -- renders an
+                  accessible, chrome-bearing not-found view inside Layout so
+                  visitors get a visible heading and recovery links instead of
+                  a blank viewport. Placed last so every explicit route above
+                  keeps precedence. */}
+              <Route path="*" element={<NotFound />} />
             </Route>
             {/* Issue #292: a chrome-less counterpart of `p/:id` above, for
                 embedding a published project's public view in an

@@ -298,3 +298,16 @@ myself rather than reusing the diff's own claim. Two discovery-gate
 follow-ups (#493, #494) both filed correctly with matching GitHub issues
 and `docs/tasks.md` entries. #491 closed. `docs/tasks.md` item 293
 reconciled.
+
+## 2026-09-08 (stage-5 re-run after #491 batch)
+
+Fourth consecutive CI run (`34269238187`, commit `95fdd10`) identical to
+the prior three: everything green except the already-tracked #419/#465
+flake. #491 and #493 closed this pass (QA: PASS both). #494 confirmed
+correctly still open (out of #491's scope). Updated readiness report
+posted on
+[#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445#issuecomment-5590742351):
+nothing engineering-blocked remains for closed work; owner is
+deliberately holding the Replit republish until #492/#474 also land, to
+batch one republish rather than several — an intentional state, not a
+readiness gap.

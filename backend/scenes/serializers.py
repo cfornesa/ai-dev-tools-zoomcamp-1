@@ -4,6 +4,7 @@ from django.urls import reverse
 from rest_framework import serializers
 
 from scenes.models import (
+    ArtPiece,
     EditSessionDraft,
     Project,
     Project3D,
@@ -317,6 +318,115 @@ class PublicProject3DListItemSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
+
+
+# The stable kind-rank order documented for `GET /api/public/gallery/`
+# (#491): "2d" < "3d" < "generated", applied only between rows sharing the
+# exact same `published_at` instant. Must stay in sync with
+# `scenes.gallery.GALLERY_KIND_RANK`.
+_GALLERY_VIEWER_URLS = {
+    "2d": "/p/{}",
+    "3d": "/p3d/{}",
+    "generated": "/art-pieces/p/{}",
+}
+
+_GALLERY_THUMBNAIL_URLS = {
+    "2d": "public-project-thumbnail",
+    "3d": "project3d-thumbnail",
+    "generated": "public-art-piece-thumbnail",
+}
+
+
+class PublicGalleryItemSerializer(serializers.Serializer):
+    """One card of the unified public gallery (`GET /api/public/gallery/`,
+    issue #491): a discriminated union over authored 2D `Project`s, authored
+    `Project3D`s, and generated `ArtPiece`s, keyed by the `kind`
+    discriminator.
+
+    Accepts each row as the `(kind, record)` pair `PublicGalleryListView`
+    already merged in global order, so the view sorts three querysets once
+    and never re-derives a row's kind. Every item exposes only the public
+    fields `docs/api.md` documents -- a stable public id, title, owner
+    display value (username, never email), publication timestamp, thumbnail
+    URL, and the viewer path -- plus `engine` on generated rows. No
+    scene/prompt/draft/visibility internal ever passes through this
+    serializer: its field set is a fixed enumeration below, so adding a
+    field to a model can never leak it here without explicitly widening
+    `fields`.
+    """
+
+    id = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
+    title = serializers.SerializerMethodField()
+    owner = serializers.SerializerMethodField()
+    published_at = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
+    viewer_url = serializers.SerializerMethodField()
+    engine = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = [
+            "id",
+            "kind",
+            "title",
+            "owner",
+            "published_at",
+            "thumbnail_url",
+            "viewer_url",
+            "engine",
+        ]
+
+    @staticmethod
+    def _entry(obj) -> tuple[str, Project | Project3D | ArtPiece]:
+        kind, record = obj
+        return kind, record
+
+    def get_id(self, obj) -> str:
+        _, record = self._entry(obj)
+        return str(record.public_id)
+
+    def get_kind(self, obj) -> str:
+        kind, _ = self._entry(obj)
+        return kind
+
+    def get_title(self, obj) -> str:
+        _, record = self._entry(obj)
+        return record.title
+
+    def get_owner(self, obj) -> str:
+        _, record = self._entry(obj)
+        return record.owner.username
+
+    def get_published_at(self, obj):
+        _, record = self._entry(obj)
+        return record.published_at
+
+    def get_thumbnail_url(self, obj) -> str | None:
+        kind, record = self._entry(obj)
+        if record.current_version_id is None:
+            return None
+        return reverse(_GALLERY_THUMBNAIL_URLS[kind], kwargs={"public_id": record.public_id})
+
+    def get_viewer_url(self, obj) -> str:
+        kind, record = self._entry(obj)
+        return _GALLERY_VIEWER_URLS[kind].format(record.public_id)
+
+    def get_engine(self, obj) -> str | None:
+        # Present (with the piece's engine label) only on generated rows;
+        # omitted from authored rows -- including it as null would imply a
+        # meaningful "no engine" state that authored pieces don't have. The
+        # isinstance narrowing is load-bearing: it tells the type checker
+        # that "generated" rows really are ArtPiece records.
+        kind, record = self._entry(obj)
+        if kind != "generated" or not isinstance(record, ArtPiece):
+            return None
+        return record.engine
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data["engine"] is None:
+            del data["engine"]
+        return data
 
 
 class SceneVersionListSerializer(serializers.ModelSerializer):

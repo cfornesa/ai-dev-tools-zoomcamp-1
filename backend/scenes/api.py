@@ -20,8 +20,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from scenes.art_piece_persistence import eligible_art_pieces
 from scenes.gallery import (
     DEFAULT_PAGE_SIZE,
+    GALLERY_KIND_RANK,
+    VALID_GALLERY_TYPES,
     InvalidCursor,
     clamp_page_size,
     decode_gallery_cursor,
@@ -47,6 +50,7 @@ from scenes.serializers import (
     DraftUpsertSerializer,
     ProjectMetadataSerializer,
     ProjectSerializer,
+    PublicGalleryItemSerializer,
     PublicProject3DListItemSerializer,
     PublicProjectListItemSerializer,
     PublicProjectSerializer,
@@ -342,7 +346,11 @@ class PublicProjectListView(APIView):
         cursor = request.query_params.get("cursor")
         if cursor:
             try:
-                cursor_published_at, cursor_renderer, cursor_id = decode_gallery_cursor(cursor)
+                # Legacy endpoint: the cursor's type segment (4th decode
+                # value) is always None here -- this endpoint predates the
+                # type-bound unified cursor and its callers never switch
+                # filters mid-walk.
+                cursor_published_at, cursor_renderer, cursor_id, _ = decode_gallery_cursor(cursor)
             except InvalidCursor:
                 return Response(
                     {"errors": {"cursor": ["Invalid or expired cursor."]}},
@@ -363,7 +371,7 @@ class PublicProjectListView(APIView):
             for project in queryset_3d[: page_size + 1]
         ]
         candidates.sort(
-            key=lambda item: (item[0], 0 if item[1] == "2d" else 1, item[2]),
+            key=lambda item: (item[0], -GALLERY_KIND_RANK[item[1]], item[2]),
             reverse=True,
         )
         has_more = len(candidates) > page_size
@@ -386,6 +394,134 @@ class PublicProjectListView(APIView):
         return Response(
             {
                 "results": results,
+                "next_cursor": next_cursor,
+                "has_more": has_more,
+            }
+        )
+
+
+class PublicGalleryListView(APIView):
+    """Issue #491: the canonical unified public gallery
+    (`GET /api/public/gallery/`).
+
+    Anonymous-reachable, and identical for anonymous and signed-in callers
+    -- this view never branches on `request.user`, so the public field sets
+    `PublicGalleryItemSerializer` enumerates are the only fields anyone can
+    ever receive (Task 50's "anonymous and signed-in users receive the same
+    public fields" criterion holds structurally here too).
+
+    Merges three eligibility querysets -- published 2D `Project`s
+    (`eligible_projects`), published `Project3D`s (`eligible_projects3d`),
+    and published generated `ArtPiece`s (`eligible_art_pieces`, the exact
+    gate the legacy `/api/public/art-pieces/` endpoint applies) -- into one
+    global order: newest `published_at` first, then the documented stable
+    kind rank (`2d` < `3d` < `generated`), then id descending. Pagination
+    is the duplicate/gap-safe keyset strategy `scenes/gallery.py`'s module
+    docstring documents, with the cursor's kind rank participating in the
+    seek position (#493) and the cursor bound to the `type` filter it was
+    issued under (see `docs/api.md`).
+
+    Query params: `type` (`all`|`authored`|`generated`, default `all`;
+    anything else is a 400), `cursor` (opaque token from a previous
+    response's `next_cursor`; malformed, or presented under a different
+    `type` than it was issued for, is a 400), and `page_size` (defaults to
+    `DEFAULT_PAGE_SIZE`, clamped to `MAX_PAGE_SIZE`, a non-integer is a
+    400) -- the same request shape `PublicProjectListView` above documents.
+
+    Response body: `{"results": [...], "next_cursor": str | null,
+    "has_more": bool}`; each result is the discriminated union
+    `docs/api.md` specifies, keyed by `kind` (`2d`|`3d`|`generated`).
+    """
+
+    _QUERYSETS_BY_TYPE = {
+        "all": ("2d", "3d", "generated"),
+        "authored": ("2d", "3d"),
+        "generated": ("generated",),
+    }
+
+    def get(self, request):
+        gallery_type = request.query_params.get("type", "all")
+        if gallery_type not in VALID_GALLERY_TYPES:
+            return Response(
+                {"errors": {"type": ["Must be one of: all, authored, generated."]}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        page_size_raw = request.query_params.get("page_size")
+        if page_size_raw is not None:
+            try:
+                page_size = clamp_page_size(int(page_size_raw))
+            except ValueError:
+                return Response(
+                    {"errors": {"page_size": ["Must be a positive integer."]}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            page_size = DEFAULT_PAGE_SIZE
+
+        querysets = {}
+        for kind in self._QUERYSETS_BY_TYPE[gallery_type]:
+            if kind == "2d":
+                querysets[kind] = eligible_projects()
+            elif kind == "3d":
+                querysets[kind] = eligible_projects3d()
+            else:
+                querysets[kind] = eligible_art_pieces()
+
+        cursor = request.query_params.get("cursor")
+        if cursor:
+            try:
+                cursor_published_at, cursor_kind, cursor_id, cursor_type = decode_gallery_cursor(
+                    cursor
+                )
+            except InvalidCursor:
+                return Response(
+                    {"errors": {"cursor": ["Invalid or expired cursor."]}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # A cursor is bound to the `type` it was issued under: reusing
+            # it under a different filter would silently re-anchor the walk
+            # in a different result set, so refuse rather than return an
+            # ambiguous page.
+            if cursor_type != gallery_type:
+                return Response(
+                    {"errors": {"cursor": ["Invalid or expired cursor."]}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            for kind, queryset in querysets.items():
+                querysets[kind] = filter_after_gallery_cursor(
+                    queryset, cursor_published_at, cursor_kind, cursor_id
+                )
+
+        candidates = []
+        for kind, queryset in querysets.items():
+            for record in queryset[: page_size + 1]:
+                # Sort by (-published_at, kind rank, -id): `reverse=True` on
+                # this tuple orders published_at and id descending and the
+                # negated rank ascending, matching docs/api.md exactly.
+                candidates.append(
+                    (
+                        record.published_at,
+                        -GALLERY_KIND_RANK[kind],
+                        record.id,
+                        kind,
+                        record,
+                    )
+                )
+        candidates.sort(key=lambda item: item[:3], reverse=True)
+        has_more = len(candidates) > page_size
+        page = candidates[:page_size]
+
+        next_cursor = None
+        if has_more and page:
+            published_at, _, object_id, kind, _ = page[-1]
+            next_cursor = encode_gallery_cursor(published_at, kind, object_id, gallery_type)
+
+        return Response(
+            {
+                "results": PublicGalleryItemSerializer(
+                    [(kind, record) for _, _, _, kind, record in page], many=True
+                ).data,
                 "next_cursor": next_cursor,
                 "has_more": has_more,
             }

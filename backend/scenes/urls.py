@@ -31,6 +31,7 @@ from scenes.api import (
     ProjectPublishView,
     ProjectThumbnailView,
     ProjectUnpublishView,
+    PublicGalleryListView,
     PublicProjectDetailView,
     PublicProjectListView,
     PublicProjectThumbnailView,
@@ -144,6 +145,14 @@ urlpatterns = [
         "public/projects/",
         PublicProjectListView.as_view(),
         name="public-project-list",
+    ),
+    # Issue #491: canonical unified anonymous listing (2D + 3D + generated).
+    # Additive only -- the legacy "public/projects/" listing above and
+    # "public/art-pieces/" below keep their existing contracts unchanged.
+    path(
+        "public/gallery/",
+        PublicGalleryListView.as_view(),
+        name="public-gallery",
     ),
     path(
         "public/projects/<uuid:public_id>/",

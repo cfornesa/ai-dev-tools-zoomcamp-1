@@ -16,8 +16,16 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from scenes.gallery import decode_cursor, encode_cursor
-from scenes.models import EditSessionDraft, Project, Project3D, SceneVersion, SceneVersion3D
+from scenes.gallery import decode_cursor, decode_gallery_cursor, encode_cursor
+from scenes.models import (
+    ArtPiece,
+    ArtPieceVersion,
+    EditSessionDraft,
+    Project,
+    Project3D,
+    SceneVersion,
+    SceneVersion3D,
+)
 
 BLANK_SCENE = json.loads(
     (
@@ -523,3 +531,367 @@ def test_thumbnail_url_is_present_and_resolvable(owner_client, anon_client, owne
     item = response.json()["results"][0]
     assert item["thumbnail_url"] is not None
     assert item["thumbnail_url"].endswith("/thumbnail.png")
+
+
+# ========================================================================
+# Issue #491: the unified public gallery (`GET /api/public/gallery/`)
+# ========================================================================
+#
+# The legacy `/api/public/projects/` contract above is unchanged and stays
+# green; everything below covers the additive unified endpoint: eligibility,
+# the `type` filter, the discriminated result union, the type-bound keyset
+# cursor, and duplicate/gap-safe mixed pagination.
+
+UNIFIED_URL = "/api/public/gallery/"
+
+PIECE_SOURCE = '<canvas id="unified-gallery-canvas"></canvas>'
+
+
+def _make_art_piece(owner_user, *, title="Generated study"):
+    piece = ArtPiece.objects.create(
+        owner=owner_user,
+        title=title,
+        description="A generated fixture.",
+        prompt="the fixture's secret prompt",
+        engine="canvas2d",
+    )
+    version = ArtPieceVersion.objects.create(piece=piece, sequence=1, source=PIECE_SOURCE)
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+    return piece
+
+
+def _publish_art_piece(piece, when=None):
+    piece.status = ArtPiece.Status.PUBLISHED
+    piece.published_at = when or timezone.now()
+    piece.save(update_fields=["status", "published_at"])
+    return piece
+
+
+@pytest.fixture
+def fixed_unified_fixture(owner):
+    """Issue #491's fixed fixture: one published piece of each kind at
+    distinct titles/timestamps, plus one private/draft sentinel of each
+    kind that must never appear under any filter."""
+    when_2d = timezone.now() - timezone.timedelta(minutes=3)
+    when_3d = timezone.now() - timezone.timedelta(minutes=2)
+    when_generated = timezone.now() - timezone.timedelta(minutes=1)
+
+    piece_2d = _publish_directly(_make_project(owner, title="Fixture 2D", description="d"), when_2d)
+    piece_3d = _publish_3d_directly(_make_project3d(owner, title="Fixture 3D"), when_3d)
+    piece_generated = _publish_art_piece(
+        _make_art_piece(owner, title="Fixture generated"), when_generated
+    )
+
+    # Private/draft sentinels of each kind -- none may ever leak.
+    _make_project(owner, title="Private 2D sentinel")
+    private_3d = _make_project3d(owner, title="Private 3D sentinel")
+    _ = private_3d
+    _make_art_piece(owner, title="Draft generated sentinel")
+    Archived = ArtPiece.Status.ARCHIVED
+    archived = _make_art_piece(owner, title="Archived generated sentinel")
+    archived.status = Archived
+    archived.save(update_fields=["status"])
+    deleted = _make_art_piece(owner, title="Deleted generated sentinel")
+    _publish_art_piece(deleted)
+    deleted.is_deleted = True
+    deleted.deleted_at = timezone.now()
+    deleted.save(update_fields=["is_deleted", "deleted_at"])
+
+    return {
+        "2d": piece_2d,
+        "3d": piece_3d,
+        "generated": piece_generated,
+    }
+
+
+# --- Contract: anonymity, field exclusion, discriminator ---
+
+
+@pytest.mark.django_db
+def test_unified_endpoint_is_anonymous_and_identical_when_signed_in(
+    owner_client, anon_client, fixed_unified_fixture
+):
+    anon_body = anon_client.get(UNIFIED_URL).json()
+    signed_in_body = owner_client.get(UNIFIED_URL).json()
+
+    assert anon_body == signed_in_body
+    titles = [item["title"] for item in anon_body["results"]]
+    assert titles == ["Fixture generated", "Fixture 3D", "Fixture 2D"]
+
+
+@pytest.mark.django_db
+def test_unified_items_are_a_discriminated_union_with_public_fields(
+    anon_client, fixed_unified_fixture
+):
+    results = anon_client.get(UNIFIED_URL).json()["results"]
+    by_kind = {item["kind"]: item for item in results}
+
+    assert set(by_kind) == {"2d", "3d", "generated"}
+
+    for kind, record in fixed_unified_fixture.items():
+        item = by_kind[kind]
+        assert item["id"] == str(record.public_id)
+        assert item["title"] == record.title
+        assert item["owner"] == "alice"
+        assert item["published_at"] is not None
+        assert item["thumbnail_url"] is not None
+
+    assert by_kind["2d"]["viewer_url"] == f"/p/{fixed_unified_fixture['2d'].public_id}"
+    assert by_kind["3d"]["viewer_url"] == f"/p3d/{fixed_unified_fixture['3d'].public_id}"
+    assert (
+        by_kind["generated"]["viewer_url"]
+        == f"/art-pieces/p/{fixed_unified_fixture['generated'].public_id}"
+    )
+
+    # Only generated rows carry the engine label.
+    assert by_kind["generated"]["engine"] == "canvas2d"
+    assert "engine" not in by_kind["2d"]
+    assert "engine" not in by_kind["3d"]
+
+
+@pytest.mark.django_db
+def test_unified_response_excludes_private_and_editing_fields(anon_client, fixed_unified_fixture):
+    body = anon_client.get(UNIFIED_URL).json()
+    raw_body = json.dumps(body)
+
+    for item in body["results"]:
+        assert set(item) <= {
+            "id",
+            "kind",
+            "title",
+            "owner",
+            "published_at",
+            "thumbnail_url",
+            "viewer_url",
+            "engine",
+        }
+
+    # No scene/prompt/draft/visibility data anywhere in the body, and the
+    # draft sentinel titles never surface under any circumstance.
+    for forbidden in (
+        "scene_json",
+        "secret prompt",
+        "prompt",
+        "visibility",
+        "status",
+        "Private 2D sentinel",
+        "Private 3D sentinel",
+        "Draft generated sentinel",
+        "Archived generated sentinel",
+        "Deleted generated sentinel",
+    ):
+        assert forbidden not in raw_body
+
+
+# --- The `type` filter ---
+
+
+@pytest.mark.django_db
+def test_unified_type_defaults_to_all(anon_client, fixed_unified_fixture):
+    omitted = anon_client.get(UNIFIED_URL).json()
+    explicit = anon_client.get(UNIFIED_URL, {"type": "all"}).json()
+    assert omitted == explicit
+    assert {item["kind"] for item in omitted["results"]} == {"2d", "3d", "generated"}
+
+
+@pytest.mark.django_db
+def test_unified_authored_filter_excludes_generated(anon_client, fixed_unified_fixture):
+    results = anon_client.get(UNIFIED_URL, {"type": "authored"}).json()["results"]
+    assert [item["title"] for item in results] == ["Fixture 3D", "Fixture 2D"]
+    assert {item["kind"] for item in results} == {"2d", "3d"}
+
+
+@pytest.mark.django_db
+def test_unified_generated_filter_excludes_authored(anon_client, fixed_unified_fixture):
+    results = anon_client.get(UNIFIED_URL, {"type": "generated"}).json()["results"]
+    assert [item["title"] for item in results] == ["Fixture generated"]
+    assert results[0]["kind"] == "generated"
+
+
+@pytest.mark.django_db
+def test_unified_invalid_type_is_a_400(anon_client, fixed_unified_fixture):
+    response = anon_client.get(UNIFIED_URL, {"type": "everything"})
+
+    assert response.status_code == 400
+    assert "type" in response.json()["errors"]
+
+
+# --- Cursor rules: malformed cursors and the type binding ---
+
+
+@pytest.mark.django_db
+def test_unified_invalid_cursor_is_a_400(anon_client, fixed_unified_fixture):
+    response = anon_client.get(UNIFIED_URL, {"cursor": "not-a-real-cursor"})
+
+    assert response.status_code == 400
+    assert "cursor" in response.json()["errors"]
+
+
+@pytest.mark.django_db
+def test_unified_cursor_reused_with_a_different_type_is_a_400(anon_client, fixed_unified_fixture):
+    first_page = anon_client.get(UNIFIED_URL, {"type": "all", "page_size": 1}).json()
+    assert first_page["next_cursor"] is not None
+
+    rebound = anon_client.get(
+        UNIFIED_URL,
+        {"type": "generated", "cursor": first_page["next_cursor"]},
+    )
+    assert rebound.status_code == 400
+    assert "cursor" in rebound.json()["errors"]
+
+
+@pytest.mark.django_db
+def test_unified_cursor_reused_with_authored_is_also_a_400(anon_client, fixed_unified_fixture):
+    first_page = anon_client.get(UNIFIED_URL, {"type": "all", "page_size": 1}).json()
+
+    rebound = anon_client.get(
+        UNIFIED_URL,
+        {"type": "authored", "cursor": first_page["next_cursor"]},
+    )
+    assert rebound.status_code == 400
+
+
+@pytest.mark.django_db
+def test_unified_cursor_round_trips_within_its_own_type(anon_client, fixed_unified_fixture):
+    first_page = anon_client.get(UNIFIED_URL, {"type": "all", "page_size": 1}).json()
+    second_page = anon_client.get(
+        UNIFIED_URL, {"type": "all", "page_size": 1, "cursor": first_page["next_cursor"]}
+    )
+
+    assert second_page.status_code == 200
+
+
+# --- Duplicate/gap-safe mixed pagination across all three kinds ---
+
+
+def _walk_unified(client, params):
+    """Page through `/api/public/gallery/` until `has_more` is false,
+    returning every title seen in order."""
+    seen = []
+    cursor = None
+    pages = 0
+    while True:
+        page_params = dict(params)
+        if cursor:
+            page_params["cursor"] = cursor
+        response = client.get(UNIFIED_URL, page_params)
+        assert response.status_code == 200
+        body = response.json()
+        seen.extend((item["title"], item["kind"]) for item in body["results"])
+        pages += 1
+        if not body["has_more"]:
+            assert body["next_cursor"] is None
+            return seen
+        cursor = body["next_cursor"]
+        assert cursor is not None
+        assert pages < 20
+
+
+@pytest.mark.django_db
+def test_unified_pagination_walks_every_kind_exactly_once(anon_client, fixed_unified_fixture):
+    seen = _walk_unified(anon_client, {"page_size": 2})
+
+    assert seen == [
+        ("Fixture generated", "generated"),
+        ("Fixture 3D", "3d"),
+        ("Fixture 2D", "2d"),
+    ]
+
+
+@pytest.mark.django_db
+def test_unified_filter_specific_pagination(anon_client, owner):
+    base = timezone.now() - timezone.timedelta(hours=1)
+    for index in range(3):
+        _publish_art_piece(
+            _make_art_piece(owner, title=f"Generated {index}"),
+            base + timezone.timedelta(minutes=index),
+        )
+
+    seen = _walk_unified(anon_client, {"type": "generated", "page_size": 2})
+
+    assert [title for title, _ in seen] == ["Generated 2", "Generated 1", "Generated 0"]
+    assert {kind for _, kind in seen} == {"generated"}
+
+
+@pytest.mark.django_db
+def test_unified_new_publish_between_pages_never_duplicates_or_skips(
+    owner_client, anon_client, owner
+):
+    base = timezone.now() - timezone.timedelta(hours=1)
+    for index in range(4):
+        if index % 3 == 0:
+            _publish_directly(
+                _make_project(owner, title=f"Walk 2D {index}", description="d"),
+                base + timezone.timedelta(minutes=index),
+            )
+        elif index % 3 == 1:
+            _publish_3d_directly(
+                _make_project3d(owner, title=f"Walk 3D {index}"),
+                base + timezone.timedelta(minutes=index),
+            )
+        else:
+            _publish_art_piece(
+                _make_art_piece(owner, title=f"Walk generated {index}"),
+                base + timezone.timedelta(minutes=index),
+            )
+
+    page1 = anon_client.get(UNIFIED_URL, {"page_size": 2}).json()
+    page1_titles = [item["title"] for item in page1["results"]]
+
+    concurrent = _make_art_piece(owner, title="Published mid-walk")
+    _publish_art_piece(concurrent)
+
+    page2 = anon_client.get(UNIFIED_URL, {"page_size": 2, "cursor": page1["next_cursor"]}).json()
+    page2_titles = [item["title"] for item in page2["results"]]
+
+    all_seen = page1_titles + page2_titles
+    assert len(all_seen) == len(set(all_seen))
+    assert {
+        "Walk 2D 0",
+        "Walk 3D 1",
+        "Walk generated 2",
+        "Walk 2D 3",
+    }.issubset(set(all_seen))
+    assert "Published mid-walk" not in all_seen
+
+
+@pytest.mark.django_db
+def test_unified_same_instant_publish_keeps_rank_order_without_gaps(anon_client, owner):
+    """The #493 regression shape: rows sharing one `published_at` instant
+    must still paginate in documented rank order (2d < 3d < generated) with
+    no row dropped when the walk crosses a kind boundary."""
+    instant = timezone.now()
+    generated = _publish_art_piece(_make_art_piece(owner, title="Same tick generated"), instant)
+    project3d = _publish_3d_directly(_make_project3d(owner, title="Same tick 3D"), instant)
+    project2d = _publish_directly(
+        _make_project(owner, title="Same tick 2D", description="d"), instant
+    )
+    _ = (generated, project3d, project2d)
+
+    seen = _walk_unified(anon_client, {"page_size": 1})
+
+    assert [title for title, _ in seen] == [
+        "Same tick 2D",
+        "Same tick 3D",
+        "Same tick generated",
+    ]
+
+
+@pytest.mark.django_db
+def test_legacy_untyped_gallery_cursor_still_decodes():
+    """Legacy API stability (issue #491's compatibility criterion): every
+    cursor `PublicProjectListView` issued before the unified endpoint
+    shipped has no `type` segment, and it must keep decoding (with
+    `gallery_type=None`) rather than become a 400 the moment the unified
+    endpoint exists."""
+    import base64
+
+    legacy = base64.urlsafe_b64encode(b"gallery|2026-09-08T10:00:00+00:00|3d|7").decode("ascii")
+
+    published_at, kind, object_id, gallery_type = decode_gallery_cursor(legacy)
+
+    assert kind == "3d"
+    assert object_id == 7
+    assert published_at is not None
+    assert gallery_type is None

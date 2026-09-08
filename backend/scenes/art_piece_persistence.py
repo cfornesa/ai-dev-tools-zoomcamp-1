@@ -82,6 +82,22 @@ def _capabilities(value):
     return {key: value.get(key, False) for key in CAPABILITY_KEYS}
 
 
+def eligible_art_pieces():
+    """The published generated pieces any public gallery listing may show.
+
+    This IS the publication gate the legacy `PublicArtPieceListView` below
+    has always applied (`status == PUBLISHED`, owner/current_version joined,
+    soft-deletes excluded by `ArtPieceManager`), extracted unchanged into one
+    helper so issue #491's unified gallery (`scenes.gallery`) reuses the
+    exact rule instead of inventing a second publication definition. No
+    behavior of the legacy endpoint changes: it queries through this same
+    helper now.
+    """
+    return ArtPiece.objects.filter(status=ArtPiece.Status.PUBLISHED).select_related(
+        "owner", "current_version"
+    )
+
+
 def regenerate_thumbnail(version: ArtPieceVersion) -> ArtPieceThumbnail:
     """Resets `version`'s thumbnail to the neutral fallback placeholder.
 
@@ -307,10 +323,7 @@ class ArtPieceVersionListCreateView(APIView):
 
 class PublicArtPieceListView(APIView):
     def get(self, request):
-        pieces = ArtPiece.objects.filter(status=ArtPiece.Status.PUBLISHED).select_related(
-            "owner", "current_version"
-        )
-        return Response([_piece_data(piece, public=True) for piece in pieces])
+        return Response([_piece_data(piece, public=True) for piece in eligible_art_pieces()])
 
 
 class PublicArtPieceDetailView(APIView):

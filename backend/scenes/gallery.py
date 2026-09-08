@@ -1,6 +1,7 @@
-"""Task 50: public gallery listing — eligibility filter and keyset (cursor)
-pagination, shared between `scenes.api.PublicProjectListView` and its
-tests.
+"""Public gallery listing — eligibility filters and keyset (cursor)
+pagination, shared between `scenes.api.PublicProjectListView` (legacy 2D/3D
+listing, Task 50), `scenes.api.PublicGalleryListView` (the unified 2D/3D/
+generated listing of issue #491), and their tests.
 
 ## Eligibility
 
@@ -63,6 +64,27 @@ field is `public_id`, wrapped as `id` in the response body; see that
 serializer's docstring) and never appears in the cursor's own encoding
 in a way a caller could use to enumerate/guess other rows' pks: the
 cursor is an opaque, base64-encoded token, not a bare integer.
+
+## Mixed kinds, the kind rank, and issue #493
+
+`PublicProjectListView` merges `eligible_projects()` with
+`eligible_projects3d()`; `PublicGalleryListView` (#491) adds
+`eligible_art_pieces()` (`scenes/art_piece_persistence.py`) as a third
+kind. The global order is `(-published_at, kind rank ASC, -id)` with the
+rank `"2d" < "3d" < "generated"` (`GALLERY_KIND_RANK`) applied only
+between rows sharing the exact same `published_at` instant.
+`filter_after_gallery_cursor` seeks strictly past the cursor's full
+`(published_at, kind, pk)` position — a queryset ranked BELOW the cursor's
+kind keeps only strictly-older rows, one ranked ABOVE keeps rows at or
+older than the cursor's timestamp, and the same-rank queryset compares
+`(published_at, id)`. Issue #493 records why the rank must participate in
+the position key this way: a same-rank-only `(published_at, id)`
+comparison loses a same-instant row of a lower-ranked kind once a walk has
+already passed its timestamp at a higher-ranked row. A cursor issued by
+the unified endpoint additionally encodes the `type` filter it was issued
+under (`encode_gallery_cursor`'s trailing segment), so the endpoint can
+reject — with a 400, never ambiguous results — a cursor reused under a
+different filter.
 """
 
 import base64
@@ -72,7 +94,7 @@ from datetime import datetime
 from django.db.models import Q, QuerySet
 from django.utils.dateparse import parse_datetime
 
-from scenes.models import Project, Project3D
+from scenes.models import ArtPiece, Project, Project3D
 
 DEFAULT_PAGE_SIZE = 24
 MAX_PAGE_SIZE = 60
@@ -144,37 +166,87 @@ def eligible_projects3d() -> QuerySet[Project3D]:
     )
 
 
-def encode_gallery_cursor(published_at: datetime, renderer: str, project_id: int) -> str:
-    """Encode the global cursor used by the mixed 2D/3D listing."""
-    raw = f"gallery|{published_at.isoformat()}|{renderer}|{project_id}"
+VALID_GALLERY_TYPES = ("all", "authored", "generated")
+"""The values `GET /api/public/gallery/` (#491) accepts for its `type`
+filter; an omitted `type` defaults to `all`, and anything else is a 400."""
+
+# Stable kind rank in the documented global order: newest `published_at`
+# first, then "2d" < "3d" < "generated", then id descending. The rank is a
+# total-order tiebreaker only ever applied between rows with the exact same
+# `published_at` instant; it is never a per-kind priority while timestamps
+# differ.
+GALLERY_KIND_RANK = {"2d": 0, "3d": 1, "generated": 2}
+_GALLERY_MODEL_RANK = {Project: 0, Project3D: 1, ArtPiece: 2}
+
+_UNSET = object()
+
+
+def encode_gallery_cursor(
+    published_at: datetime,
+    kind: str,
+    object_id: int,
+    gallery_type: str | object = _UNSET,
+) -> str:
+    """Encode the global cursor used by the mixed public-gallery listing.
+
+    `kind` is one of `GALLERY_KIND_RANK`'s keys. `gallery_type` is the
+    `type` filter the cursor is issued under (`all`/`authored`/`generated`);
+    the legacy two-kind caller (`PublicProjectListView`) omits it, which
+    encodes the payload WITHOUT a type field so every cursor that legacy
+    endpoint already issued keeps decoding identically (byte-stable shape,
+    legacy API stability). A type is added as a fourth segment only when
+    supplied.
+    """
+    raw = f"gallery|{published_at.isoformat()}|{kind}|{object_id}"
+    if gallery_type is not _UNSET:
+        raw = f"{raw}|{gallery_type}"
     return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
 
 
-def decode_gallery_cursor(cursor: str) -> tuple[datetime, str, int]:
+def decode_gallery_cursor(cursor: str) -> tuple[datetime, str, int, str | None]:
+    """Decode a global gallery cursor to (published_at, kind, object_id,
+    gallery_type). `gallery_type` is `None` for a legacy payload that never
+    encoded one (see `encode_gallery_cursor`)."""
     try:
         raw = base64.urlsafe_b64decode(cursor.encode("ascii")).decode("utf-8")
-        prefix, published_at_raw, renderer, project_id_raw = raw.rsplit("|", 3)
+        parts = raw.rsplit("|", 4)
+        prefix, published_at_raw, kind, object_id_raw = parts[:4]
+        gallery_type = parts[4] if len(parts) == 5 else None
         published_at = parse_datetime(published_at_raw)
-        project_id = int(project_id_raw)
-    except (binascii.Error, ValueError, UnicodeDecodeError) as exc:
+        object_id = int(object_id_raw)
+    except (binascii.Error, ValueError, UnicodeDecodeError, TypeError) as exc:
         raise InvalidCursor from exc
-    if prefix != "gallery" or published_at is None or renderer not in {"2d", "3d"}:
+    if len(parts) not in (4, 5):
         raise InvalidCursor
-    return published_at, renderer, project_id
+    if gallery_type is not None and gallery_type not in VALID_GALLERY_TYPES:
+        raise InvalidCursor
+    if prefix != "gallery" or published_at is None or kind not in GALLERY_KIND_RANK:
+        raise InvalidCursor
+    return published_at, kind, object_id, gallery_type
 
 
 def filter_after_gallery_cursor(
-    queryset: QuerySet, published_at: datetime, renderer: str, project_id: int
+    queryset: QuerySet, published_at: datetime, kind: str, object_id: int
 ) -> QuerySet:
-    """Seek past a row in the global order (-published_at, renderer, -id)."""
-    renderer_rank = 0 if renderer == "2d" else 1
-    queryset_renderer_rank = 0 if queryset.model is Project else 1
-    if queryset_renderer_rank < renderer_rank:
+    """Seek strictly past a cursor position in the global order
+    (-published_at, kind rank ASC, -id).
+
+    The cursor's kind rank is part of the position key, not just its
+    presence in the queryset: a queryset ranked BELOW the cursor's kind
+    (e.g. the 2D queryset when the cursor names a `3d` row) keeps only rows
+    strictly older than the cursor's `published_at` -- but never drops a
+    same-instant row of its own kind that still sorts between the cursor's
+    timestamp and the cursor row, which the previous same-rank-only
+    (published_at, id) comparison could lose (issue #493).
+    """
+    queryset_rank = _GALLERY_MODEL_RANK[queryset.model]
+    cursor_rank = GALLERY_KIND_RANK[kind]
+    if queryset_rank < cursor_rank:
         return queryset.filter(published_at__lt=published_at)
-    if queryset_renderer_rank > renderer_rank:
+    if queryset_rank > cursor_rank:
         return queryset.filter(published_at__lte=published_at)
     return queryset.filter(
-        Q(published_at__lt=published_at) | Q(published_at=published_at, id__lt=project_id)
+        Q(published_at__lt=published_at) | Q(published_at=published_at, id__lt=object_id)
     )
 
 

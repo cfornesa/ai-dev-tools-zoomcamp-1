@@ -377,3 +377,22 @@ bulk republish regardless of the mic-verification outcome (strict
 architectural improvement, no regression risk), but the issue itself
 stays open pending either a real microphone TCC grant on this machine or
 an explicit owner waiver (mirroring #192's own precedent).
+
+## 2026-09-08 (#479 closed: real-hardware microphone confirmed)
+
+Owner confirmed the macOS microphone TCC permission had already been
+granted to Playwright's Chromium binary; the previously-failing unmocked
+regression was re-run and passed reliably (1/1, then 5/5 on
+`--repeat-each=5`, all ~2.4s, plus 4/4 full-file and 7/7 camera/steering
+non-regression). #479 closed -- the entire camera+microphone parent-frame
+architecture is now real-hardware verified end to end. This is not a
+retraction of the earlier caught claim: that re-run genuinely failed at
+the time it ran (a real local-permission state, not a false report), and
+this one genuinely passes now -- both observations were accurate for their
+own moment.
+
+This closes the last open engineering item from this session's stage-2a
+batch. Everything closed today (#474, #479, #482, #483, #487, #488, #489,
+#490, #491, #492, #493) is now ready for the owner's planned bulk Replit
+republish, after which #467/#465/#419 become checkable via Claude in
+Chrome per the owner's own stated plan.

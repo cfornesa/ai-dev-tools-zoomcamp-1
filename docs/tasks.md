@@ -17602,7 +17602,7 @@ file scope, which is why it was not done there.
 
 ## 297. Move microphone capture to the trusted parent frame
 
-Status: CODE COMPLETE, closure BLOCKED on real-hardware verification.
+Status: COMPLETE — closed 2026-09-08. QA: PASS, real-hardware verified.
 
 GitHub issue: [#479](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/479)
 
@@ -17629,3 +17629,9 @@ Settings → Privacy & Security → Microphone) and the real-pipeline test is
 re-run to a genuine pass. All other criteria (code correctness, mocked
 tests, camera/steering non-regression, `make check`) are independently
 verified and accepted.
+
+Owner confirmed the microphone TCC permission had already been granted to
+Playwright's Chromium binary; the real-pipeline test was re-run and passed
+reliably: 1/1, then 5/5 on `--repeat-each=5` (2.4s each), plus the full
+file 4/4 and camera/steering's own 7/7 non-regression check, all
+independently re-verified. Issue closed.

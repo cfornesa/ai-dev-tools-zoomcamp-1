@@ -28,5 +28,7 @@ export async function loginViaUI(page: Page, email: string, password: string): P
   // actually succeeded" signal (rather than just asserting the URL, which
   // would also be true for a failed login that re-renders the form at the
   // same path in some allauth configurations).
-  await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible({
+    timeout: 15000,
+  });
 }

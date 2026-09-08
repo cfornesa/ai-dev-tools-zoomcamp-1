@@ -8,7 +8,7 @@ description: Implement one criterion-ready issue whose work is mechanical or boi
 Stage 2a of the loop in `LOOP-AGENTS.md` Section 2. Read
 `.agents/skills/_shared/HANDOFF-CONTRACT.md` first.
 
-**Rostered owner:** Opencode Go — `kimi-k2.5` for frontend/React work,
+**Rostered owner:** Opencode Go — `kimi-k3` for frontend/React work,
 `qwen3.6-plus` for backend/API work. State which you selected and why; the
 choice is recorded as provenance.
 

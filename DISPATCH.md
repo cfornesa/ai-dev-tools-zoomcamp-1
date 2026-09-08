@@ -24,7 +24,7 @@
 | 0a | Backlog definition — discover, dedupe, groom, order | Claude | Sonnet 5 | Medium | skill `task-distillation` |
 | 0b | Loop orchestration — ledger, manifest, reconciliation | Claude | Sonnet 5 | Medium | skill `backlog-session` |
 | 1 | Issue scoping / spec drafting | Codex (ChatGPT Plus) | GPT-5.6 Sol | Medium | skill `issue-scoping` |
-| 2a | Implementation — mechanical / boilerplate | Opencode Go | kimi-k2.5 (frontend) / qwen3.6-plus (backend) | — | skill `implementation-mechanical` |
+| 2a | Implementation — mechanical / boilerplate | Opencode Desktop via native Opencode Go | kimi-k2.7-code (frontend) / qwen3.6-plus (backend) | — | skill `implementation-mechanical` |
 | 2b | Implementation — complex logic | Opencode Desktop (`/connect` to Ollama Cloud) | qwen3-coder:cloud | — | skill `implementation-complex` |
 | 3 | Second-opinion patch review (optional) | Mistral Vibe | devstral-2 | — | skill `second-opinion-review` |
 | 4 | QA self-review | Claude | Sonnet 5 | Medium | skill `qa-self-review` |
@@ -57,14 +57,14 @@ wrote the diff, and stage 5 never leaves Opus 5.
 
 ## Stage 1 — Issue scoping / spec drafting
 
-**Service:** Codex, via ChatGPT Plus.
-**Model:** `GPT-5.6 Sol` at `Medium` reasoning effort — the default for
+**Service:** Codex, via ChatGPT Plus or Claude Code, via Claude Pro.
+**Model:** `GPT-5.6 Terra` at `Medium` or `Claude Sonnet` at `Medium` reasoning effort — the default for
 scoping; strong enough for scope boundaries and acceptance criteria without
 the top tier's cost.
-**Escalation:** `GPT-6 Astra` at `Low` or `Medium`, if your plan has it, only
+**Escalation:** `GPT-6 Sol` or `Claude Opus` at `Low` or `Medium`, if your plan has it, only
 for unusually ambiguous or high-stakes scoping. Treat Astra as an escalation,
 not a default.
-**Do not use:** `Terra` or `Luna`. Both are cost/speed tiers, and this stage is
+**Do not use:** `Luna`. This is a cost/speed tier, and this stage is
 judged on reasoning quality, not throughput — the cheap-tier work in this
 roster is already owned by Opencode Go and Ollama Cloud.
 
@@ -77,14 +77,14 @@ issue, actionable by a service with no access to your conversation.
 
 ## Stage 2a — Implementation (mechanical / boilerplate)
 
-**Service:** Opencode Go.
-**Model:** `kimi-k2.5` for frontend/React work, `qwen3.6-plus` for
+**Service:** Opencode Desktop using its native Opencode Go.
+**Model:** `kimi-k2.7-code` for frontend/React work, `qwen3.6-plus` for
 backend/API work. State which you picked and why — the choice is recorded as
 provenance.
 
 **Function:** implement strictly within a stage-1 issue whose routing hint is
 mechanical, plus focused regression coverage.
-**Invoke:** skill `implementation-mechanical`
+**Invoke:** skill `implementation-mechanical`.
 **Hands off:** a diff scoped to that issue, plus the exact commands run.
 **Stops at:** complex logic (that is a routing handoff to 2b, not a blocker),
 anything in the Irreversible Decisions table, a new dependency, a public
@@ -151,12 +151,12 @@ Claude-authored diffs.
 ## Stage 5 — Production-readiness gate
 
 **Service:** Claude.
-**Model:** `Claude Opus 5` — **mandatory**. This is the one stage where the
-model tier is non-negotiable: never Sonnet, never Haiku, never a non-Claude
+**Model:** `Claude Opus 5` or `Claude Sonnet 5` — **mandatory**. This is the one stage where the
+model tier is non-negotiable: never Haiku, never a non-Claude
 service, regardless of how small the change looks. That, not token spend, is
 what `LOOP-AGENTS.md`'s "never downgraded" rule protects. If Opus 5 is
 unavailable, Rule 6 applies — stop and say so.
-**Effort:** `Low` — a separate, budget-owned dial.
+**Effort:** `Low` — a separate, budget-owned dial for `Claude Opus 5` and `Medium` for `Claude Sonnet 5`.
 
 Because the effort level is low, this gate earns its rigor from procedure
 rather than unbounded reasoning: work the readiness dimensions and the

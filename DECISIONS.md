@@ -40,3 +40,9 @@ ownership and read cadence.
   **Open:** `AGENTS.md` Section 9's skill table does not yet register
   `qa-self-review` or the four orchestration skills; `AGENTS.md` is human-owned
   so this needs an owner-approved append.
+- Owner approved both open items from the split: `AGENTS.md` Section 9 now
+  registers the five loop skills with load triggers and notes that non-Claude
+  stages are `PROMPT.md` documents, not skills;
+  `per-service-kickoff-prompts.md` now specifies Opus 5 at `Low` effort and
+  reframes the non-negotiable as the model tier rather than token spend. The
+  `Max`/`xhigh` reconciliation gap logged above is closed.

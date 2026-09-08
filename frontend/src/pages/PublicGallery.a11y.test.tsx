@@ -8,28 +8,39 @@ import Layout from '../components/Layout';
 import PublicGallery from './PublicGallery';
 
 /**
- * Task 63 (issue #63): automated accessibility checks for the anonymous-
- * reachable public gallery — loading, error, empty, populated (including a
- * remixed card), and the "reached the end" state.
+ * Issue #491: automated accessibility checks for the anonymous-reachable
+ * unified public gallery — loading, error, empty, populated with 2D/3D/
+ * generated cards, and the "reached the end" state.
  */
 
 vi.mock('../api/projects');
 
-const mockedListPublicGallery = vi.mocked(projectsApi.listPublicGallery);
+const mockedFetchPublicGallery = vi.mocked(projectsApi.fetchPublicGallery);
 
-function baseProject(
-  overrides: Partial<projectsApi.PublicGalleryProject> = {},
-): projectsApi.PublicGalleryProject {
-  return {
+function baseItem(
+  overrides: Partial<projectsApi.PublicGalleryItem> & {
+    kind?: projectsApi.PublicGalleryItemKind;
+  } = {},
+): projectsApi.PublicGalleryItem {
+  const kind = overrides.kind ?? '2d';
+  const base = {
     id: 'p1',
     title: 'Hand Follower',
     owner: 'alice',
     thumbnail_url: '/api/public/projects/p1/thumbnail.png',
-    remix_provenance: null,
     published_at: '2026-08-01T00:00:00Z',
-    renderer: '2d',
-    ...overrides,
+    viewer_url: '/p/p1',
+    kind,
   };
+  if (kind === 'generated') {
+    return {
+      ...base,
+      kind: 'generated',
+      engine: 'canvas2d',
+      ...overrides,
+    } as projectsApi.PublicGalleryGeneratedItem;
+  }
+  return { ...base, kind, ...overrides } as projectsApi.PublicGalleryItem;
 }
 
 function renderPublicGallery() {
@@ -50,44 +61,44 @@ beforeEach(() => {
 
 describe('PublicGallery accessibility', () => {
   it('has no axe violations while loading', async () => {
-    mockedListPublicGallery.mockReturnValue(new Promise(() => {}));
+    mockedFetchPublicGallery.mockReturnValue(new Promise(() => {}));
     const { container } = renderPublicGallery();
     await screen.findByText(/loading the public gallery/i);
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it('has no axe violations on load error', async () => {
-    mockedListPublicGallery.mockRejectedValueOnce(new Error('network down'));
+    mockedFetchPublicGallery.mockRejectedValueOnce(new Error('network down'));
     const { container } = renderPublicGallery();
     await screen.findByRole('alert');
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it('has no axe violations in the empty state', async () => {
-    mockedListPublicGallery.mockResolvedValue({ results: [], next_cursor: null, has_more: false });
+    mockedFetchPublicGallery.mockResolvedValue({ results: [], next_cursor: null, has_more: false });
     const { container } = renderPublicGallery();
-    await screen.findByText(/no public projects yet/i);
+    await screen.findByText(/no public pieces yet/i);
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('has no axe violations with a populated grid including a remixed card, at the pagination end', async () => {
-    mockedListPublicGallery.mockResolvedValue({
+  it('has no axe violations with a populated grid including 2D, 3D, and generated cards, at the pagination end', async () => {
+    mockedFetchPublicGallery.mockResolvedValue({
       results: [
-        baseProject({ id: 'p1', title: 'Original piece' }),
-        baseProject({
-          id: 'p2',
-          title: 'Remixed piece',
-          remix_provenance: {
-            source_public_id: 'p1',
-            source_creator: 'alice',
-          },
+        baseItem({ id: 'p1', title: '2D piece' }),
+        baseItem({ id: 'p2', title: '3D piece', kind: '3d', viewer_url: '/p3d/p2' }),
+        baseItem({
+          id: 'gen-1',
+          title: 'Generated piece',
+          kind: 'generated',
+          engine: 'svg',
+          viewer_url: '/art-pieces/p/gen-1',
         }),
       ],
       next_cursor: null,
       has_more: false,
     });
     const { container } = renderPublicGallery();
-    await screen.findByRole('heading', { name: 'Original piece' });
+    await screen.findByRole('heading', { name: '2D piece' });
     expect(await axe(container)).toHaveNoViolations();
   });
 });

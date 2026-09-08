@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 
-import { listPublicGallery, type PublicGalleryProject } from '../api/projects';
-import PublicProjectCard from '../components/PublicProjectCard';
+import {
+  fetchPublicGallery,
+  type PublicGalleryItem,
+  type PublicGalleryType,
+} from '../api/projects';
 
 type InitialLoadState = 'loading' | 'error' | 'ready';
 
@@ -10,29 +14,83 @@ type LoadMoreState = {
   error: string | null;
 };
 
+const GALLERY_TYPES: { value: PublicGalleryType; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'authored', label: 'Authored' },
+  { value: 'generated', label: 'Generated' },
+];
+
+const EMPTY_MESSAGES: Record<PublicGalleryType, string> = {
+  all: 'No public pieces yet. Check back soon.',
+  authored: 'No authored public pieces yet.',
+  generated: 'No generated public pieces yet.',
+};
+
+function isValidType(value: string | null): value is PublicGalleryType {
+  return value === 'all' || value === 'authored' || value === 'generated';
+}
+
+function typeBadge(item: PublicGalleryItem): string {
+  if (item.kind === 'generated') return 'Generated';
+  return item.kind === '3d' ? '3D' : '2D';
+}
+
+function GalleryCard({ item }: { item: PublicGalleryItem }) {
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const titleId = `gallery-item-${item.id}-title`;
+  const showFallback = !item.thumbnail_url || thumbnailFailed;
+
+  return (
+    <article
+      aria-labelledby={titleId}
+      className="public-project-card"
+      data-kind={item.kind}
+      data-testid={`gallery-card-${item.id}`}
+    >
+      <Link to={item.viewer_url} className="public-project-card-link">
+        {showFallback ? (
+          <div
+            className="public-project-thumbnail-fallback"
+            role="img"
+            aria-label={`No preview available for ${item.title}`}
+          >
+            No preview available
+          </div>
+        ) : (
+          <img
+            src={item.thumbnail_url ?? undefined}
+            alt={`Preview of ${item.title}`}
+            className="public-project-thumbnail"
+            onError={() => setThumbnailFailed(true)}
+          />
+        )}
+
+        <h3 id={titleId} data-testid={`gallery-card-title-${item.id}`}>
+          {item.title}
+        </h3>
+        <span className="renderer-badge">{typeBadge(item)}</span>
+        {item.kind === 'generated' && <span className="engine-label">{item.engine}</span>}
+      </Link>
+      <p className="public-project-attribution">By {item.owner}</p>
+    </article>
+  );
+}
+
 /**
- * Task 50: the anonymous-reachable public gallery — every currently public
- * project, paginated. A sibling of Task 16's `Gallery.tsx` (the signed-in
- * "your own projects" shell), not a modification of it: that page shows a
- * different data set (`listProjects`, owner-scoped) and requires
- * authentication; this one shows `listPublicGallery` and works identically
- * for anonymous and signed-in visitors (see `PublicProjectListView`'s own
- * docstring in `scenes/api.py` for why the two are structurally identical
- * rather than "anonymous plus extras for owners").
- *
- * Task 51 (issue #53): each card (`PublicProjectCard.tsx`) links to the
- * interactive public project viewer at `/p/<id>` (`PublicProjectViewer.tsx`).
- * This page itself still only lists — the viewer page is a separate route.
- *
- * States: initial loading, initial-load error (with retry), empty (no
- * public projects at all), a populated list with a keyboard-operable
- * "Load more" action, a load-more-specific error (with retry, previously
- * loaded cards stay on screen), and a clear pagination-end state once
- * `has_more` is false.
+ * Issue #491: the anonymous-reachable public gallery — a unified catalog of
+ * published authored 2D/3D projects and generated art pieces, with a visible
+ * type filter (All / Authored / Generated). The filter is a native `<select>`
+ * labeled "Gallery type", synchronized two-way with the `type` query
+ * parameter. The legacy `/art-pieces/gallery` route redirects here with
+ * `type=generated`.
  */
 function PublicGallery() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawType = searchParams.get('type');
+  const type: PublicGalleryType = isValidType(rawType) ? rawType : 'all';
+
   const [initialLoadState, setInitialLoadState] = useState<InitialLoadState>('loading');
-  const [projects, setProjects] = useState<PublicGalleryProject[]>([]);
+  const [items, setItems] = useState<PublicGalleryItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreState, setLoadMoreState] = useState<LoadMoreState>({
@@ -40,13 +98,22 @@ function PublicGallery() {
     error: null,
   });
 
+  // Issue #491: recover from an invalid `type` query value by replacing it
+  // with the documented default (`all`) without a blank or broken surface.
+  useEffect(() => {
+    if (!isValidType(rawType)) {
+      setSearchParams({ type: 'all' }, { replace: true });
+    }
+  }, [rawType, setSearchParams]);
+
   const loadFirstPage = useCallback(() => {
     let cancelled = false;
     setInitialLoadState('loading');
-    listPublicGallery()
+    setLoadMoreState({ pending: false, error: null });
+    fetchPublicGallery(type)
       .then((page) => {
         if (cancelled) return;
-        setProjects(page.results);
+        setItems(page.results);
         setNextCursor(page.next_cursor);
         setHasMore(page.has_more);
         setInitialLoadState('ready');
@@ -58,7 +125,7 @@ function PublicGallery() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [type]);
 
   useEffect(() => loadFirstPage(), [loadFirstPage]);
 
@@ -66,13 +133,13 @@ function PublicGallery() {
     if (!nextCursor) return;
     setLoadMoreState({ pending: true, error: null });
     try {
-      const page = await listPublicGallery({ cursor: nextCursor });
+      const page = await fetchPublicGallery(type, { cursor: nextCursor });
       // De-duplicate defensively against a card already on screen (the
       // keyset cursor is designed not to produce one — see
       // scenes/gallery.py — but the UI never trusts that alone).
-      setProjects((current) => {
-        const seenIds = new Set(current.map((p) => p.id));
-        const newOnes = page.results.filter((p) => !seenIds.has(p.id));
+      setItems((current) => {
+        const seenIds = new Set(current.map((item) => item.id));
+        const newOnes = page.results.filter((item) => !seenIds.has(item.id));
         return [...current, ...newOnes];
       });
       setNextCursor(page.next_cursor);
@@ -81,8 +148,15 @@ function PublicGallery() {
     } catch {
       setLoadMoreState({
         pending: false,
-        error: 'Could not load more projects. Please try again.',
+        error: 'Could not load more pieces. Please try again.',
       });
+    }
+  }
+
+  function handleTypeChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const value = event.target.value;
+    if (isValidType(value)) {
+      setSearchParams({ type: value }, { replace: true });
     }
   }
 
@@ -111,14 +185,37 @@ function PublicGallery() {
     <section aria-labelledby="public-gallery-heading">
       <h2 id="public-gallery-heading">Public gallery</h2>
 
-      {projects.length === 0 ? (
-        <p>No public projects yet. Check back soon.</p>
+      <div className="gallery-type-filter">
+        <label htmlFor="gallery-type">Gallery type</label>
+        <select
+          id="gallery-type"
+          value={type}
+          onChange={handleTypeChange}
+          aria-label="Gallery type"
+        >
+          {GALLERY_TYPES.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {items.length === 0 ? (
+        <div>
+          <p>{EMPTY_MESSAGES[type]}</p>
+          {type !== 'all' && (
+            <p>
+              <Link to="/gallery">Show all gallery pieces</Link>
+            </p>
+          )}
+        </div>
       ) : (
         <>
           <ul className="public-project-grid">
-            {projects.map((project) => (
-              <li key={`${project.renderer}-${project.id}`}>
-                <PublicProjectCard project={project} />
+            {items.map((item) => (
+              <li key={`${item.kind}-${item.id}`}>
+                <GalleryCard item={item} />
               </li>
             ))}
           </ul>

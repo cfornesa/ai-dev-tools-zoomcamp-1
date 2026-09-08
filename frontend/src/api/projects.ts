@@ -217,6 +217,75 @@ export function listPublicGallery(
   return apiFetch<PublicGalleryPage>(`/api/public/projects/${query ? `?${query}` : ''}`);
 }
 
+/** Issue #491: discriminator for the unified public gallery. */
+export type PublicGalleryItemKind = '2d' | '3d' | 'generated';
+
+/** Issue #491: one item from the unified `/api/public/gallery/` endpoint
+ * for an authored 2D project. */
+export type PublicGallery2DItem = {
+  id: string;
+  kind: '2d';
+  title: string;
+  owner: string;
+  published_at: string;
+  thumbnail_url: string | null;
+  viewer_url: string;
+};
+
+/** Issue #491: one item from the unified `/api/public/gallery/` endpoint
+ * for an authored 3D project. */
+export type PublicGallery3DItem = {
+  id: string;
+  kind: '3d';
+  title: string;
+  owner: string;
+  published_at: string;
+  thumbnail_url: string | null;
+  viewer_url: string;
+};
+
+/** Issue #491: one item from the unified `/api/public/gallery/` endpoint
+ * for a generated art piece. */
+export type PublicGalleryGeneratedItem = {
+  id: string;
+  kind: 'generated';
+  title: string;
+  owner: string;
+  published_at: string;
+  thumbnail_url: string | null;
+  viewer_url: string;
+  engine: string;
+};
+
+/** Issue #491: discriminated union of all public gallery item shapes. */
+export type PublicGalleryItem =
+  PublicGallery2DItem | PublicGallery3DItem | PublicGalleryGeneratedItem;
+
+/** Issue #491: one page of the unified public gallery. */
+export type PublicGalleryUnifiedPage = {
+  results: PublicGalleryItem[];
+  next_cursor: string | null;
+  has_more: boolean;
+};
+
+/** Issue #491: the supported values of the `type` filter on the unified
+ * public gallery. */
+export type PublicGalleryType = 'all' | 'authored' | 'generated';
+
+/** Issue #491: fetch one page of the unified public gallery, merging
+ * authored 2D/3D projects and generated art pieces. `type` defaults to
+ * `'all'`; pass the previous page's `next_cursor` to continue a walk. */
+export function fetchPublicGallery(
+  type: PublicGalleryType = 'all',
+  options: { cursor?: string; pageSize?: number } = {},
+): Promise<PublicGalleryUnifiedPage> {
+  const params = new URLSearchParams();
+  params.set('type', type);
+  if (options.cursor) params.set('cursor', options.cursor);
+  if (options.pageSize) params.set('page_size', String(options.pageSize));
+  return apiFetch<PublicGalleryUnifiedPage>(`/api/public/gallery/?${params.toString()}`);
+}
+
 /** Task 51 (issue #53): the *current* saved version of a public project, as
  * returned nested inside `PublicProject` (`PublicSceneVersionSerializer`).
  * Deliberately narrower than `SceneVersion` — no `id`/`origin`/

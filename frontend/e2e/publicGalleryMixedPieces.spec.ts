@@ -1,8 +1,9 @@
-/** Issue #392: the header gallery must discover published structured 2D and
- * 3D pieces through one anonymous-reachable listing. */
+/** Issue #491: the unified public gallery must surface published authored 2D,
+ *  authored 3D, and generated art pieces through one anonymous-reachable
+ *  listing with a visible type filter. */
 import { expect, test } from '@playwright/test';
 
-import { apiPatch } from './support/api.js';
+import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
@@ -75,6 +76,34 @@ async function publishFrom3D(page: import('@playwright/test').Page): Promise<str
   return projectId;
 }
 
+async function publishGeneratedArtPiece(
+  context: import('@playwright/test').BrowserContext,
+  title: string,
+): Promise<string> {
+  // Issue #491: create and publish a generated art piece via the API so the
+  // unified gallery has a generated fixture alongside the authored 2D/3D ones.
+  const created = await apiPost(context, '/api/art-pieces/', {
+    title,
+    description: 'A public gallery generated fixture.',
+    prompt: 'blue rectangle',
+    engine: 'canvas2d',
+    capabilities: {
+      screenshot: true,
+      download: true,
+      fullscreen: true,
+    },
+    source:
+      '<canvas id="art-piece-canvas" width="320" height="240"></canvas><script>var c=document.getElementById("art-piece-canvas"); var x=c.getContext("2d"); x.fillStyle="#2463eb"; x.fillRect(0,0,320,240);</script>',
+  });
+  expect(created.status()).toBe(201);
+  const piece = (await created.json()) as { public_id: string };
+  const published = await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
+    status: 'published',
+  });
+  expect(published.status()).toBe(200);
+  return piece.public_id;
+}
+
 test.describe('mixed public gallery', () => {
   let fixtures: Fixtures;
 
@@ -82,13 +111,18 @@ test.describe('mixed public gallery', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('shows published 2D and 3D cards to anonymous visitors at desktop and mobile widths', async ({
+  test('shows published 2D, 3D, and generated cards to anonymous visitors at desktop and mobile widths', async ({
     page,
     browser,
+    context,
   }, testInfo) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const project2dId = await publishFrom2D(page);
     const project3dId = await publishFrom3D(page);
+    const artPieceId = await publishGeneratedArtPiece(
+      context,
+      `Gallery generated fixture ${testInfo.project.name}`,
+    );
 
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
@@ -100,14 +134,25 @@ test.describe('mixed public gallery', () => {
         await anonymousPage.setViewportSize(viewport);
         await anonymousPage.goto('/gallery');
         await expect(anonymousPage.getByRole('heading', { name: 'Public gallery' })).toBeVisible();
-        // Scoped by the exact project id (`PublicProjectCard.tsx`'s
-        // `#public-project-<id>-title`) rather than by title text -- see the
+        await expect(anonymousPage.getByRole('combobox', { name: 'Gallery type' })).toHaveValue(
+          'all',
+        );
+
+        // Scoped by stable test ids rather than title text -- see the
         // per-run-unique-title comment in `publishFrom2D` above for why a
         // text-based match is ambiguous within one `browser-qa.sh` run.
-        const card2d = anonymousPage.locator(`#public-project-${project2dId}-title`);
-        const card3d = anonymousPage.locator(`#public-project-${project3dId}-title`);
+        const card2d = anonymousPage.getByTestId(`gallery-card-${project2dId}`);
+        const card3d = anonymousPage.getByTestId(`gallery-card-${project3dId}`);
+        const cardGenerated = anonymousPage.getByTestId(`gallery-card-${artPieceId}`);
         await expect(card2d).toBeVisible();
         await expect(card3d).toBeVisible();
+        await expect(cardGenerated).toBeVisible();
+
+        await expect(card2d.getByText('2D')).toBeVisible();
+        await expect(card3d.getByText('3D')).toBeVisible();
+        await expect(cardGenerated.getByText('Generated')).toBeVisible();
+        await expect(cardGenerated.getByText('canvas2d')).toBeVisible();
+
         await expect(
           anonymousPage.getByRole('link', {
             name: new RegExp(`gallery 2d fixture ${project2dId}`, 'i'),
@@ -118,11 +163,50 @@ test.describe('mixed public gallery', () => {
             name: new RegExp(`gallery 3d fixture ${project3dId}`, 'i'),
           }),
         ).toHaveAttribute('href', `/p3d/${project3dId}`);
+        await expect(
+          anonymousPage.getByRole('link', {
+            name: new RegExp(`gallery generated fixture`, 'i'),
+          }),
+        ).toHaveAttribute('href', `/art-pieces/p/${artPieceId}`);
+
+        // Issue #491: the Authored filter hides generated pieces; the
+        // Generated filter shows only generated pieces.
+        await anonymousPage
+          .getByRole('combobox', { name: 'Gallery type' })
+          .selectOption('authored');
+        await expect(card2d).toBeVisible();
+        await expect(card3d).toBeVisible();
+        await expect(cardGenerated).not.toBeVisible();
+
+        await anonymousPage
+          .getByRole('combobox', { name: 'Gallery type' })
+          .selectOption('generated');
+        await expect(card2d).not.toBeVisible();
+        await expect(card3d).not.toBeVisible();
+        await expect(cardGenerated).toBeVisible();
+
         await anonymousPage.screenshot({
           path: testInfo.outputPath(`gallery-${viewport.width}.png`),
           fullPage: true,
         });
       }
+    } finally {
+      await anonymousContext.close();
+    }
+  });
+
+  test('legacy /art-pieces/gallery redirects to the generated-filter unified gallery', async ({
+    browser,
+  }) => {
+    const anonymousContext = await browser.newContext();
+    const anonymousPage = await anonymousContext.newPage();
+    try {
+      await anonymousPage.goto('/art-pieces/gallery');
+      await anonymousPage.waitForURL('/gallery?type=generated');
+      await expect(anonymousPage.getByRole('heading', { name: 'Public gallery' })).toBeVisible();
+      await expect(anonymousPage.getByRole('combobox', { name: 'Gallery type' })).toHaveValue(
+        'generated',
+      );
     } finally {
       await anonymousContext.close();
     }

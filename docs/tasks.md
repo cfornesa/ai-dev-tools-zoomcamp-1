@@ -17364,3 +17364,86 @@ neither blocking #479 but intended to follow it so they can reuse the
 same design decisions. Next action: implement #479 under this decided
 architecture.
 
+## 287. Unknown SPA routes must render an accessible recovery view
+
+Status: PROPOSED / GROOMED — exactly one next issue.
+
+GitHub issue: [#485](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/485)
+
+The live deployment rendered a completely blank viewport for
+`/definitely-not-a-real-route` at 1280×900 and 375×812 and logged `No routes
+matched location`. Add one catch-all React route with a semantic `Page not
+found` view, Home/Public gallery recovery links, focused component coverage,
+and a direct-deep-link Chromium check. The static SPA fallback's HTTP 200 is
+explicitly out of scope. Routing: stage 2a mechanical frontend. Exact contract
+and commands are in #485 and
+`docs/deployment-audit-distillation-2026-09-08.md`.
+
+## 288. Omit absent emissive values from live structured-3D materials
+
+Status: PROPOSED / GROOMED.
+
+GitHub issue: [#487](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/487)
+
+The published 3D fixture emits one Three.js undefined-parameter warning per
+object because `threeSceneBuilder.ts` passes `emissive: undefined` for valid
+materials that omit the optional field. Preserve configured emissive,
+opacity, transparency, and plane-side behavior; verify the exact public route
+renders without the warning. Routing: stage 2a mechanical frontend.
+
+## 289. Omit absent emissive values from the extracted 3D ZIP runtime
+
+Status: PROPOSED / DEPENDENCY-BLOCKED by #487 pattern/order.
+
+GitHub issue: [#488](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/488)
+
+`standaloneThreeRuntimeSource.ts` independently repeats the live constructor
+defect. Fix and execute the extracted Full ZIP fixture; source-string tests or
+#487's live-route evidence cannot close this artifact. Routing: stage 2a
+mechanical frontend/export.
+
+## 290. Decide generated public art-piece gallery discoverability
+
+Status: BLOCKED / OWNER PRODUCT-DESIGN DECISION.
+
+GitHub issue: [#486](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/486)
+
+`/art-pieces/gallery` is valid but absent from anonymous desktop/mobile
+navigation. #486 records the required Unified, Sibling, Gateway, and landing-
+page Reframe gallery. The owner must select a direction; task distillation
+then creates exactly one unconditional stage 2a or 2b implementation issue.
+Do not reopen closed #392/#313 or merge persistence models by default.
+
+## 291. Give content-hashed production assets immutable caching
+
+Status: PROPOSED / GROOMED — PUBLISHED VERIFICATION REQUIRED.
+
+GitHub issue: [#489](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/489)
+
+The live hashed JS asset returned `Cache-Control: no-cache`. Keep HTML
+revalidatable and dynamic `/api`, `/accounts`, and `/health` behavior private,
+while serving hashed assets with a one-year immutable policy. Use current
+runtime/configuration when possible; stop and re-distill before adding a
+package, vendor, or core server replacement. Routing: stage 2a deployment/
+frontend-serving; exact deployment header matrix is mandatory for closure.
+
+## 292. Reconcile duplicate upstream and Django HSTS policies
+
+Status: PROPOSED / GROOMED — POSSIBLE PLATFORM VERIFICATION BOUNDARY.
+
+GitHub issue: [#490](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/490)
+
+Published Django responses emit an upstream HSTS field followed by Django's
+different field. RFC 6797 requires browsers to process only the first, making
+the later `preload` directive ineffective. Document one owner/policy, emit one
+field across the fixed endpoint matrix, and preserve production fail-closed
+checks. Routing: stage 2a backend/deployment configuration; hand off exact
+vendor action if the upstream field cannot be configured in-repo.
+
+### 2026-09-08 deployment distillation handoff
+
+The complete 16-open-issue manifest, duplicate report, issue contracts,
+dependency order, blocker triage, verification boundaries, and provenance are
+in `docs/deployment-audit-distillation-2026-09-08.md`. Exactly one next
+engineering transaction is #485. No product code or tests changed in this
+distillation pass.

@@ -334,3 +334,14 @@ issues.
 
 This is now 12 local commits ahead of `origin/main`
 (`ee1c5b8`..`878d907` plus this doc reconciliation), ready to push.
+
+## 2026-09-08 (stage-5 re-run after #492/#474 closure)
+
+Fifth consecutive CI run (`34271782685`, commit `8f6d1d3`) identical to
+the prior four. #492/#474 closed. Flagged in the readiness report posted
+on
+[#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445#issuecomment-5591077624):
+#479's microphone gap (originally dispatched alongside #492/#474/#491 in
+the same 4-prompt batch) was never re-attempted with the same prescriptive
+rewrite that got #492/#474 unstuck -- still open, owner decision needed on
+whether to pursue it before the bulk republish or track separately.

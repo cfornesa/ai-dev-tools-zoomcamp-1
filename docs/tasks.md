@@ -17544,3 +17544,16 @@ order when the cursor's rank equals the queryset's rank, so a same-instant
 2D+3D publish can be gapped out of an `/api/public/projects/` walk. Routing:
 stage 2b complex; reconcile with #491's unified three-kind cursor rather than
 landing two overlapping cursor changes.
+
+## 296. Add /gallery support to the dev mock backend route table
+
+Status: PROPOSED — gap discovered during #491 stage 2a frontend pass.
+
+GitHub issue: [#494](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/494)
+
+`VITE_USE_MOCK_BACKEND=true` dev visits to `/gallery` now 404 because the
+mock route table (`frontend/src/mocks/installMockFetch.ts` /
+`frontend/src/services/mock/index.ts`) has no `/api/public/gallery/` route
+for the unified contract (#491) and its legacy `/art-pieces/gallery` shim
+also redirects into it. Routing: stage 2a mechanical; out of #491's named
+file scope, which is why it was not done there.

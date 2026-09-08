@@ -17599,3 +17599,33 @@ mock route table (`frontend/src/mocks/installMockFetch.ts` /
 for the unified contract (#491) and its legacy `/art-pieces/gallery` shim
 also redirects into it. Routing: stage 2a mechanical; out of #491's named
 file scope, which is why it was not done there.
+
+## 297. Move microphone capture to the trusted parent frame
+
+Status: CODE COMPLETE, closure BLOCKED on real-hardware verification.
+
+GitHub issue: [#479](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/479)
+
+#479's own microphone criterion was never addressed in its original
+closure -- `artPieceSandbox.ts` still called `getUserMedia({ audio: true })`
+from inside the sandboxed iframe, the same opaque-origin context that threw
+`SecurityError` for camera. Fixed in commits `c273264`/`72779c9`: microphone
+capture moved to `PieceStageControls.tsx` (parent frame), mirroring camera's
+existing pattern exactly; sandbox mic handling removed;
+`ART_PIECE_IFRAME_ALLOW` set to `''` (two consumer sites render a harmless
+`allow=""`, correctly left untouched per the dispatch's own stop condition);
+`artPieceSoundRuntime.spec.ts`'s mock rewritten to patch
+`MediaDevices.prototype` in every frame, mirroring `mockCamera`; a new
+Chromium-only unmocked real-`getUserMedia` regression added.
+
+QA re-verification found the new unmocked regression fails on this host:
+camera's equivalent real-hardware test passes reliably (macOS TCC
+microphone permission apparently never granted to Playwright's Chromium
+binary, unlike camera's TCC grant). Per
+[[camera-synthetic-verification-gap]] convention, this class of issue does
+not close on synthetic/mocked evidence alone -- **#479 stays open** until
+someone grants microphone access to Playwright's Chromium binary (System
+Settings → Privacy & Security → Microphone) and the real-pipeline test is
+re-run to a genuine pass. All other criteria (code correctness, mocked
+tests, camera/steering non-regression, `make check`) are independently
+verified and accepted.

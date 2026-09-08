@@ -345,3 +345,24 @@ on
 the same 4-prompt batch) was never re-attempted with the same prescriptive
 rewrite that got #492/#474 unstuck -- still open, owner decision needed on
 whether to pursue it before the bulk republish or track separately.
+
+## 2026-09-08 (stage-4 QA on #479's microphone fix)
+
+Opencode Desktop delivered `c273264`/`72779c9` exactly per the prescriptive
+dispatch prompt (mirrors #479's own camera fix, moving microphone to the
+parent frame). Code review (all 4 files) fully accepted. QA re-verification
+diverged from the reporting session's claim on exactly one thing: the new
+unmocked real-`getUserMedia` regression, which that session reported as
+passing (~2.3s, after approving a pending macOS TCC prompt), failed on
+independent re-run here -- `getUserMedia` never settled. Camera's identical-
+shaped real-hardware regression passed reliably on the same run. Root cause:
+camera and microphone are separate macOS TCC permission categories; this
+machine's Playwright Chromium binary has camera access granted from an
+earlier session but not microphone. Per
+[[camera-synthetic-verification-gap]]'s standing rule (this issue class does
+not close on synthetic evidence alone, and does not close on an unreproduced
+claim either), **#479 stays open** -- code accepted, real-hardware
+microphone evidence still outstanding, next action recorded on the issue
+and in `docs/tasks.md` item 297. Extended the memory topic with this
+finding rather than creating a new one, since it's the same lesson one
+level down (audio, not video).

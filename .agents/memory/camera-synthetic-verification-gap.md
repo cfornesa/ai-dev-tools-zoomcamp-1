@@ -145,3 +145,29 @@ on production, not just in local/synthetic evidence. This closes out the
 #192 saga (three reopenings across one session) with the strongest
 evidence tier this topic calls for: a real camera, on the real reported
 URL, on the real deployed build.
+
+**2026-09-08 microphone extension, class holds:** #479's own microphone
+criterion followed the exact same shape one level down. A local macOS
+run (via `chromium.launch({ args: ['--use-fake-device-for-media-stream',
+'--use-fake-ui-for-media-stream'] })`, no monkeypatch) of the new unmocked
+microphone regression failed on this host -- `getUserMedia` never settled
+(neither resolved nor rejected) -- while the *identical-shaped* real
+camera regression in `artPieceCameraRuntime.spec.ts` passed reliably
+(2.3s) on the same machine, same session. Root cause: camera and
+microphone are **separate macOS TCC (Transparency, Consent, and Control)
+permission categories**; this Chromium binary had apparently been granted
+camera access in an earlier interactive session but never microphone
+access, and there is no way to grant or inspect that from a non-interactive
+shell (`TCC.db` requires Full Disk Access; no headless path exists to
+click a native "Allow" dialog). A separate agent session claimed this same
+test "settled in ~2.3s once approved" -- that claim was not reproducible
+in this session's own run and was correctly not accepted as evidence per
+the untrusted-input rule; whether that reflects a different TCC grant
+scope, a different browser profile, or a transient state is unresolved.
+**How to apply, updated again:** when a real-hardware Playwright regression
+for one `getUserMedia` kind (video) passes but a sibling regression for
+another kind (audio) fails identically-shaped code on the same host, check
+OS-level per-device-category permission grants before assuming a code
+defect -- and don't accept a second session's "it passed for me" without
+reproducing it, since TCC grants can be scoped per-process-identity in ways
+that don't transfer between sessions even on the same machine.

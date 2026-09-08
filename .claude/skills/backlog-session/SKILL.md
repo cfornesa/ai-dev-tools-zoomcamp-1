@@ -49,49 +49,30 @@ completed issue merely because that linked work is unfinished.
 
 ## Multi-service stage routing
 
-`LOOP-AGENTS.md` Section 2 rosters the loop's stages across several services.
-This skill orchestrates the loop; it does not own every stage.
+This skill is the loop **orchestrator**. It owns the transaction ledger, the
+manifest, dependency order, reconciliation, and the completion gate. It does
+not own the stage bodies: each stage is a separate document, listed with its
+rostered owner in `.agents/skills/_shared/HANDOFF-CONTRACT.md`. Read that file
+once per session — the stage map, the advisory-routing rule, the provenance
+record format, the per-stage handoff artifacts, and the untrusted-external-
+input rules all live there and are not restated in this skill.
 
-| Stage | Rostered owner | This skill's pass |
-| --- | --- | --- |
-| Issue scoping / spec drafting | Codex (via ChatGPT Plus) | PM pass — groom |
-| Implementation — mechanical / boilerplate | Opencode Go | Engineer pass |
-| Implementation — complex logic (auth, data layer, migrations) | Ollama Cloud | Engineer pass |
-| Second-opinion patch review (optional) | Mistral Vibe | Engineer → QA handoff |
-| QA self-review | Claude Pro (Sonnet 5, Medium effort) | QA pass |
-| Production-readiness gate | Claude Pro (Opus 5, `Low` effort — budget-constrained) | Batch completion pass |
+The orchestrator's own obligations at each handoff:
 
-Routing is advisory, not blocking. When a rostered service's output is not
-present, Claude may perform that stage itself — but the substitution must be
-stated explicitly in the ledger, the batch manifest, and the evidence rollup.
-Never imply a rostered service ran when it did not, and never present a
-Claude-authored diff as an independent second opinion.
+- select the stage document by the issue's routing hint, and name the rostered
+  owner before the stage runs;
+- record `stage / rostered owner / actual owner (service, model, effort) /
+  substituted: yes|no` in the ledger as each stage completes, never
+  retroactively at the end of the batch;
+- validate the incoming artifact against the receiving stage's expectations,
+  and return an incomplete artifact to its stage rather than repairing it;
+- when a stage handed to an external service comes back with scope beyond the
+  issue, apply the in-scope/out-of-scope rule above before any verification.
 
-Provenance is recorded in the existing ledger, manifest, and evidence tables
-only. Do not create a new provenance file or a parallel tracking document.
-
-The production-readiness gate is the one stage that is never substituted
-downward, but the non-negotiable is the **model tier, not the effort level**.
-It runs on Opus 5 regardless of how small the batch looks; it is never routed
-to Sonnet, Haiku, or a non-Claude service. Effort for this gate is
-budget-constrained to `Low` by owner decision. Note that this departs from
-`per-service-kickoff-prompts.md`, which specifies `Max` with `xhigh` as the
-floor; the owner's session constraint governs, and that document should be
-reconciled to match. If Opus 5 itself is unavailable, Rule 6 applies — stop,
-state it, and do not silently run the gate on a lesser model.
-
-Because the gate runs at reduced effort, its rigor comes from the checklist
-rather than from unbounded reasoning: work the readiness dimensions and the
-completion gate below item by item, and prefer an explicit `BLOCKED` or
-`OPEN FOLLOW-UP` over a judgment call the effort level cannot support.
-
-When an implementation stage arrives from another service, the engineer pass
-begins with intake: confirm the diff is scoped to this issue's criteria only,
-classify anything outside them under the same in-scope/out-of-scope rule
-above, and record the originating service and model before running checks.
-If the external service stopped because the work exceeded its rostered
-complexity (Opencode Go hitting auth/data-layer logic, for example), record
-that as a routing handoff to the complex-logic owner rather than as a blocker.
+Two rules from the contract are repeated here because the ledger enforces
+them: a Claude-authored diff can never satisfy the second-opinion stage, and
+the production-readiness gate never routes to another service or a lesser
+Claude model (Opus 5 is mandatory; its effort level is the owner's to set).
 
 ## Prerequisite phase gate
 
@@ -183,7 +164,11 @@ Run these passes for every manifest issue, labeling artifacts with the issue num
 
 ### PM pass — groom
 
-Read the issue, relevant `tasks.md`, `docs/process.md`, `docs/team/pm.md`, and any required project guidance. Confirm or update:
+Scoping itself is stage 1 (`.agents/skills/issue-scoping/PROMPT.md`, Codex);
+this pass grooms the issue it produced and validates that its contract is
+complete enough to hand to an implementation stage. Read the issue, relevant
+`tasks.md`, `docs/process.md`, `docs/team/pm.md`, and any required project
+guidance. Confirm or update:
 
 - goal and checkable acceptance criteria;
 - constraints, dependencies, files in scope, and out-of-scope follow-ups;
@@ -193,7 +178,9 @@ Read the issue, relevant `tasks.md`, `docs/process.md`, `docs/team/pm.md`, and a
 - automated verification commands and fixtures, including the local runner
   or CI job that owns execution; identify any Replit-only manual acceptance
   separately and do not make it a local development prerequisite;
-- backlog entry and GitHub issue URL.
+- backlog entry and GitHub issue URL;
+- the routing hint (stage 2a mechanical vs. 2b complex logic) and whether
+  stage 3 second-opinion review is wanted for this issue.
 
 If the issue is not implementable because a dependency is unresolved, record `dependency-blocked`, its exact prerequisite, and its next action. Continue to the next independent issue. If the issue spans multiple independently observable surfaces, stop grooming it as a unit and create/reuse one criterion-ready child per surface before engineering.
 
@@ -201,24 +188,51 @@ If grooming discovers distinct actionable work outside the current issue, reuse 
 
 ### Engineer pass — implement
 
-Read `docs/team/software-engineer.md`. Before writing tests, read `docs/testing-guidelines.md`; for UI work, also read `docs/design-system.md` when those files exist. Implement only the current issue, add focused regression coverage, and run its documented checks through the repository's automated runner or CI-equivalent environment. If a required local check is manual or cannot be repeated, automate it in the repository or classify the missing automation as a workflow/infrastructure defect before advancing; never ask the user to perform it. Commit coherent issue-scoped changes before advancing. Do not close the issue. Do not start another issue's engineering while this issue lacks its own implementation commit and test result.
+Delegated to stage 2. Select by the issue's routing hint:
+`.agents/skills/implementation-mechanical/PROMPT.md` (Opencode Go) or
+`.agents/skills/implementation-complex/PROMPT.md` (Ollama Cloud). When Claude
+substitutes, follow that same document and flag the substitution.
 
-If implementation is blocked, do not modify unrelated code. Record the attempted command or tool, exact failure, impact, and next action, then mark the issue `blocked` or `handed-off` and continue with independent issues.
+The orchestrator's responsibilities around this pass:
 
-When engineering discovers a new defect, decide whether it belongs to the current acceptance criteria. Fix and test it within the current issue when it does. Otherwise create or reuse a follow-up issue before advancing, link the dependency, and mark the current issue `handed-off` or `dependency-blocked` as appropriate. A code change does not complete an issue until its required verification is rerun.
+- Read `docs/team/software-engineer.md`; before tests, `docs/testing-guidelines.md`,
+  and for UI work `docs/design-system.md`, where those files exist.
+- Require an issue-scoped commit before advancing. Do not start another
+  issue's engineering while this issue lacks its own implementation commit and
+  test result. Do not close the issue here.
+- If implementation is blocked, do not modify unrelated code. Record the
+  attempted command or tool, exact failure, impact, and next action; mark the
+  issue `blocked` or `handed-off` and continue with independent issues.
+- When a stage-2a service stops because the work exceeded its rostered
+  complexity, record a routing handoff to the complex-logic owner — that is a
+  routing event, not a blocker, and the issue stays current.
+- When engineering discovers a new defect, decide whether it belongs to the
+  current acceptance criteria. Fix and retest it within this issue if so;
+  otherwise create or reuse a follow-up issue before advancing, link the
+  dependency, and mark the current issue `handed-off` or `dependency-blocked`.
+  A code change does not complete an issue until its verification is rerun.
+- Optional stage 3 runs here, before QA:
+  `.agents/skills/second-opinion-review/PROMPT.md`. Record it as run (with the
+  service and model) or `not run`. It cannot be satisfied by the model that
+  wrote the diff.
 
 ### QA pass — verify
 
-Read `docs/team/qa-engineer.md` and the issue acceptance criteria again. Do not modify code during QA. Exercise every criterion against the running result using automated tests, browser automation, fixtures, and the exact commands/environment specified by the issue where possible. The agent owns local execution: provision disposable services, resolve ports, start/stop servers, install or reuse test browsers, and retain logs/traces through repository scripts or CI. Run focused tests and the full relevant suite, plus required builds/checks. Separate local automated, CI, and Replit deployment evidence; use manual verification only for Replit deployment acceptance that automation cannot faithfully establish.
+Delegated to the [qa-self-review](../qa-self-review/SKILL.md) skill (stage 4,
+Claude Sonnet 5 at Medium effort), which owns intake of untrusted external
+diffs, verification, and the `## QA: PASS`/`## QA: FAIL` comment.
 
-QA is part of the same issue transaction as engineering. It must run before
-the next issue begins. If QA fails, keep the issue current, classify the
-failure, return to that issue's engineer pass, and rerun the required tests;
-do not advance by opening a parallel fix for a later issue.
+The orchestrator's responsibilities around this pass:
 
-Post a GitHub comment for the issue beginning with `## QA: PASS` or `## QA: FAIL`, including a criterion matrix, commands, results, environment, and exact next action. A focused test never substitutes for the full relevant suite. A failed issue does not prevent QA of later independent issues.
-
-For every failed or unavailable check, classify the cause. First exhaust the automated runner's supported setup and cleanup paths; do not classify a check as unavailable merely because the user has not started a service or run a command. If the automated command fails because the required service, Compose stack, browser harness, fixture, or CI setup is absent or broken, treat that as a workflow/infrastructure defect when reproducible or required by the command: create or reuse a follow-up issue and link it from the parent. If the agent cannot execute the check because of a genuine host or platform boundary, record the exact automated attempt and retain a verification boundary; do not transfer the check to the user unless it is explicitly Replit deployment verification. Never report “focused tests pass” as sufficient when the full acceptance command failed.
+- QA is part of the same issue transaction as engineering and must run before
+  the next issue begins. Never build a queue of implementations and postpone
+  their verification.
+- On `FAIL`, keep the issue current, return it to its implementation stage,
+  and re-enter QA. Do not advance to a later issue's engineering to work
+  around it.
+- Carry the verdict's provenance block and intake outcome into the ledger.
+- The QA skill does not set terminal status or close issues; that is the issue
+  handoff below.
 
 ### Issue handoff
 

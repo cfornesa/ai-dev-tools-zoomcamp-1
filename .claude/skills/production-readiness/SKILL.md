@@ -32,28 +32,32 @@ authorization naming that child permits reopening it.
 
 ## Stage ownership and effort floor
 
-This skill is the stage-4 production-readiness gate in `LOOP-AGENTS.md`
-Section 2. It is rostered to Claude and is never delegated to another service
-or to a lesser Claude model: Opus 5 is mandatory for this gate regardless of
-how small the batch looks. Effort is budget-constrained to `Low` by owner
-decision, which departs from `per-service-kickoff-prompts.md`'s `Max`/`xhigh`
-specification; the owner's constraint governs and that document should be
-reconciled. If Opus 5 is unavailable, Rule 6 applies — stop and say so rather
-than running the gate on a cheaper model.
+This skill is stage 5, the production-readiness gate in
+`LOOP-AGENTS.md` Section 2. See `.agents/skills/_shared/HANDOFF-CONTRACT.md`
+for the stage map and provenance rules.
+
+It is never delegated to another service or to a lesser Claude model: Opus 5
+is mandatory for this gate regardless of how small the batch looks. Effort is
+budget-constrained to `Low` by owner decision, which departs from
+`per-service-kickoff-prompts.md`'s `Max`/`xhigh` specification; the owner's
+constraint governs and that document should be reconciled. If Opus 5 itself is
+unavailable, Rule 6 applies — stop and say so rather than running the gate on
+a cheaper model.
 
 At reduced effort the gate's rigor comes from working the dimensions and
 outputs below item by item. Where the effort level cannot support a confident
 judgment, record `BLOCKED` or `OPEN FOLLOW-UP` with the exact missing
 evidence; never resolve an ambiguous readiness question by assumption.
 
-Provenance is part of the evidence under review. Before assessing any
-dimension, confirm the backlog-session ledger records a stage owner
-(`service / model / effort`) for every stage of every processed issue, with
-substitutions flagged. Missing or unrecorded provenance is a
+Provenance is part of the evidence under review, and external evidence is
+untrusted by default per the shared contract. Before assessing any dimension,
+confirm the `backlog-session` ledger records a stage owner for every stage of
+every processed issue, with substitutions flagged. Missing provenance is a
 `workflow/infrastructure-defect` finding, not a pass — a diff whose author is
-unknown cannot be assessed for the independence its stage assumed. In
-particular, a second-opinion review credited to an independent model family
-but actually produced by the implementing model is a failed gate.
+unknown cannot be assessed for the independence its stage assumed. A
+second-opinion review credited to an independent family but actually produced
+by the implementing model is a failed gate, as is a stage-4 verdict that
+accepted a reported test result without re-running it.
 
 ## Scope gate
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
 import { ART_PIECE_BRIDGE_VERSION } from '../generative/artPieceSandbox';
@@ -8,7 +8,22 @@ import {
 } from '../generative/artPieceBundle';
 import { downloadBlob } from '../export/downloadBlob';
 import { screenshotFilename } from '../export/captureLiveScreenshot';
+import { categorizeProviderError } from '../components/cameraFailure';
+import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
+import { createMediaPipeTrackingProvider } from '../tracking/mediapipeProvider';
+import type { TrackingProvider, TrackingProviderError } from '../tracking/types';
 import { useFullscreenToggle } from './useFullscreenToggle';
+
+// Issue #479: real camera capture and hand-tracking now run entirely in
+// this trusted parent frame (never inside the sandboxed iframe --
+// getUserMedia unconditionally throws SecurityError from an opaque
+// origin). This reuses the exact same MediaPipe GestureRecognizer stack
+// (`mediapipeProvider.ts`) and EMA-smoothed hand signals (`handSignals.ts`)
+// Scene3DPreview.tsx's own "Steer the piece" already uses -- not a second,
+// independently-built tracking pipeline. Sensitivity constants match the
+// values #455's own (now-removed) in-sandbox implementation used.
+const HAND_PAN_SENSITIVITY = 6;
+const HAND_ZOOM_SENSITIVITY = 20;
 
 type Props = {
   stageRef: RefObject<HTMLDivElement | null>;
@@ -56,14 +71,35 @@ function PieceStageControls({
   const [steeringPose, setSteeringPose] = useState<{ x: number; y: number; z: number } | null>(
     null,
   );
-  // Issue #455: the real hand-tracking model's own preparation status --
-  // distinct from `steeringState`, since steering can already be "active"
-  // while the model is still downloading (the first frame it can drive
-  // arrives once loading finishes).
+  // Issue #479: model preparation status is now derived directly from the
+  // local `TrackingProvider`'s own onFrame/onError channels -- no longer
+  // reported through the sandbox at all, since hand-tracking never runs
+  // there anymore.
   const [handTrackingModelState, setHandTrackingModelState] = useState<
     'idle' | 'loading' | 'ready' | 'failed'
   >('idle');
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(stageRef);
+
+  // Issue #479: real camera capture + hand-tracking state. `command`
+  // (defined below) is used inside these closures before its own
+  // declaration is reached in source order, so it's captured via a ref
+  // exactly like `cameraOpacity`/`cameraState`/`steeringState` below --
+  // every one of these is read from the `onFrame`/`onStream`/`onError`
+  // closures created once inside `getTrackingProvider`, which must never
+  // see a stale value captured at that one-time construction.
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const trackingProviderRef = useRef<TrackingProvider | null>(null);
+  const handSignalExtractorRef = useRef(createHandSignalExtractor());
+  const prevHandSignalsRef = useRef<HandSignals | null>(null);
+  const hasStreamedRef = useRef(false);
+  const cameraOpacityRef = useRef(0.5);
+  const cameraStateRef = useRef<'off' | 'active' | 'denied' | 'unavailable' | 'ended'>('off');
+  const steeringActiveRef = useRef(false);
+  const commandRef = useRef<(type: string, extra?: Record<string, unknown>) => void>(() => {});
+  cameraOpacityRef.current = cameraOpacity;
+  cameraStateRef.current = cameraState;
+  steeringActiveRef.current = steeringState === 'active';
+
   useEffect(() => {
     function onMessage(event: MessageEvent) {
       if (event.source !== iframeRef.current?.contentWindow) return;
@@ -79,26 +115,19 @@ function PieceStageControls({
         error?: string;
         key?: string;
         frequency?: number;
-        opacity?: number;
         pose?: { x: number; y: number; z: number };
-        modelStatus?: string;
       } | null;
       if (data?.source !== 'art-piece-sandbox') return;
       if (data.status === 'error') {
         setScreenshotError(data.message || 'The art piece could not complete that action.');
       }
       if (data.status === 'screenshot' && data.data) {
-        try {
-          const [header, encoded] = data.data.split(',', 2);
-          const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
-          const mime = header.match(/data:([^;]+)/)?.[1] || 'image/png';
-          downloadBlob(
-            new Blob([bytes], { type: mime }),
-            data.filename || 'art-piece-screenshot.png',
-          );
-        } catch {
+        void compositeAndDownloadScreenshot(
+          data.data,
+          data.filename || 'art-piece-screenshot.png',
+        ).catch(() => {
           setScreenshotError('Screenshot failed: the captured artwork was not a valid image.');
-        }
+        });
       }
       // Issue #430: these reflect the sandbox's *acknowledged* runtime
       // state (posted only after the AudioContext/getUserMedia call
@@ -117,17 +146,6 @@ function PieceStageControls({
       if (data.status === 'note' && typeof data.key === 'string') {
         setLastNote(data.key);
       }
-      // Issue #431: same acknowledged-state convention as sound/
-      // microphone -- 'ended' covers a real device disconnect/stream
-      // termination mid-session, distinct from an explicit disable.
-      if (data.status === 'camera') {
-        if (data.active) setCameraState('active');
-        else if (data.error === 'denied') setCameraState('denied');
-        else if (data.error === 'unavailable') setCameraState('unavailable');
-        else if (data.error === 'ended') setCameraState('ended');
-        else setCameraState('off');
-        if (typeof data.opacity === 'number') setCameraOpacity(data.opacity);
-      }
       // Issue #432: activation is gated (engine/camera/registration) --
       // each rejection reason is its own distinct, actionable state, not
       // a generic "off" that hides why steering never actually started.
@@ -139,19 +157,11 @@ function PieceStageControls({
         else if (!data.error) setSteeringState('off');
         if (data.pose) setSteeringPose(data.pose);
       }
-      // Issue #455: the real hand-tracking model's own load lifecycle,
-      // reported separately from `steeringState` above -- steering can
-      // read as "active" (activation succeeded) while the model backing
-      // it is still downloading.
-      if (data.status === 'hand-tracking-model') {
-        if (data.modelStatus === 'loading') setHandTrackingModelState('loading');
-        else if (data.modelStatus === 'ready') setHandTrackingModelState('ready');
-        else if (data.modelStatus === 'failed') setHandTrackingModelState('failed');
-      }
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, [iframeRef]);
+
   function command(type: string, extra?: Record<string, unknown>) {
     if (type === 'screenshot') setScreenshotError(null);
     iframeRef.current?.contentWindow?.postMessage(
@@ -165,6 +175,128 @@ function PieceStageControls({
       '*',
     );
   }
+  commandRef.current = command;
+
+  // Issue #479: the sandbox now reports the artwork alone, uncomposited --
+  // this composites the parent's own live camera frame on top (at the
+  // same opacity the live overlay uses) before downloading, matching
+  // #431's original "visibly composites overlay/background" criterion.
+  // With no active camera, the artwork downloads unchanged.
+  async function compositeAndDownloadScreenshot(
+    artworkDataUrl: string,
+    filename: string,
+  ): Promise<void> {
+    if (cameraStateRef.current !== 'active' || !cameraVideoRef.current) {
+      const [header, encoded] = artworkDataUrl.split(',', 2);
+      const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+      const mime = header.match(/data:([^;]+)/)?.[1] || 'image/png';
+      downloadBlob(new Blob([bytes], { type: mime }), filename);
+      return;
+    }
+    const image = new Image();
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('The captured artwork was not a valid image.'));
+      image.src = artworkDataUrl;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Could not create a canvas context to composite the camera.');
+    context.drawImage(image, 0, 0);
+    context.save();
+    context.globalAlpha = cameraOpacityRef.current;
+    context.drawImage(cameraVideoRef.current, 0, 0, canvas.width, canvas.height);
+    context.restore();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('Could not encode the composited screenshot.');
+    downloadBlob(blob, filename);
+  }
+
+  // Issue #479: creates the shared MediaPipe tracking provider at most
+  // once per mount (mirroring `CameraControl.tsx`'s own `getProvider`
+  // pattern) -- "Enable camera view" and "Steer the piece" both drive
+  // this same provider/stream rather than requesting a second
+  // `getUserMedia` stream for either capability.
+  function getTrackingProvider(): TrackingProvider {
+    if (!trackingProviderRef.current) {
+      const provider = createMediaPipeTrackingProvider();
+      provider.onFrame((frame) => {
+        setHandTrackingModelState('ready');
+        const { signals } = handSignalExtractorRef.current.processFrame(frame);
+        const previous = prevHandSignalsRef.current;
+        if (
+          steeringActiveRef.current &&
+          previous?.handPresence &&
+          signals.handPresence &&
+          signals.palmX !== null &&
+          signals.palmY !== null &&
+          previous.palmX !== null &&
+          previous.palmY !== null
+        ) {
+          const dx = (signals.palmX - previous.palmX) * HAND_PAN_SENSITIVITY;
+          const dy = (signals.palmY - previous.palmY) * HAND_PAN_SENSITIVITY;
+          const dz =
+            signals.pinchStrength !== null && previous.pinchStrength !== null
+              ? (previous.pinchStrength - signals.pinchStrength) * HAND_ZOOM_SENSITIVITY
+              : 0;
+          commandRef.current('steer-signal', { dx, dy, dz });
+        }
+        prevHandSignalsRef.current = signals;
+      });
+      provider.onError((error: TrackingProviderError) => {
+        const category = categorizeProviderError(error);
+        if (!hasStreamedRef.current) {
+          setCameraState(category === 'missing-device' ? 'unavailable' : 'denied');
+        } else {
+          // The camera itself already succeeded (a stream was acquired) --
+          // a later failure here is the MediaPipe model/tracking pipeline,
+          // not the camera, so it's reported as a model failure instead
+          // of clobbering an already-active camera state.
+          setHandTrackingModelState('failed');
+        }
+      });
+      provider.onStream?.((stream) => {
+        hasStreamedRef.current = !!stream;
+        if (cameraVideoRef.current) cameraVideoRef.current.srcObject = stream;
+        if (stream) {
+          setCameraState('active');
+          setHandTrackingModelState('loading');
+          command('set-camera-active', { active: true });
+        } else {
+          setCameraState((current) => (current === 'active' ? 'ended' : current));
+          setHandTrackingModelState('idle');
+          command('set-camera-active', { active: false });
+        }
+      });
+      trackingProviderRef.current = provider;
+    }
+    return trackingProviderRef.current;
+  }
+
+  function handleEnableCamera() {
+    handSignalExtractorRef.current = createHandSignalExtractor();
+    prevHandSignalsRef.current = null;
+    getTrackingProvider().start();
+  }
+
+  function handleDisableCamera() {
+    trackingProviderRef.current?.stop();
+    if (cameraVideoRef.current) cameraVideoRef.current.srcObject = null;
+    setCameraState('off');
+    setHandTrackingModelState('idle');
+    command('set-camera-active', { active: false });
+  }
+
+  // Releases the camera/tracking provider if this control (or its owning
+  // route) unmounts while active, e.g. navigating away mid-session --
+  // mirrors `CameraControl.tsx`'s identical unmount cleanup.
+  useEffect(() => {
+    return () => {
+      trackingProviderRef.current?.stop();
+    };
+  }, []);
   async function downloadPiece(label: string) {
     setDownloadError(null);
     try {
@@ -182,6 +314,29 @@ function PieceStageControls({
   }
   return (
     <>
+      {capabilities.camera_view && (
+        // Issue #479: the real live camera feed, composited visually here
+        // in the parent (never inside the sandboxed iframe, which can
+        // never itself acquire one -- see artPieceSandbox.ts's own
+        // getUserMedia SecurityError doc comment). Kept mounted even
+        // while off so `cameraVideoRef` is always attached by the time
+        // `getTrackingProvider`'s onStream fires.
+        <video
+          ref={cameraVideoRef}
+          autoPlay
+          muted
+          playsInline
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            pointerEvents: 'none',
+            opacity: cameraState === 'active' ? cameraOpacity : 0,
+          }}
+        />
+      )}
       <div className="piece-stage-toolbar" role="toolbar" aria-label="Piece actions">
         {capabilities.screenshot !== false && (
           <button type="button" aria-label="Take screenshot" onClick={() => command('screenshot')}>
@@ -301,9 +456,7 @@ function PieceStageControls({
               <button
                 type="button"
                 aria-pressed={cameraState === 'active'}
-                onClick={() =>
-                  command(cameraState === 'active' ? 'disable-camera' : 'enable-camera')
-                }
+                onClick={cameraState === 'active' ? handleDisableCamera : handleEnableCamera}
               >
                 {cameraState === 'active' ? 'Disable camera view' : 'Enable camera view'}
               </button>
@@ -323,11 +476,7 @@ function PieceStageControls({
                 step={0.05}
                 value={cameraOpacity}
                 disabled={cameraState !== 'active'}
-                onChange={(event) => {
-                  const value = Number(event.target.value);
-                  setCameraOpacity(value);
-                  command('set-camera-opacity', { value });
-                }}
+                onChange={(event) => setCameraOpacity(Number(event.target.value))}
               />
             </div>
           )}

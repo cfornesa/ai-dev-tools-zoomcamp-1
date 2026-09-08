@@ -66,18 +66,12 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).not.toMatch(/document\.cookie/);
   });
 
-  it("canvas2d/svg get the strict CSP, with jsdelivr/googleapis allowed only for hand-steering's vision model", () => {
+  it('canvas2d/svg get the strict CSP with no external script host', () => {
     const canvasDoc = buildArtPieceSandboxDocument(SNIPPET, 'canvas2d');
     const svgDoc = buildArtPieceSandboxDocument('<svg id="art-piece-svg"></svg>', 'svg');
     for (const doc of [canvasDoc, svgDoc]) {
-      expect(doc).not.toContain('<script src="https://cdn.jsdelivr.net');
-      expect(doc).toMatch(
-        /script-src 'unsafe-inline' 'wasm-unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/,
-      );
-      expect(doc).toMatch(
-        /connect-src https:\/\/cdn\.jsdelivr\.net https:\/\/storage\.googleapis\.com;/,
-      );
-      expect(doc).toContain('worker-src blob:;');
+      expect(doc).toMatch(/script-src 'unsafe-inline';/);
+      expect(doc).not.toContain('cdn.jsdelivr.net');
     }
   });
 
@@ -85,9 +79,7 @@ describe('buildArtPieceSandboxDocument', () => {
     const jsSnippet = "THREE.foo(); document.getElementById('art-piece-container');";
     const doc = buildArtPieceSandboxDocument(jsSnippet, 'threejs');
     expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/three@0.160.0');
-    expect(doc).toMatch(
-      /script-src 'unsafe-inline' 'wasm-unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/,
-    );
+    expect(doc).toMatch(/script-src 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net;/);
     expect(doc).toContain('id="art-piece-container"');
     expect(doc).toContain(`<script>${jsSnippet}</script>`);
   });
@@ -102,9 +94,7 @@ describe('buildArtPieceSandboxDocument', () => {
     const scene = '<a-scene id="art-piece-scene" embedded><a-box></a-box></a-scene>';
     const doc = buildArtPieceSandboxDocument(scene, 'aframe');
     expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2');
-    expect(doc).toMatch(
-      /script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/,
-    );
+    expect(doc).toMatch(/script-src 'unsafe-inline' 'unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/);
     expect(doc).toContain(scene);
   });
 
@@ -113,22 +103,28 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).not.toMatch(/'unsafe-eval'/);
   });
 
-  it('#455: enabling hand steering loads the pinned MediaPipe vision bundle and gesture-recognizer model', () => {
+  it('#479: the sandbox has no MediaPipe-loading code of its own -- real hand-tracking moved to the trusted parent frame', () => {
     const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
-    expect(doc).toContain("MEDIAPIPE_VISION_VERSION = '1.0.1'");
-    expect(doc).toContain('/vision_bundle.mjs');
-    expect(doc).toContain('cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@');
-    expect(doc).toContain(
-      'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task',
-    );
-    expect(doc).toContain('ensureHandTracking()');
+    expect(doc).not.toContain('ensureHandTracking');
+    expect(doc).not.toContain('cdn.jsdelivr.net/npm/@mediapipe');
+    // The microphone command handler still calls a real getUserMedia
+    // itself (out of #479's scope) -- only the camera one is gone.
+    expect(doc).not.toContain('getUserMedia({ video: true');
+    expect(doc).not.toMatch(/connect-src|worker-src|wasm-unsafe-eval/);
   });
 
-  it('#455: steer-signal and the real hand-tracking loop share one bounded-pose path', () => {
+  it('steer-signal and any real external signal source share one bounded-pose path', () => {
     const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
     expect(doc).toContain('function applySteerDelta(dx, dy, dz)');
     expect(doc).toContain('applySteerDelta(data.dx, data.dy, data.dz)');
-    expect(doc).toContain('applySteerDelta(dx, dy, dz)');
+  });
+
+  it('#479: enabling hand steering is gated on the parent-reported camera state, not an in-sandbox getUserMedia call', () => {
+    const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
+    expect(doc).toContain("data.type === 'set-camera-active'");
+    expect(doc).toContain('cameraActive = !!data.active');
+    expect(doc).toContain('if (!cameraActive)');
+    expect(doc).not.toContain("data.type === 'enable-camera'");
   });
 
   it("#455: the trusted wrapper's A-Frame auto-camera-registration is guarded by pieceLibrary === 'aframe'", () => {

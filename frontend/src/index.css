@@ -2984,6 +2984,15 @@ select.ai-proposal-field-full-width {
   max-width: none !important;
 }
 
+/* Issue #479: establishes the positioning context .piece-stage-toolbar
+   (and the new real camera overlay <video> it sits alongside) already
+   assumed -- without this, "position: absolute" below anchors to the
+   nearest positioned ancestor further up the tree instead of this stage
+   box specifically. */
+.art-piece-stage {
+  position: relative;
+}
+
 .piece-stage-toolbar {
   position: absolute;
   top: 0.75rem;

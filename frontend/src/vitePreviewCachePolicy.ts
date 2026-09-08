@@ -17,6 +17,16 @@
  * - Everything else (`/`, fallback HTML routes, non-hashed assets such as
  *   `favicon.ico`) is `no-cache`. Republishing the app must never strand a
  *   client on a stale shell or stale unhashed asset.
+ *
+ * Platform boundary (confirmed 2026-09-08, repository owner accepted as
+ * permanent): on the published custom domain, Replit's Google Frontend edge
+ * injects its own `Set-Cookie` affinity cookie on every response, and per
+ * GFE's standard behavior this downgrades the `public` directive above to
+ * `private` on the wire -- `max-age`/`immutable` pass through unaffected.
+ * This app emits `public` correctly; the live `private` substitution is the
+ * platform's own behavior, not configurable from this repository (no
+ * `.replit` header-configuration surface). See
+ * `.agents/memory/replit-google-frontend-header-rewriting.md`.
  */
 
 export const PROXIED_DJANGO_PREFIXES = ['/api', '/accounts', '/health'] as const;

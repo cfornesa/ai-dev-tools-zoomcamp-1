@@ -260,3 +260,24 @@ already-authorized substitution for the mandatory Opus 5 on stage 5).
   three owner decisions (GFE platform-boundary disposition for #489/#490,
   #479's mic-evidence gap, and finalizing #465's flake classification
   off three consistent reproductions), not further engineering.
+
+## 2026-09-08 (owner decision: #489/#490 accepted as platform boundary)
+
+Owner reviewed the confirmed Replit Google Frontend root cause and
+accepted both #489's Cache-Control downgrade and #490's HSTS duplication
+as permanent platform boundaries rather than pursuing vendor
+remediation. Application code for both is correct and unchanged; added
+closing ownership notes to `backend/backend/settings.py` and
+`frontend/src/vitePreviewCachePolicy.ts` pointing at
+`.agents/memory/replit-google-frontend-header-rewriting.md`. Both issues
+closed. `make check`-relevant checks (ruff, tsc) pass on the doc-only
+diff.
+
+Owner also directed a follow-up prompt be drafted for the implementation
+agents (per `DISPATCH.md`) covering: #479's newly found microphone
+SecurityError gap (mic capture still runs inside the sandboxed iframe,
+never moved to the parent frame the way camera was), #492 (loginViaUI
+harness flake), and any other currently-open issue ready for engineering
+without further owner input. #440/#460 stay excluded (credential-blocked)
+and #467/#465/#419 stay excluded (owner/CI-evidence actions, not
+engineering).

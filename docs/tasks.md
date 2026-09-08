@@ -17443,8 +17443,8 @@ contracts; closed #392/#313 remain immutable.
 
 ## 291. Give content-hashed production assets immutable caching
 
-Status: QA: PASS (application-layer) — BLOCKED ON A NEWLY DISCOVERED
-PLATFORM BOUNDARY, not yet closable as originally worded.
+Status: COMPLETE — closed 2026-09-08. Owner accepted the platform's
+`private` substitution as the final policy.
 
 GitHub issue: [#489](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/489)
 
@@ -17478,8 +17478,9 @@ substitution as the practical policy.
 
 ## 292. Reconcile duplicate upstream and Django HSTS policies
 
-Status: QA: PASS (application-layer) — CONFIRMED PLATFORM BOUNDARY, live
-re-verified against the republished site 2026-09-08.
+Status: COMPLETE — closed 2026-09-08. Owner accepted the upstream
+duplicate as a permanent platform boundary; Django's own policy stays
+as-is.
 
 GitHub issue: [#490](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/490)
 

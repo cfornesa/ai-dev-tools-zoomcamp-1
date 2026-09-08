@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/glm-5.3",
   "provider": {
     "ollama-cloud": {
       "npm": "@ai-sdk/openai-compatible",
@@ -8,24 +9,26 @@
         "baseURL": "https://ollama.com/v1",
         "apiKey": "{env:OLLAMA_API_KEY}"
       },
-      "models": { "qwen3-coder:cloud": {} }
+      "models": {
+        "qwen3-coder-next:cloud": {}
+      }
     }
   },
   "agent": {
     "implementation-mechanical-frontend": {
       "mode": "subagent",
       "description": "Frontend mechanical work — DISPATCH.md Pass 2a",
-      "model": "opencode/kimi-k2.5"
+      "model": "opencode-go/kimi-k2.7-code"
     },
     "implementation-mechanical-backend": {
       "mode": "subagent",
       "description": "Backend mechanical work — DISPATCH.md Pass 2a",
-      "model": "opencode/qwen3.6-plus"
+      "model": "opencode-go/qwen3.6-plus"
     },
     "implementation-complex": {
       "mode": "subagent",
       "description": "Auth, data layer, schema, migrations — DISPATCH.md Pass 2b",
-      "model": "ollama-cloud/qwen3-coder:cloud"
+      "model": "ollama-cloud/qwen3-coder-next:cloud"
     }
   }
 }

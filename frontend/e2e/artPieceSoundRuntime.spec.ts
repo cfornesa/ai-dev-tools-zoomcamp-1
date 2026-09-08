@@ -44,9 +44,26 @@ async function mockMicrophone(
       getUserMedia?: () => Promise<MediaStream>;
     };
     if (outcomeArg === 'unavailable') {
+      // Issue #479: the parent frame now checks `getUserMedia` before any
+      // call, so the mock must make it appear missing. p5.js polyfills
+      // `navigator.mediaDevices.getUserMedia` at load time if it sees
+      // `undefined`; a plain non-writable `value: undefined` would make
+      // that assignment throw and crash the bundle. An accessor with a
+      // no-op setter absorbs p5's assignment while keeping the getter
+      // returning `undefined`. The prototype patch is kept so the same
+      // simulation survives WebKit's fresh `MediaDevices` instances.
       Object.defineProperty(mediaDevicesProto, 'getUserMedia', {
         configurable: true,
         value: undefined,
+      });
+      Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+        configurable: true,
+        get() {
+          return undefined;
+        },
+        set() {
+          // absorb p5.js's load-time polyfill assignment
+        },
       });
       return;
     }

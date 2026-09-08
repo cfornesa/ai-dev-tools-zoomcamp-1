@@ -41,6 +41,33 @@ The closure record must state `implemented/verified in this issue` and
 as complete or claim the shifted work as evidence. The linked follow-up becomes
 the next queue item according to dependency order.
 
+## Stage routing awareness
+
+Distillation feeds the scoping stage that `LOOP-AGENTS.md` Section 2 rosters
+to Codex (via ChatGPT Plus); implementation is rostered to Opencode Go
+(mechanical/boilerplate) and Ollama Cloud (auth, data layer, schema and
+business-logic translation). Routing is advisory: Claude may run any of these
+stages when the rostered service's output is not present, provided the
+substitution is stated explicitly in the manifest and never presented as that
+service's work.
+
+Two consequences for how issues are written:
+
+- Every criterion-ready issue definition must carry a **routing hint**: the
+  intended implementation owner (mechanical vs. complex-logic) and the reason.
+  An issue whose work spans both is a signal to split it, the same way a
+  two-surface issue is.
+- An issue destined for an external implementation service must be
+  self-contained. It cannot rely on conversational context, prior-session
+  reasoning, or repository knowledge that only this session holds: name the
+  files, the fixtures, the exact commands, and the cited source-of-truth
+  documents inside the issue body itself.
+
+When a manifest is handed to an external service and comes back changed,
+re-run this skill's reconciliation before engineering continues — treat the
+returned scope as evidence to verify, not as an authoritative rewrite of the
+closure contract.
+
 ## Phase gate: distill before engineering
 
 This skill is a read/reconcile and backlog-definition phase. Do not implement
@@ -62,7 +89,7 @@ to the later backlog-session engineer pass.
 1. Identify exactly one project and read its `tasks.md`, relevant plan, `docs/process.md`, and applicable acceptance criteria and constraints.
 2. Inspect the current worktree and relevant repository history without overwriting user changes.
 3. Use the authenticated GitHub connector to enumerate open issues associated with the project. Compare GitHub issues, `tasks.md`, existing memory topics, related PRs, and the user's evidence.
-4. Build or update an issue manifest containing issue number, URL, goal, dependencies, priority/order, duplicate links, scope, and status.
+4. Build or update an issue manifest containing issue number, URL, goal, dependencies, priority/order, duplicate links, scope, status, and the routing hint (intended implementation owner and rationale).
 5. Order work by dependencies, then backlog order, then priority. Mark already-completed, duplicate, blocked, and dependency-blocked items explicitly.
 
 ## Atomicity and closure cadence
@@ -183,7 +210,9 @@ Produce:
 
 - a complete project issue manifest;
 - a duplicate and already-covered-work report;
-- one criterion-ready issue definition for each actionable item;
+- one criterion-ready issue definition for each actionable item, each carrying
+  its routing hint and written to be actionable by a service with no access to
+  this session's context;
 - linked memory topics for durable context;
 - a dependency/order rationale;
 - an explicit list of unresolved blockers and verification boundaries.

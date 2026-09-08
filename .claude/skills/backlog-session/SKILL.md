@@ -18,7 +18,10 @@ or
 `GROOMED → ENGINEERING/QA → BLOCKED|DEPENDENCY-BLOCKED|HANDED-OFF`.
 
 The record must contain the issue number, commit, focused checks, full checks,
-QA result, evidence boundary, GitHub comment, and final status. The
+QA result, evidence boundary, GitHub comment, final status, and, for every
+stage, the stage owner actually used (`service / model / effort`) plus a
+`substituted: yes|no` flag when Claude ran a stage rostered to another
+service. See "Multi-service stage routing" below. The
 orchestrator may select the next issue only after the current record reaches
 `CLOSED` or a documented terminal blocked/handoff state. A code commit, green
 focused test, QA PASS, or deployment publication is never itself a terminal
@@ -43,6 +46,52 @@ criterion-ready issue before reconciliation. The current issue may then close
 as `completed` once all of its narrowed criteria pass, provided the closure
 matrix separately lists the shifted work and its next issue. Do not reopen the
 completed issue merely because that linked work is unfinished.
+
+## Multi-service stage routing
+
+`LOOP-AGENTS.md` Section 2 rosters the loop's stages across several services.
+This skill orchestrates the loop; it does not own every stage.
+
+| Stage | Rostered owner | This skill's pass |
+| --- | --- | --- |
+| Issue scoping / spec drafting | Codex (via ChatGPT Plus) | PM pass — groom |
+| Implementation — mechanical / boilerplate | Opencode Go | Engineer pass |
+| Implementation — complex logic (auth, data layer, migrations) | Ollama Cloud | Engineer pass |
+| Second-opinion patch review (optional) | Mistral Vibe | Engineer → QA handoff |
+| QA self-review | Claude Pro (Sonnet 5, Medium effort) | QA pass |
+| Production-readiness gate | Claude Pro (Opus 5, `Low` effort — budget-constrained) | Batch completion pass |
+
+Routing is advisory, not blocking. When a rostered service's output is not
+present, Claude may perform that stage itself — but the substitution must be
+stated explicitly in the ledger, the batch manifest, and the evidence rollup.
+Never imply a rostered service ran when it did not, and never present a
+Claude-authored diff as an independent second opinion.
+
+Provenance is recorded in the existing ledger, manifest, and evidence tables
+only. Do not create a new provenance file or a parallel tracking document.
+
+The production-readiness gate is the one stage that is never substituted
+downward, but the non-negotiable is the **model tier, not the effort level**.
+It runs on Opus 5 regardless of how small the batch looks; it is never routed
+to Sonnet, Haiku, or a non-Claude service. Effort for this gate is
+budget-constrained to `Low` by owner decision. Note that this departs from
+`per-service-kickoff-prompts.md`, which specifies `Max` with `xhigh` as the
+floor; the owner's session constraint governs, and that document should be
+reconciled to match. If Opus 5 itself is unavailable, Rule 6 applies — stop,
+state it, and do not silently run the gate on a lesser model.
+
+Because the gate runs at reduced effort, its rigor comes from the checklist
+rather than from unbounded reasoning: work the readiness dimensions and the
+completion gate below item by item, and prefer an explicit `BLOCKED` or
+`OPEN FOLLOW-UP` over a judgment call the effort level cannot support.
+
+When an implementation stage arrives from another service, the engineer pass
+begins with intake: confirm the diff is scoped to this issue's criteria only,
+classify anything outside them under the same in-scope/out-of-scope rule
+above, and record the originating service and model before running checks.
+If the external service stopped because the work exceeded its rostered
+complexity (Opencode Go hitting auth/data-layer logic, for example), record
+that as a routing handoff to the complex-logic owner rather than as a blocker.
 
 ## Prerequisite phase gate
 
@@ -120,14 +169,17 @@ Closure integrity after owner review:
 
 Record this manifest in the working notes and final handoff:
 
-| Issue | URL | Backlog entry | Dependencies | Scope | Status | Blocker class / follow-up issue | Owner / next action |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| Issue | URL | Backlog entry | Dependencies | Scope | Status | Stage owners (scoping / impl / review / QA / gate) | Substituted? | Blocker class / follow-up issue | Owner / next action |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+Record each stage owner as `service / model` using the routing table above,
+or `Claude (substituted for <rostered owner>)` when Claude ran it instead.
 
 Order by explicit dependencies, then project backlog order, then priority. If GitHub and `tasks.md` disagree, reconcile the records before implementation. Existing issues must be updated or reused; create a new issue only for genuinely new work authorized by the user.
 
 ## Per-issue loop
 
-Run these passes for every manifest issue, labeling artifacts with the issue number. If delegation is unavailable, perform the passes yourself in sequence and say so; never imply another agent ran.
+Run these passes for every manifest issue, labeling artifacts with the issue number. If delegation is unavailable, perform the passes yourself in sequence and say so; never imply another agent ran. Record the stage owner for each pass in the ledger as it runs, not retroactively at the end of the batch.
 
 ### PM pass — groom
 
@@ -193,9 +245,11 @@ Include per issue and as a batch rollup:
 
 | Gate | Required evidence |
 | --- | --- |
+| Routing | Rostered owner and actual owner (`service / model / effort`) per stage, every substitution flagged, and the readiness-gate model/effort named explicitly |
 | Scope | Project, complete issue manifest, ordering, worktree classification |
 | PM | Grooming result, issue URL, acceptance matrix, plan |
-| Engineer | Changed files, focused tests, commits, dependency decisions |
+| Engineer | Changed files, focused tests, commits, dependency decisions, originating service/model for any externally produced diff |
+| Second opinion | Whether an independent-family review ran, by which service/model, and how its findings were dispositioned (or an explicit “not run”) |
 | Automation | Repository runner/CI ownership of local and browser verification, disposable-service setup, cleanup, and retained failure artifacts |
 | QA | Exact automated focused/full commands, runner/CI environment, results, criterion verdicts, GitHub comment; any Replit-only manual evidence is explicitly labeled |
 | Memory | Updated or explicitly unchanged topics, linked to issues |
@@ -218,6 +272,9 @@ The project batch may be reported complete only when:
 - QA results are recorded on every processed issue;
 - changes are committed without unrelated files;
 - backlog, GitHub, and memory links are reconciled;
+- every stage of every processed issue has a recorded owner, with each
+  substitution flagged and the readiness gate run on the rostered model tier
+  (Opus 5) at the owner's budgeted effort;
 - session completion has run; and
 - the issue/PR state reflects the actual batch result.
 - every newly discovered actionable item is linked to an existing/new issue or explicitly recorded as pending authorization with an owner and next action.

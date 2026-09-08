@@ -30,6 +30,31 @@ is explicitly owned by linked follow-up issues. Report that follow-up as
 `OPEN FOLLOW-UP` rather than reopening the child. Only explicit owner
 authorization naming that child permits reopening it.
 
+## Stage ownership and effort floor
+
+This skill is the stage-4 production-readiness gate in `LOOP-AGENTS.md`
+Section 2. It is rostered to Claude and is never delegated to another service
+or to a lesser Claude model: Opus 5 is mandatory for this gate regardless of
+how small the batch looks. Effort is budget-constrained to `Low` by owner
+decision, which departs from `per-service-kickoff-prompts.md`'s `Max`/`xhigh`
+specification; the owner's constraint governs and that document should be
+reconciled. If Opus 5 is unavailable, Rule 6 applies — stop and say so rather
+than running the gate on a cheaper model.
+
+At reduced effort the gate's rigor comes from working the dimensions and
+outputs below item by item. Where the effort level cannot support a confident
+judgment, record `BLOCKED` or `OPEN FOLLOW-UP` with the exact missing
+evidence; never resolve an ambiguous readiness question by assumption.
+
+Provenance is part of the evidence under review. Before assessing any
+dimension, confirm the backlog-session ledger records a stage owner
+(`service / model / effort`) for every stage of every processed issue, with
+substitutions flagged. Missing or unrecorded provenance is a
+`workflow/infrastructure-defect` finding, not a pass — a diff whose author is
+unknown cannot be assessed for the independence its stage assumed. In
+particular, a second-opinion review credited to an independent model family
+but actually produced by the implementing model is a failed gate.
+
 ## Scope gate
 
 Run this skill only after task distillation has produced a complete,
@@ -72,6 +97,8 @@ Return:
 - every remaining issue and its status;
 - every failed gate or verification boundary;
 - exact next action for each blocker;
-- confirmation that no issue is silently omitted or duplicated.
+- confirmation that no issue is silently omitted or duplicated;
+- the routing audit: actual stage owner per stage, every substitution, and
+  confirmation that this gate itself ran on the rostered model tier.
 
 Do not call the project production-ready while any required issue or acceptance criterion is incomplete, unverified, or blocked. If tools or environments are unavailable, record the attempted command/tool, exact failure, impact, and next action rather than treating missing evidence as a pass.

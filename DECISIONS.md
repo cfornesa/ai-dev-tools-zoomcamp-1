@@ -156,3 +156,44 @@ close issues):
 No product code was changed during this QA pass (per the skill's own
 "do not modify product code" rule). Local Django/Vite dev servers used for
 verification were stopped afterward.
+
+## 2026-09-08 (stage-5 production-readiness gate)
+
+`production-readiness` requires Opus 5, never a lesser model. This session
+is Sonnet 5; flagged per Rule 6 before proceeding, owner explicitly
+authorized the substitution (same precedent as the earlier #485 stage-5
+run) via `AskUserQuestion`. Full report posted on
+[issue #445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445#issuecomment-5588861368).
+Key findings:
+
+- **New gap found:** #487/#488/#489 have real implementation commits
+  (`0eb4067`, `5e9a721`, `f2549ff`) but never went through stage-4 QA —
+  `docs/tasks.md` items 288/289/291 were stale (still said
+  PROPOSED/GROOMED) and no GitHub QA comment exists. Corrected the
+  statuses; QA itself deferred to a future stage-4 dispatch, staying in
+  stage-5's read-only assessment role.
+- **This entire 10-commit local batch is unpushed and un-CI'd** — GitHub
+  Actions has not run against any of #479/#482/#483/#487/#488/#489/#490/#492.
+  No push was performed (not authorized this session).
+- **Live-confirmed against `https://animate.creatrweb.com`:** #489's
+  caching fix is not yet deployed (live hashed asset still `no-cache`);
+  #490's duplicate-HSTS defect is still live and reproducible on `/health/`
+  exactly as the issue describes (root `/` only showed the upstream field,
+  worth narrowing later). Both expected — production predates this batch —
+  and consistent with #445's own DEPENDENCY-BLOCKED status, not a new
+  blocker.
+- #445's own child-issue checklist is stale (2026-09-05 snapshot, lists
+  issues now closed, omits the current 16-issue open manifest) — flagged
+  for the next `task-distillation` pass to refresh, not corrected here
+  (out of stage-5's scope).
+- Local full disposable-stack `npm run test:e2e` (819 tests, 1 worker) was
+  started as supplementary evidence but not waited on to completion,
+  matching this repo's own established precedent (#485's stage-5 run) of
+  using existing CI evidence over multi-hour local re-runs under the
+  Low-effort budget. Partial snapshot (76/819, 3 unclassified failures in
+  `accountSessions`/`adminSettings`, unrelated to this batch) left for
+  #419's own reconciliation scope.
+
+Overall verdict: **not yet production-ready** — three concrete blockers
+recorded above and on #445. No product code changed; `docs/tasks.md`
+reconciled (commit `f545773`).

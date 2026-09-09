@@ -614,163 +614,161 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
 });
 
 test.describe('HTML export: latest and historical versions run in an isolated browser context, no Django', () => {
-  test('a "latest version" export opens and runs, requesting only the pinned p5 CDN script -- never any /api/, /accounts/, or /health/ path', async ({
+  test('a "latest version" and a "historical version" export each open and run correctly', async ({
     browser,
   }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    const observed = interceptCdnAndTrackRequests(page);
+    await test.step('a "latest version" export opens and runs, requesting only the pinned p5 CDN script -- never any /api/, /accounts/, or /health/ path', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      const observed = interceptCdnAndTrackRequests(page);
 
-    const scene = exportFixtureScene();
-    const result = await generator.generateHtmlExport({
-      scene,
-      title: 'Latest version export',
-      description: 'The current saved version.',
-      interactionMode: 'demo',
+      const scene = exportFixtureScene();
+      const result = await generator.generateHtmlExport({
+        scene,
+        title: 'Latest version export',
+        description: 'The current saved version.',
+        interactionMode: 'demo',
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      await openExportInIsolatedContext(page, result.html, 'latest.html');
+
+      await expect(page.getByRole('heading', { name: 'Latest version export' })).toBeVisible();
+      await expect(page.locator('#scene-canvas-host canvas')).toHaveCount(1);
+
+      for (const url of observed) {
+        expect(url === generator.constants.P5_CDN_URL || url.startsWith('file://')).toBe(true);
+      }
+      expect(
+        observed.some(
+          (u) => u.includes('/api/') || u.includes('/accounts/') || u.includes('/health/'),
+        ),
+      ).toBe(false);
+
+      await context.close();
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
 
-    await openExportInIsolatedContext(page, result.html, 'latest.html');
+    await test.step('a "historical version" export (a differently-shaped scene, standing in for an older saved version) opens and runs identically', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page);
 
-    await expect(page.getByRole('heading', { name: 'Latest version export' })).toBeVisible();
-    await expect(page.locator('#scene-canvas-host canvas')).toHaveCount(1);
+      const historicalScene = historicalExportFixtureScene();
+      const result = await generator.generateHtmlExport({
+        scene: historicalScene,
+        title: 'Historical version export',
+        description: 'An older saved version, exported directly.',
+        interactionMode: 'demo',
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
 
-    for (const url of observed) {
-      expect(url === generator.constants.P5_CDN_URL || url.startsWith('file://')).toBe(true);
-    }
-    expect(
-      observed.some(
-        (u) => u.includes('/api/') || u.includes('/accounts/') || u.includes('/health/'),
-      ),
-    ).toBe(false);
+      await openExportInIsolatedContext(page, result.html, 'historical.html');
 
-    await context.close();
-  });
+      await expect(page.getByRole('heading', { name: 'Historical version export' })).toBeVisible();
+      await expect(page.locator('#scene-canvas-host canvas')).toHaveCount(1);
 
-  test('a "historical version" export (a differently-shaped scene, standing in for an older saved version) opens and runs identically', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page);
-
-    const historicalScene = historicalExportFixtureScene();
-    const result = await generator.generateHtmlExport({
-      scene: historicalScene,
-      title: 'Historical version export',
-      description: 'An older saved version, exported directly.',
-      interactionMode: 'demo',
+      await context.close();
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    await openExportInIsolatedContext(page, result.html, 'historical.html');
-
-    await expect(page.getByRole('heading', { name: 'Historical version export' })).toBeVisible();
-    await expect(page.locator('#scene-canvas-host canvas')).toHaveCount(1);
-
-    await context.close();
   });
 });
 
 test.describe('Interaction modes: demo-only, camera-only, and combined contain exactly the required controls/dependencies', () => {
-  test('demo-only: demo controls present, no camera section, no camera script, exactly one external dependency', async ({
+  test('demo-only, camera-inclusive, and combined modes each contain exactly the required controls/dependencies', async ({
     browser,
   }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page);
+    await test.step('demo-only: demo controls present, no camera section, no camera script, exactly one external dependency', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page);
 
-    const result = await generator.generateHtmlExport({
-      scene: exportFixtureScene(),
-      title: 'Demo only',
-      description: 'Demo controls only.',
-      interactionMode: 'demo',
+      const result = await generator.generateHtmlExport({
+        scene: exportFixtureScene(),
+        title: 'Demo only',
+        description: 'Demo controls only.',
+        interactionMode: 'demo',
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      // Dependencies, checked against the raw source: exactly one external
+      // script (p5), no camera module/URL anywhere.
+      const externalScripts = [...result.html.matchAll(/<script[^>]*\bsrc=/gi)];
+      expect(externalScripts).toHaveLength(1);
+      expect(result.html).toContain(generator.constants.P5_CDN_URL);
+      // The always-present stylesheet declares (unused, harmless) CSS rules
+      // for #camera-controls-host regardless of mode -- checked against the
+      // actual DOM element below instead of a raw substring match, which
+      // the stylesheet alone would make a false positive.
+      expect(result.html).not.toContain('<section id="camera-controls-host"');
+      expect(result.html).not.toContain(generator.constants.MEDIAPIPE_VISION_BUNDLE_CDN_URL);
+
+      await openExportInIsolatedContext(page, result.html, 'demo-only.html');
+      await openExportPieceControls(page);
+      await expect(page.locator('#piece-controls-panel')).toBeVisible();
+      await expect(page.locator('#demo-controls-host')).toBeVisible();
+      await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
+      await expect(page.locator('#camera-controls-host')).toHaveCount(0);
+      await expect(page.getByTestId('camera-enable')).toHaveCount(0);
+
+      await context.close();
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
 
-    // Dependencies, checked against the raw source: exactly one external
-    // script (p5), no camera module/URL anywhere.
-    const externalScripts = [...result.html.matchAll(/<script[^>]*\bsrc=/gi)];
-    expect(externalScripts).toHaveLength(1);
-    expect(result.html).toContain(generator.constants.P5_CDN_URL);
-    // The always-present stylesheet declares (unused, harmless) CSS rules
-    // for #camera-controls-host regardless of mode -- checked against the
-    // actual DOM element below instead of a raw substring match, which
-    // the stylesheet alone would make a false positive.
-    expect(result.html).not.toContain('<section id="camera-controls-host"');
-    expect(result.html).not.toContain(generator.constants.MEDIAPIPE_VISION_BUNDLE_CDN_URL);
+    await test.step('camera-inclusive ("camera" mode): demo controls remain present (always rendered), camera section/script are added', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page, { allowCamera: true });
 
-    await openExportInIsolatedContext(page, result.html, 'demo-only.html');
-    await openExportPieceControls(page);
-    await expect(page.locator('#piece-controls-panel')).toBeVisible();
-    await expect(page.locator('#demo-controls-host')).toBeVisible();
-    await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
-    await expect(page.locator('#camera-controls-host')).toHaveCount(0);
-    await expect(page.getByTestId('camera-enable')).toHaveCount(0);
+      const result = await generator.generateHtmlExport({
+        scene: exportFixtureScene(),
+        title: 'Camera mode',
+        description: 'Camera-inclusive export.',
+        interactionMode: 'camera',
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
 
-    await context.close();
-  });
+      expect(result.html).toContain('camera-controls-host');
+      // Runtime + camera module: still exactly one external dependency (p5
+      // -- the MediaPipe bundle is loaded lazily via dynamic import at
+      // click-time, never a static <script src>).
+      const externalScripts = [...result.html.matchAll(/<script[^>]*\bsrc=/gi)];
+      expect(externalScripts).toHaveLength(1);
 
-  test('camera-inclusive ("camera" mode): demo controls remain present (always rendered), camera section/script are added', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page, { allowCamera: true });
+      await openExportInIsolatedContext(page, result.html, 'camera-mode.html');
+      await openExportPieceControls(page);
+      await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
+      await expect(page.getByTestId('camera-enable')).toBeVisible();
+      await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
 
-    const result = await generator.generateHtmlExport({
-      scene: exportFixtureScene(),
-      title: 'Camera mode',
-      description: 'Camera-inclusive export.',
-      interactionMode: 'camera',
+      await context.close();
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
 
-    expect(result.html).toContain('camera-controls-host');
-    // Runtime + camera module: still exactly one external dependency (p5
-    // -- the MediaPipe bundle is loaded lazily via dynamic import at
-    // click-time, never a static <script src>).
-    const externalScripts = [...result.html.matchAll(/<script[^>]*\bsrc=/gi)];
-    expect(externalScripts).toHaveLength(1);
+    await test.step('combined ("demo-camera" mode): both demo and camera controls/dependencies are present together', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page, { allowCamera: true });
 
-    await openExportInIsolatedContext(page, result.html, 'camera-mode.html');
-    await openExportPieceControls(page);
-    await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
-    await expect(page.getByTestId('camera-enable')).toBeVisible();
-    await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
+      const result = await generator.generateHtmlExport({
+        scene: exportFixtureScene(),
+        title: 'Demo + camera',
+        description: 'Combined export.',
+        interactionMode: 'demo-camera',
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
 
-    await context.close();
-  });
+      expect(result.html).toContain('demo-controls-host');
+      expect(result.html).toContain('camera-controls-host');
 
-  test('combined ("demo-camera" mode): both demo and camera controls/dependencies are present together', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page, { allowCamera: true });
+      await openExportInIsolatedContext(page, result.html, 'combined.html');
+      await openExportPieceControls(page);
+      await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
+      await expect(page.getByTestId('camera-enable')).toBeVisible();
 
-    const result = await generator.generateHtmlExport({
-      scene: exportFixtureScene(),
-      title: 'Demo + camera',
-      description: 'Combined export.',
-      interactionMode: 'demo-camera',
+      await context.close();
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    expect(result.html).toContain('demo-controls-host');
-    expect(result.html).toContain('camera-controls-host');
-
-    await openExportInIsolatedContext(page, result.html, 'combined.html');
-    await openExportPieceControls(page);
-    await expect(page.locator('#demo-controls-host button')).not.toHaveCount(0);
-    await expect(page.getByTestId('camera-enable')).toBeVisible();
-
-    await context.close();
   });
 });
 
@@ -878,335 +876,336 @@ async function installCameraTestSeams(
 }
 
 test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, and fallback', () => {
-  test('starts inactive: steering is off, Stop is hidden, no getUserMedia call before any click', async ({
+  test('starts inactive, and each mocked failure mode (denial, missing-device, unsupported) shows its own message while leaving demo controls usable', async ({
     browser,
   }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page, { allowCamera: true });
-    await installCameraTestSeams(page, 'succeed');
-    await openExportInIsolatedContext(
-      page,
-      await cameraModeExportHtml(),
-      'lifecycle-inactive.html',
-    );
-    await openExportPieceControls(page);
+    await test.step('starts inactive: steering is off, Stop is hidden, no getUserMedia call before any click', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page, { allowCamera: true });
+      await installCameraTestSeams(page, 'succeed');
+      await openExportInIsolatedContext(
+        page,
+        await cameraModeExportHtml(),
+        'lifecycle-inactive.html',
+      );
+      await openExportPieceControls(page);
 
-    await expect(page.getByTestId('camera-status')).toHaveText('');
-    await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
-    await expect(page.getByTestId('camera-enable')).toBeVisible();
-    await expect(page.getByTestId('camera-enable')).toHaveText('Steer the piece');
-    await expect(page.getByTestId('camera-enable')).toHaveAttribute('aria-pressed', 'false');
+      await expect(page.getByTestId('camera-status')).toHaveText('');
+      await expect(page.getByTestId('camera-stop')).toHaveCSS('display', 'none');
+      await expect(page.getByTestId('camera-enable')).toBeVisible();
+      await expect(page.getByTestId('camera-enable')).toHaveText('Steer the piece');
+      await expect(page.getByTestId('camera-enable')).toHaveAttribute('aria-pressed', 'false');
 
-    await context.close();
+      await context.close();
+    });
+
+    await test.step('mocked permission denial: shows the denial message, offers Retry, and leaves demo controls usable', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page, { allowCamera: true });
+      await installCameraTestSeams(page, 'deny');
+      await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-denied.html');
+      await openExportPieceControls(page);
+
+      await page.getByTestId('camera-enable').click();
+      await expect(page.getByTestId('camera-error')).toContainText(/camera access was denied/i);
+      await expect(page.getByTestId('camera-enable')).toHaveText('Retry steering');
+
+      const demoButtons = page.locator('#demo-controls-host button');
+      await expect(demoButtons.first()).toBeVisible();
+      await expect(demoButtons.first()).toBeEnabled();
+
+      await context.close();
+    });
+
+    await test.step('mocked missing-device fallback: shows the no-camera-found message', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page, { allowCamera: true });
+      await installCameraTestSeams(page, 'missing-device');
+      await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-missing.html');
+      await openExportPieceControls(page);
+
+      await page.getByTestId('camera-enable').click();
+      await expect(page.getByTestId('camera-error')).toContainText(/no camera was found/i);
+
+      await context.close();
+    });
+
+    await test.step('mocked unsupported browser (no navigator.mediaDevices): shows the unsupported message, never calls getUserMedia', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page, { allowCamera: true });
+      await installCameraTestSeams(page, 'unsupported');
+      await openExportInIsolatedContext(
+        page,
+        await cameraModeExportHtml(),
+        'lifecycle-unsupported.html',
+      );
+      await openExportPieceControls(page);
+
+      await page.getByTestId('camera-enable').click();
+      await expect(page.getByTestId('camera-error')).toContainText(/doesn't support/i);
+
+      await context.close();
+    });
   });
 
-  test('mocked permission denial: shows the denial message, offers Retry, and leaves demo controls usable', async ({
+  test('successful steering reaches active, tears down on Stop, retries successfully, and its multi-frame network footprint stays clean', async ({
     browser,
   }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page, { allowCamera: true });
-    await installCameraTestSeams(page, 'deny');
-    await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-denied.html');
-    await openExportPieceControls(page);
+    await test.step('successful steering reaches "active", Stop steering tears it down, and Retry can succeed', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page, { allowCamera: true });
+      await installCameraTestSeams(page, 'succeed');
+      await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-active.html');
+      await openExportPieceControls(page);
 
-    await page.getByTestId('camera-enable').click();
-    await expect(page.getByTestId('camera-error')).toContainText(/camera access was denied/i);
-    await expect(page.getByTestId('camera-enable')).toHaveText('Retry steering');
+      await page.getByTestId('camera-enable').click();
+      await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
+      await expect(page.getByTestId('camera-stop')).toBeVisible();
+      await expect(page.getByTestId('camera-stop')).toHaveText('Stop steering');
+      await expect(page.getByTestId('camera-stop')).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByTestId('camera-enable')).toHaveCSS('display', 'none');
 
-    const demoButtons = page.locator('#demo-controls-host button');
-    await expect(demoButtons.first()).toBeVisible();
-    await expect(demoButtons.first()).toBeEnabled();
+      await page.getByTestId('camera-stop').click();
+      await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);
+      await expect(page.getByTestId('camera-enable')).toBeVisible();
+      await expect(page.getByTestId('camera-enable')).toHaveText('Steer the piece');
+      await expect(page.getByTestId('camera-enable')).toHaveAttribute('aria-pressed', 'false');
 
-    await context.close();
-  });
+      await context.close();
+    });
 
-  test('mocked missing-device fallback: shows the no-camera-found message', async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page, { allowCamera: true });
-    await installCameraTestSeams(page, 'missing-device');
-    await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-missing.html');
-    await openExportPieceControls(page);
+    // Task 73 (issue #73), privacy audit acceptance criterion 1: "Browser
+    // network capture during editor, public viewer, thumbnail, and export
+    // camera flows contains no video frames or frame-derived biometric
+    // payloads." Every prior camera-lifecycle scenario above already reaches
+    // "active" and runs `installCameraTestSeams('succeed')`'s fake
+    // `recognizeForVideo` (called once per `requestAnimationFrame` tick,
+    // exactly like the real `standaloneCameraSource.ts` pipeline), but none
+    // of them capture and assert on `observed` afterward -- a passing
+    // scenario only proves no *illegal* request was attempted strongly
+    // enough to trip `route.abort('failed')` on this run, not that this
+    // suite ever produced positive, recorded evidence of the full request
+    // list for the network-capture criterion. This step closes that gap: it
+    // drives the camera through several real animation-frame ticks while
+    // active (so `recognizeForVideo`/landmark processing genuinely runs
+    // repeatedly, not just once), then asserts the complete captured
+    // request list is still nothing but the two pinned CDN URLs (p5,
+    // MediaPipe) and the local `file://` document -- structurally proving
+    // that a real, multi-frame hand-tracking session never emitted a single
+    // network request carrying a video frame, image blob, or
+    // landmark/gesture JSON payload, because every such request would have
+    // been captured in `observed` and none was.
+    await test.step('network capture during active multi-frame tracking contains no video frame or landmark payload', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      const observed = interceptCdnAndTrackRequests(page, { allowCamera: true });
+      await installCameraTestSeams(page, 'succeed');
+      await openExportInIsolatedContext(
+        page,
+        await cameraModeExportHtml(),
+        'lifecycle-network-capture.html',
+      );
+      await openExportPieceControls(page);
 
-    await page.getByTestId('camera-enable').click();
-    await expect(page.getByTestId('camera-error')).toContainText(/no camera was found/i);
+      await page.getByTestId('camera-enable').click();
+      await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
 
-    await context.close();
-  });
-
-  test('mocked unsupported browser (no navigator.mediaDevices): shows the unsupported message, never calls getUserMedia', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page, { allowCamera: true });
-    await installCameraTestSeams(page, 'unsupported');
-    await openExportInIsolatedContext(
-      page,
-      await cameraModeExportHtml(),
-      'lifecycle-unsupported.html',
-    );
-    await openExportPieceControls(page);
-
-    await page.getByTestId('camera-enable').click();
-    await expect(page.getByTestId('camera-error')).toContainText(/doesn't support/i);
-
-    await context.close();
-  });
-
-  test('successful steering reaches "active", Stop steering tears it down, and Retry can succeed', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page, { allowCamera: true });
-    await installCameraTestSeams(page, 'succeed');
-    await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-active.html');
-    await openExportPieceControls(page);
-
-    await page.getByTestId('camera-enable').click();
-    await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
-    await expect(page.getByTestId('camera-stop')).toBeVisible();
-    await expect(page.getByTestId('camera-stop')).toHaveText('Stop steering');
-    await expect(page.getByTestId('camera-stop')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('camera-enable')).toHaveCSS('display', 'none');
-
-    await page.getByTestId('camera-stop').click();
-    await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);
-    await expect(page.getByTestId('camera-enable')).toBeVisible();
-    await expect(page.getByTestId('camera-enable')).toHaveText('Steer the piece');
-    await expect(page.getByTestId('camera-enable')).toHaveAttribute('aria-pressed', 'false');
-
-    await context.close();
-  });
-
-  // Task 73 (issue #73), privacy audit acceptance criterion 1: "Browser
-  // network capture during editor, public viewer, thumbnail, and export
-  // camera flows contains no video frames or frame-derived biometric
-  // payloads." Every prior camera-lifecycle test above already reaches
-  // "active" and runs `installCameraTestSeams('succeed')`'s fake
-  // `recognizeForVideo` (called once per `requestAnimationFrame` tick,
-  // exactly like the real `standaloneCameraSource.ts` pipeline), but none
-  // of them capture and assert on `observed` afterward -- a passing test
-  // only proves no *illegal* request was attempted strongly enough to
-  // trip `route.abort('failed')` on this run, not that this suite ever
-  // produced positive, recorded evidence of the full request list for the
-  // network-capture criterion. This test closes that gap: it drives the
-  // camera through several real animation-frame ticks while active (so
-  // `recognizeForVideo`/landmark processing genuinely runs repeatedly,
-  // not just once), then asserts the complete captured request list is
-  // still nothing but the two pinned CDN URLs (p5, MediaPipe) and the
-  // local `file://` document -- structurally proving that a real,
-  // multi-frame hand-tracking session never emitted a single network
-  // request carrying a video frame, image blob, or landmark/gesture JSON
-  // payload, because every such request would have been captured in
-  // `observed` and none was.
-  test('network capture during active multi-frame tracking contains no video frame or landmark payload', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    const observed = interceptCdnAndTrackRequests(page, { allowCamera: true });
-    await installCameraTestSeams(page, 'succeed');
-    await openExportInIsolatedContext(
-      page,
-      await cameraModeExportHtml(),
-      'lifecycle-network-capture.html',
-    );
-    await openExportPieceControls(page);
-
-    await page.getByTestId('camera-enable').click();
-    await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
-
-    // Let several requestAnimationFrame ticks elapse while active so the
-    // fake recognizer's recognizeForVideo (and the EMA/pinch/gesture
-    // signal derivation that consumes its output) actually runs
-    // repeatedly, the same way a real multi-second camera session would.
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          let ticks = 0;
-          function tick() {
-            ticks += 1;
-            if (ticks >= 10) {
-              resolve();
-            } else {
-              window.requestAnimationFrame(tick);
+      // Let several requestAnimationFrame ticks elapse while active so the
+      // fake recognizer's recognizeForVideo (and the EMA/pinch/gesture
+      // signal derivation that consumes its output) actually runs
+      // repeatedly, the same way a real multi-second camera session would.
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            let ticks = 0;
+            function tick() {
+              ticks += 1;
+              if (ticks >= 10) {
+                resolve();
+              } else {
+                window.requestAnimationFrame(tick);
+              }
             }
-          }
-          window.requestAnimationFrame(tick);
-        }),
-    );
+            window.requestAnimationFrame(tick);
+          }),
+      );
 
-    await page.getByTestId('camera-stop').click();
-    await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);
+      await page.getByTestId('camera-stop').click();
+      await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);
 
-    // Evidence: the complete request list captured across the whole
-    // active-tracking session is exactly the two pinned CDN URLs (fetched
-    // once each, at startup) plus the local file:// document -- nothing
-    // else was ever requested while landmarks were being derived every
-    // frame.
-    expect(observed.length).toBeGreaterThan(0);
-    for (const url of observed) {
-      const isAllowed =
-        url === generator.constants.P5_CDN_URL ||
-        url === generator.constants.MEDIAPIPE_VISION_BUNDLE_CDN_URL ||
-        url.startsWith('file://');
-      expect(isAllowed).toBe(true);
-    }
-    // No request MIME/URL shape ever resembles an image/video upload or a
-    // landmark/gesture JSON payload (a data: URL, a blob: URL, or any
-    // path containing common upload/telemetry markers).
-    expect(
-      observed.some(
-        (u) =>
-          u.startsWith('data:') ||
-          u.startsWith('blob:') ||
-          u.includes('/api/') ||
-          u.includes('upload') ||
-          u.includes('landmark') ||
-          u.includes('frame'),
-      ),
-    ).toBe(false);
+      // Evidence: the complete request list captured across the whole
+      // active-tracking session is exactly the two pinned CDN URLs (fetched
+      // once each, at startup) plus the local file:// document -- nothing
+      // else was ever requested while landmarks were being derived every
+      // frame.
+      expect(observed.length).toBeGreaterThan(0);
+      for (const url of observed) {
+        const isAllowed =
+          url === generator.constants.P5_CDN_URL ||
+          url === generator.constants.MEDIAPIPE_VISION_BUNDLE_CDN_URL ||
+          url.startsWith('file://');
+        expect(isAllowed).toBe(true);
+      }
+      // No request MIME/URL shape ever resembles an image/video upload or a
+      // landmark/gesture JSON payload (a data: URL, a blob: URL, or any
+      // path containing common upload/telemetry markers).
+      expect(
+        observed.some(
+          (u) =>
+            u.startsWith('data:') ||
+            u.startsWith('blob:') ||
+            u.includes('/api/') ||
+            u.includes('upload') ||
+            u.includes('landmark') ||
+            u.includes('frame'),
+        ),
+      ).toBe(false);
 
-    await context.close();
+      await context.close();
+    });
   });
 });
 
 test.describe('Attribution on/off: asserted in both rendered DOM and raw source text', () => {
-  test('attribution on: visible footer in the DOM, plus the HTML comment and version marker in the raw source', async ({
+  test('attribution on shows the footer and source markers; attribution off shows neither', async ({
     browser,
   }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page);
+    await test.step('attribution on: visible footer in the DOM, plus the HTML comment and version marker in the raw source', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page);
 
-    const result = await generator.generateHtmlExport({
-      scene: exportFixtureScene(),
-      title: 'Attribution on',
-      description: 'Attribution enabled.',
-      interactionMode: 'demo',
-      includeAttribution: true,
+      const result = await generator.generateHtmlExport({
+        scene: exportFixtureScene(),
+        title: 'Attribution on',
+        description: 'Attribution enabled.',
+        interactionMode: 'demo',
+        includeAttribution: true,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      // Source-text assertions.
+      expect(result.html).toContain('Created with');
+      expect(result.html).toMatch(/<!-- Created with .* -->/);
+      expect(result.html).toMatch(/<!-- export-tool-version: \d+ -->/);
+
+      // Rendered-DOM assertions.
+      await openExportInIsolatedContext(page, result.html, 'attribution-on.html');
+      await expect(page.locator('#export-attribution')).toBeVisible();
+      await expect(page.locator('#export-attribution')).toContainText('Created with');
+      await expect(page.locator('#export-attribution a')).toHaveAttribute('target', '_blank');
+
+      await context.close();
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
 
-    // Source-text assertions.
-    expect(result.html).toContain('Created with');
-    expect(result.html).toMatch(/<!-- Created with .* -->/);
-    expect(result.html).toMatch(/<!-- export-tool-version: \d+ -->/);
+    await test.step('attribution off: no footer in the DOM, and none of the attribution source markers appear', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      interceptCdnAndTrackRequests(page);
 
-    // Rendered-DOM assertions.
-    await openExportInIsolatedContext(page, result.html, 'attribution-on.html');
-    await expect(page.locator('#export-attribution')).toBeVisible();
-    await expect(page.locator('#export-attribution')).toContainText('Created with');
-    await expect(page.locator('#export-attribution a')).toHaveAttribute('target', '_blank');
+      const result = await generator.generateHtmlExport({
+        scene: exportFixtureScene(),
+        title: 'Attribution off',
+        description: 'Attribution disabled (the default).',
+        interactionMode: 'demo',
+        includeAttribution: false,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
 
-    await context.close();
-  });
+      expect(result.html).not.toContain('export-attribution');
+      expect(result.html).not.toMatch(/<!-- Created with .* -->/);
+      expect(result.html).not.toMatch(/<!-- export-tool-version: \d+ -->/);
 
-  test('attribution off: no footer in the DOM, and none of the attribution source markers appear', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    interceptCdnAndTrackRequests(page);
+      await openExportInIsolatedContext(page, result.html, 'attribution-off.html');
+      await expect(page.locator('#export-attribution')).toHaveCount(0);
 
-    const result = await generator.generateHtmlExport({
-      scene: exportFixtureScene(),
-      title: 'Attribution off',
-      description: 'Attribution disabled (the default).',
-      interactionMode: 'demo',
-      includeAttribution: false,
+      await context.close();
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    expect(result.html).not.toContain('export-attribution');
-    expect(result.html).not.toMatch(/<!-- Created with .* -->/);
-    expect(result.html).not.toMatch(/<!-- export-tool-version: \d+ -->/);
-
-    await openExportInIsolatedContext(page, result.html, 'attribution-off.html');
-    await expect(page.locator('#export-attribution')).toHaveCount(0);
-
-    await context.close();
   });
 });
 
 test.describe('Content-exclusion scanning: internal ids, prompts, history, creator identity, drafts, provenance, camera frames, unpinned dependencies', () => {
-  test("generateHtmlExport output never contains the scene's own internal id or any excess/mistakenly-attached internal field", async () => {
-    const scene = exportFixtureScene();
-    // GenerateHtmlExportInput's own type has no field for any of these --
-    // attaching them to the object actually passed at runtime (which
-    // page.evaluate serializes as plain JSON, bypassing any compile-time
-    // excess-property check entirely) proves, against the real function,
-    // that none of them can leak -- not just that the type doesn't
-    // declare them.
-    const extras = leakProbeExtras();
-    const supersetInput = {
-      scene,
-      title: 'Leak scan fixture',
-      description: 'Used only for the internal-data exclusion scan.',
-      interactionMode: 'demo-camera' as const,
-      includeAttribution: true,
-      ...extras,
-    };
-    const result = await generator.generateHtmlExport(supersetInput);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
+  test('no internal fields, unpinned dependencies, or captured camera frames ever leak into a generated export', async () => {
+    await test.step("generateHtmlExport output never contains the scene's own internal id or any excess/mistakenly-attached internal field", async () => {
+      const scene = exportFixtureScene();
+      // GenerateHtmlExportInput's own type has no field for any of these --
+      // attaching them to the object actually passed at runtime (which
+      // page.evaluate serializes as plain JSON, bypassing any compile-time
+      // excess-property check entirely) proves, against the real function,
+      // that none of them can leak -- not just that the type doesn't
+      // declare them.
+      const extras = leakProbeExtras();
+      const supersetInput = {
+        scene,
+        title: 'Leak scan fixture',
+        description: 'Used only for the internal-data exclusion scan.',
+        interactionMode: 'demo-camera' as const,
+        includeAttribution: true,
+        ...extras,
+      };
+      const result = await generator.generateHtmlExport(supersetInput);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
 
-    assertNoLeaks(result.html, extras);
-    // The scene's own top-level id is stripped by
-    // sceneExportStripping.ts -- assert it directly too (also covered by
-    // extras.internalSceneId above, kept explicit for a precise failure
-    // message if stripping regresses).
-    expect(result.html).not.toContain(INTERNAL_SCENE_ID_MARKER);
-    expect(scene.id).toBe(INTERNAL_SCENE_ID_MARKER); // sanity: the fixture really set it
-  });
+      assertNoLeaks(result.html, extras);
+      // The scene's own top-level id is stripped by
+      // sceneExportStripping.ts -- assert it directly too (also covered by
+      // extras.internalSceneId above, kept explicit for a precise failure
+      // message if stripping regresses).
+      expect(result.html).not.toContain(INTERNAL_SCENE_ID_MARKER);
+      expect(scene.id).toBe(INTERNAL_SCENE_ID_MARKER); // sanity: the fixture really set it
+    });
 
-  test('no unpinned CDN dependency: every CDN <script src> names an exact version, never @latest or unversioned', async () => {
-    for (const interactionMode of ['demo', 'camera', 'demo-camera'] as const) {
+    await test.step('no unpinned CDN dependency: every CDN <script src> names an exact version, never @latest or unversioned', async () => {
+      for (const interactionMode of ['demo', 'camera', 'demo-camera'] as const) {
+        const result = await generator.generateHtmlExport({
+          scene: exportFixtureScene(),
+          title: 'Dependency pin scan',
+          description: 'Checked for every interaction mode.',
+          interactionMode,
+        });
+        expect(result.ok).toBe(true);
+        if (!result.ok) continue;
+        expect(findUnpinnedDependencyScriptSrcs(result.html)).toEqual([]);
+      }
+
+      // The camera module's dynamically-imported MediaPipe bundle/model URLs
+      // (never a static <script src>, so the scan above can't see them) are
+      // still checked here directly against the same pinned-version pattern.
+      const cameraResult = await generator.generateHtmlExport({
+        scene: exportFixtureScene(),
+        title: 'Camera dependency pin scan',
+        description: 'Checks the dynamically-imported MediaPipe bundle URL.',
+        interactionMode: 'camera',
+      });
+      expect(cameraResult.ok).toBe(true);
+      if (!cameraResult.ok) return;
+      expect(cameraResult.html).toMatch(/@mediapipe\/tasks-vision@\d+\.\d+\.\d+\//);
+      expect(cameraResult.html).not.toMatch(/@mediapipe\/tasks-vision@latest\b/);
+    });
+
+    await test.step('no captured camera frame ever appears in an exported artifact (structural: no data: URL of any kind anywhere in the source)', async () => {
       const result = await generator.generateHtmlExport({
         scene: exportFixtureScene(),
-        title: 'Dependency pin scan',
-        description: 'Checked for every interaction mode.',
-        interactionMode,
+        title: 'Camera frame scan',
+        description: 'Camera-inclusive export, scanned for embedded frame data.',
+        interactionMode: 'demo-camera',
       });
       expect(result.ok).toBe(true);
-      if (!result.ok) continue;
-      expect(findUnpinnedDependencyScriptSrcs(result.html)).toEqual([]);
-    }
-
-    // The camera module's dynamically-imported MediaPipe bundle/model URLs
-    // (never a static <script src>, so the scan above can't see them) are
-    // still checked here directly against the same pinned-version pattern.
-    const cameraResult = await generator.generateHtmlExport({
-      scene: exportFixtureScene(),
-      title: 'Camera dependency pin scan',
-      description: 'Checks the dynamically-imported MediaPipe bundle URL.',
-      interactionMode: 'camera',
+      if (!result.ok) return;
+      expect(result.html).not.toMatch(/data:image\//i);
+      expect(result.html).not.toMatch(/data:video\//i);
     });
-    expect(cameraResult.ok).toBe(true);
-    if (!cameraResult.ok) return;
-    expect(cameraResult.html).toMatch(/@mediapipe\/tasks-vision@\d+\.\d+\.\d+\//);
-    expect(cameraResult.html).not.toMatch(/@mediapipe\/tasks-vision@latest\b/);
-  });
-
-  test('no captured camera frame ever appears in an exported artifact (structural: no data: URL of any kind anywhere in the source)', async () => {
-    const result = await generator.generateHtmlExport({
-      scene: exportFixtureScene(),
-      title: 'Camera frame scan',
-      description: 'Camera-inclusive export, scanned for embedded frame data.',
-      interactionMode: 'demo-camera',
-    });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.html).not.toMatch(/data:image\//i);
-    expect(result.html).not.toMatch(/data:video\//i);
   });
 });
+
 
 test.describe('ZIP export: real-browser Canvas 2D capture, exactly two root files, 1200x630 artwork-only PNG', () => {
   test("generateSocialThumbnailZip, run against a real Chromium Canvas 2D context (not jsdom's canvas polyfill), produces exactly index.html + thumbnail.png at the root", async () => {

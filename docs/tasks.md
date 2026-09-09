@@ -1,5 +1,49 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-09 — #419: closePieceControlsMenu fixed at the source; full-suite staleness audit closes the sweep
+
+Fixed the shared-helper bug flagged in the prior entry: `closePieceControlsMenu`
+(`frontend/e2e/support/openEditScene.ts`) checked the "Close piece controls
+menu" *button*'s visibility, ambiguous with the dialog's own "x" dismiss
+button once open (a strict-mode violation its `.catch(() => false)` silently
+treated as "already closed", so it never pressed Escape). Fixed by checking
+the dialog itself instead. Only `interactionRuntime.spec.ts` called it
+directly; reverted that file's local workaround to the fixed helper. Commit
+`2c25e23`.
+
+Then ran the entire chromium E2E suite once (192 tests, ~15 min) to find any
+other spec files broken by the same class of drift. 162 passed, 14 failed;
+triaged all 14 by re-running each in isolation:
+
+- **Not real bugs** (rate-limit/environmental noise from running ~190 tests
+  back-to-back, reconfirmed passing alone): `artPieceOwnerEditing.spec.ts`,
+  `artPieceThumbnailCapture.spec.ts`, `accountSessions.spec.ts`.
+- **Fixed** (5 files, all #427/#444/#394 stage-popover variants):
+  `exportConfigDialog.spec.ts` (`58dc36d`), `handGestureGuide.spec.ts`
+  (`e5a774a`), `public3dProportions.spec.ts` (`5d567e4`),
+  `cameraPreview3d.spec.ts` (`94e2ebe`), `soundEngine3d.spec.ts`
+  (`06fe654`) — the last two also had an unanchored "Piece controls"
+  substring collision with "Close piece controls menu".
+- **Filed as new issues** (real, confirmed, but each needs its own
+  root-cause dig rather than the known pattern):
+  - [#495](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/495) —
+    `AccountSettings.tsx` has a genuine duplicate `id="mistral-key"` between
+    the standalone Mistral form and the newer `ProviderCredentialCards`
+    list, breaking one input's label association and doubling the other's
+    accessible name. `mistralCredential.spec.ts` (`608ad2e`) works around it
+    by scoping to the standalone form; the HTML defect itself is unfixed.
+  - [#496](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/496) —
+    `artPieceFlatSpatial.spec.ts`'s mocked "camera granted" state no longer
+    reaches the sandboxed iframe (real `getUserMedia` denial reached
+    instead), across all 4 scenarios. Possibly related to #479's
+    sandboxed-iframe opaque-origin finding but distinct in kind.
+
+This closes the "systematic sweep of every remaining non-smoke spec file"
+item from the prior entry — 9 files audited across both rounds (7 fixed, 2
+filed as new issues, 3 confirmed as environmental noise). Posted as a
+comment on #419 rather than a new issue, per the same reasoning as the
+prior entry.
+
 ## 2026-09-08 — #419 new evidence: two more files broken by #427/#444, found during E2E test-count consolidation
 
 While consolidating `frontend/e2e/*.spec.ts` files for test-count reduction

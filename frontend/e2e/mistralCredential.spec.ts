@@ -1,28 +1,16 @@
 /**
- * Real-browser coverage for the personal Mistral credential journey.
+ * Real-browser coverage for the personal Mistral credential journey via the
+ * generic provider-credentials card.
  *
  * This deliberately uses a test-shaped placeholder rather than a real Mistral
  * secret: the credential endpoint encrypts and stores it without contacting
  * Mistral. The browser still exercises the real authenticated UI, CSRF/session
  * cookies, Vite proxy, Django endpoint, reload behavior, and removal flow.
  *
- * `AccountSettings.tsx` renders the original standalone Mistral-only form
- * (`<form aria-label="Mistral API key">`) *and* the newer generic
- * `ProviderCredentialCards` list that also includes a Mistral row -- the
- * two duplicate each other's status text ("Mistral key: not configured")
- * and button labels ("Save key"/"Replace key"/"Remove key"). They are not
- * write-through duplicates: the standalone form saves to the legacy
- * Mistral-only credential store that art-piece generation still reads,
- * while the generic list saves to the per-vendor `ProviderCredential`
- * store. Their former shared `id="mistral-key"` collision (which left the
- * generic Mistral input unlabelled and doubled the standalone input's
- * accessible name) was fixed by renaming the standalone input; the
- * duplicate-id absence is asserted below. Two textboxes still share the
- * accessible name "Mistral API key", so this file keeps scoping to the
- * standalone form (`getByRole('form', { name: 'Mistral API key' })`) for
- * the input and its own submit button, and `.first()` (DOM order) for
- * "Remove key", which lives outside that form as a sibling. Whether to
- * retire one of the two surfaces is an open owner design decision.
+ * `AccountSettings.tsx` renders a single `ProviderCredentialCards` list for all
+ * vendors; the Mistral row is the only place the key can be saved, replaced, or
+ * removed. The legacy standalone Mistral-only form and its backing
+ * `/api/account/mistral-credential/` endpoint were retired in issue #500.
  */
 import { expect, test } from '@playwright/test';
 
@@ -32,6 +20,84 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+async function assertWithinViewportWidth(
+  locator: import('@playwright/test').Locator,
+): Promise<void> {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  const viewportSize = locator.page().viewportSize();
+  expect(viewportSize).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewportSize!.width);
+}
+
+async function runMistralCredentialFlow(
+  page: import('@playwright/test').Page,
+  viewportSlug: string,
+): Promise<void> {
+  const testKey = 'sk-e2e-browser-key-12345';
+  const testInfo = test.info();
+
+  const mistralCard = page
+    .locator('.account-settings-list > .account-settings-section')
+    .filter({ has: page.getByLabel('Mistral API key') });
+  const keyInput = mistralCard.getByLabel('Mistral API key');
+  const saveButton = mistralCard.getByRole('button', { name: 'Save key', exact: true });
+  const replaceButton = mistralCard.getByRole('button', { name: 'Replace key', exact: true });
+  const removeButton = mistralCard.getByRole('button', { name: 'Remove key', exact: true });
+
+  await expect(keyInput).toBeVisible();
+  await assertWithinViewportWidth(keyInput);
+  await assertWithinViewportWidth(saveButton);
+
+  // Keyboard-focus the input, then verify it is reachable via Shift+Tab
+  // from the Save key button once that button is enabled.
+  await keyInput.focus();
+  await expect(keyInput).toBeFocused();
+  await keyInput.fill(testKey);
+  await saveButton.focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(keyInput).toBeFocused();
+
+  await saveButton.click();
+
+  await expect(page.getByText('Mistral key: configured', { exact: true })).toBeVisible();
+  await expect(keyInput).toHaveValue('');
+  await expect(page.locator('body')).not.toContainText(testKey);
+  await assertWithinViewportWidth(keyInput);
+  await assertWithinViewportWidth(replaceButton);
+  await assertWithinViewportWidth(removeButton);
+
+  await testInfo.attach(`account-settings-${viewportSlug}-configured.png`, {
+    body: await page.screenshot(),
+    contentType: 'image/png',
+  });
+
+  await page.reload();
+  await expect(page.getByText('Mistral key: configured', { exact: true })).toBeVisible();
+  await expect(keyInput).toHaveValue('');
+  await expect(page.locator('body')).not.toContainText(testKey);
+  await expect(replaceButton).toBeVisible();
+
+  await keyInput.fill(testKey);
+  await replaceButton.click();
+
+  await expect(page.getByText('Mistral key: configured', { exact: true })).toBeVisible();
+  await expect(keyInput).toHaveValue('');
+  await expect(page.locator('body')).not.toContainText(testKey);
+
+  await removeButton.click();
+
+  await expect(page.getByText('Mistral key: not configured', { exact: true })).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(testKey);
+
+  await testInfo.attach(`account-settings-${viewportSlug}-not-configured.png`, {
+    body: await page.screenshot(),
+    contentType: 'image/png',
+  });
+}
+
 test.describe('Personal Mistral credential settings', () => {
   let fixtures: Fixtures;
 
@@ -39,10 +105,12 @@ test.describe('Personal Mistral credential settings', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('saves, reloads, and removes a key without exposing its value', async ({ page }) => {
-    const testKey = 'sk-e2e-browser-key-12345';
-
+  test.beforeEach(async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    const hamburger = page.locator('.app-shell-hamburger');
+    if ((await hamburger.count()) > 0 && (await hamburger.isVisible())) {
+      await hamburger.click();
+    }
     await page.getByRole('link', { name: 'Account settings' }).click();
     await expect(page).toHaveURL(/\/account\/settings$/);
 
@@ -51,36 +119,21 @@ test.describe('Personal Mistral credential settings', () => {
       return ids.filter((id, index) => ids.indexOf(id) !== index);
     });
     expect(duplicateIds).toEqual([]);
+  });
 
-    const mistralKeyInputs = page.getByLabel('Mistral API key');
-    await expect(mistralKeyInputs).toHaveCount(2);
+  test.describe('desktop viewport', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
 
-    await expect(
-      page.getByText('Mistral key: not configured', { exact: true }).first(),
-    ).toBeVisible();
+    test('saves, reloads, and removes a key without exposing its value', async ({ page }) => {
+      await runMistralCredentialFlow(page, 'desktop');
+    });
+  });
 
-    const mistralForm = page.getByRole('form', { name: 'Mistral API key' });
-    const keyInput = mistralForm.getByRole('textbox');
-    await keyInput.fill(testKey);
-    await mistralForm.getByRole('button', { name: 'Save key', exact: true }).click();
+  test.describe('mobile viewport', () => {
+    test.use({ viewport: { width: 375, height: 812 } });
 
-    await expect(page.getByText('Mistral key: configured', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText('Your Mistral key is securely configured.')).toBeVisible();
-    await expect(keyInput).toHaveValue('');
-    await expect(page.locator('body')).not.toContainText(testKey);
-
-    await page.reload();
-    await expect(page.getByText('Mistral key: configured', { exact: true }).first()).toBeVisible();
-    await expect(keyInput).toHaveValue('');
-    await expect(
-      mistralForm.getByRole('button', { name: 'Replace key', exact: true }),
-    ).toBeVisible();
-    await expect(page.locator('body')).not.toContainText(testKey);
-
-    await page.getByRole('button', { name: 'Remove key', exact: true }).first().click();
-    await expect(
-      page.getByText('Mistral key: not configured', { exact: true }).first(),
-    ).toBeVisible();
-    await expect(page.getByText('Your Mistral key was removed.')).toBeVisible();
+    test('saves, reloads, and removes a key without exposing its value', async ({ page }) => {
+      await runMistralCredentialFlow(page, 'mobile');
+    });
   });
 });

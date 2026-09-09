@@ -148,7 +148,6 @@ export const mockState = {
       created_at: now,
     },
   ] as Template[],
-  mistralCredentialConfigured: false,
 };
 
 export function nextProjectId(prefix: 'mock-project' | 'mock-project3d'): string {

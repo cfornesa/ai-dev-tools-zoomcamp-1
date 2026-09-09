@@ -6,7 +6,6 @@
  * are exactly what they were before this layer existed.
  */
 import * as auth from '../api/auth';
-import * as credentials from '../api/credentials';
 import * as templates from '../api/templates';
 import * as artPieces from '../api/artPieces';
 import * as drafts from '../api/drafts';
@@ -21,11 +20,7 @@ export const realServices: BackendServices = {
     fetchCurrentUser: auth.fetchCurrentUser,
     logout: auth.logout,
   },
-  credentials: {
-    fetchMistralCredential: credentials.fetchMistralCredential,
-    saveMistralCredential: credentials.saveMistralCredential,
-    removeMistralCredential: credentials.removeMistralCredential,
-  },
+  credentials: {},
   templates: {
     listTemplates: templates.listTemplates,
     cloneTemplate: templates.cloneTemplate,

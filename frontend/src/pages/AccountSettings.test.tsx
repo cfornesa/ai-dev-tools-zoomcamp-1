@@ -12,9 +12,6 @@ vi.mock('../api/credentials');
 vi.mock('../api/aiPreferences');
 vi.mock('../api/aiRetryPreference');
 
-const mockedFetch = vi.mocked(credentialsApi.fetchMistralCredential);
-const mockedSave = vi.mocked(credentialsApi.saveMistralCredential);
-const mockedRemove = vi.mocked(credentialsApi.removeMistralCredential);
 const mockedFetchProviders = vi.mocked(credentialsApi.fetchProviderCredentials);
 const mockedSaveProvider = vi.mocked(credentialsApi.saveProviderCredential);
 const mockedRemoveProvider = vi.mocked(credentialsApi.removeProviderCredential);
@@ -45,7 +42,6 @@ beforeEach(() => {
 
 describe('AccountSettings', () => {
   it('gives every element a unique id and labels every credential input accessibly', async () => {
-    mockedFetch.mockResolvedValue({ configured: false });
     const { container } = render(
       <MemoryRouter>
         <AccountSettings />
@@ -60,7 +56,7 @@ describe('AccountSettings', () => {
     const credentialInputs = Array.from(
       container.querySelectorAll<HTMLInputElement>('input[type="password"]'),
     );
-    expect(credentialInputs).toHaveLength(4);
+    expect(credentialInputs).toHaveLength(3);
     for (const input of credentialInputs) {
       const labels = container.querySelectorAll(`label[for="${input.id}"]`);
       expect(labels).toHaveLength(1);
@@ -69,7 +65,13 @@ describe('AccountSettings', () => {
   });
 
   it('shows only a non-sensitive configured status', async () => {
-    mockedFetch.mockResolvedValue({ configured: true });
+    mockedFetchProviders.mockResolvedValue({
+      providers: [
+        { vendor: 'mistral', label: 'Mistral', implemented: true, configured: true },
+        { vendor: 'gemini', label: 'Google Gemini', implemented: true, configured: false },
+        { vendor: 'deepseek', label: 'DeepSeek', implemented: true, configured: false },
+      ],
+    });
     render(
       <MemoryRouter>
         <AccountSettings />
@@ -77,14 +79,20 @@ describe('AccountSettings', () => {
     );
 
     expect(await screen.findByText('Mistral key: configured')).toBeInTheDocument();
-    const standaloneForm = screen.getByRole('form', { name: 'Mistral API key' });
-    expect(within(standaloneForm).getByLabelText(/^mistral api key$/i)).toHaveValue('');
-    expect(screen.getByRole('button', { name: /replace key/i })).toHaveClass('shell-action');
-    expect(screen.getByRole('button', { name: /remove key/i })).toHaveClass('shell-action');
+    const mistralCard = screen
+      .getByLabelText(/^mistral api key$/i)
+      .closest('.account-settings-section');
+    expect(mistralCard).not.toBeNull();
+    expect(within(mistralCard as HTMLElement).getByLabelText(/^mistral api key$/i)).toHaveValue('');
+    expect(
+      within(mistralCard as HTMLElement).getByRole('button', { name: /replace key/i }),
+    ).toHaveClass('shell-action');
+    expect(
+      within(mistralCard as HTMLElement).getByRole('button', { name: /remove key/i }),
+    ).toHaveClass('shell-action');
   });
 
   it('shows named vendor cards and clears non-Mistral keys after saving', async () => {
-    mockedFetch.mockResolvedValue({ configured: false });
     mockedSaveProvider.mockResolvedValue({ vendor: 'gemini', configured: true });
     const user = userEvent.setup();
     render(
@@ -109,9 +117,8 @@ describe('AccountSettings', () => {
   });
 
   it('submits a key, clears the input, and supports removal', async () => {
-    mockedFetch.mockResolvedValue({ configured: false });
-    mockedSave.mockResolvedValue({ configured: true });
-    mockedRemove.mockResolvedValue();
+    mockedSaveProvider.mockResolvedValue({ vendor: 'mistral', configured: true });
+    mockedRemoveProvider.mockResolvedValue();
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -119,23 +126,25 @@ describe('AccountSettings', () => {
       </MemoryRouter>,
     );
 
-    const standaloneForm = screen.getByRole('form', { name: 'Mistral API key' });
-    const input = await within(standaloneForm).findByLabelText(/^mistral api key$/i);
+    const input = await screen.findByLabelText(/^mistral api key$/i);
+    const mistralCard = input.closest('.account-settings-section');
+    expect(mistralCard).not.toBeNull();
     await user.type(input, 'sk-user-key-12345');
     await user.click(
-      within(input.closest('form') as HTMLFormElement).getByRole('button', { name: /save key/i }),
+      within(mistralCard as HTMLElement).getByRole('button', { name: /^save key$/i }),
     );
 
-    expect(mockedSave).toHaveBeenCalledWith('sk-user-key-12345');
+    expect(mockedSaveProvider).toHaveBeenCalledWith('mistral', 'sk-user-key-12345');
     expect(input).toHaveValue('');
-    expect(await screen.findByText(/securely configured/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /remove key/i }));
-    expect(mockedRemove).toHaveBeenCalledOnce();
-    expect(await screen.findByText(/was removed/i)).toBeInTheDocument();
+    expect(await screen.findByText('Mistral key: configured')).toBeInTheDocument();
+    await user.click(
+      within(mistralCard as HTMLElement).getByRole('button', { name: /^remove key$/i }),
+    );
+    expect(mockedRemoveProvider).toHaveBeenCalledWith('mistral');
+    expect(await screen.findByText('Mistral key: not configured')).toBeInTheDocument();
   });
 
   it('links to Mistral model documentation', async () => {
-    mockedFetch.mockResolvedValue({ configured: false });
     render(
       <MemoryRouter>
         <AccountSettings />
@@ -149,7 +158,6 @@ describe('AccountSettings', () => {
   });
 
   it('adds and removes a saved Mistral model', async () => {
-    mockedFetch.mockResolvedValue({ configured: false });
     mockedCreateModel.mockResolvedValue({
       id: 1,
       slug: 'mistral-small-latest',
@@ -181,7 +189,6 @@ describe('AccountSettings', () => {
   });
 
   it('adds and removes a Persona', async () => {
-    mockedFetch.mockResolvedValue({ configured: false });
     mockedCreatePersona.mockResolvedValue({
       id: 5,
       name: 'Playful',
@@ -211,7 +218,6 @@ describe('AccountSettings', () => {
   });
 
   it('loads and saves the automatic retry setting', async () => {
-    mockedFetch.mockResolvedValue({ configured: false });
     mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
     mockedUpdateRetryPreference.mockResolvedValue({ auto_retry_enabled: true, max_retries: 5 });
     const user = userEvent.setup();

@@ -18,7 +18,13 @@
  * test's `vi.mock('../api/...')` behavior.
  */
 import { ApiError } from '../api/client';
-import { mockServices, listPublicGalleryUnified } from '../services/mock';
+import {
+  mockServices,
+  listPublicGalleryUnified,
+  fetchProviderCredentials,
+  saveProviderCredential,
+  removeProviderCredential,
+} from '../services/mock';
 
 type RouteHandler = (
   params: Record<string, string>,
@@ -50,19 +56,24 @@ const routes: Route[] = [
   },
   {
     method: 'GET',
-    pattern: /^\/api\/account\/mistral-credential\/$/,
-    handler: () => mockServices.credentials.fetchMistralCredential(),
+    pattern: /^\/api\/account\/provider-credentials\/$/,
+    handler: () => fetchProviderCredentials(),
   },
   {
     method: 'PUT',
-    pattern: /^\/api\/account\/mistral-credential\/$/,
-    handler: (_p, body) =>
-      mockServices.credentials.saveMistralCredential((body as { key: string }).key),
+    pattern: /^\/api\/account\/provider-credentials\/$/,
+    handler: (_p, body) => {
+      const b = body as { vendor: string; key: string };
+      return saveProviderCredential(b.vendor, b.key);
+    },
   },
   {
     method: 'DELETE',
-    pattern: /^\/api\/account\/mistral-credential\/$/,
-    handler: () => mockServices.credentials.removeMistralCredential(),
+    pattern: /^\/api\/account\/provider-credentials\/$/,
+    handler: (_p, _b, search) => {
+      const vendor = search.get('vendor') ?? '';
+      return removeProviderCredential(vendor);
+    },
     noContent: true,
   },
   {

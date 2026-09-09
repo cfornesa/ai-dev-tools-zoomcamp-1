@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ApiError } from '../../api/client';
 import { mockServices } from './index';
-import { MOCK_USER, mockState } from './fixtures';
+import { MOCK_USER } from './fixtures';
 
 /** Task 214 (issue #246): per-endpoint coverage of the mock
  * `BackendServices` implementation -- one success path and (where the real
@@ -11,11 +11,10 @@ import { MOCK_USER, mockState } from './fixtures';
  *
  * `mockState` is a single module-level object shared across every test in
  * this file (matching how the app itself uses it for one session), so
- * tests that mutate global fixtures (e.g. `mistralCredentialConfigured`)
- * set the state they need up front rather than relying on isolation
- * between tests, and tests that need a "fresh" project create their own
- * via `createBlankProject`/`createProject3D` instead of touching the
- * pre-seeded fixture projects other tests also read. */
+ * tests that mutate global fixtures set the state they need up front
+ * rather than relying on isolation between tests, and tests that need a
+ * "fresh" project create their own via `createBlankProject`/`createProject3D`
+ * instead of touching the pre-seeded fixture projects other tests also read. */
 describe('mockServices', () => {
   describe('auth', () => {
     it('always resolves the fixed mock user', async () => {
@@ -24,35 +23,6 @@ describe('mockServices', () => {
 
     it('logout resolves with no value', async () => {
       await expect(mockServices.auth.logout()).resolves.toBeUndefined();
-    });
-  });
-
-  describe('credentials', () => {
-    it('reports unconfigured, then configured after a save', async () => {
-      mockState.mistralCredentialConfigured = false;
-      await expect(mockServices.credentials.fetchMistralCredential()).resolves.toEqual({
-        configured: false,
-      });
-      await expect(mockServices.credentials.saveMistralCredential('sk-test')).resolves.toEqual({
-        configured: true,
-      });
-      await expect(mockServices.credentials.fetchMistralCredential()).resolves.toEqual({
-        configured: true,
-      });
-    });
-
-    it('rejects a blank key with a 400 ApiError', async () => {
-      await expect(mockServices.credentials.saveMistralCredential('   ')).rejects.toMatchObject({
-        status: 400,
-      });
-    });
-
-    it('remove clears the configured flag', async () => {
-      mockState.mistralCredentialConfigured = true;
-      await mockServices.credentials.removeMistralCredential();
-      await expect(mockServices.credentials.fetchMistralCredential()).resolves.toEqual({
-        configured: false,
-      });
     });
   });
 

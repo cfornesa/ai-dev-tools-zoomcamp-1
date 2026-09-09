@@ -12,7 +12,6 @@
  * introduced at this layer.
  */
 import type { CurrentUser } from '../api/auth';
-import type { MistralCredentialStatus } from '../api/credentials';
 import type { Template } from '../api/templates';
 import type {
   ArtPieceLibrary,
@@ -48,11 +47,7 @@ export interface AuthService {
 }
 
 /** Mirrors `../api/credentials.ts`. */
-export interface CredentialsService {
-  fetchMistralCredential(): Promise<MistralCredentialStatus>;
-  saveMistralCredential(key: string): Promise<MistralCredentialStatus>;
-  removeMistralCredential(): Promise<void>;
-}
+export interface CredentialsService {}
 
 /** Mirrors `../api/templates.ts`. */
 export interface TemplatesService {

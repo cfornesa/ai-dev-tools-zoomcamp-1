@@ -34,6 +34,7 @@ import type {
 } from '../../api/projects';
 import type { DraftSyncResponse } from '../../api/drafts';
 import type { BackendServices } from '../types';
+import type { ProviderCredentialStatuses } from '../../api/credentials';
 import {
   MOCK_USER,
   mockState,
@@ -152,6 +153,48 @@ export async function listPublicGalleryUnified(type = 'all'): Promise<PublicGall
   return { results, next_cursor: null, has_more: false };
 }
 
+const configuredProviders = new Set<string>();
+
+export async function fetchProviderCredentials(): Promise<ProviderCredentialStatuses> {
+  return {
+    providers: [
+      {
+        vendor: 'mistral',
+        label: 'Mistral',
+        implemented: true,
+        configured: configuredProviders.has('mistral'),
+      },
+      {
+        vendor: 'gemini',
+        label: 'Google Gemini',
+        implemented: true,
+        configured: configuredProviders.has('gemini'),
+      },
+      {
+        vendor: 'deepseek',
+        label: 'DeepSeek',
+        implemented: true,
+        configured: configuredProviders.has('deepseek'),
+      },
+    ],
+  };
+}
+
+export async function saveProviderCredential(
+  vendor: string,
+  key: string,
+): Promise<{ vendor: string; configured: boolean }> {
+  if (!key.trim()) {
+    throw new ApiError(400, { key: ['This field may not be blank.'] });
+  }
+  configuredProviders.add(vendor);
+  return { vendor, configured: true };
+}
+
+export async function removeProviderCredential(vendor: string): Promise<void> {
+  configuredProviders.delete(vendor);
+}
+
 export const mockServices: BackendServices = {
   auth: {
     async fetchCurrentUser(): Promise<CurrentUser | null> {
@@ -162,21 +205,7 @@ export const mockServices: BackendServices = {
     },
   },
 
-  credentials: {
-    async fetchMistralCredential() {
-      return { configured: mockState.mistralCredentialConfigured };
-    },
-    async saveMistralCredential(key: string) {
-      if (!key.trim()) {
-        throw new ApiError(400, { key: ['This field may not be blank.'] });
-      }
-      mockState.mistralCredentialConfigured = true;
-      return { configured: true };
-    },
-    async removeMistralCredential(): Promise<void> {
-      mockState.mistralCredentialConfigured = false;
-    },
-  },
+  credentials: {},
 
   templates: {
     async listTemplates() {

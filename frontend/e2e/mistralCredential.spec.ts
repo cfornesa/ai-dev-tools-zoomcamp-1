@@ -5,6 +5,23 @@
  * secret: the credential endpoint encrypts and stores it without contacting
  * Mistral. The browser still exercises the real authenticated UI, CSRF/session
  * cookies, Vite proxy, Django endpoint, reload behavior, and removal flow.
+ *
+ * `AccountSettings.tsx` now renders the original standalone Mistral-only
+ * form (`<form aria-label="Mistral API key">`) *and* a newer generic
+ * `ProviderCredentialCards` list that also includes a Mistral row -- the
+ * two duplicate each other's status text ("Mistral key: not configured")
+ * and button labels ("Save key"/"Replace key"/"Remove key"). Worse: both
+ * rows' text inputs render with `id="mistral-key"` (a real duplicate-id
+ * accessibility bug, not just a test-locator ambiguity) -- the second
+ * input's `<label htmlFor="mistral-key">` therefore associates with the
+ * *first* (wrong) input via `getElementById`, leaving the second input
+ * unlabelled and giving the first input's own accessible name an odd
+ * doubled reading ("Mistral API key Mistral API key", confirmed via a
+ * failed run's captured accessibility snapshot). Flagged separately as an
+ * app-code defect; this file works around it by scoping to the
+ * standalone form (`getByRole('form', { name: 'Mistral API key' })`)
+ * for the input and its own submit button, and `.first()` (DOM order) for
+ * "Remove key", which lives outside that form as a sibling.
  */
 import { expect, test } from '@playwright/test';
 
@@ -28,25 +45,32 @@ test.describe('Personal Mistral credential settings', () => {
     await page.getByRole('link', { name: 'Account settings' }).click();
     await expect(page).toHaveURL(/\/account\/settings$/);
 
-    await expect(page.getByRole('status').filter({ hasText: 'not configured' })).toBeVisible();
+    await expect(
+      page.getByText('Mistral key: not configured', { exact: true }).first(),
+    ).toBeVisible();
 
-    const keyInput = page.getByRole('textbox', { name: 'Mistral API key', exact: true });
+    const mistralForm = page.getByRole('form', { name: 'Mistral API key' });
+    const keyInput = mistralForm.getByRole('textbox');
     await keyInput.fill(testKey);
-    await page.getByRole('button', { name: 'Save key' }).click();
+    await mistralForm.getByRole('button', { name: 'Save key', exact: true }).click();
 
-    await expect(page.getByRole('status').filter({ hasText: 'configured' })).toBeVisible();
+    await expect(page.getByText('Mistral key: configured', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Your Mistral key is securely configured.')).toBeVisible();
     await expect(keyInput).toHaveValue('');
     await expect(page.locator('body')).not.toContainText(testKey);
 
     await page.reload();
-    await expect(page.getByRole('status').filter({ hasText: 'configured' })).toBeVisible();
+    await expect(page.getByText('Mistral key: configured', { exact: true }).first()).toBeVisible();
     await expect(keyInput).toHaveValue('');
-    await expect(page.getByRole('button', { name: 'Replace key' })).toBeVisible();
+    await expect(
+      mistralForm.getByRole('button', { name: 'Replace key', exact: true }),
+    ).toBeVisible();
     await expect(page.locator('body')).not.toContainText(testKey);
 
-    await page.getByRole('button', { name: 'Remove key' }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'not configured' })).toBeVisible();
+    await page.getByRole('button', { name: 'Remove key', exact: true }).first().click();
+    await expect(
+      page.getByText('Mistral key: not configured', { exact: true }).first(),
+    ).toBeVisible();
     await expect(page.getByText('Your Mistral key was removed.')).toBeVisible();
   });
 });

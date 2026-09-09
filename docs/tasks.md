@@ -18071,3 +18071,20 @@ by line — one replaced a genuinely vacuous existing test (patched a name
 that only exists via a local import, asserted against the wrong provider
 class) with one that proves the fake-provider path never touches the
 credential store. `make check` fully green. Unblocks #501.
+
+## 304. Credential settings coverage: rework tests for one generic Mistral card
+
+Status: COMPLETE — closed 2026-09-09, no diff needed.
+
+GitHub issue: [#501](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/501) (closed)
+
+Checked before drafting a stage-2a handoff: all six acceptance criteria
+were already satisfied by #500's frontend single-surface rework and
+#499's backend generation-path coverage, both already merged and
+independently QA'd this session. Ran the issue's own exact verification
+directly (frontend unit 8/8, Playwright 2/2 both viewports, backend
+21/21, `make check` green) and confirmed via `grep` that no legacy
+`mistral-credential`/`MistralCredential` reference remains outside the
+docstring noting the retirement and the two exception classes meant to
+stay. Closed with the full criterion matrix on the issue; no
+implementation dispatch was needed.

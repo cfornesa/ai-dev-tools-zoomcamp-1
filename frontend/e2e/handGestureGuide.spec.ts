@@ -30,11 +30,14 @@ test.describe('3D hand gesture guide', () => {
     await titleForm.getByRole('button', { name: 'Save' }).click();
     await expect(titleForm).toHaveCount(0);
 
-    const publicationTrigger = page.getByRole('button', {
-      name: 'Publication status: Draft',
-    });
-    await publicationTrigger.click();
-    await page.getByRole('button', { name: 'Published' }).click();
+    // Issue #394: the owner editor's PublishControl3D renders its
+    // "Publication status" group directly (no toggle trigger to open
+    // first) -- matches public3dRouteStageChrome.spec.ts's own fix for
+    // the same stale assumption.
+    await page
+      .getByRole('group', { name: 'Publication status' })
+      .getByRole('button', { name: 'Published', exact: true })
+      .click();
     const publishDialog = page.getByRole('alertdialog', { name: /Publish/ });
     await expect(publishDialog).toBeVisible();
     await publishDialog.getByRole('button', { name: 'Publish', exact: true }).click();
@@ -44,6 +47,10 @@ test.describe('3D hand gesture guide', () => {
 
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
+    // Issue #444: every action in this toolbar (including "Show hand
+    // gesture guide") is nested behind "Open piece controls menu" --
+    // matches immersive3dRouteParity.spec.ts's own working sequence.
+    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
     await expect(page.getByText('Camera permission')).toHaveCount(0);
 

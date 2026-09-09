@@ -673,124 +673,193 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     await context.close();
   });
 
-  test('starts in demo mode with no camera auto-start', async ({ browser }) => {
-    // A completely fresh, never-authenticated context -- no session/CSRF
-    // cookie of any kind.
-    const anonContext = await browser.newContext();
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await expectPublicStageChrome(anonPage);
-    await openCameraAndDemoControls(anonPage);
-    await expect(
-      anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
-    ).toBeVisible();
+  // Consolidation note: the 16 scenarios below were each their own
+  // Playwright test() (issues #93/#119/#132/#140/#144/#150/#152). Every one
+  // creates and closes its own fresh BrowserContext and shares no mutable
+  // state with its siblings, so grouping them by theme into one test() per
+  // group with a test.step() per original scenario preserves every
+  // assertion and every scenario's own isolated context/mocking, only
+  // reducing Playwright's own test-invocation count -- the same technique
+  // already applied to injectionArtifacts.spec.ts's fixture loops.
 
-    // CameraControl never auto-requests the camera: its status paragraph
-    // is absent (idle state renders no status text at all -- see
-    // CameraControl.tsx's statusMessage()), and only "Enable camera" is
-    // offered, never "Stop camera".
-    await expect(anonPage.getByTestId('camera-status')).toHaveCount(0);
-    await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toBeVisible();
-    await expect(anonPage.getByRole('button', { name: 'Stop camera' })).toHaveCount(0);
-
-    // Demo controls are the default, fully interactive input mode.
-    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
-    const cookies = await anonContext.cookies();
-    expect(cookies.some((c) => c.name === 'sessionid')).toBe(false);
-
-    // The iframe route reuses the same stage component but must not inherit
-    // the application shell's page chrome.
-    await anonPage.goto(`/embed/p/${publicProjectId}`);
-    await expectPublicStageChrome(anonPage);
-    await expect(anonPage.locator('nav')).toHaveCount(0);
-
-    await anonContext.close();
-  });
-
-  test('mocked camera permission denial preserves demo controls', async ({ browser }) => {
-    const anonContext = await browser.newContext();
-    // Installed before any page script runs in this context, so the
-    // app's own bundle only ever sees the mocked getUserMedia.
-    await anonContext.addInitScript(() => {
-      Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
-        configurable: true,
-        value: () => Promise.reject(new DOMException('Permission denied', 'NotAllowedError')),
-      });
-    });
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
-
-    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
-    await expect(anonPage.getByTestId('camera-error')).toContainText('Camera access was denied');
-    await expect(anonPage.getByRole('button', { name: 'Retry' })).toBeVisible();
-
-    // Demo controls are untouched by the camera failure -- fully usable.
-    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
-    const presentButton = anonPage.getByRole('button', { name: /Hand (present|absent)/ });
-    const before = await presentButton.textContent();
-    await presentButton.click();
-    await expect(presentButton).not.toHaveText(before ?? '');
-
-    await anonContext.close();
-  });
-
-  test('mocked unsupported browser (no navigator.mediaDevices) preserves demo controls', async ({
+  test('demo mode and camera-permission/hardware failure states preserve demo controls', async ({
     browser,
   }) => {
-    const anonContext = await browser.newContext();
-    await anonContext.addInitScript(() => {
-      // Simulates a browser with no camera-capture API at all --
-      // mediapipeProvider.ts's defaultIsSupported() reads
-      // navigator.mediaDevices?.getUserMedia, so making that read
-      // permanently resolve to undefined is the faithful "unsupported"
-      // simulation.
-      // Root cause of the earlier hang (issue #119): this app depends on
-      // p5.js, which polyfills navigator.mediaDevices.getUserMedia at
-      // module-load time whenever it reads as undefined --
-      // `if (navigator.mediaDevices.getUserMedia === undefined) {
-      // navigator.mediaDevices.getUserMedia = function ... }` (see
-      // node_modules/p5/lib/p5.js). A plain `value: undefined` data
-      // property (written or left at the default non-writable) makes that
-      // *assignment* throw a strict-mode TypeError, which is an uncaught
-      // exception during the bundle's own module evaluation -- it crashes
-      // before React ever mounts, which is what looked like the whole
-      // page "hanging". Redefining `navigator.mediaDevices` itself made
-      // this worse, not better, since it also affects unrelated native
-      // machinery on the page.
-      // The fix is an accessor property on the real, still-native
-      // `mediaDevices` object: the getter always reports `undefined` (so
-      // defaultIsSupported() and any other unsupported-check reads see a
-      // consistently missing method), while the setter is a silent no-op
-      // that absorbs p5's polyfill assignment instead of throwing --
-      // reaching the exact same `navigator.mediaDevices?.getUserMedia`
-      // check without crashing anything else that writes to the property.
-      if (window.navigator.mediaDevices) {
+    test.setTimeout(30000);
+
+    await test.step('starts in demo mode with no camera auto-start', async () => {
+      // A completely fresh, never-authenticated context -- no session/CSRF
+      // cookie of any kind.
+      const anonContext = await browser.newContext();
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await expectPublicStageChrome(anonPage);
+      await openCameraAndDemoControls(anonPage);
+      await expect(
+        anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+      ).toBeVisible();
+
+      // CameraControl never auto-requests the camera: its status paragraph
+      // is absent (idle state renders no status text at all -- see
+      // CameraControl.tsx's own statusMessage()), and only "Enable camera" is
+      // offered, never "Stop camera".
+      await expect(anonPage.getByTestId('camera-status')).toHaveCount(0);
+      await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toBeVisible();
+      await expect(anonPage.getByRole('button', { name: 'Stop camera' })).toHaveCount(0);
+
+      // Demo controls are the default, fully interactive input mode.
+      await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+      const cookies = await anonContext.cookies();
+      expect(cookies.some((c) => c.name === 'sessionid')).toBe(false);
+
+      // The iframe route reuses the same stage component but must not inherit
+      // the application shell's page chrome.
+      await anonPage.goto(`/embed/p/${publicProjectId}`);
+      await expectPublicStageChrome(anonPage);
+      await expect(anonPage.locator('nav')).toHaveCount(0);
+
+      await anonContext.close();
+    });
+
+    await test.step('mocked camera permission denial preserves demo controls', async () => {
+      const anonContext = await browser.newContext();
+      // Installed before any page script runs in this context, so the
+      // app's own bundle only ever sees the mocked getUserMedia.
+      await anonContext.addInitScript(() => {
         Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
           configurable: true,
-          get() {
-            return undefined;
-          },
-          set() {
-            // Absorb polyfill assignment attempts (e.g. p5.js) instead of
-            // throwing, so getUserMedia stays undefined either way.
+          value: () => Promise.reject(new DOMException('Permission denied', 'NotAllowedError')),
+        });
+      });
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
+
+      await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+      await expect(anonPage.getByTestId('camera-error')).toContainText('Camera access was denied');
+      await expect(anonPage.getByRole('button', { name: 'Retry' })).toBeVisible();
+
+      // Demo controls are untouched by the camera failure -- fully usable.
+      await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+      const presentButton = anonPage.getByRole('button', { name: /Hand (present|absent)/ });
+      const before = await presentButton.textContent();
+      await presentButton.click();
+      await expect(presentButton).not.toHaveText(before ?? '');
+
+      await anonContext.close();
+    });
+
+    await test.step('mocked unsupported browser (no navigator.mediaDevices) preserves demo controls', async () => {
+      const anonContext = await browser.newContext();
+      await anonContext.addInitScript(() => {
+        // Simulates a browser with no camera-capture API at all --
+        // mediapipeProvider.ts's defaultIsSupported() reads
+        // navigator.mediaDevices?.getUserMedia, so making that read
+        // permanently resolve to undefined is the faithful "unsupported"
+        // simulation.
+        // Root cause of the earlier hang (issue #119): this app depends on
+        // p5.js, which polyfills navigator.mediaDevices.getUserMedia at
+        // module-load time whenever it reads as undefined --
+        // `if (navigator.mediaDevices.getUserMedia === undefined) {
+        // navigator.mediaDevices.getUserMedia = function ... }` (see
+        // node_modules/p5/lib/p5.js). A plain `value: undefined` data
+        // property (written or left at the default non-writable) makes that
+        // *assignment* throw a strict-mode TypeError, which is an uncaught
+        // exception during the bundle's own module evaluation -- it crashes
+        // before React ever mounts, which is what looked like the whole
+        // page "hanging". Redefining `navigator.mediaDevices` itself made
+        // this worse, not better, since it also affects unrelated native
+        // machinery on the page.
+        // The fix is an accessor property on the real, still-native
+        // `mediaDevices` object: the getter always reports `undefined` (so
+        // defaultIsSupported() and any other unsupported-check reads see a
+        // consistently missing method), while the setter is a silent no-op
+        // that absorbs p5's polyfill assignment instead of throwing --
+        // reaching the exact same `navigator.mediaDevices?.getUserMedia`
+        // check without crashing anything else that writes to the property.
+        if (window.navigator.mediaDevices) {
+          Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+            configurable: true,
+            get() {
+              return undefined;
+            },
+            set() {
+              // Absorb polyfill assignment attempts (e.g. p5.js) instead of
+              // throwing, so getUserMedia stays undefined either way.
+            },
+          });
+        }
+      });
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
+
+      await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+      await expect(anonPage.getByTestId('camera-error')).toContainText("doesn't support");
+      await expect(anonPage.getByRole('button', { name: 'Retry' })).toBeVisible();
+
+      await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+      await anonPage.getByRole('radio', { name: 'Synthetic playback' }).click();
+      await expect(anonPage.getByTestId('demo-playback-controls')).toBeVisible();
+
+      await anonContext.close();
+    });
+
+    await test.step("a pending permission prompt shows the recovery hint on /p/:id (issue #132's fix, never previously observed on this route)", async () => {
+      const anonContext = await browser.newContext();
+      await anonContext.addInitScript(() => {
+        Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+          configurable: true,
+          // Never resolves or rejects -- simulates a native permission
+          // prompt the user hasn't answered yet.
+          value: () => new Promise(() => {}),
+        });
+      });
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
+
+      await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+      await expect(anonPage.getByTestId('camera-permission-hint')).toBeVisible({ timeout: 8000 });
+
+      await anonContext.close();
+    });
+
+    await test.step('no camera hardware (NotFoundError) shows an appropriate message and Retry, which re-attempts getUserMedia', async () => {
+      const anonContext = await browser.newContext();
+      await anonContext.addInitScript(() => {
+        let calls = 0;
+        (window as unknown as { __getUserMediaCalls: () => number }).__getUserMediaCalls = () =>
+          calls;
+        Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
+          configurable: true,
+          value: () => {
+            calls += 1;
+            return Promise.reject(new DOMException('No camera was found', 'NotFoundError'));
           },
         });
-      }
+      });
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
+
+      await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+      await expect(anonPage.getByTestId('camera-error')).toContainText(/no camera/i);
+      const retryButton = anonPage.getByRole('button', { name: 'Retry' });
+      await expect(retryButton).toBeVisible();
+      expect(await anonPage.evaluate('window.__getUserMediaCalls()')).toBe(1);
+
+      // Retry is not a dead end -- it genuinely re-attempts getUserMedia
+      // rather than leaving the control permanently stuck on this failure.
+      await retryButton.click();
+      await expect(anonPage.getByTestId('camera-error')).toContainText(/no camera/i);
+      expect(await anonPage.evaluate('window.__getUserMediaCalls()')).toBe(2);
+
+      // Demo controls remain fully usable throughout.
+      await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+
+      await anonContext.close();
     });
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
-
-    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
-    await expect(anonPage.getByTestId('camera-error')).toContainText("doesn't support");
-    await expect(anonPage.getByRole('button', { name: 'Retry' })).toBeVisible();
-
-    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
-    await anonPage.getByRole('radio', { name: 'Synthetic playback' }).click();
-    await expect(anonPage.getByTestId('demo-playback-controls')).toBeVisible();
-
-    await anonContext.close();
   });
 
   // ---------------------------------------------------------------------
@@ -802,219 +871,154 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
   // duplicated here.
   // ---------------------------------------------------------------------
 
-  test("renders the persisted scene's shapes visibly in the canvas, matching the public API's current version", async ({
+  test('persisted-scene rendering and page-level loading/empty/error states', async ({
     browser,
   }) => {
-    const anonContext = await browser.newContext();
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
-    await expect(
-      anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
-    ).toBeVisible();
+    await test.step("renders the persisted scene's shapes visibly in the canvas, matching the public API's current version", async () => {
+      const anonContext = await browser.newContext();
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
+      await expect(
+        anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+      ).toBeVisible();
 
-    const canvas = anonPage.getByTestId('public-scene-canvas').locator('canvas');
-    await expect(canvas).toBeVisible();
-    await expect
-      .poll(async () => Array.from(await samplePixelColors(anonPage, 'public-scene-canvas')), {
-        timeout: 5000,
-      })
-      .toEqual(expect.arrayContaining([hexToRgbTriple(circleFill), hexToRgbTriple(rectFill)]));
+      const canvas = anonPage.getByTestId('public-scene-canvas').locator('canvas');
+      await expect(canvas).toBeVisible();
+      await expect
+        .poll(async () => Array.from(await samplePixelColors(anonPage, 'public-scene-canvas')), {
+          timeout: 5000,
+        })
+        .toEqual(expect.arrayContaining([hexToRgbTriple(circleFill), hexToRgbTriple(rectFill)]));
 
-    // Provably the persisted current version, not a stale/draft render:
-    // the same two shapes, same count, at the data layer.
-    const publicDetail = await apiGet(anonContext, `/api/public/projects/${publicProjectId}/`);
-    expect(publicDetail.status()).toBe(200);
-    const publicBody = (await publicDetail.json()) as {
-      current_version: { scene_json: { shapes: Array<{ type: string }> } };
-    };
-    expect(publicBody.current_version.scene_json.shapes).toHaveLength(2);
-    expect(publicBody.current_version.scene_json.shapes.map((s) => s.type).sort()).toEqual([
-      'circle',
-      'rect',
-    ]);
-
-    await anonContext.close();
-  });
-
-  test('renders an empty scene cleanly: visible canvas, no shapes, no error', async ({
-    browser,
-  }) => {
-    const anonContext = await browser.newContext();
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${emptyScenePublicProjectId}`);
-    await expect(
-      anonPage.getByRole('heading', {
-        level: 2,
-        name: 'Anonymous viewer empty-scene fixture project',
-      }),
-    ).toBeVisible();
-
-    await expect(anonPage.getByTestId('public-scene-canvas').locator('canvas')).toBeVisible();
-    await expect(anonPage.getByRole('alert')).toHaveCount(0);
-
-    const publicDetail = await apiGet(
-      anonContext,
-      `/api/public/projects/${emptyScenePublicProjectId}/`,
-    );
-    const publicBody = (await publicDetail.json()) as {
-      current_version: { scene_json: { shapes: unknown[] } };
-    };
-    expect(publicBody.current_version.scene_json.shapes).toHaveLength(0);
-
-    await anonContext.close();
-  });
-
-  test('shows the loading state before the project finishes fetching', async ({ browser }) => {
-    const anonContext = await browser.newContext();
-    // Delays the public API response just long enough to reliably observe
-    // the transient 'loading' state before it resolves to 'ready'.
-    await anonContext.route(`**/api/public/projects/${publicProjectId}/`, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      await route.continue();
-    });
-    const anonPage = await anonContext.newPage();
-    const navigation = anonPage.goto(`/p/${publicProjectId}`);
-
-    // The global reduced-motion status ("Motion is currently...") also
-    // carries role="status", so this must scope to the exact text rather
-    // than the bare role.
-    await expect(anonPage.getByRole('status').getByText(/Loading project/)).toBeVisible();
-    await expect(anonPage.getByRole('heading', { level: 2 })).toHaveCount(0);
-
-    await navigation;
-    await expect(anonPage.getByRole('heading', { level: 2 })).toBeVisible();
-
-    await anonContext.close();
-  });
-
-  test('shows the unavailable state (distinct from error) for a public id that never existed, with a working gallery link', async ({
-    browser,
-  }) => {
-    const anonContext = await browser.newContext();
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto('/p/this-id-does-not-exist-e2e');
-
-    await expect(anonPage.getByRole('alert')).toContainText("isn't available");
-    const galleryLink = anonPage.getByRole('link', { name: 'Back to the public gallery' });
-    await expect(galleryLink).toBeVisible();
-    await galleryLink.click();
-    await anonPage.waitForURL(/\/gallery$/);
-
-    await anonContext.close();
-  });
-
-  test('shows a distinct error state (not "unavailable") for a non-404/403 fetch failure, with a working gallery link', async ({
-    browser,
-  }) => {
-    const anonContext = await browser.newContext();
-    await anonContext.route(`**/api/public/projects/${publicProjectId}/`, (route) =>
-      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
-    );
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${publicProjectId}`);
-
-    const alert = anonPage.getByRole('alert');
-    await expect(alert).toContainText('Something went wrong');
-    await expect(alert).not.toContainText("isn't available");
-    await expect(anonPage.getByRole('link', { name: 'Back to the public gallery' })).toBeVisible();
-
-    await anonContext.close();
-  });
-
-  test('a scene that fails to render surfaces previewError without blanking the rest of the page', async ({
-    browser,
-  }) => {
-    const anonContext = await browser.newContext();
-    // A canvas width of 5 fails schema/scene.schema.json's minimum (16),
-    // so buildScenePlan's own validateScene call throws deterministically
-    // -- mirrors #140's "a render-time failure must never blank the whole
-    // page" principle, scoped to this page's own try/catch around
-    // previewRef.current.render(...).
-    await anonContext.route(`**/api/public/projects/${publicProjectId}/`, async (route) => {
-      const response = await route.fetch();
-      const body = (await response.json()) as {
-        current_version: { scene_json: { canvas: { width: number } } };
+      // Provably the persisted current version, not a stale/draft render:
+      // the same two shapes, same count, at the data layer.
+      const publicDetail = await apiGet(anonContext, `/api/public/projects/${publicProjectId}/`);
+      expect(publicDetail.status()).toBe(200);
+      const publicBody = (await publicDetail.json()) as {
+        current_version: { scene_json: { shapes: Array<{ type: string }> } };
       };
-      body.current_version.scene_json.canvas.width = 5;
-      await route.fulfill({ response, json: body });
+      expect(publicBody.current_version.scene_json.shapes).toHaveLength(2);
+      expect(publicBody.current_version.scene_json.shapes.map((s) => s.type).sort()).toEqual([
+        'circle',
+        'rect',
+      ]);
+
+      await anonContext.close();
     });
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
 
-    await expect(
-      anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
-    ).toBeVisible();
-    await expect(anonPage.getByRole('alert')).toContainText("Couldn't render the preview");
+    await test.step('renders an empty scene cleanly: visible canvas, no shapes, no error', async () => {
+      const anonContext = await browser.newContext();
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${emptyScenePublicProjectId}`);
+      await expect(
+        anonPage.getByRole('heading', {
+          level: 2,
+          name: 'Anonymous viewer empty-scene fixture project',
+        }),
+      ).toBeVisible();
 
-    // The rest of the page stays usable -- header, camera, and demo
-    // controls are never blanked by a preview-render failure.
-    await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toBeVisible();
-    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+      await expect(anonPage.getByTestId('public-scene-canvas').locator('canvas')).toBeVisible();
+      await expect(anonPage.getByRole('alert')).toHaveCount(0);
 
-    await anonContext.close();
-  });
+      const publicDetail = await apiGet(
+        anonContext,
+        `/api/public/projects/${emptyScenePublicProjectId}/`,
+      );
+      const publicBody = (await publicDetail.json()) as {
+        current_version: { scene_json: { shapes: unknown[] } };
+      };
+      expect(publicBody.current_version.scene_json.shapes).toHaveLength(0);
 
-  test("a pending permission prompt shows the recovery hint on /p/:id (issue #132's fix, never previously observed on this route)", async ({
-    browser,
-  }) => {
-    test.setTimeout(15000);
-    const anonContext = await browser.newContext();
-    await anonContext.addInitScript(() => {
-      Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
-        configurable: true,
-        // Never resolves or rejects -- simulates a native permission
-        // prompt the user hasn't answered yet.
-        value: () => new Promise(() => {}),
+      await anonContext.close();
+    });
+
+    await test.step('shows the loading state before the project finishes fetching', async () => {
+      const anonContext = await browser.newContext();
+      // Delays the public API response just long enough to reliably observe
+      // the transient 'loading' state before it resolves to 'ready'.
+      await anonContext.route(`**/api/public/projects/${publicProjectId}/`, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await route.continue();
       });
+      const anonPage = await anonContext.newPage();
+      const navigation = anonPage.goto(`/p/${publicProjectId}`);
+
+      // The global reduced-motion status ("Motion is currently...") also
+      // carries role="status", so this must scope to the exact text rather
+      // than the bare role.
+      await expect(anonPage.getByRole('status').getByText(/Loading project/)).toBeVisible();
+      await expect(anonPage.getByRole('heading', { level: 2 })).toHaveCount(0);
+
+      await navigation;
+      await expect(anonPage.getByRole('heading', { level: 2 })).toBeVisible();
+
+      await anonContext.close();
     });
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
 
-    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
-    await expect(anonPage.getByTestId('camera-permission-hint')).toBeVisible({ timeout: 8000 });
+    await test.step('shows the unavailable state (distinct from error) for a public id that never existed, with a working gallery link', async () => {
+      const anonContext = await browser.newContext();
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto('/p/this-id-does-not-exist-e2e');
 
-    await anonContext.close();
-  });
+      await expect(anonPage.getByRole('alert')).toContainText("isn't available");
+      const galleryLink = anonPage.getByRole('link', { name: 'Back to the public gallery' });
+      await expect(galleryLink).toBeVisible();
+      await galleryLink.click();
+      await anonPage.waitForURL(/\/gallery$/);
 
-  test('no camera hardware (NotFoundError) shows an appropriate message and Retry, which re-attempts getUserMedia', async ({
-    browser,
-  }) => {
-    const anonContext = await browser.newContext();
-    await anonContext.addInitScript(() => {
-      let calls = 0;
-      (window as unknown as { __getUserMediaCalls: () => number }).__getUserMediaCalls = () =>
-        calls;
-      Object.defineProperty(window.navigator.mediaDevices, 'getUserMedia', {
-        configurable: true,
-        value: () => {
-          calls += 1;
-          return Promise.reject(new DOMException('No camera was found', 'NotFoundError'));
-        },
+      await anonContext.close();
+    });
+
+    await test.step('shows a distinct error state (not "unavailable") for a non-404/403 fetch failure, with a working gallery link', async () => {
+      const anonContext = await browser.newContext();
+      await anonContext.route(`**/api/public/projects/${publicProjectId}/`, (route) =>
+        route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
+      );
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${publicProjectId}`);
+
+      const alert = anonPage.getByRole('alert');
+      await expect(alert).toContainText('Something went wrong');
+      await expect(alert).not.toContainText("isn't available");
+      await expect(
+        anonPage.getByRole('link', { name: 'Back to the public gallery' }),
+      ).toBeVisible();
+
+      await anonContext.close();
+    });
+
+    await test.step('a scene that fails to render surfaces previewError without blanking the rest of the page', async () => {
+      const anonContext = await browser.newContext();
+      // A canvas width of 5 fails schema/scene.schema.json's minimum (16),
+      // so buildScenePlan's own validateScene call throws deterministically
+      // -- mirrors #140's "a render-time failure must never blank the whole
+      // page" principle, scoped to this page's own try/catch around
+      // previewRef.current.render(...).
+      await anonContext.route(`**/api/public/projects/${publicProjectId}/`, async (route) => {
+        const response = await route.fetch();
+        const body = (await response.json()) as {
+          current_version: { scene_json: { canvas: { width: number } } };
+        };
+        body.current_version.scene_json.canvas.width = 5;
+        await route.fulfill({ response, json: body });
       });
+      const anonPage = await anonContext.newPage();
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
+
+      await expect(
+        anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+      ).toBeVisible();
+      await expect(anonPage.getByRole('alert')).toContainText("Couldn't render the preview");
+
+      // The rest of the page stays usable -- header, camera, and demo
+      // controls are never blanked by a preview-render failure.
+      await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toBeVisible();
+      await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+
+      await anonContext.close();
     });
-    const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
-
-    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
-    await expect(anonPage.getByTestId('camera-error')).toContainText(/no camera/i);
-    const retryButton = anonPage.getByRole('button', { name: 'Retry' });
-    await expect(retryButton).toBeVisible();
-    expect(await anonPage.evaluate('window.__getUserMediaCalls()')).toBe(1);
-
-    // Retry is not a dead end -- it genuinely re-attempts getUserMedia
-    // rather than leaving the control permanently stuck on this failure.
-    await retryButton.click();
-    await expect(anonPage.getByTestId('camera-error')).toContainText(/no camera/i);
-    expect(await anonPage.evaluate('window.__getUserMediaCalls()')).toBe(2);
-
-    // Demo controls remain fully usable throughout.
-    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
-
-    await anonContext.close();
   });
 
   // -------------------------------------------------------------------
@@ -1025,114 +1029,114 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
   // the fake recognizer always returns empty landmarks/gestures/handedness.
   // -------------------------------------------------------------------
 
-  test('granted camera reaches active', async ({ browser }) => {
-    const anonContext = await browser.newContext();
-    await installMediaPipeTestSeam(anonContext);
-    const anonPage = await anonContext.newPage();
-    const observedRequests = trackRequestUrls(anonPage);
+  test('camera active lifecycle: granted, overlay controls, and stop', async ({ browser }) => {
+    await test.step('granted camera reaches active', async () => {
+      const anonContext = await browser.newContext();
+      await installMediaPipeTestSeam(anonContext);
+      const anonPage = await anonContext.newPage();
+      const observedRequests = trackRequestUrls(anonPage);
 
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
-    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
+      await anonPage.getByRole('button', { name: 'Enable camera' }).click();
 
-    await expect(anonPage.getByTestId('camera-status')).toHaveText(
-      'Camera is active. Hand tracking is running locally in your browser.',
-    );
-    await expect(anonPage.getByRole('button', { name: 'Stop camera' })).toBeVisible();
-    await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toHaveCount(0);
-    await expect(anonPage.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+      await expect(anonPage.getByTestId('camera-status')).toHaveText(
+        'Camera is active. Hand tracking is running locally in your browser.',
+      );
+      await expect(anonPage.getByRole('button', { name: 'Stop camera' })).toBeVisible();
+      await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toHaveCount(0);
+      await expect(anonPage.getByRole('button', { name: 'Retry' })).toHaveCount(0);
 
-    // Demo controls remain fully usable while the camera is active.
-    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+      // Demo controls remain fully usable while the camera is active.
+      await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
 
-    assertNoMediaPipeCdnRequests(observedRequests);
+      assertNoMediaPipeCdnRequests(observedRequests);
 
-    await anonContext.close();
-  });
+      await anonContext.close();
+    });
 
-  // Task 119 (issue #152): the camera video overlay + opacity slider +
-  // mirror toggle ported to this page (see PublicProjectViewer.tsx's own
-  // doc comment) -- exercised here against the real DOM/localStorage,
-  // complementing PublicProjectViewer.cameraOverlay.test.tsx's mocked-
-  // CameraControl unit coverage.
-  test('camera overlay video + opacity/mirror controls appear once active and persist', async ({
-    browser,
-  }) => {
-    const anonContext = await browser.newContext();
-    await installMediaPipeTestSeam(anonContext);
-    const anonPage = await anonContext.newPage();
+    // Task 119 (issue #152): the camera video overlay + opacity slider +
+    // mirror toggle ported to this page (see PublicProjectViewer.tsx's own
+    // doc comment) -- exercised here against the real DOM/localStorage,
+    // complementing PublicProjectViewer.cameraOverlay.test.tsx's mocked-
+    // CameraControl unit coverage.
+    await test.step('camera overlay video + opacity/mirror controls appear once active and persist', async () => {
+      const anonContext = await browser.newContext();
+      await installMediaPipeTestSeam(anonContext);
+      const anonPage = await anonContext.newPage();
 
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
 
-    // No overlay/controls before the camera is enabled.
-    await expect(anonPage.getByTestId('camera-overlay-video')).toHaveCount(0);
-    await expect(anonPage.getByLabel('Camera overlay opacity')).toHaveCount(0);
+      // No overlay/controls before the camera is enabled.
+      await expect(anonPage.getByTestId('camera-overlay-video')).toHaveCount(0);
+      await expect(anonPage.getByLabel('Camera overlay opacity')).toHaveCount(0);
 
-    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
-    await expect(anonPage.getByTestId('camera-status')).toHaveText(
-      'Camera is active. Hand tracking is running locally in your browser.',
-    );
+      await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+      await expect(anonPage.getByTestId('camera-status')).toHaveText(
+        'Camera is active. Hand tracking is running locally in your browser.',
+      );
 
-    // Issue #195: the canvas owns layer-aware artwork compositing, while the
-    // source video remains visibly stacked behind its transparent background
-    // as a public-surface fallback when a renderer cannot draw a frame.
-    const overlayVideo = anonPage.getByTestId('camera-overlay-video');
-    await expect(overlayVideo).toBeAttached();
-    await expect(overlayVideo).toBeVisible();
-    await expect(overlayVideo).toHaveCSS('visibility', 'visible');
-    const opacitySlider = anonPage.getByLabel('Camera overlay opacity');
-    const mirrorToggle = anonPage.getByLabel('Mirror camera overlay');
-    await expect(opacitySlider).toHaveValue('50');
-    await expect(mirrorToggle).toBeChecked();
+      // Issue #195: the canvas owns layer-aware artwork compositing, while the
+      // source video remains visibly stacked behind its transparent background
+      // as a public-surface fallback when a renderer cannot draw a frame.
+      const overlayVideo = anonPage.getByTestId('camera-overlay-video');
+      await expect(overlayVideo).toBeAttached();
+      await expect(overlayVideo).toBeVisible();
+      await expect(overlayVideo).toHaveCSS('visibility', 'visible');
+      const opacitySlider = anonPage.getByLabel('Camera overlay opacity');
+      const mirrorToggle = anonPage.getByLabel('Mirror camera overlay');
+      await expect(opacitySlider).toHaveValue('50');
+      await expect(mirrorToggle).toBeChecked();
 
-    await opacitySlider.fill('75');
-    await mirrorToggle.uncheck();
-    await expect(overlayVideo).toHaveCSS('opacity', '0.75');
-    await expect(overlayVideo).toHaveCSS('transform', 'none');
+      await opacitySlider.fill('75');
+      await mirrorToggle.uncheck();
+      await expect(overlayVideo).toHaveCSS('opacity', '0.75');
+      await expect(overlayVideo).toHaveCSS('transform', 'none');
 
-    // The preference is the same localStorage-backed store the editor
-    // reads (Task 118/#147's `cameraOverlaySettings.ts`) -- persisted here
-    // without any project/account association, recoverable after reload.
-    const stored = await anonPage.evaluate(() =>
-      window.localStorage.getItem('gesture-studio:camera-overlay-settings'),
-    );
-    expect(JSON.parse(stored ?? '{}')).toEqual({ opacity: 0.75, mirrored: false });
+      // The preference is the same localStorage-backed store the editor
+      // reads (Task 118/#147's `cameraOverlaySettings.ts`) -- persisted here
+      // without any project/account association, recoverable after reload.
+      const stored = await anonPage.evaluate(() =>
+        window.localStorage.getItem('gesture-studio:camera-overlay-settings'),
+      );
+      expect(JSON.parse(stored ?? '{}')).toEqual({ opacity: 0.75, mirrored: false });
 
-    await anonContext.close();
-  });
+      await anonContext.close();
+    });
 
-  test('stop after active', async ({ browser }) => {
-    const anonContext = await browser.newContext();
-    await installMediaPipeTestSeam(anonContext);
-    const anonPage = await anonContext.newPage();
-    const observedRequests = trackRequestUrls(anonPage);
+    await test.step('stop after active', async () => {
+      const anonContext = await browser.newContext();
+      await installMediaPipeTestSeam(anonContext);
+      const anonPage = await anonContext.newPage();
+      const observedRequests = trackRequestUrls(anonPage);
 
-    await anonPage.goto(`/p/${publicProjectId}`);
-    await openCameraAndDemoControls(anonPage);
-    await anonPage.getByRole('button', { name: 'Enable camera' }).click();
-    await expect(anonPage.getByTestId('camera-status')).toHaveText(
-      'Camera is active. Hand tracking is running locally in your browser.',
-    );
+      await anonPage.goto(`/p/${publicProjectId}`);
+      await openCameraAndDemoControls(anonPage);
+      await anonPage.getByRole('button', { name: 'Enable camera' }).click();
+      await expect(anonPage.getByTestId('camera-status')).toHaveText(
+        'Camera is active. Hand tracking is running locally in your browser.',
+      );
 
-    await anonPage.getByRole('button', { name: 'Stop camera' }).click();
+      await anonPage.getByRole('button', { name: 'Stop camera' }).click();
 
-    await expect(anonPage.getByTestId('camera-status')).toHaveText(
-      'Camera stopped. No video is being captured.',
-    );
-    await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toBeVisible();
-    await expect(anonPage.getByRole('button', { name: 'Stop camera' })).toHaveCount(0);
+      await expect(anonPage.getByTestId('camera-status')).toHaveText(
+        'Camera stopped. No video is being captured.',
+      );
+      await expect(anonPage.getByRole('button', { name: 'Enable camera' })).toBeVisible();
+      await expect(anonPage.getByRole('button', { name: 'Stop camera' })).toHaveCount(0);
 
-    // Demo controls remain fully usable/interactive throughout.
-    await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
-    const presentButton = anonPage.getByRole('button', { name: /Hand (present|absent)/ });
-    const before = await presentButton.textContent();
-    await presentButton.click();
-    await expect(presentButton).not.toHaveText(before ?? '');
+      // Demo controls remain fully usable/interactive throughout.
+      await expect(anonPage.getByTestId('demo-manual-controls')).toBeVisible();
+      const presentButton = anonPage.getByRole('button', { name: /Hand (present|absent)/ });
+      const before = await presentButton.textContent();
+      await presentButton.click();
+      await expect(presentButton).not.toHaveText(before ?? '');
 
-    assertNoMediaPipeCdnRequests(observedRequests);
+      assertNoMediaPipeCdnRequests(observedRequests);
 
-    await anonContext.close();
+      await anonContext.close();
+    });
   });
 
   test('10-second synthetic camera diagnostics stay within desktop and narrow budgets', async ({

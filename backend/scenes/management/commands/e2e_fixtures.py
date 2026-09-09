@@ -97,7 +97,7 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
-        parser.add_argument("action", choices=["create", "cleanup"])
+        parser.add_argument("action", choices=["create", "cleanup", "reset-sessions"])
         parser.add_argument(
             "--json",
             action="store_true",
@@ -122,11 +122,15 @@ class Command(BaseCommand):
             self._create(as_json)
         elif action == "cleanup":
             self._cleanup(as_json)
+        elif action == "reset-sessions":
+            self._reset_sessions(as_json)
         else:  # pragma: no cover - argparse already restricts choices
             raise CommandError(f"Unknown action: {action}")
 
     def _create(self, as_json: bool):
-        from scenes.models import ApplicationAdmin
+        from django.contrib.sessions.models import Session
+
+        from scenes.models import ApplicationAdmin, SessionMetadata
 
         with transaction.atomic():
             owner = _get_or_create_user(*E2E_USERS["owner"])
@@ -135,6 +139,26 @@ class Command(BaseCommand):
             admin = _get_or_create_user(*E2E_USERS["admin"])
             deletable = _get_or_create_user(*E2E_USERS["deletable"])
             ApplicationAdmin.objects.get_or_create(user=admin)
+
+            # Issue #505: every e2e spec that logs a fixture user in via
+            # the real /accounts/login/ form leaves a server-side Django
+            # session behind (closing the browser context only drops the
+            # client's cookie jar, it never signs the session out). Those
+            # sessions accumulate across the ~200-test serial run, so by
+            # the time accountSessions.spec.ts runs (test #18 in the
+            # observed CI ordering) the owner's session list already shows
+            # ~8 rows instead of the 2 that test asserts. Resetting the
+            # fixture users' session state here -- before any test logs
+            # anyone in -- keeps the first test's count deterministic.
+            fixture_users = [owner, other, empty, admin, deletable]
+            stale_keys = list(
+                SessionMetadata.objects.filter(user__in=fixture_users).values_list(
+                    "session_key", flat=True
+                )
+            )
+            SessionMetadata.objects.filter(user__in=fixture_users).delete()
+            if stale_keys:
+                Session.objects.filter(session_key__in=stale_keys).delete()
 
         payload = {
             "available": True,
@@ -156,6 +180,41 @@ class Command(BaseCommand):
                     "Created/reset E2E fixture users: "
                     f"{owner.username}, {other.username}, {empty.username}, "
                     f"{admin.username}, {deletable.username}"
+                )
+            )
+
+    def _reset_sessions(self, as_json: bool):
+        """Deletes every SessionMetadata (and its linked Session row)
+        belonging to any fixture user. Called once per spec file whose
+        tests assert on exact session counts, so the first test in that
+        file starts from zero regardless of how many earlier specs in
+        the same serial run logged a fixture user in without revoking.
+        """
+        from django.contrib.sessions.models import Session
+
+        from scenes.models import SessionMetadata
+
+        User = get_user_model()
+        usernames = [username for username, _email in E2E_USERS.values()]
+        fixture_users = User.objects.filter(username__in=usernames)
+        with transaction.atomic():
+            stale_keys = list(
+                SessionMetadata.objects.filter(user__in=fixture_users).values_list(
+                    "session_key", flat=True
+                )
+            )
+            deleted_metadata, _ = SessionMetadata.objects.filter(user__in=fixture_users).delete()
+            deleted_sessions = 0
+            if stale_keys:
+                deleted_sessions, _ = Session.objects.filter(session_key__in=stale_keys).delete()
+
+        payload = {"deleted_metadata": deleted_metadata, "deleted_sessions": deleted_sessions}
+        if as_json:
+            self.stdout.write(json.dumps(payload))
+        else:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Reset fixture user sessions: {deleted_sessions} session(s) removed."
                 )
             )
 

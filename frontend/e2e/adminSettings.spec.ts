@@ -38,7 +38,11 @@ async function currentSiteSettings(context: BrowserContext) {
 
 async function currentFreePlan(context: BrowserContext) {
   const response = await apiGet(context, '/api/admin/plans/');
-  const plans = (await response.json()) as Array<{ plan_key: string; revision: number }>;
+  const plans = (await response.json()) as Array<{
+    plan_key: string;
+    daily_ai_requests: number;
+    revision: number;
+  }>;
   const freePlan = plans.find((plan) => plan.plan_key === 'free');
   if (!freePlan) throw new Error('Expected a seeded "free" plan.');
   return freePlan;
@@ -136,9 +140,17 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
         });
 
         // Plan policy: free plan's daily cap is editable and takes effect.
+        // Issue #505: the baseline is read from the API, never hardcoded --
+        // the seeded default is migration 0031's 50, so a fresh database
+        // legitimately shows that rather than any value a previous run may
+        // have left behind.
+        const baselineFreePlan = await currentFreePlan(context);
+        const baselineDailyRequests = String(baselineFreePlan.daily_ai_requests ?? '50');
         const freePlanForm = page.getByRole('form', { name: 'free plan' });
         await page.reload();
-        await expect(freePlanForm.getByLabel('Daily AI requests')).toHaveValue('5');
+        await expect(freePlanForm.getByLabel('Daily AI requests')).toHaveValue(
+          baselineDailyRequests,
+        );
         await freePlanForm.getByLabel('Daily AI requests').fill('7');
         await freePlanForm.getByRole('button', { name: 'Save' }).click();
         await expect(freePlanForm.getByText('free plan saved.')).toBeVisible();
@@ -150,7 +162,7 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
         // Restore the fixture's own baseline cap for other tests.
         const afterPlanSave = await currentFreePlan(context);
         await apiPatch(context, '/api/admin/plans/?plan_key=free', {
-          daily_ai_requests: 5,
+          daily_ai_requests: Number(baselineDailyRequests),
           feature_keys: ['ai_scene_create', 'ai_scene_edit', 'ai_art_generate'],
           active: true,
           paypal_plan_id: '',

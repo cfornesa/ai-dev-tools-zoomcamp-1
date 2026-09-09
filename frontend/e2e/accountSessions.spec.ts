@@ -3,6 +3,7 @@ import { expect, test, type BrowserContext } from '@playwright/test';
 import { apiDelete, apiGet } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
+import { resetFixtureSessions } from './support/resetSessions.js';
 
 /**
  * Issue #441: `/account/settings/sessions` lists the caller's own
@@ -61,6 +62,12 @@ test.describe('Account sessions: list and revoke (#441)', () => {
   let fixture: ReturnType<typeof requireE2EFixtures>;
   test.beforeAll(() => {
     fixture = requireE2EFixtures();
+    // Issue #505: in a serial full-suite run, every earlier spec that
+    // signed fixture.owner in left an unrevoked server-side session, so
+    // this file's first count assertion would observe those stale rows
+    // (CI 2026-09-09 observed 8 listitems against an expected 2). Reset
+    // once per file so the counts below stay deterministic.
+    resetFixtureSessions();
   });
 
   test.beforeEach(() => {

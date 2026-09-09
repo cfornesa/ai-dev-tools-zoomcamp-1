@@ -1,5 +1,45 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-09 — #495/#496 stage-2a dispatch: duplicate id fixed, stale camera-mock guard fixed; dual Mistral credential store gap filed as #497
+
+Stage-2a (implementation-mechanical-frontend substitution, both frontend-only)
+ran both issues from the audit's "filed as new issues" list above:
+
+- **#495** — root-caused the redundancy question first, per the issue's own
+  instruction: `git log` shows the standalone form landed in `07e1192`
+  (Mistral-only credential management) and `ProviderCredentialCards` was
+  added *alongside* it in `71c8290` (multi-vendor work, #404-#409) without
+  removing the standalone form. The two are **not** write-through
+  duplicates: they save to different backend stores (`MistralCredential`
+  vs `ProviderCredential`), and art-piece generation still reads only the
+  legacy store — so neither section is safe to delete without a design
+  decision (flagged to the owner, not acted on). The id collision itself is
+  fixed mechanically: the standalone input renamed
+  `mistral-key` → `mistral-credential-key`; unit regression test added
+  asserting no duplicate ids on the page and a single correctly-associated
+  label per credential input; the e2e spec now asserts duplicate-id absence
+  and both Mistral inputs being labeled, with its workaround comment
+  rewritten to describe the (still-needed, two-distinct-fields) scoping.
+  One consequence the owner should weigh with the redundancy question: the
+  two inputs still share the accessible name "Mistral API key".
+- **#496** — reproduced live first (pre-fix mock fails at
+  "Camera access was denied."), root cause confirmed: the spec's
+  `if (window.self === window.top) return;` guard predates #479 and skips
+  exactly the parent frame that now owns camera capture
+  (`artPieceSandbox.ts` explicitly never calls `getUserMedia` in the
+  sandbox anymore). Fixed by mirroring the proven post-#479 mock shape from
+  `artPieceSteeringRuntime.spec.ts`/`artPieceCameraRuntime.spec.ts`
+  (prototype + instance patch, no frame guard). All 4 scenarios pass against
+  the real local stack. Sibling-spec sweep: only this spec carried the stale
+  guard; `artPieceCapabilities.spec.ts` and `artPieceOwnerEditing.spec.ts`
+  neither mock nor assert camera activation, so no silent gap there.
+- **Discovery gate:** the dual-store finding above is real and outside both
+  issues' scope — filed as
+  [#497](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/497)
+  (PROPOSED, linked here). Evidence: `backend/scenes/art_piece_api.py`
+  ~222-229 reads only `MistralCredential`; `backend/scenes/ai_api.py`
+  ~554-561 reads generic-first-then-legacy.
+
 ## 2026-09-09 — #419: closePieceControlsMenu fixed at the source; full-suite staleness audit closes the sweep
 
 Fixed the shared-helper bug flagged in the prior entry: `closePieceControlsMenu`

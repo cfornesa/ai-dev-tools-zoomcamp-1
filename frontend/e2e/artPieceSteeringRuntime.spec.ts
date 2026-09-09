@@ -154,10 +154,35 @@ test.describe('Generated regular viewer: hand-steering ownership and Reset (#432
     fixture = requireE2EFixtures();
   });
 
+  /**
+   * Issue #506: in the full serial CI run, headless Firefox on the Linux
+   * shared runner stalls past Playwright's default 30s timeout waiting for
+   * this suite's CDN-loaded art-piece sandboxes — Three.js's canvas never
+   * attaches within 30s and A-Frame's postMessage pose reply never arrives —
+   * while the identical chromium scenarios pass in ~6s in the very same run
+   * (so this is not generic runner starvation) and the same 4 scenarios pass
+   * locally (~14s, including under a sustained all-core CPU stressor and a
+   * full 22-minute serial run, so it is not ordinary load either). The
+   * stall is specific to headless Firefox's software-rendered WebGL path on
+   * the CI runner, where canvas/context initialization can be far slower
+   * than with real GPU backing (local macOS Firefox), and is a platform
+   * capacity boundary, not a product defect — the scenario's own work
+   * completes in seconds whenever the sandbox actually initializes. Scoped
+   * to this file's three rendering scenarios only, and to the firefox
+   * project only, leaving chromium's default 30s and the no-rendering
+   * capability test's 30s (passes at 4.3s on CI) untouched. 90s covers the
+   * observed 30s stall with 3x headroom; it does not weaken any steering or
+   * pose assertion — the assertions and their contents are unchanged.
+   */
+  const FIREFOX_SANDBOX_INIT_TIMEOUT_MS = 90_000;
+
   test('steering is gated on camera and a registered engine camera, then applies bounded pose changes and resets cleanly', async ({
     page,
     context,
-  }) => {
+  }, testInfo) => {
+    if (testInfo.project.name === 'firefox') {
+      testInfo.setTimeout(FIREFOX_SANDBOX_INIT_TIMEOUT_MS);
+    }
     await loginViaUI(page, fixture.owner.email, fixture.password);
     const created = await apiPost(context, '/api/art-pieces/', {
       title: 'Steering runtime fixture',
@@ -367,7 +392,10 @@ test.describe('Generated regular viewer: hand-steering ownership and Reset (#432
       test(`${label}: registers the authored position, applies bounded deltas relative to it, and resets exactly`, async ({
         page,
         context,
-      }) => {
+      }, testInfo) => {
+        if (testInfo.project.name === 'firefox') {
+          testInfo.setTimeout(FIREFOX_SANDBOX_INIT_TIMEOUT_MS);
+        }
         await loginViaUI(page, fixture.owner.email, fixture.password);
         const created = await apiPost(context, '/api/art-pieces/', {
           title: `A-Frame pose fixture (${label})`,

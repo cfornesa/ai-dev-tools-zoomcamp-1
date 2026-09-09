@@ -61,13 +61,31 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Owner decision (2026-09-09): firefox/webkit run only a curated
+    // cross-browser subset -- files this repo's own memory documents as
+    // having genuine browser-specific behavior (WebKit MediaDevices
+    // instance instability, WebKit fullscreen/Escape sync, Firefox
+    // context.request cookie timing) -- rather than the full suite.
+    // Chromium remains the full functional-coverage suite. See
+    // .agents/memory/full-matrix-scheduled-not-manual.md and
+    // .agents/memory/webkit-mediadevices-instance-instability.md.
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
+      testMatch: [
+        'drawioEditor.spec.ts',
+        'artPieceSteeringRuntime.spec.ts',
+        'manual2dStageChrome.spec.ts',
+      ],
     },
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
+      testMatch: [
+        'artPieceCameraRuntime.spec.ts',
+        'artPieceSoundRuntime.spec.ts',
+        'manual2dStageChrome.spec.ts',
+      ],
     },
   ],
 });

@@ -237,97 +237,113 @@ async function assertArtifactIsInert(
   }
 }
 
-test.describe('Injection audit: title/description fixtures, real Chromium execution', () => {
-  for (const fixture of TITLE_FIXTURES) {
-    test(`title fixture "${fixture.id}" is inert: ${fixture.note}`, async ({ browser }) => {
-      const result = await generator.generateHtmlExport({
-        scene: sceneWithHostileScopedStrings({}),
-        title: fixture.value,
-        description: 'Injection audit fixture.',
-        interactionMode: 'demo',
+// Task 74 consolidation: each fixture category below was originally one
+// Playwright `test()` per fixture (33 total across this file). Every
+// category shares the same generate -> assert-inert script and differs only
+// in *where* the fixture value is injected into the scene (title, label, or
+// a structured graph-node key/value) -- a genuinely different escaping
+// context per category, so no category or fixture is dropped. Collapsing
+// each loop into one `test()` with a `test.step()` per fixture keeps that
+// per-fixture pass/fail attribution in the report while cutting Playwright's
+// own test-invocation count, matching the pattern already used for
+// `public3dRouteStageChrome.spec.ts`/`immersive3dRouteParity.spec.ts`.
+test.describe('Injection audit: scoped-string fixtures, real Chromium execution', () => {
+  test('title fixtures are inert', async ({ browser }) => {
+    for (const fixture of TITLE_FIXTURES) {
+      await test.step(`title fixture "${fixture.id}": ${fixture.note}`, async () => {
+        const result = await generator.generateHtmlExport({
+          scene: sceneWithHostileScopedStrings({}),
+          title: fixture.value,
+          description: 'Injection audit fixture.',
+          interactionMode: 'demo',
+        });
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        await assertArtifactIsInert(browser, result.html, `title-${fixture.id}.html`);
       });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      await assertArtifactIsInert(browser, result.html, `title-${fixture.id}.html`);
-    });
-  }
-});
+    }
+  });
 
-test.describe('Injection audit: label (layer/group name) fixtures, real Chromium execution', () => {
-  for (const fixture of LABEL_FIXTURES) {
-    test(`label fixture "${fixture.id}" is inert: ${fixture.note}`, async ({ browser }) => {
-      const result = await generator.generateHtmlExport({
-        scene: sceneWithHostileScopedStrings({ label: fixture.value }),
-        title: 'Injection audit',
-        description: 'Injection audit fixture.',
-        interactionMode: 'demo',
+  test('label (layer/group name) fixtures are inert', async ({ browser }) => {
+    for (const fixture of LABEL_FIXTURES) {
+      await test.step(`label fixture "${fixture.id}": ${fixture.note}`, async () => {
+        const result = await generator.generateHtmlExport({
+          scene: sceneWithHostileScopedStrings({ label: fixture.value }),
+          title: 'Injection audit',
+          description: 'Injection audit fixture.',
+          interactionMode: 'demo',
+        });
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        await assertArtifactIsInert(browser, result.html, `label-${fixture.id}.html`);
       });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      await assertArtifactIsInert(browser, result.html, `label-${fixture.id}.html`);
-    });
-  }
-});
+    }
+  });
 
-test.describe('Injection audit: structured scene strings (graph node params), real Chromium execution', () => {
-  for (const fixture of STRUCTURED_SCENE_STRING_FIXTURES) {
-    test(`structured fixture "${fixture.id}" is inert: ${fixture.note}`, async ({ browser }) => {
-      const isKeyFixture = fixture.id === 'params-key-breakout';
-      const scene = sceneWithHostileScopedStrings(
-        isKeyFixture ? { structuredKey: fixture.value } : { structuredValue: fixture.value },
-      );
-      const result = await generator.generateHtmlExport({
-        scene,
-        title: 'Injection audit',
-        description: 'Injection audit fixture.',
-        interactionMode: 'demo',
+  test('structured scene string (graph node params) fixtures are inert', async ({ browser }) => {
+    for (const fixture of STRUCTURED_SCENE_STRING_FIXTURES) {
+      await test.step(`structured fixture "${fixture.id}": ${fixture.note}`, async () => {
+        const isKeyFixture = fixture.id === 'params-key-breakout';
+        const scene = sceneWithHostileScopedStrings(
+          isKeyFixture ? { structuredKey: fixture.value } : { structuredValue: fixture.value },
+        );
+        const result = await generator.generateHtmlExport({
+          scene,
+          title: 'Injection audit',
+          description: 'Injection audit fixture.',
+          interactionMode: 'demo',
+        });
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        await assertArtifactIsInert(browser, result.html, `structured-${fixture.id}.html`);
       });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      await assertArtifactIsInert(browser, result.html, `structured-${fixture.id}.html`);
-    });
-  }
+    }
+  });
 });
 
 test.describe('Injection audit: colors -- hostile values are rejected, never opened; valid colors still export and render', () => {
-  for (const fixture of COLOR_FIXTURES) {
-    test(`hostile color fixture "${fixture.id}" is blocked at generation time (no file to open)`, async () => {
-      const result = await generator.generateHtmlExport({
-        scene: sceneWithHostileScopedStrings({ color: fixture.value }),
-        title: 'Injection audit',
-        description: 'Injection audit fixture.',
-        interactionMode: 'demo',
+  test('hostile color fixtures are blocked at generation time (no file to open)', async () => {
+    for (const fixture of COLOR_FIXTURES) {
+      await test.step(`hostile color fixture "${fixture.id}"`, async () => {
+        const result = await generator.generateHtmlExport({
+          scene: sceneWithHostileScopedStrings({ color: fixture.value }),
+          title: 'Injection audit',
+          description: 'Injection audit fixture.',
+          interactionMode: 'demo',
+        });
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        expect('html' in result).toBe(false);
       });
-      expect(result.ok).toBe(false);
-      if (result.ok) return;
-      expect('html' in result).toBe(false);
-    });
-  }
+    }
+  });
 
-  for (const color of VALID_COLOR_FIXTURES) {
-    test(`valid color "${color}" still produces a functional, real-Chromium-renderable export`, async ({
-      browser,
-    }) => {
-      const result = await generator.generateHtmlExport({
-        scene: sceneWithHostileScopedStrings({ color }),
-        title: 'Injection audit',
-        description: 'Injection audit fixture.',
-        interactionMode: 'demo',
+  test('valid colors still produce a functional, real-Chromium-renderable export', async ({
+    browser,
+  }) => {
+    for (const color of VALID_COLOR_FIXTURES) {
+      await test.step(`valid color "${color}"`, async () => {
+        const result = await generator.generateHtmlExport({
+          scene: sceneWithHostileScopedStrings({ color }),
+          title: 'Injection audit',
+          description: 'Injection audit fixture.',
+          interactionMode: 'demo',
+        });
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        const { page, close } = await openInIsolatedContext(
+          browser,
+          result.html,
+          `color-${color.replace('#', '')}.html`,
+        );
+        try {
+          await expect(page.locator('#scene-canvas-host canvas')).toHaveCount(1);
+        } finally {
+          await close();
+        }
       });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      const { page, close } = await openInIsolatedContext(
-        browser,
-        result.html,
-        `color-${color.replace('#', '')}.html`,
-      );
-      try {
-        await expect(page.locator('#scene-canvas-host canvas')).toHaveCount(1);
-      } finally {
-        await close();
-      }
-    });
-  }
+    }
+  });
 });
 
 test.describe('Injection audit: combined worst-case payload across attribution on/off and every interaction mode', () => {
@@ -341,79 +357,83 @@ test.describe('Injection audit: combined worst-case payload across attribution o
       { interactionMode: 'demo-camera', attribution: true },
     ];
 
-  for (const scenario of scenarios) {
-    test(`mode="${scenario.interactionMode}" attribution=${scenario.attribution}: title/description/label all carry the combined payload and stay inert`, async ({
-      browser,
-    }) => {
-      const result = await generator.generateHtmlExport({
-        scene: sceneWithHostileScopedStrings({ label: COMBINED_WORST_CASE_PAYLOAD }),
-        title: COMBINED_WORST_CASE_PAYLOAD,
-        description: COMBINED_WORST_CASE_PAYLOAD,
-        interactionMode: scenario.interactionMode,
-        includeAttribution: scenario.attribution,
+  test('title/description/label all carry the combined payload and stay inert across every mode and attribution setting', async ({
+    browser,
+  }) => {
+    for (const scenario of scenarios) {
+      await test.step(`mode="${scenario.interactionMode}" attribution=${scenario.attribution}`, async () => {
+        const result = await generator.generateHtmlExport({
+          scene: sceneWithHostileScopedStrings({ label: COMBINED_WORST_CASE_PAYLOAD }),
+          title: COMBINED_WORST_CASE_PAYLOAD,
+          description: COMBINED_WORST_CASE_PAYLOAD,
+          interactionMode: scenario.interactionMode,
+          includeAttribution: scenario.attribution,
+        });
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+
+        const includesCamera = scenario.interactionMode !== 'demo';
+        // Expected pinned <script> elements: p5 CDN + scene-data json +
+        // export-config json + runtime script (4), plus the camera script
+        // for camera-inclusive modes (5). Attribution never adds a <script>
+        // (only a footer/comment/marker).
+        const expectedScriptCount = includesCamera ? 6 : 5;
+
+        await assertArtifactIsInert(
+          browser,
+          result.html,
+          `combined-${scenario.interactionMode}-${scenario.attribution}.html`,
+          expectedScriptCount,
+        );
       });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-
-      const includesCamera = scenario.interactionMode !== 'demo';
-      // Expected pinned <script> elements: p5 CDN + scene-data json +
-      // export-config json + runtime script (4), plus the camera script
-      // for camera-inclusive modes (5). Attribution never adds a <script>
-      // (only a footer/comment/marker).
-      const expectedScriptCount = includesCamera ? 6 : 5;
-
-      await assertArtifactIsInert(
-        browser,
-        result.html,
-        `combined-${scenario.interactionMode}-${scenario.attribution}.html`,
-        expectedScriptCount,
-      );
-    });
-  }
+    }
+  });
 });
 
 test.describe('Injection audit: URL / closing-tag / quote / Unicode-control fixtures, real Chromium execution (title position)', () => {
-  for (const fixture of [
-    ...URL_FIXTURES,
-    ...CLOSING_TAG_FIXTURES,
-    ...QUOTE_FIXTURES,
-    ...UNICODE_CONTROL_FIXTURES,
-  ]) {
-    test(`"${fixture.id}" (${fixture.category}) is inert as title content: ${fixture.note}`, async ({
-      browser,
-    }) => {
-      const result = await generator.generateHtmlExport({
-        scene: sceneWithHostileScopedStrings({}),
-        title: fixture.value,
-        description: 'Injection audit fixture.',
-        interactionMode: 'demo',
-      });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      await assertArtifactIsInert(browser, result.html, `cat-${fixture.id}.html`);
-      if (fixture.category === 'url') {
-        // Extra, category-specific check: the URL string never became a
-        // live href/src anywhere in the rendered DOM (it has no reason to
-        // -- there is no user-controlled URL-shaped field at all -- this
-        // proves that structurally, not just by absence of a pwn marker).
-        const { page, close } = await openInIsolatedContext(
-          browser,
-          result.html,
-          `cat-href-check-${fixture.id}.html`,
-        );
-        try {
-          const liveHrefs = await page.evaluate(() =>
-            Array.from(document.querySelectorAll('[href],[src]')).map(
-              (el) => el.getAttribute('href') ?? el.getAttribute('src'),
-            ),
+  test('URL, closing-tag, quote, and Unicode-control fixtures are inert as title content', async ({
+    browser,
+  }) => {
+    for (const fixture of [
+      ...URL_FIXTURES,
+      ...CLOSING_TAG_FIXTURES,
+      ...QUOTE_FIXTURES,
+      ...UNICODE_CONTROL_FIXTURES,
+    ]) {
+      await test.step(`"${fixture.id}" (${fixture.category}): ${fixture.note}`, async () => {
+        const result = await generator.generateHtmlExport({
+          scene: sceneWithHostileScopedStrings({}),
+          title: fixture.value,
+          description: 'Injection audit fixture.',
+          interactionMode: 'demo',
+        });
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        await assertArtifactIsInert(browser, result.html, `cat-${fixture.id}.html`);
+        if (fixture.category === 'url') {
+          // Extra, category-specific check: the URL string never became a
+          // live href/src anywhere in the rendered DOM (it has no reason to
+          // -- there is no user-controlled URL-shaped field at all -- this
+          // proves that structurally, not just by absence of a pwn marker).
+          const { page, close } = await openInIsolatedContext(
+            browser,
+            result.html,
+            `cat-href-check-${fixture.id}.html`,
           );
-          expect(liveHrefs.some((h) => h === fixture.value)).toBe(false);
-        } finally {
-          await close();
+          try {
+            const liveHrefs = await page.evaluate(() =>
+              Array.from(document.querySelectorAll('[href],[src]')).map(
+                (el) => el.getAttribute('href') ?? el.getAttribute('src'),
+              ),
+            );
+            expect(liveHrefs.some((h) => h === fixture.value)).toBe(false);
+          } finally {
+            await close();
+          }
         }
-      }
-    });
-  }
+      });
+    }
+  });
 });
 
 test.describe('Injection audit: full fixture catalog sanity -- every category is represented, nothing silently skipped', () => {

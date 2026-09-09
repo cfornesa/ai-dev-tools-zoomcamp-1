@@ -1220,8 +1220,17 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       // eslint-disable-next-line no-console
       console.log(`[camera-bench] ${JSON.stringify(result)}`);
       results.push(result);
+      // Issue #465: GitHub Actions' free-tier shared runner cannot reliably
+      // deliver 30fps to this benchmark -- 9 consecutive CI runs on
+      // 2026-09-08 measured 15-24fps with zero long tasks (ruling out a real
+      // code-side bottleneck; see the issue's own evidence table). Owner
+      // decision: accept the free-tier ceiling rather than pay for a larger
+      // runner. 12fps sits below every observed run with margin, so this
+      // assertion still catches a catastrophic regression, but it can no
+      // longer catch a moderate one (e.g. a real regression from 30fps to
+      // 20fps would now pass). See .agents/memory/camera-synthetic-verification-gap.md.
       expect(result.inferenceFps).toBeLessThanOrEqual(30.5);
-      expect(result.inferenceFps).toBeGreaterThan(20);
+      expect(result.inferenceFps).toBeGreaterThan(12);
       expect(result.animationFps).toBeGreaterThanOrEqual(30);
       expect(result.maxLongTaskMs).toBeLessThanOrEqual(100);
 

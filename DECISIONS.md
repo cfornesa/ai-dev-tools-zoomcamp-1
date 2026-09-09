@@ -450,3 +450,38 @@ subagents, committing separately per the owner's two-commit instruction:
 
 Both issues left OPEN for the stage-4 QA pass (no auto-close keywords);
 lesson recorded at `.agents/memory/subagent-dispatch-artifacts.md`.
+
+## 2026-09-08 (stage-4 QA on #465/#494: one FAIL, one PASS)
+
+QA (Sonnet 5) independently re-verified both dispatched commits from
+scratch, per the untrusted-external-input rule -- neither the dispatching
+session's report nor the commits' own claims were accepted without
+re-running everything.
+
+**#494 (`7d5b289`): QA PASS.** All four acceptance criteria verified,
+including the regex byte-check (`od -c`, confirmed correct, no `\$`
+artifact in the final commit), the `Project3D` field-name check against
+its real type, a proper browser-based runtime probe (curl doesn't work --
+this mock patches `window.fetch` client-side, not a real HTTP route), and
+the 3D-mapping path proven via a temporary in-session fixture flip
+(reverted). `npm test` 203/2505, typecheck, prettier all clean.
+
+**#465 (`c5a980f`): QA FAIL.** The numeric change and scope are correct,
+but running the exact same benchmark **locally** (not on GitHub's shared
+runner) measured `inferenceFps` of 16.68/22.68 -- the same low range as
+the 9 CI runs the embedded comment cites. This directly contradicts the
+comment's own causal claim ("ruling out a real code-side bottleneck",
+attributing the ceiling specifically to "GitHub Actions' free-tier shared
+runner"). The numeric floor (12) and code change are fine and don't need
+touching; only the comment's explanation is wrong and needs correcting
+before this can pass -- exact replacement text posted on the issue.
+Flagged directly for the owner: the "pay for a bigger runner" option
+discussed earlier this session may not actually help, since local
+hardware reproduces the same ceiling.
+
+Both issues left open (QA does not close). Neither verdict was influenced
+by the dispatching session's own claims -- the #465 finding in particular
+was only caught because QA re-ran the benchmark itself rather than
+trusting the reported "1 passed, desktop 16.2fps" result at face value
+(that number was accurate, but its implication -- CI-specific -- was not
+examined by the reporting session).

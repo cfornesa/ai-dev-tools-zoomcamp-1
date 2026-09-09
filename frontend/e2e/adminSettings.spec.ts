@@ -19,6 +19,11 @@ import { requireE2EFixtures } from './support/prerequisites.js';
  * `SiteSettings`/`Plan` are process-wide singletons this whole suite
  * shares, so a prior run's leftover state (or another spec) may have
  * already advanced the revision past whatever this test last saw.
+ *
+ * Consolidation note: the authorization-boundary pair and the viewport
+ * matrix are each grouped into one test() using test.step() per original
+ * scenario, each with its own fresh browser.newContext(). Only
+ * Playwright's own test-invocation count drops.
  */
 
 const VIEWPORTS = [
@@ -45,101 +50,117 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
     fixture = requireE2EFixtures();
   });
 
-  test('an ordinary user cannot reach the admin route or API', async ({ page, context }) => {
-    await loginViaUI(page, fixture.other.email, fixture.password);
-
-    await page.goto('/admin/settings');
-    // Non-owner UI gating (#458's convention): a confirmed non-admin is
-    // redirected away rather than shown the form.
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'Admin settings' })).toHaveCount(0);
-
-    const settingsResponse = await apiGet(context, '/api/admin/settings/');
-    expect(settingsResponse.status()).toBe(403);
-    const plansResponse = await apiGet(context, '/api/admin/plans/');
-    expect(plansResponse.status()).toBe(403);
-  });
-
-  test('an anonymous visitor is redirected and the API requires authentication', async ({
-    page,
-    context,
+  test('an ordinary user and an anonymous visitor both cannot reach the admin route or API', async ({
+    browser,
   }) => {
-    await page.goto('/admin/settings');
-    await expect(page).toHaveURL(/\/$/);
+    await test.step('an ordinary user cannot reach the admin route or API', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixture.other.email, fixture.password);
 
-    const response = await apiGet(context, '/api/admin/settings/');
-    expect(response.status()).toBe(401);
+      await page.goto('/admin/settings');
+      // Non-owner UI gating (#458's convention): a confirmed non-admin is
+      // redirected away rather than shown the form.
+      await expect(page).toHaveURL(/\/$/);
+      await expect(page.getByRole('heading', { name: 'Admin settings' })).toHaveCount(0);
+
+      const settingsResponse = await apiGet(context, '/api/admin/settings/');
+      expect(settingsResponse.status()).toBe(403);
+      const plansResponse = await apiGet(context, '/api/admin/plans/');
+      expect(plansResponse.status()).toBe(403);
+
+      await context.close();
+    });
+
+    await test.step('an anonymous visitor is redirected and the API requires authentication', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await page.goto('/admin/settings');
+      await expect(page).toHaveURL(/\/$/);
+
+      const response = await apiGet(context, '/api/admin/settings/');
+      expect(response.status()).toBe(401);
+
+      await context.close();
+    });
   });
 
-  for (const viewport of VIEWPORTS) {
-    test(`an admin can edit site title and plan caps, with save/cancel/error states, at ${viewport.width}x${viewport.height}`, async ({
-      page,
-      context,
-    }) => {
-      await page.setViewportSize(viewport);
-      await loginViaUI(page, fixture.admin.email, fixture.password);
+  test('an admin can edit site title and plan caps, with save/cancel/error states, at both viewports', async ({
+    browser,
+  }) => {
+    test.setTimeout(60000);
 
-      const before = await currentSiteSettings(context);
-      await page.goto('/admin/settings');
-      await expect(page.getByRole('heading', { name: 'Admin settings' })).toBeVisible();
+    for (const viewport of VIEWPORTS) {
+      await test.step(`${viewport.width}x${viewport.height}`, async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await page.setViewportSize(viewport);
+        await loginViaUI(page, fixture.admin.email, fixture.password);
 
-      const titleInput = page
-        .getByRole('form', { name: 'Site title settings' })
-        .getByLabel('Site title');
-      await expect(titleInput).toHaveValue(before.site_title);
+        const before = await currentSiteSettings(context);
+        await page.goto('/admin/settings');
+        await expect(page.getByRole('heading', { name: 'Admin settings' })).toBeVisible();
 
-      // Cancel: reverts the field without saving.
-      await titleInput.fill('Unsaved Draft Name');
-      await page
-        .getByRole('form', { name: 'Site title settings' })
-        .getByRole('button', { name: 'Cancel' })
-        .click();
-      await expect(titleInput).toHaveValue(before.site_title);
+        const titleInput = page
+          .getByRole('form', { name: 'Site title settings' })
+          .getByLabel('Site title');
+        await expect(titleInput).toHaveValue(before.site_title);
 
-      // Save: a real, persisted update.
-      const newTitle = `Studio Name ${viewport.width}`;
-      await titleInput.fill(newTitle);
-      await page
-        .getByRole('form', { name: 'Site title settings' })
-        .getByRole('button', { name: 'Save', exact: true })
-        .click();
-      await expect(page.getByText('Site title saved.')).toBeVisible();
-      await page.reload();
-      await expect(
-        page.getByRole('form', { name: 'Site title settings' }).getByLabel('Site title'),
-      ).toHaveValue(newTitle);
+        // Cancel: reverts the field without saving.
+        await titleInput.fill('Unsaved Draft Name');
+        await page
+          .getByRole('form', { name: 'Site title settings' })
+          .getByRole('button', { name: 'Cancel' })
+          .click();
+        await expect(titleInput).toHaveValue(before.site_title);
 
-      // Restore the fixture's own baseline so other tests/reruns still
-      // see the documented default.
-      const afterTitleSave = await currentSiteSettings(context);
-      await apiPatch(context, '/api/admin/settings/', {
-        site_title: before.site_title,
-        revision: afterTitleSave.revision,
+        // Save: a real, persisted update.
+        const newTitle = `Studio Name ${viewport.width}`;
+        await titleInput.fill(newTitle);
+        await page
+          .getByRole('form', { name: 'Site title settings' })
+          .getByRole('button', { name: 'Save', exact: true })
+          .click();
+        await expect(page.getByText('Site title saved.')).toBeVisible();
+        await page.reload();
+        await expect(
+          page.getByRole('form', { name: 'Site title settings' }).getByLabel('Site title'),
+        ).toHaveValue(newTitle);
+
+        // Restore the fixture's own baseline so other tests/reruns still
+        // see the documented default.
+        const afterTitleSave = await currentSiteSettings(context);
+        await apiPatch(context, '/api/admin/settings/', {
+          site_title: before.site_title,
+          revision: afterTitleSave.revision,
+        });
+
+        // Plan policy: free plan's daily cap is editable and takes effect.
+        const freePlanForm = page.getByRole('form', { name: 'free plan' });
+        await page.reload();
+        await expect(freePlanForm.getByLabel('Daily AI requests')).toHaveValue('5');
+        await freePlanForm.getByLabel('Daily AI requests').fill('7');
+        await freePlanForm.getByRole('button', { name: 'Save' }).click();
+        await expect(freePlanForm.getByText('free plan saved.')).toBeVisible();
+        await page.reload();
+        await expect(
+          page.getByRole('form', { name: 'free plan' }).getByLabel('Daily AI requests'),
+        ).toHaveValue('7');
+
+        // Restore the fixture's own baseline cap for other tests.
+        const afterPlanSave = await currentFreePlan(context);
+        await apiPatch(context, '/api/admin/plans/?plan_key=free', {
+          daily_ai_requests: 5,
+          feature_keys: ['ai_scene_create', 'ai_scene_edit', 'ai_art_generate'],
+          active: true,
+          paypal_plan_id: '',
+          revision: afterPlanSave.revision,
+        });
+
+        await context.close();
       });
-
-      // Plan policy: free plan's daily cap is editable and takes effect.
-      const freePlanForm = page.getByRole('form', { name: 'free plan' });
-      await page.reload();
-      await expect(freePlanForm.getByLabel('Daily AI requests')).toHaveValue('5');
-      await freePlanForm.getByLabel('Daily AI requests').fill('7');
-      await freePlanForm.getByRole('button', { name: 'Save' }).click();
-      await expect(freePlanForm.getByText('free plan saved.')).toBeVisible();
-      await page.reload();
-      await expect(
-        page.getByRole('form', { name: 'free plan' }).getByLabel('Daily AI requests'),
-      ).toHaveValue('7');
-
-      // Restore the fixture's own baseline cap for other tests.
-      const afterPlanSave = await currentFreePlan(context);
-      await apiPatch(context, '/api/admin/plans/?plan_key=free', {
-        daily_ai_requests: 5,
-        feature_keys: ['ai_scene_create', 'ai_scene_edit', 'ai_art_generate'],
-        active: true,
-        paypal_plan_id: '',
-        revision: afterPlanSave.revision,
-      });
-    });
-  }
+    }
+  });
 
   test('a stale revision is rejected with a conflict, leaving the previous value intact', async ({
     page,

@@ -1,4 +1,4 @@
-# Creatrweb Animation Studio Backlog
+# CreatrART Backlog
 
 ## 2026-09-09 — #502 stage-4 handback fixed: regression subprocess now database-isolated (`05fed05`)
 
@@ -1158,7 +1158,7 @@ intended outcome with the project owner, then configure the existing stack to
 run on Replit without restructuring it. Document the resulting workflow and
 any required setup.
 
-### 2. Task #3 — Rename product branding to Creatrweb Animation Studio
+### 2. Task #3 — Rename product branding to CreatrART
 Status: COMPLETE
 
 Specification: Replace user-facing product branding in the application shell,
@@ -1177,7 +1177,7 @@ coverage while ensuring the configured Node 22 test command passes.
 Status: COMPLETE
 
 Specification: Add a focused static-shell assertion that the browser document
-title is “Creatrweb Animation Studio,” preventing divergence between the
+title is “CreatrART,” preventing divergence between the
 visible header and browser tab branding.
 
 ### 5. Task #6 — Improve shell spacing and empty project layout
@@ -18124,3 +18124,34 @@ not accepted from the CI log alone:
 No `django_cache`/`unique_draft_scope` duplicate-key noise reproduced
 this run (the original 2026-09-05 evidence class). #419 stays open
 pending #504/#505/#506; #445 stays dependency-blocked, unchanged in kind.
+
+## 306. #504/#505 fixed and closed; #506 classification corrected, stays open
+
+Status: #504 COMPLETE (closed), #505 COMPLETE (closed), #506 OPEN (stage-2b handback, corrected evidence).
+
+GitHub issues: [#504](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/504) (closed), [#505](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/505) (closed), [#506](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/506) (open)
+
+Stage 2a (Opencode Go, `kimi-k3` substitution) delivered #504 (`9c47c54`,
+`animationFps` floor lowered to >12 matching #465's precedent for the
+sibling `inferenceFps` assertion) and #505 (`2f70c64`, centralized
+session-reset in `e2e_fixtures.py` + `resetSessions.ts`, plus
+`adminSettings.spec.ts` reading its live baseline instead of a stale
+hardcoded constant). Both independently re-verified: #504's exact
+`--repeat-each=3` claim reproduced (3/3), #505's exact ordering-dependent
+repro reproduced (18/18).
+
+#506 was correctly handed back to stage 2b with no code change (the
+firefox iframe timeout is shared Three.js/A-Frame runtime territory, not
+mechanical) — but its classification evidence cited a stale CI run
+predating both today's fixes and the firefox-curation change, claiming a
+broader "12 other artPiece firefox tests" pattern that doesn't exist
+under the current curated config. Corrected via direct re-verification
+against the actual current-`main` run: only 3 `artPieceSteeringRuntime.spec.ts`
+scenarios are affected. Classification conclusion unchanged; `.agents/memory/e2e-full-matrix-firefox-iframe-timeouts.md`
+and `DECISIONS.md` corrected (`d424047`).
+
+**Process note:** an initial `make check` re-verification attempt failed
+against the live working tree due to ~21 unrelated uncommitted files
+(an apparent concurrent session's in-progress work) sitting in the
+checkout — resolved by re-running verification in an isolated `git
+worktree` at the actual commit instead. Not touched or disturbed.

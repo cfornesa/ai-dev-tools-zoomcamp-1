@@ -102,3 +102,36 @@ against production with `DATABASE_URL` borrowed for one shell command
 (mirroring the migration's own `get_or_create` logic) — not a blanket
 `manage.py migrate`, which risks erroring on DDL operations elsewhere in
 the same unsynced `django_migrations` ledger.
+
+**2026-09-09 refinement — the same gap hits a migration whose *destination*
+table already existed, even though the migration also drops a model:**
+issue #503, migration `0036_mistral_to_provider_credential.py` (from #498)
+moves rows from `MistralCredential` into the already-existing
+`ProviderCredential` table, then `DeleteModel`s the now-empty source. A
+republish that shipped this migration's *application code* left the
+database completely unchanged: `scenes_mistralcredential` still had its
+one real row, `scenes_providercredential` had zero matching rows, one day
+after the republish. The `DeleteModel` looks like a schema change on
+paper, but from Replit's schema-diff perspective there was nothing to
+detect or apply, because the *cause* (the `RunPython` row-move) has no
+shape at all, and the source table simply wasn't dropped either — same
+root cause as the `0031` case above, just with a `DeleteModel` attached
+instead of a bare data migration. **Generalized rule:** a migration's
+`RunPython` step is at risk of silently never running in production
+after any Replit Publish whenever neither side of the move is a *new*
+table/column Replit's diff would need to create — check this whenever a
+migration moves or transforms data between tables that both already
+exist, not only for migrations with zero `CreateModel`/schema operations
+at all.
+
+Fixed by an idempotent raw-SQL script via `manage.py shell` (not
+`manage.py migrate`, for the same ledger-mismatch reason as above),
+replaying the migration's exact `RunPython` logic by hand: select the
+legacy row(s), check the unique-constraint collision the migration
+itself checks, insert verbatim ciphertext with explicit `NOW()` for
+`created_at`/`updated_at` (both plain `auto_now_add`/`auto_now`, not
+DB-level defaulted — the first attempt hit `NotNullViolation` on exactly
+these two columns), then delete the legacy row. Verified independently
+via direct read-only SQL against the Production Database panel before
+closing the issue, not accepted on the owner-reported script output
+alone.

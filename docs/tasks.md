@@ -17962,3 +17962,35 @@ runs earlier in the invocation. `tests/test_shared_quota_cache.py`'s
 `databases=["default", "postgres_test"]` form is the working convention;
 ~20 test files use the single-alias form. Fixing it is out of #498's
 scope; #498's own migration tests already use the working pattern.
+
+## 302. Production: migration 0036 (Mistral credential consolidation) never applied
+
+Status: COMPLETE — fixed and independently re-verified 2026-09-09, no code change (data-only fix).
+
+GitHub issue: [#503](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/503) (closed)
+
+Discovered while verifying the owner's republish for #445: the owner's
+republish shipped #498's application code, but direct read-only SQL
+against Replit's Production Database panel showed `scenes_mistralcredential`
+still held its one real row and `scenes_providercredential` had zero
+matching rows — migration `0036`'s `RunPython` data move never actually
+ran in production, even though the code that only reads
+`ProviderCredential` was now live. Root cause matches issue #299's
+2026-09-08 finding (`.agents/memory/replit-migrations-ledger-not-updated-by-publish.md`):
+Replit's schema-diff publish has no way to detect that a `RunPython` step
+needs replaying when neither side of the move is a genuinely new
+table/column.
+
+Fixed via an idempotent raw-SQL script run by the owner through
+`manage.py shell` (not `manage.py migrate`, to avoid replaying earlier
+migrations against production's unsynced `django_migrations` ledger),
+replicating `0036`'s tested `migrate_legacy_to_provider` logic by hand:
+move the row verbatim (ciphertext untouched), then delete the legacy row.
+One retry needed after a `NotNullViolation` on `created_at`/`updated_at`
+(plain `auto_now_add`/`auto_now`, not DB-defaulted) caught cleanly before
+any write happened. Independently re-verified directly against the
+Production Database panel (not accepted on the owner's script-output
+report alone): `scenes_mistralcredential` count 0, `scenes_providercredential`
+(vendor='mistral') count 1. Memory extended with the generalized rule:
+check this class of gap for any migration moving data between two
+already-existing tables, not only migrations with zero schema operations.

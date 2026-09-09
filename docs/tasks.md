@@ -18155,3 +18155,31 @@ against the live working tree due to ~21 unrelated uncommitted files
 (an apparent concurrent session's in-progress work) sitting in the
 checkout — resolved by re-running verification in an isolated `git
 worktree` at the actual commit instead. Not touched or disturbed.
+
+## 307. #506 fix delivered and QA'd; stays open pending nightly CI confirmation
+
+Status: OPEN — fix independently verified, final closure gated on real CI evidence.
+
+GitHub issue: [#506](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/506) (open)
+
+Stage 2b (Ollama Cloud `kimi-k3`) classified the firefox art-piece sandbox
+timeout as (a) genuine Firefox-specific timing sensitivity: headless
+Firefox's software-WebGL rasterizer on the Linux CI runner can stall past
+30s initializing the opaque-origin sandboxed iframe, while GPU-backed
+local Firefox and CI's own chromium (identical scenarios, same run) never
+do. Instrumented local reproduction under sustained CPU load could not
+reproduce the stall, corroborating the GPU/software split rather than
+generic capacity contention. Fix (`ae9392a`): a 90s timeout (3x the
+observed 30s stall), scoped to exactly the 3 rendering scenarios and the
+firefox project only — no assertion weakened.
+
+Independently re-verified: the diff's scope (grep-confirmed only the 3
+scenarios touched), the classification's specific per-test timing
+evidence (cross-checked against the actual CI log byte for byte),
+`--project=firefox` 7/7, this file on chromium 4/4, typecheck/lint/format
+clean. QA: PASS, but the issue stays open — its own acceptance criterion
+("passes repeatedly as part of the full serial suite") can only be
+confirmed against the real Linux CI runner, since the stall never
+reproduced locally even before the fix. Recommend closing once the next
+scheduled nightly full-matrix run confirms; per standing convention, not
+manually re-triggered for this alone.

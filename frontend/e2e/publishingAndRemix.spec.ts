@@ -1220,15 +1220,18 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       // eslint-disable-next-line no-console
       console.log(`[camera-bench] ${JSON.stringify(result)}`);
       results.push(result);
-      // Issue #465: GitHub Actions' free-tier shared runner cannot reliably
-      // deliver 30fps to this benchmark -- 9 consecutive CI runs on
-      // 2026-09-08 measured 15-24fps with zero long tasks (ruling out a real
-      // code-side bottleneck; see the issue's own evidence table). Owner
-      // decision: accept the free-tier ceiling rather than pay for a larger
-      // runner. 12fps sits below every observed run with margin, so this
+      // Issue #465: this benchmark's inferenceFps sits well under 30 on both
+      // GitHub Actions' free-tier runner (9 consecutive CI runs on 2026-09-08
+      // measured 15-24fps) AND on local development hardware (16.68-22.68fps
+      // measured directly during QA) -- the ceiling is not runner-specific,
+      // it is likely inherent to how this synthetic seam's inference calls
+      // are decoupled from animation frames (animationFrames significantly
+      // outpaces inferenceCalls in every measured run). Owner decision:
+      // accept this ceiling rather than investigate the seam's own timing
+      // further. 12fps sits below every observed run with margin, so this
       // assertion still catches a catastrophic regression, but it can no
-      // longer catch a moderate one (e.g. a real regression from 30fps to
-      // 20fps would now pass). See .agents/memory/camera-synthetic-verification-gap.md.
+      // longer catch a moderate one. See
+      // .agents/memory/camera-synthetic-verification-gap.md.
       expect(result.inferenceFps).toBeLessThanOrEqual(30.5);
       expect(result.inferenceFps).toBeGreaterThan(12);
       expect(result.animationFps).toBeGreaterThanOrEqual(30);

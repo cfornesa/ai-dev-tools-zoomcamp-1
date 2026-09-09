@@ -498,6 +498,21 @@ engineering item from today's session -- everything closed today
 issues (#419, #440, #445, #460) are all owner/credential/CI-evidence
 gated, not engineering-blocked.
 
+## 2026-09-09 (stage-2a handback: #502 regression subprocess isolation, `05fed05`)
+
+Stage-4 QA handback accepted: #502's fix correct, its regression test
+broken mid-suite (subprocess and parent derived the same physical test
+database; parent's session-scoped connections made the subprocess's
+create/teardown collide). Reproduced here first (full suite 1 failed/1193
+passed; also observed the teardown race directly as "database does not
+exist" on the parent side in a two-test repro), then fixed strictly in
+scope (one file): subprocess gets a `-single-selection`-suffixed
+`POSTGRES_TEST_DATABASE_URL`. Independently re-verified: handback's exact
+full-suite repro green (1194/2), no stray databases, skip convention
+intact, lint/format/mypy clean. Provenance: stage 2a substitution of the
+rostered Opencode Go (qwen3.6-plus backend slot), recorded here per
+standing practice (no backlog-session ledger active).
+
 ## 2026-09-09 (stage-2a batch: #502 + #500 delivered, #501 handback)
 
 Owner dispatch: implement #419, #445, #500, #501, #502 mechanically. Owner

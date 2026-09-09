@@ -1,5 +1,23 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-09 — #502 stage-4 handback fixed: regression subprocess now database-isolated (`05fed05`)
+
+Stage-4 QA verified #502's delivered fix (`2a977fe`) as correct but found
+its new regression test broke full-suite runs deterministically
+(`1 failed, 1193 passed, 2 skipped`): the subprocess pytest derived the
+same physical test database (`test_gesture_studio_test`) from
+`POSTGRES_TEST_DATABASE_URL` as the parent suite, which holds open
+session-scoped connections to it mid-suite — create/teardown collided and
+the two teardowns raced. Handback (stage 2a, mechanical) fixed in scope:
+only `backend/tests/test_postgres_test_single_selection.py` touched; the
+subprocess now runs against a `-single-selection`-suffixed database name so
+its derived test DB is physically distinct and its own teardown cleans it.
+Independently re-verified by this session: the exact handback repro full
+suite green (1194 passed/2 skipped, no failed, no stray
+`*single-selection*` databases left), standalone pass, parent-DB-test pair
+pass with no teardown warning, env-less skip intact, ruff/format/mypy
+clean. #502 stays open for the QA verdict on `05fed05`.
+
 ## 2026-09-09 — stage-2a batch delivered: #502 and #500 implemented, #501 handback, #419/#445 skipped per owner
 
 Stage 2a (`implementation-mechanical`, run as a substitution of the rostered

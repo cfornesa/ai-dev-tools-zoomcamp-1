@@ -1,5 +1,18 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-09 — #419: waiting on next nightly CI run, no action pending
+
+Owner-confirmed status: #419 stays open with no further work from either side
+until the next scheduled nightly full-matrix CI run produces fresh evidence
+(matrix is not manually re-triggered, per
+`.agents/memory/full-matrix-scheduled-not-manual.md`). #427/#444 (closed) plus
+this session's five stage-popover fixes and the `closePieceControlsMenu`
+source fix have all landed since #419's last recorded CI evidence, so the
+next run's failure profile should differ from what's currently documented on
+that issue. Next action once that run lands: triage each failure
+(implementation defect / test-harness defect / environment boundary) and
+link each to an owning issue, per #419's own acceptance criteria.
+
 ## 2026-09-09 — #495/#496 session completion: both closed after independent QA + readiness
 
 Stage 4 (`qa-self-review`) independently re-ran every claim from the stage-2a

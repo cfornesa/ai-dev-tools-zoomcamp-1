@@ -485,3 +485,15 @@ was only caught because QA re-ran the benchmark itself rather than
 trusting the reported "1 passed, desktop 16.2fps" result at face value
 (that number was accurate, but its implication -- CI-specific -- was not
 examined by the reporting session).
+
+## 2026-09-08 (#465/#494 closed — final engineering items of this session)
+
+QA re-check of `185032a` (comment-only fix on top of the already-fixed
+numeric bounds): independently re-verified byte-level and via a third
+fresh benchmark run (16.83/22.97fps, consistent with the two prior
+measurements). QA: PASS. Both #465 and #494 closed. This is the last
+engineering item from today's session -- everything closed today
+(#474, #479, #482, #483, #487, #488, #489, #490, #491, #492, #493, #494,
+#465) is now ready for the owner's planned bulk republish. Remaining open
+issues (#419, #440, #445, #460) are all owner/credential/CI-evidence
+gated, not engineering-blocked.

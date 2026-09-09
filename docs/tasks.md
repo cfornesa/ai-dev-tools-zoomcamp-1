@@ -17589,7 +17589,7 @@ landing two overlapping cursor changes.
 
 ## 296. Add /gallery support to the dev mock backend route table
 
-Status: PROPOSED — gap discovered during #491 stage 2a frontend pass.
+Status: COMPLETE — closed 2026-09-08. QA: PASS.
 
 GitHub issue: [#494](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/494)
 
@@ -17599,6 +17599,47 @@ mock route table (`frontend/src/mocks/installMockFetch.ts` /
 for the unified contract (#491) and its legacy `/art-pieces/gallery` shim
 also redirects into it. Routing: stage 2a mechanical; out of #491's named
 file scope, which is why it was not done there.
+
+Fixed in commit `7d5b289`: a module-level `listPublicGalleryUnified`
+function (not a `ProjectsService` interface method — the real backend
+path for this endpoint bypasses that interface entirely, so widening it
+would have been unnecessary) merges public `mockState.projects` and
+`mockState.projects3d` fixtures; `generated` stays deliberately
+always-empty pending real ArtPiece mock persistence (a separate, larger
+task, not this issue's scope). QA independently verified via the actual
+browser (not `curl`, which cannot test a client-side `fetch` shim): all
+four `type` values, the `/art-pieces/gallery` redirect landing on the
+correct empty state, and the 3D mapping path proven via a temporary
+in-session fixture flip. `npm test` 203/2505, typecheck, prettier all
+clean. Caught and fixed pre-commit by the dispatching session: a subagent
+had inserted the route regex with a literal `\$` instead of an end
+anchor, silently 404ing at runtime despite green typecheck/lint — see
+`.agents/memory/subagent-dispatch-artifacts.md`.
+
+## 300. Fix #465's misleading FPS-ceiling comment and close
+
+Status: COMPLETE — closed 2026-09-08. QA: PASS (after one FAIL/fix cycle).
+
+GitHub issue: [#465](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/465)
+
+Owner decision: accept the GitHub Actions free-tier runner's real
+capacity ceiling rather than pay for a larger runner (budget constraint).
+Commit `c5a980f` lowered `inferenceFps`'s floor from 20 to 12 with a
+rationale comment. QA re-running the benchmark **locally** (not CI)
+measured the same 16-23fps range the comment blamed on "GitHub Actions'
+free-tier shared runner" — directly contradicting the comment's own claim
+that this "rul[es] out a real code-side bottleneck." First QA verdict:
+FAIL (numeric fix correct, comment factually wrong). Commit `185032a`
+corrected the comment to state the ceiling reproduces on both CI and
+local hardware and frame the likely cause (animation/inference-call
+decoupling in the synthetic seam) as a hypothesis, not a fact. Re-QA:
+PASS, independently reproduced a third time (16.83/22.97fps). Issue
+closed.
+
+**Important correction to the earlier "runner upgrade vs. documented
+ceiling" framing discussed with the owner:** a bigger CI runner likely
+would not have resolved this, since the same ceiling reproduces on local
+development hardware, not just GitHub's shared runner.
 
 ## 297. Move microphone capture to the trusted parent frame
 

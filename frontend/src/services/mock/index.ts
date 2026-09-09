@@ -26,7 +26,12 @@
  */
 import { ApiError } from '../../api/client';
 import type { CurrentUser } from '../../api/auth';
-import type { Project, SceneVersion, PublicGalleryProject } from '../../api/projects';
+import type {
+  Project,
+  SceneVersion,
+  PublicGalleryProject,
+  PublicGalleryUnifiedPage,
+} from '../../api/projects';
 import type { DraftSyncResponse } from '../../api/drafts';
 import type { BackendServices } from '../types';
 import {
@@ -105,6 +110,46 @@ function currentVersion(project: Project): SceneVersion {
   const version = versions[versions.length - 1];
   if (!version) notFound();
   return version;
+}
+
+/**
+ * Issue #494: the unified public gallery for mock mode. No mock
+ * persistence exists yet for generated ArtPieces -- this always returns
+ * empty for 'generated', matching this issue's own scoped acceptance
+ * criteria rather than building full ArtPiece mock CRUD, which is a
+ * separate, larger task.
+ */
+export async function listPublicGalleryUnified(type = 'all'): Promise<PublicGalleryUnifiedPage> {
+  const twoD = mockState.projects
+    .filter((p) => p.visibility === 'public')
+    .map((p) => ({
+      id: p.id,
+      kind: '2d' as const,
+      title: p.title,
+      owner: p.owner,
+      published_at: p.updated_at,
+      thumbnail_url: p.thumbnail_url,
+      viewer_url: `/p/${p.id}`,
+    }));
+  const threeD = mockState.projects3d
+    .filter((p) => p.visibility === 'public')
+    .map((p) => ({
+      id: p.id,
+      kind: '3d' as const,
+      title: p.title,
+      owner: p.owner,
+      published_at: p.updated_at,
+      thumbnail_url: p.thumbnail_url,
+      viewer_url: `/p3d/${p.id}`,
+    }));
+  const generated: never[] = [];
+  const byType = {
+    all: [...twoD, ...threeD, ...generated],
+    authored: [...twoD, ...threeD],
+    generated,
+  };
+  const results = byType[type as keyof typeof byType] ?? byType.all;
+  return { results, next_cursor: null, has_more: false };
 }
 
 export const mockServices: BackendServices = {

@@ -18,7 +18,7 @@
  * test's `vi.mock('../api/...')` behavior.
  */
 import { ApiError } from '../api/client';
-import { mockServices } from '../services/mock';
+import { mockServices, listPublicGalleryUnified } from '../services/mock';
 
 type RouteHandler = (
   params: Record<string, string>,
@@ -177,6 +177,11 @@ const routes: Route[] = [
         cursor: search.get('cursor') ?? undefined,
         pageSize: search.get('page_size') ? Number(search.get('page_size')) : undefined,
       }),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/api\/public\/gallery\/$/,
+    handler: (_p, _b, search) => listPublicGalleryUnified(search.get('type') ?? 'all'),
   },
   {
     method: 'GET',

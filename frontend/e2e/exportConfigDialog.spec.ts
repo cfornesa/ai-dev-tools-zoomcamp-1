@@ -57,6 +57,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
+import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -109,9 +110,14 @@ async function addShapeAndSave(page: Page): Promise<void> {
   // SaveControl.tsx (issue #95 follow-up) is a single-click Save with no
   // change-label field by design -- see projectLifecycle.spec.ts's own
   // `addShapeAndSave` for the same fix, applied here for the same reason.
+  // Issue #427: Add circle/Save now live behind the stage's "Edit scene"
+  // popover -- see layersPanel.spec.ts's module doc comment for the full
+  // history of this restructuring.
+  await openEditScene(page);
   await page.getByRole('button', { name: 'Add circle' }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version/);
+  await closeEditScene(page);
 }
 
 /** Opens `ExportConfigDialog` and waits for its version `<select>` to

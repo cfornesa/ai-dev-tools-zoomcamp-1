@@ -655,3 +655,39 @@ QA.
   (stage-2b handback) still holds; only the supporting evidence scope
   was wrong.
 
+## 2026-09-09 (stage 2b: #506 delivered, `ae9392a`)
+
+Provenance: stage 2b ran as the rostered Ollama Cloud `kimi-k3` (not a
+substitution). No backlog-session ledger active; recorded here.
+
+- Instrumented with temporary `[506]` probes on CDN request/response,
+  iframe attach, and canvas attach (later reverted), and reproduced under
+  genuine full-run-equivalent load: full serial `npx playwright test`
+  (193 tests, 22.7 minutes) with an all-core CPU stressor holding load
+  average ~21-27 on 8 cores. Did NOT reproduce the stall locally —
+  CDN responses in ~64ms, iframe attach at ~600ms, all 7 curated firefox
+  tests passed (both in the full run and repeated after).
+- Classification: (a) Firefox-specific sandbox/WebGL init timing on
+  headless Linux CI, NOT generic capacity — chromium passed the identical
+  scenarios in ~6.0s in the same CI run where firefox stalled at 30.3s,
+  which a genuine (c) runner-capacity boundary would not produce. Local
+  macOS Firefox has GPU-backed WebGL; the Linux CI runner's headless
+  Firefox uses software rendering, whose opaque-origin sandboxed-iframe
+  context init can stall past 30s on a shared vCPU. Not (b): every path
+  that initializes completes the scenario's work in seconds.
+- Fix: 90s timeout (3x the observed stall) on exactly the 3 rendering
+  scenarios, gated on `testInfo.project.name === 'firefox'`. Chromium's
+  default 30s and the non-rendering capability test (4.3s on CI)
+  untouched. No assertion weakened or deleted.
+- Verified locally: curated firefox subset 7/7 (23.7s), this file's
+  firefox 8/8 under repeat-each=2 (45.9s), chromium 4/4 (19.0s),
+  typecheck/lint/prettier clean on the touched file.
+- Honesty note for stage 4: the true "full serial suite passes
+  repeatedly" bar is CI's own nightly full-matrix — the stall never
+  reproduced locally even before the fix (GPU-backed local WebGL), so
+  the fix is verified in shape and non-regression but its CI resolution
+  is pending the next nightly run. The memory page records
+  re-instrumentation guidance if 90s still stalls.
+- Memory page `e2e-full-matrix-firefox-iframe-timeouts.md` extended in
+  place with the confirmed classification and resolution.
+

@@ -91,6 +91,11 @@ import {
   expandAllCollapsibleSections,
   expandSection,
 } from './support/expandCollapsibleSections.js';
+import {
+  closeEditScene,
+  openEditScene,
+  openPieceControlsMenu,
+} from './support/openEditScene.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
@@ -126,12 +131,32 @@ function lastFrameStatus(page: Page) {
   return page.locator('.demo-last-frame');
 }
 
+/** Issue #444: the Demo/Camera controls disclosure ("Piece controls",
+ * `DemoControlsPanel`/`CameraControl`) moved behind the stage's "Open
+ * piece controls menu" trigger, same as "Edit scene"/"Publication status"
+ * -- mirrors `publishingAndRemix.spec.ts`'s own `openCameraAndDemoControls`.
+ * An anchored, case-insensitive regex matches both the closed ("Piece
+ * controls") and open ("Hide piece controls") accessible names. */
 async function openPieceControls(page: Page): Promise<void> {
-  const disclosure = page.getByRole('button', { name: 'Piece controls' });
+  await openPieceControlsMenu(page);
+  const disclosure = page.getByRole('button', { name: /^(piece controls|hide piece controls)$/i });
   await expect(disclosure).toBeVisible();
   if ((await disclosure.getAttribute('aria-expanded')) === 'false') {
     await disclosure.click();
   }
+}
+
+/** Issue #427: reopens the "Edit scene" stage popover after a prior
+ * `closeEditScene()` in the same test -- `openEditScene`'s own exact-match
+ * "Edit scene" trigger lookup assumes a fresh, never-yet-toggled trigger,
+ * which a close-then-reopen cycle within one page violates (see
+ * `layersPanel.spec.ts`'s identical helper for the full explanation). */
+async function reopenEditScene(page: Page): Promise<void> {
+  await openPieceControlsMenu(page);
+  const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
+  const trigger = toolbar.getByRole('button', { name: /^(edit scene|hide edit scene)$/i });
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  await toolbar.getByRole('toolbar', { name: 'Editor actions' }).waitFor({ state: 'visible' });
 }
 
 function playbackProgress(page: Page) {
@@ -191,8 +216,10 @@ async function openLogicPanel(page: Page): Promise<void> {
 }
 
 async function saveAndReload(page: Page, expectedVersionText: RegExp): Promise<void> {
+  await reopenEditScene(page);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByTestId('editor-save-status')).toHaveText(expectedVersionText);
+  await closeEditScene(page);
   await page.reload();
   await expect(page.getByTestId('editor-save-status')).toHaveText(expectedVersionText);
   await expandAllCollapsibleSections(page);
@@ -309,9 +336,26 @@ test.describe('Interaction runtime', () => {
     await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
 
     // The global Reduce motion control lives in the header (Layout.tsx),
-    // available on every route including the editor.
+    // available on every route including the editor -- but the stage's
+    // "Piece controls" popover is a modal overlay that covers the whole
+    // main content area while open (same class of occlusion documented in
+    // `layersPanel.spec.ts`'s own module doc comment), so it must be
+    // closed before this header control is reachable, then reopened for
+    // the Step click that follows.
+    // `closePieceControlsMenu`'s own guard checks the "Close piece
+    // controls menu" button's visibility, but that accessible name is
+    // shared by both the outer toggle and the dialog's own "x" dismiss
+    // button while open -- a strict-mode violation that its `.catch(() =>
+    // false)` silently treats as "already closed", so it never actually
+    // presses Escape. Pressing it directly bypasses that broken guard;
+    // `closeEditScene` (used elsewhere in this file) sidesteps the same
+    // issue by checking an unambiguous toolbar instead.
+    const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
+    await page.keyboard.press('Escape');
+    await expect(toolbar.getByRole('dialog', { name: 'Piece actions' })).toHaveCount(0);
     await page.getByRole('radio', { name: 'Reduced' }).click();
     await expect(page.getByText('Motion is currently reduced.')).toBeVisible();
+    await openPieceControls(page);
 
     // Task 29's documented substitution: auto-advance turns off entirely
     // (Play/Pause disappears) and only the manual Step control remains --
@@ -325,8 +369,11 @@ test.describe('Interaction runtime', () => {
     await expect(playbackProgress(page)).toHaveText('1 of 9 events played');
 
     // Switching back to Full restores Play/Pause.
+    await page.keyboard.press('Escape');
+    await expect(toolbar.getByRole('dialog', { name: 'Piece actions' })).toHaveCount(0);
     await page.getByRole('radio', { name: 'Full', exact: true }).click();
     await expect(page.getByText('Motion is currently full.')).toBeVisible();
+    await openPieceControls(page);
     await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toBeVisible();
   });
 
@@ -335,7 +382,9 @@ test.describe('Interaction runtime', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await openEditScene(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
+    await closeEditScene(page);
     // Issue #113/#116: open "Behaviors" only after the shape exists --
     // BehaviorCardsPanel.tsx's target select otherwise mounts with no
     // options and never recovers (see createBlankProjectViaUI's comment).
@@ -408,7 +457,9 @@ test.describe('Interaction runtime', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await openEditScene(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
+    await closeEditScene(page);
     const shapeId = await firstShapeId(page);
 
     await openLogicPanel(page);
@@ -501,7 +552,9 @@ test.describe('Interaction runtime', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await openEditScene(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
+    await closeEditScene(page);
     await openLogicPanel(page);
 
     // `handDistance` is a documented `$defs.signal` name
@@ -548,7 +601,9 @@ test.describe('Interaction runtime', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createBlankProjectViaUI(page);
+    await openEditScene(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
+    await closeEditScene(page);
 
     // A freshly created blank project carries `randomness: { seed: 0,
     // enabled: false }` (schema/fixtures/valid/blank.json) -- no
@@ -580,7 +635,9 @@ test.describe('Interaction runtime', () => {
     // module doc comment). Confirm it produces a real, connected trigger
     // graph fragment, visible consistently in both BehaviorCardsPanel and
     // GraphListView.
+    await reopenEditScene(page);
     await page.getByRole('button', { name: 'Add circle' }).click();
+    await closeEditScene(page);
     await expandAllCollapsibleSections(page);
     await page.getByRole('radio', { name: 'Emit particles', exact: true }).click();
     await page.locator('#behavior-card-event').selectOption('pinchStart');

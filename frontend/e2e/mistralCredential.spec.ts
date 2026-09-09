@@ -6,22 +6,23 @@
  * Mistral. The browser still exercises the real authenticated UI, CSRF/session
  * cookies, Vite proxy, Django endpoint, reload behavior, and removal flow.
  *
- * `AccountSettings.tsx` now renders the original standalone Mistral-only
- * form (`<form aria-label="Mistral API key">`) *and* a newer generic
+ * `AccountSettings.tsx` renders the original standalone Mistral-only form
+ * (`<form aria-label="Mistral API key">`) *and* the newer generic
  * `ProviderCredentialCards` list that also includes a Mistral row -- the
  * two duplicate each other's status text ("Mistral key: not configured")
- * and button labels ("Save key"/"Replace key"/"Remove key"). Worse: both
- * rows' text inputs render with `id="mistral-key"` (a real duplicate-id
- * accessibility bug, not just a test-locator ambiguity) -- the second
- * input's `<label htmlFor="mistral-key">` therefore associates with the
- * *first* (wrong) input via `getElementById`, leaving the second input
- * unlabelled and giving the first input's own accessible name an odd
- * doubled reading ("Mistral API key Mistral API key", confirmed via a
- * failed run's captured accessibility snapshot). Flagged separately as an
- * app-code defect; this file works around it by scoping to the
- * standalone form (`getByRole('form', { name: 'Mistral API key' })`)
- * for the input and its own submit button, and `.first()` (DOM order) for
- * "Remove key", which lives outside that form as a sibling.
+ * and button labels ("Save key"/"Replace key"/"Remove key"). They are not
+ * write-through duplicates: the standalone form saves to the legacy
+ * Mistral-only credential store that art-piece generation still reads,
+ * while the generic list saves to the per-vendor `ProviderCredential`
+ * store. Their former shared `id="mistral-key"` collision (which left the
+ * generic Mistral input unlabelled and doubled the standalone input's
+ * accessible name) was fixed by renaming the standalone input; the
+ * duplicate-id absence is asserted below. Two textboxes still share the
+ * accessible name "Mistral API key", so this file keeps scoping to the
+ * standalone form (`getByRole('form', { name: 'Mistral API key' })`) for
+ * the input and its own submit button, and `.first()` (DOM order) for
+ * "Remove key", which lives outside that form as a sibling. Whether to
+ * retire one of the two surfaces is an open owner design decision.
  */
 import { expect, test } from '@playwright/test';
 
@@ -44,6 +45,15 @@ test.describe('Personal Mistral credential settings', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await page.getByRole('link', { name: 'Account settings' }).click();
     await expect(page).toHaveURL(/\/account\/settings$/);
+
+    const duplicateIds = await page.evaluate(() => {
+      const ids = Array.from(document.querySelectorAll('[id]')).map((element) => element.id);
+      return ids.filter((id, index) => ids.indexOf(id) !== index);
+    });
+    expect(duplicateIds).toEqual([]);
+
+    const mistralKeyInputs = page.getByLabel('Mistral API key');
+    await expect(mistralKeyInputs).toHaveCount(2);
 
     await expect(
       page.getByText('Mistral key: not configured', { exact: true }).first(),

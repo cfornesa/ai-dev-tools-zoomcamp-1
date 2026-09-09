@@ -104,9 +104,9 @@ function AccountSettings() {
               : 'Mistral key: not configured'}
         </p>
         <form onSubmit={submit} aria-label="Mistral API key" className="account-settings-form">
-          <label htmlFor="mistral-key">Mistral API key</label>
+          <label htmlFor="mistral-credential-key">Mistral API key</label>
           <input
-            id="mistral-key"
+            id="mistral-credential-key"
             className="account-settings-input"
             type="password"
             autoComplete="off"

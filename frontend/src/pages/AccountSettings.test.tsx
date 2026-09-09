@@ -44,6 +44,30 @@ beforeEach(() => {
 });
 
 describe('AccountSettings', () => {
+  it('gives every element a unique id and labels every credential input accessibly', async () => {
+    mockedFetch.mockResolvedValue({ configured: false });
+    const { container } = render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('DeepSeek key: not configured');
+
+    const ids = Array.from(container.querySelectorAll('[id]')).map((element) => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+
+    const credentialInputs = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="password"]'),
+    );
+    expect(credentialInputs).toHaveLength(4);
+    for (const input of credentialInputs) {
+      const labels = container.querySelectorAll(`label[for="${input.id}"]`);
+      expect(labels).toHaveLength(1);
+      expect(labels[0]).toHaveTextContent(/api key/i);
+    }
+  });
+
   it('shows only a non-sensitive configured status', async () => {
     mockedFetch.mockResolvedValue({ configured: true });
     render(
@@ -53,7 +77,8 @@ describe('AccountSettings', () => {
     );
 
     expect(await screen.findByText('Mistral key: configured')).toBeInTheDocument();
-    expect(screen.getByLabelText(/^mistral api key$/i, { selector: 'input' })).toHaveValue('');
+    const standaloneForm = screen.getByRole('form', { name: 'Mistral API key' });
+    expect(within(standaloneForm).getByLabelText(/^mistral api key$/i)).toHaveValue('');
     expect(screen.getByRole('button', { name: /replace key/i })).toHaveClass('shell-action');
     expect(screen.getByRole('button', { name: /remove key/i })).toHaveClass('shell-action');
   });
@@ -94,7 +119,8 @@ describe('AccountSettings', () => {
       </MemoryRouter>,
     );
 
-    const input = await screen.findByLabelText(/^mistral api key$/i, { selector: 'input' });
+    const standaloneForm = screen.getByRole('form', { name: 'Mistral API key' });
+    const input = await within(standaloneForm).findByLabelText(/^mistral api key$/i);
     await user.type(input, 'sk-user-key-12345');
     await user.click(
       within(input.closest('form') as HTMLFormElement).getByRole('button', { name: /save key/i }),

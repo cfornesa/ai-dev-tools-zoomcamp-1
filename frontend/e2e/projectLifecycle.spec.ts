@@ -121,141 +121,163 @@ test.describe('Project lifecycle', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('blank canvas create, edit, save, and reload show the same current version', async ({
-    page,
+  // Consolidation note: these 4 scenarios were each an independent test()
+  // (Task 65, issue #65). Each already creates its own project and has no
+  // dependency on another's outcome, so they're grouped into one test()
+  // with a fresh browser.newContext()/page per test.step() -- the same
+  // technique already used elsewhere in this session -- rather than
+  // reusing the outer test's default page (a second loginViaUI on the same
+  // page would hit the already-known re-login timeout).
+  test('blank-canvas save/reload, selection-geometry fit, and template cloning each behave correctly', async ({
+    browser,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    test.setTimeout(60000);
 
-    await createBlankProjectViaUI(page);
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
-
-    // Add one shape (a blank-canvas project starts with none — see
-    // schema/fixtures/valid/blank.json) and edit its style through the
-    // Inspector, the real Task 60 shape-styling UI.
-    await openEditScene(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    const positionX = page.locator('#shape-style-positionX');
-    await expect(positionX).toBeVisible();
-    await positionX.fill('321');
-    await positionX.blur();
-
-    const fill = page.locator('#shape-style-fill');
-    await fill.fill('#ff00aa');
-    await fill.blur();
-
-    await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
-
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
-    await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version 2/);
-
-    // Reload the page entirely (a fresh mount, exactly like reopening the
-    // project from the gallery) and confirm the same current version and
-    // content come back — the acceptance criterion's actual assertion.
-    await page.reload();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
-    await expandAllCollapsibleSections(page);
-
-    await shapeListItem(page).first().click();
-    await expect(page.locator('#shape-style-positionX')).toHaveValue('321');
-    await expect(page.locator('#shape-style-fill')).toHaveValue('#ff00aa');
-  });
-
-  test('keeps the rendered selection center and move handle aligned at desktop and narrow fit', async ({
-    page,
-  }) => {
-    for (const viewport of [
-      { width: 1440, height: 900 },
-      { width: 390, height: 844 },
-    ]) {
-      await page.setViewportSize(viewport);
-      // Each viewport is an independent fit check. Clear the prior browser
-      // session so loginViaUI reaches the real login form again instead of
-      // being redirected from /accounts/login/ as an already-authenticated
-      // user after the desktop iteration.
-      await page.context().clearCookies();
+    await test.step('blank canvas create, edit, save, and reload show the same current version', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
+
       await createBlankProjectViaUI(page);
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
+
+      // Add one shape (a blank-canvas project starts with none — see
+      // schema/fixtures/valid/blank.json) and edit its style through the
+      // Inspector, the real Task 60 shape-styling UI.
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
+      const positionX = page.locator('#shape-style-positionX');
+      await expect(positionX).toBeVisible();
+      await positionX.fill('321');
+      await positionX.blur();
 
-      const geometry = await page.evaluate(() => {
-        const canvas = document.querySelector<HTMLElement>('[data-testid="scene-canvas"]');
-        const outline = document.querySelector<SVGRectElement>(
-          '.editor-scene-shape-selection-outline',
-        );
-        const moveHandle = document.querySelector<HTMLElement>('[data-testid="shape-handle-move"]');
-        if (!canvas || !outline || !moveHandle)
-          throw new Error('Selection geometry is not rendered.');
-        const canvasRect = canvas.getBoundingClientRect();
-        const outlineRect = outline.getBoundingClientRect();
-        const handleRect = moveHandle.getBoundingClientRect();
-        return {
-          canvasCenter: {
-            x: canvasRect.left + canvasRect.width / 2,
-            y: canvasRect.top + canvasRect.height / 2,
-          },
-          outlineCenter: {
-            x: outlineRect.left + outlineRect.width / 2,
-            y: outlineRect.top + outlineRect.height / 2,
-          },
-          handleCenter: {
-            x: handleRect.left + handleRect.width / 2,
-            y: handleRect.top + handleRect.height / 2,
-          },
-          pageScrollWidth: document.documentElement.scrollWidth,
-          pageClientWidth: document.documentElement.clientWidth,
-        };
-      });
+      const fill = page.locator('#shape-style-fill');
+      await fill.fill('#ff00aa');
+      await fill.blur();
 
-      expect(Math.abs(geometry.outlineCenter.x - geometry.canvasCenter.x)).toBeLessThan(1);
-      expect(Math.abs(geometry.outlineCenter.y - geometry.canvasCenter.y)).toBeLessThan(1);
-      expect(Math.abs(geometry.handleCenter.x - geometry.canvasCenter.x)).toBeLessThan(1);
-      expect(Math.abs(geometry.handleCenter.y - geometry.canvasCenter.y)).toBeLessThan(1);
-      expect(geometry.pageScrollWidth).toBeLessThanOrEqual(geometry.pageClientWidth);
-      await page.goto('/');
-    }
-  });
+      await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
 
-  test('cloning a built-in template keeps the source and the clone independent', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version 2/);
 
-    // "Hand follower" (scenes/fixtures/templates/hand_follower.json) has
-    // exactly one shape at positionX=400 — a stable, known baseline.
-    await page.goto('/templates');
-    await page
-      .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
-      .click();
-    await page.waitForURL(/\/projects\/[^/]+$/);
-    await expandAllCollapsibleSections(page);
+      // Reload the page entirely (a fresh mount, exactly like reopening the
+      // project from the gallery) and confirm the same current version and
+      // content come back — the acceptance criterion's actual assertion.
+      await page.reload();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      await expandAllCollapsibleSections(page);
 
-    await shapeListItem(page).first().click();
-    const clonePositionX = page.locator('#shape-style-positionX');
-    await expect(clonePositionX).toHaveValue('400');
+      await shapeListItem(page).first().click();
+      await expect(page.locator('#shape-style-positionX')).toHaveValue('321');
+      await expect(page.locator('#shape-style-fill')).toHaveValue('#ff00aa');
 
-    // Edit and save this clone — this must never reach back into the
-    // shared Template row (TemplateCloneView deep-copies scene_json on
-    // clone with no mutable link back — scenes/api.py).
-    await clonePositionX.fill('777');
-    await clonePositionX.blur();
-    await openEditScene(page);
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      await context.close();
+    });
 
-    // Clone the same template again. If the first clone's edit had
-    // somehow touched the shared template, this second, independent
-    // clone would start from 777 instead of the template's own baseline.
-    await page.goto('/templates');
-    await page
-      .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
-      .click();
-    await page.waitForURL(/\/projects\/[^/]+$/);
-    await expandAllCollapsibleSections(page);
+    await test.step('keeps the rendered selection center and move handle aligned at desktop and narrow fit', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
 
-    await shapeListItem(page).first().click();
-    await expect(page.locator('#shape-style-positionX')).toHaveValue('400');
+      for (const viewport of [
+        { width: 1440, height: 900 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.setViewportSize(viewport);
+        // Each viewport is an independent fit check. Clear the prior browser
+        // session so loginViaUI reaches the real login form again instead of
+        // being redirected from /accounts/login/ as an already-authenticated
+        // user after the desktop iteration.
+        await page.context().clearCookies();
+        await loginViaUI(page, fixtures.owner.email, fixtures.password);
+        await createBlankProjectViaUI(page);
+        await openEditScene(page);
+        await page.getByRole('button', { name: 'Add circle' }).click();
+
+        const geometry = await page.evaluate(() => {
+          const canvas = document.querySelector<HTMLElement>('[data-testid="scene-canvas"]');
+          const outline = document.querySelector<SVGRectElement>(
+            '.editor-scene-shape-selection-outline',
+          );
+          const moveHandle = document.querySelector<HTMLElement>(
+            '[data-testid="shape-handle-move"]',
+          );
+          if (!canvas || !outline || !moveHandle)
+            throw new Error('Selection geometry is not rendered.');
+          const canvasRect = canvas.getBoundingClientRect();
+          const outlineRect = outline.getBoundingClientRect();
+          const handleRect = moveHandle.getBoundingClientRect();
+          return {
+            canvasCenter: {
+              x: canvasRect.left + canvasRect.width / 2,
+              y: canvasRect.top + canvasRect.height / 2,
+            },
+            outlineCenter: {
+              x: outlineRect.left + outlineRect.width / 2,
+              y: outlineRect.top + outlineRect.height / 2,
+            },
+            handleCenter: {
+              x: handleRect.left + handleRect.width / 2,
+              y: handleRect.top + handleRect.height / 2,
+            },
+            pageScrollWidth: document.documentElement.scrollWidth,
+            pageClientWidth: document.documentElement.clientWidth,
+          };
+        });
+
+        expect(Math.abs(geometry.outlineCenter.x - geometry.canvasCenter.x)).toBeLessThan(1);
+        expect(Math.abs(geometry.outlineCenter.y - geometry.canvasCenter.y)).toBeLessThan(1);
+        expect(Math.abs(geometry.handleCenter.x - geometry.canvasCenter.x)).toBeLessThan(1);
+        expect(Math.abs(geometry.handleCenter.y - geometry.canvasCenter.y)).toBeLessThan(1);
+        expect(geometry.pageScrollWidth).toBeLessThanOrEqual(geometry.pageClientWidth);
+        await page.goto('/');
+      }
+
+      await context.close();
+    });
+
+    await test.step('cloning a built-in template keeps the source and the clone independent', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+
+      // "Hand follower" (scenes/fixtures/templates/hand_follower.json) has
+      // exactly one shape at positionX=400 — a stable, known baseline.
+      await page.goto('/templates');
+      await page
+        .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
+        .click();
+      await page.waitForURL(/\/projects\/[^/]+$/);
+      await expandAllCollapsibleSections(page);
+
+      await shapeListItem(page).first().click();
+      const clonePositionX = page.locator('#shape-style-positionX');
+      await expect(clonePositionX).toHaveValue('400');
+
+      // Edit and save this clone — this must never reach back into the
+      // shared Template row (TemplateCloneView deep-copies scene_json on
+      // clone with no mutable link back — scenes/api.py).
+      await clonePositionX.fill('777');
+      await clonePositionX.blur();
+      await openEditScene(page);
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+
+      // Clone the same template again. If the first clone's edit had
+      // somehow touched the shared template, this second, independent
+      // clone would start from 777 instead of the template's own baseline.
+      await page.goto('/templates');
+      await page
+        .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
+        .click();
+      await page.waitForURL(/\/projects\/[^/]+$/);
+      await expandAllCollapsibleSections(page);
+
+      await shapeListItem(page).first().click();
+      await expect(page.locator('#shape-style-positionX')).toHaveValue('400');
+
+      await context.close();
+    });
   });
 
   test('history shows sequence/latest metadata, restore creates a new version, and the current version cannot be soft-deleted', async ({

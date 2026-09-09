@@ -628,15 +628,30 @@ QA.
   accountEntitlements + accountIdentities + accountSessions + adminSettings
   = 18/18 passed.
 - **#506:** handback to stage 2b, no code change. Classification: the
-  curated firefox subset's artPieceSteeringRuntime tests timeout at 30.3s
-  on waitForThreeJsReady and sendCommandAndAwaitPose (waiting for the
-  CDN-loaded sandboxed iframe's canvas/postMessage). 12 other artPiece
-  firefox tests timeout identically in the same run. Standalone passes
-  at ~14s; repeat-each=3 under interleaved curated files also passes.
-  Likely a CI-runner-capacity boundary (Firefox WebGL sandboxed-iframe
-  overhead on a shared runner), but the fix would touch the Three.js/
-  A-Frame runtime or iframe postMessage protocol — shared with chromium/
-  webkit — so it's stage-2b territory per the issue's own stop condition.
-  Owner decision needed on whether to pursue a runtime fix, a longer
-  firefox-only timeout, or a curated-subset change.
+  curated firefox subset's artPieceSteeringRuntime tests (all 3 scenarios
+  in that file) timeout at 30.3-30.4s on waitForThreeJsReady and
+  sendCommandAndAwaitPose (waiting for the CDN-loaded sandboxed iframe's
+  canvas/postMessage). Standalone passes at ~14s; repeat-each=3 under
+  interleaved curated files also passes. Likely a CI-runner-capacity
+  boundary (Firefox WebGL sandboxed-iframe overhead on a shared runner),
+  but the fix would touch the Three.js/A-Frame runtime or iframe
+  postMessage protocol — shared with chromium/webkit — so it's
+  stage-2b territory per the issue's own stop condition. Owner decision
+  needed on whether to pursue a runtime fix, a longer firefox-only
+  timeout, or a curated-subset change.
+
+  **QA correction (stage 4, Sonnet 5):** the original handback cited "12
+  other artPiece firefox tests timeout identically" from CI run
+  `34307303394` — that run predates both today's fixes and the
+  firefox-curation change itself, so files it ran on firefox
+  (`artPieceFullZipRuntime`/`artPieceImmersive*`/`artPieceNonCameraZip`)
+  aren't even in the current firefox project (`playwright.config.ts`
+  curates only `drawioEditor.spec.ts`, `artPieceSteeringRuntime.spec.ts`,
+  `manual2dStageChrome.spec.ts`). Independently re-verified against the
+  actual current-`main` owner-triggered run (`34404323033`): only the 3
+  `artPieceSteeringRuntime.spec.ts` firefox failures exist, nothing
+  broader. Both `.agents/memory/e2e-full-matrix-firefox-iframe-timeouts.md`
+  and this entry corrected accordingly. The classification conclusion
+  (stage-2b handback) still holds; only the supporting evidence scope
+  was wrong.
 

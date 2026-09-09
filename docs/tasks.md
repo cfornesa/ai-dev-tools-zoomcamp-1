@@ -1,5 +1,32 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-09 — #498 closed after independent QA + readiness; #499–#502 remain open
+
+Stage 4 (`qa-self-review`) independently re-verified the stage-2b handoff for
+`a705f37`/`edbc382` (migration 0036 consolidating `MistralCredential` into
+`ProviderCredential`) rather than trusting it: read the migration script
+against the real `ProviderCredential` model schema and its
+`UniqueConstraint(owner, vendor)`, read `art_piece_api.py`'s fixed read path
+directly, read `reencrypt_provider_credentials.py` in full (all three
+original safeguards present), grepped for zero remaining legacy references,
+read `account_deletion.py`/`account_export.py`'s diffs in full, read
+`tests/test_mistral_credentials.py` in substantial part, and re-ran every
+claimed command from a clean shell (20 passed/15 passed+5 skipped/
+`makemigrations --check` clean — all exact matches) plus a full `make check`
+(exit 0: backend 1161 passed/34 skipped, frontend 2506/2506, lint/format/
+typecheck clean). Also independently reproduced #502's exact claimed error.
+No discrepancies found.
+
+Stage 5 (`production-readiness`, Sonnet 5 as the same standing-authorized
+Opus 5 substitution, Low effort) confirmed only #498's own scope was
+complete — #499's code change landed as an unavoidable side effect of
+deleting the model, but its own generation-path verification matrix is still
+outstanding; #500/#501 (frontend) are unstarted; #502 is real but ungroomed.
+
+**#498 closed** with evidence on GitHub. **#499, #500, #501, #502 stay open**,
+each with a named next action; rollup posted on the #497 tracking issue.
+Pushed to `main` at `a705f37`/`edbc382`.
+
 ## 2026-09-09 — #419: waiting on next nightly CI run, no action pending
 
 Owner-confirmed status: #419 stays open with no further work from either side

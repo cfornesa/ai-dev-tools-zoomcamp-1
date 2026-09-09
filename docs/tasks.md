@@ -17889,3 +17889,20 @@ plan shows 50/day with `ai_art_generate` included, account settings shows
 against the already-running production database. Extended
 `.agents/memory/replit-migrations-ledger-not-updated-by-publish.md` with
 the precise pure-data-migration risk pattern this revealed.
+
+## 301. Fix PostgreSQL-backed tests erroring under single-test selection
+
+Status: PROPOSED
+GitHub issue: [#502](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/502)
+Discovered: 2026-09-09 during #498's isolated-database migration testing.
+
+Goal: make every `databases=["postgres_test"]`-marked test runnable via
+`pytest path::test_name` with `POSTGRES_TEST_DATABASE_URL` set. Today the
+first DB-touching test in a pytest invocation that requests only the
+`postgres_test` alias errors at setup with `ImproperlyConfigured:
+Circular dependency in TEST[DEPENDENCIES]` (pytest-django per-test
+database setup); the same test passes when any other DB-touching test
+runs earlier in the invocation. `tests/test_shared_quota_cache.py`'s
+`databases=["default", "postgres_test"]` form is the working convention;
+~20 test files use the single-alias form. Fixing it is out of #498's
+scope; #498's own migration tests already use the working pattern.

@@ -1,5 +1,52 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-08 — #419 new evidence: two more files broken by #427/#444, found during E2E test-count consolidation
+
+While consolidating `frontend/e2e/*.spec.ts` files for test-count reduction
+(a separate task, not filed as its own issue), running each file against a
+real local stack before consolidating it (rather than trusting its
+assertions from inspection alone) found two more files broken by the same
+#427/#444 stage-popover restructuring whose own fixes only reached
+`projectLifecycle.spec.ts`/`publishingAndRemix.spec.ts`/
+`responsiveShell.spec.ts`:
+
+- **`layersPanel.spec.ts`**: every scenario hung on its first "Add circle"
+  click. Confirmed pre-existing on `main` (reproduced against the
+  unmodified file, not introduced by this session's own edits). Fixed by
+  adding `openEditScene`/`closeEditScene` calls around shape/layer
+  authoring, plus a local `reopenEditScene` (the shared `openEditScene`'s
+  exact-name "Edit scene" trigger lookup doesn't tolerate a trigger already
+  reading "Hide edit scene" from an earlier close in the same test). Also
+  found the group-selection checkboxes and `SelectionHud`'s "Move ... down"
+  button both live inside the Preview region, covered by the Edit-scene
+  popover's modal overlay while it's open. Commit `6b8e9d5`.
+- **`interactionRuntime.spec.ts`**: same pattern for Add circle/Save, plus
+  Demo/Camera controls (`DemoControlsPanel`/`CameraControl`) behind "Piece
+  controls" (#444). Also found a real bug in the shared
+  `closePieceControlsMenu` (`e2e/support/openEditScene.ts`): its own guard
+  checks the "Close piece controls menu" button's visibility, but that
+  accessible name is shared by both the outer toggle and the dialog's own
+  "×" dismiss button while open — a strict-mode violation its
+  `.catch(() => false)` silently treats as "already closed," so it never
+  presses Escape. Worked around locally (direct `Escape` + an unambiguous
+  dialog-count assertion) rather than editing the shared helper, since
+  other callers may depend on its current behavior in ways not audited
+  here. Commit `0170bad`.
+
+Both files verified passing (3/3, 7/7) against a real local stack. Posted
+as new evidence on #419 (not a new issue — #419 is already the open
+container for full-suite E2E reconciliation after #427/#444) rather than
+duplicating it. Recorded the general "non-smoke spec files silently drift
+after a UI refactor, undetected until someone actually runs them" pattern
+in `.agents/memory/e2e-spec-drift-outside-smoke-suite.md`.
+
+**Not done, still open under #419's own scope**: a systematic sweep of
+every remaining non-smoke spec file for the same class of staleness (this
+pass found these two only because the consolidation work happened to run
+them, not from an exhaustive audit), and a proper fix for
+`closePieceControlsMenu`'s ambiguous-locator bug in the shared helper
+itself (worked around per-callsite here, not fixed at the source).
+
 ## 2026-09-05 backlog session — #418 and #427 closed
 
 The working tree's uncommitted #404-#409/#414-#416 implementation (below)

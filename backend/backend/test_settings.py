@@ -66,7 +66,17 @@ if _postgres_test_database_url:
     from backend.database import parse_database_url as _parse_database_url
 
     DATABASES["postgres_test"] = _parse_database_url(_postgres_test_database_url)
+    DATABASES["postgres_test_broken"] = dict(DATABASES["postgres_test"])
+    DATABASES["postgres_test_broken"]["PORT"] = "1"
 
-    _postgres_test_broken = dict(DATABASES["postgres_test"])
-    _postgres_test_broken["PORT"] = "1"
-    DATABASES["postgres_test_broken"] = _postgres_test_broken
+    # django.test.utils.setup_databases() implicitly makes every non-default
+    # alias depend on "default" unless TEST["DEPENDENCIES"] is set explicitly
+    # (get_unique_databases_and_mirrors in django/test/utils.py). pytest-django
+    # sets up only the aliases the selected tests use, so a lone
+    # databases=["postgres_test"] test would fail at setup with
+    # "Circular dependency in TEST[DEPENDENCIES]" — the unselected "default"
+    # alias can never be resolved. Empty dependencies preserve the existing
+    # creation order (default is still first in DATABASES insertion order) and
+    # change no test semantics.
+    for _alias in ("postgres_test", "postgres_test_broken"):
+        DATABASES[_alias]["TEST"] = {"DEPENDENCIES": []}

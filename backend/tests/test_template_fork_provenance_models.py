@@ -193,7 +193,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"])
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_blocks_raw_sql_mismatched_fork_source(django_db_blocker):
     with django_db_blocker.unblock():
         conn = connections["postgres_test"]

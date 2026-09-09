@@ -345,7 +345,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_upserts_never_let_an_older_client_seq_win(django_db_blocker):
     """Two genuinely overlapping upserts for the same (project, user, session),
     one with a higher `client_seq` than the other, must serialize via
@@ -412,7 +412,7 @@ def test_postgres_concurrent_upserts_never_let_an_older_client_seq_win(django_db
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_first_writes_serialize_without_duplicate_rows(django_db_blocker):
     """Two genuinely overlapping *first-ever* upserts for the same scope
     (no existing row to lock yet) must not both succeed at creating a row —

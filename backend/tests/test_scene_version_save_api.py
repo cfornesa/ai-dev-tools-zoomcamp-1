@@ -418,7 +418,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_saves_never_collide_on_sequence(django_db_blocker):
     """Two genuinely overlapping saves against the same project must serialize:
     select_for_update() blocks the second thread's transaction until the first
@@ -483,7 +483,7 @@ def test_postgres_concurrent_saves_never_collide_on_sequence(django_db_blocker):
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"])
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_rollback_on_injected_failure_leaves_state_unchanged(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()

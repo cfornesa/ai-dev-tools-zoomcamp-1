@@ -300,7 +300,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"])
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_blocker):
     """A failure partway through the fork transaction (after the new project
     row has already been created in-transaction) must roll back the project,
@@ -356,7 +356,7 @@ def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_block
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_duplicate_fork_submission_creates_exactly_one_fork(
     django_db_blocker,
 ):
@@ -418,7 +418,7 @@ def test_postgres_concurrent_duplicate_fork_submission_creates_exactly_one_fork(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_forks_without_request_id_both_succeed_independently(
     django_db_blocker,
 ):

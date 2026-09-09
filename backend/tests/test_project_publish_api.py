@@ -422,7 +422,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_publish_and_save_leave_a_consistent_public_state(django_db_blocker):
     """A publish racing a concurrent version save must not leave the
     project half-updated: whichever order the two locked transactions

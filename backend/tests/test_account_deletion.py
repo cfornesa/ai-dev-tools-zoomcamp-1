@@ -332,7 +332,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_deletion_requests_only_one_succeeds(django_db_blocker):
     """Two genuinely overlapping deletion requests for the same account
     must never both run to completion: `select_for_update()` on the user

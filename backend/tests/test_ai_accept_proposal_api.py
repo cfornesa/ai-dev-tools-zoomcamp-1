@@ -344,7 +344,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_duplicate_accepts_produce_exactly_one_version(django_db_blocker):
     """Two genuinely overlapping Accept requests carrying the *same*
     client_request_id (e.g. a double-click, or a client retrying a request
@@ -402,7 +402,7 @@ def test_postgres_concurrent_duplicate_accepts_produce_exactly_one_version(djang
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_accepts_without_request_id_serialize_to_distinct_sequences(
     django_db_blocker,
 ):

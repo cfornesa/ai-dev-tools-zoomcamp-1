@@ -35,7 +35,7 @@ resource, malformed identifier.
 Every file above already tests, for its own operation: anonymous rejection,
 owner success, non-owner 404-not-403 (no existence leak), and unchanged
 database state after a denial. Several also carry PostgreSQL-gated
-genuinely-concurrent tests (`@pytest.mark.django_db(databases=["postgres_test"],
+genuinely-concurrent tests (`@pytest.mark.django_db(databases=["default", "postgres_test"],
 transaction=True)` + `threading.Barrier`) proving row-locking/uniqueness-race/
 rollback guarantees: version save, version restore, draft upsert, fork
 (duplicate-submission and no-request-id), publish-vs-save, template clone

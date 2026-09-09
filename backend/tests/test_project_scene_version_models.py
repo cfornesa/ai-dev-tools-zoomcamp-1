@@ -183,7 +183,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"])
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_blocks_raw_sql_snapshot_mutation(django_db_blocker):
     """Even a raw UPDATE bypassing the Django ORM guard is blocked by the DB trigger."""
     with django_db_blocker.unblock():
@@ -221,7 +221,7 @@ def test_postgres_trigger_blocks_raw_sql_snapshot_mutation(django_db_blocker):
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"])
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_blocks_current_version_from_other_project(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()
@@ -243,7 +243,7 @@ def test_postgres_trigger_blocks_current_version_from_other_project(django_db_bl
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"])
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_blocks_soft_deleted_current_version(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()
@@ -265,7 +265,7 @@ def test_postgres_trigger_blocks_soft_deleted_current_version(django_db_blocker)
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"])
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_protects_current_version_from_soft_delete(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()

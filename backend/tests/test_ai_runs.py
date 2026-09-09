@@ -698,7 +698,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_advance_calls_never_double_attempt(django_db_blocker, monkeypatch):
     """Two genuinely overlapping `advance` calls on the same run must
     never both perform a provider call: the lease means exactly one

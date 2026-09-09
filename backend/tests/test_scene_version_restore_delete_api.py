@@ -304,7 +304,7 @@ pytestmark_postgres = pytest.mark.skipif(
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"], transaction=True)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_restores_never_collide_on_sequence(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()
@@ -374,7 +374,7 @@ def test_postgres_concurrent_restores_never_collide_on_sequence(django_db_blocke
 
 
 @pytestmark_postgres
-@pytest.mark.django_db(databases=["postgres_test"])
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_rollback_on_restore_failure_leaves_state_unchanged(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()

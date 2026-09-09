@@ -18051,3 +18051,23 @@ report alone): `scenes_mistralcredential` count 0, `scenes_providercredential`
 (vendor='mistral') count 1. Memory extended with the generalized rule:
 check this class of gap for any migration moving data between two
 already-existing tables, not only migrations with zero schema operations.
+
+## 303. AI generation: resolve Mistral credentials only from ProviderCredential
+
+Status: COMPLETE — closed 2026-09-09.
+
+GitHub issue: [#499](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/499) (closed)
+
+Stage 2b (Ollama Cloud `kimi-k3`, roster corrected from `qwen3-coder:cloud`
+which Ollama Cloud no longer offers) found production code already
+satisfied every criterion after #498/#500 — both `ai_api.py` and
+`art_piece_api.py` share identical `ProviderCredential`-only lookup/error
+semantics, with no legacy `MistralCredential` reference remaining outside
+the two exception classes meant to stay. Only test coverage was missing.
+Independently re-verified before closing rather than accepted on the
+artifact's own report: direct code inspection confirmed the "zero
+production changes" claim, and the new/rewritten tests were audited line
+by line — one replaced a genuinely vacuous existing test (patched a name
+that only exists via a local import, asserted against the wrong provider
+class) with one that proves the fake-provider path never touches the
+credential store. `make check` fully green. Unblocks #501.

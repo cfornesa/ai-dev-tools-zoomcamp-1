@@ -564,3 +564,38 @@ force it in the same session as an engineering batch. Recorded at
 should check the nightly scheduled run's own results rather than
 manually re-triggering, and only force a fresh manual run when the owner
 explicitly asks for it.
+
+## 2026-09-09 (#499 closed: credential-resolution parity was already correct, only test coverage was missing)
+
+Stage 2b implementation dispatched to Opencode Go/Ollama Cloud on the
+corrected roster model (`kimi-k3`, replacing `qwen3-coder:cloud`, which
+Ollama Cloud no longer offers -- `DISPATCH.md` and both
+`implementation-complex` skill mirrors updated to match).
+
+**Provenance:**
+- Stage 2b: rostered Ollama Cloud `kimi-k3` -- ran as intended, not a
+  substitution.
+- Stage 3 (`second-opinion-review`, Mistral Vibe): not run for this diff.
+- Stage 4 (QA): Claude Sonnet 5, Medium -- substitution for no rostered
+  alternative (Claude is this stage's own roster).
+
+Stage 2b's own artifact claimed the production code already satisfied
+#499's criteria after #498/#500, and only test coverage was missing --
+independently re-verified rather than accepted: direct `grep`/read of
+both `ai_api.py` and `art_piece_api.py` confirmed no legacy
+`MistralCredential` reference remains outside the two exception classes
+that are supposed to stay, and both generation paths share byte-identical
+`ProviderCredential`-only lookup/error semantics. The artifact's central
+claim ("zero production changes needed") held up.
+
+One of the new tests replaced a genuinely vacuous existing test
+(`test_fake_provider_does_not_require_a_personal_key` patched a name that
+only ever exists via a local import inside the real function, so
+`raising=False` patched nothing live, then asserted against the wrong
+provider class) with one that proves the credential store is never
+queried on the fake-provider path. `make check` fully green (backend
+1198 passed/2 skipped, frontend 203 files/2503 tests). Closed with full
+criterion-matrix evidence on the issue.
+
+This also unblocks #501, whose own contract required #499 terminally
+reconciled first.

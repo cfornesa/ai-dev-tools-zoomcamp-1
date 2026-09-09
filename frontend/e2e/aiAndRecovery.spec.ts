@@ -195,6 +195,20 @@ async function probeFakeAIProviderMode(context: BrowserContext, page: Page): Pro
   return response.status() === 200;
 }
 
+// Consolidation note: every describe block below groups several originally
+// independent test()s (issue #66) into fewer test()s using test.step() per
+// original scenario. Each step creates and closes its OWN
+// browser.newContext()/page rather than reusing the outer test's default
+// `page`/`context` fixture -- this repo's own scenarios here rely on
+// per-scenario login, IndexedDB/localStorage isolation, and (for the
+// autosave/draft-recovery groups) a freshly `page.clock.install()`ed clock
+// per scenario, none of which are safe to share across steps on one page
+// (a second `loginViaUI` call on an already-authenticated page times out
+// waiting for the login form -- the exact bug already found and fixed in
+// this session's stage-chrome consolidations). Using a fresh context per
+// step reproduces each original scenario's isolation exactly; only
+// Playwright's own test-invocation count drops.
+
 test.describe('AI create/edit proposals', () => {
   let fixtures: Fixtures;
   let aiProviderFakeModeActive = false;
@@ -221,169 +235,185 @@ test.describe('AI create/edit proposals', () => {
     );
   });
 
-  test('create: success, then Accept persists exactly one AI-origin version', async ({ page }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page); // version 1
-    await expandAllCollapsibleSections(page);
-    await setAIScenario(page, 'success');
-
-    await page
-      .getByRole('textbox', { name: 'Describe the scene you want to generate' })
-      .fill('A calm scene with a circle.');
-    await page.getByRole('button', { name: 'Generate scene' }).click();
-    await expect(page.getByTestId('ai-proposal-success')).toBeVisible();
-    await expect(page.getByTestId('ai-proposal-summary')).toHaveText(
-      'A new scene was generated from your prompt.',
-    );
-
-    await page.getByTestId('ai-accept-button').click();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
-    await expect(versionRow(page, 2)).toContainText('AI: generated scene');
-
-    // Only Accept created a version -- exactly one new row, nothing else.
-    await expect(page.locator('.version-history-item')).toHaveCount(2);
-  });
-
-  test('create: each configured provider uses its own deterministic model selection', async ({
-    page,
+  test('create/edit proposal scenarios: success, provider matrix, error states, and reject', async ({
+    browser,
   }) => {
-    // Keep this three-request matrix isolated from the primary owner's
-    // rate-limit budget used by the failure-mode scenarios below.
-    await loginViaUI(page, fixtures.other.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-    await setAIScenario(page, 'success');
+    test.setTimeout(60000);
 
-    for (const [vendor, model] of [
-      ['mistral', ''],
-      ['gemini', 'gemini-2.5-flash'],
-      ['deepseek', 'deepseek-chat'],
-    ] as const) {
-      await page.getByLabel('AI provider').selectOption(vendor);
-      if (model) {
-        await expect(page.getByLabel(`${vendor} model (optional)`)).toHaveValue(model);
-      }
+    await test.step('create: success, then Accept persists exactly one AI-origin version', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page); // version 1
+      await expandAllCollapsibleSections(page);
+      await setAIScenario(page, 'success');
+
       await page
         .getByRole('textbox', { name: 'Describe the scene you want to generate' })
-        .fill(`Deterministic ${vendor} proposal.`);
+        .fill('A calm scene with a circle.');
       await page.getByRole('button', { name: 'Generate scene' }).click();
       await expect(page.getByTestId('ai-proposal-success')).toBeVisible();
-      await page.getByTestId('ai-reject-button').click();
-      await expect(page.getByTestId('ai-proposal-success')).toHaveCount(0);
-    }
+      await expect(page.getByTestId('ai-proposal-summary')).toHaveText(
+        'A new scene was generated from your prompt.',
+      );
 
-    await expect(page.locator('.version-history-item')).toHaveCount(1);
-  });
+      await page.getByTestId('ai-accept-button').click();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      await expect(versionRow(page, 2)).toContainText('AI: generated scene');
 
-  test('create: invalid structured output, quota, and timeout each surface their own error state and create no version', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page); // version 1
-    await expandAllCollapsibleSections(page);
+      // Only Accept created a version -- exactly one new row, nothing else.
+      await expect(page.locator('.version-history-item')).toHaveCount(2);
 
-    async function attemptAndExpectError(
-      scenario: 'invalid_structured_output' | 'quota_exceeded' | 'timeout',
-      expectedTestId: string,
-    ) {
-      await setAIScenario(page, scenario);
+      await context.close();
+    });
+
+    await test.step('create: each configured provider uses its own deterministic model selection', async () => {
+      // Keep this three-request matrix isolated from the primary owner's
+      // rate-limit budget used by the failure-mode scenarios below.
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.other.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      await setAIScenario(page, 'success');
+
+      for (const [vendor, model] of [
+        ['mistral', ''],
+        ['gemini', 'gemini-2.5-flash'],
+        ['deepseek', 'deepseek-chat'],
+      ] as const) {
+        await page.getByLabel('AI provider').selectOption(vendor);
+        if (model) {
+          await expect(page.getByLabel(`${vendor} model (optional)`)).toHaveValue(model);
+        }
+        await page
+          .getByRole('textbox', { name: 'Describe the scene you want to generate' })
+          .fill(`Deterministic ${vendor} proposal.`);
+        await page.getByRole('button', { name: 'Generate scene' }).click();
+        await expect(page.getByTestId('ai-proposal-success')).toBeVisible();
+        await page.getByTestId('ai-reject-button').click();
+        await expect(page.getByTestId('ai-proposal-success')).toHaveCount(0);
+      }
+
+      await expect(page.locator('.version-history-item')).toHaveCount(1);
+
+      await context.close();
+    });
+
+    await test.step('create: invalid structured output, quota, and timeout each surface their own error state and create no version', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page); // version 1
+      await expandAllCollapsibleSections(page);
+
+      async function attemptAndExpectError(
+        scenario: 'invalid_structured_output' | 'quota_exceeded' | 'timeout',
+        expectedTestId: string,
+      ) {
+        await setAIScenario(page, scenario);
+        await page
+          .getByRole('textbox', { name: 'Describe the scene you want to generate' })
+          .fill(`Trigger the ${scenario} scenario.`);
+        await page.getByRole('button', { name: 'Generate scene' }).click();
+        await expect(page.getByTestId(expectedTestId)).toBeVisible();
+        await expect(page.getByTestId('ai-proposal-success')).toHaveCount(0);
+      }
+
+      // `useAIProposal.ts`'s `classifyGenerationError` only routes
+      // `prompt_invalid`/`current_scene_invalid`/`request_invalid` codes to
+      // the `validation-error` phase -- the server's `invalid_structured_output`
+      // code (schema-invalid AI output) falls through to the generic
+      // `provider-error` phase, same as `timeout`.
+      await attemptAndExpectError('invalid_structured_output', 'ai-error-provider-error');
+      await attemptAndExpectError('quota_exceeded', 'ai-error-quota-error');
+      await attemptAndExpectError('timeout', 'ai-error-provider-error');
+
+      // No version was ever created by any failed attempt.
+      await expect(page.locator('.version-history-item')).toHaveCount(1);
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
+
+      await resetAIScenario(page);
+      await context.close();
+    });
+
+    await test.step('create: Reject discards the proposal and leaves saved history untouched', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page); // version 1
+      await expandAllCollapsibleSections(page);
+      await setAIScenario(page, 'success');
+
       await page
         .getByRole('textbox', { name: 'Describe the scene you want to generate' })
-        .fill(`Trigger the ${scenario} scenario.`);
+        .fill('A scene to reject.');
       await page.getByRole('button', { name: 'Generate scene' }).click();
-      await expect(page.getByTestId(expectedTestId)).toBeVisible();
+      await expect(page.getByTestId('ai-proposal-success')).toBeVisible();
+
+      await page.getByTestId('ai-reject-button').click();
       await expect(page.getByTestId('ai-proposal-success')).toHaveCount(0);
-    }
+      await expect(page.locator('.version-history-item')).toHaveCount(1);
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
 
-    // `useAIProposal.ts`'s `classifyGenerationError` only routes
-    // `prompt_invalid`/`current_scene_invalid`/`request_invalid` codes to
-    // the `validation-error` phase -- the server's `invalid_structured_output`
-    // code (schema-invalid AI output) falls through to the generic
-    // `provider-error` phase, same as `timeout`.
-    await attemptAndExpectError('invalid_structured_output', 'ai-error-provider-error');
-    await attemptAndExpectError('quota_exceeded', 'ai-error-quota-error');
-    await attemptAndExpectError('timeout', 'ai-error-provider-error');
+      await context.close();
+    });
 
-    // No version was ever created by any failed attempt.
-    await expect(page.locator('.version-history-item')).toHaveCount(1);
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
+    await test.step('edit: success proposes a minimal patch; forbidden-field patch and invalid post-patch output are both rejected with no version created', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page); // version 1
+      await expandAllCollapsibleSections(page);
 
-    await resetAIScenario(page);
-  });
+      await page.getByRole('radio', { name: 'Edit' }).click();
 
-  test('create: Reject discards the proposal and leaves saved history untouched', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page); // version 1
-    await expandAllCollapsibleSections(page);
-    await setAIScenario(page, 'success');
+      await setAIScenario(page, 'forbidden_patch');
+      await page
+        .getByRole('textbox', { name: 'Describe the change you want to make' })
+        .fill('Rename the scene identity (forbidden).');
+      await page.getByRole('button', { name: 'Propose edit' }).click();
+      // `scenes.patch`'s protected-field rejection message names the exact
+      // rejected path -- proves this actually went through real patch
+      // validation, not a hand-rolled stand-in error.
+      await expect(page.getByTestId('ai-error-provider-error')).toBeVisible();
+      await expect(page.getByTestId('ai-error-provider-error')).toContainText(/schemaVersion/);
 
-    await page
-      .getByRole('textbox', { name: 'Describe the scene you want to generate' })
-      .fill('A scene to reject.');
-    await page.getByRole('button', { name: 'Generate scene' }).click();
-    await expect(page.getByTestId('ai-proposal-success')).toBeVisible();
+      // `useAIProposal.ts`'s `classifyGenerationError` routes the server's
+      // `invalid_structured_output` code to the generic `provider-error`
+      // phase, not `validation-error` -- see the create-scene test above's
+      // own comment on this same mapping.
+      await setAIScenario(page, 'invalid_structured_output');
+      await page
+        .getByRole('textbox', { name: 'Describe the change you want to make' })
+        .fill('Set an invalid accessibility value.');
+      await page.getByRole('button', { name: 'Propose edit' }).click();
+      await expect(page.getByTestId('ai-error-provider-error')).toBeVisible();
 
-    await page.getByTestId('ai-reject-button').click();
-    await expect(page.getByTestId('ai-proposal-success')).toHaveCount(0);
-    await expect(page.locator('.version-history-item')).toHaveCount(1);
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
-  });
+      // Neither rejected edit attempt created a version.
+      await expect(page.locator('.version-history-item')).toHaveCount(1);
 
-  test('edit: success proposes a minimal patch; forbidden-field patch and invalid post-patch output are both rejected with no version created', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page); // version 1
-    await expandAllCollapsibleSections(page);
+      await setAIScenario(page, 'success');
+      await page
+        .getByRole('textbox', { name: 'Describe the change you want to make' })
+        .fill('Change the background color.');
+      await page.getByRole('button', { name: 'Propose edit' }).click();
+      await expect(page.getByTestId('ai-proposal-success')).toBeVisible();
+      // The edit endpoint's response includes a real, server-computed
+      // change summary (scenes.patch.summarize_patch) -- not the fixed
+      // create-scene string -- proving this went through the patch path.
+      await expect(page.getByTestId('ai-proposal-summary')).not.toHaveText(
+        'A new scene was generated from your prompt.',
+      );
 
-    await page.getByRole('radio', { name: 'Edit' }).click();
+      await page.getByTestId('ai-accept-button').click();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      await expect(versionRow(page, 2)).toContainText('AI: proposed edit');
+      await expect(page.locator('.version-history-item')).toHaveCount(2);
 
-    await setAIScenario(page, 'forbidden_patch');
-    await page
-      .getByRole('textbox', { name: 'Describe the change you want to make' })
-      .fill('Rename the scene identity (forbidden).');
-    await page.getByRole('button', { name: 'Propose edit' }).click();
-    // `scenes.patch`'s protected-field rejection message names the exact
-    // rejected path -- proves this actually went through real patch
-    // validation, not a hand-rolled stand-in error.
-    await expect(page.getByTestId('ai-error-provider-error')).toBeVisible();
-    await expect(page.getByTestId('ai-error-provider-error')).toContainText(/schemaVersion/);
-
-    // `useAIProposal.ts`'s `classifyGenerationError` routes the server's
-    // `invalid_structured_output` code to the generic `provider-error`
-    // phase, not `validation-error` -- see the create-scene test above's
-    // own comment on this same mapping.
-    await setAIScenario(page, 'invalid_structured_output');
-    await page
-      .getByRole('textbox', { name: 'Describe the change you want to make' })
-      .fill('Set an invalid accessibility value.');
-    await page.getByRole('button', { name: 'Propose edit' }).click();
-    await expect(page.getByTestId('ai-error-provider-error')).toBeVisible();
-
-    // Neither rejected edit attempt created a version.
-    await expect(page.locator('.version-history-item')).toHaveCount(1);
-
-    await setAIScenario(page, 'success');
-    await page
-      .getByRole('textbox', { name: 'Describe the change you want to make' })
-      .fill('Change the background color.');
-    await page.getByRole('button', { name: 'Propose edit' }).click();
-    await expect(page.getByTestId('ai-proposal-success')).toBeVisible();
-    // The edit endpoint's response includes a real, server-computed
-    // change summary (scenes.patch.summarize_patch) -- not the fixed
-    // create-scene string -- proving this went through the patch path.
-    await expect(page.getByTestId('ai-proposal-summary')).not.toHaveText(
-      'A new scene was generated from your prompt.',
-    );
-
-    await page.getByTestId('ai-accept-button').click();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
-    await expect(versionRow(page, 2)).toContainText('AI: proposed edit');
-    await expect(page.locator('.version-history-item')).toHaveCount(2);
-
-    await resetAIScenario(page);
+      await resetAIScenario(page);
+      await context.close();
+    });
   });
 });
 
@@ -394,143 +424,145 @@ test.describe('Concurrency (PostgreSQL)', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('duplicate Accept requests racing the same proposal create exactly one version', async ({
+  test('duplicate Accept requests and concurrent draft syncs each resolve deterministically', async ({
     browser,
   }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    // Keep this provider-backed race on the fixture budget used by the
-    // provider matrix so the owner's earlier AI cases cannot make the
-    // concurrency proof silently skip on rate limiting.
-    await loginViaUI(page, fixtures.other.email, fixtures.password);
+    await test.step('duplicate Accept requests racing the same proposal create exactly one version', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      // Keep this provider-backed race on the fixture budget used by the
+      // provider matrix so the owner's earlier AI cases cannot make the
+      // concurrency proof silently skip on rate limiting.
+      await loginViaUI(page, fixtures.other.email, fixtures.password);
 
-    const projectId = await createBlankProjectViaUI(page); // version 1
+      const projectId = await createBlankProjectViaUI(page); // version 1
 
-    const projectBefore = (await (await apiGet(context, `/api/projects/${projectId}/`)).json()) as {
-      current_version: number;
-    };
+      const projectBefore = (await (
+        await apiGet(context, `/api/projects/${projectId}/`)
+      ).json()) as {
+        current_version: number;
+      };
 
-    const createResponse = await apiPost(
-      context,
-      `/api/projects/${projectId}/ai/create-scene/`,
-      { prompt: 'duplicate-accept race fixture' },
-      aiScenarioHeader('success'),
-    );
-    expect(createResponse.status()).toBe(200);
-    const { scene } = (await createResponse.json()) as { scene: unknown };
+      const createResponse = await apiPost(
+        context,
+        `/api/projects/${projectId}/ai/create-scene/`,
+        { prompt: 'duplicate-accept race fixture' },
+        aiScenarioHeader('success'),
+      );
+      expect(createResponse.status()).toBe(200);
+      const { scene } = (await createResponse.json()) as { scene: unknown };
 
-    const clientRequestId = crypto.randomUUID();
-    const acceptPayload = {
-      operation: 'ai_create',
-      scene_json: scene,
-      base_version_id: projectBefore.current_version,
-      change_label: 'duplicate-accept race',
-      client_request_id: clientRequestId,
-    };
+      const clientRequestId = crypto.randomUUID();
+      const acceptPayload = {
+        operation: 'ai_create',
+        scene_json: scene,
+        base_version_id: projectBefore.current_version,
+        change_label: 'duplicate-accept race',
+        client_request_id: clientRequestId,
+      };
 
-    // Two genuinely overlapping Accept requests, same client_request_id,
-    // same session -- the exact idempotency guard
-    // AIAcceptProposalView.post's (project, ai_request_id) unique
-    // constraint + select_for_update() lock is built to serialize (see
-    // scenes/ai_api.py's own docstring), fired from two independent
-    // contexts (mirroring projectLifecycle.spec.ts's own "two tabs of one
-    // session" concurrency pattern) rather than relying on the client-side
-    // acceptInFlightRef guard a same-tab double click would never actually
-    // race past.
-    const otherContext = await browser.newContext();
-    const otherPage = await otherContext.newPage();
-    await loginViaUI(otherPage, fixtures.other.email, fixtures.password);
+      // Two genuinely overlapping Accept requests, same client_request_id,
+      // same session -- the exact idempotency guard
+      // AIAcceptProposalView.post's (project, ai_request_id) unique
+      // constraint + select_for_update() lock is built to serialize (see
+      // scenes/ai_api.py's own docstring), fired from two independent
+      // contexts (mirroring projectLifecycle.spec.ts's own "two tabs of one
+      // session" concurrency pattern) rather than relying on the client-side
+      // acceptInFlightRef guard a same-tab double click would never actually
+      // race past.
+      const otherContext = await browser.newContext();
+      const otherPage = await otherContext.newPage();
+      await loginViaUI(otherPage, fixtures.other.email, fixtures.password);
 
-    const [first, second] = await Promise.all([
-      apiPost(context, `/api/projects/${projectId}/ai/accept-proposal/`, acceptPayload),
-      apiPost(otherContext, `/api/projects/${projectId}/ai/accept-proposal/`, acceptPayload),
-    ]);
-    expect([first.status(), second.status()].sort()).toEqual([200, 201]);
-    const firstBody = (await first.json()) as { id: number; sequence: number };
-    const secondBody = (await second.json()) as { id: number; sequence: number };
-    expect(firstBody.id).toBe(secondBody.id);
-    expect(firstBody.sequence).toBe(secondBody.sequence);
+      const [first, second] = await Promise.all([
+        apiPost(context, `/api/projects/${projectId}/ai/accept-proposal/`, acceptPayload),
+        apiPost(otherContext, `/api/projects/${projectId}/ai/accept-proposal/`, acceptPayload),
+      ]);
+      expect([first.status(), second.status()].sort()).toEqual([200, 201]);
+      const firstBody = (await first.json()) as { id: number; sequence: number };
+      const secondBody = (await second.json()) as { id: number; sequence: number };
+      expect(firstBody.id).toBe(secondBody.id);
+      expect(firstBody.sequence).toBe(secondBody.sequence);
 
-    const versions = (await (
-      await apiGet(context, `/api/projects/${projectId}/versions/`)
-    ).json()) as Array<{ id: number; origin: string }>;
-    expect(versions).toHaveLength(2); // the blank-create version, plus exactly one AI version
-    expect(versions.filter((v) => v.origin === 'ai_create')).toHaveLength(1);
+      const versions = (await (
+        await apiGet(context, `/api/projects/${projectId}/versions/`)
+      ).json()) as Array<{ id: number; origin: string }>;
+      expect(versions).toHaveLength(2); // the blank-create version, plus exactly one AI version
+      expect(versions.filter((v) => v.origin === 'ai_create')).toHaveLength(1);
 
-    await context.close();
-    await otherContext.close();
-  });
-
-  test('concurrent server-draft syncs for the same session leave the highest client_seq winning, never a stale draft', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    const sessionId = await readSessionId(page, projectId);
-    if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
-
-    const scenePayload = {
-      schemaVersion: 1,
-      id: 'scene-concurrent-draft-a',
-      canvas: { width: 800, height: 600, backgroundColor: '#ffffff' },
-      renderer: { preferred: 'p5' },
-      layers: [{ id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false }],
-      shapes: [],
-      groups: [],
-      bindings: [],
-      graph: { nodes: [], connections: [] },
-      accessibility: { reducedMotion: 'auto' },
-      randomness: { seed: 0, enabled: false },
-    };
-
-    const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
-
-    // Two overlapping PUTs, same session, deliberately out-of-order
-    // client_seq values (5 then 3) -- the higher client_seq must win
-    // regardless of which request's transaction actually commits second
-    // (scenes/api.py's `_upsert_draft` compare-and-set under
-    // select_for_update()), matching
-    // tests/test_edit_session_draft_sync_api.py's own concurrency proof.
-    const [higher, lower] = await Promise.all([
-      apiPut(context, draftPath, {
-        draft_json: { ...scenePayload, id: 'scene-higher-seq' },
-        client_seq: 5,
-      }),
-      apiPut(context, draftPath, {
-        draft_json: { ...scenePayload, id: 'scene-lower-seq' },
-        client_seq: 3,
-      }),
-    ]);
-    expect(higher.status()).toBe(200);
-    expect(lower.status()).toBe(200);
-
-    const stored = (await (await apiGet(context, draftPath)).json()) as {
-      draft_json: { id: string };
-      client_seq: number;
-    };
-    expect(stored.client_seq).toBe(5);
-    expect(stored.draft_json.id).toBe('scene-higher-seq');
-
-    // A late, lower client_seq write arriving after the fact must never
-    // clobber the already-accepted higher one.
-    const stale = await apiPut(context, draftPath, {
-      draft_json: { ...scenePayload, id: 'scene-stale' },
-      client_seq: 1,
+      await context.close();
+      await otherContext.close();
     });
-    expect(stale.status()).toBe(200);
-    const staleBody = (await stale.json()) as { applied: boolean };
-    expect(staleBody.applied).toBe(false);
 
-    const finalDraft = (await (await apiGet(context, draftPath)).json()) as {
-      draft_json: { id: string };
-      client_seq: number;
-    };
-    expect(finalDraft.client_seq).toBe(5);
-    expect(finalDraft.draft_json.id).toBe('scene-higher-seq');
+    await test.step('concurrent server-draft syncs for the same session leave the highest client_seq winning, never a stale draft', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      const sessionId = await readSessionId(page, projectId);
+      if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
-    await context.close();
+      const scenePayload = {
+        schemaVersion: 1,
+        id: 'scene-concurrent-draft-a',
+        canvas: { width: 800, height: 600, backgroundColor: '#ffffff' },
+        renderer: { preferred: 'p5' },
+        layers: [{ id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false }],
+        shapes: [],
+        groups: [],
+        bindings: [],
+        graph: { nodes: [], connections: [] },
+        accessibility: { reducedMotion: 'auto' },
+        randomness: { seed: 0, enabled: false },
+      };
+
+      const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
+
+      // Two overlapping PUTs, same session, deliberately out-of-order
+      // client_seq values (5 then 3) -- the higher client_seq must win
+      // regardless of which request's transaction actually commits second
+      // (scenes/api.py's `_upsert_draft` compare-and-set under
+      // select_for_update()), matching
+      // tests/test_edit_session_draft_sync_api.py's own concurrency proof.
+      const [higher, lower] = await Promise.all([
+        apiPut(context, draftPath, {
+          draft_json: { ...scenePayload, id: 'scene-higher-seq' },
+          client_seq: 5,
+        }),
+        apiPut(context, draftPath, {
+          draft_json: { ...scenePayload, id: 'scene-lower-seq' },
+          client_seq: 3,
+        }),
+      ]);
+      expect(higher.status()).toBe(200);
+      expect(lower.status()).toBe(200);
+
+      const stored = (await (await apiGet(context, draftPath)).json()) as {
+        draft_json: { id: string };
+        client_seq: number;
+      };
+      expect(stored.client_seq).toBe(5);
+      expect(stored.draft_json.id).toBe('scene-higher-seq');
+
+      // A late, lower client_seq write arriving after the fact must never
+      // clobber the already-accepted higher one.
+      const stale = await apiPut(context, draftPath, {
+        draft_json: { ...scenePayload, id: 'scene-stale' },
+        client_seq: 1,
+      });
+      expect(stale.status()).toBe(200);
+      const staleBody = (await stale.json()) as { applied: boolean };
+      expect(staleBody.applied).toBe(false);
+
+      const finalDraft = (await (await apiGet(context, draftPath)).json()) as {
+        draft_json: { id: string };
+        client_seq: number;
+      };
+      expect(finalDraft.client_seq).toBe(5);
+      expect(finalDraft.draft_json.id).toBe('scene-higher-seq');
+
+      await context.close();
+    });
   });
 });
 
@@ -541,286 +573,316 @@ test.describe('Local and server draft autosave', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('debounced local autosave writes to IndexedDB ~1.5s after the last edit, not before', async ({
-    page,
+  test('local debounce, periodic server-sync cadence, and page-hide keepalive all fire on schedule', async ({
+    browser,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
+    test.setTimeout(60000);
 
-    await page.clock.install();
+    await test.step('debounced local autosave writes to IndexedDB ~1.5s after the last edit, not before', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
 
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
+      await page.clock.install();
 
-    // Just under the debounce window: nothing persisted yet.
-    await page.clock.fastForward(1000);
-    expect(await readLocalDraft(page, projectId)).toBeNull();
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
 
-    // Past the window: the debounced write has now fired.
-    await page.clock.fastForward(700);
-    const draft = (await readLocalDraft(page, projectId)) as { sceneJson: { shapes: unknown[] } };
-    expect(draft).not.toBeNull();
-    expect(draft.sceneJson.shapes).toHaveLength(1);
-  });
+      // Just under the debounce window: nothing persisted yet.
+      await page.clock.fastForward(1000);
+      expect(await readLocalDraft(page, projectId)).toBeNull();
 
-  test('the periodic server-sync cadence uploads the working copy roughly every 25s', async ({
-    page,
-    context,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-    const sessionId = await readSessionId(page, projectId);
-    if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
+      // Past the window: the debounced write has now fired.
+      await page.clock.fastForward(700);
+      const draft = (await readLocalDraft(page, projectId)) as { sceneJson: { shapes: unknown[] } };
+      expect(draft).not.toBeNull();
+      expect(draft.sceneJson.shapes).toHaveLength(1);
 
-    await page.clock.install();
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-
-    const [syncResponse] = await Promise.all([
-      page.waitForResponse(
-        (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
-      ),
-      page.clock.fastForward(25_000),
-    ]);
-    expect(syncResponse.status()).toBe(200);
-
-    const stored = (await (
-      await apiGet(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`)
-    ).json()) as { draft_json: { shapes: unknown[] } };
-    expect(stored.draft_json.shapes).toHaveLength(1);
-  });
-
-  test('issue #112: a failing server draft sync surfaces an actionable notice, stays on the editor route, and does not lose the working copy', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-
-    await page.route('**/draft/**', (route) => {
-      if (route.request().method() === 'PUT') {
-        void route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
-      } else {
-        void route.continue();
-      }
+      await context.close();
     });
 
-    await page.clock.install();
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
+    await test.step('the periodic server-sync cadence uploads the working copy roughly every 25s', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      const sessionId = await readSessionId(page, projectId);
+      if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
-    const [syncResponse] = await Promise.all([
-      page.waitForResponse(
-        (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
-      ),
-      page.clock.fastForward(25_000),
-    ]);
-    expect(syncResponse.status()).toBe(503);
+      await page.clock.install();
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
 
-    // `EditorWorkspace.tsx`'s failure notice reacts to
-    // `DraftServerSyncController.onFailureChange` synchronously (no polling
-    // interval to race against a fake clock) -- the notice should already
-    // be visible as soon as the 503 response above resolves.
-    await expect(page.getByTestId('draft-sync-error')).toBeVisible();
+      const [syncResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
+        ),
+        page.clock.fastForward(25_000),
+      ]);
+      expect(syncResponse.status()).toBe(200);
 
-    // Still the same editor route, and the unsaved shape is still there —
-    // a failed background sync never navigates away or drops working state.
-    await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
-    await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
-  });
+      const stored = (await (
+        await apiGet(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`)
+      ).json()) as { draft_json: { shapes: unknown[] } };
+      expect(stored.draft_json.shapes).toHaveLength(1);
 
-  test('page-hide dispatches one keepalive draft sync attempt', async ({ page, context }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-    const sessionId = await readSessionId(page, projectId);
-    if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
-
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-
-    const [pageHideSync] = await Promise.all([
-      page.waitForResponse(
-        (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
-      ),
-      page.evaluate(() => window.dispatchEvent(new Event('pagehide'))),
-    ]);
-    expect(pageHideSync.status()).toBe(200);
-
-    const stored = (await (
-      await apiGet(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`)
-    ).json()) as { draft_json: { shapes: unknown[] } };
-    expect(stored.draft_json.shapes).toHaveLength(1);
-  });
-
-  test('explicit Save clears both the local and server draft', async ({ page, context }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-    const sessionId = await readSessionId(page, projectId);
-    if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
-    const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
-
-    // Seed the server draft directly rather than waiting out the real 25s
-    // cadence -- this test's own subject is Save's cleanup, not the sync
-    // cadence (covered above). A plain HTTP call, unaffected by the fake
-    // clock installed below either way.
-    await apiPut(context, draftPath, {
-      draft_json: {
-        schemaVersion: 1,
-        id: 'scene-pre-save-draft',
-        canvas: { width: 800, height: 600, backgroundColor: '#ffffff' },
-        renderer: { preferred: 'p5' },
-        layers: [{ id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false }],
-        shapes: [],
-        groups: [],
-        bindings: [],
-        graph: { nodes: [], connections: [] },
-        accessibility: { reducedMotion: 'auto' },
-        randomness: { seed: 0, enabled: false },
-      },
-      client_seq: 1,
+      await context.close();
     });
 
-    // Install the fake clock BEFORE the edit that schedules the local
-    // debounce timer -- a timer already scheduled on the real clock
-    // before `install()` is not retroactively captured by it (see this
-    // file's module doc comment).
-    await page.clock.install();
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await page.clock.fastForward(1700); // let the local debounce fire first
-    expect(await readLocalDraft(page, projectId)).not.toBeNull();
+    await test.step('page-hide dispatches one keepalive draft sync attempt', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      const sessionId = await readSessionId(page, projectId);
+      if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
 
-    expect(await readLocalDraft(page, projectId)).toBeNull();
-    const draftAfterSave = await apiGet(context, draftPath);
-    expect(draftAfterSave.status()).toBe(404);
-  });
+      const [pageHideSync] = await Promise.all([
+        page.waitForResponse(
+          (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
+        ),
+        page.evaluate(() => window.dispatchEvent(new Event('pagehide'))),
+      ]);
+      expect(pageHideSync.status()).toBe(200);
 
-  test('issue #125: a periodic tick after explicit Save must not recreate the server draft, and resumes once a real edit follows', async ({
-    page,
-    context,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-    const sessionId = await readSessionId(page, projectId);
-    if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
-    const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
+      const stored = (await (
+        await apiGet(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`)
+      ).json()) as { draft_json: { shapes: unknown[] } };
+      expect(stored.draft_json.shapes).toHaveLength(1);
 
-    await page.clock.install();
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await page.clock.fastForward(1700); // local debounce fires, seeding a local draft
-    expect(await readLocalDraft(page, projectId)).not.toBeNull();
-
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
-
-    // Reproduces the exact evidence sequence from issue #125: POST
-    // /versions/ (the Save click above) -> DELETE /draft/<session>/
-    // (handleVersionSaved's cleanup) -> and, before this fix, a later PUT
-    // /draft/<session>/ from the next unguarded periodic tick recreating
-    // the row. Waiting past a full periodic interval (25s, plus margin)
-    // with nothing further edited must now produce no further PUT at all.
-    let putSeenDuringCleanInterval = false;
-    page.on('response', (response) => {
-      if (response.url().includes('/draft/') && response.request().method() === 'PUT') {
-        putSeenDuringCleanInterval = true;
-      }
+      await context.close();
     });
-    await page.clock.fastForward(26_000);
-    expect(putSeenDuringCleanInterval).toBe(false);
-
-    const draftAfterInterval = await apiGet(context, draftPath);
-    expect(draftAfterInterval.status()).toBe(404);
-
-    // The fix must not permanently disable autosave for the rest of the
-    // session -- a genuine new edit resumes normal periodic syncing.
-    await page.getByRole('button', { name: 'Add rectangle' }).click();
-    const [resumedSync] = await Promise.all([
-      page.waitForResponse(
-        (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
-      ),
-      page.clock.fastForward(25_000),
-    ]);
-    expect(resumedSync.status()).toBe(200);
   });
 
-  test('issue #125: reopening a project right after Save never shows the recovery prompt, whether reopened before or after a full sync interval', async ({
-    page,
+  test('explicit Save and its interaction with sync failures, periodic ticks, reopening, and Exit-without-saving', async ({
+    browser,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
+    test.setTimeout(90000);
 
-    await page.clock.install();
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await page.clock.fastForward(1700);
-    expect(await readLocalDraft(page, projectId)).not.toBeNull();
+    await test.step("issue #112: a failing server draft sync surfaces an actionable notice, stays on the editor route, and does not lose the working copy", async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
 
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      await page.route('**/draft/**', (route) => {
+        if (route.request().method() === 'PUT') {
+          void route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+        } else {
+          void route.continue();
+        }
+      });
 
-    // Reopen before a full periodic interval would have elapsed.
-    await page.reload();
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
-    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+      await page.clock.install();
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
 
-    // And again after virtual time equal to a full interval has passed --
-    // covers both issue #124's pre-existing NO_SCENE_CHANGES_SUMMARY
-    // filter and this task's "don't write while clean" fix as independent,
-    // overlapping safety nets, per the groomed spec's own wording.
-    await page.clock.fastForward(25_000);
-    await page.reload();
-    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
-  });
+      const [syncResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
+        ),
+        page.clock.fastForward(25_000),
+      ]);
+      expect(syncResponse.status()).toBe(503);
 
-  test('Exit without saving clears the local draft only after the confirmation is accepted, never on Cancel', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
+      // `EditorWorkspace.tsx`'s failure notice reacts to
+      // `DraftServerSyncController.onFailureChange` synchronously (no polling
+      // interval to race against a fake clock) -- the notice should already
+      // be visible as soon as the 503 response above resolves.
+      await expect(page.getByTestId('draft-sync-error')).toBeVisible();
 
-    await page.clock.install();
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await page.clock.fastForward(1700);
-    expect(await readLocalDraft(page, projectId)).not.toBeNull();
+      // Still the same editor route, and the unsaved shape is still there —
+      // a failed background sync never navigates away or drops working state.
+      await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
+      await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
 
-    // The stage authoring controls live in an intentionally modal command
-    // menu. Close that menu before exercising the page-level exit action so
-    // the test models the user's explicit dismissal rather than force-clicking
-    // through the modal surface.
-    await page
-      .getByRole('dialog', { name: 'Piece actions' })
-      .getByRole('button', { name: 'Close piece controls menu' })
-      .click();
-    await page.getByRole('button', { name: 'Exit without saving' }).click();
-    const dialog = page.getByRole('alertdialog', { name: 'Exit without saving?' });
-    await expect(dialog).toBeVisible();
+      await context.close();
+    });
 
-    // Cancel: the draft must still be there afterward.
-    await dialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(dialog).toHaveCount(0);
-    expect(await readLocalDraft(page, projectId)).not.toBeNull();
+    await test.step('explicit Save clears both the local and server draft', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      const sessionId = await readSessionId(page, projectId);
+      if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
+      const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
 
-    // Confirm: only now is the draft cleared, and the browser leaves the
-    // editor (client-side navigation back to the gallery).
-    await page.getByRole('button', { name: 'Exit without saving' }).click();
-    await page
-      .getByRole('alertdialog', { name: 'Exit without saving?' })
-      .getByRole('button', { name: 'Exit without saving' })
-      .click();
-    await page.waitForURL('/');
-    expect(await readLocalDraft(page, projectId)).toBeNull();
+      // Seed the server draft directly rather than waiting out the real 25s
+      // cadence -- this test's own subject is Save's cleanup, not the sync
+      // cadence (covered above). A plain HTTP call, unaffected by the fake
+      // clock installed below either way.
+      await apiPut(context, draftPath, {
+        draft_json: {
+          schemaVersion: 1,
+          id: 'scene-pre-save-draft',
+          canvas: { width: 800, height: 600, backgroundColor: '#ffffff' },
+          renderer: { preferred: 'p5' },
+          layers: [{ id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false }],
+          shapes: [],
+          groups: [],
+          bindings: [],
+          graph: { nodes: [], connections: [] },
+          accessibility: { reducedMotion: 'auto' },
+          randomness: { seed: 0, enabled: false },
+        },
+        client_seq: 1,
+      });
+
+      // Install the fake clock BEFORE the edit that schedules the local
+      // debounce timer -- a timer already scheduled on the real clock
+      // before `install()` is not retroactively captured by it (see this
+      // file's module doc comment).
+      await page.clock.install();
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await page.clock.fastForward(1700); // let the local debounce fire first
+      expect(await readLocalDraft(page, projectId)).not.toBeNull();
+
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+
+      expect(await readLocalDraft(page, projectId)).toBeNull();
+      const draftAfterSave = await apiGet(context, draftPath);
+      expect(draftAfterSave.status()).toBe(404);
+
+      await context.close();
+    });
+
+    await test.step("issue #125: a periodic tick after explicit Save must not recreate the server draft, and resumes once a real edit follows", async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      const sessionId = await readSessionId(page, projectId);
+      if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
+      const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
+
+      await page.clock.install();
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await page.clock.fastForward(1700); // local debounce fires, seeding a local draft
+      expect(await readLocalDraft(page, projectId)).not.toBeNull();
+
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+
+      // Reproduces the exact evidence sequence from issue #125: POST
+      // /versions/ (the Save click above) -> DELETE /draft/<session>/
+      // (handleVersionSaved's cleanup) -> and, before this fix, a later PUT
+      // /draft/<session>/ from the next unguarded periodic tick recreating
+      // the row. Waiting past a full periodic interval (25s, plus margin)
+      // with nothing further edited must now produce no further PUT at all.
+      let putSeenDuringCleanInterval = false;
+      page.on('response', (response) => {
+        if (response.url().includes('/draft/') && response.request().method() === 'PUT') {
+          putSeenDuringCleanInterval = true;
+        }
+      });
+      await page.clock.fastForward(26_000);
+      expect(putSeenDuringCleanInterval).toBe(false);
+
+      const draftAfterInterval = await apiGet(context, draftPath);
+      expect(draftAfterInterval.status()).toBe(404);
+
+      // The fix must not permanently disable autosave for the rest of the
+      // session -- a genuine new edit resumes normal periodic syncing.
+      await page.getByRole('button', { name: 'Add rectangle' }).click();
+      const [resumedSync] = await Promise.all([
+        page.waitForResponse(
+          (response) => response.url().includes('/draft/') && response.request().method() === 'PUT',
+        ),
+        page.clock.fastForward(25_000),
+      ]);
+      expect(resumedSync.status()).toBe(200);
+
+      await context.close();
+    });
+
+    await test.step("issue #125: reopening a project right after Save never shows the recovery prompt, whether reopened before or after a full sync interval", async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+
+      await page.clock.install();
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await page.clock.fastForward(1700);
+      expect(await readLocalDraft(page, projectId)).not.toBeNull();
+
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+
+      // Reopen before a full periodic interval would have elapsed.
+      await page.reload();
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+
+      // And again after virtual time equal to a full interval has passed --
+      // covers both issue #124's pre-existing NO_SCENE_CHANGES_SUMMARY
+      // filter and this task's "don't write while clean" fix as independent,
+      // overlapping safety nets, per the groomed spec's own wording.
+      await page.clock.fastForward(25_000);
+      await page.reload();
+      await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+
+      await context.close();
+    });
+
+    await test.step('Exit without saving clears the local draft only after the confirmation is accepted, never on Cancel', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+
+      await page.clock.install();
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await page.clock.fastForward(1700);
+      expect(await readLocalDraft(page, projectId)).not.toBeNull();
+
+      // The stage authoring controls live in an intentionally modal command
+      // menu. Close that menu before exercising the page-level exit action so
+      // the test models the user's explicit dismissal rather than force-clicking
+      // through the modal surface.
+      await page
+        .getByRole('dialog', { name: 'Piece actions' })
+        .getByRole('button', { name: 'Close piece controls menu' })
+        .click();
+      await page.getByRole('button', { name: 'Exit without saving' }).click();
+      const dialog = page.getByRole('alertdialog', { name: 'Exit without saving?' });
+      await expect(dialog).toBeVisible();
+
+      // Cancel: the draft must still be there afterward.
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
+      await expect(dialog).toHaveCount(0);
+      expect(await readLocalDraft(page, projectId)).not.toBeNull();
+
+      // Confirm: only now is the draft cleared, and the browser leaves the
+      // editor (client-side navigation back to the gallery).
+      await page.getByRole('button', { name: 'Exit without saving' }).click();
+      await page
+        .getByRole('alertdialog', { name: 'Exit without saving?' })
+        .getByRole('button', { name: 'Exit without saving' })
+        .click();
+      await page.waitForURL('/');
+      expect(await readLocalDraft(page, projectId)).toBeNull();
+
+      await context.close();
+    });
   });
 });
 
@@ -840,37 +902,47 @@ test.describe('beforeunload guard', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('a dirty editor triggers the native beforeunload prompt on close', async ({ page }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
+  test('a dirty editor prompts on close; a clean editor does not', async ({ browser }) => {
+    await test.step('a dirty editor triggers the native beforeunload prompt on close', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
 
-    const dialogPromise = page.waitForEvent('dialog', { timeout: 5_000 });
-    await openAuthoringControls(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
+      const dialogPromise = page.waitForEvent('dialog', { timeout: 5_000 });
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
 
-    await page.close({ runBeforeUnload: true });
-    const dialog = await dialogPromise;
-    expect(dialog.type()).toBe('beforeunload');
-    await dialog.dismiss().catch(() => undefined);
-  });
+      await page.close({ runBeforeUnload: true });
+      const dialog = await dialogPromise;
+      expect(dialog.type()).toBe('beforeunload');
+      await dialog.dismiss().catch(() => undefined);
 
-  test('a clean (nothing-unsaved) editor shows no prompt on close', async ({ page }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved/);
-
-    let dialogSeen = false;
-    page.on('dialog', (dialog) => {
-      dialogSeen = true;
-      void dialog.dismiss();
+      await context.close();
     });
 
-    await page.close({ runBeforeUnload: true });
-    // Give a real (short) beat for a dialog that shouldn't come.
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    expect(dialogSeen).toBe(false);
+    await test.step('a clean (nothing-unsaved) editor shows no prompt on close', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved/);
+
+      let dialogSeen = false;
+      page.on('dialog', (dialog) => {
+        dialogSeen = true;
+        void dialog.dismiss();
+      });
+
+      await page.close({ runBeforeUnload: true });
+      // Give a real (short) beat for a dialog that shouldn't come.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect(dialogSeen).toBe(false);
+
+      await context.close();
+    });
   });
 });
 
@@ -894,234 +966,254 @@ test.describe('Draft recovery', () => {
     randomness: { seed: 0, enabled: false },
   };
 
-  test('Recover loads the draft as unsaved working state and leaves the saved version untouched', async ({
-    page,
+  test('the recovery prompt: Recover, Discard, and Cancel each behave correctly', async ({
+    browser,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
+    await test.step('Recover loads the draft as unsaved working state and leaves the saved version untouched', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
 
-    await seedLocalDraft(page, {
-      projectId,
-      userKey: fixtures.owner.username,
-      sessionId: 'seeded-session',
-      sceneJson: { ...SCENE_TEMPLATE, id: 'scene-recoverable-draft' },
-      savedAt: new Date().toISOString(),
-      changeSummary: '1 shape added',
-      writeSeq: 1,
+      await seedLocalDraft(page, {
+        projectId,
+        userKey: fixtures.owner.username,
+        sessionId: 'seeded-session',
+        sceneJson: { ...SCENE_TEMPLATE, id: 'scene-recoverable-draft' },
+        savedAt: new Date().toISOString(),
+        changeSummary: '1 shape added',
+        writeSeq: 1,
+      });
+
+      await page.reload();
+      const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
+      await expect(prompt).toBeVisible();
+      await expect(prompt).toContainText('1 shape added');
+
+      await prompt.getByRole('button', { name: 'Recover draft' }).click();
+      await expect(prompt).toHaveCount(0);
+      await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
+      // A reload re-mounts the editor with every section collapsed again.
+      await expandAllCollapsibleSections(page);
+      // Saved history is still exactly version 1 -- recover never persists.
+      await expect(page.locator('.version-history-item')).toHaveCount(1);
+
+      await context.close();
     });
 
-    await page.reload();
-    const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
-    await expect(prompt).toBeVisible();
-    await expect(prompt).toContainText('1 shape added');
+    await test.step('Discard clears both the local and server draft and never resurfaces the prompt', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      const sessionId = await readSessionId(page, projectId);
+      if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
-    await prompt.getByRole('button', { name: 'Recover draft' }).click();
-    await expect(prompt).toHaveCount(0);
-    await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
-    // A reload re-mounts the editor with every section collapsed again.
-    await expandAllCollapsibleSections(page);
-    // Saved history is still exactly version 1 -- recover never persists.
-    await expect(page.locator('.version-history-item')).toHaveCount(1);
+      await seedLocalDraft(page, {
+        projectId,
+        userKey: fixtures.owner.username,
+        sessionId,
+        sceneJson: { ...SCENE_TEMPLATE, id: 'scene-to-discard' },
+        savedAt: new Date().toISOString(),
+        changeSummary: '1 shape added',
+        writeSeq: 1,
+      });
+      await apiPut(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`, {
+        draft_json: { ...SCENE_TEMPLATE, id: 'scene-to-discard-server' },
+        client_seq: 1,
+      });
+
+      await page.reload();
+      const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
+      await expect(prompt).toBeVisible();
+      await prompt.getByRole('button', { name: 'Discard draft' }).click();
+      await expect(prompt).toHaveCount(0);
+
+      expect(await readLocalDraft(page, projectId)).toBeNull();
+      const serverDraftAfter = await apiGet(
+        context,
+        `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`,
+      );
+      expect(serverDraftAfter.status()).toBe(404);
+
+      // Reloading again must never resurface a prompt for a discarded draft.
+      await page.reload();
+      await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+
+      await context.close();
+    });
+
+    await test.step('Cancel leaves both the draft and the saved version untouched, still recoverable later', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+
+      await seedLocalDraft(page, {
+        projectId,
+        userKey: fixtures.owner.username,
+        sessionId: 'seeded-session',
+        sceneJson: { ...SCENE_TEMPLATE, id: 'scene-cancel-draft' },
+        savedAt: new Date().toISOString(),
+        changeSummary: '1 shape added',
+        writeSeq: 1,
+      });
+
+      await page.reload();
+      const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
+      await expect(prompt).toBeVisible();
+      await prompt.getByRole('button', { name: 'Cancel' }).click();
+      // Cancel navigates back to the gallery without resolving the draft.
+      await page.waitForURL('/');
+
+      expect(await readLocalDraft(page, projectId)).not.toBeNull();
+
+      // Reopening the project still offers the same draft for recovery.
+      await page.goto(`/projects/${projectId}`);
+      await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toBeVisible();
+
+      await context.close();
+    });
   });
 
-  test('Discard clears both the local and server draft and never resurfaces the prompt', async ({
-    page,
-    context,
+  test('expired, corrupt, and unauthorized draft candidates are treated as none; a genuine conflict resolves by recency', async ({
+    browser,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    const sessionId = await readSessionId(page, projectId);
-    if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
+    await test.step('an expired local draft is treated as none and cleared, never prompted', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
 
-    await seedLocalDraft(page, {
-      projectId,
-      userKey: fixtures.owner.username,
-      sessionId,
-      sceneJson: { ...SCENE_TEMPLATE, id: 'scene-to-discard' },
-      savedAt: new Date().toISOString(),
-      changeSummary: '1 shape added',
-      writeSeq: 1,
-    });
-    await apiPut(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`, {
-      draft_json: { ...SCENE_TEMPLATE, id: 'scene-to-discard-server' },
-      client_seq: 1,
-    });
+      const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+      await seedLocalDraft(page, {
+        projectId,
+        userKey: fixtures.owner.username,
+        sessionId: 'seeded-session',
+        sceneJson: { ...SCENE_TEMPLATE, id: 'scene-expired-draft' },
+        savedAt: twentyFiveHoursAgo,
+        changeSummary: '1 shape added',
+        writeSeq: 1,
+      });
 
-    await page.reload();
-    const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
-    await expect(prompt).toBeVisible();
-    await prompt.getByRole('button', { name: 'Discard draft' }).click();
-    await expect(prompt).toHaveCount(0);
+      await page.reload();
+      await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+      await expect(page.getByTestId('editor-save-status')).toBeVisible();
+      // The expired record is opportunistically cleared, not merely ignored.
+      expect(await readLocalDraft(page, projectId)).toBeNull();
 
-    expect(await readLocalDraft(page, projectId)).toBeNull();
-    const serverDraftAfter = await apiGet(
-      context,
-      `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`,
-    );
-    expect(serverDraftAfter.status()).toBe(404);
-
-    // Reloading again must never resurface a prompt for a discarded draft.
-    await page.reload();
-    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
-  });
-
-  test('Cancel leaves both the draft and the saved version untouched, still recoverable later', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-
-    await seedLocalDraft(page, {
-      projectId,
-      userKey: fixtures.owner.username,
-      sessionId: 'seeded-session',
-      sceneJson: { ...SCENE_TEMPLATE, id: 'scene-cancel-draft' },
-      savedAt: new Date().toISOString(),
-      changeSummary: '1 shape added',
-      writeSeq: 1,
+      await context.close();
     });
 
-    await page.reload();
-    const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
-    await expect(prompt).toBeVisible();
-    await prompt.getByRole('button', { name: 'Cancel' }).click();
-    // Cancel navigates back to the gallery without resolving the draft.
-    await page.waitForURL('/');
+    await test.step('a corrupt local draft is treated as none and cleared, never crashes the editor', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
 
-    expect(await readLocalDraft(page, projectId)).not.toBeNull();
+      await seedCorruptLocalDraft(page, projectId);
 
-    // Reopening the project still offers the same draft for recovery.
-    await page.goto(`/projects/${projectId}`);
-    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toBeVisible();
-  });
+      await page.reload();
+      await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
+      expect(await readLocalDraft(page, projectId)).toBeNull();
 
-  test('an expired local draft is treated as none and cleared, never prompted', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-
-    const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
-    await seedLocalDraft(page, {
-      projectId,
-      userKey: fixtures.owner.username,
-      sessionId: 'seeded-session',
-      sceneJson: { ...SCENE_TEMPLATE, id: 'scene-expired-draft' },
-      savedAt: twentyFiveHoursAgo,
-      changeSummary: '1 shape added',
-      writeSeq: 1,
+      await context.close();
     });
 
-    await page.reload();
-    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
-    await expect(page.getByTestId('editor-save-status')).toBeVisible();
-    // The expired record is opportunistically cleared, not merely ignored.
-    expect(await readLocalDraft(page, projectId)).toBeNull();
-  });
+    await test.step('an unauthorized server-draft read is treated as none, never surfacing draft existence or content', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
 
-  test('a corrupt local draft is treated as none and cleared, never crashes the editor', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
+      // No real session-expiry path exists to reach a 401/403 for the
+      // caller's own draft mid-check (DraftDetailView.get scopes strictly
+      // to request.user -- see scenes/api.py's own docstring) -- this
+      // simulates the defensive branch useDraftRecovery.ts's
+      // loadServerCandidate documents for it (a session issue mid-check),
+      // via route interception on just the draft GET, per this repo's own
+      // documented precedent (projectLifecycle.spec.ts's module doc
+      // comment) for mocking a path with no naturally reachable live
+      // trigger. Every other request in this test hits the real server.
+      await page.route('**/draft/**', async (route) => {
+        if (route.request().method() === 'GET') {
+          await route.fulfill({ status: 401, contentType: 'application/json', body: '{}' });
+        } else {
+          await route.continue();
+        }
+      });
 
-    await seedCorruptLocalDraft(page, projectId);
+      await page.reload();
+      await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
+      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
 
-    await page.reload();
-    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
-    expect(await readLocalDraft(page, projectId)).toBeNull();
-  });
-
-  test('an unauthorized server-draft read is treated as none, never surfacing draft existence or content', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-
-    // No real session-expiry path exists to reach a 401/403 for the
-    // caller's own draft mid-check (DraftDetailView.get scopes strictly
-    // to request.user -- see scenes/api.py's own docstring) -- this
-    // simulates the defensive branch useDraftRecovery.ts's
-    // loadServerCandidate documents for it (a session issue mid-check),
-    // via route interception on just the draft GET, per this repo's own
-    // documented precedent (projectLifecycle.spec.ts's module doc
-    // comment) for mocking a path with no naturally reachable live
-    // trigger. Every other request in this test hits the real server.
-    await page.route('**/draft/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({ status: 401, contentType: 'application/json', body: '{}' });
-      } else {
-        await route.continue();
-      }
+      await context.close();
     });
 
-    await page.reload();
-    await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toHaveCount(0);
-    await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
-  });
+    await test.step('local/server conflict: the genuinely newer candidate wins, by timestamp, never a merge', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const projectId = await createBlankProjectViaUI(page);
+      const sessionId = await readSessionId(page, projectId);
+      if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
-  test('local/server conflict: the genuinely newer candidate wins, by timestamp, never a merge', async ({
-    page,
-    context,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
-    const sessionId = await readSessionId(page, projectId);
-    if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
+      const older = new Date(Date.now() - 60_000).toISOString();
+      await seedLocalDraft(page, {
+        projectId,
+        userKey: fixtures.owner.username,
+        sessionId,
+        sceneJson: { ...SCENE_TEMPLATE, id: 'scene-local-older' },
+        savedAt: older,
+        changeSummary: 'local (older)',
+        writeSeq: 1,
+      });
+      // The server draft's own recency is server-assigned (last_autosaved_at
+      // is set to "now" by the upsert, scenes/api.py's _upsert_draft), so a
+      // PUT issued after the local seed above is unambiguously newer in time.
+      //
+      // Issue #193 root cause (confirmed by live reproduction, not just
+      // static analysis): `createBlankProjectViaUI` above already mounts a
+      // real editor for this project, whose `useDraftServerSync` periodic
+      // timer (`DEFAULT_SYNC_INTERVAL_MS`, storage/draftServerSync.ts) syncs
+      // the pristine, untouched blank scene to the server the moment
+      // `resetCleanBaseline()` leaves it with no clean baseline to compare
+      // against -- true for every brand-new, never-explicitly-saved project.
+      // If enough real wall-clock time elapses between project creation and
+      // this seed (routine under CI/sandbox load, never guaranteed fast),
+      // that periodic tick's own client_seq:1 write can land here first,
+      // making a hardcoded `client_seq: 1` seed lose the
+      // `scenes/api.py::_upsert_draft` `client_seq <=` tie-break and get
+      // silently rejected (`applied: false`) -- exactly reproduced live
+      // against a real dev stack: the seed PUT returned the app's own
+      // already-written draft, not the one this test just sent. A client_seq
+      // no ordinary app-driven sync could plausibly reach in a single test's
+      // runtime (the periodic timer alone would need ~40 ticks/~1000s to get
+      // this high) makes this test's own seed unconditionally win regardless
+      // of what the app itself already wrote.
+      await apiPut(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`, {
+        draft_json: { ...SCENE_TEMPLATE, id: 'scene-server-newer' },
+        client_seq: 1_000_000,
+      });
 
-    const older = new Date(Date.now() - 60_000).toISOString();
-    await seedLocalDraft(page, {
-      projectId,
-      userKey: fixtures.owner.username,
-      sessionId,
-      sceneJson: { ...SCENE_TEMPLATE, id: 'scene-local-older' },
-      savedAt: older,
-      changeSummary: 'local (older)',
-      writeSeq: 1,
+      await page.reload();
+      const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
+      await expect(prompt).toBeVisible();
+      await prompt.getByRole('button', { name: 'Recover draft' }).click();
+
+      // The server candidate (the newer one) won -- its scene id is what
+      // gets loaded as the working copy. Confirmed indirectly via the
+      // shape-count/id surfaced on the canvas being the server one's, since
+      // both fixtures otherwise carry zero shapes; assert via a fresh
+      // server draft read to confirm the app never wrote the (rejected)
+      // local candidate back to the server.
+      const serverDraftAfter = (await (
+        await apiGet(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`)
+      ).json()) as { draft_json: { id: string } };
+      expect(serverDraftAfter.draft_json.id).toBe('scene-server-newer');
+
+      await context.close();
     });
-    // The server draft's own recency is server-assigned (last_autosaved_at
-    // is set to "now" by the upsert, scenes/api.py's _upsert_draft), so a
-    // PUT issued after the local seed above is unambiguously newer in time.
-    //
-    // Issue #193 root cause (confirmed by live reproduction, not just
-    // static analysis): `createBlankProjectViaUI` above already mounts a
-    // real editor for this project, whose `useDraftServerSync` periodic
-    // timer (`DEFAULT_SYNC_INTERVAL_MS`, storage/draftServerSync.ts) syncs
-    // the pristine, untouched blank scene to the server the moment
-    // `resetCleanBaseline()` leaves it with no clean baseline to compare
-    // against -- true for every brand-new, never-explicitly-saved project.
-    // If enough real wall-clock time elapses between project creation and
-    // this seed (routine under CI/sandbox load, never guaranteed fast),
-    // that periodic tick's own client_seq:1 write can land here first,
-    // making a hardcoded `client_seq: 1` seed lose the
-    // `scenes/api.py::_upsert_draft` `client_seq <=` tie-break and get
-    // silently rejected (`applied: false`) -- exactly reproduced live
-    // against a real dev stack: the seed PUT returned the app's own
-    // already-written draft, not the one this test just sent. A client_seq
-    // no ordinary app-driven sync could plausibly reach in a single test's
-    // runtime (the periodic timer alone would need ~40 ticks/~1000s to get
-    // this high) makes this test's own seed unconditionally win regardless
-    // of what the app itself already wrote.
-    await apiPut(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`, {
-      draft_json: { ...SCENE_TEMPLATE, id: 'scene-server-newer' },
-      client_seq: 1_000_000,
-    });
-
-    await page.reload();
-    const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
-    await expect(prompt).toBeVisible();
-    await prompt.getByRole('button', { name: 'Recover draft' }).click();
-
-    // The server candidate (the newer one) won -- its scene id is what
-    // gets loaded as the working copy. Confirmed indirectly via the
-    // shape-count/id surfaced on the canvas being the server one's, since
-    // both fixtures otherwise carry zero shapes; assert via a fresh
-    // server draft read to confirm the app never wrote the (rejected)
-    // local candidate back to the server.
-    const serverDraftAfter = (await (
-      await apiGet(context, `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`)
-    ).json()) as { draft_json: { id: string } };
-    expect(serverDraftAfter.draft_json.id).toBe('scene-server-newer');
   });
 });

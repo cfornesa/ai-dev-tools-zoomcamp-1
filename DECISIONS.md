@@ -497,3 +497,20 @@ engineering item from today's session -- everything closed today
 #465) is now ready for the owner's planned bulk republish. Remaining open
 issues (#419, #440, #445, #460) are all owner/credential/CI-evidence
 gated, not engineering-blocked.
+
+## 2026-09-09 (CI concurrency fix + standing rule against manual full-matrix triggers)
+
+Manually triggering the full multi-browser matrix for #419's own
+acceptance criterion was cancelled twice by unrelated routine pushes
+(a Replit publish checkpoint, then this very fix's own commit) sharing
+`ci.yml`'s branch-scoped concurrency group. Fixed in commit `2f60f65`:
+`workflow_dispatch` now gets an isolated group keyed by `github.run_id`.
+
+Owner correction, recorded as a standing rule: this repo's CI already
+runs the full matrix automatically every weeknight
+(`schedule: cron: "17 3 * * 1-5"`) -- there was never a need to manually
+force it in the same session as an engineering batch. Recorded at
+`.agents/memory/full-matrix-scheduled-not-manual.md`: future sessions
+should check the nightly scheduled run's own results rather than
+manually re-triggering, and only force a fresh manual run when the owner
+explicitly asks for it.

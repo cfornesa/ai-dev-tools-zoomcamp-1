@@ -12,6 +12,12 @@ import { requireE2EFixtures } from './support/prerequisites.js';
  * one. This suite drives the real `/art-pieces/manage` -> owner editor
  * flow: card routing by status, edit + revise + version history, thumbnail
  * regeneration, soft-delete with confirmation, and cross-user denial.
+ *
+ * Consolidation note: the viewport matrix below and the two small,
+ * independent API-only scenarios (failed-metadata-save retry, concurrent
+ * version saves) are each grouped into one test() using test.step() per
+ * original scenario, each with its own fresh browser.newContext()/page --
+ * only Playwright's own test-invocation count drops.
  */
 
 const RED_RECTANGLE =
@@ -94,148 +100,166 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     );
   });
 
-  for (const viewport of [
-    { width: 1280, height: 900 },
-    { width: 375, height: 812 },
-  ]) {
-    test(`edit metadata, generate and save a revision, and see it reflected in the version list after reload at ${viewport.width}x${viewport.height}`, async ({
-      page,
-      context,
-    }) => {
-      await page.setViewportSize(viewport);
+  test('edit metadata, generate and save a revision, and see it reflected in the version list after reload, at both viewports', async ({
+    browser,
+  }) => {
+    test.setTimeout(60000);
+
+    for (const viewport of [
+      { width: 1280, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await test.step(`${viewport.width}x${viewport.height}`, async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await page.setViewportSize(viewport);
+        await loginViaUI(page, fixture.owner.email, fixture.password);
+        const title = `Revision fixture ${viewport.width}`;
+        const created = await apiPost(context, '/api/art-pieces/', {
+          title,
+          description: 'Original description.',
+          prompt: 'red rectangle',
+          engine: 'canvas2d',
+          capabilities: { screenshot: true },
+          source: RED_RECTANGLE,
+        });
+        expect(created.status()).toBe(201);
+        const piece = (await created.json()) as { public_id: string };
+
+        await page.goto(`/art-pieces/${piece.public_id}/edit`);
+        await expect(page.getByRole('heading', { name: `Edit ${title}` })).toBeVisible();
+
+        // Metadata edit + reload proves persistence, not just component state.
+        const revisedTitle = `Revised title ${viewport.width}`;
+        await page.getByLabel('Piece title').fill(revisedTitle);
+        await page.getByLabel('Piece description').fill('Revised description.');
+        await page.getByTestId('art-piece-editor-save-metadata').click();
+        await expect(page.getByRole('heading', { name: `Edit ${revisedTitle}` })).toBeVisible();
+        await page.goto(`/art-pieces/${piece.public_id}/edit`);
+        await expect(page.getByRole('heading', { name: `Edit ${revisedTitle}` })).toBeVisible();
+        await expect(page.getByLabel('Piece description')).toHaveValue('Revised description.');
+
+        // One version exists before any revision is saved.
+        await expect(
+          page.getByTestId('art-piece-editor-version-list').getByRole('listitem'),
+        ).toHaveCount(1);
+
+        await generateRevision(page, 'a blue rectangle instead');
+        await page.getByTestId('art-piece-editor-capability-download').locator('input').check();
+        await page.getByTestId('art-piece-editor-save-version').click();
+        await expect(page.getByTestId('art-piece-editor-save-version')).toHaveCount(0);
+
+        const versionItems = page
+          .getByTestId('art-piece-editor-version-list')
+          .getByRole('listitem');
+        await expect(versionItems).toHaveCount(2);
+        await expect(versionItems.first()).toContainText('(current)');
+        await expect(versionItems.first()).toContainText('Version 2');
+        await expect(versionItems.last()).toContainText('Version 1');
+        await expect(versionItems.last()).not.toContainText('(current)');
+
+        // The previous version's source is untouched -- immutable history.
+        const versionsResponse = await apiGet(
+          context,
+          `/api/art-pieces/${piece.public_id}/versions/`,
+        );
+        const versions = (await versionsResponse.json()) as Array<{
+          sequence: number;
+          source: string;
+          capabilities: Record<string, boolean>;
+        }>;
+        expect(versions).toHaveLength(2);
+        expect(versions.find((v) => v.sequence === 1)!.source).toBe(RED_RECTANGLE);
+        expect(versions.find((v) => v.sequence === 2)!.capabilities.download).toBe(true);
+
+        // Reload again after the new version -- the current version persisted.
+        await page.goto(`/art-pieces/${piece.public_id}/edit`);
+        await expect(
+          page.getByTestId('art-piece-editor-version-list').getByRole('listitem').first(),
+        ).toContainText('(current)');
+
+        await context.close();
+      });
+    }
+  });
+
+  test('a failed metadata save is retryable without losing input, and concurrent version saves never overwrite each other', async ({
+    browser,
+  }) => {
+    await test.step('a failed metadata save retains the typed input instead of clearing it', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
       await loginViaUI(page, fixture.owner.email, fixture.password);
-      const title = `Revision fixture ${viewport.width}`;
       const created = await apiPost(context, '/api/art-pieces/', {
-        title,
-        description: 'Original description.',
+        title: 'Failure recovery fixture',
+        description: 'Original.',
         prompt: 'red rectangle',
         engine: 'canvas2d',
-        capabilities: { screenshot: true },
+        capabilities: {},
         source: RED_RECTANGLE,
       });
       expect(created.status()).toBe(201);
       const piece = (await created.json()) as { public_id: string };
 
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
-      await expect(page.getByRole('heading', { name: `Edit ${title}` })).toBeVisible();
+      await page.route(`**/api/art-pieces/${piece.public_id}/`, (route) => {
+        if (route.request().method() === 'PATCH') {
+          void route.fulfill({ status: 500, body: '{}' });
+          return;
+        }
+        void route.continue();
+      });
 
-      // Metadata edit + reload proves persistence, not just component state.
-      const revisedTitle = `Revised title ${viewport.width}`;
-      await page.getByLabel('Piece title').fill(revisedTitle);
-      await page.getByLabel('Piece description').fill('Revised description.');
+      await page.getByLabel('Piece title').fill('Typed but not yet saved');
       await page.getByTestId('art-piece-editor-save-metadata').click();
-      await expect(page.getByRole('heading', { name: `Edit ${revisedTitle}` })).toBeVisible();
-      await page.goto(`/art-pieces/${piece.public_id}/edit`);
-      await expect(page.getByRole('heading', { name: `Edit ${revisedTitle}` })).toBeVisible();
-      await expect(page.getByLabel('Piece description')).toHaveValue('Revised description.');
+      await expect(page.getByRole('alert')).toContainText('Could not save these changes');
+      await expect(page.getByLabel('Piece title')).toHaveValue('Typed but not yet saved');
 
-      // One version exists before any revision is saved.
-      await expect(
-        page.getByTestId('art-piece-editor-version-list').getByRole('listitem'),
-      ).toHaveCount(1);
+      await context.close();
+    });
 
-      await generateRevision(page, 'a blue rectangle instead');
-      await page.getByTestId('art-piece-editor-capability-download').locator('input').check();
-      await page.getByTestId('art-piece-editor-save-version').click();
-      await expect(page.getByTestId('art-piece-editor-save-version')).toHaveCount(0);
+    await test.step('concurrent version saves on the same piece never overwrite each other', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixture.owner.email, fixture.password);
+      const created = await apiPost(context, '/api/art-pieces/', {
+        title: 'Concurrency fixture',
+        description: 'Original.',
+        prompt: 'red rectangle',
+        engine: 'canvas2d',
+        capabilities: {},
+        source: RED_RECTANGLE,
+      });
+      expect(created.status()).toBe(201);
+      const piece = (await created.json()) as { public_id: string };
 
-      const versionItems = page.getByTestId('art-piece-editor-version-list').getByRole('listitem');
-      await expect(versionItems).toHaveCount(2);
-      await expect(versionItems.first()).toContainText('(current)');
-      await expect(versionItems.first()).toContainText('Version 2');
-      await expect(versionItems.last()).toContainText('Version 1');
-      await expect(versionItems.last()).not.toContainText('(current)');
+      const [first, second] = await Promise.all([
+        apiPost(context, `/api/art-pieces/${piece.public_id}/versions/`, {
+          source: '<canvas id="a"></canvas>',
+          capabilities: {},
+        }),
+        apiPost(context, `/api/art-pieces/${piece.public_id}/versions/`, {
+          source: '<canvas id="b"></canvas>',
+          capabilities: {},
+        }),
+      ]);
+      expect(first.status()).toBe(201);
+      expect(second.status()).toBe(201);
+      const firstSequence = ((await first.json()) as { sequence: number }).sequence;
+      const secondSequence = ((await second.json()) as { sequence: number }).sequence;
+      expect(new Set([firstSequence, secondSequence]).size).toBe(2);
 
-      // The previous version's source is untouched -- immutable history.
       const versionsResponse = await apiGet(
         context,
         `/api/art-pieces/${piece.public_id}/versions/`,
       );
-      const versions = (await versionsResponse.json()) as Array<{
-        sequence: number;
-        source: string;
-        capabilities: Record<string, boolean>;
-      }>;
-      expect(versions).toHaveLength(2);
-      expect(versions.find((v) => v.sequence === 1)!.source).toBe(RED_RECTANGLE);
-      expect(versions.find((v) => v.sequence === 2)!.capabilities.download).toBe(true);
+      const versions = (await versionsResponse.json()) as Array<{ sequence: number }>;
+      // The original version plus both concurrent saves -- neither
+      // clobbered the other or the original.
+      expect(versions.map((v) => v.sequence).sort((a, b) => a - b)).toEqual([1, 2, 3]);
 
-      // Reload again after the new version -- the current version persisted.
-      await page.goto(`/art-pieces/${piece.public_id}/edit`);
-      await expect(
-        page.getByTestId('art-piece-editor-version-list').getByRole('listitem').first(),
-      ).toContainText('(current)');
+      await context.close();
     });
-  }
-
-  test('a failed metadata save retains the typed input instead of clearing it', async ({
-    page,
-    context,
-  }) => {
-    await loginViaUI(page, fixture.owner.email, fixture.password);
-    const created = await apiPost(context, '/api/art-pieces/', {
-      title: 'Failure recovery fixture',
-      description: 'Original.',
-      prompt: 'red rectangle',
-      engine: 'canvas2d',
-      capabilities: {},
-      source: RED_RECTANGLE,
-    });
-    expect(created.status()).toBe(201);
-    const piece = (await created.json()) as { public_id: string };
-
-    await page.goto(`/art-pieces/${piece.public_id}/edit`);
-    await page.route(`**/api/art-pieces/${piece.public_id}/`, (route) => {
-      if (route.request().method() === 'PATCH') {
-        void route.fulfill({ status: 500, body: '{}' });
-        return;
-      }
-      void route.continue();
-    });
-
-    await page.getByLabel('Piece title').fill('Typed but not yet saved');
-    await page.getByTestId('art-piece-editor-save-metadata').click();
-    await expect(page.getByRole('alert')).toContainText('Could not save these changes');
-    await expect(page.getByLabel('Piece title')).toHaveValue('Typed but not yet saved');
-  });
-
-  test('concurrent version saves on the same piece never overwrite each other', async ({
-    page,
-    context,
-  }) => {
-    await loginViaUI(page, fixture.owner.email, fixture.password);
-    const created = await apiPost(context, '/api/art-pieces/', {
-      title: 'Concurrency fixture',
-      description: 'Original.',
-      prompt: 'red rectangle',
-      engine: 'canvas2d',
-      capabilities: {},
-      source: RED_RECTANGLE,
-    });
-    expect(created.status()).toBe(201);
-    const piece = (await created.json()) as { public_id: string };
-
-    const [first, second] = await Promise.all([
-      apiPost(context, `/api/art-pieces/${piece.public_id}/versions/`, {
-        source: '<canvas id="a"></canvas>',
-        capabilities: {},
-      }),
-      apiPost(context, `/api/art-pieces/${piece.public_id}/versions/`, {
-        source: '<canvas id="b"></canvas>',
-        capabilities: {},
-      }),
-    ]);
-    expect(first.status()).toBe(201);
-    expect(second.status()).toBe(201);
-    const firstSequence = ((await first.json()) as { sequence: number }).sequence;
-    const secondSequence = ((await second.json()) as { sequence: number }).sequence;
-    expect(new Set([firstSequence, secondSequence]).size).toBe(2);
-
-    const versionsResponse = await apiGet(context, `/api/art-pieces/${piece.public_id}/versions/`);
-    const versions = (await versionsResponse.json()) as Array<{ sequence: number }>;
-    // The original version plus both concurrent saves -- neither
-    // clobbered the other or the original.
-    expect(versions.map((v) => v.sequence).sort((a, b) => a - b)).toEqual([1, 2, 3]);
   });
 
   test('owner can regenerate the thumbnail and soft-delete with confirmation; cancelling preserves the piece', async ({

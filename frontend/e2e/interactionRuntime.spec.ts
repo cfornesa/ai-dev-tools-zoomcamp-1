@@ -374,7 +374,9 @@ test.describe('Interaction runtime', () => {
       // behind an explicit action instead of a timer.
       await expect(page.getByRole('button', { name: 'Play' })).toHaveCount(0);
       await expect(
-        page.getByText('Auto-advance is off while motion is reduced. Use Step to advance manually.'),
+        page.getByText(
+          'Auto-advance is off while motion is reduced. Use Step to advance manually.',
+        ),
       ).toBeVisible();
       await page.getByRole('button', { name: 'Step', exact: true }).click();
       await expect(playbackProgress(page)).toHaveText('1 of 9 events played');

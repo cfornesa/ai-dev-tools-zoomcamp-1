@@ -666,7 +666,7 @@ test.describe('Local and server draft autosave', () => {
   }) => {
     test.setTimeout(90000);
 
-    await test.step("issue #112: a failing server draft sync surfaces an actionable notice, stays on the editor route, and does not lose the working copy", async () => {
+    await test.step('issue #112: a failing server draft sync surfaces an actionable notice, stays on the editor route, and does not lose the working copy', async () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
@@ -758,7 +758,7 @@ test.describe('Local and server draft autosave', () => {
       await context.close();
     });
 
-    await test.step("issue #125: a periodic tick after explicit Save must not recreate the server draft, and resumes once a real edit follows", async () => {
+    await test.step('issue #125: a periodic tick after explicit Save must not recreate the server draft, and resumes once a real edit follows', async () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
@@ -809,7 +809,7 @@ test.describe('Local and server draft autosave', () => {
       await context.close();
     });
 
-    await test.step("issue #125: reopening a project right after Save never shows the recovery prompt, whether reopened before or after a full sync interval", async () => {
+    await test.step('issue #125: reopening a project right after Save never shows the recovery prompt, whether reopened before or after a full sync interval', async () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);

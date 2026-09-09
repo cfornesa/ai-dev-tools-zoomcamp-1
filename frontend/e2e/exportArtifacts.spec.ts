@@ -905,7 +905,11 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       const page = await context.newPage();
       interceptCdnAndTrackRequests(page, { allowCamera: true });
       await installCameraTestSeams(page, 'deny');
-      await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-denied.html');
+      await openExportInIsolatedContext(
+        page,
+        await cameraModeExportHtml(),
+        'lifecycle-denied.html',
+      );
       await openExportPieceControls(page);
 
       await page.getByTestId('camera-enable').click();
@@ -924,7 +928,11 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       const page = await context.newPage();
       interceptCdnAndTrackRequests(page, { allowCamera: true });
       await installCameraTestSeams(page, 'missing-device');
-      await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-missing.html');
+      await openExportInIsolatedContext(
+        page,
+        await cameraModeExportHtml(),
+        'lifecycle-missing.html',
+      );
       await openExportPieceControls(page);
 
       await page.getByTestId('camera-enable').click();
@@ -960,7 +968,11 @@ test.describe('Camera lifecycle: starts inactive; mocked denial, stop, retry, an
       const page = await context.newPage();
       interceptCdnAndTrackRequests(page, { allowCamera: true });
       await installCameraTestSeams(page, 'succeed');
-      await openExportInIsolatedContext(page, await cameraModeExportHtml(), 'lifecycle-active.html');
+      await openExportInIsolatedContext(
+        page,
+        await cameraModeExportHtml(),
+        'lifecycle-active.html',
+      );
       await openExportPieceControls(page);
 
       await page.getByTestId('camera-enable').click();
@@ -1205,7 +1217,6 @@ test.describe('Content-exclusion scanning: internal ids, prompts, history, creat
     });
   });
 });
-
 
 test.describe('ZIP export: real-browser Canvas 2D capture, exactly two root files, 1200x630 artwork-only PNG', () => {
   test("generateSocialThumbnailZip, run against a real Chromium Canvas 2D context (not jsdom's canvas polyfill), produces exactly index.html + thumbnail.png at the root", async () => {

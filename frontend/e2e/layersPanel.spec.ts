@@ -42,11 +42,7 @@ import { expect, test, type Browser, type Locator, type Page } from '@playwright
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
-import {
-  closeEditScene,
-  openEditScene,
-  openPieceControlsMenu,
-} from './support/openEditScene.js';
+import { closeEditScene, openEditScene, openPieceControlsMenu } from './support/openEditScene.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;

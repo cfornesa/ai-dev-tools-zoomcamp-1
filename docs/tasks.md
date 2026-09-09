@@ -1,5 +1,44 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-09 — stage-2a batch delivered: #502 and #500 implemented, #501 handback, #419/#445 skipped per owner
+
+Stage 2a (`implementation-mechanical`, run as a substitution of the rostered
+Opencode Go — Claude session dispatching the mechanical subagents; no
+backlog-session ledger active, provenance recorded in `DECISIONS.md`):
+
+- **#502 delivered** in `2a977fe`. Two layers were blocking single-test
+  selection with `POSTGRES_TEST_DATABASE_URL` set: (1) Django's implicit
+  non-default→`default` `TEST[DEPENDENCIES]` cannot resolve under
+  pytest-django's lazy per-alias setup — fixed with explicit empty
+  dependencies in `backend/backend/test_settings.py`; (2) with only
+  `postgres_test` selected, `default` is never created/migrated, so allauth's
+  `0006_emailaddress_lower` RunPython routes its ORM query to an empty SQLite
+  and setup fails — fixed by adopting the issue's own
+  `databases=["default", "postgres_test"]` convention across 22 single-alias
+  markers in 12 test files (+1 docstring). Added a subprocess regression test
+  asserting the issue's exact repro passes under single selection (skips
+  without the env var). Independently re-verified: the exact repro, four
+  cross-file single selections, full backend suite 1161 passed/35 skipped,
+  ruff/format/mypy clean. Note: one verification claim from the first
+  dispatch round was void (the subagent had selected a SQLite-only node id);
+  caught and corrected before commit.
+- **#500 delivered** in `7bd5d2e`. Standalone Mistral form + legacy client
+  functions + mock-backend routes removed; the generic Mistral card is the
+  sole credential surface. Mock mode gained provider-credentials routes
+  (none existed — disclosed deviation, required for the page to render under
+  `VITE_USE_MOCK_BACKEND`). E2E spec now drives the sole card at 1280x900 and
+  375x812 with keyboard-focus, bounding-box, and screenshot evidence.
+  Independently re-verified: unit 36/36, typecheck clean, Chromium E2E 2/2
+  (first re-run self-skipped — the session's own Django server had died
+  between tool calls; re-run in a single invocation passed), `make check`
+  green (backend 1161/35, frontend 203 files/2503 tests).
+- **#501 handback:** not attempted — dependency-blocked on open #499 (stage
+  2b generation-path read resolution), which its own contract requires
+  terminally reconciled first. Stays open; not a blocker.
+- **#419/#445 skipped** per owner instruction (already QA-passed).
+
+Both issues stay OPEN for the stage-4 QA pass (no auto-close keywords used).
+
 ## 2026-09-09 — #498 closed after independent QA + readiness; #499–#502 remain open
 
 Stage 4 (`qa-self-review`) independently re-verified the stage-2b handoff for

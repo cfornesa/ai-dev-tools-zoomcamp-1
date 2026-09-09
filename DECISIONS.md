@@ -498,6 +498,41 @@ engineering item from today's session -- everything closed today
 issues (#419, #440, #445, #460) are all owner/credential/CI-evidence
 gated, not engineering-blocked.
 
+## 2026-09-09 (stage-2a batch: #502 + #500 delivered, #501 handback)
+
+Owner dispatch: implement #419, #445, #500, #501, #502 mechanically. Owner
+correction mid-session: #419/#445 already QA-passed — skipped, not touched
+(consistent with both issues' own bodies: reconciliation/release containers,
+not engineering). Stage 2a executed as a substitution of the rostered
+Opencode Go (implementation-mechanical-backend / -frontend subagents under
+this session); provenance per the handoff contract, no backlog-session
+ledger active. Issues left OPEN for stage-4 QA.
+
+- **#502 (`2a977fe`):** two-layer fix — explicit empty `TEST[DEPENDENCIES]`
+  in test_settings (setup-ordering layer) + dual-alias
+  `["default", "postgres_test"]` markers across 22 markers/12 files (the
+  issue's own working convention; fixes the migration-routing layer exposed
+  once setup no longer crashed: allauth `0006_emailaddress_lower`'s unguarded
+  RunPython needs `default` migrated first). Subprocess regression test on
+  the issue's exact repro. First dispatch round's "other selection passed"
+  verification was void (a SQLite-only node id was chosen) — caught on
+  independent re-run, corrected, then fully re-verified (single selections,
+  full backend suite, lint/format/mypy) before commit.
+- **#500 (`7bd5d2e`):** standalone Mistral form + legacy client/mock wiring
+  removed; sole generic card remains. Disclosed deviations: mock-mode
+  provider-credentials routes added (none existed), now-unused imports
+  dropped, Shift+Tab used for reachability (Save button is after the input
+  in DOM order). Independently re-verified: unit 36/36, typecheck, Chromium
+  E2E 2/2 both viewports (first re-run self-skipped because this session's
+  own backgrounded Django server died between tool calls — environment
+  artifact, not code; re-ran stack+suite in one invocation), `make check`
+  green.
+- **#501:** handback, no work attempted — its own contract requires #499
+  (open, stage 2b) terminally reconciled first. Routing handoff recorded;
+  not a blocker.
+
+`docs/tasks.md` reconciled with a dated session entry (commit follows).
+
 ## 2026-09-09 (CI concurrency fix + standing rule against manual full-matrix triggers)
 
 Manually triggering the full multi-browser matrix for #419's own

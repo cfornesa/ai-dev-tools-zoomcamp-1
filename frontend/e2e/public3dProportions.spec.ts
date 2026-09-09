@@ -35,15 +35,16 @@ test.describe('anonymous public 3D proportions', () => {
     await expect(titleForm).toHaveCount(0);
 
     await page.setViewportSize({ width: 1280, height: 900 });
-    const ownerToolbar = page
-      .getByTestId('scene3d-preview-canvas-frame')
-      .getByRole('toolbar', { name: 'Preview actions' });
-    await ownerToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await ownerToolbar
-      .getByRole('button', { name: 'Publication status: Draft' })
-      .scrollIntoViewIfNeeded();
-    await ownerToolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
-    await ownerToolbar.getByRole('button', { name: 'Published', exact: true }).click();
+    // Issue #394: the owner editor's PublishControl3D renders its
+    // "Publication status" group directly on the page, not inside the
+    // "Preview actions" stage toolbar and not behind any trigger to open
+    // first -- matches handGestureGuide.spec.ts's/
+    // public3dRouteStageChrome.spec.ts's own fix for the same stale
+    // assumption.
+    await page
+      .getByRole('group', { name: 'Publication status' })
+      .getByRole('button', { name: 'Published', exact: true })
+      .click();
     await page
       .getByRole('alertdialog')
       .getByRole('button', { name: 'Publish', exact: true })

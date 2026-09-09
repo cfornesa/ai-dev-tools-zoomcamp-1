@@ -25,7 +25,7 @@
 | 0b | Loop orchestration — ledger, manifest, reconciliation | Claude | Sonnet 5 | Medium | skill `backlog-session` |
 | 1 | Issue scoping / spec drafting | Codex (ChatGPT Plus) | GPT-5.6 Sol | Medium | skill `issue-scoping` |
 | 2a | Implementation — mechanical / boilerplate | Opencode Desktop via native Opencode Go | kimi-k2.7-code (frontend) / qwen3.6-plus (backend) | — | skill `implementation-mechanical` |
-| 2b | Implementation — complex logic | Opencode Desktop (`/connect` to Ollama Cloud) | qwen3-coder:cloud | — | skill `implementation-complex` |
+| 2b | Implementation — complex logic | Opencode Desktop (`/connect` to Ollama Cloud) | kimi-k3 | — | skill `implementation-complex` |
 | 3 | Second-opinion patch review (optional) | Mistral Vibe | devstral-2 | — | skill `second-opinion-review` |
 | 4 | QA self-review | Claude | Sonnet 5 | Medium | skill `qa-self-review` |
 | 5 | Production-readiness gate | Claude | **Opus 5 (mandatory)** | Low | skill `production-readiness` |
@@ -97,8 +97,8 @@ interface change, or a URL/route change.
 **Service:** Opencode Desktop, using its native `/connect` integration with
 Ollama Cloud. Running this pass through Opencode is the intended route and is
 not a routing substitution.
-**Model:** `qwen3-coder:cloud` — the strongest reasoning in this tier, which
-is what auth, data-layer, and schema/business-logic translation need.
+**Model:** `kimi-k3` — replaces `qwen3-coder:cloud`, which Ollama Cloud no
+longer offers (owner-confirmed 2026-09-09).
 
 **Function:** implement a stage-1 issue whose routing hint is complex logic —
 auth, data layer, migrations, schema and business-logic translation.

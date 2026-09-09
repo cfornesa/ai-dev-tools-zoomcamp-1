@@ -8,8 +8,8 @@ description: Implement one criterion-ready issue involving auth, data-layer, mig
 Stage 2b of the loop in `LOOP-AGENTS.md` Section 2. Read
 `.agents/skills/_shared/HANDOFF-CONTRACT.md` first.
 
-**Rostered owner:** Ollama Cloud, `qwen3-coder:cloud` — the strongest
-reasoning in that tier, which is what this stage's work needs.
+**Rostered owner:** Ollama Cloud, `kimi-k3` — replaces `qwen3-coder:cloud`,
+which Ollama Cloud no longer offers (owner-confirmed 2026-09-09).
 
 Running this skill in a Claude session is a **substitution**. Record it as
 such in the `backlog-session` ledger. To delegate instead, hand this file's

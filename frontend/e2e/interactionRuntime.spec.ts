@@ -93,6 +93,7 @@ import {
 } from './support/expandCollapsibleSections.js';
 import {
   closeEditScene,
+  closePieceControlsMenu,
   openEditScene,
   openPieceControlsMenu,
 } from './support/openEditScene.js';
@@ -362,17 +363,7 @@ test.describe('Interaction runtime', () => {
       // `layersPanel.spec.ts`'s own module doc comment), so it must be
       // closed before this header control is reachable, then reopened for
       // the Step click that follows.
-      // `closePieceControlsMenu`'s own guard checks the "Close piece
-      // controls menu" button's visibility, but that accessible name is
-      // shared by both the outer toggle and the dialog's own "x" dismiss
-      // button while open -- a strict-mode violation that its `.catch(() =>
-      // false)` silently treats as "already closed", so it never actually
-      // presses Escape. Pressing it directly bypasses that broken guard;
-      // `closeEditScene` (used elsewhere in this file) sidesteps the same
-      // issue by checking an unambiguous toolbar instead.
-      const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-      await page.keyboard.press('Escape');
-      await expect(toolbar.getByRole('dialog', { name: 'Piece actions' })).toHaveCount(0);
+      await closePieceControlsMenu(page);
       await page.getByRole('radio', { name: 'Reduced' }).click();
       await expect(page.getByText('Motion is currently reduced.')).toBeVisible();
       await openPieceControls(page);
@@ -389,8 +380,7 @@ test.describe('Interaction runtime', () => {
       await expect(playbackProgress(page)).toHaveText('1 of 9 events played');
 
       // Switching back to Full restores Play/Pause.
-      await page.keyboard.press('Escape');
-      await expect(toolbar.getByRole('dialog', { name: 'Piece actions' })).toHaveCount(0);
+      await closePieceControlsMenu(page);
       await page.getByRole('radio', { name: 'Full', exact: true }).click();
       await expect(page.getByText('Motion is currently full.')).toBeVisible();
       await openPieceControls(page);

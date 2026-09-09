@@ -36,10 +36,18 @@ export async function openPieceControlsMenu(page: Page): Promise<void> {
  */
 export async function closePieceControlsMenu(page: Page): Promise<void> {
   const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-  const menuTrigger = toolbar.getByRole('button', { name: 'Close piece controls menu' });
-  if (!(await menuTrigger.isVisible().catch(() => false))) return; // already closed
+  // Bug fixed in this session: this used to check the "Close piece
+  // controls menu" *button*'s visibility, but that accessible name is
+  // shared by both the outer hamburger toggle and the dialog's own "x"
+  // dismiss button while open (`PieceStageToolbar.tsx`) -- a strict-mode
+  // violation `.isVisible().catch(() => false)` silently swallowed as
+  // "already closed", so this never actually pressed Escape. The dialog
+  // itself (labelled by its own "Piece actions" heading) has no such
+  // ambiguity.
+  const dialog = toolbar.getByRole('dialog', { name: 'Piece actions' });
+  if (!(await dialog.isVisible().catch(() => false))) return; // already closed
   await page.keyboard.press('Escape');
-  await menuTrigger.waitFor({ state: 'hidden' }).catch(() => {});
+  await dialog.waitFor({ state: 'hidden' }).catch(() => {});
 }
 
 /** Opens the piece-controls menu, then the nested "Edit scene" popover,

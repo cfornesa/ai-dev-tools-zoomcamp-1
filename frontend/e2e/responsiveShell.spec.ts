@@ -154,86 +154,94 @@ async function expectTabOrder(page: Page, controls: Locator[], browserName: stri
   }
 }
 
+// Consolidation note: this file's scenarios were each an independent
+// test() (issues #90/#160/#239/#241/#268/#450/#452). None of the three
+// signed-out scenarios below ever logs in, so they safely share one page
+// across test.step()s; the signed-in groups each use a fresh
+// browser.newContext()/page per step instead, since a second loginViaUI
+// call on an already-authenticated page times out (the same bug already
+// found and fixed in this session's other consolidations). Only
+// Playwright's own test-invocation count drops -- every original
+// assertion and viewport/browser combination still runs.
 test.describe('Responsive app shell', () => {
-  test('keeps the signed-out home visible without horizontal overflow at 600px breakpoint', async ({
-    page,
-  }) => {
-    await page.setViewportSize(NARROW_VIEWPORT);
-    await page.goto('/');
-
-    await expectVisibleAndInViewport(
-      page.getByRole('heading', { name: 'Creatrweb Animation Studio' }),
-    );
-    // Below the mobile-header breakpoint, primary nav lives behind the
-    // hamburger toggle (issue #90) rather than being inline, so it must be
-    // opened before asserting its contents are visible and in-viewport.
-    await page.getByRole('button', { name: 'Open menu' }).click();
-    await expectVisibleAndInViewport(page.getByRole('navigation', { name: 'Primary navigation' }));
-    await expectVisibleAndInViewport(page.getByRole('radiogroup', { name: 'Reduce motion' }));
-    await expectVisibleAndInViewport(page.locator('.content-panel'));
-    await expectVisibleAndInViewport(page.getByRole('link', { name: 'Sign in with Google' }));
-    await expectNoHorizontalOverflow(page);
-  });
-
-  test('keeps signed-out header controls in a visible tablet tab order', async ({
+  test('signed-out home, header tab order, and reduced-motion controls stay usable at narrow/tablet widths', async ({
     page,
     browserName,
   }) => {
-    await page.setViewportSize(TABLET_VIEWPORT);
-    await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Login', exact: true })).toBeVisible();
+    await test.step('keeps the signed-out home visible without horizontal overflow at 600px breakpoint', async () => {
+      await page.setViewportSize(NARROW_VIEWPORT);
+      await page.goto('/');
 
-    await expectTabOrder(
-      page,
-      [
-        page.getByRole('link', { name: 'Skip to main content' }),
-        page.getByRole('link', { name: 'Home', exact: true }),
-        page.getByRole('link', { name: 'Public gallery' }),
-        page.getByRole('link', { name: 'Login', exact: true }),
-        page.getByRole('radio', { name: 'Match system' }),
-      ],
-      browserName,
-    );
-  });
+      await expectVisibleAndInViewport(
+        page.getByRole('heading', { name: 'Creatrweb Animation Studio' }),
+      );
+      // Below the mobile-header breakpoint, primary nav lives behind the
+      // hamburger toggle (issue #90) rather than being inline, so it must be
+      // opened before asserting its contents are visible and in-viewport.
+      await page.getByRole('button', { name: 'Open menu' }).click();
+      await expectVisibleAndInViewport(
+        page.getByRole('navigation', { name: 'Primary navigation' }),
+      );
+      await expectVisibleAndInViewport(page.getByRole('radiogroup', { name: 'Reduce motion' }));
+      await expectVisibleAndInViewport(page.locator('.content-panel'));
+      await expectVisibleAndInViewport(page.getByRole('link', { name: 'Sign in with Google' }));
+      await expectNoHorizontalOverflow(page);
+    });
 
-  test('keeps reduced-motion keyboard choices focused and visible at tablet width', async ({
-    page,
-    browserName,
-  }) => {
-    await page.setViewportSize(TABLET_VIEWPORT);
-    await page.goto('/');
+    await test.step('keeps signed-out header controls in a visible tablet tab order', async () => {
+      await page.setViewportSize(TABLET_VIEWPORT);
+      await page.goto('/');
+      await expect(page.getByRole('link', { name: 'Login', exact: true })).toBeVisible();
 
-    const system = page.getByRole('radio', { name: 'Match system' });
-    const reduced = page.getByRole('radio', { name: 'Reduced' });
-    const full = page.getByRole('radio', { name: 'Full' });
+      await expectTabOrder(
+        page,
+        [
+          page.getByRole('link', { name: 'Skip to main content' }),
+          page.getByRole('link', { name: 'Home', exact: true }),
+          page.getByRole('link', { name: 'Public gallery' }),
+          page.getByRole('link', { name: 'Login', exact: true }),
+          page.getByRole('radio', { name: 'Match system' }),
+        ],
+        browserName,
+      );
+    });
 
-    await expect(system).toHaveAttribute('aria-checked', 'true');
-    await expect(system).toHaveAttribute('tabindex', '0');
+    await test.step('keeps reduced-motion keyboard choices focused and visible at tablet width', async () => {
+      await page.setViewportSize(TABLET_VIEWPORT);
+      await page.goto('/');
 
-    // The group is one tab stop, and focus enters on its checked choice.
-    await expectTabOrder(
-      page,
-      [
-        page.getByRole('link', { name: 'Skip to main content' }),
-        page.getByRole('link', { name: 'Home', exact: true }),
-        page.getByRole('link', { name: 'Public gallery' }),
-        page.getByRole('link', { name: 'Login', exact: true }),
-        system,
-      ],
-      browserName,
-    );
+      const system = page.getByRole('radio', { name: 'Match system' });
+      const reduced = page.getByRole('radio', { name: 'Reduced' });
+      const full = page.getByRole('radio', { name: 'Full' });
 
-    await page.keyboard.press('ArrowRight');
-    await expect(reduced).toBeFocused();
-    await expect(reduced).toHaveAttribute('aria-checked', 'true');
-    await expect(system).toHaveAttribute('aria-checked', 'false');
-    await expectVisibleAndInViewport(reduced);
+      await expect(system).toHaveAttribute('aria-checked', 'true');
+      await expect(system).toHaveAttribute('tabindex', '0');
 
-    await page.keyboard.press('ArrowRight');
-    await expect(full).toBeFocused();
-    await expect(full).toHaveAttribute('aria-checked', 'true');
-    await expect(reduced).toHaveAttribute('aria-checked', 'false');
-    await expectVisibleAndInViewport(full);
+      // The group is one tab stop, and focus enters on its checked choice.
+      await expectTabOrder(
+        page,
+        [
+          page.getByRole('link', { name: 'Skip to main content' }),
+          page.getByRole('link', { name: 'Home', exact: true }),
+          page.getByRole('link', { name: 'Public gallery' }),
+          page.getByRole('link', { name: 'Login', exact: true }),
+          system,
+        ],
+        browserName,
+      );
+
+      await page.keyboard.press('ArrowRight');
+      await expect(reduced).toBeFocused();
+      await expect(reduced).toHaveAttribute('aria-checked', 'true');
+      await expect(system).toHaveAttribute('aria-checked', 'false');
+      await expectVisibleAndInViewport(reduced);
+
+      await page.keyboard.press('ArrowRight');
+      await expect(full).toBeFocused();
+      await expect(full).toHaveAttribute('aria-checked', 'true');
+      await expect(reduced).toHaveAttribute('aria-checked', 'false');
+      await expectVisibleAndInViewport(full);
+    });
   });
 
   test.describe('signed-in empty gallery', () => {
@@ -244,129 +252,148 @@ test.describe('Responsive app shell', () => {
     });
 
     // Issue #268: the 4 "Create X" buttons + "Browse templates" link this
-    // test used to check for separate-row stacking are gone -- replaced by
-    // a single compact split-button ("+" plus an arrow that opens a
+    // scenario used to check for separate-row stacking are gone -- replaced
+    // by a single compact split-button ("+" plus an arrow that opens a
     // dropdown), so there is no longer a two-elements-forced-apart layout
     // to assert. This now checks the split-button itself stays visible
     // and in-viewport, and that opening its dropdown doesn't overflow the
     // narrow viewport either.
-    test('shows the create split-button and centers the empty message on narrow screens', async ({
-      page,
-    }) => {
-      await page.setViewportSize(NARROW_VIEWPORT);
-      await loginViaUI(page, fixtures.empty.email, fixtures.password);
-
-      const panel = page.locator('.gallery-panel');
-      const galleryHeader = page.locator('.gallery-header');
-      const createSplit = page.locator('.gallery-create-split');
-      const emptyState = page.locator('.gallery-empty-state');
-
-      await expectVisibleAndInViewport(panel);
-      await expectVisibleAndInViewport(galleryHeader);
-      await expectVisibleAndInViewport(createSplit);
-      await expect(emptyState).toBeVisible();
-      await expect(emptyState).toContainText('You have not created any projects.');
-      await expect(emptyState).toContainText('Create your first animation to get started.');
-
-      const emptyBox = await emptyState.boundingBox();
-      const panelBox = await panel.boundingBox();
-      expect(emptyBox).not.toBeNull();
-      expect(panelBox).not.toBeNull();
-
-      // The empty state is centered within the bordered gallery panel.
-      const emptyCenter = emptyBox!.x + emptyBox!.width / 2;
-      const panelCenter = panelBox!.x + panelBox!.width / 2;
-      expect(Math.abs(emptyCenter - panelCenter)).toBeLessThanOrEqual(1);
-      await expectNoHorizontalOverflow(page);
-
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await expect(page.getByRole('menu', { name: 'Create a new project' })).toBeVisible();
-      await expectNoHorizontalOverflow(page);
-    });
-
-    test('keeps the shell title and actions separated at desktop and narrow widths', async ({
-      page,
-    }) => {
-      const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
-      const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-      const accountLink = page.getByRole('link', { name: 'Account settings' });
-      const logoutButton = page.getByRole('button', { name: 'Logout' });
-      const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
-
-      await page.setViewportSize({ width: 1280, height: 900 });
-      await loginViaUI(page, fixtures.other.email, fixtures.password);
-
-      await expectVisibleAndInViewport(title);
-      await expectVisibleAndInViewport(navigation);
-      await expectVisibleAndInViewport(accountLink);
-      await expectVisibleAndInViewport(logoutButton);
-      await expectVisibleAndInViewport(motion);
-      await expectNoOverlap(title, navigation);
-      await expectNoOverlap(title, accountLink);
-      await expectNoOverlap(title, logoutButton);
-      await expectNoOverlap(title, motion);
-      await expectNoHorizontalOverflow(page);
-
-      await page.setViewportSize(NARROW_VIEWPORT);
-      // Below the mobile-header breakpoint, primary nav (and the auth
-      // actions inside it) live behind the hamburger toggle (issue #90).
-      await page.getByRole('button', { name: 'Open menu' }).click();
-      await expectVisibleAndInViewport(title);
-      await expectVisibleAndInViewport(navigation);
-      await expectVisibleAndInViewport(accountLink);
-      await expectVisibleAndInViewport(logoutButton);
-      await expectVisibleAndInViewport(motion);
-      await expectNoOverlap(title, navigation);
-      await expectNoOverlap(title, accountLink);
-      await expectNoOverlap(title, logoutButton);
-      await expectNoOverlap(title, motion);
-      await expectNoHorizontalOverflow(page);
-    });
-
-    test('keeps every signed-in header action readable at tablet width', async ({ page }) => {
-      await page.setViewportSize(TABLET_VIEWPORT);
-      await loginViaUI(page, fixtures.other.email, fixtures.password);
-
-      const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
-      const galleryLink = page.getByRole('link', { name: 'Public gallery' });
-      const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
-      const accountLink = page.getByRole('link', { name: 'Account settings' });
-      const logoutButton = page.getByRole('button', { name: 'Logout' });
-
-      await expectVisibleAndInViewport(title);
-      await expectVisibleAndInViewport(galleryLink);
-      await expectVisibleAndInViewport(motion);
-      await expectVisibleAndInViewport(accountLink);
-      await expectVisibleAndInViewport(logoutButton);
-
-      const headerItems = [title, galleryLink, motion, accountLink, logoutButton];
-      for (let firstIndex = 0; firstIndex < headerItems.length; firstIndex += 1) {
-        for (let secondIndex = firstIndex + 1; secondIndex < headerItems.length; secondIndex += 1) {
-          await expectNoOverlap(headerItems[firstIndex], headerItems[secondIndex]);
-        }
-      }
-      await expectNoHorizontalOverflow(page);
-    });
-
-    test('keeps signed-in header controls in a visible tablet tab order', async ({
-      page,
+    test('the empty gallery, shell header, and tab order all stay correctly laid out for a signed-in user', async ({
+      browser,
       browserName,
     }) => {
-      await page.setViewportSize(TABLET_VIEWPORT);
-      await loginViaUI(page, fixtures.other.email, fixtures.password);
+      await test.step('shows the create split-button and centers the empty message on narrow screens', async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await page.setViewportSize(NARROW_VIEWPORT);
+        await loginViaUI(page, fixtures.empty.email, fixtures.password);
 
-      await expectTabOrder(
-        page,
-        [
-          page.getByRole('link', { name: 'Skip to main content' }),
-          page.getByRole('link', { name: 'Home', exact: true }),
-          page.getByRole('link', { name: 'Public gallery' }),
-          page.getByRole('link', { name: 'Account settings' }),
-          page.getByRole('button', { name: 'Logout' }),
-          page.getByRole('radio', { name: 'Match system' }),
-        ],
-        browserName,
-      );
+        const panel = page.locator('.gallery-panel');
+        const galleryHeader = page.locator('.gallery-header');
+        const createSplit = page.locator('.gallery-create-split');
+        const emptyState = page.locator('.gallery-empty-state');
+
+        await expectVisibleAndInViewport(panel);
+        await expectVisibleAndInViewport(galleryHeader);
+        await expectVisibleAndInViewport(createSplit);
+        await expect(emptyState).toBeVisible();
+        await expect(emptyState).toContainText('You have not created any projects.');
+        await expect(emptyState).toContainText('Create your first animation to get started.');
+
+        const emptyBox = await emptyState.boundingBox();
+        const panelBox = await panel.boundingBox();
+        expect(emptyBox).not.toBeNull();
+        expect(panelBox).not.toBeNull();
+
+        // The empty state is centered within the bordered gallery panel.
+        const emptyCenter = emptyBox!.x + emptyBox!.width / 2;
+        const panelCenter = panelBox!.x + panelBox!.width / 2;
+        expect(Math.abs(emptyCenter - panelCenter)).toBeLessThanOrEqual(1);
+        await expectNoHorizontalOverflow(page);
+
+        await page.getByRole('button', { name: 'More creation options' }).click();
+        await expect(page.getByRole('menu', { name: 'Create a new project' })).toBeVisible();
+        await expectNoHorizontalOverflow(page);
+
+        await context.close();
+      });
+
+      await test.step('keeps the shell title and actions separated at desktop and narrow widths', async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+
+        const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
+        const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+        const accountLink = page.getByRole('link', { name: 'Account settings' });
+        const logoutButton = page.getByRole('button', { name: 'Logout' });
+        const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
+
+        await page.setViewportSize({ width: 1280, height: 900 });
+        await loginViaUI(page, fixtures.other.email, fixtures.password);
+
+        await expectVisibleAndInViewport(title);
+        await expectVisibleAndInViewport(navigation);
+        await expectVisibleAndInViewport(accountLink);
+        await expectVisibleAndInViewport(logoutButton);
+        await expectVisibleAndInViewport(motion);
+        await expectNoOverlap(title, navigation);
+        await expectNoOverlap(title, accountLink);
+        await expectNoOverlap(title, logoutButton);
+        await expectNoOverlap(title, motion);
+        await expectNoHorizontalOverflow(page);
+
+        await page.setViewportSize(NARROW_VIEWPORT);
+        // Below the mobile-header breakpoint, primary nav (and the auth
+        // actions inside it) live behind the hamburger toggle (issue #90).
+        await page.getByRole('button', { name: 'Open menu' }).click();
+        await expectVisibleAndInViewport(title);
+        await expectVisibleAndInViewport(navigation);
+        await expectVisibleAndInViewport(accountLink);
+        await expectVisibleAndInViewport(logoutButton);
+        await expectVisibleAndInViewport(motion);
+        await expectNoOverlap(title, navigation);
+        await expectNoOverlap(title, accountLink);
+        await expectNoOverlap(title, logoutButton);
+        await expectNoOverlap(title, motion);
+        await expectNoHorizontalOverflow(page);
+
+        await context.close();
+      });
+
+      await test.step('keeps every signed-in header action readable at tablet width', async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await page.setViewportSize(TABLET_VIEWPORT);
+        await loginViaUI(page, fixtures.other.email, fixtures.password);
+
+        const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
+        const galleryLink = page.getByRole('link', { name: 'Public gallery' });
+        const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
+        const accountLink = page.getByRole('link', { name: 'Account settings' });
+        const logoutButton = page.getByRole('button', { name: 'Logout' });
+
+        await expectVisibleAndInViewport(title);
+        await expectVisibleAndInViewport(galleryLink);
+        await expectVisibleAndInViewport(motion);
+        await expectVisibleAndInViewport(accountLink);
+        await expectVisibleAndInViewport(logoutButton);
+
+        const headerItems = [title, galleryLink, motion, accountLink, logoutButton];
+        for (let firstIndex = 0; firstIndex < headerItems.length; firstIndex += 1) {
+          for (
+            let secondIndex = firstIndex + 1;
+            secondIndex < headerItems.length;
+            secondIndex += 1
+          ) {
+            await expectNoOverlap(headerItems[firstIndex], headerItems[secondIndex]);
+          }
+        }
+        await expectNoHorizontalOverflow(page);
+
+        await context.close();
+      });
+
+      await test.step('keeps signed-in header controls in a visible tablet tab order', async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await page.setViewportSize(TABLET_VIEWPORT);
+        await loginViaUI(page, fixtures.other.email, fixtures.password);
+
+        await expectTabOrder(
+          page,
+          [
+            page.getByRole('link', { name: 'Skip to main content' }),
+            page.getByRole('link', { name: 'Home', exact: true }),
+            page.getByRole('link', { name: 'Public gallery' }),
+            page.getByRole('link', { name: 'Account settings' }),
+            page.getByRole('button', { name: 'Logout' }),
+            page.getByRole('radio', { name: 'Match system' }),
+          ],
+          browserName,
+        );
+
+        await context.close();
+      });
     });
   });
 
@@ -385,58 +412,65 @@ test.describe('Responsive app shell', () => {
       fixtures = requireE2EFixtures();
     });
 
-    test('renders the signed-in gallery with a real project card, no horizontal overflow, at 375px', async ({
-      page,
-    }) => {
-      await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
-
-      await page.setViewportSize(NARROW_VIEWPORT);
-      await page.goto('/');
-
-      // Issue #239: Gallery.tsx (task 209/#241) can render a second
-      // `.project-grid` for "Your 3D projects" once the owner fixture has
-      // any Project3D from another spec file's run -- `.project-card` is
-      // shared by both `ProjectCard` and `Project3DCard`, so `.first()`
-      // (2D's grid renders first in DOM order, unconditionally, whenever
-      // `ownProjects` is non-empty) is what actually disambiguates here,
-      // not the card class.
-      const grid = page.locator('.project-grid').first();
-      await expect(grid).toBeVisible();
-      const card = grid.locator('.project-card').first();
-      await expectVisibleAndInViewport(card);
-      await expectNoHorizontalOverflow(page);
-    });
-
-    test('renders the public gallery with a real project card, no horizontal overflow, at 375px', async ({
-      page,
+    test('the signed-in and public galleries both render a real project card without horizontal overflow at 375px', async ({
       browser,
     }) => {
-      await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
-      await publishProjectViaUI(
-        page,
-        projectId,
-        'Responsive audit gallery card',
-        'A published project used only to exercise the populated public gallery layout at narrow width.',
-      );
+      await test.step('renders the signed-in gallery with a real project card, no horizontal overflow, at 375px', async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await loginViaUI(page, fixtures.owner.email, fixtures.password);
+        await createBlankProjectViaUI(page);
 
-      // A fresh, unauthenticated context -- the public gallery must be
-      // reachable and correctly laid out for an anonymous visitor, not
-      // just the owner who just published from a signed-in session.
-      const anonymousContext = await browser.newContext({ viewport: NARROW_VIEWPORT });
-      try {
-        const anonymousPage = await anonymousContext.newPage();
-        await anonymousPage.goto('/gallery');
+        await page.setViewportSize(NARROW_VIEWPORT);
+        await page.goto('/');
 
-        const grid = anonymousPage.locator('.public-project-grid');
+        // Issue #239: Gallery.tsx (task 209/#241) can render a second
+        // `.project-grid` for "Your 3D projects" once the owner fixture has
+        // any Project3D from another spec file's run -- `.project-card` is
+        // shared by both `ProjectCard` and `Project3DCard`, so `.first()`
+        // (2D's grid renders first in DOM order, unconditionally, whenever
+        // `ownProjects` is non-empty) is what actually disambiguates here,
+        // not the card class.
+        const grid = page.locator('.project-grid').first();
         await expect(grid).toBeVisible();
-        const card = grid.locator('.public-project-card').first();
+        const card = grid.locator('.project-card').first();
         await expectVisibleAndInViewport(card);
-        await expectNoHorizontalOverflow(anonymousPage);
-      } finally {
-        await anonymousContext.close();
-      }
+        await expectNoHorizontalOverflow(page);
+
+        await context.close();
+      });
+
+      await test.step('renders the public gallery with a real project card, no horizontal overflow, at 375px', async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await loginViaUI(page, fixtures.owner.email, fixtures.password);
+        const projectId = await createBlankProjectViaUI(page);
+        await publishProjectViaUI(
+          page,
+          projectId,
+          'Responsive audit gallery card',
+          'A published project used only to exercise the populated public gallery layout at narrow width.',
+        );
+
+        // A fresh, unauthenticated context -- the public gallery must be
+        // reachable and correctly laid out for an anonymous visitor, not
+        // just the owner who just published from a signed-in session.
+        const anonymousContext = await browser.newContext({ viewport: NARROW_VIEWPORT });
+        try {
+          const anonymousPage = await anonymousContext.newPage();
+          await anonymousPage.goto('/gallery');
+
+          const grid = anonymousPage.locator('.public-project-grid');
+          await expect(grid).toBeVisible();
+          const card = grid.locator('.public-project-card').first();
+          await expectVisibleAndInViewport(card);
+          await expectNoHorizontalOverflow(anonymousPage);
+        } finally {
+          await anonymousContext.close();
+        }
+
+        await context.close();
+      });
     });
   });
 });

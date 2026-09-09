@@ -1,5 +1,34 @@
 # Creatrweb Animation Studio Backlog
 
+## 2026-09-09 — #495/#496 session completion: both closed after independent QA + readiness
+
+Stage 4 (`qa-self-review`) independently re-ran every claim from the stage-2a
+handoff below rather than trusting it: `npm run typecheck`, the targeted
+Vitest file (8/8), the full Vitest suite (203 files/2506 tests), `format:check`/
+`lint` (confirmed the 4-drift-file/14-warning claim exactly, none in touched
+files), both named Playwright specs (5/5), and the "sibling sweep" claim
+(grepped the other art-piece specs for the same camera-mock pattern — none
+present). No discrepancies found against the report below.
+
+Stage 5 (`production-readiness`, Sonnet 5 as a standing-authorized Opus 5
+substitution for this session, Low effort) additionally ran the backend
+suite (`ruff`/`mypy`/`pytest`: clean, 1157 passed/29 skipped) and confirmed
+#497 and #419 correctly stay open rather than being folded into this
+closure. Verdict: ready for session-completion.
+
+Housekeeping: `c6707f1` ran `prettier --write` on 4 files
+(`aiAndRecovery.spec.ts`, `exportArtifacts.spec.ts`,
+`interactionRuntime.spec.ts`, `layersPanel.spec.ts`) left unformatted by this
+session's earlier E2E-consolidation edits — whitespace-only, confirmed via
+`--list` that all 23 tests across the 4 files are unchanged.
+
+**#495 and #496 both closed** with evidence comments on GitHub. Pushed to
+`main` at `c6707f1`. #497 (dual Mistral credential store) stays open,
+dependency-blocked on an owner decision + grooming. #419 stays open,
+dependency-blocked on a full CI Browser-acceptance run — this session's two
+audit rounds are recorded on its own comment thread as evidence, not treated
+as closing it.
+
 ## 2026-09-09 — #495/#496 stage-2a dispatch: duplicate id fixed, stale camera-mock guard fixed; dual Mistral credential store gap filed as #497
 
 Stage-2a (implementation-mechanical-frontend substitution, both frontend-only)

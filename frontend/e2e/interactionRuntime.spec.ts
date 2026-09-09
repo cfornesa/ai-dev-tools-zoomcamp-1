@@ -232,437 +232,482 @@ test.describe('Interaction runtime', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('one-hand manual controls produce live, observable frame state', async ({ page }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-    await openPieceControls(page);
+  // Consolidation note: this file's 7 originally independent test()s are
+  // grouped into 3 using test.step() per original scenario, each opening
+  // its own fresh browser.newContext()/page -- only Playwright's own
+  // test-invocation count drops.
 
-    await expect(lastFrameStatus(page)).toHaveText('No frame emitted yet.');
-
-    // Presence: hand appears -> a real handAppear event on a real frame.
-    await page.getByRole('button', { name: 'Hand absent' }).click();
-    await expect(lastFrameStatus(page)).toContainText('right hand');
-    await expect(lastFrameStatus(page)).toContainText('events: handAppear');
-
-    // Continuous signal: dragging the indexTipX slider changes the
-    // reported confidence/position summary deterministically -- no
-    // interpolation or animation involved, a slider change is a single
-    // synchronous emitted frame.
-    const confidenceSlider = page.locator('#demo-signal-confidence');
-    await confidenceSlider.fill('0.42');
-    await expect(page.locator('output[for="demo-signal-confidence"]')).toHaveText('0.42');
-    await expect(lastFrameStatus(page)).toContainText('confidence 0.42');
-
-    // Gesture state: selecting a gesture radio emits gestureEnter for
-    // exactly that gesture, and the radio group reflects the new checked
-    // state -- both the event stream and the control state are asserted.
-    const openPalmRadio = page.getByRole('radio', { name: 'Open palm' });
-    await openPalmRadio.click();
-    await expect(openPalmRadio).toHaveAttribute('aria-checked', 'true');
-    await expect(lastFrameStatus(page)).toContainText('events: gestureEnter');
-
-    // Gesture event (one-shot): pinch start/end fire distinct events, not
-    // a persisted "gesture" state.
-    await page.getByRole('button', { name: 'Pinch start' }).click();
-    await expect(lastFrameStatus(page)).toContainText('events: pinchStart');
-    await page.getByRole('button', { name: 'Pinch end' }).click();
-    await expect(lastFrameStatus(page)).toContainText('events: pinchEnd');
-
-    // Presence off: hand disappears, exiting the active gesture first.
-    await page.getByRole('button', { name: 'Hand present' }).click();
-    await expect(lastFrameStatus(page)).toContainText('no hands');
-    await expect(lastFrameStatus(page)).toContainText('gestureExit');
-    await expect(lastFrameStatus(page)).toContainText('handDisappear');
-  });
-
-  test('synthetic playback is deterministic across replay and a fresh reload', async ({ page }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-    await openPieceControls(page);
-
-    await page.getByRole('radio', { name: 'Synthetic playback' }).click();
-    await expect(playbackProgress(page)).toHaveText('0 of 9 events played');
-
-    // Step through the entire deterministic script (see
-    // `demoPlaybackScript.ts`) and record the frame description text at
-    // every step -- no timers, no waitForTimeout, one synchronous "Step"
-    // click per scripted entry.
-    const stepButton = page.getByRole('button', { name: 'Step', exact: true });
-    const firstRunFrames: string[] = [];
-    for (let i = 0; i < 9; i += 1) {
-      await stepButton.click();
-      firstRunFrames.push((await lastFrameStatus(page).textContent()) ?? '');
-    }
-    await expect(playbackProgress(page)).toHaveText('9 of 9 events played');
-    await expect(stepButton).toBeDisabled();
-
-    // Reset rewinds without emitting anything, then replaying the exact
-    // same script in the exact same page produces byte-identical frames.
-    await page.getByRole('button', { name: 'Reset', exact: true }).click();
-    await expect(playbackProgress(page)).toHaveText('0 of 9 events played');
-    const replayFrames: string[] = [];
-    for (let i = 0; i < 9; i += 1) {
-      await stepButton.click();
-      replayFrames.push((await lastFrameStatus(page).textContent()) ?? '');
-    }
-    expect(replayFrames).toEqual(firstRunFrames);
-
-    // A fresh page load (a brand new DemoTrackingController instance, the
-    // same "same seeded fixture and mock tracking timeline" the issue
-    // asks for) reproduces the same sequence again from a clean start.
-    await page.reload();
-    await expandAllCollapsibleSections(page);
-    await openPieceControls(page);
-    await page.getByRole('radio', { name: 'Synthetic playback' }).click();
-    const reloadedFrames: string[] = [];
-    for (let i = 0; i < 9; i += 1) {
-      await stepButton.click();
-      reloadedFrames.push((await lastFrameStatus(page).textContent()) ?? '');
-    }
-    expect(reloadedFrames).toEqual(firstRunFrames);
-  });
-
-  test('reduced motion replaces playback auto-advance with manual stepping', async ({ page }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await expandAllCollapsibleSections(page);
-    await openPieceControls(page);
-
-    await page.getByRole('radio', { name: 'Synthetic playback' }).click();
-    // Full motion (the default in a fresh Chromium profile, no OS
-    // preference set): Play/Pause is offered.
-    await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
-
-    // The global Reduce motion control lives in the header (Layout.tsx),
-    // available on every route including the editor -- but the stage's
-    // "Piece controls" popover is a modal overlay that covers the whole
-    // main content area while open (same class of occlusion documented in
-    // `layersPanel.spec.ts`'s own module doc comment), so it must be
-    // closed before this header control is reachable, then reopened for
-    // the Step click that follows.
-    // `closePieceControlsMenu`'s own guard checks the "Close piece
-    // controls menu" button's visibility, but that accessible name is
-    // shared by both the outer toggle and the dialog's own "x" dismiss
-    // button while open -- a strict-mode violation that its `.catch(() =>
-    // false)` silently treats as "already closed", so it never actually
-    // presses Escape. Pressing it directly bypasses that broken guard;
-    // `closeEditScene` (used elsewhere in this file) sidesteps the same
-    // issue by checking an unambiguous toolbar instead.
-    const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-    await page.keyboard.press('Escape');
-    await expect(toolbar.getByRole('dialog', { name: 'Piece actions' })).toHaveCount(0);
-    await page.getByRole('radio', { name: 'Reduced' }).click();
-    await expect(page.getByText('Motion is currently reduced.')).toBeVisible();
-    await openPieceControls(page);
-
-    // Task 29's documented substitution: auto-advance turns off entirely
-    // (Play/Pause disappears) and only the manual Step control remains --
-    // the same scripted frames are still fully reachable, just gated
-    // behind an explicit action instead of a timer.
-    await expect(page.getByRole('button', { name: 'Play' })).toHaveCount(0);
-    await expect(
-      page.getByText('Auto-advance is off while motion is reduced. Use Step to advance manually.'),
-    ).toBeVisible();
-    await page.getByRole('button', { name: 'Step', exact: true }).click();
-    await expect(playbackProgress(page)).toHaveText('1 of 9 events played');
-
-    // Switching back to Full restores Play/Pause.
-    await page.keyboard.press('Escape');
-    await expect(toolbar.getByRole('dialog', { name: 'Piece actions' })).toHaveCount(0);
-    await page.getByRole('radio', { name: 'Full', exact: true }).click();
-    await expect(page.getByText('Motion is currently full.')).toBeVisible();
-    await openPieceControls(page);
-    await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toBeVisible();
-  });
-
-  test('compatible parallel bindings coexist; a target-channel conflict requires explicit replacement', async ({
-    page,
+  test('one-hand manual controls, synthetic playback determinism, and reduced-motion stepping', async ({
+    browser,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await openEditScene(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await closeEditScene(page);
-    // Issue #113/#116: open "Behaviors" only after the shape exists --
-    // BehaviorCardsPanel.tsx's target select otherwise mounts with no
-    // options and never recovers (see createBlankProjectViaUI's comment).
-    await expandAllCollapsibleSections(page);
+    test.setTimeout(60000);
 
-    // Two "Follow hand" cards on the same target but different axes
-    // occupy different channels (positionX vs positionY) -- compatible
-    // parallel bindings that must both coexist without any prompt.
-    await page.getByRole('radio', { name: 'Follow hand' }).click();
-    await page.locator('#behavior-card-follow-axis').selectOption('x');
-    await page.getByRole('button', { name: 'Add card', exact: true }).click();
-    await expect(
-      page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
-    ).toHaveCount(1);
+    await test.step('one-hand manual controls produce live, observable frame state', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      await openPieceControls(page);
 
-    await page.locator('#behavior-card-follow-axis').selectOption('y');
-    await page.getByRole('button', { name: 'Add card', exact: true }).click();
-    await expect(
-      page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
-    ).toHaveCount(2);
-    await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    // Scoped to the card list itself -- the live draft preview just above
-    // it (`BehaviorCardsPanel.tsx`'s "Preview: ...") can describe the same
-    // axis in its own text, which would make an unscoped page-wide
-    // `getByText` ambiguous once a card matching it actually exists.
-    const cardList = page.getByRole('list', { name: 'Behavior card list' });
-    await expect(cardList.getByText('horizontal axis')).toBeVisible();
-    await expect(cardList.getByText('vertical axis')).toBeVisible();
+      await expect(lastFrameStatus(page)).toHaveText('No frame emitted yet.');
 
-    // A second CONTINUOUS binding back on the already-occupied horizontal
-    // (positionX) channel must trigger BehaviorCardsPanel's conflict
-    // dialog rather than silently overwriting it.
-    await page.locator('#behavior-card-follow-axis').selectOption('x');
-    await page.getByRole('button', { name: 'Add card', exact: true }).click();
-    const conflictDialog = page.getByRole('alertdialog', { name: 'Target already has a binding' });
-    await expect(conflictDialog).toBeVisible();
-    await expect(conflictDialog).toContainText('horizontal axis');
-    await expect(conflictDialog).toContainText('already controls this channel');
+      // Presence: hand appears -> a real handAppear event on a real frame.
+      await page.getByRole('button', { name: 'Hand absent' }).click();
+      await expect(lastFrameStatus(page)).toContainText('right hand');
+      await expect(lastFrameStatus(page)).toContainText('events: handAppear');
 
-    // Cancel leaves the original two-card set untouched.
-    await conflictDialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    await expect(
-      page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
-    ).toHaveCount(2);
+      // Continuous signal: dragging the indexTipX slider changes the
+      // reported confidence/position summary deterministically -- no
+      // interpolation or animation involved, a slider change is a single
+      // synchronous emitted frame.
+      const confidenceSlider = page.locator('#demo-signal-confidence');
+      await confidenceSlider.fill('0.42');
+      await expect(page.locator('output[for="demo-signal-confidence"]')).toHaveText('0.42');
+      await expect(lastFrameStatus(page)).toContainText('confidence 0.42');
 
-    // Retry and explicitly confirm the replacement this time.
-    await page.getByRole('button', { name: 'Add card', exact: true }).click();
-    await expect(page.getByRole('alertdialog')).toBeVisible();
-    await page.getByRole('button', { name: 'Replace existing binding' }).click();
-    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+      // Gesture state: selecting a gesture radio emits gestureEnter for
+      // exactly that gesture, and the radio group reflects the new checked
+      // state -- both the event stream and the control state are asserted.
+      const openPalmRadio = page.getByRole('radio', { name: 'Open palm' });
+      await openPalmRadio.click();
+      await expect(openPalmRadio).toHaveAttribute('aria-checked', 'true');
+      await expect(lastFrameStatus(page)).toContainText('events: gestureEnter');
 
-    // Final binding set: still exactly two cards (positionY untouched,
-    // positionX replaced -- not duplicated) -- both axes still present.
-    const cards = page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem');
-    await expect(cards).toHaveCount(2);
-    // Scoped for the same reason as the earlier assertion above.
-    await expect(cardList.getByText('horizontal axis')).toBeVisible();
-    await expect(cardList.getByText('vertical axis')).toBeVisible();
+      // Gesture event (one-shot): pinch start/end fire distinct events, not
+      // a persisted "gesture" state.
+      await page.getByRole('button', { name: 'Pinch start' }).click();
+      await expect(lastFrameStatus(page)).toContainText('events: pinchStart');
+      await page.getByRole('button', { name: 'Pinch end' }).click();
+      await expect(lastFrameStatus(page)).toContainText('events: pinchEnd');
 
-    // Persists through an explicit save and a full reload.
-    await saveAndReload(page, /Saved as version 2/);
-    await expect(
-      page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
-    ).toHaveCount(2);
+      // Presence off: hand disappears, exiting the active gesture first.
+      await page.getByRole('button', { name: 'Hand present' }).click();
+      await expect(lastFrameStatus(page)).toContainText('no hands');
+      await expect(lastFrameStatus(page)).toContainText('gestureExit');
+      await expect(lastFrameStatus(page)).toContainText('handDisappear');
+
+      await context.close();
+    });
+
+    await test.step('synthetic playback is deterministic across replay and a fresh reload', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      await openPieceControls(page);
+
+      await page.getByRole('radio', { name: 'Synthetic playback' }).click();
+      await expect(playbackProgress(page)).toHaveText('0 of 9 events played');
+
+      // Step through the entire deterministic script (see
+      // `demoPlaybackScript.ts`) and record the frame description text at
+      // every step -- no timers, no waitForTimeout, one synchronous "Step"
+      // click per scripted entry.
+      const stepButton = page.getByRole('button', { name: 'Step', exact: true });
+      const firstRunFrames: string[] = [];
+      for (let i = 0; i < 9; i += 1) {
+        await stepButton.click();
+        firstRunFrames.push((await lastFrameStatus(page).textContent()) ?? '');
+      }
+      await expect(playbackProgress(page)).toHaveText('9 of 9 events played');
+      await expect(stepButton).toBeDisabled();
+
+      // Reset rewinds without emitting anything, then replaying the exact
+      // same script in the exact same page produces byte-identical frames.
+      await page.getByRole('button', { name: 'Reset', exact: true }).click();
+      await expect(playbackProgress(page)).toHaveText('0 of 9 events played');
+      const replayFrames: string[] = [];
+      for (let i = 0; i < 9; i += 1) {
+        await stepButton.click();
+        replayFrames.push((await lastFrameStatus(page).textContent()) ?? '');
+      }
+      expect(replayFrames).toEqual(firstRunFrames);
+
+      // A fresh page load (a brand new DemoTrackingController instance, the
+      // same "same seeded fixture and mock tracking timeline" the issue
+      // asks for) reproduces the same sequence again from a clean start.
+      await page.reload();
+      await expandAllCollapsibleSections(page);
+      await openPieceControls(page);
+      await page.getByRole('radio', { name: 'Synthetic playback' }).click();
+      const reloadedFrames: string[] = [];
+      for (let i = 0; i < 9; i += 1) {
+        await stepButton.click();
+        reloadedFrames.push((await lastFrameStatus(page).textContent()) ?? '');
+      }
+      expect(reloadedFrames).toEqual(firstRunFrames);
+
+      await context.close();
+    });
+
+    await test.step('reduced motion replaces playback auto-advance with manual stepping', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      await openPieceControls(page);
+
+      await page.getByRole('radio', { name: 'Synthetic playback' }).click();
+      // Full motion (the default in a fresh Chromium profile, no OS
+      // preference set): Play/Pause is offered.
+      await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
+
+      // The global Reduce motion control lives in the header (Layout.tsx),
+      // available on every route including the editor -- but the stage's
+      // "Piece controls" popover is a modal overlay that covers the whole
+      // main content area while open (same class of occlusion documented in
+      // `layersPanel.spec.ts`'s own module doc comment), so it must be
+      // closed before this header control is reachable, then reopened for
+      // the Step click that follows.
+      // `closePieceControlsMenu`'s own guard checks the "Close piece
+      // controls menu" button's visibility, but that accessible name is
+      // shared by both the outer toggle and the dialog's own "x" dismiss
+      // button while open -- a strict-mode violation that its `.catch(() =>
+      // false)` silently treats as "already closed", so it never actually
+      // presses Escape. Pressing it directly bypasses that broken guard;
+      // `closeEditScene` (used elsewhere in this file) sidesteps the same
+      // issue by checking an unambiguous toolbar instead.
+      const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
+      await page.keyboard.press('Escape');
+      await expect(toolbar.getByRole('dialog', { name: 'Piece actions' })).toHaveCount(0);
+      await page.getByRole('radio', { name: 'Reduced' }).click();
+      await expect(page.getByText('Motion is currently reduced.')).toBeVisible();
+      await openPieceControls(page);
+
+      // Task 29's documented substitution: auto-advance turns off entirely
+      // (Play/Pause disappears) and only the manual Step control remains --
+      // the same scripted frames are still fully reachable, just gated
+      // behind an explicit action instead of a timer.
+      await expect(page.getByRole('button', { name: 'Play' })).toHaveCount(0);
+      await expect(
+        page.getByText('Auto-advance is off while motion is reduced. Use Step to advance manually.'),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Step', exact: true }).click();
+      await expect(playbackProgress(page)).toHaveText('1 of 9 events played');
+
+      // Switching back to Full restores Play/Pause.
+      await page.keyboard.press('Escape');
+      await expect(toolbar.getByRole('dialog', { name: 'Piece actions' })).toHaveCount(0);
+      await page.getByRole('radio', { name: 'Full', exact: true }).click();
+      await expect(page.getByText('Motion is currently full.')).toBeVisible();
+      await openPieceControls(page);
+      await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toBeVisible();
+
+      await context.close();
+    });
   });
 
-  test('graph authoring: numeric transform, exact condition threshold, elapsed-time, and cooldown suppression', async ({
-    page,
+  test('compatible parallel behavior-card bindings coexist with an explicit conflict-replacement flow, and the full graph-authoring surface persists correctly', async ({
+    browser,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await openEditScene(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await closeEditScene(page);
-    const shapeId = await firstShapeId(page);
+    test.setTimeout(60000);
 
-    await openLogicPanel(page);
+    await test.step('compatible parallel bindings coexist; a target-channel conflict requires explicit replacement', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await openEditScene(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await closeEditScene(page);
+      // Issue #113/#116: open "Behaviors" only after the shape exists --
+      // BehaviorCardsPanel.tsx's target select otherwise mounts with no
+      // options and never recovers (see createBlankProjectViaUI's comment).
+      await expandAllCollapsibleSections(page);
 
-    // --- Numeric transform: Hand signal -> Map range -> Shape property ---
-    const handSignalId = await addNode(page, 'Input: Hand signal');
-    const mapRangeId = await addNode(page, 'Transform: Map range');
-    const shapePropertyId = await addNode(page, 'Visual: Shape property');
+      // Two "Follow hand" cards on the same target but different axes
+      // occupy different channels (positionX vs positionY) -- compatible
+      // parallel bindings that must both coexist without any prompt.
+      await page.getByRole('radio', { name: 'Follow hand' }).click();
+      await page.locator('#behavior-card-follow-axis').selectOption('x');
+      await page.getByRole('button', { name: 'Add card', exact: true }).click();
+      await expect(
+        page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
+      ).toHaveCount(1);
 
-    await page.locator(`#graph-list-node-${mapRangeId}-outMax`).fill('800');
-    await page.locator(`#graph-list-node-${shapePropertyId}-targetId`).fill(shapeId);
-    await page.locator(`#graph-list-node-${shapePropertyId}-property`).selectOption('positionX');
+      await page.locator('#behavior-card-follow-axis').selectOption('y');
+      await page.getByRole('button', { name: 'Add card', exact: true }).click();
+      await expect(
+        page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
+      ).toHaveCount(2);
+      await expect(page.getByRole('alertdialog')).toHaveCount(0);
+      // Scoped to the card list itself -- the live draft preview just above
+      // it (`BehaviorCardsPanel.tsx`'s "Preview: ...") can describe the same
+      // axis in its own text, which would make an unscoped page-wide
+      // `getByText` ambiguous once a card matching it actually exists.
+      const cardList = page.getByRole('list', { name: 'Behavior card list' });
+      await expect(cardList.getByText('horizontal axis')).toBeVisible();
+      await expect(cardList.getByText('vertical axis')).toBeVisible();
 
-    await connectNodes(
-      page,
-      { nodeId: handSignalId, port: 'value' },
-      { nodeId: mapRangeId, port: 'in' },
-    );
-    await connectNodes(
-      page,
-      { nodeId: mapRangeId, port: 'out' },
-      { nodeId: shapePropertyId, port: 'in' },
-    );
+      // A second CONTINUOUS binding back on the already-occupied horizontal
+      // (positionX) channel must trigger BehaviorCardsPanel's conflict
+      // dialog rather than silently overwriting it.
+      await page.locator('#behavior-card-follow-axis').selectOption('x');
+      await page.getByRole('button', { name: 'Add card', exact: true }).click();
+      const conflictDialog = page.getByRole('alertdialog', {
+        name: 'Target already has a binding',
+      });
+      await expect(conflictDialog).toBeVisible();
+      await expect(conflictDialog).toContainText('horizontal axis');
+      await expect(conflictDialog).toContainText('already controls this channel');
 
-    // --- Exact condition threshold: If/Else at threshold=0.5 ---
-    const conditionSignalId = await addNode(page, 'Input: Hand signal');
-    await page.locator(`#graph-list-node-${conditionSignalId}-signal`).fill('pinchStrength');
-    const ifElseId = await addNode(page, 'Condition: If / Else');
-    await page.locator(`#graph-list-node-${ifElseId}-comparison`).selectOption('greaterThan');
-    await page.locator(`#graph-list-node-${ifElseId}-threshold`).fill('0.5');
-    await connectNodes(
-      page,
-      { nodeId: conditionSignalId, port: 'value' },
-      { nodeId: ifElseId, port: 'in' },
-    );
+      // Cancel leaves the original two-card set untouched.
+      await conflictDialog.getByRole('button', { name: 'Cancel' }).click();
+      await expect(page.getByRole('alertdialog')).toHaveCount(0);
+      await expect(
+        page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
+      ).toHaveCount(2);
 
-    // --- Elapsed-time node: Timer in "elapsed" mode ---
-    const timerId = await addNode(page, 'Input: Timer');
-    await expect(page.locator(`#graph-list-node-${timerId}-mode`)).toHaveValue('elapsed');
+      // Retry and explicitly confirm the replacement this time.
+      await page.getByRole('button', { name: 'Add card', exact: true }).click();
+      await expect(page.getByRole('alertdialog')).toBeVisible();
+      await page.getByRole('button', { name: 'Replace existing binding' }).click();
+      await expect(page.getByRole('alertdialog')).toHaveCount(0);
 
-    // --- Cooldown suppression: Gesture event -> Cooldown -> Particle emitter ---
-    const gestureEventId = await addNode(page, 'Input: Gesture event');
-    await page.locator(`#graph-list-node-${gestureEventId}-signal`).fill('event:pinchStart');
-    const cooldownId = await addNode(page, 'Flow: Cooldown');
-    await page.locator(`#graph-list-node-${cooldownId}-milliseconds`).fill('500');
-    const particleEmitterId = await addNode(page, 'Visual: Particle emitter');
-    await connectNodes(
-      page,
-      { nodeId: gestureEventId, port: 'event' },
-      { nodeId: cooldownId, port: 'trigger' },
-    );
-    await connectNodes(
-      page,
-      { nodeId: cooldownId, port: 'trigger' },
-      { nodeId: particleEmitterId, port: 'trigger' },
-    );
+      // Final binding set: still exactly two cards (positionY untouched,
+      // positionX replaced -- not duplicated) -- both axes still present.
+      const cards = page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem');
+      await expect(cards).toHaveCount(2);
+      // Scoped for the same reason as the earlier assertion above.
+      await expect(cardList.getByText('horizontal axis')).toBeVisible();
+      await expect(cardList.getByText('vertical axis')).toBeVisible();
 
-    await expect(page.getByRole('alert')).toHaveCount(0);
-    // 5 connections: handSignal->mapRange, mapRange->shapeProperty,
-    // conditionSignal->ifElse, gestureEvent->cooldown,
-    // cooldown->particleEmitter.
-    await expect(
-      page.getByRole('list', { name: 'Graph connection list' }).getByRole('listitem'),
-    ).toHaveCount(5);
+      // Persists through an explicit save and a full reload.
+      await saveAndReload(page, /Saved as version 2/);
+      await expect(
+        page.getByRole('list', { name: 'Behavior card list' }).getByRole('listitem'),
+      ).toHaveCount(2);
 
-    // The whole authored graph -- 9 nodes (handSignal, mapRange,
-    // shapeProperty, conditionSignal, ifElse, timer, gestureEvent,
-    // cooldown, particleEmitter), 5 connections, every configured param --
-    // round-trips through an explicit save and a full reload, proving the
-    // authoring path (not the runtime evaluation, see this file's module
-    // doc comment) is correct end to end.
-    await saveAndReload(page, /Saved as version 2/);
-    await openLogicPanel(page);
-    await expect(
-      page.getByRole('list', { name: 'Graph node list' }).getByRole('listitem'),
-    ).toHaveCount(9);
-    await expect(
-      page.getByRole('list', { name: 'Graph connection list' }).getByRole('listitem'),
-    ).toHaveCount(5);
-    await expect(page.locator(`#graph-list-node-${mapRangeId}-outMax`)).toHaveValue('800');
-    await expect(page.locator(`#graph-list-node-${ifElseId}-threshold`)).toHaveValue('0.5');
-    await expect(page.locator(`#graph-list-node-${ifElseId}-comparison`)).toHaveValue(
-      'greaterThan',
-    );
-    await expect(page.locator(`#graph-list-node-${cooldownId}-milliseconds`)).toHaveValue('500');
+      await context.close();
+    });
+
+    await test.step('graph authoring: numeric transform, exact condition threshold, elapsed-time, and cooldown suppression', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await openEditScene(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await closeEditScene(page);
+      const shapeId = await firstShapeId(page);
+
+      await openLogicPanel(page);
+
+      // --- Numeric transform: Hand signal -> Map range -> Shape property ---
+      const handSignalId = await addNode(page, 'Input: Hand signal');
+      const mapRangeId = await addNode(page, 'Transform: Map range');
+      const shapePropertyId = await addNode(page, 'Visual: Shape property');
+
+      await page.locator(`#graph-list-node-${mapRangeId}-outMax`).fill('800');
+      await page.locator(`#graph-list-node-${shapePropertyId}-targetId`).fill(shapeId);
+      await page.locator(`#graph-list-node-${shapePropertyId}-property`).selectOption('positionX');
+
+      await connectNodes(
+        page,
+        { nodeId: handSignalId, port: 'value' },
+        { nodeId: mapRangeId, port: 'in' },
+      );
+      await connectNodes(
+        page,
+        { nodeId: mapRangeId, port: 'out' },
+        { nodeId: shapePropertyId, port: 'in' },
+      );
+
+      // --- Exact condition threshold: If/Else at threshold=0.5 ---
+      const conditionSignalId = await addNode(page, 'Input: Hand signal');
+      await page.locator(`#graph-list-node-${conditionSignalId}-signal`).fill('pinchStrength');
+      const ifElseId = await addNode(page, 'Condition: If / Else');
+      await page.locator(`#graph-list-node-${ifElseId}-comparison`).selectOption('greaterThan');
+      await page.locator(`#graph-list-node-${ifElseId}-threshold`).fill('0.5');
+      await connectNodes(
+        page,
+        { nodeId: conditionSignalId, port: 'value' },
+        { nodeId: ifElseId, port: 'in' },
+      );
+
+      // --- Elapsed-time node: Timer in "elapsed" mode ---
+      const timerId = await addNode(page, 'Input: Timer');
+      await expect(page.locator(`#graph-list-node-${timerId}-mode`)).toHaveValue('elapsed');
+
+      // --- Cooldown suppression: Gesture event -> Cooldown -> Particle emitter ---
+      const gestureEventId = await addNode(page, 'Input: Gesture event');
+      await page.locator(`#graph-list-node-${gestureEventId}-signal`).fill('event:pinchStart');
+      const cooldownId = await addNode(page, 'Flow: Cooldown');
+      await page.locator(`#graph-list-node-${cooldownId}-milliseconds`).fill('500');
+      const particleEmitterId = await addNode(page, 'Visual: Particle emitter');
+      await connectNodes(
+        page,
+        { nodeId: gestureEventId, port: 'event' },
+        { nodeId: cooldownId, port: 'trigger' },
+      );
+      await connectNodes(
+        page,
+        { nodeId: cooldownId, port: 'trigger' },
+        { nodeId: particleEmitterId, port: 'trigger' },
+      );
+
+      await expect(page.getByRole('alert')).toHaveCount(0);
+      // 5 connections: handSignal->mapRange, mapRange->shapeProperty,
+      // conditionSignal->ifElse, gestureEvent->cooldown,
+      // cooldown->particleEmitter.
+      await expect(
+        page.getByRole('list', { name: 'Graph connection list' }).getByRole('listitem'),
+      ).toHaveCount(5);
+
+      // The whole authored graph -- 9 nodes (handSignal, mapRange,
+      // shapeProperty, conditionSignal, ifElse, timer, gestureEvent,
+      // cooldown, particleEmitter), 5 connections, every configured param --
+      // round-trips through an explicit save and a full reload, proving the
+      // authoring path (not the runtime evaluation, see this file's module
+      // doc comment) is correct end to end.
+      await saveAndReload(page, /Saved as version 2/);
+      await openLogicPanel(page);
+      await expect(
+        page.getByRole('list', { name: 'Graph node list' }).getByRole('listitem'),
+      ).toHaveCount(9);
+      await expect(
+        page.getByRole('list', { name: 'Graph connection list' }).getByRole('listitem'),
+      ).toHaveCount(5);
+      await expect(page.locator(`#graph-list-node-${mapRangeId}-outMax`)).toHaveValue('800');
+      await expect(page.locator(`#graph-list-node-${ifElseId}-threshold`)).toHaveValue('0.5');
+      await expect(page.locator(`#graph-list-node-${ifElseId}-comparison`)).toHaveValue(
+        'greaterThan',
+      );
+      await expect(page.locator(`#graph-list-node-${cooldownId}-milliseconds`)).toHaveValue('500');
+
+      await context.close();
+    });
   });
 
-  test('two-hand distance threshold is authorable as a graph condition (no live two-hand UI exists)', async ({
-    page,
+  test('a two-hand-distance graph condition is authorable despite no live two-hand UI, and the randomness indicator/particle-trigger wiring persist across reload', async ({
+    browser,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await openEditScene(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await closeEditScene(page);
-    await openLogicPanel(page);
+    test.setTimeout(60000);
 
-    // `handDistance` is a documented `$defs.signal` name
-    // (`behaviorRuntime.ts`) that `twoHandSignals.ts` produces at runtime,
-    // but -- see this file's module doc comment -- no demo control in
-    // this app can ever emit a two-hand frame to actually drive it live.
-    // What IS provable end to end through the real UI is that the graph
-    // editor accepts this exact signal name feeding an exact-threshold
-    // condition, and persists it correctly.
-    const handDistanceId = await addNode(page, 'Input: Hand signal');
-    await page.locator(`#graph-list-node-${handDistanceId}-signal`).fill('handDistance');
+    await test.step('two-hand distance threshold is authorable as a graph condition (no live two-hand UI exists)', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await openEditScene(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await closeEditScene(page);
+      await openLogicPanel(page);
 
-    const ifElseId = await addNode(page, 'Condition: If / Else');
-    // Matches `DEFAULT_TWO_HAND_SIGNAL_OPTIONS.farEnterThreshold` --
-    // chosen to demonstrate a realistic exact threshold, not because this
-    // graph is ever actually evaluated against a live two-hand signal.
-    await page.locator(`#graph-list-node-${ifElseId}-comparison`).selectOption('greaterThan');
-    await page.locator(`#graph-list-node-${ifElseId}-threshold`).fill('0.6');
+      // `handDistance` is a documented `$defs.signal` name
+      // (`behaviorRuntime.ts`) that `twoHandSignals.ts` produces at runtime,
+      // but -- see this file's module doc comment -- no demo control in
+      // this app can ever emit a two-hand frame to actually drive it live.
+      // What IS provable end to end through the real UI is that the graph
+      // editor accepts this exact signal name feeding an exact-threshold
+      // condition, and persists it correctly.
+      const handDistanceId = await addNode(page, 'Input: Hand signal');
+      await page.locator(`#graph-list-node-${handDistanceId}-signal`).fill('handDistance');
 
-    await connectNodes(
-      page,
-      { nodeId: handDistanceId, port: 'value' },
-      { nodeId: ifElseId, port: 'in' },
-    );
+      const ifElseId = await addNode(page, 'Condition: If / Else');
+      // Matches `DEFAULT_TWO_HAND_SIGNAL_OPTIONS.farEnterThreshold` --
+      // chosen to demonstrate a realistic exact threshold, not because this
+      // graph is ever actually evaluated against a live two-hand signal.
+      await page.locator(`#graph-list-node-${ifElseId}-comparison`).selectOption('greaterThan');
+      await page.locator(`#graph-list-node-${ifElseId}-threshold`).fill('0.6');
 
-    await expect(page.getByRole('alert')).toHaveCount(0);
-    await expect(page.locator(`#graph-list-node-${handDistanceId}-signal`)).toHaveValue(
-      'handDistance',
-    );
-    await expect(
-      page.getByRole('list', { name: 'Graph connection list' }).getByRole('listitem'),
-    ).toHaveCount(1);
+      await connectNodes(
+        page,
+        { nodeId: handDistanceId, port: 'value' },
+        { nodeId: ifElseId, port: 'in' },
+      );
 
-    await saveAndReload(page, /Saved as version 2/);
-    await openLogicPanel(page);
-    await expect(page.locator(`#graph-list-node-${handDistanceId}-signal`)).toHaveValue(
-      'handDistance',
-    );
-    await expect(page.locator(`#graph-list-node-${ifElseId}-threshold`)).toHaveValue('0.6');
-  });
+      await expect(page.getByRole('alert')).toHaveCount(0);
+      await expect(page.locator(`#graph-list-node-${handDistanceId}-signal`)).toHaveValue(
+        'handDistance',
+      );
+      await expect(
+        page.getByRole('list', { name: 'Graph connection list' }).getByRole('listitem'),
+      ).toHaveCount(1);
 
-  test('deterministic randomness indicator and particle-trigger wiring persist across reload', async ({
-    page,
-  }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
-    await openEditScene(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await closeEditScene(page);
+      await saveAndReload(page, /Saved as version 2/);
+      await openLogicPanel(page);
+      await expect(page.locator(`#graph-list-node-${handDistanceId}-signal`)).toHaveValue(
+        'handDistance',
+      );
+      await expect(page.locator(`#graph-list-node-${ifElseId}-threshold`)).toHaveValue('0.6');
 
-    // A freshly created blank project carries `randomness: { seed: 0,
-    // enabled: false }` (schema/fixtures/valid/blank.json) -- no
-    // indicator yet.
-    await expect(page.locator('.randomness-indicator')).toHaveCount(0);
+      await context.close();
+    });
 
-    await openLogicPanel(page);
-    // Adding a Task 40 random node is enough to flip
-    // `sceneUsesRandomness` -- see `behaviorRuntime.ts`'s own doc comment
-    // -- without the author separately toggling anything.
-    await addNode(page, 'Input: Random range');
+    await test.step('deterministic randomness indicator and particle-trigger wiring persist across reload', async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await createBlankProjectViaUI(page);
+      await openEditScene(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await closeEditScene(page);
 
-    const indicator = page.locator('.randomness-indicator');
-    await expect(indicator).toHaveText('Randomness enabled — seed 0');
+      // A freshly created blank project carries `randomness: { seed: 0,
+      // enabled: false }` (schema/fixtures/valid/blank.json) -- no
+      // indicator yet.
+      await expect(page.locator('.randomness-indicator')).toHaveCount(0);
 
-    // "the same seeded fixture ... produce equivalent assertions on
-    // repeated runs": the same seed is reported identically after an
-    // explicit save and a completely fresh page load -- proving the
-    // *seed* a real export/runtime would consume is stable and
-    // deterministic, which is the one randomness-related fact this app's
-    // own UI can observe (see this file's module doc comment for why the
-    // actual random *values* are a unit-test-only concern).
-    await saveAndReload(page, /Saved as version 2/);
-    await expect(indicator).toHaveText('Randomness enabled — seed 0');
+      await openLogicPanel(page);
+      // Adding a Task 40 random node is enough to flip
+      // `sceneUsesRandomness` -- see `behaviorRuntime.ts`'s own doc comment
+      // -- without the author separately toggling anything.
+      await addNode(page, 'Input: Random range');
 
-    // Effects trigger wiring: an "Emit particles" card is the one
-    // particle-related affordance with a real UI surface (particleEmitter
-    // graph nodes themselves have zero configurable params -- see the
-    // module doc comment). Confirm it produces a real, connected trigger
-    // graph fragment, visible consistently in both BehaviorCardsPanel and
-    // GraphListView.
-    await reopenEditScene(page);
-    await page.getByRole('button', { name: 'Add circle' }).click();
-    await closeEditScene(page);
-    await expandAllCollapsibleSections(page);
-    await page.getByRole('radio', { name: 'Emit particles', exact: true }).click();
-    await page.locator('#behavior-card-event').selectOption('pinchStart');
-    await page.getByRole('button', { name: 'Add card', exact: true }).click();
-    await expect(
-      page.getByRole('list', { name: 'Behavior card list' }).getByText('emit particles.'),
-    ).toBeVisible();
+      const indicator = page.locator('.randomness-indicator');
+      await expect(indicator).toHaveText('Randomness enabled — seed 0');
 
-    // The card's graph fragment (gestureEvent -> particleEmitter) is the
-    // same one node/connection pair GraphListView renders -- 2 nodes (the
-    // Random range node added above, plus this card's input node) is not
-    // asserted by count here since the exact prior graph size varies by
-    // test order; instead assert the specific fragment this card must
-    // have produced. "Show logic" is a plain toggle, not a
-    // CollapsibleSection -- saveAndReload's expandAllCollapsibleSections
-    // doesn't touch it, so the reload above closed it again.
-    await openLogicPanel(page);
-    await expect(
-      page.getByRole('list', { name: 'Graph node list' }).filter({ hasText: 'Gesture event' }),
-    ).toBeVisible();
-    await expect(
-      page
-        .getByRole('list', { name: 'Graph connection list' })
-        .filter({ hasText: 'Gesture event' })
-        .filter({ hasText: 'Particle emitter' }),
-    ).toBeVisible();
+      // "the same seeded fixture ... produce equivalent assertions on
+      // repeated runs": the same seed is reported identically after an
+      // explicit save and a completely fresh page load -- proving the
+      // *seed* a real export/runtime would consume is stable and
+      // deterministic, which is the one randomness-related fact this app's
+      // own UI can observe (see this file's module doc comment for why the
+      // actual random *values* are a unit-test-only concern).
+      await saveAndReload(page, /Saved as version 2/);
+      await expect(indicator).toHaveText('Randomness enabled — seed 0');
+
+      // Effects trigger wiring: an "Emit particles" card is the one
+      // particle-related affordance with a real UI surface (particleEmitter
+      // graph nodes themselves have zero configurable params -- see the
+      // module doc comment). Confirm it produces a real, connected trigger
+      // graph fragment, visible consistently in both BehaviorCardsPanel and
+      // GraphListView.
+      await reopenEditScene(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+      await closeEditScene(page);
+      await expandAllCollapsibleSections(page);
+      await page.getByRole('radio', { name: 'Emit particles', exact: true }).click();
+      await page.locator('#behavior-card-event').selectOption('pinchStart');
+      await page.getByRole('button', { name: 'Add card', exact: true }).click();
+      await expect(
+        page.getByRole('list', { name: 'Behavior card list' }).getByText('emit particles.'),
+      ).toBeVisible();
+
+      // The card's graph fragment (gestureEvent -> particleEmitter) is the
+      // same one node/connection pair GraphListView renders -- 2 nodes (the
+      // Random range node added above, plus this card's input node) is not
+      // asserted by count here since the exact prior graph size varies by
+      // test order; instead assert the specific fragment this card must
+      // have produced. "Show logic" is a plain toggle, not a
+      // CollapsibleSection -- saveAndReload's expandAllCollapsibleSections
+      // doesn't touch it, so the reload above closed it again.
+      await openLogicPanel(page);
+      await expect(
+        page.getByRole('list', { name: 'Graph node list' }).filter({ hasText: 'Gesture event' }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByRole('list', { name: 'Graph connection list' })
+          .filter({ hasText: 'Gesture event' })
+          .filter({ hasText: 'Particle emitter' }),
+      ).toBeVisible();
+
+      await context.close();
+    });
   });
 });

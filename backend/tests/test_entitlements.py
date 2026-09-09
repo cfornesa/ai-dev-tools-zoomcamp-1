@@ -162,12 +162,14 @@ def test_granting_or_revoking_never_touches_saved_projects_versions_credentials_
     unrelated tables via some accidental shared-key/signal side effect."""
     from django.contrib.sessions.models import Session
 
-    from scenes.models import MistralCredential, Project
+    from scenes.models import Project, ProviderCredential
 
     user = _make_user("alice")
     admin = _make_user("admin")
     project = Project.objects.create(owner=user, title="Untouched")
-    credential = MistralCredential.objects.create(user=user, encrypted_key=b"unchanged")
+    credential = ProviderCredential.objects.create(
+        owner=user, vendor="mistral", encrypted_key=b"unchanged"
+    )
     session_count_before = Session.objects.count()
 
     entitlements.set_user_plan(user, "paid", granted_by=admin)

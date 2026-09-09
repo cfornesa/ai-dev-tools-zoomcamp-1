@@ -41,7 +41,7 @@ from ai_provider.art_piece_provider import (
 )
 from ai_provider.config import use_fake_ai_provider
 from scenes.entitlements import get_effective_cap
-from scenes.models import MistralCredential, MistralCredentialDecryptionError
+from scenes.models import MistralCredentialDecryptionError, ProviderCredential
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
@@ -220,7 +220,9 @@ def get_art_piece_provider() -> ArtPieceProvider:
     user = _current_ai_user.get()
     if user is None or not getattr(user, "is_authenticated", False):
         raise MissingPersonalMistralCredential
-    credential = MistralCredential.objects.filter(user=cast("User", user)).first()
+    credential = ProviderCredential.objects.filter(
+        owner=cast("User", user), vendor="mistral"
+    ).first()
     if credential is None:
         raise MissingPersonalMistralCredential
     try:

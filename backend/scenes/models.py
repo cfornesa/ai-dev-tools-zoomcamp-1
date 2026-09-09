@@ -276,35 +276,6 @@ class SessionMetadata(models.Model):
         return f"Session metadata for user {self.user_id}"
 
 
-class MistralCredential(models.Model):
-    """One encrypted, owner-scoped Mistral key; plaintext never reaches a model field."""
-
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mistral_credential"
-    )
-    encrypted_key = models.BinaryField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return f"Mistral credential for user {self.user_id}"
-
-    def set_key(self, plaintext: str) -> None:
-        from ai_provider.credentials import encrypt_mistral_key
-
-        self.encrypted_key = encrypt_mistral_key(plaintext)
-
-    def get_key(self) -> str:
-        from ai_provider.credentials import decrypt_mistral_key
-
-        try:
-            return decrypt_mistral_key(bytes(self.encrypted_key))
-        except Exception as exc:
-            raise MistralCredentialDecryptionError(
-                "The saved Mistral credential is unavailable. Please replace it."
-            ) from exc
-
-
 class ProviderCredential(models.Model):
     """Encrypted owner-scoped credential keyed by a validated vendor."""
 
@@ -343,7 +314,7 @@ class ProviderCredential(models.Model):
 class MistralModelPreference(models.Model):
     """A user's own self-declared Mistral model slug (issue #259), looked up
     from Mistral's own model documentation -- never a live models-list API
-    call. Strictly per-user, like `MistralCredential`."""
+    call. Strictly per-user, like `ProviderCredential`."""
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mistral_model_preferences"
@@ -382,7 +353,7 @@ class AIPersona(models.Model):
 
 class AIRetryPreference(models.Model):
     """A user's own configurable automated-retry setting for failed AI
-    generations (issue #266). One record per user, like `MistralCredential`
+    generations (issue #266). One record per user, like `ProviderCredential`
     -- off by default, so a failed generation only ever retries when the
     user has explicitly opted in. `max_retries` is bounded (1-10) since it
     is applied client-side and counts against the existing per-user AI

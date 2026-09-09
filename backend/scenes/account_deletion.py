@@ -6,7 +6,7 @@ owner by FK and never embedded PII directly (see their own docstrings in
 `scenes/models.py`), so anonymizing this one row is what makes every
 audit/billing record "anonymized, retained indefinitely" without a schema
 change or a per-table anonymization pass. Keeping the row also sidesteps
-every CASCADE FK pointed at `auth.User` (`Subscription`, `MistralCredential`,
+every CASCADE FK pointed at `auth.User` (`Subscription`,
 `ProviderCredential`, `SocialAccount`, ...) -- this function deletes the
 ones with no retention reason (identities, credentials, sessions) and
 leaves the rest (billing/audit history) exactly where they are, pointed at
@@ -33,7 +33,7 @@ Retention policy (repository owner decision, 2026-09-06):
   individually redacted -- anonymizing the `User` row they point at is the
   entire anonymization step, since none of them store PII of their own.
 - Sign-in identities (`SocialAccount`), personal AI provider credentials
-  (`MistralCredential`, `ProviderCredential`), and every session are
+  (`ProviderCredential`), and every session are
   deleted outright -- there is no retention reason to keep decryptable key
   material or a still-usable identity link/session around.
 """
@@ -54,7 +54,6 @@ from django.utils.crypto import get_random_string
 from scenes.models import (
     ArtPiece,
     BillingEvent,
-    MistralCredential,
     Project,
     Project3D,
     ProviderCredential,
@@ -166,7 +165,6 @@ def delete_account(user, *, password: str | None, confirmation: str) -> None:
     # Google OAuth using the same email). Erasing it is both correct
     # identity cleanup and required to free the address up.
     EmailAddress.objects.filter(user=locked_user).delete()
-    MistralCredential.objects.filter(user=locked_user).delete()
     ProviderCredential.objects.filter(owner=locked_user).delete()
 
     session_keys = list(

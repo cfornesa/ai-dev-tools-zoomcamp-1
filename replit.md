@@ -71,7 +71,7 @@ Only the encrypted value is stored. Keep the encryption root stable; changing
 it requires a controlled rotation: set the new
 `MISTRAL_CREDENTIAL_ENCRYPTION_KEY`, place the old value in
 `MISTRAL_CREDENTIAL_PREVIOUS_ENCRYPTION_KEYS`, re-save credentials to
-re-encrypt them by running `uv run python manage.py reencrypt_mistral_credentials`,
+re-encrypt them by running `uv run python manage.py reencrypt_provider_credentials`,
 then remove the old value. Losing every applicable key makes existing
 credentials unusable, but never reveals their plaintext.
 

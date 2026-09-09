@@ -11,7 +11,6 @@ from django.urls import reverse
 from scenes.models import (
     ArtPiece,
     ArtPieceVersion,
-    MistralCredential,
     Project,
     Project3D,
     ProviderCredential,
@@ -59,7 +58,7 @@ def test_export_includes_schema_version_and_profile():
 @pytest.mark.django_db
 def test_export_never_exposes_credential_key_material():
     user = _make_user("owner")
-    MistralCredential.objects.create(user=user, encrypted_key=b"not-a-real-key")
+    ProviderCredential.objects.create(owner=user, vendor="mistral", encrypted_key=b"not-a-real-key")
     ProviderCredential.objects.create(owner=user, vendor="gemini", encrypted_key=b"also-not-real")
     client = Client()
     client.force_login(user)
@@ -69,7 +68,7 @@ def test_export_never_exposes_credential_key_material():
     body = response.json()
     assert body["ai_credentials"] == {
         "mistral_configured": True,
-        "provider_credentials": ["gemini"],
+        "provider_credentials": ["gemini", "mistral"],
     }
     # Never even the encrypted bytes, let alone anything decrypted.
     assert b"not-a-real-key" not in response.content

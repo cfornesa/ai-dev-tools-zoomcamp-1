@@ -1,7 +1,7 @@
 """Owner-scoped CRUD for saved Mistral model slugs and additive AI
-Personas (issue #259). Strictly per-user, like `scenes/credentials_api.py`'s
-`MistralCredentialView` -- no record is ever visible or deletable by
-anyone other than its owner."""
+Personas (issue #259). Strictly per-user, like
+`scenes/provider_credentials_api.py`'s `ProviderCredentialView` -- no
+record is ever visible or deletable by anyone other than its owner."""
 
 from rest_framework import serializers, status
 from rest_framework.response import Response

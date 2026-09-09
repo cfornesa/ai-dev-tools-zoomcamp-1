@@ -1,6 +1,6 @@
 """Owner-scoped management of the signed-in user's configurable AI
 auto-retry setting (issue #266). One record per user, like
-`scenes/credentials_api.py`'s `MistralCredentialView`."""
+`scenes/provider_credentials_api.py`'s `ProviderCredentialView`."""
 
 from rest_framework import serializers, status
 from rest_framework.response import Response

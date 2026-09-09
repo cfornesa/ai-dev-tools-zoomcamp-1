@@ -26,7 +26,6 @@ from scenes import account_deletion
 from scenes.models import (
     ArtPiece,
     BillingEvent,
-    MistralCredential,
     Project,
     Project3D,
     ProviderCredential,
@@ -117,7 +116,7 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     piece = ArtPiece.objects.create(owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="a circle")
     SocialAccount.objects.create(user=user, provider="github", uid="12345")
     EmailAddress.objects.create(user=user, email="owner@example.test", verified=True, primary=True)
-    MistralCredential.objects.create(user=user, encrypted_key=b"not-a-real-key")
+    ProviderCredential.objects.create(owner=user, vendor="mistral", encrypted_key=b"not-a-real-key")
     ProviderCredential.objects.create(owner=user, vendor="gemini", encrypted_key=b"also-not-real")
 
     client = Client()
@@ -150,7 +149,6 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     EmailAddress.objects.create(
         user=another_user, email="owner@example.test", verified=True, primary=True
     )
-    assert not MistralCredential.objects.filter(user=user).exists()
     assert not ProviderCredential.objects.filter(owner=user).exists()
     assert not Session.objects.filter(session_key=session_key).exists()
     assert not SessionMetadata.objects.filter(user=user).exists()

@@ -20,7 +20,7 @@ from rest_framework.test import APIClient
 
 import scenes.art_piece_api as art_piece_api
 from ai_provider.art_piece_provider import ArtPieceProvider
-from scenes.models import MistralCredential
+from scenes.models import ProviderCredential
 
 URL = "/api/ai/art-pieces/generate/"
 
@@ -315,7 +315,7 @@ def test_fake_provider_seam_needs_no_personal_key(owner_client, monkeypatch):
     """`AI_PROVIDER=fake` (`ai_provider/config.py`) short-circuits
     `get_art_piece_provider` before any credential lookup, mirroring
     `scenes.ai_api.get_ai_provider`'s identical seam -- an owner with no
-    `MistralCredential` at all still gets a deterministic success."""
+    generic Mistral credential at all still gets a deterministic success."""
     monkeypatch.setattr(art_piece_api, "use_fake_ai_provider", lambda: True)
 
     response = owner_client.post(URL, {"library": "canvas2d", "prompt": "x"}, format="json")
@@ -363,7 +363,7 @@ def test_own_daily_quota_returns_429(owner, owner_client, monkeypatch):
 @pytest.mark.django_db
 def test_missing_personal_key_returns_424(owner_client):
     # No monkeypatch: exercises the real `get_art_piece_provider`, which
-    # requires a personal `MistralCredential` -- none exists for `owner`.
+    # requires a personal generic Mistral credential -- none exists for `owner`.
     response = owner_client.post(URL, {"library": "canvas2d", "prompt": "x"}, format="json")
 
     assert response.status_code == 424
@@ -377,7 +377,7 @@ def test_owner_key_and_model_reach_the_real_provider(owner, monkeypatch):
     -- calls `_provider_for_user` directly rather than through the HTTP
     view, since this only needs to verify what `ArtPieceProvider` is
     constructed with, not exercise the full request/response cycle."""
-    credential = MistralCredential(user=owner)
+    credential = ProviderCredential(owner=owner, vendor="mistral")
     credential.set_key("sk-owner-only-key-12345")
     credential.save()
     captured = {}

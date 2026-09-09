@@ -19,7 +19,6 @@ from scenes.account_entitlements import get_entitlement_summary
 from scenes.account_identities import list_identities
 from scenes.models import (
     ArtPiece,
-    MistralCredential,
     Project,
     Project3D,
     ProviderCredential,
@@ -127,7 +126,9 @@ def _serialize_subscription(user) -> dict[str, Any] | None:
 def _serialize_ai_credentials(user) -> dict[str, Any]:
     """Configuration status only -- never key material, encrypted or not."""
     return {
-        "mistral_configured": MistralCredential.objects.filter(user=user).exists(),
+        "mistral_configured": ProviderCredential.objects.filter(
+            owner=user, vendor="mistral"
+        ).exists(),
         "provider_credentials": sorted(
             ProviderCredential.objects.filter(owner=user).values_list("vendor", flat=True)
         ),

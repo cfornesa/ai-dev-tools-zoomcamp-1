@@ -108,7 +108,6 @@ from scenes.api import _get_project_or_404, _require_or_404
 from scenes.entitlements import get_effective_cap
 from scenes.models import (
     AIPersona,
-    MistralCredential,
     MistralCredentialDecryptionError,
     Project,
     ProviderCredential,
@@ -552,17 +551,10 @@ def get_ai_provider() -> AISceneProvider:
         raise UnsupportedProvider
     owner = cast("User", user)
     generic = ProviderCredential.objects.filter(owner=owner, vendor=vendor).first()
-    credential = (
-        MistralCredential.objects.filter(user=owner).first() if vendor == "mistral" else None
-    )
-    if generic is None and credential is None:
+    if generic is None:
         raise MissingPersonalMistralCredential
     try:
-        if generic is not None:
-            key = generic.get_key()
-        else:
-            assert credential is not None
-            key = credential.get_key()
+        key = generic.get_key()
     except MistralCredentialDecryptionError as exc:
         raise MissingPersonalMistralCredential from exc
     if vendor == "gemini":

@@ -172,67 +172,6 @@ paths:
         "302":
           description: Allauth may respond with a redirect depending on configuration; the frontend's fetch wrapper follows it transparently.
 
-  /api/account/mistral-credential/:
-    get:
-      tags: [Credentials]
-      operationId: getMistralCredential
-      summary: Whether the caller has a usable personal Mistral key configured
-      x-access: session
-      responses:
-        "200":
-          description: Credential status.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/MistralCredentialStatus" }
-        "401":
-          description: Not signed in.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Detail" }
-    put:
-      tags: [Credentials]
-      operationId: saveMistralCredential
-      summary: Set (create or replace) the caller's personal Mistral key
-      description: |
-        The key is encrypted at rest (`MistralCredential.set_key`) and never
-        echoed back — the response only ever confirms `configured: true`.
-      x-access: session
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/MistralKeyInput" }
-      responses:
-        "200":
-          description: Saved.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/MistralCredentialStatus" }
-        "400":
-          description: Key failed validation (too short/long, or contains whitespace).
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ValidationErrors" }
-        "401":
-          description: Not signed in.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Detail" }
-    delete:
-      tags: [Credentials]
-      operationId: removeMistralCredential
-      summary: Remove the caller's personal Mistral key
-      description: Succeeds (204) even if no credential existed.
-      x-access: session
-      responses:
-        "204":
-          description: Removed (or none existed).
-        "401":
-          description: Not signed in.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Detail" }
-
   /api/templates/:
     get:
       tags: [Templates]
@@ -1397,22 +1336,6 @@ components:
       properties:
         username: { type: string }
         email: { type: string, format: email }
-
-    MistralCredentialStatus:
-      type: object
-      required: [configured]
-      properties:
-        configured: { type: boolean }
-
-    MistralKeyInput:
-      type: object
-      required: [key]
-      properties:
-        key:
-          type: string
-          minLength: 10
-          maxLength: 500
-          description: Must not contain any whitespace.
 
     Template:
       type: object

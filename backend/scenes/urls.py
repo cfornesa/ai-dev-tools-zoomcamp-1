@@ -64,7 +64,6 @@ from scenes.art_piece_persistence import (
     PublicArtPieceThumbnailView,
 )
 from scenes.billing_api import PayPalWebhookView
-from scenes.credentials_api import MistralCredentialView
 from scenes.provider_credentials_api import ProviderCredentialView
 
 urlpatterns = [
@@ -86,7 +85,6 @@ urlpatterns = [
         AccountIdentityUnlinkView.as_view(),
         name="account-identity-unlink",
     ),
-    path("account/mistral-credential/", MistralCredentialView.as_view(), name="mistral-credential"),
     path(
         "account/provider-credentials/",
         ProviderCredentialView.as_view(),

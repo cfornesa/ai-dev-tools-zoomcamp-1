@@ -71,6 +71,35 @@ Only assign a trigger's `RAISE EXCEPTION` an explicit SQLSTATE (which
 *would* map elsewhere, e.g. to `IntegrityError` under class 23) if that
 mapping is deliberately wanted.
 
+## 4. Single-test selection of a `databases=["postgres_test"]`-only marker fails twice over
+
+Confirmed 2026-09-09 (issue #502). `pytest path::test_name` selecting a
+lone `postgres_test`-only test sets up only that alias — never `default`
+— which fails two independent ways: Django's `get_unique_databases_and_mirrors`
+implicitly depends every non-default alias on `"default"` unless
+`TEST["DEPENDENCIES"]` is set explicitly, so the never-selected `default`
+alias can't resolve (`Circular dependency in TEST[DEPENDENCIES]`); and
+even past that, allauth's own `0006_emailaddress_lower` `RunPython`
+migration queries `default` regardless of which alias is being set up,
+so with `default` never created it raises against an empty/missing
+database. Fix: explicit empty `TEST["DEPENDENCIES"]` on `postgres_test`/
+`postgres_test_broken` in `test_settings.py`, and follow this repo's own
+established `databases=["default", "postgres_test"]` convention (already
+used in `tests/test_shared_quota_cache.py`) on every single-alias marker
+rather than `databases=["postgres_test"]` alone.
+
+A regression test asserting this exact repro exits 0 under single-test
+selection needs its own care: spawning a subprocess that runs its own
+independent `pytest` against the same `POSTGRES_TEST_DATABASE_URL`-derived
+physical database name collides with the *parent* suite's already-open
+session-scoped connections when the regression test runs as part of a
+full-suite invocation ("already exists" / "is being accessed by other
+users", teardowns racing each other) — passes in isolation, fails
+deterministically in the full suite. Fix: give the subprocess its own
+suffixed `POSTGRES_TEST_DATABASE_URL` so its derived database is
+physically distinct, letting its own teardown clean up completely
+independent of the parent's.
+
 ## Also required: raw hand-written `INSERT INTO scenes_project` fixtures
 
 Both raw-SQL trigger tests above insert `scenes_project` rows directly

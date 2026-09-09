@@ -318,6 +318,11 @@ def test_fake_provider_seam_needs_no_personal_key(owner_client, monkeypatch):
     generic Mistral credential at all still gets a deterministic success."""
     monkeypatch.setattr(art_piece_api, "use_fake_ai_provider", lambda: True)
 
+    def fail_if_queried(*args, **kwargs):
+        raise AssertionError("fake-provider path must never touch the credential store")
+
+    monkeypatch.setattr(art_piece_api.ProviderCredential.objects, "filter", fail_if_queried)
+
     response = owner_client.post(URL, {"library": "canvas2d", "prompt": "x"}, format="json")
 
     assert response.status_code == 200
@@ -392,3 +397,99 @@ def test_owner_key_and_model_reach_the_real_provider(owner, monkeypatch):
     art_piece_api._provider_for_user(owner, "codestral-2405")
 
     assert captured == {"api_key": "sk-owner-only-key-12345", "model": "codestral-2405"}
+
+
+# --- Issue #499: credential-resolution parity with the scene path ----------
+
+
+@pytest.mark.django_db
+def test_generic_endpoint_key_is_accepted_for_an_art_piece_request(owner_client, monkeypatch):
+    """Issue #499's headline guarantee through the real request path: a key
+    saved via `PUT /api/account/provider-credentials/` is exactly the key
+    `get_art_piece_provider` constructs the provider from. `ArtPieceProvider`
+    is not monkeypatched here -- the request exercises the real credential
+    lookup/decrypt; the provider's lazy `client` property is replaced with a
+    fake chat client, so no SDK is constructed and no socket is opened."""
+    from ai_provider.art_piece_provider import ArtPieceProvider as RealArtPieceProvider
+
+    assert (
+        owner_client.put(
+            "/api/account/provider-credentials/",
+            {"vendor": "mistral", "key": "sk-art-piece-via-generic"},
+            format="json",
+        ).status_code
+        == 200
+    )
+
+    captured = {}
+
+    def fake_client(provider_self):
+        captured["api_key"] = provider_self._api_key
+        return _FakeClient(
+            lambda **kw: SimpleNamespace(
+                usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+                choices=[SimpleNamespace(message=SimpleNamespace(content=_VALID_SNIPPET))],
+            )
+        )
+
+    monkeypatch.setattr(RealArtPieceProvider, "client", property(fake_client))
+
+    response = owner_client.post(URL, {"library": "canvas2d", "prompt": "x"}, format="json")
+
+    assert response.status_code == 200
+    assert captured["api_key"] == "sk-art-piece-via-generic"
+    assert "sk-art-piece-via-generic" not in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_broken_owner_credential_fails_before_provider_construction(
+    owner, owner_client, monkeypatch
+):
+    """A stored credential no current key ring can decrypt must surface the
+    same stable, actionable `personal_key_required` as a missing one --
+    before `ArtPieceProvider` is ever constructed, and without the
+    undecryptable bytes or any key material leaking into the response."""
+    ProviderCredential.objects.create(
+        owner=owner, vendor="mistral", encrypted_key=b"undecryptable-bytes"
+    )
+
+    called = False
+
+    class ShouldNotConstruct:
+        def __init__(self, **kwargs):
+            nonlocal called
+            called = True
+
+    monkeypatch.setattr(art_piece_api, "ArtPieceProvider", ShouldNotConstruct)
+    response = owner_client.post(URL, {"library": "canvas2d", "prompt": "x"}, format="json")
+
+    assert response.status_code == 424
+    assert response.json()["error"] == "personal_key_required"
+    assert "undecryptable-bytes" not in response.content.decode()
+    assert called is False
+
+
+@pytest.mark.django_db
+def test_another_users_mistral_key_is_never_selected(db, owner_client, monkeypatch):
+    """Owner isolation mirrors `test_mistral_credentials.py`'s
+    `test_owner_isolation_for_provider_resolution` for the art-piece path:
+    only the other user has a generic Mistral credential, so this request
+    must fail before provider construction rather than borrow it."""
+    other = get_user_model().objects.create_user(username="art-piece-other")
+    credential = ProviderCredential(owner=other, vendor="mistral")
+    credential.set_key("sk-other-users-key-12345")
+    credential.save()
+
+    called = False
+
+    class ShouldNotConstruct:
+        def __init__(self, **kwargs):
+            nonlocal called
+            called = True
+
+    monkeypatch.setattr(art_piece_api, "ArtPieceProvider", ShouldNotConstruct)
+    response = owner_client.post(URL, {"library": "canvas2d", "prompt": "x"}, format="json")
+
+    assert response.status_code == 424
+    assert response.json()["error"] == "personal_key_required"
+    assert called is False

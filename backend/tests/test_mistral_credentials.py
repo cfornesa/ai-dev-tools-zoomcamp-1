@@ -17,7 +17,6 @@ from rest_framework.test import APIClient
 
 import scenes.ai_api as ai_api
 from ai_provider.credentials import encrypt_provider_key
-from ai_provider.fake_provider import FakeAISceneProvider
 from scenes.models import MistralCredentialDecryptionError, Project, ProviderCredential
 
 LEGACY_URL = "/api/account/mistral-credential/"
@@ -364,10 +363,46 @@ def test_owner_isolation_for_provider_resolution(owner, other, monkeypatch):
 
 @pytest.mark.django_db
 def test_fake_provider_does_not_require_a_personal_key(owner, monkeypatch):
+    """`AI_PROVIDER=fake` short-circuits `get_ai_provider` before any
+    credential lookup (issue #499): an owner with no generic Mistral
+    credential at all gets the deterministic, network-free e2e provider --
+    and the credential store is provably never consulted, so no live
+    provider call or key is needed for this path."""
     monkeypatch.setattr(ai_api, "use_fake_ai_provider", lambda: True)
-    monkeypatch.setattr(ai_api, "build_e2e_provider", lambda scenario: None, raising=False)
+
+    def fail_if_queried(*args, **kwargs):
+        raise AssertionError("fake-provider path must never touch the credential store")
+
+    monkeypatch.setattr(ai_api.ProviderCredential.objects, "filter", fail_if_queried)
     provider = ai_api._provider_for_user(owner)
-    assert isinstance(provider, FakeAISceneProvider) is False
+
+    from ai_provider.e2e_provider import E2ETestProvider
+
+    assert isinstance(provider, E2ETestProvider)
+
+
+@pytest.mark.django_db
+def test_broken_owner_credential_fails_before_provider_creation(owner, monkeypatch):
+    """Issue #499: a stored generic credential no current key ring can
+    decrypt surfaces the same `MissingPersonalMistralCredential` as a
+    missing one -- `MistralSceneProvider` is never constructed, and the
+    undecryptable bytes never appear in the raised message."""
+    ProviderCredential.objects.create(
+        owner=owner, vendor="mistral", encrypted_key=b"undecryptable-bytes"
+    )
+    called = False
+
+    class ShouldNotConstruct:
+        def __init__(self, **kwargs):
+            nonlocal called
+            called = True
+
+    monkeypatch.setattr(ai_api, "MistralSceneProvider", ShouldNotConstruct)
+    with pytest.raises(ai_api.MissingPersonalMistralCredential) as excinfo:
+        ai_api._provider_for_user(owner)
+
+    assert called is False
+    assert "undecryptable-bytes" not in str(excinfo.value)
 
 
 # --- Rotation (reencrypt_provider_credentials) -----------------------------

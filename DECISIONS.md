@@ -417,3 +417,36 @@ criteria now satisfied: `scripts/smoke-published.sh` was actually run
 after today's publish (not assumed from the checkpoint commit), AGENTS.md
 now states the guidance, and no script timeout extension was needed (the
 existing retry loop completed cleanly). Closing #467.
+
+## 2026-09-08 (dual-task stage-2a pass: #465 FPS ceiling + #494 mock gallery)
+
+Owner dispatch (Opencode Go primary agent, GLM via opencode-go) ran two
+independent prescriptive stage-2a tasks via `implementation-mechanical-frontend`
+subagents, committing separately per the owner's two-commit instruction:
+
+- **#465 (`c5a980f`):** camera-benchmark `inferenceFps` floor lowered
+  20→12 with the documented rationale comment; 30.5 runaway-inference
+  ceiling and every other assertion untouched. One prompt-vs-file
+  mismatch flagged, not silently reconciled: the prompt quoted the old
+  bound as 30; the file actually read 20 (prior pass had already lowered
+  it once). Chromium e2e verification: 1 passed, desktop 16.2fps /
+  narrow 22.5fps — desktop would have failed the old >20 bound.
+- **#494 (`7d5b289`):** mock `GET /api/public/gallery/` route added.
+  The prompt's exact code failed typecheck (TS2561/TS2551 —
+  `mockServices: BackendServices` excess-property check); owner chose
+  keeping the two-file scope over widening to types.ts/real.ts, so
+  `listPublicGalleryUnified` is a module-level export imported directly
+  by `installMockFetch.ts`. 'generated' deliberately stays always-empty
+  (no ArtPiece mock persistence — separate larger task). Caught a
+  subagent artifact pre-commit: inserted regex was `/\$` (literal
+  dollar) instead of `$/` — route silently 404'd with green
+  typecheck/lint until fixed and probed at runtime. Browser-checked
+  `/gallery`, `?type=generated` empty state, `?type=authored`, and the
+  `/art-pieces/gallery` redirect (verified, not assumed); the only
+  seeded 3D fixture is private, so a temporary fixture flip (reverted)
+  proved the 3D card path. Vitest 203 files/2505 tests, typecheck,
+  prettier, oxlint (14 pre-existing warnings, none in touched files) all
+  green. Verification servers stopped afterward.
+
+Both issues left OPEN for the stage-4 QA pass (no auto-close keywords);
+lesson recorded at `.agents/memory/subagent-dispatch-artifacts.md`.

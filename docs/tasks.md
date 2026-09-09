@@ -18088,3 +18088,39 @@ directly (frontend unit 8/8, Playwright 2/2 both viewports, backend
 docstring noting the retirement and the two exception classes meant to
 stay. Closed with the full criterion matrix on the issue; no
 implementation dispatch was needed.
+
+## 305. Full-matrix CI run classification (owner-triggered, 2026-09-09)
+
+Status: COMPLETE — classification done, three bounded children filed.
+
+GitHub issue: [#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419) (open, tracking container)
+
+Owner explicitly requested a manual full-matrix `workflow_dispatch` run
+rather than waiting for the next nightly cron, per the standing
+convention's own explicit-request carve-out
+(`.agents/memory/full-matrix-scheduled-not-manual.md`). Run
+[34404323033](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34404323033)
+at current `main` (`6e96532`): 6 failed / 185 passed / 193 total (a much
+smaller total than earlier stale-commit runs by design — the owner's
+2026-09-09 `playwright.config.ts` decision narrowed firefox/webkit to a
+curated cross-browser-behavior subset, Chromium remains full coverage).
+
+Every failure independently reproduced in isolation before classifying,
+not accepted from the CI log alone:
+- `accountSessions.spec.ts`/`adminSettings.spec.ts` (2 failures, wrong
+  session count / wrong settings value) both pass standalone — shared
+  global state (Django sessions, the Plan singleton) not reset across
+  spec files in the full serial run. Filed as
+  [#505](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/505).
+- `publishingAndRemix.spec.ts`'s `animationFps >= 30` reproduces the same
+  CI-runner-capacity class every run — #465's fix only touched the
+  coupled `inferenceFps` assertion two lines above it. Filed as
+  [#504](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/504).
+- `artPieceSteeringRuntime.spec.ts` (3 firefox scenarios, 30s timeouts)
+  all pass standalone in ~14s — first time this curated firefox subset
+  has actually run in CI. Filed as
+  [#506](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/506).
+
+No `django_cache`/`unique_draft_scope` duplicate-key noise reproduced
+this run (the original 2026-09-05 evidence class). #419 stays open
+pending #504/#505/#506; #445 stays dependency-blocked, unchanged in kind.

@@ -599,3 +599,44 @@ criterion-matrix evidence on the issue.
 
 This also unblocks #501, whose own contract required #499 terminally
 reconciled first.
+
+## 2026-09-09 (stage-2a batch: #504 + #505 delivered, #506 handback)
+
+Owner dispatch: implement #504/#505/#506 mechanically via the
+implementation-mechanical skill. Stage 2a executed as a substitution of
+the rostered Opencode Go (Claude session dispatching per AGENTS.md's
+Implementation Delegation block; primary agent handled the diagnosis,
+no subagent dispatch this run). Provenance recorded here per the handoff
+contract, no backlog-session ledger active. Issues left OPEN for stage-4
+QA.
+
+- **#504 (`9c47c54`):** animationFps floor lowered 30→12 with its own
+  rationale comment. Root cause confirmed by reading the seam: animationFps
+  and inferenceFps are NOT identical by construction — the provider
+  throttles inference to 30Hz via MIN_INFERENCE_INTERVAL_MS while
+  animationFrames counts every rAF tick. On loaded CI runners rAF drops
+  below 30fps (17.6 and 21.2 observed in two full-matrix CI runs), failing
+  >=30 for the same runner-capacity reason inferenceFps did in #465.
+  Verified locally: 3/3 repeats passed (desktop 35.3-35.5, narrow 60.0).
+- **#505 (`14ec618`):** two fixes landed — (1) e2e_fixtures.py gained a
+  `reset-sessions` action; accountSessions.spec.ts calls it once per file
+  in beforeAll via resetSessions.ts, preventing accumulated owner sessions
+  from breaking the exact-count assertion. (2) adminSettings.spec.ts now
+  reads the live plan value from the API instead of hardcoding '5'
+  (migration 0031 seeds 50; '5' was only ever a local-run leftover).
+  Verified with the exact alphabetical serial ordering CI failed on:
+  accountEntitlements + accountIdentities + accountSessions + adminSettings
+  = 18/18 passed.
+- **#506:** handback to stage 2b, no code change. Classification: the
+  curated firefox subset's artPieceSteeringRuntime tests timeout at 30.3s
+  on waitForThreeJsReady and sendCommandAndAwaitPose (waiting for the
+  CDN-loaded sandboxed iframe's canvas/postMessage). 12 other artPiece
+  firefox tests timeout identically in the same run. Standalone passes
+  at ~14s; repeat-each=3 under interleaved curated files also passes.
+  Likely a CI-runner-capacity boundary (Firefox WebGL sandboxed-iframe
+  overhead on a shared runner), but the fix would touch the Three.js/
+  A-Frame runtime or iframe postMessage protocol — shared with chromium/
+  webkit — so it's stage-2b territory per the issue's own stop condition.
+  Owner decision needed on whether to pursue a runtime fix, a longer
+  firefox-only timeout, or a curated-subset change.
+

@@ -23,13 +23,17 @@ test.describe('3D sound engine', () => {
 
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
+    // Issue #444: every action in this toolbar (including "Enable sound")
+    // is nested behind "Open piece controls menu" -- matches
+    // immersive3dRouteParity.spec.ts's own working sequence.
+    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     const enable = toolbar.getByRole('button', { name: 'Enable sound' });
     await expect(enable).toHaveAttribute('aria-pressed', 'false');
     await enable.click();
 
     const mute = toolbar.getByRole('button', { name: 'Mute sound' });
     await expect(mute).toHaveAttribute('aria-pressed', 'true');
-    await toolbar.getByRole('button', { name: 'Piece controls' }).click();
+    await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
     const volume = toolbar.getByLabel('Sound volume');
     await expect(volume).toBeVisible();
     await volume.fill('80');

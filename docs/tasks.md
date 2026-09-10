@@ -18254,3 +18254,94 @@ both genuinely owner-credential-blocked with no engineering work
 possible until the owner provides them. #445 stays open, narrowed to
 exactly those two items — no further CI/browser-gate work remains for
 this release candidate.
+
+## 311. Distill local-first multi-scene projects and an in-editor media library
+
+Status: DISTILLATION COMPLETE — hybrid architecture selected; next Stage 1
+handoff is [#510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/510).
+
+### Owner decision
+
+The owner selected **Hybrid** on 2026-09-10, recorded on
+[#507](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/507#issuecomment-5626540190):
+projects are **Local only** by default, with scenes and project media stored
+on-device; browser persistence must be best-effort and candid about quota,
+clearing, and export/recovery. Users may explicitly opt into **Sync online**
+as backup. Sync is never automatic and may later be gated by an entitlement,
+but lack/loss of the entitlement must not restrict local projects, media, or
+exports. A project becomes a collection of scenes sharing one media library;
+scene version history stays distinct.
+
+### Duplicate and already-covered-work report
+
+- No open GitHub issue covers project-scoped reusable media, multi-scene 2D
+  projects, local-authoritative project persistence, or opt-in project sync.
+  Open-issue inventory checked 2026-09-10.
+- Existing `LayersPanel`/toolbar behavior is already present and deliberately
+  stays intact. This work adds media insertion as a new independently managed
+  layer; it does not reopen or redesign completed layers work.
+- The existing IndexedDB draft store is crash recovery only—not a project or
+  asset repository—so it is supporting evidence, not duplicate coverage.
+- Existing billing foundations and entitlement resolution are reusable, but
+  the live PayPal checkout/sandbox workflow remains separately open as #440;
+  it is not folded into sync work.
+
+### Issue manifest
+
+| Order | Issue | One workflow/capability | Depends on | Routing | Status |
+| --- | --- | --- | --- | --- | --- |
+| 0 | [#507](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/507) | Architecture parent: hybrid local-first lifecycle and project-scene boundary | Owner decision recorded | Stage 1 / reconciliation container | OPEN — provider/limits details remain owner decisions |
+| 1 | [#510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/510) | Migrate 2D projects to ordered named scenes while preserving existing versions | #507 hybrid and scene boundary | Stage 2b complex | GROOMED; next handoff |
+| 2 | [#512](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/512) | Local IndexedDB repository for project manifests, scenes, media blobs, recovery export/import | #510 contract | Stage 2b complex | PROPOSED |
+| 3 | [#508](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/508) | Validated project-asset references and renderer-safe image layers | #510, #512 | Stage 2b complex | PROPOSED |
+| 4 | [#513](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/513) | 2D Editor File menu and accessible project media-library insertion workflow | #510, #512, #508 | Stage 2a mechanical | PROPOSED |
+| 5 | [#509](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/509) | Explicit, conflict-safe cloud backup of opted-in projects/media | #510, #512, approved storage provider | Stage 2b complex | BLOCKED — provider decision |
+| 6 | [#511](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/511) | Entitlement-aware cloud-sync controls that never restrict local work | #509, #440 | Stage 2b complex | DEPENDENCY-BLOCKED |
+
+Every issue body is criterion-ready: it names an entry point, fixed fixture,
+finite acceptance list, verification boundary, exact scope exclusions, and
+routing hint. #507 is a parent/reconciliation container and must not be
+implemented as one large transaction.
+
+### Dependency rationale
+
+The project/scene migration must establish the collection boundary before
+local persistence can safely serialize scenes. The local repository must own
+asset blobs and metadata before a scene can reference an asset or the editor
+can offer a reusable library. Cloud backup follows the working local format;
+premium gating follows both cloud backup and the independent PayPal checkout
+work. This preserves the selected local-first promise and avoids making an
+unprovisioned cloud service the editor's source of truth.
+
+### Blocker triage and verification boundaries
+
+- **Owner decision required:** cloud storage provider, file/byte quotas,
+  retention, and remote deletion policy remain in #507. No vendor dependency,
+  credentials, provider configuration, or cloud upload is authorized until a
+  dedicated vendor gallery and the dependency disclosure are approved.
+- **Dependency-blocked:** #511 cannot be fully verified until #440 supplies
+  operational PayPal subscription flow. The existing entitlement service is
+  reusable, but fixture-only proof is not a real payment claim.
+- **Verification boundary:** browser persistent storage may be denied or
+  evicted by the platform. #512 must test actual observable state and failure
+  handling; it cannot promise immunity from browser/user data clearing.
+- **Out of scope:** video/audio editing, third-party URL import, AI-generated
+  asset sources, multi-user collaboration, 3D/AI editor parity, and public
+  asset URLs each require a new distilled issue if requested.
+
+### Next transaction
+
+Start only [#510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/510)
+with the `issue-scoping` stage. Its closure contract is the version-compatible
+Project-to-Scene collection migration/API boundary; local media, menus, cloud
+sync, billing, and 3D remain explicitly out of scope. Before its first schema
+write, present the migration diff and rollback plan, and update `docs/api.md`
+before changing any public endpoint.
+
+### Durable-memory proposal
+
+After owner confirmation, add a concise memory topic for the selected
+local-first hybrid invariant: browser persistence is best-effort; cloud sync
+is opt-in backup; paid eligibility cannot revoke local creative work. Link it
+to #507/#509/#511. It is intentionally not written yet because this repo's
+memory governance requires owner confirmation for end-of-session updates.

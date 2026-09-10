@@ -18203,3 +18203,29 @@ run was clean (#504/#505 hold). Revised classification recorded in
 handler never reaches a respondable state on headless Firefox's
 software-WebGL sandboxed-iframe path. Routed back to stage 2b for actual
 instrumentation (not another timeout increase).
+
+## 309. #506's second stage-2b pass: root cause confirmed, fix pending final CI check
+
+Status: OPEN — fix QA'd and independently verified, final closure gated on real CI evidence.
+
+GitHub issue: [#506](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/506) (open)
+
+Stage 2b second pass (Ollama Cloud `kimi-k3`) root-caused the falsified
+90s timeout fix against the actual failing CI run's own artifacts
+(downloaded `browser-e2e-diagnostics` from run `34419548768`): headless
+Firefox on the Linux CI runner cannot create any WebGL context inside
+the sandboxed art-piece iframe at all (`FEATURE_FAILURE_WEBGL_EXHAUSTED_DRIVERS`)
+— a permanent platform boundary, not slowness or a product defect.
+Fix (`a3dfb26`): `test.skip(browserName === 'firefox', ...)` on exactly
+the 3 WebGL-requiring scenarios, matching this repo's existing
+chromium-only boundary convention elsewhere (artPieceCameraRuntime/
+artPieceSoundRuntime/artPieceFullZipRuntime).
+
+Independently re-verified rather than trusted: downloaded and inspected
+the real CI artifact myself (both `error-context.md`'s page snapshot and
+the raw unzipped `trace.zip` console log) — the exact quoted WebGL
+failure string is genuinely present, not fabricated. Diff scope,
+`oxlint`/`prettier`/`tsc`, and a local chromium+firefox run (4/4 pass,
+1 pass + 3 cleanly skipped) all confirmed. QA: PASS, but stays open
+pending the owner's next CI trigger to confirm the actual CI outcome
+(skip vs. fail) — the same evidence boundary as the first pass.

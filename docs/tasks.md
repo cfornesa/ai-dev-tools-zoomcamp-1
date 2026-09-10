@@ -18183,3 +18183,23 @@ confirmed against the real Linux CI runner, since the stall never
 reproduced locally even before the fix. Recommend closing once the next
 scheduled nightly full-matrix run confirms; per standing convention, not
 manually re-triggered for this alone.
+
+## 308. #506's 90s timeout fix falsified by owner-triggered CI re-confirmation
+
+Status: OPEN — routed back to stage 2b for real root-cause instrumentation.
+
+GitHub issue: [#506](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/506) (open)
+
+At the owner's explicit request, triggered a second manual full-matrix
+run to confirm #506's 90s timeout fix (`ae9392a`). Result: the same 3
+`artPieceSteeringRuntime.spec.ts` firefox scenarios still failed, now at
+90s instead of 30s, identical `sendCommandAndAwaitPose`/`page.evaluate`
+timeout signature. This falsifies the fix's own "just needs more time"
+classification — confirms the contingency its own commit message
+anticipated: a genuine deadlock, not slowness. Everything else in the
+run was clean (#504/#505 hold). Revised classification recorded in
+`.agents/memory/e2e-full-matrix-firefox-iframe-timeouts.md` and
+`DECISIONS.md`: likely (b), a real defect where the canvas or postMessage
+handler never reaches a respondable state on headless Firefox's
+software-WebGL sandboxed-iframe path. Routed back to stage 2b for actual
+instrumentation (not another timeout increase).

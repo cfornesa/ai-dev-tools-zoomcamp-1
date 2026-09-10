@@ -18229,3 +18229,28 @@ failure string is genuinely present, not fabricated. Diff scope,
 1 pass + 3 cleanly skipped) all confirmed. QA: PASS, but stays open
 pending the owner's next CI trigger to confirm the actual CI outcome
 (skip vs. fail) — the same evidence boundary as the first pass.
+
+## 310. #506, #419 closed; #445 narrowed to pure credential blockers
+
+Status: #506 COMPLETE (closed), #419 COMPLETE (closed), #445 OPEN (narrowed).
+
+GitHub issues: [#506](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/506) (closed), [#419](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/419) (closed), [#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445) (open, narrowed)
+
+Owner-triggered manual full-matrix run
+([34424201026](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34424201026),
+current `main` at `1bd32ae`) came back fully clean: 188 passed, 5
+skipped, 0 failed. Confirmed the 3 previously-failing
+`artPieceSteeringRuntime.spec.ts` firefox scenarios now cleanly skip
+(matching #506's WebGL-platform-boundary fix), and the remaining 2 skips
+are the pre-existing, documented #479 real-hardware-only boundary — no
+unclassified skip or failure anywhere. Closed #506 with this evidence,
+then closed #419 (its own acceptance criteria — complete current-revision
+matrix passes, every failure/skip classified — are now fully met).
+
+#445 reconciled to its true remaining state: every engineering-side
+child (#419, #465, #467) is terminal. The only two children left open
+are #440 (PayPal sandbox credentials) and #460 (LinkedIn OAuth client),
+both genuinely owner-credential-blocked with no engineering work
+possible until the owner provides them. #445 stays open, narrowed to
+exactly those two items — no further CI/browser-gate work remains for
+this release candidate.

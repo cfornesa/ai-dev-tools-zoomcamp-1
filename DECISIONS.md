@@ -691,3 +691,24 @@ substitution). No backlog-session ledger active; recorded here.
 - Memory page `e2e-full-matrix-firefox-iframe-timeouts.md` extended in
   place with the confirmed classification and resolution.
 
+
+## 2026-09-10 (owner-triggered CI re-confirmation: #506's 90s fix falsified)
+
+Owner explicitly requested a second manual full-matrix `workflow_dispatch`
+run to confirm #506's timeout fix, per the standing convention's
+explicit-request carve-out. Run
+[34419548768](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34419548768)
+at current `main` (`915416a`): the same 3 `artPieceSteeringRuntime.spec.ts`
+firefox scenarios still failed — now at 90s instead of 30s, identical
+`page.evaluate`/`sendCommandAndAwaitPose` timeout signature. Everything
+else in the run was clean (#504/#505's fixes hold; no other failures).
+
+This falsifies the "just needs more time" classification (a)/(c) the
+stage-2b fix assumed and confirms exactly the contingency that fix's own
+commit message anticipated: a genuine deadlock, not slowness. #506
+reopened for a second stage-2b pass — real root-cause instrumentation
+(is the canvas ever created? does the postMessage handler ever reach a
+respondable state?) rather than another timeout adjustment, which the
+owner-confirmed evidence already rules out. Memory topic
+(`.agents/memory/e2e-full-matrix-firefox-iframe-timeouts.md`) updated
+with the revised classification.

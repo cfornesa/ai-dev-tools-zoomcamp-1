@@ -18391,3 +18391,54 @@ this session is pausing the #512 engineering chain to work the reconciliation
 containers (#507, #445) next, posing their remaining owner-decision points
 (cloud storage provider for #509; explicit acknowledgement that #440/#460
 still need owner-supplied credentials) directly rather than guessing.
+
+## 313. #507 architecture decisions recorded; #445 refreshed
+
+Status: #507 OPEN — decisions recorded, ready to unblock #512/#509/#511
+scoping. #445 OPEN — refreshed to current state, unchanged in kind.
+
+GitHub issues: [#507](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/507#issuecomment-5627513047),
+[#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445#issuecomment-5627413474)
+
+Per the owner's explicit request, this session posed #507's three remaining
+open architecture questions directly (gallery format) rather than guessing:
+
+- **Storage provider: PostgreSQL BLOB storage.** No new vendor dependency.
+  Verified live against Replit's own docs (`docs.replit.com/cloud-services/
+  storage-and-databases/database`, 2026-09-10): every Replit App gets 20GB
+  free database storage, dev/prod separate. At the local quota below that's
+  headroom for roughly 400 projects before capacity is a live concern.
+  Deliberately not Replit-proprietary storage: plain Postgres BLOBs keep a
+  future move to a cheaper host (explicitly flagged by the owner as
+  exploratory, not decided) a database migration rather than a storage-API
+  rewrite.
+- **Cloud sync gets a site-wide admin kill switch, default OFF** — the owner
+  has not configured sync's operational prerequisites yet and wants it fully
+  disabled at the platform level regardless of user opt-in state. New
+  requirement for #509/#511's eventual Stage 1 contracts: extend
+  `SiteSettings` with `cloud_sync_enabled` (default `False`); every
+  sync-initiation path must refuse before touching storage/entitlement
+  checks when it's off. **Per-user-tier storage quotas must be configurable
+  in the admin panel independently of the kill switch** — an admin can set
+  tier quotas at any time, whether or not sync is currently enabled. This is
+  new admin-panel scope, not previously in #509/#511's bodies.
+- **Local-only quota (applies now): 50MB / 100 files per project**, enforced
+  by #512's IndexedDB repository. This is the only quota that matters until
+  cloud sync is ever turned on.
+- **Retention on entitlement lapse/account deletion:** confirmed as
+  originally proposed in entry 311 — indefinite read-only cloud backup on
+  lapse (local always fully usable), explicit account deletion purges the
+  cloud copy.
+
+#445 was refreshed via comment to match entry 310's already-narrowed state
+(only #440/#460 open, pure credential blockers) since its issue body itself
+still carried a stale 2026-09-05 historical child list.
+
+### Next transaction
+
+[#512](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/512) is
+unblocked and does not need the cloud-sync admin toggle or tier-quota work —
+proceed to its Stage 1 scoping using the 50MB/100-file local quota above.
+#509 and #511 remain correctly PROPOSED/DEPENDENCY-BLOCKED until their own
+Stage 1 scoping incorporates the kill switch and independent tier-quota
+configuration as acceptance criteria.

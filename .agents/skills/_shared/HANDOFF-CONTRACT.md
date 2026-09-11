@@ -14,7 +14,7 @@ file owns the mechanics of the handoff.
 | 2b | Implementation — complex logic | Ollama Cloud | skill `implementation-complex` |
 | 3 | Second-opinion patch review (optional) | Mistral Vibe | skill `second-opinion-review` |
 | 4 | QA self-review | Claude (Sonnet 5, Medium) | skill `qa-self-review` |
-| 5 | Production-readiness gate | Claude (Opus 5, owner-budgeted effort) | skill `production-readiness` |
+| 5 | Production-readiness gate | Claude (Opus 5 or Sonnet 5, owner-budgeted effort) | skill `production-readiness` |
 
 Backlog definition (`task-distillation`), loop orchestration
 (`backlog-session`), and batch reconciliation (`session-completion`) sit
@@ -43,8 +43,10 @@ work. Two consequences that are not negotiable:
 - A Claude-authored diff can never satisfy stage 3. An independent-family
   second opinion requires an independent family; if Mistral Vibe did not run,
   stage 3 is `not run`, not `covered by QA`.
-- Stage 5 never routes to another service or a lesser Claude model. Opus 5 is
-  mandatory; only its effort level is the owner's to set.
+- Stage 5 never routes to another service or a lesser Claude model. Opus 5
+  or Sonnet 5 is mandatory (owner-authorized 2026-09-10 as a permanent
+  equivalence, not a per-run substitution — see `DECISIONS.md`); only the
+  effort level is the owner's to set.
 
 ## Provenance record
 

@@ -18636,3 +18636,59 @@ an export-bundling approach exists.
 Await #508's Stage 2b completion, then QA it. [#513](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/513)
 (File menu / media-library UI) depends on #510 + #512 + #508 and becomes
 scopeable once #508 closes.
+
+## 317. #508 QA'd, stage-5 readiness PASS, closed; batch pushed and CI-confirmed
+
+Status: [#508](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/508)
+CLOSED (completed).
+
+This transaction resumed a prior session that hit its usage limit mid-gate,
+after stage 4 QA (PASS, with two in-QA fixes: a `TS18046` cast and a
+schema-inconsistent test) was already posted to the issue and `make check`
+was already green locally. Re-ran `make check` fresh from a clean tree to
+confirm (backend 1199 passed/39 skipped, ruff/mypy clean; frontend 206
+files/2548 tests passed, typecheck/lint/format clean; exit 0) before
+proceeding to stage 5.
+
+**Stage-5 model roster change (owner-authorized, permanent):** every prior
+stage-5 run required re-asking the owner to authorize a Sonnet 5
+substitution for the mandatory Opus 5 tier. Asked again per that
+precedent before this run; owner responded to authorize Sonnet 5
+**permanently** as an equivalent stage-5 tier alongside Opus 5, not a
+per-run substitution to re-flag. Updated `DISPATCH.md` (dispatch table,
+the "not substitutable" note, and the Stage 5 detail section),
+`.agents/skills/_shared/HANDOFF-CONTRACT.md` (stage map and "Routing is
+advisory"), and both mirrors of `production-readiness/SKILL.md`
+accordingly; full rationale in `DECISIONS.md` (2026-09-10, "stage-5 model
+roster"). Only Opus 5 and Sonnet 5 qualify; Haiku and non-Claude services
+remain excluded.
+
+**Readiness finding — real gap found and resolved, not rubber-stamped:**
+the whole batch (#508, plus already-closed #510/#512/#514, plus an owner
+CreatrART-rename commit and 3 doc commits) was 15 commits ahead of
+`origin/main` with zero CI evidence for any of it. Owner authorized
+pushing (`22f5e60..fdec6ab`); CI run
+[34562050780](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34562050780)
+confirmed green (Backend checks, Frontend checks, Browser acceptance E2E,
+Disposable published routing smoke check, Workflow validation all
+passed; the 3 remaining jobs correctly self-skipped on repo vars/secrets
+not applicable to a plain push).
+
+Readiness result posted to #508, issue closed. Full criterion matrix,
+routing audit (including a minor non-blocking provenance note: stage 4
+ran on Sonnet 4.6 rather than the rostered Sonnet 5, and its own
+"substitution for Ollama Cloud QA" label was a documentation error since
+stage 4 has always been rostered to Claude), and dimension-by-dimension
+readiness result are in the issue comment, not duplicated here.
+
+No new defects found during readiness review. #507 (the parent
+architecture-decision issue) correctly stays open pending its remaining
+children (#509, #511, #513).
+
+### Next transaction
+
+[#513](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/513)
+(File menu / media-library UI) now depends only on already-closed issues
+(#510, #512, #508) and is scopeable next. [#509](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/509)
+remains provider-decision-blocked; [#511](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/511)
+remains dependency-blocked on #509 and #440.

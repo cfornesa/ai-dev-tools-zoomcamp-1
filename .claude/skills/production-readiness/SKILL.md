@@ -37,10 +37,12 @@ This skill is stage 5, the production-readiness gate in
 for the stage map and provenance rules.
 
 It is never delegated to another service or to a lesser Claude model: Opus 5
-is mandatory for this gate regardless of how small the batch looks. Effort is
-budget-constrained to `Low` by owner decision, matching
-`DISPATCH.md`. If Opus 5 itself is
-unavailable, Rule 6 applies — stop and say so rather than running the gate on
+or Sonnet 5 is mandatory for this gate regardless of how small the batch
+looks (owner-authorized 2026-09-10 as a permanent equivalence between the
+two — see `DECISIONS.md` — not a per-run substitution to flag). Effort is
+budget-constrained to `Low` for Opus 5 / `Medium` for Sonnet 5 by owner
+decision, matching `DISPATCH.md`. If neither is
+available, Rule 6 applies — stop and say so rather than running the gate on
 a cheaper model.
 
 At reduced effort the gate's rigor comes from working the dimensions and

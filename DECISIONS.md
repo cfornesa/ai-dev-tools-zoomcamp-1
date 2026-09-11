@@ -712,3 +712,28 @@ respondable state?) rather than another timeout adjustment, which the
 owner-confirmed evidence already rules out. Memory topic
 (`.agents/memory/e2e-full-matrix-firefox-iframe-timeouts.md`) updated
 with the revised classification.
+
+## 2026-09-10 (stage-5 model roster: Sonnet 5 permanently authorized alongside Opus 5)
+
+Every prior stage-5 run required asking the owner to authorize a Sonnet 5
+substitution for the mandatory Opus 5 tier (2026-09-08 entries above, same
+precedent as #445/#485). Asked again before this run (resuming
+production-readiness + session-completion for #508, handed off from a prior
+session that ran out of usage credits mid-gate); owner responded: authorize
+Sonnet 5 **permanently**, adding it to the approved-model list rather than
+re-asking each run.
+
+Updated the roster in four places to state Opus 5 **or** Sonnet 5 as the
+mandatory stage-5 tier (Low effort for Opus 5, Medium for Sonnet 5), with
+this entry cited as the authorization so future runs don't re-flag it as a
+substitution:
+- `DISPATCH.md` (dispatch table row 5, the "not substitutable" note, and
+  the Stage 5 detail section)
+- `.agents/skills/_shared/HANDOFF-CONTRACT.md` (stage map row 5 and the
+  "Routing is advisory" section)
+- `.agents/skills/production-readiness/SKILL.md` and its `.claude/` mirror
+  (Stage ownership and effort floor)
+
+Only Opus 5 and Sonnet 5 qualify — Haiku and non-Claude services remain
+excluded from stage 5, unchanged. This does not touch stage 4's existing
+Sonnet 5 roster.

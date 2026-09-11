@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-image-shape-decorative",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#ffffff" },
+  "renderer": { "preferred": "canvas2d" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-texture",
+      "type": "image",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": null, "stroke": null, "strokeWidth": 0 },
+      "name": "Background texture",
+      "mediaAssetId": "asset-texture-1",
+      "decorative": true
+    }
+  ],
+  "groups": [],
+  "bindings": [],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "randomness": { "seed": 0, "enabled": false }
+}

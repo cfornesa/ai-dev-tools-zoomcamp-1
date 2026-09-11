@@ -53,6 +53,7 @@
  */
 import type { SceneDocument } from '../api/projects';
 import { createCanvas2DScenePreview } from './canvas2dAdapter';
+import { createImageAssetCache, type ImageAssetCache } from './imageAssetCache';
 import {
   buildScenePlan,
   type AnyShape,
@@ -66,6 +67,10 @@ import type {
   RenderableTrail,
   ScenePreview,
 } from './scenePreview';
+
+/** Issue #508: same fixed local-space fallback size as the raster
+ * adapters -- see `canvas2dAdapter.ts`'s identical constant. */
+const IMAGE_FALLBACK_SIZE = 100;
 
 export { SceneRenderError } from './sceneDrawPlan';
 export type { RenderableCameraOverlay, RenderableParticle, RenderableTrail } from './scenePreview';
@@ -117,7 +122,107 @@ function applyStyleAttrs(node: SVGElement, shape: AnyShape): void {
   node.setAttribute('transform', transformAttr(shape.transform));
 }
 
-function buildShapeElement(shape: AnyShape): SVGElement {
+/** Issue #508: an accessible "broken asset" fallback -- a dashed box with
+ * crossed diagonals (the same silhouette `canvas2dAdapter.ts`'s
+ * `drawImageFallback` draws), wrapped in a `<g role="img">` carrying a
+ * `<title>` so a screen reader announces the shape's own `altText` (or a
+ * generic "Decorative image" label when `decorative` is true) even though
+ * the asset itself never rendered. This is the one adapter that *can*
+ * fully satisfy the acceptance criterion's "accessible fallback" wording,
+ * unlike the raster adapters' visual-only equivalent (see their own doc
+ * comments for why). Used for both `pending` and `error` asset states. */
+function buildImageFallbackElement(shape: AnyShape & { type: 'image' }): SVGElement {
+  const group = el('g');
+  group.setAttribute('role', 'img');
+  const title = el('title');
+  title.textContent = shape.decorative ? 'Decorative image' : (shape.altText ?? 'Image');
+  group.appendChild(title);
+
+  const rect = el('rect');
+  rect.setAttribute('x', '0');
+  rect.setAttribute('y', '0');
+  rect.setAttribute('width', String(IMAGE_FALLBACK_SIZE));
+  rect.setAttribute('height', String(IMAGE_FALLBACK_SIZE));
+  rect.setAttribute('fill', 'rgba(128, 128, 128, 0.12)');
+  rect.setAttribute('stroke', 'rgba(128, 128, 128, 0.8)');
+  rect.setAttribute('stroke-width', '2');
+  rect.setAttribute('stroke-dasharray', '6 4');
+  group.appendChild(rect);
+
+  const cross = el('path');
+  cross.setAttribute(
+    'd',
+    `M 0 0 L ${IMAGE_FALLBACK_SIZE} ${IMAGE_FALLBACK_SIZE} M ${IMAGE_FALLBACK_SIZE} 0 L 0 ${IMAGE_FALLBACK_SIZE}`,
+  );
+  cross.setAttribute('stroke', 'rgba(128, 128, 128, 0.8)');
+  cross.setAttribute('stroke-width', '2');
+  cross.setAttribute('fill', 'none');
+  group.appendChild(cross);
+
+  applyStyleAttrs(group, shape);
+  return group;
+}
+
+/** Issue #508: a resolved `image` shape as a real `<image>` element (its
+ * `href` an object URL from `imageAssetCache.ts`, owned by that cache and
+ * revoked on `destroy()` -- never this function's concern), sized at the
+ * asset's natural pixel dimensions per `ImageShape`'s doc comment, wrapped
+ * the same accessible `role="img"`/`<title>` way as the fallback above so
+ * a screen reader gets the same announcement whether or not the asset
+ * itself loaded. */
+function buildResolvedImageElement(
+  shape: AnyShape & { type: 'image' },
+  href: string,
+  width: number,
+  height: number,
+): SVGElement {
+  const group = el('g');
+  group.setAttribute('role', 'img');
+  const title = el('title');
+  title.textContent = shape.decorative ? 'Decorative image' : (shape.altText ?? 'Image');
+  group.appendChild(title);
+
+  if (shape.style.fill !== null) {
+    const bg = el('rect');
+    bg.setAttribute('x', '0');
+    bg.setAttribute('y', '0');
+    bg.setAttribute('width', String(width));
+    bg.setAttribute('height', String(height));
+    bg.setAttribute('fill', rgba(shape.style.fill));
+    group.appendChild(bg);
+  }
+
+  const image = el('image');
+  image.setAttribute('x', '0');
+  image.setAttribute('y', '0');
+  image.setAttribute('width', String(width));
+  image.setAttribute('height', String(height));
+  image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', href);
+  image.setAttribute('href', href);
+  group.appendChild(image);
+
+  if (shape.style.stroke !== null) {
+    const border = el('rect');
+    border.setAttribute('x', '0');
+    border.setAttribute('y', '0');
+    border.setAttribute('width', String(width));
+    border.setAttribute('height', String(height));
+    border.setAttribute('fill', 'none');
+    border.setAttribute('stroke', rgba(shape.style.stroke));
+    border.setAttribute('stroke-width', String(shape.style.strokeWidth));
+    group.appendChild(border);
+  }
+
+  group.setAttribute('opacity', String(shape.transform.opacity));
+  group.setAttribute('transform', transformAttr(shape.transform));
+  return group;
+}
+
+function buildShapeElement(
+  shape: AnyShape,
+  imageCache: ImageAssetCache,
+  requestRedraw: () => void,
+): SVGElement {
   switch (shape.type) {
     case 'circle': {
       const node = el('circle');
@@ -190,12 +295,28 @@ function buildShapeElement(shape: AnyShape): SVGElement {
       node.setAttribute('transform', transformAttr(shape.transform));
       return node;
     }
+    case 'image': {
+      const assetState = imageCache.get(shape.mediaAssetId, requestRedraw);
+      if (assetState.status === 'ready') {
+        return buildResolvedImageElement(
+          shape,
+          assetState.objectUrl,
+          assetState.naturalWidth,
+          assetState.naturalHeight,
+        );
+      }
+      return buildImageFallbackElement(shape);
+    }
   }
 }
 
-function buildNodeElement(node: DrawNode): SVGElement {
+function buildNodeElement(
+  node: DrawNode,
+  imageCache: ImageAssetCache,
+  requestRedraw: () => void,
+): SVGElement {
   if (node.kind === 'shape') {
-    return buildShapeElement(node.shape);
+    return buildShapeElement(node.shape, imageCache, requestRedraw);
   }
   const group = el('g');
   if (!node.group.visible) {
@@ -204,7 +325,9 @@ function buildNodeElement(node: DrawNode): SVGElement {
   }
   group.setAttribute('transform', transformAttr(node.group.transform));
   group.setAttribute('opacity', String(node.group.transform.opacity));
-  for (const child of node.children) group.appendChild(buildNodeElement(child));
+  for (const child of node.children) {
+    group.appendChild(buildNodeElement(child, imageCache, requestRedraw));
+  }
   return group;
 }
 
@@ -309,6 +432,16 @@ export function createSVGScenePreview(container: HTMLElement): SVGScenePreview {
   // renderer to delegate to. See the module doc comment.
   const mirrorContainer = document.createElement('div');
   const mirrorPreview = createCanvas2DScenePreview(mirrorContainer);
+  // Issue #508: this adapter's own image cache (independent of
+  // mirrorPreview's -- see canvas2dAdapter.ts's doc comment on why each
+  // preview instance owns its own). `lastRenderArgs` lets `requestRedraw`
+  // re-run the exact same `render()` call once a pending asset settles,
+  // without every caller needing to re-invoke render() itself.
+  const imageCache = createImageAssetCache();
+  let lastRenderArgs: Parameters<SVGScenePreview['render']> | null = null;
+  const requestRedraw = () => {
+    if (lastRenderArgs) render(...lastRenderArgs);
+  };
 
   function ensureSvg(width: number, height: number): SVGSVGElement {
     if (svg) {
@@ -337,6 +470,7 @@ export function createSVGScenePreview(container: HTMLElement): SVGScenePreview {
     // for an invalid scene, so this adapter's own SVG DOM is guaranteed
     // untouched too whenever this line throws.
     mirrorPreview.render(scene, particles, trails, transparentBackground, cameraOverlay);
+    lastRenderArgs = [scene, particles, trails, transparentBackground, cameraOverlay];
 
     const plan = buildScenePlan(scene);
     const root = ensureSvg(plan.canvas.width, plan.canvas.height);
@@ -368,16 +502,22 @@ export function createSVGScenePreview(container: HTMLElement): SVGScenePreview {
           behindNodes.push(node);
         }
       }
-      for (const node of behindNodes) root.appendChild(buildNodeElement(node));
+      for (const node of behindNodes) {
+        root.appendChild(buildNodeElement(node, imageCache, requestRedraw));
+      }
       const overlayEl = buildCameraOverlayElement(
         cameraOverlay,
         plan.canvas.width,
         plan.canvas.height,
       );
       if (overlayEl) root.appendChild(overlayEl);
-      for (const node of frontNodes) root.appendChild(buildNodeElement(node));
+      for (const node of frontNodes) {
+        root.appendChild(buildNodeElement(node, imageCache, requestRedraw));
+      }
     } else {
-      for (const node of plan.nodes) root.appendChild(buildNodeElement(node));
+      for (const node of plan.nodes) {
+        root.appendChild(buildNodeElement(node, imageCache, requestRedraw));
+      }
     }
 
     for (const particle of particles) root.appendChild(buildParticleElement(particle));
@@ -386,6 +526,8 @@ export function createSVGScenePreview(container: HTMLElement): SVGScenePreview {
   function destroy(): void {
     svg?.remove();
     svg = null;
+    imageCache.destroy();
+    lastRenderArgs = null;
     mirrorPreview.destroy();
   }
 

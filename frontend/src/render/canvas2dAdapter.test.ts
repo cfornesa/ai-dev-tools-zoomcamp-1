@@ -10,13 +10,15 @@
  * renderer-agnostic and kept unchanged) and is replaced with a smoke test
  * that `randomness.enabled` doesn't affect rendering or throw either way.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createCanvas2DScenePreview, SceneRenderError } from './canvas2dAdapter';
+import { setActiveMediaAssetResolver } from './mediaAssetResolver';
 import {
   baseScene,
   circleShape,
   group,
+  imageShape,
   layer,
   lineShape,
   particleEmitterShape,
@@ -867,6 +869,117 @@ describe('canvas2d scene preview', () => {
       preview.render(baseScene({ canvas: { width: 20, height: 20, backgroundColor: '#ff0000' } }));
       const canvas = preview.getCanvasElement()!;
       expect(pixel(canvas, 10, 10)).toEqual([0xff, 0x00, 0x00, 255]);
+    });
+  });
+
+  describe('image shapes (issue #508)', () => {
+    afterEach(() => {
+      setActiveMediaAssetResolver(null);
+      vi.unstubAllGlobals();
+    });
+
+    it('renders the visible fallback (no crash) when no resolver is registered', () => {
+      const { preview } = tracked();
+      expect(() =>
+        preview.render(
+          baseScene({
+            canvas: { width: 200, height: 200, backgroundColor: '#000000' },
+            shapes: [imageShape({ transform: transform({ x: 0, y: 0 }) })],
+          }),
+        ),
+      ).not.toThrow();
+      const canvas = preview.getCanvasElement()!;
+      // The fallback's gray stroke/fill must appear somewhere in the
+      // placeholder box's bounds -- proof it drew *something* distinct
+      // from the plain black background, rather than silently no-op'ing.
+      const [r, g, b, a] = pixel(canvas, 1, 1);
+      expect(a).toBeGreaterThan(0);
+      expect(r).toBe(g);
+      expect(g).toBe(b);
+      expect(r).toBeGreaterThan(0);
+    });
+
+    it('renders the fallback when the resolver returns null (missing/cross-project/deleted/unsupported)', async () => {
+      setActiveMediaAssetResolver(async () => null);
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 200, height: 200, backgroundColor: '#000000' },
+          shapes: [imageShape({ transform: transform({ x: 0, y: 0 }) })],
+        }),
+      );
+      // Let the resolver's promise settle and the resulting redraw run.
+      await Promise.resolve();
+      await Promise.resolve();
+      const canvas = preview.getCanvasElement()!;
+      const [r, g, b, a] = pixel(canvas, 1, 1);
+      expect(a).toBeGreaterThan(0);
+      expect(r).toBe(g);
+      expect(g).toBe(b);
+    });
+
+    it('renders the fallback when the resolver rejects, without throwing', async () => {
+      setActiveMediaAssetResolver(async () => {
+        throw new Error('boom');
+      });
+      const { preview } = tracked();
+      expect(() =>
+        preview.render(
+          baseScene({
+            canvas: { width: 200, height: 200, backgroundColor: '#000000' },
+            shapes: [imageShape({ transform: transform({ x: 0, y: 0 }) })],
+          }),
+        ),
+      ).not.toThrow();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    it('draws the resolved asset once the resolver settles, respecting opacity', async () => {
+      // jsdom cannot decode a real image, and has no createObjectURL --
+      // stub both with the same pattern captureSocialThumbnail.test.ts
+      // uses: a solid-color <canvas> standing in for a decoded
+      // HTMLImageElement, whose `src` setter synchronously fires onload.
+      const source = document.createElement('canvas');
+      source.width = 10;
+      source.height = 10;
+      const sctx = source.getContext('2d')!;
+      sctx.fillStyle = '#00ff00';
+      sctx.fillRect(0, 0, 10, 10);
+      Object.defineProperties(source, {
+        naturalWidth: { value: 10 },
+        naturalHeight: { value: 10 },
+      });
+      const fakeImage = source as unknown as HTMLImageElement;
+      Object.defineProperty(fakeImage, 'src', {
+        configurable: true,
+        set: () => queueMicrotask(() => fakeImage.onload?.(new Event('load'))),
+      });
+      vi.stubGlobal('Image', function FakeImage() {
+        return fakeImage;
+      });
+      vi.stubGlobal('URL', {
+        ...URL,
+        createObjectURL: () => 'blob:fake',
+        revokeObjectURL: () => {},
+      });
+
+      setActiveMediaAssetResolver(async () => new Blob());
+      const { preview } = tracked();
+      preview.render(
+        baseScene({
+          canvas: { width: 20, height: 20, backgroundColor: '#000000' },
+          shapes: [imageShape({ transform: transform({ x: 0, y: 0 }) })],
+        }),
+      );
+      // Flush the resolver promise, the image "load", and the resulting
+      // redraw's own microtasks.
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const canvas = preview.getCanvasElement()!;
+      expect(pixel(canvas, 5, 5)).toEqual([0, 255, 0, 255]);
     });
   });
 });

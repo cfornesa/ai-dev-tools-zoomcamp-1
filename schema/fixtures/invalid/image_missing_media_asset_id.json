@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "scene-image-missing-media-asset-id",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#ffffff" },
+  "renderer": { "preferred": "canvas2d" },
+  "layers": [
+    { "id": "layer-1", "name": "Layer 1", "order": 0, "visible": true, "locked": false }
+  ],
+  "shapes": [
+    {
+      "id": "shape-photo",
+      "type": "image",
+      "layerId": "layer-1",
+      "groupId": null,
+      "transform": { "x": 100, "y": 100, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": null, "stroke": null, "strokeWidth": 0 },
+      "name": "Photo",
+      "altText": "A photo missing its mediaAssetId."
+    }
+  ],
+  "groups": [],
+  "bindings": [],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "randomness": { "seed": 0, "enabled": false }
+}

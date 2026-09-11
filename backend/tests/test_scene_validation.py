@@ -267,3 +267,120 @@ class TestNormalizeSceneLayers:
         normalize_scene_layers(data)
         assert data["shapes"] == original_shapes
         assert data["layers"] == original_layers
+
+
+class TestImageShape:
+    """Issue #508: `type: "image"` shapes go through the exact same
+    `validate_scene` pipeline as every other shape type, plus the new
+    `mediaAssetId`/`altText`/`decorative` conditional block. Existence/
+    cross-project/deleted/unsupported-mimeType checks are frontend-only
+    (see `validate_scene`'s module docstring and
+    `frontend/src/validation/scene.test.ts`'s equivalent suite) -- nothing
+    here can or should assert the backend rejects a bogus `mediaAssetId`
+    string, since the backend has no data to check that against at all.
+    """
+
+    def _scene_with_image_shape(self, **overrides):
+        data = _blank_scene()
+        shape = {
+            "id": "image-1",
+            "type": "image",
+            "layerId": "layer-1",
+            "groupId": None,
+            "transform": {
+                "x": 0,
+                "y": 0,
+                "scaleX": 1,
+                "scaleY": 1,
+                "rotation": 0,
+                "opacity": 1,
+            },
+            "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+            "mediaAssetId": "asset-1",
+            "altText": "A description.",
+        }
+        shape.update(overrides)
+        data["layers"] = [
+            {"id": "layer-1", "name": "Layer 1", "order": 0, "visible": True, "locked": False}
+        ]
+        data["shapes"] = [shape]
+        return data
+
+    def test_valid_informative_image_shape_is_accepted(self):
+        data = self._scene_with_image_shape()
+        result = validate_scene(data)
+        assert result.valid is True, [(e.path, e.rule, e.message) for e in result.errors]
+
+    def test_valid_decorative_image_shape_needs_no_alt_text(self):
+        data = self._scene_with_image_shape(decorative=True)
+        del data["shapes"][0]["altText"]
+        result = validate_scene(data)
+        assert result.valid is True, [(e.path, e.rule, e.message) for e in result.errors]
+
+    def test_decorative_false_still_requires_alt_text(self):
+        # Regression test for the fixed bug in scene.schema.json's nested
+        # if/then: a bare `properties` check without `required` is
+        # vacuously true when the property is absent, so the original
+        # (issue-body-verbatim) block never required altText unless
+        # "decorative" was explicitly false -- this asserts the corrected
+        # behavior for that explicit-false case specifically.
+        data = self._scene_with_image_shape(decorative=False)
+        del data["shapes"][0]["altText"]
+        result = validate_scene(data)
+        assert result.valid is False
+        assert any(e.rule == "missingRequired" for e in result.errors)
+
+    def test_missing_media_asset_id_is_rejected(self):
+        data = self._scene_with_image_shape()
+        del data["shapes"][0]["mediaAssetId"]
+        result = validate_scene(data)
+        assert result.valid is False
+        assert any(e.rule == "missingRequired" for e in result.errors)
+
+    def test_missing_alt_text_without_decorative_is_rejected(self):
+        data = self._scene_with_image_shape()
+        del data["shapes"][0]["altText"]
+        result = validate_scene(data)
+        assert result.valid is False
+        assert any(e.rule == "missingRequired" for e in result.errors)
+
+    def test_unknown_extra_field_is_rejected(self):
+        data = self._scene_with_image_shape(width=200)
+        result = validate_scene(data)
+        assert result.valid is False
+        assert any(e.rule == "unknownField" for e in result.errors)
+
+    def test_image_shapes_count_toward_max_shapes_limit(self):
+        from scenes.validation import LIMITS
+
+        data = _blank_scene()
+        data["layers"] = []
+        data["shapes"] = []
+        limit = LIMITS["maxShapes"]
+        for i in range(limit + 1):
+            layer_id = f"layer-{i}"
+            data["layers"].append(
+                {"id": layer_id, "name": layer_id, "order": i, "visible": True, "locked": False}
+            )
+            data["shapes"].append(
+                {
+                    "id": f"image-{i}",
+                    "type": "image",
+                    "layerId": layer_id,
+                    "groupId": None,
+                    "transform": {
+                        "x": 0,
+                        "y": 0,
+                        "scaleX": 1,
+                        "scaleY": 1,
+                        "rotation": 0,
+                        "opacity": 1,
+                    },
+                    "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+                    "mediaAssetId": f"asset-{i}",
+                    "decorative": True,
+                }
+            )
+        result = validate_scene(data)
+        assert result.valid is False
+        assert any(e.rule == "limitExceeded" for e in result.errors)

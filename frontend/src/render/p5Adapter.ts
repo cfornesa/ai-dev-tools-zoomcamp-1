@@ -52,6 +52,7 @@
 import p5 from 'p5';
 
 import type { SceneDocument } from '../api/projects';
+import { createImageAssetCache, type ImageAssetCache } from './imageAssetCache';
 import {
   buildScenePlan,
   type AnyShape,
@@ -65,6 +66,11 @@ import type {
   RenderableTrail,
   ScenePreview,
 } from './scenePreview';
+
+/** Issue #508: see `canvas2dAdapter.ts`'s identical constant -- an `image`
+ * shape has no size field of its own, so its fallback (unresolved/broken
+ * asset) needs a fixed local-space size to stay visible. */
+const IMAGE_FALLBACK_SIZE = 100;
 
 export { SceneRenderError } from './sceneDrawPlan';
 // Issue #206: these three types moved to `scenePreview.ts` so a second
@@ -129,7 +135,75 @@ function applyFillAndStroke(sk: p5, shape: AnyShape, opacity: number): void {
  * the origin to (x2 - transform.x, y2 - transform.y)), and a path's
  * points are already relative offsets from the transform.
  */
-function drawShapeGeometry(sk: p5, shape: AnyShape): void {
+/** Issue #508: the same dashed-box-with-crossed-diagonals "broken asset"
+ * glyph `canvas2dAdapter.ts`'s `drawImageFallback` draws, reimplemented
+ * against p5's raw `drawingContext` (like `drawCameraOverlay` below
+ * already does) rather than p5's own drawing API, since p5 has no native
+ * dashed-line primitive. Drawn for both `pending` and `error` asset
+ * states -- see that function's doc comment for why a canvas-based
+ * fallback can't carry per-shape ARIA semantics the way `svgAdapter.ts`'s
+ * parallel fallback can. */
+function drawImageFallback(sk: p5, width: number, height: number): void {
+  const ctx = sk.drawingContext as CanvasRenderingContext2D;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(128, 128, 128, 0.8)';
+  ctx.fillStyle = 'rgba(128, 128, 128, 0.12)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeRect(0, 0, width, height);
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(width, height);
+  ctx.moveTo(width, 0);
+  ctx.lineTo(0, height);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Issue #508: draws a resolved `image` shape's decoded asset at its
+ * natural pixel size via p5's raw `drawingContext`, respecting
+ * `style.fill`/`style.stroke` and the shape's composited opacity, mirroring
+ * `canvas2dAdapter.ts`'s `drawResolvedImage`. */
+function drawResolvedImage(
+  sk: p5,
+  image: HTMLImageElement,
+  width: number,
+  height: number,
+  shape: AnyShape & { type: 'image' },
+  opacity: number,
+): void {
+  const ctx = sk.drawingContext as CanvasRenderingContext2D;
+  const { style } = shape;
+  if (style.fill !== null) {
+    const c = parseColor(style.fill);
+    ctx.save();
+    ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a * opacity})`;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(image, 0, 0, width, height);
+  ctx.restore();
+  if (style.stroke !== null) {
+    const c = parseColor(style.stroke);
+    ctx.save();
+    ctx.strokeStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a * opacity})`;
+    ctx.lineWidth = style.strokeWidth;
+    ctx.strokeRect(0, 0, width, height);
+    ctx.restore();
+  }
+}
+
+function drawShapeGeometry(
+  sk: p5,
+  shape: AnyShape,
+  opacity: number,
+  imageCache: ImageAssetCache,
+  requestRedraw: () => void,
+): void {
   switch (shape.type) {
     case 'circle':
       sk.circle(0, 0, shape.radius * 2);
@@ -160,16 +234,38 @@ function drawShapeGeometry(sk: p5, shape: AnyShape): void {
       sk.circle(0, 0, shape.size);
       return;
     }
+    case 'image': {
+      const assetState = imageCache.get(shape.mediaAssetId, requestRedraw);
+      if (assetState.status === 'ready') {
+        drawResolvedImage(
+          sk,
+          assetState.image,
+          assetState.naturalWidth,
+          assetState.naturalHeight,
+          shape,
+          opacity,
+        );
+      } else {
+        drawImageFallback(sk, IMAGE_FALLBACK_SIZE, IMAGE_FALLBACK_SIZE);
+      }
+      return;
+    }
   }
 }
 
-function drawNode(sk: p5, node: DrawNode, inheritedOpacity: number): void {
+function drawNode(
+  sk: p5,
+  node: DrawNode,
+  inheritedOpacity: number,
+  imageCache: ImageAssetCache,
+  requestRedraw: () => void,
+): void {
   if (node.kind === 'shape') {
     const opacity = inheritedOpacity * node.shape.transform.opacity;
     sk.push();
     applyTransform(sk, node.shape.transform);
     applyFillAndStroke(sk, node.shape, opacity);
-    drawShapeGeometry(sk, node.shape);
+    drawShapeGeometry(sk, node.shape, opacity, imageCache, requestRedraw);
     sk.pop();
     return;
   }
@@ -182,7 +278,7 @@ function drawNode(sk: p5, node: DrawNode, inheritedOpacity: number): void {
   const opacity = inheritedOpacity * node.group.transform.opacity;
   sk.push();
   applyTransform(sk, node.group.transform);
-  for (const child of node.children) drawNode(sk, child, opacity);
+  for (const child of node.children) drawNode(sk, child, opacity, imageCache, requestRedraw);
   sk.pop();
 }
 
@@ -271,6 +367,9 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
   // compositing happens this way rather than multiplying every draw
   // call's own alpha by `canvasOpacity`.
   let opacityBuffer: p5.Graphics | null = null;
+  // Issue #508: see canvas2dAdapter.ts's identical field for the rationale.
+  const imageCache = createImageAssetCache();
+  const requestRedraw = () => instance?.redraw();
 
   /** Lazily creates (or resizes, replacing the old one) the offscreen
    * buffer `sk.draw` renders into when `canvas.opacity < 1`. A fresh
@@ -372,11 +471,13 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
               behindNodes.push(node);
             }
           }
-          for (const node of behindNodes) drawNode(target, node, 1);
+          for (const node of behindNodes) drawNode(target, node, 1, imageCache, requestRedraw);
           drawCameraOverlay(target, overlay);
-          for (const node of frontNodes) drawNode(target, node, 1);
+          for (const node of frontNodes) drawNode(target, node, 1, imageCache, requestRedraw);
         } else {
-          for (const node of currentPlan.nodes) drawNode(target, node, 1);
+          for (const node of currentPlan.nodes) {
+            drawNode(target, node, 1, imageCache, requestRedraw);
+          }
         }
         // Task 39: live particles draw last, on top of everything else —
         // see the module doc comment.
@@ -434,6 +535,7 @@ export function createP5ScenePreview(container: HTMLElement): P5ScenePreview {
     currentTrails = [];
     currentCameraOverlay = undefined;
     currentTransparentBackground = false;
+    imageCache.destroy();
   }
 
   function getCanvasElement(): HTMLCanvasElement | null {

@@ -10,6 +10,20 @@ Server validation here is authoritative and independent of whatever the
 browser already checked (see Task 6): callers must invoke `validate_scene`
 before save, AI-proposal acceptance, publish, and export, never trusting
 client-side validation alone.
+
+Issue #508 (`type: "image"` shapes): this module validates `mediaAssetId`
+and `altText`/`decorative` at the schema-structural level only (well-formed
+id, required-unless-decorative altText, no fields outside the type's
+allowlist) via `scene.schema.json`'s `image` conditional block, exactly like
+every other shape type. It deliberately does NOT and cannot check whether
+`mediaAssetId` actually exists, belongs to this project, has been deleted,
+or has a supported `mimeType` -- #512's media assets live only in the
+authoring browser's IndexedDB (`frontend/src/storage/localProjectRepository.ts`),
+never in the backend database, so the backend has no data to check that
+against. This is intentional per #508's own architecture note, not a gap:
+that existence/cross-project/deleted/unsupported-type check runs only in
+`frontend/src/validation/scene.ts`, against the local repository, in the
+same browser session that authored the reference.
 """
 
 import json

@@ -188,6 +188,43 @@ def test_particle_emitter_renders_only_its_static_marker():
     assert 0 < green_pixels < (CARD_WIDTH * CARD_HEIGHT) // 4
 
 
+def test_image_shape_renders_fallback_instead_of_crashing():
+    """Issue #508: the backend never has access to #512's local
+    (browser-IndexedDB-only) media library, so an `image` shape can never
+    be resolved server-side -- this must render the documented "broken
+    asset" fallback (a gray box), not raise `ThumbnailRenderError` the way
+    an actually-unrecognized shape type would."""
+    scene = _solid_circle_scene(canvas_width=CARD_WIDTH, canvas_height=CARD_HEIGHT)
+    scene["shapes"] = [
+        {
+            "id": "image-1",
+            "type": "image",
+            "layerId": "layer-1",
+            "groupId": None,
+            "transform": {
+                "x": CARD_WIDTH / 2 - 50,
+                "y": CARD_HEIGHT / 2 - 50,
+                "scaleX": 1,
+                "scaleY": 1,
+                "rotation": 0,
+                "opacity": 1,
+            },
+            "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+            "mediaAssetId": "asset-1",
+            "altText": "A photo.",
+        }
+    ]
+    png = render_card_thumbnail_png(scene)
+    image = Image.open(__import__("io").BytesIO(png)).convert("RGB")
+    colors = set(image.getdata())
+    # The fallback's neutral gray fill/stroke (composited over the black
+    # background/circle scene, then resampled by the card crop) must
+    # appear as some genuinely gray pixel -- proof the placeholder box
+    # actually drew rather than the shape being silently skipped or
+    # crashing (which would leave only the background and circle colors).
+    assert any(r == g == b and 40 <= r <= 180 for r, g, b in colors)
+
+
 # --- Determinism (acceptance criterion 3) ---
 
 

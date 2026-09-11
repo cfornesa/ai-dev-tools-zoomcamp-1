@@ -144,6 +144,21 @@ export function particleEmitterShape(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** Issue #508. */
+export function imageShape(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'shape-image',
+    type: 'image',
+    layerId: 'layer-1',
+    groupId: null,
+    transform: transform({ x: 0, y: 0 }),
+    style: style({ fill: null }),
+    mediaAssetId: 'asset-1',
+    altText: 'A description.',
+    ...overrides,
+  };
+}
+
 export function group(overrides: Record<string, unknown> = {}) {
   return {
     id: 'group-1',

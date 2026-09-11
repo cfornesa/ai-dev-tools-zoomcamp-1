@@ -103,8 +103,29 @@ export type ParticleEmitterShape = BaseFields & {
   speed: number;
   palette: string[];
 };
+/** Issue #508: a reusable 2D image reference. Unlike every other shape
+ * type, it carries no explicit size field (`schema/scene.schema.json`'s
+ * `image` conditional block only adds `mediaAssetId`/`altText`/
+ * `decorative` -- no `width`/`height`) -- its rendered size comes from the
+ * resolved asset's own natural pixel dimensions (or a fixed placeholder
+ * size while unresolved/broken), scaled by `transform.scaleX`/`scaleY`
+ * exactly like every other shape's own size field would be. Its local
+ * coordinate origin matches `RectShape`'s convention: `transform.x`/`y` is
+ * the top-left corner, not the center. */
+export type ImageShape = BaseFields & {
+  type: 'image';
+  mediaAssetId: string;
+  altText: string | null;
+  decorative: boolean;
+};
 
-export type AnyShape = CircleShape | RectShape | LineShape | PathShape | ParticleEmitterShape;
+export type AnyShape =
+  | CircleShape
+  | RectShape
+  | LineShape
+  | PathShape
+  | ParticleEmitterShape
+  | ImageShape;
 
 export type GroupNode = {
   id: string;
@@ -146,7 +167,7 @@ export type ScenePlan = {
   nodes: DrawNode[];
 };
 
-const SHAPE_TYPES = new Set(['circle', 'rect', 'line', 'path', 'particleEmitter']);
+const SHAPE_TYPES = new Set(['circle', 'rect', 'line', 'path', 'particleEmitter', 'image']);
 
 function asRecord(value: unknown): Record<string, unknown> {
   return (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
@@ -309,6 +330,24 @@ function readShape(raw: unknown, index: number): AnyShape {
         lifespan: s.lifespan,
         speed: s.speed,
         palette: s.palette as string[],
+      };
+    }
+    case 'image': {
+      if (typeof s.mediaAssetId !== 'string') {
+        throw new SceneRenderError(`${where}.mediaAssetId must be a string.`);
+      }
+      if (s.altText !== undefined && typeof s.altText !== 'string') {
+        throw new SceneRenderError(`${where}.altText must be a string when present.`);
+      }
+      if (s.decorative !== undefined && typeof s.decorative !== 'boolean') {
+        throw new SceneRenderError(`${where}.decorative must be a boolean when present.`);
+      }
+      return {
+        ...base,
+        type,
+        mediaAssetId: s.mediaAssetId,
+        altText: typeof s.altText === 'string' ? s.altText : null,
+        decorative: s.decorative === true,
       };
     }
     default:

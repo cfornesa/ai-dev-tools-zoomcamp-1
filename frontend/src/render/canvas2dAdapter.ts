@@ -22,6 +22,7 @@
  * `new Function`, or a template that could be interpreted as code.
  */
 import type { SceneDocument } from '../api/projects';
+import { createImageAssetCache, type ImageAssetCache } from './imageAssetCache';
 import {
   buildScenePlan,
   type AnyShape,
@@ -35,6 +36,17 @@ import type {
   RenderableTrail,
   ScenePreview,
 } from './scenePreview';
+
+/** Issue #508: fixed placeholder size (in local shape-space units, before
+ * `transform.scaleX`/`scaleY`) an `image` shape draws its fallback at
+ * while its asset is unresolved (pending) or broken (missing/cross-
+ * project/deleted/unsupported type, or a decode failure) -- an `image`
+ * shape has no explicit size field of its own (see `sceneDrawPlan.ts`'s
+ * `ImageShape` doc comment), so a resolved asset uses its own natural
+ * pixel dimensions, but an unresolved one needs *some* fixed size to
+ * remain visible and clickable in the editor rather than collapsing to a
+ * zero-size no-op. */
+const IMAGE_FALLBACK_SIZE = 100;
 
 export { SceneRenderError } from './sceneDrawPlan';
 export type { RenderableCameraOverlay, RenderableParticle, RenderableTrail } from './scenePreview';
@@ -104,6 +116,72 @@ function paint(ctx: CanvasRenderingContext2D, state: DrawState): void {
   }
 }
 
+/** Issue #508: the visible half of an `image` shape's "broken asset"
+ * fallback -- a dashed box with a crossed-diagonal glyph, the same
+ * silhouette browsers themselves use for a broken `<img>`, drawn at
+ * `width`x`height` in the shape's local (already-transformed) coordinate
+ * frame. Used both while an asset is still resolving (`pending`) and once
+ * it's confirmed broken (`error`), so an image shape is never invisible.
+ *
+ * This is a *visual* fallback only: a `<canvas>` has no way to attach
+ * per-shape ARIA semantics the way `svgAdapter.ts`'s parallel `<image>`/
+ * `<title>` fallback can (see that adapter's own `image` case) — a known,
+ * inherent limitation of drawing to a raster surface rather than a
+ * screen-reader-visible DOM tree, not something this adapter can close on
+ * its own. Consumers that need the accessible meaning conveyed (rather
+ * than just the pixels) should prefer the SVG renderer for scenes carrying
+ * `image` shapes, or read the shape's own `altText`/`decorative` fields
+ * directly (e.g. from a layers/outline panel), matching this issue's
+ * acceptance criterion that exports/public viewers preserve the resolved
+ * accessibility meaning via those fields, not the image bytes. */
+function drawImageFallback(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(128, 128, 128, 0.8)';
+  ctx.fillStyle = 'rgba(128, 128, 128, 0.12)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeRect(0, 0, width, height);
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(width, height);
+  ctx.moveTo(width, 0);
+  ctx.lineTo(0, height);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Issue #508: draws a resolved `image` shape's decoded asset at its
+ * natural pixel size, respecting `style.fill` (painted behind the asset,
+ * useful for a transparent PNG/SVG) and `style.stroke` (a border drawn on
+ * top), then `ctx.drawImage`. `opacity` is applied via `globalAlpha`
+ * separately from `state` (whose fill/stroke strings already bake opacity
+ * into their alpha channel) because `drawImage` has no equivalent color
+ * string to bake it into. */
+function drawResolvedImage(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  width: number,
+  height: number,
+  state: DrawState,
+  opacity: number,
+): void {
+  if (state.fill !== null) {
+    ctx.fillStyle = state.fill;
+    ctx.fillRect(0, 0, width, height);
+  }
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(image, 0, 0, width, height);
+  ctx.restore();
+  if (state.stroke !== null) {
+    ctx.strokeStyle = state.stroke;
+    ctx.lineWidth = state.lineWidth;
+    ctx.strokeRect(0, 0, width, height);
+  }
+}
+
 /**
  * Draws one shape's type-specific geometry (acceptance criterion 2) in the
  * shape's *local* coordinate frame — i.e. after `applyTransform` has
@@ -112,9 +190,19 @@ function paint(ctx: CanvasRenderingContext2D, state: DrawState): void {
  * circle's transform is its center, a rect's transform is its top-left
  * corner, a line runs from the transform to (x2, y2) (so locally, from the
  * origin to (x2 - transform.x, y2 - transform.y)), and a path's points are
- * already relative offsets from the transform.
+ * already relative offsets from the transform. An `image` shape (issue
+ * #508) also uses the top-left convention, matching `rect` -- see
+ * `sceneDrawPlan.ts`'s `ImageShape` doc comment for why it has no size
+ * field of its own.
  */
-function drawShapeGeometry(ctx: CanvasRenderingContext2D, shape: AnyShape, state: DrawState): void {
+function drawShapeGeometry(
+  ctx: CanvasRenderingContext2D,
+  shape: AnyShape,
+  state: DrawState,
+  opacity: number,
+  imageCache: ImageAssetCache,
+  requestRedraw: () => void,
+): void {
   switch (shape.type) {
     case 'circle': {
       ctx.beginPath();
@@ -174,15 +262,47 @@ function drawShapeGeometry(ctx: CanvasRenderingContext2D, shape: AnyShape, state
       paint(ctx, { ...state, fill });
       return;
     }
+    case 'image': {
+      const assetState = imageCache.get(shape.mediaAssetId, requestRedraw);
+      if (assetState.status === 'ready') {
+        drawResolvedImage(
+          ctx,
+          assetState.image,
+          assetState.naturalWidth,
+          assetState.naturalHeight,
+          state,
+          opacity,
+        );
+      } else {
+        // 'pending' and 'error' share the same visible fallback -- see
+        // drawImageFallback's doc comment for why a `<canvas>` can't
+        // distinguish "still loading" from "broken" accessibly anyway.
+        drawImageFallback(ctx, IMAGE_FALLBACK_SIZE, IMAGE_FALLBACK_SIZE);
+      }
+      return;
+    }
   }
 }
 
-function drawNode(ctx: CanvasRenderingContext2D, node: DrawNode, inheritedOpacity: number): void {
+function drawNode(
+  ctx: CanvasRenderingContext2D,
+  node: DrawNode,
+  inheritedOpacity: number,
+  imageCache: ImageAssetCache,
+  requestRedraw: () => void,
+): void {
   if (node.kind === 'shape') {
     const opacity = inheritedOpacity * node.shape.transform.opacity;
     ctx.save();
     applyTransform(ctx, node.shape.transform);
-    drawShapeGeometry(ctx, node.shape, computeDrawState(node.shape, opacity));
+    drawShapeGeometry(
+      ctx,
+      node.shape,
+      computeDrawState(node.shape, opacity),
+      opacity,
+      imageCache,
+      requestRedraw,
+    );
     ctx.restore();
     return;
   }
@@ -195,7 +315,7 @@ function drawNode(ctx: CanvasRenderingContext2D, node: DrawNode, inheritedOpacit
   const opacity = inheritedOpacity * node.group.transform.opacity;
   ctx.save();
   applyTransform(ctx, node.group.transform);
-  for (const child of node.children) drawNode(ctx, child, opacity);
+  for (const child of node.children) drawNode(ctx, child, opacity, imageCache, requestRedraw);
   ctx.restore();
 }
 
@@ -290,6 +410,10 @@ export function createCanvas2DScenePreview(container: HTMLElement): Canvas2DScen
   // happens this way rather than multiplying every draw call's own alpha
   // by `canvasOpacity`.
   let opacityBuffer: HTMLCanvasElement | null = null;
+  // Issue #508: resolves `image` shapes' `mediaAssetId`s against whatever
+  // resolver is currently active (mediaAssetResolver.ts); owns this
+  // preview's own object URLs, revoked in destroy() below.
+  const imageCache = createImageAssetCache();
 
   function ensureCanvas(width: number, height: number): HTMLCanvasElement {
     if (canvas) return canvas;
@@ -351,11 +475,11 @@ export function createCanvas2DScenePreview(container: HTMLElement): Canvas2DScen
           behindNodes.push(node);
         }
       }
-      for (const node of behindNodes) drawNode(ctx, node, 1);
+      for (const node of behindNodes) drawNode(ctx, node, 1, imageCache, drawFrame);
       drawCameraOverlay(ctx, overlay);
-      for (const node of frontNodes) drawNode(ctx, node, 1);
+      for (const node of frontNodes) drawNode(ctx, node, 1, imageCache, drawFrame);
     } else {
-      for (const node of plan.nodes) drawNode(ctx, node, 1);
+      for (const node of plan.nodes) drawNode(ctx, node, 1, imageCache, drawFrame);
     }
     // Task 39: live particles draw last, on top of everything else.
     for (const particle of currentParticles) drawParticle(ctx, particle);
@@ -409,6 +533,7 @@ export function createCanvas2DScenePreview(container: HTMLElement): Canvas2DScen
     currentTrails = [];
     currentCameraOverlay = undefined;
     currentTransparentBackground = false;
+    imageCache.destroy();
   }
 
   function getCanvasElement(): HTMLCanvasElement | null {

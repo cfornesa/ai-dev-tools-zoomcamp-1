@@ -93,6 +93,11 @@ CARD_ASPECT = CARD_WIDTH / CARD_HEIGHT
 
 CIRCLE_SEGMENTS = 48
 
+# Issue #508: same fixed local-space fallback size the frontend raster
+# adapters use for an unresolved/broken `image` shape -- see
+# `frontend/src/render/canvas2dAdapter.ts`'s `IMAGE_FALLBACK_SIZE`.
+IMAGE_FALLBACK_SIZE = 100.0
+
 Matrix = tuple[float, float, float, float, float, float]
 IDENTITY: Matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
 
@@ -208,10 +213,46 @@ def _local_geometry(shape: dict) -> tuple[list[tuple[float, float]], bool, bool]
     raise ThumbnailRenderError(f"unknown shape type: {shape_type!r}")
 
 
+def _draw_image_fallback(base: Image.Image, world_matrix: Matrix, opacity: float) -> None:
+    """Issue #508: the backend has no visibility into #512's local
+    (browser-IndexedDB-only) media library at all -- there is no
+    `mediaAssetId` this server-side thumbnail rasterizer could ever
+    resolve, for any `image` shape, in any scene, on any request. Rather
+    than crash (`_local_geometry`'s behavior for every genuinely
+    unrecognized shape type), an `image` shape always draws the same
+    "broken asset" fallback the frontend renderers draw for an unresolved
+    asset (see `canvas2dAdapter.ts`'s `drawImageFallback`) -- a box with a
+    crossed-diagonal glyph, at the same fixed placeholder size those
+    adapters use while unresolved. This is expected, documented behavior
+    for a thumbnail, not a defect: thumbnails render from
+    `SceneVersion.scene_json` alone, with no access to any browser's
+    IndexedDB, exactly like the public viewer/export paths #508's own
+    architecture note already covers.
+    """
+    size = IMAGE_FALLBACK_SIZE
+    corners = [(0.0, 0.0), (size, 0.0), (size, size), (0.0, size)]
+    world_points = [_apply(world_matrix, x, y) for x, y in corners]
+
+    layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    fill_rgba = _hex_to_rgba("#808080", opacity * 0.12)
+    stroke_rgba = _hex_to_rgba("#808080", opacity * 0.8)
+    draw.polygon(world_points, fill=fill_rgba)
+    draw.line([*world_points, world_points[0]], fill=stroke_rgba, width=2, joint="curve")
+    draw.line([world_points[0], world_points[2]], fill=stroke_rgba, width=2)
+    draw.line([world_points[1], world_points[3]], fill=stroke_rgba, width=2)
+    base.alpha_composite(layer)
+
+
 def _draw_shape(base: Image.Image, shape: dict, parent_matrix: Matrix, inherited_opacity: float):
     transform = shape["transform"]
     opacity = inherited_opacity * float(transform["opacity"])
     world_matrix = _matmul(parent_matrix, _transform_matrix(transform))
+
+    if shape.get("type") == "image":
+        _draw_image_fallback(base, world_matrix, opacity)
+        return
+
     local_points, stroke_only, closed = _local_geometry(shape)
     world_points = [_apply(world_matrix, x, y) for x, y in local_points]
 

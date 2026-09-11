@@ -270,7 +270,7 @@
       "required": ["id", "type", "layerId", "groupId", "transform", "style"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "type": { "enum": ["circle", "rect", "line", "path", "particleEmitter"] },
+        "type": { "enum": ["circle", "rect", "line", "path", "particleEmitter", "image"] },
         "layerId": {
           "description": "Task 111 (issue #142): every shape is its own independent layer -- no two shapes in one scene document may share a layerId (enforced by scenes/validation.py and frontend/src/validation/scene.ts, not expressible in JSON Schema alone; a legacy document violating this is normalized at read time rather than rejected outright -- see those modules' own doc comments).",
           "$ref": "#/$defs/id"
@@ -286,6 +286,19 @@
         },
         "locked": {
           "description": "Task 111 (issue #142): a shape's own lock state, independent of any ancestor group/layer's locked flag -- see the `visible` field's doc comment for the same optional/absent-defaults-to-unlocked convention.",
+          "type": "boolean"
+        },
+        "mediaAssetId": {
+          "description": "Issue #508: client-generated id of a #512 local media asset (browser IndexedDB `mediaAssets` object store). Required, and only meaningful, when `type` is `image` -- see that type's conditional block below. This is a plain string reference, not a database foreign key: local media assets live only in the authoring browser's IndexedDB and are never visible to the backend.",
+          "$ref": "#/$defs/id"
+        },
+        "altText": {
+          "description": "Issue #508: accessible text description of an `image` shape's asset. Required unless `decorative` is `true` -- see that type's conditional block below.",
+          "type": "string",
+          "maxLength": 500
+        },
+        "decorative": {
+          "description": "Issue #508: when `true`, an `image` shape's asset is purely decorative and `altText` is not required. Optional; absent is treated as `false`.",
           "type": "boolean"
         }
       },
@@ -371,6 +384,27 @@
               "physics": { "$ref": "#/$defs/physicsForce" }
             },
             "additionalProperties": false
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "image" } } },
+          "then": {
+            "required": ["mediaAssetId"],
+            "properties": {
+              "id": true, "type": true, "layerId": true, "groupId": true,
+              "transform": true, "style": true, "name": true, "trail": true,
+              "visible": true, "locked": true,
+              "mediaAssetId": true, "altText": true, "decorative": true
+            },
+            "additionalProperties": false,
+            "$comment": "Issue #508's own verbatim spec used `{\"not\": {\"properties\": {\"decorative\": {\"const\": true}}}}` here, but a bare `properties` constraint is vacuously satisfied when the property is absent (JSON Schema's open-world semantics: `properties` only constrains keys that are present), so that block was always true (never requiring altText) for the common case of a shape that omits `decorative` entirely -- exactly backwards from the stated intent ('altText required unless decorative is true'). Fixed by adding `required: [\"decorative\"]` to the inner condition, so the `not` correctly captures both 'decorative is absent' and 'decorative is present but false' as the two cases that require altText.",
+            "if": {
+              "not": {
+                "required": ["decorative"],
+                "properties": { "decorative": { "const": true } }
+              }
+            },
+            "then": { "required": ["mediaAssetId", "altText"] }
           }
         }
       ]

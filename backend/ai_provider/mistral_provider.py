@@ -245,7 +245,15 @@ elsewhere in the document.
 "circle" requires "radius"; "rect" requires "width", "height", and \
 "cornerRadius"; "line" requires "x2" and "y2"; "path" requires "points" \
 and "closed"; "particleEmitter" requires "rate", "size", "lifespan", \
-"speed", and "palette".
+"speed", and "palette"; "image" requires "mediaAssetId" (and "altText" \
+unless "decorative" is true).
+- Never generate a shape with "type": "image". It requires a \
+"mediaAssetId" referencing a media asset already imported into the \
+user's local project library, which you have no way to know or \
+generate -- any "image" shape you invent would reference an asset that \
+does not exist and would be rejected. If the user's prompt asks for an \
+image or photo, omit that part of the request and generate the rest of \
+the scene using only the other shape types.
 - Every shape is its own independent layer: no two shapes may share the \
 same "layerId" -- each shape needs a distinct layer with a distinct id, \
 even if you otherwise reuse a shared style or transform.

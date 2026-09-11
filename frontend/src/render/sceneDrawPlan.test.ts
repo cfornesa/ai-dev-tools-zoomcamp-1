@@ -10,6 +10,7 @@ import {
   baseScene,
   circleShape,
   group,
+  imageShape,
   layer,
   lineShape,
   particleEmitterShape,
@@ -105,6 +106,47 @@ describe('buildScenePlan', () => {
       ],
     });
     expect(byId.e).toMatchObject({ type: 'particleEmitter', size: 6, palette: ['#112233'] });
+  });
+
+  // Issue #508
+  it('resolves a decorative image shape, defaulting altText to null when absent', () => {
+    // altText is schema-required unless decorative:true; use a decorative shape to test
+    // the altText=null default at the renderer layer without triggering the schema gate.
+    const plan = buildScenePlan(
+      baseScene({ shapes: [imageShape({ mediaAssetId: 'asset-1', altText: undefined, decorative: true })] }),
+    );
+    const shape = plan.nodes[0];
+    expect(shape.kind).toBe('shape');
+    expect((shape as DrawShapeNode).shape).toMatchObject({
+      type: 'image',
+      mediaAssetId: 'asset-1',
+      altText: null,
+      decorative: true,
+    });
+  });
+
+  it('resolves an image shape carrying altText and decorative:true', () => {
+    const plan = buildScenePlan(
+      baseScene({
+        shapes: [imageShape({ mediaAssetId: 'asset-2', altText: 'A sunset.', decorative: true })],
+      }),
+    );
+    const shape = (plan.nodes[0] as DrawShapeNode).shape;
+    expect(shape).toMatchObject({
+      type: 'image',
+      mediaAssetId: 'asset-2',
+      altText: 'A sunset.',
+      decorative: true,
+    });
+  });
+
+  it('throws for an image shape missing mediaAssetId', () => {
+    // buildScenePlan's own pre-pass never lets a shape omit mediaAssetId
+    // through validateScene, but this asserts the pre-pass itself would
+    // also catch it, matching every other shape's defense-in-depth check.
+    const scene = baseScene({ shapes: [imageShape({ mediaAssetId: undefined })] });
+    delete ((scene.shapes as unknown[])[0] as Record<string, unknown>).mediaAssetId;
+    expect(() => buildScenePlan(scene)).toThrow(/mediaAssetId must be a string/);
   });
 
   // Acceptance criterion 3

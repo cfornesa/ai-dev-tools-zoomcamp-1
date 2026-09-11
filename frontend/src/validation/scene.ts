@@ -17,6 +17,11 @@ import Ajv2020, { type ErrorObject } from 'ajv/dist/2020';
 import sceneSchema from '../../../schema/scene.schema.json';
 import rawLimits from '../../../schema/limits.json';
 import rawNodeTypes from '../../../schema/node_types.json';
+import {
+  listMediaAssetsForProject,
+  SUPPORTED_MEDIA_MIME_TYPES,
+  STORE_MEDIA_ASSETS,
+} from '../storage/localProjectRepository';
 
 export const LIMITS: Record<string, number> = Object.fromEntries(
   Object.entries(rawLimits).filter(([key]) => !key.startsWith('$')),
@@ -630,6 +635,127 @@ export function normalizeSceneLayers(data: any): { scene: any; changed: boolean 
 
   if (!changed) return { scene: data, changed: false };
   return { scene: { ...scene, layers: newLayers, shapes: newShapes }, changed: true };
+}
+
+/**
+ * Issue #508: frontend-only checks for `type: "image"` shapes' `mediaAssetId`
+ * references, run *in addition to* (never instead of) `validateScene`'s
+ * schema-level check that `mediaAssetId` is a well-formed id and required
+ * fields are present. These checks cannot run on the backend at all --
+ * #512's local media library lives only in this browser's IndexedDB
+ * (`../storage/localProjectRepository.ts`), never in the Django database --
+ * see `scenes/validation.py`'s matching doc comment for the same
+ * architecture note from the other side.
+ *
+ * Four distinct, explicit error rules, matching #508's acceptance
+ * criterion:
+ * - `missingMediaAsset`: `mediaAssetId` does not match any asset this
+ *   browser's IndexedDB has ever recorded, in any project.
+ * - `crossProjectMediaAsset`: it matches an asset, but one that belongs to
+ *   a *different* project than `projectId`.
+ * - `deletedMediaAsset`: it used to resolve in this project (per
+ *   `previouslyKnownAssetIds`) but no longer does. #512's local storage
+ *   keeps no tombstone for a removed asset -- once its `refCount` reaches
+ *   zero, its `mediaAssets`/`mediaBlobs` rows are deleted outright (see
+ *   `localProjectRepository.ts`'s `decrementAssetRefInTx`) -- so this
+ *   distinction is only available when a caller can supply the set of ids
+ *   it has itself seen resolve successfully before (e.g. from a prior
+ *   successful validation of the same scene, or its own edit history).
+ *   Without that context, an unresolvable id is reported as
+ *   `missingMediaAsset` instead; this is a deliberate, documented
+ *   consequence of the local storage model, not a bug in this check.
+ * - `unsupportedMediaAssetType`: it resolves in this project, but its
+ *   `mimeType` is not in `SUPPORTED_MEDIA_MIME_TYPES`.
+ *
+ * Async because resolving against IndexedDB is inherently async
+ * (`localProjectRepository.ts`'s API); `validateScene` above stays
+ * synchronous and schema-only so every existing caller is unaffected. A
+ * caller that also needs these checks (e.g. before importing/attaching a
+ * media reference, once #513 builds a UI for it) awaits this in addition
+ * to calling `validateScene`.
+ */
+export type MediaReferenceCheckOptions = {
+  db: IDBDatabase;
+  projectId: string;
+  previouslyKnownAssetIds?: ReadonlySet<string>;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function checkImageMediaReferences(
+  data: any,
+  options: MediaReferenceCheckOptions,
+): Promise<SceneValidationError[]> {
+  const shapes: Array<Record<string, unknown>> = Array.isArray(data?.shapes) ? data.shapes : [];
+  const imageShapes = shapes
+    .map((shape, index) => ({ shape, index }))
+    .filter(({ shape }) => shape.type === 'image');
+  if (imageShapes.length === 0) return [];
+
+  const [projectAssets, allAssetRows] = await Promise.all([
+    listMediaAssetsForProject(options.db, options.projectId),
+    (async () => {
+      // Cross-project lookup needs every project's assets, which
+      // `listMediaAssetsForProject` (scoped by design to one project) can't
+      // give us -- read the whole `mediaAssets` store directly instead.
+      const tx = options.db.transaction(STORE_MEDIA_ASSETS, 'readonly');
+      return new Promise<Array<{ id: string; projectId: string; mimeType: string }>>(
+        (resolve, reject) => {
+          const request = tx.objectStore(STORE_MEDIA_ASSETS).getAll();
+          request.onsuccess = () => resolve(request.result ?? []);
+          request.onerror = () => reject(request.error);
+        },
+      );
+    })(),
+  ]);
+
+  const projectAssetsById = new Map(projectAssets.map((asset) => [asset.id, asset]));
+  const allAssetsById = new Map(allAssetRows.map((asset) => [asset.id, asset]));
+  const previouslyKnown = options.previouslyKnownAssetIds ?? new Set<string>();
+
+  const errors: SceneValidationError[] = [];
+  for (const { shape, index } of imageShapes) {
+    const mediaAssetId = shape.mediaAssetId;
+    if (typeof mediaAssetId !== 'string') continue; // schema-level check already covers this
+
+    const inProject = projectAssetsById.get(mediaAssetId);
+    if (inProject) {
+      if (!SUPPORTED_MEDIA_MIME_TYPES.has(inProject.mimeType)) {
+        errors.push({
+          path: `$.shapes[${index}].mediaAssetId`,
+          rule: 'unsupportedMediaAssetType',
+          message: `Media asset '${mediaAssetId}' has unsupported type '${inProject.mimeType}'.`,
+        });
+      }
+      continue;
+    }
+
+    const inOtherProject = allAssetsById.get(mediaAssetId);
+    if (inOtherProject) {
+      errors.push({
+        path: `$.shapes[${index}].mediaAssetId`,
+        rule: 'crossProjectMediaAsset',
+        message: `Media asset '${mediaAssetId}' belongs to a different project.`,
+      });
+      continue;
+    }
+
+    if (previouslyKnown.has(mediaAssetId)) {
+      errors.push({
+        path: `$.shapes[${index}].mediaAssetId`,
+        rule: 'deletedMediaAsset',
+        message: `Media asset '${mediaAssetId}' was deleted.`,
+      });
+      continue;
+    }
+
+    errors.push({
+      path: `$.shapes[${index}].mediaAssetId`,
+      rule: 'missingMediaAsset',
+      message: `Media asset '${mediaAssetId}' does not exist in this project.`,
+    });
+  }
+
+  return errors;
 }
 
 export function validateScene(data: unknown): SceneValidationResult {

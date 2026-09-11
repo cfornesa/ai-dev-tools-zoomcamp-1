@@ -18345,3 +18345,49 @@ local-first hybrid invariant: browser persistence is best-effort; cloud sync
 is opt-in backup; paid eligibility cannot revoke local creative work. Link it
 to #507/#509/#511. It is intentionally not written yet because this repo's
 memory governance requires owner confirmation for end-of-session updates.
+
+## 312. #510 closed — scene-collection migration delivered and QA'd
+
+Status: #510 COMPLETE (closed).
+
+GitHub issue: [#510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/510) (closed), follow-up [#514](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/514) (new, open)
+
+Owner approved the FK-based `Scene` model design (a gallery of three options
+was presented; owner chose the recommended one: new `Scene` table,
+`Project.current_version` kept as a denormalized mirror of
+`active_scene.current_version` so the ~150+ existing call sites elsewhere
+stay unchanged). Implemented as a Claude Sonnet 5 substitution for stage 2b
+(rostered Ollama Cloud `kimi-k3`), commit `66c3015`: additive `Scene` model,
+three-migration sequence (additive schema -> RunPython backfill -> NOT NULL
+tightening + per-scene sequence uniqueness), scene create/rename/reorder/
+duplicate/delete endpoints (owner-only), and additive frontend API/type
+support. `Project.active_scene` stays schema-nullable (Django's `fields.E132`
+forbids `on_delete=SET_NULL` on a non-nullable FK), matching the existing
+`Project.current_version` pattern.
+
+QA (stage 4, Claude Sonnet 5, no substitution) independently re-ran every
+check rather than trusting the implementer's report: ruff/mypy clean, no
+missing migrations, full suite 1186 passed/38 skipped (SQLite) and 1222
+passed/2 skipped (real PostgreSQL), the specific claimed concurrency-bug
+regressions (73 tests) green, migration verified both directions against
+real Postgres with no data loss on a manually seeded pre-existing project.
+`make check`'s failure is confirmed unrelated to #510 (pre-existing
+formatting drift in `test_admin_settings.py` from the owner's separate,
+still-uncommitted CreatrART rename) — recorded as a verification boundary,
+not a #510 defect. QA: PASS posted; issue closed.
+
+Discovery gate: implementation flagged that the Postgres trigger in
+`0002_postgres_invariants.py` isn't extended to cover `scene_id` immutability
+(the app-level `SNAPSHOT_FIELDS` check already covers it). Filed as
+[#514](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/514) and
+linked from #510 rather than folded into it.
+
+**Unblocked:** [#512](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/512)
+(local IndexedDB repository) and, transitively once #512 lands,
+[#508](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/508) and
+[#513](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/513) can now
+proceed to Stage 1 issue scoping. **Session direction:** per owner request,
+this session is pausing the #512 engineering chain to work the reconciliation
+containers (#507, #445) next, posing their remaining owner-decision points
+(cloud storage provider for #509; explicit acknowledgement that #440/#460
+still need owner-supplied credentials) directly rather than guessing.

@@ -51,9 +51,7 @@ def fixed_plans(db):
             "active": True,
         },
     )
-    SiteSettings.objects.update_or_create(
-        pk=1, defaults={"site_title": "CreatrART"}
-    )
+    SiteSettings.objects.update_or_create(pk=1, defaults={"site_title": "CreatrART"})
 
 
 # --- API authorization ---

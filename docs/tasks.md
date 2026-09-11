@@ -18442,3 +18442,39 @@ proceed to its Stage 1 scoping using the 50MB/100-file local quota above.
 #509 and #511 remain correctly PROPOSED/DEPENDENCY-BLOCKED until their own
 Stage 1 scoping incorporates the kill switch and independent tier-quota
 configuration as acceptance criteria.
+
+## 314. #512 scoped to criterion-ready; #514 closed
+
+Status: #512 OPEN (criterion-ready, Stage 2b in progress). #514 COMPLETE
+(closed).
+
+GitHub issues: [#512](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/512),
+[#514](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/514) (closed)
+
+**#512** (Stage 1, Claude substitution for Codex): the issue's own "Next
+action" gap -- exact IndexedDB schema, quota enforcement, export/import
+format, internal migration strategy -- is now filled in directly on the
+GitHub issue body: five object stores (`projects`/`scenes`/`mediaAssets`/
+`mediaBlobs`/`meta`) in a `creatrart-local-projects` v1 database, 50MB/100-file
+quota checked pre-import with checksum dedup, a base64-in-JSON export/import
+package (deliberately no new archive package), and a numbered
+`onupgradeneeded` migration strategy for the store's own future schema
+changes. Routed to Stage 2b implementation (Claude substitution for Ollama
+Cloud), in progress at time of this entry -- `frontend/src/storage/
+localProjectRepository.ts` and `localProjectExport.ts` appearing as untracked
+files, not yet committed or QA'd.
+
+**#514** (the Postgres-trigger `scene_id` gap filed during #510's QA):
+implemented and independently QA'd in this session. Migration `0040_trigger_
+scene_immutable.py` extends `scenes_sceneversion_prevent_snapshot_mutation`
+to also compare `scene_id`; the new regression test's validity was proven
+directly (temporarily reverted the fix, confirmed the test fails against the
+pre-fix trigger, restored the fix, confirmed it passes) rather than trusting
+a green run alone. Full suite independently re-verified: SQLite 1186
+passed/39 skipped, real PostgreSQL 1223 passed/2 skipped. Commit `4736a4d`.
+Closed.
+
+### Next transaction
+
+Await #512's Stage 2b completion, then QA it before starting #508's Stage 1
+scoping (#508 depends on #510 + #512, both now closed/in-flight).

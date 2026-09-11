@@ -18478,3 +18478,33 @@ Closed.
 
 Await #512's Stage 2b completion, then QA it before starting #508's Stage 1
 scoping (#508 depends on #510 + #512, both now closed/in-flight).
+
+## 315. #512 closed; #508 next
+
+Status: #512 COMPLETE (closed).
+
+GitHub issue: [#512](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/512) (closed)
+
+Implementation (Claude Sonnet 5 substitution for Ollama Cloud, commit
+`a569667`): `frontend/src/storage/localProjectRepository.ts` (the 5-store
+IndexedDB wrapper, numbered upgrade steps, 5 classified error kinds, atomic
+quota-checked import with checksum dedup) and `localProjectExport.ts`
+(base64-in-JSON export/import, checksum-revalidated, fresh-UUID
+collision-safe, atomic). 26 new tests using `fake-indexeddb`.
+
+QA (Claude Sonnet 5, no substitution) independently re-ran everything:
+`npm test` 205 files/2529 tests all passed, typecheck/lint clean, root
+`make check` fails only on the same pre-existing unrelated
+`test_admin_settings.py` drift already QA'd against #510. Two implementer
+judgment calls specifically scrutinized rather than accepted at face value:
+the MIME allowlist (confirmed consistent with existing `image/png`/
+`image/svg+xml` handling in `generateHtmlExport.ts`) and a
+`globalThis.Blob`-for-`node:buffer` test-environment override (confirmed via
+grep + full-suite rerun that it's scoped to only the two new test files, no
+leakage). QA: PASS posted; issue closed.
+
+### Next transaction
+
+[#508](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/508)
+(validated project-asset references and renderer-safe image layers) depends
+on #510 + #512, both now closed — proceed to its Stage 1 scoping next.

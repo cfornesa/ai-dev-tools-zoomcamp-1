@@ -19,9 +19,7 @@ describe('App', () => {
   it('renders the branding heading regardless of auth state', async () => {
     render(<App />);
 
-    expect(
-      screen.getByRole('heading', { name: 'CreatrART', level: 1 }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'CreatrART', level: 1 })).toBeInTheDocument();
     expect(shellDocument.title).toBe('CreatrART');
     expect(await screen.findByText(/sign in to see your projects/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Sign in with Google' })).toHaveClass('shell-action');

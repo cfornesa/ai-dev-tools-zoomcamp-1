@@ -172,9 +172,7 @@ test.describe('Responsive app shell', () => {
       await page.setViewportSize(NARROW_VIEWPORT);
       await page.goto('/');
 
-      await expectVisibleAndInViewport(
-        page.getByRole('heading', { name: 'CreatrART' }),
-      );
+      await expectVisibleAndInViewport(page.getByRole('heading', { name: 'CreatrART' }));
       // Below the mobile-header breakpoint, primary nav lives behind the
       // hamburger toggle (issue #90) rather than being inline, so it must be
       // opened before asserting its contents are visible and in-viewport.

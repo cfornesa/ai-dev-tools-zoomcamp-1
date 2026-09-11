@@ -1,6 +1,97 @@
 # CreatrART Backlog
 
+## 2026-09-10 — #508 QA'd + readiness + CreatrART rename committed
+
+Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized
+substitution for Sonnet 5): independently re-ran every claimed command from
+the Claude Code stage-2b handoff (not trusted). Found and fixed two defects
+before accepting the diff:
+
+1. **TS18046** (`sceneDrawPlan.test.ts:146`): `scene.shapes[0]` typed as
+   `unknown`; cast to `(scene.shapes as unknown[])[0]`. One-line, no logic
+   change.
+2. **Schema-inconsistent test** (`sceneDrawPlan.test.ts:111`): the test passed
+   an image shape without `altText` and without `decorative:true` — valid under
+   the original (buggy) spec but correctly rejected by the fixed schema. Updated
+   to `decorative:true`, the only schema-valid case where altText can be absent.
+
+Verdict: **ACCEPTED-WITH-FIXES**. QA evidence comment posted at
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/508#issuecomment-5628120636
+
+Committed as `0023ec5` (feat: image shape, schema, validation, renderer, tests).
+Also documented a new memory topic: [JSON Schema properties open-world semantics](.agents/memory/json-schema-properties-open-world.md)
+— the schema bug that made `altText` never required (fixed in Claude Code's own
+implementation, documented here for future agents).
+
+Stage 5 (`production-readiness`, Sonnet 4.6 Thinking, user-authorized Opus 5
+substitution): see readiness verdict in [tasks.md](#2026-09-10--508-production-readiness-verdict)
+entry below. **`make check` green** post format-fix (`e2c4e85`).
+
+CreatrART rename (`8d59588`) committed from owner's working-tree files (product
+name, HTML templates, Layout, export attribution, admin settings, compose
+preflight, responsiveShell E2E, plan docs, opencode.json). Format drift from the
+rename fixed in `e2c4e85` (ruff format `test_admin_settings.py`).
+
+**#508 stays OPEN** pending owner review of the QA verdict. No auto-close used.
+
+## 2026-09-10 — #508 production-readiness verdict
+
+Stage 5 (`production-readiness`, Claude Sonnet 4.6 Thinking, user-authorized
+Opus 5 Low-effort substitution, restricted to #508's batch only):
+
+### Local web-app deployment
+
+| Dimension | Status | Evidence |
+| --- | --- | --- |
+| Backend pytest full suite | ✅ PASS | 1199 passed, 39 skipped |
+| Backend mypy | ✅ PASS | 0 issues, 219 files |
+| Backend ruff check | ✅ PASS | All checks passed |
+| Backend ruff format-check | ✅ PASS | Post `e2c4e85` fix |
+| Frontend typecheck (tsc -b) | ✅ PASS | 0 errors |
+| Frontend lint (oxlint) | ✅ PASS | Warnings only (pre-existing) |
+| Frontend vitest full suite | ✅ PASS | 2548 passed, 0 failed |
+| `make check` (post format-fix) | ✅ PASS | All gates green |
+
+### #508 acceptance criteria
+
+| Criterion | Status | Finding |
+|---|---|---|
+| Scene JSON stores only mediaAssetId + presentation fields | ✅ PASS | Schema allowlist enforces this |
+| Schema-level rejects malformed/missing fields | ✅ PASS | 12 backend tests, 3 invalid fixtures |
+| Frontend-only validation rejects 4 distinct error classes | ✅ PASS | 7 tests on fake-indexeddb |
+| Renderer draws with correct transform/opacity/layer ordering | ✅ PASS | canvas2d + p5 + svg adapters implemented |
+| Missing/broken asset visible accessible fallback | ✅ PASS | All 3 adapters + backend thumbnails |
+| altText required unless decorative:true | ✅ PASS | Schema conditional verified against both fixtures |
+| image shapes go through same validation pipeline | ✅ PASS | Same scenes/validation.py gate |
+| Schema fixtures follow conventions | ✅ PASS | 5 fixtures, expectations.json updated |
+| `make check` passes | ✅ PASS | Green after format fix |
+| No new dependencies | ✅ PASS | No pyproject.toml or package.json changes |
+
+### Non-local surfaces
+
+| Surface | Status | Note |
+|---|---|---|
+| CI (GitHub Actions) | OPEN FOLLOW-UP | Push to main occurred; CI `.github/workflows/ci.yml` will run automatically. #508 has no Replit deployment criteria — no migration, no new route, no published asset. |
+| Replit publish | NON-ACTIONABLE | #508 adds no migrations and no new backend routes. Existing deployed app is unaffected. |
+| Public/export viewer image fallback | NON-ACTIONABLE per issue | Documented expected behavior per #508's own architecture note. Deferred to #509 (cloud sync) or a future bundled-export format. |
+
+### Readiness verdict
+
+**#508 is locally complete and ready to close** pending owner review of the QA
+verdict comment on GitHub. No blocking follow-up issues are created by this
+issue — the public/export viewer fallback is explicitly accepted behavior per
+the spec. The remaining open work is:
+
+- `OPEN FOLLOW-UP` — CI result: auto-running on push, not manually blocked.
+- `OPEN` — #513 (media library UI): next in the #507→#510→#512→#508→#513 chain;
+  depends on #508 closing.
+- `OPEN` — #507, #509, #511: architecture/cloud decisions, not blocked by #508.
+
+**No production blocker found for this batch.**
+
 ## 2026-09-09 — #502 stage-4 handback fixed: regression subprocess now database-isolated (`05fed05`)
+
+
 
 Stage-4 QA verified #502's delivered fix (`2a977fe`) as correct but found
 its new regression test broke full-suite runs deterministically

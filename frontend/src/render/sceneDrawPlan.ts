@@ -120,12 +120,7 @@ export type ImageShape = BaseFields & {
 };
 
 export type AnyShape =
-  | CircleShape
-  | RectShape
-  | LineShape
-  | PathShape
-  | ParticleEmitterShape
-  | ImageShape;
+  CircleShape | RectShape | LineShape | PathShape | ParticleEmitterShape | ImageShape;
 
 export type GroupNode = {
   id: string;

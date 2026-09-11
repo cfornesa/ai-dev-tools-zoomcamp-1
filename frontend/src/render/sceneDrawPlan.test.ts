@@ -113,7 +113,9 @@ describe('buildScenePlan', () => {
     // altText is schema-required unless decorative:true; use a decorative shape to test
     // the altText=null default at the renderer layer without triggering the schema gate.
     const plan = buildScenePlan(
-      baseScene({ shapes: [imageShape({ mediaAssetId: 'asset-1', altText: undefined, decorative: true })] }),
+      baseScene({
+        shapes: [imageShape({ mediaAssetId: 'asset-1', altText: undefined, decorative: true })],
+      }),
     );
     const shape = plan.nodes[0];
     expect(shape.kind).toBe('shape');

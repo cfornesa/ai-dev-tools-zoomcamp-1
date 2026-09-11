@@ -8,6 +8,7 @@ from scenes.models import (
     EditSessionDraft,
     Project,
     Project3D,
+    Scene,
     SceneVersion,
     SceneVersion3D,
     Template,
@@ -134,11 +135,59 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
         }
 
 
+class SceneSerializer(serializers.ModelSerializer):
+    """Issue #510: one scene's collection metadata -- stable id, display
+    name, ordering position, and which `SceneVersion` (by bare pk, matching
+    `ProjectSerializer.current_version`'s own shape) is currently that
+    scene's saved state. Deliberately excludes `scene_json`/full version
+    history the same way `ProjectSerializer` excludes them for versions --
+    a project/scene list response is metadata only; `GET
+    /api/projects/<id>/scenes/<scene_id>/versions/...` (the existing
+    per-project version endpoints, now scoped to a scene going forward)
+    remains the only place full scene content is fetched.
+    """
+
+    id = serializers.UUIDField(source="public_id", read_only=True)
+
+    class Meta:
+        model = Scene
+        fields = ["id", "name", "position", "current_version", "created_at", "updated_at"]
+        read_only_fields = fields
+
+
+class SceneCreateSerializer(serializers.Serializer):
+    """Issue #510: optional display name for a newly created scene --
+    defaults to `Scene.name`'s own model default ("Scene") when omitted,
+    same optional-with-sensible-default convention as
+    `TemplateCreateSerializer.category`/`description` above."""
+
+    name = serializers.CharField(max_length=200, required=False, allow_blank=False)
+
+
+class SceneRenameSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=200, allow_blank=False)
+
+
+class SceneReorderSerializer(serializers.Serializer):
+    """Issue #510: request body for the reorder endpoint -- the full,
+    desired ordering of every one of the project's scene ids (by
+    `public_id`), position 0 first. Deliberately whole-collection rather
+    than a single move-this-scene-to-this-index operation: it is simpler
+    to validate (every existing scene id must appear exactly once, no
+    partial/ambiguous reorderings possible) and simpler for the frontend
+    to drive from a drag-and-drop list's final order.
+    """
+
+    scene_ids = serializers.ListField(child=serializers.UUIDField(), allow_empty=False)
+
+
 class ProjectSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.CharField(source="owner.username", read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
     current_version_origin = serializers.SerializerMethodField()
+    active_scene = serializers.SerializerMethodField()
+    scenes = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -154,6 +203,12 @@ class ProjectSerializer(serializers.ModelSerializer):
             "thumbnail_url",
             "current_version",
             "current_version_origin",
+            # Issue #510: additive scene-collection metadata -- see
+            # `get_active_scene`/`get_scenes` below. Every pre-#510 field
+            # above is unchanged, so existing callers that only read those
+            # fields are unaffected.
+            "active_scene",
+            "scenes",
             "created_at",
             "updated_at",
         ]
@@ -178,6 +233,20 @@ class ProjectSerializer(serializers.ModelSerializer):
         if current_version is None:
             return None
         return current_version.origin
+
+    def get_active_scene(self, project: Project) -> str | None:
+        # Issue #510: the currently active scene's stable `public_id` --
+        # `None` only for a not-yet-migrated/edge-case row (see
+        # `Project.active_scene`'s own docstring for why this stays
+        # nullable at the schema level even though it is always set by
+        # every scene-creating code path in practice).
+        active_scene = project.active_scene
+        if active_scene is None:
+            return None
+        return str(active_scene.public_id)
+
+    def get_scenes(self, project: Project) -> list[dict]:
+        return SceneSerializer(project.scenes.all(), many=True).data
 
 
 class PublicSceneVersionSerializer(serializers.ModelSerializer):

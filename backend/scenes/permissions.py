@@ -29,6 +29,15 @@ class Action(StrEnum):
     VERSION_CREATE = "version.create"
     VERSION_RESTORE = "version.restore"
     VERSION_DELETE = "version.delete"
+    # Issue #510: scene create/rename/reorder/duplicate/delete are all
+    # owner-only operations on the *project* the scene belongs to -- there
+    # is no separate "is this a public scene" concept the way
+    # PROJECT_READ has, so these resolve exactly like VERSION_* above
+    # (added to _OWNER_ONLY_PROJECT_ACTIONS below) rather than needing
+    # their own can()/require() branch.
+    SCENE_CREATE = "scene.create"
+    SCENE_WRITE = "scene.write"
+    SCENE_DELETE = "scene.delete"
     DRAFT_READ = "draft.read"
     DRAFT_WRITE = "draft.write"
     TEMPLATE_READ = "template.read"
@@ -94,6 +103,11 @@ _OWNER_ONLY_PROJECT_ACTIONS = frozenset(
         # project and never creates a SceneVersion or touches
         # current_version, but it's still owner-only working state.
         Action.AI_EDIT_SCENE,
+        # Issue #510: scene management is owner-only working state, same
+        # reasoning as every action above.
+        Action.SCENE_CREATE,
+        Action.SCENE_WRITE,
+        Action.SCENE_DELETE,
     }
 )
 

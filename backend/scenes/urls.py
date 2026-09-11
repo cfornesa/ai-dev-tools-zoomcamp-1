@@ -36,6 +36,10 @@ from scenes.api import (
     PublicProjectListView,
     PublicProjectThumbnailView,
     SaveVersionAsTemplateView,
+    SceneDetailView,
+    SceneDuplicateView,
+    SceneListCreateView,
+    SceneReorderView,
     SceneVersionDetailView,
     SceneVersionListCreateView,
     SceneVersionRestoreView,
@@ -166,6 +170,30 @@ urlpatterns = [
         "public/projects/<uuid:public_id>/fork/",
         ProjectForkView.as_view(),
         name="project-fork",
+    ),
+    # Issue #510: ordered scene collection for a project. Deliberately
+    # placed before "versions/" is scoped per-scene in any future work --
+    # today's "versions/" routes below stay project-scoped (unchanged) per
+    # this issue's own "don't touch existing call sites" boundary.
+    path(
+        "projects/<uuid:public_id>/scenes/",
+        SceneListCreateView.as_view(),
+        name="scene-list-create",
+    ),
+    path(
+        "projects/<uuid:public_id>/scenes/reorder/",
+        SceneReorderView.as_view(),
+        name="scene-reorder",
+    ),
+    path(
+        "projects/<uuid:public_id>/scenes/<uuid:scene_id>/",
+        SceneDetailView.as_view(),
+        name="scene-detail",
+    ),
+    path(
+        "projects/<uuid:public_id>/scenes/<uuid:scene_id>/duplicate/",
+        SceneDuplicateView.as_view(),
+        name="scene-duplicate",
     ),
     path(
         "projects/<uuid:public_id>/versions/",

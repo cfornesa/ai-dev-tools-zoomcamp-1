@@ -12,8 +12,9 @@ proof of PostgreSQL constraint behavior (Task 8's own constraint):
 2. A `Project.current_version` must belong to that same project and must
    not be soft-deleted.
 
-Everything else (uniqueness of `(project, sequence)`, `sequence >= 1`) is
-a plain Django `UniqueConstraint`/`CheckConstraint`, which SQLite already
+Everything else (uniqueness of `(scene, sequence)` -- `(project, sequence)`
+before issue #510's per-scene renumbering -- and `sequence >= 1`) is a
+plain Django `UniqueConstraint`/`CheckConstraint`, which SQLite already
 enforces the same way, so no trigger is needed for those.
 """
 
@@ -426,6 +427,35 @@ class Project(models.Model):
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Issue #510: which of this project's `Scene`s is currently being
+    # edited/viewed. Populated for every project by
+    # `scenes/migrations/0032_backfill_scenes.py` (existing projects) and by
+    # every scene-creating code path thereafter (new projects), so in
+    # practice this is never null past that migration. `on_delete=SET_NULL`
+    # rather than `PROTECT`/`CASCADE`: deleting the active scene (never the
+    # *last* scene -- see `scenes/api.py`'s `SceneDetailView.delete`) must
+    # not delete or block-delete the project itself; the caller reassigns
+    # this to a remaining scene in the same transaction as the delete.
+    #
+    # Deliberately kept `null=True`/`blank=True` at the Django field level
+    # even though issue #510's spec calls for `AlterField`-ing this to
+    # NOT NULL alongside `SceneVersion.scene`: Django's own model checks
+    # (E132) forbid `on_delete=SET_NULL` on a non-nullable FK -- the ORM
+    # cannot satisfy "set to null on delete" on a column that rejects null.
+    # `manage.py check` fails hard on that combination, so this field stays
+    # nullable at the schema level; "always set in practice" is enforced by
+    # application invariants only (mirrors `Project.current_version`'s own
+    # nullable-but-always-set pattern above), not a database constraint.
+    # See `scenes/migrations/0033_tighten_scene_fields.py`'s docstring for
+    # the full reasoning -- flagged here as a deviation from the literal
+    # spec for the repo owner/QA to confirm.
+    active_scene = models.ForeignKey(
+        "scenes.Scene",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="active_for_projects",
+    )
 
     all_objects = models.Manager()
     objects = ProjectManager()
@@ -461,6 +491,53 @@ class Project(models.Model):
         return self.title
 
 
+class Scene(models.Model):
+    """One ordered, named scene within a 2D project (issue #510).
+
+    Turns a project's version history from one project-wide timeline into
+    an ordered collection of independently-versioned scenes: each `Scene`
+    owns its own append-only `SceneVersion` history (`SceneVersion.scene`
+    below), scoped by the `unique_sequence_per_project` constraint's
+    successor, `unique_sequence_per_scene` (added by
+    `scenes/migrations/0033_tighten_scene_fields.py`).
+
+    `position` is the ordering key within `project` — a plain integer
+    renumbered wholesale by `scenes.api`'s reorder endpoint, never inferred
+    from creation order or row id. `current_version` mirrors
+    `Project.current_version`'s exact shape and `on_delete=PROTECT` policy
+    (a `SceneVersion` that is some scene's current version can never be
+    hard-deleted out from under it) — `Project.current_version` itself is
+    kept as a denormalized mirror of `Project.active_scene.current_version`
+    (see that field's docstring) so the ~150+ existing call sites reading
+    `project.current_version` directly keep working unchanged.
+    """
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="scenes")
+    name = models.CharField(max_length=200, default="Scene")
+    position = models.PositiveIntegerField()
+    current_version = models.ForeignKey(
+        "scenes.SceneVersion",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="current_for_scenes",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["project", "position"], name="unique_scene_position_per_project"
+            ),
+        ]
+        ordering = ["position"]
+
+    def __str__(self) -> str:
+        return f"{self.name} (project {self.project_id}, position {self.position})"
+
+
 class SceneVersionImmutableError(Exception):
     """Raised when application code tries to mutate an existing SceneVersion snapshot."""
 
@@ -468,6 +545,7 @@ class SceneVersionImmutableError(Exception):
 SNAPSHOT_FIELDS = frozenset(
     {
         "project_id",
+        "scene_id",
         "sequence",
         "scene_json",
         "created_by_id",
@@ -489,6 +567,17 @@ class SceneVersion(models.Model):
         FORK = "fork", "Fork"
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="versions")
+    # Issue #510: which `Scene` this version belongs to. Nullable only for
+    # migration sequencing (`scenes/migrations/0031_add_scene.py` adds this
+    # column nullable; `0032_backfill_scenes.py` populates it for every
+    # existing row; `0033_tighten_scene_fields.py` makes it NOT NULL) — new
+    # code should treat this as always-set. `related_name="scene_versions"`
+    # deliberately doesn't collide with `Project.versions` (the pre-existing
+    # project-wide related_name, kept unchanged so every current call site
+    # that reads `project.versions` keeps working).
+    scene = models.ForeignKey(
+        "scenes.Scene", on_delete=models.CASCADE, related_name="scene_versions"
+    )
     sequence = models.PositiveIntegerField()
     scene_json = models.JSONField()
     created_by = models.ForeignKey(
@@ -520,9 +609,13 @@ class SceneVersion(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["project", "sequence"], name="unique_sequence_per_project"
-            ),
+            # Issue #510: sequence numbering is scoped per scene, not
+            # per project, as of `0033_tighten_scene_fields.py` -- a
+            # second scene in the same project starts its own sequence at
+            # 1, independent of any other scene's history. See that
+            # migration's docstring for the (documented, deliberately
+            # narrow) reversibility window this re-scoping closes.
+            models.UniqueConstraint(fields=["scene", "sequence"], name="unique_sequence_per_scene"),
             models.CheckConstraint(condition=models.Q(sequence__gte=1), name="sequence_gte_1"),
             models.UniqueConstraint(
                 fields=["project", "ai_request_id"],
@@ -530,12 +623,72 @@ class SceneVersion(models.Model):
                 name="unique_ai_request_id_per_project",
             ),
         ]
-        ordering = ["project", "sequence"]
+        ordering = ["project", "scene", "sequence"]
 
     def __str__(self) -> str:
         return f"{self.project_id} v{self.sequence}"
 
     def save(self, *args, **kwargs):
+        if self.pk is None and self.scene_id is None:
+            # Issue #510: `scene` is required (NOT NULL), but several
+            # pre-#510 creation call sites outside `scenes/api.py`
+            # (`scenes.ai_api.AIAcceptProposalView`, `scenes.ai_runs
+            # .accept_run`) are explicitly out of this issue's scope to
+            # modify -- see that issue's "keep the ~150+ existing call
+            # sites working unchanged" policy. Rather than requiring every
+            # such caller to learn about scenes, a version created without
+            # an explicit `scene` silently attaches to its project's
+            # current active scene, lazily creating one first if the
+            # project doesn't have one yet at all -- the same fallback
+            # `scenes.api._ensure_active_scene` provides for the
+            # manual-save/restore endpoints, just enforced here at the
+            # model layer so every caller is covered, not only those two.
+            # Explicitly bound to the *project's own* database alias
+            # (`self.project._state.db`) rather than left to default
+            # routing: a caller that does `SceneVersion.objects.using(
+            # "some_alias").create(project=project, ...)` (several
+            # PostgreSQL-gated tests in this repo construct fixtures this
+            # way, e.g. tests/test_blank_project_creation_api.py's
+            # multi-database rollback/concurrency tests) has already
+            # loaded/created `project` on that exact alias -- querying or
+            # creating `Scene` rows through unqualified `Scene.objects`
+            # here would silently default to a *different* database
+            # (typically "default"), and then assigning the
+            # cross-database `Scene` back onto `project.active_scene`
+            # raises "the current database router prevents this relation"
+            # (Django's `allow_relation` check) unless a permissive router
+            # happens to be active.
+            project = self.project
+            db_alias = project._state.db
+            # A plain `project.active_scene` attribute read is *not* safe
+            # here: Django's related-object descriptor resolves its query
+            # database via `router.db_for_read(Scene, instance=project)`,
+            # which -- with no custom router configured (this repo's own
+            # test settings have none) -- ignores `instance`/its hints
+            # entirely and always falls back to `DEFAULT_DB_ALIAS`,
+            # regardless of `project._state.db`. An explicit `.using(
+            # db_alias)` query is the only way to actually stay on the
+            # project's own database, exactly like every other query in
+            # this block.
+            scene = (
+                Scene.objects.using(db_alias).filter(pk=project.active_scene_id).first()
+                if project.active_scene_id is not None
+                else None
+            )
+            if scene is None:
+                next_position = (
+                    Scene.objects.using(db_alias)
+                    .filter(project=project)
+                    .aggregate(models.Max("position"))["position__max"]
+                )
+                next_position = 0 if next_position is None else next_position + 1
+                scene = Scene.objects.using(db_alias).create(
+                    project=project, name="Scene 1", position=next_position
+                )
+                project.active_scene = scene
+                project.save(using=db_alias, update_fields=["active_scene"])
+            self.scene = scene
+
         if self.pk is not None:
             using = kwargs.get("using")
             queryset = SceneVersion.objects.using(using) if using else SceneVersion.objects

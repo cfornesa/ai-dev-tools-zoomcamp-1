@@ -38,6 +38,7 @@ from scenes.models import (
     ForkProvenance,
     Project,
     ProjectActivity,
+    Scene,
     SceneVersion,
     Template,
     Thumbnail,
@@ -54,6 +55,10 @@ from scenes.serializers import (
     PublicProject3DListItemSerializer,
     PublicProjectListItemSerializer,
     PublicProjectSerializer,
+    SceneCreateSerializer,
+    SceneRenameSerializer,
+    SceneReorderSerializer,
+    SceneSerializer,
     SceneVersionCreateSerializer,
     SceneVersionDetailSerializer,
     SceneVersionListSerializer,
@@ -73,7 +78,14 @@ with (SCHEMA_DIR / "fixtures" / "valid" / "blank.json").open() as _f:
 def _get_project_or_404(public_id) -> Project:
     try:
         return Project.objects.select_related(
-            "owner", "fork_provenance", "fork_provenance__source_project__owner"
+            "owner",
+            "fork_provenance",
+            "fork_provenance__source_project__owner",
+            # Issue #510: ProjectSerializer.get_active_scene dereferences
+            # this per project -- joined here for the same reason
+            # "current_version" is joined in ProjectListCreateView.get
+            # below.
+            "active_scene",
         ).get(public_id=public_id)
     except (Project.DoesNotExist, ValueError, TypeError) as exc:
         raise Http404 from exc
@@ -88,12 +100,16 @@ class ProjectListCreateView(APIView):
     def get(self, request):
         if not request.user.is_authenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-        # current_version is joined too: ProjectSerializer's
-        # current_version_origin field dereferences it per project, and
-        # without this the list view would issue one extra query per
-        # project instead of a single join.
-        projects = Project.objects.filter(owner=request.user).select_related(
-            "owner", "current_version"
+        # current_version/active_scene are joined too: ProjectSerializer's
+        # current_version_origin/get_active_scene fields dereference them
+        # per project, and without this the list view would issue one
+        # extra query per project instead of a single join. "scenes" is
+        # prefetched (a reverse FK, not joinable) for the same reason --
+        # get_scenes() would otherwise issue one query per project too.
+        projects = (
+            Project.objects.filter(owner=request.user)
+            .select_related("owner", "current_version", "active_scene")
+            .prefetch_related("scenes")
         )
         return Response(ProjectSerializer(projects, many=True).data)
 
@@ -727,8 +743,16 @@ class ProjectForkView(APIView):
                     title=locked_source.title,
                     creation_request_id=request_id,
                 )
+                # Issue #510: a fork gets its own fresh scene collection --
+                # it never shares (or points back at) any of the source
+                # project's scenes, matching this view's own "independent
+                # copy" guarantee for scene_json above.
+                forked_scene = Scene.objects.create(
+                    project=forked_project, name="Scene 1", position=0
+                )
                 version = SceneVersion.objects.create(
                     project=forked_project,
+                    scene=forked_scene,
                     sequence=1,
                     scene_json=cloned_scene,
                     created_by=request.user,
@@ -736,8 +760,11 @@ class ProjectForkView(APIView):
                     fork_source_version=source_version,
                     change_label=f"Forked from {locked_source.title}",
                 )
+                forked_scene.current_version = version
+                forked_scene.save(update_fields=["current_version", "updated_at"])
                 forked_project.current_version = version
-                forked_project.save(update_fields=["current_version", "updated_at"])
+                forked_project.active_scene = forked_scene
+                forked_project.save(update_fields=["current_version", "active_scene", "updated_at"])
                 ForkProvenance.objects.create(
                     project=forked_project,
                     source_project=locked_source,
@@ -768,6 +795,34 @@ class ProjectForkView(APIView):
         return Response(ProjectSerializer(forked_project).data, status=status.HTTP_201_CREATED)
 
 
+def _ensure_active_scene(locked_project: Project) -> Scene:
+    """Issue #510: lazily create a project's first scene the moment one is
+    needed, for any project that reaches a version-creating code path
+    without ever having gone through `BlankProjectCreateView`/
+    `ProjectForkView`/`TemplateCloneView`'s own eager scene creation —
+    most directly, the pre-#510 test fixture pattern (`Project.objects
+    .create(owner=owner)` with no scene at all) used throughout
+    tests/test_scene_version_save_api.py and elsewhere, and any other bare
+    `Project.objects.create()` caller. This is what keeps every such
+    existing call site working unchanged rather than 500ing on
+    `SceneVersion.scene`'s NOT NULL constraint.
+
+    Must be called with `locked_project` already `select_for_update()`-locked
+    by the caller, inside the same transaction as whatever save follows —
+    same concurrency-safety shape as the sequence-number computation right
+    next to every call of this function.
+    """
+    existing_scene = locked_project.active_scene
+    if existing_scene is not None:
+        return existing_scene
+    next_position = locked_project.scenes.aggregate(Max("position"))["position__max"]
+    next_position = 0 if next_position is None else next_position + 1
+    scene = Scene.objects.create(project=locked_project, name="Scene 1", position=next_position)
+    locked_project.active_scene = scene
+    locked_project.save(update_fields=["active_scene", "updated_at"])
+    return scene
+
+
 class SceneVersionListCreateView(APIView):
     """Task 14: list a project's history, and save the next immutable version.
 
@@ -780,13 +835,20 @@ class SceneVersionListCreateView(APIView):
     which is fine for single-threaded correctness tests but proves
     nothing about real concurrency — see tests/test_scene_version_save_api.py
     for the PostgreSQL-gated concurrency tests that do.
+
+    Issue #510: a manual save always targets the project's *active* scene
+    (`_ensure_active_scene`, lazily created if this project doesn't have
+    one yet) — `sequence` is now computed per scene, not per project (see
+    `unique_sequence_per_scene`), and both the scene's own
+    `current_version` and the project's denormalized mirror
+    (`Project.current_version`) advance together, in the same transaction.
     """
 
     def get(self, request, public_id):
         project = _get_project_or_404(public_id)
         _require_or_404(request.user, Action.VERSION_READ, project)
 
-        versions = project.versions.filter(is_deleted=False).order_by("sequence")
+        versions = project.versions.filter(is_deleted=False).order_by("scene_id", "sequence")
         return Response(SceneVersionListSerializer(versions, many=True).data)
 
     def post(self, request, public_id):
@@ -814,11 +876,13 @@ class SceneVersionListCreateView(APIView):
         try:
             with transaction.atomic():
                 locked_project = Project.objects.select_for_update().get(pk=project.pk)
+                active_scene = _ensure_active_scene(locked_project)
                 next_sequence = (
-                    locked_project.versions.aggregate(Max("sequence"))["sequence__max"] or 0
+                    active_scene.scene_versions.aggregate(Max("sequence"))["sequence__max"] or 0
                 ) + 1
                 version = SceneVersion.objects.create(
                     project=locked_project,
+                    scene=active_scene,
                     sequence=next_sequence,
                     scene_json=scene_json,
                     created_by=request.user if request.user.is_authenticated else None,
@@ -826,6 +890,8 @@ class SceneVersionListCreateView(APIView):
                     origin=input_serializer.validated_data["origin"],
                     change_label=input_serializer.validated_data.get("change_label", ""),
                 )
+                active_scene.current_version = version
+                active_scene.save(update_fields=["current_version", "updated_at"])
                 locked_project.current_version = version
                 locked_project.save(update_fields=["current_version", "updated_at"])
                 # Task 54: a no-op unless the project is already public --
@@ -881,8 +947,16 @@ class SceneVersionDetailView(APIView):
 
         try:
             with transaction.atomic():
-                locked_project = Project.objects.select_for_update().get(pk=project.pk)
-                if locked_project.current_version_id == version.pk:
+                # Locks the project row so a concurrent version-creating
+                # save/restore/delete on this same project can't race this
+                # check-then-act sequence -- the lock itself is the point;
+                # nothing below needs to read the locked row's fields.
+                Project.objects.select_for_update().get(pk=project.pk)
+                # Issue #510: a version is protected from soft-delete by
+                # being its *own scene's* current version -- not just by
+                # being the project-wide mirrored `current_version` -- so
+                # this also protects a non-active scene's current version.
+                if version.scene_id is not None and version.scene.current_version_id == version.pk:
                     raise CannotModifyCurrentVersion
                 version.is_deleted = True
                 version.deleted_at = timezone.now()
@@ -919,13 +993,22 @@ class SceneVersionRestoreView(APIView):
         try:
             with transaction.atomic():
                 locked_project = Project.objects.select_for_update().get(pk=project.pk)
-                if locked_project.current_version_id == source.pk:
+                # Issue #510: restoring re-creates a version in the
+                # *source's own scene* -- for every pre-#510 single-scene
+                # project this is identical to "the project's one scene",
+                # so existing behavior is unchanged; a version is protected
+                # from being restored by being its own scene's current
+                # version (not just the project-wide mirror), same
+                # reasoning as SceneVersionDetailView.delete above.
+                target_scene = source.scene
+                if target_scene.current_version_id == source.pk:
                     raise CannotModifyCurrentVersion
                 next_sequence = (
-                    locked_project.versions.aggregate(Max("sequence"))["sequence__max"] or 0
+                    target_scene.scene_versions.aggregate(Max("sequence"))["sequence__max"] or 0
                 ) + 1
                 new_version = SceneVersion.objects.create(
                     project=locked_project,
+                    scene=target_scene,
                     sequence=next_sequence,
                     scene_json=copy.deepcopy(source.scene_json),
                     created_by=request.user if request.user.is_authenticated else None,
@@ -933,8 +1016,16 @@ class SceneVersionRestoreView(APIView):
                     origin=SceneVersion.Origin.RESTORE,
                     change_label=f"Restored from version {source.sequence}",
                 )
-                locked_project.current_version = new_version
-                locked_project.save(update_fields=["current_version", "updated_at"])
+                target_scene.current_version = new_version
+                target_scene.save(update_fields=["current_version", "updated_at"])
+                # The project-wide mirror only follows along if the
+                # restored scene is the one currently active -- restoring a
+                # historical version of a background (non-active) scene
+                # must not silently change what the project's own
+                # `current_version` mirror points at.
+                if locked_project.active_scene_id == target_scene.pk:
+                    locked_project.current_version = new_version
+                    locked_project.save(update_fields=["current_version", "updated_at"])
                 maybe_schedule_thumbnail_generation(locked_project)
         except CannotModifyCurrentVersion:
             return Response(
@@ -1013,16 +1104,24 @@ class BlankProjectCreateView(APIView):
         try:
             with transaction.atomic():
                 project = Project.objects.create(owner=request.user, creation_request_id=request_id)
+                # Issue #510: every project owns at least one scene from
+                # creation on -- this is that project's first (and, for a
+                # freshly-created blank project, only) scene.
+                scene = Scene.objects.create(project=project, name="Scene 1", position=0)
                 version = SceneVersion.objects.create(
                     project=project,
+                    scene=scene,
                     sequence=1,
                     scene_json=blank_scene,
                     created_by=request.user,
                     origin=SceneVersion.Origin.MANUAL,
                     change_label="Blank canvas",
                 )
+                scene.current_version = version
+                scene.save(update_fields=["current_version", "updated_at"])
                 project.current_version = version
-                project.save(update_fields=["current_version", "updated_at"])
+                project.active_scene = scene
+                project.save(update_fields=["current_version", "active_scene", "updated_at"])
         except IntegrityError:
             # A concurrent duplicate submission won the race on
             # creation_request_id's unique constraint between our pre-check
@@ -1033,6 +1132,269 @@ class BlankProjectCreateView(APIView):
             return Response(ProjectSerializer(existing).data, status=status.HTTP_200_OK)
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
+
+
+def _get_scene_or_404(project: Project, scene_public_id) -> Scene:
+    """Scoped to `project`, exactly like `_get_version_or_404` above -- a
+    scene id from another project 404s identically to a nonexistent one."""
+    try:
+        return project.scenes.get(public_id=scene_public_id)
+    except (Scene.DoesNotExist, ValueError, TypeError) as exc:
+        raise Http404 from exc
+
+
+def _new_scene_json() -> dict:
+    """Issue #510: the initial document for a brand-new scene -- the exact
+    same blank-canvas fixture `BlankProjectCreateView` seeds a new
+    *project's* first scene with, given its own fresh scene id so no two
+    scenes ever share one (mirrors that view's own `blank_scene["id"]`
+    reassignment)."""
+    blank_scene = copy.deepcopy(_BLANK_SCENE_FIXTURE)
+    blank_scene["id"] = f"scene-{uuid.uuid4()}"
+    return blank_scene
+
+
+class SceneNoRemainingScenesError(Exception):
+    """Raised inside an atomic block to abort deleting a project's only scene."""
+
+
+class SceneListCreateView(APIView):
+    """Issue #510: list a project's ordered scene collection, and create a
+    new scene within it.
+
+    Creating a scene never changes `project.active_scene`/
+    `project.current_version` — a newly added scene joins the collection
+    without switching what the editor is currently viewing; the frontend
+    (or a follow-up explicit action) decides when to make it active. This
+    mirrors `SceneVersionListCreateView.post`'s own transaction shape: lock
+    the project row, compute the next `position` from inside that lock, and
+    create the scene plus its first version atomically.
+    """
+
+    def get(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.VERSION_READ, project)
+        scenes = project.scenes.all()
+        return Response(SceneSerializer(scenes, many=True).data)
+
+    def post(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.SCENE_CREATE, project)
+
+        input_serializer = SceneCreateSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        name = input_serializer.validated_data.get("name") or "Scene"
+
+        scene_json = _new_scene_json()
+        result = validate_scene(scene_json)
+        if not result.valid:  # pragma: no cover — would mean the fixture itself is broken
+            return Response(
+                {"detail": "Internal error creating the scene."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        try:
+            with transaction.atomic():
+                locked_project = Project.objects.select_for_update().get(pk=project.pk)
+                next_position = locked_project.scenes.aggregate(Max("position"))["position__max"]
+                next_position = 0 if next_position is None else next_position + 1
+                scene = Scene.objects.create(
+                    project=locked_project, name=name, position=next_position
+                )
+                version = SceneVersion.objects.create(
+                    project=locked_project,
+                    scene=scene,
+                    sequence=1,
+                    scene_json=scene_json,
+                    created_by=request.user,
+                    origin=SceneVersion.Origin.MANUAL,
+                    change_label="New scene",
+                )
+                scene.current_version = version
+                scene.save(update_fields=["current_version", "updated_at"])
+        except Project.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(SceneSerializer(scene).data, status=status.HTTP_201_CREATED)
+
+
+class SceneDetailView(APIView):
+    """Issue #510: rename or delete one scene.
+
+    Deleting the project's only remaining scene is refused (400) -- a
+    project must always own at least one scene. Deleting the *active*
+    scene reassigns `project.active_scene` (and, to keep the denormalized
+    mirror in `project.current_version` correct — see `Project
+    .current_version`'s own docstring — `project.current_version` too) to
+    another remaining scene (the lowest-`position` survivor) inside the
+    same transaction, before the scene itself is deleted. Deleting a scene
+    only ever cascades its own `SceneVersion` rows (the `scene` FK's
+    `on_delete=CASCADE`) — there is no shared media table yet for a scene
+    delete to reach into (issue #512 owns that).
+    """
+
+    def patch(self, request, public_id, scene_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.SCENE_WRITE, project)
+        scene = _get_scene_or_404(project, scene_id)
+
+        input_serializer = SceneRenameSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        scene.name = input_serializer.validated_data["name"]
+        scene.save(update_fields=["name", "updated_at"])
+
+        return Response(SceneSerializer(scene).data)
+
+    def delete(self, request, public_id, scene_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.SCENE_DELETE, project)
+        scene = _get_scene_or_404(project, scene_id)
+
+        try:
+            with transaction.atomic():
+                locked_project = Project.objects.select_for_update().get(pk=project.pk)
+                remaining = list(locked_project.scenes.exclude(pk=scene.pk).order_by("position"))
+                if not remaining:
+                    raise SceneNoRemainingScenesError
+
+                if locked_project.active_scene_id == scene.pk:
+                    replacement = remaining[0]
+                    locked_project.active_scene = replacement
+                    locked_project.current_version = replacement.current_version
+                    locked_project.save(
+                        update_fields=["active_scene", "current_version", "updated_at"]
+                    )
+
+                # `Scene.current_version` is `on_delete=PROTECT` against
+                # SceneVersion -- deleting this scene needs to cascade away
+                # its own SceneVersion rows (`SceneVersion.scene`'s
+                # `on_delete=CASCADE`), but as long as this very scene still
+                # points `current_version` at one of them, PROTECT blocks
+                # it, even though the scene itself is also being deleted in
+                # this same operation (Django's collector doesn't special-
+                # case that). Null it first, exactly like
+                # `scenes.management.commands.e2e_fixtures` already has to
+                # for `Project.current_version` before a hard delete.
+                Scene.objects.filter(pk=scene.pk).update(current_version=None)
+                scene.delete()
+        except SceneNoRemainingScenesError:
+            return Response(
+                {"detail": "The only remaining scene cannot be deleted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Project.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SceneReorderMismatchError(Exception):
+    """Raised inside an atomic block when the submitted scene id set doesn't
+    exactly match the project's actual scenes."""
+
+
+class SceneReorderView(APIView):
+    """Issue #510: renumber every scene's `position` in one request.
+
+    Whole-collection, not a single move -- see `SceneReorderSerializer`'s
+    own docstring for why. Positions are applied in two passes inside the
+    lock (every scene first pushed past the current max, then set to its
+    final index) so the intermediate states never collide with
+    `unique_scene_position_per_project`, which is enforced at the database
+    level and would otherwise reject a direct swap between two scenes
+    already holding each other's target position.
+    """
+
+    def post(self, request, public_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.SCENE_WRITE, project)
+
+        input_serializer = SceneReorderSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        ordered_ids = [str(v) for v in input_serializer.validated_data["scene_ids"]]
+
+        try:
+            with transaction.atomic():
+                locked_project = Project.objects.select_for_update().get(pk=project.pk)
+                scenes_by_public_id = {str(s.public_id): s for s in locked_project.scenes.all()}
+                if set(ordered_ids) != set(scenes_by_public_id) or len(ordered_ids) != len(
+                    scenes_by_public_id
+                ):
+                    raise SceneReorderMismatchError
+
+                # Pass 1: push every scene's position out of collision range.
+                offset = len(ordered_ids)
+                for scene in scenes_by_public_id.values():
+                    scene.position += offset
+                Scene.objects.bulk_update(scenes_by_public_id.values(), ["position"])
+
+                # Pass 2: assign the final, requested order.
+                for index, public_id_str in enumerate(ordered_ids):
+                    scenes_by_public_id[public_id_str].position = index
+                Scene.objects.bulk_update(scenes_by_public_id.values(), ["position"])
+        except SceneReorderMismatchError:
+            return Response(
+                {"scene_ids": ["Must include every one of the project's scene ids, exactly once."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Project.DoesNotExist as exc:
+            raise Http404 from exc
+
+        scenes = project.scenes.all()
+        return Response(SceneSerializer(scenes, many=True).data)
+
+
+class SceneDuplicateView(APIView):
+    """Issue #510: deep-copy a scene's current version into a brand-new
+    scene appended to the end of the collection.
+
+    Only the scene's `scene_json` is cloned (whatever it already contains)
+    — no shared media asset reference is duplicated by this endpoint;
+    issues #512/#508 own shared-media semantics, out of this issue's scope.
+    Never changes `project.active_scene`/`current_version`, same as
+    `SceneListCreateView.post`.
+    """
+
+    def post(self, request, public_id, scene_id):
+        project = _get_project_or_404(public_id)
+        _require_or_404(request.user, Action.SCENE_CREATE, project)
+        source = _get_scene_or_404(project, scene_id)
+
+        if source.current_version is None:  # pragma: no cover — every scene gets one at creation
+            return Response(
+                {"detail": "This scene has no saved content to duplicate."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cloned_scene_json = copy.deepcopy(source.current_version.scene_json)
+        if isinstance(cloned_scene_json, dict) and "id" in cloned_scene_json:
+            cloned_scene_json["id"] = f"scene-{uuid.uuid4()}"
+
+        try:
+            with transaction.atomic():
+                locked_project = Project.objects.select_for_update().get(pk=project.pk)
+                next_position = locked_project.scenes.aggregate(Max("position"))["position__max"]
+                next_position = 0 if next_position is None else next_position + 1
+                new_scene = Scene.objects.create(
+                    project=locked_project,
+                    name=f"{source.name} copy",
+                    position=next_position,
+                )
+                version = SceneVersion.objects.create(
+                    project=locked_project,
+                    scene=new_scene,
+                    sequence=1,
+                    scene_json=cloned_scene_json,
+                    created_by=request.user,
+                    origin=SceneVersion.Origin.MANUAL,
+                    change_label=f"Duplicated from scene '{source.name}'",
+                )
+                new_scene.current_version = version
+                new_scene.save(update_fields=["current_version", "updated_at"])
+        except Project.DoesNotExist as exc:
+            raise Http404 from exc
+
+        return Response(SceneSerializer(new_scene).data, status=status.HTTP_201_CREATED)
 
 
 def _get_template_or_404(public_id) -> Template:
@@ -1092,16 +1454,23 @@ class TemplateCloneView(APIView):
 
         with transaction.atomic():
             project = Project.objects.create(owner=request.user, title=template.name)
+            # Issue #510: same "every project owns at least one scene from
+            # creation" invariant as BlankProjectCreateView/ProjectForkView.
+            scene = Scene.objects.create(project=project, name="Scene 1", position=0)
             version = SceneVersion.objects.create(
                 project=project,
+                scene=scene,
                 sequence=1,
                 scene_json=cloned_scene,
                 created_by=request.user,
                 origin=SceneVersion.Origin.MANUAL,
                 change_label=f"Cloned from template: {template.name}",
             )
+            scene.current_version = version
+            scene.save(update_fields=["current_version", "updated_at"])
             project.current_version = version
-            project.save(update_fields=["current_version", "updated_at"])
+            project.active_scene = scene
+            project.save(update_fields=["current_version", "active_scene", "updated_at"])
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
 

@@ -2,6 +2,22 @@ import { apiFetch } from './client';
 
 export type Visibility = 'private' | 'public';
 
+/** Issue #510: one scene's collection metadata within a project's ordered
+ * scene collection (`SceneSerializer`, `scenes/serializers.py`) -- stable
+ * id, display name, ordering position, and which `SceneVersion` (by bare
+ * pk, matching `Project.current_version`'s own shape) is that scene's
+ * currently saved state. Deliberately no `scene_json`/version history here
+ * -- this is metadata only, mirroring how `Project` itself never nests full
+ * scene content. */
+export type SceneSummary = {
+  id: string;
+  name: string;
+  position: number;
+  current_version: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Project = {
   id: string;
   owner: string;
@@ -21,6 +37,13 @@ export type Project = {
   // without this field don't all need updating for what's purely
   // additive display metadata.
   current_version_origin?: string | null;
+  // Issue #510: which of `scenes` (by `id`) is currently active/being
+  // edited, and the full ordered scene collection itself. Both additive
+  // and optional for the same "don't force every pre-#510 fixture to
+  // change" reason as `current_version_origin` above -- every real backend
+  // response includes both, always with `scenes.length >= 1`.
+  active_scene?: string | null;
+  scenes?: SceneSummary[];
   created_at: string;
   updated_at: string;
 };
@@ -373,5 +396,70 @@ export function createBlankProject(
   return apiFetch<Project>('/api/projects/blank/', {
     method: 'POST',
     body: JSON.stringify(body),
+  });
+}
+
+// --- Issue #510: ordered scene collection within a project -----------------
+
+/** List a project's ordered scene collection -- the same data
+ * `Project.scenes` already carries, fetched independently (e.g. to refresh
+ * just the scene list without re-fetching the whole project). */
+export function listProjectScenes(projectId: string): Promise<SceneSummary[]> {
+  return apiFetch<SceneSummary[]>(`/api/projects/${projectId}/scenes/`);
+}
+
+/** Create a new scene, appended to the end of the project's scene
+ * collection. Never changes which scene is active -- see
+ * `scenes/api.py`'s `SceneListCreateView.post` docstring. `name` defaults
+ * server-side ("Scene") when omitted. */
+export function createScene(projectId: string, name?: string): Promise<SceneSummary> {
+  return apiFetch<SceneSummary>(`/api/projects/${projectId}/scenes/`, {
+    method: 'POST',
+    body: JSON.stringify(name ? { name } : {}),
+  });
+}
+
+/** Rename one scene. */
+export function renameScene(
+  projectId: string,
+  sceneId: string,
+  name: string,
+): Promise<SceneSummary> {
+  return apiFetch<SceneSummary>(`/api/projects/${projectId}/scenes/${sceneId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  });
+}
+
+/** Reorder every scene in the project in one request -- `sceneIds` must
+ * name every one of the project's existing scene ids, exactly once, in the
+ * desired final order (position 0 first). Returns the full, freshly
+ * reordered scene list. */
+export function reorderScenes(projectId: string, sceneIds: string[]): Promise<SceneSummary[]> {
+  return apiFetch<SceneSummary[]>(`/api/projects/${projectId}/scenes/reorder/`, {
+    method: 'POST',
+    body: JSON.stringify({ scene_ids: sceneIds }),
+  });
+}
+
+/** Deep-copy a scene's current version into a brand-new scene appended to
+ * the end of the collection. Never duplicates a shared media asset
+ * reference by reference -- issues #512/#508 own shared-media semantics,
+ * out of this endpoint's scope; it only clones whatever `scene_json`
+ * already contains. */
+export function duplicateScene(projectId: string, sceneId: string): Promise<SceneSummary> {
+  return apiFetch<SceneSummary>(`/api/projects/${projectId}/scenes/${sceneId}/duplicate/`, {
+    method: 'POST',
+  });
+}
+
+/** Delete one scene. Refused (a rejected promise via `ApiError`, 400) if
+ * this is the project's only remaining scene -- a project must always own
+ * at least one. Deleting the currently active scene reassigns the
+ * project's active scene to another remaining one server-side; re-fetch
+ * the project afterward to see the new `active_scene`/`current_version`. */
+export function deleteScene(projectId: string, sceneId: string): Promise<void> {
+  return apiFetch<void>(`/api/projects/${projectId}/scenes/${sceneId}/`, {
+    method: 'DELETE',
   });
 }

@@ -205,11 +205,22 @@ def test_postgres_trigger_blocks_raw_sql_snapshot_mutation(django_db_blocker):
                 [user_id],
             )
             (project_id,) = cursor.fetchone()
+            # Issue #510: `scenes_sceneversion.scene_id` is NOT NULL, so a
+            # raw-SQL version insert needs a real `scenes_scene` row to
+            # point at first -- mirrors what `BlankProjectCreateView`/every
+            # other creation path does at the ORM level.
             cursor.execute(
-                "INSERT INTO scenes_sceneversion (project_id, sequence, scene_json, origin, "
-                "change_label, is_deleted, created_at) "
-                "VALUES (%s, 1, %s, 'manual', '', false, now()) RETURNING id",
-                [project_id, json.dumps(BLANK_SCENE)],
+                "INSERT INTO scenes_scene (public_id, project_id, name, position, "
+                "created_at, updated_at) "
+                "VALUES (gen_random_uuid(), %s, 'Scene 1', 0, now(), now()) RETURNING id",
+                [project_id],
+            )
+            (scene_id,) = cursor.fetchone()
+            cursor.execute(
+                "INSERT INTO scenes_sceneversion (project_id, scene_id, sequence, scene_json, "
+                "origin, change_label, is_deleted, created_at) "
+                "VALUES (%s, %s, 1, %s, 'manual', '', false, now()) RETURNING id",
+                [project_id, scene_id, json.dumps(BLANK_SCENE)],
             )
             (version_id,) = cursor.fetchone()
 

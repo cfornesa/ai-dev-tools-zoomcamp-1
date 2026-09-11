@@ -221,7 +221,7 @@ class Command(BaseCommand):
     def _cleanup(self, as_json: bool):
         from django.db.models import Q
 
-        from scenes.models import ArtPiece, ForkProvenance, Project, Project3D
+        from scenes.models import ArtPiece, ForkProvenance, Project, Project3D, Scene
 
         User = get_user_model()
         usernames = [username for username, _email in E2E_USERS.values()]
@@ -263,7 +263,13 @@ class Command(BaseCommand):
         #    points `current_version` at it. Null it first, across every
         #    project including soft-deleted ones (`all_objects`), so
         #    nothing protects the versions this cleanup is about to
-        #    remove.
+        #    remove. Issue #510: `Scene.current_version` is the identical
+        #    PROTECT shape one level down -- a fixture project's `Scene`
+        #    rows are about to cascade-delete along with it (`Scene.project`
+        #    is `on_delete=CASCADE`), but each one still protects whichever
+        #    `SceneVersion` it currently points at until *it* is nulled too,
+        #    so this must be cleared before the delete below, exactly like
+        #    `Project.current_version` right above it.
         # 2. Deleting a SceneVersion that another (also-being-deleted)
         #    SceneVersion still references as `parent`/`fork_source_version`,
         #    or that a deleted user still authored (`created_by`), requires
@@ -292,6 +298,13 @@ class Command(BaseCommand):
                 | _owned_by_a_fixture_user("source_version__project__owner")
             ).delete()
             Project.all_objects.filter(_owned_by_a_fixture_user("owner")).update(
+                current_version=None
+            )
+            # Issue #510: see the numbered comment above -- Scene has no
+            # soft-delete manager pair (it has no `is_deleted` concept),
+            # so a plain `Scene.objects` filter reaches every fixture
+            # scene, including ones under a soft-deleted fixture project.
+            Scene.objects.filter(_owned_by_a_fixture_user("project__owner")).update(
                 current_version=None
             )
             # Issue #239: Project3D.current_version is PROTECT (scenes/models.py)

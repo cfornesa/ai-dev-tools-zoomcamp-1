@@ -24,15 +24,18 @@ Also documented a new memory topic: [JSON Schema properties open-world semantics
 implementation, documented here for future agents).
 
 Stage 5 (`production-readiness`, Sonnet 4.6 Thinking, user-authorized Opus 5
-substitution): see readiness verdict in [tasks.md](#2026-09-10--508-production-readiness-verdict)
-entry below. **`make check` green** post format-fix (`e2c4e85`).
+substitution): see readiness verdict in the entry below. **`make check` green**
+after three format-fix commits (`e2c4e85` ruff, `ffc69a9` Prettier).
 
 CreatrART rename (`8d59588`) committed from owner's working-tree files (product
 name, HTML templates, Layout, export attribution, admin settings, compose
-preflight, responsiveShell E2E, plan docs, opencode.json). Format drift from the
-rename fixed in `e2c4e85` (ruff format `test_admin_settings.py`).
+preflight, responsiveShell E2E, plan docs, opencode.json). Format drift fixed in
+`e2c4e85` (ruff `test_admin_settings.py`) and `ffc69a9` (Prettier:
+`responsiveShell.spec.ts`, `App.notFound.test.tsx`, `App.test.tsx`,
+`sceneDrawPlan.test.ts`, `sceneDrawPlan.ts` — whitespace-only).
 
 **#508 stays OPEN** pending owner review of the QA verdict. No auto-close used.
+
 
 ## 2026-09-10 — #508 production-readiness verdict
 

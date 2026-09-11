@@ -18508,3 +18508,37 @@ leakage). QA: PASS posted; issue closed.
 [#508](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/508)
 (validated project-asset references and renderer-safe image layers) depends
 on #510 + #512, both now closed — proceed to its Stage 1 scoping next.
+
+## 316. #508 scoped to criterion-ready
+
+Status: #508 OPEN (criterion-ready, Stage 2b in progress).
+
+GitHub issue: [#508](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/508)
+
+Stage 1 (Claude substitution for Codex) resolved the issue's own "Next
+action" gap: exact `schema/scene.schema.json` addition (`image` added to the
+shape `type` enum, new `mediaAssetId`/`altText`/`decorative` properties, an
+`if`/`then` conditional matching the file's existing per-type pattern).
+
+One architectural clarification surfaced and resolved during scoping, not
+deferred: since #512's media library is local-only (per #507's hybrid
+decision), the **backend has no visibility into media assets at all**.
+Schema-shape validation (well-formed `mediaAssetId`, `altText` presence)
+runs identically on both frontend and backend, exactly like every other
+shape type; but existence/cross-project/deleted/unsupported-type checks can
+only run client-side against #512's `localProjectRepository.ts` --
+`backend/scenes/validation.py` cannot and must not attempt them. A direct
+consequence: the public gallery (`/p/:id`) and export artifacts, running in
+a different browser with no access to the original author's IndexedDB, will
+hit the existing "broken asset" fallback for every image layer until a
+resolver strategy exists (cloud sync via #509, or a bundled export). This is
+recorded as an accepted, explicitly out-of-scope limitation for #508 --
+already covered by its own fallback acceptance criterion, not a new defect
+-- with a future issue left to define public/export resolution once #509 or
+an export-bundling approach exists.
+
+### Next transaction
+
+Await #508's Stage 2b completion, then QA it. [#513](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/513)
+(File menu / media-library UI) depends on #510 + #512 + #508 and becomes
+scopeable once #508 closes.

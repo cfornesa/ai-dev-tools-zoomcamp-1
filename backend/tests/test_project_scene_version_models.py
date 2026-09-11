@@ -233,6 +233,62 @@ def test_postgres_trigger_blocks_raw_sql_snapshot_mutation(django_db_blocker):
 
 @pytestmark_postgres
 @pytest.mark.django_db(databases=["default", "postgres_test"])
+def test_postgres_trigger_blocks_raw_sql_scene_reassignment(django_db_blocker):
+    """Issue #514: `scene_id` is a snapshot field too -- the trigger must block it
+    exactly like the other seven fields, not just the app-level `SNAPSHOT_FIELDS` guard.
+    """
+    with django_db_blocker.unblock():
+        conn = connections["postgres_test"]
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO auth_user (username, password, is_superuser, is_staff, is_active, "
+                "date_joined, first_name, last_name, email) "
+                "VALUES ('trigger-test-user-514', '', false, false, true, now(), '', '', '') "
+                "RETURNING id"
+            )
+            (user_id,) = cursor.fetchone()
+            cursor.execute(
+                "INSERT INTO scenes_project (public_id, owner_id, title, description, "
+                "visibility, allow_public_remix, created_at, updated_at, is_deleted, "
+                "export_attribution, tags) "
+                "VALUES (gen_random_uuid(), %s, 'Untitled animation', '', 'private', false, "
+                "now(), now(), false, false, '[]') RETURNING id",
+                [user_id],
+            )
+            (project_id,) = cursor.fetchone()
+            # Two scenes on the same project: the trigger must reject moving
+            # an existing version from one to the other via raw SQL.
+            cursor.execute(
+                "INSERT INTO scenes_scene (public_id, project_id, name, position, "
+                "created_at, updated_at) "
+                "VALUES (gen_random_uuid(), %s, 'Scene 1', 0, now(), now()) RETURNING id",
+                [project_id],
+            )
+            (scene_a,) = cursor.fetchone()
+            cursor.execute(
+                "INSERT INTO scenes_scene (public_id, project_id, name, position, "
+                "created_at, updated_at) "
+                "VALUES (gen_random_uuid(), %s, 'Scene 2', 1, now(), now()) RETURNING id",
+                [project_id],
+            )
+            (scene_b,) = cursor.fetchone()
+            cursor.execute(
+                "INSERT INTO scenes_sceneversion (project_id, scene_id, sequence, scene_json, "
+                "origin, change_label, is_deleted, created_at) "
+                "VALUES (%s, %s, 1, %s, 'manual', '', false, now()) RETURNING id",
+                [project_id, scene_a, json.dumps(BLANK_SCENE)],
+            )
+            (version_id,) = cursor.fetchone()
+
+            with pytest.raises(ProgrammingError):
+                cursor.execute(
+                    "UPDATE scenes_sceneversion SET scene_id = %s WHERE id = %s",
+                    [scene_b, version_id],
+                )
+
+
+@pytestmark_postgres
+@pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_blocks_current_version_from_other_project(django_db_blocker):
     with django_db_blocker.unblock():
         User = get_user_model()

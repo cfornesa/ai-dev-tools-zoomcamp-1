@@ -17,11 +17,11 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Ollama Cloud",
       "options": {
-        "baseURL": "https://ollama.com/v1",
-        "apiKey": "{env:OLLAMA_API_KEY}"
+        "baseURL": "https://ollama.com/v1"
       },
       "models": {
-        "qwen3-coder-next:cloud": {}
+        "kimi-k3": {},
+        "qwen3.5:397b": {}
       }
     }
   },

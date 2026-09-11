@@ -79,7 +79,7 @@ function Layout() {
             see `.app-shell-header-row`'s `justify-content: space-between`
             below that breakpoint. */}
         <div className="app-shell-header-row">
-          <h1>Creatrweb Animation Studio</h1>
+          <h1>CreatrART</h1>
           {isMobileHeader && (
             <button
               type="button"

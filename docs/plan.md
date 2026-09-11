@@ -1,4 +1,4 @@
-# Creatrweb Animation Studio — V1 Plan
+# CreatrART — V1 Plan
 
 ## Product definition
 

@@ -20,9 +20,9 @@ describe('App', () => {
     render(<App />);
 
     expect(
-      screen.getByRole('heading', { name: 'Creatrweb Animation Studio', level: 1 }),
+      screen.getByRole('heading', { name: 'CreatrART', level: 1 }),
     ).toBeInTheDocument();
-    expect(shellDocument.title).toBe('Creatrweb Animation Studio');
+    expect(shellDocument.title).toBe('CreatrART');
     expect(await screen.findByText(/sign in to see your projects/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Sign in with Google' })).toHaveClass('shell-action');
     expect(screen.getByRole('link', { name: 'Sign in with Google' })).toHaveAttribute(

@@ -1,4 +1,4 @@
-# AI Dev Tools Zoomcamp Project 1: Creatrweb Animation Studio
+# AI Dev Tools Zoomcamp Project 1: CreatrART
 
 I created this project as part of the Week 1 project for the AI Dev Tools Zoomcamp offered by <a href="https://datatalks.club" target="_blank">DataTalks Club</a>. The GitHub repository for this specific project details and associated assignment is located at <a href="https://github.com/DataTalksClub/ai-dev-tools-zoomcamp/tree/main" target="_blank">this link</a>.
 
@@ -204,7 +204,7 @@ make compose-preflight
 ```
 
 `make compose-preflight` is read-only. It verifies the Compose project,
-working directory, config file, served `Creatrweb Animation Studio` marker,
+working directory, config file, served `CreatrART` marker,
 health response, and anonymous auth response; it reports unrelated running
 Compose projects without stopping them. Native `make browser-qa` remains an
 independent disposable-stack path.

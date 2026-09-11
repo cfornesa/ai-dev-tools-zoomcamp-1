@@ -20,7 +20,7 @@ check and served-app fingerprint before browser readiness.
 
 Issue #321 now provides `compose.yaml` and `make compose-preflight`. The
 preflight pins project `ai-dev-tools-zoomcamp-1`, checks Compose working-dir
-and config-file labels, verifies the `Creatrweb Animation Studio` root marker,
+and config-file labels, verifies the `CreatrART` root marker,
 and requires the repository-specific anonymous `/api/whoami/` 401 response.
 It is read-only and reports conflicting projects without stopping them. A
 successful config parse is not enough: the correct stack must be running and

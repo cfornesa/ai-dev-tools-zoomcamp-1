@@ -653,7 +653,7 @@ describe('generateHtmlExport: camera-mode generation (Task 57, issue #56)', () =
  */
 describe('generateHtmlExport: optional product attribution (Task 60, issue #60)', () => {
   it('uses the Creatrweb product name for attribution', () => {
-    expect(ATTRIBUTION_PRODUCT_NAME).toBe('Creatrweb Animation Studio');
+    expect(ATTRIBUTION_PRODUCT_NAME).toBe('CreatrART');
   });
 
   it('includes zero attribution content -- visible text, comment, and marker -- when disabled or omitted', () => {

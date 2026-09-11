@@ -122,7 +122,7 @@ class SiteSettings(models.Model):
     change.
     """
 
-    site_title = models.CharField(max_length=200, default="Creatrweb Animation Studio")
+    site_title = models.CharField(max_length=200, default="CreatrART")
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(

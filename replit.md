@@ -1,4 +1,4 @@
-# Running Creatrweb Animation Studio on Replit
+# Running CreatrART on Replit
 
 The `Start application` workflow runs the full development stack:
 

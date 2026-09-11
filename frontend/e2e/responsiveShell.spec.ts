@@ -173,7 +173,7 @@ test.describe('Responsive app shell', () => {
       await page.goto('/');
 
       await expectVisibleAndInViewport(
-        page.getByRole('heading', { name: 'Creatrweb Animation Studio' }),
+        page.getByRole('heading', { name: 'CreatrART' }),
       );
       // Below the mobile-header breakpoint, primary nav lives behind the
       // hamburger toggle (issue #90) rather than being inline, so it must be
@@ -302,7 +302,7 @@ test.describe('Responsive app shell', () => {
         const context = await browser.newContext();
         const page = await context.newPage();
 
-        const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
+        const title = page.getByRole('heading', { name: 'CreatrART' });
         const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
         const accountLink = page.getByRole('link', { name: 'Account settings' });
         const logoutButton = page.getByRole('button', { name: 'Logout' });
@@ -346,7 +346,7 @@ test.describe('Responsive app shell', () => {
         await page.setViewportSize(TABLET_VIEWPORT);
         await loginViaUI(page, fixtures.other.email, fixtures.password);
 
-        const title = page.getByRole('heading', { name: 'Creatrweb Animation Studio' });
+        const title = page.getByRole('heading', { name: 'CreatrART' });
         const galleryLink = page.getByRole('link', { name: 'Public gallery' });
         const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
         const accountLink = page.getByRole('link', { name: 'Account settings' });

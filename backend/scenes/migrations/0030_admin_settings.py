@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
             name='SiteSettings',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('site_title', models.CharField(default='Creatrweb Animation Studio', max_length=200)),
+                ('site_title', models.CharField(default='CreatrART', max_length=200)),
                 ('revision', models.PositiveIntegerField(default=1)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('updated_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),

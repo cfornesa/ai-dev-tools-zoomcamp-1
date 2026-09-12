@@ -18970,7 +18970,7 @@ and repeat the signed-in project-list check. Do not use the production
 database panel's migration-row count as success evidence; verify the actual
 tables/columns directly.
 
-## 326. Replit production publish is blocked by an unresolved constraint review
+## 326. Replit production publish is blocked by an unsafe generated data diff
 
 The bounded Replit development-only reconciliation completed successfully in
 Free mode: `scripts/post-merge.sh` exited 0, migrations `0037_add_scene`
@@ -18983,15 +18983,33 @@ Attempting the supported production publish flow then surfaced a review gate:
 Replit detected that adding the `unique_sequence_per_scene` unique constraint
 to `scenes_sceneversion` could fail against 14 existing rows. Replit offered
 either “Add the constraint as-is” or “Delete all data from
-`scenes_sceneversion` first.” The publish was cancelled without selecting
-either option; no production data or deployment state was changed.
+`scenes_sceneversion` first.” Read-only inspection established that the
+production table is missing `scene_id` entirely, so the repeated sequence
+values cannot be evaluated as `(scene_id, sequence)` conflicts.
+
+After selecting the non-destructive review path, Replit generated the full
+production SQL. The candidate was then cancelled because its SQL explicitly
+included `truncate table "scenes_sceneversion" cascade;` before adding the
+new non-null `scene_id` column. That would discard the 14 existing production
+rows. Replit reported “Database migrations validated successfully,” but that
+validation did not make the destructive operation safe. No production data or
+deployment state was changed.
 
 Read-only inspection confirmed the Development Database has zero
-`scenes_sceneversion` rows, while the Production Database has 14. Replit's
-Free-mode production connector returned only transaction wrappers for the
-grouped row payload, so duplicate keys and row identifiers remain unverified.
-Do not approve the destructive delete option. The next action is to obtain a
-supported production read of `(scene_id, sequence)` and row IDs (or inspect
-the production table directly), establish whether the constraint is valid for
-all 14 rows, and only then resume the publish review. This is a production
-schema/data-integrity blocker, separate from PayPal or OAuth setup.
+`scenes_sceneversion` rows, while Production has 14 rows with columns
+`id, sequence, scene_json, origin, change_label, is_deleted, deleted_at,
+created_at, created_by_id, fork_source_version_id, parent_id, project_id,
+ai_request_id` and no `scene_id`. Existing sequence groups are 1×6, 2×2,
+and 3–8×1 (row IDs 1–14), so the duplicate sequence values are across the
+legacy project-scoped rows and are not evidence of a `(scene_id, sequence)`
+collision. The current live authenticated browser check still reaches the
+published app but shows “We couldn't load your projects,” confirming the
+missing production scene schema remains user-visible.
+
+Do not approve either Replit option that truncates data. The next action is a
+reviewed, non-destructive production migration path that preserves the 14
+legacy versions and performs the 0037 schema add plus 0038 backfill before
+0039's NOT NULL/unique-constraint tightening. This is a production
+schema/data-integrity blocker, separate from PayPal or OAuth setup, and is
+already covered by #445's release reconciliation boundary and the closed
+#467 verification practice; no duplicate issue was created.

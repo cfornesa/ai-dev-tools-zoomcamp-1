@@ -18923,3 +18923,23 @@ from Replit's Git settings, then Fetch until the Replit history reaches
 `8a792e4`; only after that should the app be republished and its exact revision
 verified. The current published smoke check remains independent and passed
 against `https://animate.creatrweb.com` before this fetch investigation.
+
+## 324. Post-publish signed-in project-list API returns 500
+
+The owner reported that the recent changes were imported and the app was
+republished successfully. Direct evidence confirms the frontend publish: the
+live `EditorWorkspace-S0LxKbbC.js` chunk contains `File menu`, `Import media`,
+`Project media library`, and `Rename metadata`. The credential-free published
+smoke still passes `/health/`, `/`, anonymous `/api/whoami/` (401), and
+`/accounts/login/` (200).
+
+Authenticated browser evidence differs: the active signed-in session renders
+`Account settings` and `Logout`, but the home page says “We couldn't load your
+projects. Please try again.” Navigating that same session directly to
+`https://animate.creatrweb.com/api/projects/` returns HTTP 500. This is a
+published-runtime defect or production-schema/configuration boundary, not a
+PayPal or LinkedIn OAuth prerequisite, and it prevents #513's authenticated
+editor workflow from being exercised against the published app.
+
+No product-code change was made from this observation. The next exact action
+is the existing post-publish verification path under [#467](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/467): inspect Replit deployment logs for the traceback and directly inspect the production tables required by the 2D project-list query, then fix or republish only after the missing relation/configuration is identified. Keep the local #513 Chromium workflow against a disposable PostgreSQL-backed stack separate from production data.

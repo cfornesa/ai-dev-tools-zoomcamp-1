@@ -19013,3 +19013,14 @@ legacy versions and performs the 0037 schema add plus 0038 backfill before
 schema/data-integrity blocker, separate from PayPal or OAuth setup, and is
 already covered by #445's release reconciliation boundary and the closed
 #467 verification practice; no duplicate issue was created.
+
+The Free-mode Replit investigation confirms there is no safe one-step
+Publish-only path: Replit applies schema diff and does not execute the
+`RunPython` backfill in 0038. The supported staged option is: take a
+production backup/PITR checkpoint; publish an intermediate 0037-equivalent
+schema with nullable `scene_id` and no final uniqueness constraint; have the
+owner execute or approve a reviewed production backfill that creates one
+Scene per Project, links all existing versions, sets `active_scene`, and
+preserves the 14 version IDs; verify the links and uniqueness read-only; then
+publish 0039/0040. If production data writes are not approved, the current
+final schema must remain unpublished.

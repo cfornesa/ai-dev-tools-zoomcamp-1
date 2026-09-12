@@ -50,26 +50,24 @@ PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh
 - **Implementation commits:** `b5337a2`, `cb6af86`
 - **Focused checks:** backend env/OAuth/settings tests: passed; frontend targeted
   branding/login tests: passed.
-- **Full checks:** `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` passed
-  through backend, frontend lint/format/typecheck, and 2,557 frontend tests;
-  a rerun was interrupted during the same frontend test suite after the
-  published smoke had already passed. The prior complete run recorded
-  `1206 passed, 39 skipped, 10 warnings` backend and `2557 passed` frontend;
-  no source changes occurred after the hardening commit except ledger updates.
+- **Full checks:** `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` passed:
+  backend `1206 passed, 39 skipped, 10 warnings`; frontend lint,
+  format/typecheck, and `2557 passed` tests.
 - **Published smoke:** `PUBLISHED_APP_URL=https://augmentrart.com
   scripts/smoke-published.sh` passed: health 200, root 200, anonymous whoami
   401, login 200.
 - **Published route evidence:** direct requests to
   `https://augmentrart.com/health/` and `/accounts/login/` return 200; login
   HTML title is `Log in · AugmentrART` and contains the AugmentrART header.
-  The original Chrome tab retained a cached 400 document, so the direct
-  published HTTP check is the authoritative fresh-origin evidence; a new
-  browser context should be used for any cache-specific retest.
+  A fresh Chrome browser context at the exact origin rendered
+  `Log in · AugmentrART` with the email/password fields and Login button. The
+  original tab's cached 400 document is a stale-tab artifact.
 - **Deployment workaround:** production deployment secrets
   `DJANGO_ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` were added in Replit and
   the production publish completed. The Replit Git panel still reports
   `UNAUTHENTICATED` on Refresh and Fetch and shows `Sync Changes 3 1`; this is
   a separate source-sync verification boundary, not a runtime failure.
-- **GitHub evidence:** reconciliation comment pending final posting; issue
-  remains open because #445 is the broader release-candidate parent and still
+- **GitHub evidence:** reconciliation comment posted at
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445#issuecomment-5649051789;
+  issue remains open because #445 is the broader release-candidate parent and still
   owns unresolved release/provider boundaries (#440/#460).

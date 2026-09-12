@@ -19331,7 +19331,8 @@ deployment-secret configuration:
 
 - `https://augmentrart.com/health/`: HTTP 200.
 - `https://augmentrart.com/accounts/login/`: HTTP 200, rendered login HTML,
-  title `Log in · AugmentrART`.
+  title `Log in · AugmentrART`; a fresh Chrome context at that exact origin
+  rendered the email/password fields and Login button.
 - `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`:
   passed health/root/login and expected anonymous `whoami` 401.
 
@@ -19446,3 +19447,31 @@ existing release-reconciliation owner. Branding is a direct release artifact
 correction and is handled in the same criterion-ready transaction. No new
 issue is created. Order is #445 engineering/QA/reconciliation first, then
 leave #440/#460 open as terminal dependency-blocked items.
+
+## 342. Production-readiness and session-completion gate for #445 (2026-09-12)
+
+The required production-readiness assessment ran after the #445 transaction
+reconciled. Results: local deployment PASS; CI/browser repository checks PASS;
+intended domain/branding functionality PASS; published Replit runtime PASS;
+overall project production readiness BLOCKED by the Replit Git
+`UNAUTHENTICATED` fetch/pull boundary and the owner-controlled PayPal/OAuth
+boundaries in #440/#460. The published app is not claimed to be source/revision
+parity-verified until Replit Git authentication is repaired and the correct
+revision is fetched there.
+
+Session-completion audit: manifest items #440, #445, and #460 all have
+terminal classifications for this run—#440 dependency-blocked, #445
+dependency-blocked at its broader release-parent boundary with its
+domain/branding transaction complete, and #460 dependency-blocked. Missing
+terminal statuses: 0. No issue was silently omitted, duplicated, or closed.
+
+Routing audit: scoping, complex implementation, second-opinion review, and QA
+were executed in this Codex task as the owner-authorized substitution for the
+normally rostered external services; the substitution is explicitly recorded
+in the per-issue ledger. Production-readiness and session-completion likewise
+ran here because the owner instructed that no other model or Opencode task be
+invoked. The exact next actions are: repair Replit Git authentication and
+fetch/pull the intended `origin/main` revision; then repeat publish and exact
+revision parity checks. Separately, supply PayPal sandbox credentials for #440
+and OAuth provider credentials for #460 when those external callback tests are
+wanted.

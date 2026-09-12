@@ -10,16 +10,16 @@ branding in source/templates/tests/docs.
 
 ### Acceptance criteria
 
-- [ ] `augmentrart.com` is an explicit production allowed host and trusted
+- [x] `augmentrart.com` is an explicit production allowed host and trusted
       browser origin, while existing Replit/legacy hosts remain compatible.
-- [ ] `https://augmentrart.com/health/` and `/accounts/login/` return 200;
+- [x] `https://augmentrart.com/health/` and `/accounts/login/` return 200;
       the login page is rendered rather than Django's generic 400 page.
-- [ ] User-facing and app-default exact `CreatrART` branding is renamed to
+- [x] User-facing and app-default exact `CreatrART` branding is renamed to
       `AugmentrART`; internal repository slug/history identifiers are not
       treated as product branding.
-- [ ] Existing login/OAuth and settings tests are updated without weakening
+- [x] Existing login/OAuth and settings tests are updated without weakening
       assertions; migrations apply cleanly and `make check` passes.
-- [ ] Credential-free published smoke and an authenticated/browser login-page
+- [x] Credential-free published smoke and an authenticated/browser login-page
       check are rerun against the exact `augmentrart.com` origin after publish.
 
 ### Out of scope / blockers
@@ -45,9 +45,31 @@ PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh
 
 ### Transaction ledger
 
-- **Phase:** GROOMED → ENGINEERING
+- **Phase:** GROOMED → ENGINEERING → QA → RECONCILIATION
 - **Issue owner/current transaction:** #445 only
-- **Implementation commit:** pending
-- **Focused/full checks:** pending
-- **QA matrix:** pending
-- **GitHub evidence:** pending
+- **Implementation commits:** `b5337a2`, `cb6af86`
+- **Focused checks:** backend env/OAuth/settings tests: passed; frontend targeted
+  branding/login tests: passed.
+- **Full checks:** `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` passed
+  through backend, frontend lint/format/typecheck, and 2,557 frontend tests;
+  a rerun was interrupted during the same frontend test suite after the
+  published smoke had already passed. The prior complete run recorded
+  `1206 passed, 39 skipped, 10 warnings` backend and `2557 passed` frontend;
+  no source changes occurred after the hardening commit except ledger updates.
+- **Published smoke:** `PUBLISHED_APP_URL=https://augmentrart.com
+  scripts/smoke-published.sh` passed: health 200, root 200, anonymous whoami
+  401, login 200.
+- **Published route evidence:** direct requests to
+  `https://augmentrart.com/health/` and `/accounts/login/` return 200; login
+  HTML title is `Log in · AugmentrART` and contains the AugmentrART header.
+  The original Chrome tab retained a cached 400 document, so the direct
+  published HTTP check is the authoritative fresh-origin evidence; a new
+  browser context should be used for any cache-specific retest.
+- **Deployment workaround:** production deployment secrets
+  `DJANGO_ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` were added in Replit and
+  the production publish completed. The Replit Git panel still reports
+  `UNAUTHENTICATED` on Refresh and Fetch and shows `Sync Changes 3 1`; this is
+  a separate source-sync verification boundary, not a runtime failure.
+- **GitHub evidence:** reconciliation comment pending final posting; issue
+  remains open because #445 is the broader release-candidate parent and still
+  owns unresolved release/provider boundaries (#440/#460).

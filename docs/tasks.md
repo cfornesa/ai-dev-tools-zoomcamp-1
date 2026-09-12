@@ -19317,6 +19317,39 @@ it is flagged and is not represented as roster-equivalent.
 No new issue was created: every discovered failure is already represented by
 an existing issue or is a release-environment verification boundary.
 
+## 341. #445 domain/branding QA and reconciliation (2026-09-12)
+
+The #445 transaction reached QA and reconciliation. Commits `b5337a2` and
+`cb6af86` add the `augmentrart.com` allowed-host/trusted-origin configuration,
+retain legacy hosts, harden the public host defaults against stale deployment
+environment snapshots, and rename the former product name references to
+`AugmentrART`. The data migration for the persisted site title is
+`scenes.0044_rename_site_brand`.
+
+Fresh published evidence after the owner-confirmed republish and Replit
+deployment-secret configuration:
+
+- `https://augmentrart.com/health/`: HTTP 200.
+- `https://augmentrart.com/accounts/login/`: HTTP 200, rendered login HTML,
+  title `Log in · AugmentrART`.
+- `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`:
+  passed health/root/login and expected anonymous `whoami` 401.
+
+Local focused backend/frontend checks passed. The project-wide check reached
+backend `1206 passed, 39 skipped, 10 warnings`, frontend lint/format/typecheck,
+and the full frontend test run had passed previously with `2557 passed`; a
+post-hardening rerun was interrupted during the frontend test run after the
+published smoke passed. The remaining Replit Git panel evidence is explicitly
+recorded as a verification boundary: Refresh and Fetch returned
+`UNAUTHENTICATED`, and the panel showed `Sync Changes 3 1`. This does not
+invalidate the fresh published runtime result, but exact source/revision parity
+still needs Replit Git authentication and a successful fetch/pull.
+
+Backlog reconciliation: #445 remains OPEN as the broader release-candidate
+parent because #440 (PayPal credentials) and #460 (OAuth credentials) remain
+dependency-blocked; the domain/branding child transaction is complete. No
+issue was silently closed or duplicated.
+
 ## 336. Session-completion reconciliation after full local E2E (2026-09-12)
 
 Batch rollup: 2 issues processed; #513 **CLOSED as completed after all

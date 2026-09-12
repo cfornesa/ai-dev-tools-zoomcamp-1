@@ -14,11 +14,15 @@ DJANGO_ALLOWED_HOSTS = "*"
 DJANGO_DEBUG = "true"
 CSRF_TRUSTED_ORIGINS = "https://augmentrart.com,https://animate.creatrweb.com,https://creatrweb.replit.app"
 RUN_MIGRATIONS_ON_START = "true"
+PAYPAL_MODE = "sandbox"
+RECAPTCHA_ENABLED = "True"
+RECAPTCHA_ACTION = "signup"
+RECAPTCHA_MIN_SCORE = "0.5"
+RECAPTCHA_ALLOWED_HOSTNAMES = "augmentrart.com"
 
 [userenv.production]
 DJANGO_ALLOWED_HOSTS = "augmentrart.com,animate.creatrweb.com,creatrweb.replit.app,localhost,127.0.0.1"
 DJANGO_DEBUG = "false"
-RUN_MIGRATIONS_ON_START = "false"
 
 [workflows]
 runButton = "Project"

@@ -18759,7 +18759,8 @@ bridge: `ProjectMediaLibraryPanel.tsx`, its focused test,
 `manual2dMediaLibrary.spec.ts`, `EditorWorkspace.tsx`, `sceneShapes.ts`,
 `localProjectRepository.ts`, `index.css`, and this ledger.
 Focused checks passed: `npm test -- --run
-src/pages/ProjectMediaLibraryPanel.test.tsx` (2 passed), `npm run build`.
+src/pages/ProjectMediaLibraryPanel.test.tsx` (4 passed), `npm run typecheck`,
+and `npm run build`.
 Full checks passed: `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check`
 (backend 1199 passed/39 skipped; frontend 2550 passed; lint/format/typecheck
 clean). `cd frontend && npm run test:e2e -- --list` discovered 194 tests.

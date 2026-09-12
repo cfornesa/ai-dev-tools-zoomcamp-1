@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react';
 
 import { downloadBlob } from '../export/downloadBlob';
 import type { SceneDocument } from '../api/projects';
@@ -57,6 +63,7 @@ export default function ProjectMediaLibraryPanel({
   const fileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuItemsRef = useRef<Array<HTMLButtonElement | null>>([]);
 
   async function refresh(nextDb = db) {
     if (!nextDb) return;
@@ -92,10 +99,11 @@ export default function ProjectMediaLibraryPanel({
 
   useEffect(() => {
     if (!fileMenuOpen) return;
+    menuItemsRef.current[0]?.focus();
     function onPointerDown(event: PointerEvent) {
       if (!menuRef.current?.contains(event.target as Node)) closeFileMenu();
     }
-    function onKeyDown(event: KeyboardEvent) {
+    function onKeyDown(event: globalThis.KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault();
         closeFileMenu();
@@ -108,6 +116,29 @@ export default function ProjectMediaLibraryPanel({
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [fileMenuOpen]);
+
+  function handleMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const items = menuItemsRef.current.filter(
+      (item): item is HTMLButtonElement => item !== null && !item.disabled,
+    );
+    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeFileMenu();
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) || items.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    const nextIndex =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? items.length - 1
+          : (currentIndex + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
+    items[nextIndex]?.focus();
+  }
 
   async function exportProject() {
     setFileMenuOpen(false);
@@ -231,14 +262,40 @@ export default function ProjectMediaLibraryPanel({
           File
         </button>
         {fileMenuOpen && (
-          <div role="menu" aria-label="File menu" className="editor-file-menu-popover">
-            <button type="button" role="menuitem" onClick={() => fileInputRef.current?.click()}>
+          <div
+            role="menu"
+            aria-label="File menu"
+            className="editor-file-menu-popover"
+            onKeyDown={handleMenuKeyDown}
+          >
+            <button
+              ref={(element) => {
+                menuItemsRef.current[0] = element;
+              }}
+              type="button"
+              role="menuitem"
+              onClick={() => fileInputRef.current?.click()}
+            >
               Import media
             </button>
-            <button type="button" role="menuitem" onClick={() => void openLibrary()}>
+            <button
+              ref={(element) => {
+                menuItemsRef.current[1] = element;
+              }}
+              type="button"
+              role="menuitem"
+              onClick={() => void openLibrary()}
+            >
               Open media library
             </button>
-            <button type="button" role="menuitem" onClick={() => void exportProject()}>
+            <button
+              ref={(element) => {
+                menuItemsRef.current[2] = element;
+              }}
+              type="button"
+              role="menuitem"
+              onClick={() => void exportProject()}
+            >
               Export local project
             </button>
             <p role="status" aria-live="polite">

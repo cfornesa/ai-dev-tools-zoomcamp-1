@@ -61,6 +61,33 @@ describe('ProjectMediaLibraryPanel', () => {
     expect(screen.getByRole('button', { name: 'Import image' })).toBeInTheDocument();
   });
 
+  it('moves through File menu items with the keyboard and restores focus on Escape', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const fileButton = screen.getByRole('button', { name: 'File' });
+    await user.click(fileButton);
+    const importItem = screen.getByRole('menuitem', { name: 'Import media' });
+    const libraryItem = screen.getByRole('menuitem', { name: 'Open media library' });
+    await waitFor(() => expect(importItem).toHaveFocus());
+    await user.keyboard('{ArrowDown}');
+    expect(libraryItem).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(fileButton).toHaveFocus();
+    expect(screen.queryByRole('menu', { name: 'File menu' })).not.toBeInTheDocument();
+  });
+
+  it('reports unsupported files without opening the import metadata dialog', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    const input = screen.getByLabelText('Import media file') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: { files: [new File(['script'], 'payload.txt', { type: 'text/plain' })] },
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent('is not a supported media file type');
+    expect(screen.queryByRole('dialog', { name: 'Describe this image' })).not.toBeInTheDocument();
+  });
+
   it('lists a library asset and inserts it as an independently selectable image layer', async () => {
     repo.listMediaAssetsForProject.mockResolvedValueOnce([
       {

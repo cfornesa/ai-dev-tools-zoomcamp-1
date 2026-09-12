@@ -19369,4 +19369,27 @@ Transaction ledger:
   `.local/tasks/511-cloud-sync-entitlement.md`. The implementation adds the
   fail-closed `cloud_project_sync` entitlement, per-project enable/pause
   controls, and non-blocking local-first UI messaging. Full checks and QA are
-  complete; GitHub reconciliation/closure is the final step.
+  complete; QA passed in this Codex task as the owner-requested substitution
+  for the normally rostered Claude review, and GitHub reconciliation/closure
+  evidence is recorded in `.local/tasks/511-cloud-sync-entitlement.md`.
+
+## 339. Production-readiness and completion gate for #507/#509/#511 (2026-09-12)
+
+The batch is locally and functionally ready. `make check` passed after the
+#511 implementation, and GitHub shows #507, #509, and #511 closed with QA and
+reconciliation comments. The production-readiness gate ran in this Codex task
+as the owner-directed substitution for the rostered Opus/Sonnet gate; the
+substitution is explicit because the owner instructed that no other model or
+Opencode task be invoked.
+
+Readiness findings:
+
+- **Local deployment:** PASS for the batch; `UV_CACHE_DIR=/private/tmp/codex-uv-cache make deploy-check` executes successfully but reports five expected local-development security warnings (debug, SSL redirect, secure cookies, and HSTS), so this is not production-setting evidence.
+- **CI/browser:** PASS for repository checks and the previously recorded local PostgreSQL/Chromium path; no new published authenticated browser claim is made for this batch.
+- **Intended functionality:** PASS for #507/#509/#511 on their scoped criteria; no PayPal or OAuth credential is needed for these closures.
+- **Production/release:** BLOCKED outside this batch by open #445's Replit schema/release reconciliation, plus owner-credential-gated #440 and #460. Those issues remain open and are not silently absorbed into the closed batch.
+
+The session-completion reconciliation therefore has zero missing terminal
+statuses for the requested batch, while the repository as a whole is not
+declared production-ready until #445/#440/#460 are resolved or explicitly
+deferred by the owner.

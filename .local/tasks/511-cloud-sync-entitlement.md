@@ -60,5 +60,8 @@ cd backend && uv run pytest tests/test_entitlements.py tests/test_cloud_backup.p
   39 skipped`, frontend `2557 passed`.
 - **QA matrix:** PASS; Codex substitution for the normally rostered Claude
   Sonnet review, with the matrix posted to GitHub.
-- **GitHub closure evidence:** pending until reconciliation comment is posted.
+- **GitHub closure evidence:** QA comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/511#issuecomment-5648819392`
+  and reconciliation comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/511#issuecomment-5648819496`.
 - **New gaps discovered:** none

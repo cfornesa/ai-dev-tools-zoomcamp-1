@@ -1,0 +1,195 @@
+"""Provider-neutral PostgreSQL cloud-backup protocol (#509).
+
+The service is deliberately separate from views: the site kill switch is
+checked before touching a backup row, every project decision goes through the
+central permission service, and all writes are transactional/idempotent.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import uuid
+
+from django.db import transaction
+
+from scenes.admin_settings import get_site_settings
+from scenes.entitlements import get_user_plan_key
+from scenes.models import CloudBackupBlob, CloudBackupManifest, CloudBackupProject, Plan, Project
+from scenes.permissions import Action, require
+
+
+class CloudBackupError(Exception):
+    status_code = 409
+    code = "cloud_backup_error"
+
+
+class CloudBackupDisabled(CloudBackupError):
+    code = "cloud_sync_disabled"
+
+
+class CloudBackupReadOnly(CloudBackupError):
+    code = "cloud_backup_read_only"
+
+
+class CloudBackupConflict(CloudBackupError):
+    code = "cloud_backup_conflict"
+
+
+class CloudBackupQuotaExceeded(CloudBackupError):
+    status_code = 413
+    code = "cloud_backup_quota_exceeded"
+
+
+class CloudBackupChecksumMismatch(CloudBackupError):
+    code = "checksum_mismatch"
+
+
+def _enabled() -> None:
+    if not get_site_settings().cloud_sync_enabled:
+        raise CloudBackupDisabled("Cloud sync is disabled by the site administrator.")
+
+
+def _owned(user, project: Project, action: Action) -> None:
+    require(user, action, project)
+
+
+def _backup(project: Project) -> CloudBackupProject:
+    try:
+        return CloudBackupProject.objects.get(project=project)
+    except CloudBackupProject.DoesNotExist as exc:
+        raise CloudBackupConflict("This project has not opted into cloud backup.") from exc
+
+
+def _plan_quota(user) -> tuple[int, int]:
+    plan = Plan.objects.filter(plan_key=get_user_plan_key(user), active=True).first()
+    if plan is None:
+        plan = Plan.objects.filter(plan_key="free", active=True).first()
+    if plan is None:
+        return 0, 0
+    return plan.cloud_storage_bytes, plan.cloud_storage_files
+
+
+@transaction.atomic
+def enable_backup(user, project: Project) -> CloudBackupProject:
+    _enabled()
+    _owned(user, project, Action.CLOUD_BACKUP_WRITE)
+    backup, _ = CloudBackupProject.objects.select_for_update().get_or_create(project=project)
+    if backup.read_only:
+        raise CloudBackupReadOnly("This backup is retained read-only.")
+    backup.enabled = True
+    backup.save(update_fields=["enabled", "updated_at"])
+    return backup
+
+
+def get_backup(user, project: Project) -> CloudBackupProject:
+    _enabled()
+    _owned(user, project, Action.CLOUD_BACKUP_READ)
+    return _backup(project)
+
+
+@transaction.atomic
+def put_manifest(
+    user, project: Project, *, expected_revision: int, idempotency_key: str, manifest: dict
+) -> CloudBackupManifest:
+    _enabled()
+    _owned(user, project, Action.CLOUD_BACKUP_WRITE)
+    backup = CloudBackupProject.objects.select_for_update().get(project=project)
+    if not backup.enabled:
+        raise CloudBackupConflict("Enable backup before uploading a manifest.")
+    if backup.read_only:
+        raise CloudBackupReadOnly("This backup is retained read-only.")
+    if not idempotency_key or len(idempotency_key) > 128:
+        raise CloudBackupConflict("A bounded idempotency key is required.")
+    prior = CloudBackupManifest.objects.filter(
+        backup=backup, idempotency_key=idempotency_key
+    ).first()
+    if prior is not None:
+        return prior
+    if expected_revision != backup.revision:
+        raise CloudBackupConflict("The manifest revision is stale.")
+    if not isinstance(manifest, dict):
+        raise CloudBackupConflict("The manifest must be a JSON object.")
+    encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    row = CloudBackupManifest.objects.create(
+        backup=backup,
+        revision=backup.revision + 1,
+        idempotency_key=idempotency_key,
+        checksum=hashlib.sha256(encoded).hexdigest(),
+        manifest=manifest,
+    )
+    backup.revision = row.revision
+    backup.save(update_fields=["revision", "updated_at"])
+    return row
+
+
+def latest_manifest(user, project: Project) -> CloudBackupManifest | None:
+    backup = get_backup(user, project)
+    return backup.manifests.order_by("-revision").first()
+
+
+@transaction.atomic
+def put_blob(
+    user,
+    project: Project,
+    asset_id: uuid.UUID,
+    data: bytes,
+    *,
+    checksum: str,
+    mime_type: str,
+    idempotency_key: str,
+) -> CloudBackupBlob:
+    _enabled()
+    _owned(user, project, Action.CLOUD_BACKUP_WRITE)
+    backup = CloudBackupProject.objects.select_for_update().get(project=project)
+    if not backup.enabled:
+        raise CloudBackupConflict("Enable backup before uploading an asset.")
+    if backup.read_only:
+        raise CloudBackupReadOnly("This backup is retained read-only.")
+    actual = hashlib.sha256(data).hexdigest()
+    if checksum != actual:
+        raise CloudBackupChecksumMismatch("The supplied checksum does not match the asset.")
+    prior_key = CloudBackupBlob.objects.filter(
+        backup=backup, idempotency_key=idempotency_key
+    ).first()
+    if prior_key is not None:
+        if prior_key.checksum != checksum:
+            raise CloudBackupChecksumMismatch("The idempotency key was reused for another asset.")
+        return prior_key
+    prior_asset = CloudBackupBlob.objects.filter(backup=backup, asset_id=asset_id).first()
+    if prior_asset is not None:
+        if prior_asset.checksum != checksum:
+            raise CloudBackupChecksumMismatch("The asset ID already has another checksum.")
+        return prior_asset
+    max_bytes, max_files = _plan_quota(user)
+    used_bytes = sum(backup.blobs.values_list("byte_size", flat=True))
+    used_files = backup.blobs.count()
+    if used_bytes + len(data) > max_bytes:
+        raise CloudBackupQuotaExceeded("The configured cloud byte quota was exceeded.")
+    if used_files + 1 > max_files:
+        raise CloudBackupQuotaExceeded("The configured cloud file quota was exceeded.")
+    return CloudBackupBlob.objects.create(
+        backup=backup,
+        asset_id=asset_id,
+        checksum=checksum,
+        mime_type=mime_type[:128],
+        byte_size=len(data),
+        data=data,
+        idempotency_key=idempotency_key,
+    )
+
+
+def get_blob(user, project: Project, asset_id: uuid.UUID) -> CloudBackupBlob:
+    backup = get_backup(user, project)
+    try:
+        return backup.blobs.get(asset_id=asset_id)
+    except CloudBackupBlob.DoesNotExist as exc:
+        raise CloudBackupConflict("The requested asset is not backed up.") from exc
+
+
+@transaction.atomic
+def mark_backup_read_only_for_user(user) -> int:
+    """Retain a user's remote copies as read-only after entitlement loss."""
+    return CloudBackupProject.objects.filter(project__owner=user, enabled=True).update(
+        read_only=True
+    )

@@ -33,6 +33,7 @@ class ValidationFailed(Exception):
 @dataclass(frozen=True)
 class SiteSettingsView:
     site_title: str
+    cloud_sync_enabled: bool
     revision: int
 
 
@@ -40,6 +41,8 @@ class SiteSettingsView:
 class PlanView:
     plan_key: str
     daily_ai_requests: int
+    cloud_storage_bytes: int
+    cloud_storage_files: int
     feature_keys: list[str]
     active: bool
     paypal_plan_id: str
@@ -48,11 +51,17 @@ class PlanView:
 
 def get_site_settings() -> SiteSettingsView:
     settings_row = SiteSettings.get_solo()
-    return SiteSettingsView(site_title=settings_row.site_title, revision=settings_row.revision)
+    return SiteSettingsView(
+        site_title=settings_row.site_title,
+        cloud_sync_enabled=settings_row.cloud_sync_enabled,
+        revision=settings_row.revision,
+    )
 
 
 @transaction.atomic
-def update_site_settings(*, actor, expected_revision: int, site_title: str) -> SiteSettingsView:
+def update_site_settings(
+    *, actor, expected_revision: int, site_title: str, cloud_sync_enabled: bool | None = None
+) -> SiteSettingsView:
     if not isinstance(site_title, str) or not site_title.strip():
         raise ValidationFailed("site_title must be a non-empty string.")
     if len(site_title) > 200:
@@ -64,16 +73,26 @@ def update_site_settings(*, actor, expected_revision: int, site_title: str) -> S
             f"Expected revision {expected_revision}, but the current revision is {row.revision}."
         )
     row.site_title = site_title.strip()
+    if cloud_sync_enabled is not None:
+        if not isinstance(cloud_sync_enabled, bool):
+            raise ValidationFailed("cloud_sync_enabled must be a boolean.")
+        row.cloud_sync_enabled = cloud_sync_enabled
     row.revision += 1
     row.updated_by = actor
     row.save()
-    return SiteSettingsView(site_title=row.site_title, revision=row.revision)
+    return SiteSettingsView(
+        site_title=row.site_title,
+        cloud_sync_enabled=row.cloud_sync_enabled,
+        revision=row.revision,
+    )
 
 
 def _plan_view(plan: Plan) -> PlanView:
     return PlanView(
         plan_key=plan.plan_key,
         daily_ai_requests=plan.daily_ai_requests,
+        cloud_storage_bytes=plan.cloud_storage_bytes,
+        cloud_storage_files=plan.cloud_storage_files,
         feature_keys=sorted(plan.feature_keys),
         active=plan.active,
         paypal_plan_id=plan.paypal_plan_id,
@@ -95,6 +114,8 @@ def update_plan(
     feature_keys: list[str],
     active: bool,
     paypal_plan_id: str = "",
+    cloud_storage_bytes: int = 52_428_800,
+    cloud_storage_files: int = 100,
 ) -> PlanView:
     """Atomically validate and apply every field, or change nothing.
 
@@ -106,6 +127,18 @@ def update_plan(
         raise ValidationFailed("daily_ai_requests must be an integer.")
     if daily_ai_requests < 0:
         raise ValidationFailed("daily_ai_requests must not be negative.")
+    if (
+        not isinstance(cloud_storage_bytes, int)
+        or isinstance(cloud_storage_bytes, bool)
+        or cloud_storage_bytes < 0
+    ):
+        raise ValidationFailed("cloud_storage_bytes must be a non-negative integer.")
+    if (
+        not isinstance(cloud_storage_files, int)
+        or isinstance(cloud_storage_files, bool)
+        or cloud_storage_files < 0
+    ):
+        raise ValidationFailed("cloud_storage_files must be a non-negative integer.")
     if not isinstance(feature_keys, list) or any(not isinstance(f, str) for f in feature_keys):
         raise ValidationFailed("feature_keys must be a list of strings.")
     unknown = set(feature_keys) - FEATURE_KEYS
@@ -127,6 +160,8 @@ def update_plan(
         )
 
     plan.daily_ai_requests = daily_ai_requests
+    plan.cloud_storage_bytes = cloud_storage_bytes
+    plan.cloud_storage_files = cloud_storage_files
     plan.feature_keys = sorted(set(feature_keys))
     plan.active = active
     plan.paypal_plan_id = paypal_plan_id

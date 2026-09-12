@@ -68,6 +68,7 @@ from scenes.art_piece_persistence import (
     PublicArtPieceThumbnailView,
 )
 from scenes.billing_api import PayPalWebhookView
+from scenes.cloud_backup_api import CloudBackupBlobView, CloudBackupManifestView, CloudBackupView
 from scenes.provider_credentials_api import ProviderCredentialView
 
 urlpatterns = [
@@ -128,6 +129,17 @@ urlpatterns = [
         name="template-clone",
     ),
     path("projects/<uuid:public_id>/", ProjectDetailView.as_view(), name="project-detail"),
+    path("projects/<uuid:public_id>/cloud-backup/", CloudBackupView.as_view(), name="cloud-backup"),
+    path(
+        "projects/<uuid:public_id>/cloud-backup/manifest/",
+        CloudBackupManifestView.as_view(),
+        name="cloud-backup-manifest",
+    ),
+    path(
+        "projects/<uuid:public_id>/cloud-backup/assets/<uuid:asset_id>/",
+        CloudBackupBlobView.as_view(),
+        name="cloud-backup-blob",
+    ),
     path(
         "projects/<uuid:public_id>/thumbnail.png",
         ProjectThumbnailView.as_view(),

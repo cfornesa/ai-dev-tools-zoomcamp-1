@@ -19049,3 +19049,312 @@ the scene-aware project-list code, while the production schema remains on the
 pre-#510 scene state. The defect is therefore a missing production schema
 reconciliation, not a frontend import failure or an absent PayPal/OAuth
 credential.
+
+### Follow-up after staged production schema repair (2026-09-12)
+
+The owner-approved staged repair completed in Replit Free mode. The
+intermediate publish created the missing `scenes_scene` table and nullable
+scene foreign-key columns without truncating or deleting data. Replit's
+production SQL console then executed the guarded scene insert and the two
+nullable-link updates. Direct production queries verified 7 projects, 7
+scenes, and 14 scene versions, with 0 `scene_id` values missing and 0
+`active_scene_id` values missing. The pre-repair 14 scene-version rows were
+preserved. Live database editing was disabled again after verification.
+
+The credential-free published smoke check was rerun and passed:
+`/health/` 200 with `status=ok`, `/` 200, anonymous `/api/whoami/` 401, and
+`/accounts/login/` 200. The authenticated published home now loads the
+preserved project list (two 2D projects and three 3D projects), and the
+published 2D editor route opens with the expected accessible editor tabs and
+preview controls. This confirms the prior `scenes_scene` traceback was fixed
+by the staged production schema/data reconciliation.
+
+Development was intentionally left at the safe staging point after the
+intermediate publish: migrations `0037_add_scene` and `0038_backfill_scenes`
+are applied, while `0039_tighten_scene_fields` and
+`0040_trigger_scene_immutable` remain unapplied until the final publish gate
+is separately reviewed. PayPal and optional OAuth credentials were not needed
+for these baseline, anonymous, or authenticated project/editor checks.
+
+## 327. Production-readiness reassessment after staged repair (2026-09-12)
+
+Status: **BLOCKED — baseline published runtime recovered; batch is not yet
+production-ready.** This gate was run by Codex / GPT-5.6 Sol / Medium as an
+explicit substitution because the rostered Opus 5/Sonnet 5 readiness model
+was unavailable. The substitution is flagged and does not claim roster-level
+independence.
+
+- **Local deployment: BLOCKED.** The previously recorded `make deploy-check`
+  warnings (production debug/HSTS/HTTPS and secure-cookie settings) remain
+  release blockers under repository policy. Docker is unavailable, so the
+  disposable local PostgreSQL browser stack was not rerun in this session.
+- **Approved browser / CI: PARTIAL, then BLOCKED for release.** The live
+  authenticated Chrome session loaded the preserved project list and opened
+  the published 2D editor route with accessible tabs and preview controls.
+  The published smoke passed all four credential-free checks. The targeted
+  local Playwright workflow and CI for the local commits remain unverified;
+  the local branch is ahead of `origin/main`, and no new CI run covers the
+  evidence documentation or the final database state.
+- **Intended functionality: PASS for the exercised baseline boundary.** The
+  authenticated project list and editor route work after repair; no PayPal or
+  optional OAuth credential was needed. The full #513 import/reuse/delete
+  workflow still needs the documented disposable-stack browser run.
+- **Replit publication: PASS for the staged production repair.** The
+  intermediate publish created the missing scene schema, the reviewed guarded
+  backfill preserved all 14 scene-version rows, direct queries returned 7
+  projects/7 scenes/14 versions and zero missing links, and live editing was
+  disabled afterward. The development database remains intentionally at
+  migrations 0037–0038; final 0039–0040 publication is still a gate.
+- **Production readiness: BLOCKED.** Final schema tightening, deploy-check
+  warnings, targeted browser/CI evidence, and #445's optional-provider release
+  reconciliation remain open. #445 is not silently omitted: its baseline
+  runtime is repaired, while its exact release-candidate callback checklist
+  remains dependency-blocked on owner-controlled PayPal/LinkedIn setup.
+
+No new issue was created: each remaining item is already covered by #445 or
+the existing #467 verification boundary. Exact next actions are to run the
+final 0039/0040 publish only after reviewing its generated SQL for the absence
+of destructive operations, rerun the published smoke and direct table/link
+queries, run the disposable PostgreSQL-backed #513 Chromium workflow, and
+reconcile the reviewed revision with CI and GitHub.
+
+## 328. Session-completion reconciliation after staged repair (2026-09-12)
+
+Status: **HANDED-OFF with zero missing terminal statuses.** This batch pass
+was run by Codex / GPT-5.6 Sol / Medium as an explicit substitution for the
+rostered stage-5 model path; no rostered Opus 5/Sonnet 5 model was callable.
+
+Batch rollup: 2 issues processed; 0 fully completed; #513 handed off with
+engineering, local checks, published smoke, authenticated project-list, and
+published-editor evidence; #445 handed off/dependency-blocked for final
+release reconciliation and optional provider callbacks; missing terminal
+statuses: 0.
+
+The production repair is recorded above and the authenticated runtime is no
+longer failing on the missing `scenes_scene` relation. No PR or GitHub issue
+closure was performed. The evidence documentation is currently uncommitted
+because the workspace denied creation of `.git/index.lock`; the working-tree
+change is visible in `docs/tasks.md` and must be committed once Git metadata
+write access is restored.
+
+Routing audit: #513 scoping and implementation provenance are recorded in the
+earlier ledger; its independent second-opinion stage was not run, and QA was
+performed by Codex as a flagged substitution. #445 had no source-engineering
+transaction. This readiness and completion assessment is also a flagged
+Codex substitution. No second-opinion result was credited to the implementing
+model. Remaining follow-up ownership is explicit: release operator for the
+final Replit schema publish/CI reconciliation; owner for optional PayPal and
+LinkedIn credentials; engineering/QA for the disposable #513 browser run.
+
+## 329. Final Replit schema publish and production verification (2026-09-12)
+
+Development-only migration staging completed successfully in Free mode:
+`0039_tighten_scene_fields` and `0040_trigger_scene_immutable` both applied,
+with `0037` through `0040` all marked applied. Replit detected the recorded
+potential conflict on the 14 existing `scenes_sceneversion` rows. The
+non-destructive “Add the constraint as-is” option was selected; the
+delete-all-rows option was rejected. Replit validated the migration and the
+owner-approved publish completed successfully.
+
+Post-publish production verification in the read-only SQL console returned
+one integrity row: `projects=7`, `scenes=7`, `versions=14`,
+`versions_missing_scene=0`, `projects_missing_active_scene=0`, and
+`duplicate_scene_sequences=0`. The production database editor was left in
+read-only mode. The published smoke check passed again for `/health/`, `/`,
+anonymous `/api/whoami/`, and `/accounts/login/`.
+
+This closes the Replit missing-schema/runtime incident without deleting the
+14 legacy scene-version rows. It does not close the independent local
+deployment warnings, disposable-stack browser run, CI reconciliation, or
+owner-controlled optional-provider callback setup for #445.
+
+## 330. Production-readiness and session-completion update after final publish (2026-09-12)
+
+The final publish and production data-integrity checks change the Replit
+publication dimension to PASS. Baseline functionality is verified in the
+published authenticated Chrome session and by the credential-free smoke
+script without PayPal or optional OAuth credentials. The batch remains
+**BLOCKED for full production-readiness closure** because local
+`make deploy-check` warnings remain, the disposable PostgreSQL-backed #513
+browser workflow and CI run are not yet evidenced, and #445's optional
+provider callback reconciliation remains owner-dependent. This is a Codex /
+GPT-5.6 Sol / Medium substitution for the unavailable rostered readiness and
+completion model path; it is not presented as roster-equivalent evidence.
+
+The backlog follow-up audit found no new actionable issue and no duplicate:
+the remaining work is already covered by #445 and the existing #467
+verification boundary. The session remains handed off with zero missing
+terminal statuses. Evidence changes remain uncommitted because Git metadata
+write access still denies creation of `.git/index.lock`.
+
+## 331. Final local and published verification pass (2026-09-12)
+
+The final verification pass recorded the following concrete outcomes:
+
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make deploy-check` ran to
+  completion and reproduced the five repository-policy release blockers:
+  unset HSTS, disabled SSL redirect, insecure session cookies, insecure CSRF
+  cookies, and `DEBUG=True`.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` passed backend lint,
+  formatting, typing, and tests (`1199 passed, 39 skipped`), plus frontend
+  lint, formatting, typing, and build checks. The full frontend Vitest run
+  had one intermittent `useDraftAutosave` failure (`No changes detected`
+  instead of `1 shape added`); the affected autosave/recovery files passed
+  when isolated (`48/48`), so no unrelated source change was made.
+- `make compose-preflight` remains blocked because Docker is unavailable in
+  this environment. Playwright discovery itself succeeds: `194 tests in 63
+  files`.
+- The published Chrome session confirmed the real rendered #513 File menu
+  exposes `Import media`, `Open media library`, and `Export local project`;
+  the media-library view opened and reported persistent browser storage. The
+  CUA browser wrapper could not provide a file to the page's chooser, so the
+  published import/insert/referenced-delete assertions remain pending the
+  documented disposable PostgreSQL-backed Playwright run. A temporary test
+  project was created for this check; its browser delete confirmation was
+  dismissed safely rather than confirming cloud-data deletion, so it remains
+  for owner cleanup.
+- Final Replit publication remains verified: the non-destructive constraint
+  option was selected despite the recorded potential conflict, the direct
+  read-only production query returned `7/7/14/0/0/0`, the database editor was
+  left read-only, and the published smoke check passed all four endpoints.
+
+No new actionable issue was opened: the deploy warnings, browser/CI evidence,
+and optional-provider callback reconciliation are already covered by #445 and
+the existing #467 verification boundary. This section is evidence-only; no
+product source changes were made during the pass.
+
+## 332. Published browser recheck and focused #513 regression evidence (2026-09-12)
+
+The republished authenticated Chrome session was reopened and rechecked. The
+temporary 2D project still loads, the editor opens, the piece-controls File
+menu renders, and its accessible menu exposes `Import media`, `Open media
+library`, and `Export local project`. The media-library view had already been
+verified in the preceding pass. The browser bridge's Playwright file chooser
+capability rejects `setFiles` with `Not allowed` before the page receives the
+fixture, so it cannot provide stronger published import/insert/delete proof;
+this is an automation permission limitation, not an observed application
+failure.
+
+The focused frontend regression command passed:
+`npm --prefix frontend test -- --run
+src/pages/ProjectMediaLibraryPanel.test.tsx
+src/pages/EditorWorkspace.test.tsx
+src/storage/localProjectRepository.test.ts` — 3 files and 53 tests passed.
+No source change was made in response to the earlier full-suite autosave
+flake.
+
+The native macOS picker was also opened from the published `Import media`
+action and displayed the repository's `attached_assets` PNG files. The CUA
+layer could not reliably select and confirm a file in that native sheet, so
+the browser evidence remains limited to the verified import trigger and
+media-library surface; no claim is made that the uploaded asset reached the
+published app.
+
+## 333. Local PostgreSQL-backed Chromium verification (2026-09-12)
+
+The host Docker daemon remains unavailable, but the configured local
+non-production PostgreSQL server was reachable on `localhost:5432`. I started
+Django with `AI_PROVIDER=fake` on port 8000 and Vite on port 5000, applied
+migrations with no pending changes, and ran the browser suite with the
+documented temporary uv cache override. The targeted #513 Chromium workflow
+passed end-to-end, including fixture image import, alt-text choice, library
+insertion as an image layer, and referenced-asset deletion protection. The
+companion containment workflow passed at both required viewport sizes, and
+both 2D stage-control checks passed.
+
+The full Chromium suite completed with `174 passed` and `4 failed` out of 178
+tests. All #513 tests passed. The four failures are outside this batch and
+map to existing issue boundaries: #429 owner-editing preview readiness, #479
+real unmocked microphone activation, and #438 thumbnail capture (two tests).
+Their exact failures were recorded by Playwright in `test-results/`; no new
+issue was opened because each is already represented in the backlog. The
+local Django/Vite processes were stopped after the run, and the E2E fixture
+teardown completed through the repository's normal global teardown.
+
+## 334. Exact project-wide checks after local browser verification (2026-09-12)
+
+The exact documented gate `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check`
+now passes: action-pin check, backend lint/format/typecheck, backend tests
+(`1199 passed, 39 skipped`), frontend lint/format/typecheck, and frontend
+Vitest (`207 files, 2553 tests passed`). Existing lint and dependency warnings
+remain informational; no check failed.
+
+The local PostgreSQL-backed full Chromium run is separate from `make check`
+and completed with 174 passing tests and 4 existing out-of-batch failures.
+The #513 subset passed in that same run. This replaces the earlier isolated
+autosave-flake evidence and removes the prior full-check ambiguity.
+
+No source files changed during verification. The only working-tree change is
+this evidence ledger, and Git metadata still denies `.git/index.lock` creation.
+
+## 335. Updated production-readiness gate after full browser evidence (2026-09-12)
+
+Readiness assessment: **#513 functional and verification criteria PASS;
+#445 remains dependency-blocked; project production readiness remains
+BLOCKED.** The gate was performed as the already-recorded owner-authorized
+Codex substitution because the rostered Opus 5/Sonnet 5 path is unavailable;
+it is flagged and is not represented as roster-equivalent.
+
+- **Local deployment:** the real local PostgreSQL/Django/Vite stack started,
+  migrations were current, `make check` passed, and the targeted/full
+  Chromium evidence passed for #513. `make deploy-check` still emits the five
+  production configuration warnings (HSTS, SSL redirect, secure session and
+  CSRF cookies, and DEBUG), so production configuration remains blocked.
+- **Approved browser / CI:** the repository's full local Chromium suite ran
+  against PostgreSQL. #513 passed completely; CI for the local commits is not
+  available in this workspace and remains a separate reconciliation boundary.
+- **Intended functionality:** #513 passes import, accessible metadata,
+  library insertion, reference-aware deletion, stage controls, and narrow
+  containment. No PayPal or optional OAuth credential was needed. The four
+  unrelated existing E2E failures remain mapped to #429/#438/#479.
+- **Replit publication:** PASS. Final publish, read-only integrity query
+  (`7/7/14/0/0/0`), production smoke, and authenticated project/editor checks
+  remain verified.
+- **#445:** dependency-blocked only for owner-controlled PayPal sandbox and
+  LinkedIn OAuth callback evidence; this does not block baseline app or #513
+  functionality.
+
+No new issue was created: every discovered failure is already represented by
+an existing issue or is a release-environment verification boundary.
+
+## 336. Session-completion reconciliation after full local E2E (2026-09-12)
+
+Batch rollup: 2 issues processed; #513 **CLOSED as completed after all
+engineering, `make check`, focused browser, and full local Chromium evidence
+completed**; #445 **DEPENDENCY-BLOCKED** for optional provider callbacks and
+final release reconciliation; missing terminal statuses: 0.
+
+The final follow-up audit classifies the four full-E2E failures as existing
+#429/#438/#479 boundaries, not new #513 work. #513 was then closed on GitHub as
+`completed`. The remaining exact next actions are: owner/provider setup for
+#445, production deploy-setting remediation, CI reconciliation for the local
+revision, and restoration of Git metadata write access so this ledger can be
+committed. The required production-readiness gate was run before this
+session-completion update, with the substitution explicitly flagged above.
+
+## 337. #507/#509/#511 closure run (2026-09-12)
+
+Run manifest: #507 parent architecture reconciliation, then #509 cloud
+backup protocol, then #511 entitlement-aware sync gating. #507 is now CLOSED
+on GitHub after the owner-confirmed architecture and a reconciliation comment.
+The next transaction is #509; it must be groomed to a finite, criterion-ready
+contract incorporating PostgreSQL BLOB storage, the site-wide
+`cloud_sync_enabled` kill switch (default `false`), independent admin-managed
+tier quotas, and local-first access guarantees. #511 follows only after #509
+has reached a terminal status because its sync controls depend on that
+protocol. PayPal/OAuth credentials are not prerequisites for deterministic
+local engineering or mocked entitlement tests; live provider callbacks remain
+outside these issues and belong to #440/#460.
+
+Transaction ledger:
+
+- **#507:** `CLOSED`; GitHub reconciliation comment posted and issue closed
+  as completed. No product implementation is claimed for the parent.
+- **#509:** `GROOMED → ENGINEERING`; criterion-ready contract captured in
+  `.local/tasks/509-cloud-backup.md` with the owner-authorized Codex
+  GPT-5.6 Luna / Medium Stage 1 route. Stage 2b complex implementation is
+  now the active transaction; QA and GitHub closure remain pending.
+- **#511:** queued behind #509 for Stage 1 issue-scoping by the same route,
+  then Stage 2b complex implementation and QA.
+- **Agent routing correction:** active Stage 1 documentation now names Codex
+  GPT-5.6 Luna / Medium; historical Sol/Terra provenance is preserved.

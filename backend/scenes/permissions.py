@@ -24,6 +24,8 @@ class Action(StrEnum):
     PROJECT_DELETE = "project.delete"
     PROJECT_PUBLISH = "project.publish"
     PROJECT_EXPORT = "project.export"
+    CLOUD_BACKUP_READ = "cloud_backup.read"
+    CLOUD_BACKUP_WRITE = "cloud_backup.write"
     PROJECT_FORK = "project.fork"
     VERSION_READ = "version.read"
     VERSION_CREATE = "version.create"
@@ -89,6 +91,8 @@ _OWNER_ONLY_PROJECT_ACTIONS = frozenset(
         Action.PROJECT_DELETE,
         Action.PROJECT_PUBLISH,
         Action.PROJECT_EXPORT,
+        Action.CLOUD_BACKUP_READ,
+        Action.CLOUD_BACKUP_WRITE,
         Action.VERSION_READ,
         Action.VERSION_CREATE,
         Action.VERSION_RESTORE,

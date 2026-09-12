@@ -66,6 +66,31 @@ Error bodies are finite JSON. An invalid filter:
 { "errors": { "type": ["Must be one of: all, authored, generated."] } }
 ```
 
+## Cloud backup protocol (#509)
+
+Cloud backup is an authenticated, owner-only, provider-neutral protocol for
+the local-first project repository. It is disabled unless the singleton
+`SiteSettings.cloud_sync_enabled` is true; the server rejects sync requests
+before entitlement or storage access when it is false. PostgreSQL BLOBs are
+the initial provider implementation. Local projects and exports never depend
+on these endpoints.
+
+| Endpoint | Contract |
+| --- | --- |
+| `POST /api/projects/<public_id>/cloud-backup/` | Body `{\"enabled\": true}` explicitly opts a project into backup. `409` is returned for a disabled site switch or read-only backup. |
+| `GET /api/projects/<public_id>/cloud-backup/manifest/` | Returns the owner's latest manifest and revision, or `404` when no backup exists. |
+| `PUT /api/projects/<public_id>/cloud-backup/manifest/` | Body `{\"revision\": n, \"idempotency_key\": \"...\", \"manifest\": {...}}`. `revision` must be the current revision; a replay is idempotent and a stale write returns `409`. |
+| `PUT /api/projects/<public_id>/cloud-backup/assets/<asset_id>/` | Stores one binary asset with `X-Asset-Checksum`, `X-Idempotency-Key`, and `X-Asset-Mime-Type`. Replays with the same checksum are idempotent; a mismatch returns `409`. |
+| `GET /api/projects/<public_id>/cloud-backup/assets/<asset_id>/` | Returns the stored bytes for the owner while the backup is readable. |
+
+The manifest is JSON metadata only and must include stable scene/asset IDs;
+asset records include a checksum and byte size. The configured plan quota is
+checked before a new blob lands. Entitlement loss marks the backup read-only
+and retains it; account deletion purges the backup. A future entitlement/UI
+issue owns the transition controls. The endpoints return finite error codes:
+`401` unauthenticated, `403` non-owner, `404` absent resource, `409` disabled,
+stale, read-only, or checksum conflict, and `413` quota exhaustion.
+
 An invalid cursor (malformed or reused under a different `type` than it was
 issued for — see binding rule below):
 

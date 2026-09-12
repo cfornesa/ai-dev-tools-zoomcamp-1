@@ -75,7 +75,11 @@ def test_settings_get_allowed_for_admin(client, admin_a):
     client.force_login(admin_a)
     response = client.get(reverse("admin-settings"))
     assert response.status_code == 200
-    assert response.json() == {"site_title": "CreatrART", "revision": 1}
+    assert response.json() == {
+        "site_title": "CreatrART",
+        "cloud_sync_enabled": False,
+        "revision": 1,
+    }
 
 
 @pytest.mark.django_db
@@ -115,7 +119,11 @@ def test_admin_can_update_site_title(client, admin_a):
         content_type="application/json",
     )
     assert response.status_code == 200
-    assert response.json() == {"site_title": "New Studio Name", "revision": 2}
+    assert response.json() == {
+        "site_title": "New Studio Name",
+        "cloud_sync_enabled": False,
+        "revision": 2,
+    }
     assert SiteSettings.get_solo().site_title == "New Studio Name"
 
 
@@ -300,11 +308,20 @@ def test_plan_cap_change_is_used_by_the_next_quota_decision_without_resetting_co
 @pytest.mark.django_db
 def test_get_site_settings_and_list_plans_expose_only_named_fields():
     site_settings = get_site_settings()
-    assert set(vars(site_settings).keys()) == {"site_title", "revision"}
+    assert set(vars(site_settings).keys()) == {"site_title", "cloud_sync_enabled", "revision"}
 
     plans = list_plans()
     assert all(
         set(vars(plan).keys())
-        == {"plan_key", "daily_ai_requests", "feature_keys", "active", "paypal_plan_id", "revision"}
+        == {
+            "plan_key",
+            "daily_ai_requests",
+            "cloud_storage_bytes",
+            "cloud_storage_files",
+            "feature_keys",
+            "active",
+            "paypal_plan_id",
+            "revision",
+        }
         for plan in plans
     )

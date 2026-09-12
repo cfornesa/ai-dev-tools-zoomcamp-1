@@ -123,6 +123,8 @@ class SiteSettings(models.Model):
     """
 
     site_title = models.CharField(max_length=200, default="CreatrART")
+    # Issue #509: cloud backup is disabled until an administrator enables it.
+    cloud_sync_enabled = models.BooleanField(default=False)
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
@@ -151,6 +153,9 @@ class Plan(models.Model):
 
     plan_key = models.CharField(max_length=32, unique=True)
     daily_ai_requests = models.PositiveIntegerField()
+    # Issue #509: independently editable cloud-backup tier quotas.
+    cloud_storage_bytes = models.PositiveBigIntegerField(default=52_428_800)
+    cloud_storage_files = models.PositiveIntegerField(default=100)
     # Which of scenes.entitlements.FEATURE_KEYS this plan grants at all --
     # a feature key absent here has an effective cap of 0 on this plan,
     # independent of `daily_ai_requests`. Validated against the live
@@ -489,6 +494,70 @@ class Project(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+class CloudBackupProject(models.Model):
+    """Opt-in cloud-backup state for one local-first project (#509)."""
+
+    project = models.OneToOneField(Project, on_delete=models.CASCADE, related_name="cloud_backup")
+    enabled = models.BooleanField(default=False)
+    read_only = models.BooleanField(default=False)
+    revision = models.PositiveBigIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Cloud backup for project {self.project_id}"
+
+
+class CloudBackupManifest(models.Model):
+    """Immutable revision record for an idempotent manifest upload."""
+
+    backup = models.ForeignKey(
+        CloudBackupProject, on_delete=models.CASCADE, related_name="manifests"
+    )
+    revision = models.PositiveBigIntegerField()
+    idempotency_key = models.CharField(max_length=128)
+    checksum = models.CharField(max_length=128)
+    manifest = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["backup", "revision"], name="unique_cloud_manifest_revision"
+            ),
+            models.UniqueConstraint(
+                fields=["backup", "idempotency_key"], name="unique_cloud_manifest_idempotency"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Cloud manifest {self.backup_id} revision {self.revision}"
+
+
+class CloudBackupBlob(models.Model):
+    """One provider-neutral PostgreSQL BLOB per stable project asset ID."""
+
+    backup = models.ForeignKey(CloudBackupProject, on_delete=models.CASCADE, related_name="blobs")
+    asset_id = models.UUIDField()
+    checksum = models.CharField(max_length=128)
+    mime_type = models.CharField(max_length=128)
+    byte_size = models.PositiveBigIntegerField()
+    data = models.BinaryField()
+    idempotency_key = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["backup", "asset_id"], name="unique_cloud_blob_asset"),
+            models.UniqueConstraint(
+                fields=["backup", "idempotency_key"], name="unique_cloud_blob_idempotency"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Cloud asset {self.asset_id} for backup {self.backup_id}"
 
 
 class Scene(models.Model):

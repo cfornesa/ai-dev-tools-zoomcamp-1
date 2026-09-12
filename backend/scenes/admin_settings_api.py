@@ -36,6 +36,7 @@ def _admin_required_response(request) -> Response | None:
 class SiteSettingsUpdateSerializer(serializers.Serializer):
     site_title = serializers.CharField(max_length=200, allow_blank=False, trim_whitespace=True)
     revision = serializers.IntegerField(min_value=0)
+    cloud_sync_enabled = serializers.BooleanField(required=False)
 
 
 class AdminSiteSettingsView(APIView):
@@ -45,7 +46,11 @@ class AdminSiteSettingsView(APIView):
             return denied
         site_settings = get_site_settings()
         return Response(
-            {"site_title": site_settings.site_title, "revision": site_settings.revision}
+            {
+                "site_title": site_settings.site_title,
+                "cloud_sync_enabled": site_settings.cloud_sync_enabled,
+                "revision": site_settings.revision,
+            }
         )
 
     def patch(self, request):
@@ -53,7 +58,7 @@ class AdminSiteSettingsView(APIView):
         if denied:
             return denied
 
-        unknown_fields = set(request.data.keys()) - {"site_title", "revision"}
+        unknown_fields = set(request.data.keys()) - {"site_title", "revision", "cloud_sync_enabled"}
         if unknown_fields:
             return Response(
                 {"error": "unknown_fields", "detail": sorted(unknown_fields)},
@@ -71,6 +76,7 @@ class AdminSiteSettingsView(APIView):
                 actor=request.user,
                 expected_revision=serializer.validated_data["revision"],
                 site_title=serializer.validated_data["site_title"],
+                cloud_sync_enabled=serializer.validated_data.get("cloud_sync_enabled"),
             )
         except RevisionConflict as exc:
             return Response(
@@ -81,11 +87,19 @@ class AdminSiteSettingsView(APIView):
                 {"error": "validation_failed", "detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        return Response({"site_title": updated.site_title, "revision": updated.revision})
+        return Response(
+            {
+                "site_title": updated.site_title,
+                "cloud_sync_enabled": updated.cloud_sync_enabled,
+                "revision": updated.revision,
+            }
+        )
 
 
 class PlanUpdateSerializer(serializers.Serializer):
     daily_ai_requests = serializers.IntegerField(min_value=0)
+    cloud_storage_bytes = serializers.IntegerField(min_value=0, required=False, default=52_428_800)
+    cloud_storage_files = serializers.IntegerField(min_value=0, required=False, default=100)
     feature_keys = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     active = serializers.BooleanField()
     paypal_plan_id = serializers.CharField(
@@ -106,6 +120,8 @@ class AdminPlansView(APIView):
                 {
                     "plan_key": plan.plan_key,
                     "daily_ai_requests": plan.daily_ai_requests,
+                    "cloud_storage_bytes": plan.cloud_storage_bytes,
+                    "cloud_storage_files": plan.cloud_storage_files,
                     "feature_keys": plan.feature_keys,
                     "active": plan.active,
                     "paypal_plan_id": plan.paypal_plan_id,
@@ -129,6 +145,8 @@ class AdminPlansView(APIView):
 
         allowed_fields = {
             "daily_ai_requests",
+            "cloud_storage_bytes",
+            "cloud_storage_files",
             "feature_keys",
             "active",
             "paypal_plan_id",
@@ -153,6 +171,8 @@ class AdminPlansView(APIView):
                 plan_key=plan_key,
                 expected_revision=serializer.validated_data["revision"],
                 daily_ai_requests=serializer.validated_data["daily_ai_requests"],
+                cloud_storage_bytes=serializer.validated_data["cloud_storage_bytes"],
+                cloud_storage_files=serializer.validated_data["cloud_storage_files"],
                 feature_keys=serializer.validated_data["feature_keys"],
                 active=serializer.validated_data["active"],
                 paypal_plan_id=serializer.validated_data.get("paypal_plan_id", ""),
@@ -170,6 +190,8 @@ class AdminPlansView(APIView):
             {
                 "plan_key": updated.plan_key,
                 "daily_ai_requests": updated.daily_ai_requests,
+                "cloud_storage_bytes": updated.cloud_storage_bytes,
+                "cloud_storage_files": updated.cloud_storage_files,
                 "feature_keys": updated.feature_keys,
                 "active": updated.active,
                 "paypal_plan_id": updated.paypal_plan_id,

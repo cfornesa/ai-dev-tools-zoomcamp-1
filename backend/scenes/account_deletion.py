@@ -54,6 +54,7 @@ from django.utils.crypto import get_random_string
 from scenes.models import (
     ArtPiece,
     BillingEvent,
+    CloudBackupProject,
     Project,
     Project3D,
     ProviderCredential,
@@ -128,6 +129,10 @@ def delete_account(user, *, password: str | None, confirmation: str) -> None:
     _verify_confirmation(confirmation)
 
     now = timezone.now()
+    # Cloud copies are explicitly purged on account deletion; local project
+    # data is still only soft-deleted below and remains available for the
+    # documented grace-period cleanup.
+    CloudBackupProject.objects.filter(project__owner=locked_user).delete()
     Project.all_objects.filter(owner=locked_user, is_deleted=False).update(
         is_deleted=True, deleted_at=now
     )

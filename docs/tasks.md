@@ -19369,4 +19369,4 @@ Transaction ledger:
   `.local/tasks/511-cloud-sync-entitlement.md`. The implementation adds the
   fail-closed `cloud_project_sync` entitlement, per-project enable/pause
   controls, and non-blocking local-first UI messaging. Full checks and QA are
-  still pending.
+  complete; GitHub reconciliation/closure is the final step.

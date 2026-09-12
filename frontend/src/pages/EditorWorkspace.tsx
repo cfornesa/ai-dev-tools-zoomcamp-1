@@ -2970,7 +2970,6 @@ function EditorWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <EditableProjectTitle id={id} project={project} setProject={setProject} />
-        {id && <CloudSyncControl projectId={id} />}
         <span className="editor-header-break" aria-hidden="true" />
         {workingCopy && (
           <span className="editor-renderer-badge" data-testid="editor-renderer-badge">
@@ -3856,6 +3855,7 @@ function EditorWorkspace() {
                 setProject={setProject}
               />
             )}
+            {id && <CloudSyncControl projectId={id} />}
           </TopLevelPanel>
         </section>
 

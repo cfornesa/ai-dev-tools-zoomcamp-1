@@ -51,10 +51,14 @@ cd backend && uv run pytest tests/test_entitlements.py tests/test_cloud_backup.p
 
 ### Transaction ledger
 
-- **Phase:** GROOMED → ENGINEERING
+- **Phase:** GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED
 - **Issue owner / current transaction:** #511 only
-- **Implementation commit:** pending
-- **Focused/full checks:** pending
-- **QA matrix:** pending
-- **GitHub closure evidence:** pending
+- **Implementation commit:** `0764482` (follow-up formatting/test fixes are
+  included in the next closure commit).
+- **Focused/full checks:** focused editor/cloud tests `34 passed`; backend
+  focused `25 passed, 1 skipped`; final `make check` backend `1206 passed,
+  39 skipped`, frontend `2557 passed`.
+- **QA matrix:** PASS; Codex substitution for the normally rostered Claude
+  Sonnet review, with the matrix posted to GitHub.
+- **GitHub closure evidence:** pending until reconciliation comment is posted.
 - **New gaps discovered:** none

@@ -18755,13 +18755,14 @@ DEPENDENCY-BLOCKED. Implementation commit: `a6de6c6`.
 ### #513 engineering evidence
 
 Changed only the scoped frontend/editor surface plus the local repository
-bridge: `ProjectMediaLibraryPanel.tsx`, its focused test, `EditorWorkspace.tsx`,
-`sceneShapes.ts`, `localProjectRepository.ts`, `index.css`, and this ledger.
+bridge: `ProjectMediaLibraryPanel.tsx`, its focused test,
+`manual2dMediaLibrary.spec.ts`, `EditorWorkspace.tsx`, `sceneShapes.ts`,
+`localProjectRepository.ts`, `index.css`, and this ledger.
 Focused checks passed: `npm test -- --run
 src/pages/ProjectMediaLibraryPanel.test.tsx` (2 passed), `npm run build`.
 Full checks passed: `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check`
 (backend 1199 passed/39 skipped; frontend 2550 passed; lint/format/typecheck
-clean). `cd frontend && npm run test:e2e -- --list` discovered 193 tests.
+clean). `cd frontend && npm run test:e2e -- --list` discovered 194 tests.
 
 The implementation adds the File menu, accessible import metadata choice,
 local library listing/thumbnails/fallback, rename/delete policy, export action,
@@ -18778,8 +18779,9 @@ re-run and pass. The targeted Chromium browser command
 e2e/manual2dStageChrome.spec.ts --project=chromium --grep "renders finite
 stage actions"` self-skipped because the required app stack was unavailable;
 `make compose-preflight` independently reports Docker unavailable. The new
-#513 workflow has no browser-rendered import/reuse/deletion evidence, so the
-issue cannot close. Stage 3 was explicitly not run.
+#513 workflow is now discoverable as a Chromium test, but has no
+browser-rendered import/reuse/deletion evidence because the required stack is
+unavailable, so the issue cannot close. Stage 3 was explicitly not run.
 
 Stage 5 production-readiness is **BLOCKED** by the mandatory model boundary:
 the roster permits only Claude Sonnet 5 or Opus 5, neither callable from this

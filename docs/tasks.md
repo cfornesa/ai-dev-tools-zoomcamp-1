@@ -19024,3 +19024,18 @@ Scene per Project, links all existing versions, sets `active_scene`, and
 preserves the 14 version IDs; verify the links and uniqueness read-only; then
 publish 0039/0040. If production data writes are not approved, the current
 final schema must remain unpublished.
+
+### Follow-up after owner-reported successful republish (2026-09-12)
+
+Replit now reports a successful Production publish approximately 33 minutes
+ago, but the Production Database overview still contains
+`scenes_sceneversion` (14 rows) and does not contain `scenes_scene`. The live
+authenticated browser session reaches the published app, but the home page
+shows “We couldn't load your projects,” and authenticated `GET /api/projects/`
+returns HTTP 500. The credential-free smoke check remains green (`/health/`
+200, anonymous identity 401, login 200).
+
+This distinguishes a successful application publish from a successful
+production schema reconciliation: the current republish is not sufficient to
+close the #445 schema/runtime gate. No production data was modified by this
+investigation.

@@ -7,7 +7,14 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from scenes.models import CloudBackupBlob, CloudBackupProject, Plan, Project, SiteSettings
+from scenes.cloud_backup import mark_backup_read_only_for_user
+from scenes.models import (
+    CloudBackupBlob,
+    CloudBackupProject,
+    Plan,
+    Project,
+    SiteSettings,
+)
 
 
 @pytest.fixture
@@ -63,6 +70,12 @@ def test_owner_manifest_and_blob_are_idempotent_and_isolated(client, owner, othe
     replay = client.put(manifest_url, payload, content_type="application/json")
     assert first.status_code == replay.status_code == 200
     assert first.json() == replay.json()
+    stale = client.put(
+        manifest_url,
+        {**payload, "idempotency_key": "manifest-stale"},
+        content_type="application/json",
+    )
+    assert stale.status_code == 409
 
     asset_id = uuid.uuid4()
     blob = b"123456"
@@ -93,6 +106,28 @@ def test_owner_manifest_and_blob_are_idempotent_and_isolated(client, owner, othe
     client.force_login(other)
     assert client.get(manifest_url).status_code == 404
     assert client.get(blob_url).status_code == 404
+
+
+@pytest.mark.django_db
+def test_entitlement_loss_retains_remote_copy_as_read_only(owner, project):
+    from scenes.cloud_backup import enable_backup, put_blob
+
+    backup = enable_backup(owner, project)
+    blob = b"asset"
+    checksum = hashlib.sha256(blob).hexdigest()
+    put_blob(
+        owner,
+        project,
+        uuid.uuid4(),
+        blob,
+        checksum=checksum,
+        mime_type="image/png",
+        idempotency_key="retained-asset",
+    )
+    assert mark_backup_read_only_for_user(owner) == 1
+    backup.refresh_from_db()
+    assert backup.read_only is True
+    assert CloudBackupBlob.objects.filter(backup=backup).exists()
 
 
 @pytest.mark.django_db

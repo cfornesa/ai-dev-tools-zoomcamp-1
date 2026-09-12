@@ -19039,3 +19039,13 @@ This distinguishes a successful application publish from a successful
 production schema reconciliation: the current republish is not sufficient to
 close the #445 schema/runtime gate. No production data was modified by this
 investigation.
+
+The published deployment log now provides the exact failure, not just the
+HTTP symptom: `GET /api/projects/` reaches Django and fails with
+`psycopg.errors.UndefinedTable: relation "scenes_scene" does not exist`.
+The SQL shown in the traceback joins `scenes_sceneversion` to the missing
+`scenes_scene` relation. This confirms the deployed application is executing
+the scene-aware project-list code, while the production schema remains on the
+pre-#510 scene state. The defect is therefore a missing production schema
+reconciliation, not a frontend import failure or an absent PayPal/OAuth
+credential.

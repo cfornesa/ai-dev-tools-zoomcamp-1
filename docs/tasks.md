@@ -19317,6 +19317,40 @@ it is flagged and is not represented as roster-equivalent.
 No new issue was created: every discovered failure is already represented by
 an existing issue or is a release-environment verification boundary.
 
+## 341. #445 domain/branding QA and reconciliation (2026-09-12)
+
+The #445 transaction reached QA and reconciliation. Commits `b5337a2` and
+`cb6af86` add the `augmentrart.com` allowed-host/trusted-origin configuration,
+retain legacy hosts, harden the public host defaults against stale deployment
+environment snapshots, and rename the former product name references to
+`AugmentrART`. The data migration for the persisted site title is
+`scenes.0044_rename_site_brand`.
+
+Fresh published evidence after the owner-confirmed republish and Replit
+deployment-secret configuration:
+
+- `https://augmentrart.com/health/`: HTTP 200.
+- `https://augmentrart.com/accounts/login/`: HTTP 200, rendered login HTML,
+  title `Log in · AugmentrART`; a fresh Chrome context at that exact origin
+  rendered the email/password fields and Login button.
+- `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`:
+  passed health/root/login and expected anonymous `whoami` 401.
+
+Local focused backend/frontend checks passed. The project-wide check reached
+backend `1206 passed, 39 skipped, 10 warnings`, frontend lint/format/typecheck,
+and the full frontend test run had passed previously with `2557 passed`; a
+post-hardening rerun was interrupted during the frontend test run after the
+published smoke passed. The remaining Replit Git panel evidence is explicitly
+recorded as a verification boundary: Refresh and Fetch returned
+`UNAUTHENTICATED`, and the panel showed `Sync Changes 3 1`. This does not
+invalidate the fresh published runtime result, but exact source/revision parity
+still needs Replit Git authentication and a successful fetch/pull.
+
+Backlog reconciliation: #445 remains OPEN as the broader release-candidate
+parent because #440 (PayPal credentials) and #460 (OAuth credentials) remain
+dependency-blocked; the domain/branding child transaction is complete. No
+issue was silently closed or duplicated.
+
 ## 336. Session-completion reconciliation after full local E2E (2026-09-12)
 
 Batch rollup: 2 issues processed; #513 **CLOSED as completed after all
@@ -19413,3 +19447,31 @@ existing release-reconciliation owner. Branding is a direct release artifact
 correction and is handled in the same criterion-ready transaction. No new
 issue is created. Order is #445 engineering/QA/reconciliation first, then
 leave #440/#460 open as terminal dependency-blocked items.
+
+## 342. Production-readiness and session-completion gate for #445 (2026-09-12)
+
+The required production-readiness assessment ran after the #445 transaction
+reconciled. Results: local deployment PASS; CI/browser repository checks PASS;
+intended domain/branding functionality PASS; published Replit runtime PASS;
+overall project production readiness BLOCKED by the Replit Git
+`UNAUTHENTICATED` fetch/pull boundary and the owner-controlled PayPal/OAuth
+boundaries in #440/#460. The published app is not claimed to be source/revision
+parity-verified until Replit Git authentication is repaired and the correct
+revision is fetched there.
+
+Session-completion audit: manifest items #440, #445, and #460 all have
+terminal classifications for this run—#440 dependency-blocked, #445
+dependency-blocked at its broader release-parent boundary with its
+domain/branding transaction complete, and #460 dependency-blocked. Missing
+terminal statuses: 0. No issue was silently omitted, duplicated, or closed.
+
+Routing audit: scoping, complex implementation, second-opinion review, and QA
+were executed in this Codex task as the owner-authorized substitution for the
+normally rostered external services; the substitution is explicitly recorded
+in the per-issue ledger. Production-readiness and session-completion likewise
+ran here because the owner instructed that no other model or Opencode task be
+invoked. The exact next actions are: repair Replit Git authentication and
+fetch/pull the intended `origin/main` revision; then repeat publish and exact
+revision parity checks. Separately, supply PayPal sandbox credentials for #440
+and OAuth provider credentials for #460 when those external callback tests are
+wanted.

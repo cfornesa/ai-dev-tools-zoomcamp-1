@@ -18969,3 +18969,29 @@ missing scene schema. Afterwards rerun
 and repeat the signed-in project-list check. Do not use the production
 database panel's migration-row count as success evidence; verify the actual
 tables/columns directly.
+
+## 326. Replit production publish is blocked by an unresolved constraint review
+
+The bounded Replit development-only reconciliation completed successfully in
+Free mode: `scripts/post-merge.sh` exited 0, migrations `0037_add_scene`
+through `0040_trigger_scene_immutable` applied, and the frontend production
+build completed. Refreshing the Development Database schema showed
+`scenes_scene`. The credential-free published smoke still passes all anonymous
+checks.
+
+Attempting the supported production publish flow then surfaced a review gate:
+Replit detected that adding the `unique_sequence_per_scene` unique constraint
+to `scenes_sceneversion` could fail against 14 existing rows. Replit offered
+either “Add the constraint as-is” or “Delete all data from
+`scenes_sceneversion` first.” The publish was cancelled without selecting
+either option; no production data or deployment state was changed.
+
+Read-only inspection confirmed the Development Database has zero
+`scenes_sceneversion` rows, while the Production Database has 14. Replit's
+Free-mode production connector returned only transaction wrappers for the
+grouped row payload, so duplicate keys and row identifiers remain unverified.
+Do not approve the destructive delete option. The next action is to obtain a
+supported production read of `(scene_id, sequence)` and row IDs (or inspect
+the production table directly), establish whether the constraint is valid for
+all 14 rows, and only then resume the publish review. This is a production
+schema/data-integrity blocker, separate from PayPal or OAuth setup.

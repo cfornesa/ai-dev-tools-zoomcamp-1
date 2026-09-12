@@ -18800,3 +18800,75 @@ Opus 5 roster unavailable.
 GitHub issue comments/close state could not be reconciled because no
 authenticated GitHub connector or active Chrome GitHub session was available;
 the local evidence and exact next action are recorded here.
+
+## 320. Production-readiness assessment for #513/#445 (owner-authorized substitution)
+
+Status: **BLOCKED — not production-ready**. This stage was explicitly run at
+the owner's request by Codex / GPT-5.6 Sol / Medium as a substitution for the
+rostered Opus 5 readiness gate. The substitution is flagged; the result does
+not claim roster-equivalent confidence.
+
+### Readiness dimensions
+
+- **Local deployment: BLOCKED.** `UV_CACHE_DIR=/private/tmp/codex-uv-cache
+  make deploy-check` completed but emitted five Django deployment warnings:
+  missing HSTS, HTTPS redirect, secure session cookie, secure CSRF cookie, and
+  production-safe `DEBUG=False`. Per repository policy, any deploy-check
+  warning blocks release readiness. `make compose-preflight` failed because
+  the Docker daemon is unavailable.
+- **Approved browser / CI: BLOCKED.** Playwright discovery finds 194 tests,
+  but the focused #513 Chromium workflow self-skips without the disposable
+  PostgreSQL-backed Django/Vite stack. No CI run or pushed remote revision
+  verifies commits through `d5e777a`.
+- **Intended functionality: BLOCKED at verification boundary.** Local unit,
+  type, build, and full-stack checks pass, but #513 still lacks rendered
+  desktop/mobile evidence and cross-scene reuse evidence. #445 remains
+  dependency-blocked on owner-provided PayPal sandbox and LinkedIn OAuth
+  credentials; no local test can substitute for those callbacks.
+- **Replit publication: BLOCKED / not assessed.** No exact published revision,
+  schema inspection, or post-publish smoke evidence was supplied for this
+  batch.
+- **Production readiness: BLOCKED.** The unresolved deployment warnings,
+  browser verification boundary, missing CI evidence, and #445 credentials
+  prevent a production-ready classification.
+
+No issue was silently omitted or duplicated. Exact next actions are: run the
+disposable stack and the #513 Chromium workflow at 1280x900 and 375x812; push
+and reconcile CI for the reviewed commits; configure the owner-controlled
+PayPal/LinkedIn callbacks and reconcile #445; then rerun this gate on Opus 5
+or Sonnet 5 at its permitted effort.
+
+## 321. Session-completion reconciliation for the #513/#445 batch
+
+Status: **HANDED-OFF with zero missing terminal statuses**. This completion
+stage was also run by Codex / GPT-5.6 Sol / Medium at the owner's explicit
+request as a substitution for the rostered readiness/completion model path.
+
+### Batch rollup
+
+- Discovered/processed: 2 issues.
+- Completed: 0.
+- Handed-off: #513 (implementation and local verification complete; live
+  browser and cross-scene evidence pending).
+- Dependency-blocked: #445 (PayPal and LinkedIn OAuth setup pending).
+- Missing terminal status: 0.
+
+The current worktree is clean and the reviewed changes are committed through
+`d5e777a`. The latest project-wide `make check` passed with backend 1199
+passed/39 skipped and frontend 2553 passed; lint emitted only existing
+warnings. The readiness result is the blocked assessment in entry 320. No PR
+was created and GitHub issue comments/closure were not reconciled because an
+authenticated GitHub write surface was unavailable; both issues remain open.
+
+Routing audit: #513 scoping was Codex / GPT-5.6 Sol / Medium; implementation
+was Codex / GPT-5.6 Sol / Medium substituted for Opencode Go / kimi-k2.7-code;
+second opinion was not requested; QA was Codex / GPT-5.6 Sol / Medium
+substituted for Claude Sonnet 5; readiness and completion were Codex /
+GPT-5.6 Sol / Medium substituted at the owner's request for the mandatory
+rostered gate. #445 was a release-assessment container with no engineering
+transaction. No second-opinion result was credited to the implementing model.
+
+The only outstanding actionable items are captured above with owners and exact
+next actions; the proposed durable-memory note about the stable-ID bridge
+between server editor projects and local IndexedDB media storage remains
+pending owner confirmation rather than being silently written.

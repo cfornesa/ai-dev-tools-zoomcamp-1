@@ -18872,3 +18872,35 @@ The only outstanding actionable items are captured above with owners and exact
 next actions; the proposed durable-memory note about the stable-ID bridge
 between server editor projects and local IndexedDB media storage remains
 pending owner confirmation rather than being silently written.
+
+## 322. Correction: optional provider credentials are not a baseline app gate
+
+The preceding readiness report over-broadened #445's credential blockers. The
+PayPal sandbox credentials for #440 and LinkedIn OAuth credentials for #460 are
+required only for those optional provider workflows and #445's exact release-
+candidate checklist. They are not prerequisites for the app's baseline
+functionality, local-first projects, #513's editor workflow, or anonymous
+published routing.
+
+The current published routing smoke check was run against
+`https://animate.creatrweb.com` and passed: `/health/` 200 with `status=ok`,
+`/` 200, anonymous `/api/whoami/` 401, and `/accounts/login/` 200. That proves
+the currently published app is reachable, not that the reviewed commits
+through `d5e777a` are deployed. A republish is therefore the correct next
+deployment-evidence step, not a PayPal/OAuth prerequisite.
+
+After the owner republishes, the readiness investigation can continue with:
+
+1. capture the exact published revision and rerun
+   `PUBLISHED_APP_URL=https://animate.creatrweb.com scripts/smoke-published.sh`;
+2. use the active Chrome/Replit session to inspect deployment logs and, for any
+   migration-bearing publish, the actual production tables required by the
+   release checklist;
+3. run the #513 browser workflow against a disposable PostgreSQL-backed
+   Django/Vite stack, or manually inspect the published baseline without
+   mutating production data; and
+4. reconcile CI for the reviewed revision separately from production smoke.
+
+#445 remains open for its optional-provider callbacks and exact release
+reconciliation, but it must not be used to declare the baseline app or #513
+non-functional.

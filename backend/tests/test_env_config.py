@@ -95,7 +95,8 @@ def test_valid_example_derived_env_loads_settings(monkeypatch):
 
     assert settings_module.SECRET_KEY == VALID_ENV["DJANGO_SECRET_KEY"]
     assert settings_module.DEBUG is True
-    assert settings_module.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
+    assert settings_module.ALLOWED_HOSTS[:2] == ["localhost", "127.0.0.1"]
+    assert "augmentrart.com" in settings_module.ALLOWED_HOSTS
     assert settings_module.CSRF_TRUSTED_ORIGINS == [
         "https://animate.creatrweb.com",
         "http://localhost:8000",
@@ -168,7 +169,8 @@ def test_optional_allowed_hosts_defaults_when_unset(monkeypatch):
 
     settings_module = _reload_settings(monkeypatch, env)
 
-    assert settings_module.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
+    assert settings_module.ALLOWED_HOSTS[:2] == ["localhost", "127.0.0.1"]
+    assert "augmentrart.com" in settings_module.ALLOWED_HOSTS
 
 
 def test_default_csrf_origins_allow_vite_browser_requests(monkeypatch):

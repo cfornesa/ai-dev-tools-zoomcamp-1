@@ -113,6 +113,17 @@ ALLOWED_HOSTS = [
     for host in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
     if host.strip()
 ]
+# Public Replit/custom-domain routes are part of the application's deployment
+# contract. Keep them available even when a deployment retains an older
+# environment variable snapshot; operators can still add environment-specific
+# hosts through DJANGO_ALLOWED_HOSTS, and production continues to reject '*'.
+for public_host in (
+    'augmentrart.com',
+    'animate.creatrweb.com',
+    'creatrweb.replit.app',
+):
+    if public_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(public_host)
 CSRF_TRUSTED_ORIGINS = get_csrf_trusted_origins()
 
 # Replit's HTTPS edge forwards requests through Vite to Django on localhost.

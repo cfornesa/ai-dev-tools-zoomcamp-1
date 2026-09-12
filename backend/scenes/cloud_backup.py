@@ -70,6 +70,37 @@ def _plan_quota(user) -> tuple[int, int]:
     return plan.cloud_storage_bytes, plan.cloud_storage_files
 
 
+def _validate_manifest(project: Project, manifest: dict) -> None:
+    """Require the stable identity/checksum shape used by the sync protocol."""
+    if manifest.get("project_id") != str(project.public_id):
+        raise CloudBackupConflict("The manifest project_id does not match the project.")
+    scenes = manifest.get("scenes")
+    assets = manifest.get("assets", [])
+    if not isinstance(scenes, list) or not scenes:
+        raise CloudBackupConflict("The manifest must contain a non-empty scenes list.")
+    if not isinstance(assets, list):
+        raise CloudBackupConflict("The manifest assets field must be a list.")
+    scene_ids = [item.get("id") if isinstance(item, dict) else None for item in scenes]
+    if any(not isinstance(value, str) or not value for value in scene_ids):
+        raise CloudBackupConflict("Every scene must have a stable id.")
+    if len(set(scene_ids)) != len(scene_ids):
+        raise CloudBackupConflict("Scene ids must be unique within a manifest.")
+    asset_ids = []
+    for item in assets:
+        if not isinstance(item, dict):
+            raise CloudBackupConflict("Every asset must be an object.")
+        asset_id = item.get("id")
+        if not isinstance(asset_id, str) or not asset_id:
+            raise CloudBackupConflict("Every asset must have a stable id.")
+        if not isinstance(item.get("checksum"), str) or not item["checksum"]:
+            raise CloudBackupConflict("Every asset must include a checksum.")
+        if not isinstance(item.get("byte_size"), int) or item["byte_size"] < 0:
+            raise CloudBackupConflict("Every asset must include a non-negative byte_size.")
+        asset_ids.append(asset_id)
+    if len(set(asset_ids)) != len(asset_ids):
+        raise CloudBackupConflict("Asset ids must be unique within a manifest.")
+
+
 @transaction.atomic
 def enable_backup(user, project: Project) -> CloudBackupProject:
     _enabled()
@@ -110,6 +141,7 @@ def put_manifest(
         raise CloudBackupConflict("The manifest revision is stale.")
     if not isinstance(manifest, dict):
         raise CloudBackupConflict("The manifest must be a JSON object.")
+    _validate_manifest(project, manifest)
     encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
     row = CloudBackupManifest.objects.create(
         backup=backup,

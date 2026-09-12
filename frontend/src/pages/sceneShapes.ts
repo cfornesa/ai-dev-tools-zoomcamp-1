@@ -24,7 +24,7 @@
 
 import rawLimits from '../../../schema/limits.json';
 
-export type ShapeType = 'circle' | 'rect' | 'line' | 'path';
+export type ShapeType = 'circle' | 'rect' | 'line' | 'path' | 'image';
 
 export type Point = { x: number; y: number };
 
@@ -70,8 +70,14 @@ export type RectShape = BaseShape & {
 };
 export type LineShape = BaseShape & { type: 'line'; x2: number; y2: number };
 export type PathShape = BaseShape & { type: 'path'; points: Point[]; closed: boolean };
+export type ImageShape = BaseShape & {
+  type: 'image';
+  mediaAssetId: string;
+  altText: string | null;
+  decorative: boolean;
+};
 
-export type Shape = CircleShape | RectShape | LineShape | PathShape;
+export type Shape = CircleShape | RectShape | LineShape | PathShape | ImageShape;
 
 const DEFAULT_STYLE: Style = { fill: '#4f46e5', stroke: '#1e1b4b', strokeWidth: 2 };
 
@@ -119,6 +125,15 @@ export function createShape(
         ],
         closed: true,
       };
+    case 'image':
+      return {
+        ...base,
+        type,
+        transform: baseTransform(cx - 80, cy - 60),
+        mediaAssetId: '',
+        altText: null,
+        decorative: true,
+      };
   }
 }
 
@@ -133,7 +148,13 @@ export function duplicateShape(shape: Shape): Shape {
 }
 
 function isShapeType(value: unknown): value is ShapeType {
-  return value === 'circle' || value === 'rect' || value === 'line' || value === 'path';
+  return (
+    value === 'circle' ||
+    value === 'rect' ||
+    value === 'line' ||
+    value === 'path' ||
+    value === 'image'
+  );
 }
 
 /** Narrows a scene's raw `shapes` array down to the shapes this task's UI
@@ -300,6 +321,8 @@ export function shapeBounds(shape: Shape, groups: RenderGroup[] = []): Bounds {
         maxY: Math.max(...ys),
       });
     }
+    case 'image':
+      return bounds({ minX: 0, minY: 0, maxX: 160, maxY: 120 });
   }
 }
 
@@ -331,6 +354,7 @@ const SHAPE_TYPE_DISPLAY_NAMES: Record<ShapeType, string> = {
   rect: 'Rectangle',
   line: 'Line',
   path: 'Polygon',
+  image: 'Image',
 };
 
 export function shapeTypeDisplayName(type: ShapeType): string {
@@ -439,6 +463,8 @@ function localResizeHandle(shape: Shape): Point {
       const b = pathLocalBounds(shape);
       return { x: x + b.maxX, y: y + b.maxY };
     }
+    case 'image':
+      return { x: x + 160, y: y + 120 };
   }
 }
 
@@ -467,6 +493,8 @@ function localRotateHandle(shape: Shape): Point {
       const b = pathLocalBounds(shape);
       return { x: x + (b.minX + b.maxX) / 2, y: y + b.minY - ROTATE_HANDLE_OFFSET };
     }
+    case 'image':
+      return { x: x + 80, y: y - ROTATE_HANDLE_OFFSET };
   }
 }
 
@@ -539,6 +567,17 @@ function applyResize(shape: Shape, pointer: Point): Shape {
         y: clamp(p.y * scale, POSITION_LIMIT.min, POSITION_LIMIT.max),
       }));
       return { ...shape, points };
+    }
+    case 'image': {
+      const local = rotateAround(pointer.x, pointer.y, x, y, -rotation);
+      return {
+        ...shape,
+        transform: {
+          ...shape.transform,
+          scaleX: clamp((local.x - x) / 160, 0, 100),
+          scaleY: clamp((local.y - y) / 120, 0, 100),
+        },
+      };
     }
   }
 }
@@ -917,6 +956,8 @@ function applyGroupResize(startShapes: Shape[], bounds: Bounds, pointer: Point):
         }));
         return { ...shape, transform, points };
       }
+      case 'image':
+        return { ...shape, transform };
     }
   });
 }

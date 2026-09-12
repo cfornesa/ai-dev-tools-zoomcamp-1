@@ -128,6 +128,7 @@ import SaveControl from './SaveControl';
 import SelectionHud from './SelectionHud';
 import ShapeInspectorPanel from './ShapeInspectorPanel';
 import VersionHistoryPanel from './VersionHistoryPanel';
+import ProjectMediaLibraryPanel from './ProjectMediaLibraryPanel';
 
 /**
  * Task 64 (issue #64): the "Exit without saving" confirmation, as its own
@@ -2800,6 +2801,8 @@ function EditorWorkspace() {
         return `(${shape.transform.x}, ${shape.transform.y}) -> (${shape.x2}, ${shape.y2})`;
       case 'path':
         return `${shape.points.length} point(s), closed=${shape.closed}`;
+      case 'image':
+        return `asset=${shape.mediaAssetId}`;
     }
   }
 
@@ -3783,6 +3786,15 @@ function EditorWorkspace() {
                   }
                   editorControls={
                     <>
+                      {id && auth.status === 'signed-in' && (
+                        <ProjectMediaLibraryPanel
+                          projectId={id}
+                          projectTitle={project?.title ?? 'Local project'}
+                          ownerId={auth.user.username}
+                          workingCopy={workingCopy}
+                          sceneEditor={sceneEditor}
+                        />
+                      )}
                       <StageControlsPopover
                         label="Edit scene"
                         panelClassName="editor-authoring-controls-panel"

@@ -18692,3 +18692,57 @@ children (#509, #511, #513).
 (#510, #512, #508) and is scopeable next. [#509](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/509)
 remains provider-decision-blocked; [#511](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/511)
 remains dependency-blocked on #509 and #440.
+
+## 318. #513 scoped to criterion-ready; #445 reconciled as dependency-blocked
+
+Status: #513 GROOMED — Stage 2a engineering transaction; #445
+DEPENDENCY-BLOCKED — release reconciliation only.
+
+GitHub issues: [#513](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/513),
+[#445](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/445)
+
+### #513 closure contract
+
+Entry point: the rendered 2D editor at `/projects/:id`, using a local project
+fixture with two scenes and two project-owned image assets. The implementation
+may touch only the editor UI, its focused tests/E2E fixture, and the established
+local project repository integration. No cloud sync, backend persistence,
+public viewer, export artifact, or 3D/AI editor behavior is claimed.
+
+Finite checks: File menu keyboard semantics and focus restoration; supported
+media import with accessible alt/decorative validation and classified failure
+messages; library metadata and reference-aware deletion; insertion as a named
+independently selectable image layer; cross-scene reuse; narrow viewport access
+without preview/Layers landmark overlap; focused component tests, Chromium
+fixed-viewport browser evidence, and `make check`.
+
+Routing: Stage 2a mechanical frontend (`Opencode Go / kimi-k2.7-code`), with a
+handoff to Stage 2b if the existing local repository contract must change.
+Stage 3 second-opinion review: not requested. Evidence boundary: rendered
+local 2D editor only; deployment and cloud/public asset parity stay out of
+scope.
+
+### Transaction ledger
+
+- **Phase:** GROOMED → ENGINEERING
+- **Issue owner / current transaction:** #513 only; #445 is not an engineering
+  selection because its own contract says it is a release-assessment container.
+- **Focused checks:** `cd frontend && npm test -- --run ...` for the new panel/
+  workspace tests; `cd frontend && npm run typecheck`.
+- **Full checks:** `make check`; supported Chromium E2E for the named workflow.
+- **QA / closure:** pending Stage 4 re-run and criterion matrix.
+- **Evidence boundary:** localhost/disposable local project only; no Replit
+  publish or external provider claim.
+- **Stage provenance:** scoping — Codex / GPT-5.6 Sol / Medium (no
+  substitution); implementation — rostered Opencode Go / kimi-k2.7-code,
+  substitution recorded if performed here; second opinion — not run; QA and
+  readiness are recorded at their gates.
+
+### #445 handoff
+
+No source change is authorized for #445. Its current finite blocker set is
+owner-supplied PayPal sandbox credentials for #440 and LinkedIn OAuth client
+credentials for #460. Owner/release operator next action: provide those
+credentials, execute the bounded non-production callbacks, then reconcile the
+exact release SHA, schema, and published evidence under #445. No local green
+suite can close that deployment boundary.

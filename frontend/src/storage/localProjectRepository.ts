@@ -425,6 +425,35 @@ export async function createProject(
   return record;
 }
 
+/** Returns the stable local mirror for an editor project, creating it with
+ * the caller's supplied id when this is the first local-media interaction.
+ * Server-backed editor projects use this bridge until the full local-first
+ * project route becomes the editor's source of truth. */
+export async function ensureProject(
+  db: IDBDatabase,
+  input: { id: string; ownerId: string; title: string },
+): Promise<LocalProjectRecord> {
+  const existing = await getProject(db, input.ownerId, input.id);
+  if (existing) return existing;
+  const record: LocalProjectRecord = {
+    id: input.id,
+    ownerId: input.ownerId,
+    title: input.title,
+    sceneOrder: [],
+    activeSceneId: null,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+  try {
+    const tx = db.transaction(STORE_PROJECTS, 'readwrite');
+    tx.objectStore(STORE_PROJECTS).put(record);
+    await txDone(tx);
+  } catch (err) {
+    throw classifyDbFailure(err);
+  }
+  return record;
+}
+
 function isWellFormedProject(value: unknown): value is LocalProjectRecord {
   if (!value || typeof value !== 'object') return false;
   const r = value as Partial<LocalProjectRecord>;
@@ -944,6 +973,31 @@ export async function listMediaAssetsForProject(
   } catch (err) {
     throw classifyDbFailure(err);
   }
+}
+
+export async function updateMediaAssetMetadata(
+  db: IDBDatabase,
+  assetId: string,
+  patch: Pick<LocalMediaAssetRecord, 'filename' | 'altText'>,
+): Promise<LocalMediaAssetRecord> {
+  let asset: LocalMediaAssetRecord | undefined;
+  try {
+    const tx = db.transaction(STORE_MEDIA_ASSETS, 'readonly');
+    asset = (await reqPromise(tx.objectStore(STORE_MEDIA_ASSETS).get(assetId))) as
+      LocalMediaAssetRecord | undefined;
+  } catch (err) {
+    throw classifyDbFailure(err);
+  }
+  if (!asset) throw corruptData(`Local media asset "${assetId}" was not found.`);
+  const updated = { ...asset, ...patch };
+  try {
+    const tx = db.transaction(STORE_MEDIA_ASSETS, 'readwrite');
+    tx.objectStore(STORE_MEDIA_ASSETS).put(updated);
+    await txDone(tx);
+  } catch (err) {
+    throw classifyDbFailure(err);
+  }
+  return updated;
 }
 
 export async function getMediaBlob(db: IDBDatabase, assetId: string): Promise<Blob | null> {

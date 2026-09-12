@@ -953,6 +953,123 @@ code {
   font-size: 12px;
 }
 
+.editor-file-menu {
+  position: relative;
+}
+
+.editor-file-menu-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 6px;
+  min-width: 190px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+.editor-file-menu-popover button {
+  padding: 7px 9px;
+  text-align: left;
+}
+
+.editor-file-menu-popover p,
+.editor-media-library p {
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+.media-import-dialog {
+  position: absolute;
+  z-index: 30;
+  top: 48px;
+  left: 12px;
+  display: grid;
+  gap: 8px;
+  max-width: min(360px, calc(100% - 24px));
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.editor-media-error {
+  margin: 8px 0;
+  color: #b42318;
+}
+
+.editor-media-library {
+  position: absolute;
+  z-index: 18;
+  top: 52px;
+  left: 12px;
+  width: min(560px, calc(100% - 24px));
+  max-height: min(70vh, 620px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.editor-media-library-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.editor-media-library-header h3 {
+  margin: 0;
+}
+
+.editor-media-library ul {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.editor-media-asset {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.editor-media-asset > img,
+.editor-media-asset > span {
+  width: 72px;
+  height: 56px;
+  object-fit: cover;
+  background: var(--code-bg);
+}
+
+.editor-media-asset > span {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  text-align: center;
+}
+
+.editor-media-asset button {
+  margin: 4px 6px 0 0;
+}
+
+.editor-media-asset p,
+.editor-media-asset strong {
+  overflow-wrap: anywhere;
+}
+
 .editor-panel-switcher {
   display: flex;
   flex-wrap: wrap;

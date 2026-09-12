@@ -60,6 +60,7 @@ export default function ProjectMediaLibraryPanel({
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [renameAltText, setRenameAltText] = useState('');
   const fileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -240,7 +241,7 @@ export default function ProjectMediaLibraryPanel({
     try {
       await updateMediaAssetMetadata(db, asset.id, {
         filename: renameValue.trim(),
-        altText: asset.altText,
+        altText: renameAltText.trim(),
       });
       setRenamingId(null);
       await refresh();
@@ -371,11 +372,14 @@ export default function ProjectMediaLibraryPanel({
                 db={db}
                 renaming={renamingId === asset.id}
                 renameValue={renameValue}
+                renameAltText={renameAltText}
                 onRenameStart={() => {
                   setRenamingId(asset.id);
                   setRenameValue(asset.filename);
+                  setRenameAltText(asset.altText);
                 }}
                 onRenameChange={setRenameValue}
+                onRenameAltTextChange={setRenameAltText}
                 onRenameSave={() => void saveRename(asset)}
                 onInsert={() => void insertAsset(asset)}
                 onDelete={() => void deleteAsset(asset)}
@@ -393,8 +397,10 @@ function MediaAssetRow({
   db,
   renaming,
   renameValue,
+  renameAltText,
   onRenameStart,
   onRenameChange,
+  onRenameAltTextChange,
   onRenameSave,
   onInsert,
   onDelete,
@@ -403,8 +409,10 @@ function MediaAssetRow({
   db: IDBDatabase | null;
   renaming: boolean;
   renameValue: string;
+  renameAltText: string;
   onRenameStart: () => void;
   onRenameChange: (value: string) => void;
+  onRenameAltTextChange: (value: string) => void;
   onRenameSave: () => void;
   onInsert: () => void;
   onDelete: () => void;
@@ -441,6 +449,14 @@ function MediaAssetRow({
               id={`rename-media-${asset.id}`}
               value={renameValue}
               onChange={(event) => onRenameChange(event.target.value)}
+            />
+            <label htmlFor={`rename-media-alt-${asset.id}`}>
+              Alt text (leave blank for decorative)
+            </label>
+            <input
+              id={`rename-media-alt-${asset.id}`}
+              value={renameAltText}
+              onChange={(event) => onRenameAltTextChange(event.target.value)}
             />
             <button type="button" onClick={onRenameSave}>
               Save metadata

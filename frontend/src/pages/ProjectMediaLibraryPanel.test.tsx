@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -117,5 +117,41 @@ describe('ProjectMediaLibraryPanel', () => {
       altText: 'Sunset',
     });
     expect(selectShape).toHaveBeenCalledWith(nextScene.shapes[0].id);
+  });
+
+  it('edits the filename and alt-text metadata together', async () => {
+    repo.listMediaAssetsForProject.mockResolvedValueOnce([
+      {
+        id: 'asset-2',
+        projectId: 'project-1',
+        mimeType: 'image/jpeg',
+        byteSize: 24,
+        checksum: 'def',
+        filename: 'old.jpg',
+        altText: 'Old description',
+        createdAt: '2026-01-02',
+        refCount: 1,
+      },
+    ]);
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Open media library' }));
+    const asset = screen
+      .getAllByRole('listitem')
+      .find((item) => item.textContent?.includes('old.jpg'))!;
+    await user.click(within(asset).getByRole('button', { name: 'Rename metadata' }));
+    await user.clear(screen.getByLabelText('Asset name'));
+    await user.type(screen.getByLabelText('Asset name'), 'new.jpg');
+    await user.clear(screen.getByLabelText('Alt text (leave blank for decorative)'));
+    await user.type(
+      screen.getByLabelText('Alt text (leave blank for decorative)'),
+      'New description',
+    );
+    await user.click(screen.getByRole('button', { name: 'Save metadata' }));
+    expect(repo.updateMediaAssetMetadata).toHaveBeenCalledWith(expect.anything(), 'asset-2', {
+      filename: 'new.jpg',
+      altText: 'New description',
+    });
   });
 });

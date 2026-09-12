@@ -1,7 +1,7 @@
 """Tests for the admin settings/plans API and service (issue #422).
 
 Uses the issue's own fixed fixture: application-admin A, ordinary user B,
-`site_title='CreatrART'`, free plan `daily_ai_requests=5`
+`site_title='AugmentrART'`, free plan `daily_ai_requests=5`
 and paid plan `daily_ai_requests=20` (test values, not an approved
 commercial price).
 """
@@ -51,7 +51,7 @@ def fixed_plans(db):
             "active": True,
         },
     )
-    SiteSettings.objects.update_or_create(pk=1, defaults={"site_title": "CreatrART"})
+    SiteSettings.objects.update_or_create(pk=1, defaults={"site_title": "AugmentrART"})
 
 
 # --- API authorization ---
@@ -76,7 +76,7 @@ def test_settings_get_allowed_for_admin(client, admin_a):
     response = client.get(reverse("admin-settings"))
     assert response.status_code == 200
     assert response.json() == {
-        "site_title": "CreatrART",
+        "site_title": "AugmentrART",
         "cloud_sync_enabled": False,
         "revision": 1,
     }
@@ -136,7 +136,7 @@ def test_site_title_update_rejects_unknown_fields_atomically(client, admin_a):
         content_type="application/json",
     )
     assert response.status_code == 400
-    assert SiteSettings.get_solo().site_title == "CreatrART"
+    assert SiteSettings.get_solo().site_title == "AugmentrART"
 
 
 @pytest.mark.django_db
@@ -148,7 +148,7 @@ def test_site_title_update_rejects_blank_title(client, admin_a):
         content_type="application/json",
     )
     assert response.status_code == 400
-    assert SiteSettings.get_solo().site_title == "CreatrART"
+    assert SiteSettings.get_solo().site_title == "AugmentrART"
 
 
 @pytest.mark.django_db
@@ -160,7 +160,7 @@ def test_stale_site_title_revision_returns_conflict_without_partial_update(clien
         content_type="application/json",
     )
     assert response.status_code == 409
-    assert SiteSettings.get_solo().site_title == "CreatrART"
+    assert SiteSettings.get_solo().site_title == "AugmentrART"
     assert SiteSettings.get_solo().revision == 1
 
 

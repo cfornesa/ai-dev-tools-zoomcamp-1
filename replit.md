@@ -1,4 +1,4 @@
-# Running CreatrART on Replit
+# Running AugmentrART on Replit
 
 The `Start application` workflow runs the full development stack:
 

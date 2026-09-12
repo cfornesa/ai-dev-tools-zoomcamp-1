@@ -1,4 +1,4 @@
-# CreatrART — V1 Plan
+# AugmentrART — V1 Plan
 
 ## Product definition
 

@@ -69,8 +69,8 @@ grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"' <<<"$health_body" \
 
 root_body="$(curl --silent --show-error --fail --max-time 5 "$base_url/")" \
   || fail "root probe failed at $base_url/"
-grep -Fq 'CreatrART' <<<"$root_body" \
-  || fail "served app identity is not 'CreatrART'; inspect Docker Compose project labels before running browser tests"
+grep -Fq 'AugmentrART' <<<"$root_body" \
+  || fail "served app identity is not 'AugmentrART'; inspect Docker Compose project labels before running browser tests"
 
 whoami_status="$(curl --silent --max-time 5 -o /dev/null -w '%{http_code}' "$base_url/api/whoami/")"
 [[ "$whoami_status" == 401 ]] \

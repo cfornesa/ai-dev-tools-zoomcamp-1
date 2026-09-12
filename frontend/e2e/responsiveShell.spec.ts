@@ -172,7 +172,7 @@ test.describe('Responsive app shell', () => {
       await page.setViewportSize(NARROW_VIEWPORT);
       await page.goto('/');
 
-      await expectVisibleAndInViewport(page.getByRole('heading', { name: 'CreatrART' }));
+      await expectVisibleAndInViewport(page.getByRole('heading', { name: 'AugmentrART' }));
       // Below the mobile-header breakpoint, primary nav lives behind the
       // hamburger toggle (issue #90) rather than being inline, so it must be
       // opened before asserting its contents are visible and in-viewport.
@@ -300,7 +300,7 @@ test.describe('Responsive app shell', () => {
         const context = await browser.newContext();
         const page = await context.newPage();
 
-        const title = page.getByRole('heading', { name: 'CreatrART' });
+        const title = page.getByRole('heading', { name: 'AugmentrART' });
         const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
         const accountLink = page.getByRole('link', { name: 'Account settings' });
         const logoutButton = page.getByRole('button', { name: 'Logout' });
@@ -344,7 +344,7 @@ test.describe('Responsive app shell', () => {
         await page.setViewportSize(TABLET_VIEWPORT);
         await loginViaUI(page, fixtures.other.email, fixtures.password);
 
-        const title = page.getByRole('heading', { name: 'CreatrART' });
+        const title = page.getByRole('heading', { name: 'AugmentrART' });
         const galleryLink = page.getByRole('link', { name: 'Public gallery' });
         const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
         const accountLink = page.getByRole('link', { name: 'Account settings' });

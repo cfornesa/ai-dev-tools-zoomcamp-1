@@ -96,7 +96,9 @@ describe('known routes still resolve (issue #485 regression check)', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'CreatrART', level: 1 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'AugmentrART', level: 1 }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/sign in to see your projects/i)).toBeInTheDocument();
   });
 });

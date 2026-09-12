@@ -122,7 +122,7 @@ class SiteSettings(models.Model):
     change.
     """
 
-    site_title = models.CharField(max_length=200, default="CreatrART")
+    site_title = models.CharField(max_length=200, default="AugmentrART")
     # Issue #509: cloud backup is disabled until an administrator enables it.
     cloud_sync_enabled = models.BooleanField(default=False)
     revision = models.PositiveIntegerField(default=1)

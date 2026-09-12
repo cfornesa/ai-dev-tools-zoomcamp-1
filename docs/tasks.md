@@ -1,6 +1,6 @@
-# CreatrART Backlog
+# AugmentrART Backlog
 
-## 2026-09-10 — #508 QA'd + readiness + CreatrART rename committed
+## 2026-09-10 — #508 QA'd + readiness + AugmentrART rename committed
 
 Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized
 substitution for Sonnet 5): independently re-ran every claimed command from
@@ -27,7 +27,7 @@ Stage 5 (`production-readiness`, Sonnet 4.6 Thinking, user-authorized Opus 5
 substitution): see readiness verdict in the entry below. **`make check` green**
 after three format-fix commits (`e2c4e85` ruff, `ffc69a9` Prettier).
 
-CreatrART rename (`8d59588`) committed from owner's working-tree files (product
+AugmentrART rename (`8d59588`) committed from owner's working-tree files (product
 name, HTML templates, Layout, export attribution, admin settings, compose
 preflight, responsiveShell E2E, plan docs, opencode.json). Format drift fixed in
 `e2c4e85` (ruff `test_admin_settings.py`) and `ffc69a9` (Prettier:
@@ -1252,7 +1252,7 @@ intended outcome with the project owner, then configure the existing stack to
 run on Replit without restructuring it. Document the resulting workflow and
 any required setup.
 
-### 2. Task #3 — Rename product branding to CreatrART
+### 2. Task #3 — Rename product branding to AugmentrART
 Status: COMPLETE
 
 Specification: Replace user-facing product branding in the application shell,
@@ -1271,7 +1271,7 @@ coverage while ensuring the configured Node 22 test command passes.
 Status: COMPLETE
 
 Specification: Add a focused static-shell assertion that the browser document
-title is “CreatrART,” preventing divergence between the
+title is “AugmentrART,” preventing divergence between the
 visible header and browser tab branding.
 
 ### 5. Task #6 — Improve shell spacing and empty project layout
@@ -18467,7 +18467,7 @@ regressions (73 tests) green, migration verified both directions against
 real Postgres with no data loss on a manually seeded pre-existing project.
 `make check`'s failure is confirmed unrelated to #510 (pre-existing
 formatting drift in `test_admin_settings.py` from the owner's separate,
-still-uncommitted CreatrART rename) — recorded as a verification boundary,
+still-uncommitted AugmentrART rename) — recorded as a verification boundary,
 not a #510 defect. QA: PASS posted; issue closed.
 
 Discovery gate: implementation flagged that the Postgres trigger in
@@ -18665,7 +18665,7 @@ remain excluded.
 
 **Readiness finding — real gap found and resolved, not rubber-stamped:**
 the whole batch (#508, plus already-closed #510/#512/#514, plus an owner
-CreatrART-rename commit and 3 doc commits) was 15 commits ahead of
+AugmentrART-rename commit and 3 doc commits) was 15 commits ahead of
 `origin/main` with zero CI evidence for any of it. Owner authorized
 pushing (`22f5e60..fdec6ab`); CI run
 [34562050780](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34562050780)
@@ -19393,3 +19393,23 @@ The session-completion reconciliation therefore has zero missing terminal
 statuses for the requested batch, while the repository as a whole is not
 declared production-ready until #445/#440/#460 are resolved or explicitly
 deferred by the owner.
+
+## 340. Task-distillation: augmentrart.com 400 and branding (2026-09-12)
+
+Current manifest after the owner's successful republish:
+
+- **#445:** actionable release reconciliation. Live evidence shows the custom
+  domain serves `/` but Django returns 400 for `/health/` and
+  `/accounts/login/`; this is caused by the production host/origin lists not
+  naming `augmentrart.com`. Exact product branding also remains in the
+  checkout. Criterion-ready transaction: `.local/tasks/445-domain-branding.md`.
+- **#440:** dependency-blocked on owner PayPal sandbox credentials; no
+  credential-free substitute can establish the external callback boundary.
+- **#460:** dependency-blocked on owner OAuth-provider credentials; no
+  credential-free substitute can establish the external callback boundary.
+
+Duplicate/coverage result: the 400 is not a new standalone issue; #445 is the
+existing release-reconciliation owner. Branding is a direct release artifact
+correction and is handled in the same criterion-ready transaction. No new
+issue is created. Order is #445 engineering/QA/reconciliation first, then
+leave #440/#460 open as terminal dependency-blocked items.

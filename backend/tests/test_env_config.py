@@ -99,6 +99,7 @@ def test_valid_example_derived_env_loads_settings(monkeypatch):
     assert settings_module.CSRF_TRUSTED_ORIGINS == [
         "https://animate.creatrweb.com",
         "http://localhost:8000",
+        "https://augmentrart.com",
         "https://animate.creatrweb.com",
         "https://creatrweb.replit.app",
         "http://localhost:5000",

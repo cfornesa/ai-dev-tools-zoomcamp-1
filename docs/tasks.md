@@ -18943,3 +18943,29 @@ editor workflow from being exercised against the published app.
 
 No product-code change was made from this observation. The next exact action
 is the existing post-publish verification path under [#467](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/467): inspect Replit deployment logs for the traceback and directly inspect the production tables required by the 2D project-list query, then fix or republish only after the missing relation/configuration is identified. Keep the local #513 Chromium workflow against a disposable PostgreSQL-backed stack separate from production data.
+
+## 325. Replit production schema is missing the scene migration
+
+The Replit Database panels were inspected read-only after the successful
+republish. Both development and production have `scenes_project`, but neither
+has a `scenes_scene` table and neither `scenes_project` schema includes
+`active_scene_id`. Both are required by the deployed Django code:
+`ProjectListCreateView.get()` joins `active_scene` and prefetches `scenes`,
+while `ProjectSerializer` serializes both fields. The development
+`django_migrations` table stops at `scenes` migration `0015`, although later
+objects were created through Replit's schema tooling; the repository's missing
+scene migrations are `0037_add_scene.py` through `0040_trigger_scene_immutable.py`.
+
+This explains the authenticated `GET /api/projects/` HTTP 500 and the home
+page's project-load error. The published frontend bundle is current, but the
+production and development database schemas are not. This is a confirmed
+Replit schema-diff/migration-ledger failure in the existing #467 verification
+path, not a missing PayPal/LinkedIn credential. Owner action: bring the
+development database through the repository's supported post-merge migration
+flow, reconcile the resulting schema against the known Replit ledger drift,
+then use Replit's supported production schema publish flow to apply the
+missing scene schema. Afterwards rerun
+`PUBLISHED_APP_URL=https://animate.creatrweb.com scripts/smoke-published.sh`
+and repeat the signed-in project-list check. Do not use the production
+database panel's migration-row count as success evidence; verify the actual
+tables/columns directly.

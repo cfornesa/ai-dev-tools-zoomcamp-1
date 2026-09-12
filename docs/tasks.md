@@ -18904,3 +18904,22 @@ After the owner republishes, the readiness investigation can continue with:
 #445 remains open for its optional-provider callbacks and exact release
 reconciliation, but it must not be used to declare the baseline app or #513
 non-functional.
+
+## 323. Replit workspace fetch is blocked by stale GitHub authentication
+
+Investigation result: the local checkout and GitHub remote are current and
+equal at `8a792e4696e6539dc146d23c7b58a9aa1ff471f5`. The open Replit
+`creatrweb` workspace still displayed history ending two days ago and reported
+`upstream last fetched 1 day ago`. Its Git settings showed the GitHub
+connection as Active, but pressing Fetch returned `UNAUTHENTICATED: Failed to
+authenticate with the remote` and left the visible history unchanged.
+
+This is a Replit/GitHub connection-state blocker, not evidence that the #513
+commits were absent from GitHub and not a product-code failure. The repository
+already contains the matching historical sync/authentication class (#380/#379),
+which is closed; no new issue or destructive connection reset was created
+without owner authorization. Owner action: reauthorize the GitHub connection
+from Replit's Git settings, then Fetch until the Replit history reaches
+`8a792e4`; only after that should the app be republished and its exact revision
+verified. The current published smoke check remains independent and passed
+against `https://animate.creatrweb.com` before this fetch investigation.

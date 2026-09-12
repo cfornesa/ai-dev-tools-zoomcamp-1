@@ -39,7 +39,7 @@ def backup_policy(db):
         plan_key="free",
         defaults={
             "daily_ai_requests": 5,
-            "feature_keys": [],
+            "feature_keys": ["cloud_project_sync"],
             "active": True,
             "cloud_storage_bytes": 10,
             "cloud_storage_files": 1,
@@ -106,6 +106,49 @@ def test_owner_manifest_and_blob_are_idempotent_and_isolated(client, owner, othe
     client.force_login(other)
     assert client.get(manifest_url).status_code == 404
     assert client.get(blob_url).status_code == 404
+
+
+@pytest.mark.django_db
+def test_owner_can_pause_backup_without_affecting_local_project(client, owner, project):
+    client.force_login(owner)
+    base = reverse("cloud-backup", args=[project.public_id])
+    assert client.post(base, {"action": "enable"}).status_code == 201
+    paused = client.post(base, {"action": "pause"})
+    assert paused.status_code == 201
+    assert paused.json()["paused"] is True
+    assert client.get(base).json()["paused"] is True
+
+
+@pytest.mark.django_db
+def test_sync_entitlement_is_fail_closed(owner, project):
+    from scenes.cloud_backup import CloudBackupConflict, enable_backup
+
+    Plan.objects.filter(plan_key="free").update(feature_keys=[])
+    with pytest.raises(CloudBackupConflict):
+        enable_backup(owner, project)
+
+
+@pytest.mark.django_db
+def test_entitlement_loss_turns_future_writes_into_read_only_retention(owner, project):
+    from scenes.cloud_backup import (
+        CloudBackupReadOnly,
+        enable_backup,
+        mark_backup_read_only_for_user,
+        put_manifest,
+    )
+
+    enable_backup(owner, project)
+    Plan.objects.filter(plan_key="free").update(feature_keys=[])
+    assert mark_backup_read_only_for_user(owner) == 1
+    with pytest.raises(CloudBackupReadOnly):
+        put_manifest(
+            owner,
+            project,
+            expected_revision=0,
+            idempotency_key="lost-entitlement",
+            manifest={"project_id": str(project.public_id), "scenes": [{"id": "scene-1"}]},
+        )
+    assert CloudBackupProject.objects.get(project=project).read_only is True
 
 
 @pytest.mark.django_db

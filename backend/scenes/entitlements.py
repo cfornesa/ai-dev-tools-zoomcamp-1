@@ -26,7 +26,9 @@ from django.db import transaction
 from scenes.models import Plan, UserEntitlementPlan, UserFeatureOverride
 
 DEFAULT_PLAN = "free"
-FEATURE_KEYS = frozenset({"ai_scene_create", "ai_scene_edit", "ai_art_generate"})
+FEATURE_KEYS = frozenset(
+    {"ai_scene_create", "ai_scene_edit", "ai_art_generate", "cloud_project_sync"}
+)
 
 
 def get_user_plan_key(user) -> str:

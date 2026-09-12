@@ -24,6 +24,9 @@ _FEATURE_QUOTA_KEYS = {
     "ai_scene_create": lambda user_id: _scene_quota_cache_key(user_id),
     "ai_scene_edit": lambda user_id: _scene_quota_cache_key(user_id, operation="edit"),
     "ai_art_generate": lambda user_id: _art_quota_cache_key(user_id),
+    # Cloud sync is entitlement-gated but not a daily request quota; its
+    # account summary entry still uses the shared shape with zero usage.
+    "cloud_project_sync": lambda user_id: "cloud-sync-entitlement-unused",
 }
 
 

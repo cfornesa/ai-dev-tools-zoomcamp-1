@@ -23,7 +23,7 @@
 |---|---|---|---|---|---|
 | 0a | Backlog definition — discover, dedupe, groom, order | Claude | Sonnet 5 | Medium | skill `task-distillation` |
 | 0b | Loop orchestration — ledger, manifest, reconciliation | Claude | Sonnet 5 | Medium | skill `backlog-session` |
-| 1 | Issue scoping / spec drafting | Codex (ChatGPT Plus) | GPT-5.6 Sol | Medium | skill `issue-scoping` |
+| 1 | Issue scoping / spec drafting | Codex (ChatGPT Plus) | GPT-5.6 Luna | Medium | skill `issue-scoping` |
 | 2a | Implementation — mechanical / boilerplate | Opencode Desktop via native Opencode Go | kimi-k2.7-code (frontend) / qwen3.6-plus (backend) | — | skill `implementation-mechanical` |
 | 2b | Implementation — complex logic | Opencode Desktop (`/connect` to Ollama Cloud) | kimi-k3 | — | skill `implementation-complex` |
 | 3 | Second-opinion patch review (optional) | Mistral Vibe | devstral-2 | — | skill `second-opinion-review` |
@@ -59,15 +59,11 @@ wrote the diff, and stage 5 never leaves the Opus 5/Sonnet 5 Claude tier
 ## Stage 1 — Issue scoping / spec drafting
 
 **Service:** Codex, via ChatGPT Plus or Claude Code, via Claude Pro.
-**Model:** `GPT-5.6 Terra` at `Medium` or `Claude Sonnet` at `Medium` reasoning effort — the default for
-scoping; strong enough for scope boundaries and acceptance criteria without
-the top tier's cost.
-**Escalation:** `GPT-6 Sol` or `Claude Opus` at `Low` or `Medium`, if your plan has it, only
-for unusually ambiguous or high-stakes scoping. Treat Astra as an escalation,
-not a default.
-**Do not use:** `Luna`. This is a cost/speed tier, and this stage is
-judged on reasoning quality, not throughput — the cheap-tier work in this
-roster is already owned by Opencode Go and Ollama Cloud.
+**Model:** `GPT-5.6 Luna` at `Medium` reasoning effort — the owner-authorized
+default for scoping. Claude Sonnet may run this as an explicitly flagged
+substitution.
+**Escalation:** `GPT-6 Astra` or `Claude Opus` at `Low` or `Medium`, if your
+plan has it, only for unusually ambiguous or high-stakes scoping.
 
 **Function:** turn one groomed backlog item into one criterion-ready GitHub
 issue, actionable by a service with no access to your conversation.

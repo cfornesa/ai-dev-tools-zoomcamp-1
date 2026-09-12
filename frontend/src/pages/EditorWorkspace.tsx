@@ -129,6 +129,7 @@ import SelectionHud from './SelectionHud';
 import ShapeInspectorPanel from './ShapeInspectorPanel';
 import VersionHistoryPanel from './VersionHistoryPanel';
 import ProjectMediaLibraryPanel from './ProjectMediaLibraryPanel';
+import CloudSyncControl from './CloudSyncControl';
 
 /**
  * Task 64 (issue #64): the "Exit without saving" confirmation, as its own
@@ -2969,6 +2970,7 @@ function EditorWorkspace() {
     <div>
       <header className="editor-workspace-header">
         <EditableProjectTitle id={id} project={project} setProject={setProject} />
+        {id && <CloudSyncControl projectId={id} />}
         <span className="editor-header-break" aria-hidden="true" />
         {workingCopy && (
           <span className="editor-renderer-badge" data-testid="editor-renderer-badge">

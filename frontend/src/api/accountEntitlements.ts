@@ -21,6 +21,7 @@ const FEATURE_LABELS: Record<string, string> = {
   ai_scene_create: 'AI scene creation',
   ai_scene_edit: 'AI scene editing',
   ai_art_generate: 'AI art generation',
+  cloud_project_sync: 'Project cloud sync',
 };
 
 export function featureLabel(feature: string): string {

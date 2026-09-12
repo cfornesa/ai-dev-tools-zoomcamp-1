@@ -737,3 +737,33 @@ substitution:
 Only Opus 5 and Sonnet 5 qualify — Haiku and non-Claude services remain
 excluded from stage 5, unchanged. This does not touch stage 4's existing
 Sonnet 5 roster.
+
+## 2026-09-12 (owner-approved durable memory updates)
+
+The owner approved two durable memory updates based on the completed #513/#445
+verification pass. Added linked topic pages and concise index entries for:
+
+- using a reachable local non-production PostgreSQL server with Django/Vite
+  when Docker is unavailable, and retrying Playwright outside the managed
+  sandbox when macOS blocks Chromium Mach-port startup;
+- verifying migration-bearing Replit publishes by rejecting destructive
+  conflict options, staging schema/backfill work, and checking real
+  production tables, relationships, smoke, and authenticated runtime instead
+  of relying on `django_migrations`.
+
+No credentials, tokens, or personal data were recorded.
+
+## 2026-09-12 (issue-scoping routing correction)
+
+Owner explicitly corrected the active Stage 1 issue-scoping route to Codex
+GPT-5.6 Luna at Medium effort. Updated `DISPATCH.md`, the `.agents` and
+`.claude` issue-scoping skill mirrors, and the backlog-session routing note.
+Historical Sol/Terra provenance entries remain unchanged.
+
+## 2026-09-12 (owner-directed in-task agent substitution)
+
+The owner explicitly directed that no Opencode Desktop or other external model
+be invoked. The #509/#511 complex implementation and QA stages therefore ran
+in this Codex task, while preserving the documented external roster as the
+normal route and flagging the substitution in the task ledgers and GitHub QA
+evidence.

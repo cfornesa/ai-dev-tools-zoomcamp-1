@@ -83,6 +83,27 @@ on these endpoints.
 | `PUT /api/projects/<public_id>/cloud-backup/assets/<asset_id>/` | Stores one binary asset with `X-Asset-Checksum`, `X-Idempotency-Key`, and `X-Asset-Mime-Type`. Replays with the same checksum are idempotent; a mismatch returns `409`. |
 | `GET /api/projects/<public_id>/cloud-backup/assets/<asset_id>/` | Returns the stored bytes for the owner while the backup is readable. |
 
+Cloud-sync entitlement and controls (#511)
+
+The server-resolved `cloud_project_sync` entitlement is required before a
+project can be enabled for remote backup. A missing or inactive plan and an
+explicit deny override fail closed. The account UI may explain this state
+without reading project content. Local project operations and exports do not
+depend on the entitlement or backup provider.
+
+`POST /api/projects/<public_id>/cloud-backup/` accepts `{"action":
+"enable"}` or `{"action": "pause"}` for the authenticated owner. Enable
+requires the entitlement; pause is always allowed for an existing owner
+backup. A paused backup remains locally usable and its existing remote copy is
+retained, but future manifest/blob writes return `409` with
+`cloud_backup_paused`. Entitlement loss uses the same read-only retention
+boundary. Provider/network failures are surfaced as retryable client errors;
+they never delete local data.
+
+The status GET returns `404` when the owner has not opted the project in yet;
+the editor treats that as the ordinary “Enable cloud sync” state. A `409`
+from enable explains that the account is ineligible without uploading content.
+
 The manifest is JSON metadata only and must include stable scene/asset IDs;
 asset records include a checksum and byte size. The configured plan quota is
 checked before a new blob lands. Entitlement loss marks the backup read-only

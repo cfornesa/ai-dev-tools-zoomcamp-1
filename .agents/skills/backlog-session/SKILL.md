@@ -57,8 +57,9 @@ Antigravity's Sonnet implementation.
 Choosing one of these supported profiles is not a substitution. Record the
 actual platform, model, and effort in the session provenance, then apply the
 same ledger, handoff, and completion requirements without weakening them for a
-faster model. The Luna restriction on the separate `issue-scoping` stage does
-not apply to this orchestration task.
+faster model. The owner-authorized Luna routing for the separate
+`issue-scoping` stage does not alter the independent orchestration profile
+used by this orchestration task.
 
 ## Multi-service stage routing
 

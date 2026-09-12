@@ -14,7 +14,7 @@ import uuid
 from django.db import transaction
 
 from scenes.admin_settings import get_site_settings
-from scenes.entitlements import get_user_plan_key
+from scenes.entitlements import get_effective_cap, get_user_plan_key
 from scenes.models import CloudBackupBlob, CloudBackupManifest, CloudBackupProject, Plan, Project
 from scenes.permissions import Action, require
 
@@ -30,6 +30,10 @@ class CloudBackupDisabled(CloudBackupError):
 
 class CloudBackupReadOnly(CloudBackupError):
     code = "cloud_backup_read_only"
+
+
+class CloudBackupPaused(CloudBackupError):
+    code = "cloud_backup_paused"
 
 
 class CloudBackupConflict(CloudBackupError):
@@ -59,6 +63,17 @@ def _backup(project: Project) -> CloudBackupProject:
         return CloudBackupProject.objects.get(project=project)
     except CloudBackupProject.DoesNotExist as exc:
         raise CloudBackupConflict("This project has not opted into cloud backup.") from exc
+
+
+def _require_writable(backup: CloudBackupProject, user) -> None:
+    if backup.read_only:
+        raise CloudBackupReadOnly("This backup is retained read-only.")
+    if backup.paused:
+        raise CloudBackupPaused("This backup is paused; local project editing remains available.")
+    if get_effective_cap(user, "cloud_project_sync") <= 0:
+        backup.read_only = True
+        backup.save(update_fields=["read_only", "updated_at"])
+        raise CloudBackupReadOnly("Sync eligibility ended; the remote copy is retained read-only.")
 
 
 def _plan_quota(user) -> tuple[int, int]:
@@ -105,11 +120,24 @@ def _validate_manifest(project: Project, manifest: dict) -> None:
 def enable_backup(user, project: Project) -> CloudBackupProject:
     _enabled()
     _owned(user, project, Action.CLOUD_BACKUP_WRITE)
+    if get_effective_cap(user, "cloud_project_sync") <= 0:
+        raise CloudBackupConflict("This account is not eligible for project cloud sync.")
     backup, _ = CloudBackupProject.objects.select_for_update().get_or_create(project=project)
     if backup.read_only:
         raise CloudBackupReadOnly("This backup is retained read-only.")
     backup.enabled = True
-    backup.save(update_fields=["enabled", "updated_at"])
+    backup.paused = False
+    backup.save(update_fields=["enabled", "paused", "updated_at"])
+    return backup
+
+
+@transaction.atomic
+def pause_backup(user, project: Project) -> CloudBackupProject:
+    _enabled()
+    _owned(user, project, Action.CLOUD_BACKUP_WRITE)
+    backup = _backup(project)
+    backup.paused = True
+    backup.save(update_fields=["paused", "updated_at"])
     return backup
 
 
@@ -128,8 +156,7 @@ def put_manifest(
     backup = CloudBackupProject.objects.select_for_update().get(project=project)
     if not backup.enabled:
         raise CloudBackupConflict("Enable backup before uploading a manifest.")
-    if backup.read_only:
-        raise CloudBackupReadOnly("This backup is retained read-only.")
+    _require_writable(backup, user)
     if not idempotency_key or len(idempotency_key) > 128:
         raise CloudBackupConflict("A bounded idempotency key is required.")
     prior = CloudBackupManifest.objects.filter(
@@ -176,8 +203,7 @@ def put_blob(
     backup = CloudBackupProject.objects.select_for_update().get(project=project)
     if not backup.enabled:
         raise CloudBackupConflict("Enable backup before uploading an asset.")
-    if backup.read_only:
-        raise CloudBackupReadOnly("This backup is retained read-only.")
+    _require_writable(backup, user)
     actual = hashlib.sha256(data).hexdigest()
     if checksum != actual:
         raise CloudBackupChecksumMismatch("The supplied checksum does not match the asset.")

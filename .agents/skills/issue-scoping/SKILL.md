@@ -9,11 +9,10 @@ Stage 1 of the loop in `LOOP-AGENTS.md` Section 2. Read
 `.agents/skills/_shared/HANDOFF-CONTRACT.md` first — the stage map, advisory
 routing, provenance format, and handoff artifacts live there.
 
-**Rostered owner:** Codex (via ChatGPT Plus), `GPT-5.6 Sol` at `Medium`
-reasoning effort. Escalate to `GPT-6 Astra` at `Low`/`Medium` only for
-unusually ambiguous or high-stakes scoping — an escalation, not a default.
-Never `Terra` or `Luna`: this stage is judged on reasoning quality, not
-throughput, and the cheap-tier work is already owned by stages 2a/2b.
+**Rostered owner:** Codex (via ChatGPT Plus), `GPT-5.6 Luna` at `Medium`
+reasoning effort, explicitly authorized by the owner for this repository.
+Escalate to `GPT-6 Astra` at `Low`/`Medium` only for unusually ambiguous or
+high-stakes scoping — an escalation, not a default.
 
 Running this skill in a Claude session is a **substitution**. Record it as
 such in the `backlog-session` ledger. To delegate instead, hand this file's

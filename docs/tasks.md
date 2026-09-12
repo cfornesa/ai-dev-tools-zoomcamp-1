@@ -19358,3 +19358,15 @@ Transaction ledger:
   then Stage 2b complex implementation and QA.
 - **Agent routing correction:** active Stage 1 documentation now names Codex
   GPT-5.6 Luna / Medium; historical Sol/Terra provenance is preserved.
+
+## 338. #509 → #511 engineering run (2026-09-12)
+
+- **#509:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`. QA was
+  performed in this Codex task as the owner-requested substitution for the
+  normally rostered independent Claude review. GitHub QA and closure evidence
+  is recorded in `.local/tasks/509-cloud-backup.md`.
+- **#511:** `GROOMED → ENGINEERING`; criterion-ready scope is recorded in
+  `.local/tasks/511-cloud-sync-entitlement.md`. The implementation adds the
+  fail-closed `cloud_project_sync` entitlement, per-project enable/pause
+  controls, and non-blocking local-first UI messaging. Full checks and QA are
+  still pending.

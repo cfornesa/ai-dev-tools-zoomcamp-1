@@ -76,10 +76,16 @@ an independent Claude Sonnet 5 / Medium review.
 
 ### Transaction ledger
 
-- **Phase:** GROOMED → ENGINEERING
+- **Phase:** GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED
 - **Issue owner / current transaction:** #509 only
-- **Implementation commit:** pending
-- **Focused/full checks:** pending
-- **QA matrix:** pending
-- **GitHub closure evidence:** pending
+- **Implementation commits:** `02702f4`, `8f3744a`, `976f275`, plus the
+  follow-up entitlement/pause implementation in the current closure commit.
+- **Focused/full checks:** backend focused `25 passed, 1 skipped`; frontend
+  focused `3 passed`; complete `make check` passed for the implementation.
+- **QA matrix:** PASS; Codex substitution for the normally rostered Claude
+  Sonnet review, with criterion matrix posted to GitHub.
+- **GitHub closure evidence:** QA comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/509#issuecomment-5648743149`
+  and reconciliation comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/509#issuecomment-5648743232`.
 - **New gaps discovered:** none

@@ -12,6 +12,7 @@ from scenes.cloud_backup import (
     get_backup,
     get_blob,
     latest_manifest,
+    pause_backup,
     put_blob,
     put_manifest,
 )
@@ -35,13 +36,26 @@ class CloudBackupView(APIView):
         if not request.user.is_authenticated:
             return Response(status=401)
         try:
-            backup = enable_backup(request.user, _project(public_id))
+            project = _project(public_id)
+            action = request.data.get("action", "enable")
+            if action not in {"enable", "pause"}:
+                return Response({"error": "invalid_action"}, status=400)
+            backup = (
+                pause_backup(request.user, project)
+                if action == "pause"
+                else enable_backup(request.user, project)
+            )
         except PermissionDenied as exc:
             raise Http404 from exc
         except CloudBackupError as exc:
             return _error(exc)
         return Response(
-            {"enabled": backup.enabled, "read_only": backup.read_only, "revision": backup.revision},
+            {
+                "enabled": backup.enabled,
+                "paused": backup.paused,
+                "read_only": backup.read_only,
+                "revision": backup.revision,
+            },
             status=201,
         )
 
@@ -53,9 +67,16 @@ class CloudBackupView(APIView):
         except PermissionDenied as exc:
             raise Http404 from exc
         except CloudBackupError as exc:
+            if exc.code == "cloud_backup_conflict":
+                raise Http404 from None
             return _error(exc)
         return Response(
-            {"enabled": backup.enabled, "read_only": backup.read_only, "revision": backup.revision}
+            {
+                "enabled": backup.enabled,
+                "paused": backup.paused,
+                "read_only": backup.read_only,
+                "revision": backup.revision,
+            }
         )
 
 

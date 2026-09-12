@@ -18746,3 +18746,54 @@ credentials for #460. Owner/release operator next action: provide those
 credentials, execute the bounded non-production callbacks, then reconcile the
 exact release SHA, schema, and published evidence under #445. No local green
 suite can close that deployment boundary.
+
+## 319. #513 engineering complete; QA/readiness blocked by browser and owner gates
+
+Status: #513 HANDED-OFF / verification-boundary; #445 remains
+DEPENDENCY-BLOCKED. Implementation commit: `a6de6c6`.
+
+### #513 engineering evidence
+
+Changed only the scoped frontend/editor surface plus the local repository
+bridge: `ProjectMediaLibraryPanel.tsx`, its focused test, `EditorWorkspace.tsx`,
+`sceneShapes.ts`, `localProjectRepository.ts`, `index.css`, and this ledger.
+Focused checks passed: `npm test -- --run
+src/pages/ProjectMediaLibraryPanel.test.tsx` (2 passed), `npm run build`.
+Full checks passed: `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check`
+(backend 1199 passed/39 skipped; frontend 2550 passed; lint/format/typecheck
+clean). `cd frontend && npm run test:e2e -- --list` discovered 193 tests.
+
+The implementation adds the File menu, accessible import metadata choice,
+local library listing/thumbnails/fallback, rename/delete policy, export action,
+and insertion of a selectable `image` scene shape. No new dependency, backend
+route, schema migration, public URL, cloud provider, or production database
+write was introduced.
+
+### QA verdict / blocker
+
+Stage 4 QA was run by Codex as a substitution because the rostered Claude
+service was not callable in this session. Unit/full checks were independently
+re-run and pass. The targeted Chromium browser command
+`E2E_BASE_URL=http://localhost:5000 npm run test:e2e --
+e2e/manual2dStageChrome.spec.ts --project=chromium --grep "renders finite
+stage actions"` self-skipped because the required app stack was unavailable;
+`make compose-preflight` independently reports Docker unavailable. The new
+#513 workflow has no browser-rendered import/reuse/deletion evidence, so the
+issue cannot close. Stage 3 was explicitly not run.
+
+Stage 5 production-readiness is **BLOCKED** by the mandatory model boundary:
+the roster permits only Claude Sonnet 5 or Opus 5, neither callable from this
+session. Next action: run the targeted Chromium workflow on a disposable
+PostgreSQL-backed Django/Vite stack, inspect 1280x900 and 375x812 renders,
+then have the rostered readiness model reconcile and post the issue comment.
+
+### Routing / reconciliation
+
+Scoping: Codex / GPT-5.6 Sol / Medium / substituted: no. Engineering:
+Codex / GPT-5.6 Sol / Medium / substituted: yes for Opencode Go / kimi-k2.7-code.
+Second opinion: not run. QA: Codex / GPT-5.6 Sol / Medium / substituted: yes
+for Claude Sonnet 5. Readiness gate: not run; mandatory Claude Sonnet 5 or
+Opus 5 roster unavailable.
+GitHub issue comments/close state could not be reconciled because no
+authenticated GitHub connector or active Chrome GitHub session was available;
+the local evidence and exact next action are recorded here.

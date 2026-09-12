@@ -18762,7 +18762,7 @@ Focused checks passed: `npm test -- --run
 src/pages/ProjectMediaLibraryPanel.test.tsx` (5 passed), `npm run typecheck`,
 and `npm run build`.
 Full checks passed: `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check`
-(backend 1199 passed/39 skipped; frontend 2550 passed; lint/format/typecheck
+(backend 1199 passed/39 skipped; frontend 2553 passed; lint/format/typecheck
 clean). `cd frontend && npm run test:e2e -- --list` discovered 194 tests.
 
 The implementation adds the File menu, accessible import metadata choice,

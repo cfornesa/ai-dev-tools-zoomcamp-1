@@ -19509,3 +19509,42 @@ reconciliation and #440's manual gate. Production-readiness and session-completi
 were run in this Codex task as the owner-authorized substitution for the
 rostered external stages; the current verdict is blocked at the Replit
 deployment boundary and the operator-controlled PayPal transaction.
+
+## 344. Replit schema publication and synchronized QA reconciliation (2026-09-12)
+
+This entry supersedes the stale deployment-boundary findings in section 343.
+The Replit `creatrweb` workspace synchronized successfully to `origin/main` at
+`93f7a4a` (`Published your App`; deployment build `8c527e6d`). Development
+migrations were applied through `scripts/post-merge.sh`, and the owner approved
+the production schema-diff warning during Publish, including its reported
+truncation of `scenes_plan` and `scenes_sitesettings`.
+
+Direct read-only inspection of the selected Replit Production Database now
+confirms the three `scenes_plan` pricing columns required by migration
+`scenes.0046_plan_pricing`: `price` is `numeric(10,2)`, and `currency` and
+`billing_interval` are present as character fields. The production overview
+also shows the expected billing, backup, and plan tables. This is the
+authoritative schema-parity evidence; `django_migrations` is not used as a
+success signal for Replit Publish.
+
+Fresh local QA at the synchronized revision passed `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check`:
+1,214 backend tests passed with 39 skips and 10 warnings; frontend lint,
+format, typecheck, and 2,557 Vitest tests passed. The credential-free public
+smoke also passed against `https://augmentrart.com`: health 200, root 200,
+anonymous identity 401, and login form 200.
+
+Current issue reconciliation: #513 CLOSED and #460 CLOSED. #440 remains OPEN
+because its acceptance criteria require the operator-authorized PayPal sandbox
+approval/webhook roundtrip, which has not been claimed from configuration alone.
+#445 remains OPEN as the release-candidate container until all of its current
+children and release evidence reconcile, including #440's external boundary.
+No PayPal charge or production transaction was performed.
+
+Production-readiness result: the synchronized codebase, local checks, Replit
+schema, and anonymous published runtime are PASS; overall production readiness
+remains BLOCKED only by the explicitly scoped PayPal callback/transaction gate
+in #440 and its parent release reconciliation in #445. Session-completion has
+zero missing terminal classifications for this run. Scoping, implementation,
+independent review, QA, production-readiness, and session-completion were
+performed in this Codex task as the owner-authorized substitution for the
+normally rostered external services.

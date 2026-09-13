@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
-import { requestPersistentStorage } from '../storage/localProjectRepository';
+import { exportDatabaseArchive, restoreDatabaseArchive } from '../storage/localDatabaseArchive';
+import {
+  deleteProject,
+  listProjectsForOwner,
+  openLocalProjectDatabase,
+  requestPersistentStorage,
+  type LocalProjectRecord,
+} from '../storage/localProjectRepository';
 import {
   getLocalStorageDashboardSnapshot,
   isNearQuota,
@@ -58,6 +65,205 @@ function DatabaseRow({ database }: { database: DatabaseSummary }) {
         </dl>
       )}
     </li>
+  );
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+/** Issue #526: per-project export/delete plus whole-database export and
+ * restore-from-file, for the local project database only -- the drafts
+ * database has no comparable per-project archive concept. */
+function LocalProjectsManager({ ownerId }: { ownerId: string }) {
+  const [projects, setProjects] = useState<LocalProjectRecord[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    openLocalProjectDatabase()
+      .then(async (db) => {
+        const list = await listProjectsForOwner(db, ownerId);
+        db.close();
+        if (!cancelled) setProjects(list);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError('Could not read local projects.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerId, refreshKey]);
+
+  async function exportProject(project: LocalProjectRecord) {
+    setBusyId(project.id);
+    setMessage(null);
+    try {
+      const db = await openLocalProjectDatabase();
+      const result = await exportDatabaseArchive(db, ownerId, { projectIds: [project.id] });
+      db.close();
+      downloadBlob(result.blob, `${project.title.replace(/[^\w.-]+/g, '_') || 'project'}.zip`);
+      setMessage(`Exported "${project.title}".`);
+    } catch {
+      setMessage(`Could not export "${project.title}". Local data was not changed.`);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function exportWholeDatabase() {
+    setBusyId('__database__');
+    setMessage(null);
+    try {
+      const db = await openLocalProjectDatabase();
+      const result = await exportDatabaseArchive(db, ownerId);
+      db.close();
+      downloadBlob(result.blob, 'local-projects-archive.zip');
+      setMessage(
+        `Exported ${result.projectCount} project(s), ${result.sceneCount} scene(s), ${result.mediaFileCount} media file(s). This file is your own responsibility to keep safe -- it is not uploaded anywhere.`,
+      );
+    } catch {
+      setMessage('Could not export the database. Local data was not changed.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function deleteProjectConfirmed(project: LocalProjectRecord) {
+    setBusyId(project.id);
+    setConfirmingDeleteId(null);
+    setMessage(null);
+    try {
+      const db = await openLocalProjectDatabase();
+      await deleteProject(db, ownerId, project.id);
+      db.close();
+      setMessage(`Deleted "${project.title}".`);
+      setRefreshKey((k) => k + 1);
+    } catch {
+      setMessage(`Could not delete "${project.title}".`);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function restoreFromFile(file: File) {
+    setBusyId('__restore__');
+    setMessage(null);
+    try {
+      const zipBytes = new Uint8Array(await file.arrayBuffer());
+      const db = await openLocalProjectDatabase();
+      const result = await restoreDatabaseArchive(db, ownerId, zipBytes);
+      db.close();
+      setMessage(
+        `Restored ${result.projectCount} project(s), ${result.sceneCount} scene(s), ${result.mediaFileCount} media file(s) as new project(s).`,
+      );
+      setRefreshKey((k) => k + 1);
+    } catch {
+      setMessage(
+        'Could not restore that archive. It may be corrupted or in an unrecognized format. No local data was changed.',
+      );
+    } finally {
+      setBusyId(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  return (
+    <section aria-label="Manage local projects: export, restore, and delete">
+      <h3>Manage local projects</h3>
+      {loadError && (
+        <p role="alert" aria-live="assertive">
+          {loadError}
+        </p>
+      )}
+      {message && (
+        <p role="status" aria-live="polite">
+          {message}
+        </p>
+      )}
+      <div className="local-storage-actions">
+        <button
+          type="button"
+          onClick={() => void exportWholeDatabase()}
+          disabled={busyId !== null || !projects || projects.length === 0}
+        >
+          {busyId === '__database__' ? 'Exporting…' : 'Export entire database'}
+        </button>
+        <label htmlFor="restore-archive-input">Restore from a ZIP archive</label>
+        <input
+          ref={fileInputRef}
+          id="restore-archive-input"
+          type="file"
+          accept=".zip,application/zip"
+          disabled={busyId !== null}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void restoreFromFile(file);
+          }}
+        />
+      </div>
+      <p className="intro">
+        An exported ZIP is your responsibility to keep safe -- it is never uploaded anywhere by this
+        app. Restoring an archive always creates brand-new project(s); it never overwrites an
+        existing one.
+      </p>
+      {projects && projects.length === 0 && <p>No local projects yet.</p>}
+      {projects && projects.length > 0 && (
+        <ul className="local-storage-project-list">
+          {projects.map((project) => (
+            <li key={project.id} aria-label={project.title}>
+              <span>{project.title}</span>
+              <div className="local-storage-actions">
+                <button
+                  type="button"
+                  onClick={() => void exportProject(project)}
+                  disabled={busyId !== null}
+                >
+                  {busyId === project.id && confirmingDeleteId !== project.id
+                    ? 'Exporting…'
+                    : 'Export'}
+                </button>
+                {confirmingDeleteId === project.id ? (
+                  <>
+                    <span role="alert">Delete "{project.title}" permanently?</span>
+                    <button
+                      type="button"
+                      onClick={() => void deleteProjectConfirmed(project)}
+                      disabled={busyId !== null}
+                    >
+                      {busyId === project.id ? 'Deleting…' : 'Confirm delete'}
+                    </button>
+                    <button type="button" onClick={() => setConfirmingDeleteId(null)}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDeleteId(project.id)}
+                    disabled={busyId !== null}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -200,6 +406,8 @@ function AccountLocalStorage() {
               ))}
             </ul>
           </section>
+
+          <LocalProjectsManager ownerId={auth.user.username} />
         </>
       )}
     </section>

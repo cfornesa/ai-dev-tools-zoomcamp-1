@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthContext } from '../auth/context';
+import * as localDatabaseArchive from '../storage/localDatabaseArchive';
 import * as localProjectRepository from '../storage/localProjectRepository';
 import * as dashboard from '../storage/localStorageDashboard';
 import AccountLocalStorage from './AccountLocalStorage';
@@ -25,8 +26,30 @@ vi.mock('../storage/localProjectRepository', async () => {
   return {
     ...actual,
     requestPersistentStorage: vi.fn(),
+    openLocalProjectDatabase: vi.fn(),
+    listProjectsForOwner: vi.fn(),
+    deleteProject: vi.fn(),
   };
 });
+
+vi.mock('../storage/localDatabaseArchive', async () => {
+  const actual = await vi.importActual<typeof import('../storage/localDatabaseArchive')>(
+    '../storage/localDatabaseArchive',
+  );
+  return {
+    ...actual,
+    exportDatabaseArchive: vi.fn(),
+    restoreDatabaseArchive: vi.fn(),
+  };
+});
+
+const mockedOpenDb = vi.mocked(localProjectRepository.openLocalProjectDatabase);
+const mockedListProjects = vi.mocked(localProjectRepository.listProjectsForOwner);
+const mockedDeleteProject = vi.mocked(localProjectRepository.deleteProject);
+const mockedExportArchive = vi.mocked(localDatabaseArchive.exportDatabaseArchive);
+const mockedRestoreArchive = vi.mocked(localDatabaseArchive.restoreDatabaseArchive);
+
+const FAKE_DB = { close: vi.fn() } as unknown as IDBDatabase;
 
 const mockedSnapshot = vi.mocked(dashboard.getLocalStorageDashboardSnapshot);
 const mockedRequestPersistentStorage = vi.mocked(localProjectRepository.requestPersistentStorage);
@@ -88,6 +111,8 @@ function baseSnapshot(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedOpenDb.mockResolvedValue(FAKE_DB);
+  mockedListProjects.mockResolvedValue([]);
 });
 
 describe('AccountLocalStorage', () => {
@@ -228,5 +253,139 @@ describe('AccountLocalStorage', () => {
     await user.click(await screen.findByRole('button', { name: /request persistent storage/i }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(/declined persistent storage/i);
+  });
+});
+
+function fakeProject(overrides: Partial<localProjectRepository.LocalProjectRecord> = {}) {
+  return {
+    id: 'p1',
+    ownerId: 'alice',
+    title: 'My Project',
+    sceneOrder: [],
+    activeSceneId: null,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+    ...overrides,
+  };
+}
+
+describe('AccountLocalStorage: manage local projects', () => {
+  it('lists local projects with export and delete controls', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([fakeProject()]);
+    renderPage();
+
+    expect(await screen.findByRole('listitem', { name: 'My Project' })).toBeVisible();
+  });
+
+  it('shows no local projects yet when the database is empty', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([]);
+    renderPage();
+
+    expect(await screen.findByText('No local projects yet.')).toBeVisible();
+    expect(screen.getByRole('button', { name: /export entire database/i })).toBeDisabled();
+  });
+
+  it('exports one project via a button click', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([fakeProject()]);
+    mockedExportArchive.mockResolvedValue({
+      blob: new Blob(['zip'], { type: 'application/zip' }),
+      projectCount: 1,
+      sceneCount: 1,
+      mediaFileCount: 0,
+      byteTotal: 0,
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Export' }));
+
+    expect(mockedExportArchive).toHaveBeenCalledWith(FAKE_DB, 'alice', { projectIds: ['p1'] });
+    expect(await screen.findByText(/exported "my project"/i)).toBeVisible();
+  });
+
+  it('exports the whole database via its own button', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([fakeProject()]);
+    mockedExportArchive.mockResolvedValue({
+      blob: new Blob(['zip'], { type: 'application/zip' }),
+      projectCount: 1,
+      sceneCount: 2,
+      mediaFileCount: 3,
+      byteTotal: 100,
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /export entire database/i }));
+
+    expect(mockedExportArchive).toHaveBeenCalledWith(FAKE_DB, 'alice');
+    expect(
+      await screen.findByText(/exported 1 project\(s\), 2 scene\(s\), 3 media file\(s\)/i),
+    ).toBeVisible();
+  });
+
+  it('requires an explicit confirmation before deleting a project, and cancel changes nothing', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([fakeProject()]);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+    expect(screen.getByText(/delete "my project" permanently\?/i)).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(mockedDeleteProject).not.toHaveBeenCalled();
+    expect(screen.queryByText(/delete "my project" permanently\?/i)).not.toBeInTheDocument();
+  });
+
+  it('deletes a project only after confirming', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([fakeProject()]);
+    mockedDeleteProject.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm delete' }));
+
+    expect(mockedDeleteProject).toHaveBeenCalledWith(FAKE_DB, 'alice', 'p1');
+    expect(await screen.findByText(/deleted "my project"/i)).toBeVisible();
+  });
+
+  it('restores an archive selected via the file input', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([]);
+    mockedRestoreArchive.mockResolvedValue({
+      projects: [],
+      projectCount: 1,
+      sceneCount: 2,
+      mediaFileCount: 0,
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    const file = new File(['zip-bytes'], 'archive.zip', { type: 'application/zip' });
+    const input = await screen.findByLabelText(/restore from a zip archive/i);
+    await user.upload(input, file);
+
+    expect(await screen.findByText(/restored 1 project\(s\), 2 scene\(s\)/i)).toBeVisible();
+    expect(mockedRestoreArchive).toHaveBeenCalledWith(FAKE_DB, 'alice', expect.any(Uint8Array));
+  });
+
+  it('reports a restore failure without changing local data', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([]);
+    mockedRestoreArchive.mockRejectedValue(new Error('corrupt'));
+    const user = userEvent.setup();
+    renderPage();
+
+    const file = new File(['not-a-zip'], 'bad.zip', { type: 'application/zip' });
+    const input = await screen.findByLabelText(/restore from a zip archive/i);
+    await user.upload(input, file);
+
+    expect(await screen.findByText(/could not restore that archive/i)).toBeVisible();
   });
 });

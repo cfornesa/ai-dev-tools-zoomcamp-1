@@ -20176,3 +20176,25 @@ destructive table or column warning. The publish completed successfully and
 the signed-in production check returned HTTP 200 for profile, site theme,
 entitlements, and billing. Published smoke also passed on
 `https://augmentrart.com`.
+
+## 375. Task-distillation: agentic editing, local storage, recovery, and 2D-to-3D conversion (2026-09-13)
+
+Status: DISTILLATION COMPLETE. Full manifest, duplicate report, blocker triage,
+verification boundaries, and dependency rationale are recorded in
+[`docs/distillation-2026-09-13-agent-storage-conversion.md`](distillation-2026-09-13-agent-storage-conversion.md).
+
+Seven new criterion-ready GitHub issues were filed:
+
+- [#523](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/523) — admin provider/model catalog with an explicit `agentic_supported` flag.
+- [#524](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/524) — signup-time opt-in cloud-sync choice, local-only by default.
+- [#525](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/525) — local storage dashboard and app-owned IndexedDB database catalog.
+- [#526](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/526) — complete local database/project ZIP archive and atomic restore.
+- [#527](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/527) — in-app clear warnings and safe sync-before-clear checkpoint.
+- [#528](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/528) — reviewable structured 2D-to-3D conversion.
+- [#529](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/529) — owner decision on free/paid cloud-sync availability and snapshot quotas.
+
+The exact next transaction is Stage 1 scoping for #523 only. Existing
+agentic, local-first, cloud-backup, retention, draft-recovery, and export
+issues were classified as covered or prerequisites; no product implementation
+was performed during distillation. A proposed durable-memory topic for the
+origin-wide quota/external-browser-clearing limitation awaits owner approval.

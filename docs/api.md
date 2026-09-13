@@ -175,6 +175,27 @@ issue owns the transition controls. The endpoints return finite error codes:
 `401` unauthenticated, `403` non-owner, `404` absent resource, `409` disabled,
 stale, read-only, or checksum conflict, and `413` quota exhaustion.
 
+### Cloud-sync availability and snapshot policy (#529)
+
+Cloud sync is available to both free and paid/admin accounts, with different
+cadence and archiving:
+
+- **Free plan:** silent scheduled snapshots on a 7-day cadence. Only the
+  latest snapshot is retained — no archive of prior snapshots beyond the
+  current one.
+- **Paid and application-admin accounts:** silent scheduled snapshots on the
+  plan's configured cadence, with archived snapshots retained per the
+  existing [Cloud-media retention policy (#522)](#cloud-media-retention-policy-522)
+  grace periods below.
+
+Scheduled snapshots are silent: no per-snapshot user approval, email, or
+blocking in-app notification is generated. A manual "Sync now" action remains
+available on any entitled project regardless of the scheduled cadence. This
+policy governs cadence and archiving only; it does not change the opt-in
+consent flow (#524), the manual sync transport (#509), the entitlement
+resolver (#511/#519), or the retention grace periods/purge endpoint (#522).
+Implementation of the scheduled job itself is tracked in #530.
+
 ## Cloud-media retention policy (#522)
 
 The application-owned PostgreSQL/blob lifecycle is governed by one atomic

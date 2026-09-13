@@ -6,6 +6,15 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
       "port": 5000
+    },
+    {
+      "name": "backend-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd backend && AI_PROVIDER=fake uv run --env-file .env python manage.py runserver 8000"
+      ],
+      "port": 8000
     }
   ]
 }

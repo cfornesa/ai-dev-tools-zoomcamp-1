@@ -316,6 +316,21 @@ test.describe('Admin AI model catalog (#523)', () => {
     const row = page.getByRole('form', { name: `Catalog entry gemini/${modelSlug}` });
     await expect(row.getByLabel('Display label')).toHaveValue('Changed Out From Under The Page');
 
+    // A second concurrent edit happens after the page has already loaded
+    // (and cached) the first revision -- this is what makes the page's
+    // in-memory revision stale by the time it tries to save.
+    const afterFirstEdit = await apiGet(context, '/api/admin/ai-models/');
+    const rowsAfterFirstEdit = (await afterFirstEdit.json()) as Array<{
+      id: number;
+      revision: number;
+    }>;
+    const currentRevision = rowsAfterFirstEdit.find((r) => r.id === id)?.revision;
+    const secondConcurrent = await apiPatch(context, `/api/admin/ai-models/${id}/`, {
+      revision: currentRevision,
+      display_label: 'Changed Out From Under The Page Again',
+    });
+    expect(secondConcurrent.status()).toBe(200);
+
     await row.getByLabel('Display label').fill('Attempted Stale Write');
     await row.getByRole('button', { name: 'Save' }).click();
     await expect(row.getByText(/changed elsewhere/i)).toBeVisible();

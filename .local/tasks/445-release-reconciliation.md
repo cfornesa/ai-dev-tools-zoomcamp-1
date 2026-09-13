@@ -2,7 +2,7 @@
 
 ### Current state
 
-- **Phase:** RECONCILIATION pending child #440/#460 completion
+- **Phase:** RECONCILIATION blocked by child #440 and published-revision evidence
 - #445 remains a release container, not a replacement for the two child
   engineering transactions.
 - Local config presence is confirmed for PayPal, LinkedIn, GitHub, and
@@ -14,3 +14,6 @@
   revision before release/provider claims can be made.
 - **Stage provenance:** Codex substitution authorized by the owner; no
   external model was invoked.
+- #440 QA returned to engineering because the required browser spec and live
+  PayPal roundtrip are still missing. #460 local QA passed, but its published
+  callback boundary remains open. Do not close #445 yet.

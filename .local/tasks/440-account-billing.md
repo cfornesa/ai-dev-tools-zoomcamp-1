@@ -2,7 +2,7 @@
 
 ### Transaction ledger
 
-- **Phase:** GROOMED → ENGINEERING → QA pending
+- **Phase:** GROOMED → ENGINEERING → QA → RETURNED-TO-ENGINEERING
 - **Stage provenance:** issue scoping and implementation performed by Codex as
   the owner-authorized substitution for the rostered external stages; no
   external model was invoked.
@@ -15,3 +15,7 @@
 - **Boundary:** the live PayPal sandbox approval/webhook roundtrip remains
   operator-authorized and has not been claimed from mocked tests. Published
   deployment must receive this migration/code before release evidence.
+- **QA:** FAIL, posted at
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/440#issuecomment-5649577374.
+  Required `frontend/e2e/accountBilling.spec.ts` and current published/live
+  PayPal evidence remain open.

@@ -20138,3 +20138,26 @@ Final signed-in browser confirmation then passed on the published site:
 `/api/account/billing/` each returned HTTP 200. The account settings page
 rendered the paid plan, usage limits, and public-profile controls without the
 prior fallback/error state.
+
+## 373. Replit republish safety validation after schema reconciliation (2026-09-13)
+
+The owner attempted another `creatrweb` republish. Replit's generated
+development-to-production SQL incorrectly proposed dropping the eight
+post-`0046` production tables and related columns. The validation then failed
+on `scenes_plan_role_id_8f16e805_fk_scenes_entitlementrole_id` because the
+generated SQL first drops `scenes_entitlementrole CASCADE`, which removes that
+foreign key before its later explicit `DROP CONSTRAINT` statement.
+
+The current Replit Development Database was inspected separately and is behind
+the repository: it lacks the eight post-`0046` tables even though the current
+Production Database contains them. The publish attempt was canceled before
+deployment; no destructive overwrite was selected. Published smoke remained
+healthy afterward (`/health/`, `/`, anonymous identity, and login form all
+passed).
+
+Before another publish, apply the repository migrations to the Replit
+Development Database using its Shell/Console:
+`cd backend && uv run --env-file .env python manage.py migrate`. Confirm that
+the eight tables and migrations through `0055` exist in Development, then
+retry Publish. Do not choose “Copy your development database schema & data to
+production” for this incident.

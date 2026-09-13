@@ -19729,3 +19729,13 @@ stored in memory or task records. The required next action is limited to
 updating the LinkedIn app's two redirect entries to the exact OIDC callback
 paths for `augmentrart.com` and `localhost:5000`, then rerunning the live
 callback and this release gate.
+
+## 355. LinkedIn callback and final #445 closure (2026-09-13)
+
+The owner corrected both LinkedIn Auth redirect registrations to the exact
+generic OIDC paths. A fresh published-browser run reached the LinkedIn
+consent screen, authorized AugmentrART, and returned to the authenticated
+AugmentrART home page. Direct LinkedIn Auth inspection confirmed the published
+and local callback entries. #445 was updated with the final evidence and
+closed. The callback-path lesson is recorded in
+`linkedin-oidc-callback-registration.md`.

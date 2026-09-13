@@ -29,3 +29,12 @@ and `scripts/smoke-published.sh` passed against the custom domain. The Publish
 warning also reported truncation of `scenes_plan` and `scenes_sitesettings`;
 that consequence must be surfaced explicitly when the owner approves the
 operation, never hidden behind a generic “schema sync succeeded” statement.
+
+Confirmed 2026-09-13: the same publish path can leave `scenes_plan` empty even
+when its schema columns exist, because historical `RunPython` seed operations
+are not replayed by Replit's schema sync. Verify the actual production plan
+rows, not only columns or `/health/`; if the owner approves a narrowly scoped
+backfill, include every non-null model field, verify the rows in the table UI,
+and rerun the published smoke check afterward. Do not treat this as evidence
+that arbitrary production data migrations should be run from the deployment
+build or startup command.

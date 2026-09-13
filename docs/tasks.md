@@ -19615,3 +19615,25 @@ complete external acceptance; the provider-side subscription approval itself
 was successful and no production transaction occurred. #513 remains ready;
 #445 remains open pending final release reconciliation and issue-status
 reconciliation.
+
+## 348. Replit production plan catalog backfill and smoke verification (2026-09-13)
+
+The owner-confirmed $10 USD/month paid plan is now present in the selected
+Replit Production Database alongside the Free plan. Direct table inspection
+confirmed both rows are active, the paid row has the published pricing fields
+(`10.00`, `USD`, `month`), and its PayPal plan reference is populated. This
+was a narrowly scoped production-data repair after Replit Publish applied the
+`Plan` schema columns but did not replay the historical `RunPython` seed
+migration; no application source or migration ledger was altered.
+
+The current published release is shown by Replit at hash `c2d2aa27`. A fresh
+`PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` passed:
+health 200, root 200, anonymous identity 401, and login form 200. The
+production database editor was left available for verification after the
+backfill; no PayPal charge or production subscription was created.
+
+The production plan catalog and anonymous published runtime are now verified.
+#513 remains engineering-complete and closed. #445 still requires its
+remaining release-candidate reconciliation, including fresh provider callback
+evidence and any owner-controlled external acceptance criteria; this backfill
+does not claim those unperformed callbacks.

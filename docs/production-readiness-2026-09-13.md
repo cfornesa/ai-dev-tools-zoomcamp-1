@@ -11,8 +11,8 @@ Manifest: `docs/distillation-2026-09-13-admin-profile-parity.md`.
 | Focused approved-browser verification | PASS | Escalated Chromium `themeCustomization.spec.ts` and `cloudRetention.spec.ts`: each passed at 1280x900 and 375x812; #522 screenshots inspected. |
 | Full browser verification | BLOCKED / workflow boundary | First run could not launch Chromium under the managed sandbox. Escalated run launched successfully and reached 37 passes, but was stopped after six failures: four AI-agent cases lacked the documented `AI_PROVIDER=fake` server prerequisite, and the existing admin-settings case exposed cross-spec singleton baseline drift (#505 class). This is not evidence against #521. |
 | CI verification | BLOCKED | Latest run `34738342190` was cancelled by workflow concurrency; the latest completed success `34736533185` targets older SHA `a51ec51a0a3648eab84a0a7ce428967042807102`, not the current local SHA `983505db8ca60d494d1c6206ee3fb3e65966dc85`. |
-| Replit publication | PASS for schema and anonymous runtime; authenticated UI confirmation pending | Direct inspection of the Replit Production Database after authorized reconciliation confirmed the eight migration-created tables, five required columns, 55 `scenes` ledger records, seeded roles/capabilities/retention policy, and read-only mode restored. Published smoke passed health, root, anonymous identity, and login checks. Repeat the signed-in account-settings browser check to confirm the prior 500s are gone. |
-| Production readiness | CONDITIONAL / final authenticated confirmation pending | The production schema-drift blocker is repaired and anonymous published smoke passes. Final release evidence still needs a signed-in browser check for account profile, theme, entitlements, and billing UI. The required rostered Opus 5 readiness model remains unavailable in this task, so no silent model substitution is claimed. |
+| Replit publication | PASS | Direct inspection of the Replit Production Database after authorized reconciliation confirmed the eight migration-created tables, five required columns, 55 `scenes` ledger records, seeded roles/capabilities/retention policy, and read-only mode restored. Published smoke passed health, root, anonymous identity, and login checks. Signed-in browser verification confirmed HTTP 200 for profile, site theme, entitlements, and billing; the account settings page rendered the paid plan and profile controls. |
+| Production readiness | PASS for this schema/release gate | The production schema-drift blocker is repaired, anonymous published smoke passes, and the affected authenticated APIs/UI are functional. The required rostered Opus 5 readiness model remains unavailable in this task, so no silent model substitution is claimed; that is a process limitation, not a product failure. |
 
 ## Issue rollup
 
@@ -22,10 +22,8 @@ Manifest: `docs/distillation-2026-09-13-admin-profile-parity.md`.
 
 ## Exact next actions
 
-1. In the owner's signed-in Chrome session, recheck account profile, site theme,
-   entitlements, and billing endpoints/UI after the authorized production
-   schema reconciliation. The direct production schema repair is complete;
-   this is confirmation evidence, not another migration attempt.
+1. No schema-reconciliation action remains. Preserve the direct production
+   table/column inspection and signed-in API evidence as the release record.
 2. Start the documented local E2E stack with `AI_PROVIDER=fake` and rerun the
    full suite; separately address the existing singleton-isolation failure if
    it reproduces in a clean per-spec run. Do not attribute either to #521.

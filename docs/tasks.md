@@ -20132,3 +20132,9 @@ anonymous `/api/whoami/` (401), and `/accounts/login/` (200). Authenticated
 account-settings verification should be repeated in the owner's existing
 signed-in browser session as a final UI confirmation; no credentials or
 production connection details were recorded.
+
+Final signed-in browser confirmation then passed on the published site:
+`/api/account/profile/`, `/api/site-theme/`, `/api/account/entitlements/`, and
+`/api/account/billing/` each returned HTTP 200. The account settings page
+rendered the paid plan, usage limits, and public-profile controls without the
+prior fallback/error state.

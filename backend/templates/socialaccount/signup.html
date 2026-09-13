@@ -2,28 +2,24 @@
 {% block title %}Create your account · AugmentrART{% endblock %}
 {% block head %}
 <style>
-  fieldset.cloud-sync-consent { border: 1px solid #2e303a; border-radius: 8px; padding: 16px; margin: 20px 0 0; }
-  fieldset.cloud-sync-consent legend { padding: 0 6px; font-weight: 700; color: #f3f4f6; }
-  label.cloud-sync-choice { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-weight: 400; }
-  label.cloud-sync-choice input[type="radio"] { width: auto; padding: 0; }
+  fieldset.cloud-sync-consent, fieldset.persistent-storage-consent { border: 1px solid #2e303a; border-radius: 8px; padding: 16px; margin: 20px 0 0; }
+  fieldset.cloud-sync-consent legend, fieldset.persistent-storage-consent legend { padding: 0 6px; font-weight: 700; color: #f3f4f6; }
+  label.cloud-sync-choice, label.persistent-storage-choice { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-weight: 400; }
+  label.cloud-sync-choice input[type="radio"], label.persistent-storage-choice input[type="checkbox"] { width: auto; padding: 0; }
 </style>
 {% endblock %}
 {% block content %}
 <h1>Almost there</h1>
 <p class="intro">Confirm your account and choose how your work is stored.</p>
 {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
-<form method="post" action="{% url 'socialaccount_signup' %}">
+<form method="post" action="{% url 'socialaccount_signup' %}" id="signup-form">
   {% csrf_token %}
   <label for="{{ form.email.id_for_label }}">Email</label>
   {{ form.email }}{{ form.email.errors }}
 
   <fieldset class="cloud-sync-consent">
     <legend>Cloud sync</legend>
-    <p class="intro">
-      Your projects are always usable entirely offline in this browser. You
-      can change this choice later in Account settings, and enabling sync
-      here does not upload anything until you separately opt a project in.
-    </p>
+    <p class="intro">Uploads an opt-in backup copy of a project to our servers so it survives clearing this browser.</p>
     {% if form.site_cloud_sync_disabled %}
       <p class="intro">
         Cloud sync is currently disabled site-wide, so your projects will be
@@ -38,6 +34,31 @@
     {{ form.cloud_sync_choice.errors }}
   </fieldset>
 
+  <fieldset class="persistent-storage-consent">
+    <legend>Persistent local storage</legend>
+    <p class="intro">Asks this browser not to automatically delete your local project data when device storage runs low.</p>
+    <label for="persist-local-storage" class="persistent-storage-choice">
+      <input type="checkbox" id="persist-local-storage" name="persist_local_storage" checked>
+      Ask this browser to keep my local data persistent
+    </label>
+    <p class="intro">
+      This is a request only -- the browser decides, and you can retry it
+      later from Account settings &rarr; Local storage.
+    </p>
+  </fieldset>
+
   <button type="submit">Create account</button>
 </form>
+<script>
+  // Issue #524/#525: best-effort, fire-and-forget -- never blocks or delays
+  // account creation, and never claims a result the browser didn't actually
+  // report. The real granted/denied state is always readable afterward at
+  // Account settings -> Local storage, which can also retry this request.
+  document.getElementById('signup-form').addEventListener('submit', function () {
+    var checkbox = document.getElementById('persist-local-storage');
+    if (checkbox && checkbox.checked && window.navigator && navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().catch(function () {});
+    }
+  });
+</script>
 {% endblock %}

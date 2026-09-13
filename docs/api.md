@@ -162,6 +162,19 @@ a project must still be explicitly opted in through the existing
 independently re-enforces the site-wide switch and the `cloud_project_sync`
 entitlement.
 
+The same signup form also nudges for browser persistent storage (issue
+#525), alongside a one-line privilege summary for each: cloud sync
+("Uploads an opt-in backup copy of a project to our servers so it survives
+clearing this browser") and persistent storage ("Asks this browser not to
+automatically delete your local project data when device storage runs
+low"). Unlike the cloud-sync choice, persistent storage is a pure browser
+permission with no server-side record -- a plain (non-Django-form) checkbox,
+checked by default, triggers a best-effort, fire-and-forget
+`navigator.storage.persist()` call on submit that never blocks or delays
+account creation and never claims a result the browser didn't actually
+report. The real granted/denied state is always readable afterward, and
+re-requestable, from the local storage dashboard below (issue #525).
+
 ## Scheduled cloud-backup snapshots (#530)
 
 The server never pushes a snapshot on its own -- it has no independent copy

@@ -18,9 +18,12 @@ import { validateScene } from '../validation/scene';
  * best-effort convenience on top of it.
  */
 
-const DB_NAME = 'motion-editor-draft-autosave';
-const DB_VERSION = 1;
-const STORE_NAME = 'drafts';
+// Exported for issue #525's local storage dashboard, which needs to name
+// and open this database alongside `localProjectRepository.ts`'s -- never
+// otherwise re-exported or re-used as a public API surface for this module.
+export const DB_NAME = 'motion-editor-draft-autosave';
+export const DB_VERSION = 1;
+export const STORE_NAME = 'drafts';
 
 /** Recommended debounce window from `_docs/plan.md`: "approximately 1-2
  * seconds after the last edit." 1500ms sits in the middle of that range. */

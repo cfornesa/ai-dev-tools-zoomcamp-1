@@ -46,6 +46,9 @@ function AccountSettings() {
           <Link to="/account/settings/export">Export your data</Link>
         </p>
         <p>
+          <Link to="/account/settings/storage">View local storage usage</Link>
+        </p>
+        <p>
           <Link to="/account/settings/delete">Delete your account</Link>
         </p>
       </div>

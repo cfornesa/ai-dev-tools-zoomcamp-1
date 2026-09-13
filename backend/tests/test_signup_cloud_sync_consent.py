@@ -64,6 +64,23 @@ def test_default_choice_is_local_only(client, monkeypatch):
 
 
 @pytest.mark.django_db
+def test_signup_page_offers_a_persistent_storage_nudge_with_one_line_privilege_summaries(
+    client, monkeypatch
+):
+    _start_new_social_login(client, monkeypatch, "persist-nudge@example.com", "google-uid-persist")
+
+    response = client.get(reverse("socialaccount_signup"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="persist-local-storage"' in content
+    assert "checked" in content
+    assert "navigator.storage" in content
+    assert "Uploads an opt-in backup copy" in content
+    assert "Asks this browser not to automatically delete" in content
+
+
+@pytest.mark.django_db
 def test_choosing_local_only_records_no_sync_and_no_backup_project(client, monkeypatch):
     _start_new_social_login(client, monkeypatch, "local-only@example.com", "google-uid-2")
 

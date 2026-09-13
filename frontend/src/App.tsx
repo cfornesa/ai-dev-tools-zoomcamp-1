@@ -32,6 +32,7 @@ const AccountBilling = lazy(() => import('./pages/AccountBilling'));
 const AccountIdentities = lazy(() => import('./pages/AccountIdentities'));
 const AccountSessions = lazy(() => import('./pages/AccountSessions'));
 const AccountDataExport = lazy(() => import('./pages/AccountDataExport'));
+const AccountLocalStorage = lazy(() => import('./pages/AccountLocalStorage'));
 const AccountDeletion = lazy(() => import('./pages/AccountDeletion'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 const AdminPages = lazy(() => import('./pages/AdminPages'));
@@ -92,6 +93,7 @@ function App() {
               <Route path="account/settings/identities" element={<AccountIdentities />} />
               <Route path="account/settings/sessions" element={<AccountSessions />} />
               <Route path="account/settings/export" element={<AccountDataExport />} />
+              <Route path="account/settings/storage" element={<AccountLocalStorage />} />
               <Route path="account/settings/delete" element={<AccountDeletion />} />
               <Route path="admin/settings" element={<AdminSettings />} />
               <Route path="admin/pages" element={<AdminPages />} />

@@ -20095,3 +20095,17 @@ drift, consistent with the known Replit publish boundary in #467, not a local
 implementation failure. The next action is to apply/reconcile the production
 schema diff through migration `0055`, reject destructive conflict options,
 republish, and rerun authenticated production checks.
+
+## 371. Post-republish production verification rerun (2026-09-13)
+
+After the owner republished again, the credential-free published smoke still
+passed against `https://augmentrart.com`: `/health/` 200 with `status=ok`, `/`
+200, anonymous `/api/whoami/` 401, and `/accounts/login/` 200. The
+authenticated Chrome session still showed the account-settings fallback, and
+CDP captured HTTP 500 responses from `/api/account/profile/`,
+`/api/site-theme/`, and `/api/account/entitlements/`; unrelated account APIs
+returned 200. An unauthenticated probe also returned HTTP 500 for
+`/api/site-theme/`, confirming that endpoint remains broken independently of
+the login session. Republish alone therefore did not apply the missing
+`scenes_sitesettings.theme_config` production schema column; production
+readiness remains blocked pending Replit's supported schema reconciliation.

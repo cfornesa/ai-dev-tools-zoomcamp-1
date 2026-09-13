@@ -11533,6 +11533,18 @@ issue or parent is closed from this assessment. Next actions are authorized
 production publish, exact-route/artifact QA, and authenticated GitHub status
 reconciliation.
 
+## 348. #445 release-gate evidence refresh (2026-09-13)
+
+The production-like `make deploy-check` passed with `DJANGO_DEBUG=False`,
+explicit allowed hosts, HTTPS redirects, secure session/CSRF cookies, and a
+positive HSTS value. The authenticated `BASE_URL=http://localhost:5000 make
+smoke-local` path passed health, anonymous identity, login form, and
+authenticated identity checks using disposable fixtures, which were cleaned
+up by the smoke command. Local settings confirm LinkedIn OIDC is configured
+with provider id `linkedin`. #513 is closed on GitHub; #445 remains open as
+the release-assessment container pending its complete current-child and
+published-artifact reconciliation.
+
 ## 346. #440 PayPal sandbox roundtrip evidence (2026-09-13)
 
 The local PayPal sandbox configuration was verified with live credentials. A

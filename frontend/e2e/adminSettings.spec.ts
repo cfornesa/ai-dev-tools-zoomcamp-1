@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext } from '@playwright/test';
 
-import { apiGet, apiPatch } from './support/api.js';
+import { apiDelete, apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -217,5 +217,115 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
 
     const stillCurrent = await currentSiteSettings(context);
     expect(stillCurrent.site_title).toBe(baseline.site_title);
+  });
+});
+
+test.describe('Admin AI model catalog (#523)', () => {
+  let fixture: ReturnType<typeof requireE2EFixtures>;
+  test.beforeAll(() => {
+    fixture = requireE2EFixtures();
+  });
+
+  test('an admin can add, edit, and delete a catalog entry at both viewports', async ({
+    browser,
+  }) => {
+    test.setTimeout(60000);
+
+    for (const viewport of VIEWPORTS) {
+      await test.step(`${viewport.width}x${viewport.height}`, async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await page.setViewportSize(viewport);
+        await loginViaUI(page, fixture.admin.email, fixture.password);
+
+        const modelSlug = `e2e-catalog-model-${viewport.width}-${Date.now()}`;
+        await page.goto('/admin/settings');
+        await expect(page.getByRole('heading', { name: 'AI model catalog' })).toBeVisible();
+
+        const createForm = page.getByRole('form', { name: 'Add AI model catalog entry' });
+        await createForm.getByLabel('Provider').selectOption('gemini');
+        await createForm.getByLabel('Model slug').fill(modelSlug);
+        await createForm.getByLabel('Display label').fill('E2E catalog model');
+        await createForm.getByLabel('Agent run (2D)').check();
+        await createForm.getByLabel('Agentic supported').check();
+        await createForm.getByRole('button', { name: 'Add model' }).click();
+
+        const row = page.getByRole('form', { name: `Catalog entry gemini/${modelSlug}` });
+        await expect(row).toBeVisible();
+        await expect(row.getByText(/product capability declaration/i)).toBeVisible();
+
+        // Edit: turn off agentic support and save.
+        await row.getByLabel('Agentic supported', { exact: false }).uncheck();
+        await row.getByRole('button', { name: 'Save' }).click();
+        await expect(row.getByText('Saved.')).toBeVisible();
+        await page.reload();
+        await expect(
+          page
+            .getByRole('form', { name: `Catalog entry gemini/${modelSlug}` })
+            .getByLabel('Agentic supported', { exact: false }),
+        ).not.toBeChecked();
+
+        // Delete: confirm the dialog and the row disappears.
+        page.once('dialog', (dialog) => void dialog.accept());
+        await page
+          .getByRole('form', { name: `Catalog entry gemini/${modelSlug}` })
+          .getByRole('button', { name: 'Delete' })
+          .click();
+        await expect(
+          page.getByRole('form', { name: `Catalog entry gemini/${modelSlug}` }),
+        ).toHaveCount(0);
+
+        await context.close();
+      });
+    }
+  });
+
+  test('a non-admin cannot reach the catalog API', async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await loginViaUI(page, fixture.other.email, fixture.password);
+
+    const response = await apiGet(context, '/api/admin/ai-models/');
+    expect(response.status()).toBe(403);
+
+    await context.close();
+  });
+
+  test('a stale revision on the catalog is rejected with a conflict', async ({ page, context }) => {
+    await loginViaUI(page, fixture.admin.email, fixture.password);
+
+    const modelSlug = `e2e-catalog-stale-${Date.now()}`;
+    const created = await apiPost(context, '/api/admin/ai-models/', {
+      vendor: 'gemini',
+      model_slug: modelSlug,
+      display_label: 'Stale test model',
+      task_kinds: ['one_shot_2d'],
+      agentic_supported: false,
+    });
+    expect(created.status()).toBe(201);
+    const { id, revision } = (await created.json()) as { id: number; revision: number };
+
+    // A concurrent edit happens "behind the UI's back" via the API.
+    const concurrent = await apiPatch(context, `/api/admin/ai-models/${id}/`, {
+      revision,
+      display_label: 'Changed Out From Under The Page',
+    });
+    expect(concurrent.status()).toBe(200);
+
+    await page.goto('/admin/settings');
+    const row = page.getByRole('form', { name: `Catalog entry gemini/${modelSlug}` });
+    await expect(row.getByLabel('Display label')).toHaveValue('Changed Out From Under The Page');
+
+    await row.getByLabel('Display label').fill('Attempted Stale Write');
+    await row.getByRole('button', { name: 'Save' }).click();
+    await expect(row.getByText(/changed elsewhere/i)).toBeVisible();
+
+    // Clean up regardless of outcome.
+    const current = await apiGet(context, '/api/admin/ai-models/');
+    const rows = (await current.json()) as Array<{ id: number; revision: number }>;
+    const stillThere = rows.find((r) => r.id === id);
+    if (stillThere) {
+      await apiDelete(context, `/api/admin/ai-models/${id}/`, { revision: stillThere.revision });
+    }
   });
 });

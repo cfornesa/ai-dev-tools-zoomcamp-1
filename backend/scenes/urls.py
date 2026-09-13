@@ -12,6 +12,8 @@ from scenes.admin_content_api import (
 )
 from scenes.admin_pages_api import AdminPageDetailView, AdminPageListCreateView
 from scenes.admin_settings_api import (
+    AdminAIModelDetailView,
+    AdminAIModelsView,
     AdminGlobalCapabilitiesView,
     AdminPlansView,
     AdminRoleDetailView,
@@ -103,6 +105,12 @@ urlpatterns = [
         "admin/global-capabilities/",
         AdminGlobalCapabilitiesView.as_view(),
         name="admin-global-capabilities",
+    ),
+    path("admin/ai-models/", AdminAIModelsView.as_view(), name="admin-ai-models"),
+    path(
+        "admin/ai-models/<int:model_id>/",
+        AdminAIModelDetailView.as_view(),
+        name="admin-ai-model-detail",
     ),
     path("admin/cloud-retention/", AdminCloudRetentionView.as_view(), name="admin-cloud-retention"),
     path(

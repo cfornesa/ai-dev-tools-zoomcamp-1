@@ -7,6 +7,7 @@ import {
   type GlobalCapability,
   type CloudRetentionPolicy,
   type SiteSettings,
+  type AIProviderModel,
   fetchPlans,
   fetchRoles,
   fetchGlobalCapabilities,
@@ -18,6 +19,10 @@ import {
   fetchSiteSettings,
   updatePlan,
   updateSiteSettings,
+  fetchAIProviderModels,
+  createAIProviderModel,
+  updateAIProviderModel,
+  deleteAIProviderModel,
 } from '../api/adminSettings';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/useAuth';
@@ -523,6 +528,290 @@ function PlanForm({
   );
 }
 
+const AI_PROVIDER_OPTIONS = ['mistral', 'gemini', 'deepseek'] as const;
+const AI_TASK_KIND_OPTIONS = [
+  ['one_shot_2d', 'One-shot 2D'],
+  ['one_shot_3d', 'One-shot 3D'],
+  ['agent_2d', 'Agent run (2D)'],
+  ['agent_3d', 'Agent run (3D)'],
+] as const;
+
+function AIModelCatalogRow({
+  model,
+  onSaved,
+  onDeleted,
+}: {
+  model: AIProviderModel;
+  onSaved: (next: AIProviderModel) => void;
+  onDeleted: (id: number) => void;
+}) {
+  const [displayLabel, setDisplayLabel] = useState(model.display_label);
+  const [taskKinds, setTaskKinds] = useState<string[]>(model.task_kinds);
+  const [agenticSupported, setAgenticSupported] = useState(model.agentic_supported);
+  const [active, setActive] = useState(model.active);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  function toggleTaskKind(key: string) {
+    setTaskKinds((current) =>
+      current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
+    );
+  }
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const next = await updateAIProviderModel(model.id, {
+        revision: model.revision,
+        display_label: displayLabel,
+        task_kinds: taskKinds,
+        agentic_supported: agenticSupported,
+        active,
+      });
+      onSaved(next);
+      setMessage('Saved.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 409
+          ? 'This entry changed elsewhere. Reload before saving.'
+          : 'Could not save this catalog entry.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!window.confirm(`Delete the catalog entry for ${model.vendor}/${model.model_slug}?`)) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteAIProviderModel(model.id, model.revision);
+      onDeleted(model.id);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 409
+          ? 'This entry changed elsewhere. Reload before deleting.'
+          : 'Could not delete this catalog entry.',
+      );
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form
+      className="admin-settings-form ai-model-catalog-row"
+      aria-label={`Catalog entry ${model.vendor}/${model.model_slug}`}
+      onSubmit={save}
+    >
+      <h4>
+        {model.vendor}/{model.model_slug}
+      </h4>
+      <label htmlFor={`ai-model-label-${model.id}`}>
+        Display label
+        <input
+          id={`ai-model-label-${model.id}`}
+          type="text"
+          value={displayLabel}
+          onChange={(event) => setDisplayLabel(event.target.value)}
+          required
+        />
+      </label>
+      <fieldset>
+        <legend>Task kinds</legend>
+        {AI_TASK_KIND_OPTIONS.map(([key, label]) => (
+          <label key={key} htmlFor={`ai-model-${model.id}-${key}`}>
+            <input
+              id={`ai-model-${model.id}-${key}`}
+              type="checkbox"
+              checked={taskKinds.includes(key)}
+              onChange={() => toggleTaskKind(key)}
+            />
+            {label}
+          </label>
+        ))}
+      </fieldset>
+      <label htmlFor={`ai-model-agentic-${model.id}`}>
+        <input
+          id={`ai-model-agentic-${model.id}`}
+          type="checkbox"
+          checked={agenticSupported}
+          onChange={(event) => setAgenticSupported(event.target.checked)}
+        />
+        Agentic supported (a product capability declaration, not proof of safe arbitrary code
+        execution)
+      </label>
+      <label htmlFor={`ai-model-active-${model.id}`}>
+        <input
+          id={`ai-model-active-${model.id}`}
+          type="checkbox"
+          checked={active}
+          onChange={(event) => setActive(event.target.checked)}
+        />
+        Active (offered to the AI editor model controls)
+      </label>
+      <div className="admin-settings-actions">
+        <button type="submit" disabled={busy}>
+          Save
+        </button>
+        <button type="button" onClick={() => void remove()} disabled={busy}>
+          Delete
+        </button>
+      </div>
+      {message && <p role="status">{message}</p>}
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+
+function AIModelCatalogCreateForm({ onCreated }: { onCreated: (model: AIProviderModel) => void }) {
+  const [vendor, setVendor] = useState<(typeof AI_PROVIDER_OPTIONS)[number]>('mistral');
+  const [modelSlug, setModelSlug] = useState('');
+  const [displayLabel, setDisplayLabel] = useState('');
+  const [taskKinds, setTaskKinds] = useState<string[]>([]);
+  const [agenticSupported, setAgenticSupported] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggleTaskKind(key: string) {
+    setTaskKinds((current) =>
+      current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
+    );
+  }
+
+  async function create(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await createAIProviderModel({
+        vendor,
+        model_slug: modelSlug,
+        display_label: displayLabel,
+        task_kinds: taskKinds,
+        agentic_supported: agenticSupported,
+      });
+      onCreated(created);
+      setModelSlug('');
+      setDisplayLabel('');
+      setTaskKinds([]);
+      setAgenticSupported(false);
+    } catch {
+      setError('Could not create this catalog entry. Check the provider, slug, and task kinds.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="admin-settings-form" aria-label="Add AI model catalog entry" onSubmit={create}>
+      <h4>Add a model</h4>
+      <label htmlFor="ai-model-new-vendor">
+        Provider
+        <select
+          id="ai-model-new-vendor"
+          value={vendor}
+          onChange={(event) =>
+            setVendor(event.target.value as (typeof AI_PROVIDER_OPTIONS)[number])
+          }
+        >
+          {AI_PROVIDER_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label htmlFor="ai-model-new-slug">
+        Model slug
+        <input
+          id="ai-model-new-slug"
+          type="text"
+          value={modelSlug}
+          onChange={(event) => setModelSlug(event.target.value)}
+          required
+        />
+      </label>
+      <label htmlFor="ai-model-new-label">
+        Display label
+        <input
+          id="ai-model-new-label"
+          type="text"
+          value={displayLabel}
+          onChange={(event) => setDisplayLabel(event.target.value)}
+          required
+        />
+      </label>
+      <fieldset>
+        <legend>Task kinds</legend>
+        {AI_TASK_KIND_OPTIONS.map(([key, label]) => (
+          <label key={key} htmlFor={`ai-model-new-${key}`}>
+            <input
+              id={`ai-model-new-${key}`}
+              type="checkbox"
+              checked={taskKinds.includes(key)}
+              onChange={() => toggleTaskKind(key)}
+            />
+            {label}
+          </label>
+        ))}
+      </fieldset>
+      <label htmlFor="ai-model-new-agentic">
+        <input
+          id="ai-model-new-agentic"
+          type="checkbox"
+          checked={agenticSupported}
+          onChange={(event) => setAgenticSupported(event.target.checked)}
+        />
+        Agentic supported
+      </label>
+      <div className="admin-settings-actions">
+        <button type="submit" disabled={busy || taskKinds.length === 0}>
+          Add model
+        </button>
+      </div>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+
+function AIModelCatalogSettings({
+  models,
+  onModels,
+}: {
+  models: AIProviderModel[];
+  onModels: (next: AIProviderModel[]) => void;
+}) {
+  return (
+    <div className="ai-model-catalog">
+      <h3>AI model catalog</h3>
+      <p>
+        Declares which provider/model pairs the AI editor may offer, and which of those are enabled
+        for bounded agent runs. Enabling agentic support is a product capability declaration -- it
+        does not test provider quality or introduce shell, browser, credential, publishing, or
+        autonomous deletion tools.
+      </p>
+      {models.map((model) => (
+        <AIModelCatalogRow
+          key={model.id}
+          model={model}
+          onSaved={(next) =>
+            onModels(models.map((existing) => (existing.id === next.id ? next : existing)))
+          }
+          onDeleted={(id) => onModels(models.filter((existing) => existing.id !== id))}
+        />
+      ))}
+      <AIModelCatalogCreateForm onCreated={(created) => onModels([...models, created])} />
+    </div>
+  );
+}
+
 function AdminSettings() {
   const auth = useAuth();
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -530,6 +819,7 @@ function AdminSettings() {
   const [roles, setRoles] = useState<EntitlementRole[] | null>(null);
   const [globals, setGlobals] = useState<Record<string, GlobalCapability> | null>(null);
   const [retentionPolicy, setRetentionPolicy] = useState<CloudRetentionPolicy | null>(null);
+  const [aiModels, setAiModels] = useState<AIProviderModel[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -540,13 +830,15 @@ function AdminSettings() {
       fetchRoles(),
       fetchGlobalCapabilities(),
       fetchCloudRetentionPolicy(),
+      fetchAIProviderModels(),
     ])
-      .then(([settings, planList, roleList, globalList, retention]) => {
+      .then(([settings, planList, roleList, globalList, retention, models]) => {
         setSiteSettings(settings);
         setPlans(planList);
         setRoles(roleList);
         setGlobals(globalList);
         setRetentionPolicy(retention);
+        setAiModels(models);
       })
       .catch(() => setLoadError('Could not load admin settings.'));
   }, [auth]);
@@ -599,6 +891,11 @@ function AdminSettings() {
       )}
       {retentionPolicy && (
         <CloudRetentionSettings policy={retentionPolicy} onSaved={setRetentionPolicy} />
+      )}
+      {aiModels ? (
+        <AIModelCatalogSettings models={aiModels} onModels={setAiModels} />
+      ) : (
+        !loadError && <p role="status">Loading AI model catalog…</p>
       )}
     </section>
   );

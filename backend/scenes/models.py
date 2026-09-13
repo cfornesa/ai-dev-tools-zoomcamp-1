@@ -579,6 +579,54 @@ class MistralModelPreference(models.Model):
         return f"{self.slug} (owner {self.owner_id})"
 
 
+class AIProviderModel(models.Model):
+    """Application-admin-maintained catalog entry for one (vendor, model
+    slug) pair (issue #523). `agentic_supported` is a product capability
+    declaration -- it does not test or guarantee real provider quality --
+    consulted by `scenes.ai_runs.start_run` to gate bounded agent runs
+    before any provider call. One-shot generation (`scenes.ai_api`)
+    remains independently usable where its own existing capability
+    allows it and does not consult this catalog.
+
+    Only one active row may exist per `(vendor, model_slug)` pair;
+    `scenes.ai_catalog` enforces that (and every other validation rule)
+    atomically with optimistic-concurrency `revision` checks, matching
+    `SiteSettings`/`Plan` (issue #422).
+    """
+
+    class TaskKind(models.TextChoices):
+        ONE_SHOT_2D = "one_shot_2d", "One-shot 2D generation"
+        ONE_SHOT_3D = "one_shot_3d", "One-shot 3D generation"
+        AGENT_2D = "agent_2d", "Bounded agent run (2D)"
+        AGENT_3D = "agent_3d", "Bounded agent run (3D)"
+
+    vendor = models.CharField(max_length=32)
+    model_slug = models.CharField(max_length=200)
+    display_label = models.CharField(max_length=200)
+    task_kinds = models.JSONField(default=list)
+    agentic_supported = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
+    revision = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["vendor", "model_slug"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["vendor", "model_slug"],
+                condition=models.Q(active=True),
+                name="unique_active_ai_provider_model",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.vendor}/{self.model_slug}"
+
+
 class AIPersona(models.Model):
     """A user's named, additive system-prompt add-on (issue #259/#257).
     Personas only ever layer extra style/tone/content guidance on top of

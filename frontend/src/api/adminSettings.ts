@@ -131,6 +131,57 @@ export async function updateGlobalCapability(
   );
 }
 
+export type AIProviderModel = {
+  id: number;
+  vendor: string;
+  model_slug: string;
+  display_label: string;
+  task_kinds: string[];
+  agentic_supported: boolean;
+  active: boolean;
+  revision: number;
+};
+
+export async function fetchAIProviderModels(): Promise<AIProviderModel[]> {
+  return apiFetch<AIProviderModel[]>('/api/admin/ai-models/');
+}
+
+export async function createAIProviderModel(fields: {
+  vendor: string;
+  model_slug: string;
+  display_label: string;
+  task_kinds: string[];
+  agentic_supported?: boolean;
+}): Promise<AIProviderModel> {
+  return apiFetch<AIProviderModel>('/api/admin/ai-models/', {
+    method: 'POST',
+    body: JSON.stringify(fields),
+  });
+}
+
+export async function updateAIProviderModel(
+  id: number,
+  fields: {
+    revision: number;
+    display_label?: string;
+    task_kinds?: string[];
+    agentic_supported?: boolean;
+    active?: boolean;
+  },
+): Promise<AIProviderModel> {
+  return apiFetch<AIProviderModel>(`/api/admin/ai-models/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(fields),
+  });
+}
+
+export async function deleteAIProviderModel(id: number, revision: number): Promise<void> {
+  await apiFetch<void>(`/api/admin/ai-models/${id}/`, {
+    method: 'DELETE',
+    body: JSON.stringify({ revision }),
+  });
+}
+
 export async function updatePlan(
   planKey: string,
   fields: {

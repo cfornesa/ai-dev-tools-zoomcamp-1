@@ -28,6 +28,7 @@ _ERROR_STATUS = {
     ai_runs.RateLimited.code: status.HTTP_429_TOO_MANY_REQUESTS,
     ai_runs.MissingCredential.code: status.HTTP_400_BAD_REQUEST,
     ai_runs.InvalidTarget.code: status.HTTP_400_BAD_REQUEST,
+    ai_runs.AgenticNotSupported.code: status.HTTP_400_BAD_REQUEST,
     ai_runs.NotRunning.code: status.HTTP_409_CONFLICT,
     ai_runs.AdvanceInProgress.code: status.HTTP_409_CONFLICT,
     ai_runs.NotAwaitingReview.code: status.HTTP_409_CONFLICT,

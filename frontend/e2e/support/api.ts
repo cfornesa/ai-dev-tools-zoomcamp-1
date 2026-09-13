@@ -58,9 +58,13 @@ export async function apiPostMultipart(
   return context.request.post(path, { multipart, headers });
 }
 
-export async function apiDelete(context: BrowserContext, path: string): Promise<APIResponse> {
+export async function apiDelete(
+  context: BrowserContext,
+  path: string,
+  data?: unknown,
+): Promise<APIResponse> {
   const headers = await csrfHeaders(context);
-  return context.request.delete(path, { headers });
+  return context.request.delete(path, { headers, ...(data !== undefined ? { data } : {}) });
 }
 
 export async function apiPatch(

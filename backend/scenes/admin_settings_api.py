@@ -12,7 +12,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes import entitlements
+from scenes import ai_catalog, entitlements
 from scenes.admin_authorization import is_application_admin
 from scenes.admin_settings import (
     RevisionConflict,
@@ -311,6 +311,151 @@ class AdminRoleDetailView(APIView):
         except ValueError as exc:
             return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
         return Response(_role_payload(role))
+
+
+def _ai_model_payload(view: ai_catalog.AIProviderModelView) -> dict:
+    return {
+        "id": view.id,
+        "vendor": view.vendor,
+        "model_slug": view.model_slug,
+        "display_label": view.display_label,
+        "task_kinds": view.task_kinds,
+        "agentic_supported": view.agentic_supported,
+        "active": view.active,
+        "revision": view.revision,
+    }
+
+
+class AIProviderModelCreateSerializer(serializers.Serializer):
+    vendor = serializers.CharField(max_length=32)
+    model_slug = serializers.CharField(max_length=200)
+    display_label = serializers.CharField(max_length=200)
+    task_kinds = serializers.ListField(child=serializers.CharField(), allow_empty=False)
+    agentic_supported = serializers.BooleanField(required=False, default=False)
+
+
+class AIProviderModelUpdateSerializer(serializers.Serializer):
+    revision = serializers.IntegerField(min_value=0)
+    display_label = serializers.CharField(max_length=200, required=False)
+    task_kinds = serializers.ListField(
+        child=serializers.CharField(), allow_empty=False, required=False
+    )
+    agentic_supported = serializers.BooleanField(required=False)
+    active = serializers.BooleanField(required=False)
+
+
+class AdminAIModelsView(APIView):
+    """GET lists every catalog entry (including inactive, for admin
+    management); POST creates one."""
+
+    def get(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        return Response([_ai_model_payload(row) for row in ai_catalog.list_models()])
+
+    def post(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        allowed_fields = {
+            "vendor",
+            "model_slug",
+            "display_label",
+            "task_kinds",
+            "agentic_supported",
+        }
+        unknown_fields = set(request.data.keys()) - allowed_fields
+        if unknown_fields:
+            return Response(
+                {"error": "unknown_fields", "detail": sorted(unknown_fields)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = AIProviderModelCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"error": "validation_failed", "detail": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            created = ai_catalog.create_model(actor=request.user, **serializer.validated_data)
+        except ai_catalog.ValidationFailed as exc:
+            return Response(
+                {"error": "validation_failed", "detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(_ai_model_payload(created), status=status.HTTP_201_CREATED)
+
+
+class AdminAIModelDetailView(APIView):
+    """PATCH edits/deactivates/reactivates one catalog entry named by
+    `<model_id>`; DELETE permanently removes it. Both are revision-checked."""
+
+    def patch(self, request, model_id):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        allowed_fields = {
+            "revision",
+            "display_label",
+            "task_kinds",
+            "agentic_supported",
+            "active",
+        }
+        unknown_fields = set(request.data.keys()) - allowed_fields
+        if unknown_fields:
+            return Response(
+                {"error": "unknown_fields", "detail": sorted(unknown_fields)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = AIProviderModelUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"error": "validation_failed", "detail": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        values = dict(serializer.validated_data)
+        expected_revision = values.pop("revision")
+        try:
+            updated = ai_catalog.update_model(
+                actor=request.user,
+                model_id=model_id,
+                expected_revision=expected_revision,
+                **values,
+            )
+        except ai_catalog.NotFound:
+            return Response({"error": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        except ai_catalog.RevisionConflict as exc:
+            return Response(
+                {"error": "revision_conflict", "detail": str(exc)}, status=status.HTTP_409_CONFLICT
+            )
+        except ai_catalog.ValidationFailed as exc:
+            return Response(
+                {"error": "validation_failed", "detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(_ai_model_payload(updated))
+
+    def delete(self, request, model_id):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        try:
+            expected_revision = int(request.data.get("revision"))
+        except (TypeError, ValueError):
+            return Response(
+                {"error": "validation_failed", "detail": "revision is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            ai_catalog.delete_model(model_id=model_id, expected_revision=expected_revision)
+        except ai_catalog.NotFound:
+            return Response({"error": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        except ai_catalog.RevisionConflict as exc:
+            return Response(
+                {"error": "revision_conflict", "detail": str(exc)}, status=status.HTTP_409_CONFLICT
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AdminGlobalCapabilitiesView(APIView):

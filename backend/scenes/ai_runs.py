@@ -42,6 +42,7 @@ from ai_provider.interface import (
     AIOperationResult,
 )
 from ai_provider.interface3d import AICreateScene3DRequest, AIEditScene3DRequest
+from ai_provider.registry import get_provider
 from scenes.ai_api import (
     DAILY_QUOTA_RESET_TIMEOUT_SECONDS,
     MissingPersonalMistralCredential,
@@ -53,11 +54,13 @@ from scenes.ai_api import (
     _quota_cache_key,
     _rate_limit_cache_key,
 )
+from scenes.ai_catalog import is_agentic_supported
 from scenes.entitlements import get_effective_cap
 from scenes.models import (
     AI_RUN_ADVANCE_LEASE_SECONDS,
     AI_RUN_MAX_PROVIDER_ATTEMPTS,
     AI_RUN_MAX_REPAIR_ATTEMPTS,
+    AIProviderModel,
     AIRun,
     Project,
     Project3D,
@@ -135,6 +138,14 @@ class StaleBase(AIRunError):
     code = "stale_base"
 
 
+class AgenticNotSupported(AIRunError):
+    """Raised when the requested (vendor, model) is not marked
+    `agentic_supported` in the admin AI model catalog (issue #523) for
+    this run's task kind -- checked before any provider call."""
+
+    code = "agentic_not_supported"
+
+
 def _digest(scene_json: dict[str, Any]) -> str:
     canonical = json.dumps(scene_json, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode()).hexdigest()
@@ -155,6 +166,14 @@ def _quota_operation_key(operation: str, target_type: str) -> str:
 
 def _quota_operation(run: AIRun) -> str:
     return _quota_operation_key(run.operation, run.target_type)
+
+
+def _agent_task_kind(target_type: str) -> str:
+    return (
+        AIProviderModel.TaskKind.AGENT_3D
+        if target_type == AIRun.TargetType.PROJECT3D
+        else AIProviderModel.TaskKind.AGENT_2D
+    )
 
 
 def _target_scene_json(run: AIRun) -> dict[str, Any] | None:
@@ -277,6 +296,18 @@ def start_run(
         existing = AIRun.objects.filter(owner=owner, start_request_id=start_request_id).first()
         if existing is not None:
             return existing
+
+    try:
+        provider_def = get_provider(vendor)
+    except ValueError as exc:
+        raise InvalidTarget(str(exc)) from exc
+    effective_model_id = (model_id or "").strip() or provider_def.default_model
+    if not is_agentic_supported(
+        vendor=vendor, model_slug=effective_model_id, task_kind=_agent_task_kind(target_type)
+    ):
+        raise AgenticNotSupported(
+            f"The {vendor}/{effective_model_id} model is not enabled for agent runs."
+        )
 
     cap = get_effective_cap(owner, _feature_key(operation))
     quota_key = _quota_cache_key(owner.id, operation=_quota_operation_key(operation, target_type))

@@ -128,8 +128,23 @@ def test_successful_github_callback_creates_and_links_local_account(client, monk
         reverse("github_callback"), {"state": state, "code": "fake-authorization-code"}
     )
 
-    assert callback_response.status_code in (302, 200)
+    # Issue #524: a brand-new social identity no longer auto-creates the
+    # account -- the callback redirects to the one-time signup/consent
+    # form instead, and no account exists yet.
+    assert callback_response.status_code == 302
+    assert callback_response["Location"] == reverse("socialaccount_signup")
     User = get_user_model()
+    assert not User.objects.filter(email="newgithubuser@example.com").exists()
+
+    signup_post = client.post(
+        reverse("socialaccount_signup"),
+        {
+            "username": "newgithubuser",
+            "email": "newgithubuser@example.com",
+            "cloud_sync_choice": "local_only",
+        },
+    )
+    assert signup_post.status_code == 302
     assert User.objects.filter(email="newgithubuser@example.com").exists()
     assert SocialAccount.objects.filter(provider="github", uid="987654").exists()
 

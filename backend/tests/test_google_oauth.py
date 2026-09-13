@@ -214,12 +214,30 @@ def test_successful_callback_creates_and_links_local_account(client, monkeypatch
         reverse("google_callback"), {"state": state, "code": "fake-authorization-code"}
     )
 
-    assert callback_response.status_code in (302, 200)
+    # Issue #524: a brand-new social identity no longer auto-creates the
+    # account -- the callback redirects to the one-time signup/consent
+    # form instead, and no account exists yet.
+    assert callback_response.status_code == 302
+    assert callback_response["Location"] == reverse("socialaccount_signup")
     User = get_user_model()
+    assert not User.objects.filter(email="newuser@example.com").exists()
+
+    signup_get = client.get(reverse("socialaccount_signup"))
+    assert signup_get.status_code == 200
+
+    signup_post = client.post(
+        reverse("socialaccount_signup"),
+        {
+            "username": "newuser",
+            "email": "newuser@example.com",
+            "cloud_sync_choice": "local_only",
+        },
+    )
+    assert signup_post.status_code == 302
     assert User.objects.filter(email="newuser@example.com").exists()
     assert SocialAccount.objects.filter(provider="google", uid="google-uid-123").exists()
 
-    # The callback established an authenticated session for the new user.
+    # The signup POST established an authenticated session for the new user.
     whoami_response = client.get(reverse("whoami"))
     assert whoami_response.status_code == 200
     assert whoami_response.json()["email"] == "newuser@example.com"

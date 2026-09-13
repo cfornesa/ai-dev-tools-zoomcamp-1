@@ -129,6 +129,39 @@ Error bodies are finite JSON. An invalid filter:
 { "errors": { "type": ["Must be one of: all, authored, generated."] } }
 ```
 
+## Signup-time cloud-sync consent (#524)
+
+A brand-new social-login account (Google/GitHub -- local password signup
+remains closed) is shown an explicit, one-time choice between "Keep projects
+local only" (pre-selected default) and "Enable optional cloud sync" before
+the account is created. `LinkedProvidersSocialAccountAdapter.is_auto_signup_allowed`
+(`backend/backend/social_account_adapter.py`) always returns `False` for a
+genuinely new identity, so allauth's standard social-signup form
+(`socialaccount/signup.html`, `POST /accounts/3rdparty/signup/`) is shown
+instead of auto-creating the account; a returning user signing in through an
+already-linked identity never reaches this form and is never re-prompted or
+changed.
+
+The extra `cloud_sync_choice` field (`backend/backend/social_signup_forms.py`'s
+`CloudSyncSignupForm`, wired in as `SOCIALACCOUNT_FORMS['signup']`) only
+offers "Enable optional cloud sync" while the site-wide
+`SiteSettings.cloud_sync_enabled` switch is on; a forged/replayed request for
+that value while the switch is off is rejected with a validation error, and
+omitting the field entirely is rejected the same way -- there is no blank or
+implicit choice. The pending social login is cleared from the session as
+soon as the form is submitted once, so a duplicate/replayed POST has no
+sociallogin to finalize and is redirected to the login page rather than
+creating a second account.
+
+The choice is recorded exactly once, at account creation, as a
+`CloudSyncSignupConsent` row (`owner` one-to-one, `sync_enabled`,
+`decided_at`). This is only an account-level preference record: choosing
+"enabled" here creates no `CloudBackupProject` row and uploads no content --
+a project must still be explicitly opted in through the existing
+`POST /api/projects/<public_id>/cloud-backup/` flow below, which
+independently re-enforces the site-wide switch and the `cloud_project_sync`
+entitlement.
+
 ## Cloud backup protocol (#509)
 
 Cloud backup is an authenticated, owner-only, provider-neutral protocol for

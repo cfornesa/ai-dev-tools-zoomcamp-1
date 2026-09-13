@@ -787,6 +787,30 @@ class Project(models.Model):
         return self.title
 
 
+class CloudSyncSignupConsent(models.Model):
+    """The signup-time cloud-sync choice recorded once for a newly created
+    social-login account (issue #524). Local-only is the safe default;
+    choosing "enabled" here records only this account-level preference --
+    it does not itself create a `CloudBackupProject` row or upload any
+    content. A later project must still be explicitly opted in through
+    the existing `POST /api/projects/<id>/cloud-backup/` flow (#509/#511),
+    which independently enforces the site-wide kill switch and
+    entitlement. Created exactly once, at account creation, by
+    `backend.social_signup_forms.CloudSyncSignupForm.save`/
+    `LinkedProvidersSocialAccountAdapter.save_user` -- never for an
+    existing account signing in again.
+    """
+
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cloud_sync_consent"
+    )
+    sync_enabled = models.BooleanField(default=False)
+    decided_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"Signup cloud-sync consent for user {self.owner_id}: {self.sync_enabled}"
+
+
 class CloudBackupProject(models.Model):
     """Opt-in cloud-backup state for one local-first project (#509)."""
 

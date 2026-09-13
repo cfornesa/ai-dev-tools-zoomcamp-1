@@ -1,0 +1,43 @@
+{% extends "account/base.html" %}
+{% block title %}Create your account · AugmentrART{% endblock %}
+{% block head %}
+<style>
+  fieldset.cloud-sync-consent { border: 1px solid #2e303a; border-radius: 8px; padding: 16px; margin: 20px 0 0; }
+  fieldset.cloud-sync-consent legend { padding: 0 6px; font-weight: 700; color: #f3f4f6; }
+  label.cloud-sync-choice { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-weight: 400; }
+  label.cloud-sync-choice input[type="radio"] { width: auto; padding: 0; }
+</style>
+{% endblock %}
+{% block content %}
+<h1>Almost there</h1>
+<p class="intro">Confirm your account and choose how your work is stored.</p>
+{% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+<form method="post" action="{% url 'socialaccount_signup' %}">
+  {% csrf_token %}
+  <label for="{{ form.email.id_for_label }}">Email</label>
+  {{ form.email }}{{ form.email.errors }}
+
+  <fieldset class="cloud-sync-consent">
+    <legend>Cloud sync</legend>
+    <p class="intro">
+      Your projects are always usable entirely offline in this browser. You
+      can change this choice later in Account settings, and enabling sync
+      here does not upload anything until you separately opt a project in.
+    </p>
+    {% if form.site_cloud_sync_disabled %}
+      <p class="intro">
+        Cloud sync is currently disabled site-wide, so your projects will be
+        kept local-only for now.
+      </p>
+    {% endif %}
+    {% for radio in form.cloud_sync_choice %}
+      <label for="{{ radio.id_for_label }}" class="cloud-sync-choice">
+        {{ radio.tag }} {{ radio.choice_label }}
+      </label>
+    {% endfor %}
+    {{ form.cloud_sync_choice.errors }}
+  </fieldset>
+
+  <button type="submit">Create account</button>
+</form>
+{% endblock %}

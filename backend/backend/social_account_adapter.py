@@ -7,6 +7,9 @@ from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from django.shortcuts import render
 
+from backend.social_signup_forms import ENABLED
+from scenes.models import CloudSyncSignupConsent
+
 
 class LinkedProvidersSocialAccountAdapter(DefaultSocialAccountAdapter):
     """Allow verified social identities to create their first local account."""
@@ -15,6 +18,29 @@ class LinkedProvidersSocialAccountAdapter(DefaultSocialAccountAdapter):
         # Local email/password signup is intentionally closed by the account
         # adapter. Google/GitHub are the supported account-creation paths.
         return True
+
+    def is_auto_signup_allowed(self, request, sociallogin):
+        # Issue #524: every brand-new social identity must see the
+        # explicit local-only/cloud-sync choice before an account is
+        # created -- never auto-decided. This hook is only consulted by
+        # allauth for a genuinely new account (an existing linked
+        # identity signs in through a separate path that never reaches
+        # here), so returning False unconditionally is safe and does not
+        # affect a returning user.
+        return False
+
+    def save_user(self, request, sociallogin, form=None):
+        user = super().save_user(request, sociallogin, form=form)
+        # `form` is the `CloudSyncSignupForm` instance that finalized this
+        # signup -- always present for a real social signup (allauth only
+        # calls `save_user` with `form=None` from its own auto-signup
+        # path, which #524 disables above). Recorded exactly once, at the
+        # moment the account itself is created.
+        choice = form.cleaned_data.get("cloud_sync_choice") if form is not None else None
+        CloudSyncSignupConsent.objects.get_or_create(
+            owner=user, defaults={"sync_enabled": choice == ENABLED}
+        )
+        return user
 
     def pre_social_login(self, request: HttpRequest, sociallogin: SocialLogin) -> None:
         # Issue #420: a brand-new provider identity (this exact provider +

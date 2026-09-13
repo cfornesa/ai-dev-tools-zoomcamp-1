@@ -424,6 +424,9 @@ ACCOUNT_FORMS = {'signup': 'backend.forms.RecaptchaSignupForm'}
 # copy.
 ACCOUNT_ADAPTER = "backend.account_adapter.SocialOnlySignupAccountAdapter"
 SOCIALACCOUNT_ADAPTER = "backend.social_account_adapter.LinkedProvidersSocialAccountAdapter"
+# Issue #524: the signup-time local-only/cloud-sync consent choice, shown
+# once for every brand-new social account (never for a returning user).
+SOCIALACCOUNT_FORMS = {'signup': 'backend.social_signup_forms.CloudSyncSignupForm'}
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'

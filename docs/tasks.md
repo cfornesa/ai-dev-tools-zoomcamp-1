@@ -20157,7 +20157,22 @@ passed).
 
 Before another publish, apply the repository migrations to the Replit
 Development Database using its Shell/Console:
-`cd backend && uv run --env-file .env python manage.py migrate`. Confirm that
+`cd backend && uv run python manage.py migrate --noinput`. Confirm that
 the eight tables and migrations through `0055` exist in Development, then
 retry Publish. Do not choose “Copy your development database schema & data to
 production” for this incident.
+
+## 374. Replit development migration and republish recovery (2026-09-13)
+
+The Replit Shell does not contain the gitignored `backend/.env`; Replit injects
+the Development Database and Secrets into the environment directly. The
+correct command from the Shell's `backend` directory is therefore:
+`uv run python manage.py migrate --noinput` (without `--env-file .env`).
+It completed successfully with migrations `0047` through `0055` reporting
+`OK`, and `showmigrations scenes` confirmed all scene migrations applied.
+
+After that development repair, Replit validated the publish without any
+destructive table or column warning. The publish completed successfully and
+the signed-in production check returned HTTP 200 for profile, site theme,
+entitlements, and billing. Published smoke also passed on
+`https://augmentrart.com`.

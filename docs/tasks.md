@@ -20109,3 +20109,26 @@ returned 200. An unauthenticated probe also returned HTTP 500 for
 the login session. Republish alone therefore did not apply the missing
 `scenes_sitesettings.theme_config` production schema column; production
 readiness remains blocked pending Replit's supported schema reconciliation.
+
+## 372. Replit production schema reconciliation and verification (2026-09-13)
+
+The owner authorized direct reconciliation in Replit's `creatrweb` Production
+Database after republish. The production database was audited before writing:
+the existing schema matched the local Django state through `0046_plan_pricing`,
+while the published code required migrations `0047` through `0055`. No
+destructive changes were selected.
+
+The missing schema was applied directly through Replit's SQL console, then the
+idempotent data seeds and migration ledger were reconciled. Verification found
+all eight expected tables and five required columns. The ledger now contains
+55 `scenes` migration records. The seeded roles link `free` to the Free plan
+and `premium` to the paid plan; all global capabilities are enabled except
+`cloud_project_sync`, and the retention policy is 30 days for each grace
+period.
+
+The database editor was returned to read-only mode. Published smoke against
+`https://augmentrart.com` passed `/health/` (200/status=ok), `/` (200),
+anonymous `/api/whoami/` (401), and `/accounts/login/` (200). Authenticated
+account-settings verification should be repeated in the owner's existing
+signed-in browser session as a final UI confirmation; no credentials or
+production connection details were recorded.

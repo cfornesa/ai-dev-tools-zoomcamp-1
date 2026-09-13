@@ -11,8 +11,8 @@ Manifest: `docs/distillation-2026-09-13-admin-profile-parity.md`.
 | Focused approved-browser verification | PASS | Escalated Chromium `themeCustomization.spec.ts` and `cloudRetention.spec.ts`: each passed at 1280x900 and 375x812; #522 screenshots inspected. |
 | Full browser verification | BLOCKED / workflow boundary | First run could not launch Chromium under the managed sandbox. Escalated run launched successfully and reached 37 passes, but was stopped after six failures: four AI-agent cases lacked the documented `AI_PROVIDER=fake` server prerequisite, and the existing admin-settings case exposed cross-spec singleton baseline drift (#505 class). This is not evidence against #521. |
 | CI verification | BLOCKED | Latest run `34738342190` was cancelled by workflow concurrency; the latest completed success `34736533185` targets older SHA `a51ec51a0a3648eab84a0a7ce428967042807102`, not the current local SHA `983505db8ca60d494d1c6206ee3fb3e65966dc85`. |
-| Replit publication | BLOCKED by production schema drift | The post-republish check still has healthy public domains and passing credential-free smoke, but authenticated production requests return 500. CDP confirms `/api/account/profile/`, `/api/site-theme/`, and `/api/account/entitlements/` fail; Replit console evidence reports `ProgrammingError: column scenes_sitesettings.theme_config does not exist`; production schema is behind the published code. |
-| Production readiness | BLOCKED | Current-revision CI is PASS, and credential-free published smoke passes, but production authenticated settings are not functional until Replit applies the missing schema diff. The required rostered Opus 5 readiness model is unavailable in this task, so no silent model substitution is claimed. |
+| Replit publication | PASS for schema and anonymous runtime; authenticated UI confirmation pending | Direct inspection of the Replit Production Database after authorized reconciliation confirmed the eight migration-created tables, five required columns, 55 `scenes` ledger records, seeded roles/capabilities/retention policy, and read-only mode restored. Published smoke passed health, root, anonymous identity, and login checks. Repeat the signed-in account-settings browser check to confirm the prior 500s are gone. |
+| Production readiness | CONDITIONAL / final authenticated confirmation pending | The production schema-drift blocker is repaired and anonymous published smoke passes. Final release evidence still needs a signed-in browser check for account profile, theme, entitlements, and billing UI. The required rostered Opus 5 readiness model remains unavailable in this task, so no silent model substitution is claimed. |
 
 ## Issue rollup
 
@@ -22,11 +22,10 @@ Manifest: `docs/distillation-2026-09-13-admin-profile-parity.md`.
 
 ## Exact next actions
 
-1. In Replit `creatrweb` → Publishing, reconcile/apply the production schema
-   diff for the migrations through `0055_seed_cloud_retention_policy`; reject
-   destructive conflict options. Then republish and recheck the authenticated
-   account-settings APIs. The specific first confirmed missing field is
-   `scenes_sitesettings.theme_config`.
+1. In the owner's signed-in Chrome session, recheck account profile, site theme,
+   entitlements, and billing endpoints/UI after the authorized production
+   schema reconciliation. The direct production schema repair is complete;
+   this is confirmation evidence, not another migration attempt.
 2. Start the documented local E2E stack with `AI_PROVIDER=fake` and rerun the
    full suite; separately address the existing singleton-isolation failure if
    it reproduces in a clean per-spec run. Do not attribute either to #521.

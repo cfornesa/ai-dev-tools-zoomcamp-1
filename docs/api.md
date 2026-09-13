@@ -22,6 +22,26 @@ PayPal failure, and `200` for a status or successful idempotent retry. The
 response contains no client secret, access token, raw provider payload, or
 unverified entitlement claim.
 
+### PayPal sandbox operator verification
+
+The deterministic tests mock the approval transport; they do not create a
+provider subscription. For the separately authorized sandbox roundtrip, use
+the same `PAYPAL_MODE=sandbox` app credentials locally and in Replit, and keep
+the existing webhook endpoint configured for the deployment being tested. Open
+`/account/billing` as a fixture or sandbox buyer account, select the displayed
+paid plan, and click **Subscribe with PayPal**. PayPal redirects to its
+sandbox approval page: sign in there with a PayPal **sandbox personal/buyer**
+account, not the sandbox business account that owns the app, then approve the
+subscription. Return to the app and verify the subscription status only after
+the webhook arrives. The server-side webhook remains the authority; the
+browser return URL alone never grants paid access.
+
+For local testing, the webhook must target the active HTTPS forwarding URL
+for the local Django endpoint. Do not replace the Replit webhook with the
+localhost-forwarding URL; maintain one provider webhook per target environment
+or switch the callback only for the short local test and restore the deployed
+URL immediately afterward. No production PayPal account or charge is needed.
+
 This document is the canonical contract for the anonymous public gallery
 listing API. It exists because the repository pre-write rule requires any
 public API contract change to be documented **before** the product source

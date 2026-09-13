@@ -19637,3 +19637,19 @@ The production plan catalog and anonymous published runtime are now verified.
 remaining release-candidate reconciliation, including fresh provider callback
 evidence and any owner-controlled external acceptance criteria; this backfill
 does not claim those unperformed callbacks.
+
+## 349. PayPal sandbox operator path and pricing-fixture reconciliation (2026-09-13)
+
+The deterministic billing fixtures had drifted to `19.99` while the configured
+and published paid plan is the owner-selected `$10.00 USD/month`. Backend and
+frontend billing fixtures are now aligned to `10.00`; focused backend billing
+coverage passes 4/4 and the #513 media-library component coverage passes 5/5.
+
+The real local Chromium scenario for #513 was rerun against the reachable
+PostgreSQL-backed Django/Vite stack and passed 1/1. The operator procedure for
+the remaining PayPal acceptance step is documented in `docs/api.md`: use a
+PayPal sandbox personal/buyer account to approve the subscription created from
+`/account/billing`, while the sandbox business account remains the app owner.
+The existing local HTTPS forwarding webhook remains the local target; the
+deployed webhook is not replaced permanently. Provider webhook delivery, not
+the browser return URL, remains the authority for activation.

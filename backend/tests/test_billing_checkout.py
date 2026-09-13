@@ -28,7 +28,7 @@ def paid_plan(db, settings):
             "daily_ai_requests": 20,
             "feature_keys": list(entitlements.FEATURE_KEYS),
             "paypal_plan_id": "P-FIXTURE-PAID",
-            "price": "19.99",
+            "price": "10.00",
             "currency": "USD",
             "billing_interval": "month",
         },
@@ -87,7 +87,7 @@ def test_billing_status_exposes_configured_plan_pricing(client, user):
     assert response.json()["available_plan"] == {
         "plan_key": "paid",
         "paypal_configured": True,
-        "price": "19.99",
+            "price": "10.00",
         "currency": "USD",
         "interval": "month",
     }

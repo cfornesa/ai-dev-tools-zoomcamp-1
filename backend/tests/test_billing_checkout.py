@@ -87,7 +87,7 @@ def test_billing_status_exposes_configured_plan_pricing(client, user):
     assert response.json()["available_plan"] == {
         "plan_key": "paid",
         "paypal_configured": True,
-            "price": "10.00",
+        "price": "10.00",
         "currency": "USD",
         "interval": "month",
     }

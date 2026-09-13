@@ -19549,3 +19549,21 @@ completion has zero missing terminal classifications for this run. Scoping,
 implementation, independent review, QA, production-readiness, and session-
 completion were performed in this Codex task as the owner-authorized
 substitution for the normally rostered external services.
+
+## 345. #513 browser verification and E2E harness repair (2026-09-13)
+
+The #513 implementation was re-verified against the live local PostgreSQL-
+backed Django/Vite stack. The Chromium scenario
+`frontend/e2e/manual2dMediaLibrary.spec.ts` passed 1/1 after the E2E harness
+was repaired to give its `uv` fixture setup/teardown commands a writable
+temporary cache directory. Before that repair, the scenario self-skipped
+because macOS sandbox permissions blocked uv cache initialization; after it,
+the remaining managed-sandbox Chromium Mach-port restriction was bypassed only
+for the identical command through the approved unsandboxed browser path.
+
+Focused `ProjectMediaLibraryPanel` coverage passed 5/5, and the subsequent
+full `make check` passed: 1,214 backend tests and 2,557 frontend tests, with
+only the repository's existing warnings. The harness repair is committed in
+`e10267b` and pushed to `origin/main`. #513's engineering and verification
+criteria are now satisfied; its GitHub issue remains open pending status
+reconciliation.

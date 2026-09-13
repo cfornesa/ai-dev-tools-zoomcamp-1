@@ -11533,6 +11533,22 @@ issue or parent is closed from this assessment. Next actions are authorized
 production publish, exact-route/artifact QA, and authenticated GitHub status
 reconciliation.
 
+## 346. #440 PayPal sandbox roundtrip evidence (2026-09-13)
+
+The local PayPal sandbox configuration was verified with live credentials. A
+$10 USD monthly sandbox product/plan was created and the local `paid` plan was
+mapped to the returned PayPal plan. The buyer approved a subscription through
+the isolated sandbox checkout. PayPal delivered `BILLING.SUBSCRIPTION.ACTIVATED`
+and `PAYMENT.SALE.COMPLETED` through the configured ngrok URL. The activation
+delivery initially hit Django's `DisallowedHost` response because the exact
+ngrok hostname was absent from local `DJANGO_ALLOWED_HOSTS`; after adding that
+hostname and restarting Django, replaying the captured activation delivery
+returned `{"outcome":"applied"}` and created an active local paid
+subscription. The sale delivery was retained as a rejected event because its
+resource shape identifies the sale rather than the subscription; this is a
+separate #440 follow-up and is not evidence of a failed subscription
+activation. No production transaction occurred.
+
 ## 268. Reconcile Docker identity preflight (#321)
 
 Status: COMPLETE

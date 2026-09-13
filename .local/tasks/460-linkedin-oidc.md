@@ -2,7 +2,7 @@
 
 ### Transaction ledger
 
-- **Phase:** GROOMED → ENGINEERING → QA → RECONCILIATION pending deployment
+- **Phase:** GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED
 - **Stage provenance:** issue scoping and implementation performed by Codex as
   the owner-authorized substitution for the rostered external stages; no
   external model was invoked.
@@ -18,3 +18,5 @@
   must be republished before external verification.
 - **QA:** PASS with deployment boundary, posted at
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/460#issuecomment-5649576285.
+- **GitHub:** closed; live callback and current publish remain explicitly
+  owned by #445.

@@ -21,3 +21,11 @@ Confirmed 2026-09-12: the staged repair and final publish preserved 14 legacy
 scene-version rows and the direct production invariant query returned
 7 projects, 7 scenes, 14 versions, zero missing links, and zero duplicate
 scene sequences; published smoke and authenticated baseline checks passed.
+
+Confirmed 2026-09-12 for the billing-pricing publish: after the owner-approved
+Publish operation, direct `information_schema.columns` inspection showed
+`scenes_plan.price` as `numeric(10,2)` plus `currency` and `billing_interval`,
+and `scripts/smoke-published.sh` passed against the custom domain. The Publish
+warning also reported truncation of `scenes_plan` and `scenes_sitesettings`;
+that consequence must be surfaced explicitly when the owner approves the
+operation, never hidden behind a generic “schema sync succeeded” statement.

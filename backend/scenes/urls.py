@@ -67,7 +67,7 @@ from scenes.art_piece_persistence import (
     PublicArtPieceListView,
     PublicArtPieceThumbnailView,
 )
-from scenes.billing_api import PayPalWebhookView
+from scenes.billing_api import AccountBillingView, PayPalWebhookView
 from scenes.cloud_backup_api import CloudBackupBlobView, CloudBackupManifestView, CloudBackupView
 from scenes.provider_credentials_api import ProviderCredentialView
 
@@ -75,6 +75,7 @@ urlpatterns = [
     path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
     path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
+    path("account/billing/", AccountBillingView.as_view(), name="account-billing"),
     path("account/entitlements/", AccountEntitlementsView.as_view(), name="account-entitlements"),
     path("account/export/", AccountDataExportView.as_view(), name="account-data-export"),
     path("account/delete/", AccountDeletionView.as_view(), name="account-delete"),

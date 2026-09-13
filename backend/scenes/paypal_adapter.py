@@ -22,6 +22,30 @@ _API_BASES = {
 _REQUEST_TIMEOUT_SECONDS = 10
 
 
+def create_subscription(
+    *, plan_id: str, custom_id: str, request_id: str, return_url: str, cancel_url: str
+) -> dict:
+    """Create one PayPal subscription and return the minimal provider response."""
+    base = _API_BASES[settings.PAYPAL_MODE]
+    token = _get_access_token()
+    response = requests.post(
+        f"{base}/v1/billing/subscriptions",
+        json={
+            "plan_id": plan_id,
+            "custom_id": custom_id,
+            "application_context": {
+                "user_action": "SUBSCRIBE_NOW",
+                "return_url": return_url,
+                "cancel_url": cancel_url,
+            },
+        },
+        headers={"Authorization": f"Bearer {token}", "PayPal-Request-Id": request_id},
+        timeout=_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def _get_access_token() -> str:
     base = _API_BASES[settings.PAYPAL_MODE]
     response = requests.post(

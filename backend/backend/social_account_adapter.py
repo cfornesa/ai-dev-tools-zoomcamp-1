@@ -41,6 +41,14 @@ class LinkedProvidersSocialAccountAdapter(DefaultSocialAccountAdapter):
         elif sociallogin.user.email:
             email = sociallogin.user.email
         if not email:
+            if sociallogin.account.provider == "linkedin":
+                response = render(
+                    request,
+                    "socialaccount/social_identity_email_required.html",
+                    {"provider": "LinkedIn"},
+                    status=400,
+                )
+                raise ImmediateHttpResponse(response)
             return
         matching_user = get_user_model().objects.filter(email__iexact=email).first()
         if matching_user is None:

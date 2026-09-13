@@ -185,7 +185,9 @@ class Subscription(models.Model):
     """
 
     class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
         ACTIVE = "active", "Active"
+        PAST_DUE = "past_due", "Past due"
         CANCELLED = "cancelled", "Cancelled"
         SUSPENDED = "suspended", "Suspended"
         EXPIRED = "expired", "Expired"
@@ -206,6 +208,35 @@ class Subscription(models.Model):
 
     def __str__(self) -> str:
         return f"{self.paypal_subscription_id} ({self.status}) for user {self.user_id}"
+
+
+class BillingCheckout(models.Model):
+    """Server-owned PayPal checkout correlation (issue #440).
+
+    The unique owner/key pair makes browser retries idempotent while keeping
+    provider approval URLs and subscription ids out of client-controlled
+    return parameters. It is deliberately not an entitlement record; only a
+    verified webhook may transition ``Subscription``.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="billing_checkouts"
+    )
+    idempotency_key = models.CharField(max_length=128)
+    plan_key = models.CharField(max_length=32)
+    paypal_subscription_id = models.CharField(max_length=64, blank=True, default="")
+    approval_url = models.URLField(max_length=500, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "idempotency_key"], name="unique_billing_checkout_key"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"PayPal checkout {self.pk} for user {self.user_id}"
 
 
 class BillingEvent(models.Model):

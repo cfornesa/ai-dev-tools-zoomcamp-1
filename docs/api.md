@@ -1,5 +1,24 @@
 # Public gallery API contract
 
+## Account billing contract (#440)
+
+Authenticated account billing is exposed through `/api/account/billing/` and
+the frontend route `/account/billing`. `GET` returns the effective plan and
+the user's latest PayPal subscription status; `POST` accepts a server-created
+idempotency key and a published active plan key, creates a PayPal sandbox
+subscription with the authenticated user's id as the provider correlation,
+and returns only a provider approval URL plus an opaque checkout id. The
+server records the checkout correlation before returning and never trusts
+return-query parameters as proof of payment. PayPal webhook verification and
+the existing billing service are the only paths that change subscription or
+entitlement state.
+
+The endpoint returns `401` for anonymous callers, `400` for malformed or
+inactive plans, `409` for an idempotency-key conflict, `502` for an upstream
+PayPal failure, and `200` for a status or successful idempotent retry. The
+response contains no client secret, access token, raw provider payload, or
+unverified entitlement claim.
+
 This document is the canonical contract for the anonymous public gallery
 listing API. It exists because the repository pre-write rule requires any
 public API contract change to be documented **before** the product source

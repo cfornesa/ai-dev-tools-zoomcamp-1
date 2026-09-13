@@ -28,6 +28,7 @@ const ImmersiveArtPieceViewer = lazy(() => import('./pages/ImmersiveArtPieceView
 const Templates = lazy(() => import('./pages/Templates'));
 const CreateChooser = lazy(() => import('./pages/CreateChooser'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
+const AccountBilling = lazy(() => import('./pages/AccountBilling'));
 const AccountIdentities = lazy(() => import('./pages/AccountIdentities'));
 const AccountSessions = lazy(() => import('./pages/AccountSessions'));
 const AccountDataExport = lazy(() => import('./pages/AccountDataExport'));
@@ -83,6 +84,7 @@ function App() {
               <Route path="art-pieces/p/:id" element={<PublicArtPieceViewer />} />
               <Route path="art-pieces/immersive/:id" element={<ImmersiveArtPieceViewer />} />
               <Route path="account/settings" element={<AccountSettings />} />
+              <Route path="account/billing" element={<AccountBilling />} />
               <Route path="account/settings/identities" element={<AccountIdentities />} />
               <Route path="account/settings/sessions" element={<AccountSessions />} />
               <Route path="account/settings/export" element={<AccountDataExport />} />

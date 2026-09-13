@@ -17,6 +17,12 @@ from allauth.socialaccount.providers.github.views import (
 from allauth.socialaccount.providers.github.views import (
     oauth2_login as _github_oauth2_login,
 )
+from allauth.socialaccount.providers.openid_connect.views import (
+    callback as _openid_connect_callback,
+)
+from allauth.socialaccount.providers.openid_connect.views import (
+    login as _openid_connect_login,
+)
 from django.conf import settings
 from django.http import Http404, HttpRequest, HttpResponse
 
@@ -32,3 +38,16 @@ def _require_github_oauth_enabled(view):
 
 github_login = _require_github_oauth_enabled(_github_oauth2_login)
 github_callback = _require_github_oauth_enabled(_github_oauth2_callback)
+
+
+def _require_linkedin_oauth_enabled(view):
+    def gated(request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        if not settings.LINKEDIN_OAUTH_ENABLED:
+            raise Http404("LinkedIn sign-in is not configured.")
+        return view(request, *args, provider_id="linkedin", **kwargs)
+
+    return gated
+
+
+linkedin_login = _require_linkedin_oauth_enabled(_openid_connect_login)
+linkedin_callback = _require_linkedin_oauth_enabled(_openid_connect_callback)

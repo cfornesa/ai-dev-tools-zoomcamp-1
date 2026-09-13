@@ -18,7 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
-from backend.oauth_gates import github_callback, github_login
+from backend.oauth_gates import github_callback, github_login, linkedin_callback, linkedin_login
 from backend.views import health, whoami
 
 urlpatterns = [
@@ -31,6 +31,8 @@ urlpatterns = [
     # GITHUB_OAUTH_ENABLED is False. See backend.oauth_gates.
     path('accounts/github/login/', github_login, name='github_login'),
     path('accounts/github/login/callback/', github_callback, name='github_callback'),
+    path('accounts/linkedin/login/', linkedin_login, name='linkedin_login'),
+    path('accounts/linkedin/login/callback/', linkedin_callback, name='linkedin_callback'),
     # Google sign-in (Task 12): exposes /accounts/login/, /accounts/logout/,
     # /accounts/google/login/, and /accounts/google/login/callback/ — the
     # only redirect URI that must be registered with Google (see

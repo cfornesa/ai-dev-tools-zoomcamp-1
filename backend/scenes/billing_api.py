@@ -10,12 +10,17 @@ from `scenes.billing.process_webhook_event`'s signature verification.
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from django.http import Http404
+from django.urls import reverse
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.billing import WebhookRejected, process_webhook_event
+from scenes.models import BillingCheckout, Plan, Subscription
+from scenes.paypal_adapter import create_subscription
 
 
 def _lookup_user_by_custom_id(custom_id):
@@ -68,3 +73,99 @@ class PayPalWebhookView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response({"outcome": outcome.outcome}, status=status.HTTP_200_OK)
+
+
+class AccountBillingView(APIView):
+    """Authenticated checkout/status surface for issue #440."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        subscription = (
+            Subscription.objects.filter(user=request.user).order_by("-updated_at").first()
+        )
+        plan_key = subscription.plan_key if subscription else "free"
+        plan = Plan.objects.filter(plan_key=plan_key, active=True).first()
+        return Response(
+            {
+                "plan_key": plan_key,
+                "plan": {
+                    "price": "0.00" if plan_key == "free" else None,
+                    "currency": "USD",
+                    "interval": "month",
+                },
+                "subscription": {
+                    "status": subscription.status if subscription else None,
+                    "paid_through": subscription.paid_through if subscription else None,
+                },
+                "available_plan": {
+                    "plan_key": plan.plan_key,
+                    "paypal_configured": bool(plan.paypal_plan_id),
+                }
+                if plan and plan.plan_key != "free"
+                else None,
+            }
+        )
+
+    def post(self, request):
+        if not settings.PAYPAL_ENABLED:
+            raise Http404("PayPal billing is not configured.")
+        plan_key = request.data.get("plan_key")
+        idempotency_key = str(request.data.get("idempotency_key", "")).strip()
+        if not isinstance(plan_key, str) or not idempotency_key or len(idempotency_key) > 128:
+            return Response(
+                {"error": "invalid_checkout_request"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        plan = Plan.objects.filter(plan_key=plan_key, active=True).first()
+        if plan is None or not plan.paypal_plan_id:
+            return Response({"error": "plan_unavailable"}, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            try:
+                with transaction.atomic():
+                    checkout = BillingCheckout.objects.create(
+                        user=request.user, idempotency_key=idempotency_key, plan_key=plan.plan_key
+                    )
+            except IntegrityError:
+                checkout = BillingCheckout.objects.get(
+                    user=request.user, idempotency_key=idempotency_key
+                )
+                if checkout.plan_key != plan.plan_key:
+                    return Response(
+                        {"error": "idempotency_key_conflict"}, status=status.HTTP_409_CONFLICT
+                    )
+                return Response(
+                    {"checkout_id": checkout.pk, "approval_url": checkout.approval_url},
+                    status=status.HTTP_200_OK,
+                )
+            try:
+                payload = create_subscription(
+                    plan_id=plan.paypal_plan_id,
+                    custom_id=str(request.user.pk),
+                    request_id=idempotency_key,
+                    return_url=request.build_absolute_uri(reverse("account-billing")),
+                    cancel_url=request.build_absolute_uri(reverse("account-billing")),
+                )
+            except Exception:
+                checkout.delete()
+                return Response({"error": "paypal_unavailable"}, status=status.HTTP_502_BAD_GATEWAY)
+            approval_url = next(
+                (
+                    link.get("href")
+                    for link in payload.get("links", [])
+                    if link.get("rel") == "approve"
+                ),
+                "",
+            )
+            provider_id = payload.get("id", "")
+            if not approval_url or not provider_id:
+                checkout.delete()
+                return Response(
+                    {"error": "paypal_invalid_response"}, status=status.HTTP_502_BAD_GATEWAY
+                )
+            checkout.paypal_subscription_id = provider_id
+            checkout.approval_url = approval_url
+            checkout.save(update_fields=["paypal_subscription_id", "approval_url"])
+        return Response(
+            {"checkout_id": checkout.pk, "approval_url": approval_url},
+            status=status.HTTP_201_CREATED,
+        )

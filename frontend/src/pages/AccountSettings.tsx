@@ -32,6 +32,9 @@ function AccountSettings() {
         <h2>Account settings</h2>
         <EntitlementsSummary />
         <p>
+          <Link to="/account/billing">Manage billing</Link>
+        </p>
+        <p>
           <Link to="/account/settings/identities">Manage linked sign-in methods</Link>
         </p>
         <p>

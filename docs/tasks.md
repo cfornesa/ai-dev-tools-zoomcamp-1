@@ -19475,3 +19475,28 @@ fetch/pull the intended `origin/main` revision; then repeat publish and exact
 revision parity checks. Separately, supply PayPal sandbox credentials for #440
 and OAuth provider credentials for #460 when those external callback tests are
 wanted.
+## 343. Billing pricing implementation and release-gate reconciliation (2026-09-13)
+
+Commit `a3b7e5c` adds persisted `Plan` pricing (`price`, `currency`, and
+`billing_interval`), admin editing, explicit paid-plan display, migration
+`scenes.0046_plan_pricing`, and deterministic checkout regression coverage.
+Local focused tests pass (22), the full repository gate passes (1,214 backend
+tests, 2,557 frontend tests), and CI run
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34728693345
+passes backend, frontend, workflow, disposable routing, and browser acceptance
+jobs.
+
+The requested Replit `creatrweb` republish was initiated but remains at the
+Bundle stage with no new checkpoint or promotion after the visible build logs
+stopped advancing. The public domains therefore remain on checkpoint `99ce0da4`
+until this deployment completes. Do not claim production schema parity for
+migration `0046` until the new checkpoint is visible, then verify the actual
+production columns/tables and run `scripts/smoke-published.sh`.
+
+Current issue state: #460 and #513 CLOSED; #440 OPEN pending the PayPal sandbox
+approval/webhook roundtrip and final production price configuration; #445 OPEN
+as the release-candidate container pending the Replit migration-bearing
+publish and #440's manual gate. Production-readiness and session-completion
+were run in this Codex task as the owner-authorized substitution for the
+rostered external stages; the current verdict is blocked at the Replit
+deployment boundary and the operator-controlled PayPal transaction.

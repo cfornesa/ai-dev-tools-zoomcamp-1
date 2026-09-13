@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import ReducedMotionControl from './ReducedMotionControl';
 import { useIsMobileHeader } from './useIsMobileHeader';
 import { useAuth } from '../auth/useAuth';
+import { fetchSiteTheme } from '../api/siteTheme';
 
 /**
  * Task 64 (issue #64): app-shell skip link, per `_docs/plan.md`'s
@@ -30,6 +31,32 @@ function Layout() {
   const location = useLocation();
   const isMobileHeader = useIsMobileHeader();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchSiteTheme()
+      .then((theme) => {
+        if (!mounted) return;
+        const root = document.documentElement;
+        const mapping: Record<string, string> = {
+          background: '--bg',
+          surface: '--code-bg',
+          text: '--text-h',
+          muted: '--text',
+          accent: '--accent',
+        };
+        Object.entries(mapping).forEach(([key, variable]) => {
+          const value = theme[key];
+          if (value) root.style.setProperty(variable, value);
+        });
+      })
+      .catch(() => {
+        /* keep the compiled safe defaults */
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Issue #90: collapsing back to desktop width while the mobile menu is
   // open would otherwise leave menuOpen stuck true, showing the (now

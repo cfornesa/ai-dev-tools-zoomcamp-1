@@ -19739,3 +19739,342 @@ AugmentrART home page. Direct LinkedIn Auth inspection confirmed the published
 and local callback entries. #445 was updated with the final evidence and
 closed. The callback-path lesson is recorded in
 `linkedin-oidc-callback-registration.md`.
+## 356. Billing, CMS, entitlement, profile, and theme parity distillation (2026-09-13)
+
+Task-distillation reconciled the owner's post-PayPal review against the current
+application, closed issue history, and the read-only
+`augment-humankind-platform` / `augment-humankind-react-node` references. The
+current app already has fail-closed environment-configured admin identities,
+protected `/admin/settings`, atomic plan/entitlement foundations, PayPal
+checkout/webhooks, and local-first media/project contracts. It does not yet
+have the broader pages/content CMS, public profiles, or site/profile theme
+surfaces described by the owner.
+
+No closed issue was reopened. No product source or product tests were changed
+during this distillation pass. The new criterion-ready queue is:
+
+- [#515](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/515) —
+  published billing pending status and centered Billing surface; Stage 2a,
+  next transaction.
+- [#516](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/516) —
+  dark branded allauth authentication templates; Stage 2a.
+- [#517](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/517) —
+  protected admin shell and pages configuration; Stage 2b complex.
+- [#518](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/518) —
+  list-oriented admin project/piece/media operations; Stage 2b complex.
+- [#519](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/519) —
+  cross-surface capability registry and deterministic plan behavior; Stage 2b
+  complex.
+- [#520](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/520) —
+  public profiles and user profile settings; Stage 2b complex.
+- [#521](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/521) —
+  site-wide and per-profile customization/theme parity; dependency-blocked on
+  the #517/#520 contracts.
+- [#522](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/522) —
+  admin-configurable cloud-media retention; dependency-blocked on an owner
+  policy/storage decision.
+
+The complete manifest, duplicate report, closure contracts, routing hints,
+verification boundaries, and blocker triage are in
+`docs/distillation-2026-09-13-admin-profile-parity.md`; issue-local execution
+plans are in `.local/tasks/515-*.md` through `.local/tasks/522-*.md`.
+The next backlog-session transaction is #515 only. Existing closed #421–#426,
+#439, #440, #507, #509, #511, #512, and #513 remain historical foundations.
+
+## 357. Backlog-session transaction for #515 (2026-09-13)
+
+Issue #515 completed the transaction through engineering and QA. Because the
+owner explicitly prohibited invoking Opencode or another model, Stage 2a was
+performed in this Codex task as an owner-directed substitution for the
+rostered implementation service; Stage 3 was not run; Stage 4 QA was also
+performed here as an explicit substitution for the rostered independent QA
+service.
+
+Engineering added a bounded PayPal-return status poll (12 attempts at five
+seconds), an accessible asynchronous-confirmation status message, a truthful
+timeout state, removal of PayPal return query parameters after confirmed
+activation, and centered Billing-panel layout. The browser fixture now covers
+pending, active transition, and both required viewports with screenshots.
+
+QA evidence:
+
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache npx playwright test
+  e2e/accountBilling.spec.ts --project=chromium` — 5 passed, including
+  1280x900 and 375x812 geometry plus screenshot evidence.
+- `npm test -- --run` — 208 files, 2,557 tests passed.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` — passed: backend
+  lint/format/typecheck/tests (1,216 passed, 39 skipped), frontend
+  lint/format/typecheck/tests (208 files, 2,557 tests). Existing lint and
+  deprecation warnings remain non-blocking.
+- Screenshots inspected at
+  `frontend/test-results/billing-pending-1280.png` and
+  `frontend/test-results/billing-pending-375.png`; no overlap or horizontal
+  overflow observed.
+
+No new dependency, migration, or public route/API change was introduced.
+The stale Vite process encountered during QA was restarted; the initial
+focused failure was classified as a local workflow/infrastructure stale-server
+condition, and the rerun against the refreshed server passed. #515 is ready
+for reconciliation/closure; the next transaction is #516.
+
+## 358. Backlog-session transaction for #516 (2026-09-13)
+
+Issue #516 completed engineering and QA. Stage 2a and Stage 4 were performed
+in this Codex task as owner-directed substitutions because the owner prohibited
+Opencode/other models; Stage 3 was not run.
+
+The allauth account base template now uses the React shell's dark palette,
+typography, borders, controls, focus treatment, responsive sizing, and reduced-
+motion behavior. Login, signup-closed, and social-account error templates
+continue to use the same safe inherited shell and preserve their existing
+provider/account behavior without rendering credentials or payloads.
+
+QA evidence:
+
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache uv run pytest
+  tests/test_signup_policy.py -q` — 4 passed.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache npx playwright test
+  e2e/authPolicy.spec.ts --project=chromium` — 2 passed at 1280x900 and
+  375x812; rendered screenshots inspected.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` — passed: backend
+  1,217 passed / 39 skipped; frontend 208 files / 2,557 tests passed, with
+  only existing lint/deprecation warnings.
+
+No new dependency, migration, public route/API change, or secret handling was
+introduced. #516 is ready for reconciliation/closure; the next transaction is
+#517.
+
+## 359. Backlog-session dependency triage for #517/#521/#522 (2026-09-13)
+
+#517 reached its engineering intake but is not yet implementation-ready: the
+required `/admin/pages` route/API and page data model need an owner choice
+before the repository's irreversible API/schema gate can be crossed. The
+recommended option is a dedicated `Page` model with `/api/admin/pages/` and
+`/admin/pages`, separate from artwork/projects. A corrected blocker comment was
+posted to #517; the issue remains open.
+
+#521 is dependency-blocked on the #517 admin/site-settings contract and #520's
+profile contract. #522 is dependency-blocked by its own explicit requirement
+for an owner-approved retention policy and storage-provider lifecycle contract.
+Both dependency boundaries were recorded on their GitHub issues; no product
+code or destructive lifecycle behavior was invented ahead of those decisions.
+
+## 360. Backlog-session blocked audit for #517 (2026-09-13)
+
+#517's dedicated-page model and slug-history proposal was presented in three
+consecutive goal continuations without an owner decision. The issue is
+dependency-blocked at the schema/API gate; implementing it would require
+silently choosing a persistent data model and public URL policy. No further
+issue can safely advance in this batch because #518 depends on #517 and #519
+would require a separate API-contract decision. Resume the backlog session
+after the owner confirms the proposal in `.local/tasks/517-admin-pages-cms.md`.
+
+## 361. Backlog-session transaction for #517 (2026-09-13)
+
+#517 completed engineering and QA in this Codex task as owner-directed
+substitutions because external model delegation was prohibited; Stage 3 was not
+run. The implementation adds a dedicated `Page`/slug-history/audit model set,
+admin-only page list/create/update/soft-delete APIs, published public reads with
+301 slug redirects, revision and protected-page invariants, and the responsive
+React admin pages console.
+
+QA evidence:
+
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache uv run pytest
+  tests/test_admin_pages.py -q` — 5 passed.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache npx playwright test
+  e2e/adminPages.spec.ts --project=chromium` — 2 passed, including 1280x900
+  and 375x812 screenshots.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` — passed: backend
+  1,222 passed / 39 skipped; frontend 208 files / 2,557 tests passed, plus
+  formatting, lint, mypy, and action-pin checks.
+- Migrations `0047_cms_pages` and `0048_alter_page_managers` applied to local
+  PostgreSQL; `manage.py check` and `makemigrations --check --dry-run` were
+  clean.
+
+The QA PASS comment and reconciliation closure were posted on GitHub:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/517#issuecomment-5651479979.
+The next transaction is #518.
+
+## 362. Backlog-session transaction for #518 (2026-09-13)
+
+#518 completed engineering and QA in this Codex task as owner-directed
+substitutions because external model delegation was prohibited; Stage 3 was not
+run. The approved dedicated `AdminContentAuditEvent` model records actor,
+resource, action, detail, and time for cross-family admin operations. The
+content API/console lists 2D/3D/generated resources, immutable versions, and
+cloud-backed media without touching local IndexedDB; supports explicit
+publish/unpublish/soft-delete/restore actions and application-admin grants;
+and preserves the existing publication, current-version, meaningful-content,
+and local-first invariants.
+
+QA evidence:
+
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache uv run pytest
+  tests/test_admin_content.py -q` — 5 passed.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache npx playwright test
+  e2e/adminContent.spec.ts --project=chromium` — 2 passed, including
+  anonymous/non-admin denial and 1280x900/375x812 screenshots.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` — passed: backend
+  1,227 passed / 39 skipped; frontend 208 files / 2,557 tests passed, plus
+  formatting, lint, mypy, and action-pin checks.
+- Migration `0049_admin_content_audit_event` applied to local PostgreSQL;
+  `manage.py check` and `makemigrations --check --dry-run` were clean.
+
+The QA PASS comment and reconciliation closure were posted on GitHub; the next
+transaction is #519, whose requirement now includes an atomic per-user,
+per-capability permission matrix that omits unavailable features from the UI.
+
+## 363. Backlog-session transaction for #519 (2026-09-13)
+
+#519 completed engineering and QA in this Codex task as owner-directed
+substitutions because external model delegation was prohibited; Stage 3 was
+not run. The implementation adds a canonical atomic capability registry,
+reusable Free/Premium/admin-defined entitlement roles, plan-to-role assignment,
+revision-checked per-user overrides, and revision-checked global capability
+switches. The cloud-sync global switch is synchronized with the existing
+site-wide setting in one transaction. Application admins receive all
+capabilities subject to an explicit global shutdown. The account summary
+exposes the resolved map and the admin console omits no local work while
+ordinary UI surfaces can omit unavailable optional tools.
+
+The privacy boundary is explicit: public gallery/profile surfaces expose only
+explicitly public pieces; private pieces remain local-first in IndexedDB unless
+the account is permitted and opts into cloud backup. Immersive viewer and
+multi-library AI/editor implementations remain covered by immutable closed
+parity issues (#274/#318/#326/#463 and their children); #519 adds their atomic
+permission vocabulary without reopening them.
+
+QA evidence:
+
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache uv run pytest
+  tests/test_admin_settings.py tests/test_entitlements.py -q` — 32 passed / 1
+  skipped.
+- `E2E_BASE_URL=http://localhost:5000 npx playwright test
+  e2e/capabilityConsistency.spec.ts --project=chromium` — 1 passed at both
+  1280×900 and 375×812; screenshots inspected.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` — passed: backend 1,230
+  passed / 39 skipped and frontend 208 files / 2,557 tests passed, including
+  lint, formatting, typecheck, mypy, and action-pin checks.
+- Migrations `0050_roles_global_capabilities` and
+  `0051_seed_entitlement_policy` applied locally; `manage.py check` and
+  `makemigrations --check --dry-run` were clean.
+
+No new dependency was introduced. The QA PASS comment and reconciliation
+closure were posted on GitHub; the next transaction is #520.
+
+## 364. Backlog-session transaction for #520 (2026-09-13)
+
+#520 completed engineering and QA in this Codex task as owner-directed
+substitutions because external model delegation was prohibited; Stage 3 was
+not run. The implementation adds the owner-scoped `PublicProfile` model and
+migration, revision-checked profile settings for unique handles, display name,
+bio, website, social metadata, profile-photo metadata, and public visibility,
+plus the anonymous `/users/@handle` route and responsive account/profile UI.
+The public payload aggregates only eligible public 2D, 3D, and generated
+pieces; prompts, credentials, billing, provider identities, drafts, deleted
+work, and private work are excluded. Existing project routes remain unchanged.
+
+QA evidence:
+
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache uv run pytest
+  tests/test_profiles.py -q` — 2 passed.
+- `E2E_BASE_URL=http://localhost:5000 npx playwright test
+  e2e/publicProfiles.spec.ts --project=chromium` — 1 passed at both 1280×900
+  and 375×812; screenshots inspected.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` — passed: backend 1,232
+  passed / 39 skipped and frontend 208 files / 2,557 tests passed, including
+  lint, formatting, typecheck, mypy, and action-pin checks.
+- Migration `0052_publicprofile` applied locally; `manage.py check` and
+  `makemigrations --check --dry-run` were clean.
+
+No new dependency was introduced. The QA PASS comment and reconciliation
+closure were posted on GitHub; the next transaction is #521.
+
+## 365. Backlog-session transaction for #521 (2026-09-13)
+
+#521 completed engineering and QA in this Codex task as owner-directed
+substitutions because external model delegation was prohibited; Stage 3 was
+not run. The implementation adds a finite, validated theme-token contract for
+site settings and owner profiles, revision-safe persistence and default
+fallbacks, admin site editing with reset-to-default, owner profile editing
+with reset-to-default, the anonymous `/api/site-theme/` contract, and
+profile-scoped accent styling that cannot override the site shell or auth
+security surfaces. Invalid stored values fail closed to effective defaults.
+
+QA evidence:
+
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache uv run pytest
+  tests/test_profiles.py tests/test_admin_settings.py -q` — 22 passed.
+- `E2E_BASE_URL=http://localhost:5000 npx playwright test
+  e2e/themeCustomization.spec.ts --project=chromium` — 1 passed at both
+  1280x900 and 375x812; screenshots were captured.
+- `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` — passed: backend
+  1,233 passed / 39 skipped and frontend 208 files / 2,557 tests passed,
+  including lint, formatting, typecheck, mypy, and action-pin checks.
+- Migration `0053_theme_config` applied locally; `manage.py check` and
+  `makemigrations --check --dry-run` were clean.
+
+No new dependency was introduced. The QA PASS comment and reconciliation
+closure were posted on GitHub; the next transaction is #522, which remains
+dependency-blocked pending the owner's retention-policy and storage-lifecycle
+decision.
+
+## 366. Backlog-session blocker reconciliation for #522 (2026-09-13)
+
+#522 is the sole remaining open issue. It is `dependency-blocked` at an
+owner-policy/provider boundary: remote-copy retention and deletion semantics
+for active, deleted, cancelled/expired, and disabled-sync media have not been
+approved, and the storage lifecycle owner/provider contract is unspecified.
+No code changes or destructive defaults are authorized before that decision.
+
+Duplicate review confirms that #443 owns account deletion, while #509/#511 own
+cloud-sync transport and entitlement gating; neither duplicates #522's
+remote-media lifecycle contract, so no new follow-up issue is required.
+
+Exact next action: the owner records the finite retention/grace matrix,
+storage lifecycle ownership/provider contract, and whether retroactive purge
+requires explicit confirmation. The issue then returns to Stage 1/2b with its
+existing PostgreSQL/purge/browser closure contract.
+
+## 367. Production-readiness and session-completion handoff (2026-09-13)
+
+The batch rollup and readiness assessment are recorded in
+`docs/production-readiness-2026-09-13.md`. Local authenticated smoke and
+focused Chromium theme evidence passed; full-browser, CI-current-revision, and
+exact published-revision evidence remain classified at their documented
+boundaries. #522 is the sole remaining open issue and remains
+dependency-blocked. The session is not production-ready and must resume with
+the owner retention-policy decision, then current-revision CI/published smoke
+verification.
+
+## 368. Backlog-session transaction for #522 (2026-09-13)
+
+The owner approved the finite retention policy and existing
+application-owned PostgreSQL/blob lifecycle: active remote copies remain while
+active; deleted projects, cancelled/expired entitlements, and disabled-sync
+copies receive a 30-day grace period; retroactive destructive purge requires
+explicit confirmation. Local IndexedDB content is never affected.
+
+The implementation added revisioned/audited admin policy APIs, bounded
+idempotent purge and lifecycle state reconciliation, truthful cloud-sync status
+fields, admin controls, PostgreSQL tests, and a responsive Chromium scenario.
+The issue-specific QA record is `.local/tasks/522-qa-comment.md`.
+
+Evidence: focused retention tests 4/4, focused Chromium 1/1 with inspected
+1280x900 and 375x812 screenshots, and full `make check` passed (backend 1,237
+passed / 39 skipped; frontend 2,557 passed). No new dependency was added.
+The implementation and QA were Codex owner-directed substitutions; Stage 3
+independent review was not run. QA comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/522#issuecomment-5652013638.
+GitHub issue #522 is closed as completed.
+
+## 369. Final batch reconciliation handoff (2026-09-13)
+
+The original open batch is now functionally complete: #515–#522 satisfy their
+recorded scoped contracts, with #522's prior policy blocker resolved by owner
+approval. Production readiness remains a separate release gate because
+current-revision CI and exact published-Replit schema/smoke evidence are not
+yet available, and the mandatory rostered Opus 5 readiness model was
+unavailable in this task. These boundaries must not be represented as product
+defects or as published proof.

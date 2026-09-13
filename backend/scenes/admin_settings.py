@@ -17,7 +17,8 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from scenes.entitlements import FEATURE_KEYS
-from scenes.models import Plan, SiteSettings
+from scenes.models import EntitlementRole, Plan, SiteSettings
+from scenes.theme import sanitize_theme
 
 
 class RevisionConflict(Exception):
@@ -35,6 +36,7 @@ class SiteSettingsView:
     site_title: str
     cloud_sync_enabled: bool
     revision: int
+    theme_config: dict[str, str]
 
 
 @dataclass(frozen=True)
@@ -50,6 +52,7 @@ class PlanView:
     currency: str
     interval: str
     revision: int
+    role_key: str | None
 
 
 def get_site_settings() -> SiteSettingsView:
@@ -58,17 +61,28 @@ def get_site_settings() -> SiteSettingsView:
         site_title=settings_row.site_title,
         cloud_sync_enabled=settings_row.cloud_sync_enabled,
         revision=settings_row.revision,
+        theme_config=settings_row.theme_config,
     )
 
 
 @transaction.atomic
 def update_site_settings(
-    *, actor, expected_revision: int, site_title: str, cloud_sync_enabled: bool | None = None
+    *,
+    actor,
+    expected_revision: int,
+    site_title: str,
+    cloud_sync_enabled: bool | None = None,
+    theme_config: dict[str, str] | None = None,
 ) -> SiteSettingsView:
     if not isinstance(site_title, str) or not site_title.strip():
         raise ValidationFailed("site_title must be a non-empty string.")
     if len(site_title) > 200:
         raise ValidationFailed("site_title must be at most 200 characters.")
+    if theme_config is not None:
+        try:
+            theme_config = sanitize_theme(theme_config)
+        except ValueError as exc:
+            raise ValidationFailed(str(exc)) from exc
 
     row = SiteSettings.objects.select_for_update().get(pk=SiteSettings.get_solo().pk)
     if row.revision != expected_revision:
@@ -80,6 +94,8 @@ def update_site_settings(
         if not isinstance(cloud_sync_enabled, bool):
             raise ValidationFailed("cloud_sync_enabled must be a boolean.")
         row.cloud_sync_enabled = cloud_sync_enabled
+    if theme_config is not None:
+        row.theme_config = theme_config
     row.revision += 1
     row.updated_by = actor
     row.save()
@@ -87,6 +103,7 @@ def update_site_settings(
         site_title=row.site_title,
         cloud_sync_enabled=row.cloud_sync_enabled,
         revision=row.revision,
+        theme_config=row.theme_config,
     )
 
 
@@ -103,6 +120,7 @@ def _plan_view(plan: Plan) -> PlanView:
         currency=plan.currency,
         interval=plan.billing_interval,
         revision=plan.revision,
+        role_key=plan.role.role_key if plan.role_id and plan.role is not None else None,
     )
 
 
@@ -123,6 +141,7 @@ def update_plan(
     price: str | None = None,
     currency: str | None = None,
     interval: str | None = None,
+    role_key: str | None = None,
     cloud_storage_bytes: int = 52_428_800,
     cloud_storage_files: int = 100,
 ) -> PlanView:
@@ -174,6 +193,11 @@ def update_plan(
         raise ValidationFailed("currency must be a three-letter code.")
     if interval is not None and interval not in {"day", "week", "month", "year"}:
         raise ValidationFailed("interval must be one of: day, week, month, year.")
+    if role_key is not None:
+        if not isinstance(role_key, str) or (
+            role_key and not EntitlementRole.objects.filter(role_key=role_key, active=True).exists()
+        ):
+            raise ValidationFailed("role_key must name an active role.")
 
     try:
         plan = Plan.objects.select_for_update().get(plan_key=plan_key)
@@ -197,6 +221,8 @@ def update_plan(
         plan.currency = currency.upper()
     if interval is not None:
         plan.billing_interval = interval
+    if role_key is not None:
+        plan.role = EntitlementRole.objects.filter(role_key=role_key).first() if role_key else None
     plan.revision += 1
     plan.updated_by = actor
     plan.save()

@@ -221,7 +221,15 @@ class Command(BaseCommand):
     def _cleanup(self, as_json: bool):
         from django.db.models import Q
 
-        from scenes.models import ArtPiece, ForkProvenance, Project, Project3D, Scene
+        from scenes.models import (
+            AdminContentAuditEvent,
+            ArtPiece,
+            ForkProvenance,
+            Page,
+            Project,
+            Project3D,
+            Scene,
+        )
 
         User = get_user_model()
         usernames = [username for username, _email in E2E_USERS.values()]
@@ -241,6 +249,8 @@ class Command(BaseCommand):
             return Q(**{f"{prefix}username__in": usernames}) | Q(
                 **{f"{prefix}username__startswith": "deleted-user-"}
             )
+
+        fixture_users = User.objects.filter(_owned_by_a_fixture_user())
 
         # CASCADE on Project.owner (scenes/models.py) removes every
         # project/version/draft/activity row these users own along with
@@ -325,6 +335,14 @@ class Command(BaseCommand):
             ArtPiece.all_objects.filter(_owned_by_a_fixture_user("owner")).update(
                 current_version=None
             )
+            # Issue #517: CMS pages use SET_NULL for author/audit ownership so
+            # deleting fixture users would otherwise leave their pages behind
+            # between browser runs. Remove only pages authored or updated by
+            # these disposable fixture users, including soft-deleted pages.
+            Page.all_objects.filter(
+                Q(author__in=fixture_users) | Q(updated_by__in=fixture_users)
+            ).delete()
+            AdminContentAuditEvent.objects.filter(actor__in=fixture_users).delete()
             if connection.vendor == "postgresql":
                 with connection.cursor() as cursor:
                     cursor.execute(

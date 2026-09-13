@@ -54,6 +54,8 @@ class CloudBackupView(APIView):
                 "enabled": backup.enabled,
                 "paused": backup.paused,
                 "read_only": backup.read_only,
+                "retention_state": backup.retention_state,
+                "retain_until": backup.retain_until.isoformat() if backup.retain_until else None,
                 "revision": backup.revision,
             },
             status=201,
@@ -75,6 +77,8 @@ class CloudBackupView(APIView):
                 "enabled": backup.enabled,
                 "paused": backup.paused,
                 "read_only": backup.read_only,
+                "retention_state": backup.retention_state,
+                "retain_until": backup.retain_until.isoformat() if backup.retain_until else None,
                 "revision": backup.revision,
             }
         )

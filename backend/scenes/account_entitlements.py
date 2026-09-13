@@ -57,5 +57,6 @@ def get_entitlement_summary(user) -> dict:
     return {
         "plan_key": entitlements.get_user_plan_key(user),
         "features": features,
+        "capabilities": entitlements.resolve_effective_capabilities(user),
         "reset_at": next_reset_at(),
     }

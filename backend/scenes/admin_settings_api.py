@@ -7,10 +7,12 @@ owner-scoped resource), so there is no reason to hide it behind a 404 the
 way `scenes/api.py`'s per-project endpoints do.
 """
 
+from django.db import IntegrityError
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from scenes import entitlements
 from scenes.admin_authorization import is_application_admin
 from scenes.admin_settings import (
     RevisionConflict,
@@ -20,6 +22,7 @@ from scenes.admin_settings import (
     update_plan,
     update_site_settings,
 )
+from scenes.theme import effective_theme
 
 
 def _admin_required_response(request) -> Response | None:
@@ -37,6 +40,7 @@ class SiteSettingsUpdateSerializer(serializers.Serializer):
     site_title = serializers.CharField(max_length=200, allow_blank=False, trim_whitespace=True)
     revision = serializers.IntegerField(min_value=0)
     cloud_sync_enabled = serializers.BooleanField(required=False)
+    theme_config = serializers.DictField(required=False)
 
 
 class AdminSiteSettingsView(APIView):
@@ -50,6 +54,7 @@ class AdminSiteSettingsView(APIView):
                 "site_title": site_settings.site_title,
                 "cloud_sync_enabled": site_settings.cloud_sync_enabled,
                 "revision": site_settings.revision,
+                "theme_config": site_settings.theme_config,
             }
         )
 
@@ -58,7 +63,12 @@ class AdminSiteSettingsView(APIView):
         if denied:
             return denied
 
-        unknown_fields = set(request.data.keys()) - {"site_title", "revision", "cloud_sync_enabled"}
+        unknown_fields = set(request.data.keys()) - {
+            "site_title",
+            "revision",
+            "cloud_sync_enabled",
+            "theme_config",
+        }
         if unknown_fields:
             return Response(
                 {"error": "unknown_fields", "detail": sorted(unknown_fields)},
@@ -77,6 +87,7 @@ class AdminSiteSettingsView(APIView):
                 expected_revision=serializer.validated_data["revision"],
                 site_title=serializer.validated_data["site_title"],
                 cloud_sync_enabled=serializer.validated_data.get("cloud_sync_enabled"),
+                theme_config=serializer.validated_data.get("theme_config"),
             )
         except RevisionConflict as exc:
             return Response(
@@ -92,8 +103,17 @@ class AdminSiteSettingsView(APIView):
                 "site_title": updated.site_title,
                 "cloud_sync_enabled": updated.cloud_sync_enabled,
                 "revision": updated.revision,
+                "theme_config": updated.theme_config,
             }
         )
+
+
+class SiteThemeView(APIView):
+    """Anonymous-safe effective site theme; invalid data falls back."""
+
+    def get(self, request):
+        settings = get_site_settings()
+        return Response(effective_theme(settings.theme_config))
 
 
 class PlanUpdateSerializer(serializers.Serializer):
@@ -111,6 +131,7 @@ class PlanUpdateSerializer(serializers.Serializer):
     currency = serializers.CharField(min_length=3, max_length=3, required=False, allow_blank=False)
     interval = serializers.ChoiceField(choices=("day", "week", "month", "year"), required=False)
     revision = serializers.IntegerField(min_value=0)
+    role_key = serializers.CharField(max_length=32, allow_blank=True, required=False)
 
 
 class AdminPlansView(APIView):
@@ -134,6 +155,7 @@ class AdminPlansView(APIView):
                     "currency": plan.currency,
                     "interval": plan.interval,
                     "revision": plan.revision,
+                    "role_key": plan.role_key,
                 }
                 for plan in list_plans()
             ]
@@ -162,6 +184,7 @@ class AdminPlansView(APIView):
             "currency",
             "interval",
             "revision",
+            "role_key",
         }
         unknown_fields = set(request.data.keys()) - allowed_fields
         if unknown_fields:
@@ -190,6 +213,9 @@ class AdminPlansView(APIView):
                 price=serializer.validated_data.get("price"),
                 currency=serializer.validated_data.get("currency"),
                 interval=serializer.validated_data.get("interval"),
+                role_key=serializer.validated_data.get("role_key")
+                if "role_key" in serializer.validated_data
+                else None,
             )
         except RevisionConflict as exc:
             return Response(
@@ -213,5 +239,114 @@ class AdminPlansView(APIView):
                 "currency": updated.currency,
                 "interval": updated.interval,
                 "revision": updated.revision,
+                "role_key": updated.role_key,
+            }
+        )
+
+
+class RoleSerializer(serializers.Serializer):
+    role_key = serializers.CharField(max_length=32)
+    label = serializers.CharField(max_length=100)
+    description = serializers.CharField(max_length=500, allow_blank=True)
+    capabilities = serializers.DictField()
+    active = serializers.BooleanField(required=False, default=True)
+    revision = serializers.IntegerField(min_value=0, required=False)
+
+
+def _role_payload(role):
+    return {
+        "role_key": role.role_key,
+        "label": role.label,
+        "description": role.description,
+        "capabilities": role.capabilities,
+        "active": role.active,
+        "revision": role.revision,
+        "plan_keys": list(role.plans.order_by("plan_key").values_list("plan_key", flat=True)),
+    }
+
+
+class AdminRolesView(APIView):
+    def get(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        return Response([_role_payload(role) for role in entitlements.list_roles()])
+
+    def post(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        serializer = RoleSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"error": "validation_failed", "detail": serializer.errors}, status=400)
+        values = dict(serializer.validated_data)
+        values.pop("active", None)
+        values.pop("revision", None)
+        try:
+            role = entitlements.create_role(actor=request.user, **values)
+        except IntegrityError:
+            return Response({"error": "role_exists"}, status=409)
+        except ValueError as exc:
+            return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
+        return Response(_role_payload(role), status=status.HTTP_201_CREATED)
+
+
+class AdminRoleDetailView(APIView):
+    def patch(self, request, role_key):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        serializer = RoleSerializer(data={**request.data, "role_key": role_key})
+        if not serializer.is_valid() or "revision" not in serializer.validated_data:
+            return Response(
+                {"error": "validation_failed", "detail": serializer.errors or "revision required"},
+                status=400,
+            )
+        try:
+            values = dict(serializer.validated_data)
+            expected_revision = values.pop("revision")
+            role = entitlements.update_role(
+                actor=request.user, expected_revision=expected_revision, **values
+            )
+        except ValueError as exc:
+            return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
+        return Response(_role_payload(role))
+
+
+class AdminGlobalCapabilitiesView(APIView):
+    def get(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        rows = {
+            row.capability_key: {"enabled": row.enabled, "revision": row.revision}
+            for row in entitlements.GlobalCapabilitySetting.objects.order_by("capability_key")
+        }
+        return Response(
+            {
+                key: rows.get(key, {"enabled": True, "revision": 1})
+                for key in sorted(entitlements.CAPABILITY_KEYS)
+            }
+        )
+
+    def patch(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        key = request.data.get("capability_key")
+        try:
+            setting = entitlements.set_global_capability(
+                actor=request.user,
+                capability_key=key,
+                enabled=request.data["enabled"],
+                expected_revision=request.data["revision"],
+            )
+        except (KeyError, ValueError) as exc:
+            return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
+        return Response(
+            {
+                "capability_key": setting.capability_key,
+                "enabled": setting.enabled,
+                "revision": setting.revision,
             }
         )

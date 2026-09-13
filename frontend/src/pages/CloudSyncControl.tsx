@@ -8,6 +8,8 @@ export default function CloudSyncControl({ projectId }: { projectId: string }) {
     enabled: false,
     paused: false,
     read_only: false,
+    retention_state: 'active',
+    retain_until: null,
     revision: 0,
   });
   const [message, setMessage] = useState<string | null>(null);
@@ -36,12 +38,19 @@ export default function CloudSyncControl({ projectId }: { projectId: string }) {
       <h3>Cloud sync</h3>
       {status?.read_only ? (
         <p role="status">
-          Your retained cloud copy is read-only. Local editing and export remain available.
+          Your retained cloud copy is read-only
+          {status.retain_until
+            ? ` until ${new Date(status.retain_until).toLocaleDateString()}`
+            : ''}
+          . Local editing and export remain available.
         </p>
       ) : status?.paused ? (
         <p role="status">
-          Cloud sync is paused. Your local project remains available and the remote copy is
-          retained.
+          Cloud sync is paused. Your local project remains available and the remote copy is retained
+          {status.retain_until
+            ? ` until ${new Date(status.retain_until).toLocaleDateString()}`
+            : ''}
+          .
         </p>
       ) : status?.enabled ? (
         <>

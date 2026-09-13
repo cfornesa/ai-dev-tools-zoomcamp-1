@@ -5,7 +5,20 @@ from scenes.account_entitlements_api import AccountEntitlementsView
 from scenes.account_export_api import AccountDataExportView
 from scenes.account_identities_api import AccountIdentitiesView, AccountIdentityUnlinkView
 from scenes.account_sessions_api import AccountSessionRevokeView, AccountSessionsView
-from scenes.admin_settings_api import AdminPlansView, AdminSiteSettingsView
+from scenes.admin_content_api import (
+    AdminContentAccessView,
+    AdminContentActionView,
+    AdminContentListView,
+)
+from scenes.admin_pages_api import AdminPageDetailView, AdminPageListCreateView
+from scenes.admin_settings_api import (
+    AdminGlobalCapabilitiesView,
+    AdminPlansView,
+    AdminRoleDetailView,
+    AdminRolesView,
+    AdminSiteSettingsView,
+    SiteThemeView,
+)
 from scenes.ai_api import AIAcceptProposalView, AICreateSceneView, AIEditSceneView
 from scenes.ai_api3d import AIAcceptProposal3DView, AICreateScene3DView, AIEditScene3DView
 from scenes.ai_preferences_api import (
@@ -69,11 +82,34 @@ from scenes.art_piece_persistence import (
 )
 from scenes.billing_api import AccountBillingView, PayPalWebhookView
 from scenes.cloud_backup_api import CloudBackupBlobView, CloudBackupManifestView, CloudBackupView
+from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudRetentionView
+from scenes.pages_api import PublicPageDetailView
+from scenes.profile_api import AccountProfileView, PublicProfileView
 from scenes.provider_credentials_api import ProviderCredentialView
 
 urlpatterns = [
+    path("pages/<slug:slug>/", PublicPageDetailView.as_view(), name="public-page-detail"),
+    path("admin/pages/", AdminPageListCreateView.as_view(), name="admin-page-list-create"),
+    path("admin/pages/<int:pk>/", AdminPageDetailView.as_view(), name="admin-page-detail"),
+    path("admin/content/", AdminContentListView.as_view(), name="admin-content-list"),
+    path("admin/content/actions/", AdminContentActionView.as_view(), name="admin-content-action"),
+    path("admin/content/access/", AdminContentAccessView.as_view(), name="admin-content-access"),
     path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
+    path("site-theme/", SiteThemeView.as_view(), name="site-theme"),
     path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
+    path("admin/roles/", AdminRolesView.as_view(), name="admin-roles"),
+    path("admin/roles/<str:role_key>/", AdminRoleDetailView.as_view(), name="admin-role-detail"),
+    path(
+        "admin/global-capabilities/",
+        AdminGlobalCapabilitiesView.as_view(),
+        name="admin-global-capabilities",
+    ),
+    path("admin/cloud-retention/", AdminCloudRetentionView.as_view(), name="admin-cloud-retention"),
+    path(
+        "admin/cloud-retention/purge/",
+        AdminCloudRetentionPurgeView.as_view(),
+        name="admin-cloud-retention-purge",
+    ),
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
     path("account/billing/", AccountBillingView.as_view(), name="account-billing"),
     path("account/entitlements/", AccountEntitlementsView.as_view(), name="account-entitlements"),
@@ -96,6 +132,8 @@ urlpatterns = [
         ProviderCredentialView.as_view(),
         name="provider-credentials",
     ),
+    path("account/profile/", AccountProfileView.as_view(), name="account-profile"),
+    path("users/@<str:handle>/", PublicProfileView.as_view(), name="public-profile"),
     path(
         "account/mistral-model-preferences/",
         MistralModelPreferenceListCreateView.as_view(),

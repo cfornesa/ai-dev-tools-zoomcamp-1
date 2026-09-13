@@ -21,7 +21,14 @@ describe('CloudSyncControl', () => {
   });
 
   it('enables and pauses an eligible project', async () => {
-    setAction.mockResolvedValue({ enabled: true, paused: false, read_only: false, revision: 0 });
+    setAction.mockResolvedValue({
+      enabled: true,
+      paused: false,
+      read_only: false,
+      retention_state: 'active',
+      retain_until: null,
+      revision: 0,
+    });
     const user = userEvent.setup();
     render(<CloudSyncControl projectId="p1" />);
     await user.click(await screen.findByRole('button', { name: /enable cloud sync/i }));
@@ -30,7 +37,14 @@ describe('CloudSyncControl', () => {
   });
 
   it('describes retained read-only copies without blocking local access', async () => {
-    setAction.mockResolvedValue({ enabled: true, paused: false, read_only: true, revision: 1 });
+    setAction.mockResolvedValue({
+      enabled: true,
+      paused: false,
+      read_only: true,
+      retention_state: 'entitlement_expired',
+      retain_until: null,
+      revision: 1,
+    });
     render(<CloudSyncControl projectId="p1" />);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /enable cloud sync/i }));

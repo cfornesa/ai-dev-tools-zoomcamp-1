@@ -125,6 +125,7 @@ class SiteSettings(models.Model):
     site_title = models.CharField(max_length=200, default="AugmentrART")
     # Issue #509: cloud backup is disabled until an administrator enables it.
     cloud_sync_enabled = models.BooleanField(default=False)
+    theme_config = models.JSONField(default=dict, blank=True)
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
@@ -138,6 +139,207 @@ class SiteSettings(models.Model):
     def get_solo(cls) -> "SiteSettings":
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class PublicProfile(models.Model):
+    """Owner-controlled, safe public identity and gallery metadata (#520)."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="public_profile"
+    )
+    handle = models.CharField(max_length=32, unique=True, null=True, blank=True)
+    display_name = models.CharField(max_length=120, blank=True, default="")
+    bio = models.TextField(max_length=1000, blank=True, default="")
+    website_url = models.URLField(max_length=300, blank=True, default="")
+    social_links = models.JSONField(default=dict, blank=True)
+    profile_image_url = models.URLField(max_length=500, blank=True, default="")
+    is_public = models.BooleanField(default=True)
+    theme_config = models.JSONField(default=dict, blank=True)
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.handle or f"profile-{self.user_id}"
+
+
+class CloudRetentionPolicy(models.Model):
+    """Singleton lifecycle policy for remote copies of cloud media (#522)."""
+
+    deleted_grace_days = models.PositiveIntegerField(
+        default=30, validators=[MaxValueValidator(3650)]
+    )
+    entitlement_grace_days = models.PositiveIntegerField(
+        default=30, validators=[MaxValueValidator(3650)]
+    )
+    disabled_sync_grace_days = models.PositiveIntegerField(
+        default=30, validators=[MaxValueValidator(3650)]
+    )
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+
+    def __str__(self) -> str:
+        return f"Cloud retention policy (revision {self.revision})"
+
+    @classmethod
+    def get_solo(cls) -> "CloudRetentionPolicy":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class PageManager(models.Manager):
+    """Active CMS pages; soft-deleted pages remain queryable explicitly."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+
+class Page(models.Model):
+    """A bounded, separately-owned CMS page (issue #517)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        PUBLISHED = "published", "Published"
+
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=120, unique=True)
+    description = models.TextField(max_length=5000, blank=True, default="")
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    nav_label = models.CharField(max_length=100, blank=True, default="")
+    show_in_nav = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
+    system_key = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="cms_pages"
+    )
+    revision = models.PositiveIntegerField(default=1)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="updated_cms_pages",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    all_objects = models.Manager()
+    objects = PageManager()
+
+    class Meta:
+        ordering = ["sort_order", "title", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(system_key=""), name="page_system_key_not_empty"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class PageSlugRedirect(models.Model):
+    """Permanent history for renamed page slugs."""
+
+    page = models.ForeignKey(Page, on_delete=models.CASCADE, related_name="slug_redirects")
+    old_slug = models.SlugField(max_length=120, unique=True)
+    system_key = models.CharField(max_length=64, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"/{self.old_slug} → /{self.page.slug}"
+
+
+class PageAuditEvent(models.Model):
+    """Minimal actor/time audit trail for admin page mutations."""
+
+    page = models.ForeignKey(
+        Page, on_delete=models.SET_NULL, null=True, related_name="audit_events"
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="cms_page_audit_events",
+    )
+    action = models.CharField(max_length=32)
+    detail = models.CharField(max_length=200, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.action} page {self.page_id}"
+
+
+class AdminContentAuditEvent(models.Model):
+    """Cross-resource audit trail for application-admin content actions (#518)."""
+
+    resource_type = models.CharField(max_length=32)
+    resource_id = models.CharField(max_length=128)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="admin_content_audit_events",
+    )
+    action = models.CharField(max_length=32)
+    detail = models.CharField(max_length=240, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(
+                fields=["resource_type", "resource_id", "-created_at"],
+                name="admin_content_resource_idx",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.action} {self.resource_type} {self.resource_id}"
+
+
+class EntitlementRole(models.Model):
+    """Reusable admin-defined capability section for subscription plans (#519)."""
+
+    role_key = models.CharField(max_length=32, unique=True)
+    label = models.CharField(max_length=100)
+    description = models.TextField(max_length=500, blank=True, default="")
+    capabilities = models.JSONField(default=dict)
+    active = models.BooleanField(default=True)
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="updated_roles"
+    )
+
+    class Meta:
+        ordering = ["role_key"]
+
+    def __str__(self) -> str:
+        return f"{self.label} ({self.role_key})"
+
+
+class GlobalCapabilitySetting(models.Model):
+    """Atomic site-wide enable/disable switch for a named capability (#519)."""
+
+    capability_key = models.CharField(max_length=64, unique=True)
+    enabled = models.BooleanField(default=True)
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="updated_global_capabilities",
+    )
+
+    class Meta:
+        ordering = ["capability_key"]
+
+    def __str__(self) -> str:
+        return f"{self.capability_key}: {'on' if self.enabled else 'off'}"
 
 
 class Plan(models.Model):
@@ -163,6 +365,13 @@ class Plan(models.Model):
     # `scenes.admin_settings.update_plan`, which is the only code that
     # should write this field.
     feature_keys = models.JSONField(default=list)
+    role = models.ForeignKey(
+        EntitlementRole,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="plans",
+    )
     active = models.BooleanField(default=True)
     paypal_plan_id = models.CharField(max_length=64, blank=True, default="")
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -533,10 +742,20 @@ class Project(models.Model):
 class CloudBackupProject(models.Model):
     """Opt-in cloud-backup state for one local-first project (#509)."""
 
+    class RetentionState(models.TextChoices):
+        ACTIVE = "active", "Active"
+        DELETED = "deleted", "Deleted"
+        ENTITLEMENT_EXPIRED = "entitlement_expired", "Entitlement expired"
+        SYNC_DISABLED = "sync_disabled", "Sync disabled"
+
     project = models.OneToOneField(Project, on_delete=models.CASCADE, related_name="cloud_backup")
     enabled = models.BooleanField(default=False)
     paused = models.BooleanField(default=False)
     read_only = models.BooleanField(default=False)
+    retention_state = models.CharField(
+        max_length=24, choices=RetentionState.choices, default=RetentionState.ACTIVE
+    )
+    retain_until = models.DateTimeField(null=True, blank=True)
     revision = models.PositiveBigIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 

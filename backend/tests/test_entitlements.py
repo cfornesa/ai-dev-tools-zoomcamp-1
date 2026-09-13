@@ -15,7 +15,15 @@ from django.contrib.auth import get_user_model
 from django.db import connections
 
 from scenes import entitlements
-from scenes.models import ApplicationAdmin, Plan, UserEntitlementPlan, UserFeatureOverride
+from scenes.models import (
+    ApplicationAdmin,
+    EntitlementRole,
+    GlobalCapabilitySetting,
+    Plan,
+    SiteSettings,
+    UserEntitlementPlan,
+    UserFeatureOverride,
+)
 
 
 def _rebind_default_to_postgres():
@@ -215,6 +223,53 @@ def test_admin_granted_free_access_is_reflected_by_application_admin_grant():
 
     assert entitlements.get_user_plan_key(admin) == "paid"
     assert ApplicationAdmin.objects.filter(user=admin).exists()
+
+
+@pytest.mark.django_db
+def test_role_and_global_layers_resolve_atomically_and_global_deny_wins():
+    user = _make_user("alice")
+    admin = _make_user("admin")
+    role = EntitlementRole.objects.create(
+        role_key="premium_test",
+        label="Premium",
+        capabilities={"editor_3d_local": False, "cloud_project_sync": True},
+        updated_by=admin,
+    )
+    Plan.objects.filter(plan_key="paid").update(role=role)
+    entitlements.set_user_plan(user, "paid", granted_by=admin)
+
+    resolved = entitlements.resolve_effective_capabilities(user)
+    assert resolved["editor_2d_local"]["available"] is True
+    assert resolved["editor_3d_local"]["available"] is False
+    assert resolved["editor_3d_local"]["source"] == "role"
+
+    setting = entitlements.set_global_capability(
+        actor=admin, capability_key="cloud_project_sync", enabled=False, expected_revision=1
+    )
+    assert setting.revision == 2
+    assert SiteSettings.get_solo().cloud_sync_enabled is False
+    assert entitlements.resolve_effective_capabilities(user)["cloud_project_sync"] == {
+        "available": False,
+        "source": "global",
+        "local": False,
+        "remote": True,
+        "quota": False,
+        "daily_cap": None,
+    }
+
+
+@pytest.mark.django_db
+def test_global_revision_conflict_does_not_change_setting():
+    admin = _make_user("admin")
+    entitlements.set_global_capability(
+        actor=admin, capability_key="publishing", enabled=False, expected_revision=1
+    )
+    with pytest.raises(ValueError, match="revision conflict"):
+        entitlements.set_global_capability(
+            actor=admin, capability_key="publishing", enabled=True, expected_revision=1
+        )
+    setting = GlobalCapabilitySetting.objects.get(capability_key="publishing")
+    assert setting.enabled is False
 
 
 @pytest.mark.skipif(

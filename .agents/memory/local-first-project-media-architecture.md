@@ -20,7 +20,11 @@ exports.
 
 A 2D Project is being extended into a collection of ordered scenes that share
 one project media library; scene-version history remains a separate concept.
-Do not select or configure a cloud-storage vendor, quotas, retention policy,
-or remote-deletion behavior without resolving #507's remaining provider
-decision and the vendor-dependency disclosure. The implementation queue is
-#510 → #512 → #508 → #513, then #509 and #511.
+The owner approved #522's finite retention policy for the existing
+application-owned PostgreSQL/blob boundary: active remote copies are retained
+while active; deleted projects, cancelled/expired entitlements, and disabled
+sync copies are retained for 30 days before purge. Retroactive destructive
+purges require explicit confirmation. This policy never deletes local
+IndexedDB content. A future external storage vendor or transport remains a
+separate decision requiring the normal dependency disclosure. The
+implementation queue is #510 → #512 → #508 → #513, then #509 and #511.

@@ -34,6 +34,9 @@ const AccountSessions = lazy(() => import('./pages/AccountSessions'));
 const AccountDataExport = lazy(() => import('./pages/AccountDataExport'));
 const AccountDeletion = lazy(() => import('./pages/AccountDeletion'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const AdminPages = lazy(() => import('./pages/AdminPages'));
+const AdminContent = lazy(() => import('./pages/AdminContent'));
+const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 
 /** Task 94 (issue #94): `/projects/:id/settings` no longer exists as a
  * standalone page (project-metadata editing is now the editor's own
@@ -56,6 +59,7 @@ function App() {
                   never checks `useAuth()`'s status, unlike the index route's
                   Home/Gallery split. */}
               <Route path="gallery" element={<PublicGallery />} />
+              <Route path="users/:handle" element={<PublicProfile />} />
               {/* Task 51 (issue #53): the public project viewer -- also
                   reachable without authentication, and identical for
                   anonymous and signed-in visitors (see PublicProjectViewer.tsx
@@ -90,6 +94,8 @@ function App() {
               <Route path="account/settings/export" element={<AccountDataExport />} />
               <Route path="account/settings/delete" element={<AccountDeletion />} />
               <Route path="admin/settings" element={<AdminSettings />} />
+              <Route path="admin/pages" element={<AdminPages />} />
+              <Route path="admin/content" element={<AdminContent />} />
               <Route path="projects/:id" element={<EditorWorkspace />} />
               {/* Issue #223: the 2D AI-assisted editor -- a distinct route
                   over the same Project/SceneVersion document family as

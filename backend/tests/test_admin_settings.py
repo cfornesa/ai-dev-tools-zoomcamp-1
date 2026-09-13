@@ -18,7 +18,7 @@ from scenes.admin_settings import (
     update_plan,
     update_site_settings,
 )
-from scenes.models import ApplicationAdmin, Plan, SiteSettings
+from scenes.models import ApplicationAdmin, EntitlementRole, Plan, SiteSettings
 
 
 @pytest.fixture
@@ -79,6 +79,7 @@ def test_settings_get_allowed_for_admin(client, admin_a):
         "site_title": "AugmentrART",
         "cloud_sync_enabled": False,
         "revision": 1,
+        "theme_config": {},
     }
 
 
@@ -107,6 +108,58 @@ def test_plans_patch_denied_for_non_admin(client, user_b):
     assert Plan.objects.get(plan_key="free").daily_ai_requests == 5
 
 
+@pytest.mark.django_db
+def test_roles_and_global_capabilities_are_admin_only_and_revision_checked(client, admin_a, user_b):
+    assert client.get(reverse("admin-roles")).status_code == 401
+    client.force_login(user_b)
+    assert client.get(reverse("admin-roles")).status_code == 403
+    client.force_login(admin_a)
+    created = client.post(
+        reverse("admin-roles"),
+        {
+            "role_key": "creator",
+            "label": "Premium",
+            "description": "Paid tools",
+            "capabilities": {"editor_3d_local": True},
+        },
+        content_type="application/json",
+    )
+    assert created.status_code == 201
+    role = EntitlementRole.objects.get(role_key="creator")
+    changed = client.patch(
+        reverse("admin-role-detail", kwargs={"role_key": "creator"}),
+        {
+            "label": "Premium Plus",
+            "description": "Paid tools",
+            "capabilities": {"editor_3d_local": False},
+            "active": True,
+            "revision": role.revision,
+        },
+        content_type="application/json",
+    )
+    assert changed.status_code == 200
+    setting = client.patch(
+        reverse("admin-global-capabilities"),
+        {"capability_key": "cloud_project_sync", "enabled": True, "revision": 1},
+        content_type="application/json",
+    )
+    assert setting.status_code == 200
+    assert SiteSettings.get_solo().cloud_sync_enabled is True
+
+
+@pytest.mark.django_db
+def test_theme_tokens_are_finite_and_invalid_values_do_not_apply(client, admin_a):
+    client.force_login(admin_a)
+    response = client.patch(
+        reverse("admin-settings"),
+        {"site_title": "AugmentrART", "theme_config": {"accent": "red"}, "revision": 1},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert SiteSettings.get_solo().theme_config == {}
+    assert client.get(reverse("site-theme")).json()["accent"] == "#c084fc"
+
+
 # --- Site settings: read/update/validation/concurrency ---
 
 
@@ -123,6 +176,7 @@ def test_admin_can_update_site_title(client, admin_a):
         "site_title": "New Studio Name",
         "cloud_sync_enabled": False,
         "revision": 2,
+        "theme_config": {},
     }
     assert SiteSettings.get_solo().site_title == "New Studio Name"
 
@@ -308,7 +362,12 @@ def test_plan_cap_change_is_used_by_the_next_quota_decision_without_resetting_co
 @pytest.mark.django_db
 def test_get_site_settings_and_list_plans_expose_only_named_fields():
     site_settings = get_site_settings()
-    assert set(vars(site_settings).keys()) == {"site_title", "cloud_sync_enabled", "revision"}
+    assert set(vars(site_settings).keys()) == {
+        "site_title",
+        "cloud_sync_enabled",
+        "revision",
+        "theme_config",
+    }
 
     plans = list_plans()
     assert all(
@@ -325,6 +384,7 @@ def test_get_site_settings_and_list_plans_expose_only_named_fields():
             "currency",
             "interval",
             "revision",
+            "role_key",
         }
         for plan in plans
     )

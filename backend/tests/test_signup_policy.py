@@ -34,3 +34,15 @@ def test_login_page_has_google_creation_copy_without_local_signup_link(client):
     assert response.status_code == 200
     assert b"Continue with Google to create your account" in response.content
     assert b'href="/accounts/signup/"' not in response.content
+    assert b"color-scheme: dark" in response.content
+    assert b"background: #16171d" in response.content
+
+
+@pytest.mark.django_db
+def test_signup_closed_page_uses_the_dark_auth_shell(client):
+    response = client.get(reverse("account_signup"))
+
+    assert response.status_code == 200
+    assert b"Sign-up is currently unavailable" in response.content
+    assert b"color-scheme: dark" in response.content
+    assert b"background: #1f2028" in response.content

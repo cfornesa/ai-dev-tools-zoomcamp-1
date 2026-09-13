@@ -19,6 +19,7 @@ import {
   saveProviderCredential,
 } from '../api/credentials';
 import EntitlementsSummary from './EntitlementsSummary';
+import { fetchProfile, type PublicProfile, updateProfile } from '../api/profile';
 
 const MIN_MAX_RETRIES = 1;
 const MAX_MAX_RETRIES = 10;
@@ -31,6 +32,7 @@ function AccountSettings() {
       <div className="centered-state">
         <h2>Account settings</h2>
         <EntitlementsSummary />
+        <ProfileSettings />
         <p>
           <Link to="/account/billing">Manage billing</Link>
         </p>
@@ -52,6 +54,103 @@ function AccountSettings() {
       <AIPersonas />
       <AIRetrySettings />
     </section>
+  );
+}
+
+function ProfileSettings() {
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    fetchProfile()
+      .then(setProfile)
+      .catch(() => setError('Could not load profile settings.'));
+  }, []);
+  if (!profile) return error ? <p role="alert">{error}</p> : <p role="status">Loading profile…</p>;
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    const current = profile as PublicProfile;
+    try {
+      setProfile(await updateProfile(current));
+      setMessage('Profile saved.');
+      setError(null);
+    } catch {
+      setError('Could not save that profile. Check the handle and try again.');
+    }
+  }
+  return (
+    <form className="account-settings-form" aria-label="Profile settings" onSubmit={save}>
+      <h3>Public profile</h3>
+      <p>
+        Choose a unique handle to publish your profile and public pieces at{' '}
+        <code>/users/@handle</code>.
+      </p>
+      <label htmlFor="profile-handle">Handle</label>
+      <input
+        id="profile-handle"
+        value={profile.handle ?? ''}
+        onChange={(event) => setProfile({ ...profile, handle: event.target.value.toLowerCase() })}
+      />
+      <label htmlFor="profile-display-name">Display name</label>
+      <input
+        id="profile-display-name"
+        value={profile.display_name}
+        onChange={(event) => setProfile({ ...profile, display_name: event.target.value })}
+      />
+      <label htmlFor="profile-bio">Bio</label>
+      <textarea
+        id="profile-bio"
+        value={profile.bio}
+        onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
+      />
+      <label htmlFor="profile-website">Website URL</label>
+      <input
+        id="profile-website"
+        type="url"
+        value={profile.website_url}
+        onChange={(event) => setProfile({ ...profile, website_url: event.target.value })}
+      />
+      <label htmlFor="profile-image">Profile photo URL</label>
+      <input
+        id="profile-image"
+        type="url"
+        value={profile.profile_image_url}
+        onChange={(event) => setProfile({ ...profile, profile_image_url: event.target.value })}
+      />
+      <label htmlFor="profile-accent">Profile accent</label>
+      <input
+        id="profile-accent"
+        type="color"
+        value={profile.theme_config.accent ?? '#c084fc'}
+        onChange={(event) =>
+          setProfile({
+            ...profile,
+            theme_config: { ...profile.theme_config, accent: event.target.value },
+          })
+        }
+      />
+      <button
+        className="shell-action"
+        type="button"
+        onClick={() => setProfile({ ...profile, theme_config: {} })}
+      >
+        Reset profile theme
+      </button>
+      <label htmlFor="profile-public">
+        <input
+          id="profile-public"
+          type="checkbox"
+          checked={profile.is_public}
+          onChange={(event) => setProfile({ ...profile, is_public: event.target.checked })}
+        />{' '}
+        Make profile public
+      </label>
+      <button className="shell-action" type="submit">
+        Save profile
+      </button>
+      {message && <p role="status">{message}</p>}
+      {error && <p role="alert">{error}</p>}
+    </form>
   );
 }
 

@@ -4,6 +4,8 @@ export type CloudBackupStatus = {
   enabled: boolean;
   paused: boolean;
   read_only: boolean;
+  retention_state: 'active' | 'deleted' | 'entitlement_expired' | 'sync_disabled';
+  retain_until: string | null;
   revision: number;
 };
 

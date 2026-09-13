@@ -10,12 +10,21 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from datetime import timedelta
 
 from django.db import transaction
+from django.utils import timezone
 
 from scenes.admin_settings import get_site_settings
 from scenes.entitlements import get_effective_cap, get_user_plan_key
-from scenes.models import CloudBackupBlob, CloudBackupManifest, CloudBackupProject, Plan, Project
+from scenes.models import (
+    CloudBackupBlob,
+    CloudBackupManifest,
+    CloudBackupProject,
+    CloudRetentionPolicy,
+    Plan,
+    Project,
+)
 from scenes.permissions import Action, require
 
 
@@ -71,8 +80,11 @@ def _require_writable(backup: CloudBackupProject, user) -> None:
     if backup.paused:
         raise CloudBackupPaused("This backup is paused; local project editing remains available.")
     if get_effective_cap(user, "cloud_project_sync") <= 0:
+        policy = CloudRetentionPolicy.objects.select_for_update().get(pk=1)
+        backup.retention_state = CloudBackupProject.RetentionState.ENTITLEMENT_EXPIRED
+        backup.retain_until = timezone.now() + timedelta(days=policy.entitlement_grace_days)
         backup.read_only = True
-        backup.save(update_fields=["read_only", "updated_at"])
+        backup.save(update_fields=["read_only", "retention_state", "retain_until", "updated_at"])
         raise CloudBackupReadOnly("Sync eligibility ended; the remote copy is retained read-only.")
 
 
@@ -127,7 +139,11 @@ def enable_backup(user, project: Project) -> CloudBackupProject:
         raise CloudBackupReadOnly("This backup is retained read-only.")
     backup.enabled = True
     backup.paused = False
-    backup.save(update_fields=["enabled", "paused", "updated_at"])
+    backup.retention_state = CloudBackupProject.RetentionState.ACTIVE
+    backup.retain_until = None
+    backup.save(
+        update_fields=["enabled", "paused", "retention_state", "retain_until", "updated_at"]
+    )
     return backup
 
 
@@ -137,7 +153,10 @@ def pause_backup(user, project: Project) -> CloudBackupProject:
     _owned(user, project, Action.CLOUD_BACKUP_WRITE)
     backup = _backup(project)
     backup.paused = True
-    backup.save(update_fields=["paused", "updated_at"])
+    policy = CloudRetentionPolicy.objects.select_for_update().get(pk=1)
+    backup.retention_state = CloudBackupProject.RetentionState.SYNC_DISABLED
+    backup.retain_until = timezone.now() + timedelta(days=policy.disabled_sync_grace_days)
+    backup.save(update_fields=["paused", "retention_state", "retain_until", "updated_at"])
     return backup
 
 
@@ -248,6 +267,10 @@ def get_blob(user, project: Project, asset_id: uuid.UUID) -> CloudBackupBlob:
 @transaction.atomic
 def mark_backup_read_only_for_user(user) -> int:
     """Retain a user's remote copies as read-only after entitlement loss."""
+    policy = CloudRetentionPolicy.objects.get(pk=1)
+    deadline = timezone.now() + timedelta(days=policy.entitlement_grace_days)
     return CloudBackupProject.objects.filter(project__owner=user, enabled=True).update(
-        read_only=True
+        read_only=True,
+        retention_state=CloudBackupProject.RetentionState.ENTITLEMENT_EXPIRED,
+        retain_until=deadline,
     )

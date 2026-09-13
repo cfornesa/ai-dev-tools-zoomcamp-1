@@ -6,20 +6,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Account · AugmentrART{% endblock %}</title>
   <style>
-    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #27212f; background: #faf8fc; }
-    * { box-sizing: border-box; } body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
-    header { padding: 28px 24px; border-bottom: 1px solid #e5e4e7; background: white; }
-    header a { color: inherit; text-decoration: none; font-weight: 700; }
-    main { width: min(100% - 32px, 480px); margin: auto; padding: 40px 0; flex: 1; }
-    .card { background: white; border: 1px solid #e5e4e7; border-radius: 12px; padding: 32px; box-shadow: 0 10px 25px #241b3210; }
-    h1 { margin: 0 0 8px; font-size: 30px; } .intro { margin: 0 0 24px; color: #6b6375; }
-    label { display: block; margin: 16px 0 6px; font-weight: 600; } input { width: 100%; padding: 11px 12px; border: 1px solid #aaa3b0; border-radius: 6px; font: inherit; }
-    input:focus, button:focus, a:focus { outline: 3px solid #aa3bff66; outline-offset: 2px; }
-    button, .google { display: block; width: 100%; min-height: 44px; margin-top: 22px; padding: 10px 16px; border: 0; border-radius: 6px; background: #7627b8; color: white; font: inherit; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
-    .google { margin-top: 12px; background: white; border: 1px solid #aaa3b0; color: #27212f; } .links { margin-top: 24px; text-align: center; }
-    .errorlist { padding: 10px 12px; margin: 8px 0; border-radius: 6px; background: #fff0f0; color: #9b1c1c; } .messages { color: #9b1c1c; }
-    footer { padding: 24px; text-align: center; border-top: 1px solid #e5e4e7; color: #6b6375; font-size: 14px; }
-    @media (max-width: 520px) { .card { padding: 24px 20px; } main { padding: 24px 0; } }
+    :root { color-scheme: dark; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; color: #9ca3af; background: #16171d; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: #16171d; }
+    header { padding: 40px 24px; border-bottom: 1px solid #2e303a; background: #16171d; text-align: center; }
+    header a { color: #f3f4f6; text-decoration: none; font-weight: 700; font-size: 2rem; }
+    main { width: min(100% - 32px, 480px); margin: auto; padding: 40px 0; flex: 1; display: flex; align-items: center; }
+    .card { width: 100%; background: #1f2028; border: 1px solid #2e303a; border-radius: 12px; padding: 32px; box-shadow: rgba(0, 0, 0, .4) 0 10px 25px; }
+    h1 { margin: 0 0 8px; color: #f3f4f6; font-size: 30px; }
+    .intro { margin: 0 0 24px; color: #9ca3af; }
+    label { display: block; margin: 16px 0 6px; color: #f3f4f6; font-weight: 600; }
+    input { width: 100%; padding: 11px 12px; border: 1px solid #4b5563; border-radius: 6px; background: #16171d; color: #f3f4f6; font: inherit; }
+    input:focus, button:focus, a:focus { outline: 3px solid #c084fc; outline-offset: 2px; }
+    button, .google { display: block; width: 100%; min-height: 44px; margin-top: 22px; padding: 10px 16px; border: 1px solid #c084fc; border-radius: 6px; background: #6b21a8; color: #fff; font: inherit; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
+    button:hover { background: #7e22ce; }
+    .google { margin-top: 12px; background: #292b35; border-color: #4b5563; color: #f3f4f6; }
+    .google:hover { background: #363946; }
+    .links { margin-top: 24px; text-align: center; }
+    .links a { color: #c084fc; }
+    .errorlist { padding: 10px 12px; margin: 8px 0; border-radius: 6px; background: #451a1a; color: #fca5a5; }
+    .messages { color: #fca5a5; }
+    footer { padding: 24px; text-align: center; border-top: 1px solid #2e303a; color: #9ca3af; font-size: 14px; }
+    @media (max-width: 520px) { header { padding: 24px 16px; } .card { padding: 24px 20px; } main { padding: 24px 0; } }
+    @media (prefers-reduced-motion: no-preference) { button, a { transition: background-color .15s ease, color .15s ease; } }
   </style>
   {% block head %}{% endblock %}
 </head>

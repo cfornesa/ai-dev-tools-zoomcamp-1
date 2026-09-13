@@ -71,6 +71,27 @@ backward-compatible redirect or shim rendering the unified gallery with its
 type filter pre-set to **Generated** (`/gallery?type=generated`). The route is
 never silently deleted.
 
+## CMS pages (#517)
+
+CMS pages are a separate content family from user artwork/projects. Public
+page reads are published-only and expose bounded presentation metadata; drafts,
+soft-deleted pages, private author data, and admin audit fields are never
+returned. A renamed page preserves its old slug through a redirect record and
+the canonical page is addressed by its current slug.
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET /api/pages/<slug>/` | Anonymous published-page read; returns `200` for the canonical page, `301` for a recorded old slug, and `404` for missing/draft/deleted pages. |
+| `GET /api/admin/pages/` | Application-admin-only list of active published/draft pages with title, slug, status, updated time, author, navigation metadata, and revision. Anonymous callers receive `401`; non-admins receive `403`. |
+| `POST /api/admin/pages/` | CSRF-protected application-admin create with bounded title, slug, description, status, navigation metadata, and optional system key. |
+| `PATCH /api/admin/pages/<id>/` | CSRF-protected optimistic-concurrency update requiring the current `revision`; slug changes create redirect history. Supports publish/unpublish and navigation metadata changes. |
+| `DELETE /api/admin/pages/<id>/` | CSRF-protected soft-delete. Required system pages cannot be deleted. |
+
+Admin responses include `updated_by` as a display name only; no email,
+provider identity, credentials, prompt, or billing data is exposed. Reserved
+application paths and duplicate slugs are rejected. Public project and gallery
+routes remain unchanged.
+
 ## `GET /api/public/gallery/`
 
 Anonymous-reachable paginated listing merging three kinds of published work:
@@ -153,6 +174,26 @@ and retains it; account deletion purges the backup. A future entitlement/UI
 issue owns the transition controls. The endpoints return finite error codes:
 `401` unauthenticated, `403` non-owner, `404` absent resource, `409` disabled,
 stale, read-only, or checksum conflict, and `413` quota exhaustion.
+
+## Cloud-media retention policy (#522)
+
+The application-owned PostgreSQL/blob lifecycle is governed by one atomic
+admin policy. The approved defaults are: active copies retained while active;
+deleted, entitlement-expired, and disabled-sync copies retained for 30 days;
+retroactive destructive purge requires explicit confirmation. Local IndexedDB
+content is never affected.
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET /api/admin/cloud-retention/` | Application-admin only. Returns the finite grace periods, revision, and update metadata. |
+| `PATCH /api/admin/cloud-retention/` | Application-admin only. Requires `revision`, accepts the three non-negative grace periods, and rejects stale/invalid writes atomically. |
+| `POST /api/admin/cloud-retention/purge/` | Application-admin only. Requires `confirm_retroactive=true` when the request may purge eligible existing copies; accepts bounded `limit` (1–100); returns scanned/purged/retained counts and policy revision. |
+
+Each remote backup carries a retention state (`active`, `deleted`,
+`entitlement_expired`, or `sync_disabled`) and an optional `retain_until`.
+Purge is idempotent, locks rows before deletion, and deletes only remote
+manifests/blobs whose deadline has passed. The account-deletion policy remains
+owned by #443.
 
 An invalid cursor (malformed or reused under a different `type` than it was
 issued for — see binding rule below):
@@ -258,3 +299,89 @@ other `type` (`all`, `authored`), and vice versa. Reusing a cursor across
 filters would silently re-anchor the walk inside a different result set, so
 the API refuses rather than returning ambiguous pages. Clients changing the
 filter must start a fresh walk with no `cursor`.
+
+## Capability consistency (#519)
+
+`GET /api/account/entitlements/` retains its legacy `features` list and adds a
+`capabilities` map keyed by the atomic registry. Each entry includes
+`available`, `source` (`local`, `plan`, `role`, `override`, or `global`),
+`local`, `remote`, `quota`, and `daily_cap`.
+
+Application-admin policy endpoints are additive:
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET/POST /api/admin/roles/` | List or create reusable role sections. Role capabilities are a bounded map of registry keys. |
+| `PATCH /api/admin/roles/<role_key>/` | Revision-checked atomic role update. |
+| `GET/PATCH /api/admin/global-capabilities/` | Read or revision-check one global capability toggle. Cloud sync also updates the existing site-wide switch in the same transaction. |
+| `GET/PATCH /api/admin/plans/?plan_key=<key>` | Existing plan contract, extended with `role_key` for role assignment. |
+
+Global denial takes precedence over role, plan, and per-user overrides. The
+resolver never hides local create/open/edit/import/export because a plan lacks
+a remote capability; frontend surfaces omit unavailable optional controls.
+Application admins are a separate authorization class and receive all
+capabilities (subject to an explicit global shutdown); they are not assigned a
+role or per-user capability matrix.
+
+## Public profiles (#520)
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET/PATCH /api/account/profile/` | Authenticated owner profile settings with a revision check; fields are a unique handle, display name, bounded bio, URLs, profile-image URL metadata, visibility, and revision. |
+| `GET /api/users/@<handle>/` | Anonymous public profile read with safe metadata and only explicitly public 2D/3D/generated pieces. Missing, inactive, or private profiles return `404`. |
+
+Provider identities, email, prompts, credentials, billing, drafts, deleted
+pieces, and private pieces never appear in the public response. A profile
+handle is an opaque user-selected slug and conflicts return `409`.
+
+## Theme customization (#521)
+
+`GET /api/site-theme/` is anonymous-safe and returns the effective finite site
+tokens (`background`, `surface`, `text`, `muted`, `accent`).
+`GET/PATCH /api/admin/settings/` includes `theme_config` and applies an
+optimistic revision check; only validated six-digit hex colors and known token
+names are accepted. `GET/PATCH /api/account/profile/` includes the same
+bounded `theme_config` object for the profile accent/presentation. Profile
+tokens are applied only inside the profile surface and cannot alter shell,
+authentication, or security styling. Invalid or unavailable configuration uses
+the compiled safe defaults.
+
+`GET /api/account/entitlements/` remains the authenticated caller's own
+summary and adds a stable `capabilities` object keyed by the finite capability
+registry. Each entry contains `available`, `source` (`local`, `plan`, or
+`override`), `remote`, and `daily_cap`/`used`/`remaining` where applicable.
+Local editor capabilities default to available for every plan; a missing plan
+feature can deny only the affected remote or paid operation. An explicit
+per-user override may intentionally allow or deny one named capability.
+
+The registry includes `editor_2d_local`, `editor_3d_local`,
+`generated_pieces`, `ai_scene_create`, `ai_scene_edit`, `ai_art_generate`,
+`publishing`, and `cloud_project_sync`. Plan and override changes are
+transactional and never mutate projects, versions, media, credentials, or
+sessions. Frontend surfaces consume this map and omit unavailable optional
+controls rather than rendering locked-feature prompts.
+
+## Admin content operations (#518)
+
+`GET /api/admin/content/` is application-admin-only and returns a bounded,
+list-oriented view of server-owned projects, 3D projects, generated pieces,
+their immutable versions, and cloud-backup media blobs. Local IndexedDB data is
+never exposed or mutated by this API.
+
+`POST /api/admin/content/actions/` accepts one explicit action payload:
+`{"resource_type": "project|project3d|art_piece", "resource_id": "...", "action": "publish|unpublish|restore|delete"}`.
+The action runs in one transaction, reuses the resource's existing publication
+and soft-delete invariants, and records an `AdminContentAuditEvent`. Delete is
+soft-delete only and is rejected for a current/reference-protected resource.
+
+`POST /api/admin/content/access/` accepts
+`{"username": "...", "granted": true|false}` to grant or revoke an
+application-admin identity. This changes only the `ApplicationAdmin` grant;
+the next environment reconciliation remains authoritative for configured
+admin identities.
+
+All write endpoints require the normal authenticated session and CSRF token.
+Anonymous callers receive `401`; authenticated non-admins receive `403`;
+invalid actions, stale/conflicting invariants, and protected deletes receive
+finite `400`/`409` responses. Audit responses expose actor username, action,
+resource kind/id, and timestamp, never credentials or private content.

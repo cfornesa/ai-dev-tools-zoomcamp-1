@@ -11,6 +11,17 @@ export type AccountEntitlementSummary = {
   plan_key: string;
   features: FeatureUsage[];
   reset_at: string;
+  capabilities?: Record<
+    string,
+    {
+      available: boolean;
+      source: string;
+      local: boolean;
+      remote: boolean;
+      quota: boolean;
+      daily_cap: number | null;
+    }
+  >;
 };
 
 export async function fetchAccountEntitlements(): Promise<AccountEntitlementSummary> {

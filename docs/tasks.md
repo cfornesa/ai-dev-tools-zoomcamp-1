@@ -19486,12 +19486,15 @@ https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34728693345
 passes backend, frontend, workflow, disposable routing, and browser acceptance
 jobs.
 
-The requested Replit `creatrweb` republish was initiated but remains at the
-Bundle stage with no new checkpoint or promotion after the visible build logs
-stopped advancing. The public domains therefore remain on checkpoint `99ce0da4`
-until this deployment completes. Do not claim production schema parity for
-migration `0046` until the new checkpoint is visible, then verify the actual
-production columns/tables and run `scripts/smoke-published.sh`.
+The requested Replit `creatrweb` migration-bearing republish completed with
+deployment logs reporting `Deployment successful`, and the public smoke check
+passed against `https://augmentrart.com` (health 200, root 200, anonymous
+identity 401, login 200). The Replit console still displays the prior visible
+checkpoint `99ce0da4`, and its database tool entered a reconnecting state before
+the actual production columns could be inspected. Do not claim production
+schema parity for migration `0046` until Replit exposes the production
+database again and `scenes_plan.price`, `currency`, and `billing_interval` are
+verified directly; then rerun `scripts/smoke-published.sh`.
 
 Current issue state: #460 and #513 CLOSED; #440 OPEN pending the PayPal sandbox
 approval/webhook roundtrip and final production price configuration; #445 OPEN

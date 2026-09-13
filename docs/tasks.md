@@ -19653,3 +19653,19 @@ PayPal sandbox personal/buyer account to approve the subscription created from
 The existing local HTTPS forwarding webhook remains the local target; the
 deployed webhook is not replaced permanently. Provider webhook delivery, not
 the browser return URL, remains the authority for activation.
+
+## 350. PayPal captured-event replay boundary (2026-09-13)
+
+The local PostgreSQL state was rechecked before requesting another sandbox
+purchase. It already contains an active paid subscription and two recorded
+PayPal deliveries: activation applied and the original sale delivery rejected
+under the pre-fix sale-resource interpretation. Replaying that captured,
+provider-signed sale through the active local ngrok tunnel returned the stored
+rejection, as required by the event-id idempotency contract; it did not create
+a duplicate subscription or alter the active subscription.
+
+Consequently, no additional buyer account or subscription is needed merely to
+establish that a subscription exists. A fresh provider event ID would still be
+needed if #445 requires external proof of the post-fix sale-event path; a
+replayed pre-fix event is intentionally insufficient. The durable rule is
+recorded in `paypal-event-replay-idempotency.md`.

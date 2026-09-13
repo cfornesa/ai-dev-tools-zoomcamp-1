@@ -89,7 +89,14 @@ def process_webhook_event(
         # the same outcome recorded the first time -- never reapplied.
         return WebhookOutcome(outcome=existing.outcome, detail=existing.detail)
 
+    # PayPal's subscription events use the subscription id as `resource.id`,
+    # while legacy payment-sale events use a sale/transaction id and carry
+    # the subscription in `billing_agreement_id`. Prefer the latter for sale
+    # events, falling back to `id` for deterministic fixtures and providers
+    # that use the subscription id directly.
     subscription_id = resource.get("id")
+    if event_type.startswith("PAYMENT.SALE."):
+        subscription_id = resource.get("billing_agreement_id") or subscription_id
     if not subscription_id:
         return _reject(event_id, event_type, "Missing subscription id in event resource.")
 

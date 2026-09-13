@@ -233,6 +233,44 @@ def test_later_event_cannot_redirect_subscription_to_a_different_user(client, us
     assert entitlements.get_user_plan_key(user_b) == "free"
 
 
+@pytest.mark.django_db
+def test_sale_event_resolves_paypal_billing_agreement_id(client, user_a, monkeypatch):
+    """PayPal sale notifications identify the sale, not the subscription."""
+    monkeypatch.setattr("scenes.billing.verify_webhook_signature", lambda headers, body: True)
+
+    client.post(
+        reverse("paypal-webhook"),
+        _event(
+            "evt-sale-activation",
+            "BILLING.SUBSCRIPTION.ACTIVATED",
+            {
+                "id": "I-SALE",
+                "plan_id": "P-FIXTURE-PAID",
+                "custom_id": str(user_a.id),
+            },
+        ),
+        content_type="application/json",
+    )
+    response = client.post(
+        reverse("paypal-webhook"),
+        _event(
+            "evt-sale-completed",
+            "PAYMENT.SALE.COMPLETED",
+            {"id": "5YT-SALE", "billing_agreement_id": "I-SALE"},
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"outcome": "applied"}
+    assert Subscription.objects.get(paypal_subscription_id="I-SALE").status == (
+        Subscription.Status.ACTIVE
+    )
+    assert BillingEvent.objects.get(paypal_event_id="evt-sale-completed").outcome == (
+        BillingEvent.Outcome.APPLIED
+    )
+
+
 # --- Cancellation/suspension/expiration/refund policy ---
 
 

@@ -11544,10 +11544,12 @@ delivery initially hit Django's `DisallowedHost` response because the exact
 ngrok hostname was absent from local `DJANGO_ALLOWED_HOSTS`; after adding that
 hostname and restarting Django, replaying the captured activation delivery
 returned `{"outcome":"applied"}` and created an active local paid
-subscription. The sale delivery was retained as a rejected event because its
-resource shape identifies the sale rather than the subscription; this is a
-separate #440 follow-up and is not evidence of a failed subscription
-activation. No production transaction occurred.
+subscription. The live sale delivery initially exposed a handler defect: its
+resource shape identifies the sale rather than the subscription. The handler
+now resolves `billing_agreement_id` for PayPal sale events, with focused
+regression coverage, so subsequent sale deliveries for the active agreement
+are applied idempotently. The original rejected delivery remains only as
+historical local audit evidence. No production transaction occurred.
 
 ## 268. Reconcile Docker identity preflight (#321)
 

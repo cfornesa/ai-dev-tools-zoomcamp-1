@@ -87,6 +87,7 @@ import { hitTestDrawioObjectAt } from './drawioDocument';
 import type { TrackingFrame } from '../tracking/types';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
+import { useCloudBackupSchedule } from './useCloudBackupSchedule';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useDraftRecovery } from './useDraftRecovery';
 import { useDraftServerSync } from './useDraftServerSync';
@@ -1211,6 +1212,11 @@ function EditorWorkspace() {
   // draft back into the editor on its own (that's Task 44's
   // `useDraftRecovery.ts`, above).
   const draftServerSync = useDraftServerSync(id, gatedWorkingCopy);
+
+  // Issue #530: opportunistically, silently pushes a scheduled cloud-
+  // backup snapshot once per project load if the plan's cadence says one
+  // is due -- never on its own timer, and never surfaced to the user.
+  useCloudBackupSchedule(id, gatedWorkingCopy);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Issue #112: `draftAutosave`/`draftServerSync` above already classify

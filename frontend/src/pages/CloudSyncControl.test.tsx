@@ -28,6 +28,9 @@ describe('CloudSyncControl', () => {
       retention_state: 'active',
       retain_until: null,
       revision: 0,
+      snapshot_cadence_days: 7,
+      snapshot_archive_enabled: false,
+      last_snapshot_at: null,
     });
     const user = userEvent.setup();
     render(<CloudSyncControl projectId="p1" />);
@@ -43,6 +46,9 @@ describe('CloudSyncControl', () => {
       read_only: true,
       retention_state: 'entitlement_expired',
       retain_until: null,
+      snapshot_cadence_days: 7,
+      snapshot_archive_enabled: false,
+      last_snapshot_at: null,
       revision: 1,
     });
     render(<CloudSyncControl projectId="p1" />);

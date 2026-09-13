@@ -358,6 +358,14 @@ class Plan(models.Model):
     # Issue #509: independently editable cloud-backup tier quotas.
     cloud_storage_bytes = models.PositiveBigIntegerField(default=52_428_800)
     cloud_storage_files = models.PositiveIntegerField(default=100)
+    # Issue #530: how often (in days) a silent scheduled cloud-backup
+    # snapshot is due for a project on this plan, and whether prior
+    # snapshot revisions/orphaned assets are kept (`True`, subject to the
+    # existing #522 retention grace periods) or trimmed down to the
+    # single latest snapshot after each write (`False`) -- the #529
+    # policy decision.
+    cloud_snapshot_cadence_days = models.PositiveIntegerField(default=7)
+    cloud_snapshot_archive_enabled = models.BooleanField(default=False)
     # Which of scenes.entitlements.FEATURE_KEYS this plan grants at all --
     # a feature key absent here has an effective cap of 0 on this plan,
     # independent of `daily_ai_requests`. Validated against the live

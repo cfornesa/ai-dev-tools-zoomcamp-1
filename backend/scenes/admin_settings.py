@@ -45,6 +45,8 @@ class PlanView:
     daily_ai_requests: int
     cloud_storage_bytes: int
     cloud_storage_files: int
+    cloud_snapshot_cadence_days: int
+    cloud_snapshot_archive_enabled: bool
     feature_keys: list[str]
     active: bool
     paypal_plan_id: str
@@ -113,6 +115,8 @@ def _plan_view(plan: Plan) -> PlanView:
         daily_ai_requests=plan.daily_ai_requests,
         cloud_storage_bytes=plan.cloud_storage_bytes,
         cloud_storage_files=plan.cloud_storage_files,
+        cloud_snapshot_cadence_days=plan.cloud_snapshot_cadence_days,
+        cloud_snapshot_archive_enabled=plan.cloud_snapshot_archive_enabled,
         feature_keys=sorted(plan.feature_keys),
         active=plan.active,
         paypal_plan_id=plan.paypal_plan_id,
@@ -144,6 +148,8 @@ def update_plan(
     role_key: str | None = None,
     cloud_storage_bytes: int = 52_428_800,
     cloud_storage_files: int = 100,
+    cloud_snapshot_cadence_days: int = 7,
+    cloud_snapshot_archive_enabled: bool = False,
 ) -> PlanView:
     """Atomically validate and apply every field, or change nothing.
 
@@ -167,6 +173,14 @@ def update_plan(
         or cloud_storage_files < 0
     ):
         raise ValidationFailed("cloud_storage_files must be a non-negative integer.")
+    if (
+        not isinstance(cloud_snapshot_cadence_days, int)
+        or isinstance(cloud_snapshot_cadence_days, bool)
+        or cloud_snapshot_cadence_days < 1
+    ):
+        raise ValidationFailed("cloud_snapshot_cadence_days must be a positive integer.")
+    if not isinstance(cloud_snapshot_archive_enabled, bool):
+        raise ValidationFailed("cloud_snapshot_archive_enabled must be a boolean.")
     if not isinstance(feature_keys, list) or any(not isinstance(f, str) for f in feature_keys):
         raise ValidationFailed("feature_keys must be a list of strings.")
     unknown = set(feature_keys) - FEATURE_KEYS
@@ -212,6 +226,8 @@ def update_plan(
     plan.daily_ai_requests = daily_ai_requests
     plan.cloud_storage_bytes = cloud_storage_bytes
     plan.cloud_storage_files = cloud_storage_files
+    plan.cloud_snapshot_cadence_days = cloud_snapshot_cadence_days
+    plan.cloud_snapshot_archive_enabled = cloud_snapshot_archive_enabled
     plan.feature_keys = sorted(set(feature_keys))
     plan.active = active
     plan.paypal_plan_id = paypal_plan_id

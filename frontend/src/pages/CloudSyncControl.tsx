@@ -11,6 +11,9 @@ export default function CloudSyncControl({ projectId }: { projectId: string }) {
     retention_state: 'active',
     retain_until: null,
     revision: 0,
+    snapshot_cadence_days: 7,
+    snapshot_archive_enabled: false,
+    last_snapshot_at: null,
   });
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

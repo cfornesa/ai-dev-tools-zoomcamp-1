@@ -162,6 +162,30 @@ a project must still be explicitly opted in through the existing
 independently re-enforces the site-wide switch and the `cloud_project_sync`
 entitlement.
 
+## Scheduled cloud-backup snapshots (#530)
+
+The server never pushes a snapshot on its own -- it has no independent copy
+of a project's media (an `"image"` shape's `mediaAssetId` only ever resolves
+against the browser's own local IndexedDB media library, #508/#512). Instead,
+`GET`/`POST /api/projects/<public_id>/cloud-backup/` (below) additionally
+return `snapshot_cadence_days`, `snapshot_archive_enabled` (both resolved
+from the owner's current `Plan`), and `last_snapshot_at` (the most recent
+manifest's timestamp, or `null`). The frontend (`useCloudBackupSchedule`,
+`storage/cloudSnapshot.ts`) reads these once whenever a cloud-sync-eligible
+project opens and, if due, silently builds and pushes one snapshot through
+the existing manifest/asset endpoints below -- no repeating background timer,
+no user-facing prompt, and a missed/failed check is simply retried next time
+the project opens.
+
+Per the #529 policy: the free plan defaults to a 7-day cadence with
+`snapshot_archive_enabled=False`; paid/admin default to a 1-day cadence with
+archiving on. When `snapshot_archive_enabled` is false, `PUT .../manifest/`
+atomically trims every manifest revision except the one just written and
+deletes any blob no longer referenced by it, immediately after that write --
+"only the latest snapshot" applies to every manifest write on such a plan,
+not only ones a client marks as "scheduled." An archive-enabled plan keeps
+full history, governed only by the existing #522 retention policy below.
+
 ## Cloud backup protocol (#509)
 
 Cloud backup is an authenticated, owner-only, provider-neutral protocol for

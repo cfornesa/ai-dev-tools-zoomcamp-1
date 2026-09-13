@@ -88,13 +88,48 @@ def _require_writable(backup: CloudBackupProject, user) -> None:
         raise CloudBackupReadOnly("Sync eligibility ended; the remote copy is retained read-only.")
 
 
-def _plan_quota(user) -> tuple[int, int]:
+def _user_plan(user) -> Plan | None:
     plan = Plan.objects.filter(plan_key=get_user_plan_key(user), active=True).first()
     if plan is None:
         plan = Plan.objects.filter(plan_key="free", active=True).first()
+    return plan
+
+
+def _plan_quota(user) -> tuple[int, int]:
+    plan = _user_plan(user)
     if plan is None:
         return 0, 0
     return plan.cloud_storage_bytes, plan.cloud_storage_files
+
+
+def _snapshot_policy(user) -> tuple[int, bool]:
+    """`(cadence_days, archive_enabled)` for the owner's current plan
+    (issue #529/#530). Fails closed to a conservative 7-day, no-archive
+    default if no plan can be resolved at all."""
+    plan = _user_plan(user)
+    if plan is None:
+        return 7, False
+    return plan.cloud_snapshot_cadence_days, plan.cloud_snapshot_archive_enabled
+
+
+def _trim_to_latest_snapshot(backup: CloudBackupProject, latest: CloudBackupManifest) -> None:
+    """Issue #530: for a plan without archive retention, keep only the
+    single latest manifest revision and the blobs it still references --
+    older revisions and now-orphaned assets are deleted. Never touches a
+    read-only/retained backup's existing data outside of a fresh write,
+    and only ever runs as part of the same atomic `put_manifest` write
+    that produced `latest`.
+    """
+    referenced_asset_ids: set[uuid.UUID] = set()
+    for item in latest.manifest.get("assets", []):
+        if not isinstance(item, dict):
+            continue
+        try:
+            referenced_asset_ids.add(uuid.UUID(str(item.get("id"))))
+        except (ValueError, AttributeError, TypeError):
+            continue
+    CloudBackupManifest.objects.filter(backup=backup).exclude(pk=latest.pk).delete()
+    backup.blobs.exclude(asset_id__in=referenced_asset_ids).delete()
 
 
 def _validate_manifest(project: Project, manifest: dict) -> None:
@@ -198,12 +233,29 @@ def put_manifest(
     )
     backup.revision = row.revision
     backup.save(update_fields=["revision", "updated_at"])
+    _, archive_enabled = _snapshot_policy(user)
+    if not archive_enabled:
+        _trim_to_latest_snapshot(backup, row)
     return row
 
 
 def latest_manifest(user, project: Project) -> CloudBackupManifest | None:
     backup = get_backup(user, project)
     return backup.manifests.order_by("-revision").first()
+
+
+def snapshot_schedule(user, project: Project) -> dict:
+    """Issue #530: the plan-resolved cadence/archive policy plus the
+    timestamp of the most recent successful manifest write, so a client
+    can decide for itself whether a silent scheduled snapshot is due.
+    Never triggers a snapshot itself -- purely informational."""
+    cadence_days, archive_enabled = _snapshot_policy(user)
+    latest = latest_manifest(user, project)
+    return {
+        "snapshot_cadence_days": cadence_days,
+        "snapshot_archive_enabled": archive_enabled,
+        "last_snapshot_at": latest.created_at.isoformat() if latest is not None else None,
+    }
 
 
 @transaction.atomic

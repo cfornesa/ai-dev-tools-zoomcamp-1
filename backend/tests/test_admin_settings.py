@@ -377,6 +377,8 @@ def test_get_site_settings_and_list_plans_expose_only_named_fields():
             "daily_ai_requests",
             "cloud_storage_bytes",
             "cloud_storage_files",
+            "cloud_snapshot_cadence_days",
+            "cloud_snapshot_archive_enabled",
             "feature_keys",
             "active",
             "paypal_plan_id",

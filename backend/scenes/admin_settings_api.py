@@ -120,6 +120,8 @@ class PlanUpdateSerializer(serializers.Serializer):
     daily_ai_requests = serializers.IntegerField(min_value=0)
     cloud_storage_bytes = serializers.IntegerField(min_value=0, required=False, default=52_428_800)
     cloud_storage_files = serializers.IntegerField(min_value=0, required=False, default=100)
+    cloud_snapshot_cadence_days = serializers.IntegerField(min_value=1, required=False, default=7)
+    cloud_snapshot_archive_enabled = serializers.BooleanField(required=False, default=False)
     feature_keys = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     active = serializers.BooleanField()
     paypal_plan_id = serializers.CharField(
@@ -148,6 +150,8 @@ class AdminPlansView(APIView):
                     "daily_ai_requests": plan.daily_ai_requests,
                     "cloud_storage_bytes": plan.cloud_storage_bytes,
                     "cloud_storage_files": plan.cloud_storage_files,
+                    "cloud_snapshot_cadence_days": plan.cloud_snapshot_cadence_days,
+                    "cloud_snapshot_archive_enabled": plan.cloud_snapshot_archive_enabled,
                     "feature_keys": plan.feature_keys,
                     "active": plan.active,
                     "paypal_plan_id": plan.paypal_plan_id,
@@ -177,6 +181,8 @@ class AdminPlansView(APIView):
             "daily_ai_requests",
             "cloud_storage_bytes",
             "cloud_storage_files",
+            "cloud_snapshot_cadence_days",
+            "cloud_snapshot_archive_enabled",
             "feature_keys",
             "active",
             "paypal_plan_id",
@@ -207,6 +213,12 @@ class AdminPlansView(APIView):
                 daily_ai_requests=serializer.validated_data["daily_ai_requests"],
                 cloud_storage_bytes=serializer.validated_data["cloud_storage_bytes"],
                 cloud_storage_files=serializer.validated_data["cloud_storage_files"],
+                cloud_snapshot_cadence_days=serializer.validated_data[
+                    "cloud_snapshot_cadence_days"
+                ],
+                cloud_snapshot_archive_enabled=serializer.validated_data[
+                    "cloud_snapshot_archive_enabled"
+                ],
                 feature_keys=serializer.validated_data["feature_keys"],
                 active=serializer.validated_data["active"],
                 paypal_plan_id=serializer.validated_data.get("paypal_plan_id", ""),
@@ -232,6 +244,8 @@ class AdminPlansView(APIView):
                 "daily_ai_requests": updated.daily_ai_requests,
                 "cloud_storage_bytes": updated.cloud_storage_bytes,
                 "cloud_storage_files": updated.cloud_storage_files,
+                "cloud_snapshot_cadence_days": updated.cloud_snapshot_cadence_days,
+                "cloud_snapshot_archive_enabled": updated.cloud_snapshot_archive_enabled,
                 "feature_keys": updated.feature_keys,
                 "active": updated.active,
                 "paypal_plan_id": updated.paypal_plan_id,

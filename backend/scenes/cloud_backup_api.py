@@ -15,6 +15,7 @@ from scenes.cloud_backup import (
     pause_backup,
     put_blob,
     put_manifest,
+    snapshot_schedule,
 )
 from scenes.models import Project
 from scenes.permissions import PermissionDenied
@@ -57,6 +58,7 @@ class CloudBackupView(APIView):
                 "retention_state": backup.retention_state,
                 "retain_until": backup.retain_until.isoformat() if backup.retain_until else None,
                 "revision": backup.revision,
+                **snapshot_schedule(request.user, project),
             },
             status=201,
         )
@@ -65,7 +67,8 @@ class CloudBackupView(APIView):
         if not request.user.is_authenticated:
             return Response(status=401)
         try:
-            backup = get_backup(request.user, _project(public_id))
+            project = _project(public_id)
+            backup = get_backup(request.user, project)
         except PermissionDenied as exc:
             raise Http404 from exc
         except CloudBackupError as exc:
@@ -80,6 +83,7 @@ class CloudBackupView(APIView):
                 "retention_state": backup.retention_state,
                 "retain_until": backup.retain_until.isoformat() if backup.retain_until else None,
                 "revision": backup.revision,
+                **snapshot_schedule(request.user, project),
             }
         )
 

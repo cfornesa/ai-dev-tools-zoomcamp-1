@@ -11,8 +11,8 @@ Manifest: `docs/distillation-2026-09-13-admin-profile-parity.md`.
 | Focused approved-browser verification | PASS | Escalated Chromium `themeCustomization.spec.ts` and `cloudRetention.spec.ts`: each passed at 1280x900 and 375x812; #522 screenshots inspected. |
 | Full browser verification | BLOCKED / workflow boundary | First run could not launch Chromium under the managed sandbox. Escalated run launched successfully and reached 37 passes, but was stopped after six failures: four AI-agent cases lacked the documented `AI_PROVIDER=fake` server prerequisite, and the existing admin-settings case exposed cross-spec singleton baseline drift (#505 class). This is not evidence against #521. |
 | CI verification | BLOCKED | Latest run `34738342190` was cancelled by workflow concurrency; the latest completed success `34736533185` targets older SHA `a51ec51a0a3648eab84a0a7ce428967042807102`, not the current local SHA `983505db8ca60d494d1c6206ee3fb3e65966dc85`. |
-| Replit publication | VERIFICATION BOUNDARY | No exact current published revision/table/smoke evidence was available in this pass. Local evidence is not deployment evidence. |
-| Production readiness | BLOCKED | All tracked issues are closed, including owner-approved #522. Release evidence still lacks current-revision CI and exact published-Replit schema/smoke proof; the required rostered Opus 5 readiness model is unavailable in this task, so no silent model substitution is claimed. |
+| Replit publication | BLOCKED by production schema drift | Replit `creatrweb` shows a successful publish about 15 minutes ago and the public domains are healthy, but authenticated production requests return 500. Replit console evidence reports `ProgrammingError: column scenes_sitesettings.theme_config does not exist`; production schema is behind the published code. |
+| Production readiness | BLOCKED | Current-revision CI is PASS, and credential-free published smoke passes, but production authenticated settings are not functional until Replit applies the missing schema diff. The required rostered Opus 5 readiness model is unavailable in this task, so no silent model substitution is claimed. |
 
 ## Issue rollup
 
@@ -22,13 +22,20 @@ Manifest: `docs/distillation-2026-09-13-admin-profile-parity.md`.
 
 ## Exact next actions
 
-1. Start the documented local E2E stack with `AI_PROVIDER=fake` and rerun the
+1. In Replit `creatrweb` → Publishing, reconcile/apply the production schema
+   diff for the migrations through `0055_seed_cloud_retention_policy`; reject
+   destructive conflict options. Then republish and recheck the authenticated
+   account-settings APIs. The specific first confirmed missing field is
+   `scenes_sitesettings.theme_config`.
+2. Start the documented local E2E stack with `AI_PROVIDER=fake` and rerun the
    full suite; separately address the existing singleton-isolation failure if
    it reproduces in a clean per-spec run. Do not attribute either to #521.
-2. Publish the current reconciled revision, then verify the exact published
+3. After schema reconciliation, verify the exact published
    URL with `scripts/smoke-published.sh` and inspect migration-created tables
    directly; do not rely on `django_migrations`.
-3. Obtain a terminal CI run for the current revision before production release.
+4. Obtain/retain the terminal CI result for the current revision before
+   production release; CI run `34745983422` is already successful for
+   `b44e249a68c6f7049fba3db855bb8131dcffea9b`.
 
 ## Routing audit
 

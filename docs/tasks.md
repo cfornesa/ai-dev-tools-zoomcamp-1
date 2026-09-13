@@ -20078,3 +20078,20 @@ current-revision CI and exact published-Replit schema/smoke evidence are not
 yet available, and the mandatory rostered Opus 5 readiness model was
 unavailable in this task. These boundaries must not be represented as product
 defects or as published proof.
+
+## 370. Production verification after republish (2026-09-13)
+
+The current `creatrweb` Replit publish is live on `https://augmentrart.com`
+and `https://animate.creatrweb.com`. Credential-free published smoke passed
+(`/health/`, `/`, anonymous `/api/whoami/`, and login form), and CI run
+`34745983422` passed for commit `b44e249a68c6f7049fba3db855bb8131dcffea9b`.
+
+Authenticated production verification found a release blocker: account
+settings requests to `/api/account/profile/`, `/api/site-theme/`, and
+`/api/account/entitlements/` return HTTP 500. Replit's production console
+trace explicitly reports `ProgrammingError: column
+scenes_sitesettings.theme_config does not exist`. This is production schema
+drift, consistent with the known Replit publish boundary in #467, not a local
+implementation failure. The next action is to apply/reconcile the production
+schema diff through migration `0055`, reject destructive conflict options,
+republish, and rerun authenticated production checks.

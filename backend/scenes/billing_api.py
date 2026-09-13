@@ -8,6 +8,8 @@ exempts CSRF for exactly this reason) -- authenticity comes entirely
 from `scenes.billing.process_webhook_event`'s signature verification.
 """
 
+from decimal import Decimal
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
@@ -21,6 +23,10 @@ from rest_framework.views import APIView
 from scenes.billing import WebhookRejected, process_webhook_event
 from scenes.models import BillingCheckout, Plan, Subscription
 from scenes.paypal_adapter import create_subscription
+
+
+def _format_price(value) -> str:
+    return f"{Decimal(str(value)):.2f}"
 
 
 def _lookup_user_by_custom_id(custom_id):
@@ -86,23 +92,31 @@ class AccountBillingView(APIView):
         )
         plan_key = subscription.plan_key if subscription else "free"
         plan = Plan.objects.filter(plan_key=plan_key, active=True).first()
+        available_plan = (
+            Plan.objects.filter(plan_key="paid", active=True).first()
+            if plan_key != "paid"
+            else None
+        )
         return Response(
             {
                 "plan_key": plan_key,
                 "plan": {
-                    "price": "0.00" if plan_key == "free" else None,
-                    "currency": "USD",
-                    "interval": "month",
+                    "price": _format_price(plan.price) if plan else None,
+                    "currency": plan.currency if plan else "USD",
+                    "interval": plan.billing_interval if plan else "month",
                 },
                 "subscription": {
                     "status": subscription.status if subscription else None,
                     "paid_through": subscription.paid_through if subscription else None,
                 },
                 "available_plan": {
-                    "plan_key": plan.plan_key,
-                    "paypal_configured": bool(plan.paypal_plan_id),
+                    "plan_key": available_plan.plan_key,
+                    "paypal_configured": bool(available_plan.paypal_plan_id),
+                    "price": _format_price(available_plan.price),
+                    "currency": available_plan.currency,
+                    "interval": available_plan.billing_interval,
                 }
-                if plan and plan.plan_key != "free"
+                if available_plan
                 else None,
             }
         )

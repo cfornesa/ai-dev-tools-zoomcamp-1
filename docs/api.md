@@ -4,7 +4,10 @@
 
 Authenticated account billing is exposed through `/api/account/billing/` and
 the frontend route `/account/billing`. `GET` returns the effective plan and
-the user's latest PayPal subscription status; `POST` accepts a server-created
+the user's latest PayPal subscription status. The returned plan pricing is
+read from the active persisted `Plan` row: `price` is a two-decimal string,
+`currency` is a three-letter code, and `interval` is the billing interval.
+`POST` accepts a server-created
 idempotency key and a published active plan key, creates a PayPal sandbox
 subscription with the authenticated user's id as the provider correlation,
 and returns only a provider approval URL plus an opaque checkout id. The

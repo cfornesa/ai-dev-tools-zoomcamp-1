@@ -96,6 +96,9 @@ function PlanForm({ plan, onSaved }: { plan: Plan; onSaved: (next: Plan) => void
   const [featureKeys, setFeatureKeys] = useState<string[]>(plan.feature_keys);
   const [active, setActive] = useState(plan.active);
   const [paypalPlanId, setPaypalPlanId] = useState(plan.paypal_plan_id);
+  const [price, setPrice] = useState(plan.price);
+  const [currency, setCurrency] = useState(plan.currency);
+  const [interval, setInterval] = useState(plan.interval);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -105,6 +108,9 @@ function PlanForm({ plan, onSaved }: { plan: Plan; onSaved: (next: Plan) => void
     setFeatureKeys(plan.feature_keys);
     setActive(plan.active);
     setPaypalPlanId(plan.paypal_plan_id);
+    setPrice(plan.price);
+    setCurrency(plan.currency);
+    setInterval(plan.interval);
   }, [plan]);
 
   function toggleFeature(feature: string) {
@@ -131,6 +137,9 @@ function PlanForm({ plan, onSaved }: { plan: Plan; onSaved: (next: Plan) => void
         feature_keys: featureKeys,
         active,
         paypal_plan_id: paypalPlanId,
+        price,
+        currency,
+        interval,
         revision: plan.revision,
       });
       onSaved(next);
@@ -196,6 +205,36 @@ function PlanForm({ plan, onSaved }: { plan: Plan; onSaved: (next: Plan) => void
         value={paypalPlanId}
         onChange={(event) => setPaypalPlanId(event.target.value)}
       />
+      <label htmlFor={`plan-${plan.plan_key}-price`}>Price</label>
+      <input
+        id={`plan-${plan.plan_key}-price`}
+        type="number"
+        min={0}
+        step="0.01"
+        value={price}
+        onChange={(event) => setPrice(event.target.value)}
+        required
+      />
+      <label htmlFor={`plan-${plan.plan_key}-currency`}>Currency</label>
+      <input
+        id={`plan-${plan.plan_key}-currency`}
+        type="text"
+        maxLength={3}
+        value={currency}
+        onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+        required
+      />
+      <label htmlFor={`plan-${plan.plan_key}-interval`}>Billing interval</label>
+      <select
+        id={`plan-${plan.plan_key}-interval`}
+        value={interval}
+        onChange={(event) => setInterval(event.target.value)}
+      >
+        <option value="day">day</option>
+        <option value="week">week</option>
+        <option value="month">month</option>
+        <option value="year">year</option>
+      </select>
       <div className="admin-settings-actions">
         <button type="submit" disabled={busy}>
           Save

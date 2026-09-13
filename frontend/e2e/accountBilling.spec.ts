@@ -7,7 +7,13 @@ const BILLING_STATUS = {
   plan_key: 'free',
   plan: { price: '0.00', currency: 'USD', interval: 'month' },
   subscription: { status: null, paid_through: null },
-  available_plan: { plan_key: 'paid', paypal_configured: true },
+  available_plan: {
+    plan_key: 'paid',
+    paypal_configured: true,
+    price: '19.99',
+    currency: 'USD',
+    interval: 'month',
+  },
 };
 
 test.describe('Account billing checkout (#440)', () => {
@@ -48,6 +54,7 @@ test.describe('Account billing checkout (#440)', () => {
     await page.goto('/account/billing');
     await expect(page.getByRole('heading', { name: 'Billing' })).toBeVisible();
     await expect(page.getByText('Price: 0.00 USD / month')).toBeVisible();
+    await expect(page.getByText('Available paid plan: 19.99 USD / month')).toBeVisible();
     await expect(page.getByText('Subscription status: not started')).toBeVisible();
 
     await page.getByRole('button', { name: 'Subscribe with PayPal' }).click();

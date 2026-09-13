@@ -165,6 +165,9 @@ class Plan(models.Model):
     feature_keys = models.JSONField(default=list)
     active = models.BooleanField(default=True)
     paypal_plan_id = models.CharField(max_length=64, blank=True, default="")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default="USD")
+    billing_interval = models.CharField(max_length=16, default="month")
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(

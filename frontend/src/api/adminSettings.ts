@@ -11,6 +11,9 @@ export type Plan = {
   feature_keys: string[];
   active: boolean;
   paypal_plan_id: string;
+  price: string;
+  currency: string;
+  interval: string;
   revision: number;
 };
 
@@ -39,6 +42,9 @@ export async function updatePlan(
     feature_keys: string[];
     active: boolean;
     paypal_plan_id: string;
+    price: string;
+    currency: string;
+    interval: string;
     revision: number;
   },
 ): Promise<Plan> {

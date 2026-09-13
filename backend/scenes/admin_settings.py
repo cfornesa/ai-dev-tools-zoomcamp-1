@@ -46,6 +46,9 @@ class PlanView:
     feature_keys: list[str]
     active: bool
     paypal_plan_id: str
+    price: str
+    currency: str
+    interval: str
     revision: int
 
 
@@ -96,6 +99,9 @@ def _plan_view(plan: Plan) -> PlanView:
         feature_keys=sorted(plan.feature_keys),
         active=plan.active,
         paypal_plan_id=plan.paypal_plan_id,
+        price=f"{plan.price:.2f}",
+        currency=plan.currency,
+        interval=plan.billing_interval,
         revision=plan.revision,
     )
 
@@ -114,6 +120,9 @@ def update_plan(
     feature_keys: list[str],
     active: bool,
     paypal_plan_id: str = "",
+    price: str | None = None,
+    currency: str | None = None,
+    interval: str | None = None,
     cloud_storage_bytes: int = 52_428_800,
     cloud_storage_files: int = 100,
 ) -> PlanView:
@@ -148,6 +157,23 @@ def update_plan(
         raise ValidationFailed("active must be a boolean.")
     if not isinstance(paypal_plan_id, str):
         raise ValidationFailed("paypal_plan_id must be a string.")
+    if price is not None:
+        from decimal import Decimal, InvalidOperation
+
+        try:
+            price_value = Decimal(str(price)).quantize(Decimal("0.01"))
+        except (InvalidOperation, ValueError, TypeError) as exc:
+            raise ValidationFailed(
+                "price must be a non-negative amount with at most 2 decimals."
+            ) from exc
+        if price_value < 0:
+            raise ValidationFailed("price must be a non-negative amount.")
+    else:
+        price_value = None
+    if currency is not None and (not isinstance(currency, str) or len(currency) != 3):
+        raise ValidationFailed("currency must be a three-letter code.")
+    if interval is not None and interval not in {"day", "week", "month", "year"}:
+        raise ValidationFailed("interval must be one of: day, week, month, year.")
 
     try:
         plan = Plan.objects.select_for_update().get(plan_key=plan_key)
@@ -165,6 +191,12 @@ def update_plan(
     plan.feature_keys = sorted(set(feature_keys))
     plan.active = active
     plan.paypal_plan_id = paypal_plan_id
+    if price_value is not None:
+        plan.price = price_value
+    if currency is not None:
+        plan.currency = currency.upper()
+    if interval is not None:
+        plan.billing_interval = interval
     plan.revision += 1
     plan.updated_by = actor
     plan.save()

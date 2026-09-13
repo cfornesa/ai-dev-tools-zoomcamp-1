@@ -105,6 +105,11 @@ class PlanUpdateSerializer(serializers.Serializer):
     paypal_plan_id = serializers.CharField(
         max_length=64, allow_blank=True, required=False, default=""
     )
+    price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, min_value=0, required=False, allow_null=True
+    )
+    currency = serializers.CharField(min_length=3, max_length=3, required=False, allow_blank=False)
+    interval = serializers.ChoiceField(choices=("day", "week", "month", "year"), required=False)
     revision = serializers.IntegerField(min_value=0)
 
 
@@ -125,6 +130,9 @@ class AdminPlansView(APIView):
                     "feature_keys": plan.feature_keys,
                     "active": plan.active,
                     "paypal_plan_id": plan.paypal_plan_id,
+                    "price": plan.price,
+                    "currency": plan.currency,
+                    "interval": plan.interval,
                     "revision": plan.revision,
                 }
                 for plan in list_plans()
@@ -150,6 +158,9 @@ class AdminPlansView(APIView):
             "feature_keys",
             "active",
             "paypal_plan_id",
+            "price",
+            "currency",
+            "interval",
             "revision",
         }
         unknown_fields = set(request.data.keys()) - allowed_fields
@@ -176,6 +187,9 @@ class AdminPlansView(APIView):
                 feature_keys=serializer.validated_data["feature_keys"],
                 active=serializer.validated_data["active"],
                 paypal_plan_id=serializer.validated_data.get("paypal_plan_id", ""),
+                price=serializer.validated_data.get("price"),
+                currency=serializer.validated_data.get("currency"),
+                interval=serializer.validated_data.get("interval"),
             )
         except RevisionConflict as exc:
             return Response(
@@ -195,6 +209,9 @@ class AdminPlansView(APIView):
                 "feature_keys": updated.feature_keys,
                 "active": updated.active,
                 "paypal_plan_id": updated.paypal_plan_id,
+                "price": updated.price,
+                "currency": updated.currency,
+                "interval": updated.interval,
                 "revision": updated.revision,
             }
         )

@@ -54,6 +54,12 @@ function AccountBilling() {
             Price: {billing.plan.price ?? 'configured plan price'} {billing.plan.currency} /{' '}
             {billing.plan.interval}
           </p>
+          {billing.available_plan && (
+            <p>
+              Available {billing.available_plan.plan_key} plan: {billing.available_plan.price}{' '}
+              {billing.available_plan.currency} / {billing.available_plan.interval}
+            </p>
+          )}
           <p>Subscription status: {billing.subscription.status ?? 'not started'}</p>
           {billing.available_plan?.paypal_configured && (
             <button

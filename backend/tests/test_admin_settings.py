@@ -321,6 +321,9 @@ def test_get_site_settings_and_list_plans_expose_only_named_fields():
             "feature_keys",
             "active",
             "paypal_plan_id",
+            "price",
+            "currency",
+            "interval",
             "revision",
         }
         for plan in plans

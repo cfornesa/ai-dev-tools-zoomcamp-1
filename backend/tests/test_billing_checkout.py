@@ -28,6 +28,9 @@ def paid_plan(db, settings):
             "daily_ai_requests": 20,
             "feature_keys": list(entitlements.FEATURE_KEYS),
             "paypal_plan_id": "P-FIXTURE-PAID",
+            "price": "19.99",
+            "currency": "USD",
+            "billing_interval": "month",
         },
     )
 
@@ -69,3 +72,22 @@ def test_checkout_never_accepts_unavailable_plan(client, user):
         reverse("account-billing"), {"plan_key": "missing", "idempotency_key": "checkout-2"}
     )
     assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_billing_status_exposes_configured_plan_pricing(client, user):
+    client.force_login(user)
+    response = client.get(reverse("account-billing"))
+    assert response.status_code == 200
+    assert response.json()["plan"] == {
+        "price": "0.00",
+        "currency": "USD",
+        "interval": "month",
+    }
+    assert response.json()["available_plan"] == {
+        "plan_key": "paid",
+        "paypal_configured": True,
+        "price": "19.99",
+        "currency": "USD",
+        "interval": "month",
+    }

@@ -19490,16 +19490,22 @@ The requested Replit `creatrweb` migration-bearing republish completed with
 deployment logs reporting `Deployment successful`, and the public smoke check
 passed against `https://augmentrart.com` (health 200, root 200, anonymous
 identity 401, login 200). The Replit console still displays the prior visible
-checkpoint `99ce0da4`, and its database tool entered a reconnecting state before
-the actual production columns could be inspected. Do not claim production
-schema parity for migration `0046` until Replit exposes the production
-database again and `scenes_plan.price`, `currency`, and `billing_interval` are
-verified directly; then rerun `scripts/smoke-published.sh`.
+checkpoint `99ce0da4`.
+Direct read-only inspection of the selected `Production Database` confirmed
+that `scenes_plan` exists but has only the pre-0046 columns (14 matching
+`%plan%` column rows across the plan tables; no `price`, `currency`, or
+`billing_interval`). The Replit Git panel currently reports
+`UNAUTHENTICATED`, with upstream last fetched 54 minutes ago and three sync
+changes, so the workspace cannot currently fetch the latest remote source.
+Do not claim production schema parity until Replit Git authentication is
+restored, the workspace is synchronized to `origin/main`, the app is
+republished, and those three columns are verified directly again; then rerun
+`scripts/smoke-published.sh`.
 
 Current issue state: #460 and #513 CLOSED; #440 OPEN pending the PayPal sandbox
 approval/webhook roundtrip and final production price configuration; #445 OPEN
-as the release-candidate container pending the Replit migration-bearing
-publish and #440's manual gate. Production-readiness and session-completion
+as the release-candidate container pending Replit Git authentication/schema
+reconciliation and #440's manual gate. Production-readiness and session-completion
 were run in this Codex task as the owner-authorized substitution for the
 rostered external stages; the current verdict is blocked at the Replit
 deployment boundary and the operator-controlled PayPal transaction.

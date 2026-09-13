@@ -17,3 +17,10 @@ sandbox subscription and an earlier rejected `PAYMENT.SALE.COMPLETED` event.
 Replaying that captured event through the live local ngrok tunnel returned the
 same rejection without creating a duplicate subscription or changing the
 existing active state.
+
+Confirmed 2026-09-13: PayPal Sandbox deliveries for the tested subscription
+can omit both `resource.custom_id` and `resource.plan_id`. When the provider
+subscription id matches a server-owned `BillingCheckout`, webhook processing
+must resolve the owner and plan from that checkout record. A fresh sandbox
+approval after this fallback was deployed produced applied
+`BILLING.SUBSCRIPTION.ACTIVATED` and `PAYMENT.SALE.COMPLETED` deliveries.

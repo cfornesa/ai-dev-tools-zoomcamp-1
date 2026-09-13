@@ -19669,3 +19669,19 @@ establish that a subscription exists. A fresh provider event ID would still be
 needed if #445 requires external proof of the post-fix sale-event path; a
 replayed pre-fix event is intentionally insufficient. The durable rule is
 recorded in `paypal-event-replay-idempotency.md`.
+
+## 351. #440 corrected return route and checkout-correlated webhook fallback (2026-09-13)
+
+The live approval flow exposed two provider-integration gaps. PayPal was being
+sent the DRF API URL as its return/cancel destination, so the browser landed on
+an unstyled API page; checkout creation now returns the SPA route
+`/account/billing`. PayPal Sandbox also delivered subscription activation and
+sale payloads without `custom_id` and/or `plan_id`; webhook processing now
+falls back to the server-owned `BillingCheckout` correlation to resolve the
+local owner and plan. Focused billing/webhook tests pass 19/19.
+
+A fresh local sandbox approval after the fix returned to the styled React
+billing page. The resulting activation and sale deliveries both returned HTTP
+200 through the local ngrok webhook, and the local PostgreSQL ledger recorded
+the activation and sale as applied for the disposable fixture user. No
+production transaction occurred.

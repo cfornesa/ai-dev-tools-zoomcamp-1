@@ -16,7 +16,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from scenes import billing, entitlements
-from scenes.models import BillingEvent, Plan, Subscription
+from scenes.models import BillingCheckout, BillingEvent, Plan, Subscription
 
 TODAY = date(2026, 1, 15)
 FUTURE = TODAY + timedelta(days=30)
@@ -269,6 +269,36 @@ def test_sale_event_resolves_paypal_billing_agreement_id(client, user_a, monkeyp
     assert BillingEvent.objects.get(paypal_event_id="evt-sale-completed").outcome == (
         BillingEvent.Outcome.APPLIED
     )
+
+
+@pytest.mark.django_db
+def test_provider_event_resolves_owner_and_plan_from_checkout_when_metadata_is_omitted(
+    client, user_a, monkeypatch
+):
+    """Real PayPal subscription events may omit custom_id and plan_id."""
+    monkeypatch.setattr("scenes.billing.verify_webhook_signature", lambda headers, body: True)
+    checkout = BillingCheckout.objects.create(
+        user=user_a,
+        idempotency_key="checkout-provider-metadata-omitted",
+        plan_key="paid",
+        paypal_subscription_id="I-CHECKOUT-FALLBACK",
+    )
+
+    response = client.post(
+        reverse("paypal-webhook"),
+        _event(
+            "evt-checkout-fallback",
+            "BILLING.SUBSCRIPTION.ACTIVATED",
+            {"id": checkout.paypal_subscription_id},
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    subscription = Subscription.objects.get(paypal_subscription_id=checkout.paypal_subscription_id)
+    assert subscription.user_id == user_a.id
+    assert subscription.plan_key == "paid"
+    assert subscription.status == Subscription.Status.ACTIVE
 
 
 # --- Cancellation/suspension/expiration/refund policy ---

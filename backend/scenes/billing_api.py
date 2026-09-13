@@ -14,7 +14,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.http import Http404
-from django.urls import reverse
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -40,6 +39,11 @@ def _lookup_user_by_custom_id(custom_id):
         return get_user_model().objects.filter(pk=int(custom_id)).first()
     except (TypeError, ValueError):
         return None
+
+
+def _billing_frontend_url(request):
+    """Return to the styled SPA route after PayPal approval or cancellation."""
+    return request.build_absolute_uri("/account/billing")
 
 
 class PayPalWebhookView(APIView):
@@ -156,8 +160,8 @@ class AccountBillingView(APIView):
                     plan_id=plan.paypal_plan_id,
                     custom_id=str(request.user.pk),
                     request_id=idempotency_key,
-                    return_url=request.build_absolute_uri(reverse("account-billing")),
-                    cancel_url=request.build_absolute_uri(reverse("account-billing")),
+                    return_url=_billing_frontend_url(request),
+                    cancel_url=_billing_frontend_url(request),
                 )
             except Exception:
                 checkout.delete()

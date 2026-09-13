@@ -62,6 +62,8 @@ def test_checkout_is_idempotent_and_sends_server_owned_correlation(client, user,
     assert first.json() == second.json()
     assert len(calls) == 1
     assert calls[0]["custom_id"] == str(user.pk)
+    assert calls[0]["return_url"].endswith("/account/billing")
+    assert calls[0]["cancel_url"].endswith("/account/billing")
     assert BillingCheckout.objects.count() == 1
 
 

@@ -33,7 +33,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from scenes import entitlements
-from scenes.models import BillingEvent, Plan, Subscription
+from scenes.models import BillingCheckout, BillingEvent, Plan, Subscription
 from scenes.paypal_adapter import verify_webhook_signature
 
 
@@ -107,13 +107,22 @@ def process_webhook_event(
     )
 
     if subscription is None:
+        checkout = (
+            BillingCheckout.objects.select_related("user")
+            .filter(paypal_subscription_id=subscription_id)
+            .first()
+        )
         plan_id = resource.get("plan_id")
         plan = Plan.objects.filter(paypal_plan_id=plan_id, active=True).first() if plan_id else None
+        if plan is None and checkout is not None:
+            plan = Plan.objects.filter(plan_key=checkout.plan_key, active=True).first()
         if plan is None:
             return _reject(
                 event_id, event_type, f"Unknown or inactive PayPal plan id: {plan_id!r}."
             )
         user = actor_user_lookup(resource.get("custom_id"))
+        if user is None and checkout is not None:
+            user = checkout.user
         if user is None:
             return _reject(event_id, event_type, "Could not resolve a user for this subscription.")
         subscription = Subscription.objects.create(

@@ -19685,3 +19685,21 @@ billing page. The resulting activation and sale deliveries both returned HTTP
 200 through the local ngrok webhook, and the local PostgreSQL ledger recorded
 the activation and sale as applied for the disposable fixture user. No
 production transaction occurred.
+
+## 352. Release reconciliation after PayPal and LinkedIn live checks (2026-09-13)
+
+The current release evidence was added to GitHub issue #445. Source commit
+`040afd3` is pushed and the current `creatrweb` publish passed the anonymous
+published smoke; direct Production Database inspection confirms the
+migration-backed pricing columns and Free/Paid plan rows. PayPal's fresh
+Personal-buyer sandbox approval returned to the styled `/account/billing`
+route, and fresh activation and sale deliveries were accepted and applied in
+the disposable local PostgreSQL database. Issue #440 is closed.
+
+The live LinkedIn check reached LinkedIn but was rejected before consent: the
+app currently whitelists `/accounts/linkedin/login/callback/`, while the
+generic OIDC provider correctly requests `/accounts/oidc/linkedin/login/callback/`.
+This is an external app-registration mismatch, not a credential or code-path
+failure. #445 remains open pending correction of the published and local
+LinkedIn redirect registrations and one successful live callback; no secret
+values are recorded here.

@@ -19585,3 +19585,21 @@ only the repository's existing warnings. The harness repair is committed in
 `e10267b` and pushed to `origin/main`. #513's engineering and verification
 criteria are now satisfied; its GitHub issue remains open pending status
 reconciliation.
+
+## 347. #440 sale-event compatibility and readiness reassessment (2026-09-13)
+
+The live sandbox payload showed that `PAYMENT.SALE.COMPLETED` uses a sale id
+as `resource.id` and the subscription id as `resource.billing_agreement_id`.
+The billing service now resolves that agreement id for all `PAYMENT.SALE.*`
+events, retaining the existing fallback for subscription-shaped fixtures and
+preserving the verified idempotency boundary. The focused webhook suite passes
+14/14, and the full `make check` gate passes 1,215 backend tests and 2,557
+frontend tests. Commit `7ce3ba7` is pushed to `origin/main`.
+
+The original live activation delivery was applied and an active local paid
+subscription exists. The original sale delivery was rejected before this fix,
+so a fresh live sale-delivery proof is still desirable before claiming #440's
+complete external acceptance; the provider-side subscription approval itself
+was successful and no production transaction occurred. #513 remains ready;
+#445 remains open pending final release reconciliation and issue-status
+reconciliation.

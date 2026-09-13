@@ -15,6 +15,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import { clearE2EState, readE2EState } from './state.js';
@@ -28,6 +29,11 @@ const ENV_FILE_ARGS = configuredEnvFile
     ? ['--env-file', '.env']
     : [];
 
+const UV_CHILD_ENV = {
+  ...process.env,
+  UV_CACHE_DIR: process.env.UV_CACHE_DIR ?? path.join(os.tmpdir(), 'creatrweb-uv-cache'),
+};
+
 export default async function globalTeardown(): Promise<void> {
   const state = readE2EState();
 
@@ -36,7 +42,7 @@ export default async function globalTeardown(): Promise<void> {
       execFileSync(
         'uv',
         ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'cleanup', '--json'],
-        { cwd: BACKEND_DIR, stdio: 'ignore' },
+        { cwd: BACKEND_DIR, env: UV_CHILD_ENV, stdio: 'ignore' },
       );
     } catch (err) {
       // Best-effort: teardown must not mask the suite's actual pass/fail

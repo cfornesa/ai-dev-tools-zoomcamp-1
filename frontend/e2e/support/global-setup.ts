@@ -28,6 +28,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import type { FullConfig } from '@playwright/test';
@@ -52,6 +53,11 @@ const PREREQUISITES_HINT =
   '(4) the Vite dev server running via `npm run dev` in frontend/ (it proxies ' +
   '/api, /accounts, and /health to Django -- see frontend/vite.config.ts). ' +
   'Start all four, then run `make e2e` from the repo root.';
+
+const UV_CHILD_ENV = {
+  ...process.env,
+  UV_CACHE_DIR: process.env.UV_CACHE_DIR ?? path.join(os.tmpdir(), 'creatrweb-uv-cache'),
+};
 
 async function probeHealth(baseURL: string): Promise<{ ok: boolean; detail: string }> {
   try {
@@ -80,7 +86,12 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     const output = execFileSync(
       'uv',
       ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'create', '--json'],
-      { cwd: BACKEND_DIR, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
+      {
+        cwd: BACKEND_DIR,
+        encoding: 'utf-8',
+        env: UV_CHILD_ENV,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
     );
     const lastLine = output.trim().split('\n').at(-1);
     if (!lastLine) {

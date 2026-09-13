@@ -19703,3 +19703,29 @@ This is an external app-registration mismatch, not a credential or code-path
 failure. #445 remains open pending correction of the published and local
 LinkedIn redirect registrations and one successful live callback; no secret
 values are recorded here.
+
+## 353. Production-readiness reassessment after provider verification (2026-09-13)
+
+Production-readiness was rerun after the current source was pushed and the
+`creatrweb` publish, anonymous smoke, direct production schema inspection, and
+fresh local PayPal sandbox roundtrip completed. Local PostgreSQL runtime,
+automated checks, published health/login/routing, Replit plan schema/data, and
+PayPal activation/sale processing are PASS. The LinkedIn live callback is an
+OPEN FOLLOW-UP: LinkedIn rejects the request before consent because its app
+registration still contains `/accounts/linkedin/login/callback/`, while the
+OIDC provider requests `/accounts/oidc/linkedin/login/callback/`. This is an
+owner-controlled external configuration boundary, not evidence of an invalid
+credential. Overall production readiness remains BLOCKED until that exact
+published and local redirect registration is corrected and the callback is
+rerun.
+
+## 354. Session-completion reconciliation for the #513/#445 batch (2026-09-13)
+
+The batch manifest is reconciled: #513 is closed and #440 is closed after
+fresh sandbox evidence; #445 remains the sole open issue for its explicit
+LinkedIn callback boundary. Source and evidence are durable in `origin/main`
+at commits `040afd3` and `28b15ee`; no credentials or provider tokens are
+stored in memory or task records. The required next action is limited to
+updating the LinkedIn app's two redirect entries to the exact OIDC callback
+paths for `augmentrart.com` and `localhost:5000`, then rerunning the live
+callback and this release gate.

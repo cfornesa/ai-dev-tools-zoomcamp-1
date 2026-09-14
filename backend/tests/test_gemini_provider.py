@@ -7,7 +7,7 @@ from pathlib import Path
 from ai_provider.errors import AIProviderQuotaError, AIProviderTimeoutError
 from ai_provider.gemini_provider import GeminiResponse, GeminiSceneProvider
 from ai_provider.interface import AICreateSceneRequest, AIEditSceneRequest, AIErrorCategory
-from ai_provider.interface3d import AICreateScene3DRequest
+from ai_provider.interface3d import AIConvertScene2DTo3DRequest, AICreateScene3DRequest
 
 
 def _scene():
@@ -81,3 +81,20 @@ def test_gemini_implements_the_3d_create_contract():
     )
     assert result.success
     assert result.scene == scene
+
+
+def test_gemini_implements_the_convert_2d_to_3d_contract():
+    with (Path(__file__).parents[2] / "schema/fixtures3d/valid/minimal.json").open() as stream:
+        scene = json.load(stream)
+    client = FakeGeminiClient(scene)
+    source_2d = {"shapes": [{"type": "circle", "id": "c1"}]}
+
+    result = GeminiSceneProvider(client=client).convert_scene_2d_to_3d(
+        AIConvertScene2DTo3DRequest(source_scene=source_2d, prompt="make it 3D")
+    )
+
+    assert result.success
+    assert result.scene == scene
+    sent_prompt = json.loads(client.calls[0]["prompt"])
+    assert sent_prompt["source_scene_2d"] == source_2d
+    assert sent_prompt["prompt"] == "make it 3D"

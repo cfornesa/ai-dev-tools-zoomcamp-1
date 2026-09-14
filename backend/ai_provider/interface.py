@@ -63,10 +63,16 @@ from scenes.validation import SUPPORTED_SCHEMA_VERSION, validate_scene
 
 
 class AIOperation(StrEnum):
-    """The two, and only two, structured AI operations V1 supports."""
+    """The structured AI operations this codebase supports: create and
+    edit (V1, `docs/plan.md`), plus (issue #528) a 3D-only conversion
+    operation that turns an existing 2D scene into a new 3D scene."""
 
     CREATE_SCENE = "create_scene"
     EDIT_SCENE = "edit_scene"
+    # Issue #528: 2D scene -> 3D scene, only ever produced against the 3D
+    # document family (`AIScene3DProvider.convert_scene_2d_to_3d`) -- there
+    # is no 2D counterpart.
+    CONVERT_2D_TO_3D = "convert_2d_to_3d"
 
 
 class AIErrorCategory(StrEnum):

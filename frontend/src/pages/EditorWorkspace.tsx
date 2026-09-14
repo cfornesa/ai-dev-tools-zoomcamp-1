@@ -133,6 +133,8 @@ import ShapeInspectorPanel from './ShapeInspectorPanel';
 import VersionHistoryPanel from './VersionHistoryPanel';
 import ProjectMediaLibraryPanel from './ProjectMediaLibraryPanel';
 import CloudSyncControl from './CloudSyncControl';
+import SceneConversionPanel from './SceneConversionPanel';
+import { useSceneConversion } from './useSceneConversion';
 
 /**
  * Task 64 (issue #64): the "Exit without saving" confirmation, as its own
@@ -1030,6 +1032,11 @@ function EditorWorkspace() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const auth = useAuth();
+  // Issue #528: "Convert to 3D" -- its own hook instance, mirroring how
+  // useAIProposal is owned directly by this component rather than by a
+  // child panel, so a future reload-reconnection banner elsewhere in this
+  // page could reference `sceneConversion.run` without prop-drilling.
+  const sceneConversion = useSceneConversion(id);
   const {
     loadState,
     project,
@@ -4166,6 +4173,25 @@ function EditorWorkspace() {
                   workingCopy={workingCopy}
                   currentVersionId={project?.current_version ?? null}
                   onAccepted={handleAIProposalAccepted}
+                />
+              )}
+            </CollapsibleSection>
+
+            <CollapsibleSection heading="Convert to 3D" icon="🧊">
+              {/* Issue #528: AI-assisted conversion of this project's saved
+                scene into a brand-new 3D project. Deliberately reads only
+                the project's persisted scene (never `workingCopy`) --
+                `useSceneConversion` starts against the server's own
+                current_version, exactly like every other AI operation in
+                this codebase. Accept navigates away to the new 3D
+                project's editor rather than touching anything on this
+                page, since nothing about the 2D project itself changes. */}
+              {id && (
+                <SceneConversionPanel
+                  sceneConversion={sceneConversion}
+                  onAccepted={(project3dPublicId) => {
+                    navigate(`/projects3d/${project3dPublicId}`);
+                  }}
                 />
               )}
             </CollapsibleSection>

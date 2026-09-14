@@ -7,9 +7,14 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from ai_provider.interface import AIErrorCategory
-from ai_provider.interface3d import AICreateScene3DRequest, AIEditScene3DRequest
+from ai_provider.interface import AIErrorCategory, AIOperation
+from ai_provider.interface3d import (
+    AIConvertScene2DTo3DRequest,
+    AICreateScene3DRequest,
+    AIEditScene3DRequest,
+)
 from ai_provider.mistral_provider import (
+    _CONVERT_SYSTEM_PROMPT_3D,
     _EDIT_SYSTEM_PROMPT_3D,
     _SYSTEM_PROMPT_3D,
     MistralSceneProvider,
@@ -338,3 +343,72 @@ def test_edit_scene3d_appends_persona_as_a_second_system_message():
     assert len(system_messages) == 2
     assert system_messages[0]["content"] == _EDIT_SYSTEM_PROMPT_3D
     assert system_messages[1]["content"] == "Prefer wide-angle shots."
+
+
+# --- convert_scene_2d_to_3d (issue #528) ------------------------------------
+
+_SOURCE_2D_SCENE = {
+    "shapes": [
+        {"type": "circle", "id": "c1", "name": "Sun"},
+        {"type": "rect", "id": "r1"},
+        {"type": "line", "id": "l1"},
+    ]
+}
+
+
+def test_convert_scene_2d_to_3d_success_returns_validated_scene():
+    provider = _provider_with(lambda **kw: _fake_response(json.dumps(MINIMAL_SCENE_3D)))
+    result = provider.convert_scene_2d_to_3d(
+        AIConvertScene2DTo3DRequest(source_scene=_SOURCE_2D_SCENE)
+    )
+
+    assert result.success
+    assert result.scene == MINIMAL_SCENE_3D
+    assert result.operation == AIOperation.CONVERT_2D_TO_3D
+
+
+def test_convert_scene_2d_to_3d_sends_the_convert_system_prompt_and_source_scene():
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(MINIMAL_SCENE_3D))
+
+    provider = _provider_with(handler)
+    provider.convert_scene_2d_to_3d(
+        AIConvertScene2DTo3DRequest(source_scene=_SOURCE_2D_SCENE, prompt="make it colorful")
+    )
+
+    system_message = next(m for m in captured["messages"] if m["role"] == "system")
+    assert system_message["content"] == _CONVERT_SYSTEM_PROMPT_3D
+    user_message = next(m for m in captured["messages"] if m["role"] == "user")
+    user_payload = json.loads(user_message["content"])
+    assert user_payload["prompt"] == "make it colorful"
+    assert user_payload["source_scene_2d"] == _SOURCE_2D_SCENE
+    assert captured["response_format"]["json_schema"]["name"] == "canonical_scene3d"
+
+
+def test_convert_scene_2d_to_3d_invalid_structured_output_is_rejected():
+    provider = _provider_with(lambda **kw: _fake_response(json.dumps({"not": "a scene3d"})))
+    result = provider.convert_scene_2d_to_3d(
+        AIConvertScene2DTo3DRequest(source_scene=_SOURCE_2D_SCENE)
+    )
+
+    assert not result.success
+    assert result.error.category == AIErrorCategory.INVALID_STRUCTURED_OUTPUT
+
+
+def test_convert_scene_2d_to_3d_appends_persona_as_a_second_system_message():
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return _fake_response(json.dumps(MINIMAL_SCENE_3D))
+
+    provider = _provider_with(handler, persona_prompt="Be whimsical.")
+    provider.convert_scene_2d_to_3d(AIConvertScene2DTo3DRequest(source_scene=_SOURCE_2D_SCENE))
+
+    system_messages = [m for m in captured["messages"] if m["role"] == "system"]
+    assert len(system_messages) == 2
+    assert system_messages[0]["content"] == _CONVERT_SYSTEM_PROMPT_3D
+    assert system_messages[1]["content"] == "Be whimsical."

@@ -153,7 +153,12 @@ describe('SelectionHud: visibility (issue #163)', () => {
     ).toBeInTheDocument();
     expect(within(hud()!).getByLabelText('Shape primitive')).toHaveTextContent('Circle');
     expect(screen.getAllByLabelText('Shape primitive')).toHaveLength(2);
-    expect(screen.queryByRole('button', { name: /convert|morph/i })).not.toBeInTheDocument();
+    // Scoped to the HUD itself (not a page-wide query): issue #528 added an
+    // unrelated "Convert to 3D" whole-project action elsewhere on this page,
+    // which also matches this convert/morph pattern by name.
+    expect(
+      within(hud()!).queryByRole('button', { name: /convert|morph/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('disables current layer and top-level destinations to prevent no-op moves', async () => {

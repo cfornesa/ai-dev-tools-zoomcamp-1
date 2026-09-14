@@ -19,11 +19,15 @@ from django.utils import timezone
 from scenes import entitlements
 from scenes.ai_api import _quota_cache_key as _scene_quota_cache_key
 from scenes.art_piece_api import _quota_cache_key as _art_quota_cache_key
+from scenes.scene_conversion import QUOTA_OPERATION as _CONVERT_3D_QUOTA_OPERATION
 
 _FEATURE_QUOTA_KEYS = {
     "ai_scene_create": lambda user_id: _scene_quota_cache_key(user_id),
     "ai_scene_edit": lambda user_id: _scene_quota_cache_key(user_id, operation="edit"),
     "ai_art_generate": lambda user_id: _art_quota_cache_key(user_id),
+    "ai_scene_convert_3d": lambda user_id: _scene_quota_cache_key(
+        user_id, operation=_CONVERT_3D_QUOTA_OPERATION
+    ),
     # Cloud sync is entitlement-gated but not a daily request quota; its
     # account summary entry still uses the shared shape with zero usage.
     "cloud_project_sync": lambda user_id: "cloud-sync-entitlement-unused",

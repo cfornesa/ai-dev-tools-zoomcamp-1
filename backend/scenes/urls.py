@@ -88,6 +88,13 @@ from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudR
 from scenes.pages_api import PublicPageDetailView
 from scenes.profile_api import AccountProfileView, PublicProfileView
 from scenes.provider_credentials_api import ProviderCredentialView
+from scenes.scene_conversion_api import (
+    SceneConversionAcceptView,
+    SceneConversionAdvanceView,
+    SceneConversionCancelView,
+    SceneConversionDetailView,
+    SceneConversionListCreateView,
+)
 
 urlpatterns = [
     path("pages/<slug:slug>/", PublicPageDetailView.as_view(), name="public-page-detail"),
@@ -304,6 +311,31 @@ urlpatterns = [
     path("ai/runs/<int:pk>/advance/", AIRunAdvanceView.as_view(), name="ai-run-advance"),
     path("ai/runs/<int:pk>/cancel/", AIRunCancelView.as_view(), name="ai-run-cancel"),
     path("ai/runs/<int:pk>/accept/", AIRunAcceptView.as_view(), name="ai-run-accept"),
+    path(
+        "scene-conversions/",
+        SceneConversionListCreateView.as_view(),
+        name="scene-conversion-list-create",
+    ),
+    path(
+        "scene-conversions/<int:pk>/",
+        SceneConversionDetailView.as_view(),
+        name="scene-conversion-detail",
+    ),
+    path(
+        "scene-conversions/<int:pk>/advance/",
+        SceneConversionAdvanceView.as_view(),
+        name="scene-conversion-advance",
+    ),
+    path(
+        "scene-conversions/<int:pk>/cancel/",
+        SceneConversionCancelView.as_view(),
+        name="scene-conversion-cancel",
+    ),
+    path(
+        "scene-conversions/<int:pk>/accept/",
+        SceneConversionAcceptView.as_view(),
+        name="scene-conversion-accept",
+    ),
     # Issue #199: deliberately not project-scoped -- see art_piece_api.py's
     # module docstring for why.
     path(

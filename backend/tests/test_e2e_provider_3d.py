@@ -10,7 +10,11 @@ from __future__ import annotations
 
 from ai_provider.e2e_provider import build_e2e_provider
 from ai_provider.interface import AICreateSceneRequest, AIErrorCategory
-from ai_provider.interface3d import AICreateScene3DRequest, AIEditScene3DRequest
+from ai_provider.interface3d import (
+    AIConvertScene2DTo3DRequest,
+    AICreateScene3DRequest,
+    AIEditScene3DRequest,
+)
 from scenes.validation3d import validate_scene3d
 
 
@@ -120,3 +124,28 @@ def test_2d_and_3d_scenarios_are_independent_on_the_same_provider_instance():
 
     assert result_2d.success
     assert result_3d.success
+
+
+# --- Issue #528: convert_scene_2d_to_3d -------------------------------------
+
+
+def test_success_scenario_convert_scene_2d_to_3d_returns_a_valid_scene():
+    provider = build_e2e_provider("success")
+
+    result = provider.convert_scene_2d_to_3d(
+        AIConvertScene2DTo3DRequest(source_scene={"shapes": [{"type": "circle", "id": "c1"}]})
+    )
+
+    assert result.success
+    assert validate_scene3d(result.scene).valid
+
+
+def test_invalid_structured_output_scenario_rejects_convert_scene_2d_to_3d():
+    provider = build_e2e_provider("invalid_structured_output")
+
+    result = provider.convert_scene_2d_to_3d(
+        AIConvertScene2DTo3DRequest(source_scene={"shapes": []})
+    )
+
+    assert not result.success
+    assert result.error.category == AIErrorCategory.INVALID_STRUCTURED_OUTPUT

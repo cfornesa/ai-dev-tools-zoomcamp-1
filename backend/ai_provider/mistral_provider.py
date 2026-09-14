@@ -148,6 +148,7 @@ from ai_provider.interface import (
     execute,
 )
 from ai_provider.interface3d import (
+    AIConvertScene2DTo3DRequest,
     AICreateScene3DRequest,
     AIEditScene3DRequest,
     AIOperationResult3D,
@@ -334,6 +335,41 @@ address it back by that name. Leave "name" unset when no name is \
 implied.
 - Keep the scene well within reasonable limits: at most a few dozen \
 objects, groups, and lights each."""
+
+# Issue #528: 2D scene -> 3D scene. The request's JSON user content is
+# {"prompt": <optional extra guidance>, "source_scene_2d": <the 2D scene
+# document>} -- never a 3D `current_scene` like `_EDIT_SYSTEM_PROMPT_3D`.
+_CONVERT_SYSTEM_PROMPT_3D = """You convert an existing 2D canonical scene document into a \
+new, complete 3D scene document for the same gesture-reactive animation editor. You will \
+receive a JSON object with a "source_scene_2d" field (the 2D scene to convert) and a \
+"prompt" field (optional extra guidance from the user -- may be empty). Follow these rules \
+exactly:
+
+- Respond with ONLY a single JSON object -- no prose, no markdown code fences, no \
+explanation before or after it. It must conform to the same 3D scene schema described \
+below; never return the 2D input back verbatim.
+- The JSON object must conform to the provided JSON Schema (schemaVersion, documentType, \
+id, scene, camera, lights, groups, objects, and randomness are the top-level fields). \
+schemaVersion must be exactly 1, documentType must be exactly "scene3d".
+- Only these 2D shape types have a defined 3D equivalent, and you MUST convert every \
+occurrence of them: a "circle" shape becomes a "sphere" object (radius derived from the \
+circle's size, default 1 if unclear); a "rect" shape becomes a "box" object (width/height \
+derived from the rect's size, depth defaulting to 1).
+- Every other 2D shape type ("line", "path", "particleEmitter", "image") has NO 3D \
+equivalent -- skip them entirely. Do not approximate them with a box, plane, or any other \
+primitive, and do not mention them in the output.
+- Preserve the 2D scene's approximate relative layout: map each converted shape's 2D \
+position to a 3D position on the same relative x/y plane (z=0 unless the prompt requests \
+otherwise), and preserve relative sizing between shapes.
+- Every object's "type" must be exactly one of: "box", "sphere", "cylinder", "plane" -- \
+never omit a type-specific dimension field (box: width/height/depth; sphere: radius; \
+cylinder: radiusTop/radiusBottom/height; plane: width/height).
+- Include at least one light (a "directional" or "ambient" light is sufficient) and a \
+reasonable default camera framing the converted scene -- the 2D source has neither.
+- When a converted shape had a "name" field in the 2D source, carry it over to the new 3D \
+object's "name" field unchanged.
+- Keep the scene well within reasonable limits: at most a few dozen objects, groups, and \
+lights each."""
 
 _EDIT_SYSTEM_PROMPT_3D = """You propose a minimal JSON Patch editing an existing 3D \
 gesture-reactive animation scene document. Follow these rules exactly:
@@ -817,6 +853,10 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
         usage, produce = self._invoke_3d(request.prompt)
         return execute3d(AIOperation.CREATE_SCENE, usage, produce)
 
+    def convert_scene_2d_to_3d(self, request: AIConvertScene2DTo3DRequest) -> AIOperationResult3D:
+        usage, produce = self._invoke_convert_3d(request.prompt, request.source_scene)
+        return execute3d(AIOperation.CONVERT_2D_TO_3D, usage, produce)
+
     def edit_scene3d(self, request: AIEditScene3DRequest) -> AIOperationResult3D:
         return self.edit_scene3d_with_patch(request).result
 
@@ -880,6 +920,103 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
                 messages=[
                     *self._system_messages(_SYSTEM_PROMPT_3D),
                     {"role": "user", "content": prompt},
+                ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "canonical_scene3d",
+                        "schema_definition": _RESPONSE_JSON_SCHEMA_3D,
+                        "strict": False,
+                    },
+                },
+                temperature=0.2,
+                timeout_ms=self.timeout_ms,
+            )
+        except httpx.TimeoutException:
+            return zero_usage, _raiser(
+                AIProviderTimeoutError(f"Mistral did not respond within {self.timeout_ms}ms.")
+            )
+        except httpx.HTTPError:
+            return zero_usage, _raiser(
+                AIProviderRejectionError("Mistral request failed (network/connection error).")
+            )
+        except Exception as exc:  # Mistral SDK error types (lazy-imported below)
+            from mistralai.client.errors import MistralError
+
+            if not isinstance(exc, MistralError):
+                raise  # a genuine bug, not a documented provider condition
+
+            status = getattr(exc, "status_code", None)
+            if status == 429:
+                return zero_usage, _raiser(
+                    AIProviderQuotaError(
+                        "Mistral reported its account/API rate limit or quota was exceeded."
+                    )
+                )
+            if status in (408, 504):
+                return zero_usage, _raiser(
+                    AIProviderTimeoutError(f"Mistral reported a request timeout (status {status}).")
+                )
+            return zero_usage, _raiser(
+                AIProviderRejectionError(f"Mistral provider request failed (status {status}).")
+            )
+
+        usage_info = getattr(response, "usage", None)
+        prompt_tokens = int(getattr(usage_info, "prompt_tokens", 0) or 0)
+        completion_tokens = int(getattr(usage_info, "completion_tokens", 0) or 0)
+        usage = AIUsageMetadata(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            estimated_cost_usd=_estimate_cost_usd(prompt_tokens, completion_tokens),
+        )
+
+        try:
+            choice = response.choices[0]
+            content = choice.message.content
+        except (AttributeError, IndexError, TypeError):
+            return usage, _raiser(
+                AIProviderRejectionError("Mistral response contained no message content.")
+            )
+
+        text = _coerce_message_content_to_text(content)
+        raw_bytes = len(text.encode("utf-8"))
+        if raw_bytes > MAX_RAW_RESPONSE_BYTES:
+            return usage, _raiser(
+                AIProviderRejectionError(
+                    f"{RESPONSE_TOO_LARGE_PREFIX} Mistral's response was {raw_bytes} bytes, "
+                    f"exceeding the {MAX_RAW_RESPONSE_BYTES}-byte limit."
+                )
+            )
+
+        try:
+            scene = json.loads(text)
+        except (json.JSONDecodeError, TypeError):
+            return usage, _raiser(AIProviderRejectionError("Mistral response was not valid JSON."))
+
+        if not isinstance(scene, dict):
+            return usage, _raiser(
+                AIProviderRejectionError("Mistral response JSON was not a scene object.")
+            )
+
+        normalized_scene = normalize_scene3d_ai_output(scene)
+        return usage, (lambda: normalized_scene)
+
+    def _invoke_convert_3d(
+        self, prompt: str, source_scene: dict[str, Any]
+    ) -> tuple[AIUsageMetadata, Callable[[], dict[str, Any]]]:
+        """Same shape/purpose as `_invoke_3d`, but targets
+        `_CONVERT_SYSTEM_PROMPT_3D` and embeds the source 2D scene document
+        (plus the optional extra-guidance prompt) as JSON user content,
+        rather than a free-form create prompt."""
+        zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
+        user_content = json.dumps({"prompt": prompt, "source_scene_2d": source_scene})
+
+        try:
+            response = self.client.chat.complete(
+                model=self.model,
+                messages=[
+                    *self._system_messages(_CONVERT_SYSTEM_PROMPT_3D),
+                    {"role": "user", "content": user_content},
                 ],
                 response_format={
                     "type": "json_schema",

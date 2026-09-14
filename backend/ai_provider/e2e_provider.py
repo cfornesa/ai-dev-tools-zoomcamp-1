@@ -100,6 +100,7 @@ from ai_provider.interface import (
     AISceneProvider,
 )
 from ai_provider.interface3d import (
+    AIConvertScene2DTo3DRequest,
     AICreateScene3DRequest,
     AIEditScene3DRequest,
     AIOperationResult3D,
@@ -292,6 +293,14 @@ class E2ETestProvider(AISceneProvider, AIScene3DProvider):
 
     def edit_scene3d_with_patch(self, request: AIEditScene3DRequest) -> AIEditScene3DPatchResult:
         return self._provider_3d.edit_scene3d_with_patch(request)
+
+    def convert_scene_2d_to_3d(self, request: AIConvertScene2DTo3DRequest) -> AIOperationResult3D:
+        # Issue #528: routed through the same fake-client MistralSceneProvider
+        # as create/edit3d above -- the fake client's response_format name
+        # ("canonical_scene3d") is shared with create_scene3d, so this
+        # exercises the real convert_scene_2d_to_3d/execute3d path against
+        # the same deterministic scenario fixtures.
+        return self._provider_3d.convert_scene_2d_to_3d(request)
 
 
 def build_e2e_provider(

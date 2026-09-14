@@ -37,7 +37,16 @@ from scenes.models import (
 
 DEFAULT_PLAN = "free"
 FEATURE_KEYS = frozenset(
-    {"ai_scene_create", "ai_scene_edit", "ai_art_generate", "cloud_project_sync"}
+    {
+        "ai_scene_create",
+        "ai_scene_edit",
+        "ai_art_generate",
+        "cloud_project_sync",
+        # Issue #528: AI-assisted 2D-to-3D scene conversion -- its own
+        # quota bucket, same shape as ai_scene_create/ai_scene_edit,
+        # deliberately separate from both (a conversion run is neither).
+        "ai_scene_convert_3d",
+    }
 )
 
 
@@ -59,6 +68,9 @@ CAPABILITY_REGISTRY: dict[str, CapabilitySpec] = {
         local=False, remote=True, quota=True, plan_key="ai_scene_create"
     ),
     "ai_scene_edit": CapabilitySpec(local=False, remote=True, quota=True, plan_key="ai_scene_edit"),
+    "ai_scene_convert_3d": CapabilitySpec(
+        local=False, remote=True, quota=True, plan_key="ai_scene_convert_3d"
+    ),
     "ai_art_generate": CapabilitySpec(
         local=False, remote=True, quota=True, plan_key="ai_art_generate"
     ),

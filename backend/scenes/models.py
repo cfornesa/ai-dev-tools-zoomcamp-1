@@ -1521,6 +1521,12 @@ class SceneVersion3D(models.Model):
         # Issue #232: the 3D counterpart of SceneVersion's AI_CREATE/AI_EDIT.
         AI_CREATE = "ai_create", "AI create"
         AI_EDIT = "ai_edit", "AI edit"
+        # Issue #528: this version's scene_json was produced by
+        # AI-converting a 2D Project's scene into a new 3D project, rather
+        # than authored directly against this 3D project. Always the
+        # first version (sequence=1) of a brand-new Project3D -- conversion
+        # never edits an existing 3D project in place.
+        CONVERTED_FROM_2D = "converted_from_2d", "Converted from 2D"
 
     project = models.ForeignKey(Project3D, on_delete=models.CASCADE, related_name="versions")
     sequence = models.PositiveIntegerField()
@@ -1536,6 +1542,23 @@ class SceneVersion3D(models.Model):
     # idempotency-key purpose for AIAcceptProposal3DView, same per-project
     # uniqueness scoping.
     ai_request_id = models.UUIDField(null=True, blank=True)
+    # Issue #528: provenance for a CONVERTED_FROM_2D version -- which 2D
+    # Project and which of its SceneVersion ids this 3D version was
+    # converted from. SET_NULL (not CASCADE): deleting the source 2D
+    # project must never delete the 3D project/version it was converted
+    # into: the converted 3D scene is a real, independent copy, not a
+    # live reference. `source_version_id` is a plain int (mirroring
+    # AIRun.base_version_id/accepted_version_id) rather than an FK for the
+    # same reason -- the source SceneVersion is immutable and this is only
+    # ever read back for display, never joined against.
+    source_project = models.ForeignKey(
+        Project,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="converted_3d_versions",
+    )
+    source_version_id = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -1838,3 +1861,120 @@ class AIRun(models.Model):
 
     def default_deadline(self) -> datetime:
         return timezone.now() + timedelta(seconds=AI_RUN_DEFAULT_BUDGET_SECONDS)
+
+
+# Issue #528: same budget/attempt/lease constants as AIRun's, reused
+# verbatim rather than duplicated with different values -- a conversion
+# run is governed by the exact same bounded plan-validate-revise timing
+# invariants, just for one fixed operation.
+SCENE_CONVERSION_RUN_DEFAULT_BUDGET_SECONDS = AI_RUN_DEFAULT_BUDGET_SECONDS
+SCENE_CONVERSION_RUN_MAX_PROVIDER_ATTEMPTS = AI_RUN_MAX_PROVIDER_ATTEMPTS
+SCENE_CONVERSION_RUN_MAX_REPAIR_ATTEMPTS = AI_RUN_MAX_REPAIR_ATTEMPTS
+SCENE_CONVERSION_RUN_ADVANCE_LEASE_SECONDS = AI_RUN_ADVANCE_LEASE_SECONDS
+
+
+class SceneConversionRun(models.Model):
+    """A persisted, bounded, owner-scoped AI-assisted 2D-to-3D scene
+    conversion run (issue #528).
+
+    Deliberately modeled as `AIRun`'s sibling rather than folded into it:
+    `AIRun` always targets and mutates a single existing `Project`/
+    `Project3D` in place (its own `project`/`project3d` FKs), while a
+    conversion always *reads* an existing 2D `Project` and, on accept,
+    *creates a brand-new* `Project3D` + first `SceneVersion3D` -- a
+    meaningfully different accept shape that would otherwise force
+    `AIRun.accept_run` to grow a third, incompatible branch. Everything
+    else about the bounded run mechanics (one provider call per `advance`,
+    an exclusive advance lease, repair-attempt retries, a deadline) is
+    copied verbatim from `AIRun` -- see `scenes.ai_runs`'s module
+    docstring for the shared rationale, and `scenes.scene_conversion` for
+    this model's own start/advance/cancel/accept implementation.
+    """
+
+    class Status(models.TextChoices):
+        RUNNING = "running", "Running"
+        AWAITING_REVIEW = "awaiting_review", "Awaiting review"
+        ACCEPTED = "accepted", "Accepted"
+        CANCELLED = "cancelled", "Cancelled"
+        FAILED = "failed", "Failed"
+        EXPIRED = "expired", "Expired"
+
+    TERMINAL_STATUSES = (Status.ACCEPTED, Status.CANCELLED, Status.FAILED, Status.EXPIRED)
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="scene_conversion_runs"
+    )
+    # The 2D project being converted. CASCADE (not SET_NULL like
+    # SceneVersion3D.source_project above): a run still in progress against
+    # a deleted source project has nothing left to read or convert, and a
+    # terminal run's own candidate/provenance data lives on this row
+    # regardless -- but once accepted, `SceneVersion3D.source_project`
+    # (SET_NULL) is the durable provenance pointer, not this FK.
+    source_project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="scene_conversion_runs"
+    )
+    source_version_id = models.PositiveIntegerField()
+    prompt = models.TextField(blank=True, default="")
+    vendor = models.CharField(max_length=32, default="mistral")
+    model_id = models.CharField(max_length=100, blank=True, default="")
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RUNNING)
+    # sha256 of the source scene_json at the moment this run started -- the
+    # same content-addressed staleness signal AIRun.input_digest provides,
+    # checked on accept alongside source_version_id.
+    input_digest = models.CharField(max_length=64)
+
+    attempts = models.PositiveIntegerField(default=0)
+    repairs = models.PositiveIntegerField(default=0)
+
+    candidate_scene_json = models.JSONField(null=True, blank=True)
+    # 2D shape types present in the source scene that have no 3D
+    # equivalent and were therefore omitted from the candidate (e.g.
+    # ["line", "path"]) -- computed deterministically from the source
+    # scene before the first provider call, surfaced to the caller
+    # regardless of run outcome so the UI can warn "N shapes could not be
+    # converted" rather than silently dropping them.
+    unsupported_shape_types = models.JSONField(default=list, blank=True)
+    plan_summary = models.TextField(blank=True, default="")
+    validation_summary = models.TextField(blank=True, default="")
+    error_reason = models.CharField(max_length=64, blank=True, default="")
+
+    usage_prompt_tokens = models.PositiveIntegerField(default=0)
+    usage_completion_tokens = models.PositiveIntegerField(default=0)
+    usage_cost_usd = models.FloatField(default=0.0)
+    charged = models.BooleanField(default=False)
+    accepted_project3d_id = models.PositiveIntegerField(null=True, blank=True)
+    accepted_version_id = models.PositiveIntegerField(null=True, blank=True)
+
+    advance_lease_token = models.UUIDField(null=True, blank=True)
+    advance_lease_expires_at = models.DateTimeField(null=True, blank=True)
+
+    start_request_id = models.UUIDField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deadline_at = models.DateTimeField()
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "start_request_id"],
+                condition=models.Q(start_request_id__isnull=False),
+                name="unique_scene_conversion_run_start_request_id_per_owner",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["owner", "-created_at"], name="scene_conv_owner_recent_idx"),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"SceneConversionRun({self.pk}) {self.status} for user {self.owner_id}"
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.status in self.TERMINAL_STATUSES
+
+    def default_deadline(self) -> datetime:
+        return timezone.now() + timedelta(seconds=SCENE_CONVERSION_RUN_DEFAULT_BUDGET_SECONDS)

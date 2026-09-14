@@ -31,6 +31,7 @@ from ai_provider.interface import (
     execute,
 )
 from ai_provider.interface3d import (
+    AIConvertScene2DTo3DRequest,
     AICreateScene3DRequest,
     AIEditScene3DRequest,
     AIOperationResult3D,
@@ -123,6 +124,20 @@ _EDIT_INSTRUCTIONS = (
     "Return only a JSON Patch array. Use only add, replace, or remove "
     "operations on the existing allowlisted scene paths. Return [] when "
     "the edit is not expressible."
+)
+# Issue #528: convert an existing 2D scene into a new 3D scene. The request
+# body is {"prompt": <optional extra guidance>, "source_scene_2d": <the 2D
+# scene>}; only "circle"->"sphere" and "rect"->"box" have a defined 3D
+# equivalent -- every other 2D shape type must be skipped, never
+# approximated.
+_CONVERT_INSTRUCTIONS = (
+    "Return only one JSON object matching the supplied 3D scene schema, representing a new "
+    "3D scene converted from the given 2D source scene (source_scene_2d). Convert every "
+    "'circle' shape to a 'sphere' object and every 'rect' shape to a 'box' object, "
+    "preserving relative position, size, and name. Skip every other 2D shape type "
+    "entirely (line, path, particleEmitter, image) -- never approximate them. Include a "
+    "reasonable default camera and at least one light. Never return code, XML, markdown, "
+    "or prose."
 )
 
 
@@ -289,6 +304,24 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
             return self._error3d(AIOperation.CREATE_SCENE, exc)
         return execute3d(
             AIOperation.CREATE_SCENE, self._usage(response), lambda: self._json(response)
+        )
+
+    def convert_scene_2d_to_3d(self, request: AIConvertScene2DTo3DRequest) -> AIOperationResult3D:
+        try:
+            response = self._call(
+                _CONVERT_INSTRUCTIONS,
+                json.dumps({"prompt": request.prompt, "source_scene_2d": request.source_scene}),
+                SCENE3D_SCHEMA,
+            )
+        except (
+            AIProviderTimeoutError,
+            AIProviderCancelledError,
+            AIProviderQuotaError,
+            AIProviderRejectionError,
+        ) as exc:
+            return self._error3d(AIOperation.CONVERT_2D_TO_3D, exc)
+        return execute3d(
+            AIOperation.CONVERT_2D_TO_3D, self._usage(response), lambda: self._json(response)
         )
 
     def edit_scene3d(self, request: AIEditScene3DRequest) -> AIOperationResult3D:

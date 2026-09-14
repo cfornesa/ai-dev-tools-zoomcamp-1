@@ -55,6 +55,23 @@ class AIEditScene3DRequest:
 
 
 @dataclass(frozen=True)
+class AIConvertScene2DTo3DRequest:
+    """Convert 2D->3D (issue #528): an existing, validated 2D scene JSON
+    document (+ an optional free-form prompt for extra guidance) -> a
+    complete, editable scene3d JSON document. There is no `current_scene`
+    on the 3D side -- this always produces a brand-new 3D document, never
+    an edit of an existing one."""
+
+    source_scene: dict[str, Any]
+    prompt: str = ""
+    schema_version: int = SUPPORTED_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.source_scene, dict):
+            raise ValueError("source_scene must be a scene JSON object.")
+
+
+@dataclass(frozen=True)
 class AIOperationResult3D:
     """The `scene3d` counterpart of `interface.AIOperationResult`."""
 
@@ -80,6 +97,11 @@ class AIScene3DProvider(ABC):
 
     @abstractmethod
     def edit_scene3d(self, request: AIEditScene3DRequest) -> AIOperationResult3D: ...
+
+    @abstractmethod
+    def convert_scene_2d_to_3d(
+        self, request: AIConvertScene2DTo3DRequest
+    ) -> AIOperationResult3D: ...
 
 
 def execute3d(
@@ -132,11 +154,13 @@ def _error_result(
 PUBLIC_DATA_TYPES: tuple[type, ...] = (
     AICreateScene3DRequest,
     AIEditScene3DRequest,
+    AIConvertScene2DTo3DRequest,
     AIOperationResult3D,
 )
 
 __all__ = [
     "PUBLIC_DATA_TYPES",
+    "AIConvertScene2DTo3DRequest",
     "AICreateScene3DRequest",
     "AIEditScene3DRequest",
     "AIOperationResult3D",

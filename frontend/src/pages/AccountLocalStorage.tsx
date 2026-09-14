@@ -539,10 +539,20 @@ function AccountLocalStorage() {
           <section aria-label="Overall browser storage">
             <h3>Overall browser storage</h3>
             {snapshot.estimate.supported ? (
-              <p>
-                Using {formatBytes(snapshot.estimate.usage)} of{' '}
-                {formatBytes(snapshot.estimate.quota)} available to this origin.
-              </p>
+              <>
+                <p>
+                  Using {formatBytes(snapshot.estimate.usage)} of{' '}
+                  {formatBytes(snapshot.estimate.quota)} available to this origin.
+                </p>
+                {snapshot.estimate.usage !== undefined && snapshot.estimate.quota !== undefined && (
+                  <p>
+                    Estimated remaining origin capacity:{' '}
+                    {formatBytes(Math.max(snapshot.estimate.quota - snapshot.estimate.usage, 0))}.
+                    This is an origin quota estimate, not free space on the device, and it may
+                    change.
+                  </p>
+                )}
+              </>
             ) : (
               <p>This browser does not report a storage estimate.</p>
             )}

@@ -20317,7 +20317,7 @@ export, archive, inspect, and rehydrate data. ZIP archives are the
 cross-browser baseline. File System Access API support is optional and must
 not be required for local operation.
 
-Six follow-ups were filed as separate criterion-ready GitHub issues:
+Eight follow-ups are now filed as separate criterion-ready GitHub issues:
 
 - [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) — selected ZIP as an isolated workspace with selective project restore;
 - [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) — explicit archive/offload and safe rehydration of inactive projects;
@@ -20325,13 +20325,17 @@ Six follow-ups were filed as separate criterion-ready GitHub issues:
 - [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) — open a selected supported file/folder as project context with explicit read-only/copy-in semantics and unsaved-change safety.
 - [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) — durable editable file/folder save and reopen with active-draft plus bounded IndexedDB recovery.
 - [#537](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537) — browser-local editor handoff and workspace switching for restored projects.
+- [#538](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/538) — mobile overflow fix for the local storage dashboard.
+- [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) — remaining browser-origin quota display.
 
 Duplicate check: #512, #525, #526, and #527 are closed foundations but do not
 cover named archive workspace switching, selective offload lifecycle, folder
-handles, or opening a selected local project context. Standalone piece/account
-exports are separate contracts.
+handles, or opening a selected local project context. #525 exposes the raw
+estimate but not the remaining-capacity presentation in #539. Standalone
+piece/account exports are separate contracts.
 
-Next action: begin Stage 1 scoping for #532 only. Process #533 and #534 after
+Next action: keep #532's seeded archive-flow evidence as the primary blocker;
+scope #538 and #539 as independent mechanical follow-ups. Process #533 and #534 after
 #532's workspace contract is terminal, then #535, #536, and #537 according to
 their dependency edges. #533, #534, and #535 depend on #532; #536 depends on
 #512/#526/#535 and owns the active-draft plus bounded-recovery semantics; #537
@@ -20352,13 +20356,31 @@ authorized by this distillation entry.
   format checks passed with existing warnings.
 - **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-532 make check` passed —
   backend 1309 passed/39 skipped and frontend 2643 passed.
-- **QA:** GitHub QA comment [5660120256](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532#issuecomment-5660120256)
-  recorded PASS for local criteria and FAIL for the required rendered Chromium
-  evidence at 1280x900 and 375x812.
-- **Evidence boundary / next action:** start the supported disposable Django+
-  Vite stack, add or run a dedicated local-workspace Chromium scenario at both
-  viewports, inspect the archive preview/workspace states, and rerun QA. Issues
-  #533–#537 remain dependency-blocked until this gate is terminal.
+- **QA:** The initial QA comment [5660120256](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532#issuecomment-5660120256)
+  recorded PASS for local criteria and FAIL for rendered Chromium evidence.
+  Follow-up active-Chrome evidence is recorded in comment
+  [5660171431](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532#issuecomment-5660171431):
+  the empty-state/archive controls render at both 1280x900 and 375x812; the
+  mobile view collapses primary navigation to the menu button without a layout
+  break.
+- **Evidence boundary / next action:** viewport evidence is now covered, but a
+  seeded archive-preview/selected-restore browser scenario is still required
+  before rerunning QA can make #532 terminal. Issues #533–#537 remain
+  dependency-blocked until that workspace contract is terminal.
+
+### Newly discovered follow-ups — 2026-09-14
+
+- **#538 — mobile overflow:** Active Chrome at 375x812 exposed document
+  horizontal overflow from the native ZIP file input in the local storage
+  dashboard. GitHub issue [#538](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/538)
+  is a distinct Stage 2a mechanical/UI issue; it is not a dependency blocker
+  for the archive semantics.
+- **#539 — remaining origin quota:** The dashboard shows usage and quota but
+  not the calculated remaining origin capacity. GitHub issue
+  [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) is a
+  distinct Stage 2a dashboard issue. It complements #533's explanation that
+  another archive/database does not create extra quota, but does not duplicate
+  #533 or depend on #532.
 
 ### Batch production-readiness and session-completion — 2026-09-14
 
@@ -20376,8 +20398,8 @@ authorized by this distillation entry.
 - **Readiness gate provenance:** not run. The repository requires Opus 5 or
   Sonnet 5 for this gate; that selectable model tier was unavailable in this
   thread. This is a workflow/provenance blocker, not a readiness pass.
-- **Session rollup:** discovered 6; completed 0; blocked 1; dependency-blocked
-  5; handed-off 0; missing terminal status 0.
+- **Session rollup before the latest discovery:** discovered 6; completed 0;
+  blocked 1; dependency-blocked 5; handed-off 0; missing terminal status 0.
 - **Follow-up audit:** one actionable follow-up was created and linked (#537)
   for the missing local editor handoff; no duplicate issue was created for the
   browser-evidence boundary. The exact next action for every remaining issue

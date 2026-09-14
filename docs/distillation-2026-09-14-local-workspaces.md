@@ -1,8 +1,8 @@
 # Local workspace opening, selective retention, and folder access distillation
 
-Status: DISTILLATION COMPLETE — owner-selected browser-local hybrid direction;
-six criterion-ready follow-ups are proposed. No product source or API
-contract changes are made in this phase.
+Status: DISTILLATION UPDATED — owner-selected browser-local hybrid direction;
+eight criterion-ready follow-ups are tracked. Active-Chrome evidence also
+discovered one mobile layout defect and one distinct quota-visibility gap.
 
 ## Current-state investigation
 
@@ -39,19 +39,24 @@ required for the local workspace to function.
 - #527 covers clear-data warnings and sync-before-clear, not archive browsing,
   offload, or directory handles.
 - Standalone piece exports and account export are different artifact contracts.
-- The six open GitHub issues below cover distinct capability boundaries; no
-  duplicate open issue was found.
+- The eight open GitHub issues below cover distinct capability boundaries; no
+  duplicate open issue was found. #533 mentions quota behavior during
+  offload, but does not require the dashboard to calculate and display
+  remaining origin quota; that is #539. The mobile overflow in the #532
+  dashboard evidence is a separate UI defect tracked by #538.
 
 ## Issue manifest and order
 
 | Order | Issue | Capability | Dependencies | Routing | Status |
 | --- | --- | --- | --- | --- | --- |
-| 1 | [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) | Open a selected ZIP as an isolated browser-local workspace with selective project restore | #526; owner-selected hybrid contract | Stage 2b complex | BLOCKED / verification-boundary: rendered Chromium evidence unavailable |
+| 1 | [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) | Open a selected ZIP as an isolated browser-local workspace with selective project restore | #526; owner-selected hybrid contract | Stage 2b complex | BLOCKED / seeded archive-flow evidence unavailable; responsive Chromium empty-state evidence captured |
 | 2 | [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) | Archive/offload inactive local projects and rehydrate them safely | #525/#526/#532 | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
 | 3 | [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) | Add an optional folder-backed archive bridge with permission and compatibility states | #512/#532; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
 | 4 | [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) | Open a selected local file/folder as project context with explicit copy-in semantics | #526/#532; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
 | 5 | [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) | Save editable browser workspaces durably to disk and reopen them with bounded IndexedDB recovery | #512/#526/#535 | Stage 2b complex | DEPENDENCY-BLOCKED on #535/#532 |
 | 6 | [#537](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537) | Hand restored local projects into a browser-local editor route with workspace switching | #532 | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
+| 7 | [#538](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/538) | Remove local-storage-dashboard horizontal overflow on mobile | #532 evidence; no product dependency | Stage 2a mechanical | NEW / ready to scope |
+| 8 | [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) | Show remaining browser-origin storage quota for local artwork | #525 storage estimate; no #532 dependency | Stage 2a mechanical | NEW / ready to scope |
 
 ## Criterion-ready issue contracts
 
@@ -107,14 +112,21 @@ must provide validated file export/import fallback.
 
 ## Blocker triage and next action
 
-- Issue 1 was implemented locally, but remains blocked at QA by the named
-  rendered-browser evidence boundary.
+- Issue 1 was implemented locally. Responsive Chromium evidence now covers the
+  empty-state and archive controls at 1280x900 and 375x812, but QA still needs
+  a seeded archive-preview/selected-restore browser scenario before the issue
+  can become terminal.
 - Issue 2 depends on issue 1's workspace identity and archive-selection
   semantics; it must not invent a second archive format.
 - Issue 3 is independent of issue 2 but browser-platform-bound; unsupported
   APIs are a verification boundary, not an implementation failure.
 - The prior editor-handoff criterion was split into #537 because the current
   repository has no browser-local editor route or loader.
+- #538 records the observed file-input overflow at 375x812; it is not a
+  contradiction in the archive contract and can be fixed independently.
+- #539 records the missing `quota - usage` presentation. It complements, but
+  does not duplicate, #533's requirement to explain that another archive does
+  not create extra browser quota.
 - No new vendor dependency is required.
 
 ## Next transaction

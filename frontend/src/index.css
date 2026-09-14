@@ -284,6 +284,25 @@ button:disabled {
   box-sizing: border-box;
 }
 
+/* Issue #538: native file inputs retain a browser-defined intrinsic width.
+   Keep the local-storage archive controls shrink-safe so the ZIP picker does
+   not make the whole dashboard wider than a narrow viewport. */
+.local-storage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.local-storage-actions input[type='file'] {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .account-billing {
   display: flex;
   flex-direction: column;

@@ -163,6 +163,7 @@ describe('AccountLocalStorage', () => {
     renderPage();
 
     expect(await screen.findByText(/Using.*of.*available/i)).toBeVisible();
+    expect(screen.getByText(/Estimated remaining origin capacity: 1023.0 KB/i)).toBeVisible();
     expect(screen.getByText(/persistent storage:\s*granted/i)).toBeVisible();
   });
 

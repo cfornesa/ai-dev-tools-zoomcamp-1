@@ -20447,9 +20447,10 @@ later backlog-session transactions did.
   active draft/workspace; the selected disk archive owns the durable checkpoint.
   It depends on #535 and the #534/#541 folder-write contract. Clarification
   comment [5661407115](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5661407115).
-- **#541:** DEPENDENCY-BLOCKED/criterion-ready split of #535's folder entry
-  point; it depends on #534's native evidence gate and owns safe folder archive
-  inspection plus explicit copy-in. Handoff [5661601036](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541#issuecomment-5661601036).
+- **#541:** CLOSED as a duplicate of #534; the folder bridge now owns safe
+  archive listing, inspection, preview, and explicit copy-in in one contract.
+  Reconciliation comment
+  [5661706286](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541#issuecomment-5661706286).
 - **#537:** COMPLETE; commit `d3b9922`; explicit `/local-projects/:id`
   IndexedDB editor route, owner-scoped loading, persistent workspace selection,
   save/cancel navigation guard, responsive checksum layout, focused tests 27
@@ -20470,10 +20471,10 @@ later backlog-session transactions did.
   are distinct mechanisms, not duplicates; overlap audit
   [5661675522](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542#issuecomment-5661675522).
 - **Session-completion result:** terminal-status audit must be refreshed after
-  the #535 duplicate reconciliation, new #541 issue, and #542 follow-up.
-  Current reconciliation is discovered 11, completed 7 (including #535's
-  duplicate closure and #540's decision closure), with #534, #536, #541, and
-  #542 still open for implementation/dependency work. Routing
+  the #535/#541 duplicate reconciliations and #542 follow-up. Current
+  reconciliation is discovered 11, completed 8 (including both duplicate
+  closures and #540's decision closure), with #534, #536, and #542 still open
+  for implementation/dependency work. Routing
   audit remains incomplete for the unavailable
   independent second-opinion and readiness-gate stages; all substitutions are
   explicitly identified in this ledger and no issue was silently closed.

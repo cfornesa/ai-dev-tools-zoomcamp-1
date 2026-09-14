@@ -2,9 +2,9 @@
 
 Status: DISTILLATION UPDATED — owner-selected offline-first sync and folder-bridge direction;
 eleven criterion-ready follow-ups were reconciled, with #532, #533, #535, #537,
-#538, #539, and #540 now closed after implementation, duplicate reconciliation,
-decision closure, and dual-viewport verification. Four local-workspace issues
-remain open for implementation or dependency work;
+#538, #539, #540, and #541 now closed after implementation, duplicate
+reconciliation, decision closure, and dual-viewport verification. Three
+local-workspace issues remain open for implementation or dependency work;
 #540's boundary decision is resolved, and #534's folder-bridge policy is now
 selected for implementation and Chromium lifecycle verification.
 
@@ -68,7 +68,7 @@ required for the local workspace to function.
 | 7 | [#538](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/538) | Remove local-storage-dashboard horizontal overflow on mobile | #532 evidence; no product dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
 | 8 | [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) | Show remaining browser-origin storage quota for local artwork | #525 storage estimate; no #532 dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
 | 9 | [#540](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/540) | Decide the first offline/downloadable milestone before PWA/native implementation | #532/#533/#537 evidence; owner boundary decision | Stage 2b complex/architecture | DECIDED / offline-first sync selected; scope a follow-up for outbox, conflict, auth recovery, and retry semantics |
-| 10 | [#541](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541) | Open a selected folder as project context with safe archive inspection and copy-in | #526/#532/#534 | Stage 2b complex | DEPENDENCY-BLOCKED / follows #534's native evidence gate |
+| 10 | [#541](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541) | Open a selected folder as project context with safe archive inspection and copy-in | #526/#532/#534 | Stage 2b complex | CLOSED / duplicate of #534; folder bridge remains single-owner |
 | 11 | [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542) | Define offline-first sync outbox, conflict, and recovery contract | #540/#512/#534/#536 | Stage 2b complex/architecture | OPEN / criterion-ready follow-up; no implementation dependency added |
 
 ## Criterion-ready issue contracts

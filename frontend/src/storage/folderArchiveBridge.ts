@@ -193,13 +193,21 @@ export async function getFolderBridgeStatus(
   if (!supportsDirectoryPicker()) return { status: 'unavailable', handle: null };
   const handle = await loadFolderHandle(db);
   if (!handle) return { status: 'prompt', handle: null };
+  return { status: await getHandlePermissionStatus(handle), handle };
+}
+
+export async function getHandlePermissionStatus(
+  handle: FileSystemDirectoryHandleLike,
+): Promise<FolderBridgeStatus> {
   try {
-    const state = await handle.queryPermission({ mode: 'readwrite' });
-    if (state === 'granted') return { status: 'granted', handle };
-    if (state === 'denied') return { status: 'denied', handle };
-    return { status: 'prompt', handle };
+    const writeState = await handle.queryPermission({ mode: 'readwrite' });
+    if (writeState === 'granted') return 'granted';
+    const readState = await handle.queryPermission({ mode: 'read' });
+    if (readState === 'granted') return 'read-only';
+    if (writeState === 'denied' || readState === 'denied') return 'denied';
+    return 'prompt';
   } catch {
-    return { status: 'revoked', handle };
+    return 'revoked';
   }
 }
 

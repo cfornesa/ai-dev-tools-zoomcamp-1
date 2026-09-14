@@ -5,6 +5,7 @@ import { Blob as NodeBlob } from 'node:buffer';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  getHandlePermissionStatus,
   getFolderBridgeStatus,
   listArchiveFiles,
   readArchiveFile,
@@ -107,5 +108,13 @@ describe('folderArchiveBridge', () => {
     const handle = directoryHandle([]);
     vi.spyOn(handle, 'queryPermission').mockResolvedValue('denied');
     await expect(listArchiveFiles(handle)).rejects.toMatchObject({ kind: 'permission-denied' });
+  });
+
+  it('reports a persisted handle as read-only when only read permission remains', async () => {
+    const handle = directoryHandle([]);
+    vi.spyOn(handle, 'queryPermission').mockImplementation(async ({ mode } = {}) =>
+      mode === 'read' ? 'granted' : 'denied',
+    );
+    await expect(getHandlePermissionStatus(handle)).resolves.toBe('read-only');
   });
 });

@@ -20425,8 +20425,14 @@ later backlog-session transactions did.
 - **#534:** OWNER-DECIDED folder approach; implement an optional
   File-System-Access adapter over the IndexedDB-authoritative workspace, with
   ZIP as the cross-platform fallback. Chromium still requires native
-  grant/denial/reload/revocation evidence before closure. Decision comment
-  [5661371085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661371085).
+  grant/denial/reload/revocation evidence before closure. Local implementation
+  commit `fdab960` adds the persisted-handle bridge, safe ZIP filtering,
+  permission/error states, dashboard wiring, and focused tests. Decision
+  comment [5661371085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661371085);
+  implementation evidence [5661599582](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661599582).
+  The rostered external implementation service was unavailable in this thread;
+  the local implementation is explicitly a current-session substitution and
+  remains subject to independent QA.
 - **#535:** CLOSED as a duplicate of completed #532; its file-only archive
   picker, preview, validation, and copy-in contract already has terminal
   implementation and Chromium evidence in #532. The folder-context entry
@@ -20436,8 +20442,9 @@ later backlog-session transactions did.
   active draft/workspace; the selected disk archive owns the durable checkpoint.
   It depends on #535 and the #534/#541 folder-write contract. Clarification
   comment [5661407115](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5661407115).
-- **#541:** PROPOSED/criterion-ready split of #535's folder entry point; it
-  depends on #534 and owns safe folder archive inspection plus explicit copy-in.
+- **#541:** DEPENDENCY-BLOCKED/criterion-ready split of #535's folder entry
+  point; it depends on #534's native evidence gate and owns safe folder archive
+  inspection plus explicit copy-in. Handoff [5661601036](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541#issuecomment-5661601036).
 - **#537:** COMPLETE; commit `d3b9922`; explicit `/local-projects/:id`
   IndexedDB editor route, owner-scoped loading, persistent workspace selection,
   save/cancel navigation guard, responsive checksum layout, focused tests 27

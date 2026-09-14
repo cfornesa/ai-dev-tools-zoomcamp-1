@@ -28,6 +28,7 @@ import {
   computeChecksum,
   createProject,
   createScene,
+  deleteProject,
   getMediaBlob,
   getProject,
   importMediaAsset,
@@ -76,6 +77,7 @@ export type ArchiveManifest = {
   exportedAt: string;
   databaseName: string;
   databaseVersion: number;
+  ownerId?: string;
   projects: ArchiveManifestProject[];
 };
 
@@ -93,6 +95,24 @@ export type ArchiveExportResult = {
   sceneCount: number;
   mediaFileCount: number;
   byteTotal: number;
+};
+
+export type ArchiveProjectSummary = {
+  index: number;
+  title: string;
+  sceneCount: number;
+  mediaFileCount: number;
+  byteTotal: number;
+  checksums: string[];
+};
+
+export type ArchiveInspection = {
+  formatVersion: typeof ARCHIVE_FORMAT_VERSION;
+  projectCount: number;
+  sceneCount: number;
+  mediaFileCount: number;
+  byteTotal: number;
+  projects: ArchiveProjectSummary[];
 };
 
 /**
@@ -238,6 +258,103 @@ export type RestoreArchiveResult = {
   mediaFileCount: number;
 };
 
+/** Reads and verifies a ZIP without opening or mutating IndexedDB. The
+ * returned summaries intentionally omit scene JSON and media bytes so the
+ * dashboard can preview a user-selected archive safely. */
+export async function inspectDatabaseArchive(
+  zipBytes: Uint8Array,
+  ownerId?: string,
+): Promise<ArchiveInspection> {
+  let entries: Record<string, Uint8Array>;
+  try {
+    entries = unzipSync(zipBytes);
+  } catch {
+    throw corruptData('The selected file is not a valid ZIP archive.');
+  }
+  const manifestBytes = entries['manifest.json'];
+  if (!manifestBytes) throw corruptData('Archive is missing manifest.json.');
+  let raw: unknown;
+  try {
+    raw = JSON.parse(strFromU8(manifestBytes));
+  } catch {
+    throw corruptData('Archive manifest.json is not valid JSON.');
+  }
+  validateManifestShape(raw);
+  if (raw.ownerId !== undefined && typeof raw.ownerId !== 'string') {
+    throw corruptData('Archive owner metadata is malformed.');
+  }
+  if (ownerId && raw.ownerId !== undefined && raw.ownerId !== ownerId) {
+    throw corruptData('Archive belongs to a different local owner.');
+  }
+  const projects: ArchiveProjectSummary[] = [];
+  let sceneCount = 0;
+  let mediaFileCount = 0;
+  let byteTotal = 0;
+  for (const project of raw.projects) {
+    let projectBytes = 0;
+    for (const scene of project.scenes) {
+      const path = scenePath(project.index, scene.index);
+      const sceneBytes = entries[path];
+      if (!sceneBytes) throw corruptData(`Archive is missing scene file "${path}".`);
+      try {
+        const parsed: unknown = JSON.parse(strFromU8(sceneBytes));
+        if (!parsed || typeof parsed !== 'object') throw new Error('not an object');
+      } catch {
+        throw corruptData(`Scene file "${path}" is not valid JSON.`);
+      }
+    }
+    const checksums: string[] = [];
+    for (const asset of project.mediaAssets) {
+      const path = mediaPath(project.index, asset.index, asset.mimeType);
+      const bytes = entries[path];
+      if (!bytes) throw corruptData(`Archive is missing media file "${path}".`);
+      if (bytes.byteLength !== asset.byteSize) {
+        throw corruptData(`Media file "${path}" byte size does not match the manifest.`);
+      }
+      const checksum = await computeChecksum(bytes);
+      if (checksum !== asset.checksum)
+        throw corruptData(`Media file "${path}" failed checksum validation.`);
+      checksums.push(checksum);
+      projectBytes += bytes.byteLength;
+    }
+    if (projectBytes > MAX_PROJECT_BYTES) {
+      throw new LocalRepositoryException({
+        kind: 'quota-exceeded',
+        message: `Project "${project.title}" exceeds the local storage bytes limit.`,
+        limit: 'bytes',
+        currentUsage: projectBytes,
+      });
+    }
+    if (project.mediaAssets.length > MAX_PROJECT_FILES) {
+      throw new LocalRepositoryException({
+        kind: 'quota-exceeded',
+        message: `Project "${project.title}" exceeds the local storage files limit.`,
+        limit: 'files',
+        currentUsage: project.mediaAssets.length,
+      });
+    }
+    projects.push({
+      index: project.index,
+      title: project.title,
+      sceneCount: project.scenes.length,
+      mediaFileCount: project.mediaAssets.length,
+      byteTotal: projectBytes,
+      checksums,
+    });
+    sceneCount += project.scenes.length;
+    mediaFileCount += project.mediaAssets.length;
+    byteTotal += projectBytes;
+  }
+  return {
+    formatVersion: ARCHIVE_FORMAT_VERSION,
+    projectCount: projects.length,
+    sceneCount,
+    mediaFileCount,
+    byteTotal,
+    projects,
+  };
+}
+
 /**
  * Restores every project in a previously exported ZIP into brand-new
  * projects owned by `ownerId`, in the *existing* local project database
@@ -253,6 +370,7 @@ export async function restoreDatabaseArchive(
   db: IDBDatabase,
   ownerId: string,
   zipBytes: Uint8Array,
+  options: { projectIndices?: number[] } = {},
 ): Promise<RestoreArchiveResult> {
   let entries: Record<string, Uint8Array>;
   try {
@@ -273,6 +391,12 @@ export async function restoreDatabaseArchive(
   }
   validateManifestShape(manifestRaw);
   const manifest = manifestRaw;
+  if (manifest.ownerId !== undefined && typeof manifest.ownerId !== 'string') {
+    throw corruptData('Archive owner metadata is malformed.');
+  }
+  if (manifest.ownerId !== undefined && manifest.ownerId !== ownerId) {
+    throw corruptData('Archive belongs to a different local owner.');
+  }
 
   // Decode + re-validate every referenced entry up front -- nothing is
   // written to IndexedDB until every project in the archive has passed.
@@ -348,31 +472,43 @@ export async function restoreDatabaseArchive(
   // place, exactly like importing several independent single-project
   // packages in sequence; it never corrupts or deletes anything that
   // existed before the restore.
+  const selected = options.projectIndices
+    ? decodedProjects.filter((project) => options.projectIndices?.includes(project.meta.index))
+    : decodedProjects;
+  if (options.projectIndices && selected.length !== options.projectIndices.length) {
+    throw corruptData('One or more selected archive projects do not exist.');
+  }
   const createdProjects: LocalProjectRecord[] = [];
   let sceneCount = 0;
   let mediaFileCount = 0;
-  for (const decoded of decodedProjects) {
-    const project = await createProject(db, { ownerId, title: decoded.meta.title });
-    for (const scene of decoded.scenes.sort((a, b) => a.meta.position - b.meta.position)) {
-      await createScene(db, ownerId, {
-        projectId: project.id,
-        name: scene.meta.name,
-        sceneJson: scene.sceneJson,
-      });
-      sceneCount += 1;
+  try {
+    for (const decoded of selected) {
+      const project = await createProject(db, { ownerId, title: decoded.meta.title });
+      createdProjects.push(project);
+      for (const scene of decoded.scenes.sort((a, b) => a.meta.position - b.meta.position)) {
+        await createScene(db, ownerId, {
+          projectId: project.id,
+          name: scene.meta.name,
+          sceneJson: scene.sceneJson,
+        });
+        sceneCount += 1;
+      }
+      for (const asset of decoded.assets) {
+        await importMediaAsset(db, {
+          projectId: project.id,
+          blob: new Blob([asset.bytes as BlobPart], { type: asset.meta.mimeType }),
+          mimeType: asset.meta.mimeType,
+          filename: asset.meta.filename,
+          altText: asset.meta.altText,
+        });
+        mediaFileCount += 1;
+      }
+      const reloaded = await getProject(db, ownerId, project.id);
+      if (reloaded) createdProjects[createdProjects.length - 1] = reloaded;
     }
-    for (const asset of decoded.assets) {
-      await importMediaAsset(db, {
-        projectId: project.id,
-        blob: new Blob([asset.bytes as BlobPart], { type: asset.meta.mimeType }),
-        mimeType: asset.meta.mimeType,
-        filename: asset.meta.filename,
-        altText: asset.meta.altText,
-      });
-      mediaFileCount += 1;
-    }
-    const reloaded = await getProject(db, ownerId, project.id);
-    createdProjects.push(reloaded ?? project);
+  } catch (err) {
+    for (const project of createdProjects) await deleteProject(db, ownerId, project.id);
+    throw err;
   }
 
   return {

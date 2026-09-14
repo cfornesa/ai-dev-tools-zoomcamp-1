@@ -41,6 +41,7 @@ vi.mock('../storage/localDatabaseArchive', async () => {
   return {
     ...actual,
     exportDatabaseArchive: vi.fn(),
+    inspectDatabaseArchive: vi.fn(),
     restoreDatabaseArchive: vi.fn(),
   };
 });
@@ -52,6 +53,7 @@ const mockedListScenesForProject = vi.mocked(localProjectRepository.listScenesFo
 const mockedGetProjectUsage = vi.mocked(localProjectRepository.getProjectUsage);
 const mockedExportArchive = vi.mocked(localDatabaseArchive.exportDatabaseArchive);
 const mockedRestoreArchive = vi.mocked(localDatabaseArchive.restoreDatabaseArchive);
+const mockedInspectArchive = vi.mocked(localDatabaseArchive.inspectDatabaseArchive);
 
 const FAKE_DB = { close: vi.fn() } as unknown as IDBDatabase;
 
@@ -119,6 +121,31 @@ beforeEach(() => {
   mockedListProjects.mockResolvedValue([]);
   mockedListScenesForProject.mockResolvedValue([]);
   mockedGetProjectUsage.mockResolvedValue({ bytesUsed: 0, fileCount: 0 });
+  mockedInspectArchive.mockResolvedValue({
+    formatVersion: 1,
+    projectCount: 2,
+    sceneCount: 3,
+    mediaFileCount: 1,
+    byteTotal: 100,
+    projects: [
+      {
+        index: 0,
+        title: 'Imported A',
+        sceneCount: 2,
+        mediaFileCount: 1,
+        byteTotal: 100,
+        checksums: ['abc'],
+      },
+      {
+        index: 1,
+        title: 'Imported B',
+        sceneCount: 1,
+        mediaFileCount: 0,
+        byteTotal: 0,
+        checksums: [],
+      },
+    ],
+  });
 });
 
 describe('AccountLocalStorage', () => {
@@ -388,7 +415,7 @@ describe('AccountLocalStorage: manage local projects', () => {
     expect(await screen.findByText(/deleted "my project"/i)).toBeVisible();
   });
 
-  it('restores an archive selected via the file input', async () => {
+  it('previews and restores selected projects into a named workspace', async () => {
     mockedSnapshot.mockResolvedValue(baseSnapshot());
     mockedListProjects.mockResolvedValue([]);
     mockedRestoreArchive.mockResolvedValue({
@@ -404,14 +431,20 @@ describe('AccountLocalStorage: manage local projects', () => {
     const input = await screen.findByLabelText(/restore from a zip archive/i);
     await user.upload(input, file);
 
+    expect(await screen.findByRole('heading', { name: 'Archive preview' })).toBeVisible();
+    await user.type(screen.getByLabelText('New workspace name'), 'Imported workspace');
+    await user.click(screen.getByRole('button', { name: /restore selected projects/i }));
+
     expect(await screen.findByText(/restored 1 project\(s\), 2 scene\(s\)/i)).toBeVisible();
-    expect(mockedRestoreArchive).toHaveBeenCalledWith(FAKE_DB, 'alice', expect.any(Uint8Array));
+    expect(mockedRestoreArchive).toHaveBeenCalledWith(FAKE_DB, 'alice', expect.any(Uint8Array), {
+      projectIndices: [0, 1],
+    });
   });
 
   it('reports a restore failure without changing local data', async () => {
     mockedSnapshot.mockResolvedValue(baseSnapshot());
     mockedListProjects.mockResolvedValue([]);
-    mockedRestoreArchive.mockRejectedValue(new Error('corrupt'));
+    mockedInspectArchive.mockRejectedValue(new Error('corrupt'));
     const user = userEvent.setup();
     renderPage();
 
@@ -419,6 +452,6 @@ describe('AccountLocalStorage: manage local projects', () => {
     const input = await screen.findByLabelText(/restore from a zip archive/i);
     await user.upload(input, file);
 
-    expect(await screen.findByText(/could not restore that archive/i)).toBeVisible();
+    expect(await screen.findByText(/could not inspect that archive/i)).toBeVisible();
   });
 });

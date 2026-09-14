@@ -1,7 +1,7 @@
 # Local workspace opening, selective retention, and folder access distillation
 
 Status: DISTILLATION COMPLETE — owner-selected browser-local hybrid direction;
-five criterion-ready follow-ups are proposed. No product source or API
+six criterion-ready follow-ups are proposed. No product source or API
 contract changes are made in this phase.
 
 ## Current-state investigation
@@ -16,7 +16,7 @@ contract changes are made in this phase.
   prevented reliably and provides in-app recovery safeguards.
 - #536 defines durable editable save/reopen with bounded IndexedDB recovery;
   #532–#535 cover the related archive, offload, folder bridge, and context
-  workflows.
+  workflows; #537 owns the missing browser-local editor handoff.
 
 ## Owner-selected direction
 
@@ -39,7 +39,8 @@ required for the local workspace to function.
 - #527 covers clear-data warnings and sync-before-clear, not archive browsing,
   offload, or directory handles.
 - Standalone piece exports and account export are different artifact contracts.
-- No open GitHub issue currently covers the three capability boundaries below.
+- The six open GitHub issues below cover distinct capability boundaries; no
+  duplicate open issue was found.
 
 ## Issue manifest and order
 
@@ -50,6 +51,7 @@ required for the local workspace to function.
 | 3 | [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) | Add an optional folder-backed archive bridge with permission and compatibility states | #512/#532; owner-selected hybrid contract | Stage 2b complex | OPEN / criterion-ready, platform-bound |
 | 4 | [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) | Open a selected local file/folder as project context with explicit copy-in semantics | #526/#532; owner-selected hybrid contract | Stage 2b complex | OPEN / dependency-blocked on #532 |
 | 5 | [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) | Save editable browser workspaces durably to disk and reopen them with bounded IndexedDB recovery | #512/#526/#535 | Stage 2b complex | OPEN / criterion-ready |
+| 6 | [#537](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537) | Hand restored local projects into a browser-local editor route with workspace switching | #532 | Stage 2b complex | OPEN / criterion-ready |
 
 ## Criterion-ready issue contracts
 
@@ -110,10 +112,15 @@ must provide validated file export/import fallback.
   semantics; it must not invent a second archive format.
 - Issue 3 is independent of issue 2 but browser-platform-bound; unsupported
   APIs are a verification boundary, not an implementation failure.
+- The prior editor-handoff criterion was split into #537 because the current
+  repository has no browser-local editor route or loader.
 - No new vendor dependency is required.
 
 ## Next transaction
 
-Create and groom [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536)
-only: durable editable save/reopen with bounded IndexedDB recovery. Do not
-implement product behavior during distillation.
+Create and groom [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532)
+only: selected ZIP inspection, named workspace identity, and atomic selective
+restore. After #532 reaches a terminal state, #533 and #534 may be considered
+in dependency order; #535 follows the selected-ZIP contract, and #536 follows
+#535, and #537 follows #532. Do not implement product behavior during
+distillation.

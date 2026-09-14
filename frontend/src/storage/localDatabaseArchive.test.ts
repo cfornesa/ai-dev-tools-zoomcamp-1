@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   ARCHIVE_FORMAT_VERSION,
   exportDatabaseArchive,
+  inspectDatabaseArchive,
   restoreDatabaseArchive,
 } from './localDatabaseArchive';
 import {
@@ -151,6 +152,40 @@ describe('restoreDatabaseArchive', () => {
     expect(scenes[0].sceneJson).toEqual({ shapes: [] });
     const assets = await listMediaAssetsForProject(db, projects[0].id);
     expect(assets).toHaveLength(1);
+  });
+
+  it('inspects a ZIP and verifies checksums without writing to IndexedDB', async () => {
+    const zipBytes = await exportedZipBytes('inspect-owner', 'Preview me');
+    const db = await openLocalProjectDatabase();
+    const before = await listProjectsForOwner(db, 'inspect-owner');
+
+    const inspection = await inspectDatabaseArchive(zipBytes, 'inspect-owner');
+
+    expect(inspection.projects).toEqual([
+      expect.objectContaining({ title: 'Preview me', sceneCount: 1, mediaFileCount: 1 }),
+    ]);
+    expect(await listProjectsForOwner(db, 'inspect-owner')).toEqual(before);
+  });
+
+  it('restores only the selected archive project indices', async () => {
+    const db = await openLocalProjectDatabase();
+    const first = await createProject(db, { ownerId: 'select-owner', title: 'First' });
+    await createScene(db, 'select-owner', { projectId: first.id, name: 'S1', sceneJson: {} });
+    const second = await createProject(db, { ownerId: 'select-owner', title: 'Second' });
+    await createScene(db, 'select-owner', { projectId: second.id, name: 'S2', sceneJson: {} });
+    const exported = await exportDatabaseArchive(db, 'select-owner');
+    const zipBytes = new Uint8Array(await exported.blob.arrayBuffer());
+    const secondIndex = (await inspectDatabaseArchive(zipBytes)).projects.find(
+      (project) => project.title === 'Second',
+    )?.index;
+    expect(secondIndex).toBeTypeOf('number');
+    const restored = await restoreDatabaseArchive(db, 'select-owner', zipBytes, {
+      projectIndices: [secondIndex as number],
+    });
+
+    expect(restored.projectCount).toBe(1);
+    expect(restored.projects[0].title).toBe('Second');
+    expect(await listProjectsForOwner(db, 'select-owner')).toHaveLength(3);
   });
 
   it('generates a new project id even when restoring into a database with the original data', async () => {

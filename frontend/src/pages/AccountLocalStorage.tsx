@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
-import { exportDatabaseArchive, restoreDatabaseArchive } from '../storage/localDatabaseArchive';
+import {
+  exportDatabaseArchive,
+  inspectDatabaseArchive,
+  restoreDatabaseArchive,
+  type ArchiveInspection,
+} from '../storage/localDatabaseArchive';
 import {
   deleteProject,
   getProjectUsage,
@@ -81,6 +86,27 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+type LocalWorkspace = { name: string; projectIds: string[] };
+const workspaceStorageKey = (ownerId: string) => `creatrart:local-workspaces:${ownerId}`;
+
+function readWorkspaces(ownerId: string): Record<string, LocalWorkspace> {
+  try {
+    const raw = window.localStorage.getItem(workspaceStorageKey(ownerId));
+    if (raw) return JSON.parse(raw) as Record<string, LocalWorkspace>;
+  } catch {
+    // A blocked/full localStorage must not make the IndexedDB workspace unusable.
+  }
+  return { active: { name: 'Active workspace', projectIds: [] } };
+}
+
+function writeWorkspaces(ownerId: string, workspaces: Record<string, LocalWorkspace>) {
+  try {
+    window.localStorage.setItem(workspaceStorageKey(ownerId), JSON.stringify(workspaces));
+  } catch {
+    // Workspace labels are convenience metadata; project data remains in IndexedDB.
+  }
+}
+
 /** Issue #526: per-project export/delete plus whole-database export and
  * restore-from-file, for the local project database only -- the drafts
  * database has no comparable per-project archive concept. */
@@ -93,6 +119,14 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [workspaces, setWorkspaces] = useState<Record<string, LocalWorkspace>>(() =>
+    readWorkspaces(ownerId),
+  );
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState('active');
+  const [archivePreview, setArchivePreview] = useState<ArchiveInspection | null>(null);
+  const [archiveBytes, setArchiveBytes] = useState<Uint8Array | null>(null);
+  const [selectedArchiveIndices, setSelectedArchiveIndices] = useState<number[]>([]);
+  const [workspaceName, setWorkspaceName] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -134,6 +168,12 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
       cancelled = true;
     };
   }, [ownerId, refreshKey]);
+
+  useEffect(() => {
+    const next = readWorkspaces(ownerId);
+    setWorkspaces(next);
+    setSelectedWorkspaceId('active');
+  }, [ownerId]);
 
   async function exportProject(project: LocalProjectRecord) {
     setBusyId(project.id);
@@ -186,27 +226,71 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
     }
   }
 
-  async function restoreFromFile(file: File) {
+  async function inspectArchive(file: File) {
+    setMessage(null);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const inspection = await inspectDatabaseArchive(bytes, ownerId);
+      setArchiveBytes(bytes);
+      setArchivePreview(inspection);
+      setSelectedArchiveIndices(inspection.projects.map((project) => project.index));
+      setWorkspaceName('');
+      setMessage('Archive verified. Choose projects and a workspace name before restoring.');
+    } catch {
+      setMessage(
+        'Could not inspect that archive. It may be corrupted or in an unrecognized format. No local data was changed.',
+      );
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function restoreSelectedArchive() {
+    if (
+      !archiveBytes ||
+      !archivePreview ||
+      !workspaceName.trim() ||
+      selectedArchiveIndices.length === 0
+    )
+      return;
     setBusyId('__restore__');
     setMessage(null);
     try {
-      const zipBytes = new Uint8Array(await file.arrayBuffer());
       const db = await openLocalProjectDatabase();
-      const result = await restoreDatabaseArchive(db, ownerId, zipBytes);
+      const result = await restoreDatabaseArchive(db, ownerId, archiveBytes, {
+        projectIndices: selectedArchiveIndices,
+      });
       db.close();
+      const id = crypto.randomUUID();
+      const next = {
+        ...workspaces,
+        [id]: {
+          name: workspaceName.trim(),
+          projectIds: result.projects.map((project) => project.id),
+        },
+      };
+      writeWorkspaces(ownerId, next);
+      setWorkspaces(next);
+      setSelectedWorkspaceId(id);
+      setArchivePreview(null);
+      setArchiveBytes(null);
       setMessage(
-        `Restored ${result.projectCount} project(s), ${result.sceneCount} scene(s), ${result.mediaFileCount} media file(s) as new project(s).`,
+        `Restored ${result.projectCount} project(s), ${result.sceneCount} scene(s), ${result.mediaFileCount} media file(s) into "${workspaceName.trim()}".`,
       );
       setRefreshKey((k) => k + 1);
     } catch {
       setMessage(
-        'Could not restore that archive. It may be corrupted or in an unrecognized format. No local data was changed.',
+        'Could not restore that archive. No active or existing workspace data was changed.',
       );
     } finally {
       setBusyId(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
+
+  const selectedProjectIds = new Set(workspaces[selectedWorkspaceId]?.projectIds ?? []);
+  const visibleProjects = projects?.filter(
+    (project) => selectedWorkspaceId === 'active' || selectedProjectIds.has(project.id),
+  );
 
   return (
     <section aria-label="Manage local projects: export, restore, and delete">
@@ -238,19 +322,91 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
           disabled={busyId !== null}
           onChange={(event) => {
             const file = event.target.files?.[0];
-            if (file) void restoreFromFile(file);
+            if (file) void inspectArchive(file);
           }}
         />
       </div>
+      <label htmlFor="local-workspace-select">Workspace</label>
+      <select
+        id="local-workspace-select"
+        value={selectedWorkspaceId}
+        onChange={(event) => setSelectedWorkspaceId(event.target.value)}
+      >
+        {Object.entries(workspaces).map(([id, workspace]) => (
+          <option key={id} value={id}>
+            {workspace.name}
+          </option>
+        ))}
+      </select>
+      {archivePreview && (
+        <section aria-label="Inspect archive before restore">
+          <h4>Archive preview</h4>
+          <p>
+            {archivePreview.projectCount} project(s), {archivePreview.sceneCount} scene(s),{' '}
+            {archivePreview.mediaFileCount} media file(s), {formatBytes(archivePreview.byteTotal)}.
+          </p>
+          <label htmlFor="workspace-name">New workspace name</label>
+          <input
+            id="workspace-name"
+            value={workspaceName}
+            onChange={(event) => setWorkspaceName(event.target.value)}
+          />
+          <ul>
+            {archivePreview.projects.map((project) => (
+              <li key={project.index}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={selectedArchiveIndices.includes(project.index)}
+                    onChange={(event) =>
+                      setSelectedArchiveIndices((current) =>
+                        event.target.checked
+                          ? [...current, project.index]
+                          : current.filter((index) => index !== project.index),
+                      )
+                    }
+                  />{' '}
+                  {project.title} — {project.sceneCount} scene(s), {project.mediaFileCount} media
+                  file(s), {formatBytes(project.byteTotal)}
+                </label>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => void restoreSelectedArchive()}
+            disabled={
+              busyId !== null || !workspaceName.trim() || selectedArchiveIndices.length === 0
+            }
+          >
+            {busyId === '__restore__' ? 'Restoring…' : 'Restore selected projects'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setArchivePreview(null);
+              setArchiveBytes(null);
+            }}
+          >
+            Cancel
+          </button>
+        </section>
+      )}
       <p className="intro">
         An exported ZIP is your responsibility to keep safe -- it is never uploaded anywhere by this
         app. Restoring an archive always creates brand-new project(s); it never overwrites an
         existing one.
       </p>
-      {projects && projects.length === 0 && <p>No local projects yet.</p>}
-      {projects && projects.length > 0 && (
+      {visibleProjects && visibleProjects.length === 0 && (
+        <p>
+          {selectedWorkspaceId === 'active'
+            ? 'No local projects yet.'
+            : 'No projects in this workspace yet.'}
+        </p>
+      )}
+      {visibleProjects && visibleProjects.length > 0 && (
         <ul className="local-storage-project-list">
-          {projects.map((project) => (
+          {visibleProjects.map((project) => (
             <li key={project.id} aria-label={project.title}>
               <span>{project.title}</span>
               <div className="local-storage-actions">

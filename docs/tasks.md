@@ -20199,6 +20199,38 @@ issues were classified as covered or prerequisites; no product implementation
 was performed during distillation. A proposed durable-memory topic for the
 origin-wide quota/external-browser-clearing limitation awaits owner approval.
 
+## 377. Task-distillation and grooming for #531 production schema incident (2026-09-14)
+
+Manifest: one discovered actionable issue, #531, and no duplicate or
+independent open issue in this project. The user-reported production failure
+was reproduced first in the authenticated live browser (`GET
+/api/projects3d/` = 500; `GET /api/projects/` = 200), then confirmed directly
+against the Replit Production Database with a read-only SQL query. The
+production `scenes_sceneversion3d` table lacks `source_project_id` and
+`source_version_id`; `scenes_sceneconversionrun` is absent; and neither
+`scenes.0061_scene_conversion_run` nor
+`scenes.0062_seed_convert_3d_feature_key` appears in `django_migrations`.
+
+Closure contract: (1) non-destructive Replit schema reconciliation/republish
+must add the two existing-table columns and the conversion-run table; (2)
+production Plan rows must contain `ai_scene_convert_3d` because 0062 is a
+data-only migration and cannot be inferred from schema presence; (3) the
+authenticated production 3D list endpoint must return successfully for a user
+with an existing 3D project; and (4) the live Home page must render the
+project list without its load-error message. The exact production URL and
+real signed-in browser are the evidence boundary. Destructive conflict
+options, blanket `manage.py migrate` against the production ledger, and
+historical migration re-auditing are out of scope.
+
+Routing hint: deployment/schema reconciliation with complex data-layer impact;
+no product source change is currently indicated. Focused backend verification
+passed 46/46. Full `make check` passed: backend 1,309 passed / 39 skipped and
+frontend 2,641 passed. The transaction is now `GROOMED → ENGINEERING` and is
+blocked only on the production repair/verification action. A GitHub comment
+was attempted but rejected by the connector's sensitive-egress safeguard;
+the evidence is retained here and in the working session record, not sent by
+workaround.
+
 ## 376. Backlog-session batch #523-#530 and production-readiness gate (2026-09-14)
 
 Status: BATCH COMPLETE, one follow-up filed. All eight issues from entry #375

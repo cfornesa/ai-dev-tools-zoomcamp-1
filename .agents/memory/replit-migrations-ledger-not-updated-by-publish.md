@@ -135,3 +135,24 @@ these two columns), then delete the legacy row. Verified independently
 via direct read-only SQL against the Production Database panel before
 closing the issue, not accepted on the owner-reported script output
 alone.
+
+**2026-09-14 recurrence, this time on an existing table's new columns:**
+[issue #531](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/531)
+— after publishing issue #528's `0061_scene_conversion_run` migration
+(which both creates a brand-new table, `scenes_sceneconversionrun`, and
+adds two new columns, `source_project_id`/`source_version_id`, to the
+*existing* `scenes_sceneversion3d` table), `GET /api/projects3d/`
+started 500ing in production while the new-table-adjacent
+`/api/scene-conversions/` route resolved fine (its 405-on-GET response
+confirms the view/URL code deployed; it just never reached the DB).
+Consistent with this topic's core finding: a brand-new table is the
+condition Replit's diff reliably detects, while a column addition to a
+table that already exists is not. Root cause unconfirmed (no production
+DB/log access this session) — first thing to try per the note above:
+retry the Publish with zero code changes before escalating. Separately,
+`0062_seed_convert_3d_feature_key.py` is a pure-`RunPython` data
+migration with no schema component at all, landing in the exact same
+publish — per the `0031`/generalized-rule notes above, check whether it
+actually ran (every production `Plan` row's `feature_keys` should include
+`"ai_scene_convert_3d"`) independently of whatever fixes the column
+issue; nothing about the 500 symptom would surface that one.

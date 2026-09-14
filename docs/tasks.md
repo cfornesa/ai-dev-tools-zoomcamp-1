@@ -20198,3 +20198,42 @@ agentic, local-first, cloud-backup, retention, draft-recovery, and export
 issues were classified as covered or prerequisites; no product implementation
 was performed during distillation. A proposed durable-memory topic for the
 origin-wide quota/external-browser-clearing limitation awaits owner approval.
+
+## 376. Backlog-session batch #523-#530 and production-readiness gate (2026-09-14)
+
+Status: BATCH COMPLETE, one follow-up filed. All eight issues from entry #375
+(#523-#530, #529 having spawned a corrected #530) were implemented, tested,
+and QA-reconciled, each closed with its own GitHub QA comment; #527's
+live-browser verification boundary was reported incomplete there rather than
+claimed. #528 ("AI-assisted 2D-to-3D conversion") was the largest: a new
+bounded `SceneConversionRun` model/service mirroring `AIRun`'s
+plan-validate-revise mechanics but creating a brand-new `Project3D` on
+accept, `AIScene3DProvider.convert_scene_2d_to_3d` across Mistral/Gemini/
+e2e-fake providers, a new `ai_scene_convert_3d` entitlement bucket, and a
+frontend "Convert to 3D" panel — migrations `0061_scene_conversion_run` and
+`0062_seed_convert_3d_feature_key`.
+
+The production-readiness gate (Sonnet 5, Medium effort, no delegation) found
+0 open issues/PRs, a clean fast-forwarded `main`, full green CI on
+`15ff83e` ([run 34804314942](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/34804314942)),
+and live-browser evidence for #528 at both 1280x900 and 375x812. It flagged
+two non-blocking process gaps for session-completion to carry forward: no
+per-issue completion entries were appended to this file during the batch
+(GitHub QA comments carry the actual evidence instead), and no
+`second-opinion-review` (independent-model-family review) stage was invoked
+for any of the eight issues.
+
+After the owner's own Replit republish, live verification against
+`https://augmentrart.com` (real signed-in session) found `GET
+/api/projects3d/` returning a bare `500`, breaking the Home page's project
+list — isolated to the 3D endpoint specifically (`/api/projects/` 2D and
+`/health/` both healthy). Filed as
+[#531](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/531): the
+leading hypothesis is the same Replit-publish schema-diff gap #238/#467
+already documented, this time missing the `source_project_id`/
+`source_version_id` columns `0061` added to the existing
+`scenes_sceneversion3d` table (a new-table-adjacent route, `/api/
+scene-conversions/`, resolves fine — its 405-on-GET response confirms the
+routing/view code itself deployed). No production database or Replit
+deployment-log access was available in this session to confirm the root
+cause or apply a fix; #531 is left for a session with that access.

@@ -20427,9 +20427,11 @@ later backlog-session transactions did.
   ZIP as the cross-platform fallback. Chromium still requires native
   grant/denial/reload/revocation evidence before closure. Decision comment
   [5661371085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661371085).
-- **#535:** GROOMED as the file-only archive-context issue; #541 now owns the
-  folder-context entry point. It can proceed independently of #534. Prior
-  handoff [5660732408](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535#issuecomment-5660732408).
+- **#535:** CLOSED as a duplicate of completed #532; its file-only archive
+  picker, preview, validation, and copy-in contract already has terminal
+  implementation and Chromium evidence in #532. The folder-context entry
+  point is now #541. Reconciliation comment
+  [5661426355](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535#issuecomment-5661426355).
 - **#536:** GROOMED with an explicit authority boundary: IndexedDB owns the
   active draft/workspace; the selected disk archive owns the durable checkpoint.
   It depends on #535 and the #534/#541 folder-write contract. Clarification
@@ -20453,9 +20455,9 @@ later backlog-session transactions did.
   The mandated Opus 5/Sonnet 5 readiness tier was unavailable, so the formal
   readiness gate was not run and is not being represented as a pass.
 - **Session-completion result:** terminal-status audit must be refreshed after
-  the #535 split and new #541 issue. The prior discovered-9 rollup is stale;
-  current reconciliation is discovered 10, completed 5, with #534, #536, and
-  #541 still open for implementation/dependency work and #535 groomed. Routing
+  the #535 duplicate reconciliation and new #541 issue. Current reconciliation
+  is discovered 10, completed 6 (including #535's duplicate closure), with
+  #534, #536, and #541 still open for implementation/dependency work. Routing
   audit remains incomplete for the unavailable
   independent second-opinion and readiness-gate stages; all substitutions are
   explicitly identified in this ledger and no issue was silently closed.

@@ -1,9 +1,10 @@
 import { useEffect, useState, type MouseEvent } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
 import { exportDatabaseArchive } from '../storage/localDatabaseArchive';
 import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiveBridge';
+import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
 import {
   getProject,
   listMediaAssetsForProject,
@@ -31,6 +32,7 @@ function downloadBlob(blob: Blob, filename: string): void {
 function LocalEditorWorkspace() {
   const { id } = useParams<{ id: string }>();
   const auth = useAuth();
+  const navigate = useNavigate();
   const [state, setState] = useState<LocalEditorState>('loading');
   const [project, setProject] = useState<LocalProjectRecord | null>(null);
   const [scenes, setScenes] = useState<LocalSceneRecord[]>([]);
@@ -40,6 +42,9 @@ function LocalEditorWorkspace() {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [checkpointBusy, setCheckpointBusy] = useState(false);
+  const [recoveryDraftId, setRecoveryDraftId] = useState<string | null>(null);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
 
   useEffect(() => {
     if (auth.status !== 'signed-in' || !id) return;
@@ -55,9 +60,10 @@ function LocalEditorWorkspace() {
           setState('missing');
           return;
         }
-        const [loadedScenes, loadedAssets] = await Promise.all([
+        const [loadedScenes, loadedAssets, latestRecovery] = await Promise.all([
           listScenesForProject(db, id),
           listMediaAssetsForProject(db, id),
+          getLatestRecoveryDraft(db, auth.user.username, id).catch(() => null),
         ]);
         db.close();
         const firstScene = loadedScenes[0] ?? null;
@@ -66,6 +72,7 @@ function LocalEditorWorkspace() {
         setAssets(loadedAssets);
         setSelectedSceneId(firstScene?.id ?? null);
         setSceneName(firstScene?.name ?? '');
+        setRecoveryDraftId(latestRecovery?.id ?? null);
         setState('ready');
       } catch {
         if (!cancelled) setState('error');
@@ -75,6 +82,35 @@ function LocalEditorWorkspace() {
       cancelled = true;
     };
   }, [auth, id]);
+
+  useEffect(() => {
+    if (!dirty || !selectedScene || !id || auth.status !== 'signed-in') return;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        let db: IDBDatabase | undefined;
+        try {
+          db = await openLocalProjectDatabase();
+          await updateScene(db, selectedScene.id, {
+            name: sceneName.trim() || selectedScene.name,
+          });
+          const archive = await exportDatabaseArchive(db, auth.user.username, {
+            projectIds: [id],
+          });
+          const recovery = await appendRecoveryDraft(db, {
+            ownerId: auth.user.username,
+            projectId: id,
+            archive: archive.blob,
+          });
+          setRecoveryDraftId(recovery.id);
+        } catch {
+          // Recovery is best effort and must never interrupt the active edit.
+        } finally {
+          db?.close();
+        }
+      })();
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [auth, dirty, id, sceneName, selectedScene]);
 
   if (auth.status === 'loading') return null;
   if (auth.status !== 'signed-in') return <Navigate to="/" replace />;
@@ -99,22 +135,73 @@ function LocalEditorWorkspace() {
     );
   }
 
-  const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
-
   async function saveScene() {
     if (!selectedScene || !id) return;
+    let db: IDBDatabase | undefined;
     try {
-      const db = await openLocalProjectDatabase();
+      db = await openLocalProjectDatabase();
       const updated = await updateScene(db, selectedScene.id, {
         name: sceneName.trim() || selectedScene.name,
       });
-      db.close();
+      let recoveryId: string | null = null;
+      try {
+        const archive = await exportDatabaseArchive(db, auth.user!.username, {
+          projectIds: [id],
+        });
+        const recovery = await appendRecoveryDraft(db, {
+          ownerId: auth.user!.username,
+          projectId: id,
+          archive: archive.blob,
+        });
+        recoveryId = recovery.id;
+      } catch {
+        // A recovery snapshot is best effort; the active IndexedDB scene save
+        // remains authoritative even when snapshot storage is unavailable.
+      }
       setScenes((current) => current.map((scene) => (scene.id === updated.id ? updated : scene)));
       setSceneName(updated.name);
       setDirty(false);
-      setMessage('Saved local scene changes to this browser.');
+      if (recoveryId) setRecoveryDraftId(recoveryId);
+      setMessage(
+        recoveryId
+          ? 'Saved local scene changes to this browser.'
+          : 'Saved local scene changes; a recovery snapshot was unavailable.',
+      );
     } catch {
       setMessage('Could not save local scene changes. Your draft remains on screen.');
+    } finally {
+      db?.close();
+    }
+  }
+
+  async function recoverLatestDraft() {
+    if (!project || !id || !recoveryDraftId || recoveryBusy) return;
+    setRecoveryBusy(true);
+    setMessage(null);
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      const latest = await getLatestRecoveryDraft(db, auth.user!.username, id);
+      if (!latest) {
+        setRecoveryDraftId(null);
+        setMessage('The recovery draft is no longer available.');
+        return;
+      }
+      const { restoreDatabaseArchive } = await import('../storage/localDatabaseArchive');
+      const restored = await restoreDatabaseArchive(
+        db,
+        auth.user!.username,
+        new Uint8Array(await latest.archive.arrayBuffer()),
+      );
+      const recovered = restored.projects[0];
+      if (!recovered) throw new Error('Recovery archive did not contain a project.');
+      setMessage('Recovered the latest browser-local draft in a fresh workspace.');
+      navigate(`/local-projects/${recovered.id}?workspace=recovered`);
+    } catch {
+      setMessage('Could not recover the latest draft. The active workspace was preserved.');
+    } finally {
+      db?.close();
+      setRecoveryBusy(false);
     }
   }
 
@@ -181,6 +268,14 @@ function LocalEditorWorkspace() {
       </p>
       <h2>{project.title}</h2>
       <p>Local editor — this project is loaded from this browser&apos;s IndexedDB.</p>
+      {recoveryDraftId && (
+        <p role="status">
+          A browser-local recovery draft is available.
+          <button type="button" onClick={() => void recoverLatestDraft()} disabled={recoveryBusy}>
+            {recoveryBusy ? 'Recovering…' : 'Recover latest draft'}
+          </button>
+        </p>
+      )}
       {message && (
         <p role="status" aria-live="polite">
           {message}

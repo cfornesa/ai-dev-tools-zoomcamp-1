@@ -14,17 +14,18 @@
  * specified in issue #512. Every future schema change ships as a new,
  * numbered upgrade step appended to `UPGRADE_STEPS` below (keyed to the
  * target version), so upgrades compose instead of rewriting history; this
- * issue ships only step 1 (the initial schema).
+ * issue ships steps 1 (the initial schema) and 2 (bounded recovery drafts).
  */
 
 export const DB_NAME = 'creatrart-local-projects';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export const STORE_PROJECTS = 'projects';
 export const STORE_SCENES = 'scenes';
 export const STORE_MEDIA_ASSETS = 'mediaAssets';
 export const STORE_MEDIA_BLOBS = 'mediaBlobs';
 export const STORE_META = 'meta';
+export const STORE_RECOVERY_DRAFTS = 'recoveryDrafts';
 
 const OBJECT_STORE_NAMES = [
   STORE_PROJECTS,
@@ -32,6 +33,7 @@ const OBJECT_STORE_NAMES = [
   STORE_MEDIA_ASSETS,
   STORE_MEDIA_BLOBS,
   STORE_META,
+  STORE_RECOVERY_DRAFTS,
 ] as const;
 
 /** #512's recorded quota: exactly 50MB of blob bytes and 100 media assets,
@@ -211,6 +213,14 @@ export type LocalMediaBlobRecord = {
   blob: Blob;
 };
 
+export type LocalRecoveryDraftRecord = {
+  id: string;
+  projectId: string;
+  ownerId: string;
+  savedAt: string;
+  archive: Blob;
+};
+
 type MetaSchemaVersionRecord = {
   key: 'schemaVersion';
   value: number;
@@ -232,8 +242,8 @@ function usageMetaKey(projectId: string): string {
 /** One isolated migration step per target DB version. Step `n` runs when
  * upgrading *to* version `n` (i.e. `event.oldVersion < n <= DB_VERSION`),
  * receiving the open upgrade transaction and the database handle. This
- * issue ships only step 1 (the initial schema); a future schema change
- * appends a new step here rather than editing this one. */
+ * issue ships steps 1 and 2; future schema changes append a new step here
+ * rather than editing an existing one. */
 const UPGRADE_STEPS: Array<(db: IDBDatabase, tx: IDBTransaction) => void> = [
   // Step 1 (version 1): initial schema.
   (db) => {
@@ -254,6 +264,13 @@ const UPGRADE_STEPS: Array<(db: IDBDatabase, tx: IDBTransaction) => void> = [
     }
     if (!db.objectStoreNames.contains(STORE_META)) {
       db.createObjectStore(STORE_META, { keyPath: 'key' });
+    }
+  },
+  // Step 2: bounded, browser-local recovery archives for issue #536.
+  (db) => {
+    if (!db.objectStoreNames.contains(STORE_RECOVERY_DRAFTS)) {
+      const drafts = db.createObjectStore(STORE_RECOVERY_DRAFTS, { keyPath: 'id' });
+      drafts.createIndex('by_project_saved_at', ['projectId', 'savedAt'], { unique: false });
     }
   },
 ];

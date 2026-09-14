@@ -63,7 +63,7 @@ describe('localProjectRepository', () => {
     const db = await openLocalProjectDatabase();
     expect(db.name).toBe(DB_NAME);
     expect(Array.from(db.objectStoreNames).sort()).toEqual(
-      ['mediaAssets', 'mediaBlobs', 'meta', 'projects', 'scenes'].sort(),
+      ['mediaAssets', 'mediaBlobs', 'meta', 'projects', 'recoveryDrafts', 'scenes'].sort(),
     );
     const tx = db.transaction(STORE_META, 'readonly');
     const req = tx.objectStore(STORE_META).get('schemaVersion');
@@ -71,7 +71,7 @@ describe('localProjectRepository', () => {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
-    expect(value).toEqual({ key: 'schemaVersion', value: 1 });
+    expect(value).toEqual({ key: 'schemaVersion', value: 2 });
     db.close();
   });
 
@@ -91,7 +91,7 @@ describe('localProjectRepository', () => {
     // to simulate corruption/partial-schema without going through this
     // module's own upgrade path.
     await new Promise<void>((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, 1);
+      const req = indexedDB.open(DB_NAME, 2);
       req.onupgradeneeded = () => {
         req.result.createObjectStore('projects', { keyPath: 'id' });
         // Deliberately omit scenes/mediaAssets/mediaBlobs/meta.

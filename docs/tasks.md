@@ -20434,9 +20434,11 @@ later backlog-session transactions did.
   action that restores into a fresh active workspace. Recovery snapshots are
   recorded after local saves and the idle autosave window; recovery failure
   does not interrupt active IndexedDB editing. The full frontend gate now
-  passes with 218 test files / 2,656 tests, typecheck, format-check, and lint
-  (existing warnings only). Active Chromium editor lifecycle evidence,
-  `make check`, independent QA, and production readiness remain outstanding.
+  passes with 218 test files / 2,656 tests, and the repository-wide `make
+  check` passes with backend 1,309 passed/39 skipped, frontend 2,656 passed,
+  typecheck, format-check, and lint (existing warnings only). Active Chromium
+  editor lifecycle evidence, independent QA, and production readiness remain
+  outstanding.
   GitHub update:
   [5661946081](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5661946081).
 

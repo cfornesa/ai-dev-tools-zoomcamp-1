@@ -20426,8 +20426,9 @@ later backlog-session transactions did.
   File-System-Access adapter over the IndexedDB-authoritative workspace, with
   ZIP as the cross-platform fallback. Chromium still requires native
   grant/denial/reload/revocation evidence before closure. Local implementation
-  commit `fdab960` adds the persisted-handle bridge, safe ZIP filtering,
-  permission/error states, dashboard wiring, and focused tests. Decision
+  commit `fdab960` plus lifecycle fix `78a4a92` add the persisted-handle bridge,
+  safe ZIP filtering, read-only/permission/error states, dashboard wiring, and
+  focused tests. Full frontend tests pass 2654. Decision
   comment [5661371085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661371085);
   implementation evidence [5661599582](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661599582).
   The rostered external implementation service was unavailable in this thread;

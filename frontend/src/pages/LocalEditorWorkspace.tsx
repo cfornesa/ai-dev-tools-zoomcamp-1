@@ -2,6 +2,8 @@ import { useEffect, useState, type MouseEvent } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { exportDatabaseArchive } from '../storage/localDatabaseArchive';
+import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiveBridge';
 import {
   getProject,
   listMediaAssetsForProject,
@@ -15,6 +17,17 @@ import {
 
 type LocalEditorState = 'loading' | 'ready' | 'missing' | 'error';
 
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 function LocalEditorWorkspace() {
   const { id } = useParams<{ id: string }>();
   const auth = useAuth();
@@ -26,6 +39,7 @@ function LocalEditorWorkspace() {
   const [sceneName, setSceneName] = useState('');
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [checkpointBusy, setCheckpointBusy] = useState(false);
 
   useEffect(() => {
     if (auth.status !== 'signed-in' || !id) return;
@@ -104,6 +118,44 @@ function LocalEditorWorkspace() {
     }
   }
 
+  async function saveDurableCheckpoint() {
+    const ownerId = auth.user?.username;
+    if (!project || !id || !ownerId || dirty) {
+      setMessage(
+        'Save or cancel the current local scene changes before writing a durable checkpoint.',
+      );
+      return;
+    }
+    setCheckpointBusy(true);
+    setMessage(null);
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      const result = await exportDatabaseArchive(db, ownerId, { projectIds: [id] });
+      const bridge = await getFolderBridgeStatus(db);
+      if (bridge.handle && bridge.status === 'granted') {
+        await writeArchiveFile(
+          bridge.handle,
+          `${project.title.replace(/[^\w.-]+/g, '_') || 'project'}.zip`,
+          result.blob,
+        );
+        setMessage('Durable checkpoint saved to the selected archive folder.');
+      } else {
+        downloadBlob(result.blob, `${project.title.replace(/[^\w.-]+/g, '_') || 'project'}.zip`);
+        setMessage(
+          'Durable checkpoint exported as a ZIP download. Direct folder writing is unavailable here.',
+        );
+      }
+    } catch {
+      setMessage(
+        'Could not write the durable checkpoint. The active IndexedDB workspace was preserved.',
+      );
+    } finally {
+      db?.close();
+      setCheckpointBusy(false);
+    }
+  }
+
   function switchScene(nextId: string) {
     if (dirty) {
       setMessage('Save or cancel the current local scene changes before switching scenes.');
@@ -172,6 +224,13 @@ function LocalEditorWorkspace() {
               Cancel changes
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => void saveDurableCheckpoint()}
+            disabled={dirty || checkpointBusy}
+          >
+            {checkpointBusy ? 'Writing checkpoint…' : 'Save durable checkpoint'}
+          </button>
           <p>Scene JSON is available locally and remains scoped to this project.</p>
         </>
       ) : (

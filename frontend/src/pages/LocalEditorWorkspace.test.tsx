@@ -103,10 +103,12 @@ describe('LocalEditorWorkspace', () => {
 
     expect(screen.getByRole('button', { name: 'Save local changes' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Cancel changes' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Save durable checkpoint' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Save local changes' }));
 
     expect(mockedUpdateScene).toHaveBeenCalledWith(db, 's1', { name: 'Unsaved scene' });
     expect(await screen.findByRole('status')).toHaveTextContent(/saved local scene changes/i);
+    expect(screen.getByRole('button', { name: 'Save durable checkpoint' })).toBeEnabled();
   });
 
   it('does not expose a missing or foreign local project', async () => {

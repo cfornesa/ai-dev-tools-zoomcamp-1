@@ -9,6 +9,17 @@ import {
   type ArchiveInspection,
 } from '../storage/localDatabaseArchive';
 import {
+  clearFolderHandle,
+  getFolderBridgeStatus,
+  listArchiveFiles,
+  pickFolder,
+  readArchiveFile,
+  saveFolderHandle,
+  writeArchiveFile,
+  type FileSystemDirectoryHandleLike,
+  type FolderBridgeStatus,
+} from '../storage/folderArchiveBridge';
+import {
   deleteProject,
   getProjectUsage,
   listProjectsForOwner,
@@ -41,6 +52,15 @@ function kindLabel(kind: DatabaseSummary['kind']): string {
   if (kind === 'active') return 'Active';
   if (kind === 'legacy_recovery') return 'Legacy / recovery';
   return 'Archived';
+}
+
+function folderStatusLabel(status: FolderBridgeStatus): string {
+  if (status === 'granted') return 'granted';
+  if (status === 'prompt') return 'not selected';
+  if (status === 'denied') return 'denied';
+  if (status === 'revoked') return 'revoked';
+  if (status === 'read-only') return 'read-only';
+  return 'unavailable';
 }
 
 function DatabaseRow({ database }: { database: DatabaseSummary }) {
@@ -174,6 +194,10 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
     readOffloadedProjects(ownerId),
   );
   const [pendingOffload, setPendingOffload] = useState<PendingOffload | null>(null);
+  const [folderHandle, setFolderHandle] = useState<FileSystemDirectoryHandleLike | null>(null);
+  const [folderStatus, setFolderStatus] = useState<FolderBridgeStatus>('unavailable');
+  const [folderArchives, setFolderArchives] = useState<string[]>([]);
+  const [folderBusy, setFolderBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -210,6 +234,38 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
       })
       .catch(() => {
         if (!cancelled) setLoadError('Could not read local projects.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerId, refreshKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    openLocalProjectDatabase()
+      .then(async (db) => {
+        const bridge = await getFolderBridgeStatus(db);
+        let archives: string[] = [];
+        if (bridge.handle && bridge.status === 'granted') {
+          try {
+            archives = await listArchiveFiles(bridge.handle);
+          } catch {
+            // A revoked/read-failed handle must not affect IndexedDB projects.
+          }
+        }
+        db.close();
+        if (!cancelled) {
+          setFolderHandle(bridge.handle);
+          setFolderStatus(bridge.status);
+          setFolderArchives(archives);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFolderHandle(null);
+          setFolderStatus('unavailable');
+          setFolderArchives([]);
+        }
       });
     return () => {
       cancelled = true;
@@ -323,10 +379,17 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
       const db = await openLocalProjectDatabase();
       const result = await exportDatabaseArchive(db, ownerId);
       db.close();
-      downloadBlob(result.blob, 'local-projects-archive.zip');
-      setMessage(
-        `Exported ${result.projectCount} project(s), ${result.sceneCount} scene(s), ${result.mediaFileCount} media file(s). This file is your own responsibility to keep safe -- it is not uploaded anywhere.`,
-      );
+      if (folderHandle && folderStatus === 'granted') {
+        await writeArchiveFile(folderHandle, 'local-projects-archive.zip', result.blob);
+        setMessage(
+          `Saved ${result.projectCount} project(s), ${result.sceneCount} scene(s), ${result.mediaFileCount} media file(s) to the selected archive folder.`,
+        );
+      } else {
+        downloadBlob(result.blob, 'local-projects-archive.zip');
+        setMessage(
+          `Exported ${result.projectCount} project(s), ${result.sceneCount} scene(s), ${result.mediaFileCount} media file(s). This file is your own responsibility to keep safe -- it is not uploaded anywhere.`,
+        );
+      }
     } catch {
       setMessage('Could not export the database. Local data was not changed.');
     } finally {
@@ -367,6 +430,74 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
       );
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function inspectFolderArchive(filename: string) {
+    if (!folderHandle || folderStatus !== 'granted') return;
+    setFolderBusy(true);
+    setMessage(null);
+    try {
+      const bytes = await readArchiveFile(folderHandle, filename);
+      const inspection = await inspectDatabaseArchive(bytes, ownerId);
+      setArchiveBytes(bytes);
+      setArchivePreview(inspection);
+      setSelectedArchiveIndices(inspection.projects.map((project) => project.index));
+      setWorkspaceName('');
+      setMessage(`Verified ${filename}. Choose projects and a workspace name before restoring.`);
+    } catch {
+      setMessage(
+        `Could not inspect ${filename}. The folder archive was not trusted and local data was not changed.`,
+      );
+    } finally {
+      setFolderBusy(false);
+    }
+  }
+
+  async function selectFolder() {
+    setFolderBusy(true);
+    setMessage(null);
+    let db: IDBDatabase | undefined;
+    try {
+      // Start the picker before awaiting IndexedDB; showDirectoryPicker()
+      // requires the transient activation from this button click.
+      const pickedHandle = pickFolder();
+      db = await openLocalProjectDatabase();
+      const handle = await pickedHandle;
+      await saveFolderHandle(db, handle);
+      const archives = await listArchiveFiles(handle);
+      setFolderHandle(handle);
+      setFolderStatus('granted');
+      setFolderArchives(archives);
+      setMessage(
+        archives.length > 0
+          ? 'Folder selected. Choose a verified ZIP archive to inspect.'
+          : 'Folder selected, but it contains no safe ZIP archive files yet.',
+      );
+    } catch {
+      setMessage(
+        'Folder access was not granted or could not be read. The browser-local workspace and ZIP fallback remain available.',
+      );
+    } finally {
+      db?.close();
+      setFolderBusy(false);
+    }
+  }
+
+  async function forgetFolder() {
+    setFolderBusy(true);
+    try {
+      const db = await openLocalProjectDatabase();
+      await clearFolderHandle(db);
+      db.close();
+      setFolderHandle(null);
+      setFolderStatus('prompt');
+      setFolderArchives([]);
+      setMessage('The saved folder handle was removed. IndexedDB projects were not changed.');
+    } catch {
+      setMessage('Could not remove the saved folder handle. IndexedDB projects were not changed.');
+    } finally {
+      setFolderBusy(false);
     }
   }
 
@@ -451,6 +582,57 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
           }}
         />
       </div>
+      <section aria-label="Folder archive bridge">
+        <h4>Folder archive bridge</h4>
+        <p>
+          Status: <strong>{folderStatusLabel(folderStatus)}</strong>. This optional bridge reads and
+          writes explicit ZIP checkpoints only; IndexedDB remains the active browser-local
+          workspace.
+        </p>
+        <div className="local-storage-actions">
+          <button
+            type="button"
+            onClick={() => void selectFolder()}
+            disabled={folderBusy || busyId !== null}
+          >
+            {folderBusy ? 'Checking folder…' : 'Choose archive folder'}
+          </button>
+          {folderHandle && (
+            <button
+              type="button"
+              onClick={() => void forgetFolder()}
+              disabled={folderBusy || busyId !== null}
+            >
+              Forget folder
+            </button>
+          )}
+        </div>
+        {folderStatus === 'granted' && (
+          <>
+            {folderArchives.length > 0 ? (
+              <ul aria-label="Safe archive files in selected folder">
+                {folderArchives.map((filename) => (
+                  <li key={filename}>
+                    <code>{filename}</code>{' '}
+                    <button
+                      type="button"
+                      onClick={() => void inspectFolderArchive(filename)}
+                      disabled={folderBusy || busyId !== null}
+                    >
+                      Inspect archive
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No safe ZIP archives found in the selected folder.</p>
+            )}
+          </>
+        )}
+        {folderStatus === 'unavailable' && (
+          <p>Direct folder access is unavailable here. Use the ZIP file picker above.</p>
+        )}
+      </section>
       <label htmlFor="local-workspace-select">Workspace</label>
       <select
         id="local-workspace-select"

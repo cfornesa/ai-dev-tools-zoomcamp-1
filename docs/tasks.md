@@ -20199,6 +20199,40 @@ issues were classified as covered or prerequisites; no product implementation
 was performed during distillation. A proposed durable-memory topic for the
 origin-wide quota/external-browser-clearing limitation awaits owner approval.
 
+## 378. Backlog-session, production-readiness, and completion for #531 (2026-09-14)
+
+The production repair was completed through the Replit Production Database
+editor after confirming point-in-time recovery was enabled. Republish alone
+did not change the schema, so the repair was executed as individually
+verified, idempotent SQL statements: added `source_project_id` and
+`source_version_id` to `scenes_sceneversion3d`; created the 29-column
+`scenes_sceneconversionrun` table; restored its foreign keys and indexes; and
+applied `ai_scene_convert_3d` to both existing `scenes_plan` rows. The final
+read-only invariant was:
+`source_project_id=t; source_version_id=t; conversion_run_table=t;
+conversion_run_columns=29; plans=2; plans_with_feature=2`.
+
+Production verification passed: authenticated `GET /api/projects3d/` returned
+HTTP 200, the signed-in Home page loaded its project section without an API
+error, and `PUBLISHED_APP_URL=https://augmentrart.com
+scripts/smoke-published.sh` passed health, root, anonymous whoami, and login
+checks. Local focused tests remained 46/46 and the previously recorded full
+`make check` remained green (backend 1,309 passed / 39 skipped; frontend 2,641
+passed). The exact issue acceptance criteria are satisfied.
+
+No additional actionable issue was found: the open-issue search contained
+only #531. Replit reported two moderate dependency vulnerabilities during
+republish; they are a separate security backlog concern and were not absorbed
+into this incident. GitHub comment/update reconciliation was blocked by the
+connector's sensitive-egress safeguard, so the repository record is complete
+locally but the remote issue remains open pending a human-approved GitHub
+update. Stage provenance: current Codex run performed the operational repair,
+QA, and readiness passes as a flagged substitution for the rostered external
+model stages; no independent second-opinion stage was available.
+
+Final state: `ENGINEERING → QA → PRODUCTION-READY → COMPLETE`, with the
+remote issue update as the only handoff item.
+
 ## 377. Task-distillation and grooming for #531 production schema incident (2026-09-14)
 
 Manifest: one discovered actionable issue, #531, and no duplicate or

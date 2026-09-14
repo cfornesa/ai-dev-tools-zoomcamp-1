@@ -20427,11 +20427,15 @@ later backlog-session transactions did.
   ZIP as the cross-platform fallback. Chromium still requires native
   grant/denial/reload/revocation evidence before closure. Decision comment
   [5661371085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661371085).
-- **#535:** GROOMABLE after the #534 decision; split file and folder entry
-  points. The file half can proceed independently; the folder half follows
-  the #534 adapter contract. Prior handoff [5660732408](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535#issuecomment-5660732408).
-- **#536:** DEPENDENCY-BLOCKED on #535; no product diff started. GitHub handoff
-  [5660732949](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5660732949).
+- **#535:** GROOMED as the file-only archive-context issue; #541 now owns the
+  folder-context entry point. It can proceed independently of #534. Prior
+  handoff [5660732408](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535#issuecomment-5660732408).
+- **#536:** GROOMED with an explicit authority boundary: IndexedDB owns the
+  active draft/workspace; the selected disk archive owns the durable checkpoint.
+  It depends on #535 and the #534/#541 folder-write contract. Clarification
+  comment [5661407115](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5661407115).
+- **#541:** PROPOSED/criterion-ready split of #535's folder entry point; it
+  depends on #534 and owns safe folder archive inspection plus explicit copy-in.
 - **#537:** COMPLETE; commit `d3b9922`; explicit `/local-projects/:id`
   IndexedDB editor route, owner-scoped loading, persistent workspace selection,
   save/cancel navigation guard, responsive checksum layout, focused tests 27
@@ -20448,8 +20452,10 @@ later backlog-session transactions did.
   Chrome evidence pass for #532, #533, and #537, but #534–#536 are not ready.
   The mandated Opus 5/Sonnet 5 readiness tier was unavailable, so the formal
   readiness gate was not run and is not being represented as a pass.
-- **Session-completion result:** terminal-status audit passes with discovered 9,
-  completed 5, blocked 1, dependency-blocked 2, handed-off 1, and missing
-  terminal status 0. Routing audit remains incomplete for the unavailable
+- **Session-completion result:** terminal-status audit must be refreshed after
+  the #535 split and new #541 issue. The prior discovered-9 rollup is stale;
+  current reconciliation is discovered 10, completed 5, with #534, #536, and
+  #541 still open for implementation/dependency work and #535 groomed. Routing
+  audit remains incomplete for the unavailable
   independent second-opinion and readiness-gate stages; all substitutions are
   explicitly identified in this ledger and no issue was silently closed.

@@ -20386,7 +20386,8 @@ later backlog-session transactions did.
   `734cec6`, focused QA, full `make check`, and active-Chrome evidence at
   1280x900 and 375x812. #534 remains blocked by native directory-picker
   verification; #535 is dependency-blocked on #534 and needs file/folder
-  contract grooming; #536 remains dependency-blocked on #535.
+  contract grooming; #536 remains dependency-blocked on #535. #540 is a new
+  owner-decision handoff for the offline/downloadable boundary.
 
 ### Batch production-readiness and session-completion — 2026-09-14
 
@@ -20406,8 +20407,8 @@ later backlog-session transactions did.
   thread. This is a workflow/provenance blocker, not a readiness pass.
 - **Session rollup before the latest discovery:** discovered 6; completed 1;
   blocked 0; dependency-blocked 5; handed-off 0; missing terminal status 0.
-- **Updated session rollup:** discovered 8; completed 5; blocked 1;
-  dependency-blocked 2; handed-off 0; missing terminal status 0.
+- **Updated session rollup:** discovered 9; completed 5; blocked 1;
+  dependency-blocked 2; handed-off 1; missing terminal status 0.
 - **Follow-up audit:** one actionable follow-up was created and linked (#537)
   for the missing local editor handoff; no duplicate issue was created for the
   browser-evidence boundary. The exact next action for every remaining issue
@@ -20438,12 +20439,15 @@ later backlog-session transactions did.
   frontend 2648 passed, and active-Chrome 1280x900/375x812 evidence; GitHub QA
   comment [5660725740](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537#issuecomment-5660725740);
   closed.
+- **#540:** HANDED-OFF pending the owner's offline-boundary decision. No
+  product implementation or dependency was added; GitHub handoff
+  [5660766248](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/540#issuecomment-5660766248).
 - **Production-readiness result:** INCOMPLETE/BLOCKED. Local checks and active
   Chrome evidence pass for #532, #533, and #537, but #534–#536 are not ready.
   The mandated Opus 5/Sonnet 5 readiness tier was unavailable, so the formal
   readiness gate was not run and is not being represented as a pass.
-- **Session-completion result:** terminal-status audit passes with discovered 8,
-  completed 5, blocked 1, dependency-blocked 2, handed-off 0, and missing
+- **Session-completion result:** terminal-status audit passes with discovered 9,
+  completed 5, blocked 1, dependency-blocked 2, handed-off 1, and missing
   terminal status 0. Routing audit remains incomplete for the unavailable
   independent second-opinion and readiness-gate stages; all substitutions are
   explicitly identified in this ledger and no issue was silently closed.

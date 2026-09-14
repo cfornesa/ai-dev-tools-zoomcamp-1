@@ -1,9 +1,10 @@
 # Local workspace opening, selective retention, and folder access distillation
 
 Status: DISTILLATION UPDATED — owner-selected browser-local hybrid direction;
-eight criterion-ready follow-ups were reconciled, with #532, #533, #537, #538,
+nine criterion-ready follow-ups were reconciled, with #532, #533, #537, #538,
 and #539 now closed after implementation and dual-viewport verification. Three
-remain open with terminal blocker states.
+local-workspace issues remain blocked/dependency-blocked, and #540 is handed
+off pending the owner's offline-boundary decision.
 
 ## Current-state investigation
 
@@ -21,8 +22,8 @@ remain open with terminal blocker states.
 - The offline/downloadable investigation found no existing open PWA/offline
   issue, no web app manifest, and no service worker. IndexedDB and archive
   flows provide a local-data foundation, but Django/auth/AI surfaces remain
-  network-backed. A first PWA issue is pending the owner's boundary decision:
-  local-workspace-only offline use versus offline cloud projects, AI, and sync.
+  network-backed. The boundary decision is tracked in #540: local-workspace-only
+  offline use versus offline cloud projects, AI, and sync.
 
 ## Owner-selected direction
 
@@ -45,7 +46,8 @@ required for the local workspace to function.
 - #527 covers clear-data warnings and sync-before-clear, not archive browsing,
   offload, or directory handles.
 - Standalone piece exports and account export are different artifact contracts.
-- The eight reconciled GitHub issues cover distinct capability boundaries; no
+- The eight local-workspace GitHub issues cover distinct capability boundaries;
+  #540 is a separate owner-decision issue; no
   duplicate open issue was found. #533 mentions quota behavior during
   offload, but does not require the dashboard to calculate and display
   remaining origin quota; that is #539. The mobile overflow in the #532
@@ -63,6 +65,7 @@ required for the local workspace to function.
 | 6 | [#537](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537) | Hand restored local projects into a browser-local editor route with workspace switching | #532 | Stage 2b complex | COMPLETE / commit `d3b9922`; local editor, owner isolation, unsaved guard, and dual-viewport Chromium evidence pass |
 | 7 | [#538](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/538) | Remove local-storage-dashboard horizontal overflow on mobile | #532 evidence; no product dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
 | 8 | [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) | Show remaining browser-origin storage quota for local artwork | #525 storage estimate; no #532 dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
+| 9 | [#540](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/540) | Decide the first offline/downloadable milestone before PWA/native implementation | #532/#533/#537 evidence; owner boundary decision | Stage 2b complex/architecture | HANDED-OFF / owner must select local-only PWA, offline-first sync, or defer PWA/native work |
 
 ## Criterion-ready issue contracts
 
@@ -143,10 +146,10 @@ PWA Vite plugin. It does have browser-local IndexedDB projects/media, ZIP
 archive validation, and local editor work after #537. Current auth, cloud
 project, AI, and sync paths cannot be assumed to work offline.
 
-The next distillation action is owner confirmation of the first offline
-milestone. If it is local-workspace-only, create one criterion-ready PWA issue
+That decision is now tracked by [#540](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/540).
+If the owner selects local-workspace-only, create one criterion-ready PWA issue
 for manifest/installability, cached shell, offline local editor/restore, and an
-explicit online boundary. If it includes cloud projects, AI, or sync, split a
+explicit online boundary. If cloud projects, AI, or sync are selected, split a
 larger offline-first contract with an outbox/conflict model before filing the
 installability work. Native packaging remains a later Capacitor-style option,
 not a prerequisite for the browser PWA.

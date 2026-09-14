@@ -20334,12 +20334,11 @@ handles, or opening a selected local project context. #525 exposes the raw
 estimate but not the remaining-capacity presentation in #539. Standalone
 piece/account exports are separate contracts.
 
-Next action: process #533 and #534 now that #532's workspace contract is
-terminal, then #535, #536, and #537 according to
-their dependency edges. #533, #534, and #535 depend on #532; #536 depends on
-#512/#526/#535 and owns the active-draft plus bounded-recovery semantics; #537
-depends on #532 and owns the editor handoff. No product implementation is
-authorized by this distillation entry.
+Superseded next action: #533 and #537 have since completed; #534 is blocked on
+native directory-picker evidence; #535 is dependency-blocked on #534 and needs
+file/folder contract grooming; #536 remains dependency-blocked on #535. The
+original distillation entry did not authorize product implementation; the
+later backlog-session transactions did.
 
 ### #532 transaction ledger — 2026-09-14
 
@@ -20366,8 +20365,8 @@ authorized by this distillation entry.
   records checksum-valid mixed-media archive preview and selected restore at
   both viewpoints, with full checks green. GitHub #532 is closed as completed.
 - **Evidence boundary / next action:** the archive/workspace contract is
-  terminal. Issues #533–#537 remain open and dependency-ordered; #533, #534,
-  and #537 are now eligible for their own backlog passes.
+  terminal. #533 and #537 have completed; #534–#536 retain the blocker states
+  recorded below.
 
 ### Newly discovered follow-ups — 2026-09-14
 
@@ -20413,3 +20412,38 @@ authorized by this distillation entry.
   for the missing local editor handoff; no duplicate issue was created for the
   browser-evidence boundary. The exact next action for every remaining issue
   is recorded in its GitHub comment and the manifest above.
+
+### Backlog-session continuation, production-readiness, and session-completion — 2026-09-14
+
+- **#533:** COMPLETE; commit `5e833e0`; focused AccountLocalStorage tests 24
+  passed; full `make check` passed with backend 1309 passed/39 skipped and
+  frontend 2645 passed; active Chrome verified explicit export/confirm/cancel,
+  offloaded metadata, rehydration, and 1280x900/375x812 evidence; GitHub QA
+  comment [5660551315](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533#issuecomment-5660551315);
+  closed.
+- **#534:** BLOCKED, verification-boundary; Chromium exposes the File System
+  Access API, but the current active-Chrome automation cannot safely exercise
+  native grant/denial/reload/revocation cycles. No product diff was started;
+  next action is an approved native-browser harness or disposable directory
+  runner. GitHub handoff [5660559531](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5660559531).
+- **#535:** DEPENDENCY-BLOCKED on #534; its file and folder entry points are
+  independently observable and must be split or explicitly groomed before
+  implementation. GitHub handoff [5660732408](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535#issuecomment-5660732408).
+- **#536:** DEPENDENCY-BLOCKED on #535; no product diff started. GitHub handoff
+  [5660732949](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5660732949).
+- **#537:** COMPLETE; commit `d3b9922`; explicit `/local-projects/:id`
+  IndexedDB editor route, owner-scoped loading, persistent workspace selection,
+  save/cancel navigation guard, responsive checksum layout, focused tests 27
+  passed, full `make check` passed with backend 1309 passed/39 skipped and
+  frontend 2648 passed, and active-Chrome 1280x900/375x812 evidence; GitHub QA
+  comment [5660725740](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537#issuecomment-5660725740);
+  closed.
+- **Production-readiness result:** INCOMPLETE/BLOCKED. Local checks and active
+  Chrome evidence pass for #532, #533, and #537, but #534–#536 are not ready.
+  The mandated Opus 5/Sonnet 5 readiness tier was unavailable, so the formal
+  readiness gate was not run and is not being represented as a pass.
+- **Session-completion result:** terminal-status audit passes with discovered 8,
+  completed 5, blocked 1, dependency-blocked 2, handed-off 0, and missing
+  terminal status 0. Routing audit remains incomplete for the unavailable
+  independent second-opinion and readiness-gate stages; all substitutions are
+  explicitly identified in this ledger and no issue was silently closed.

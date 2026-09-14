@@ -18,6 +18,11 @@ remain open with terminal blocker states.
 - #536 defines durable editable save/reopen with bounded IndexedDB recovery;
   #532–#535 cover the related archive, offload, folder bridge, and context
   workflows; #537 owns the missing browser-local editor handoff.
+- The offline/downloadable investigation found no existing open PWA/offline
+  issue, no web app manifest, and no service worker. IndexedDB and archive
+  flows provide a local-data foundation, but Django/auth/AI surfaces remain
+  network-backed. A first PWA issue is pending the owner's boundary decision:
+  local-workspace-only offline use versus offline cloud projects, AI, and sync.
 
 ## Owner-selected direction
 
@@ -129,6 +134,22 @@ must provide validated file export/import fallback.
   does not duplicate, #533's requirement to explain that another archive does
   not create extra browser quota.
 - No new vendor dependency is required.
+
+## Offline/downloadable direction — pending boundary decision
+
+No duplicate open issue covers an installable PWA or offline-first runtime.
+The codebase has no `manifest.json`, service worker, Workbox integration, or
+PWA Vite plugin. It does have browser-local IndexedDB projects/media, ZIP
+archive validation, and local editor work after #537. Current auth, cloud
+project, AI, and sync paths cannot be assumed to work offline.
+
+The next distillation action is owner confirmation of the first offline
+milestone. If it is local-workspace-only, create one criterion-ready PWA issue
+for manifest/installability, cached shell, offline local editor/restore, and an
+explicit online boundary. If it includes cloud projects, AI, or sync, split a
+larger offline-first contract with an outbox/conflict model before filing the
+installability work. Native packaging remains a later Capacitor-style option,
+not a prerequisite for the browser PWA.
 
 ## Next transaction
 

@@ -20462,7 +20462,12 @@ later backlog-session transactions did.
   because it can silently discard artwork. #542 remains open for the exact
   criterion-ready follow-up decomposition covering outbox, media transfer,
   conflict UI, auth recovery, and online-only boundaries. GitHub update:
-  [5662050053](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542#issuecomment-5662050053).
+  [5662117175](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542#issuecomment-5662117175).
+  Follow-up issues are now filed: #543 (outbox), #544 (deterministic conflict
+  and rebase), #545 (authentication ownership recovery), and #546 (resumable
+  media transfer/quota recovery). #543 is the next independent sync slice;
+  #544/#545 follow its operation identity, and #546 follows both outbox and
+  ownership contracts.
 
 - **#533:** COMPLETE; commit `5e833e0`; focused AccountLocalStorage tests 24
   passed; full `make check` passed with backend 1309 passed/39 skipped and
@@ -20517,10 +20522,11 @@ later backlog-session transactions did.
   Chrome evidence pass for #532, #533, and #537, but #534–#536 are not ready.
   The mandated Opus 5/Sonnet 5 readiness tier was unavailable, so the formal
   readiness gate was not run and is not being represented as a pass.
-- **#542:** OPEN/criterion-ready follow-up for the selected offline-first sync
-  path; it owns outbox, conflict/rebase, auth recovery, media retry, quota,
-  and online-only boundary semantics. Existing draft autosave and cloud backup
-  are distinct mechanisms, not duplicates; overlap audit
+- **#542:** GROOMED/criterion-ready contract for the selected offline-first
+  sync path; it owns the authority boundary and deterministic-hybrid policy,
+  while #543–#546 own outbox, conflict/rebase, auth recovery, media retry,
+  quota, and online-only boundary implementation slices. Existing draft
+  autosave and cloud backup are distinct mechanisms, not duplicates; overlap audit
   [5661675522](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542#issuecomment-5661675522).
 - **Session-completion result:** terminal-status audit must be refreshed after
   the #535/#541 duplicate reconciliations and #542 follow-up. Current

@@ -5,7 +5,8 @@ and deterministic-hybrid conflict policy;
 eleven criterion-ready follow-ups were reconciled, with #532, #533, #535, #537,
 #538, #539, #540, and #541 now closed after implementation, duplicate
 reconciliation, decision closure, and dual-viewport verification. Three
-local-workspace issues remain open for implementation or dependency work;
+local-workspace issues remain open for implementation or dependency work, and
+#542 has four linked sync implementation follow-ups;
 #540's boundary decision is resolved, and #534's folder-bridge policy is now
 selected for implementation and Chromium lifecycle verification.
 
@@ -70,7 +71,11 @@ required for the local workspace to function.
 | 8 | [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) | Show remaining browser-origin storage quota for local artwork | #525 storage estimate; no #532 dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
 | 9 | [#540](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/540) | Decide the first offline/downloadable milestone before PWA/native implementation | #532/#533/#537 evidence; owner boundary decision | Stage 2b complex/architecture | DECIDED / offline-first sync selected; scope a follow-up for outbox, conflict, auth recovery, and retry semantics |
 | 10 | [#541](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541) | Open a selected folder as project context with safe archive inspection and copy-in | #526/#532/#534 | Stage 2b complex | CLOSED / duplicate of #534; folder bridge remains single-owner |
-| 11 | [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542) | Define offline-first sync outbox, conflict, and recovery contract | #540/#512/#534/#536 | Stage 2b complex/architecture | OWNER-DECIDED / deterministic hybrid merge; follow-up decomposition and criterion-ready implementation spec remain |
+| 11 | [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542) | Define offline-first sync outbox, conflict, and recovery contract | #540/#512/#534/#536 | Stage 2b complex/architecture | GROOMED / owner-selected deterministic hybrid; four implementation follow-ups filed |
+| 12 | [#543](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/543) | Durable mutation outbox with deterministic retry and acknowledgement | #542/#512/#534/#536 | Stage 2b complex | OPEN / next independent sync implementation slice |
+| 13 | [#544](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/544) | Deterministic conflict detection and explicit rebase workflow | #543/#542 | Stage 2b complex | OPEN / depends on outbox identity |
+| 14 | [#545](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/545) | Authentication ownership recovery for queued private mutations | #543/#542 | Stage 2b complex | OPEN / depends on outbox identity |
+| 15 | [#546](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/546) | Resumable media transfer and quota-aware partial recovery | #543/#545/#542 | Stage 2b complex | OPEN / depends on outbox and ownership contracts |
 
 ## Criterion-ready issue contracts
 

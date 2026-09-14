@@ -20439,9 +20439,11 @@ later backlog-session transactions did.
   frontend 2648 passed, and active-Chrome 1280x900/375x812 evidence; GitHub QA
   comment [5660725740](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537#issuecomment-5660725740);
   closed.
-- **#540:** HANDED-OFF pending the owner's offline-boundary decision. No
-  product implementation or dependency was added; GitHub handoff
-  [5660766248](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/540#issuecomment-5660766248).
+- **#540:** DECIDED; owner selected offline-first sync. No product
+  implementation or dependency was added. The next issue must define the
+  outbox, conflict/rebase behavior, authentication recovery, media retry,
+  quota handling, and explicit online-only boundaries before PWA installability
+  work. GitHub decision record will be added to #540.
 - **Production-readiness result:** INCOMPLETE/BLOCKED. Local checks and active
   Chrome evidence pass for #532, #533, and #537, but #534–#536 are not ready.
   The mandated Opus 5/Sonnet 5 readiness tier was unavailable, so the formal

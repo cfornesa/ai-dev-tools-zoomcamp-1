@@ -20213,28 +20213,27 @@ read-only invariant was:
 conversion_run_columns=29; plans=2; plans_with_feature=2`.
 
 Production verification passed: authenticated `GET /api/projects3d/` returned
-HTTP 200, the signed-in Home page loaded its project section without an API
-error, and `PUBLISHED_APP_URL=https://augmentrart.com
-scripts/smoke-published.sh` passed health, root, anonymous whoami, and login
-checks. Local focused tests remained 46/46 and the previously recorded full
-`make check` remained green (backend 1,309 passed / 39 skipped; frontend 2,641
-passed). The signed-in account had no existing 3D project, so the live route
-check covered the repaired empty-list path; no production project was created
-just to manufacture a populated-list test.
+HTTP 200 with a populated list after a disposable 3D project was created
+through the supported app flow; the authenticated Home page rendered its 3D
+project card without an API error. That disposable record was then removed
+through the supported owner delete flow. The final production invariant was
+`migration_0061=t; migration_0062=t; active_project3d_rows=3;
+sceneversion3d_rows=12; conversion_run_table=t`. The published smoke check
+also passed health, root, anonymous whoami, and login checks. Local focused
+tests remained 46/46 and the previously recorded full `make check` remained
+green (backend 1,309 passed / 39 skipped; frontend 2,641 passed).
 
 No additional actionable issue was found: the open-issue search contained
-only #531. Replit reported two moderate dependency vulnerabilities during
-republish; they are a separate security backlog concern and were not absorbed
-into this incident. GitHub comment/update reconciliation was blocked by the
-connector's sensitive-egress safeguard, so the repository record is complete
-locally but the remote issue remains open pending a human-approved GitHub
-update. Stage provenance: current Codex run performed the operational repair,
-QA, and readiness passes as a flagged substitution for the rostered external
-model stages; no independent second-opinion stage was available.
+only #531. Replit's two moderate dependency vulnerabilities remain a separate
+security backlog concern and were not absorbed into this incident. A sanitized
+reconciliation comment was posted to [#531](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/531),
+which was then closed as completed. Stage provenance: current Codex run
+performed the operational repair, QA, and readiness passes as a flagged
+substitution for the rostered external model stages; no independent
+second-opinion stage was available.
 
-Final state: `ENGINEERING → QA → PRODUCTION-READY → COMPLETE`, with the
-remote issue update and a populated-list verification as explicit handoff
-items if an owner supplies a suitable non-destructive test account.
+Final state: `ENGINEERING → QA → PRODUCTION-READY → COMPLETE`; GitHub #531 is
+closed and the production evidence is reconciled.
 
 ## 377. Task-distillation and grooming for #531 production schema incident (2026-09-14)
 

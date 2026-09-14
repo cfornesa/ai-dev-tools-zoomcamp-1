@@ -88,6 +88,16 @@ function downloadBlob(blob: Blob, filename: string) {
 
 type LocalWorkspace = { name: string; projectIds: string[] };
 const workspaceStorageKey = (ownerId: string) => `creatrart:local-workspaces:${ownerId}`;
+type OffloadedProject = {
+  projectId: string;
+  title: string;
+  archiveFilename: string;
+  exportedAt: string;
+  sceneCount: number;
+  mediaFileCount: number;
+  byteTotal: number;
+};
+const offloadedProjectsStorageKey = (ownerId: string) => `creatrart:offloaded-projects:${ownerId}`;
 
 function readWorkspaces(ownerId: string): Record<string, LocalWorkspace> {
   try {
@@ -107,10 +117,35 @@ function writeWorkspaces(ownerId: string, workspaces: Record<string, LocalWorksp
   }
 }
 
+function readOffloadedProjects(ownerId: string): OffloadedProject[] {
+  try {
+    const raw = window.localStorage.getItem(offloadedProjectsStorageKey(ownerId));
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed as OffloadedProject[];
+    }
+  } catch {
+    // Recovery metadata is best effort; active IndexedDB data remains authoritative.
+  }
+  return [];
+}
+
+function writeOffloadedProjects(ownerId: string, projects: OffloadedProject[]) {
+  try {
+    window.localStorage.setItem(offloadedProjectsStorageKey(ownerId), JSON.stringify(projects));
+  } catch {
+    // A full/blocked localStorage must not make the active repository unusable.
+  }
+}
+
 /** Issue #526: per-project export/delete plus whole-database export and
  * restore-from-file, for the local project database only -- the drafts
  * database has no comparable per-project archive concept. */
 type LocalProjectDetails = { sceneCount: number; mediaFileCount: number; byteTotal: number };
+type PendingOffload = {
+  project: LocalProjectRecord;
+  result: { sceneCount: number; mediaFileCount: number; byteTotal: number };
+};
 
 function LocalProjectsManager({ ownerId }: { ownerId: string }) {
   const [projects, setProjects] = useState<LocalProjectRecord[] | null>(null);
@@ -127,6 +162,10 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
   const [archiveBytes, setArchiveBytes] = useState<Uint8Array | null>(null);
   const [selectedArchiveIndices, setSelectedArchiveIndices] = useState<number[]>([]);
   const [workspaceName, setWorkspaceName] = useState('');
+  const [offloadedProjects, setOffloadedProjects] = useState<OffloadedProject[]>(() =>
+    readOffloadedProjects(ownerId),
+  );
+  const [pendingOffload, setPendingOffload] = useState<PendingOffload | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -175,6 +214,11 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
     setSelectedWorkspaceId('active');
   }, [ownerId]);
 
+  useEffect(() => {
+    setOffloadedProjects(readOffloadedProjects(ownerId));
+    setPendingOffload(null);
+  }, [ownerId]);
+
   async function exportProject(project: LocalProjectRecord) {
     setBusyId(project.id);
     setMessage(null);
@@ -186,6 +230,65 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
       setMessage(`Exported "${project.title}".`);
     } catch {
       setMessage(`Could not export "${project.title}". Local data was not changed.`);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function prepareOffload(project: LocalProjectRecord) {
+    setBusyId(`offload:${project.id}`);
+    setMessage(null);
+    try {
+      const db = await openLocalProjectDatabase();
+      const result = await exportDatabaseArchive(db, ownerId, { projectIds: [project.id] });
+      const bytes = new Uint8Array(await result.blob.arrayBuffer());
+      const inspection = await inspectDatabaseArchive(bytes, ownerId);
+      db.close();
+      downloadBlob(result.blob, `${project.title.replace(/[^\w.-]+/g, '_') || 'project'}.zip`);
+      setPendingOffload({
+        project,
+        result: {
+          sceneCount: inspection.sceneCount,
+          mediaFileCount: inspection.mediaFileCount,
+          byteTotal: inspection.byteTotal,
+        },
+      });
+      setMessage(
+        `Archive verified for "${project.title}". Confirm offload only after keeping the downloaded archive safe.`,
+      );
+    } catch {
+      setMessage(`Could not verify an archive for "${project.title}". Local data was not changed.`);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function confirmOffload() {
+    if (!pendingOffload) return;
+    const { project, result } = pendingOffload;
+    setBusyId(`offload:${project.id}`);
+    setMessage(null);
+    try {
+      const db = await openLocalProjectDatabase();
+      await deleteProject(db, ownerId, project.id);
+      db.close();
+      const record: OffloadedProject = {
+        projectId: project.id,
+        title: project.title,
+        archiveFilename: `${project.title.replace(/[^\w.-]+/g, '_') || 'project'}.zip`,
+        exportedAt: new Date().toISOString(),
+        ...result,
+      };
+      const next = [...offloadedProjects.filter((item) => item.projectId !== project.id), record];
+      writeOffloadedProjects(ownerId, next);
+      setOffloadedProjects(next);
+      setPendingOffload(null);
+      setMessage(
+        `Offloaded "${project.title}" after verified export. Keep ${record.archiveFilename} to rehydrate it later.`,
+      );
+      setRefreshKey((k) => k + 1);
+    } catch {
+      setMessage(`Could not offload "${project.title}". The active project was preserved.`);
     } finally {
       setBusyId(null);
     }
@@ -428,6 +531,33 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
                     ? 'Exporting…'
                     : 'Export'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void prepareOffload(project)}
+                  disabled={busyId !== null}
+                >
+                  {busyId === `offload:${project.id}` ? 'Preparing…' : 'Archive & offload'}
+                </button>
+                {pendingOffload?.project.id === project.id && (
+                  <>
+                    <span role="alert">
+                      Archive verified: {pendingOffload.result.sceneCount} scene(s),{' '}
+                      {pendingOffload.result.mediaFileCount} media file(s),{' '}
+                      {formatBytes(pendingOffload.result.byteTotal)}. Confirming removes the active
+                      browser copy; the downloaded archive remains your recovery copy.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void confirmOffload()}
+                      disabled={busyId !== null}
+                    >
+                      {busyId === `offload:${project.id}` ? 'Offloading…' : 'Confirm offload'}
+                    </button>
+                    <button type="button" onClick={() => setPendingOffload(null)}>
+                      Cancel
+                    </button>
+                  </>
+                )}
                 {confirmingDeleteId === project.id ? (
                   <>
                     <span role="alert">
@@ -462,6 +592,25 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
             </li>
           ))}
         </ul>
+      )}
+      {offloadedProjects.length > 0 && (
+        <section aria-label="Offloaded local projects">
+          <h4>Offloaded local projects</h4>
+          <p>
+            These projects are no longer in active IndexedDB storage. Keep their verified ZIP
+            archives to rehydrate them later; another archive or database does not create extra
+            browser quota.
+          </p>
+          <ul>
+            {offloadedProjects.map((project) => (
+              <li key={project.projectId}>
+                <strong>{project.title}</strong> — {project.sceneCount} scene(s),{' '}
+                {project.mediaFileCount} media file(s), {formatBytes(project.byteTotal)}; archive{' '}
+                <code>{project.archiveFilename}</code>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </section>
   );

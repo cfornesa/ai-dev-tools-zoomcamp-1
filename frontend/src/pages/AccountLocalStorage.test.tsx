@@ -117,6 +117,7 @@ function baseSnapshot(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
   mockedOpenDb.mockResolvedValue(FAKE_DB);
   mockedListProjects.mockResolvedValue([]);
   mockedListScenesForProject.mockResolvedValue([]);
@@ -338,6 +339,56 @@ describe('AccountLocalStorage: manage local projects', () => {
 
     expect(mockedExportArchive).toHaveBeenCalledWith(FAKE_DB, 'alice', { projectIds: ['p1'] });
     expect(await screen.findByText(/exported "my project"/i)).toBeVisible();
+  });
+
+  it('verifies an archive before offering an explicit offload confirmation', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([fakeProject()]);
+    mockedExportArchive.mockResolvedValue({
+      blob: new Blob(['zip'], { type: 'application/zip' }),
+      projectCount: 1,
+      sceneCount: 2,
+      mediaFileCount: 1,
+      byteTotal: 100,
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /archive & offload/i }));
+
+    expect(mockedExportArchive).toHaveBeenCalledWith(FAKE_DB, 'alice', { projectIds: ['p1'] });
+    expect(await screen.findByText(/archive verified for "my project"/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /confirm offload/i })).toBeVisible();
+    expect(mockedDeleteProject).not.toHaveBeenCalled();
+  });
+
+  it('keeps active data on cancellation and records verified offload metadata only after confirmation', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([fakeProject()]);
+    mockedExportArchive.mockResolvedValue({
+      blob: new Blob(['zip'], { type: 'application/zip' }),
+      projectCount: 1,
+      sceneCount: 2,
+      mediaFileCount: 1,
+      byteTotal: 100,
+    });
+    mockedDeleteProject.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /archive & offload/i }));
+    await user.click(screen.getByRole('button', { name: /^cancel$/i }));
+    expect(mockedDeleteProject).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole('heading', { name: 'Offloaded local projects' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /archive & offload/i }));
+    await user.click(screen.getByRole('button', { name: /confirm offload/i }));
+    expect(mockedDeleteProject).toHaveBeenCalledWith(FAKE_DB, 'alice', 'p1');
+    expect(await screen.findByText(/offloaded "my project" after verified export/i)).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Offloaded local projects' })).toBeVisible();
+    expect(screen.getAllByText(/my_project\.zip/i).length).toBeGreaterThan(0);
   });
 
   it('exports the whole database via its own button', async () => {

@@ -1,8 +1,13 @@
+import 'fake-indexeddb/auto';
+
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { IDBFactory } from 'fake-indexeddb';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiError } from '../api/client';
+import * as cloudBackupApi from '../api/cloudBackup';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
@@ -21,6 +26,7 @@ import { useDraftAutosave } from './useDraftAutosave';
  */
 
 vi.mock('../api/projects');
+vi.mock('../api/cloudBackup');
 vi.mock('./useDraftAutosave');
 
 const mockedGetProject = vi.mocked(projectsApi.getProject);
@@ -28,6 +34,17 @@ const mockedGetSceneVersion = vi.mocked(projectsApi.getSceneVersion);
 const mockedListSceneVersions = vi.mocked(projectsApi.listSceneVersions);
 const mockedSaveSceneVersion = vi.mocked(projectsApi.saveSceneVersion);
 const mockedUseDraftAutosave = vi.mocked(useDraftAutosave);
+// Issue #527: "Exit without saving" now attempts a cloud-sync "Save now"
+// checkpoint first. Defaulting `fetchCloudBackup` to "not opted in" (404)
+// keeps every pre-existing test in this file's assertions about the
+// draft-clearing flow itself unaffected; the cloud-sync-aware behavior is
+// covered by its own dedicated tests below.
+const mockedFetchCloudBackup = vi.mocked(cloudBackupApi.fetchCloudBackup);
+const mockedPutCloudBackupManifest = vi.mocked(cloudBackupApi.putCloudBackupManifest);
+beforeEach(() => {
+  (globalThis as { indexedDB: IDBFactory }).indexedDB = new IDBFactory();
+  mockedFetchCloudBackup.mockRejectedValue(new ApiError(404, {}));
+});
 
 function baseProject(overrides: Partial<Project> = {}): Project {
   return {
@@ -170,6 +187,111 @@ describe('Exit without saving', () => {
     const dialog = screen.getByRole('alertdialog', { name: /exit without saving/i });
     const confirmButton = within(dialog).getAllByRole('button', { name: 'Exit without saving' })[0];
     await user.click(confirmButton);
+
+    await waitFor(() => expect(clearDraft).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText('Gallery placeholder')).toBeInTheDocument());
+  });
+
+  // Issue #527: "Save now before clearing" for a project explicitly opted
+  // into cloud sync -- the checkpoint attempt itself is unit-tested
+  // exhaustively against `saveNowBeforeClearing` directly
+  // (`storage/cloudSnapshot.test.ts`); these prove the *wiring*: the
+  // workspace actually calls it, and reacts correctly to success vs.
+  // failure before ever clearing the draft or navigating away.
+  it('exits directly when the project is not cloud-synced (fetchCloudBackup 404)', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    mockedFetchCloudBackup.mockRejectedValue(new ApiError(404, {}));
+
+    await user.click(screen.getByRole('button', { name: 'Exit without saving' }));
+    const dialog = screen.getByRole('alertdialog', { name: /exit without saving/i });
+    await user.click(within(dialog).getAllByRole('button', { name: 'Exit without saving' })[0]);
+
+    await waitFor(() => expect(clearDraft).toHaveBeenCalledTimes(1));
+  });
+
+  it('exits directly once a checkpoint succeeds for a cloud-synced project', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    mockedFetchCloudBackup.mockResolvedValue({
+      enabled: true,
+      paused: false,
+      read_only: false,
+      retention_state: 'active',
+      retain_until: null,
+      revision: 1,
+      snapshot_cadence_days: 7,
+      snapshot_archive_enabled: false,
+      last_snapshot_at: null,
+    });
+    mockedPutCloudBackupManifest.mockResolvedValue({
+      revision: 2,
+      checksum: 'x',
+      manifest: { project_id: 'p1', scenes: [], assets: [] },
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Exit without saving' }));
+    const dialog = screen.getByRole('alertdialog', { name: /exit without saving/i });
+    await user.click(within(dialog).getAllByRole('button', { name: 'Exit without saving' })[0]);
+
+    await waitFor(() => expect(mockedPutCloudBackupManifest).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(clearDraft).toHaveBeenCalledTimes(1));
+  });
+
+  it('offers "Clear anyway" instead of exiting when the checkpoint fails, and Cancel changes nothing', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    mockedFetchCloudBackup.mockResolvedValue({
+      enabled: true,
+      paused: false,
+      read_only: false,
+      retention_state: 'active',
+      retain_until: null,
+      revision: 1,
+      snapshot_cadence_days: 7,
+      snapshot_archive_enabled: false,
+      last_snapshot_at: null,
+    });
+    mockedPutCloudBackupManifest.mockRejectedValue(
+      new ApiError(409, { error: 'cloud_backup_conflict' }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Exit without saving' }));
+    const dialog = screen.getByRole('alertdialog', { name: /exit without saving/i });
+    await user.click(within(dialog).getAllByRole('button', { name: 'Exit without saving' })[0]);
+
+    expect(
+      await within(dialog).findByText(/newer version already exists in the cloud copy/i),
+    ).toBeInTheDocument();
+    expect(clearDraft).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(clearDraft).not.toHaveBeenCalled();
+  });
+
+  it('clears the draft after explicitly choosing "Clear anyway"', async () => {
+    await loadReadyWorkspace();
+    const user = userEvent.setup();
+    mockedFetchCloudBackup.mockResolvedValue({
+      enabled: true,
+      paused: false,
+      read_only: false,
+      retention_state: 'active',
+      retain_until: null,
+      revision: 1,
+      snapshot_cadence_days: 7,
+      snapshot_archive_enabled: false,
+      last_snapshot_at: null,
+    });
+    mockedPutCloudBackupManifest.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await user.click(screen.getByRole('button', { name: 'Exit without saving' }));
+    const dialog = screen.getByRole('alertdialog', { name: /exit without saving/i });
+    await user.click(within(dialog).getAllByRole('button', { name: 'Exit without saving' })[0]);
+    await within(dialog).findByRole('button', { name: 'Clear anyway' });
+
+    await user.click(within(dialog).getByRole('button', { name: 'Clear anyway' }));
 
     await waitFor(() => expect(clearDraft).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText('Gallery placeholder')).toBeInTheDocument());

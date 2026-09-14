@@ -28,6 +28,8 @@ vi.mock('../storage/localProjectRepository', async () => {
     requestPersistentStorage: vi.fn(),
     openLocalProjectDatabase: vi.fn(),
     listProjectsForOwner: vi.fn(),
+    listScenesForProject: vi.fn(),
+    getProjectUsage: vi.fn(),
     deleteProject: vi.fn(),
   };
 });
@@ -46,6 +48,8 @@ vi.mock('../storage/localDatabaseArchive', async () => {
 const mockedOpenDb = vi.mocked(localProjectRepository.openLocalProjectDatabase);
 const mockedListProjects = vi.mocked(localProjectRepository.listProjectsForOwner);
 const mockedDeleteProject = vi.mocked(localProjectRepository.deleteProject);
+const mockedListScenesForProject = vi.mocked(localProjectRepository.listScenesForProject);
+const mockedGetProjectUsage = vi.mocked(localProjectRepository.getProjectUsage);
 const mockedExportArchive = vi.mocked(localDatabaseArchive.exportDatabaseArchive);
 const mockedRestoreArchive = vi.mocked(localDatabaseArchive.restoreDatabaseArchive);
 
@@ -113,6 +117,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedOpenDb.mockResolvedValue(FAKE_DB);
   mockedListProjects.mockResolvedValue([]);
+  mockedListScenesForProject.mockResolvedValue([]);
+  mockedGetProjectUsage.mockResolvedValue({ bytesUsed: 0, fileCount: 0 });
 });
 
 describe('AccountLocalStorage', () => {
@@ -325,6 +331,33 @@ describe('AccountLocalStorage: manage local projects', () => {
     expect(
       await screen.findByText(/exported 1 project\(s\), 2 scene\(s\), 3 media file\(s\)/i),
     ).toBeVisible();
+  });
+
+  it('names exact scope and shows real scene/media/byte counts before deleting (issue #527)', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    mockedListProjects.mockResolvedValue([fakeProject()]);
+    mockedListScenesForProject.mockResolvedValue([
+      { id: 's1', projectId: 'p1', name: 'Scene 1', position: 0, sceneJson: {}, updatedAt: '' },
+      { id: 's2', projectId: 'p1', name: 'Scene 2', position: 1, sceneJson: {}, updatedAt: '' },
+    ]);
+    mockedGetProjectUsage.mockResolvedValue({ bytesUsed: 2048, fileCount: 3 });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+
+    const confirmText = screen.getByRole('alert');
+    expect(confirmText).toHaveTextContent('2 scene(s)');
+    expect(confirmText).toHaveTextContent('3 media file(s)');
+    expect(confirmText).toHaveTextContent('2.0 KB');
+    expect(confirmText).toHaveTextContent(/not synced to the cloud/i);
+  });
+
+  it('explains that external browser-data clearing bypasses the app and cannot be detected', async () => {
+    mockedSnapshot.mockResolvedValue(baseSnapshot());
+    renderPage();
+
+    expect(await screen.findByText(/no website can reliably detect or prevent it/i)).toBeVisible();
   });
 
   it('requires an explicit confirmation before deleting a project, and cancel changes nothing', async () => {

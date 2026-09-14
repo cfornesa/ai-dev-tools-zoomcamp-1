@@ -6,15 +6,24 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '../api/client';
+import * as cloudBackupApi from '../api/cloudBackup';
 import * as projectsApi from '../api/projects';
 import type { Project, SceneVersion } from '../api/projects';
 import EditorWorkspace from './EditorWorkspace';
 
 vi.mock('../api/projects');
+vi.mock('../api/cloudBackup');
 
 const mockedGetProject = vi.mocked(projectsApi.getProject);
 const mockedGetSceneVersion = vi.mocked(projectsApi.getSceneVersion);
 const mockedListSceneVersions = vi.mocked(projectsApi.listSceneVersions);
+// Issue #527: "Exit without saving" attempts a cloud-sync "Save now"
+// checkpoint first -- default to "not opted in" (404) so this file's
+// pre-existing assertions are unaffected by that new network call.
+const mockedFetchCloudBackup = vi.mocked(cloudBackupApi.fetchCloudBackup);
+beforeEach(() => {
+  mockedFetchCloudBackup.mockRejectedValue(new ApiError(404, {}));
+});
 
 function baseProject(overrides: Partial<Project> = {}): Project {
   return {

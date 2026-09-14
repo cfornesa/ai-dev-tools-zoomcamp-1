@@ -88,6 +88,8 @@ import type { TrackingFrame } from '../tracking/types';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useCloudBackupSchedule } from './useCloudBackupSchedule';
+import { saveNowBeforeClearing } from '../storage/cloudSnapshot';
+import type { CloudBackupFailure } from '../api/cloudBackupErrors';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useDraftRecovery } from './useDraftRecovery';
 import { useDraftServerSync } from './useDraftServerSync';
@@ -141,11 +143,48 @@ import CloudSyncControl from './CloudSyncControl';
 function ExitWithoutSavingConfirm({
   onConfirm,
   onCancel,
+  saving,
+  saveFailure,
+  onClearAnyway,
 }: {
   onConfirm: () => void;
   onCancel: () => void;
+  /** Issue #527: while `saveNowBeforeClearing` is in flight for a
+   * cloud-synced project, before this dialog decides whether to proceed
+   * or show `saveFailure`'s override prompt. */
+  saving?: boolean;
+  /** Set once a "Save now" checkpoint attempt has failed -- replaces the
+   * initial prompt with an explicit "Clear anyway" override, never
+   * auto-proceeding on failure. */
+  saveFailure?: CloudBackupFailure | null;
+  onClearAnyway?: () => void;
 }) {
   const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
+  if (saveFailure) {
+    return (
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        role="alertdialog"
+        aria-labelledby="exit-without-saving-confirm-title"
+        className="exit-without-saving-confirm"
+      >
+        <h3 id="exit-without-saving-confirm-title">Could not save to the cloud</h3>
+        <p role="alert">{saveFailure.message}</p>
+        <p>
+          Your local recovery draft for this project will be cleared, and any changes not already in
+          the cloud copy may be lost. Clear anyway?
+        </p>
+        <button type="button" onClick={onClearAnyway}>
+          Clear anyway
+        </button>
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
   return (
     <div
       ref={dialogRef}
@@ -160,10 +199,10 @@ function ExitWithoutSavingConfirm({
         Any unsaved changes will stay out of version history. Your local recovery draft for this
         project will also be cleared.
       </p>
-      <button type="button" onClick={onConfirm}>
-        Exit without saving
+      <button type="button" onClick={onConfirm} disabled={saving}>
+        {saving ? 'Saving to the cloud…' : 'Exit without saving'}
       </button>
-      <button type="button" onClick={onCancel}>
+      <button type="button" onClick={onCancel} disabled={saving}>
         Cancel
       </button>
     </div>
@@ -1218,6 +1257,8 @@ function EditorWorkspace() {
   // is due -- never on its own timer, and never surfaced to the user.
   useCloudBackupSchedule(id, gatedWorkingCopy);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [exitSaving, setExitSaving] = useState(false);
+  const [exitSaveFailure, setExitSaveFailure] = useState<CloudBackupFailure | null>(null);
 
   // Issue #112: `draftAutosave`/`draftServerSync` above already classify
   // and record autosave/sync failures via `getLastFailure()`, but nothing
@@ -1327,7 +1368,30 @@ function EditorWorkspace() {
     await draftAutosave.clearDraft();
     void draftServerSync.deleteServerDraft();
     setShowExitConfirm(false);
+    setExitSaveFailure(null);
     navigate('/');
+  }
+
+  // Issue #527: "Save now before clearing" -- attempted once, the first
+  // time the user confirms "Exit without saving," for a project opted
+  // into cloud sync. `saveNowBeforeClearing` itself decides it's a no-op
+  // (`applicable: false`) for a project that isn't cloud-synced, so this
+  // never delays or changes behavior for the common (no-sync) case. A
+  // failure never auto-proceeds -- it replaces the dialog with an
+  // explicit "Clear anyway" override (`exitSaveFailure`); only a
+  // successful checkpoint (or no applicable checkpoint at all) exits
+  // directly.
+  async function attemptExit() {
+    if (id && gatedWorkingCopy) {
+      setExitSaving(true);
+      const result = await saveNowBeforeClearing(id, gatedWorkingCopy);
+      setExitSaving(false);
+      if (result.applicable && !result.success) {
+        setExitSaveFailure(result.failure);
+        return;
+      }
+    }
+    await handleConfirmExit();
   }
 
   // Task 44: "Recover draft" loads the reconciled draft's scene as the new
@@ -3016,8 +3080,14 @@ function EditorWorkspace() {
         </button>
         {showExitConfirm && (
           <ExitWithoutSavingConfirm
-            onConfirm={() => void handleConfirmExit()}
-            onCancel={() => setShowExitConfirm(false)}
+            onConfirm={() => void attemptExit()}
+            onCancel={() => {
+              setShowExitConfirm(false);
+              setExitSaveFailure(null);
+            }}
+            saving={exitSaving}
+            saveFailure={exitSaveFailure}
+            onClearAnyway={() => void handleConfirmExit()}
           />
         )}
       </header>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { deleteProject, type Project } from '../api/projects';
+import { deleteProject, getSceneVersion, type Project } from '../api/projects';
+import { saveNowBeforeClearing } from '../storage/cloudSnapshot';
 import { originLabel } from './originLabel';
 
 function formatDate(iso: string): string {
@@ -35,12 +36,48 @@ function ProjectCard({
   // Issue #252: mirrors Project3DCard.tsx's delete pattern (added for
   // #242) exactly -- window.confirm is this codebase's existing
   // destructive-action confirmation pattern.
+  //
+  // Issue #527: before actually deleting a project explicitly opted into
+  // cloud sync, attempt one bounded "Save now" checkpoint of its current
+  // saved content -- a scheduled snapshot may not have run yet, so the
+  // cloud copy could be behind. A project never opted into cloud sync (or
+  // with no saved version yet) skips this entirely and deletes directly,
+  // same as before. A failed checkpoint never silently proceeds -- it
+  // asks for an explicit "delete anyway" confirmation naming why the
+  // checkpoint failed, and declining leaves the project untouched.
   async function handleDelete() {
     if (!window.confirm(`Delete "${project.title}"? This cannot be undone from the gallery.`)) {
       return;
     }
     setDeleting(true);
     setDeleteError(null);
+
+    if (project.current_version) {
+      try {
+        const version = await getSceneVersion(project.id, project.current_version);
+        const result = await saveNowBeforeClearing(project.id, version.scene_json);
+        if (result.applicable && !result.success) {
+          const proceedAnyway = window.confirm(
+            `${result.failure.message} Delete "${project.title}" anyway? Any changes not already in the cloud copy may be lost.`,
+          );
+          if (!proceedAnyway) {
+            setDeleting(false);
+            return;
+          }
+        }
+      } catch {
+        // Couldn't even determine cloud-sync status/content -- treat the
+        // same as a failed checkpoint rather than silently deleting.
+        const proceedAnyway = window.confirm(
+          `Could not check this project's cloud backup status. Delete "${project.title}" anyway? Any changes not already in the cloud copy may be lost.`,
+        );
+        if (!proceedAnyway) {
+          setDeleting(false);
+          return;
+        }
+      }
+    }
+
     try {
       await deleteProject(project.id);
       onDeleted(project.id);

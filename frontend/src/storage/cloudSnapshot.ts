@@ -18,13 +18,21 @@
  * `pushCloudSnapshot` when it says so.
  */
 
-import { computeChecksum, getMediaBlob, listMediaAssetsForProject } from './localProjectRepository';
 import {
+  computeChecksum,
+  getMediaBlob,
+  listMediaAssetsForProject,
+  openLocalProjectDatabase,
+} from './localProjectRepository';
+import {
+  fetchCloudBackup,
   putCloudBackupAsset,
   putCloudBackupManifest,
   type CloudBackupManifestAsset,
   type CloudBackupStatus,
 } from '../api/cloudBackup';
+import { classifyCloudBackupError, type CloudBackupFailure } from '../api/cloudBackupErrors';
+import { ApiError } from '../api/client';
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -99,4 +107,63 @@ export async function pushCloudSnapshot(
       assets,
     },
   });
+}
+
+export type SaveNowResult =
+  | { applicable: false }
+  | { applicable: true; success: true }
+  | { applicable: true; success: false; failure: CloudBackupFailure };
+
+/**
+ * Issue #527: the bounded, awaitable "Save now" checkpoint a destructive
+ * local-clearing action (e.g. "Exit without saving") offers before it
+ * proceeds, for a project explicitly opted into cloud sync. Returns
+ * `{applicable: false}` immediately, without any network call, for a
+ * project that is not enabled/is paused/is read-only -- there is no
+ * cloud copy to protect, so the caller should just proceed with its
+ * local clearing action directly (the "no-sync projects" case).
+ *
+ * Never throws: a failure (offline, conflict, paused, quota, etc.) is
+ * reported in the return value via `classifyCloudBackupError`, for the
+ * caller to explain to the user and offer an explicit "Clear anyway"
+ * override -- this function only ever *attempts* the checkpoint, it
+ * never itself decides whether clearing should be allowed to proceed.
+ */
+export async function saveNowBeforeClearing(
+  projectId: string,
+  sceneJson: Record<string, unknown>,
+): Promise<SaveNowResult> {
+  let status: CloudBackupStatus;
+  try {
+    status = await fetchCloudBackup(projectId);
+  } catch (err) {
+    // A 404 means this project was never opted into cloud sync at all --
+    // there is no cloud copy to protect, so the caller should just
+    // proceed. Any other failure (offline, 401/403, 5xx) is a genuine
+    // "we don't know the state of the cloud copy" case and must be
+    // surfaced, not silently treated as "nothing to protect."
+    if (err instanceof ApiError && err.status === 404) {
+      return { applicable: false };
+    }
+    return { applicable: true, success: false, failure: classifyCloudBackupError(err) };
+  }
+  if (!status.enabled || status.paused || status.read_only) {
+    return { applicable: false };
+  }
+  let db: IDBDatabase;
+  try {
+    db = await openLocalProjectDatabase();
+  } catch (err) {
+    // e.g. IndexedDB unavailable in this browser -- a real failure to
+    // establish the checkpoint, not "nothing to protect."
+    return { applicable: true, success: false, failure: classifyCloudBackupError(err) };
+  }
+  try {
+    await pushCloudSnapshot(db, projectId, sceneJson, status.revision);
+    return { applicable: true, success: true };
+  } catch (err) {
+    return { applicable: true, success: false, failure: classifyCloudBackupError(err) };
+  } finally {
+    db.close();
+  }
 }

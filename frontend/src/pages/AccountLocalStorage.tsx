@@ -5,7 +5,9 @@ import { useAuth } from '../auth/useAuth';
 import { exportDatabaseArchive, restoreDatabaseArchive } from '../storage/localDatabaseArchive';
 import {
   deleteProject,
+  getProjectUsage,
   listProjectsForOwner,
+  listScenesForProject,
   openLocalProjectDatabase,
   requestPersistentStorage,
   type LocalProjectRecord,
@@ -82,8 +84,11 @@ function downloadBlob(blob: Blob, filename: string) {
 /** Issue #526: per-project export/delete plus whole-database export and
  * restore-from-file, for the local project database only -- the drafts
  * database has no comparable per-project archive concept. */
+type LocalProjectDetails = { sceneCount: number; mediaFileCount: number; byteTotal: number };
+
 function LocalProjectsManager({ ownerId }: { ownerId: string }) {
   const [projects, setProjects] = useState<LocalProjectRecord[] | null>(null);
+  const [details, setDetails] = useState<Record<string, LocalProjectDetails>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -96,8 +101,31 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
     openLocalProjectDatabase()
       .then(async (db) => {
         const list = await listProjectsForOwner(db, ownerId);
+        // Issue #527: "names the exact scope ... shows current
+        // project/file/byte counts" for the delete confirmation below --
+        // fetched once per load rather than only when Delete is clicked,
+        // so the confirmation can show real numbers immediately.
+        const detailEntries = await Promise.all(
+          list.map(async (project) => {
+            const [scenes, usage] = await Promise.all([
+              listScenesForProject(db, project.id),
+              getProjectUsage(db, project.id),
+            ]);
+            return [
+              project.id,
+              {
+                sceneCount: scenes.length,
+                mediaFileCount: usage.fileCount,
+                byteTotal: usage.bytesUsed,
+              },
+            ] as const;
+          }),
+        );
         db.close();
-        if (!cancelled) setProjects(list);
+        if (!cancelled) {
+          setProjects(list);
+          setDetails(Object.fromEntries(detailEntries));
+        }
       })
       .catch(() => {
         if (!cancelled) setLoadError('Could not read local projects.');
@@ -237,7 +265,14 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
                 </button>
                 {confirmingDeleteId === project.id ? (
                   <>
-                    <span role="alert">Delete "{project.title}" permanently?</span>
+                    <span role="alert">
+                      Delete "{project.title}" permanently? This removes{' '}
+                      {details[project.id]?.sceneCount ?? 0} scene(s) and{' '}
+                      {details[project.id]?.mediaFileCount ?? 0} media file(s) (
+                      {formatBytes(details[project.id]?.byteTotal)}) from this browser. This project
+                      is not synced to the cloud -- it only exists here; export it first if you want
+                      a copy.
+                    </span>
                     <button
                       type="button"
                       onClick={() => void deleteProjectConfirmed(project)}
@@ -324,6 +359,12 @@ function AccountLocalStorage() {
       <p>
         This reports only what this browser can tell us about this app's own storage on this origin.
         It never sees other sites' storage, and it can't guarantee more space is available.
+      </p>
+      <p>
+        Clearing your browser's history or site data outside this app can delete this data too --
+        that happens entirely outside this page, and no website can reliably detect or prevent it.
+        Export what you want to keep, and check "Last activity" above for a rough sense of what's
+        been backed up.
       </p>
       {loadError && (
         <p role="alert" aria-live="assertive">

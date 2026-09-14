@@ -10,19 +10,23 @@ import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiError } from '../api/client';
 import type { CloudBackupStatus } from '../api/cloudBackup';
 import * as cloudBackupApi from '../api/cloudBackup';
-import { isSnapshotDue, pushCloudSnapshot } from './cloudSnapshot';
+import { isSnapshotDue, pushCloudSnapshot, saveNowBeforeClearing } from './cloudSnapshot';
 import { importMediaAsset, openLocalProjectDatabase } from './localProjectRepository';
 
 vi.mock('../api/cloudBackup', async () => {
   const actual = await vi.importActual<typeof cloudBackupApi>('../api/cloudBackup');
   return {
     ...actual,
+    fetchCloudBackup: vi.fn(),
     putCloudBackupManifest: vi.fn(),
     putCloudBackupAsset: vi.fn(),
   };
 });
+
+const mockedFetchCloudBackup = vi.mocked(cloudBackupApi.fetchCloudBackup);
 
 function baseStatus(overrides: Partial<CloudBackupStatus> = {}): CloudBackupStatus {
   return {
@@ -140,5 +144,82 @@ describe('pushCloudSnapshot', () => {
     const [, manifestFields] = vi.mocked(cloudBackupApi.putCloudBackupManifest).mock.calls[0];
     expect(manifestFields.revision).toBe(3);
     expect(manifestFields.manifest.assets).toEqual([]);
+  });
+});
+
+describe('saveNowBeforeClearing', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (globalThis as { indexedDB: IDBFactory }).indexedDB = new IDBFactory();
+  });
+
+  it('is a no-op (not applicable) for a project never opted into cloud sync', async () => {
+    mockedFetchCloudBackup.mockRejectedValue(new ApiError(404, {}));
+
+    const result = await saveNowBeforeClearing('proj-1', { shapes: [] });
+
+    expect(result).toEqual({ applicable: false });
+    expect(cloudBackupApi.putCloudBackupManifest).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op for a project that is disabled, paused, or read-only', async () => {
+    for (const overrides of [{ enabled: false }, { paused: true }, { read_only: true }]) {
+      mockedFetchCloudBackup.mockResolvedValue(baseStatus(overrides));
+      const result = await saveNowBeforeClearing('proj-1', { shapes: [] });
+      expect(result).toEqual({ applicable: false });
+    }
+  });
+
+  it('succeeds and pushes a checkpoint for an enabled, unpaused, writable project', async () => {
+    mockedFetchCloudBackup.mockResolvedValue(baseStatus());
+    vi.mocked(cloudBackupApi.putCloudBackupManifest).mockResolvedValue({
+      revision: 1,
+      checksum: 'x',
+      manifest: { project_id: 'proj-1', scenes: [], assets: [] },
+    });
+
+    const result = await saveNowBeforeClearing('proj-1', { shapes: [] });
+
+    expect(result).toEqual({ applicable: true, success: true });
+    expect(cloudBackupApi.putCloudBackupManifest).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a classified conflict failure without throwing (stale remote revision)', async () => {
+    mockedFetchCloudBackup.mockResolvedValue(baseStatus());
+    vi.mocked(cloudBackupApi.putCloudBackupManifest).mockRejectedValue(
+      new ApiError(409, { error: 'cloud_backup_conflict' }),
+    );
+
+    const result = await saveNowBeforeClearing('proj-1', { shapes: [] });
+
+    expect(result.applicable).toBe(true);
+    expect(result).toMatchObject({ success: false, failure: { kind: 'conflict' } });
+  });
+
+  it('reports an offline failure without throwing (provider/network failure)', async () => {
+    mockedFetchCloudBackup.mockResolvedValue(baseStatus());
+    vi.mocked(cloudBackupApi.putCloudBackupManifest).mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    );
+
+    const result = await saveNowBeforeClearing('proj-1', { shapes: [] });
+
+    expect(result).toMatchObject({
+      applicable: true,
+      success: false,
+      failure: { kind: 'offline' },
+    });
+  });
+
+  it('reports a status-check failure (not a 404) as a real failure, never silently as no-sync', async () => {
+    mockedFetchCloudBackup.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = await saveNowBeforeClearing('proj-1', { shapes: [] });
+
+    expect(result).toMatchObject({
+      applicable: true,
+      success: false,
+      failure: { kind: 'offline' },
+    });
   });
 });

@@ -20422,14 +20422,14 @@ later backlog-session transactions did.
   offloaded metadata, rehydration, and 1280x900/375x812 evidence; GitHub QA
   comment [5660551315](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533#issuecomment-5660551315);
   closed.
-- **#534:** BLOCKED, verification-boundary; Chromium exposes the File System
-  Access API, but the current active-Chrome automation cannot safely exercise
-  native grant/denial/reload/revocation cycles. No product diff was started;
-  next action is an approved native-browser harness or disposable directory
-  runner. GitHub handoff [5660559531](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5660559531).
-- **#535:** DEPENDENCY-BLOCKED on #534; its file and folder entry points are
-  independently observable and must be split or explicitly groomed before
-  implementation. GitHub handoff [5660732408](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535#issuecomment-5660732408).
+- **#534:** OWNER-DECIDED folder approach; implement an optional
+  File-System-Access adapter over the IndexedDB-authoritative workspace, with
+  ZIP as the cross-platform fallback. Chromium still requires native
+  grant/denial/reload/revocation evidence before closure. Decision comment
+  [5661371085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661371085).
+- **#535:** GROOMABLE after the #534 decision; split file and folder entry
+  points. The file half can proceed independently; the folder half follows
+  the #534 adapter contract. Prior handoff [5660732408](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535#issuecomment-5660732408).
 - **#536:** DEPENDENCY-BLOCKED on #535; no product diff started. GitHub handoff
   [5660732949](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5660732949).
 - **#537:** COMPLETE; commit `d3b9922`; explicit `/local-projects/:id`

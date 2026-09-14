@@ -20218,7 +20218,9 @@ error, and `PUBLISHED_APP_URL=https://augmentrart.com
 scripts/smoke-published.sh` passed health, root, anonymous whoami, and login
 checks. Local focused tests remained 46/46 and the previously recorded full
 `make check` remained green (backend 1,309 passed / 39 skipped; frontend 2,641
-passed). The exact issue acceptance criteria are satisfied.
+passed). The signed-in account had no existing 3D project, so the live route
+check covered the repaired empty-list path; no production project was created
+just to manufacture a populated-list test.
 
 No additional actionable issue was found: the open-issue search contained
 only #531. Replit reported two moderate dependency vulnerabilities during
@@ -20231,7 +20233,8 @@ QA, and readiness passes as a flagged substitution for the rostered external
 model stages; no independent second-opinion stage was available.
 
 Final state: `ENGINEERING → QA → PRODUCTION-READY → COMPLETE`, with the
-remote issue update as the only handoff item.
+remote issue update and a populated-list verification as explicit handoff
+items if an owner supplies a suitable non-destructive test account.
 
 ## 377. Task-distillation and grooming for #531 production schema incident (2026-09-14)
 

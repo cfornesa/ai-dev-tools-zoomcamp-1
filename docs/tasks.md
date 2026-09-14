@@ -20442,6 +20442,14 @@ later backlog-session transactions did.
   GitHub update:
   [5661946081](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5661946081).
 
+- **#536 active-Chrome fixture audit:** opening a normal server project and its
+  media library seeds only the local project record; it does not copy a server
+  scene into local IndexedDB. The local editor consequently renders its
+  no-scenes state, which cannot substitute for the supported archive/folder
+  fixture required by #536. The temporary E2E fixture account and project were
+  cleaned up after this check. GitHub update:
+  [5662040877](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5662040877).
+
 - **#533:** COMPLETE; commit `5e833e0`; focused AccountLocalStorage tests 24
   passed; full `make check` passed with backend 1309 passed/39 skipped and
   frontend 2645 passed; active Chrome verified explicit export/confirm/cancel,

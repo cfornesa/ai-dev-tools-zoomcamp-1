@@ -1,8 +1,8 @@
 # Local workspace opening, selective retention, and folder access distillation
 
 Status: DISTILLATION UPDATED — owner-selected browser-local hybrid direction;
-eight criterion-ready follow-ups were reconciled, with #538 and #539 now
-closed after implementation and dual-viewport verification. Six remain open.
+eight criterion-ready follow-ups were reconciled, with #532, #538, and #539 now
+closed after implementation and dual-viewport verification. Five remain open.
 
 ## Current-state investigation
 
@@ -49,7 +49,7 @@ required for the local workspace to function.
 
 | Order | Issue | Capability | Dependencies | Routing | Status |
 | --- | --- | --- | --- | --- | --- |
-| 1 | [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) | Open a selected ZIP as an isolated browser-local workspace with selective project restore | #526; owner-selected hybrid contract | Stage 2b complex | BLOCKED / seeded archive-flow evidence unavailable; responsive Chromium empty-state evidence captured |
+| 1 | [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) | Open a selected ZIP as an isolated browser-local workspace with selective project restore | #526; owner-selected hybrid contract | Stage 2b complex | COMPLETE / commit `ebd6e45`; checksum-valid mixed-media restore and dual-viewport Chromium evidence pass |
 | 2 | [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) | Archive/offload inactive local projects and rehydrate them safely | #525/#526/#532 | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
 | 3 | [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) | Add an optional folder-backed archive bridge with permission and compatibility states | #512/#532; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
 | 4 | [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) | Open a selected local file/folder as project context with explicit copy-in semantics | #526/#532; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |

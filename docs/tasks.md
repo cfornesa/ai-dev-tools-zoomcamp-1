@@ -20334,9 +20334,8 @@ handles, or opening a selected local project context. #525 exposes the raw
 estimate but not the remaining-capacity presentation in #539. Standalone
 piece/account exports are separate contracts.
 
-Next action: keep #532's seeded archive-flow evidence as the primary blocker;
-scope #538 and #539 as independent mechanical follow-ups. Process #533 and #534 after
-#532's workspace contract is terminal, then #535, #536, and #537 according to
+Next action: process #533 and #534 now that #532's workspace contract is
+terminal, then #535, #536, and #537 according to
 their dependency edges. #533, #534, and #535 depend on #532; #536 depends on
 #512/#526/#535 and owns the active-draft plus bounded-recovery semantics; #537
 depends on #532 and owns the editor handoff. No product implementation is
@@ -20344,12 +20343,13 @@ authorized by this distillation entry.
 
 ### #532 transaction ledger — 2026-09-14
 
-- **Phase:** BLOCKED (verification-boundary)
+- **Phase:** COMPLETE
 - **Stage owners:** scoping `Codex / ChatGPT Plus equivalent / Medium`;
   implementation `Claude / current session / Medium` substituted for Ollama
   Cloud `kimi-k3`; second opinion not run; QA `Claude / current session /
   Medium`; readiness gate not run because the batch is incomplete.
-- **Implementation commit:** `60c61d2` (`Implement selected local archive restore preview`)
+- **Implementation commits:** `60c61d2` (`Implement selected local archive restore preview`),
+  `ebd6e45` (`Show verified archive media checksums`)
 - **Changed files:** the archive module and tests, the local storage dashboard
   and tests, plus the distillation/backlog records.
 - **Focused checks:** 34 frontend tests passed; frontend typecheck, lint, and
@@ -20362,11 +20362,12 @@ authorized by this distillation entry.
   [5660171431](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532#issuecomment-5660171431):
   the empty-state/archive controls render at both 1280x900 and 375x812; the
   mobile view collapses primary navigation to the menu button without a layout
-  break.
-- **Evidence boundary / next action:** viewport evidence is now covered, but a
-  seeded archive-preview/selected-restore browser scenario is still required
-  before rerunning QA can make #532 terminal. Issues #533–#537 remain
-  dependency-blocked until that workspace contract is terminal.
+  break. Follow-up QA comment [5660438357](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532#issuecomment-5660438357)
+  records checksum-valid mixed-media archive preview and selected restore at
+  both viewpoints, with full checks green. GitHub #532 is closed as completed.
+- **Evidence boundary / next action:** the archive/workspace contract is
+  terminal. Issues #533–#537 remain open and dependency-ordered; #533, #534,
+  and #537 are now eligible for their own backlog passes.
 
 ### Newly discovered follow-ups — 2026-09-14
 
@@ -20381,30 +20382,30 @@ authorized by this distillation entry.
   distinct Stage 2a dashboard issue. It complements #533's explanation that
   another archive/database does not create extra quota, but does not duplicate
   #533 or depend on #532.
-- **Terminal status:** #538 and #539 are closed as completed after commit
+- **Terminal status:** #532, #538, and #539 are closed as completed after commits
+  `ebd6e45` and
   `734cec6`, focused QA, full `make check`, and active-Chrome evidence at
-  1280x900 and 375x812. The remaining open batch is #532–#537; #532's seeded
-  archive-flow evidence remains the gating dependency for #533–#537.
+  1280x900 and 375x812. The remaining open batch is #533–#537; #533, #534,
+  and #537 are unblocked by #532, while #536 still follows #535.
 
 ### Batch production-readiness and session-completion — 2026-09-14
 
-- **Local deployment:** BLOCKED. Repository-wide checks pass, but the
-  required Django/Vite browser stack was not running and no rendered Chromium
-  evidence was available for #532.
-- **Approved-browser / CI:** BLOCKED. Playwright discovery passed (210 tests),
-  but the required #532 dashboard scenario is not present and no browser run
-  could be executed against a live stack.
-- **Intended functionality:** INCOMPLETE. #532 is locally implemented but QA
-  blocked; #533–#537 are dependency-blocked and remain open.
+- **Local deployment:** PARTIAL. Repository-wide checks pass and #532 now has
+  rendered Chromium evidence at both viewpoints; the remaining open issues
+  still prevent a complete batch release.
+- **Approved-browser / CI:** PARTIAL. Active Chrome evidence passes for #532;
+  approved-browser/CI evidence for #533–#537 remains outstanding.
+- **Intended functionality:** INCOMPLETE. #532 is complete; #533–#537 remain
+  open, with #533/#534/#537 unblocked and #536 still waiting on #535.
 - **Replit publication / production readiness:** NON-ACTIONABLE for this
   batch's local-only contract, but the overall project is not production-ready
   while required issues remain incomplete.
 - **Readiness gate provenance:** not run. The repository requires Opus 5 or
   Sonnet 5 for this gate; that selectable model tier was unavailable in this
   thread. This is a workflow/provenance blocker, not a readiness pass.
-- **Session rollup before the latest discovery:** discovered 6; completed 0;
-  blocked 1; dependency-blocked 5; handed-off 0; missing terminal status 0.
-- **Updated session rollup:** discovered 8; completed 2; blocked 1;
+- **Session rollup before the latest discovery:** discovered 6; completed 1;
+  blocked 0; dependency-blocked 5; handed-off 0; missing terminal status 0.
+- **Updated session rollup:** discovered 8; completed 3; blocked 0;
   dependency-blocked 5; handed-off 0; missing terminal status 0.
 - **Follow-up audit:** one actionable follow-up was created and linked (#537)
   for the missing local editor handoff; no duplicate issue was created for the

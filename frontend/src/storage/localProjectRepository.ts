@@ -9,16 +9,18 @@
  * and classifies every failure into one of five caller-actionable kinds so a
  * failed write never corrupts or discards the last known-good project.
  *
- * Database: `creatrart-local-projects`, version 1. Five object stores --
- * `projects`, `scenes`, `mediaAssets`, `mediaBlobs`, `meta` -- exactly as
+ * Database: `creatrart-local-projects`, version 3. Seven object stores --
+ * `projects`, `scenes`, `mediaAssets`, `mediaBlobs`, `meta`, recovery drafts,
+ * and the authenticated mutation outbox -- exactly as
  * specified in issue #512. Every future schema change ships as a new,
  * numbered upgrade step appended to `UPGRADE_STEPS` below (keyed to the
  * target version), so upgrades compose instead of rewriting history; this
- * issue ships steps 1 (the initial schema) and 2 (bounded recovery drafts).
+ * issue ships steps 1 (the initial schema), 2 (bounded recovery drafts), and
+ * 3 (the authenticated cloud-mutation outbox used by issue #543).
  */
 
 export const DB_NAME = 'creatrart-local-projects';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const STORE_PROJECTS = 'projects';
 export const STORE_SCENES = 'scenes';
@@ -26,6 +28,7 @@ export const STORE_MEDIA_ASSETS = 'mediaAssets';
 export const STORE_MEDIA_BLOBS = 'mediaBlobs';
 export const STORE_META = 'meta';
 export const STORE_RECOVERY_DRAFTS = 'recoveryDrafts';
+export const STORE_MUTATION_OUTBOX = 'mutationOutbox';
 
 const OBJECT_STORE_NAMES = [
   STORE_PROJECTS,
@@ -34,6 +37,7 @@ const OBJECT_STORE_NAMES = [
   STORE_MEDIA_BLOBS,
   STORE_META,
   STORE_RECOVERY_DRAFTS,
+  STORE_MUTATION_OUTBOX,
 ] as const;
 
 /** #512's recorded quota: exactly 50MB of blob bytes and 100 media assets,
@@ -271,6 +275,16 @@ const UPGRADE_STEPS: Array<(db: IDBDatabase, tx: IDBTransaction) => void> = [
     if (!db.objectStoreNames.contains(STORE_RECOVERY_DRAFTS)) {
       const drafts = db.createObjectStore(STORE_RECOVERY_DRAFTS, { keyPath: 'id' });
       drafts.createIndex('by_project_saved_at', ['projectId', 'savedAt'], { unique: false });
+    }
+  },
+  // Step 3: durable authenticated cloud-mutation outbox for issue #543.
+  (db) => {
+    if (!db.objectStoreNames.contains(STORE_MUTATION_OUTBOX)) {
+      const outbox = db.createObjectStore(STORE_MUTATION_OUTBOX, { keyPath: 'operationId' });
+      outbox.createIndex('by_owner_project', ['ownerId', 'projectId'], { unique: false });
+      outbox.createIndex('by_owner_project_sequence', ['ownerId', 'projectId', 'clientSequence'], {
+        unique: false,
+      });
     }
   },
 ];
@@ -554,8 +568,8 @@ export async function updateProject(
   return updated;
 }
 
-/** Deletes a project and every scene/media asset/blob it owns. Runs as one
- * atomic transaction across all four data stores -- either everything is
+/** Deletes a project and every scene/media asset/blob/outbox operation it owns.
+ * Runs as one atomic transaction across all six data stores -- either everything is
  * removed, or (on any failure) nothing is, leaving the project intact. */
 export async function deleteProject(
   db: IDBDatabase,
@@ -566,28 +580,47 @@ export async function deleteProject(
   if (!existing) return;
   let sceneIds: string[];
   let assetIds: string[];
+  let operationIds: string[];
   try {
-    const readTx = db.transaction([STORE_SCENES, STORE_MEDIA_ASSETS], 'readonly');
+    const readTx = db.transaction(
+      [STORE_SCENES, STORE_MEDIA_ASSETS, STORE_MUTATION_OUTBOX],
+      'readonly',
+    );
     const scenes = (await reqPromise(
       readTx.objectStore(STORE_SCENES).index('by_project').getAll(projectId),
     )) as LocalSceneRecord[];
     const assets = (await reqPromise(
       readTx.objectStore(STORE_MEDIA_ASSETS).index('by_project').getAll(projectId),
     )) as LocalMediaAssetRecord[];
+    const operations = (await reqPromise(
+      readTx
+        .objectStore(STORE_MUTATION_OUTBOX)
+        .index('by_owner_project')
+        .getAll([ownerId, projectId]),
+    )) as Array<{ operationId: string }>;
     sceneIds = scenes.map((s) => s.id);
     assetIds = assets.map((a) => a.id);
+    operationIds = operations.map((operation) => operation.operationId);
   } catch (err) {
     throw classifyDbFailure(err);
   }
   try {
     const tx = db.transaction(
-      [STORE_PROJECTS, STORE_SCENES, STORE_MEDIA_ASSETS, STORE_MEDIA_BLOBS, STORE_META],
+      [
+        STORE_PROJECTS,
+        STORE_SCENES,
+        STORE_MEDIA_ASSETS,
+        STORE_MEDIA_BLOBS,
+        STORE_META,
+        STORE_MUTATION_OUTBOX,
+      ],
       'readwrite',
     );
     tx.objectStore(STORE_PROJECTS).delete(projectId);
     for (const id of sceneIds) tx.objectStore(STORE_SCENES).delete(id);
     for (const id of assetIds) tx.objectStore(STORE_MEDIA_ASSETS).delete(id);
     for (const id of assetIds) tx.objectStore(STORE_MEDIA_BLOBS).delete(id);
+    for (const id of operationIds) tx.objectStore(STORE_MUTATION_OUTBOX).delete(id);
     tx.objectStore(STORE_META).delete(usageMetaKey(projectId));
     await txDone(tx);
   } catch (err) {

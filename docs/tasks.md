@@ -20469,6 +20469,19 @@ later backlog-session transactions did.
   #544/#545 follow its operation identity, and #546 follows both outbox and
   ownership contracts.
 
+- **#543:** ENGINEERING/QA RETURNED. Commit `7245b25` adds the versioned
+  IndexedDB mutation outbox, owner/project sequence, payload checksums,
+  dependency ordering, bounded deterministic retry, acknowledgement, pause,
+  and replay primitives. Focused tests pass 22/22; full frontend passes 219
+  files / 2,660 tests; temporary-cache `make check` passes backend 1,309/39
+  skipped and frontend 2,660 with typecheck, format, and lint. QA found the
+  authenticated transport adapter and required desktop/mobile Chromium
+  offline-to-reload-to-reconnect evidence missing, so the issue remains open
+  and must return to implementation before closure. The GitHub QA comment
+  could not be published after a connector safety rejection following one
+  mistyped repository target; the complete verdict is recorded here pending a
+  safe authenticated retry.
+
 - **#533:** COMPLETE; commit `5e833e0`; focused AccountLocalStorage tests 24
   passed; full `make check` passed with backend 1309 passed/39 skipped and
   frontend 2645 passed; active Chrome verified explicit export/confirm/cancel,

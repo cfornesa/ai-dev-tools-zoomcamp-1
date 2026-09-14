@@ -20443,10 +20443,14 @@ later backlog-session transactions did.
   implementation and Chromium evidence in #532. The folder-context entry
   point is now #541. Reconciliation comment
   [5661426355](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535#issuecomment-5661426355).
-- **#536:** GROOMED with an explicit authority boundary: IndexedDB owns the
-  active draft/workspace; the selected disk archive owns the durable checkpoint.
-  It depends on #535 and the #534/#541 folder-write contract. Clarification
-  comment [5661407115](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5661407115).
+- **#536:** IMPLEMENTATION ACTIVE with an explicit authority boundary:
+  IndexedDB owns the active draft/workspace; the selected disk archive owns the
+  durable checkpoint. Commit `66305d8` adds an explicit editor checkpoint
+  save/download action gated by Save/Cancel. Remaining work is bounded draft
+  history, reload/reopen reconciliation, atomic-write recovery, and browser
+  lifecycle evidence. Clarification comment
+  [5661407115](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5661407115);
+  implementation slice [5661748261](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5661748261).
 - **#541:** CLOSED as a duplicate of #534; the folder bridge now owns safe
   archive listing, inspection, preview, and explicit copy-in in one contract.
   Reconciliation comment

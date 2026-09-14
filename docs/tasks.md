@@ -20568,3 +20568,37 @@ later backlog-session transactions did.
   audit remains incomplete for the unavailable
   independent second-opinion and readiness-gate stages; all substitutions are
   explicitly identified in this ledger and no issue was silently closed.
+
+## 2026-09-14 backlog-session / session-completion reconciliation
+
+The current 15-item local-workspace manifest has zero missing terminal-status
+records:
+
+- **Completed (8):** #532, #533, #535, #537, #538, #539, and #540, #541.
+- **Handed off (1):** #542. Its authority boundary and deterministic-hybrid
+  policy are reconciled; implementation is decomposed into #543–#546.
+- **Verification-boundary blocked (2):** #534 (native File System Access API
+  absent in active Chrome) and #536 (supported archive/folder fixture cannot be
+  produced in active Chrome).
+- **Owner-decision blocked (1):** #543, pending explicit approval of a
+  dedicated authenticated mutation endpoint and server-side idempotency/
+  acknowledgement migration after QA returned commit `7245b25`.
+- **Dependency-blocked (3):** #544, #545, and #546, all reconciled on GitHub
+  with exact dependency comments [#544 comment 5662429943](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/544#issuecomment-5662429943),
+  [#545 comment 5662430617](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/545#issuecomment-5662430617),
+  and [#546 comment 5662431223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/546#issuecomment-5662431223).
+
+The final local regression evidence remains green: temporary-cache
+`UV_CACHE_DIR=/private/tmp/creatrweb-uv-cache make check` passed backend
+1,309/39 skipped and frontend 2,660, typecheck, format, and lint. The active
+Chrome evidence boundaries are recorded on #534 and #536 above. The formal
+production-readiness gate is **not run**: the mandated Opus 5/Sonnet 5 tier is
+not available in this session, and the batch contains blocked/unverified
+criteria. It must not be represented as production-ready.
+
+Routing reconciliation: the Codex session handled task distillation,
+scoping, and QA as substitutions where the rostered external workers were
+unavailable; the delegated #543 worker terminated incomplete before the local
+implementation. No independent second-opinion review ran. The readiness gate
+and final production assessment remain pending the owner decision, external
+browser capabilities, and the mandated model tier.

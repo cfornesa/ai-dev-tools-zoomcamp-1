@@ -20382,21 +20382,23 @@ authorized by this distillation entry.
   distinct Stage 2a dashboard issue. It complements #533's explanation that
   another archive/database does not create extra quota, but does not duplicate
   #533 or depend on #532.
-- **Terminal status:** #532, #538, and #539 are closed as completed after commits
-  `ebd6e45` and
+- **Terminal status:** #532, #533, #537, #538, and #539 are closed as completed
+  after commits `ebd6e45`, `5e833e0`, and `d3b9922`,
   `734cec6`, focused QA, full `make check`, and active-Chrome evidence at
-  1280x900 and 375x812. The remaining open batch is #533–#537; #533, #534,
-  and #537 are unblocked by #532, while #536 still follows #535.
+  1280x900 and 375x812. #534 remains blocked by native directory-picker
+  verification; #535 is dependency-blocked on #534 and needs file/folder
+  contract grooming; #536 remains dependency-blocked on #535.
 
 ### Batch production-readiness and session-completion — 2026-09-14
 
-- **Local deployment:** PARTIAL. Repository-wide checks pass and #532 now has
-  rendered Chromium evidence at both viewpoints; the remaining open issues
-  still prevent a complete batch release.
-- **Approved-browser / CI:** PARTIAL. Active Chrome evidence passes for #532;
-  approved-browser/CI evidence for #533–#537 remains outstanding.
-- **Intended functionality:** INCOMPLETE. #532 is complete; #533–#537 remain
-  open, with #533/#534/#537 unblocked and #536 still waiting on #535.
+- **Local deployment:** PARTIAL. Repository-wide checks pass and #532, #533,
+  and #537 have rendered Chromium evidence at both viewpoints; #534–#536
+  prevent a complete batch release.
+- **Approved-browser / CI:** PARTIAL. Active Chrome evidence passes for #532,
+  #533, and #537; #534's native-picker evidence and #535/#536 browser flows
+  remain outstanding.
+- **Intended functionality:** INCOMPLETE. #532, #533, and #537 are complete;
+  #534 is blocked and #535/#536 are dependency-blocked.
 - **Replit publication / production readiness:** NON-ACTIONABLE for this
   batch's local-only contract, but the overall project is not production-ready
   while required issues remain incomplete.
@@ -20405,8 +20407,8 @@ authorized by this distillation entry.
   thread. This is a workflow/provenance blocker, not a readiness pass.
 - **Session rollup before the latest discovery:** discovered 6; completed 1;
   blocked 0; dependency-blocked 5; handed-off 0; missing terminal status 0.
-- **Updated session rollup:** discovered 8; completed 3; blocked 0;
-  dependency-blocked 5; handed-off 0; missing terminal status 0.
+- **Updated session rollup:** discovered 8; completed 5; blocked 1;
+  dependency-blocked 2; handed-off 0; missing terminal status 0.
 - **Follow-up audit:** one actionable follow-up was created and linked (#537)
   for the missing local editor handoff; no duplicate issue was created for the
   browser-evidence boundary. The exact next action for every remaining issue

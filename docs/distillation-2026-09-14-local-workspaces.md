@@ -1,8 +1,9 @@
 # Local workspace opening, selective retention, and folder access distillation
 
 Status: DISTILLATION UPDATED — owner-selected browser-local hybrid direction;
-eight criterion-ready follow-ups were reconciled, with #532, #538, and #539 now
-closed after implementation and dual-viewport verification. Five remain open.
+eight criterion-ready follow-ups were reconciled, with #532, #533, #537, #538,
+and #539 now closed after implementation and dual-viewport verification. Three
+remain open with terminal blocker states.
 
 ## Current-state investigation
 
@@ -50,11 +51,11 @@ required for the local workspace to function.
 | Order | Issue | Capability | Dependencies | Routing | Status |
 | --- | --- | --- | --- | --- | --- |
 | 1 | [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) | Open a selected ZIP as an isolated browser-local workspace with selective project restore | #526; owner-selected hybrid contract | Stage 2b complex | COMPLETE / commit `ebd6e45`; checksum-valid mixed-media restore and dual-viewport Chromium evidence pass |
-| 2 | [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) | Archive/offload inactive local projects and rehydrate them safely | #525/#526/#532 | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
-| 3 | [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) | Add an optional folder-backed archive bridge with permission and compatibility states | #512/#532; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
-| 4 | [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) | Open a selected local file/folder as project context with explicit copy-in semantics | #526/#532; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
-| 5 | [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) | Save editable browser workspaces durably to disk and reopen them with bounded IndexedDB recovery | #512/#526/#535 | Stage 2b complex | DEPENDENCY-BLOCKED on #535/#532 |
-| 6 | [#537](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537) | Hand restored local projects into a browser-local editor route with workspace switching | #532 | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
+| 2 | [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) | Archive/offload inactive local projects and rehydrate them safely | #525/#526/#532 | Stage 2b complex | COMPLETE / commit `5e833e0`; verified export, explicit confirmation, offload metadata, rehydration, and dual-viewport Chromium evidence pass |
+| 3 | [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) | Add an optional folder-backed archive bridge with permission and compatibility states | #512/#532; owner-selected hybrid contract | Stage 2b complex | BLOCKED / verification boundary: active Chrome automation cannot drive native grant/denial/revocation cycles |
+| 4 | [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) | Open a selected local file/folder as project context with explicit copy-in semantics | #526/#532/#534; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #534; contract combines file and folder entry points and needs grooming/splitting |
+| 5 | [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) | Save editable browser workspaces durably to disk and reopen them with bounded IndexedDB recovery | #512/#526/#535 | Stage 2b complex | DEPENDENCY-BLOCKED on #535 |
+| 6 | [#537](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537) | Hand restored local projects into a browser-local editor route with workspace switching | #532 | Stage 2b complex | COMPLETE / commit `d3b9922`; local editor, owner isolation, unsaved guard, and dual-viewport Chromium evidence pass |
 | 7 | [#538](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/538) | Remove local-storage-dashboard horizontal overflow on mobile | #532 evidence; no product dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
 | 8 | [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) | Show remaining browser-origin storage quota for local artwork | #525 storage estimate; no #532 dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
 

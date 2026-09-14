@@ -1,6 +1,7 @@
 # Local workspace opening, selective retention, and folder access distillation
 
-Status: DISTILLATION UPDATED — owner-selected offline-first sync and folder-bridge direction;
+Status: DISTILLATION UPDATED — owner-selected offline-first sync, folder-bridge direction,
+and deterministic-hybrid conflict policy;
 eleven criterion-ready follow-ups were reconciled, with #532, #533, #535, #537,
 #538, #539, #540, and #541 now closed after implementation, duplicate
 reconciliation, decision closure, and dual-viewport verification. Three
@@ -69,7 +70,7 @@ required for the local workspace to function.
 | 8 | [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) | Show remaining browser-origin storage quota for local artwork | #525 storage estimate; no #532 dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
 | 9 | [#540](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/540) | Decide the first offline/downloadable milestone before PWA/native implementation | #532/#533/#537 evidence; owner boundary decision | Stage 2b complex/architecture | DECIDED / offline-first sync selected; scope a follow-up for outbox, conflict, auth recovery, and retry semantics |
 | 10 | [#541](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541) | Open a selected folder as project context with safe archive inspection and copy-in | #526/#532/#534 | Stage 2b complex | CLOSED / duplicate of #534; folder bridge remains single-owner |
-| 11 | [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542) | Define offline-first sync outbox, conflict, and recovery contract | #540/#512/#534/#536 | Stage 2b complex/architecture | OPEN / groomed; authority boundary reconciled, but owner conflict/rebase policy and follow-up decomposition remain before implementation-ready closure |
+| 11 | [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542) | Define offline-first sync outbox, conflict, and recovery contract | #540/#512/#534/#536 | Stage 2b complex/architecture | OWNER-DECIDED / deterministic hybrid merge; follow-up decomposition and criterion-ready implementation spec remain |
 
 ## Criterion-ready issue contracts
 
@@ -161,11 +162,18 @@ authoritative for the last durable checkpoint. Explicit Save validates and
 atomically writes from the active IndexedDB state; reopen validates the archive
 and creates or reconciles a fresh active IndexedDB workspace. This resolves the
 apparent source-of-truth contradiction between #512/#534 and #536.
-The next criterion-ready contract is [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542): it must define the outbox,
-conflict/rebase model, authentication recovery, media upload retry, quota
-behavior, and exact online boundaries before manifest/installability work is
-filed. Native packaging remains a later Capacitor-style option, not a
-prerequisite for the browser PWA.
+The owner selected a deterministic hybrid merge policy for [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542): queueing,
+retry/backoff, idempotent replay, divergence detection, and any merge that can
+be proven independent are automated. The system must surface an explicit,
+reproducible conflict only when edits overlap or cannot be safely rebased; it
+must never silently discard artwork through last-write-wins. This preserves a
+deterministic automation path without forcing manual work for non-conflicting
+changes. The criterion-ready contract must define operation identity,
+mergeability rules, conflict records, owner resolution/rebase actions, auth
+recovery, media retry/checksum behavior, quota handling, and exact online-only
+boundaries before implementation or manifest/installability work is filed.
+Native packaging remains a later Capacitor-style option, not a prerequisite
+for the browser PWA.
 
 ## Next transaction
 

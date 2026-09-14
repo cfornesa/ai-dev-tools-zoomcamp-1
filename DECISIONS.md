@@ -3,6 +3,16 @@
 Append-only log of agent-relevant decisions. See `AGENTS.md` Section 10 for
 ownership and read cadence.
 
+## 2026-09-14
+
+- **#542 conflict policy (owner-selected):** deterministic hybrid merge. The
+  outbox automates operation identity, ordering, retry/backoff, idempotent
+  replay, divergence detection, and merges proven independent. Overlapping or
+  otherwise ambiguous edits become explicit reproducible conflicts with an
+  owner resolution/rebase action. Last-write-wins is excluded because it can
+  silently discard artwork. #542 remains open until this policy is translated
+  into a criterion-ready follow-up decomposition and implementation contract.
+
 ## 2026-09-08
 
 - Roster finalized for ai-dev-tools-zoomcamp-1 — see LOOP-AGENTS.md Section 4 and GRAPH-AGENTS.md Section 5.

@@ -20455,9 +20455,13 @@ later backlog-session transactions did.
   recovery only, folder/ZIP is the durable checkpoint, the #542 outbox is only
   for authenticated cloud mutations, and the server is authoritative for
   synchronized cloud state. Existing draft autosave and one-way cloud backup
-  remain distinct. #542 is groomed but still open pending the owner’s
-  conflict/rebase policy and follow-up decomposition for outbox, media
-  transfer, and conflict UI. GitHub update:
+  remain distinct. The owner then selected a **deterministic hybrid merge**:
+  queueing, retries, idempotent replay, divergence detection, and provably
+  independent merges are automated; only overlapping or non-provable edits
+  surface an explicit reproducible conflict. Last-write-wins is excluded
+  because it can silently discard artwork. #542 remains open for the exact
+  criterion-ready follow-up decomposition covering outbox, media transfer,
+  conflict UI, auth recovery, and online-only boundaries. GitHub update:
   [5662050053](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542#issuecomment-5662050053).
 
 - **#533:** COMPLETE; commit `5e833e0`; focused AccountLocalStorage tests 24

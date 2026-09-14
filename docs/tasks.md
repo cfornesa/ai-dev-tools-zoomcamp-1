@@ -20452,19 +20452,21 @@ later backlog-session transactions did.
   frontend 2648 passed, and active-Chrome 1280x900/375x812 evidence; GitHub QA
   comment [5660725740](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537#issuecomment-5660725740);
   closed.
-- **#540:** DECIDED; owner selected offline-first sync. No product
-  implementation or dependency was added. The next issue must define the
-  outbox, conflict/rebase behavior, authentication recovery, media retry,
-  quota handling, and explicit online-only boundaries before PWA installability
-  work. GitHub decision record will be added to #540.
+- **#540:** CLOSED as the completed architecture decision; owner selected
+  offline-first sync. No product implementation or dependency was added. Its
+  implementation contract is now #542.
 - **Production-readiness result:** INCOMPLETE/BLOCKED. Local checks and active
   Chrome evidence pass for #532, #533, and #537, but #534–#536 are not ready.
   The mandated Opus 5/Sonnet 5 readiness tier was unavailable, so the formal
   readiness gate was not run and is not being represented as a pass.
+- **#542:** OPEN/criterion-ready follow-up for the selected offline-first sync
+  path; it owns outbox, conflict/rebase, auth recovery, media retry, quota,
+  and online-only boundary semantics. No PWA/native dependency was added.
 - **Session-completion result:** terminal-status audit must be refreshed after
-  the #535 duplicate reconciliation and new #541 issue. Current reconciliation
-  is discovered 10, completed 6 (including #535's duplicate closure), with
-  #534, #536, and #541 still open for implementation/dependency work. Routing
+  the #535 duplicate reconciliation, new #541 issue, and #542 follow-up.
+  Current reconciliation is discovered 11, completed 7 (including #535's
+  duplicate closure and #540's decision closure), with #534, #536, #541, and
+  #542 still open for implementation/dependency work. Routing
   audit remains incomplete for the unavailable
   independent second-opinion and readiness-gate stages; all substitutions are
   explicitly identified in this ledger and no issue was silently closed.

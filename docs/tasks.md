@@ -20381,6 +20381,10 @@ authorized by this distillation entry.
   distinct Stage 2a dashboard issue. It complements #533's explanation that
   another archive/database does not create extra quota, but does not duplicate
   #533 or depend on #532.
+- **Terminal status:** #538 and #539 are closed as completed after commit
+  `734cec6`, focused QA, full `make check`, and active-Chrome evidence at
+  1280x900 and 375x812. The remaining open batch is #532–#537; #532's seeded
+  archive-flow evidence remains the gating dependency for #533–#537.
 
 ### Batch production-readiness and session-completion — 2026-09-14
 
@@ -20400,6 +20404,8 @@ authorized by this distillation entry.
   thread. This is a workflow/provenance blocker, not a readiness pass.
 - **Session rollup before the latest discovery:** discovered 6; completed 0;
   blocked 1; dependency-blocked 5; handed-off 0; missing terminal status 0.
+- **Updated session rollup:** discovered 8; completed 2; blocked 1;
+  dependency-blocked 5; handed-off 0; missing terminal status 0.
 - **Follow-up audit:** one actionable follow-up was created and linked (#537)
   for the missing local editor handoff; no duplicate issue was created for the
   browser-evidence boundary. The exact next action for every remaining issue

@@ -20508,6 +20508,15 @@ later backlog-session transactions did.
   The rostered external implementation service was unavailable in this thread;
   the local implementation is explicitly a current-session substitution and
   remains subject to independent QA.
+- **#536:** VERIFICATION-BOUNDARY-BLOCKED after implementation/QA. Commits
+  `66305d8` and `3d8693f` provide explicit durable checkpoint save, bounded
+  IndexedDB recovery, reload-time recovery, and ZIP fallback. Focused recovery
+  and editor tests pass 5/5 and the full temporary-cache `make check` gate is
+  green. Active Chrome at both required viewports could not produce the
+  supported archive/folder fixture: opening a normal server project seeded an
+  empty local project, so the editor's no-scenes state cannot prove reopen.
+  GitHub QA comment [5662423705](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5662423705)
+  records the exact boundary and next action.
 - **#535:** CLOSED as a duplicate of completed #532; its file-only archive
   picker, preview, validation, and copy-in contract already has terminal
   implementation and Chromium evidence in #532. The folder-context entry

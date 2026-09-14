@@ -46,12 +46,12 @@ required for the local workspace to function.
 
 | Order | Issue | Capability | Dependencies | Routing | Status |
 | --- | --- | --- | --- | --- | --- |
-| 1 | [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) | Open a selected ZIP as an isolated browser-local workspace with selective project restore | #526; owner-selected hybrid contract | Stage 2b complex | OPEN / criterion-ready |
-| 2 | [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) | Archive/offload inactive local projects and rehydrate them safely | #525/#526/#532 | Stage 2b complex | OPEN / dependency-blocked on #532 |
-| 3 | [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) | Add an optional folder-backed archive bridge with permission and compatibility states | #512/#532; owner-selected hybrid contract | Stage 2b complex | OPEN / criterion-ready, platform-bound |
-| 4 | [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) | Open a selected local file/folder as project context with explicit copy-in semantics | #526/#532; owner-selected hybrid contract | Stage 2b complex | OPEN / dependency-blocked on #532 |
-| 5 | [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) | Save editable browser workspaces durably to disk and reopen them with bounded IndexedDB recovery | #512/#526/#535 | Stage 2b complex | OPEN / criterion-ready |
-| 6 | [#537](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537) | Hand restored local projects into a browser-local editor route with workspace switching | #532 | Stage 2b complex | OPEN / criterion-ready |
+| 1 | [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) | Open a selected ZIP as an isolated browser-local workspace with selective project restore | #526; owner-selected hybrid contract | Stage 2b complex | BLOCKED / verification-boundary: rendered Chromium evidence unavailable |
+| 2 | [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) | Archive/offload inactive local projects and rehydrate them safely | #525/#526/#532 | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
+| 3 | [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) | Add an optional folder-backed archive bridge with permission and compatibility states | #512/#532; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
+| 4 | [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) | Open a selected local file/folder as project context with explicit copy-in semantics | #526/#532; owner-selected hybrid contract | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
+| 5 | [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) | Save editable browser workspaces durably to disk and reopen them with bounded IndexedDB recovery | #512/#526/#535 | Stage 2b complex | DEPENDENCY-BLOCKED on #535/#532 |
+| 6 | [#537](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/537) | Hand restored local projects into a browser-local editor route with workspace switching | #532 | Stage 2b complex | DEPENDENCY-BLOCKED on #532 |
 
 ## Criterion-ready issue contracts
 
@@ -107,7 +107,8 @@ must provide validated file export/import fallback.
 
 ## Blocker triage and next action
 
-- Issue 1 is the next independent implementation transaction.
+- Issue 1 was implemented locally, but remains blocked at QA by the named
+  rendered-browser evidence boundary.
 - Issue 2 depends on issue 1's workspace identity and archive-selection
   semantics; it must not invent a second archive format.
 - Issue 3 is independent of issue 2 but browser-platform-bound; unsupported

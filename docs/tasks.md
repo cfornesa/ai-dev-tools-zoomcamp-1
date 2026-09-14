@@ -20337,3 +20337,25 @@ their dependency edges. #533, #534, and #535 depend on #532; #536 depends on
 #512/#526/#535 and owns the active-draft plus bounded-recovery semantics; #537
 depends on #532 and owns the editor handoff. No product implementation is
 authorized by this distillation entry.
+
+### #532 transaction ledger — 2026-09-14
+
+- **Phase:** BLOCKED (verification-boundary)
+- **Stage owners:** scoping `Codex / ChatGPT Plus equivalent / Medium`;
+  implementation `Claude / current session / Medium` substituted for Ollama
+  Cloud `kimi-k3`; second opinion not run; QA `Claude / current session /
+  Medium`; readiness gate not run because the batch is incomplete.
+- **Implementation commit:** `60c61d2` (`Implement selected local archive restore preview`)
+- **Changed files:** the archive module and tests, the local storage dashboard
+  and tests, plus the distillation/backlog records.
+- **Focused checks:** 34 frontend tests passed; frontend typecheck, lint, and
+  format checks passed with existing warnings.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-532 make check` passed —
+  backend 1309 passed/39 skipped and frontend 2643 passed.
+- **QA:** GitHub QA comment [5660120256](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532#issuecomment-5660120256)
+  recorded PASS for local criteria and FAIL for the required rendered Chromium
+  evidence at 1280x900 and 375x812.
+- **Evidence boundary / next action:** start the supported disposable Django+
+  Vite stack, add or run a dedicated local-workspace Chromium scenario at both
+  viewports, inspect the archive preview/workspace states, and rerun QA. Issues
+  #533–#537 remain dependency-blocked until this gate is terminal.

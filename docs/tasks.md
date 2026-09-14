@@ -20431,6 +20431,10 @@ later backlog-session transactions did.
   focused tests. Full frontend tests pass 2654. Decision
   comment [5661371085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661371085);
   implementation evidence [5661599582](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661599582).
+  Fresh active extension-Chrome evidence at 1280x900 (`scrollWidth=1265`)
+  and 375x812 (`scrollWidth=360`) confirms the responsive surface, while the
+  runtime reports both native directory APIs as undefined; evidence update
+  [5661692211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534#issuecomment-5661692211).
   The rostered external implementation service was unavailable in this thread;
   the local implementation is explicitly a current-session substitution and
   remains subject to independent QA.
@@ -20462,7 +20466,9 @@ later backlog-session transactions did.
   readiness gate was not run and is not being represented as a pass.
 - **#542:** OPEN/criterion-ready follow-up for the selected offline-first sync
   path; it owns outbox, conflict/rebase, auth recovery, media retry, quota,
-  and online-only boundary semantics. No PWA/native dependency was added.
+  and online-only boundary semantics. Existing draft autosave and cloud backup
+  are distinct mechanisms, not duplicates; overlap audit
+  [5661675522](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542#issuecomment-5661675522).
 - **Session-completion result:** terminal-status audit must be refreshed after
   the #535 duplicate reconciliation, new #541 issue, and #542 follow-up.
   Current reconciliation is discovered 11, completed 7 (including #535's

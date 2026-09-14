@@ -20465,7 +20465,8 @@ later backlog-session transactions did.
   [5662117175](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542#issuecomment-5662117175).
   Follow-up issues are now filed: #543 (outbox), #544 (deterministic conflict
   and rebase), #545 (authentication ownership recovery), and #546 (resumable
-  media transfer/quota recovery). #543 is the next independent sync slice;
+  media transfer/quota recovery). The contract is HANDED-OFF to #543–#546;
+  #543 is owner-decision-blocked before those dependent implementation slices;
   #544/#545 follow its operation identity, and #546 follows both outbox and
   ownership contracts.
 

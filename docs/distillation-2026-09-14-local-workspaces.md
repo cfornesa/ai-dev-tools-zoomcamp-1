@@ -14,15 +14,17 @@ contract changes are made in this phase.
   selective restore into a chosen workspace.
 - #527 explains that external browser site-data clearing cannot be detected or
   prevented reliably and provides in-app recovery safeguards.
-- No issue defines explicit folder handles, permission/revocation behavior,
-  a folder-backed archive bridge, or opening a selected local file/folder as
-  project context with durable save/reopen semantics.
+- #536 defines durable editable save/reopen with bounded IndexedDB recovery;
+  #532–#535 cover the related archive, offload, folder bridge, and context
+  workflows.
 
 ## Owner-selected direction
 
-The workspace remains browser-local and IndexedDB-authoritative. Explicit user
-file/folder picker actions may import, export, archive, or rehydrate data, but
-the app does not silently upload, watch, or bind to arbitrary filesystem paths.
+The workspace remains browser-local, with the selected file/folder defining the
+durable checkpoint and IndexedDB holding the active draft plus bounded recovery
+history. Explicit user file/folder picker actions may import, export, archive,
+or rehydrate data, but the app does not silently upload, watch, or bind to
+arbitrary filesystem paths.
 ZIP archives are the cross-browser baseline. File System Access API support is
 an enhancement with explicit capability and permission states; it must not be
 required for the local workspace to function.

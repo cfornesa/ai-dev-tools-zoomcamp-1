@@ -20469,7 +20469,7 @@ later backlog-session transactions did.
   #544/#545 follow its operation identity, and #546 follows both outbox and
   ownership contracts.
 
-- **#543:** ENGINEERING/QA RETURNED. Commit `7245b25` adds the versioned
+- **#543:** OWNER-DECISION-BLOCKED after ENGINEERING/QA RETURN. Commit `7245b25` adds the versioned
   IndexedDB mutation outbox, owner/project sequence, payload checksums,
   dependency ordering, bounded deterministic retry, acknowledgement, pause,
   and replay primitives. Focused tests pass 22/22; full frontend passes 219
@@ -20477,7 +20477,11 @@ later backlog-session transactions did.
   skipped and frontend 2,660 with typecheck, format, and lint. QA found the
   authenticated transport adapter and required desktop/mobile Chromium
   offline-to-reload-to-reconnect evidence missing, so the issue remains open
-  and must return to implementation before closure. The GitHub QA comment
+  and must return to implementation before closure. The next action is an
+  explicit owner choice to authorize a dedicated authenticated mutation API
+  with server-side idempotency/acknowledgement records and its migration;
+  the existing cloud-backup manifest endpoint is not semantically sufficient.
+  The GitHub QA comment
   could not be published after a connector safety rejection following one
   mistyped repository target; the complete verdict is recorded here pending a
   safe authenticated retry.

@@ -1,7 +1,7 @@
 # Local workspace opening, selective retention, and folder access distillation
 
 Status: DISTILLATION COMPLETE — owner-selected browser-local hybrid direction;
-four criterion-ready follow-ups are proposed. No product source or API
+five criterion-ready follow-ups are proposed. No product source or API
 contract changes are made in this phase.
 
 ## Current-state investigation
@@ -16,7 +16,7 @@ contract changes are made in this phase.
   prevented reliably and provides in-app recovery safeguards.
 - No issue defines explicit folder handles, permission/revocation behavior,
   a folder-backed archive bridge, or opening a selected local file/folder as
-  project context.
+  project context with durable save/reopen semantics.
 
 ## Owner-selected direction
 
@@ -47,6 +47,7 @@ required for the local workspace to function.
 | 2 | [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) | Archive/offload inactive local projects and rehydrate them safely | #525/#526/#532 | Stage 2b complex | OPEN / dependency-blocked on #532 |
 | 3 | [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) | Add an optional folder-backed archive bridge with permission and compatibility states | #512/#532; owner-selected hybrid contract | Stage 2b complex | OPEN / criterion-ready, platform-bound |
 | 4 | [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) | Open a selected local file/folder as project context with explicit copy-in semantics | #526/#532; owner-selected hybrid contract | Stage 2b complex | OPEN / dependency-blocked on #532 |
+| 5 | [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) | Save editable browser workspaces durably to disk and reopen them with bounded IndexedDB recovery | #512/#526/#535 | Stage 2b complex | OPEN / criterion-ready |
 
 ## Criterion-ready issue contracts
 
@@ -89,6 +90,17 @@ usable when the folder is unavailable. Do not promise live folder watching,
 arbitrary file execution, universal browser support, or native desktop
 semantics. Verify Chromium behavior and document the Firefox/Safari boundary.
 
+### Durable editable save/reopen
+
+Entry point: local storage dashboard or File menu. Fixture: a valid local
+workspace with two scenes, mixed media, a prior saved checkpoint, unsaved
+edits, and bounded recovery history. Autosave replaces the active IndexedDB
+draft; explicit Save validates and atomically writes the durable checkpoint to
+the selected destination. Reopening after reload or a new browser session must
+reproduce the saved valid state. Failed writes preserve both the prior disk
+checkpoint and recoverable local work. Browsers without direct folder writes
+must provide validated file export/import fallback.
+
 ## Blocker triage and next action
 
 - Issue 1 is the next independent implementation transaction.
@@ -100,6 +112,6 @@ semantics. Verify Chromium behavior and document the Firefox/Safari boundary.
 
 ## Next transaction
 
-Create and groom [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532)
-only: selected ZIP workspace opening and selective restore. Do not implement
-product behavior during distillation.
+Create and groom [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536)
+only: durable editable save/reopen with bounded IndexedDB recovery. Do not
+implement product behavior during distillation.

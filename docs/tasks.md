@@ -20317,18 +20317,19 @@ export, archive, inspect, and rehydrate data. ZIP archives are the
 cross-browser baseline. File System Access API support is optional and must
 not be required for local operation.
 
-Four follow-ups were filed as separate criterion-ready GitHub issues:
+Five follow-ups were filed as separate criterion-ready GitHub issues:
 
 - [#532](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/532) — selected ZIP as an isolated workspace with selective project restore;
 - [#533](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/533) — explicit archive/offload and safe rehydration of inactive projects;
 - [#534](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/534) — optional folder-backed archive bridge with permission and compatibility states;
 - [#535](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/535) — open a selected supported file/folder as project context with explicit read-only/copy-in semantics and unsaved-change safety.
+- [#536](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536) — durable editable file/folder save and reopen with active-draft plus bounded IndexedDB recovery.
 
 Duplicate check: #512, #525, #526, and #527 are closed foundations but do not
 cover named archive workspace switching, selective offload lifecycle, folder
 handles, or opening a selected local project context. Standalone piece/account
 exports are separate contracts.
 
-Next action: begin Stage 1 scoping for #532 only. #533 and #535 depend on #532;
-#534 reuses the #532 archive contract. No product implementation is authorized
-by this distillation entry.
+Next action: begin Stage 1 scoping for #536 only. #533 and #535 depend on #532;
+#536 depends on #512/#526/#535 and owns the active-draft plus bounded-recovery
+semantics. No product implementation is authorized by this distillation entry.

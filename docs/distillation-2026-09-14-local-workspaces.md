@@ -73,9 +73,9 @@ required for the local workspace to function.
 | 10 | [#541](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541) | Open a selected folder as project context with safe archive inspection and copy-in | #526/#532/#534 | Stage 2b complex | CLOSED / duplicate of #534; folder bridge remains single-owner |
 | 11 | [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542) | Define offline-first sync outbox, conflict, and recovery contract | #540/#512/#534/#536 | Stage 2b complex/architecture | GROOMED / owner-selected deterministic hybrid; four implementation follow-ups filed |
 | 12 | [#543](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/543) | Durable mutation outbox with deterministic retry and acknowledgement | #542/#512/#534/#536 | Stage 2b complex | OWNER-DECISION-BLOCKED / QA return on `7245b25`; dedicated authenticated endpoint + migration requires explicit approval |
-| 13 | [#544](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/544) | Deterministic conflict detection and explicit rebase workflow | #543/#542 | Stage 2b complex | OPEN / depends on outbox identity |
-| 14 | [#545](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/545) | Authentication ownership recovery for queued private mutations | #543/#542 | Stage 2b complex | OPEN / depends on outbox identity |
-| 15 | [#546](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/546) | Resumable media transfer and quota-aware partial recovery | #543/#545/#542 | Stage 2b complex | OPEN / depends on outbox and ownership contracts |
+| 13 | [#544](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/544) | Deterministic conflict detection and explicit rebase workflow | #543/#542 | Stage 2b complex | DEPENDENCY-BLOCKED / #543 transport and operation identity |
+| 14 | [#545](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/545) | Authentication ownership recovery for queued private mutations | #543/#542 | Stage 2b complex | DEPENDENCY-BLOCKED / #543 transport and operation identity |
+| 15 | [#546](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/546) | Resumable media transfer and quota-aware partial recovery | #543/#545/#542 | Stage 2b complex | DEPENDENCY-BLOCKED / #543 and #545 ownership/retry contracts |
 
 ## Criterion-ready issue contracts
 

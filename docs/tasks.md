@@ -20485,6 +20485,11 @@ later backlog-session transactions did.
   could not be published after a connector safety rejection following one
   mistyped repository target; the complete verdict is recorded here pending a
   safe authenticated retry.
+- **#544/#545/#546:** DEPENDENCY-BLOCKED. GitHub reconciliation comments
+  `5662429943`, `5662430617`, and `5662431223` record that conflict/rebase,
+  ownership recovery, and media transfer must wait for #543's operation
+  identity and authenticated transport; #546 additionally waits for #545's
+  ownership/retry contract. No dependent implementation was started.
 
 - **#533:** COMPLETE; commit `5e833e0`; focused AccountLocalStorage tests 24
   passed; full `make check` passed with backend 1309 passed/39 skipped and

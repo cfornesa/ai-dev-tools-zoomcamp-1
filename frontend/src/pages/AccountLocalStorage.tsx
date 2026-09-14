@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
 import {
@@ -88,6 +88,8 @@ function downloadBlob(blob: Blob, filename: string) {
 
 type LocalWorkspace = { name: string; projectIds: string[] };
 const workspaceStorageKey = (ownerId: string) => `creatrart:local-workspaces:${ownerId}`;
+const selectedWorkspaceStorageKey = (ownerId: string) =>
+  `creatrart:selected-local-workspace:${ownerId}`;
 type OffloadedProject = {
   projectId: string;
   title: string;
@@ -157,7 +159,13 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
   const [workspaces, setWorkspaces] = useState<Record<string, LocalWorkspace>>(() =>
     readWorkspaces(ownerId),
   );
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState('active');
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(() => {
+    try {
+      return window.localStorage.getItem(selectedWorkspaceStorageKey(ownerId)) ?? 'active';
+    } catch {
+      return 'active';
+    }
+  });
   const [archivePreview, setArchivePreview] = useState<ArchiveInspection | null>(null);
   const [archiveBytes, setArchiveBytes] = useState<Uint8Array | null>(null);
   const [selectedArchiveIndices, setSelectedArchiveIndices] = useState<number[]>([]);
@@ -211,8 +219,22 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
   useEffect(() => {
     const next = readWorkspaces(ownerId);
     setWorkspaces(next);
-    setSelectedWorkspaceId('active');
+    try {
+      const saved = window.localStorage.getItem(selectedWorkspaceStorageKey(ownerId));
+      setSelectedWorkspaceId(saved && next[saved] ? saved : 'active');
+    } catch {
+      setSelectedWorkspaceId('active');
+    }
   }, [ownerId]);
+
+  function selectWorkspace(workspaceId: string) {
+    setSelectedWorkspaceId(workspaceId);
+    try {
+      window.localStorage.setItem(selectedWorkspaceStorageKey(ownerId), workspaceId);
+    } catch {
+      // Selection persistence is best effort; project data remains in IndexedDB.
+    }
+  }
 
   useEffect(() => {
     setOffloadedProjects(readOffloadedProjects(ownerId));
@@ -433,7 +455,7 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
       <select
         id="local-workspace-select"
         value={selectedWorkspaceId}
-        onChange={(event) => setSelectedWorkspaceId(event.target.value)}
+        onChange={(event) => selectWorkspace(event.target.value)}
       >
         {Object.entries(workspaces).map(([id, workspace]) => (
           <option key={id} value={id}>
@@ -520,7 +542,9 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
         <ul className="local-storage-project-list">
           {visibleProjects.map((project) => (
             <li key={project.id} aria-label={project.title}>
-              <span>{project.title}</span>
+              <Link to={`/local-projects/${project.id}?workspace=${selectedWorkspaceId}`}>
+                {project.title}
+              </Link>
               <div className="local-storage-actions">
                 <button
                   type="button"

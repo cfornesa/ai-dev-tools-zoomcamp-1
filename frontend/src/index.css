@@ -309,6 +309,17 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.local-editor-media-list {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.local-editor-media-checksum {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .account-billing {
   display: flex;
   flex-direction: column;

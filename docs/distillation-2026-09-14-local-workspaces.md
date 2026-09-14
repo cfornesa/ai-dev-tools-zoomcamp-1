@@ -69,7 +69,7 @@ required for the local workspace to function.
 | 8 | [#539](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/539) | Show remaining browser-origin storage quota for local artwork | #525 storage estimate; no #532 dependency | Stage 2a mechanical | COMPLETE / commit `734cec6`; QA and dual-viewport Chromium evidence pass |
 | 9 | [#540](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/540) | Decide the first offline/downloadable milestone before PWA/native implementation | #532/#533/#537 evidence; owner boundary decision | Stage 2b complex/architecture | DECIDED / offline-first sync selected; scope a follow-up for outbox, conflict, auth recovery, and retry semantics |
 | 10 | [#541](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/541) | Open a selected folder as project context with safe archive inspection and copy-in | #526/#532/#534 | Stage 2b complex | CLOSED / duplicate of #534; folder bridge remains single-owner |
-| 11 | [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542) | Define offline-first sync outbox, conflict, and recovery contract | #540/#512/#534/#536 | Stage 2b complex/architecture | OPEN / criterion-ready follow-up; no implementation dependency added |
+| 11 | [#542](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542) | Define offline-first sync outbox, conflict, and recovery contract | #540/#512/#534/#536 | Stage 2b complex/architecture | OPEN / groomed; authority boundary reconciled, but owner conflict/rebase policy and follow-up decomposition remain before implementation-ready closure |
 
 ## Criterion-ready issue contracts
 

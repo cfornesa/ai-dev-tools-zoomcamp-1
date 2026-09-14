@@ -20450,6 +20450,16 @@ later backlog-session transactions did.
   cleaned up after this check. GitHub update:
   [5662040877](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/536#issuecomment-5662040877).
 
+- **#542 distillation reconciliation:** the authority boundary is now explicit:
+  active IndexedDB is the local draft authority, #536 recovery is crash
+  recovery only, folder/ZIP is the durable checkpoint, the #542 outbox is only
+  for authenticated cloud mutations, and the server is authoritative for
+  synchronized cloud state. Existing draft autosave and one-way cloud backup
+  remain distinct. #542 is groomed but still open pending the owner’s
+  conflict/rebase policy and follow-up decomposition for outbox, media
+  transfer, and conflict UI. GitHub update:
+  [5662050053](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/542#issuecomment-5662050053).
+
 - **#533:** COMPLETE; commit `5e833e0`; focused AccountLocalStorage tests 24
   passed; full `make check` passed with backend 1309 passed/39 skipped and
   frontend 2645 passed; active Chrome verified explicit export/confirm/cancel,

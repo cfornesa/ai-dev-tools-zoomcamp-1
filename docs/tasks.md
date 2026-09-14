@@ -20359,3 +20359,26 @@ authorized by this distillation entry.
   Vite stack, add or run a dedicated local-workspace Chromium scenario at both
   viewports, inspect the archive preview/workspace states, and rerun QA. Issues
   #533–#537 remain dependency-blocked until this gate is terminal.
+
+### Batch production-readiness and session-completion — 2026-09-14
+
+- **Local deployment:** BLOCKED. Repository-wide checks pass, but the
+  required Django/Vite browser stack was not running and no rendered Chromium
+  evidence was available for #532.
+- **Approved-browser / CI:** BLOCKED. Playwright discovery passed (210 tests),
+  but the required #532 dashboard scenario is not present and no browser run
+  could be executed against a live stack.
+- **Intended functionality:** INCOMPLETE. #532 is locally implemented but QA
+  blocked; #533–#537 are dependency-blocked and remain open.
+- **Replit publication / production readiness:** NON-ACTIONABLE for this
+  batch's local-only contract, but the overall project is not production-ready
+  while required issues remain incomplete.
+- **Readiness gate provenance:** not run. The repository requires Opus 5 or
+  Sonnet 5 for this gate; that selectable model tier was unavailable in this
+  thread. This is a workflow/provenance blocker, not a readiness pass.
+- **Session rollup:** discovered 6; completed 0; blocked 1; dependency-blocked
+  5; handed-off 0; missing terminal status 0.
+- **Follow-up audit:** one actionable follow-up was created and linked (#537)
+  for the missing local editor handoff; no duplicate issue was created for the
+  browser-evidence boundary. The exact next action for every remaining issue
+  is recorded in its GitHub comment and the manifest above.

@@ -303,6 +303,12 @@ button:disabled {
   box-sizing: border-box;
 }
 
+.local-storage-checksums {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .account-billing {
   display: flex;
   flex-direction: column;

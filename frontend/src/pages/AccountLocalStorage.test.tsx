@@ -433,6 +433,8 @@ describe('AccountLocalStorage: manage local projects', () => {
     await user.upload(input, file);
 
     expect(await screen.findByRole('heading', { name: 'Archive preview' })).toBeVisible();
+    expect(screen.getByText('Verified SHA-256:')).toBeVisible();
+    expect(screen.getByText('abc')).toBeVisible();
     await user.type(screen.getByLabelText('New workspace name'), 'Imported workspace');
     await user.click(screen.getByRole('button', { name: /restore selected projects/i }));
 

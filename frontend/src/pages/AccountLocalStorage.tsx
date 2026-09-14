@@ -368,6 +368,15 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
                   />{' '}
                   {project.title} — {project.sceneCount} scene(s), {project.mediaFileCount} media
                   file(s), {formatBytes(project.byteTotal)}
+                  {project.checksums.length > 0 && (
+                    <span className="local-storage-checksums">
+                      {' '}
+                      Verified SHA-256:{' '}
+                      {project.checksums.map((checksum) => (
+                        <code key={checksum}>{checksum}</code>
+                      ))}
+                    </span>
+                  )}
                 </label>
               </li>
             ))}

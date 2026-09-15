@@ -20683,6 +20683,65 @@ offline → reload → reconnect replay at 1280x900 and 375x812, plus an
 independent QA review of the migration/API/adapter. #544–#546 remain
 dependency-blocked on this transaction's operation/transport contract.
 
+## 2026-09-15 — qa-self-review: #534, #536, #542-#546 returned, none ready
+
+Owner asked for `qa-self-review` against #534, #536, #542-#546 on the belief
+(from Codex) that their implementations were ready. Re-ran every check from a
+clean shell rather than accepting the prior session's self-report; none of
+the seven reached a PASS.
+
+- **#543:** unit/backend/full-suite evidence is solid (backend 1,314
+  passed/39 skipped; frontend 221 files/2,663 tests; typecheck/lint/format
+  clean; `makemigrations --check` clean) and matches the prior claim
+  exactly. The one required Chromium E2E scenario
+  (`frontend/e2e/offlineSync.spec.ts`, both 1280x900 and 375x812) **fails
+  deterministically** when actually run against a real local Django
+  (`AI_PROVIDER=fake`) + Vite stack: `seedLocalProject`'s
+  `indexedDB.open('creatrart-local-projects', 3)` has no `onupgradeneeded`
+  handler, so a fresh browser context creates an empty v3 database and the
+  following `db.transaction([...])` throws synchronously and unhandled,
+  hanging `page.evaluate` to Playwright's 30s timeout. QA verdict:
+  **RETURNED-TO-implementation**; full detail and exact fix in the GitHub QA
+  comment. This directly contradicts the "QA pending, ready" framing of the
+  prior handoff — the required evidence did not actually exist until run.
+- **#534, #536:** no Chromium E2E spec exists for either capability at all
+  (confirmed by listing `frontend/e2e/*.spec.ts` — no folder-bridge or
+  durable-save/reopen spec). Both issues explicitly name Chromium browser
+  evidence as an acceptance criterion; a real local Chromium/Django/Vite
+  stack is available (used successfully for #543 in this same pass), so
+  this is a missing deliverable, not merely the unreachable-deployed-route
+  boundary the prior distillation entry recorded. Focused unit tests
+  (`folderArchiveBridge.test.ts`, `localRecovery.test.ts`) pass. QA verdict
+  for both: **RETURNED-TO-implementation**.
+- **#542:** reconciliation container, not a closure unit — no diff to QA;
+  correctly stays open pending its children.
+- **#544, #545, #546:** no implementation exists yet (`git log` has no
+  matching commits); correctly dependency-blocked on #543, which itself
+  just returned to implementation. Not ready by definition.
+
+None of the seven issues moved to a terminal state in this pass. GitHub QA
+comments posted on all seven with the exact criterion matrix, commands, and
+next action; no issue was closed. Owner premise ("sufficient ready state")
+did not hold for any of the seven on re-verification.
+
+**Concurrency note:** a second, independent session was actively working this
+same backlog while this QA pass ran (visible as interleaved commits
+`5023b67`/`fd38814`/`9122e6c` landing mid-review). It fixed the exact
+`offlineSync.spec.ts` `onupgradeneeded` defect this QA pass had just found
+(commit `5023b67`, "Stabilize offline sync browser fixture") before this
+pass's #543 comment was posted. Re-running `npx playwright test
+e2e/offlineSync.spec.ts --project=chromium` against that fix: the desktop
+1280x900 scenario now **passes**; the mobile 375x812 scenario now fails at a
+different point — `loginViaUI` times out waiting for the "Your projects"
+heading after sign-in, suggesting a separate responsive-login issue distinct
+from the IndexedDB defect. #543 is still not a clean PASS. The same
+concurrent session also **closed #542** in this window; this QA pass's own
+#542 comment (posted moments earlier) recorded it should stay open until
+every child (#543-#546) reaches a terminal state — #543-#546 are all still
+open/not-ready, so this is a direct conflict with the project's own
+reconciliation-container rule, not a disagreement this session resolved
+unilaterally. Flagged to the owner rather than reopened or re-closed.
+
 ## 2026-09-15 — resumed backlog run: #543 evidence and #548 implementation
 
 Task-distillation re-ran against the live GitHub inventory. The complete open

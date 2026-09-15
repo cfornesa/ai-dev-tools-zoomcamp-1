@@ -48,6 +48,9 @@ Verification:
   one transient login-page timeout was rerun successfully).
 - Focused unit tests — 7 passed for recovery-panel and outbox resume/discard
   semantics; frontend typecheck passed.
+- Follow-up `authentication returns` Chromium evidence — **2 passed** at
+  1280×900 and 375×812 for explicit original-owner resume after one 401 and a
+  subsequent successful acknowledgement (`fb641a8`).
 
 #545 remains open for successful live re-auth/resume and distinct revoked
 project-access evidence.

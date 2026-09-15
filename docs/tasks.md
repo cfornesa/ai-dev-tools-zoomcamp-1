@@ -21169,3 +21169,13 @@ and a distinct revoked-access state at both viewpoints. The repository-wide
 backend tests passed/39 skipped and 2,682 frontend tests passed, with lint,
 format, typecheck, and action-pin checks green. GitHub #545 is closed as
 completed.
+
+## 2026-09-15 — #544 Chromium evidence reverified
+
+The focused `offlineConflictResolution.spec.ts` suite was rerun with the
+active local stack and passed 2/2 in Chromium at 1280×900 and 375×812. This
+reconfirms the accessible client-side conflict pause and explicit resolution
+choices. It does not satisfy #544's remaining live-server gate: the deployed
+sync endpoint still needs authoritative conflict detection/rebase integration,
+including a persisted three-way merge proof and idempotent resolution against
+the current server version.

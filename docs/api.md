@@ -233,6 +233,25 @@ retained, but future manifest/blob writes return `409` with
 boundary. Provider/network failures are surfaced as retryable client errors;
 they never delete local data.
 
+## Offline mutation acknowledgement protocol (#543)
+
+The offline editor uses a separate authenticated mutation endpoint for
+cloud-synchronizable mutations. It is deliberately not the cloud-backup
+manifest endpoint: a mutation is an operation in the deterministic outbox,
+not a replacement snapshot. The endpoint records the operation receipt and
+returns the same acknowledgement for a replay of the same operation.
+
+| Endpoint | Contract |
+| --- | --- |
+| `POST /api/projects/<public_id>/sync/mutations/` | Authenticated owner-only operation receipt. The JSON body contains `operation_id`, `client_sequence`, `kind` (`scene`, `metadata`, or `media-reference`), `payload`, `payload_checksum`, `schema_version`, `dependency_operation_ids`, and optional `client_created_at`. The first accepted operation returns `201`; an identical replay returns `200` with `replayed: true`. |
+
+The server scopes operation identity to the authenticated owner and project.
+Reusing an operation ID with a different checksum or payload returns `409`;
+reusing a client sequence for a different operation also returns `409`.
+Anonymous callers and non-owners cannot discover a project's mutation receipt.
+The receipt is an acknowledgement journal for the sync/conflict stages; it
+does not enable offline generation, publishing, gallery reads, or AI flows.
+
 The status GET returns `404` when the owner has not opted the project in yet;
 the editor treats that as the ordinary “Enable cloud sync” state. A `409`
 from enable explains that the account is ineligible without uploading content.

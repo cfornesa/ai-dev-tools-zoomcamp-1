@@ -95,6 +95,7 @@ from scenes.scene_conversion_api import (
     SceneConversionDetailView,
     SceneConversionListCreateView,
 )
+from scenes.sync_mutation_api import SyncMutationReceiptView
 
 urlpatterns = [
     path("pages/<slug:slug>/", PublicPageDetailView.as_view(), name="public-page-detail"),
@@ -184,6 +185,11 @@ urlpatterns = [
     ),
     path("projects/<uuid:public_id>/", ProjectDetailView.as_view(), name="project-detail"),
     path("projects/<uuid:public_id>/cloud-backup/", CloudBackupView.as_view(), name="cloud-backup"),
+    path(
+        "projects/<uuid:public_id>/sync/mutations/",
+        SyncMutationReceiptView.as_view(),
+        name="sync-mutation-receipt",
+    ),
     path(
         "projects/<uuid:public_id>/cloud-backup/manifest/",
         CloudBackupManifestView.as_view(),

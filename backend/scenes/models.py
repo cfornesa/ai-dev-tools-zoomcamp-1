@@ -819,6 +819,61 @@ class CloudSyncSignupConsent(models.Model):
         return f"Signup cloud-sync consent for user {self.owner_id}: {self.sync_enabled}"
 
 
+class SyncMutationReceipt(models.Model):
+    """Durable acknowledgement for one deterministic offline mutation (#543).
+
+    This is an operation journal, not a cloud-backup snapshot.  The stable
+    owner/project/operation identity and unique client sequence let an
+    authenticated reconnect retry safely without creating a second receipt.
+    Later sync stages consume the retained payload and dependency links when
+    applying conflict/rebase policy.
+    """
+
+    class Kind(models.TextChoices):
+        SCENE = "scene", "Scene"
+        METADATA = "metadata", "Metadata"
+        MEDIA_REFERENCE = "media-reference", "Media reference"
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sync_mutation_receipts"
+    )
+    project = models.ForeignKey(
+        "scenes.Project", on_delete=models.CASCADE, related_name="sync_mutation_receipts"
+    )
+    operation_id = models.UUIDField()
+    scene_id = models.UUIDField(null=True, blank=True)
+    client_sequence = models.PositiveBigIntegerField()
+    kind = models.CharField(max_length=24, choices=Kind.choices)
+    payload = models.JSONField()
+    payload_checksum = models.CharField(max_length=64)
+    schema_version = models.PositiveIntegerField()
+    dependency_operation_ids = models.JSONField(default=list, blank=True)
+    client_created_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    acknowledged_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["client_sequence", "created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "operation_id"], name="unique_sync_operation_per_owner"
+            ),
+            models.UniqueConstraint(
+                fields=["owner", "project", "client_sequence"],
+                name="unique_sync_sequence_per_project_owner",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["owner", "project", "client_sequence"],
+                name="sync_receipt_owner_proj_seq",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Sync mutation {self.operation_id} for project {self.project_id}"
+
+
 class CloudBackupProject(models.Model):
     """Opt-in cloud-backup state for one local-first project (#509)."""
 

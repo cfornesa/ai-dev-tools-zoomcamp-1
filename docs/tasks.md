@@ -20650,3 +20650,35 @@ checked before filing both). Both #547 and #548 are independent and may
 proceed in parallel; neither is a dependency of the other or of the existing
 #542-#546 offline-sync chain. Durable context recorded in
 `.agents/memory/account-settings-production-audit-2026-09-15.md`.
+
+## 2026-09-15 — active-Chrome retry and #543 complex engineering increment
+
+The active Chrome session was retried rather than accepting the earlier
+verification-boundary result as final:
+
+- **#534:** the current Chromium runtime reports
+  `showDirectoryPicker === "function"` and
+  `FileSystemDirectoryHandle === "function"`; the native chooser opens. The
+  deployed app still exposes no reachable local-editor route, so the actual
+  persisted-folder grant/reload/revocation workflow remains unverified.
+- **#536:** the native chooser successfully restored `Browser_Test_Project.zip`
+  and the dashboard reported 1 project, 1 scene, and 0 media files. The
+  fixture is insufficient for the full mixed-media/recovery contract, and
+  `/local-projects/<id>` returns the deployed app's Page-not-found surface.
+  Both issues remain open as verification-boundary handoffs; no criteria were
+  silently waived.
+- **#543:** owner approval is recorded in GitHub comment 5686437062. Stage 2b
+  engineering (Codex substitution for the unavailable rostered Ollama Cloud
+  `kimi-k3` run) added `SyncMutationReceipt`, migration `0063`, the
+  authenticated owner-only `POST /api/projects/<public_id>/sync/mutations/`
+  endpoint, checksum/operation/sequence conflict handling, and the frontend
+  `sendSyncMutation` adapter. The public contract was documented in
+  `docs/api.md` before implementation. Focused checks pass: backend 5/5 and
+  frontend transport/outbox 5/5; `UV_CACHE_DIR=/private/tmp/creatrweb-uv-cache
+  make check` passes with backend 1,314 passed/39 skipped and frontend 2,661
+  passed. Current transaction state: **QA pending**; #543 is not closed.
+
+The remaining #543 evidence boundary is the issue's deterministic Chromium
+offline → reload → reconnect replay at 1280x900 and 375x812, plus an
+independent QA review of the migration/API/adapter. #544–#546 remain
+dependency-blocked on this transaction's operation/transport contract.

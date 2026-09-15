@@ -32,6 +32,26 @@ packaging question is already resolved by #540's offline-first sync decision
 and is explicitly out of scope for #544–#546. Existing #532 storage accounting
 covers browser-origin quota/usage; no duplicate issue was opened.
 
+## 2026-09-15 — #545 explicit ownership recovery increment
+
+Commit `7a1da7d` adds an owner-scoped recovery panel for paused private
+mutations. A 401/403 pause is now visible in the local editor with explicit
+**Resume sync** and **Discard queued mutation** actions; discard removes only
+the queued server mutation and preserves local artwork. Session-generation
+partitioning remains in force, so an account switch cannot replay the prior
+owner's queue.
+
+Verification:
+
+- `offlineOwnershipRecovery.spec.ts` — Chromium passes for account-switch
+  isolation and expired-auth pause/discard at 1280×900 and 375×812 (4/4; the
+  one transient login-page timeout was rerun successfully).
+- Focused unit tests — 7 passed for recovery-panel and outbox resume/discard
+  semantics; frontend typecheck passed.
+
+#545 remains open for successful live re-auth/resume and distinct revoked
+project-access evidence.
+
 ## 2026-09-10 — #508 QA'd + readiness + AugmentrART rename committed
 
 Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized

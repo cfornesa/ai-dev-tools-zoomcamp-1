@@ -20822,3 +20822,33 @@ closed issues as immutable unless the owner explicitly authorizes reopening
 that exact issue. The #542/child-container conflict (closed while #543-#546
 remain open) stays recorded only as a GitHub QA comment and in this file's
 prior entry, not as a body edit or reopen.
+
+## 2026-09-15 — Chromium evidence completed for #543 and #548
+
+The local PostgreSQL-backed Django/Vite stack was restarted from the current
+checkout after detecting that the first account-settings screenshots had been
+served by a stale Vite process. The current process served the corrected
+field-wrapper markup, and the screenshots were visually inspected at both
+required viewpoints:
+
+- **#543:** `E2E_BASE_URL=http://127.0.0.1:5000 npm run test:e2e --
+  e2e/offlineSync.spec.ts --project=chromium` — 2 passed, desktop
+  1280x900 and mobile 375x812.
+- **#548:** `E2E_BASE_URL=http://127.0.0.1:5000 npm run test:e2e --
+  e2e/accountSettings.spec.ts --project=chromium` — 4 passed, empty and
+  populated fixtures at both viewpoints. The final screenshots show labels
+  directly above their controls on desktop and a single-column mobile layout
+  without horizontal overflow.
+- Focused #548 component tests: 9 passed. Full `UV_CACHE_DIR=/private/tmp/
+  creatrweb-uv-cache make check`: backend 1,314 passed/39 skipped and
+  frontend 2,663 passed; lint, format, and typecheck passed.
+
+The corrected #548 layout and evidence harness are committed as `75f60a2`.
+GitHub QA PASS comments were added and **#543** and **#548** were closed as
+completed. The earlier QA-pending comments remain in the history as the
+superseded boundary; the later PASS comments document the resolving evidence.
+
+The remaining open set is #534, #536, #544, #545, #546, and #547. #544–#546
+can now proceed past the #543 dependency in the next backlog pass; #534/#536
+still need deployed-route/fixture evidence, and #547 still needs the actual
+production traceback before any fix can be responsibly implemented.

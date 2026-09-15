@@ -1,5 +1,27 @@
 # AugmentrART Backlog
 
+## 2026-09-15 — #544 deterministic conflict resolution evidence increment
+
+The #544 implementation now has a durable, accessible resolution path for a
+server-reported overlapping mutation conflict. The replay layer persists the
+structured conflict envelope in IndexedDB, pauses the original mutation, and
+the local editor presents explicit **Keep local**, **Keep remote**, and
+**Rebase / compose result** choices. Each choice creates a new audited
+`conflict-resolution` mutation that depends on the paused operation, preserving
+deterministic replay order. Invalid compose JSON is rejected in the UI.
+
+Verification:
+
+- `E2E_BASE_URL=http://127.0.0.1:5000 npm run test:e2e -- e2e/offlineConflictResolution.spec.ts --project=chromium` — **2 passed** (1280×900 and 375×812).
+- Focused Vitest — **3 passed** across the conflict panel and replay persistence tests.
+- Frontend typecheck and Prettier format-check — **PASS**.
+- Commit: `83377ba` (`Add deterministic conflict resolution UI evidence`).
+
+This is an implementation/evidence increment, not a closure: #544 still needs
+real server-side conflict detection/rebase integration and independent
+three-way merge coverage against the live sync endpoint before its full
+acceptance criteria are satisfied.
+
 ## 2026-09-10 — #508 QA'd + readiness + AugmentrART rename committed
 
 Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized

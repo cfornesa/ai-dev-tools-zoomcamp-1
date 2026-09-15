@@ -67,7 +67,7 @@ test.describe('Offline mutation ownership recovery (#545)', () => {
       expect(
         await page.evaluate(async () => {
           const db = await new Promise<IDBDatabase>((resolve, reject) => {
-            const request = indexedDB.open('creatrart-local-projects', 3);
+            const request = indexedDB.open('creatrart-local-projects', 4);
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
           });

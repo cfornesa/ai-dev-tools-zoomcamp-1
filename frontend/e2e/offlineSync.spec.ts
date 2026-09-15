@@ -19,7 +19,7 @@ async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
   await page.evaluate(
     ({ ownerId, projectId, sceneId }) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open('creatrart-local-projects', 3);
+        const request = indexedDB.open('creatrart-local-projects', 4);
         request.onerror = () => reject(request.error);
         request.onblocked = () => reject(new Error('IndexedDB fixture upgrade was blocked.'));
         request.onupgradeneeded = () => {
@@ -54,6 +54,11 @@ async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
               'clientSequence',
             ]);
           }
+          if (!db.objectStoreNames.contains('mediaTransfers')) {
+            const transfers = db.createObjectStore('mediaTransfers', { keyPath: 'transferId' });
+            transfers.createIndex('by_owner_project', ['ownerId', 'projectId']);
+            transfers.createIndex('by_owner_asset', ['ownerId', 'assetId']);
+          }
         };
         request.onsuccess = () => {
           const db = request.result;
@@ -66,6 +71,7 @@ async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
               'meta',
               'recoveryDrafts',
               'mutationOutbox',
+              'mediaTransfers',
             ],
             'readwrite',
           );
@@ -86,7 +92,7 @@ async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
             sceneJson: { shapes: [] },
             updatedAt: '2026-09-15T19:30:00.000Z',
           });
-          transaction.objectStore('meta').put({ key: 'schemaVersion', value: 3 });
+          transaction.objectStore('meta').put({ key: 'schemaVersion', value: 4 });
           transaction.oncomplete = () => {
             db.close();
             resolve();
@@ -102,7 +108,7 @@ async function readOutboxStates(page: Page): Promise<string[]> {
   return page.evaluate(
     ({ projectId }) =>
       new Promise<string[]>((resolve, reject) => {
-        const request = indexedDB.open('creatrart-local-projects', 3);
+        const request = indexedDB.open('creatrart-local-projects', 4);
         request.onerror = () => reject(request.error);
         request.onsuccess = () => {
           const db = request.result;

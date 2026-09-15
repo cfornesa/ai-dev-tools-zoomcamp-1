@@ -43,7 +43,7 @@ async function outboxKinds(page: Page): Promise<Array<{ state: string; type?: st
   return page.evaluate(
     ({ projectId }) =>
       new Promise<Array<{ state: string; type?: string }>>((resolve, reject) => {
-        const request = indexedDB.open('creatrart-local-projects', 3);
+        const request = indexedDB.open('creatrart-local-projects', 4);
         request.onerror = () => reject(request.error);
         request.onsuccess = () => {
           const db = request.result;

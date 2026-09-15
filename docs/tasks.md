@@ -21057,3 +21057,26 @@ boundary for #545. It does not close #545: the issue still inherits #536's
 durable-workspace dependency, and the full ownership recovery matrix remains
 covered by deterministic response fixtures rather than a production-like
 expired-session/revoked-access environment.
+
+## 2026-09-15 — #547 production traceback identified
+
+The active Chrome session was used to inspect the `creatrweb` Replit
+workspace's production Logs. The exact traceback for the live Account settings
+failure is:
+
+`psycopg.errors.UndefinedColumn: column scenes_plan.cloud_snapshot_cadence_days does not exist`
+
+The same error is logged for `GET /api/account/entitlements/` at 14:08:22,
+14:27:41, and 14:27:46. The surrounding authenticated account endpoints
+return 200, confirming this is not a general session failure. The local
+repository already contains the authoritative schema change in
+`backend/scenes/migrations/0059_plan_snapshot_cadence.py` (with its seed
+follow-up `0060_seed_snapshot_cadence_policy.py`), so the immediate remedy is
+to apply the migration-bearing release to Replit production and verify the
+actual `scenes_plan` columns plus the endpoint afterward. No production data
+or settings were changed during diagnosis.
+
+This changes #547 from an unknown application defect to a confirmed
+production-schema deployment blocker. A release/publish action remains
+explicitly pending owner authorization; the issue cannot be closed from local
+tests alone.

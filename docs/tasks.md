@@ -77,6 +77,18 @@ The schema migration also reverified the existing offline replay/conflict/
 ownership browser fixtures against IndexedDB v4: the offline replay scenarios
 pass at 1280×900 and 375×812 (`594b694`).
 
+Commit `54fb906` adds the typed frontend chunk client and the authenticated
+provider-neutral cloud chunk endpoint. Partial ranges are idempotent and
+quota-reserved, checksum verification gates atomic promotion into the final
+blob, and invalid complete objects are safely discarded. The new Chromium
+transfer evidence passes at both 1280×900 and 375×812: acknowledged range →
+interrupted request → persisted paused state → verified resume (`2/2`). The
+backend cloud-backup suite passes 9/9, migration drift is clean, and frontend
+typecheck/API coverage passes.
+
+#546 remains open for browser evidence of explicit checksum-mismatch and
+quota-failure recovery states, plus the post-migration full `make check`.
+
 ## 2026-09-10 — #508 QA'd + readiness + AugmentrART rename committed
 
 Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized

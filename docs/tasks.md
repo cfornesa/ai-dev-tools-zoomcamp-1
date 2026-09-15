@@ -21227,3 +21227,21 @@ choices. It does not satisfy #544's remaining live-server gate: the deployed
 sync endpoint still needs authoritative conflict detection/rebase integration,
 including a persisted three-way merge proof and idempotent resolution against
 the current server version.
+
+## 2026-09-15 — #546 QA/reconciliation and closure
+
+Commit `8d41058` adds the live authenticated resumable-transfer browser fixture
+and records its evidence. The real Django chunk endpoint was exercised in
+Chromium at both required viewpoints (1280×900 and 375×812): the fixture
+uploads a verified first range, injects an interruption, resumes the remaining
+range, downloads and byte-checks the completed blob, and verifies checksum
+mismatch (409) plus quota exhaustion (413). The local `scenes.0064` migration
+was applied before the run and disposable E2E fixtures were cleaned afterward.
+
+Focused media sender/snapshot/repository tests pass (19 tests), focused
+backend cloud-backup and mutation tests pass (16 tests), and the clean
+repository-wide `make check` passes with 1,318 backend tests passed/39 skipped
+and 2,682 frontend tests passed. Formatting, typechecking, and action-pin
+checks pass; lint reports warnings only. GitHub #546 received the authenticated
+Chrome QA verdict and is closed as completed. Evidence is local disposable
+PostgreSQL/Django/Vite plus Chromium and is not a production deployment claim.

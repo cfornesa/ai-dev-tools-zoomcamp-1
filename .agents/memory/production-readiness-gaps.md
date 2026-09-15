@@ -15,8 +15,9 @@ state, the development server can appear healthy while being unsupported for
 production, and a plan/UI mismatch can create ambiguous or unverified signup
 behavior.
 
-**How to apply:** Treat #414 as the next high-priority operational issue,
-follow with #415, and resolve #416 only after the owner selects the
-authoritative signup policy. Keep live deployment, multi-worker, real-camera,
-and provider-credential checks as explicit verification boundaries rather than
-claiming them from local evidence.
+**How to apply:** #414, #415, and #416 are CLOSED (verified 2026-09-15) —
+shared AI quota storage, published ASGI routing, and explicit signup policy
+are all resolved. Keep live deployment, multi-worker, real-camera, and
+provider-credential checks as explicit verification boundaries rather than
+claiming them from local evidence; treat this page as historical operational
+context only, not an open pointer.

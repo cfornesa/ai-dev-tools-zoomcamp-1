@@ -777,3 +777,29 @@ be invoked. The #509/#511 complex implementation and QA stages therefore ran
 in this Codex task, while preserving the documented external roster as the
 normal route and flagging the substitution in the task ledgers and GitHub QA
 evidence.
+
+## 2026-09-15 (production-readiness + task-distillation: #543 API decision authorized)
+
+Ran `production-readiness` against the full manifest (backend mypy 267 files
+clean, frontend `tsc -b` clean, GitHub open-issue enumeration, cross-repo
+parity memory review against `augment-humankind`/`augment-humankind-react-node`).
+No new implementation gap was found: the pieces-parity effort is closed out
+through its scoped chain (#274/#320/#324 remain immutable containers), the
+blog/comments/feeds/syndication domain (`augment-humankind-react-node` AH-10)
+remains an intentional out-of-scope exclusion per `docs/process.md`'s parity
+boundary, and privacy-first workflows (camera opt-in, account export/deletion,
+cloud retention policy, encrypted provider credentials) are already
+implemented and covered by closed issues. Corrected one stale memory pointer:
+`.agents/memory/production-readiness-gaps.md` cited #414-#416 as open
+next actions; verified all three CLOSED and updated the page.
+
+The only live blocker found was #543 (durable mutation outbox), QA-returned
+2026-09-14 pending an explicit owner decision: implementation needs a new
+dedicated authenticated backend endpoint plus a DB migration for server-side
+idempotency/acknowledgement records, since the existing cloud-backup manifest
+endpoint is not semantically sufficient. Per `AGENTS.md`'s dependency/schema
+rule, this required asking rather than deciding silently. Owner authorized the
+new endpoint and migration in this conversation. #543 is now unblocked for
+stage 2b `implementation-complex`; #544/#545/#546 remain dependency-blocked on
+#543's transport and operation-identity contract, in that order, per
+`docs/distillation-2026-09-14-local-workspaces.md`.

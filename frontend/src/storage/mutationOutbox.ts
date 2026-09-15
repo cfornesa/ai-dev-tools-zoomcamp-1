@@ -16,6 +16,7 @@ export type MutationOutboxRecord = {
   operationId: string;
   ownerId: string;
   projectId: string;
+  sceneId?: string;
   kind: MutationKind;
   payload: unknown;
   payloadChecksum: string;
@@ -33,6 +34,7 @@ export type MutationOutboxRecord = {
 export type EnqueueMutationInput = {
   ownerId: string;
   projectId: string;
+  sceneId?: string;
   kind: MutationKind;
   payload: unknown;
   dependencyOperationIds?: string[];
@@ -104,6 +106,7 @@ export async function enqueueMutation(
     operationId: crypto.randomUUID(),
     ownerId: input.ownerId,
     projectId: input.projectId,
+    sceneId: input.sceneId,
     kind: input.kind,
     payload: JSON.parse(serialized) as unknown,
     payloadChecksum: await computeChecksum(new TextEncoder().encode(serialized)),

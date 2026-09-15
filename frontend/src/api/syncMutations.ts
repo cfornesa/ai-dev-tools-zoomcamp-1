@@ -28,6 +28,7 @@ export function sendSyncMutation(
       method: 'POST',
       body: JSON.stringify({
         project_id: operation.projectId,
+        scene_id: operation.sceneId,
         operation_id: operation.operationId,
         client_sequence: operation.clientSequence,
         kind: operation.kind,

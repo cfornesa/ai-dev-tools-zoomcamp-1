@@ -15,6 +15,8 @@ import {
   type LocalProjectRecord,
   type LocalSceneRecord,
 } from '../storage/localProjectRepository';
+import { enqueueMutation } from '../storage/mutationOutbox';
+import { replaySyncMutations } from '../storage/syncMutationReplay';
 
 type LocalEditorState = 'loading' | 'ready' | 'missing' | 'error';
 
@@ -84,6 +86,19 @@ function LocalEditorWorkspace() {
   }, [auth, id]);
 
   useEffect(() => {
+    const ownerId = auth.user?.username;
+    if (auth.status !== 'signed-in' || !ownerId || !id) return;
+    const replay = () => {
+      void replaySyncMutations(ownerId, id).catch(() => {
+        // The outbox remains durable; a later online event retries it.
+      });
+    };
+    replay();
+    window.addEventListener('online', replay);
+    return () => window.removeEventListener('online', replay);
+  }, [auth.status, auth.user?.username, id]);
+
+  useEffect(() => {
     if (!dirty || !selectedScene || !id || auth.status !== 'signed-in') return;
     const timer = window.setTimeout(() => {
       void (async () => {
@@ -143,6 +158,18 @@ function LocalEditorWorkspace() {
       const updated = await updateScene(db, selectedScene.id, {
         name: sceneName.trim() || selectedScene.name,
       });
+      try {
+        await enqueueMutation(db, {
+          ownerId: auth.user!.username,
+          projectId: id,
+          sceneId: updated.id,
+          kind: 'scene',
+          payload: { name: updated.name, scene_json: updated.sceneJson },
+        });
+      } catch {
+        // Local IndexedDB remains authoritative when the optional sync queue
+        // cannot accept this project or the browser is unavailable.
+      }
       let recoveryId: string | null = null;
       try {
         const archive = await exportDatabaseArchive(db, auth.user!.username, {

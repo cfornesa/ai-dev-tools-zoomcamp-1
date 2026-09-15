@@ -20870,3 +20870,20 @@ keep-remote/compose UI, idempotent resolution operation, backend/property
 coverage, and Chromium desktop/mobile evidence. #545 and #546 remain queued
 behind the shared sync-policy work; their GitHub notes now explicitly record
 that #543 is closed and that they are no longer transport-blocked.
+
+## 2026-09-15 — #534 Chromium bridge evidence completed
+
+Added `frontend/e2e/localWorkspaceFolderBridge.spec.ts` and ran it against the
+current local PostgreSQL-backed Django/Vite stack. Chromium passed both
+1280x900 and 375x812 scenarios, covering the real folder-bridge module with a
+mocked native `showDirectoryPicker` handle: granted access, safe ZIP listing,
+explicit read/write, reload, denied permission, and revoked permission. The
+OS chooser is not automatable by Playwright, so this uses the repository's
+supported mocked-native-handle evidence boundary; existing unit tests cover
+the persisted-handle and non-destructive error matrix.
+
+The full check after the spec and #544 backend contract work passed with 1,316
+backend tests passed/39 skipped and 2,667 frontend tests passed. #534 received
+a QA PASS comment and was closed as completed. #536 remains open and now
+needs its own durable save/reopen browser spec, which depends on the verified
+#534 folder path.

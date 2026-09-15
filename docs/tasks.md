@@ -21022,3 +21022,22 @@ end-to-end sender integration with the persisted local media blob, remain
 release gates. #545 likewise still depends on live authenticated ownership
 verification; #544 still needs live server conflict/rebase proof; #536 and
 #547 retain their previously recorded blockers.
+
+## 2026-09-15 — #536 durable checkpoint browser evidence
+
+Extended `frontend/e2e/localWorkspaceDurableSave.spec.ts` with a granted-folder
+checkpoint path at both required Chromium viewpoints. The browser now exports
+the edited IndexedDB project through the real archive exporter, writes it
+through `writeArchiveFile` against a permission-granted folder handle, reads
+the resulting ZIP back, restores it through the storage UI, and verifies the
+edited scene after reopen. The existing fallback ZIP download/import flow also
+passes at 1280x900 and 375x812; the complete spec is 4/4.
+
+This closes the previously missing #534-dependent evidence boundary for #536,
+but #536 is not yet ready for closure. Remaining acceptance work includes the
+full invalid-archive/ownership/path validation matrix at the UI boundary,
+accessible unsaved-edit decisions during project/file transitions, and the
+documented Firefox/Safari support or fallback matrix. The folder-handle test
+uses the repository's supported mocked-native-handle boundary because native
+OS chooser interaction is not Playwright-automatable; #534 covers that same
+bridge boundary independently.

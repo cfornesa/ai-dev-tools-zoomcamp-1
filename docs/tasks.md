@@ -51,6 +51,8 @@ Verification:
 - Follow-up `authentication returns` Chromium evidence — **2 passed** at
   1280×900 and 375×812 for explicit original-owner resume after one 401 and a
   subsequent successful acknowledgement (`fb641a8`).
+- Revoked-access Chromium evidence — **2 passed** at 1280×900 and 375×812 for
+  the distinct 403 state and explicit discard (`86f634e`).
 
 #545 remains open for successful live re-auth/resume and distinct revoked
 project-access evidence.

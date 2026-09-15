@@ -26,6 +26,21 @@ export type MergeResult = {
   conflicts: MergeConflict[];
 };
 
+export type ConflictResolutionChoice = 'keep-local' | 'keep-remote' | 'compose';
+
+export type ConflictResolutionOperation = {
+  operationId: string;
+  kind: 'scene' | 'metadata' | 'media-reference';
+  baseVersion: string;
+  choice: ConflictResolutionChoice;
+  resolvedPayload: unknown;
+  audit: {
+    conflictPaths: string[];
+    localOperationIds: string[];
+    remoteOperationIds: string[];
+  };
+};
+
 function stableJson(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
@@ -149,4 +164,27 @@ export function mergeSyncSnapshots(
 
 export function stableMergeFingerprint(value: unknown): string {
   return stableJson(value);
+}
+
+export function createConflictResolutionOperation(
+  conflictResult: MergeResult,
+  choice: ConflictResolutionChoice,
+  context: MergeOperationContext,
+  resolvedPayload: unknown,
+): ConflictResolutionOperation {
+  if (conflictResult.conflicts.length === 0) {
+    throw new Error('A conflict resolution operation requires at least one conflict.');
+  }
+  return {
+    operationId: crypto.randomUUID(),
+    kind: 'scene',
+    baseVersion: context.baseVersion,
+    choice,
+    resolvedPayload,
+    audit: {
+      conflictPaths: conflictResult.conflicts.map((item) => item.path).sort(),
+      localOperationIds: [...context.localOperationIds],
+      remoteOperationIds: [...context.remoteOperationIds],
+    },
+  };
 }

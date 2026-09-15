@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { mergeSyncSnapshots, stableMergeFingerprint } from './conflictMerge';
+import {
+  createConflictResolutionOperation,
+  mergeSyncSnapshots,
+  stableMergeFingerprint,
+} from './conflictMerge';
 
 const context = {
   baseVersion: 'scene-version-7',
@@ -72,6 +76,26 @@ describe('deterministic hybrid conflict merge', () => {
   it('produces the same canonical fingerprint regardless of object key order', () => {
     expect(stableMergeFingerprint({ z: 1, a: { y: 2, x: 3 } })).toBe(
       stableMergeFingerprint({ a: { x: 3, y: 2 }, z: 1 }),
+    );
+  });
+
+  it('creates an auditable idempotent resolution payload for an explicit choice', () => {
+    const result = mergeSyncSnapshots({ value: 1 }, { value: 2 }, { value: 3 }, context);
+    const operation = createConflictResolutionOperation(result, 'compose', context, { value: 4 });
+
+    expect(operation).toMatchObject({
+      kind: 'scene',
+      baseVersion: 'scene-version-7',
+      choice: 'compose',
+      resolvedPayload: { value: 4 },
+      audit: {
+        conflictPaths: ['value'],
+        localOperationIds: ['local-1'],
+        remoteOperationIds: ['remote-1'],
+      },
+    });
+    expect(operation.operationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
   });
 });

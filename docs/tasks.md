@@ -22,6 +22,16 @@ real server-side conflict detection/rebase integration and independent
 three-way merge coverage against the live sync endpoint before its full
 acceptance criteria are satisfied.
 
+Backlog reconciliation after the Claude Sonnet 5 QA notes: #536 now has the
+required fallback/reopen browser evidence but remains open for the granted
+folder in-place checkpoint path; #545 remains open for expiry/re-auth and
+explicit original-owner recovery controls; #546 remains open for authenticated
+media endpoint integration and browser interruption/quota evidence; #547
+remains production-blocked pending the actual Replit traceback. The PWA/native
+packaging question is already resolved by #540's offline-first sync decision
+and is explicitly out of scope for #544–#546. Existing #532 storage accounting
+covers browser-origin quota/usage; no duplicate issue was opened.
+
 ## 2026-09-10 — #508 QA'd + readiness + AugmentrART rename committed
 
 Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized

@@ -156,5 +156,31 @@ test.describe('Offline mutation ownership recovery (#545)', () => {
         page.getByText('Queued mutation resumed for authenticated replay.'),
       ).toBeVisible();
     });
+
+    test(`shows a distinct revoked-access state at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await seedLocalProject(page, fixtures.owner.username);
+      await page.route(`**/api/projects/${PROJECT_ID}/sync/mutations/`, async (route) => {
+        await route.fulfill({
+          status: 403,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'permission-denied' }),
+        });
+      });
+      await page.goto(`/local-projects/${PROJECT_ID}`);
+      await page.getByLabel('Scene name').fill('Revoked private edit');
+      await page.getByRole('button', { name: 'Save local changes' }).click();
+      await expect(page.getByText('Saved local scene changes to this browser.')).toBeVisible();
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'Private sync paused' })).toBeVisible();
+      await expect(page.getByText(/server rejected access/i)).toBeVisible();
+      await page.getByRole('button', { name: 'Discard queued mutation' }).click();
+      await expect(
+        page.getByText('Queued private mutation discarded; local artwork was preserved.'),
+      ).toBeVisible();
+    });
   }
 });

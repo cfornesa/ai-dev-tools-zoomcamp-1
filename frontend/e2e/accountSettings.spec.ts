@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -8,7 +8,7 @@ const VIEWPORTS = [
   { width: 375, height: 812 },
 ];
 
-async function assertGroupedSettings(page: Parameters<typeof loginViaUI>[0]) {
+async function assertGroupedSettings(page: Page) {
   await expect(page.getByRole('heading', { name: 'Account settings' })).toBeVisible();
   for (const heading of [
     'Plan and usage',
@@ -37,20 +37,21 @@ test.describe('Account settings grouping (#548)', () => {
   for (const viewport of VIEWPORTS) {
     test(`empty settings fixture stays grouped at ${viewport.width}x${viewport.height}`, async ({
       page,
-    }) => {
+    }, testInfo: TestInfo) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
       await page.goto('/account/settings');
       await assertGroupedSettings(page);
       await expect(page.getByText('No saved models yet.')).toBeVisible();
       await expect(page.getByText('No Personas yet.')).toBeVisible();
+      await page.screenshot({ path: testInfo.outputPath('account-settings-empty.png') });
     });
   }
 
   for (const viewport of VIEWPORTS) {
     test(`populated settings fixture stays grouped at ${viewport.width}x${viewport.height}`, async ({
       page,
-    }) => {
+    }, testInfo: TestInfo) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
       await page.route('**/api/account/provider-credentials/', (route) =>
@@ -99,6 +100,7 @@ test.describe('Account settings grouping (#548)', () => {
       await expect(page.getByText('Small (mistral-small-latest)')).toBeVisible();
       await expect(page.getByText('Playful')).toBeVisible();
       await expect(page.getByText('Mistral key: configured')).toBeVisible();
+      await page.screenshot({ path: testInfo.outputPath('account-settings-populated.png') });
     });
   }
 });

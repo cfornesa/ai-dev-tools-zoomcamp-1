@@ -222,12 +222,34 @@ button:disabled {
 
 .account-settings-form {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
   gap: 10px;
   width: 100%;
   max-width: 640px;
+}
+
+.account-settings-form > input,
+.account-settings-form > textarea {
+  width: 100%;
+}
+
+.account-settings-form > button {
+  align-self: flex-start;
+}
+
+.account-settings-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+
+.account-settings-field > input,
+.account-settings-field > textarea {
+  width: 100%;
 }
 
 .account-settings-input {
@@ -246,6 +268,21 @@ button:disabled {
   margin-top: 24px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
+}
+
+.account-settings-card > .account-settings-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.account-settings-card > .account-settings-section > input {
+  width: 100%;
+}
+
+.account-settings-card > .account-settings-section > button {
+  align-self: flex-start;
 }
 
 .account-settings-header {
@@ -3091,8 +3128,10 @@ select.ai-proposal-field-full-width {
   }
 
   .account-settings-form {
-    flex-direction: column;
-    align-items: stretch;
+    width: 100%;
+  }
+
+  .account-settings-card > .account-settings-section {
     width: 100%;
   }
 

@@ -112,50 +112,62 @@ function ProfileSettings() {
         Choose a unique handle to publish your profile and public pieces at{' '}
         <code>/users/@handle</code>.
       </p>
-      <label htmlFor="profile-handle">Handle</label>
-      <input
-        id="profile-handle"
-        value={profile.handle ?? ''}
-        onChange={(event) => setProfile({ ...profile, handle: event.target.value.toLowerCase() })}
-      />
-      <label htmlFor="profile-display-name">Display name</label>
-      <input
-        id="profile-display-name"
-        value={profile.display_name}
-        onChange={(event) => setProfile({ ...profile, display_name: event.target.value })}
-      />
-      <label htmlFor="profile-bio">Bio</label>
-      <textarea
-        id="profile-bio"
-        value={profile.bio}
-        onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
-      />
-      <label htmlFor="profile-website">Website URL</label>
-      <input
-        id="profile-website"
-        type="url"
-        value={profile.website_url}
-        onChange={(event) => setProfile({ ...profile, website_url: event.target.value })}
-      />
-      <label htmlFor="profile-image">Profile photo URL</label>
-      <input
-        id="profile-image"
-        type="url"
-        value={profile.profile_image_url}
-        onChange={(event) => setProfile({ ...profile, profile_image_url: event.target.value })}
-      />
-      <label htmlFor="profile-accent">Profile accent</label>
-      <input
-        id="profile-accent"
-        type="color"
-        value={profile.theme_config.accent ?? '#c084fc'}
-        onChange={(event) =>
-          setProfile({
-            ...profile,
-            theme_config: { ...profile.theme_config, accent: event.target.value },
-          })
-        }
-      />
+      <div className="account-settings-field">
+        <label htmlFor="profile-handle">Handle</label>
+        <input
+          id="profile-handle"
+          value={profile.handle ?? ''}
+          onChange={(event) => setProfile({ ...profile, handle: event.target.value.toLowerCase() })}
+        />
+      </div>
+      <div className="account-settings-field">
+        <label htmlFor="profile-display-name">Display name</label>
+        <input
+          id="profile-display-name"
+          value={profile.display_name}
+          onChange={(event) => setProfile({ ...profile, display_name: event.target.value })}
+        />
+      </div>
+      <div className="account-settings-field">
+        <label htmlFor="profile-bio">Bio</label>
+        <textarea
+          id="profile-bio"
+          value={profile.bio}
+          onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
+        />
+      </div>
+      <div className="account-settings-field">
+        <label htmlFor="profile-website">Website URL</label>
+        <input
+          id="profile-website"
+          type="url"
+          value={profile.website_url}
+          onChange={(event) => setProfile({ ...profile, website_url: event.target.value })}
+        />
+      </div>
+      <div className="account-settings-field">
+        <label htmlFor="profile-image">Profile photo URL</label>
+        <input
+          id="profile-image"
+          type="url"
+          value={profile.profile_image_url}
+          onChange={(event) => setProfile({ ...profile, profile_image_url: event.target.value })}
+        />
+      </div>
+      <div className="account-settings-field">
+        <label htmlFor="profile-accent">Profile accent</label>
+        <input
+          id="profile-accent"
+          type="color"
+          value={profile.theme_config.accent ?? '#c084fc'}
+          onChange={(event) =>
+            setProfile({
+              ...profile,
+              theme_config: { ...profile.theme_config, accent: event.target.value },
+            })
+          }
+        />
+      </div>
       <button
         className="shell-action"
         type="button"

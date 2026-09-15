@@ -1,5 +1,6 @@
 """Authenticated project cloud-backup endpoints (#509)."""
 
+import re
 import uuid
 
 from django.http import Http404, HttpResponse
@@ -14,6 +15,7 @@ from scenes.cloud_backup import (
     latest_manifest,
     pause_backup,
     put_blob,
+    put_blob_chunk,
     put_manifest,
     snapshot_schedule,
 )
@@ -164,3 +166,33 @@ class CloudBackupBlobView(APIView):
         return Response(
             {"asset_id": str(row.asset_id), "checksum": row.checksum, "byte_size": row.byte_size}
         )
+
+
+class CloudBackupBlobChunkView(APIView):
+    def put(self, request, public_id, asset_id):
+        if not request.user.is_authenticated:
+            return Response(status=401)
+        match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", request.headers.get("Content-Range", ""))
+        if match is None:
+            return Response({"error": "invalid_content_range"}, status=400)
+        start, inclusive_end, byte_length = (int(value) for value in match.groups())
+        try:
+            result = put_blob_chunk(
+                request.user,
+                _project(public_id),
+                uuid.UUID(str(asset_id)),
+                request.body,
+                start=start,
+                end=inclusive_end + 1,
+                byte_length=byte_length,
+                checksum=request.headers.get("X-Asset-Checksum", ""),
+                mime_type=request.headers.get("X-Asset-Mime-Type", "application/octet-stream"),
+                idempotency_key=request.headers.get("X-Idempotency-Key", ""),
+            )
+        except ValueError as exc:
+            return Response({"error": "invalid_chunk", "detail": str(exc)}, status=400)
+        except PermissionDenied as exc:
+            raise Http404 from exc
+        except CloudBackupError as exc:
+            return _error(exc)
+        return Response(result, status=200 if result["complete"] else 308)

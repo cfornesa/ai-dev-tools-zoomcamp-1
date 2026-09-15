@@ -83,7 +83,12 @@ from scenes.art_piece_persistence import (
     PublicArtPieceThumbnailView,
 )
 from scenes.billing_api import AccountBillingView, PayPalWebhookView
-from scenes.cloud_backup_api import CloudBackupBlobView, CloudBackupManifestView, CloudBackupView
+from scenes.cloud_backup_api import (
+    CloudBackupBlobChunkView,
+    CloudBackupBlobView,
+    CloudBackupManifestView,
+    CloudBackupView,
+)
 from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudRetentionView
 from scenes.pages_api import PublicPageDetailView
 from scenes.profile_api import AccountProfileView, PublicProfileView
@@ -199,6 +204,11 @@ urlpatterns = [
         "projects/<uuid:public_id>/cloud-backup/assets/<uuid:asset_id>/",
         CloudBackupBlobView.as_view(),
         name="cloud-backup-blob",
+    ),
+    path(
+        "projects/<uuid:public_id>/cloud-backup/assets/<uuid:asset_id>/chunks/",
+        CloudBackupBlobChunkView.as_view(),
+        name="cloud-backup-blob-chunk",
     ),
     path(
         "projects/<uuid:public_id>/thumbnail.png",

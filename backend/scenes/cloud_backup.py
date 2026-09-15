@@ -19,6 +19,7 @@ from scenes.admin_settings import get_site_settings
 from scenes.entitlements import get_effective_cap, get_user_plan_key
 from scenes.models import (
     CloudBackupBlob,
+    CloudBackupBlobTransfer,
     CloudBackupManifest,
     CloudBackupProject,
     CloudRetentionPolicy,
@@ -306,6 +307,117 @@ def put_blob(
         data=data,
         idempotency_key=idempotency_key,
     )
+
+
+def _merge_ranges(ranges: list[dict[str, int]]) -> list[dict[str, int]]:
+    ordered = sorted(ranges, key=lambda item: (item["start"], item["end"]))
+    merged: list[dict[str, int]] = []
+    for current in ordered:
+        previous = merged[-1] if merged else None
+        if previous is not None and current["start"] <= previous["end"]:
+            previous["end"] = max(previous["end"], current["end"])
+        else:
+            merged.append({"start": current["start"], "end": current["end"]})
+    return merged
+
+
+def _ranges_cover(ranges: list[dict[str, int]], byte_length: int) -> bool:
+    return len(ranges) == 1 and ranges[0] == {"start": 0, "end": byte_length}
+
+
+@transaction.atomic
+def put_blob_chunk(
+    user,
+    project: Project,
+    asset_id: uuid.UUID,
+    data: bytes,
+    *,
+    start: int,
+    end: int,
+    byte_length: int,
+    checksum: str,
+    mime_type: str,
+    idempotency_key: str,
+) -> dict[str, object]:
+    """Store one idempotent byte range and promote it atomically when complete."""
+    _enabled()
+    _owned(user, project, Action.CLOUD_BACKUP_WRITE)
+    if start < 0 or end <= start or end > byte_length or len(data) != end - start:
+        raise ValueError("The byte range does not match the supplied chunk.")
+    backup = CloudBackupProject.objects.select_for_update().get(project=project)
+    if not backup.enabled:
+        raise CloudBackupConflict("Enable backup before uploading an asset.")
+    _require_writable(backup, user)
+    existing = CloudBackupBlob.objects.filter(backup=backup, asset_id=asset_id).first()
+    if existing is not None:
+        if existing.checksum != checksum or existing.byte_size != byte_length:
+            raise CloudBackupChecksumMismatch("The asset ID already has another checksum.")
+        return {
+            "asset_id": str(asset_id),
+            "checksum": existing.checksum,
+            "byte_size": existing.byte_size,
+            "complete": True,
+            "acknowledged_ranges": [{"start": 0, "end": byte_length}],
+        }
+    max_bytes, max_files = _plan_quota(user)
+    used_bytes = sum(backup.blobs.values_list("byte_size", flat=True))
+    if used_bytes + byte_length > max_bytes:
+        raise CloudBackupQuotaExceeded("The configured cloud byte quota was exceeded.")
+    transfer, created = CloudBackupBlobTransfer.objects.select_for_update().get_or_create(
+        backup=backup,
+        asset_id=asset_id,
+        defaults={
+            "checksum": checksum,
+            "mime_type": mime_type[:128],
+            "byte_length": byte_length,
+            "data": b"\x00" * byte_length,
+            "idempotency_key": idempotency_key,
+        },
+    )
+    if not created and (
+        transfer.checksum != checksum
+        or transfer.byte_length != byte_length
+        or transfer.idempotency_key != idempotency_key
+    ):
+        raise CloudBackupChecksumMismatch("The asset transfer identity was reused incorrectly.")
+    if created and used_bytes + 1 > max_files:
+        raise CloudBackupQuotaExceeded("The configured cloud file quota was exceeded.")
+    merged_data = bytearray(transfer.data)
+    merged_data[start:end] = data
+    ranges = _merge_ranges([*transfer.acknowledged_ranges, {"start": start, "end": end}])
+    transfer.data = bytes(merged_data)
+    transfer.acknowledged_ranges = ranges
+    transfer.save(update_fields=["data", "acknowledged_ranges", "updated_at"])
+    if not _ranges_cover(ranges, byte_length):
+        return {
+            "asset_id": str(asset_id),
+            "checksum": checksum,
+            "byte_size": byte_length,
+            "complete": False,
+            "acknowledged_ranges": ranges,
+        }
+    actual = hashlib.sha256(bytes(merged_data)).hexdigest()
+    if actual != checksum:
+        raise CloudBackupChecksumMismatch("The completed transfer checksum does not match.")
+    if CloudBackupBlob.objects.filter(backup=backup).count() + 1 > max_files:
+        raise CloudBackupQuotaExceeded("The configured cloud file quota was exceeded.")
+    blob = CloudBackupBlob.objects.create(
+        backup=backup,
+        asset_id=asset_id,
+        checksum=checksum,
+        mime_type=transfer.mime_type,
+        byte_size=byte_length,
+        data=bytes(merged_data),
+        idempotency_key=idempotency_key,
+    )
+    transfer.delete()
+    return {
+        "asset_id": str(blob.asset_id),
+        "checksum": blob.checksum,
+        "byte_size": blob.byte_size,
+        "complete": True,
+        "acknowledged_ranges": [{"start": 0, "end": byte_length}],
+    }
 
 
 def get_blob(user, project: Project, asset_id: uuid.UUID) -> CloudBackupBlob:

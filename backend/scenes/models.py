@@ -949,6 +949,33 @@ class CloudBackupBlob(models.Model):
         return f"Cloud asset {self.asset_id} for backup {self.backup_id}"
 
 
+class CloudBackupBlobTransfer(models.Model):
+    """Resumable partial object for one opted-in cloud-backup asset."""
+
+    backup = models.ForeignKey(
+        CloudBackupProject, on_delete=models.CASCADE, related_name="blob_transfers"
+    )
+    asset_id = models.UUIDField()
+    checksum = models.CharField(max_length=128)
+    mime_type = models.CharField(max_length=128)
+    byte_length = models.PositiveBigIntegerField()
+    data = models.BinaryField(default=bytes)
+    acknowledged_ranges = models.JSONField(default=list)
+    idempotency_key = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["backup", "asset_id"], name="unique_cloud_blob_transfer_asset"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Cloud transfer {self.asset_id} for backup {self.backup_id}"
+
+
 class Scene(models.Model):
     """One ordered, named scene within a 2D project (issue #510).
 

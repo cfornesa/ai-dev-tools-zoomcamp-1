@@ -10,6 +10,7 @@ from django.urls import reverse
 from scenes.cloud_backup import mark_backup_read_only_for_user
 from scenes.models import (
     CloudBackupBlob,
+    CloudBackupBlobTransfer,
     CloudBackupProject,
     Plan,
     Project,
@@ -198,3 +199,79 @@ def test_blob_checksum_and_quota_fail_without_writing(client, owner, project):
     )
     assert response.status_code == 413
     assert CloudBackupBlob.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_chunk_upload_resumes_idempotently_and_promotes_after_checksum_match(
+    client, owner, project
+):
+    client.force_login(owner)
+    Plan.objects.update_or_create(
+        plan_key="free",
+        defaults={
+            "daily_ai_requests": 5,
+            "feature_keys": ["cloud_project_sync"],
+            "active": True,
+            "cloud_storage_bytes": 100,
+            "cloud_storage_files": 2,
+        },
+    )
+    client.post(reverse("cloud-backup", args=[project.public_id]), {"enabled": True})
+    payload = b"abcdefgh"
+    checksum = hashlib.sha256(payload).hexdigest()
+    asset_id = uuid.uuid4()
+    url = reverse("cloud-backup-blob-chunk", args=[project.public_id, asset_id])
+    headers = {
+        "HTTP_X_ASSET_CHECKSUM": checksum,
+        "HTTP_X_ASSET_MIME_TYPE": "image/png",
+        "HTTP_X_IDEMPOTENCY_KEY": "chunked-asset-1",
+    }
+    first = client.put(
+        url,
+        payload[:4],
+        content_type="application/octet-stream",
+        HTTP_CONTENT_RANGE="bytes 0-3/8",
+        **headers,
+    )
+    assert first.status_code == 308
+    assert first.json()["acknowledged_ranges"] == [{"start": 0, "end": 4}]
+    replay = client.put(
+        url,
+        payload[:4],
+        content_type="application/octet-stream",
+        HTTP_CONTENT_RANGE="bytes 0-3/8",
+        **headers,
+    )
+    assert replay.status_code == 308
+    final = client.put(
+        url,
+        payload[4:],
+        content_type="application/octet-stream",
+        HTTP_CONTENT_RANGE="bytes 4-7/8",
+        **headers,
+    )
+    assert final.status_code == 200
+    assert final.json()["complete"] is True
+    assert CloudBackupBlobTransfer.objects.count() == 0
+    assert CloudBackupBlob.objects.get(asset_id=asset_id).data == payload
+
+
+@pytest.mark.django_db
+def test_chunk_upload_garbage_collects_invalid_complete_object_on_checksum_failure(
+    client, owner, project
+):
+    client.force_login(owner)
+    client.post(reverse("cloud-backup", args=[project.public_id]), {"enabled": True})
+    asset_id = uuid.uuid4()
+    url = reverse("cloud-backup-blob-chunk", args=[project.public_id, asset_id])
+    response = client.put(
+        url,
+        b"wrong",
+        content_type="application/octet-stream",
+        HTTP_CONTENT_RANGE="bytes 0-4/5",
+        HTTP_X_ASSET_CHECKSUM="0" * 64,
+        HTTP_X_IDEMPOTENCY_KEY="bad-chunk",
+    )
+    assert response.status_code == 409
+    assert CloudBackupBlob.objects.count() == 0
+    assert not CloudBackupBlobTransfer.objects.filter(asset_id=asset_id).exists()

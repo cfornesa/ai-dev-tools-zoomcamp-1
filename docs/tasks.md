@@ -20887,3 +20887,21 @@ backend tests passed/39 skipped and 2,667 frontend tests passed. #534 received
 a QA PASS comment and was closed as completed. #536 remains open and now
 needs its own durable save/reopen browser spec, which depends on the verified
 #534 folder path.
+
+## 2026-09-15 — #545/#546 implementation increments
+
+For #545, commit `65b2d50` adds a tab-scoped mutation session generation to
+new private outbox records and filters replay by that generation. Commit
+`0023815` adds `frontend/e2e/offlineOwnershipRecovery.spec.ts`; Chromium passes
+desktop and mobile account-switch scenarios, proving the queued owner mutation
+is session-bound and is not replayed by the next account. #545 remains open
+for expiry/re-authentication, revoked-access distinctions, explicit recovery
+or discard UI, and original-owner resume evidence.
+
+For #546, commit `ca49b6c` adds the deterministic `mediaTransfer` state core
+and focused tests. It tracks owner/project/asset identity, byte length,
+checksum, acknowledged ranges, resumable next ranges, idempotent repeated
+range acknowledgements, and non-destructive checksum/quota/permission pause
+states. #546 remains open until this state is wired to an authenticated
+chunk-transfer endpoint and receives Chromium interruption/resume, checksum,
+quota, and recovery evidence.

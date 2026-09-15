@@ -803,3 +803,32 @@ new endpoint and migration in this conversation. #543 is now unblocked for
 stage 2b `implementation-complex`; #544/#545/#546 remain dependency-blocked on
 #543's transport and operation-identity contract, in that order, per
 `docs/distillation-2026-09-14-local-workspaces.md`.
+
+## 2026-09-15 (Claude in Chrome production audit: #547/#548 filed)
+
+Owner asked for a follow-up readiness pass using Claude in Chrome against
+the live `https://augmentrart.com` deployment (Account settings layout,
+WCAG 2.2, editor functionality, admin-panel theme customization parity),
+explicitly instructing no amendment of any existing issue and use of
+`task-distillation` to scope and file new issues instead. Owner also
+explicitly authorized issue-scoping ahead of distillation and use of Claude
+in Chrome for this pass.
+
+Findings: (1) `GET /api/account/entitlements/` returns HTTP 500 in
+production — the real cause of Account settings' permanent "Could not load
+your plan and usage." error — filed as
+[#547](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/547);
+(2) Account settings renders as one flat, ungrouped column across ~7
+distinct concerns despite well-formed underlying accessibility semantics
+(landmarks/labels/headings all correct) — a WCAG 2.2 SC 1.3.1
+grouping/usability gap — filed as
+[#548](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/548).
+Confirmed via source review (could not reach live as a non-admin account,
+expected fail-closed behavior) that the admin panel
+(`/admin/settings`/`/admin/pages`/`/admin/content`) is built and already
+has site theme customization (closed #521). #521's exclusion of arbitrary
+custom CSS/HTML/JS theming (unlike `augment-humankind-react-node`'s
+sandboxed custom-runtime system) is a deliberate, already-recorded security
+scope decision, not a gap — not re-filed. No existing issue duplicated
+either finding. Full detail in `docs/tasks.md` and
+`.agents/memory/account-settings-production-audit-2026-09-15.md`.

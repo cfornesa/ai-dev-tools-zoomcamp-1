@@ -20605,3 +20605,48 @@ unavailable; the delegated #543 worker terminated incomplete before the local
 implementation. No independent second-opinion review ran. The readiness gate
 and final production assessment remain pending the owner decision, external
 browser capabilities, and the mandated model tier.
+
+## 2026-09-15 — production-readiness re-run with Claude in Chrome; #547/#548 filed
+
+Owner asked for a fresh readiness pass using Claude in Chrome against the
+live `https://augmentrart.com` deployment, focused on Account settings
+layout, WCAG 2.2, editor functionality, and admin-panel theme customization
+parity with `augment-humankind`/`augment-humankind-react-node`. Explicit
+instruction: do not amend any existing issue; scope and file new issues via
+`task-distillation` instead.
+
+Authenticated Chrome inspection of `/account/settings` found:
+
+- `GET /api/account/entitlements/` returns HTTP 500 in production while
+  every sibling account API on the same page returns 200 — the real cause
+  of the page's permanent "Could not load your plan and usage." alert and
+  non-functional Retry button. Filed as new bug
+  [#547](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/547).
+- The page's accessibility tree is actually well-formed (landmarks, skip
+  link, correct `label`/`for`, headings present), but it renders as one
+  flat, ungrouped column across ~7 distinct concerns, with the 6
+  account-management links (including "Delete your account") stacked as
+  plain text with no list semantics or destructive-action distinction.
+  This is a WCAG 2.2 SC 1.3.1 grouping/relationship gap plus a plain
+  usability gap, not a broken-semantics defect. Filed as new enhancement
+  [#548](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/548).
+
+`/admin` (bare) 404s as expected; the real admin routes are
+`/admin/settings`, `/admin/pages`, `/admin/content` (`frontend/src/App.tsx`).
+The current authenticated account is not an application admin, so live
+inspection redirected to `/` (fail-closed boundary, expected, not a defect).
+Source review of `frontend/src/pages/AdminSettings.tsx` confirmed the admin
+panel is built and does expose site theme customization (finite validated
+color-token contract, closed via #521). #521 deliberately excluded arbitrary
+custom CSS/HTML/JS site theming as a security boundary — `augment-humankind-react-node`
+has a richer sandboxed custom-runtime theme system, but porting that was an
+explicit out-of-scope decision on #521, not an unaddressed gap; it was not
+re-filed. Editor functionality was not re-verified live in this pass (would
+require creating real data on the production database); the extensive prior
+closed-issue verification history for the structured editors stands.
+
+No duplicate issues existed for either finding (`gh issue list --search`
+checked before filing both). Both #547 and #548 are independent and may
+proceed in parallel; neither is a dependency of the other or of the existing
+#542-#546 offline-sync chain. Durable context recorded in
+`.agents/memory/account-settings-production-audit-2026-09-15.md`.

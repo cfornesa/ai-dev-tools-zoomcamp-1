@@ -1,6 +1,51 @@
 # AugmentrART Backlog
 
-## 2026-09-15 — current open-only task distillation and handoff
+## 2026-09-15 — final task distillation, readiness, and completion reconciliation
+
+The authenticated GitHub connector was re-enumerated after the #544 migration
+and returned **zero open issues**. Direct issue fetches confirm #543, #544,
+#545, #546, #547, and #548 are all closed with `state_reason: completed`.
+No duplicate or new issue is needed: the remaining deployment/schema evidence
+boundary is already covered by the release container #445 and post-publish
+schema-verification issue #467.
+
+| Issue | Scope | Terminal status | Evidence boundary |
+| --- | --- | --- | --- |
+| #543 | Durable mutation outbox, deterministic retry, acknowledgement | CLOSED / completed | Local/CI/browser evidence; implementation substitution disclosed |
+| #544 | Server-authoritative conflict detection and deterministic resolution | CLOSED / completed | Owner-authorized local `scenes.0065` migration; real Chromium at 1280×900 and 375×812; disposable PostgreSQL |
+| #545 | Ownership recovery for queued private mutations | CLOSED / completed | Chromium desktop/mobile recovery evidence; local/CI/browser boundary |
+| #546 | Resumable media transfer, checksum/quota recovery | CLOSED / completed | Real Chromium at 1280×900 and 375×812; disposable PostgreSQL |
+| #547 | Production entitlement HTTP 500 repair | CLOSED / completed | Authenticated Chrome/Replit production evidence recorded on issue |
+| #548 | Grouped, accessible Account settings layout | CLOSED / completed | Authenticated Chrome desktop/mobile evidence recorded on issue |
+
+Every issue has a terminal transaction (`GROOMED → ENGINEERING → QA →
+RECONCILIATION → CLOSED`). Optional independent Stage 3 review was not run;
+all implementation and QA substitutions are disclosed in the issue/task
+evidence rather than credited to the rostered service.
+
+### Production-readiness gate — Sonnet 5 Medium
+
+The mandated Stage 5 review ran in the active Claude session on Sonnet 5
+Medium. Local deployment, approved Chromium/CI verification, and scoped
+functionality were **PASS** on the re-run evidence. Replit publication was
+**NON-ACTIONABLE / not performed in this batch**. Overall production readiness
+is **OPEN FOLLOW-UP** because no migration-bearing Replit publish, production
+schema inspection, or deployed-browser smoke matrix was performed. This is an
+existing release boundary owned by #445/#467, not a new child defect.
+
+### Session-completion result
+
+The batch is complete locally: six completed issues, zero blocked,
+dependency-blocked, or handed-off issues, zero missing terminal statuses, and
+zero remaining open GitHub issues. Final status is **batch-complete,
+deployment-pending**, not production-ready. The exact next action is to
+publish the migration-bearing release, run
+`PUBLISHED_APP_URL=<published-url> scripts/smoke-published.sh`, inspect actual
+production tables rather than `django_migrations`, and run the deployed
+Chromium matrix before upgrading the release claim. The historical open-only
+manifest below is retained unchanged as audit history.
+
+## 2026-09-15 — historical open-only task distillation and handoff
 
 Fresh GitHub enumeration for `cfornesa/ai-dev-tools-zoomcamp-1` reports exactly
 two open issues: #544 and #546. Closed issues #534, #536, #543, #545, and

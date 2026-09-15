@@ -844,3 +844,22 @@ snapshot, and creates one immutable `SceneVersion` linked to the receipt.
 Stage 2b is a Codex/GPT-5 substitution for rostered Ollama Cloud `kimi-k3`;
 Stage 4 and the readiness gate remain separate stages and are not implied by
 this implementation increment.
+
+## 2026-09-15 (final backlog reconciliation and readiness gate)
+
+After the owner-authorized #544 migration, the authenticated GitHub connector
+was re-enumerated and returned no open issues. Direct fetches confirmed #543
+through #548 are closed with `state_reason: completed`; #548 is included in
+the terminal batch despite the earlier historical manifest naming only #544/#546.
+The stale open-only text was preserved as history and superseded by the final
+manifest at the top of `docs/tasks.md`.
+
+Stage 5 production-readiness ran on the rostered Claude Sonnet 5 Medium in the
+active Chrome Claude session. It passed local deployment, approved Chromium/CI
+evidence, and scoped functionality, but returned `OPEN FOLLOW-UP` for overall
+production readiness because no migration-bearing Replit publish, production
+schema inspection, or deployed-browser smoke matrix was performed in this
+batch. This does not reopen a closed child or create a duplicate: #445 owns
+release-candidate reconciliation and #467 owns the post-publish schema
+verification practice. Session completion therefore records the batch as
+`deployment-pending`, not production-ready.

@@ -55,6 +55,10 @@ Verification:
 #545 remains open for successful live re-auth/resume and distinct revoked
 project-access evidence.
 
+The post-fix full quality gate is green: `make check` completed with backend
+**1316 passed, 39 skipped**, frontend **2675 passed**, lint warnings only,
+format-check, typecheck, and action-pin checks all passing.
+
 ## 2026-09-10 — #508 QA'd + readiness + AugmentrART rename committed
 
 Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized

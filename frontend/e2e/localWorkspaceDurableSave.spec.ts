@@ -122,7 +122,9 @@ test.describe('Local workspace durable save and reopen (#536)', () => {
       await page.goto(`/local-projects/${projectId}`);
       await expect(page.getByRole('heading', { name: 'Durable Save Project' })).toBeVisible();
       await page.getByLabel('Scene name').fill('Edited scene');
-      await page.getByRole('button', { name: 'Save local changes' }).click();
+      await expect(page.getByRole('region', { name: 'Unsaved local changes' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Recover draft' })).toBeDisabled();
+      await page.getByRole('button', { name: 'Save now' }).click();
       await expect(page.getByText('Saved local scene changes to this browser.')).toBeVisible();
 
       await page.reload();

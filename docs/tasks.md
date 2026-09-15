@@ -21080,3 +21080,20 @@ This changes #547 from an unknown application defect to a confirmed
 production-schema deployment blocker. A release/publish action remains
 explicitly pending owner authorization; the issue cannot be closed from local
 tests alone.
+
+## 2026-09-15 — #536 explicit dirty-state decisions
+
+The local editor now presents an accessible **Save now**, **Recover draft**,
+**Export ZIP**, and **Cancel edit** decision surface whenever the active scene
+is dirty. Cancel restores the last saved scene value in IndexedDB while
+retaining the recovery draft; Export writes the current draft to a validated
+ZIP before clearing the dirty state; Save now uses the existing local save and
+recovery path. A `beforeunload` guard also protects reload/close while edits
+are dirty, and the existing back link remains blocked until a decision is
+made.
+
+Focused unit coverage passes (4/4), and the durable-save Chromium suite passes
+4/4 at 1280x900 and 375x812 with the new decision surface exercised. This
+removes the previously recorded unsaved-transition gap for #536. The issue
+still needs the remaining invalid-archive/ownership/path UI matrix and the
+documented Firefox/Safari support/fallback matrix before readiness review.

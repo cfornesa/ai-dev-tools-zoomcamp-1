@@ -117,6 +117,26 @@ describe('LocalEditorWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Save durable checkpoint' })).toBeEnabled();
   });
 
+  it('offers accessible save, recovery, export, and cancel choices for dirty edits', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const input = await screen.findByLabelText('Scene name');
+    await user.clear(input);
+    await user.type(input, 'Unsaved choice');
+
+    expect(screen.getByRole('region', { name: 'Unsaved local changes' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Save now' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Recover draft' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Export ZIP' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Cancel edit' })).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Cancel edit' }));
+    expect(mockedUpdateScene).toHaveBeenLastCalledWith(db, 's1', { name: 'Opening scene' });
+    expect(screen.getByLabelText('Scene name')).toHaveValue('Opening scene');
+    expect(screen.queryByRole('region', { name: 'Unsaved local changes' })).toBeNull();
+  });
+
   it('does not expose a missing or foreign local project', async () => {
     mockedGetProject.mockResolvedValue(null);
     renderPage();

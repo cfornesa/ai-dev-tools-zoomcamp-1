@@ -284,6 +284,16 @@ function LocalEditorWorkspace() {
     return () => window.clearTimeout(timer);
   }, [auth, dirty, id, sceneName, selectedScene]);
 
+  useEffect(() => {
+    if (!dirty) return;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [dirty]);
+
   if (auth.status === 'loading') return null;
   if (auth.status !== 'signed-in') return <Navigate to="/" replace />;
 
@@ -428,6 +438,46 @@ function LocalEditorWorkspace() {
     }
   }
 
+  async function exportUnsavedChanges() {
+    if (!selectedScene || !id || auth.status !== 'signed-in') return;
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      await updateScene(db, selectedScene.id, {
+        name: sceneName.trim() || selectedScene.name,
+      });
+      const archive = await exportDatabaseArchive(db, auth.user.username, { projectIds: [id] });
+      downloadBlob(archive.blob, `${project?.title.replace(/[^\w.-]+/g, '_') || 'project'}.zip`);
+      const exportedScene = { ...selectedScene, name: sceneName.trim() || selectedScene.name };
+      setScenes((current) =>
+        current.map((scene) => (scene.id === exportedScene.id ? exportedScene : scene)),
+      );
+      setSceneName(exportedScene.name);
+      setDirty(false);
+      setMessage('Unsaved local changes exported as a ZIP checkpoint.');
+    } catch {
+      setMessage('Could not export the unsaved changes. Your draft remains on screen.');
+    } finally {
+      db?.close();
+    }
+  }
+
+  async function cancelUnsavedChanges() {
+    if (!selectedScene) return;
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      await updateScene(db, selectedScene.id, { name: selectedScene.name });
+      setSceneName(selectedScene.name);
+      setDirty(false);
+      setMessage('Unsaved scene changes discarded; the recovery draft remains available.');
+    } catch {
+      setMessage('Could not discard the unsaved scene changes. Your draft remains on screen.');
+    } finally {
+      db?.close();
+    }
+  }
+
   function switchScene(nextId: string) {
     if (dirty) {
       setMessage('Save or cancel the current local scene changes before switching scenes.');
@@ -465,6 +515,33 @@ function LocalEditorWorkspace() {
         <p role="status" aria-live="polite">
           {message}
         </p>
+      )}
+      {dirty && (
+        <section className="sync-recovery-panel" aria-label="Unsaved local changes">
+          <h3>Unsaved local changes</h3>
+          <p>
+            Choose how to resolve this edit before leaving the project. The browser-local recovery
+            draft remains available until you explicitly replace or discard it.
+          </p>
+          <div className="sync-conflict-actions">
+            <button type="button" onClick={() => void saveScene()}>
+              Save now
+            </button>
+            <button
+              type="button"
+              onClick={() => void recoverLatestDraft()}
+              disabled={!recoveryDraftId}
+            >
+              Recover draft
+            </button>
+            <button type="button" onClick={() => void exportUnsavedChanges()}>
+              Export ZIP
+            </button>
+            <button type="button" onClick={() => void cancelUnsavedChanges()}>
+              Cancel edit
+            </button>
+          </div>
+        </section>
       )}
       {syncConflict && (
         <ConflictResolutionPanel

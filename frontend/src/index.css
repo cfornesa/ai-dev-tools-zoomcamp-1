@@ -252,6 +252,32 @@ button:disabled {
   width: 100%;
 }
 
+.sync-conflict-panel {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-bg) 35%, var(--bg));
+}
+
+.sync-conflict-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font:
+    0.9rem/1.4 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.sync-conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .account-settings-input {
   min-height: 40px;
   box-sizing: border-box;

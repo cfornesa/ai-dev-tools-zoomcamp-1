@@ -1,7 +1,7 @@
 import { ApiError } from '../api/client';
 import { sendSyncMutation } from '../api/syncMutations';
 import { openLocalProjectDatabase } from './localProjectRepository';
-import type { MutationOutboxRecord } from './mutationOutbox';
+import type { MutationOutboxRecord, StoredSyncConflict } from './mutationOutbox';
 import { replayReadyMutations, type MutationReplayResult } from './mutationOutbox';
 
 function classifyTransportFailure(error: unknown): MutationReplayResult {
@@ -10,7 +10,10 @@ function classifyTransportFailure(error: unknown): MutationReplayResult {
     if (error.status === 403 || error.status === 404) {
       return { type: 'paused', code: 'permission-denied' };
     }
-    if (error.status === 409) return { type: 'paused', code: 'conflict' };
+    if (error.status === 409) {
+      const body = error.body as { conflict?: StoredSyncConflict } | null;
+      return { type: 'paused', code: 'conflict', conflict: body?.conflict };
+    }
     if (error.status >= 400 && error.status < 500) {
       return { type: 'paused', code: 'invalid-operation' };
     }

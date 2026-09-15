@@ -7,6 +7,7 @@ import { createProject, openLocalProjectDatabase } from './localProjectRepositor
 import { enqueueMutation, listMutationOutbox } from './mutationOutbox';
 import { replaySyncMutations } from './syncMutationReplay';
 import { sendSyncMutation } from '../api/syncMutations';
+import { ApiError } from '../api/client';
 
 vi.mock('../api/syncMutations', () => ({
   sendSyncMutation: vi.fn(),
@@ -48,5 +49,37 @@ describe('replaySyncMutations', () => {
       { state: 'acknowledged' },
     ]);
     verifyDb.close();
+  });
+
+  it('persists a server conflict record while pausing the original operation', async () => {
+    const setupDb = await openLocalProjectDatabase();
+    const project = await createProject(setupDb, { ownerId: 'owner-a', title: 'Project' });
+    await enqueueMutation(setupDb, {
+      ownerId: 'owner-a',
+      projectId: project.id,
+      kind: 'scene',
+      payload: { value: 1 },
+    });
+    setupDb.close();
+    vi.mocked(sendSyncMutation).mockRejectedValue(
+      new ApiError(409, {
+        conflict: {
+          conflicts: [],
+          context: {
+            baseVersion: 'version-7',
+            localOperationIds: ['local-1'],
+            remoteOperationIds: ['remote-1'],
+          },
+        },
+      }),
+    );
+
+    const completed = await replaySyncMutations('owner-a', project.id);
+
+    expect(completed[0]).toMatchObject({
+      state: 'paused',
+      lastErrorCode: 'conflict',
+      conflict: { context: { baseVersion: 'version-7' } },
+    });
   });
 });

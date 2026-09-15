@@ -4,6 +4,7 @@ import {
   openLocalProjectDatabase,
   STORE_MUTATION_OUTBOX,
 } from './localProjectRepository';
+import type { MergeConflict, MergeOperationContext } from './conflictMerge';
 
 export const MUTATION_OUTBOX_SCHEMA_VERSION = 1;
 export const DEFAULT_MAX_ATTEMPTS = 5;
@@ -11,6 +12,14 @@ export const DEFAULT_RETRY_BASE_MS = 1_000;
 
 export type MutationKind = 'scene' | 'metadata' | 'media-reference';
 export type MutationState = 'pending' | 'in-flight' | 'acknowledged' | 'failed' | 'paused';
+
+export type StoredSyncConflict = {
+  conflicts: MergeConflict[];
+  context: MergeOperationContext;
+  localSnapshot?: unknown;
+  remoteSnapshot?: unknown;
+  mergedSnapshot?: unknown;
+};
 
 export type MutationOutboxRecord = {
   operationId: string;
@@ -30,6 +39,7 @@ export type MutationOutboxRecord = {
   nextAttemptAt: string;
   lastErrorCode: string | null;
   acknowledgedAt: string | null;
+  conflict?: StoredSyncConflict;
 };
 
 export type EnqueueMutationInput = {
@@ -46,7 +56,7 @@ export type EnqueueMutationInput = {
 export type MutationReplayResult =
   | { type: 'acknowledged'; serverOperationId?: string }
   | { type: 'retryable'; code: string }
-  | { type: 'paused'; code: string };
+  | { type: 'paused'; code: string; conflict?: StoredSyncConflict };
 
 function stableJson(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
@@ -248,10 +258,12 @@ export function pauseMutation(
   ownerId: string,
   operationId: string,
   code: string,
+  conflict?: StoredSyncConflict,
 ): Promise<MutationOutboxRecord | null> {
   return updateOperation(db, ownerId, operationId, (operation) => {
     operation.state = 'paused';
     operation.lastErrorCode = code;
+    operation.conflict = conflict;
   });
 }
 
@@ -272,7 +284,7 @@ export async function replayReadyMutations(
         ? await acknowledgeMutation(db, ownerId, operation.operationId, now)
         : result.type === 'retryable'
           ? await retryMutation(db, ownerId, operation.operationId, result.code, now)
-          : await pauseMutation(db, ownerId, operation.operationId, result.code);
+          : await pauseMutation(db, ownerId, operation.operationId, result.code, result.conflict);
     if (updated) completed.push(updated);
     if (result.type === 'paused' || result.type === 'retryable') break;
   }

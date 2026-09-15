@@ -2,6 +2,7 @@ import { useEffect, useState, type MouseEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { ConflictResolutionPanel } from '../components/ConflictResolutionPanel';
 import { exportDatabaseArchive } from '../storage/localDatabaseArchive';
 import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiveBridge';
 import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
@@ -16,6 +17,12 @@ import {
   type LocalSceneRecord,
 } from '../storage/localProjectRepository';
 import { enqueueMutation } from '../storage/mutationOutbox';
+import {
+  createConflictResolutionOperation,
+  type ConflictResolutionChoice,
+} from '../storage/conflictMerge';
+import type { StoredSyncConflict, MutationOutboxRecord } from '../storage/mutationOutbox';
+import { pauseMutation } from '../storage/mutationOutbox';
 import { getMutationSessionGeneration } from '../storage/mutationSession';
 import { replaySyncMutations } from '../storage/syncMutationReplay';
 
@@ -47,6 +54,10 @@ function LocalEditorWorkspace() {
   const [checkpointBusy, setCheckpointBusy] = useState(false);
   const [recoveryDraftId, setRecoveryDraftId] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [syncConflict, setSyncConflict] = useState<{
+    operation: MutationOutboxRecord;
+    conflict: StoredSyncConflict;
+  } | null>(null);
   const sessionGeneration =
     auth.status === 'signed-in' ? getMutationSessionGeneration(auth.user.username) : undefined;
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
@@ -92,14 +103,65 @@ function LocalEditorWorkspace() {
     const ownerId = auth.user?.username;
     if (auth.status !== 'signed-in' || !ownerId || !id) return;
     const replay = () => {
-      void replaySyncMutations(ownerId, id, sessionGeneration).catch(() => {
-        // The outbox remains durable; a later online event retries it.
-      });
+      void replaySyncMutations(ownerId, id, sessionGeneration)
+        .then((completed) => {
+          const conflicted = completed.find((operation) => operation.conflict);
+          if (conflicted?.conflict) {
+            setSyncConflict({ operation: conflicted, conflict: conflicted.conflict });
+          }
+        })
+        .catch(() => {
+          // The outbox remains durable; a later online event retries it.
+        });
     };
     replay();
     window.addEventListener('online', replay);
     return () => window.removeEventListener('online', replay);
   }, [auth.status, auth.user?.username, id, sessionGeneration]);
+
+  async function resolveSyncConflict(choice: ConflictResolutionChoice, resolvedPayload: unknown) {
+    if (!syncConflict || !id || auth.status !== 'signed-in') return;
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      const resolution = createConflictResolutionOperation(
+        {
+          merged: syncConflict.conflict.mergedSnapshot,
+          conflicts: syncConflict.conflict.conflicts,
+        },
+        choice,
+        syncConflict.conflict.context,
+        resolvedPayload,
+      );
+      await enqueueMutation(db, {
+        ownerId: auth.user.username,
+        sessionGeneration,
+        projectId: id,
+        sceneId: syncConflict.operation.sceneId,
+        kind: syncConflict.operation.kind,
+        payload: {
+          type: 'conflict-resolution',
+          base_version: resolution.baseVersion,
+          choice: resolution.choice,
+          resolved_payload: resolution.resolvedPayload,
+          audit: resolution.audit,
+        },
+        dependencyOperationIds: [syncConflict.operation.operationId],
+      });
+      await pauseMutation(
+        db,
+        auth.user.username,
+        syncConflict.operation.operationId,
+        `conflict-resolved-${choice}`,
+      );
+      setSyncConflict(null);
+      setMessage('Conflict resolution queued for deterministic replay.');
+    } catch {
+      setMessage('Could not queue that conflict resolution. The original conflict remains paused.');
+    } finally {
+      db?.close();
+    }
+  }
 
   useEffect(() => {
     if (!dirty || !selectedScene || !id || auth.status !== 'signed-in') return;
@@ -311,6 +373,12 @@ function LocalEditorWorkspace() {
         <p role="status" aria-live="polite">
           {message}
         </p>
+      )}
+      {syncConflict && (
+        <ConflictResolutionPanel
+          conflict={syncConflict.conflict}
+          onResolve={(choice, payload) => void resolveSyncConflict(choice, payload)}
+        />
       )}
       <label htmlFor="local-scene-select">Scene</label>
       <select

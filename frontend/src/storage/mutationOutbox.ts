@@ -15,6 +15,7 @@ export type MutationState = 'pending' | 'in-flight' | 'acknowledged' | 'failed' 
 export type MutationOutboxRecord = {
   operationId: string;
   ownerId: string;
+  sessionGeneration?: string;
   projectId: string;
   sceneId?: string;
   kind: MutationKind;
@@ -33,6 +34,7 @@ export type MutationOutboxRecord = {
 
 export type EnqueueMutationInput = {
   ownerId: string;
+  sessionGeneration?: string;
   projectId: string;
   sceneId?: string;
   kind: MutationKind;
@@ -78,7 +80,12 @@ function retryAt(now: Date, attemptCount: number, baseMs: number): string {
   return new Date(now.getTime() + baseMs * 2 ** Math.max(0, attemptCount - 1)).toISOString();
 }
 
-async function nextSequence(db: IDBDatabase, ownerId: string, projectId: string): Promise<number> {
+async function nextSequence(
+  db: IDBDatabase,
+  ownerId: string,
+  projectId: string,
+  sessionGeneration?: string,
+): Promise<number> {
   const transaction = db.transaction(STORE_MUTATION_OUTBOX, 'readonly');
   const rows = (await requestValue(
     transaction
@@ -87,7 +94,12 @@ async function nextSequence(db: IDBDatabase, ownerId: string, projectId: string)
       .getAll([ownerId, projectId]),
   )) as unknown[];
   return (
-    rows.reduce<number>((maximum, row) => Math.max(maximum, asRecord(row).clientSequence), 0) + 1
+    rows
+      .filter(
+        (row) =>
+          sessionGeneration === undefined || asRecord(row).sessionGeneration === sessionGeneration,
+      )
+      .reduce<number>((maximum, row) => Math.max(maximum, asRecord(row).clientSequence), 0) + 1
   );
 }
 
@@ -105,6 +117,7 @@ export async function enqueueMutation(
   const record: MutationOutboxRecord = {
     operationId: crypto.randomUUID(),
     ownerId: input.ownerId,
+    sessionGeneration: input.sessionGeneration,
     projectId: input.projectId,
     sceneId: input.sceneId,
     kind: input.kind,
@@ -154,8 +167,12 @@ export async function claimReadyMutations(
   projectId: string,
   now = new Date(),
   limit = 10,
+  sessionGeneration?: string,
 ): Promise<MutationOutboxRecord[]> {
-  const all = await listMutationOutbox(db, ownerId, projectId);
+  const all = (await listMutationOutbox(db, ownerId, projectId)).filter(
+    (operation) =>
+      sessionGeneration === undefined || operation.sessionGeneration === sessionGeneration,
+  );
   const byId = new Map(all.map((operation) => [operation.operationId, operation]));
   const ready = all
     .filter(
@@ -244,8 +261,9 @@ export async function replayReadyMutations(
   projectId: string,
   send: (operation: MutationOutboxRecord) => Promise<MutationReplayResult>,
   now = new Date(),
+  sessionGeneration?: string,
 ): Promise<MutationOutboxRecord[]> {
-  const claimed = await claimReadyMutations(db, ownerId, projectId, now);
+  const claimed = await claimReadyMutations(db, ownerId, projectId, now, 10, sessionGeneration);
   const completed: MutationOutboxRecord[] = [];
   for (const operation of claimed) {
     const result = await send(operation);

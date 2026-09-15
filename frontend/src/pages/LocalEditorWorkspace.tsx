@@ -16,6 +16,7 @@ import {
   type LocalSceneRecord,
 } from '../storage/localProjectRepository';
 import { enqueueMutation } from '../storage/mutationOutbox';
+import { getMutationSessionGeneration } from '../storage/mutationSession';
 import { replaySyncMutations } from '../storage/syncMutationReplay';
 
 type LocalEditorState = 'loading' | 'ready' | 'missing' | 'error';
@@ -46,6 +47,8 @@ function LocalEditorWorkspace() {
   const [checkpointBusy, setCheckpointBusy] = useState(false);
   const [recoveryDraftId, setRecoveryDraftId] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const sessionGeneration =
+    auth.status === 'signed-in' ? getMutationSessionGeneration(auth.user.username) : undefined;
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
 
   useEffect(() => {
@@ -89,14 +92,14 @@ function LocalEditorWorkspace() {
     const ownerId = auth.user?.username;
     if (auth.status !== 'signed-in' || !ownerId || !id) return;
     const replay = () => {
-      void replaySyncMutations(ownerId, id).catch(() => {
+      void replaySyncMutations(ownerId, id, sessionGeneration).catch(() => {
         // The outbox remains durable; a later online event retries it.
       });
     };
     replay();
     window.addEventListener('online', replay);
     return () => window.removeEventListener('online', replay);
-  }, [auth.status, auth.user?.username, id]);
+  }, [auth.status, auth.user?.username, id, sessionGeneration]);
 
   useEffect(() => {
     if (!dirty || !selectedScene || !id || auth.status !== 'signed-in') return;
@@ -161,6 +164,7 @@ function LocalEditorWorkspace() {
       try {
         await enqueueMutation(db, {
           ownerId: auth.user!.username,
+          sessionGeneration,
           projectId: id,
           sceneId: updated.id,
           kind: 'scene',

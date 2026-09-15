@@ -23,6 +23,7 @@ function classifyTransportFailure(error: unknown): MutationReplayResult {
 export async function replaySyncMutations(
   ownerId: string,
   projectId: string,
+  sessionGeneration?: string,
   now = new Date(),
 ): Promise<MutationOutboxRecord[]> {
   const db = await openLocalProjectDatabase();
@@ -40,6 +41,7 @@ export async function replaySyncMutations(
         }
       },
       now,
+      sessionGeneration,
     );
   } finally {
     db.close();

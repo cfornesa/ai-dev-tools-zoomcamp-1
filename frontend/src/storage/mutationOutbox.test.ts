@@ -146,4 +146,25 @@ describe('mutation outbox', () => {
       lastErrorCode: 'conflict',
     });
   });
+
+  it('does not claim a different sign-in session generation', async () => {
+    const db = await openLocalProjectDatabase();
+    const project = await createProject(db, { ownerId: 'owner-a', title: 'Project' });
+    await enqueueMutation(db, {
+      ownerId: 'owner-a',
+      sessionGeneration: 'session-a',
+      projectId: project.id,
+      kind: 'scene',
+      payload: { private: true },
+    });
+
+    expect(
+      await claimReadyMutations(db, 'owner-a', project.id, new Date(), 10, 'session-b'),
+    ).toEqual([]);
+    expect(
+      (await claimReadyMutations(db, 'owner-a', project.id, new Date(), 10, 'session-a')).map(
+        (operation) => operation.sessionGeneration,
+      ),
+    ).toEqual(['session-a']);
+  });
 });

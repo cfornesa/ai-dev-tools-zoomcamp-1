@@ -38,3 +38,10 @@ backfill, include every non-null model field, verify the rows in the table UI,
 and rerun the published smoke check afterward. Do not treat this as evidence
 that arbitrary production data migrations should be run from the deployment
 build or startup command.
+
+Confirmed 2026-09-15 for #544: a successful local migration is not production
+schema evidence. A migration-bearing Replit release still requires Publish,
+`/health/`, direct inspection of the affected production table/column,
+`scripts/smoke-published.sh`, and deployed-browser verification. Do not infer
+production readiness from a clean local disposable PostgreSQL run, the Django
+migration ledger, or a GitHub closure alone.

@@ -863,3 +863,12 @@ batch. This does not reopen a closed child or create a duplicate: #445 owns
 release-candidate reconciliation and #467 owns the post-publish schema
 verification practice. Session completion therefore records the batch as
 `deployment-pending`, not production-ready.
+
+The owner approved the proposed durable-memory updates. Added
+`.agents/memory/server-authoritative-sync-conflict-resolution.md` documenting
+the project-row lock, stale-base/no-write rule, immutable receipt linkage, and
+PostgreSQL nullable-join failure from #544. Extended
+`.agents/memory/replit-final-schema-publish-verification.md` and its index entry
+to record that the successful local `scenes.0065` migration does not establish
+production schema or runtime evidence; Publish, direct table checks, smoke, and
+deployed-browser verification remain required.

@@ -21231,7 +21231,7 @@ the current server version.
 ## 2026-09-15 — #544 server-authoritative resolution implementation
 
 Owner authorized the migration after the rollback boundary was reviewed.
-Commit `PENDING` adds migration `scenes.0065_sync_receipt_applied_scene_version`
+Commit `544345e` adds migration `scenes.0065_sync_receipt_applied_scene_version`
 and extends the authenticated mutation endpoint so a conflict-resolution
 payload compares its numeric base version against the locked project’s current
 version. A stale base returns `409` with base/local/remote snapshots and
@@ -21247,6 +21247,15 @@ Focused backend coverage passes 8/8, focused frontend sync coverage passes
 new authenticated live server fixture passes 2/2 at 1280×900 and 375×812.
 The live run also exposed and fixed a PostgreSQL `FOR UPDATE` nullable-join
 defect before passing. Stage 4 QA and production-readiness remain pending.
+
+## 2026-09-15 — #544 QA/reconciliation and closure
+
+Stage 4 posted an authenticated `## QA: PASS` criterion matrix to GitHub after
+rerunning the focused tests, both mocked and live Chromium viewpoints, and the
+full repository check. GitHub #544 is closed as completed. The complete
+offline-sync chain (#543–#546) is now terminally reconciled; no open issue
+remains in the distilled batch. Evidence remains bounded to the local
+disposable PostgreSQL/Django/Vite stack and Chromium, not a production deploy.
 
 ## 2026-09-15 — #546 QA/reconciliation and closure
 

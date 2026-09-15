@@ -20905,3 +20905,8 @@ range acknowledgements, and non-destructive checksum/quota/permission pause
 states. #546 remains open until this state is wired to an authenticated
 chunk-transfer endpoint and receives Chromium interruption/resume, checksum,
 quota, and recovery evidence.
+
+The current branch's final `make check` after these increments is green:
+1,316 backend tests passed/39 skipped and 2,671 frontend tests passed, with
+lint, format, typecheck, and action-pin checks passing. Existing lint and
+runtime-test warnings remain non-blocking and predate this backlog work.

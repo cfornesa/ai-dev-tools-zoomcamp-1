@@ -21094,9 +21094,13 @@ made.
 
 Focused unit coverage passes (4/4), and the durable-save Chromium suite passes
 4/4 at 1280x900 and 375x812 with the new decision surface exercised. This
-removes the previously recorded unsaved-transition gap for #536. The issue
-still needs the remaining invalid-archive/ownership/path UI matrix and the
-documented Firefox/Safari support/fallback matrix before readiness review.
+removes the previously recorded unsaved-transition gap for #536. The invalid
+archive browser boundary is now covered; repository tests cover the deeper
+ownership/checksum/path matrix. The issue still needs the documented
+Firefox/Safari support/fallback matrix before readiness review. The direct
+folder bridge also remains subject to #534's explicit atomic-write contract;
+this browser evidence does not claim an OS-level atomic rename that the
+current File System Access abstraction cannot expose.
 
 The same Chromium matrix now includes invalid archive input at both required
 viewpoints. A corrupt ZIP is rejected before preview/restore, the UI states

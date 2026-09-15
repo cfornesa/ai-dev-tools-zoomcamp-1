@@ -21157,3 +21157,15 @@ Chromium `offlineMediaTransfer.spec.ts` passes 4/4 at 1280x900 and 375x812.
 The issue remains open only for production-like authenticated endpoint and
 quota/checksum verification against a live persisted transfer, which the
 current deployed browser session does not expose as a user flow.
+
+## 2026-09-15 — #545 ownership recovery completion evidence
+
+The combined Chromium suites pass 10/10 at the required viewpoints: real
+authenticated server transport acknowledges and idempotently replays the same
+owner-scoped operation at 1280x900 and 375x812; the ownership suite covers
+account-switch isolation, expired-auth pause/discard, original-owner resume,
+and a distinct revoked-access state at both viewpoints. The repository-wide
+`UV_CACHE_DIR=/tmp/codex-uv-cache-545-546 make check` also passes: 1,318
+backend tests passed/39 skipped and 2,682 frontend tests passed, with lint,
+format, typecheck, and action-pin checks green. GitHub #545 is closed as
+completed.

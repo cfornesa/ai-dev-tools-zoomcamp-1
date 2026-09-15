@@ -233,7 +233,7 @@ def test_chunk_upload_resumes_idempotently_and_promotes_after_checksum_match(
         HTTP_CONTENT_RANGE="bytes 0-3/8",
         **headers,
     )
-    assert first.status_code == 308
+    assert first.status_code == 200
     assert first.json()["acknowledged_ranges"] == [{"start": 0, "end": 4}]
     replay = client.put(
         url,
@@ -242,7 +242,7 @@ def test_chunk_upload_resumes_idempotently_and_promotes_after_checksum_match(
         HTTP_CONTENT_RANGE="bytes 0-3/8",
         **headers,
     )
-    assert replay.status_code == 308
+    assert replay.status_code == 200
     final = client.put(
         url,
         payload[4:],

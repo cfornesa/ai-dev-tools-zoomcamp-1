@@ -60,6 +60,43 @@ export function putCloudBackupAsset(
   });
 }
 
+export type CloudBackupAssetChunkResponse = {
+  asset_id: string;
+  checksum: string;
+  byte_size: number;
+  complete: boolean;
+  acknowledged_ranges: Array<{ start: number; end: number }>;
+};
+
+export function putCloudBackupAssetChunk(
+  projectId: string,
+  assetId: string,
+  data: BodyInit,
+  fields: {
+    start: number;
+    end: number;
+    byteLength: number;
+    checksum: string;
+    mimeType: string;
+    idempotencyKey: string;
+  },
+): Promise<CloudBackupAssetChunkResponse> {
+  return apiFetch<CloudBackupAssetChunkResponse>(
+    `/api/projects/${projectId}/cloud-backup/assets/${assetId}/chunks/`,
+    {
+      method: 'PUT',
+      body: data,
+      headers: {
+        'Content-Type': fields.mimeType,
+        'Content-Range': `bytes ${fields.start}-${fields.end - 1}/${fields.byteLength}`,
+        'X-Asset-Checksum': fields.checksum,
+        'X-Asset-Mime-Type': fields.mimeType,
+        'X-Idempotency-Key': fields.idempotencyKey,
+      },
+    },
+  );
+}
+
 export function fetchCloudBackup(projectId: string): Promise<CloudBackupStatus> {
   return apiFetch<CloudBackupStatus>(`/api/projects/${projectId}/cloud-backup/`);
 }

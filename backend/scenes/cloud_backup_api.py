@@ -195,4 +195,4 @@ class CloudBackupBlobChunkView(APIView):
             raise Http404 from exc
         except CloudBackupError as exc:
             return _error(exc)
-        return Response(result, status=200 if result["complete"] else 308)
+        return Response(result, status=200)

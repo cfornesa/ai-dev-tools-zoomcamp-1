@@ -61,6 +61,18 @@ The post-fix full quality gate is green: `make check` completed with backend
 **1316 passed, 39 skipped**, frontend **2675 passed**, lint warnings only,
 format-check, typecheck, and action-pin checks all passing.
 
+## 2026-09-15 — #546 durable transfer ledger increment
+
+Commit `18c0902` adds IndexedDB schema version 4 and a durable
+`mediaTransfers` store for #546. Transfer records are owner/project scoped,
+indexed by project and asset, and retain byte length, checksum, acknowledged
+ranges, retry count, and paused/complete state. CRUD tests cover persistence,
+owner isolation, deterministic listing, and explicit deletion; the existing
+range/checksum unit suite remains green.
+
+#546 remains open for the authenticated chunk endpoint and browser evidence for
+interruption, resume, checksum mismatch, quota failure, and recovery.
+
 ## 2026-09-10 — #508 QA'd + readiness + AugmentrART rename committed
 
 Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized

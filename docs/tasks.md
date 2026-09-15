@@ -21041,3 +21041,19 @@ documented Firefox/Safari support or fallback matrix. The folder-handle test
 uses the repository's supported mocked-native-handle boundary because native
 OS chooser interaction is not Playwright-automatable; #534 covers that same
 bridge boundary independently.
+
+## 2026-09-15 — #545 authenticated transport evidence
+
+Added `frontend/e2e/offlineLiveTransport.spec.ts`. At both 1280x900 and
+375x812, Chromium now creates a real authenticated server project, binds a
+matching local owner workspace, sends an owner-scoped sync mutation through
+the live Django endpoint, repeats the identical operation, and verifies the
+first acknowledgement is non-replayed while the second is idempotently
+replayed. The server fixture is deleted after the assertion. Both scenarios
+pass.
+
+This removes the prior uncertainty around the authenticated #543 transport
+boundary for #545. It does not close #545: the issue still inherits #536's
+durable-workspace dependency, and the full ownership recovery matrix remains
+covered by deterministic response fixtures rather than a production-like
+expired-session/revoked-access environment.

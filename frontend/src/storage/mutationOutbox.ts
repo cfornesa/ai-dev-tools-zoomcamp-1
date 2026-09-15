@@ -267,6 +267,42 @@ export function pauseMutation(
   });
 }
 
+export function resumeMutation(
+  db: IDBDatabase,
+  ownerId: string,
+  operationId: string,
+  now = new Date(),
+): Promise<MutationOutboxRecord | null> {
+  return updateOperation(db, ownerId, operationId, (operation) => {
+    operation.state = 'pending';
+    operation.lastErrorCode = null;
+    operation.nextAttemptAt = now.toISOString();
+  });
+}
+
+export function discardMutation(
+  db: IDBDatabase,
+  ownerId: string,
+  operationId: string,
+): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_MUTATION_OUTBOX, 'readwrite');
+    const store = transaction.objectStore(STORE_MUTATION_OUTBOX);
+    const request = store.get(operationId);
+    request.onsuccess = () => {
+      const operation = request.result as MutationOutboxRecord | undefined;
+      if (!operation || operation.ownerId !== ownerId || operation.state !== 'paused') {
+        resolve(false);
+        return;
+      }
+      store.delete(operationId);
+    };
+    transaction.oncomplete = () => resolve(Boolean(request.result));
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
+
 export async function replayReadyMutations(
   db: IDBDatabase,
   ownerId: string,

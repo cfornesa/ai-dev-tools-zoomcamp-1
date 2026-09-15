@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
 import { ConflictResolutionPanel } from '../components/ConflictResolutionPanel';
+import { MutationRecoveryPanel } from '../components/MutationRecoveryPanel';
 import { exportDatabaseArchive } from '../storage/localDatabaseArchive';
 import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiveBridge';
 import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
@@ -16,7 +17,12 @@ import {
   type LocalProjectRecord,
   type LocalSceneRecord,
 } from '../storage/localProjectRepository';
-import { enqueueMutation } from '../storage/mutationOutbox';
+import {
+  discardMutation,
+  enqueueMutation,
+  listMutationOutbox,
+  resumeMutation,
+} from '../storage/mutationOutbox';
 import {
   createConflictResolutionOperation,
   type ConflictResolutionChoice,
@@ -58,6 +64,7 @@ function LocalEditorWorkspace() {
     operation: MutationOutboxRecord;
     conflict: StoredSyncConflict;
   } | null>(null);
+  const [syncRecovery, setSyncRecovery] = useState<MutationOutboxRecord | null>(null);
   const sessionGeneration =
     auth.status === 'signed-in' ? getMutationSessionGeneration(auth.user.username) : undefined;
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
@@ -81,6 +88,12 @@ function LocalEditorWorkspace() {
           listMediaAssetsForProject(db, id),
           getLatestRecoveryDraft(db, auth.user.username, id).catch(() => null),
         ]);
+        const pausedMutation = (await listMutationOutbox(db, auth.user.username, id)).find(
+          (operation) =>
+            operation.state === 'paused' &&
+            operation.lastErrorCode !== 'conflict' &&
+            operation.lastErrorCode !== null,
+        );
         db.close();
         const firstScene = loadedScenes[0] ?? null;
         setProject(loadedProject);
@@ -89,6 +102,7 @@ function LocalEditorWorkspace() {
         setSelectedSceneId(firstScene?.id ?? null);
         setSceneName(firstScene?.name ?? '');
         setRecoveryDraftId(latestRecovery?.id ?? null);
+        setSyncRecovery(pausedMutation ?? null);
         setState('ready');
       } catch {
         if (!cancelled) setState('error');
@@ -108,6 +122,11 @@ function LocalEditorWorkspace() {
           const conflicted = completed.find((operation) => operation.conflict);
           if (conflicted?.conflict) {
             setSyncConflict({ operation: conflicted, conflict: conflicted.conflict });
+          } else {
+            const paused = completed.find(
+              (operation) => operation.state === 'paused' && operation.lastErrorCode !== 'conflict',
+            );
+            if (paused) setSyncRecovery(paused);
           }
         })
         .catch(() => {
@@ -118,6 +137,37 @@ function LocalEditorWorkspace() {
     window.addEventListener('online', replay);
     return () => window.removeEventListener('online', replay);
   }, [auth.status, auth.user?.username, id, sessionGeneration]);
+
+  async function resumeSyncRecovery() {
+    if (!syncRecovery || auth.status !== 'signed-in') return;
+    const db = await openLocalProjectDatabase();
+    try {
+      await resumeMutation(db, auth.user.username, syncRecovery.operationId);
+      setSyncRecovery(null);
+      setMessage('Queued mutation resumed for authenticated replay.');
+      await replaySyncMutations(auth.user.username, id!, sessionGeneration);
+    } catch {
+      setMessage('Could not resume the queued mutation; your local workspace remains unchanged.');
+    } finally {
+      db.close();
+    }
+  }
+
+  async function discardSyncRecovery() {
+    if (!syncRecovery || auth.status !== 'signed-in') return;
+    const db = await openLocalProjectDatabase();
+    try {
+      const removed = await discardMutation(db, auth.user.username, syncRecovery.operationId);
+      if (removed) {
+        setSyncRecovery(null);
+        setMessage('Queued private mutation discarded; local artwork was preserved.');
+      }
+    } catch {
+      setMessage('Could not discard the queued mutation.');
+    } finally {
+      db.close();
+    }
+  }
 
   async function resolveSyncConflict(choice: ConflictResolutionChoice, resolvedPayload: unknown) {
     if (!syncConflict || !id || auth.status !== 'signed-in') return;
@@ -378,6 +428,13 @@ function LocalEditorWorkspace() {
         <ConflictResolutionPanel
           conflict={syncConflict.conflict}
           onResolve={(choice, payload) => void resolveSyncConflict(choice, payload)}
+        />
+      )}
+      {syncRecovery && !syncConflict && (
+        <MutationRecoveryPanel
+          operation={syncRecovery}
+          onResume={() => void resumeSyncRecovery()}
+          onDiscard={() => void discardSyncRecovery()}
         />
       )}
       <label htmlFor="local-scene-select">Scene</label>

@@ -15,6 +15,8 @@ import {
   pauseMutation,
   replayReadyMutations,
   retryMutation,
+  resumeMutation,
+  discardMutation,
 } from './mutationOutbox';
 
 describe('mutation outbox', () => {
@@ -166,5 +168,23 @@ describe('mutation outbox', () => {
         (operation) => operation.sessionGeneration,
       ),
     ).toEqual(['session-a']);
+  });
+
+  it('requires an explicit owner decision to resume or discard a paused mutation', async () => {
+    const db = await openLocalProjectDatabase();
+    const project = await createProject(db, { ownerId: 'owner-a', title: 'Project' });
+    const operation = await enqueueMutation(db, {
+      ownerId: 'owner-a',
+      projectId: project.id,
+      kind: 'scene',
+      payload: { private: true },
+    });
+    await pauseMutation(db, 'owner-a', operation.operationId, 'authentication-required');
+    expect(await claimReadyMutations(db, 'owner-a', project.id)).toEqual([]);
+    await resumeMutation(db, 'owner-a', operation.operationId, new Date('2026-09-15T20:00:00Z'));
+    expect(await claimReadyMutations(db, 'owner-a', project.id)).toHaveLength(1);
+    await pauseMutation(db, 'owner-a', operation.operationId, 'permission-denied');
+    expect(await discardMutation(db, 'owner-a', operation.operationId)).toBe(true);
+    expect(await listMutationOutbox(db, 'owner-a', project.id)).toEqual([]);
   });
 });

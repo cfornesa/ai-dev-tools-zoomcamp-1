@@ -95,5 +95,31 @@ test.describe('Offline mutation ownership recovery (#545)', () => {
       await expect(page.getByRole('heading', { name: 'Local project unavailable' })).toBeVisible();
       expect(requests).toBe(0);
     });
+
+    test(`pauses expired authentication and offers explicit discard at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await seedLocalProject(page, fixtures.owner.username);
+      await page.route(`**/api/projects/${PROJECT_ID}/sync/mutations/`, async (route) => {
+        await route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'authentication-required' }),
+        });
+      });
+      await page.goto(`/local-projects/${PROJECT_ID}`);
+      await page.getByLabel('Scene name').fill('Expired private edit');
+      await page.getByRole('button', { name: 'Save local changes' }).click();
+      await expect(page.getByText('Saved local scene changes to this browser.')).toBeVisible();
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'Private sync paused' })).toBeVisible();
+      await expect(page.getByText(/sign-in expired/i)).toBeVisible();
+      await page.getByRole('button', { name: 'Discard queued mutation' }).click();
+      await expect(
+        page.getByText('Queued private mutation discarded; local artwork was preserved.'),
+      ).toBeVisible();
+    });
   }
 });

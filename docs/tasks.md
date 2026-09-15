@@ -58,7 +58,7 @@ Verification:
 project-access evidence.
 
 The post-fix full quality gate is green: `make check` completed with backend
-**1316 passed, 39 skipped**, frontend **2675 passed**, lint warnings only,
+**1318 passed, 39 skipped**, frontend **2677 passed**, lint warnings only,
 format-check, typecheck, and action-pin checks all passing.
 
 ## 2026-09-15 — #546 durable transfer ledger increment

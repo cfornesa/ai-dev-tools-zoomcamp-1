@@ -21081,6 +21081,16 @@ production-schema deployment blocker. A release/publish action remains
 explicitly pending owner authorization; the issue cannot be closed from local
 tests alone.
 
+The owner subsequently authorized the repair. Replit Production SQL was used
+to add the two missing `scenes_plan` columns from migration `0059` and apply
+the corresponding free/paid cadence and archive values from `0060`. Direct
+verification returned `free → 7 days / FALSE` and `paid → 1 day / TRUE`.
+The authenticated production Account settings page was retried in Chrome and
+now renders the paid plan and feature usage instead of the HTTP 500 alert.
+GitHub #547 is closed as completed. The repository's migration files remain
+the source of truth; the SQL console repair was the authorized production
+schema correction after Replit's publish path was unavailable.
+
 ## 2026-09-15 — #536 explicit dirty-state decisions
 
 The local editor now presents an accessible **Save now**, **Recover draft**,

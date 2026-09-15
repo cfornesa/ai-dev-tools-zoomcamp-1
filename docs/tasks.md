@@ -21140,3 +21140,20 @@ This closes the remaining documentation gap for #536's browser support
 boundary. It does not turn the mocked native-handle test into an OS-level
 chooser test, and it does not close the independent live-sync, media-transfer,
 or production-schema blockers in #544–#547.
+
+## 2026-09-15 — #546 authenticated resumable sender increment
+
+Commit `8f99d26` adds the authenticated `sendMediaTransfer` path. When an
+owner identity is available, scheduled cloud snapshots now read each media
+blob from IndexedDB, create or resume its durable transfer record, upload the
+next unacknowledged range through the real chunk endpoint, persist every
+acknowledged range, and retain explicit checksum/quota/permission/offline
+pause states. The existing whole-blob path remains for the older manual
+save-before-clearing call that has no owner identity yet.
+
+Focused sender and persisted-blob integration tests pass (21 tests total with
+cloud-snapshot coverage); frontend lint, format-check, and typecheck pass.
+Chromium `offlineMediaTransfer.spec.ts` passes 4/4 at 1280x900 and 375x812.
+The issue remains open only for production-like authenticated endpoint and
+quota/checksum verification against a live persisted transfer, which the
+current deployed browser session does not expose as a user flow.

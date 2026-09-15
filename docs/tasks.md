@@ -20797,3 +20797,28 @@ completed contract/reconciliation issue (GitHub comment 5687014145).
 Issue #547 has the same explicit production-log boundary recorded in GitHub
 comment 5687031083; browser UI evidence confirms the symptom but not the
 server root cause, so no speculative entitlement fix was applied.
+
+## 2026-09-15 — QA findings folded into issue bodies for handoff
+
+Owner asked for the qa-self-review findings to be reconciled into the issue
+bodies themselves (not left only as comments) so another agent working this
+backlog concurrently can pick up the exact next action without re-deriving
+it. Amended, via `gh issue edit --body-file` (append-only; original goal,
+fixture, and acceptance criteria preserved unchanged):
+
+- **#543:** added a "QA findings" section naming the fixed IndexedDB
+  `onupgradeneeded` defect (now resolved by the concurrent session's commit
+  `5023b67`) and the still-open mobile 375x812 `loginViaUI` timeout as two
+  distinct, named next steps.
+- **#534:** added the exact missing-E2E-spec gap and a concrete file/scope
+  suggestion (`frontend/e2e/localWorkspaceFolderBridge.spec.ts`).
+- **#536:** added the same gap plus its dependency on #534's browser
+  evidence landing first.
+- **#544/#545/#546:** added a short confirmation that each is correctly
+  blocked on #543's still-open QA state, with no scope change needed.
+
+**#542** was not amended: it is closed, and this repo's convention treats
+closed issues as immutable unless the owner explicitly authorizes reopening
+that exact issue. The #542/child-container conflict (closed while #543-#546
+remain open) stays recorded only as a GitHub QA comment and in this file's
+prior entry, not as a body edit or reopen.

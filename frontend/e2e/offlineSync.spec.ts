@@ -21,6 +21,40 @@ async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
       new Promise<void>((resolve, reject) => {
         const request = indexedDB.open('creatrart-local-projects', 3);
         request.onerror = () => reject(request.error);
+        request.onblocked = () => reject(new Error('IndexedDB fixture upgrade was blocked.'));
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains('projects')) {
+            const projects = db.createObjectStore('projects', { keyPath: 'id' });
+            projects.createIndex('by_owner', 'ownerId');
+          }
+          if (!db.objectStoreNames.contains('scenes')) {
+            const scenes = db.createObjectStore('scenes', { keyPath: 'id' });
+            scenes.createIndex('by_project', 'projectId');
+          }
+          if (!db.objectStoreNames.contains('mediaAssets')) {
+            const mediaAssets = db.createObjectStore('mediaAssets', { keyPath: 'id' });
+            mediaAssets.createIndex('by_project', 'projectId');
+          }
+          if (!db.objectStoreNames.contains('mediaBlobs')) {
+            db.createObjectStore('mediaBlobs', { keyPath: 'assetId' });
+          }
+          if (!db.objectStoreNames.contains('meta'))
+            db.createObjectStore('meta', { keyPath: 'key' });
+          if (!db.objectStoreNames.contains('recoveryDrafts')) {
+            const drafts = db.createObjectStore('recoveryDrafts', { keyPath: 'id' });
+            drafts.createIndex('by_project_saved_at', ['projectId', 'savedAt']);
+          }
+          if (!db.objectStoreNames.contains('mutationOutbox')) {
+            const outbox = db.createObjectStore('mutationOutbox', { keyPath: 'operationId' });
+            outbox.createIndex('by_owner_project', ['ownerId', 'projectId']);
+            outbox.createIndex('by_owner_project_sequence', [
+              'ownerId',
+              'projectId',
+              'clientSequence',
+            ]);
+          }
+        };
         request.onsuccess = () => {
           const db = request.result;
           const transaction = db.transaction(
@@ -123,7 +157,7 @@ async function runOfflineReplay(page: Page, fixtures: Fixtures): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Offline Sync Fixture' })).toBeVisible();
   await page.getByLabel('Scene name').fill('Edited while offline');
   await page.getByRole('button', { name: 'Save local changes' }).click();
-  await expect(page.getByRole('status')).toContainText('Saved local scene changes');
+  await expect(page.getByText('Saved local scene changes to this browser.')).toBeVisible();
   await expect.poll(() => readOutboxStates(page)).toEqual(['pending']);
 
   await page.reload();

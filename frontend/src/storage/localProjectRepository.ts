@@ -9,18 +9,19 @@
  * and classifies every failure into one of five caller-actionable kinds so a
  * failed write never corrupts or discards the last known-good project.
  *
- * Database: `creatrart-local-projects`, version 3. Seven object stores --
+ * Database: `creatrart-local-projects`, version 4. Eight object stores --
  * `projects`, `scenes`, `mediaAssets`, `mediaBlobs`, `meta`, recovery drafts,
  * and the authenticated mutation outbox -- exactly as
  * specified in issue #512. Every future schema change ships as a new,
  * numbered upgrade step appended to `UPGRADE_STEPS` below (keyed to the
  * target version), so upgrades compose instead of rewriting history; this
- * issue ships steps 1 (the initial schema), 2 (bounded recovery drafts), and
- * 3 (the authenticated cloud-mutation outbox used by issue #543).
+ * issue ships steps 1 (the initial schema), 2 (bounded recovery drafts), 3
+ * (the authenticated cloud-mutation outbox used by issue #543), and 4 (the
+ * resumable media-transfer ledger used by issue #546).
  */
 
 export const DB_NAME = 'creatrart-local-projects';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const STORE_PROJECTS = 'projects';
 export const STORE_SCENES = 'scenes';
@@ -29,6 +30,7 @@ export const STORE_MEDIA_BLOBS = 'mediaBlobs';
 export const STORE_META = 'meta';
 export const STORE_RECOVERY_DRAFTS = 'recoveryDrafts';
 export const STORE_MUTATION_OUTBOX = 'mutationOutbox';
+export const STORE_MEDIA_TRANSFERS = 'mediaTransfers';
 
 const OBJECT_STORE_NAMES = [
   STORE_PROJECTS,
@@ -38,6 +40,7 @@ const OBJECT_STORE_NAMES = [
   STORE_META,
   STORE_RECOVERY_DRAFTS,
   STORE_MUTATION_OUTBOX,
+  STORE_MEDIA_TRANSFERS,
 ] as const;
 
 /** #512's recorded quota: exactly 50MB of blob bytes and 100 media assets,
@@ -285,6 +288,14 @@ const UPGRADE_STEPS: Array<(db: IDBDatabase, tx: IDBTransaction) => void> = [
       outbox.createIndex('by_owner_project_sequence', ['ownerId', 'projectId', 'clientSequence'], {
         unique: false,
       });
+    }
+  },
+  // Step 4: durable resumable media-transfer ledger for issue #546.
+  (db) => {
+    if (!db.objectStoreNames.contains(STORE_MEDIA_TRANSFERS)) {
+      const transfers = db.createObjectStore(STORE_MEDIA_TRANSFERS, { keyPath: 'transferId' });
+      transfers.createIndex('by_owner_project', ['ownerId', 'projectId'], { unique: false });
+      transfers.createIndex('by_owner_asset', ['ownerId', 'assetId'], { unique: false });
     }
   },
 ];

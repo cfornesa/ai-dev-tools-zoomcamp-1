@@ -21106,3 +21106,27 @@ The same Chromium matrix now includes invalid archive input at both required
 viewpoints. A corrupt ZIP is rejected before preview/restore, the UI states
 that no local data changed, and no archive preview is created; the complete
 `localWorkspaceDurableSave.spec.ts` run is now 6/6.
+
+## 2026-09-15 — #536 browser support and durability boundary
+
+The supported browser matrix is now explicit. Chromium-family browsers that
+expose `showDirectoryPicker()` can use the permission-granted folder bridge;
+the flow still requires a secure context and a user gesture. Firefox, Safari,
+mobile browsers, and any older/unsupported browser use the validated ZIP
+export/import path instead. IndexedDB recovery remains available within the
+browser-origin path, but it is not presented as a substitute for a durable
+user-managed archive.
+
+The folder writer uses the File System Access writable stream and awaits
+`close()` before reporting success. That gives the implementation's documented
+write completion boundary, but does not claim an operating-system atomic rename
+or crash-proof transaction beyond what the browser API provides. MDN records
+`showDirectoryPicker()` as limited availability and secure-context-only, and
+documents that closing a writable stream writes its contents to disk:
+<https://developer.mozilla.org/en-US/docs/Web/API/Window/showDirectoryPicker>
+and <https://developer.mozilla.org/en-US/docs/Web/API/FileSystemWritableFileStream>.
+
+This closes the remaining documentation gap for #536's browser support
+boundary. It does not turn the mocked native-handle test into an OS-level
+chooser test, and it does not close the independent live-sync, media-transfer,
+or production-schema blockers in #544–#547.

@@ -54,3 +54,10 @@ Treat the release as schema-unverified even when Replit reports “Published you
 app” and “Database migrations validated successfully.” Do not compensate with
 manual production SQL; inspect deployment logs and use the repository's
 non-destructive Replit publish/retry path under #467.
+
+The non-destructive retry was performed on 2026-09-15 and produced a second
+successful “Published your app” event. The published smoke check passed again,
+but the same read-only schema query still returned no
+`scenes_syncmutationreceipt` or `scenes_cloudbackupblobtransfer` table. This
+is not a transient publish lag; stop further retries and escalate with the
+deployment release identity and the exact missing-table evidence.

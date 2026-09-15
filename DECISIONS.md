@@ -883,3 +883,12 @@ and `/accounts/login/` (200). However, read-only production
 schema-verification failure despite the publish UI success. No production SQL
 was written; the next action is the non-destructive log/retry path under #467,
 followed by direct table and deployed-browser checks.
+
+The documented non-destructive retry was then performed. It completed with a
+second successful “Published your app” event and the published smoke check
+passed again, but the same read-only `information_schema.columns` query still
+showed no `scenes_syncmutationreceipt` or `scenes_cloudbackupblobtransfer`.
+Deployment logs exposed release identity `edcd459` with successful
+security/build/promotion stages and no migration error. Further retries are
+stopped; escalation under #467 must use that release identity and the exact
+missing-table evidence, with no direct production SQL.

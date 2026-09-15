@@ -44,8 +44,12 @@ inspection found `scenes_sceneversion` without
 is **batch-complete, deployment/schema-verification-blocked**, not
 production-ready. The exact next action is to inspect the Replit deployment
 logs and use the non-destructive retry/publish path owned by #467, then repeat
-the table check and deployed Chromium matrix. The historical open-only
-manifest below is retained unchanged as audit history.
+the table check and deployed Chromium matrix. The retry completed successfully
+but the same read-only query still found both migration-created tables absent;
+release identity `edcd459` had successful security/build/promotion stages and
+no migration error. Stop further retries and escalate that exact release
+identity plus the missing-table evidence. The historical open-only manifest
+below is retained unchanged as audit history.
 
 ## 2026-09-15 — historical open-only task distillation and handoff
 

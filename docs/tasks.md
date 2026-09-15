@@ -73,6 +73,10 @@ range/checksum unit suite remains green.
 #546 remains open for the authenticated chunk endpoint and browser evidence for
 interruption, resume, checksum mismatch, quota failure, and recovery.
 
+The schema migration also reverified the existing offline replay/conflict/
+ownership browser fixtures against IndexedDB v4: the offline replay scenarios
+pass at 1280×900 and 375×812 (`594b694`).
+
 ## 2026-09-10 — #508 QA'd + readiness + AugmentrART rename committed
 
 Stage 4 (`qa-self-review`, Claude Sonnet 4.6 Thinking, user-authorized

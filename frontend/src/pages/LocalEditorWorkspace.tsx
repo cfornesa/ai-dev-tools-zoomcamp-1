@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import { ConflictResolutionPanel } from '../components/ConflictResolutionPanel';
 import { MutationRecoveryPanel } from '../components/MutationRecoveryPanel';
+import { MediaTransferRecoveryPanel } from '../components/MediaTransferRecoveryPanel';
 import { exportDatabaseArchive } from '../storage/localDatabaseArchive';
 import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiveBridge';
 import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
@@ -31,6 +32,12 @@ import type { StoredSyncConflict, MutationOutboxRecord } from '../storage/mutati
 import { pauseMutation } from '../storage/mutationOutbox';
 import { getMutationSessionGeneration } from '../storage/mutationSession';
 import { replaySyncMutations } from '../storage/syncMutationReplay';
+import {
+  deleteMediaTransfer,
+  listMediaTransfersForProject,
+  saveMediaTransfer,
+} from '../storage/mediaTransferRepository';
+import { resumeMediaTransfer, type MediaTransferRecord } from '../storage/mediaTransfer';
 
 type LocalEditorState = 'loading' | 'ready' | 'missing' | 'error';
 
@@ -65,6 +72,7 @@ function LocalEditorWorkspace() {
     conflict: StoredSyncConflict;
   } | null>(null);
   const [syncRecovery, setSyncRecovery] = useState<MutationOutboxRecord | null>(null);
+  const [pausedMediaTransfers, setPausedMediaTransfers] = useState<MediaTransferRecord[]>([]);
   const sessionGeneration =
     auth.status === 'signed-in' ? getMutationSessionGeneration(auth.user.username) : undefined;
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
@@ -83,10 +91,11 @@ function LocalEditorWorkspace() {
           setState('missing');
           return;
         }
-        const [loadedScenes, loadedAssets, latestRecovery] = await Promise.all([
+        const [loadedScenes, loadedAssets, latestRecovery, mediaTransfers] = await Promise.all([
           listScenesForProject(db, id),
           listMediaAssetsForProject(db, id),
           getLatestRecoveryDraft(db, auth.user.username, id).catch(() => null),
+          listMediaTransfersForProject(db, auth.user.username, id),
         ]);
         const pausedMutation = (await listMutationOutbox(db, auth.user.username, id)).find(
           (operation) =>
@@ -103,6 +112,7 @@ function LocalEditorWorkspace() {
         setSceneName(firstScene?.name ?? '');
         setRecoveryDraftId(latestRecovery?.id ?? null);
         setSyncRecovery(pausedMutation ?? null);
+        setPausedMediaTransfers(mediaTransfers.filter((transfer) => transfer.state === 'paused'));
         setState('ready');
       } catch {
         if (!cancelled) setState('error');
@@ -164,6 +174,38 @@ function LocalEditorWorkspace() {
       }
     } catch {
       setMessage('Could not discard the queued mutation.');
+    } finally {
+      db.close();
+    }
+  }
+
+  async function resumeMediaRecovery(transferId: string) {
+    if (auth.status !== 'signed-in') return;
+    const db = await openLocalProjectDatabase();
+    try {
+      const transfer = pausedMediaTransfers.find((item) => item.transferId === transferId);
+      if (!transfer) return;
+      await saveMediaTransfer(db, resumeMediaTransfer(transfer));
+      setPausedMediaTransfers((current) =>
+        current.filter((item) => item.transferId !== transferId),
+      );
+      setMessage('Media transfer queued to retry from its acknowledged ranges.');
+    } finally {
+      db.close();
+    }
+  }
+
+  async function discardMediaRecovery(transferId: string) {
+    if (auth.status !== 'signed-in') return;
+    const db = await openLocalProjectDatabase();
+    try {
+      const removed = await deleteMediaTransfer(db, auth.user.username, transferId);
+      if (removed) {
+        setPausedMediaTransfers((current) =>
+          current.filter((item) => item.transferId !== transferId),
+        );
+        setMessage('Paused media transfer discarded; local artwork was preserved.');
+      }
     } finally {
       db.close();
     }
@@ -437,6 +479,11 @@ function LocalEditorWorkspace() {
           onDiscard={() => void discardSyncRecovery()}
         />
       )}
+      <MediaTransferRecoveryPanel
+        transfers={pausedMediaTransfers}
+        onResume={(transferId) => void resumeMediaRecovery(transferId)}
+        onDiscard={(transferId) => void discardMediaRecovery(transferId)}
+      />
       <label htmlFor="local-scene-select">Scene</label>
       <select
         id="local-scene-select"

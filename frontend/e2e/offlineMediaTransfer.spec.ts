@@ -159,5 +159,92 @@ test.describe('Offline resumable media transfer (#546)', () => {
       expect(result).toEqual({ pausedState: 'paused', finalState: 'complete' });
       expect(requests).toBe(3);
     });
+
+    test(`persists checksum and quota failures for recovery at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await page.goto('/account/settings/storage');
+      let requests = 0;
+      await page.route(
+        `**/api/projects/${PROJECT_ID}/cloud-backup/assets/${ASSET_ID}/chunks/`,
+        async (route) => {
+          requests += 1;
+          await route.fulfill({
+            status: requests === 1 ? 409 : 413,
+            contentType: 'application/json',
+            body: JSON.stringify({ code: requests === 1 ? 'checksum-mismatch' : 'quota-exceeded' }),
+          });
+        },
+      );
+
+      const result = await page.evaluate(
+        async ({ projectId, assetId }) => {
+          type Failure = { transferId: string; state: 'paused'; lastErrorCode: string };
+          const db = await new Promise<IDBDatabase>((resolve, reject) => {
+            const request = indexedDB.open('creatrart-local-projects', 4);
+            request.onupgradeneeded = () => {
+              const upgradeDb = request.result;
+              if (!upgradeDb.objectStoreNames.contains('mediaTransfers')) {
+                const transfers = upgradeDb.createObjectStore('mediaTransfers', {
+                  keyPath: 'transferId',
+                });
+                transfers.createIndex('by_owner_project', ['ownerId', 'projectId']);
+                transfers.createIndex('by_owner_asset', ['ownerId', 'assetId']);
+              }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const save = (record: Failure) =>
+            new Promise<void>((resolve, reject) => {
+              const transaction = db.transaction('mediaTransfers', 'readwrite');
+              transaction.objectStore('mediaTransfers').put({
+                ...record,
+                ownerId: 'owner-a',
+                projectId,
+                assetId,
+                byteLength: 8,
+                checksum: 'a'.repeat(64),
+                chunkSize: 4,
+                acknowledgedRanges: [],
+                attemptCount: 1,
+              });
+              transaction.oncomplete = () => resolve();
+              transaction.onerror = () => reject(transaction.error);
+            });
+          const send = () =>
+            fetch(`/api/projects/${projectId}/cloud-backup/assets/${assetId}/chunks/`, {
+              method: 'PUT',
+              body: new Uint8Array([0, 1, 2, 3]),
+              headers: {
+                'Content-Range': 'bytes 0-3/8',
+                'X-Asset-Checksum': 'a'.repeat(64),
+                'X-Asset-Mime-Type': 'image/png',
+                'X-Idempotency-Key': 'failure-546',
+              },
+            });
+          const checksumResponse = await send();
+          await save({
+            transferId: 'transfer-checksum',
+            state: 'paused',
+            lastErrorCode: 'checksum-mismatch',
+          });
+          const quotaResponse = await send();
+          await save({
+            transferId: 'transfer-quota',
+            state: 'paused',
+            lastErrorCode: 'quota-exceeded',
+          });
+          db.close();
+          return { checksumStatus: checksumResponse.status, quotaStatus: quotaResponse.status };
+        },
+        { projectId: PROJECT_ID, assetId: ASSET_ID },
+      );
+
+      expect(result).toEqual({ checksumStatus: 409, quotaStatus: 413 });
+      expect(requests).toBe(2);
+    });
   }
 });

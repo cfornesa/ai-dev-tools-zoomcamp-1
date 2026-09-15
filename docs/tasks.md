@@ -20999,3 +20999,26 @@ The current branch's final `make check` after these increments is green:
 1,316 backend tests passed/39 skipped and 2,671 frontend tests passed, with
 lint, format, typecheck, and action-pin checks passing. Existing lint and
 runtime-test warnings remain non-blocking and predate this backlog work.
+
+## 2026-09-15 — #546 media recovery and failure-path evidence
+
+Commit pending in this increment adds `MediaTransferRecoveryPanel` to the
+local editor. Paused transfers now expose explicit **Retry transfer** and
+**Discard transfer** actions. Retry resets only the transfer state and keeps
+the acknowledged ranges, so the next deterministic sender can resume from
+the verified boundary; discard removes only the transfer ledger record and
+does not delete local artwork. Unit coverage covers the panel and the
+resume-state transition.
+
+`frontend/e2e/offlineMediaTransfer.spec.ts` now also exercises the browser
+failure paths. Chromium passed all four scenarios at 1280x900 and 375x812:
+interruption followed by verified-range resume, checksum rejection persisted
+as `checksum-mismatch`, and quota rejection persisted as `quota-exceeded`.
+The focused frontend suite is green (4 files, 8 tests), and typecheck passes.
+
+This advances #546 but does not make it ready: authenticated live endpoint
+verification, including a real production-like quota/checksum response and
+end-to-end sender integration with the persisted local media blob, remain
+release gates. #545 likewise still depends on live authenticated ownership
+verification; #544 still needs live server conflict/rebase proof; #536 and
+#547 retain their previously recorded blockers.

@@ -123,3 +123,7 @@ export function pauseMediaTransfer(
 ): MediaTransferRecord {
   return { ...record, state: 'paused', lastErrorCode: code };
 }
+
+export function resumeMediaTransfer(record: MediaTransferRecord): MediaTransferRecord {
+  return { ...record, state: 'pending', lastErrorCode: null };
+}

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthContext } from '../auth/context';
 import * as repository from '../storage/localProjectRepository';
 import * as mutationOutbox from '../storage/mutationOutbox';
+import * as mediaTransferRepository from '../storage/mediaTransferRepository';
 import LocalEditorWorkspace from './LocalEditorWorkspace';
 
 vi.mock('../storage/localProjectRepository', async () => {
@@ -28,6 +29,7 @@ const mockedListScenes = vi.mocked(repository.listScenesForProject);
 const mockedListAssets = vi.mocked(repository.listMediaAssetsForProject);
 const mockedUpdateScene = vi.mocked(repository.updateScene);
 const mockedListMutationOutbox = vi.spyOn(mutationOutbox, 'listMutationOutbox');
+const mockedListMediaTransfers = vi.spyOn(mediaTransferRepository, 'listMediaTransfersForProject');
 const db = { close: vi.fn() } as unknown as IDBDatabase;
 
 const project = {
@@ -84,6 +86,7 @@ beforeEach(() => {
   mockedListAssets.mockResolvedValue([asset]);
   mockedUpdateScene.mockResolvedValue({ ...scene, name: 'Renamed scene' });
   mockedListMutationOutbox.mockResolvedValue([]);
+  mockedListMediaTransfers.mockResolvedValue([]);
 });
 
 describe('LocalEditorWorkspace', () => {

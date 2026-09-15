@@ -20735,3 +20735,6 @@ unavailable. This is an infrastructure/workflow boundary, not a product pass.
 The required browser checks for #543 and #548 are posted as QA-pending
 failures on GitHub, with exact next actions. #542 is now closed as the
 completed contract/reconciliation issue (GitHub comment 5687014145).
+Issue #547 has the same explicit production-log boundary recorded in GitHub
+comment 5687031083; browser UI evidence confirms the symptom but not the
+server root cause, so no speculative entitlement fix was applied.

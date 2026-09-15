@@ -121,5 +121,40 @@ test.describe('Offline mutation ownership recovery (#545)', () => {
         page.getByText('Queued private mutation discarded; local artwork was preserved.'),
       ).toBeVisible();
     });
+
+    test(`resumes the original owner's queue after authentication returns at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await seedLocalProject(page, fixtures.owner.username);
+      let expired = true;
+      await page.route(`**/api/projects/${PROJECT_ID}/sync/mutations/`, async (route) => {
+        if (expired) {
+          expired = false;
+          await route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: 'authentication-required' }),
+          });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ acknowledged: true }),
+        });
+      });
+      await page.goto(`/local-projects/${PROJECT_ID}`);
+      await page.getByLabel('Scene name').fill('Re-authenticated private edit');
+      await page.getByRole('button', { name: 'Save local changes' }).click();
+      await expect(page.getByText('Saved local scene changes to this browser.')).toBeVisible();
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'Private sync paused' })).toBeVisible();
+      await page.getByRole('button', { name: 'Resume sync' }).click();
+      await expect(
+        page.getByText('Queued mutation resumed for authenticated replay.'),
+      ).toBeVisible();
+    });
   }
 });

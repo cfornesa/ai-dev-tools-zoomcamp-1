@@ -20682,3 +20682,56 @@ The remaining #543 evidence boundary is the issue's deterministic Chromium
 offline → reload → reconnect replay at 1280x900 and 375x812, plus an
 independent QA review of the migration/API/adapter. #544–#546 remain
 dependency-blocked on this transaction's operation/transport contract.
+
+## 2026-09-15 — resumed backlog run: #543 evidence and #548 implementation
+
+Task-distillation re-ran against the live GitHub inventory. The complete open
+set is now #534, #536, #542, #543, #544, #545, #546, #547, and #548. No
+duplicates or contradictions were found. The dependency order remains:
+
+- #543 establishes authenticated mutation identity, acknowledgement, and
+  replay transport.
+- #544 and #545 depend on #543's operation identity; #546 depends on the
+  outbox and ownership contracts.
+- #534 and #536 are independent local-persistence verification handoffs.
+- #547 and #548 are independent account-settings issues.
+
+**#543:** commit `492fcea` adds the required Chromium E2E spec
+`frontend/e2e/offlineSync.spec.ts` with deterministic API outage, reload, and
+reconnect replay at 1280x900 and 375x812. Playwright discovery lists both
+scenarios. The retry assertion waits for the deterministic one-second retry
+eligibility window. Local E2E execution remains unavailable because the
+documented disposable PostgreSQL/Django/Vite stack is not running in this
+workspace; the spec is therefore evidence-ready but not a QA pass. The
+production local-editor route remains unavailable in the active deployment.
+
+**#548:** stage 2a mechanical implementation (Codex substitution for the
+rostered Opencode Go worker) is committed as `602969a`. Account settings now
+use independently scannable semantic sections, a six-item account-management
+list with icon/label treatment, a visually and programmatically distinct
+destructive action, consistent responsive form stacking, and no horizontal
+overflow contract in the new browser spec. Focused component tests pass 9/9,
+typecheck passes, Playwright discovery lists four scenarios (empty/populated ×
+desktop/mobile), and the full temporary-cache `make check` passes with backend
+1,314 passed/39 skipped and frontend 2,663 passed. Deployment/browser
+acceptance is still pending a republished build.
+
+**#547:** remains implementation-blocked pending the actual Replit
+production traceback required by its acceptance criteria. Active Chrome
+reconfirms the account-settings alert, but browser console output contains only
+extension noise and cannot establish the server root cause. No speculative
+entitlement change was made; the next action is to obtain the deployment log,
+reproduce that exact data shape locally, add the regression, republish, and
+rerun the authenticated smoke check.
+
+**#534/#536:** remain verification-boundary handoffs. Native folder APIs and
+ZIP restoration are available in the active Chrome session, but the deployed
+build still returns its own Page-not-found surface for `/local-projects/:id`,
+and the restored fixture has only one scene and no media. They are not closed.
+
+QA follow-up: `make compose-preflight` was attempted before treating the
+Chromium checks as unavailable; it reports that the Docker daemon is
+unavailable. This is an infrastructure/workflow boundary, not a product pass.
+The required browser checks for #543 and #548 are posted as QA-pending
+failures on GitHub, with exact next actions. #542 is now closed as the
+completed contract/reconciliation issue (GitHub comment 5687014145).

@@ -872,3 +872,14 @@ PostgreSQL nullable-join failure from #544. Extended
 to record that the successful local `scenes.0065` migration does not establish
 production schema or runtime evidence; Publish, direct table checks, smoke, and
 deployed-browser verification remain required.
+
+The owner then authorized a Replit republish. The active Replit session showed
+“Database migrations validated successfully,” and the publish completed with a
+new “Published your app” event. Post-publish checks passed for
+`GET /health/` (HTTP 200, status ok), `/` (200), anonymous `/api/whoami/` (401),
+and `/accounts/login/` (200). However, read-only production
+`information_schema.columns` inspection found `scenes_sceneversion` but no
+`scenes_syncmutationreceipt` or `scenes_cloudbackupblobtransfer`. This is a
+schema-verification failure despite the publish UI success. No production SQL
+was written; the next action is the non-destructive log/retry path under #467,
+followed by direct table and deployed-browser checks.

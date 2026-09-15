@@ -45,3 +45,12 @@ schema evidence. A migration-bearing Replit release still requires Publish,
 `scripts/smoke-published.sh`, and deployed-browser verification. Do not infer
 production readiness from a clean local disposable PostgreSQL run, the Django
 migration ledger, or a GitHub closure alone.
+
+Post-publish verification on 2026-09-15 found a concrete failure after the
+#544 republish: `/health/` and the anonymous published smoke passed, but direct
+`information_schema.columns` inspection showed `scenes_sceneversion` while
+`scenes_syncmutationreceipt` and `scenes_cloudbackupblobtransfer` were absent.
+Treat the release as schema-unverified even when Replit reports “Published your
+app” and “Database migrations validated successfully.” Do not compensate with
+manual production SQL; inspect deployment logs and use the repository's
+non-destructive Replit publish/retry path under #467.

@@ -35,14 +35,16 @@ existing release boundary owned by #445/#467, not a new child defect.
 
 ### Session-completion result
 
-The batch is complete locally: six completed issues, zero blocked,
+The batch remains complete locally: six completed issues, zero blocked,
 dependency-blocked, or handed-off issues, zero missing terminal statuses, and
-zero remaining open GitHub issues. Final status is **batch-complete,
-deployment-pending**, not production-ready. The exact next action is to
-publish the migration-bearing release, run
-`PUBLISHED_APP_URL=<published-url> scripts/smoke-published.sh`, inspect actual
-production tables rather than `django_migrations`, and run the deployed
-Chromium matrix before upgrading the release claim. The historical open-only
+zero remaining open GitHub issues. The authorized Replit republish completed;
+`/health/` and `scripts/smoke-published.sh` passed, but direct production
+inspection found `scenes_sceneversion` without
+`scenes_syncmutationreceipt` or `scenes_cloudbackupblobtransfer`. Final status
+is **batch-complete, deployment/schema-verification-blocked**, not
+production-ready. The exact next action is to inspect the Replit deployment
+logs and use the non-destructive retry/publish path owned by #467, then repeat
+the table check and deployed Chromium matrix. The historical open-only
 manifest below is retained unchanged as audit history.
 
 ## 2026-09-15 — historical open-only task distillation and handoff

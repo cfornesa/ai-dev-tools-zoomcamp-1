@@ -1,5 +1,31 @@
 # AugmentrART Backlog
 
+## 2026-09-15 — current open-only task distillation and handoff
+
+Fresh GitHub enumeration for `cfornesa/ai-dev-tools-zoomcamp-1` reports exactly
+two open issues: #544 and #546. Closed issues #534, #536, #543, #545, and
+#547 were not reopened. No duplicate issue is needed for the current browser
+storage, offline-first, or sync findings: #532 owns browser-origin quota
+accounting, #540/#542 own the offline-first and deterministic-hybrid policy,
+and #543/#545 own outbox and ownership contracts.
+
+| Issue | Order | Scope and dependency result | Status / next action |
+| --- | --- | --- | --- |
+| #544 | 1 | Server-authoritative conflict detection, deterministic three-way merge/rebase, conflict audit, and idempotent resolution; prerequisites #512, #536, #542, and closed #543 are present. Complex stage 2b because it changes sync business logic and API semantics. | ENGINEERING-READY; groom and implement against the live sync contract, then run independent QA. |
+| #546 | 2 | Resumable media-byte transfer, checksum/quota recovery, and safe partial-object handling; its outbox/ownership prerequisites are present. Complex stage 2b because it spans authenticated persistence and transfer semantics. | IMPLEMENTED LOCALLY / LIVE-VERIFICATION-BLOCKED; after #544, run or provision the production-like authenticated persisted-transfer fixture and terminalize. |
+
+The only actionable unresolved items are the existing acceptance criteria in
+#544 and #546. #544's client conflict UI is already evidenced, but its server
+endpoint still does not compare the submitted base against the current server
+version or apply a conflict/rebase result. #546's sender and recovery states
+are locally evidenced, but the current deployed browser flow does not expose a
+production-like persisted transfer with real quota/checksum responses. These
+are implementation/live-verification gates, not duplicate issues.
+
+Next groomed issue: #544. The transaction ledger is
+`GROOMED → ENGINEERING → QA → RECONCILIATION`; implementation and QA remain
+scoped to #544 until it reaches a terminal status.
+
 ## 2026-09-15 — #544 deterministic conflict resolution evidence increment
 
 The #544 implementation now has a durable, accessible resolution path for a

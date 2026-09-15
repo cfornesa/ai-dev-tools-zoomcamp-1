@@ -20852,3 +20852,21 @@ The remaining open set is #534, #536, #544, #545, #546, and #547. #544–#546
 can now proceed past the #543 dependency in the next backlog pass; #534/#536
 still need deployed-route/fixture evidence, and #547 still needs the actual
 production traceback before any fix can be responsibly implemented.
+
+## 2026-09-15 — #544 dependency reconciliation and implementation start
+
+The completed #543 browser gate unblocked #544, #545, and #546. #544 is the
+first active dependent issue because its deterministic merge policy is the
+shared foundation for later sync recovery states. Commit `c3ccfd6` adds
+`frontend/src/storage/conflictMerge.ts` and focused tests. The core performs a
+three-way merge by these rules: unchanged-side adoption, equal-edit
+deduplication, stable-ID collection merge in sorted identity order, and
+explicit conflicts for all remaining overlaps. Each conflict carries the
+common base version, local/remote operation IDs, path, and affected identity.
+
+This is an implementation increment, not a ready-state verdict. #544 still
+needs the server conflict/rebase contract, an accessible keep-local/
+keep-remote/compose UI, idempotent resolution operation, backend/property
+coverage, and Chromium desktop/mobile evidence. #545 and #546 remain queued
+behind the shared sync-policy work; their GitHub notes now explicitly record
+that #543 is closed and that they are no longer transport-blocked.

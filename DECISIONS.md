@@ -832,3 +832,15 @@ sandboxed custom-runtime system) is a deliberate, already-recorded security
 scope decision, not a gap — not re-filed. No existing issue duplicated
 either finding. Full detail in `docs/tasks.md` and
 `.agents/memory/account-settings-production-audit-2026-09-15.md`.
+
+## 2026-09-15 (#544 server-authoritative resolution authorized)
+
+Owner authorized the `SyncMutationReceipt.applied_scene_version` schema
+migration after the deterministic-hybrid contract and rollback boundary were
+shown. The implementation keeps the receipt as the immutable audit record,
+locks only the project row (nullable related joins cannot be selected for
+update on PostgreSQL), rejects stale bases with the authoritative remote
+snapshot, and creates one immutable `SceneVersion` linked to the receipt.
+Stage 2b is a Codex/GPT-5 substitution for rostered Ollama Cloud `kimi-k3`;
+Stage 4 and the readiness gate remain separate stages and are not implied by
+this implementation increment.

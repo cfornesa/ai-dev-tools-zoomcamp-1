@@ -9,6 +9,7 @@ export type SyncMutationAcknowledgement = {
   client_sequence: number;
   payload_checksum: string;
   acknowledged_at: string;
+  applied_scene_version_id?: number;
 };
 
 /**

@@ -252,6 +252,33 @@ Anonymous callers and non-owners cannot discover a project's mutation receipt.
 The receipt is an acknowledgement journal for the sync/conflict stages; it
 does not enable offline generation, publishing, gallery reads, or AI flows.
 
+### Deterministic conflict resolution (#544)
+
+A scene conflict-resolution payload uses this additional shape:
+
+```json
+{
+  "type": "conflict-resolution",
+  "base_version": "<SceneVersion id>",
+  "choice": "keep-local | keep-remote | compose",
+  "resolved_payload": {"...": "validated scene snapshot"},
+  "audit": {
+    "conflict_paths": ["..."],
+    "local_operation_ids": ["..."],
+    "remote_operation_ids": ["..."]
+  }
+}
+```
+
+The server locks the owner’s project, compares `base_version` with the
+authoritative current version, validates the resolved snapshot, and creates a
+new immutable `SceneVersion` only when the base is still current. A stale base
+returns `409` with the authoritative remote snapshot and the preserved base,
+local, remote-operation, and affected-identity context; no receipt or version
+is created. The accepted receipt stores the resulting version link, so an
+identical replay returns the same applied version without creating a second
+version. Artwork-bearing data never uses last-write-wins.
+
 The status GET returns `404` when the owner has not opted the project in yet;
 the editor treats that as the ordinary “Enable cloud sync” state. A `409`
 from enable explains that the account is ineligible without uploading content.

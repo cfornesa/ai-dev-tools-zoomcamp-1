@@ -5,12 +5,14 @@ import json
 import uuid
 
 from django.db import IntegrityError, transaction
+from django.db.models import Max
 from django.http import Http404
 from django.utils.dateparse import parse_datetime
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.models import Project, SyncMutationReceipt
+from scenes.models import Project, Scene, SceneVersion, SyncMutationReceipt
+from scenes.validation import validate_scene
 
 ALLOWED_KINDS = {choice.value for choice in SyncMutationReceipt.Kind}
 CONFLICT_RESOLUTION_CHOICES = {"keep-local", "keep-remote", "compose"}
@@ -38,17 +40,23 @@ def _parse_uuid(value, field_name):
 
 
 def _validate_conflict_resolution_payload(kind, payload):
-    """Validate the migration-free #544 resolution envelope stored in #543 receipts."""
+    """Validate the server-authoritative #544 resolution envelope."""
     if not isinstance(payload, dict) or payload.get("type") != "conflict-resolution":
         return
     if kind != SyncMutationReceipt.Kind.SCENE:
         raise ValueError("conflict-resolution payloads must use the scene kind.")
-    if not isinstance(payload.get("base_version"), str) or not payload["base_version"].strip():
-        raise ValueError("conflict-resolution base_version must be a non-empty string.")
+    base_version = payload.get("base_version")
+    if (
+        not isinstance(base_version, str)
+        or not base_version.strip()
+        or not base_version.isdecimal()
+        or int(base_version) < 1
+    ):
+        raise ValueError("conflict-resolution base_version must be a positive SceneVersion id.")
     if payload.get("choice") not in CONFLICT_RESOLUTION_CHOICES:
         raise ValueError("conflict-resolution choice is invalid.")
-    if "resolved_payload" not in payload:
-        raise ValueError("conflict-resolution resolved_payload is required.")
+    if not isinstance(payload.get("resolved_payload"), dict):
+        raise ValueError("conflict-resolution resolved_payload must be a scene object.")
     audit = payload.get("audit")
     if not isinstance(audit, dict):
         raise ValueError("conflict-resolution audit is required.")
@@ -63,7 +71,7 @@ def _validate_conflict_resolution_payload(kind, payload):
 
 
 def _receipt_body(receipt: SyncMutationReceipt, *, replayed: bool) -> dict:
-    return {
+    body = {
         "acknowledged": True,
         "replayed": replayed,
         "operation_id": str(receipt.operation_id),
@@ -72,6 +80,53 @@ def _receipt_body(receipt: SyncMutationReceipt, *, replayed: bool) -> dict:
         "payload_checksum": receipt.payload_checksum,
         "acknowledged_at": receipt.acknowledged_at.isoformat(),
     }
+    if receipt.applied_scene_version_id is not None:
+        body["applied_scene_version_id"] = receipt.applied_scene_version_id
+    return body
+
+
+def _scene_validation_errors(scene_json: dict) -> list[dict]:
+    result = validate_scene(scene_json)
+    return [
+        {"path": error.path, "rule": error.rule, "message": error.message}
+        for error in result.errors
+    ]
+
+
+def _stale_conflict_response(
+    *, operation_id: uuid.UUID, base: SceneVersion | None, current: SceneVersion | None, local: dict
+) -> Response:
+    base_snapshot = base.scene_json if base is not None else None
+    remote_snapshot = current.scene_json if current is not None else None
+    base_id = str(base.pk) if base is not None else "unknown"
+    remote_id = str(current.pk) if current is not None else "unknown"
+    context = {
+        "baseVersion": base_id,
+        "localOperationIds": [str(operation_id)],
+        "remoteOperationIds": [remote_id],
+    }
+    return Response(
+        {
+            "error": "conflict",
+            "conflict": {
+                "conflicts": [
+                    {
+                        "path": "$",
+                        "base": base_snapshot,
+                        "local": local,
+                        "remote": remote_snapshot,
+                        "affectedIdentities": [],
+                        "context": context,
+                    }
+                ],
+                "context": context,
+                "localSnapshot": local,
+                "remoteSnapshot": remote_snapshot,
+                "mergedSnapshot": remote_snapshot,
+            },
+        },
+        status=409,
+    )
 
 
 class SyncMutationReceiptView(APIView):
@@ -137,34 +192,95 @@ class SyncMutationReceiptView(APIView):
         except ValueError as exc:
             return Response({"error": "invalid_operation", "detail": str(exc)}, status=400)
 
-        with transaction.atomic():
-            existing = (
-                SyncMutationReceipt.objects.select_for_update()
-                .filter(owner=request.user, operation_id=operation_id)
-                .first()
-            )
-            if existing is not None:
-                same = (
-                    existing.project_id == project.id
-                    and existing.client_sequence == raw_sequence
-                    and existing.kind == kind
-                    and existing.scene_id == scene_id
-                    and existing.payload_checksum == payload_checksum
-                    and existing.schema_version == schema_version
-                    and existing.dependency_operation_ids == parsed_dependencies
-                    and existing.payload == payload
+        try:
+            with transaction.atomic():
+                existing = (
+                    SyncMutationReceipt.objects.select_for_update()
+                    .filter(owner=request.user, operation_id=operation_id)
+                    .first()
                 )
-                if not same:
-                    return Response({"error": "operation_id_conflict"}, status=409)
-                return Response(_receipt_body(existing, replayed=True), status=200)
+                if existing is not None:
+                    same = (
+                        existing.project_id == project.id
+                        and existing.client_sequence == raw_sequence
+                        and existing.kind == kind
+                        and existing.scene_id == scene_id
+                        and existing.payload_checksum == payload_checksum
+                        and existing.schema_version == schema_version
+                        and existing.dependency_operation_ids == parsed_dependencies
+                        and existing.payload == payload
+                    )
+                    if not same:
+                        return Response({"error": "operation_id_conflict"}, status=409)
+                    return Response(_receipt_body(existing, replayed=True), status=200)
 
-            sequence_exists = SyncMutationReceipt.objects.filter(
-                owner=request.user, project=project, client_sequence=raw_sequence
-            ).exists()
-            if sequence_exists:
-                return Response({"error": "client_sequence_conflict"}, status=409)
+                sequence_exists = SyncMutationReceipt.objects.filter(
+                    owner=request.user, project=project, client_sequence=raw_sequence
+                ).exists()
+                if sequence_exists:
+                    return Response({"error": "client_sequence_conflict"}, status=409)
 
-            try:
+                applied_scene_version = None
+                if payload.get("type") == "conflict-resolution":
+                    # Lock only the project row. Both related fields are
+                    # nullable, and PostgreSQL rejects FOR UPDATE over the
+                    # nullable side of the outer joins select_related would
+                    # introduce. The locked project remains the authority;
+                    # related rows are read after that row lock is acquired.
+                    locked_project = Project.objects.select_for_update().get(pk=project.pk)
+                    current_version = locked_project.current_version
+                    base_version = (
+                        SceneVersion.objects.filter(
+                            project=locked_project, pk=int(payload["base_version"])
+                        )
+                        .select_related("scene")
+                        .first()
+                    )
+                    if (
+                        base_version is None
+                        or current_version is None
+                        or base_version.pk != current_version.pk
+                    ):
+                        return _stale_conflict_response(
+                            operation_id=operation_id,
+                            base=base_version,
+                            current=current_version,
+                            local=payload["resolved_payload"],
+                        )
+                    validation_errors = _scene_validation_errors(payload["resolved_payload"])
+                    if validation_errors:
+                        return Response({"errors": validation_errors}, status=400)
+                    target_scene = locked_project.active_scene
+                    if scene_id is not None:
+                        target_scene = Scene.objects.filter(
+                            project=locked_project, public_id=scene_id
+                        ).first()
+                    if target_scene is None or target_scene.pk != current_version.scene_id:
+                        return Response(
+                            {
+                                "error": "scene_conflict",
+                                "detail": "scene_id is not the current scene.",
+                            },
+                            status=409,
+                        )
+                    next_sequence = (
+                        target_scene.scene_versions.aggregate(Max("sequence"))["sequence__max"] or 0
+                    ) + 1
+                    applied_scene_version = SceneVersion.objects.create(
+                        project=locked_project,
+                        scene=target_scene,
+                        sequence=next_sequence,
+                        scene_json=payload["resolved_payload"],
+                        created_by=request.user,
+                        parent=current_version,
+                        origin=SceneVersion.Origin.MANUAL,
+                        change_label=f"Offline conflict resolution {operation_id}",
+                    )
+                    target_scene.current_version = applied_scene_version
+                    target_scene.save(update_fields=["current_version", "updated_at"])
+                    locked_project.current_version = applied_scene_version
+                    locked_project.save(update_fields=["current_version", "updated_at"])
+
                 receipt = SyncMutationReceipt.objects.create(
                     owner=request.user,
                     project=project,
@@ -177,16 +293,17 @@ class SyncMutationReceiptView(APIView):
                     schema_version=schema_version,
                     dependency_operation_ids=parsed_dependencies,
                     client_created_at=client_created_at,
+                    applied_scene_version=applied_scene_version,
                 )
-            except IntegrityError:
-                # A concurrent request may have won either unique key.  The
-                # retry can safely inspect the durable row and return the
-                # same acknowledgement or an explicit conflict.
-                receipt = SyncMutationReceipt.objects.filter(
-                    owner=request.user, operation_id=operation_id
-                ).first()
-                if receipt is not None and receipt.payload_checksum == payload_checksum:
-                    return Response(_receipt_body(receipt, replayed=True), status=200)
-                return Response({"error": "client_sequence_conflict"}, status=409)
+        except IntegrityError:
+            # A concurrent request may have won either unique key. The retry
+            # can safely inspect the durable row and return the same
+            # acknowledgement or an explicit conflict.
+            receipt = SyncMutationReceipt.objects.filter(
+                owner=request.user, operation_id=operation_id
+            ).first()
+            if receipt is not None and receipt.payload_checksum == payload_checksum:
+                return Response(_receipt_body(receipt, replayed=True), status=200)
+            return Response({"error": "client_sequence_conflict"}, status=409)
 
         return Response(_receipt_body(receipt, replayed=False), status=201)

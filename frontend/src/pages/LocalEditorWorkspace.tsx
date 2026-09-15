@@ -238,7 +238,11 @@ function LocalEditorWorkspace() {
           resolved_payload: resolution.resolvedPayload,
           audit: resolution.audit,
         },
-        dependencyOperationIds: [syncConflict.operation.operationId],
+        // The original operation was rejected and is intentionally paused;
+        // making the resolution depend on it would leave the resolution
+        // permanently ineligible for replay. The audit payload retains the
+        // original operation identity for deterministic provenance.
+        dependencyOperationIds: [],
       });
       await pauseMutation(
         db,

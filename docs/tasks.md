@@ -21228,6 +21228,26 @@ sync endpoint still needs authoritative conflict detection/rebase integration,
 including a persisted three-way merge proof and idempotent resolution against
 the current server version.
 
+## 2026-09-15 — #544 server-authoritative resolution implementation
+
+Owner authorized the migration after the rollback boundary was reviewed.
+Commit `PENDING` adds migration `scenes.0065_sync_receipt_applied_scene_version`
+and extends the authenticated mutation endpoint so a conflict-resolution
+payload compares its numeric base version against the locked project’s current
+version. A stale base returns `409` with base/local/remote snapshots and
+operation context without writing a receipt or version. A current base is
+validated against the canonical scene schema, creates exactly one immutable
+`SceneVersion`, advances both scene/project current-version pointers, and links
+the receipt so identical replays return the same applied version. The client
+resolution operation no longer depends on the already-paused rejected
+operation; its audit still retains that identity.
+
+Focused backend coverage passes 8/8, focused frontend sync coverage passes
+7/7, the existing mocked conflict UI passes 2/2 Chromium viewpoints, and the
+new authenticated live server fixture passes 2/2 at 1280×900 and 375×812.
+The live run also exposed and fixed a PostgreSQL `FOR UPDATE` nullable-join
+defect before passing. Stage 4 QA and production-readiness remain pending.
+
 ## 2026-09-15 — #546 QA/reconciliation and closure
 
 Commit `8d41058` adds the live authenticated resumable-transfer browser fixture

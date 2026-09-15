@@ -851,6 +851,17 @@ class SyncMutationReceipt(models.Model):
     client_created_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     acknowledged_at = models.DateTimeField(auto_now_add=True)
+    # #544: a conflict-resolution receipt is also the durable idempotency
+    # anchor for the immutable SceneVersion it created. SET_NULL preserves the
+    # operation/audit journal if a historical version is later soft-deleted or
+    # removed by an owner-authorized cleanup path.
+    applied_scene_version = models.ForeignKey(
+        "scenes.SceneVersion",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="sync_resolution_receipts",
+    )
 
     class Meta:
         ordering = ["client_sequence", "created_at"]

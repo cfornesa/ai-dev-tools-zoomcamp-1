@@ -26,6 +26,28 @@ Next groomed issue: #544. The transaction ledger is
 `GROOMED → ENGINEERING → QA → RECONCILIATION`; implementation and QA remain
 scoped to #544 until it reaches a terminal status.
 
+## 2026-09-15 — #546 live authenticated transfer evidence
+
+Added `frontend/e2e/offlineMediaTransferLive.spec.ts` for the production-like
+local PostgreSQL/Django/Vite stack. At both 1280×900 and 375×812, Chromium
+creates an authenticated project, enables cloud backup through the existing
+admin-controlled policy, sends real byte ranges to Django, injects a network
+interruption, resumes the unacknowledged range, downloads the completed blob,
+and verifies exact bytes plus the server checksum. The same live endpoint also
+returns and is asserted for `checksum_mismatch` (409) and
+`cloud_backup_quota_exceeded` (413).
+
+Verification:
+
+- `npm run test:e2e -- e2e/offlineMediaTransferLive.spec.ts --project=chromium` — **2 passed** (1280×900 and 375×812).
+- `npx prettier --check e2e/offlineMediaTransferLive.spec.ts` — **PASS**.
+- `npm run typecheck` — **PASS**.
+- Local PostgreSQL migration `scenes.0064_cloudbackupblobtransfer` applied before the run; E2E fixture cleanup completed (`deleted: 28`).
+
+#546 now has local model, sender, recovery, backend, and live endpoint
+evidence. It remains open pending the issue transaction's independent QA
+matrix and reconciliation/closure decision.
+
 ## 2026-09-15 — #544 deterministic conflict resolution evidence increment
 
 The #544 implementation now has a durable, accessible resolution path for a

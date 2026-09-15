@@ -33,6 +33,9 @@ import {
 } from '../api/cloudBackup';
 import { classifyCloudBackupError, type CloudBackupFailure } from '../api/cloudBackupErrors';
 import { ApiError } from '../api/client';
+import { createMediaTransferRecord } from './mediaTransfer';
+import { getMediaTransfer, saveMediaTransfer } from './mediaTransferRepository';
+import { sendMediaTransfer } from './mediaTransferSender';
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -75,6 +78,7 @@ export async function pushCloudSnapshot(
   projectId: string,
   sceneJson: Record<string, unknown>,
   expectedRevision: number,
+  ownerId?: string,
 ): Promise<void> {
   const referencedIds = collectReferencedMediaAssetIds(sceneJson);
   const localAssets = await listMediaAssetsForProject(db, projectId);
@@ -86,12 +90,34 @@ export async function pushCloudSnapshot(
     if (!asset) continue; // not locally available -- skip, never block the snapshot
     const blob = await getMediaBlob(db, assetId);
     if (!blob) continue;
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    await putCloudBackupAsset(projectId, assetId, bytes, {
-      checksum: asset.checksum,
-      mimeType: asset.mimeType,
-      idempotencyKey: `snapshot-asset-${assetId}-${asset.checksum}`,
-    });
+    if (ownerId) {
+      const transferId = `snapshot-${projectId}-${assetId}-${asset.checksum}`;
+      let transfer = await getMediaTransfer(db, ownerId, transferId);
+      if (!transfer) {
+        transfer = await saveMediaTransfer(
+          db,
+          createMediaTransferRecord({
+            transferId,
+            ownerId,
+            projectId,
+            assetId,
+            byteLength: asset.byteSize,
+            checksum: asset.checksum,
+          }),
+        );
+      }
+      const completed = await sendMediaTransfer(db, transfer, blob);
+      if (completed.state !== 'complete') {
+        throw new Error(`Media transfer paused: ${completed.lastErrorCode ?? 'unknown'}.`);
+      }
+    } else {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      await putCloudBackupAsset(projectId, assetId, bytes, {
+        checksum: asset.checksum,
+        mimeType: asset.mimeType,
+        idempotencyKey: `snapshot-asset-${assetId}-${asset.checksum}`,
+      });
+    }
     assets.push({ id: assetId, checksum: asset.checksum, byte_size: asset.byteSize });
   }
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { fetchCloudBackup } from '../api/cloudBackup';
+import { useAuth } from '../auth/useAuth';
 import { pushCloudSnapshot, isSnapshotDue } from '../storage/cloudSnapshot';
 import { openLocalProjectDatabase } from '../storage/localProjectRepository';
 
@@ -22,6 +23,7 @@ export function useCloudBackupSchedule(
   projectId: string | undefined,
   sceneJson: Record<string, unknown> | null,
 ) {
+  const auth = useAuth();
   const sceneJsonRef = useRef(sceneJson);
   sceneJsonRef.current = sceneJson;
   const attemptedRef = useRef<string | undefined>(undefined);
@@ -39,7 +41,8 @@ export function useCloudBackupSchedule(
         if (!scene) return;
         const db = await openLocalProjectDatabase();
         try {
-          await pushCloudSnapshot(db, projectId, scene, status.revision);
+          const ownerId = auth.status === 'signed-in' ? auth.user.username : undefined;
+          await pushCloudSnapshot(db, projectId, scene, status.revision, ownerId);
         } finally {
           db.close();
         }
@@ -52,5 +55,5 @@ export function useCloudBackupSchedule(
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [auth, projectId]);
 }

@@ -23,6 +23,7 @@ vi.mock('../api/cloudBackup', async () => {
     fetchCloudBackup: vi.fn(),
     putCloudBackupManifest: vi.fn(),
     putCloudBackupAsset: vi.fn(),
+    putCloudBackupAssetChunk: vi.fn(),
   };
 });
 
@@ -131,6 +132,39 @@ describe('pushCloudSnapshot', () => {
     expect(cloudBackupApi.putCloudBackupManifest).toHaveBeenCalledTimes(1);
     const [, manifestFields] = vi.mocked(cloudBackupApi.putCloudBackupManifest).mock.calls[0];
     expect(manifestFields.manifest.assets).toEqual([]);
+  });
+
+  it('uses the persisted resumable sender when an authenticated owner is available', async () => {
+    const db = await openLocalProjectDatabase();
+    const projectId = 'server-project-resumable';
+    const ownerId = 'owner-a';
+    const blob = new Blob([new Uint8Array([1, 2, 3, 4])], { type: 'image/png' });
+    const asset = await importMediaAsset(db, {
+      projectId,
+      blob,
+      mimeType: 'image/png',
+      filename: 'a.png',
+      altText: '',
+    });
+    vi.mocked(cloudBackupApi.putCloudBackupAssetChunk).mockResolvedValue({
+      asset_id: asset.id,
+      checksum: asset.checksum,
+      byte_size: asset.byteSize,
+      complete: true,
+      acknowledged_ranges: [{ start: 0, end: asset.byteSize }],
+    });
+
+    await pushCloudSnapshot(
+      db,
+      projectId,
+      { shapes: [{ type: 'image', id: 'i1', mediaAssetId: asset.id }] },
+      0,
+      ownerId,
+    );
+
+    expect(cloudBackupApi.putCloudBackupAsset).not.toHaveBeenCalled();
+    expect(cloudBackupApi.putCloudBackupAssetChunk).toHaveBeenCalledTimes(1);
+    expect(cloudBackupApi.putCloudBackupManifest).toHaveBeenCalledTimes(1);
   });
 
   it('pushes a manifest with no assets for a scene with no image shapes', async () => {

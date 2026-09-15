@@ -21097,3 +21097,8 @@ Focused unit coverage passes (4/4), and the durable-save Chromium suite passes
 removes the previously recorded unsaved-transition gap for #536. The issue
 still needs the remaining invalid-archive/ownership/path UI matrix and the
 documented Firefox/Safari support/fallback matrix before readiness review.
+
+The same Chromium matrix now includes invalid archive input at both required
+viewpoints. A corrupt ZIP is rejected before preview/restore, the UI states
+that no local data changed, and no archive preview is created; the complete
+`localWorkspaceDurableSave.spec.ts` run is now 6/6.

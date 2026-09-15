@@ -180,5 +180,22 @@ test.describe('Local workspace durable save and reopen (#536)', () => {
       await page.getByRole('link', { name: 'Durable Save Project' }).last().click();
       await expect(page.getByLabel('Scene name')).toHaveValue('Folder checkpoint scene');
     });
+
+    test(`rejects an invalid archive without changing local state at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await page.goto('/account/settings/storage');
+      await page.locator('#restore-archive-input').setInputFiles({
+        name: 'corrupt.zip',
+        mimeType: 'application/zip',
+        buffer: Buffer.from([1, 2, 3, 4]),
+      });
+      await expect(
+        page.getByText(/could not inspect that archive.*no local data was changed/i),
+      ).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Archive preview' })).toHaveCount(0);
+    });
   }
 });

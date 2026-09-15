@@ -29,33 +29,57 @@ const MISTRAL_MODELS_DOCS_URL = 'https://docs.mistral.ai/getting-started/models/
 function AccountSettings() {
   return (
     <section className="content-panel account-settings">
-      <div className="centered-state">
+      <div className="account-settings-header">
         <h2>Account settings</h2>
-        <EntitlementsSummary />
-        <ProfileSettings />
-        <p>
-          <Link to="/account/billing">Manage billing</Link>
-        </p>
-        <p>
-          <Link to="/account/settings/identities">Manage linked sign-in methods</Link>
-        </p>
-        <p>
-          <Link to="/account/settings/sessions">Manage active sessions</Link>
-        </p>
-        <p>
-          <Link to="/account/settings/export">Export your data</Link>
-        </p>
-        <p>
-          <Link to="/account/settings/storage">View local storage usage</Link>
-        </p>
-        <p>
-          <Link to="/account/settings/delete">Delete your account</Link>
-        </p>
       </div>
-      <ProviderCredentialCards />
-      <SavedMistralModels />
-      <AIPersonas />
-      <AIRetrySettings />
+      <div className="account-settings-grid">
+        <section className="account-settings-card" aria-labelledby="account-plan-heading">
+          <h3 id="account-plan-heading">Plan and usage</h3>
+          <EntitlementsSummary />
+        </section>
+        <section className="account-settings-card" aria-labelledby="profile-settings-heading">
+          <ProfileSettings />
+        </section>
+        <section className="account-settings-card" aria-labelledby="account-management-heading">
+          <h3 id="account-management-heading">Account management</h3>
+          <ul className="account-settings-actions" aria-label="Account management actions">
+            <li>
+              <Link to="/account/billing">
+                <span aria-hidden="true">◈</span> Manage billing
+              </Link>
+            </li>
+            <li>
+              <Link to="/account/settings/identities">
+                <span aria-hidden="true">◎</span> Manage linked sign-in methods
+              </Link>
+            </li>
+            <li>
+              <Link to="/account/settings/sessions">
+                <span aria-hidden="true">◌</span> Manage active sessions
+              </Link>
+            </li>
+            <li>
+              <Link to="/account/settings/export">
+                <span aria-hidden="true">⇩</span> Export your data
+              </Link>
+            </li>
+            <li>
+              <Link to="/account/settings/storage">
+                <span aria-hidden="true">▣</span> View local storage usage
+              </Link>
+            </li>
+            <li className="account-settings-action-danger">
+              <Link to="/account/settings/delete">
+                <span aria-hidden="true">⚠</span> Delete your account
+              </Link>
+            </li>
+          </ul>
+        </section>
+        <ProviderCredentialCards />
+        <SavedMistralModels />
+        <AIPersonas />
+        <AIRetrySettings />
+      </div>
     </section>
   );
 }
@@ -83,7 +107,7 @@ function ProfileSettings() {
   }
   return (
     <form className="account-settings-form" aria-label="Profile settings" onSubmit={save}>
-      <h3>Public profile</h3>
+      <h3 id="profile-settings-heading">Public profile</h3>
       <p>
         Choose a unique handle to publish your profile and public pieces at{' '}
         <code>/users/@handle</code>.
@@ -207,7 +231,7 @@ function ProviderCredentialCards() {
 
   if (providers.length === 0 && !error) return null;
   return (
-    <div className="centered-state account-settings-section" aria-labelledby="provider-credentials">
+    <section className="account-settings-card" aria-labelledby="provider-credentials">
       <h3 id="provider-credentials">AI provider credentials</h3>
       <p>Keys are encrypted for your account and are never shown again after saving.</p>
       <div className="account-settings-list">
@@ -256,7 +280,7 @@ function ProviderCredentialCards() {
         ))}
       </div>
       {error && <p role="alert">{error}</p>}
-    </div>
+    </section>
   );
 }
 
@@ -299,8 +323,8 @@ function AIRetrySettings() {
   }
 
   return (
-    <div className="centered-state account-settings-section">
-      <h3>Automatic retry</h3>
+    <section className="account-settings-card" aria-labelledby="automatic-retry-heading">
+      <h3 id="automatic-retry-heading">Automatic retry</h3>
       <p>
         When an AI generation fails with a retryable error (an invalid response, a timeout, or a
         provider failure), automatically retry instead of leaving you to notice and resubmit.
@@ -351,7 +375,7 @@ function AIRetrySettings() {
       )}
       {message && <p role="status">{message}</p>}
       {error && <p role="alert">{error}</p>}
-    </div>
+    </section>
   );
 }
 
@@ -398,8 +422,8 @@ function SavedMistralModels() {
   }
 
   return (
-    <div className="centered-state account-settings-section">
-      <h3>Saved Mistral models</h3>
+    <section className="account-settings-card" aria-labelledby="saved-models-heading">
+      <h3 id="saved-models-heading">Saved Mistral models</h3>
       <p>
         Save your own Mistral model slugs to pick from a dropdown in the AI assistant, instead of
         retyping one each time. Look up valid slugs in{' '}
@@ -456,7 +480,7 @@ function SavedMistralModels() {
         </ul>
       )}
       {error && <p role="alert">{error}</p>}
-    </div>
+    </section>
   );
 }
 
@@ -503,8 +527,8 @@ function AIPersonas() {
   }
 
   return (
-    <div className="centered-state account-settings-section">
-      <h3>Personas</h3>
+    <section className="account-settings-card" aria-labelledby="personas-heading">
+      <h3 id="personas-heading">Personas</h3>
       <p>
         A Persona adds your own style/tone guidance on top of the AI assistant&apos;s required
         technical instructions — it can never replace or remove them.
@@ -556,7 +580,7 @@ function AIPersonas() {
         </ul>
       )}
       {error && <p role="alert">{error}</p>}
-    </div>
+    </section>
   );
 }
 

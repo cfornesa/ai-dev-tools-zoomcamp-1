@@ -223,9 +223,11 @@ button:disabled {
 .account-settings-form {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-start;
   gap: 10px;
+  width: 100%;
+  max-width: 640px;
 }
 
 .account-settings-input {
@@ -244,6 +246,65 @@ button:disabled {
   margin-top: 24px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
+}
+
+.account-settings-header {
+  padding: 28px 32px 8px;
+}
+
+.account-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding: 8px 32px 32px;
+}
+
+.account-settings-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 88%, var(--accent-bg));
+}
+
+.account-settings-card > h3:first-child {
+  margin-top: 0;
+}
+
+.account-settings-actions {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-settings-actions li {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.account-settings-actions a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--text-h);
+  text-decoration: none;
+}
+
+.account-settings-actions a:hover {
+  background: var(--accent-bg);
+}
+
+.account-settings-action-danger {
+  border-color: var(--danger, #b42318) !important;
+}
+
+.account-settings-action-danger a {
+  color: var(--danger, #b42318);
+  font-weight: 600;
 }
 
 .account-settings-textarea {
@@ -3020,6 +3081,15 @@ select.ai-proposal-field-full-width {
    full-width, easy-to-hit tap targets rather than three centered items
    competing for one row's worth of space. */
 @media (max-width: 600px) {
+  .account-settings-header {
+    padding: 20px 16px 4px;
+  }
+
+  .account-settings-grid {
+    grid-template-columns: 1fr;
+    padding: 4px 16px 20px;
+  }
+
   .account-settings-form {
     flex-direction: column;
     align-items: stretch;

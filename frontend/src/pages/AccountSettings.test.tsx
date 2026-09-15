@@ -6,11 +6,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as aiPreferencesApi from '../api/aiPreferences';
 import * as aiRetryPreferenceApi from '../api/aiRetryPreference';
 import * as credentialsApi from '../api/credentials';
+import * as profileApi from '../api/profile';
 import AccountSettings from './AccountSettings';
 
 vi.mock('../api/credentials');
 vi.mock('../api/aiPreferences');
 vi.mock('../api/aiRetryPreference');
+vi.mock('../api/profile');
 
 const mockedFetchProviders = vi.mocked(credentialsApi.fetchProviderCredentials);
 const mockedSaveProvider = vi.mocked(credentialsApi.saveProviderCredential);
@@ -25,6 +27,7 @@ const mockedDeletePersona = vi.mocked(aiPreferencesApi.deleteAIPersona);
 
 const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
 const mockedUpdateRetryPreference = vi.mocked(aiRetryPreferenceApi.updateAIRetryPreference);
+const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -38,9 +41,44 @@ beforeEach(() => {
       { vendor: 'deepseek', label: 'DeepSeek', implemented: true, configured: false },
     ],
   });
+  mockedFetchProfile.mockResolvedValue({
+    handle: null,
+    display_name: '',
+    bio: '',
+    website_url: '',
+    social_links: {},
+    profile_image_url: '',
+    theme_config: {},
+    is_public: true,
+    revision: 1,
+  });
 });
 
 describe('AccountSettings', () => {
+  it('groups settings and distinguishes account-management actions', async () => {
+    const { container } = render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Public profile' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Account management' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'AI provider credentials' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Saved Mistral models' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Personas' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Automatic retry' })).toBeInTheDocument();
+
+    const actions = screen.getByRole('list', { name: 'Account management actions' });
+    expect(within(actions).getAllByRole('listitem')).toHaveLength(6);
+    expect(
+      within(actions)
+        .getByRole('link', { name: /delete your account/i })
+        .closest('li'),
+    ).toHaveClass('account-settings-action-danger');
+    expect(container.querySelectorAll('h1')).toHaveLength(0);
+  });
+
   it('gives every element a unique id and labels every credential input accessibly', async () => {
     const { container } = render(
       <MemoryRouter>

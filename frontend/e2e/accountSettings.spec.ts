@@ -1,0 +1,104 @@
+import { expect, test } from '@playwright/test';
+
+import { loginViaUI } from './support/auth.js';
+import { requireE2EFixtures } from './support/prerequisites.js';
+
+const VIEWPORTS = [
+  { width: 1280, height: 900 },
+  { width: 375, height: 812 },
+];
+
+async function assertGroupedSettings(page: Parameters<typeof loginViaUI>[0]) {
+  await expect(page.getByRole('heading', { name: 'Account settings' })).toBeVisible();
+  for (const heading of [
+    'Plan and usage',
+    'Public profile',
+    'Account management',
+    'AI provider credentials',
+    'Saved Mistral models',
+    'Personas',
+    'Automatic retry',
+  ]) {
+    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+  }
+  const actions = page.getByRole('list', { name: 'Account management actions' });
+  await expect(actions.getByRole('listitem')).toHaveCount(6);
+  await expect(actions.getByRole('link', { name: /delete your account/i })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+}
+
+test.describe('Account settings grouping (#548)', () => {
+  const fixtures = requireE2EFixtures();
+
+  for (const viewport of VIEWPORTS) {
+    test(`empty settings fixture stays grouped at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await page.goto('/account/settings');
+      await assertGroupedSettings(page);
+      await expect(page.getByText('No saved models yet.')).toBeVisible();
+      await expect(page.getByText('No Personas yet.')).toBeVisible();
+    });
+  }
+
+  for (const viewport of VIEWPORTS) {
+    test(`populated settings fixture stays grouped at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await page.route('**/api/account/provider-credentials/', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            providers: [
+              { vendor: 'mistral', label: 'Mistral', implemented: true, configured: true },
+              { vendor: 'gemini', label: 'Google Gemini', implemented: true, configured: false },
+              { vendor: 'deepseek', label: 'DeepSeek', implemented: true, configured: false },
+            ],
+          }),
+        }),
+      );
+      await page.route('**/api/account/mistral-model-preferences/', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 1,
+              slug: 'mistral-small-latest',
+              label: 'Small',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        }),
+      );
+      await page.route('**/api/account/ai-personas/', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 1,
+              name: 'Playful',
+              prompt_text: 'Prefer bright colors.',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        }),
+      );
+      await page.goto('/account/settings');
+      await assertGroupedSettings(page);
+      await expect(page.getByText('Small (mistral-small-latest)')).toBeVisible();
+      await expect(page.getByText('Playful')).toBeVisible();
+      await expect(page.getByText('Mistral key: configured')).toBeVisible();
+    });
+  }
+});

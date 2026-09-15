@@ -125,3 +125,50 @@ def test_checksum_mismatch_is_rejected_before_persistence(owner_client, project)
     assert response.status_code == 409
     assert response.json() == {"error": "payload_checksum_mismatch"}
     assert not SyncMutationReceipt.objects.exists()
+
+
+@pytest.mark.django_db
+def test_conflict_resolution_envelope_is_acknowledged_idempotently(owner_client, project):
+    resolution = {
+        "type": "conflict-resolution",
+        "base_version": "scene-version-7",
+        "choice": "compose",
+        "resolved_payload": {"objects": [{"id": "shape-1", "x": 25}]},
+        "audit": {
+            "conflict_paths": ["objects[shape-1].x"],
+            "local_operation_ids": ["local-1"],
+            "remote_operation_ids": ["remote-1"],
+        },
+    }
+    operation = _operation(resolution)
+    operation["project_id"] = str(project.public_id)
+
+    first = owner_client.post(_url(project), operation, format="json")
+    replay = owner_client.post(_url(project), operation, format="json")
+
+    assert first.status_code == 201
+    assert replay.status_code == 200
+    assert replay.json()["replayed"] is True
+
+
+@pytest.mark.django_db
+def test_conflict_resolution_requires_sorted_audit_paths(owner_client, project):
+    payload = {
+        "type": "conflict-resolution",
+        "base_version": "scene-version-7",
+        "choice": "keep-local",
+        "resolved_payload": {"value": 2},
+        "audit": {
+            "conflict_paths": ["z", "a"],
+            "local_operation_ids": ["local-1"],
+            "remote_operation_ids": ["remote-1"],
+        },
+    }
+    operation = _operation(payload)
+    operation["project_id"] = str(project.public_id)
+
+    response = owner_client.post(_url(project), operation, format="json")
+
+    assert response.status_code == 400
+    assert "must be sorted" in response.json()["detail"]
+    assert not SyncMutationReceipt.objects.exists()

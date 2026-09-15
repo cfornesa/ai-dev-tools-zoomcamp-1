@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from scenes.models import Project, SyncMutationReceipt
 
 ALLOWED_KINDS = {choice.value for choice in SyncMutationReceipt.Kind}
+CONFLICT_RESOLUTION_CHOICES = {"keep-local", "keep-remote", "compose"}
 
 
 def _project_for_owner(request, public_id):
@@ -34,6 +35,31 @@ def _parse_uuid(value, field_name):
         return uuid.UUID(str(value))
     except (ValueError, TypeError, AttributeError) as exc:
         raise ValueError(f"{field_name} must be a UUID.") from exc
+
+
+def _validate_conflict_resolution_payload(kind, payload):
+    """Validate the migration-free #544 resolution envelope stored in #543 receipts."""
+    if not isinstance(payload, dict) or payload.get("type") != "conflict-resolution":
+        return
+    if kind != SyncMutationReceipt.Kind.SCENE:
+        raise ValueError("conflict-resolution payloads must use the scene kind.")
+    if not isinstance(payload.get("base_version"), str) or not payload["base_version"].strip():
+        raise ValueError("conflict-resolution base_version must be a non-empty string.")
+    if payload.get("choice") not in CONFLICT_RESOLUTION_CHOICES:
+        raise ValueError("conflict-resolution choice is invalid.")
+    if "resolved_payload" not in payload:
+        raise ValueError("conflict-resolution resolved_payload is required.")
+    audit = payload.get("audit")
+    if not isinstance(audit, dict):
+        raise ValueError("conflict-resolution audit is required.")
+    for field in ("conflict_paths", "local_operation_ids", "remote_operation_ids"):
+        values = audit.get(field)
+        if not isinstance(values, list) or not all(
+            isinstance(value, str) and value for value in values
+        ):
+            raise ValueError(f"conflict-resolution audit.{field} must be a list of strings.")
+    if audit["conflict_paths"] != sorted(audit["conflict_paths"]):
+        raise ValueError("conflict-resolution audit.conflict_paths must be sorted.")
 
 
 def _receipt_body(receipt: SyncMutationReceipt, *, replayed: bool) -> dict:
@@ -84,6 +110,7 @@ class SyncMutationReceiptView(APIView):
             if "payload" not in data:
                 raise ValueError("payload is required.")
             payload = data["payload"]
+            _validate_conflict_resolution_payload(kind, payload)
             payload_checksum = str(data.get("payload_checksum", ""))
             if len(payload_checksum) != 64 or any(
                 char not in "0123456789abcdef" for char in payload_checksum

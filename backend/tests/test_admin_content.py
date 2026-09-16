@@ -60,6 +60,65 @@ def test_admin_lists_resource_families_without_private_content():
     assert str(project.public_id) in {row["resource_id"] for row in rows}
 
 
+def test_admin_content_search_matches_title_and_description():
+    owner = _user("owner")
+    admin = _user("admin")
+    ApplicationAdmin.objects.create(user=admin)
+    Project.objects.create(owner=owner, title="Sunset Study", description="An evening piece.")
+    Project.objects.create(owner=owner, title="Morning Light", description="A sunrise piece.")
+
+    response = _client(admin).get(reverse("admin-content-list"), {"q": "sunset"})
+
+    assert response.status_code == 200
+    titles = {row["title"] for row in response.json()}
+    assert "Sunset Study" in titles
+    assert "Morning Light" not in titles
+
+
+def test_admin_content_account_filter_matches_username_and_email_without_leaking_secrets():
+    owner_a = get_user_model().objects.create_user(
+        username="artist-a", email="artist-a@example.com", password="test-password"
+    )
+    owner_b = get_user_model().objects.create_user(username="artist-b", password="test-password")
+    admin = _user("admin")
+    ApplicationAdmin.objects.create(user=admin)
+    Project.objects.create(owner=owner_a, title="Owned by A", description="")
+    Project.objects.create(owner=owner_b, title="Owned by B", description="")
+
+    by_username = _client(admin).get(reverse("admin-content-list"), {"account": "artist-a"})
+    assert by_username.status_code == 200
+    assert {row["title"] for row in by_username.json()} == {"Owned by A"}
+
+    by_email = _client(admin).get(
+        reverse("admin-content-list"), {"account": "artist-a@example.com"}
+    )
+    assert by_email.status_code == 200
+    assert {row["title"] for row in by_email.json()} == {"Owned by A"}
+    assert all("email" not in row for row in by_email.json())
+    assert all("password" not in row for row in by_email.json())
+
+
+def test_admin_content_search_and_account_filter_combine_and_reset_to_all():
+    owner = _user("owner")
+    admin = _user("admin")
+    ApplicationAdmin.objects.create(user=admin)
+    Project.objects.create(owner=owner, title="Sunset Study", description="")
+
+    combined = _client(admin).get(
+        reverse("admin-content-list"), {"q": "sunset", "account": "owner"}
+    )
+    assert combined.status_code == 200
+    assert {row["title"] for row in combined.json()} == {"Sunset Study"}
+
+    no_match = _client(admin).get(reverse("admin-content-list"), {"q": "nonexistent"})
+    assert no_match.status_code == 200
+    assert no_match.json() == []
+
+    reset = _client(admin).get(reverse("admin-content-list"))
+    assert reset.status_code == 200
+    assert "Sunset Study" in {row["title"] for row in reset.json()}
+
+
 def test_admin_actions_publish_unpublish_delete_restore_and_audit():
     owner = _user("owner")
     admin = _user("admin")

@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import {
   fetchPublicGallery,
+  type PublicGalleryEngine,
+  type PublicGalleryEngineOption,
   type PublicGalleryItem,
   type PublicGalleryType,
 } from '../api/projects';
@@ -28,6 +30,10 @@ const EMPTY_MESSAGES: Record<PublicGalleryType, string> = {
 
 function isValidType(value: string | null): value is PublicGalleryType {
   return value === 'all' || value === 'authored' || value === 'generated';
+}
+
+function isValidEngine(value: string | null): value is PublicGalleryEngine {
+  return value === 'canvas2d' || value === 'svg' || value === 'threejs' || value === 'aframe';
 }
 
 function typeBadge(item: PublicGalleryItem): string {
@@ -87,7 +93,9 @@ function GalleryCard({ item }: { item: PublicGalleryItem }) {
 function PublicGallery() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawType = searchParams.get('type');
+  const rawEngine = searchParams.get('engine');
   const type: PublicGalleryType = isValidType(rawType) ? rawType : 'all';
+  const engine: PublicGalleryEngine | undefined = isValidEngine(rawEngine) ? rawEngine : undefined;
 
   const [initialLoadState, setInitialLoadState] = useState<InitialLoadState>('loading');
   const [items, setItems] = useState<PublicGalleryItem[]>([]);
@@ -97,6 +105,7 @@ function PublicGallery() {
     pending: false,
     error: null,
   });
+  const [engineCatalog, setEngineCatalog] = useState<PublicGalleryEngineOption[]>([]);
 
   // Issue #491: recover from an invalid `type` query value by replacing it
   // with the documented default (`all`) without a blank or broken surface.
@@ -110,12 +119,14 @@ function PublicGallery() {
     let cancelled = false;
     setInitialLoadState('loading');
     setLoadMoreState({ pending: false, error: null });
-    fetchPublicGallery(type)
+    const request = engine ? fetchPublicGallery(type, { engine }) : fetchPublicGallery(type);
+    request
       .then((page) => {
         if (cancelled) return;
         setItems(page.results);
         setNextCursor(page.next_cursor);
         setHasMore(page.has_more);
+        setEngineCatalog(page.engine_catalog ?? []);
         setInitialLoadState('ready');
       })
       .catch(() => {
@@ -125,7 +136,7 @@ function PublicGallery() {
     return () => {
       cancelled = true;
     };
-  }, [type]);
+  }, [type, engine]);
 
   useEffect(() => loadFirstPage(), [loadFirstPage]);
 
@@ -133,7 +144,10 @@ function PublicGallery() {
     if (!nextCursor) return;
     setLoadMoreState({ pending: true, error: null });
     try {
-      const page = await fetchPublicGallery(type, { cursor: nextCursor });
+      const page = await fetchPublicGallery(type, {
+        cursor: nextCursor,
+        ...(engine ? { engine } : {}),
+      });
       // De-duplicate defensively against a card already on screen (the
       // keyset cursor is designed not to produce one — see
       // scenes/gallery.py — but the UI never trusts that alone).
@@ -156,8 +170,16 @@ function PublicGallery() {
   function handleTypeChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const value = event.target.value;
     if (isValidType(value)) {
-      setSearchParams({ type: value }, { replace: true });
+      setSearchParams({ type: value, ...(engine ? { engine } : {}) }, { replace: true });
     }
+  }
+
+  function handleEngineChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const value = event.target.value;
+    setSearchParams(
+      { type, ...(isValidEngine(value) ? { engine: value } : {}) },
+      { replace: true },
+    );
   }
 
   if (initialLoadState === 'loading') {
@@ -196,6 +218,15 @@ function PublicGallery() {
           {GALLERY_TYPES.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
+            </option>
+          ))}
+        </select>
+        <label htmlFor="gallery-engine">Gallery engine</label>
+        <select id="gallery-engine" value={engine ?? ''} onChange={handleEngineChange}>
+          <option value="">All implemented engines</option>
+          {engineCatalog.map((option) => (
+            <option key={option.value} value={option.value} disabled={!option.available}>
+              {option.label} ({option.count})
             </option>
           ))}
         </select>

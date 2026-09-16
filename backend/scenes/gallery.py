@@ -170,6 +170,8 @@ VALID_GALLERY_TYPES = ("all", "authored", "generated")
 """The values `GET /api/public/gallery/` (#491) accepts for its `type`
 filter; an omitted `type` defaults to `all`, and anything else is a 400."""
 
+VALID_GALLERY_ENGINES = tuple(value for value, _ in ArtPiece.Engine.choices)
+
 # Stable kind rank in the documented global order: newest `published_at`
 # first, then "2d" < "3d" < "generated", then id descending. The rank is a
 # total-order tiebreaker only ever applied between rows with the exact same

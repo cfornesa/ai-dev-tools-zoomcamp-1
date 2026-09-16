@@ -24,6 +24,7 @@ from scenes.art_piece_persistence import eligible_art_pieces
 from scenes.gallery import (
     DEFAULT_PAGE_SIZE,
     GALLERY_KIND_RANK,
+    VALID_GALLERY_ENGINES,
     VALID_GALLERY_TYPES,
     InvalidCursor,
     clamp_page_size,
@@ -34,6 +35,7 @@ from scenes.gallery import (
     filter_after_gallery_cursor,
 )
 from scenes.models import (
+    ArtPiece,
     EditSessionDraft,
     ForkProvenance,
     Project,
@@ -462,6 +464,12 @@ class PublicGalleryListView(APIView):
                 {"errors": {"type": ["Must be one of: all, authored, generated."]}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        engine = request.query_params.get("engine")
+        if engine is not None and engine not in VALID_GALLERY_ENGINES:
+            return Response(
+                {"errors": {"engine": ["Must be a supported public gallery engine."]}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         page_size_raw = request.query_params.get("page_size")
         if page_size_raw is not None:
@@ -482,7 +490,9 @@ class PublicGalleryListView(APIView):
             elif kind == "3d":
                 querysets[kind] = eligible_projects3d()
             else:
-                querysets[kind] = eligible_art_pieces()
+                querysets[kind] = eligible_art_pieces().filter(
+                    **({"engine": engine} if engine else {})
+                )
 
         cursor = request.query_params.get("cursor")
         if cursor:
@@ -540,6 +550,20 @@ class PublicGalleryListView(APIView):
                 ).data,
                 "next_cursor": next_cursor,
                 "has_more": has_more,
+                "engine_catalog": [
+                    {
+                        "value": value,
+                        "label": label,
+                        "count": eligible_art_pieces().filter(engine=value).count()
+                        if gallery_type in ("all", "generated")
+                        else 0,
+                        "available": bool(
+                            gallery_type in ("all", "generated")
+                            and eligible_art_pieces().filter(engine=value).exists()
+                        ),
+                    }
+                    for value, label in ArtPiece.Engine.choices
+                ],
             }
         )
 

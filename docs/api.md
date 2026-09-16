@@ -133,6 +133,7 @@ visibility/status internals) ever appear in any item.
 | Parameter   | Rule                                                                                                                                        |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `type`      | `all` (default when omitted) \| `authored` (2D + 3D only) \| `generated` (generated pieces only). Any other value → **HTTP 400**.        |
+| `engine`    | Optional server-supported generated engine (`canvas2d`, `svg`, `threejs`, or `aframe`). It composes with `type`; authored-only results are empty. Any other value → **HTTP 400**. |
 | `cursor`    | Opaque keyset token from a previous response's `next_cursor`. Malformed, or bound to a different `type` (see below) → **HTTP 400**.         |
 | `page_size` | Positive integer, default `24` (`DEFAULT_PAGE_SIZE`), clamped to `60` (`MAX_PAGE_SIZE`); a non-integer value → **HTTP 400**. Same shape as the legacy `/api/public/projects/` endpoint. |
 
@@ -141,6 +142,13 @@ Error bodies are finite JSON. An invalid filter:
 ```json
 { "errors": { "type": ["Must be one of: all, authored, generated."] } }
 ```
+
+The response also includes `engine_catalog`, an array of server-derived
+`{value, label, count, available}` entries for the currently implemented
+generated engines. `available` is false when the selected type has no
+published results for that engine; dormant or unsupported engine values are
+never listed. The frontend uses this catalog for its engine control and keeps
+the selected engine in the shareable URL.
 
 ## Signup-time cloud-sync consent (#524)
 

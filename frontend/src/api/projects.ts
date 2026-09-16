@@ -284,11 +284,20 @@ export type PublicGalleryGeneratedItem = {
 export type PublicGalleryItem =
   PublicGallery2DItem | PublicGallery3DItem | PublicGalleryGeneratedItem;
 
+export type PublicGalleryEngine = 'canvas2d' | 'svg' | 'threejs' | 'aframe';
+export type PublicGalleryEngineOption = {
+  value: PublicGalleryEngine;
+  label: string;
+  count: number;
+  available: boolean;
+};
+
 /** Issue #491: one page of the unified public gallery. */
 export type PublicGalleryUnifiedPage = {
   results: PublicGalleryItem[];
   next_cursor: string | null;
   has_more: boolean;
+  engine_catalog?: PublicGalleryEngineOption[];
 };
 
 /** Issue #491: the supported values of the `type` filter on the unified
@@ -300,12 +309,13 @@ export type PublicGalleryType = 'all' | 'authored' | 'generated';
  * `'all'`; pass the previous page's `next_cursor` to continue a walk. */
 export function fetchPublicGallery(
   type: PublicGalleryType = 'all',
-  options: { cursor?: string; pageSize?: number } = {},
+  options: { cursor?: string; pageSize?: number; engine?: PublicGalleryEngine } = {},
 ): Promise<PublicGalleryUnifiedPage> {
   const params = new URLSearchParams();
   params.set('type', type);
   if (options.cursor) params.set('cursor', options.cursor);
   if (options.pageSize) params.set('page_size', String(options.pageSize));
+  if (options.engine) params.set('engine', options.engine);
   return apiFetch<PublicGalleryUnifiedPage>(`/api/public/gallery/?${params.toString()}`);
 }
 

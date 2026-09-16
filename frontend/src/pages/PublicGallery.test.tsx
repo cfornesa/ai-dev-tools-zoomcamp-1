@@ -116,7 +116,9 @@ describe('PublicGallery filter control', () => {
 
     const select = screen.getByRole('combobox', { name: /gallery type/i });
     expect(select).toBeInTheDocument();
-    const options = screen.getAllByRole('option');
+    const options = within(screen.getByRole('combobox', { name: /gallery type/i })).getAllByRole(
+      'option',
+    );
     expect(options.map((o) => (o as HTMLOptionElement).value)).toEqual([
       'all',
       'authored',
@@ -166,6 +168,28 @@ describe('PublicGallery filter control', () => {
     await user.selectOptions(select, 'generated');
 
     expect(mockedFetchPublicGallery).toHaveBeenLastCalledWith('generated');
+  });
+
+  it('derives engine options from the server catalog and keeps the engine in the request', async () => {
+    mockedFetchPublicGallery.mockResolvedValue({
+      results: [],
+      next_cursor: null,
+      has_more: false,
+      engine_catalog: [
+        { value: 'canvas2d', label: 'Canvas2D', count: 2, available: true },
+        { value: 'svg', label: 'SVG', count: 0, available: false },
+      ],
+    });
+    const user = userEvent.setup();
+
+    renderPublicGallery();
+    await screen.findByText(/no public pieces yet/i);
+    const select = screen.getByRole('combobox', { name: /gallery engine/i });
+    expect(within(select).getByRole('option', { name: /canvas2d \(2\)/i })).toBeEnabled();
+    expect(within(select).getByRole('option', { name: /svg \(0\)/i })).toBeDisabled();
+    await user.selectOptions(select, 'canvas2d');
+
+    expect(mockedFetchPublicGallery).toHaveBeenLastCalledWith('all', { engine: 'canvas2d' });
   });
 
   it('keeps control and URL in sync when the location changes (reload, Back, Forward)', async () => {
@@ -317,6 +341,8 @@ describe('PublicGallery pagination', () => {
     // the gallery, before the card grid and the Load more button.
     await user.tab();
     expect(select).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('combobox', { name: /gallery engine/i })).toHaveFocus();
     await user.tab();
     expect(screen.getByRole('link', { name: /first/i })).toHaveFocus();
     await user.tab();

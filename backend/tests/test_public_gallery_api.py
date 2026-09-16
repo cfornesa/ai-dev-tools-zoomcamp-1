@@ -710,6 +710,38 @@ def test_unified_generated_filter_excludes_authored(anon_client, fixed_unified_f
 
 
 @pytest.mark.django_db
+def test_unified_engine_filter_and_catalog_are_server_derived(anon_client, owner):
+    canvas = _publish_art_piece(_make_art_piece(owner, title="Canvas result"))
+    svg = _make_art_piece(owner, title="SVG result")
+    svg.engine = ArtPiece.Engine.SVG
+    svg.save(update_fields=["engine"])
+    _publish_art_piece(svg)
+
+    response = anon_client.get(UNIFIED_URL, {"type": "generated", "engine": "svg"})
+
+    assert response.status_code == 200
+    assert [item["title"] for item in response.json()["results"]] == ["SVG result"]
+    catalog = {entry["value"]: entry for entry in response.json()["engine_catalog"]}
+    assert catalog["svg"] == {
+        "value": "svg",
+        "label": "SVG",
+        "count": 1,
+        "available": True,
+    }
+    assert catalog["canvas2d"]["count"] == 1
+    assert catalog["canvas2d"]["available"] is True
+    assert canvas.engine == ArtPiece.Engine.CANVAS2D
+
+
+@pytest.mark.django_db
+def test_unified_invalid_engine_is_a_400(anon_client):
+    response = anon_client.get(UNIFIED_URL, {"engine": "future-engine"})
+
+    assert response.status_code == 400
+    assert "engine" in response.json()["errors"]
+
+
+@pytest.mark.django_db
 def test_unified_invalid_type_is_a_400(anon_client, fixed_unified_fixture):
     response = anon_client.get(UNIFIED_URL, {"type": "everything"})
 

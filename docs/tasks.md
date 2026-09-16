@@ -21770,10 +21770,13 @@ these new capabilities. The attached images remain evidence only.
 ### Distillation reconciliation and blocker report
 
 - Existing open #571 remains a `verification-boundary` handoff: the live
-  profile endpoint returns HTTP 500, but production traceback/database
-  context is unavailable. It is independent of the new presentation work;
-  exact next action remains production traceback plus table/migration
-  verification for `PublicProfile`/`ProfileStyle`.
+  profile endpoint returns HTTP 500. A read-only Replit Production query now
+  confirms `scenes_publicprofile` exists but `scenes_profilestyle` and
+  `scenes_publicprofilehandleredirect` do not, and the profile table lacks
+  `style_id`, which the current code reads. The exact next action is a
+  migration-bearing Replit Publish that synchronizes migrations `0066` and
+  `0067`, followed by direct production table/column verification and then
+  QA; no production schema write was performed in this session.
 - #575 is implemented and handed off for QA in commit `cb03d12`. #576 is
   implemented and handed off for QA in commit `6256e67`; its focused backend
   suite (23 tests), frontend typecheck/lint/format/build, and migration check
@@ -21817,6 +21820,12 @@ criterion-ready issues rather than leaving that prerequisite implicit.
   deployment. No new dependency or durable memory topic is required.
 
 ### Engineering reconciliation
+
+- #571’s blocker is now classified with direct evidence: the published
+  endpoint still returns 500, while Replit Production reports the profile
+  table without `style_id` and reports the `ProfileStyle` and handle-redirect
+  tables absent. This is deployment/schema drift; the fix boundary is the
+  owner-controlled migration-bearing Publish, not speculative source changes.
 
 - #586 is implemented and handed off for QA in commit `ec7622b`; its 23
   focused admin-settings tests, migration check, Ruff checks, and frontend

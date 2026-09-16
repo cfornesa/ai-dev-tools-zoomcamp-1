@@ -12,6 +12,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='mistralmodelpreference',
             name='vendor',
-            field=models.CharField(db_default='mistral', default='mistral', max_length=32),
+            field=models.CharField(
+                blank=True,
+                db_default='mistral',
+                default='mistral',
+                max_length=32,
+                null=True,
+            ),
         ),
     ]

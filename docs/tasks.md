@@ -21846,9 +21846,10 @@ tracks the safe migration boundary.
 
 - #587's first database-default attempt was rejected because Replit still
   generated a truncating `ALTER TABLE` for the absent non-null column. The
-  follow-up bridge keeps the original `0068` add-column operation nullable
-  during synchronization, retains the application/database defaults, and
-  serializes legacy NULL values as `"mistral"`.
+  follow-up bridge keeps the original `0068` add-column operation and the
+  `0075` alteration nullable during synchronization, retains the
+  application/database defaults, and serializes legacy NULL values as
+  `"mistral"`.
 - The focused saved-model preference suite passes (10 tests), migration
   consistency is clean, and Ruff check/format checks pass. Production
   publish validation and QA remain deferred until the generated Replit SQL is

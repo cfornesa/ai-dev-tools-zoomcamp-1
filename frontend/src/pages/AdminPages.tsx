@@ -41,6 +41,7 @@ function AdminPages() {
   const [pages, setPages] = useState<CmsPage[] | null>(null);
   const [draft, setDraft] = useState<CmsPageFields>(EMPTY_PAGE);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -59,6 +60,7 @@ function AdminPages() {
 
   function beginCreate() {
     setEditingId(null);
+    setEditorOpen(true);
     setDraft(EMPTY_PAGE);
     setError(null);
     setMessage(null);
@@ -66,6 +68,7 @@ function AdminPages() {
 
   function beginEdit(page: CmsPage) {
     setEditingId(page.id);
+    setEditorOpen(true);
     setDraft({
       title: page.title,
       slug: page.slug,
@@ -77,6 +80,14 @@ function AdminPages() {
       system_key: page.system_key,
       seo_config: page.seo_config,
     });
+    setError(null);
+    setMessage(null);
+  }
+
+  function cancelEdit() {
+    setEditorOpen(false);
+    setEditingId(null);
+    setDraft(EMPTY_PAGE);
     setError(null);
     setMessage(null);
   }
@@ -142,6 +153,7 @@ function AdminPages() {
         <a href="/admin/pages" aria-current="page">
           Pages
         </a>
+        <a href="/admin/content">Content</a>
         <a href="/admin/settings">Settings and plans</a>
         <a href="/">Return to public site</a>
       </nav>
@@ -169,6 +181,10 @@ function AdminPages() {
                       <code>/{page.slug}</code> · {page.status} · updated{' '}
                       {new Date(page.updated_at).toLocaleString()}
                     </p>
+                    <p>
+                      {page.description.slice(0, 50)}
+                      {page.description.length > 50 ? '…' : ''}
+                    </p>
                     <p>Author: {page.author ?? 'System'}</p>
                   </div>
                   <div className="admin-page-actions">
@@ -195,122 +211,136 @@ function AdminPages() {
           )}
         </section>
       )}
-      <section className="admin-console-section" aria-labelledby="admin-page-editor-heading">
-        <form className="admin-page-form" aria-label="CMS page editor" onSubmit={save}>
-          <h3 id="admin-page-editor-heading">{editingId === null ? 'Create page' : 'Edit page'}</h3>
-          <label htmlFor="cms-page-title">Title</label>
-          <input
-            id="cms-page-title"
-            value={draft.title}
-            onChange={(event) => setDraft({ ...draft, title: event.target.value })}
-            required
-            maxLength={200}
-          />
-          <label htmlFor="cms-page-slug">Slug</label>
-          <input
-            id="cms-page-slug"
-            value={draft.slug}
-            onChange={(event) => setDraft({ ...draft, slug: event.target.value })}
-            required
-            maxLength={120}
-          />
-          <label htmlFor="cms-page-description">Description</label>
-          <textarea
-            id="cms-page-description"
-            value={draft.description}
-            onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-            maxLength={5000}
-            rows={5}
-          />
-          <fieldset>
-            <legend>SEO and AEO metadata</legend>
-            <label htmlFor="cms-seo-title">Search title</label>
+      {editorOpen && (
+        <section className="admin-console-section" aria-labelledby="admin-page-editor-heading">
+          <form className="admin-page-form" aria-label="CMS page editor" onSubmit={save}>
+            <h3 id="admin-page-editor-heading">
+              {editingId === null ? 'Create page' : 'Edit page'}
+            </h3>
+            <label htmlFor="cms-page-title">Title</label>
             <input
-              id="cms-seo-title"
+              id="cms-page-title"
+              value={draft.title}
+              onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+              required
               maxLength={200}
-              value={draft.seo_config.title}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  seo_config: { ...draft.seo_config, title: event.target.value },
-                })
-              }
             />
-            <label htmlFor="cms-seo-description">Search description</label>
+            <label htmlFor="cms-page-slug">Slug</label>
+            <input
+              id="cms-page-slug"
+              value={draft.slug}
+              onChange={(event) => setDraft({ ...draft, slug: event.target.value })}
+              required
+              maxLength={120}
+            />
+            <label htmlFor="cms-page-description">Description</label>
             <textarea
-              id="cms-seo-description"
-              maxLength={320}
-              rows={3}
-              value={draft.seo_config.description}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  seo_config: { ...draft.seo_config, description: event.target.value },
-                })
-              }
+              id="cms-page-description"
+              value={draft.description}
+              onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+              maxLength={5000}
+              rows={5}
             />
-            <label htmlFor="cms-seo-indexing">Indexing</label>
+            <fieldset>
+              <legend>SEO and AEO metadata</legend>
+              <label htmlFor="cms-seo-title">Search title</label>
+              <input
+                id="cms-seo-title"
+                maxLength={200}
+                value={draft.seo_config.title}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    seo_config: { ...draft.seo_config, title: event.target.value },
+                  })
+                }
+              />
+              <label htmlFor="cms-seo-description">Search description</label>
+              <textarea
+                id="cms-seo-description"
+                maxLength={320}
+                rows={3}
+                value={draft.seo_config.description}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    seo_config: { ...draft.seo_config, description: event.target.value },
+                  })
+                }
+              />
+              <label htmlFor="cms-seo-indexing">Indexing</label>
+              <select
+                id="cms-seo-indexing"
+                value={draft.seo_config.indexing}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    seo_config: {
+                      ...draft.seo_config,
+                      indexing: event.target.value as SeoConfig['indexing'],
+                    },
+                  })
+                }
+              >
+                <option value="index">Index</option>
+                <option value="noindex">No index</option>
+              </select>
+              <label htmlFor="cms-seo-answer">Answer summary</label>
+              <textarea
+                id="cms-seo-answer"
+                maxLength={1000}
+                rows={3}
+                value={draft.seo_config.answer_summary}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    seo_config: { ...draft.seo_config, answer_summary: event.target.value },
+                  })
+                }
+              />
+            </fieldset>
+            <label htmlFor="cms-page-status">Status</label>
             <select
-              id="cms-seo-indexing"
-              value={draft.seo_config.indexing}
+              id="cms-page-status"
+              value={draft.status}
               onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  seo_config: {
-                    ...draft.seo_config,
-                    indexing: event.target.value as SeoConfig['indexing'],
-                  },
-                })
+                setDraft({ ...draft, status: event.target.value as CmsPageFields['status'] })
               }
             >
-              <option value="index">Index</option>
-              <option value="noindex">No index</option>
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
             </select>
-            <label htmlFor="cms-seo-answer">Answer summary</label>
-            <textarea
-              id="cms-seo-answer"
-              maxLength={1000}
-              rows={3}
-              value={draft.seo_config.answer_summary}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  seo_config: { ...draft.seo_config, answer_summary: event.target.value },
-                })
-              }
-            />
-          </fieldset>
-          <label htmlFor="cms-page-status">Status</label>
-          <select
-            id="cms-page-status"
-            value={draft.status}
-            onChange={(event) =>
-              setDraft({ ...draft, status: event.target.value as CmsPageFields['status'] })
-            }
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
-          <label htmlFor="cms-page-nav-label">Navigation label</label>
-          <input
-            id="cms-page-nav-label"
-            value={draft.nav_label}
-            onChange={(event) => setDraft({ ...draft, nav_label: event.target.value })}
-            maxLength={100}
-          />
-          <label>
+            <label htmlFor="cms-page-nav-label">Navigation label</label>
             <input
-              type="checkbox"
-              checked={draft.show_in_nav}
-              onChange={(event) => setDraft({ ...draft, show_in_nav: event.target.checked })}
+              id="cms-page-nav-label"
+              value={draft.nav_label}
+              onChange={(event) => setDraft({ ...draft, nav_label: event.target.value })}
+              maxLength={100}
             />
-            Show in navigation
-          </label>
-          <button className="admin-action-primary" type="submit" disabled={busy}>
-            {busy ? 'Saving…' : 'Save page'}
-          </button>
-        </form>
-      </section>
+            <label>
+              <input
+                type="checkbox"
+                checked={draft.show_in_nav}
+                onChange={(event) => setDraft({ ...draft, show_in_nav: event.target.checked })}
+              />
+              Show in navigation
+            </label>
+            <div className="admin-settings-actions">
+              <button className="admin-action-primary" type="submit" disabled={busy}>
+                {busy ? 'Saving…' : 'Save page'}
+              </button>
+              <button
+                className="admin-action-secondary"
+                type="button"
+                onClick={cancelEdit}
+                disabled={busy}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
     </section>
   );
 }

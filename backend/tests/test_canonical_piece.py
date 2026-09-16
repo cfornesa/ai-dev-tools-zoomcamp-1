@@ -53,3 +53,29 @@ def test_canonical_piece_does_not_expose_private_or_unknown_piece(client):
         )
     )
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_canonical_piece_404s_for_unknown_handle(client):
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "nobody-with-this-handle", "piece_slug": "anything"},
+        )
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_canonical_piece_404s_for_a_published_piece_on_a_private_profile(client):
+    user = get_user_model().objects.create_user(username="hidden-artist")
+    PublicProfile.objects.create(user=user, handle="hidden-artist", is_public=False)
+    piece = _published_piece(user, "Hidden Study")
+
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "hidden-artist", "piece_slug": piece.public_slug},
+        )
+    )
+    assert response.status_code == 404

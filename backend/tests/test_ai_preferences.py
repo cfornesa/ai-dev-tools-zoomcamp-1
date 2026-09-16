@@ -5,6 +5,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
+from scenes.ai_preferences_api import MistralModelPreferenceSerializer
 from scenes.models import AIPersona, MistralModelPreference
 
 MODELS_URL = "/api/account/mistral-model-preferences/"
@@ -18,6 +19,16 @@ def test_vendor_has_database_default_for_non_destructive_publish():
 
     assert field.default == "mistral"
     assert field.db_default == "mistral"
+    assert field.null is True
+
+
+@pytest.mark.django_db
+def test_legacy_missing_vendor_serializes_as_mistral(owner):
+    preference = MistralModelPreference.objects.create(
+        owner=owner, vendor=None, slug="legacy-model"
+    )
+
+    assert MistralModelPreferenceSerializer(preference).data["vendor"] == "mistral"
 
 
 @pytest.fixture

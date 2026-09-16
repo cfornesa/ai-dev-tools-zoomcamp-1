@@ -21844,11 +21844,12 @@ by the vendor-aware saved-model contract. The publish was canceled before any
 production mutation. Follow-up issue [#587](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/587)
 tracks the safe migration boundary.
 
-- #587 is implemented in commit `db8c179` by retaining the application
-  default and adding a PostgreSQL database default of `"mistral"`; this lets
-  the production schema add the non-null column without truncating existing
-  rows.
-- The focused saved-model preference suite passes (8 tests), migration
+- #587's first database-default attempt was rejected because Replit still
+  generated a truncating `ALTER TABLE` for the absent non-null column. The
+  follow-up bridge keeps the field nullable during synchronization, retains
+  the application/database defaults, and serializes legacy NULL values as
+  `"mistral"`.
+- The focused saved-model preference suite passes (10 tests), migration
   consistency is clean, and Ruff check/format checks pass. Production
   publish validation and QA remain deferred until the generated Replit SQL is
   confirmed non-destructive.

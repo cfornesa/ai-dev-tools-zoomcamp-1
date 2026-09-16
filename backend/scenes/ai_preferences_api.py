@@ -28,6 +28,15 @@ class MistralModelPreferenceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("The model slug must be a non-empty, trimmed value.")
         return value
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Production may contain legacy rows created before vendor existed.
+        # Keep their public compatibility shape while the nullable bridge is
+        # deployed and backfilled safely.
+        if data["vendor"] is None:
+            data["vendor"] = "mistral"
+        return data
+
     def validate_vendor(self, value):
         try:
             return get_provider(value).vendor

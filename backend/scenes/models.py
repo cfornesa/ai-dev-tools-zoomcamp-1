@@ -704,7 +704,9 @@ class MistralModelPreference(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mistral_model_preferences"
     )
-    vendor = models.CharField(max_length=32, db_default="mistral", default="mistral")
+    vendor = models.CharField(  # noqa: DJ001 - nullable bridge preserves legacy production rows
+        max_length=32, db_default="mistral", default="mistral", null=True, blank=True
+    )
     slug = models.CharField(max_length=200)
     label = models.CharField(max_length=200, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)

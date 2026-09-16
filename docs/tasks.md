@@ -21815,3 +21815,14 @@ criterion-ready issues rather than leaving that prerequisite implicit.
 - The approved architecture is request-time generation: published admin
   changes are visible on the next request without a manual artifact edit or
   deployment. No new dependency or durable memory topic is required.
+
+### Engineering reconciliation
+
+- #586 is implemented and handed off for QA in commit `ec7622b`; its 23
+  focused admin-settings tests, migration check, Ruff checks, and frontend
+  typecheck/format checks passed. QA and closure remain deferred.
+- #585 is implemented and handed off for QA in commit `7bb7a47`; its 3
+  focused guidance-file tests plus the 23 #586 regression tests passed, and
+  Ruff/migration checks are clean. QA and closure remain deferred.
+- No production publish, browser QA, issue closure, production-readiness, or
+  session-completion was performed in this run.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -20,26 +20,133 @@ import {
 } from '../api/credentials';
 import EntitlementsSummary from './EntitlementsSummary';
 import { fetchProfile, type PublicProfile, updateProfile } from '../api/profile';
+import { useAuth } from '../auth/useAuth';
 
 const MIN_MAX_RETRIES = 1;
 const MAX_MAX_RETRIES = 10;
 
 const MISTRAL_MODELS_DOCS_URL = 'https://docs.mistral.ai/getting-started/models/';
 
-function AccountSettings() {
+const SETTINGS_LAYOUT_KEY = 'augmentrart:account-settings-layout:v1';
+const DEFAULT_SECTION_ORDER = [
+  'plan',
+  'profile',
+  'management',
+  'credentials',
+  'models',
+  'personas',
+  'retry',
+] as const;
+type SettingsSectionId = (typeof DEFAULT_SECTION_ORDER)[number];
+type SettingsLayout = { order: SettingsSectionId[]; expanded: Record<string, boolean> };
+
+function readSettingsLayout(storageKey: string): SettingsLayout {
+  const fallback = { order: [...DEFAULT_SECTION_ORDER], expanded: {} };
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(storageKey) ?? 'null',
+    ) as Partial<SettingsLayout>;
+    const order = Array.isArray(parsed.order)
+      ? parsed.order.filter((id): id is SettingsSectionId => DEFAULT_SECTION_ORDER.includes(id))
+      : [];
+    const uniqueOrder = [...new Set(order)];
+    return {
+      order: [...uniqueOrder, ...DEFAULT_SECTION_ORDER.filter((id) => !uniqueOrder.includes(id))],
+      expanded: parsed.expanded && typeof parsed.expanded === 'object' ? parsed.expanded : {},
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function SettingsSection({
+  id,
+  label,
+  expanded,
+  onToggle,
+  onMove,
+  children,
+}: {
+  id: SettingsSectionId;
+  label: string;
+  expanded: boolean;
+  onToggle: () => void;
+  onMove: (direction: -1 | 1) => void;
+  children: ReactNode;
+}) {
   return (
-    <section className="content-panel account-settings">
-      <div className="account-settings-header">
-        <h2>Account settings</h2>
+    <section className="account-settings-layout-item" data-settings-section={id}>
+      <div className="account-settings-layout-controls" aria-label={`${label} layout controls`}>
+        <button type="button" onClick={() => onMove(-1)} aria-label={`Move ${label} up`}>
+          Move up
+        </button>
+        <button type="button" onClick={() => onMove(1)} aria-label={`Move ${label} down`}>
+          Move down
+        </button>
+        <button type="button" onClick={onToggle} aria-expanded={expanded}>
+          {expanded ? `Collapse ${label}` : `Expand ${label}`}
+        </button>
       </div>
-      <div className="account-settings-grid">
+      <div hidden={!expanded}>{children}</div>
+    </section>
+  );
+}
+
+function AccountSettings() {
+  const auth = useAuth();
+  const accountKey =
+    auth.status === 'signed-in' ? auth.user.email || auth.user.username : 'unknown';
+  const storageKey = `${SETTINGS_LAYOUT_KEY}:${accountKey}`;
+  const [layout, setLayout] = useState<SettingsLayout>(() => readSettingsLayout(storageKey));
+
+  useEffect(() => {
+    setLayout(readSettingsLayout(storageKey));
+  }, [storageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(layout));
+    } catch {
+      // Storage is optional; the default in-memory layout remains usable.
+    }
+  }, [layout, storageKey]);
+
+  function move(id: SettingsSectionId, direction: -1 | 1) {
+    setLayout((current) => {
+      const index = current.order.indexOf(id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.order.length) return current;
+      const order = [...current.order];
+      [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
+      return { ...current, order };
+    });
+  }
+
+  function resetLayout() {
+    setLayout({ order: [...DEFAULT_SECTION_ORDER], expanded: {} });
+  }
+
+  const sections: Record<SettingsSectionId, { label: string; content: ReactNode }> = {
+    plan: {
+      label: 'Plan and usage',
+      content: (
         <section className="account-settings-card" aria-labelledby="account-plan-heading">
           <h3 id="account-plan-heading">Plan and usage</h3>
           <EntitlementsSummary />
         </section>
-        <section className="account-settings-card" aria-labelledby="profile-settings-heading">
+      ),
+    },
+    profile: {
+      label: 'Public profile',
+      content: (
+        <section className="account-settings-card">
           <ProfileSettings />
         </section>
+      ),
+    },
+    management: {
+      label: 'Account management',
+      content: (
         <section className="account-settings-card" aria-labelledby="account-management-heading">
           <h3 id="account-management-heading">Account management</h3>
           <ul className="account-settings-actions" aria-label="Account management actions">
@@ -75,10 +182,40 @@ function AccountSettings() {
             </li>
           </ul>
         </section>
-        <ProviderCredentialCards />
-        <SavedMistralModels />
-        <AIPersonas />
-        <AIRetrySettings />
+      ),
+    },
+    credentials: { label: 'AI provider credentials', content: <ProviderCredentialCards /> },
+    models: { label: 'Saved Mistral models', content: <SavedMistralModels /> },
+    personas: { label: 'Personas', content: <AIPersonas /> },
+    retry: { label: 'Automatic retry', content: <AIRetrySettings /> },
+  };
+
+  return (
+    <section className="content-panel account-settings">
+      <div className="account-settings-header">
+        <h2>Account settings</h2>
+        <button type="button" className="shell-action" onClick={resetLayout}>
+          Reset layout
+        </button>
+      </div>
+      <div className="account-settings-grid">
+        {layout.order.map((id) => (
+          <SettingsSection
+            key={id}
+            id={id}
+            label={sections[id].label}
+            expanded={layout.expanded[id] !== false}
+            onToggle={() =>
+              setLayout((current) => ({
+                ...current,
+                expanded: { ...current.expanded, [id]: !(current.expanded[id] !== false) },
+              }))
+            }
+            onMove={(direction) => move(id, direction)}
+          >
+            {sections[id].content}
+          </SettingsSection>
+        ))}
       </div>
     </section>
   );

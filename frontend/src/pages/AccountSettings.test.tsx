@@ -31,6 +31,7 @@ const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   mockedFetchModels.mockResolvedValue([]);
   mockedFetchPersonas.mockResolvedValue([]);
   mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
@@ -288,5 +289,42 @@ describe('AccountSettings', () => {
       max_retries: 5,
     });
     expect(await screen.findByText(/automatic retry setting was saved/i)).toBeInTheDocument();
+  });
+
+  it('persists keyboard reordering and collapsed state, and repairs malformed storage', async () => {
+    localStorage.setItem('augmentrart:account-settings-layout:v1:unknown', '{not-json');
+    const user = userEvent.setup();
+    const view = render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', { name: 'Automatic retry' });
+    const moveRetryUp = screen.getByRole('button', { name: 'Move Automatic retry up' });
+    for (let i = 0; i < 6; i += 1) await user.click(moveRetryUp);
+    await user.click(screen.getByRole('button', { name: 'Collapse Plan and usage' }));
+
+    const order = Array.from(document.querySelectorAll('[data-settings-section]')).map((element) =>
+      element.getAttribute('data-settings-section'),
+    );
+    expect(order[0]).toBe('retry');
+    expect(screen.getByRole('button', { name: 'Expand Plan and usage' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    view.unmount();
+
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Automatic retry' });
+    expect(document.querySelector('[data-settings-section]')).toHaveAttribute(
+      'data-settings-section',
+      'retry',
+    );
+    expect(screen.getByRole('button', { name: 'Expand Plan and usage' })).toBeInTheDocument();
   });
 });

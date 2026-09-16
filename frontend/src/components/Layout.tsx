@@ -50,6 +50,37 @@ function Layout() {
           const value = theme[key];
           if (value) root.style.setProperty(variable, value);
         });
+        const fonts: Record<string, string> = {
+          system: "system-ui, 'Segoe UI', Roboto, sans-serif",
+          serif: "Georgia, 'Times New Roman', serif",
+          mono: 'ui-monospace, Consolas, monospace',
+        };
+        const presentation = theme.presentation;
+        if (presentation?.font_family && fonts[presentation.font_family]) {
+          root.style.setProperty('--site-font', fonts[presentation.font_family]);
+        }
+        if (presentation?.density) {
+          root.style.setProperty(
+            '--site-density',
+            presentation.density === 'compact' ? '12px' : '20px',
+          );
+        }
+        if (presentation?.radius) {
+          root.style.setProperty(
+            '--site-radius',
+            presentation.radius === 'sharp'
+              ? '2px'
+              : presentation.radius === 'pill'
+                ? '999px'
+                : '8px',
+          );
+        }
+        if (presentation?.border_style) {
+          root.style.setProperty(
+            '--site-border-style',
+            presentation.border_style === 'none' ? 'none' : presentation.border_style,
+          );
+        }
       })
       .catch(() => {
         /* keep the compiled safe defaults */

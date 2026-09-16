@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { fetchPublicCollection, type Collection, type CollectionItem } from '../api/collections';
+import { fetchPublicProfile, type PublicProfile } from '../api/profile';
 
 function CollectionCard({ item }: { item: CollectionItem }) {
   const [failed, setFailed] = useState(false);
@@ -34,6 +35,7 @@ export default function PublicCollection() {
   const handle = rawHandle.replace(/^@/, '');
   const [collection, setCollection] = useState<Collection | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
 
   useEffect(() => {
     setState('loading');
@@ -45,6 +47,9 @@ export default function PublicCollection() {
       .catch((error: unknown) => {
         setState(error instanceof Error && error.message.includes('404') ? 'missing' : 'error');
       });
+    fetchPublicProfile(handle)
+      .then((page) => setProfile(page.profile))
+      .catch(() => undefined);
   }, [collectionSlug, handle]);
 
   if (state === 'loading') return <p role="status">Loading collection…</p>;
@@ -69,6 +74,31 @@ export default function PublicCollection() {
   return (
     <section
       className="content-panel public-collection"
+      style={
+        profile
+          ? ({
+              '--profile-background': profile.theme_config.background,
+              '--profile-surface': profile.theme_config.surface,
+              '--profile-text': profile.theme_config.text,
+              '--profile-muted': profile.theme_config.muted,
+              '--profile-accent': profile.theme_config.accent,
+              '--profile-font':
+                profile.presentation?.font_family === 'serif'
+                  ? "Georgia, 'Times New Roman', serif"
+                  : profile.presentation?.font_family === 'mono'
+                    ? 'ui-monospace, Consolas, monospace'
+                    : "system-ui, 'Segoe UI', Roboto, sans-serif",
+              '--profile-radius':
+                profile.presentation?.radius === 'sharp'
+                  ? '2px'
+                  : profile.presentation?.radius === 'pill'
+                    ? '999px'
+                    : '8px',
+              '--profile-density': profile.presentation?.density === 'compact' ? '12px' : '20px',
+              '--profile-border-style': profile.presentation?.border_style ?? 'solid',
+            } as CSSProperties)
+          : undefined
+      }
       aria-labelledby="public-collection-heading"
     >
       <header>

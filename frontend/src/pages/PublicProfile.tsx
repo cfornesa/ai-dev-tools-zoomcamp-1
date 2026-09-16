@@ -32,6 +32,10 @@ export default function PublicProfile() {
           '--profile-text': theme.text,
           '--profile-muted': theme.muted,
           '--profile-accent': theme.accent,
+          '--profile-font': profilePresentationFont(data.profile.presentation?.font_family),
+          '--profile-radius': profileRadius(data.profile.presentation?.radius),
+          '--profile-density': data.profile.presentation?.density === 'compact' ? '12px' : '20px',
+          '--profile-border-style': data.profile.presentation?.border_style ?? 'solid',
         } as CSSProperties
       }
     >
@@ -69,4 +73,16 @@ export default function PublicProfile() {
       </div>
     </section>
   );
+}
+
+function profilePresentationFont(value: string | undefined): string {
+  if (value === 'serif') return "Georgia, 'Times New Roman', serif";
+  if (value === 'mono') return 'ui-monospace, Consolas, monospace';
+  return "system-ui, 'Segoe UI', Roboto, sans-serif";
+}
+
+function profileRadius(value: string | undefined): string {
+  if (value === 'sharp') return '2px';
+  if (value === 'pill') return '999px';
+  return '8px';
 }

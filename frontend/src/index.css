@@ -13,6 +13,10 @@
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
+  --site-font: var(--sans);
+  --site-density: 20px;
+  --site-radius: 8px;
+  --site-border-style: solid;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
@@ -27,6 +31,25 @@
   @media (max-width: 1024px) {
     font-size: 16px;
   }
+}
+
+body,
+.app-shell {
+  font-family: var(--site-font);
+}
+
+.app-shell .content-panel,
+.app-shell .public-project-card,
+.app-shell button,
+.app-shell input,
+.app-shell select,
+.app-shell textarea {
+  border-radius: var(--site-radius);
+  border-style: var(--site-border-style);
+}
+
+.app-shell .content-panel {
+  padding: var(--site-density);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -628,10 +651,35 @@ button:disabled {
   border-top: 1px solid var(--border);
 }
 
-.public-profile {
+.app-shell .public-profile {
   padding: 32px 24px;
   color: var(--profile-text, var(--text));
   background: var(--profile-background, var(--bg));
+  font-family: var(--profile-font, var(--site-font));
+  border-radius: var(--profile-radius, var(--site-radius));
+  border-style: var(--profile-border-style, var(--site-border-style));
+  padding: var(--profile-density, 20px);
+}
+
+.app-shell .public-collection {
+  color: var(--profile-text, var(--text));
+  background: var(--profile-background, var(--bg));
+  font-family: var(--profile-font, var(--site-font));
+  border-radius: var(--profile-radius, var(--site-radius));
+  border-style: var(--profile-border-style, var(--site-border-style));
+}
+
+.public-collection a,
+.public-collection h2,
+.public-collection h3 {
+  color: var(--profile-accent, var(--accent));
+}
+
+.public-collection-card {
+  color: var(--profile-text, var(--text));
+  background: var(--profile-surface, var(--code-bg));
+  border-radius: var(--profile-radius, var(--site-radius));
+  border-style: var(--profile-border-style, var(--site-border-style));
 }
 
 .public-profile-heading {

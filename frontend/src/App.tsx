@@ -39,6 +39,7 @@ const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 const AdminPages = lazy(() => import('./pages/AdminPages'));
 const AdminContent = lazy(() => import('./pages/AdminContent'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
+const CanonicalPublicPiece = lazy(() => import('./pages/CanonicalPublicPiece'));
 const CollectionManagement = lazy(() => import('./pages/CollectionManagement'));
 const PublicCollection = lazy(() => import('./pages/PublicCollection'));
 const CollectionImmersiveViewer = lazy(() => import('./pages/CollectionImmersiveViewer'));
@@ -98,6 +99,7 @@ function App() {
               <Route path="art-pieces/:id/edit" element={<ArtPieceEditor />} />
               <Route path="art-pieces/gallery" element={<PublicArtPieceGallery />} />
               <Route path="art-pieces/p/:id" element={<PublicArtPieceViewer />} />
+              <Route path="users/:handle/pieces/:pieceSlug" element={<CanonicalPublicPiece />} />
               <Route path="art-pieces/immersive/:id" element={<ImmersiveArtPieceViewer />} />
               <Route path="account/settings" element={<AccountSettings />} />
               <Route path="account/billing" element={<AccountBilling />} />

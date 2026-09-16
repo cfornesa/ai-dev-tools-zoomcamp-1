@@ -66,6 +66,19 @@ Unknown keys, malformed values, arbitrary CSS/HTML/JavaScript, and disabled
 new selections are rejected or fall back to the documented defaults. Existing
 legacy `theme_config` color overrides remain backward-compatible.
 
+### Canonical public piece URLs (#578)
+
+`GET /api/users/@<handle>/pieces/<piece-slug>/` resolves a published public
+2D project, 3D project, or generated art piece owned by the profile. Slugs are
+persisted, lowercase, title-derived identifiers and are unique per owner and
+piece family; collisions receive deterministic numeric suffixes. Private,
+deleted, archived, and missing pieces return the same not-found behavior as
+the existing public detail routes. The response includes `canonical_url`,
+`viewer_url`, and renderer/type information.
+
+The frontend canonical route is `/users/@<handle>/pieces/<piece-slug>`. Existing
+identifier-based viewer routes remain backward-compatible and are not removed.
+
 ## Account billing contract (#440, #550)
 
 Authenticated account billing is exposed through `/api/account/billing/` and

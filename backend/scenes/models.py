@@ -818,6 +818,7 @@ class Project(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="projects"
     )
     title = models.CharField(max_length=200, default="Untitled animation")
+    public_slug = models.SlugField(max_length=220, default="", blank=True)
     description = models.TextField(default="", blank=True)
     visibility = models.CharField(
         max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
@@ -910,6 +911,9 @@ class Project(models.Model):
             # must never collide with each other's requests.
             models.UniqueConstraint(
                 fields=["owner", "creation_request_id"], name="unique_creation_request_per_owner"
+            ),
+            models.UniqueConstraint(
+                fields=["owner", "public_slug"], name="unique_project_public_slug_per_owner"
             ),
         ]
         indexes = [
@@ -1686,6 +1690,7 @@ class Project3D(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="projects_3d"
     )
     title = models.CharField(max_length=200, default="Untitled 3D scene")
+    public_slug = models.SlugField(max_length=220, default="", blank=True)
     # Issue #296: publish/visibility parity with the 2D `Project` model
     # above -- same field shapes, same PRIVATE-by-default, same separate
     # `published_at` (not `updated_at`) sort/cursor key for a future public
@@ -1731,6 +1736,11 @@ class Project3D(models.Model):
             # -id) access pattern.
             models.Index(
                 fields=["visibility", "-published_at", "-id"], name="project3d_public_gallery_idx"
+            ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "public_slug"], name="unique_project3d_public_slug_per_owner"
             ),
         ]
 
@@ -1861,6 +1871,7 @@ class ArtPiece(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="art_pieces"
     )
     title = models.CharField(max_length=200, default="Untitled art piece")
+    public_slug = models.SlugField(max_length=220, default="", blank=True)
     description = models.TextField(default="", blank=True)
     prompt = models.TextField(max_length=4000)
     engine = models.CharField(max_length=20, choices=Engine.choices)
@@ -1887,6 +1898,11 @@ class ArtPiece(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["status", "-published_at", "-id"], name="art_piece_public_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "public_slug"], name="unique_artpiece_public_slug_per_owner"
+            ),
         ]
 
     def __str__(self) -> str:

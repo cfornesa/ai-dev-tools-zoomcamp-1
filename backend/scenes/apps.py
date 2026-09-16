@@ -20,5 +20,6 @@ class ScenesConfig(AppConfig):
         from scenes import (
             account_identity_signals,  # noqa: F401
             account_session_signals,  # noqa: F401
+            canonical_piece_signals,  # noqa: F401
             scene_current_version_sync,  # noqa: F401
         )

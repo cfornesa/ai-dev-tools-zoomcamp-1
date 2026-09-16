@@ -89,6 +89,7 @@ from scenes.art_piece_persistence import (
     PublicArtPieceThumbnailView,
 )
 from scenes.billing_api import AccountBillingView, PayPalWebhookView
+from scenes.canonical_piece_api import PublicPieceBySlugView
 from scenes.cloud_backup_api import (
     CloudBackupBlobChunkView,
     CloudBackupBlobView,
@@ -222,6 +223,11 @@ urlpatterns = [
         name="public-collection-detail",
     ),
     path("users/@<str:handle>/", PublicProfileView.as_view(), name="public-profile"),
+    path(
+        "users/@<str:handle>/pieces/<slug:piece_slug>/",
+        PublicPieceBySlugView.as_view(),
+        name="public-piece-by-slug",
+    ),
     path(
         "account/ai-model-preferences/",
         SavedAIModelPreferenceListCreateView.as_view(),

@@ -47,3 +47,18 @@ export type PublicProfilePage = {
 export async function fetchPublicProfile(handle: string): Promise<PublicProfilePage> {
   return apiFetch<PublicProfilePage>(`/api/users/@${encodeURIComponent(handle)}/`);
 }
+
+export type CanonicalPublicPiece = {
+  canonical_url: string;
+  viewer_url: string;
+  type: '2d' | '3d' | 'generated';
+};
+
+export async function fetchCanonicalPublicPiece(
+  handle: string,
+  pieceSlug: string,
+): Promise<CanonicalPublicPiece> {
+  return apiFetch<CanonicalPublicPiece>(
+    `/api/users/@${encodeURIComponent(handle)}/pieces/${encodeURIComponent(pieceSlug)}/`,
+  );
+}

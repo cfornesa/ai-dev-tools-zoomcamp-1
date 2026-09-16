@@ -135,7 +135,7 @@ def public_collection_context(kind: str, item_id) -> list[dict[str, str]]:
     result = []
     for row in rows:
         profile = PublicProfile.objects.filter(user=row.collection.owner).first()
-        if profile is None:
+        if profile is None or profile.handle is None:
             continue
         result.append(
             {

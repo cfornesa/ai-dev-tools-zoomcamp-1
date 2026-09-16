@@ -379,12 +379,14 @@ def test_public_detail_excludes_owner_private_fields(
         "allow_public_remix",
         "thumbnail_url",
         "remix_provenance",
+        "collections",
         "current_version",
         "created_at",
         "updated_at",
     }
     assert "export_attribution" not in body
     assert "visibility" not in body
+    assert body["collections"] == []
 
 
 @pytest.mark.django_db

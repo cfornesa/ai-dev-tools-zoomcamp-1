@@ -480,7 +480,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
 
     def get_thumbnail_url(self, obj) -> str | None:
         kind, record = self._entry(obj)
-        if kind == "collection":
+        if isinstance(record, Collection):
             return None
         if record.current_version_id is None:
             return None
@@ -488,7 +488,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
 
     def get_viewer_url(self, obj) -> str:
         kind, record = self._entry(obj)
-        if kind == "collection":
+        if kind == "collection" and isinstance(record, Collection):
             return f"/users/@{record.owner.public_profile.handle}/{record.slug}"
         return _GALLERY_VIEWER_URLS[kind].format(record.public_id)
 

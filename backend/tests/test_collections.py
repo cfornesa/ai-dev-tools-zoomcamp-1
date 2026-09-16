@@ -301,9 +301,7 @@ def test_public_gallery_collections_mode_is_profile_and_visibility_filtered(
     all_response = anonymous_client.get("/api/public/gallery/?type=all")
     assert all_response.status_code == 200
     assert {item["title"] for item in all_response.json()["results"]} >= {"Gallery collection"}
-    assert "Hidden collection" not in {
-        item["title"] for item in all_response.json()["results"]
-    }
+    assert "Hidden collection" not in {item["title"] for item in all_response.json()["results"]}
 
     profile = owner.public_profile
     profile.is_public = False

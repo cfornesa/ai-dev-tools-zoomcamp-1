@@ -73,7 +73,7 @@ describe('AccountSettings', () => {
     expect(screen.getByRole('heading', { name: 'Automatic retry' })).toBeInTheDocument();
 
     const actions = screen.getByRole('list', { name: 'Account management actions' });
-    expect(within(actions).getAllByRole('listitem')).toHaveLength(10);
+    expect(within(actions).getAllByRole('listitem')).toHaveLength(11);
     expect(
       within(actions).getByRole('link', { name: /verified email addresses/i }),
     ).toHaveAttribute('href', '/accounts/email/');

@@ -21671,3 +21671,43 @@ caveats recorded as "external verification boundaries" in earlier entries
 were re-checked against each issue's own body and are explicitly out of
 scope there, deferred to already-closed issues #445/#467/#440 — so they did
 not block closure. #570 (filed this pass) is the only open issue remaining.
+
+## 2026-09-16 — #570 QA, readiness gate, and final backlog closure
+
+Implementation for #570 landed as `a2ce68b` (repo owner, direct commit,
+touching only `AccountSettings.tsx`/`.test.tsx` and three E2E specs).
+Stage 4 QA (`qa-self-review`) re-ran every check independently rather than
+accepting the handoff comment's claims, per the skill's untrusted-diff
+intake: focused and full frontend suites matched the claimed pass, but
+`npm run format:check` failed on `accountSettingsProgressiveDisclosure.spec.ts`
+— contradicting the handoff's reported pass. Posted `## QA: FAIL`,
+returned to implementation rather than silently fixing it inline.
+
+No separate implementation service was available in-session, so the
+one-line Prettier fix was applied as its own commit (`8564d3d`,
+formatting-only, no assertion change) and QA re-ran clean: full suite
+2,694/2,694, typecheck, lint, and format-check all pass, Playwright
+`--list` confirms all 8 scenarios across the 3 touched spec files remain
+collectible at both viewports. Posted `## QA: PASS` with
+`ACCEPTED-WITH-FIXES` disposition.
+
+**Readiness gate (Sonnet 5, this pass):** `make check` re-run in full —
+backend 1,348 passed/39 skipped, frontend 2,694/2,694, matching every prior
+count exactly. `make deploy-check` reproduced the same 5 local-dev-only
+warnings already recorded as expected. Working tree was clean (no orphaned
+changes) before pushing. `origin/main` fast-forwarded to `8564d3d`
+(2 commits: `a2ce68b`, `8564d3d`).
+
+**Production check:** `PUBLISHED_APP_URL=https://augmentrart.com
+scripts/smoke-published.sh` — PASS (`/health/` 200, `/` 200, anonymous
+`/api/whoami/` 401, login form 200). This reflects the last Replit Publish
+checkpoint (empty commit `274daf2`), not this session's batch — a Replit
+Publish is a manual owner action this session cannot trigger, so the
+production environment does not yet include the closed-backlog batch or
+#570's fix. Local/CI-equivalent code readiness is PASS; **Replit
+publication of this batch remains an explicit open action for the owner**,
+not a blocker in the code itself.
+
+**Backlog:** #570 closed (QA PASS, no follow-up). `gh issue list --state
+open` returns **zero** open issues.
+

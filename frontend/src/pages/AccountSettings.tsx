@@ -85,17 +85,34 @@ function SettingsSection({
   return (
     <section className="account-settings-layout-item" data-settings-section={id}>
       <div className="account-settings-layout-controls" aria-label={`${label} layout controls`}>
-        <button type="button" onClick={() => onMove(-1)} aria-label={`Move ${label} up`}>
-          Move up
+        <button
+          type="button"
+          onClick={() => onMove(-1)}
+          aria-label={`Move ${label} up`}
+          title={`Move ${label} up`}
+        >
+          <span aria-hidden="true">↑</span>
         </button>
-        <button type="button" onClick={() => onMove(1)} aria-label={`Move ${label} down`}>
-          Move down
-        </button>
-        <button type="button" onClick={onToggle} aria-expanded={expanded}>
-          {expanded ? `Collapse ${label}` : `Expand ${label}`}
+        <button
+          type="button"
+          onClick={() => onMove(1)}
+          aria-label={`Move ${label} down`}
+          title={`Move ${label} down`}
+        >
+          <span aria-hidden="true">↓</span>
         </button>
       </div>
       <div hidden={!expanded}>{children}</div>
+      <button
+        className="account-settings-collapse-toggle"
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-label={expanded ? 'Collapse' : `Expand ${label}`}
+      >
+        <span aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
+        <span>{expanded ? 'Collapse' : `Expand ${label}`}</span>
+      </button>
     </section>
   );
 }
@@ -237,11 +254,11 @@ function AccountSettings() {
             key={id}
             id={id}
             label={sections[id].label}
-            expanded={layout.expanded[id] !== false}
+            expanded={layout.expanded[id] === true}
             onToggle={() =>
               setLayout((current) => ({
                 ...current,
-                expanded: { ...current.expanded, [id]: !(current.expanded[id] !== false) },
+                expanded: { ...current.expanded, [id]: current.expanded[id] !== true },
               }))
             }
             onMove={(direction) => move(id, direction)}

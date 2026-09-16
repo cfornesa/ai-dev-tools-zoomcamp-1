@@ -353,6 +353,26 @@ button:disabled {
   margin-top: 0;
 }
 
+.account-settings-layout-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.account-settings-layout-controls button {
+  width: 40px;
+  min-height: 36px;
+  padding: 4px 8px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.account-settings-collapse-toggle {
+  width: 100%;
+  margin-top: 12px;
+  gap: 8px;
+}
+
 .account-settings-actions {
   display: grid;
   gap: 8px;

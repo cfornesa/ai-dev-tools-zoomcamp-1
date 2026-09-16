@@ -637,6 +637,11 @@ button:disabled {
   margin-bottom: 24px;
 }
 
+.admin-console-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .admin-console-menu {
   display: flex;
   gap: 16px;
@@ -663,6 +668,17 @@ button:disabled {
   .admin-console-menu a {
     display: block;
     padding: 8px 12px;
+  }
+
+  /* A higher-specificity override is required here: without it, this
+     media query's own `.admin-console-menu { flex-direction: column }`
+     rule above has the same specificity as the desktop
+     `.admin-console-menu { display: flex }` rule and wins by source
+     order, silently defeating the `hidden` attribute the toggle button
+     controls (#584) -- the menu would stay visible/focusable at narrow
+     widths regardless of `aria-expanded`. */
+  .admin-console-menu[hidden] {
+    display: none;
   }
 }
 

@@ -12,6 +12,14 @@ PERSONAS_URL = "/api/account/ai-personas/"
 SAVED_MODELS_URL = "/api/account/ai-model-preferences/"
 
 
+@pytest.mark.django_db
+def test_vendor_has_database_default_for_non_destructive_publish():
+    field = MistralModelPreference._meta.get_field("vendor")
+
+    assert field.default == "mistral"
+    assert field.db_default == "mistral"
+
+
 @pytest.fixture
 def owner(db):
     return get_user_model().objects.create_user(username="prefs-owner")

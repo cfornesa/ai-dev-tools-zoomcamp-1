@@ -21835,3 +21835,20 @@ criterion-ready issues rather than leaving that prerequisite implicit.
   Ruff/migration checks are clean. QA and closure remain deferred.
 - No production publish, browser QA, issue closure, production-readiness, or
   session-completion was performed in this run.
+
+## 2026-09-16 — non-destructive vendor preference schema synchronization
+
+Replit's production schema validator proposed truncating two existing
+`scenes_mistralmodelpreference` rows before adding the vendor column required
+by the vendor-aware saved-model contract. The publish was canceled before any
+production mutation. Follow-up issue [#587](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/587)
+tracks the safe migration boundary.
+
+- #587 is implemented in commit `PENDING-COMMIT` by retaining the application
+  default and adding a PostgreSQL database default of `"mistral"`; this lets
+  the production schema add the non-null column without truncating existing
+  rows.
+- The focused saved-model preference suite passes (8 tests), migration
+  consistency is clean, and Ruff check/format checks pass. Production
+  publish validation and QA remain deferred until the generated Replit SQL is
+  confirmed non-destructive.

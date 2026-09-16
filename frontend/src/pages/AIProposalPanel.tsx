@@ -355,8 +355,8 @@ function AIProposalPanel({
               {savedModels.filter((saved) => (saved.vendor ?? 'mistral') === vendor).length ===
               0 ? (
                 <p className="ai-proposal-empty-preference">
-                  No saved {vendor} models yet — add one in{' '}
-                  <a href="/account/settings">Account settings</a>.
+                  {vendor === 'mistral' ? 'No saved models yet' : `No saved ${vendor} models yet`} —
+                  add one in <a href="/account/settings">Account settings</a>.
                 </p>
               ) : (
                 <select

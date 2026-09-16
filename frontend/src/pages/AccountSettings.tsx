@@ -5,10 +5,13 @@ import {
   type AIPersona,
   type SavedAIModelPreference,
   createAIPersona,
+  createMistralModelPreference,
   createSavedAIModelPreference,
   deleteAIPersona,
+  deleteMistralModelPreference,
   deleteSavedAIModelPreference,
   fetchAIPersonas,
+  fetchMistralModelPreferences,
   fetchSavedAIModelPreferences,
 } from '../api/aiPreferences';
 import { fetchAIRetryPreference, updateAIRetryPreference } from '../api/aiRetryPreference';
@@ -627,7 +630,8 @@ function SavedMistralModels() {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    fetchSavedAIModelPreferences()
+    Promise.resolve(fetchSavedAIModelPreferences?.())
+      .then((saved) => saved ?? fetchMistralModelPreferences())
       .then(setModels)
       .catch(() => setError('Could not load your saved AI models.'));
   }, []);
@@ -637,7 +641,10 @@ function SavedMistralModels() {
     setBusy(true);
     setError(null);
     try {
-      const created = await createSavedAIModelPreference(vendor, slug, label);
+      const created =
+        vendor === 'mistral'
+          ? await createMistralModelPreference(slug, label)
+          : await createSavedAIModelPreference(vendor, slug, label);
       setModels((current) => [...(current ?? []), created]);
       setSlug('');
       setLabel('');
@@ -652,7 +659,9 @@ function SavedMistralModels() {
     setBusy(true);
     setError(null);
     try {
-      await deleteSavedAIModelPreference(id);
+      const saved = models?.find((model) => model.id === id);
+      if ((saved?.vendor ?? 'mistral') === 'mistral') await deleteMistralModelPreference(id);
+      else await deleteSavedAIModelPreference(id);
       setModels((current) => (current ?? []).filter((m) => m.id !== id));
     } catch {
       setError('Could not remove that model.');
@@ -663,7 +672,7 @@ function SavedMistralModels() {
 
   return (
     <section className="account-settings-card" aria-labelledby="saved-models-heading">
-      <h3 id="saved-models-heading">Saved AI models</h3>
+      <h3 id="saved-models-heading">Saved Mistral models</h3>
       <details>
         <summary>See more details about saved models</summary>
         <p>
@@ -724,11 +733,11 @@ function SavedMistralModels() {
       {models === null && !error && <p>Loading your saved models…</p>}
       {models !== null && models.length === 0 && <p>No saved models yet.</p>}
       {models !== null && models.length > 0 && (
-        <ul className="account-settings-list" aria-label="Saved AI models">
+        <ul className="account-settings-list" aria-label="Saved Mistral models">
           {models.map((model) => (
             <li key={model.id}>
               <span>
-                {model.vendor ?? 'mistral'}:{' '}
+                {model.vendor && model.vendor !== 'mistral' ? `${model.vendor}: ` : ''}
                 {model.label ? `${model.label} (${model.slug})` : model.slug}
               </span>
               <button

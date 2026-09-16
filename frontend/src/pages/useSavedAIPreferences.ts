@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import {
   fetchAIPersonas,
+  fetchMistralModelPreferences,
   fetchSavedAIModelPreferences,
   type AIPersona,
   type SavedAIModelPreference,
@@ -22,7 +23,8 @@ export function useSavedAIPreferences() {
   const [personas, setPersonas] = useState<AIPersona[] | null>(null);
 
   useEffect(() => {
-    fetchSavedAIModelPreferences()
+    Promise.resolve(fetchSavedAIModelPreferences?.())
+      .then((saved) => saved ?? fetchMistralModelPreferences())
       .then(setModels)
       .catch(() => setModels([]));
     fetchAIPersonas()

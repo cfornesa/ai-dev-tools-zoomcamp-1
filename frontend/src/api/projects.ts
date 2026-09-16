@@ -2,6 +2,13 @@ import { apiFetch } from './client';
 
 export type Visibility = 'private' | 'public';
 
+export type PublicCollectionContext = {
+  title: string;
+  handle: string;
+  slug: string;
+  url: string;
+};
+
 /** Issue #510: one scene's collection metadata within a project's ordered
  * scene collection (`SceneSerializer`, `scenes/serializers.py`) -- stable
  * id, display name, ordering position, and which `SceneVersion` (by bare
@@ -46,6 +53,7 @@ export type Project = {
   scenes?: SceneSummary[];
   created_at: string;
   updated_at: string;
+  collections?: PublicCollectionContext[];
 };
 
 /** A scene document is validated against ../../../schema/scene.schema.json
@@ -349,6 +357,7 @@ export type PublicProject = {
   current_version: PublicSceneVersion | null;
   created_at: string;
   updated_at: string;
+  collections?: PublicCollectionContext[];
 };
 
 /** Task 51 (issue #53): fetch a single public project by its `public_id`,

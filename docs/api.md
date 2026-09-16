@@ -668,6 +668,11 @@ position order and include `kind`, `id`, `title`, `viewer_url`, and
 or deleted are omitted without revealing their prior existence. Missing,
 private, and deleted collections return `404`.
 
+Public detail responses for projects, 3D projects, and generated art pieces
+add a `collections` array containing only currently public, non-deleted
+collection links: `{title, handle, slug, url}`. Private or unpublished
+collections are omitted, and the field is absent from owner-only responses.
+
 `GET /api/account/collections/<uuid>/snapshot/` returns the same deterministic
 online JSON representation for the owner. It is not an offline export and no
 download or archival guarantee is implied. All account writes require the

@@ -73,6 +73,14 @@ export type ArtPiece = {
   created_at: string;
   updated_at: string;
   published_at?: string | null;
+  collections?: PublicCollectionContext[];
+};
+
+export type PublicCollectionContext = {
+  title: string;
+  handle: string;
+  slug: string;
+  url: string;
 };
 
 /** Every distinct `error` code this endpoint can return -- see

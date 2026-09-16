@@ -131,6 +131,8 @@ function PublicProject3DViewer() {
 
   if (!project) return null; // unreachable once loadState === 'ready'
 
+  const isEmbedRoute = window.location.pathname.startsWith('/embed/p3d/');
+
   return (
     <div className="public-project-viewer" data-project-kind="original">
       <header>
@@ -192,6 +194,18 @@ function PublicProject3DViewer() {
           />
         )}
       </section>
+      {!isEmbedRoute && !!project.collections?.length && (
+        <aside className="public-collection-context" aria-label="Public collections">
+          <h3>Part of these collections</h3>
+          <ul>
+            {project.collections.map((collection) => (
+              <li key={collection.url}>
+                <Link to={collection.url}>{collection.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )}
       {downloadError && (
         <p role="alert" aria-live="assertive">
           Couldn’t download this piece: {downloadError}

@@ -114,6 +114,40 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
     }
 
 
+def public_collection_context(kind: str, item_id) -> list[dict[str, str]]:
+    """Return only published collection links containing a public item.
+
+    This is deliberately a link-only contract: callers never receive the
+    collection's private description, owner id, or unpublished membership.
+    Ordering is stable and duplicate memberships are impossible by the
+    database constraint on ``CollectionItem``.
+    """
+    rows = (
+        CollectionItem.objects.filter(
+            kind=kind,
+            item_id=item_id,
+            collection__visibility=Collection.Visibility.PUBLIC,
+            collection__is_deleted=False,
+        )
+        .select_related("collection__owner")
+        .order_by("collection__owner_id", "collection__slug", "collection_id")
+    )
+    result = []
+    for row in rows:
+        profile = PublicProfile.objects.filter(user=row.collection.owner).first()
+        if profile is None:
+            continue
+        result.append(
+            {
+                "title": row.collection.title,
+                "handle": profile.handle,
+                "slug": row.collection.slug,
+                "url": f"/users/@{profile.handle}/{row.collection.slug}",
+            }
+        )
+    return result
+
+
 def _collection_for_owner(owner, public_id) -> Collection:
     try:
         return (

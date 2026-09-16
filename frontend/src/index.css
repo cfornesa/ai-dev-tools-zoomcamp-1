@@ -3668,6 +3668,25 @@ select.ai-proposal-field-full-width {
   position: relative;
 }
 
+.public-collection-context {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #d7dce2);
+  border-radius: 0.5rem;
+}
+
+.public-collection-context h3 {
+  margin-top: 0;
+}
+
+.public-collection-context ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
 .piece-stage-toolbar {
   position: absolute;
   top: 0.75rem;

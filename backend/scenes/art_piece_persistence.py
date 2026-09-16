@@ -170,6 +170,10 @@ def _piece_data(piece: ArtPiece, *, public: bool):
         "created_at": piece.created_at,
         "updated_at": piece.updated_at,
     }
+    if public:
+        from scenes.collections import public_collection_context
+
+        data["collections"] = public_collection_context("art_piece", piece.public_id)
     if not public:
         data.update(
             {"prompt": piece.prompt, "owner_id": piece.owner_id, "published_at": piece.published_at}

@@ -247,6 +247,36 @@ def test_private_collection_and_foreign_mutation_are_not_disclosed(owner_client,
         ).status_code
         == 404
     )
+
+
+@pytest.mark.django_db
+def test_public_item_detail_exposes_only_public_collection_context(
+    owner_client, anonymous_client, owner
+):
+    project = _published_project(owner)
+    public = _create_collection(owner_client, "Public work")
+    private = _create_collection(owner_client, "Private work")
+    for collection in (public, private):
+        assert (
+            owner_client.post(
+                f"/api/account/collections/{collection['id']}/items/",
+                {"items": [{"kind": "project", "id": str(project.public_id)}]},
+                format="json",
+            ).status_code
+            == 200
+        )
+    assert owner_client.post(f"/api/account/collections/{public['id']}/publish/").status_code == 200
+
+    response = anonymous_client.get(f"/api/public/projects/{project.public_id}/")
+    assert response.status_code == 200
+    assert response.json()["collections"] == [
+        {
+            "title": "Public work",
+            "handle": "collection-owner",
+            "slug": "public-work",
+            "url": "/users/@collection-owner/public-work",
+        }
+    ]
     assert (
         APIClient()
         .get(f"/api/public/collections/collection-owner/{collection['slug']}/")

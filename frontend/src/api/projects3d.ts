@@ -114,6 +114,7 @@ export type PublicProject3D = {
   current_version: SceneVersion3D | null;
   created_at: string;
   updated_at: string;
+  collections?: import('./projects').PublicCollectionContext[];
 };
 
 /** Issue #296: anonymous-reachable read of a *published* Project3D --

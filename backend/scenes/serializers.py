@@ -284,6 +284,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
     current_version = PublicSceneVersionSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
     remix_provenance = serializers.SerializerMethodField()
+    collections = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -296,6 +297,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "allow_public_remix",
             "thumbnail_url",
             "remix_provenance",
+            "collections",
             "current_version",
             "created_at",
             "updated_at",
@@ -316,6 +318,11 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         # for the snapshot-or-live, availability, and nested-remix policy
         # shared with `PublicProjectListItemSerializer` below.
         return remix_provenance_data(project)
+
+    def get_collections(self, project: Project) -> list[dict[str, str]]:
+        from scenes.collections import public_collection_context
+
+        return public_collection_context("project", project.public_id)
 
 
 class PublicProjectListItemSerializer(serializers.ModelSerializer):
@@ -694,6 +701,7 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source="owner.username", read_only=True)
     current_version = PublicSceneVersion3DSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
+    collections = serializers.SerializerMethodField()
 
     class Meta:
         model = Project3D
@@ -702,6 +710,7 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
             "owner",
             "title",
             "thumbnail_url",
+            "collections",
             "current_version",
             "created_at",
             "updated_at",
@@ -712,6 +721,11 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_collections(self, project: Project3D) -> list[dict[str, str]]:
+        from scenes.collections import public_collection_context
+
+        return public_collection_context("project3d", project.public_id)
 
 
 class SceneVersion3DCreateSerializer(serializers.Serializer):

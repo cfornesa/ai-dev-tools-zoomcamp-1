@@ -131,6 +131,18 @@ function PublicArtPieceViewer() {
           title={piece.title}
         />
       </div>
+      {!isEmbedRoute && !!piece.collections?.length && (
+        <aside className="public-collection-context" aria-label="Public collections">
+          <h3>Part of these collections</h3>
+          <ul>
+            {piece.collections.map((collection) => (
+              <li key={collection.url}>
+                <Link to={collection.url}>{collection.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )}
       {!isEmbedRoute && <Link to="/art-pieces/gallery">Back to public art pieces</Link>}
     </section>
   );

@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
+from allauth.account.models import EmailAddress
+from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
@@ -235,12 +237,21 @@ def apply_action(*, actor, resource_type: str, resource_id: str, action: str):
 @transaction.atomic
 def set_application_access(*, actor, username: str, granted: bool):
     if not isinstance(username, str) or not username.strip():
-        raise AdminContentValidationFailed("username is required.")
+        raise AdminContentValidationFailed("username or verified email is required.")
     User = get_user_model()
-    try:
-        user = User.objects.get(username=username.strip())
-    except User.DoesNotExist as exc:
-        raise AdminContentConflict("user was not found.") from exc
+    identifier = username.strip()
+    user = User.objects.filter(username=identifier).first()
+    if user is None:
+        matches = list(
+            EmailAddress.objects.filter(email__iexact=identifier, verified=True)
+            .values_list("user_id", flat=True)
+            .distinct()
+        )
+        if len(matches) != 1:
+            raise AdminContentConflict("user was not found.")
+        user = User.objects.filter(pk=matches[0]).first()
+    if user is None or not user.is_active:
+        raise AdminContentConflict("user was not found.")
     if granted:
         ApplicationAdmin.objects.get_or_create(user=user)
         action = "access_granted"
@@ -254,4 +265,33 @@ def set_application_access(*, actor, username: str, granted: bool):
         action=action,
         detail=f"username={user.get_username()}",
     )
-    return {"username": user.get_username(), "granted": granted}
+    return _admin_access_payload(user, granted=granted)
+
+
+def _admin_access_payload(user, *, granted: bool | None = None) -> dict:
+    verified_email = (
+        EmailAddress.objects.filter(user=user)
+        .order_by("-primary", "id")
+        .filter(verified=True)
+        .values_list("email", flat=True)
+        .first()
+    )
+    payload = {
+        "user_id": user.pk,
+        "username": user.get_username(),
+        "verified_email": verified_email,
+        "providers": sorted(
+            SocialAccount.objects.filter(user=user).values_list("provider", flat=True).distinct()
+        ),
+        "granted": ApplicationAdmin.objects.filter(user=user).exists(),
+    }
+    if granted is not None:
+        payload["changed"] = granted
+    return payload
+
+
+def list_application_admins() -> list[dict]:
+    return [
+        _admin_access_payload(grant.user)
+        for grant in ApplicationAdmin.objects.select_related("user").order_by("user__username")
+    ]

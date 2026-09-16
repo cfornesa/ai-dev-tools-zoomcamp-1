@@ -3,10 +3,12 @@ import { Navigate } from 'react-router-dom';
 
 import {
   applyAdminContentAction,
+  fetchAdminAccess,
   fetchAdminContent,
   setAdminAccess,
   type AdminContentAction,
   type AdminContentRow,
+  type AdminAccessEntry,
 } from '../api/adminContent';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/useAuth';
@@ -14,6 +16,7 @@ import { useAuth } from '../auth/useAuth';
 function AdminContent() {
   const auth = useAuth();
   const [rows, setRows] = useState<AdminContentRow[] | null>(null);
+  const [admins, setAdmins] = useState<AdminAccessEntry[] | null>(null);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -22,8 +25,11 @@ function AdminContent() {
 
   useEffect(() => {
     if (auth.status !== 'signed-in' || !auth.user.is_application_admin) return;
-    fetchAdminContent()
-      .then(setRows)
+    Promise.all([fetchAdminContent(), fetchAdminAccess()])
+      .then(([content, access]) => {
+        setRows(content);
+        setAdmins(access);
+      })
       .catch(() => setError('Could not load admin content.'));
   }, [auth]);
 
@@ -74,7 +80,12 @@ function AdminContent() {
     setBusyId('access');
     setError(null);
     try {
-      await setAdminAccess(username.trim(), true);
+      const changed = await setAdminAccess(username.trim(), true);
+      setAdmins((current) =>
+        current?.some((entry) => entry.user_id === changed.user_id)
+          ? current.map((entry) => (entry.user_id === changed.user_id ? changed : entry))
+          : [...(current ?? []), changed],
+      );
       setMessage(`Application-admin access granted to ${username.trim()}.`);
       setUsername('');
     } catch {
@@ -186,8 +197,50 @@ function AdminContent() {
         <button type="submit" disabled={busyId !== null}>
           Grant access
         </button>
-        <p>Revocation remains available through the environment identity reconciliation command.</p>
+        <p>
+          Use an exact username or verified email address. Provider handles alone are not accepted.
+        </p>
       </form>
+      {admins && (
+        <section aria-labelledby="admin-roster-heading">
+          <h3 id="admin-roster-heading">Current application administrators</h3>
+          {admins.length === 0 ? (
+            <p>No managed administrators.</p>
+          ) : (
+            <ul aria-label="Application administrators">
+              {admins.map((entry) => (
+                <li key={entry.user_id}>
+                  <span>
+                    {entry.username}
+                    {entry.verified_email ? ` (${entry.verified_email})` : ''} —{' '}
+                    {entry.providers.join(', ') || 'no linked providers'}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busyId !== null}
+                    onClick={() => {
+                      setBusyId(`revoke:${entry.user_id}`);
+                      void setAdminAccess(entry.username, false)
+                        .then(() => {
+                          setAdmins(
+                            (current) =>
+                              current?.filter((candidate) => candidate.user_id !== entry.user_id) ??
+                              null,
+                          );
+                          setMessage(`Application-admin access revoked from ${entry.username}.`);
+                        })
+                        .catch(() => setError('Could not revoke application-admin access.'))
+                        .finally(() => setBusyId(null));
+                    }}
+                  >
+                    Revoke
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </section>
   );
 }

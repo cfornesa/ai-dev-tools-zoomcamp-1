@@ -19,6 +19,15 @@ export type AdminContentAction = {
   action: 'publish' | 'unpublish' | 'restore' | 'delete';
 };
 
+export type AdminAccessEntry = {
+  user_id: number;
+  username: string;
+  verified_email: string | null;
+  providers: string[];
+  granted: boolean;
+  changed?: boolean;
+};
+
 export function fetchAdminContent() {
   return apiFetch<AdminContentRow[]>('/api/admin/content/');
 }
@@ -31,8 +40,12 @@ export function applyAdminContentAction(action: AdminContentAction) {
 }
 
 export function setAdminAccess(username: string, granted: boolean) {
-  return apiFetch<{ username: string; granted: boolean }>('/api/admin/content/access/', {
+  return apiFetch<AdminAccessEntry>('/api/admin/content/access/', {
     method: 'POST',
-    body: JSON.stringify({ username, granted }),
+    body: JSON.stringify({ identifier: username, granted }),
   });
+}
+
+export function fetchAdminAccess() {
+  return apiFetch<AdminAccessEntry[]>('/api/admin/content/access/');
 }

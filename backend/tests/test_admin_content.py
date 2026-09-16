@@ -3,6 +3,8 @@ import uuid
 from pathlib import Path
 
 import pytest
+from allauth.account.models import EmailAddress
+from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -160,6 +162,47 @@ def test_admin_access_grant_and_revoke_are_atomic_and_audited():
     assert revoked.status_code == 200
     assert not ApplicationAdmin.objects.filter(user=target).exists()
     assert AdminContentAuditEvent.objects.filter(resource_type="application_admin").count() == 2
+
+
+def test_admin_access_resolves_verified_email_and_lists_linked_providers():
+    admin = _user("admin")
+    target = _user("target")
+    ApplicationAdmin.objects.create(user=admin)
+    EmailAddress.objects.create(
+        user=target, email="target@example.com", verified=True, primary=True
+    )
+    SocialAccount.objects.create(user=target, provider="google", uid="google-target")
+    client = _client(admin)
+
+    granted = client.post(
+        reverse("admin-content-access"),
+        {"identifier": "TARGET@EXAMPLE.COM", "granted": True},
+        format="json",
+    )
+
+    assert granted.status_code == 200
+    assert granted.json()["username"] == "target"
+    assert granted.json()["providers"] == ["google"]
+    roster = client.get(reverse("admin-content-access"))
+    assert roster.status_code == 200
+    target_entry = next(entry for entry in roster.json() if entry["username"] == "target")
+    assert target_entry["verified_email"] == "target@example.com"
+
+
+def test_admin_access_does_not_resolve_unverified_email():
+    admin = _user("admin")
+    target = _user("target")
+    ApplicationAdmin.objects.create(user=admin)
+    EmailAddress.objects.create(user=target, email="target@example.com", verified=False)
+
+    response = _client(admin).post(
+        reverse("admin-content-access"),
+        {"identifier": "target@example.com", "granted": True},
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert not ApplicationAdmin.objects.filter(user=target).exists()
 
 
 def test_admin_rejects_invalid_or_missing_content_without_mutation():

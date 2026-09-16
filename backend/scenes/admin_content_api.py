@@ -9,6 +9,7 @@ from scenes.admin_content import (
     AdminContentConflict,
     AdminContentValidationFailed,
     apply_action,
+    list_application_admins,
     list_content,
     set_application_access,
 )
@@ -68,6 +69,12 @@ class AdminContentActionView(APIView):
 
 
 class AdminContentAccessView(APIView):
+    def get(self, request):
+        denied = _admin_required(request)
+        if denied:
+            return denied
+        return Response(list_application_admins())
+
     def post(self, request):
         denied = _admin_required(request)
         if denied:
@@ -75,7 +82,7 @@ class AdminContentAccessView(APIView):
         try:
             result = set_application_access(
                 actor=request.user,
-                username=request.data.get("username"),
+                username=request.data.get("identifier", request.data.get("username")),
                 granted=request.data.get("granted"),
             )
         except AdminContentValidationFailed as exc:

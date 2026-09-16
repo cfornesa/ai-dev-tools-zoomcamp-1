@@ -504,6 +504,13 @@ Linking uses allauth's top-level CSRF-protected `POST /accounts/<provider>/login
 flow with `process=connect` and a return path to account settings. Provider
 identity ownership conflicts fail closed and never merge local accounts.
 
+## Managed application-admin roster (#560)
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET /api/admin/content/access/` | Application-admin-only roster of canonical local accounts, including username, verified email when present, and linked provider names; no provider uid, token, or handle is returned. |
+| `POST /api/admin/content/access/` | Application-admin-only grant/revoke by exact local `username` or exact verified allauth email. The legacy `username` field remains accepted; new callers may send `identifier` plus boolean `granted`. Grants/revokes are idempotent and return the resolved account. |
+
 ## Theme customization (#521)
 
 `GET /api/site-theme/` is anonymous-safe and returns the effective finite site

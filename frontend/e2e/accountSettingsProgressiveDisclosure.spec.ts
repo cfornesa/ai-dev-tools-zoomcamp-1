@@ -26,9 +26,7 @@ test.describe('account settings progressive disclosure (#554)', () => {
       }
       await page.goto('/account/settings');
 
-      const modelSection = page
-        .getByRole('heading', { name: 'Saved AI models' })
-        .locator('..');
+      const modelSection = page.getByRole('heading', { name: 'Saved AI models' }).locator('..');
       const personaSection = page.getByRole('heading', { name: 'Personas' }).locator('..');
       await expect(page.getByRole('button', { name: 'New model' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'New persona' })).toBeVisible();

@@ -36,6 +36,21 @@ test.describe('account security flows (#562/#563)', () => {
       await expect(anonymousPage.locator('input[name="email"]')).toBeVisible();
       await expect(anonymousPage.locator('body')).not.toContainText(fixtures.owner.email);
       await anonymousContext.close();
+
+      const temporaryPassword = `${fixtures.password}-changed!`;
+      await page.goto('/accounts/password/change/');
+      await page.locator('input[name="oldpassword"]').fill(fixtures.password);
+      await page.locator('input[name="password1"]').fill(temporaryPassword);
+      await page.locator('input[name="password2"]').fill(temporaryPassword);
+      await page.getByRole('button', { name: /change password/i }).click();
+      await expect(page).toHaveURL(/\/accounts\/login\//);
+      await loginViaUI(page, fixtures.owner.email, temporaryPassword);
+      await page.goto('/accounts/password/change/');
+      await page.locator('input[name="oldpassword"]').fill(temporaryPassword);
+      await page.locator('input[name="password1"]').fill(fixtures.password);
+      await page.locator('input[name="password2"]').fill(fixtures.password);
+      await page.getByRole('button', { name: /change password/i }).click();
+      await expect(page).toHaveURL(/\/accounts\/login\//);
     });
   }
 });

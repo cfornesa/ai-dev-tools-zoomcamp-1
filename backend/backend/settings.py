@@ -415,6 +415,13 @@ if GITHUB_OAUTH_ENABLED:
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+# Password lifecycle safety (#563): reset links never create a session, and
+# changing/setting a password invalidates the current session so the next
+# authentication is explicit. Django's token generator remains single-use;
+# this timeout bounds the reset-link window as well.
+ACCOUNT_LOGIN_ON_PASSWORD_RESET = False
+ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+PASSWORD_RESET_TIMEOUT = 3600
 ACCOUNT_FORMS = {'signup': 'backend.forms.RecaptchaSignupForm'}
 # V1 supports Google (required), GitHub, and LinkedIn (optional,
 # environment-gated)

@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.db.utils import ProgrammingError
 from django.urls import reverse
 
 from scenes.models import PublicProfile, PublicProfileHandleRedirect
@@ -89,3 +90,26 @@ def test_handle_change_creates_permanent_redirect_and_field_errors(client):
     assert reserved.status_code == 400
     assert reserved.json()["detail"]["handle"]
     assert client.get(reverse("account-profile")).json()["handle"] == "new-alice"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("is_staff", [False, True])
+def test_profile_get_fails_safely_on_schema_drift(client, monkeypatch, is_staff):
+    """A production database missing a pending migration (#571) must return
+    a handled 503, never an unexplained 500 traceback, for ordinary and
+    application-admin accounts alike."""
+    user = get_user_model().objects.create_user(
+        username="drift-user", password="x", is_staff=is_staff
+    )
+    client.force_login(user)
+
+    def _raise(*args, **kwargs):
+        raise ProgrammingError(
+            'column "style_id" of relation "scenes_publicprofile" does not exist'
+        )
+
+    monkeypatch.setattr(PublicProfile.objects, "get_or_create", _raise)
+
+    response = client.get(reverse("account-profile"))
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Profile settings are temporarily unavailable."}

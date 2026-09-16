@@ -3,6 +3,7 @@
 import re
 
 from django.db import transaction
+from django.db.utils import OperationalError, ProgrammingError
 from django.http import HttpResponsePermanentRedirect
 from rest_framework import serializers, status
 from rest_framework.response import Response
@@ -127,18 +128,24 @@ class AccountProfileView(APIView):
     def get(self, request):
         if not request.user.is_authenticated:
             return Response({"detail": "Authentication required."}, status=401)
-        profile, _ = PublicProfile.objects.get_or_create(
-            user=request.user,
-            defaults={"style": ProfileStyle.objects.filter(key="default").first()},
-        )
-        if profile.handle is None:
-            with transaction.atomic():
-                profile = PublicProfile.objects.select_for_update().get(pk=profile.pk)
-                if profile.handle is None:
-                    profile.handle = _available_handle(request.user)
-                    profile.save(update_fields=["handle", "updated_at"])
-        payload = _profile_payload(profile)
-        payload["available_styles"] = _available_styles()
+        try:
+            profile, _ = PublicProfile.objects.get_or_create(
+                user=request.user,
+                defaults={"style": ProfileStyle.objects.filter(key="default").first()},
+            )
+            if profile.handle is None:
+                with transaction.atomic():
+                    profile = PublicProfile.objects.select_for_update().get(pk=profile.pk)
+                    if profile.handle is None:
+                        profile.handle = _available_handle(request.user)
+                        profile.save(update_fields=["handle", "updated_at"])
+            payload = _profile_payload(profile)
+            payload["available_styles"] = _available_styles()
+        except (OperationalError, ProgrammingError):
+            # A schema-drift deployment (a pending migration not yet applied
+            # to this database) must fail safely, not surface an unhandled
+            # 500 traceback (#571).
+            return Response({"detail": "Profile settings are temporarily unavailable."}, status=503)
         return Response(payload)
 
     def patch(self, request):

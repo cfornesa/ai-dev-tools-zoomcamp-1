@@ -42,6 +42,12 @@ current API profile URL, and the frontend updates the browser URL to the
 canonical `/users/@<current-handle>` route. Redirect history is owner-scoped
 through the profile relation and is never exposed in public profile payloads.
 
+`GET /api/account/profile/` returns `503 {"detail": "Profile settings are
+temporarily unavailable."}` instead of an unhandled `500` when the database
+is missing a schema element the view depends on (a pending migration not yet
+applied to that environment), for both ordinary and application-admin
+accounts (#571).
+
 ## Profile style catalog (#552)
 
 `GET /api/account/profile/` returns the current `style_key` and an

@@ -121,6 +121,11 @@ def get_user_plan_key(user) -> str:
     return plan.plan_key if plan else DEFAULT_PLAN
 
 
+def is_unlimited(user) -> bool:
+    """Whether the current application-admin grant removes daily caps."""
+    return is_application_admin(user)
+
+
 def _active_plan(plan_key: str) -> Plan | None:
     plan = Plan.objects.filter(plan_key=plan_key, active=True).first()
     if plan is not None:
@@ -178,7 +183,7 @@ def resolve_effective_capabilities(user) -> dict[str, dict[str, object]]:
         for row in UserFeatureOverride.objects.filter(user=user, feature_key__in=CAPABILITY_KEYS)
     }
     result: dict[str, dict[str, object]] = {}
-    admin = is_application_admin(user)
+    admin = is_unlimited(user)
     for key in sorted(CAPABILITY_KEYS):
         spec = CAPABILITY_REGISTRY[key]
         override = overrides.get(key)
@@ -219,7 +224,8 @@ def resolve_effective_capabilities(user) -> dict[str, dict[str, object]]:
             "local": spec.local,
             "remote": spec.remote,
             "quota": spec.quota,
-            "daily_cap": cap,
+            "daily_cap": None if admin and spec.quota else cap,
+            "unlimited": bool(admin and spec.quota),
         }
     return result
 

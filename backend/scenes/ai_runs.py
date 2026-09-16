@@ -55,7 +55,7 @@ from scenes.ai_api import (
     _rate_limit_cache_key,
 )
 from scenes.ai_catalog import is_agentic_supported
-from scenes.entitlements import get_effective_cap
+from scenes.entitlements import get_effective_cap, is_unlimited
 from scenes.models import (
     AI_RUN_ADVANCE_LEASE_SECONDS,
     AI_RUN_MAX_PROVIDER_ATTEMPTS,
@@ -311,7 +311,7 @@ def start_run(
 
     cap = get_effective_cap(owner, _feature_key(operation))
     quota_key = _quota_cache_key(owner.id, operation=_quota_operation_key(operation, target_type))
-    if _current_count(quota_key) >= cap:
+    if not is_unlimited(owner) and _current_count(quota_key) >= cap:
         raise QuotaExceeded(cap)
 
     scene_json: dict[str, Any] | None = (

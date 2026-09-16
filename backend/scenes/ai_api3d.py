@@ -60,6 +60,7 @@ from scenes.ai_api import (
     _validate_model_id,
 )
 from scenes.api3d import _get_project3d_or_404
+from scenes.entitlements import is_unlimited
 from scenes.models import Project3D, SceneVersion3D
 from scenes.patch import PatchErrorReason
 from scenes.permissions import Action, can
@@ -283,7 +284,10 @@ class AICreateScene3DView(APIView):
             return _rate_limited_response_3d()
 
         quota_key = _quota_cache_key(user_id, operation="create3d")
-        if _current_count(quota_key) >= DAILY_QUOTA_MAX_SUCCESSES_3D:
+        if (
+            not is_unlimited(request.user)
+            and _current_count(quota_key) >= DAILY_QUOTA_MAX_SUCCESSES_3D
+        ):
             return _quota_exceeded_response_3d()
 
         try:
@@ -300,7 +304,7 @@ class AICreateScene3DView(APIView):
             return _error_response(result)
 
         quota_count = _increment_quota(quota_key, timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS)
-        if quota_count > DAILY_QUOTA_MAX_SUCCESSES_3D:
+        if not is_unlimited(request.user) and quota_count > DAILY_QUOTA_MAX_SUCCESSES_3D:
             return _quota_exceeded_response_3d()
 
         return Response(
@@ -366,7 +370,10 @@ class AIEditScene3DView(APIView):
             return _edit_rate_limited_response_3d()
 
         edit_quota_key = _quota_cache_key(user_id, operation="edit3d")
-        if _current_count(edit_quota_key) >= EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D:
+        if (
+            not is_unlimited(request.user)
+            and _current_count(edit_quota_key) >= EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D
+        ):
             return _edit_quota_exceeded_response_3d()
 
         try:
@@ -386,7 +393,7 @@ class AIEditScene3DView(APIView):
             return _edit_error_response(result)
 
         quota_count = _increment_quota(edit_quota_key, timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS)
-        if quota_count > EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D:
+        if not is_unlimited(request.user) and quota_count > EDIT_DAILY_QUOTA_MAX_SUCCESSES_3D:
             return _edit_quota_exceeded_response_3d()
 
         return Response(

@@ -56,6 +56,7 @@ def get_entitlement_summary(user) -> dict:
                 "cap": cap,
                 "used": used,
                 "remaining": max(cap - used, 0),
+                "unlimited": entitlements.is_unlimited(user),
             }
         )
     return {

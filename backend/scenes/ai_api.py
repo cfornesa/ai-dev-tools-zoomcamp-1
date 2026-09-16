@@ -105,7 +105,7 @@ from ai_provider.mistral_provider import (
 )
 from ai_provider.registry import get_provider, validate_model
 from scenes.api import _get_project_or_404, _require_or_404
-from scenes.entitlements import get_effective_cap
+from scenes.entitlements import get_effective_cap, is_unlimited
 from scenes.models import (
     AIPersona,
     MistralCredentialDecryptionError,
@@ -674,7 +674,10 @@ class AICreateSceneView(APIView):
             return _rate_limited_response()
 
         create_scene_cap = get_effective_cap(request.user, "ai_scene_create")
-        if _current_count(_quota_cache_key(user_id)) >= create_scene_cap:
+        if (
+            not is_unlimited(request.user)
+            and _current_count(_quota_cache_key(user_id)) >= create_scene_cap
+        ):
             return _quota_exceeded_response(create_scene_cap)
 
         try:
@@ -695,7 +698,7 @@ class AICreateSceneView(APIView):
         quota_count = _increment_quota(
             _quota_cache_key(user_id), timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS
         )
-        if quota_count > create_scene_cap:
+        if not is_unlimited(request.user) and quota_count > create_scene_cap:
             return _quota_exceeded_response(create_scene_cap)
 
         return Response(
@@ -808,7 +811,7 @@ class AIEditSceneView(APIView):
 
         edit_quota_key = _quota_cache_key(user_id, operation="edit")
         edit_scene_cap = get_effective_cap(request.user, "ai_scene_edit")
-        if _current_count(edit_quota_key) >= edit_scene_cap:
+        if not is_unlimited(request.user) and _current_count(edit_quota_key) >= edit_scene_cap:
             return _edit_quota_exceeded_response(edit_scene_cap)
 
         try:
@@ -833,7 +836,7 @@ class AIEditSceneView(APIView):
             _quota_cache_key(user_id, operation="edit"),
             timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS,
         )
-        if quota_count > edit_scene_cap:
+        if not is_unlimited(request.user) and quota_count > edit_scene_cap:
             return _edit_quota_exceeded_response(edit_scene_cap)
 
         return Response(

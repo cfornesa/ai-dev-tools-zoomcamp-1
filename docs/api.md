@@ -511,6 +511,17 @@ identity ownership conflicts fail closed and never merge local accounts.
 | `GET /api/admin/content/access/` | Application-admin-only roster of canonical local accounts, including username, verified email when present, and linked provider names; no provider uid, token, or handle is returned. |
 | `POST /api/admin/content/access/` | Application-admin-only grant/revoke by exact local `username` or exact verified allauth email. The legacy `username` field remains accepted; new callers may send `identifier` plus boolean `granted`. Grants/revokes are idempotent and return the resolved account. |
 
+## Admin entitlements (#561)
+
+`GET /api/account/entitlements/` keeps its existing feature summary and
+capability map. For quota-bearing capabilities, an application administrator
+receives `unlimited: true` and `daily_cap: null`; ordinary users continue to
+receive their configured numeric cap. Admin status is resolved from the
+current `ApplicationAdmin` grant on every request. Daily-cap enforcement is
+skipped only for the active grant; request-rate limits and successful-use
+accounting remain in place, and revocation immediately restores the user's
+plan/override cap without changing owned data.
+
 ## Theme customization (#521)
 
 `GET /api/site-theme/` is anonymous-safe and returns the effective finite site

@@ -40,7 +40,7 @@ from ai_provider.art_piece_provider import (
     ArtPieceProvider,
 )
 from ai_provider.config import use_fake_ai_provider
-from scenes.entitlements import get_effective_cap
+from scenes.entitlements import get_effective_cap, is_unlimited
 from scenes.models import MistralCredentialDecryptionError, ProviderCredential
 
 if TYPE_CHECKING:
@@ -317,7 +317,10 @@ class ArtPieceGenerateView(APIView):
             return _rate_limited_response()
 
         art_generate_cap = get_effective_cap(request.user, "ai_art_generate")
-        if _current_count(_quota_cache_key(user_id)) >= art_generate_cap:
+        if (
+            not is_unlimited(request.user)
+            and _current_count(_quota_cache_key(user_id)) >= art_generate_cap
+        ):
             return _quota_exceeded_response(art_generate_cap)
 
         try:
@@ -371,7 +374,7 @@ class ArtPieceGenerateView(APIView):
             )
 
         quota_count = _increment_quota(_quota_cache_key(user_id), timeout=60 * 60 * 26)
-        if quota_count > art_generate_cap:
+        if not is_unlimited(request.user) and quota_count > art_generate_cap:
             return _quota_exceeded_response(art_generate_cap)
 
         return Response(

@@ -63,7 +63,7 @@ from scenes.ai_api import (
     _rate_limit_cache_key,
 )
 from scenes.ai_catalog import is_agentic_supported
-from scenes.entitlements import get_effective_cap
+from scenes.entitlements import get_effective_cap, is_unlimited
 from scenes.models import (
     SCENE_CONVERSION_RUN_ADVANCE_LEASE_SECONDS,
     SCENE_CONVERSION_RUN_MAX_PROVIDER_ATTEMPTS,
@@ -250,7 +250,7 @@ def start_conversion(
 
     cap = get_effective_cap(owner, FEATURE_KEY)
     quota_key = _quota_cache_key(owner.id, operation=QUOTA_OPERATION)
-    if _current_count(quota_key) >= cap:
+    if not is_unlimited(owner) and _current_count(quota_key) >= cap:
         raise QuotaExceeded(cap)
 
     if source_project.current_version is None:

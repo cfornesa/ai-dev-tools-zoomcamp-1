@@ -73,6 +73,7 @@ def test_free_user_sees_effective_tier_and_zero_usage(client):
         "cap": 5,
         "used": 0,
         "remaining": 5,
+        "unlimited": False,
     }
 
 
@@ -103,6 +104,7 @@ def test_usage_reflects_live_quota_counter_without_altering_it(client):
         "cap": 5,
         "used": 3,
         "remaining": 2,
+        "unlimited": False,
     }
     assert by_feature["ai_art_generate"]["used"] == 1
     # Reading the summary is side-effect free.

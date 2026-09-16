@@ -26,7 +26,7 @@ from rest_framework.test import APIClient
 import scenes.ai_api as ai_api
 from ai_provider.fake_provider import FakeAIProviderScenario, FakeAISceneProvider
 from ai_provider.mistral_provider import MAX_RAW_RESPONSE_BYTES, MistralSceneProvider
-from scenes.models import Project, SceneVersion
+from scenes.models import ApplicationAdmin, Project, SceneVersion
 
 _FIXTURE_PATH = (
     Path(__file__).resolve().parent.parent.parent / "schema" / "fixtures" / "valid" / "blank.json"
@@ -325,6 +325,23 @@ def test_own_daily_quota_returns_429_and_only_counts_successes(owner_client, pro
 
     assert response.status_code == 429
     assert response.json()["error"] == "quota_exceeded"
+
+
+@pytest.mark.django_db
+def test_application_admin_bypasses_daily_quota_but_keeps_rate_limit(
+    owner, owner_client, project, monkeypatch
+):
+    ApplicationAdmin.objects.create(user=owner)
+    cache.set(
+        ai_api._quota_cache_key(project.owner_id, operation="create"),
+        ai_api.DAILY_QUOTA_MAX_SUCCESSES,
+    )
+    _use_provider(monkeypatch, FakeAISceneProvider(FakeAIProviderScenario.SUCCESS))
+
+    response = owner_client.post(_url(project), {"prompt": "anything"}, format="json")
+
+    assert response.status_code == 200
+    assert response.json()["draft"] is True
 
 
 @pytest.mark.django_db

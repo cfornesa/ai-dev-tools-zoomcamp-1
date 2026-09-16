@@ -226,6 +226,18 @@ def test_admin_granted_free_access_is_reflected_by_application_admin_grant():
 
 
 @pytest.mark.django_db
+def test_application_admin_quota_capability_is_explicitly_unlimited():
+    admin = _make_user("admin_unlimited")
+    ApplicationAdmin.objects.create(user=admin)
+
+    resolved = entitlements.resolve_effective_capabilities(admin)
+
+    assert resolved["ai_scene_create"]["unlimited"] is True
+    assert resolved["ai_scene_create"]["daily_cap"] is None
+    assert resolved["editor_2d_local"]["unlimited"] is False
+
+
+@pytest.mark.django_db
 def test_role_and_global_layers_resolve_atomically_and_global_deny_wins():
     user = _make_user("alice")
     admin = _make_user("admin")
@@ -255,6 +267,7 @@ def test_role_and_global_layers_resolve_atomically_and_global_deny_wins():
         "remote": True,
         "quota": False,
         "daily_cap": None,
+        "unlimited": False,
     }
 
 

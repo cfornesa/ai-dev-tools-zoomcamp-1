@@ -1,5 +1,41 @@
 # AugmentrART Backlog
 
+## 2026-09-16 — #549 login/session E2E flake resolved
+
+Backlog-session transaction: `GROOMED → ENGINEERING → QA → RECONCILIATION`.
+The issue was criterion-ready and the only remaining open GitHub issue. The
+rostered Opencode Go Stage 2a implementation was unavailable through the
+active browser tab after two bounded attempts; this session continued as an
+explicit Claude substitution, with no Opencode result credited.
+
+Investigation reproduced the underlying defect rather than treating the
+15-second heading timeout as the cause. On the reused browser context's second
+login, after the test cleared cookies, the server-rendered allauth form could
+submit a stale CSRF form/cookie pairing and return Django `403 CSRF token from
+POST incorrect`. The helper then reported the indirect `Your projects`
+heading timeout. The fix is scoped to `frontend/e2e/support/auth.ts`:
+
+- reload the server-rendered login form before every UI login so Django issues
+  a fresh CSRF token/cookie pair;
+- wait for the redirect to `/` and the page's authenticated `/api/whoami/`
+  response before asserting the Gallery heading;
+- retain the existing 15-second heading assertion and the Firefox
+  `context.request` authenticated-cookie round trip.
+
+Verification:
+
+- `npm run typecheck` passed;
+- focused project lifecycle reproduction after the fix: 5/5;
+- #549 repeat gate across project lifecycle's desktop/narrow selection loop
+  and offline-sync desktop/mobile cases: 60/60 Chromium runs passed with
+  `--repeat-each=20`;
+- `make check`: GitHub action pin check, backend lint/format/typecheck,
+  1,319 backend tests passed / 39 skipped, frontend lint/format/typecheck,
+  and 229 Vitest files / 2,682 tests passed.
+
+The change is ready for issue-specific QA/reconciliation and does not weaken
+any assertion or change product/runtime behavior.
+
 ## 2026-09-15 — final task distillation, readiness, and completion reconciliation
 
 The authenticated GitHub connector was re-enumerated after the #544 migration

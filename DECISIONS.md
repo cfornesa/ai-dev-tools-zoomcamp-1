@@ -949,3 +949,21 @@ Full batch rollup, per-issue routing audit, and final verdict recorded in
 the `session-completion` report returned to the user this turn. Missing-
 terminal-status count: zero (all 9 processed issues + #549 have a recorded
 status). No further reconciliation gaps found.
+
+## 2026-09-16 (#549 engineering substitution and QA evidence)
+
+The rostered Opencode Go Stage 2a implementation was unavailable through the
+active browser tab after two bounded attempts. Continued as an explicit Claude
+substitution; no Opencode result was represented as having run. Investigation
+found the actual login-context defect: a reused Playwright context could
+submit a stale Django CSRF form/cookie pair on its second login after cookie
+clearing, producing a 403 that the helper surfaced later as a `Your projects`
+heading timeout. `loginViaUI` now reloads the server-rendered login form and
+stages readiness on the `/` redirect plus the page's authenticated
+`/api/whoami/` response before retaining the Gallery assertion and Firefox
+cookie-jar round trip. Focused 60-run Chromium evidence passed across the
+affected project desktop/narrow loop and offline desktop/mobile cases; full
+`make check` passed (backend 1,319 passed/39 skipped; frontend 229 files and
+2,682 tests passed). Independent Stage 3 review was not run because the
+rostered reviewer path was unavailable; QA used the issue's repeat harness
+and repository checks directly.

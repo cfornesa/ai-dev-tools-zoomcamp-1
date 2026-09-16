@@ -33,3 +33,14 @@ root-causing this (repeat-run harness across multiple specs/viewports,
 correlate with viewport/ordering/session timing) before closing. Any new
 `loginViaUI` timeout observed anywhere should be logged against #549, not
 treated as a one-off.
+
+**Resolution (2026-09-16):** The failure was a stale CSRF form/cookie pair on
+the second login in a reused Playwright browser context after cookies were
+cleared. Django returned `403 CSRF token from POST incorrect`; because the
+helper only waited for the downstream Gallery heading, it misreported that
+boundary as a login timeout. `loginViaUI` now reloads the server-rendered
+login form before submission and stages readiness on the redirect plus the
+page's authenticated `/api/whoami/` response before asserting the heading.
+The existing 15-second assertion and Firefox `context.request` cookie-jar
+round trip remain in place. A 60-run Chromium repeat gate across the affected
+project and offline desktop/mobile scenarios passed after the change.

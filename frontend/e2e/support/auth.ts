@@ -16,6 +16,11 @@
  * "Password") rather than guessed -- see this task's own investigation
  * notes in the PR/issue comment.
  *
+ * It first waits for the page's authenticated /api/whoami/ response, then
+ * waits for the gallery heading. This keeps a slow project-list request from
+ * being misreported as a failed login while still proving that the browser
+ * page has an authenticated session.
+ *
  * After the heading is visible, it forces one authenticated /api/whoami/
  * round-trip through the same APIRequestContext the api helpers use, so
  * Firefox's lagging shared cookie jar resolves before any spec makes a raw
@@ -25,9 +30,27 @@ import { expect, type Page } from '@playwright/test';
 
 export async function loginViaUI(page: Page, email: string, password: string): Promise<void> {
   await page.goto('/accounts/login/');
+  // A context can be reused for a second login after logout or explicit
+  // cookie clearing. Reload the server-rendered form so Django issues a
+  // fresh hidden token/cookie pair instead of submitting a stale CSRF token.
+  await page.reload();
   await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Login', exact: true }).click();
+  const pageSessionResponse = page.waitForResponse(
+    (response) => response.request().method() === 'GET' && response.url().endsWith('/api/whoami/'),
+    { timeout: 15000 },
+  );
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/', { timeout: 15000 }),
+    page.getByRole('button', { name: 'Login', exact: true }).click(),
+  ]);
+  const sessionResponse = await pageSessionResponse;
+  if (sessionResponse.status() !== 200) {
+    throw new Error(
+      `loginViaUI: page auth check got HTTP ${sessionResponse.status()} from ` +
+        '/api/whoami/, expected 200 after the login redirect.',
+    );
+  }
   // LOGIN_REDIRECT_URL = '/' (config/settings.py); Home.tsx then renders
   // the signed-in Gallery, whose heading is the most reliable "login
   // actually succeeded" signal (rather than just asserting the URL, which

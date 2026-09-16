@@ -52,7 +52,13 @@ test.describe('vendor-aware saved AI models (#553)', () => {
       await page.getByRole('button', { name: 'More creation options' }).click();
       await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
       await page.waitForURL(/\/projects\/[^/]+$/);
-      await page.getByRole('button', { name: 'Expand Tools panel' }).click();
+      if (viewport.width < 768) {
+        // The whole-scene AI action is in the dedicated Layers panel on the
+        // narrow layout; Tools only contains editing preferences there.
+        await page.getByRole('tab', { name: 'Layers' }).click();
+      } else {
+        await page.getByRole('button', { name: 'Expand Tools panel' }).click();
+      }
       await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
       await expect(page.getByRole('heading', { name: 'AI assistant' })).toBeVisible();
       const vendor = page.getByLabel('AI provider');

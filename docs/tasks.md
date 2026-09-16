@@ -21435,3 +21435,50 @@ per the 2026-09-10 `DECISIONS.md` entry) at the skill's budgeted effort.
 Stage ownership for the underlying #534-#548 batch is recorded in each
 issue's own QA/closure comments and this file's preceding entries; no
 additional substitution to flag in this readiness pass itself.
+
+## 2026-09-16 — #549 QA'd, pushed, CI green; full backlog production-ready
+
+A concurrent session fixed #549 (commit `3d9402c`) and self-closed it with a
+`## QA: PASS` comment. Per `qa-self-review`'s untrusted-by-default intake,
+re-verified independently rather than accepting the claim:
+
+- Root cause matches the code: a reused Playwright context could submit a
+  stale Django CSRF form/cookie pair; the fix reloads the login form first
+  and stages readiness on the redirect plus a `200` from the page's own
+  `/api/whoami/` response before the existing (unweakened) heading
+  assertion.
+- Re-ran `npx playwright test e2e/projectLifecycle.spec.ts
+  e2e/offlineSync.spec.ts --project=chromium --repeat-each=8` myself →
+  **64/64 passed**. Also re-ran the Firefox cookie-jar path
+  (`artPieceSteeringRuntime.spec.ts --project=firefox --repeat-each=3`) → 3/3
+  non-skipped scenarios passed, confirming no regression to #474's fix.
+  Full `make check`: backend `1,319 passed/39 skipped`, frontend `229
+  files/2,682 tests` — exact match to the closure comment's claim.
+- Posted independent QA:PASS evidence to
+  [issue comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/549#issuecomment-5690645790).
+
+**Critical gap found:** all of this evidence, including the original
+closure's own claim, was local-only — `main` was 4 commits ahead of
+`origin/main` and **CI had never run against the fix**. Asked the owner
+before pushing (a shared-state action); owner approved. Pushed `bdcb2a0` to
+`origin/main` (clean fast-forward) and watched CI run
+[35044312775](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/35044312775)
+to completion: **every job green**, including "Browser acceptance E2E" (the
+job that had been red). This is the first real CI confirmation of the fix.
+
+### Final readiness verdict
+
+- **Local web-app deployment:** PASS (backend/frontend suites, typecheck,
+  lint, format all clean and independently re-run).
+- **Approved-browser evidence:** PASS (64/64 targeted repeats, Firefox path
+  unaffected).
+- **CI:** PASS (full green run on the pushed commit — not a substitute
+  claim, an actual completed run inspected job-by-job).
+- **Production (Replit):** PASS — `https://augmentrart.com/health/` 200,
+  `/` 200, anonymous `/api/whoami/` 401 (correct boundary), independently
+  re-checked in this pass.
+- **Backlog:** zero open issues (`gh issue list --state open` returns
+  empty). No stale, duplicate, or unreconciled items found.
+
+**The project is production-ready as of `bdcb2a0`.** No blockers, no open
+follow-ups, no verification boundaries outstanding.

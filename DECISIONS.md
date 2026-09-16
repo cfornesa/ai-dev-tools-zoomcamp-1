@@ -967,3 +967,25 @@ affected project desktop/narrow loop and offline desktop/mobile cases; full
 2,682 tests passed). Independent Stage 3 review was not run because the
 rostered reviewer path was unavailable; QA used the issue's repeat harness
 and repository checks directly.
+
+## 2026-09-16 (qa-self-review + production-readiness: #549 CI-confirmed, backlog production-ready)
+
+Re-ran `qa-self-review` on #549's self-closed fix rather than trusting its
+`QA: PASS` claim: independently reproduced 64/64 across the two originally
+affected specs plus the Firefox cookie-jar path, and matched `make check`'s
+exact numbers. Root cause (stale CSRF token/cookie pair on a reused login
+context) and fix (reload login form, wait for redirect + authenticated
+`/api/whoami/` before the existing unweakened heading assertion) both hold
+up under independent review.
+
+Found that all evidence, including the original closure's own, was local
+only — `main` was 4 commits ahead of `origin/main` and CI had never run
+against the fix. Asked the owner before pushing (a shared-state action);
+approved. Pushed `bdcb2a0` and watched CI run to completion: every job
+green, including the previously-red "Browser acceptance E2E" job. This is
+the first real CI evidence for #549.
+
+`production-readiness` then found: zero open issues, all local suites
+green, CI green on the pushed commit, and production (`augmentrart.com`)
+healthy with #547's earlier schema fix still confirmed live. No blockers or
+open follow-ups remain — the project is production-ready as of `bdcb2a0`.

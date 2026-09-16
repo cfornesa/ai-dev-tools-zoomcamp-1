@@ -1,6 +1,6 @@
 ---
 name: Login flake outlives timeout fix
-description: loginViaUI still times out waiting for "Your projects" intermittently after #492 widened the timeout to 15s — the real cause isn't just timeout width.
+description: RESOLVED — loginViaUI's stale-CSRF root cause (not timeout width) fixed and CI-confirmed after #492's timeout widening proved insufficient.
 metadata:
   type: project
 ---
@@ -44,3 +44,11 @@ page's authenticated `/api/whoami/` response before asserting the heading.
 The existing 15-second assertion and Firefox `context.request` cookie-jar
 round trip remain in place. A 60-run Chromium repeat gate across the affected
 project and offline desktop/mobile scenarios passed after the change.
+
+**Independently re-verified (2026-09-16, qa-self-review, commit `3d9402c`):**
+re-ran 64/64 (`projectLifecycle.spec.ts` + `offlineSync.spec.ts`,
+`--repeat-each=8`) plus the Firefox cookie-jar path (3/3), full `make check`
+matched the claimed numbers exactly, and confirmed the heading assertion was
+not weakened. Pushed to `origin/main` (`bdcb2a0`) and **CI's "Browser
+acceptance E2E" job ran green** — the first real CI confirmation of this
+fix, superseding all prior local-only evidence. #549 closed, terminal.

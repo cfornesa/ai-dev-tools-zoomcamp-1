@@ -1,4 +1,4 @@
-import { expect, test, type Browser, type Page } from '@playwright/test';
+import { expect, test, type Browser, type BrowserContext } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
 import { apiGet, apiPatch } from './support/api.js';
@@ -9,13 +9,13 @@ const VIEWPORTS = [
   { width: 375, height: 812 },
 ];
 
-async function profile(context: Page['context']) {
+async function profile(context: BrowserContext) {
   const response = await apiGet(context, '/api/account/profile/');
   expect(response.ok()).toBe(true);
   return response.json() as Promise<Record<string, unknown> & { revision: number }>;
 }
 
-async function setHandle(context: Page['context'], handle: string) {
+async function setHandle(context: BrowserContext, handle: string) {
   const current = await profile(context);
   const response = await apiPatch(context, '/api/account/profile/', {
     ...current,

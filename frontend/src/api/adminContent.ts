@@ -4,6 +4,7 @@ export type AdminContentRow = {
   resource_type: string;
   resource_id: string;
   title: string;
+  description?: string;
   owner: string;
   status: string;
   updated_at: string;
@@ -28,8 +29,12 @@ export type AdminAccessEntry = {
   changed?: boolean;
 };
 
-export function fetchAdminContent() {
-  return apiFetch<AdminContentRow[]>('/api/admin/content/');
+export function fetchAdminContent(options: { query?: string; account?: string } = {}) {
+  const params = new URLSearchParams();
+  if (options.query) params.set('q', options.query);
+  if (options.account) params.set('account', options.account);
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  return apiFetch<AdminContentRow[]>(`/api/admin/content/${suffix}`);
 }
 
 export function applyAdminContentAction(action: AdminContentAction) {

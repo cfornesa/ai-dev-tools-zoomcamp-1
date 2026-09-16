@@ -22,16 +22,19 @@ function AdminContent() {
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [username, setUsername] = useState('');
+  const [search, setSearch] = useState('');
+  const [accountFilter, setAccountFilter] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState({ query: '', account: '' });
 
   useEffect(() => {
     if (auth.status !== 'signed-in' || !auth.user.is_application_admin) return;
-    Promise.all([fetchAdminContent(), fetchAdminAccess()])
+    Promise.all([fetchAdminContent(appliedSearch), fetchAdminAccess()])
       .then(([content, access]) => {
         setRows(content);
         setAdmins(access);
       })
       .catch(() => setError('Could not load admin content.'));
-  }, [auth]);
+  }, [auth, appliedSearch]);
 
   const visibleRows = useMemo(
     () => rows?.filter((row) => filter === 'all' || row.resource_type.startsWith(filter)) ?? [],
@@ -95,6 +98,17 @@ function AdminContent() {
     }
   }
 
+  function submitSearch(event: React.FormEvent) {
+    event.preventDefault();
+    setAppliedSearch({ query: search.trim(), account: accountFilter.trim() });
+  }
+
+  function resetSearch() {
+    setSearch('');
+    setAccountFilter('');
+    setAppliedSearch({ query: '', account: '' });
+  }
+
   return (
     <section className="content-panel admin-pages" aria-labelledby="admin-content-heading">
       <nav className="admin-console-nav" aria-label="Admin console">
@@ -119,6 +133,28 @@ function AdminContent() {
           </select>
         </label>
       </div>
+      <form className="admin-content-search" role="search" onSubmit={submitSearch}>
+        <label htmlFor="admin-content-search-input">Search title or description</label>
+        <input
+          id="admin-content-search-input"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          maxLength={100}
+        />
+        <label htmlFor="admin-content-account-filter">Account username or email</label>
+        <input
+          id="admin-content-account-filter"
+          value={accountFilter}
+          onChange={(event) => setAccountFilter(event.target.value)}
+          maxLength={254}
+        />
+        <button className="admin-action-primary" type="submit">
+          Search
+        </button>
+        <button className="admin-action-secondary" type="button" onClick={resetSearch}>
+          Reset filters
+        </button>
+      </form>
       {message && <p role="status">{message}</p>}
       {error && <p role="alert">{error}</p>}
       {rows === null && !error && <p role="status">Loading content…</p>}

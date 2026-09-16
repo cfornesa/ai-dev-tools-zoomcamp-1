@@ -33,6 +33,7 @@ def _payload(row):
         "resource_type": row.resource_type,
         "resource_id": row.resource_id,
         "title": row.title,
+        "description": row.description,
         "owner": row.owner,
         "status": row.status,
         "updated_at": row.updated_at,
@@ -46,7 +47,15 @@ class AdminContentListView(APIView):
         denied = _admin_required(request)
         if denied:
             return denied
-        return Response([_payload(row) for row in list_content()])
+        return Response(
+            [
+                _payload(row)
+                for row in list_content(
+                    query=request.query_params.get("q", ""),
+                    account=request.query_params.get("account", ""),
+                )
+            ]
+        )
 
 
 class AdminContentActionView(APIView):

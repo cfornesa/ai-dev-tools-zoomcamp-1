@@ -44,6 +44,7 @@ class ContentRow:
     updated_at: str
     deleted: bool
     version_count: int | None = None
+    description: str = ""
 
 
 def _user_name(user) -> str:
@@ -64,6 +65,7 @@ def _row(resource_type: str, resource) -> ContentRow:
         resource_type=resource_type,
         resource_id=str(resource.public_id),
         title=resource.title,
+        description=getattr(resource, "description", ""),
         owner=_user_name(resource.owner),
         status=status,
         updated_at=resource.updated_at.isoformat(),
@@ -72,7 +74,7 @@ def _row(resource_type: str, resource) -> ContentRow:
     )
 
 
-def list_content() -> list[ContentRow | dict]:
+def list_content(*, query: str = "", account: str = "") -> list[ContentRow | dict]:
     rows: list[ContentRow | dict] = []
     for project in Project.all_objects.select_related("owner").order_by("-updated_at", "-id"):
         rows.append(_row("project", project))
@@ -137,6 +139,33 @@ def list_content() -> list[ContentRow | dict]:
                 "byte_size": blob.byte_size,
             }
         )
+    query = query.strip().lower()
+    account = account.strip().lower()
+    if account:
+        user_model = get_user_model()
+        usernames = set(
+            user_model.objects.filter(email__iexact=account).values_list("username", flat=True)
+        )
+        usernames.update(
+            user_model.objects.filter(username__icontains=account).values_list(
+                "username", flat=True
+            )
+        )
+        rows = [
+            row
+            for row in rows
+            if (row.owner if isinstance(row, ContentRow) else row["owner"]) in usernames
+        ]
+    if query:
+        rows = [
+            row
+            for row in rows
+            if query in (row.title if isinstance(row, ContentRow) else row["title"]).lower()
+            or query
+            in (
+                row.description if isinstance(row, ContentRow) else row.get("description", "")
+            ).lower()
+        ]
     return rows
 
 

@@ -87,6 +87,14 @@ handle/display name/link fields; content results use the existing gallery card
 contract. Blank queries return an empty result set, malformed scopes or terms
 over 100 characters return `400`, and ordering is deterministic.
 
+### Admin content search (#582)
+
+`GET /api/admin/content/?q=<term>&account=<username-or-email>` remains
+application-admin-only and applies both filters to safe administrative content
+metadata. `q` matches title or description, while `account` resolves an exact
+email or username substring internally; email addresses are never returned in
+content rows. Missing filters preserve the existing full list contract.
+
 ## Account billing contract (#440, #550)
 
 Authenticated account billing is exposed through `/api/account/billing/` and

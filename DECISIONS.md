@@ -930,3 +930,22 @@ No other gaps found. Readiness verdict: local **PASS**, full suite **PASS**,
 Replit production **PASS**, CI **FAIL** (test-infrastructure flake, tracked
 as #549, not a product defect and not blocking on the already-closed feature
 work).
+
+## 2026-09-16 (session-completion: batch rollup)
+
+Ran `session-completion` over the #534/#536/#542-#548 batch (9 issues, all
+closed) plus #549 (new). Reconciliation found two closed issues (#536,
+#545) closed via a "Backlog-session reconciliation" comment describing
+passing evidence rather than the qa-self-review skill's strict `## QA:
+PASS` comment format — content is adequate (specific commits, viewports,
+pass counts named), format deviation only, not reopened for it. #547 was
+closed with **zero** GitHub comments explaining the fix (root cause,
+production SQL repair, verification) — a real reconciliation gap, not just
+a format one; posted a closure-reconciliation comment recovering that from
+`docs/tasks.md` (GitHub comment 5690204222) so the record is complete
+without reopening anything.
+
+Full batch rollup, per-issue routing audit, and final verdict recorded in
+the `session-completion` report returned to the user this turn. Missing-
+terminal-status count: zero (all 9 processed issues + #549 have a recorded
+status). No further reconciliation gaps found.

@@ -21781,9 +21781,11 @@ these new capabilities. The attached images remain evidence only.
   service, and no QA was run per the owner instruction. #577 depends on the
   #576 data contract and is the next engineering transaction.
 - #578–#584 are criterion-ready, linked, and not duplicates of closed #521,
-  #547, #548, #552, or #575’s bounded presentation contract. Their issue
-  bodies contain entry points, finite acceptance criteria, routing hints,
-  verification commands/evidence, dependencies, and out-of-scope boundaries.
+  #547, #548, #552, or #575’s bounded presentation contract. They have now
+  been implemented and handed off for QA in commits `eb8418a`, `e21360b`,
+  `89e41c2`, `b93f874`, `0e00238`, `d8f1013`, and `f568386` respectively;
+  each issue remains open with its focused checks and QA boundary recorded in
+  the issue comment.
 - No new memory topic was added: the expanded request is fully represented by
   the linked issue contracts, while #571’s existing verification boundary is
   already recorded in the durable account-settings production audit.

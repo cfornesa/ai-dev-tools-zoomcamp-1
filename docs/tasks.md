@@ -21741,9 +21741,9 @@ QA gates. Production deployment remains a later readiness/owner operation.
   production `PublicProfile`/`ProfileStyle` tables and migrations `0052`,
   `0066`, and `0067` before engineering a fix. The blocker and next action
   were posted to #571.
-- #572 is the next independent groomed issue. #573, #574, and #575 remain
-  criterion-ready and ordered after it; #575 still carries an owner visual
-  checkpoint before implementation.
+- #572, #573, #574, and #575 are implemented and handed off for QA; their
+  commits and checks are recorded in the corresponding GitHub comments. #571
+  remains blocked at the production verification boundary.
 
 ## 2026-09-16 — expanded admin, style, URL, metadata, and search follow-ups
 
@@ -21774,10 +21774,12 @@ these new capabilities. The attached images remain evidence only.
   context is unavailable. It is independent of the new presentation work;
   exact next action remains production traceback plus table/migration
   verification for `PublicProfile`/`ProfileStyle`.
-- #575 is now fully groomed with the owner-selected admin-card direction and
-  is the next engineering transaction. #576 is the next complex dependency
-  after #575 only because the owner requested style capabilities as part of
-  the same expanded backlog; #577 depends on its data contract.
+- #575 is implemented and handed off for QA in commit `cb03d12`. #576 is
+  implemented and handed off for QA in commit `6256e67`; its focused backend
+  suite (23 tests), frontend typecheck/lint/format/build, and migration check
+  passed. Direct Codex implementation substituted for the rostered complex
+  service, and no QA was run per the owner instruction. #577 depends on the
+  #576 data contract and is the next engineering transaction.
 - #578–#584 are criterion-ready, linked, and not duplicates of closed #521,
   #547, #548, #552, or #575’s bounded presentation contract. Their issue
   bodies contain entry points, finite acceptance criteria, routing hints,

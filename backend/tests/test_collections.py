@@ -325,3 +325,124 @@ def test_publish_unpublish_and_soft_delete_are_safe_and_idempotent(owner_client,
 def test_account_collection_endpoints_require_authentication(anonymous_client):
     assert anonymous_client.get("/api/account/collections/").status_code == 401
     assert anonymous_client.post("/api/account/collections/", {"title": "Nope"}).status_code == 401
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "bad_seo_config",
+    [
+        {"title": "x" * 201},
+        {"unknown_field": "nope"},
+        {"canonical_policy": "everywhere"},
+        {"og_image_url": "javascript:alert(1)"},
+        {"structured_data": "not-an-object"},
+    ],
+)
+def test_collection_seo_config_rejects_invalid_values(owner_client, bad_seo_config):
+    collection = _create_collection(owner_client)
+    response = owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {"seo_config": bad_seo_config},
+        format="json",
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_published_collection_exposes_configured_seo_metadata_publicly(
+    owner_client, anonymous_client
+):
+    collection = _create_collection(owner_client, "SEO collection")
+    seo_config = {
+        "title": "SEO collection — AugmentrART",
+        "description": "A curated set of public work.",
+        "canonical_policy": "self",
+        "indexing": "index",
+        "og_image_url": "https://example.com/collection.png",
+        "structured_data": {"@type": "CollectionPage"},
+    }
+    assert (
+        owner_client.patch(
+            f"/api/account/collections/{collection['id']}/",
+            {"seo_config": seo_config},
+            format="json",
+        ).status_code
+        == 200
+    )
+    assert (
+        owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+        == 200
+    )
+
+    response = anonymous_client.get("/api/public/collections/collection-owner/seo-collection/")
+    assert response.status_code == 200
+    assert response.json()["seo_config"] == seo_config
+
+
+@pytest.mark.django_db
+def test_private_and_deleted_collection_do_not_leak_seo_metadata(owner_client, anonymous_client):
+    collection = _create_collection(owner_client, "Hidden collection")
+    seo_config = {"description": "Should never be public."}
+    owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {"seo_config": seo_config},
+        format="json",
+    )
+
+    private_response = anonymous_client.get(
+        "/api/public/collections/collection-owner/hidden-collection/"
+    )
+    assert private_response.status_code == 404
+
+    owner_client.post(f"/api/account/collections/{collection['id']}/publish/")
+    owner_client.delete(f"/api/account/collections/{collection['id']}/")
+    deleted_response = anonymous_client.get(
+        "/api/public/collections/collection-owner/hidden-collection/"
+    )
+    assert deleted_response.status_code == 404
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "bad_seo_config",
+    [
+        {"title": "x" * 201},
+        {"unknown_field": "nope"},
+        {"twitter_card": "huge"},
+        {"og_image_url": "javascript:alert(1)"},
+    ],
+)
+def test_art_piece_seo_config_rejects_invalid_values(owner_client, owner, bad_seo_config):
+    piece = _published_piece(owner)
+    response = owner_client.patch(
+        f"/api/art-pieces/{piece.public_id}/",
+        {"seo_config": bad_seo_config},
+        format="json",
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_published_art_piece_exposes_configured_seo_metadata_publicly(
+    owner_client, anonymous_client, owner
+):
+    piece = _published_piece(owner)
+    piece.description = "A meaningful description."
+    piece.save(update_fields=["description"])
+    seo_config = {
+        "title": "Published piece — AugmentrART",
+        "answer_summary": "A generated public art piece.",
+        "structured_data": {"@type": "CreativeWork"},
+    }
+    assert (
+        owner_client.patch(
+            f"/api/art-pieces/{piece.public_id}/",
+            {"seo_config": seo_config},
+            format="json",
+        ).status_code
+        == 200
+    )
+
+    response = anonymous_client.get(f"/api/public/art-pieces/{piece.public_id}/")
+    assert response.status_code == 200
+    assert response.json()["seo_config"] == seo_config

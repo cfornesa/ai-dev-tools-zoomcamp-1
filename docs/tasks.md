@@ -1,5 +1,67 @@
 # AugmentrART Backlog
 
+## 2026-09-16 — QA batch reconciliation: #571-#587 closed, CI restored, #588 opened
+
+Backlog-session transaction: `GROOMED → ENGINEERING/QA → RECONCILIATION`, run
+as a `/goal`-driven qa-self-review pass over all 17 then-open issues
+(#571-#587), each already source/QA-ready from a prior session's engineering
+handoffs, per `docs/tasks.md`'s two 2026-09-15/16 distillation batches above.
+
+**CI was found red on `main`** at session start (3 commits back-to-back
+failing): a pre-existing `make backend-typecheck` regression (`scenes/llms.py`
+reused a for-loop variable across two element types; `public_search_api.py`/
+`canonical_piece_api.py` left `authentication_classes`/`permission_classes`
+unannotated — introduced by #578/#581/#585's engineering, undetected because
+their own handoffs never ran the full backend typecheck), and a
+`responsiveShell.spec.ts` E2E regression from #572's routing change (the spec
+still asserted the removed standalone Home surface and a "Home" nav link that
+no longer existed; `PublicGallery.tsx` was also missing the `.content-panel`
+wrapper every sibling page has). Both fixed and pushed before proceeding;
+CI has been green on every run since.
+
+**Per-issue QA findings** (full criterion matrices and evidence are in each
+issue's `## QA: PASS` comment — this is a summary, not a substitute):
+
+| Issue | Verdict | What QA found/fixed beyond confirming the existing diff |
+| --- | --- | --- |
+| [#587](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/587) | PASS | Vendor schema fix verified as-is; no gap |
+| [#571](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/571) | PASS, fixed | The issue's own required regression test (safe 503 on schema drift, not an unhandled 500) had never been implemented; added the handling in `AccountProfileView.get` plus the test |
+| [#572](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/572) | PASS, fixed | Caused the `responsiveShell.spec.ts` CI break above; fixed as part of this issue's own required browser evidence |
+| [#575](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/575) | PASS | Verified as-is via live browser interaction across all three admin routes |
+| [#574](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/574) | PASS | Verified as-is; `aria-expanded` sync confirmed via direct DOM inspection |
+| [#573](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/573) | PASS, fixed | `/accounts/3rdparty/` (named in the issue's own entry-point list) still rendered fully unstyled default allauth markup — `socialaccount/base_manage.html`/`base_entrance.html` extend a separate allauth layout chain the original diff never overrode; added the missing template overrides + regression test |
+| [#578](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/578) | PASS, tests added | Only 2 of the 5 required test scenarios (success/collision/privacy) existed; added unknown-handle and private-profile 404 cases plus a `CanonicalPublicPiece.tsx` frontend test (zero prior coverage) |
+| [#579](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/579) | PASS, tests added | `seo_config` validation/rendering/fallback had zero dedicated tests (handoff's "5 passed" was pre-existing Page CRUD tests); added 8 backend tests and a new `PublicCmsPage.test.tsx` |
+| [#580](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/580) | PASS, tests added + follow-up filed | Same test gap as #579 for Collection/ArtPiece; also found `Project`/`Project3D` (2D/3D pieces) have **no `seo_config` field at all** despite sharing #578's canonical route with generated pieces — filed and linked [#588](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/588) rather than blocking or absorbing |
+| [#581](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/581) | PASS, tests added | Content-scope search and the entire frontend search form had zero coverage (only accounts-scope was tested); added both |
+| [#582](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/582) | PASS, tests added | `q`/`account` filter params untested; added coverage plus a secrets-non-leak assertion; live-verified reset behavior |
+| [#583](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/583) | PASS | Verified as-is via live interaction (Cancel-doesn't-mutate, mobile Save/Cancel stacking) |
+| [#584](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/584) | PASS, **real bugs fixed** | "Admin console" was a `<strong>`, not a heading (criterion violation); the mobile hamburger menu's `hidden` attribute was silently overridden by CSS at every viewport (`getComputedStyle` showed `display: flex` while `hidden` was `true`) — the "collapsed" nav was always visible/focusable regardless of `aria-expanded`; also had no Escape/close-on-select handlers despite the criterion requiring both. All three fixed; this was live-broken in production, not just under-tested |
+| [#585](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/585) | PASS, tests added | Pieces/collections representation, ordering, and injection-safety in `llms.txt`/`llms-full.txt` had no tests; added coverage including a literal `\n## Fake section` injection probe |
+| [#586](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/586) | PASS | Genuinely well-tested from the start (23 tests covering every required category); no gap found |
+| [#576](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/576) | PASS, tests added | `scenes/theme.py` (the shared fail-closed validator enforcing "no arbitrary CSS/HTML/JS") had zero direct tests; added 9, including explicit `javascript:`/`<script>` rejection probes |
+| [#577](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/577) | PASS, tests added | Global/profile style cascade had no direct test coverage (`PublicProfile.tsx` had no test file at all); added coverage and live-verified the cascade end-to-end (saved Bauhaus for a fixture profile, confirmed the profile panel took the override while the shared shell and `/gallery` stayed on the global style, then reverted the fixture) |
+
+**Verification run this session** (final state, after all fixes): backend
+`uv run pytest` 1403 passed / 39 skipped, `ruff check`/`format --check`/`mypy`
+clean, `makemigrations --check` clean (no schema changes this session);
+frontend `npx vitest run` 2715 passed, `tsc -b`/`oxlint`/`prettier --check`/
+`npm run build` clean; the exact CI "Browser acceptance E2E" 4-spec selection
+24/24 passed locally against a real PostgreSQL-backed Django + Vite pair.
+GitHub Actions CI green on every run once the two CI-breaking fixes above
+landed.
+
+**Rollup:** 17 discovered, 17 completed, 0 blocked, 0 dependency-blocked,
+0 handed-off, 0 missing terminal status. 1 newly discovered follow-up
+(#588, 2D/3D piece SEO metadata) created and linked, not yet engineered.
+No new migrations were added this session — every fix is code/test-only, so
+a Replit republish for these changes is a lower-risk code-only deploy (no
+schema diff to approve). See `.agents/memory/` for durable lessons recorded
+from this session (`responsiveshell-spec-drift-after-#572` topic references
+the pre-existing `e2e-spec-drift-outside-smoke-suite` pattern; a new
+`qa-batch-hidden-attribute-css-override` topic records the #584 CSS
+specificity bug as a durable class of defect to watch for).
+
 ## 2026-09-16 — #549 login/session E2E flake resolved
 
 Backlog-session transaction: `GROOMED → ENGINEERING → QA → RECONCILIATION`.

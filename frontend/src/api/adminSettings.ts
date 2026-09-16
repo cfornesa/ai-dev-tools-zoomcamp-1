@@ -32,6 +32,36 @@ export type EntitlementRole = {
 
 export type GlobalCapability = { enabled: boolean; revision: number };
 
+export type ProfileStyle = {
+  id: number;
+  key: string;
+  label: string;
+  description: string;
+  tokens: Record<string, string>;
+  enabled: boolean;
+  revision: number;
+};
+
+export async function fetchProfileStyles(): Promise<ProfileStyle[]> {
+  return apiFetch<ProfileStyle[]>('/api/admin/profile-styles/');
+}
+
+export async function createProfileStyle(
+  style: Omit<ProfileStyle, 'id' | 'revision'>,
+): Promise<ProfileStyle> {
+  return apiFetch<ProfileStyle>('/api/admin/profile-styles/', {
+    method: 'POST',
+    body: JSON.stringify(style),
+  });
+}
+
+export async function updateProfileStyle(style: ProfileStyle): Promise<ProfileStyle> {
+  return apiFetch<ProfileStyle>(`/api/admin/profile-styles/${style.id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(style),
+  });
+}
+
 export type CloudRetentionPolicy = {
   deleted_grace_days: number;
   entitlement_grace_days: number;

@@ -9,8 +9,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.gallery import eligible_projects, eligible_projects3d
-from scenes.models import ArtPiece, PublicProfile, PublicProfileHandleRedirect
-from scenes.theme import effective_theme, sanitize_theme
+from scenes.models import ArtPiece, ProfileStyle, PublicProfile, PublicProfileHandleRedirect
+from scenes.theme import effective_profile_theme, sanitize_theme
 
 RESERVED_HANDLES = {"admin", "api", "account", "accounts", "users", "gallery"}
 HANDLE_MAX_LENGTH = 32
@@ -51,12 +51,15 @@ class ProfileSerializer(serializers.Serializer):
     profile_image_url = serializers.URLField(max_length=500, allow_blank=True, required=False)
     is_public = serializers.BooleanField(required=False)
     revision = serializers.IntegerField(min_value=1)
+    style_key = serializers.SlugField(max_length=48, required=False)
     theme_config = serializers.DictField(required=False)
 
 
 def _profile_payload(profile: PublicProfile) -> dict:
+    style = profile.style
     return {
         "handle": profile.handle,
+        "style_key": style.key if style else None,
         "display_name": profile.display_name,
         "bio": profile.bio,
         "website_url": profile.website_url,
@@ -64,8 +67,22 @@ def _profile_payload(profile: PublicProfile) -> dict:
         "profile_image_url": profile.profile_image_url,
         "is_public": profile.is_public,
         "revision": profile.revision,
-        "theme_config": effective_theme(profile.theme_config),
+        "theme_config": effective_profile_theme(
+            style.tokens if style else {}, profile.theme_config
+        ),
     }
+
+
+def _available_styles() -> list[dict]:
+    return [
+        {
+            "key": style.key,
+            "label": style.label,
+            "description": style.description,
+            "tokens": style.tokens,
+        }
+        for style in ProfileStyle.objects.filter(enabled=True)
+    ]
 
 
 def _piece_payload(profile: PublicProfile) -> dict:
@@ -108,14 +125,19 @@ class AccountProfileView(APIView):
     def get(self, request):
         if not request.user.is_authenticated:
             return Response({"detail": "Authentication required."}, status=401)
-        profile, _ = PublicProfile.objects.get_or_create(user=request.user)
+        profile, _ = PublicProfile.objects.get_or_create(
+            user=request.user,
+            defaults={"style": ProfileStyle.objects.filter(key="default").first()},
+        )
         if profile.handle is None:
             with transaction.atomic():
                 profile = PublicProfile.objects.select_for_update().get(pk=profile.pk)
                 if profile.handle is None:
                     profile.handle = _available_handle(request.user)
                     profile.save(update_fields=["handle", "updated_at"])
-        return Response(_profile_payload(profile))
+        payload = _profile_payload(profile)
+        payload["available_styles"] = _available_styles()
+        return Response(payload)
 
     def patch(self, request):
         if not request.user.is_authenticated:
@@ -135,6 +157,27 @@ class AccountProfileView(APIView):
             if profile.revision != values["revision"]:
                 return Response({"error": "revision_conflict"}, status=409)
             handle = values.get("handle", profile.handle)
+            style_key = values.get(
+                "style_key", profile.style.key if profile.style_id else "default"
+            )
+            try:
+                style = ProfileStyle.objects.get(key=style_key)
+            except ProfileStyle.DoesNotExist:
+                return Response(
+                    {
+                        "error": "validation_failed",
+                        "detail": {"style_key": ["Unknown profile style."]},
+                    },
+                    status=400,
+                )
+            if not style.enabled and style.pk != profile.style_id:
+                return Response(
+                    {
+                        "error": "validation_failed",
+                        "detail": {"style_key": ["That profile style is disabled."]},
+                    },
+                    status=400,
+                )
             if not handle:
                 return Response(
                     {
@@ -151,9 +194,13 @@ class AccountProfileView(APIView):
                     },
                     status=400,
                 )
-            if handle and (
-                PublicProfile.objects.filter(handle=handle).exclude(pk=profile.pk).exists()
-                or PublicProfileHandleRedirect.objects.filter(old_handle=handle).exists()
+            if (
+                handle
+                and handle != profile.handle
+                and (
+                    PublicProfile.objects.filter(handle=handle).exclude(pk=profile.pk).exists()
+                    or PublicProfileHandleRedirect.objects.filter(old_handle=handle).exists()
+                )
             ):
                 return Response(
                     {
@@ -163,8 +210,10 @@ class AccountProfileView(APIView):
                     status=409,
                 )
             old_handle = profile.handle
+            style_changed = "style_key" in values and style.pk != profile.style_id
             for field in (
                 "handle",
+                "style",
                 "display_name",
                 "bio",
                 "website_url",
@@ -174,14 +223,20 @@ class AccountProfileView(APIView):
                 "theme_config",
             ):
                 if field in values:
-                    setattr(profile, field, values[field])
+                    setattr(profile, field, style if field == "style" else values[field])
+            if "style_key" in values:
+                profile.style = style
+                if style_changed:
+                    profile.theme_config = {}
             profile.revision += 1
             profile.save()
             if old_handle and old_handle != profile.handle:
                 PublicProfileHandleRedirect.objects.update_or_create(
                     old_handle=old_handle, defaults={"profile": profile}
                 )
-        return Response(_profile_payload(profile))
+        payload = _profile_payload(profile)
+        payload["available_styles"] = _available_styles()
+        return Response(payload)
 
 
 class PublicProfileView(APIView):
@@ -190,7 +245,7 @@ class PublicProfileView(APIView):
             PublicProfile.objects.filter(
                 handle=handle.lower(), is_public=True, user__is_active=True
             )
-            .select_related("user")
+            .select_related("user", "style")
             .first()
         )
         if profile is None:

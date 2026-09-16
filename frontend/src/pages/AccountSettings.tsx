@@ -294,6 +294,52 @@ function ProfileSettings() {
           </p>
         )}
       </div>
+      {profile.available_styles && profile.available_styles.length > 0 && (
+        <div className="account-settings-field">
+          <label htmlFor="profile-style">Profile style</label>
+          <select
+            id="profile-style"
+            value={profile.style_key ?? ''}
+            onChange={(event) =>
+              setProfile({ ...profile, style_key: event.target.value, theme_config: {} })
+            }
+          >
+            {profile.available_styles.map((style) => (
+              <option key={style.key} value={style.key}>
+                {style.label}
+              </option>
+            ))}
+          </select>
+          <p>
+            {profile.available_styles.find((style) => style.key === profile.style_key)
+              ?.description ?? 'Choose a safe, token-only profile style.'}
+          </p>
+          <div
+            aria-label="Profile style preview"
+            className="profile-style-preview"
+            style={(() => {
+              const tokens = profile.available_styles?.find(
+                (style) => style.key === profile.style_key,
+              )?.tokens;
+              return tokens
+                ? {
+                    backgroundColor: tokens.background,
+                    color: tokens.text,
+                    borderColor: tokens.accent,
+                  }
+                : undefined;
+            })()}
+          >
+            Style preview
+          </div>
+          <button
+            type="button"
+            onClick={() => setProfile({ ...profile, style_key: 'default', theme_config: {} })}
+          >
+            Reset style
+          </button>
+        </div>
+      )}
       <div className="account-settings-field">
         <label htmlFor="profile-display-name">Display name</label>
         <input

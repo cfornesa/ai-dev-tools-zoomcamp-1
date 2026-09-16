@@ -2,6 +2,13 @@ import { apiFetch } from './client';
 
 export type PublicProfile = {
   handle: string | null;
+  style_key?: string | null;
+  available_styles?: Array<{
+    key: string;
+    label: string;
+    description: string;
+    tokens: Record<string, string>;
+  }>;
   display_name: string;
   bio: string;
   website_url: string;

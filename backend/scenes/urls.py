@@ -96,6 +96,7 @@ from scenes.cloud_backup_api import (
 from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudRetentionView
 from scenes.pages_api import PublicPageDetailView
 from scenes.profile_api import AccountProfileView, PublicProfileView
+from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
 from scenes.provider_credentials_api import ProviderCredentialView
 from scenes.scene_conversion_api import (
     SceneConversionAcceptView,
@@ -114,6 +115,16 @@ urlpatterns = [
     path("admin/content/actions/", AdminContentActionView.as_view(), name="admin-content-action"),
     path("admin/content/access/", AdminContentAccessView.as_view(), name="admin-content-access"),
     path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
+    path(
+        "admin/profile-styles/",
+        AdminProfileStyleListCreateView.as_view(),
+        name="admin-profile-style-list-create",
+    ),
+    path(
+        "admin/profile-styles/<int:style_id>/",
+        AdminProfileStyleDetailView.as_view(),
+        name="admin-profile-style-detail",
+    ),
     path("site-theme/", SiteThemeView.as_view(), name="site-theme"),
     path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
     path("admin/roles/", AdminRolesView.as_view(), name="admin-roles"),

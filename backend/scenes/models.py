@@ -148,6 +148,13 @@ class PublicProfile(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="public_profile"
     )
     handle = models.CharField(max_length=32, unique=True, null=True, blank=True)
+    style = models.ForeignKey(
+        "ProfileStyle",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+    )
     display_name = models.CharField(max_length=120, blank=True, default="")
     bio = models.TextField(max_length=1000, blank=True, default="")
     website_url = models.URLField(max_length=300, blank=True, default="")
@@ -160,6 +167,24 @@ class PublicProfile(models.Model):
 
     def __str__(self) -> str:
         return self.handle or f"profile-{self.user_id}"
+
+
+class ProfileStyle(models.Model):
+    """Admin-managed finite token set for public profile presentation (#552)."""
+
+    key = models.SlugField(max_length=48, unique=True)
+    label = models.CharField(max_length=80)
+    description = models.CharField(max_length=240, blank=True, default="")
+    tokens = models.JSONField(default=dict)
+    enabled = models.BooleanField(default=True)
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["key"]
+
+    def __str__(self) -> str:
+        return self.label
 
 
 class PublicProfileHandleRedirect(models.Model):

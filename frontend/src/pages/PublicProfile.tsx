@@ -21,10 +21,19 @@ export default function PublicProfile() {
   }, [handle, navigate]);
   if (missing) return <Navigate to="/" replace />;
   if (!data) return <p role="status">Loading profile…</p>;
+  const theme = data.profile.theme_config;
   return (
     <section
       className="content-panel public-profile"
-      style={{ '--profile-accent': data.profile.theme_config.accent } as CSSProperties}
+      style={
+        {
+          '--profile-background': theme.background,
+          '--profile-surface': theme.surface,
+          '--profile-text': theme.text,
+          '--profile-muted': theme.muted,
+          '--profile-accent': theme.accent,
+        } as CSSProperties
+      }
     >
       <div className="public-profile-heading">
         {data.profile.profile_image_url && <img src={data.profile.profile_image_url} alt="" />}

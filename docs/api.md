@@ -16,6 +16,23 @@ current API profile URL, and the frontend updates the browser URL to the
 canonical `/users/@<current-handle>` route. Redirect history is owner-scoped
 through the profile relation and is never exposed in public profile payloads.
 
+## Profile style catalog (#552)
+
+`GET /api/account/profile/` returns the current `style_key` and an
+`available_styles` catalog containing only enabled, server-managed styles.
+`PATCH /api/account/profile/` accepts `style_key`; unknown or newly disabled
+styles return field-level validation errors, while an existing assignment
+remains readable after an administrator disables it. `theme_config` remains a
+validated token-only compatibility override and cannot contain CSS, HTML, or
+JavaScript.
+
+Application administrators can use `GET|POST /api/admin/profile-styles/` and
+`PATCH /api/admin/profile-styles/<id>/` to manage the finite catalog. Anonymous
+callers receive `401`, non-admins `403`, and updates require the current
+integer `revision`. Styles contain only approved six-digit hex tokens for
+`background`, `surface`, `text`, `muted`, and `accent`; disabling a style hides
+it from new user selections without deleting existing assignments.
+
 ## Account billing contract (#440, #550)
 
 Authenticated account billing is exposed through `/api/account/billing/` and

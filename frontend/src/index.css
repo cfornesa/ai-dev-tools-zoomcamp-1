@@ -252,6 +252,17 @@ button:disabled {
   width: 100%;
 }
 
+.profile-style-preview {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--surface);
+}
+
 .sync-conflict-panel {
   display: grid;
   gap: 10px;
@@ -551,8 +562,18 @@ button:disabled {
   margin-top: 16px;
 }
 
+.admin-style-row {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 .public-profile {
   padding: 32px 24px;
+  color: var(--profile-text, var(--text));
+  background: var(--profile-background, var(--bg));
 }
 
 .public-profile-heading {
@@ -573,6 +594,16 @@ button:disabled {
 .public-profile-heading h2,
 .public-profile-heading a {
   color: var(--profile-accent, var(--accent));
+}
+
+.public-profile-heading p {
+  color: var(--profile-muted, var(--muted));
+}
+
+.public-profile .project-card {
+  color: var(--profile-text, var(--text));
+  background: var(--profile-surface, var(--surface));
+  border-color: var(--profile-accent, var(--accent-border));
 }
 
 .public-profile h2,

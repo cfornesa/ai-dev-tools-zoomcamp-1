@@ -31,3 +31,16 @@ def effective_theme(value: object) -> dict[str, str]:
     except ValueError:
         override = {}
     return {**DEFAULT_THEME, **override}
+
+
+def effective_profile_theme(style_tokens: object, legacy_overrides: object) -> dict[str, str]:
+    """Resolve a catalog style plus the legacy safe token override contract."""
+    try:
+        style = sanitize_theme(style_tokens)
+    except ValueError:
+        style = {}
+    try:
+        legacy = sanitize_theme(legacy_overrides)
+    except ValueError:
+        legacy = {}
+    return {**DEFAULT_THEME, **style, **legacy}

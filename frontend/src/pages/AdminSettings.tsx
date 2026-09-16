@@ -23,6 +23,10 @@ import {
   createAIProviderModel,
   updateAIProviderModel,
   deleteAIProviderModel,
+  type ProfileStyle,
+  fetchProfileStyles,
+  createProfileStyle,
+  updateProfileStyle,
 } from '../api/adminSettings';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/useAuth';
@@ -812,6 +816,101 @@ function AIModelCatalogSettings({
   );
 }
 
+function ProfileStyleCatalogSettings({
+  styles,
+  onStyles,
+}: {
+  styles: ProfileStyle[];
+  onStyles: (next: ProfileStyle[]) => void;
+}) {
+  const [newKey, setNewKey] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  async function toggle(style: ProfileStyle) {
+    try {
+      const next = await updateProfileStyle({ ...style, enabled: !style.enabled });
+      onStyles(styles.map((item) => (item.id === next.id ? next : item)));
+    } catch {
+      setError('Could not update that profile style.');
+    }
+  }
+  async function rename(style: ProfileStyle, label: string) {
+    try {
+      const next = await updateProfileStyle({ ...style, label });
+      onStyles(styles.map((item) => (item.id === next.id ? next : item)));
+    } catch {
+      setError('Could not update that profile style.');
+    }
+  }
+  async function create() {
+    const key = newKey.trim().toLowerCase();
+    if (!key) return;
+    try {
+      const created = await createProfileStyle({
+        key,
+        label: key,
+        description: 'A token-only profile style.',
+        tokens: { accent: '#c084fc' },
+        enabled: true,
+      });
+      onStyles([...styles, created]);
+      setNewKey('');
+      setError(null);
+    } catch {
+      setError('Could not create that profile style.');
+    }
+  }
+  return (
+    <section className="admin-settings-card" aria-labelledby="profile-style-catalog-heading">
+      <h3 id="profile-style-catalog-heading">Profile style catalog</h3>
+      <p>Manage safe, token-only styles available in public profile settings.</p>
+      {styles.map((style) => (
+        <div className="admin-style-row" key={style.id}>
+          <label htmlFor={`profile-style-label-${style.id}`}>Style label</label>
+          <input
+            id={`profile-style-label-${style.id}`}
+            value={style.label}
+            onChange={(event) =>
+              onStyles(
+                styles.map((item) =>
+                  item.id === style.id ? { ...item, label: event.target.value } : item,
+                ),
+              )
+            }
+            onBlur={(event) => void rename(style, event.target.value)}
+          />
+          <span>{style.key}</span>
+          <button type="button" onClick={() => void toggle(style)}>
+            {style.enabled ? 'Disable' : 'Enable'}
+          </button>
+          <div
+            aria-label={`${style.label} preview`}
+            className="profile-style-preview"
+            style={{
+              backgroundColor: style.tokens.background,
+              color: style.tokens.text,
+              borderColor: style.tokens.accent,
+            }}
+          >
+            {style.enabled ? 'Enabled preview' : 'Disabled preview'}
+          </div>
+        </div>
+      ))}
+      <div className="admin-settings-actions">
+        <label htmlFor="new-profile-style-key">New style key</label>
+        <input
+          id="new-profile-style-key"
+          value={newKey}
+          onChange={(event) => setNewKey(event.target.value)}
+        />
+        <button type="button" onClick={() => void create()}>
+          Create style
+        </button>
+      </div>
+      {error && <p role="alert">{error}</p>}
+    </section>
+  );
+}
+
 function AdminSettings() {
   const auth = useAuth();
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -820,6 +919,7 @@ function AdminSettings() {
   const [globals, setGlobals] = useState<Record<string, GlobalCapability> | null>(null);
   const [retentionPolicy, setRetentionPolicy] = useState<CloudRetentionPolicy | null>(null);
   const [aiModels, setAiModels] = useState<AIProviderModel[] | null>(null);
+  const [profileStyles, setProfileStyles] = useState<ProfileStyle[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -831,14 +931,16 @@ function AdminSettings() {
       fetchGlobalCapabilities(),
       fetchCloudRetentionPolicy(),
       fetchAIProviderModels(),
+      fetchProfileStyles(),
     ])
-      .then(([settings, planList, roleList, globalList, retention, models]) => {
+      .then(([settings, planList, roleList, globalList, retention, models, styles]) => {
         setSiteSettings(settings);
         setPlans(planList);
         setRoles(roleList);
         setGlobals(globalList);
         setRetentionPolicy(retention);
         setAiModels(models);
+        setProfileStyles(styles);
       })
       .catch(() => setLoadError('Could not load admin settings.'));
   }, [auth]);
@@ -896,6 +998,11 @@ function AdminSettings() {
         <AIModelCatalogSettings models={aiModels} onModels={setAiModels} />
       ) : (
         !loadError && <p role="status">Loading AI model catalog…</p>
+      )}
+      {profileStyles ? (
+        <ProfileStyleCatalogSettings styles={profileStyles} onStyles={setProfileStyles} />
+      ) : (
+        !loadError && <p role="status">Loading profile style catalog…</p>
       )}
     </section>
   );

@@ -43,6 +43,32 @@ const ENV_FILE_ARGS = configuredEnvFile
   : fs.existsSync(path.join(BACKEND_DIR, '.env'))
     ? ['--env-file', '.env']
     : [];
+const fixtureCommand =
+  process.env.E2E_DOCKER_COMPOSE === 'true'
+    ? {
+        command: 'docker',
+        args: [
+          'compose',
+          '--project-name',
+          'ai-dev-tools-zoomcamp-1',
+          '--file',
+          'compose.yaml',
+          'exec',
+          '-T',
+          'backend',
+          'uv',
+          'run',
+          'python',
+          'manage.py',
+          'e2e_fixtures',
+          'create',
+          '--json',
+        ],
+      }
+    : {
+        command: 'uv',
+        args: ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'create', '--json'],
+      };
 
 const PREREQUISITES_HINT =
   'This suite requires, in order: (1) a real reachable PostgreSQL server ' +
@@ -83,16 +109,12 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   }
 
   try {
-    const output = execFileSync(
-      'uv',
-      ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'create', '--json'],
-      {
-        cwd: BACKEND_DIR,
-        encoding: 'utf-8',
-        env: UV_CHILD_ENV,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
+    const output = execFileSync(fixtureCommand.command, fixtureCommand.args, {
+      cwd: fixtureCommand.command === 'docker' ? REPO_ROOT : BACKEND_DIR,
+      encoding: 'utf-8',
+      env: UV_CHILD_ENV,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
     const lastLine = output.trim().split('\n').at(-1);
     if (!lastLine) {
       throw new Error('e2e_fixtures create --json produced no output');

@@ -160,6 +160,11 @@ function AccountSettings() {
               </Link>
             </li>
             <li>
+              <Link to="/account/collections">
+                <span aria-hidden="true">▤</span> Manage public collections
+              </Link>
+            </li>
+            <li>
               <Link to="/account/settings/identities">
                 <span aria-hidden="true">◎</span> Manage linked sign-in methods
               </Link>

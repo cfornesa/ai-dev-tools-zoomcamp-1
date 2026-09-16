@@ -3243,6 +3243,114 @@ select.ai-proposal-field-full-width {
   text-align: left;
 }
 
+/* Issue #568: collection management and canonical public collection cards. */
+.collection-management,
+.public-collection {
+  width: min(1100px, calc(100% - 32px));
+  margin: 24px auto;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.collection-management-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.collection-management form,
+.collection-management section,
+.collection-management details {
+  display: grid;
+  gap: 10px;
+  margin-block: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.collection-management input,
+.collection-management textarea,
+.collection-management select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  font: inherit;
+}
+
+.collection-management ol,
+.collection-management ul {
+  display: grid;
+  gap: 10px;
+  padding-inline-start: 24px;
+}
+
+.collection-management li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.collection-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.collection-management pre {
+  max-width: 100%;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.public-collection header {
+  margin-bottom: 24px;
+}
+
+.public-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0;
+  padding-inline-start: 24px;
+}
+
+.public-collection-card {
+  height: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.public-collection-card img,
+.public-collection-card [role='img'] {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--code-bg);
+}
+
+.public-collection-card [role='img'] {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .collection-management-layout,
+  .public-collection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .collection-management,
+  .public-collection {
+    width: calc(100% - 20px);
+  }
+}
+
 @media (max-width: 600px) {
   .public-project-grid {
     grid-template-columns: 1fr;

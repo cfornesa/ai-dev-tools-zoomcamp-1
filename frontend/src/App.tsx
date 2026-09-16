@@ -39,6 +39,8 @@ const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 const AdminPages = lazy(() => import('./pages/AdminPages'));
 const AdminContent = lazy(() => import('./pages/AdminContent'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
+const CollectionManagement = lazy(() => import('./pages/CollectionManagement'));
+const PublicCollection = lazy(() => import('./pages/PublicCollection'));
 
 /** Task 94 (issue #94): `/projects/:id/settings` no longer exists as a
  * standalone page (project-metadata editing is now the editor's own
@@ -62,6 +64,7 @@ function App() {
                   Home/Gallery split. */}
               <Route path="gallery" element={<PublicGallery />} />
               <Route path="users/:handle" element={<PublicProfile />} />
+              <Route path="users/:handle/:collectionSlug" element={<PublicCollection />} />
               {/* Task 51 (issue #53): the public project viewer -- also
                   reachable without authentication, and identical for
                   anonymous and signed-in visitors (see PublicProjectViewer.tsx
@@ -96,6 +99,7 @@ function App() {
               <Route path="account/settings/export" element={<AccountDataExport />} />
               <Route path="account/settings/storage" element={<AccountLocalStorage />} />
               <Route path="account/settings/delete" element={<AccountDeletion />} />
+              <Route path="account/collections" element={<CollectionManagement />} />
               <Route path="admin/settings" element={<AdminSettings />} />
               <Route path="admin/pages" element={<AdminPages />} />
               <Route path="admin/content" element={<AdminContent />} />

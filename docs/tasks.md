@@ -21985,6 +21985,8 @@ both public viewers, and adds focused privacy/validation/rendering coverage.
   format check passed.
 - The full `make check` passed: 1,409 backend tests passed with 39 skipped and
   2,717 frontend tests passed. Existing lint warnings remain non-blocking.
-- Stage 3 second-opinion review was not run. Stage 4 QA is being performed by
-  Codex using `qa-self-review` as a documented substitution; production
-  readiness and session completion remain explicitly deferred to Claude Code.
+- Stage 3 second-opinion review was not run. Stage 4 QA passed on the same
+  commit, performed by Codex using `qa-self-review` as a documented
+  substitution; the evidence is recorded on #588. Production readiness and
+  session completion remain explicitly deferred to Claude Code, and #588 stays
+  open for that handoff.

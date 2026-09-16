@@ -15,11 +15,13 @@ vi.mock('../api/accountIdentities', async () => {
   return {
     ...actual,
     fetchAccountIdentities: vi.fn(),
+    fetchAccountIdentityProviders: vi.fn(),
     unlinkAccountIdentity: vi.fn(),
   };
 });
 
 const mockedFetch = vi.mocked(accountIdentitiesApi.fetchAccountIdentities);
+const mockedFetchProviders = vi.mocked(accountIdentitiesApi.fetchAccountIdentityProviders);
 const mockedUnlink = vi.mocked(accountIdentitiesApi.unlinkAccountIdentity);
 
 const SIGNED_IN_USER = {
@@ -39,6 +41,11 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedFetchProviders.mockResolvedValue([
+    { provider: 'google', label: 'Google', enabled: true },
+    { provider: 'github', label: 'GitHub', enabled: true },
+    { provider: 'linkedin', label: 'LinkedIn', enabled: true },
+  ]);
 });
 
 describe('AccountIdentities', () => {
@@ -50,6 +57,7 @@ describe('AccountIdentities', () => {
 
     expect(await screen.findByText('Google')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Connect GitHub' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect LinkedIn' })).toBeInTheDocument();
   });
 
   it('flags a currently disabled provider without hiding it', async () => {

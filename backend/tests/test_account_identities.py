@@ -19,7 +19,7 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
 
-from scenes.account_identities import is_provider_enabled, list_identities
+from scenes.account_identities import is_provider_enabled, list_identities, list_provider_registry
 from scenes.models import IdentityLinkEvent
 
 _GITHUB_APP_SETTINGS = {
@@ -78,6 +78,25 @@ def test_list_identities_api_scoped_to_caller(client):
 def test_disabled_provider_never_counts_as_usable():
     assert is_provider_enabled("google") is True
     assert is_provider_enabled("github") is False  # unset in this test's settings
+
+
+@pytest.mark.django_db
+def test_provider_registry_reports_linkedin_from_server_configuration():
+    with override_settings(LINKEDIN_OAUTH_ENABLED=True):
+        registry = list_provider_registry()
+
+    assert {entry["provider"] for entry in registry} == {"google", "github", "linkedin"}
+    assert next(entry for entry in registry if entry["provider"] == "linkedin") == {
+        "provider": "linkedin",
+        "label": "LinkedIn",
+        "enabled": True,
+    }
+
+
+@pytest.mark.django_db
+def test_provider_registry_api_requires_authentication(client):
+    response = client.get(reverse("account-identity-providers"))
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db

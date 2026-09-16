@@ -13,7 +13,12 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.account_identities import CannotUnlink, list_identities, unlink_identity
+from scenes.account_identities import (
+    CannotUnlink,
+    list_identities,
+    list_provider_registry,
+    unlink_identity,
+)
 
 
 def _auth_required_response(request) -> Response | None:
@@ -28,6 +33,14 @@ class AccountIdentitiesView(APIView):
         if denied:
             return denied
         return Response(list_identities(request.user))
+
+
+class AccountIdentityProvidersView(APIView):
+    def get(self, request):
+        denied = _auth_required_response(request)
+        if denied:
+            return denied
+        return Response(list_provider_registry())
 
 
 class AccountIdentityUnlinkView(APIView):

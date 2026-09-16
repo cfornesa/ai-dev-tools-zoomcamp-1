@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 
 import {
   type AccountIdentity,
+  fetchAccountIdentityProviders,
   fetchAccountIdentities,
   providerLabel,
   unlinkAccountIdentity,
@@ -26,11 +27,12 @@ function ConnectProviderForm({ provider }: { provider: string }) {
   );
 }
 
-const CONNECTABLE_PROVIDERS = ['google', 'github'];
-
 function AccountIdentities() {
   const auth = useAuth();
   const [identities, setIdentities] = useState<AccountIdentity[] | null>(null);
+  const [providers, setProviders] = useState<Awaited<
+    ReturnType<typeof fetchAccountIdentityProviders>
+  > | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [unlinkError, setUnlinkError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -38,8 +40,11 @@ function AccountIdentities() {
 
   useEffect(() => {
     if (auth.status !== 'signed-in') return;
-    fetchAccountIdentities()
-      .then(setIdentities)
+    Promise.all([fetchAccountIdentities(), fetchAccountIdentityProviders()])
+      .then(([linked, registry]) => {
+        setIdentities(linked);
+        setProviders(registry);
+      })
       .catch(() => setLoadError('Could not load your linked sign-in methods.'));
   }, [auth]);
 
@@ -75,7 +80,7 @@ function AccountIdentities() {
           {loadError}
         </p>
       )}
-      {identities ? (
+      {identities && providers ? (
         <ul aria-label="Linked sign-in methods">
           {identities.map((identity) => (
             <li key={identity.provider}>
@@ -103,11 +108,11 @@ function AccountIdentities() {
         </p>
       )}
       <h3>Connect another sign-in method</h3>
-      {CONNECTABLE_PROVIDERS.filter((provider) => !linkedProviders.has(provider)).map(
-        (provider) => (
-          <ConnectProviderForm key={provider} provider={provider} />
-        ),
-      )}
+      {(providers ?? [])
+        .filter((provider) => provider.enabled && !linkedProviders.has(provider.provider))
+        .map((provider) => (
+          <ConnectProviderForm key={provider.provider} provider={provider.provider} />
+        ))}
     </section>
   );
 }

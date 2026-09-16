@@ -6,8 +6,18 @@ export type AccountIdentity = {
   connected_at: string;
 };
 
+export type AccountIdentityProvider = {
+  provider: string;
+  label: string;
+  enabled: boolean;
+};
+
 export async function fetchAccountIdentities(): Promise<AccountIdentity[]> {
   return apiFetch<AccountIdentity[]>('/api/account/identities/');
+}
+
+export async function fetchAccountIdentityProviders(): Promise<AccountIdentityProvider[]> {
+  return apiFetch<AccountIdentityProvider[]>('/api/account/identity-providers/');
 }
 
 export async function unlinkAccountIdentity(provider: string): Promise<AccountIdentity[]> {
@@ -19,6 +29,7 @@ export async function unlinkAccountIdentity(provider: string): Promise<AccountId
 const PROVIDER_LABELS: Record<string, string> = {
   google: 'Google',
   github: 'GitHub',
+  linkedin: 'LinkedIn',
 };
 
 export function providerLabel(provider: string): string {

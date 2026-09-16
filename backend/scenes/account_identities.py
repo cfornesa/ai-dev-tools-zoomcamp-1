@@ -22,7 +22,10 @@ from scenes.models import IdentityLinkEvent
 _ENABLED_CHECKS = {
     "google": lambda: True,
     "github": lambda: settings.GITHUB_OAUTH_ENABLED,
+    "linkedin": lambda: settings.LINKEDIN_OAUTH_ENABLED,
 }
+
+PROVIDER_LABELS = {"google": "Google", "github": "GitHub", "linkedin": "LinkedIn"}
 
 
 def is_provider_enabled(provider: str) -> bool:
@@ -43,6 +46,17 @@ def list_identities(user) -> list[dict]:
             "connected_at": account.date_joined.isoformat(),
         }
         for account in SocialAccount.objects.filter(user=user).order_by("provider")
+    ]
+
+
+def list_provider_registry() -> list[dict]:
+    return [
+        {
+            "provider": provider,
+            "label": PROVIDER_LABELS[provider],
+            "enabled": is_provider_enabled(provider),
+        }
+        for provider in PROVIDER_LABELS
     ]
 
 

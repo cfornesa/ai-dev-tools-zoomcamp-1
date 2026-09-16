@@ -3,7 +3,11 @@ from django.urls import path
 from scenes.account_deletion_api import AccountDeletionView
 from scenes.account_entitlements_api import AccountEntitlementsView
 from scenes.account_export_api import AccountDataExportView
-from scenes.account_identities_api import AccountIdentitiesView, AccountIdentityUnlinkView
+from scenes.account_identities_api import (
+    AccountIdentitiesView,
+    AccountIdentityProvidersView,
+    AccountIdentityUnlinkView,
+)
 from scenes.account_sessions_api import AccountSessionRevokeView, AccountSessionsView
 from scenes.admin_content_api import (
     AdminContentAccessView,
@@ -143,6 +147,11 @@ urlpatterns = [
         name="account-session-revoke",
     ),
     path("account/identities/", AccountIdentitiesView.as_view(), name="account-identities"),
+    path(
+        "account/identity-providers/",
+        AccountIdentityProvidersView.as_view(),
+        name="account-identity-providers",
+    ),
     path(
         "account/identities/<str:provider>/",
         AccountIdentityUnlinkView.as_view(),

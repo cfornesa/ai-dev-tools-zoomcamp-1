@@ -492,6 +492,18 @@ Provider identities, email, prompts, credentials, billing, drafts, deleted
 pieces, and private pieces never appear in the public response. A profile
 handle is an opaque user-selected slug and conflicts return `409`.
 
+## Account identities (#559)
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET /api/account/identities/` | Authenticated caller's linked provider identities only; each entry contains `provider`, `enabled`, and `connected_at`, with no provider uid, token, or handle. |
+| `GET /api/account/identity-providers/` | Authenticated caller's provider registry view. Returns every configured provider with its display label and enabled state, so the UI never hard-codes an enabled/disabled decision. |
+| `DELETE /api/account/identities/<provider>/` | Removes only the caller's linked identity, returning `409` when the operation would leave no usable enabled sign-in method. |
+
+Linking uses allauth's top-level CSRF-protected `POST /accounts/<provider>/login/`
+flow with `process=connect` and a return path to account settings. Provider
+identity ownership conflicts fail closed and never merge local accounts.
+
 ## Theme customization (#521)
 
 `GET /api/site-theme/` is anonymous-safe and returns the effective finite site

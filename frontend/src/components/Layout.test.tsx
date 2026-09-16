@@ -4,9 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import * as siteThemeApi from '../api/siteTheme';
 import { AuthContext } from '../auth/context';
 import Layout from './Layout';
 import { MOBILE_HEADER_BREAKPOINT_PX } from './useIsMobileHeader';
+
+vi.mock('../api/siteTheme', () => ({
+  fetchSiteTheme: vi.fn().mockRejectedValue(new Error('no theme in this test')),
+}));
 
 /**
  * Task 64 (issue #64): the app-shell skip link — a real gap this task's
@@ -237,5 +242,46 @@ describe('Layout: mobile hamburger menu', () => {
 
     await user.keyboard('{Escape}');
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('Layout: global site theme cascade (#577)', () => {
+  afterEach(() => {
+    document.documentElement.style.cssText = '';
+  });
+
+  it('applies the fetched global theme tokens and presentation as document-root CSS variables', async () => {
+    const theme = {
+      background: '#101014',
+      surface: '#1a1a20',
+      text: '#f5f5f5',
+      muted: '#999999',
+      accent: '#22c55e',
+      presentation: {
+        font_family: 'mono',
+        density: 'compact',
+        radius: 'pill',
+        border_style: 'solid',
+      },
+    } as unknown as siteThemeApi.ThemeTokens;
+    vi.mocked(siteThemeApi.fetchSiteTheme).mockResolvedValueOnce(theme);
+
+    renderLayout();
+
+    const root = document.documentElement;
+    await vi.waitFor(() => expect(root.style.getPropertyValue('--bg')).toBe('#101014'));
+    expect(root.style.getPropertyValue('--accent')).toBe('#22c55e');
+    expect(root.style.getPropertyValue('--site-font')).toContain('Consolas');
+    expect(root.style.getPropertyValue('--site-density')).toBe('12px');
+    expect(root.style.getPropertyValue('--site-radius')).toBe('999px');
+  });
+
+  it('leaves document-root theme variables untouched when the fetch fails', async () => {
+    vi.mocked(siteThemeApi.fetchSiteTheme).mockRejectedValueOnce(new Error('network error'));
+
+    renderLayout();
+
+    await screen.findByRole('button', { name: 'First focusable in main' });
+    expect(document.documentElement.style.getPropertyValue('--bg')).toBe('');
   });
 });

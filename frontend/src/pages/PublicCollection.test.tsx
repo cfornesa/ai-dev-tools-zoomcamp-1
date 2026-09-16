@@ -3,14 +3,20 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as collectionsApi from '../api/collections';
+import * as profileApi from '../api/profile';
 import PublicCollection from './PublicCollection';
 
 vi.mock('../api/collections', async () => {
   const actual = await vi.importActual<typeof import('../api/collections')>('../api/collections');
   return { ...actual, fetchPublicCollection: vi.fn() };
 });
+vi.mock('../api/profile', async () => {
+  const actual = await vi.importActual<typeof import('../api/profile')>('../api/profile');
+  return { ...actual, fetchPublicProfile: vi.fn() };
+});
 
 const mockedFetch = vi.mocked(collectionsApi.fetchPublicCollection);
+const mockedFetchProfile = vi.mocked(profileApi.fetchPublicProfile);
 
 const SAMPLE: collectionsApi.Collection = {
   id: 'collection-1',
@@ -49,6 +55,7 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedFetch.mockResolvedValue(SAMPLE);
+  mockedFetchProfile.mockRejectedValue(new Error('no profile in this test'));
 });
 
 describe('PublicCollection', () => {
@@ -71,5 +78,46 @@ describe('PublicCollection', () => {
       await screen.findByRole('heading', { name: 'Collection not found' }),
     ).toBeInTheDocument();
     expect(screen.getByText(/private, unavailable, or no longer exists/i)).toBeInTheDocument();
+  });
+
+  it("applies the owning profile's selected theme as CSS custom properties (#577)", async () => {
+    mockedFetchProfile.mockResolvedValue({
+      profile: {
+        handle: 'alice',
+        style_key: 'bauhaus',
+        presentation: {
+          font_family: 'mono',
+          density: 'compact',
+          radius: 'pill',
+          border_style: 'solid',
+        },
+        display_name: 'Alice',
+        bio: '',
+        website_url: '',
+        social_links: {},
+        profile_image_url: '',
+        is_public: true,
+        revision: 1,
+        theme_config: {
+          background: '#f4efe6',
+          surface: '#fffaf0',
+          text: '#1f2937',
+          muted: '#6b7280',
+          accent: '#dc2626',
+        },
+      },
+      pieces: [],
+    });
+
+    renderPage();
+
+    const heading = await screen.findByRole('heading', { name: 'Spring studies' });
+    const section = heading.closest('.public-collection') as HTMLElement;
+    expect(section).not.toBeNull();
+    await vi.waitFor(() =>
+      expect(section.style.getPropertyValue('--profile-background')).toBe('#f4efe6'),
+    );
+    expect(section.style.getPropertyValue('--profile-accent')).toBe('#dc2626');
+    expect(section.style.getPropertyValue('--profile-radius')).toBe('999px');
   });
 });

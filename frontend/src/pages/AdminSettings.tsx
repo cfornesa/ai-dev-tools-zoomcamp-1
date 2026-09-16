@@ -30,6 +30,7 @@ import {
 } from '../api/adminSettings';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/useAuth';
+import AdminConsoleNav from '../components/AdminConsoleNav';
 
 const DEFAULT_THEME = {
   background: '#0b0d12',
@@ -1007,6 +1008,7 @@ function AdminSettings() {
 
   return (
     <section className="content-panel admin-settings">
+      <AdminConsoleNav current="settings" />
       <h2>Admin settings</h2>
       {loadError && (
         <p role="alert" aria-live="assertive">

@@ -12,6 +12,7 @@ import {
 } from '../api/adminContent';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/useAuth';
+import AdminConsoleNav from '../components/AdminConsoleNav';
 
 function AdminContent() {
   const auth = useAuth();
@@ -111,15 +112,7 @@ function AdminContent() {
 
   return (
     <section className="content-panel admin-pages" aria-labelledby="admin-content-heading">
-      <nav className="admin-console-nav" aria-label="Admin console">
-        <strong>Admin console</strong>
-        <a href="/admin/pages">Pages</a>
-        <a href="/admin/content" aria-current="page">
-          Content
-        </a>
-        <a href="/admin/settings">Settings and plans</a>
-        <a href="/">Return to public site</a>
-      </nav>
+      <AdminConsoleNav current="content" />
       <div className="admin-pages-heading-row">
         <h2 id="admin-content-heading">Content operations</h2>
         <label>

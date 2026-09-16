@@ -12,6 +12,7 @@ import {
 } from '../api/adminPages';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/useAuth';
+import AdminConsoleNav from '../components/AdminConsoleNav';
 
 const EMPTY_PAGE: CmsPageFields = {
   title: '',
@@ -148,15 +149,7 @@ function AdminPages() {
 
   return (
     <section className="content-panel admin-pages" aria-labelledby="admin-pages-heading">
-      <nav className="admin-console-nav" aria-label="Admin console">
-        <strong>Admin console</strong>
-        <a href="/admin/pages" aria-current="page">
-          Pages
-        </a>
-        <a href="/admin/content">Content</a>
-        <a href="/admin/settings">Settings and plans</a>
-        <a href="/">Return to public site</a>
-      </nav>
+      <AdminConsoleNav current="pages" />
       <div className="admin-pages-heading-row">
         <h2 id="admin-pages-heading">Pages</h2>
         <button type="button" onClick={beginCreate} disabled={busy}>

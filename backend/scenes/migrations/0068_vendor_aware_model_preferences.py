@@ -8,7 +8,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="mistralmodelpreference",
             name="vendor",
-            field=models.CharField(default="mistral", max_length=32),
+            field=models.CharField(
+                blank=True,
+                default="mistral",
+                max_length=32,
+                null=True,
+            ),
         ),
         migrations.AddConstraint(
             model_name="mistralmodelpreference",

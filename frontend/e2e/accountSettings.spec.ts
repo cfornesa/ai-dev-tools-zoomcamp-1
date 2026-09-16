@@ -15,7 +15,7 @@ async function assertGroupedSettings(page: Page) {
     'Public profile',
     'Account management',
     'AI provider credentials',
-    'Saved Mistral models',
+    'Saved AI models',
     'Personas',
     'Automatic retry',
   ]) {

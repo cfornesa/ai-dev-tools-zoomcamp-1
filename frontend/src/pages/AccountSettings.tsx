@@ -29,7 +29,11 @@ import { useAuth } from '../auth/useAuth';
 const MIN_MAX_RETRIES = 1;
 const MAX_MAX_RETRIES = 10;
 
-const MISTRAL_MODELS_DOCS_URL = 'https://docs.mistral.ai/getting-started/models/';
+const AI_MODEL_DOCS = [
+  { label: 'Mistral', href: 'https://docs.mistral.ai/getting-started/models/' },
+  { label: 'Google Gemini', href: 'https://ai.google.dev/gemini-api/docs/models' },
+  { label: 'DeepSeek', href: 'https://api-docs.deepseek.com/' },
+] as const;
 
 const SETTINGS_LAYOUT_KEY = 'augmentrart:account-settings-layout:v1';
 const DEFAULT_SECTION_ORDER = [
@@ -214,7 +218,7 @@ function AccountSettings() {
       ),
     },
     credentials: { label: 'AI provider credentials', content: <ProviderCredentialCards /> },
-    models: { label: 'Saved Mistral models', content: <SavedMistralModels /> },
+    models: { label: 'Saved AI models', content: <SavedAIModels /> },
     personas: { label: 'Personas', content: <AIPersonas /> },
     retry: { label: 'Automatic retry', content: <AIRetrySettings /> },
   };
@@ -625,7 +629,7 @@ const AI_VENDORS = [
   { key: 'deepseek', label: 'DeepSeek' },
 ];
 
-function SavedMistralModels() {
+function SavedAIModels() {
   const [models, setModels] = useState<SavedAIModelPreference[] | null>(null);
   const [vendor, setVendor] = useState('mistral');
   const [slug, setSlug] = useState('');
@@ -677,15 +681,20 @@ function SavedMistralModels() {
 
   return (
     <section className="account-settings-card" aria-labelledby="saved-models-heading">
-      <h3 id="saved-models-heading">Saved Mistral models</h3>
+      <h3 id="saved-models-heading">Saved AI models</h3>
       <details>
         <summary>See more details about saved models</summary>
         <p>
           Save provider-specific model slugs to pick from a vendor-filtered dropdown in the AI
-          assistant, instead of retyping one each time. Look up valid slugs in{' '}
-          <a href={MISTRAL_MODELS_DOCS_URL} target="_blank" rel="noopener noreferrer">
-            Mistral&apos;s model documentation
-          </a>
+          assistant, instead of retyping one each time. Look up valid model slugs in the{' '}
+          {AI_MODEL_DOCS.map((docs, index) => (
+            <span key={docs.label}>
+              {index > 0 ? (index === AI_MODEL_DOCS.length - 1 ? ', or ' : ', ') : ''}
+              <a href={docs.href} target="_blank" rel="noopener noreferrer">
+                {docs.label} model documentation
+              </a>
+            </span>
+          ))}
           .
         </p>
       </details>
@@ -738,7 +747,7 @@ function SavedMistralModels() {
       {models === null && !error && <p>Loading your saved models…</p>}
       {models !== null && models.length === 0 && <p>No saved models yet.</p>}
       {models !== null && models.length > 0 && (
-        <ul className="account-settings-list" aria-label="Saved Mistral models">
+        <ul className="account-settings-list" aria-label="Saved AI models">
           {models.map((model) => (
             <li key={model.id}>
               <span>

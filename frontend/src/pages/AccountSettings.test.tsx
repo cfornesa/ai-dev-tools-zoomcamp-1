@@ -68,7 +68,7 @@ describe('AccountSettings', () => {
     expect(await screen.findByRole('heading', { name: 'Public profile' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Account management' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'AI provider credentials' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Saved Mistral models' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Saved AI models' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Personas' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Automatic retry' })).toBeInTheDocument();
 
@@ -219,17 +219,24 @@ describe('AccountSettings', () => {
     expect(await screen.findByText('Mistral key: not configured')).toBeInTheDocument();
   });
 
-  it('links to Mistral model documentation', async () => {
+  it('links to every enabled AI vendor model documentation page', async () => {
     render(
       <MemoryRouter>
         <AccountSettings />
       </MemoryRouter>,
     );
 
-    const link = await screen.findByRole('link', { name: /mistral's model documentation/i });
-    expect(link).toHaveAttribute('href', expect.stringContaining('mistral.ai'));
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    const links = await screen.findAllByRole('link', { name: /model documentation/i });
+    expect(links).toHaveLength(3);
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Mistral model documentation',
+      'Google Gemini model documentation',
+      'DeepSeek model documentation',
+    ]);
+    for (const link of links) {
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    }
   });
 
   it('adds and removes a saved Mistral model', async () => {

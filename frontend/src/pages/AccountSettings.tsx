@@ -161,6 +161,26 @@ function AccountSettings() {
               </Link>
             </li>
             <li>
+              <a href="/accounts/email/">
+                <span aria-hidden="true">✉</span> Manage verified email addresses
+              </a>
+            </li>
+            <li>
+              <a href="/accounts/password/set/">
+                <span aria-hidden="true">⌑</span> Set a local password
+              </a>
+            </li>
+            <li>
+              <a href="/accounts/password/change/">
+                <span aria-hidden="true">⌑</span> Change your password
+              </a>
+            </li>
+            <li>
+              <a href="/accounts/password/reset/">
+                <span aria-hidden="true">↻</span> Recover a password
+              </a>
+            </li>
+            <li>
               <Link to="/account/settings/sessions">
                 <span aria-hidden="true">◌</span> Manage active sessions
               </Link>

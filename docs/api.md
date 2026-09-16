@@ -522,6 +522,24 @@ skipped only for the active grant; request-rate limits and successful-use
 accounting remain in place, and revocation immediately restores the user's
 plan/override cap without changing owned data.
 
+## Account email aliases (#562)
+
+The account settings security links use allauth's existing authenticated
+`/accounts/email/` flow for adding, verifying, setting primary, and removing
+aliases. The flow rejects unverified addresses for sign-in/admin resolution
+and preserves the same local user and owned records. Verification sends are
+handled by the configured server mail backend; no address ownership detail is
+returned to another account.
+
+## Password lifecycle (#563)
+
+Social-first users use allauth's existing top-level
+`/accounts/password/set/`, `/accounts/password/change/`, and
+`/accounts/password/reset/` flows. These retain CSRF protection, recent
+authentication/session policy, generic reset responses, expiring single-use
+tokens, and the existing controlled local-signup policy; reset tokens are not
+placed in application URLs after consumption or in client diagnostics.
+
 ## Theme customization (#521)
 
 `GET /api/site-theme/` is anonymous-safe and returns the effective finite site

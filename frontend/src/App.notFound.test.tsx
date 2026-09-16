@@ -21,6 +21,7 @@ vi.mock('./api/auth', () => ({
 }));
 
 const mockedGetPublicProject = vi.mocked(projectsApi.getPublicProject);
+const mockedFetchPublicGallery = vi.mocked(projectsApi.fetchPublicGallery);
 
 function navigateTo(path: string) {
   window.history.pushState({}, '', path);
@@ -28,6 +29,11 @@ function navigateTo(path: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedFetchPublicGallery.mockResolvedValue({
+    results: [],
+    next_cursor: null,
+    has_more: false,
+  });
 });
 
 afterEach(() => {
@@ -57,11 +63,8 @@ describe('unknown routes (issue #485)', () => {
     expect(galleryLink).toHaveAttribute('href', '/gallery');
     expect(galleryLink).toHaveClass('shell-action');
 
-    // QA (issue #485): the recovery links must carry distinct accessible
-    // names -- bare "Home"/"Public gallery" duplicated the shell nav's
-    // identically-named links and made the page ambiguous for assistive
-    // tech (and tripped Playwright's strict mode in the real browser run).
-    expect(screen.getAllByRole('link', { name: /^home$/i })).toHaveLength(1);
+    // The anonymous shell now exposes Public gallery as its primary
+    // destination; the recovery link keeps its distinct descriptive name.
     expect(screen.getAllByRole('link', { name: /^public gallery$/i })).toHaveLength(1);
   });
 
@@ -91,7 +94,7 @@ describe('unknown routes (issue #485)', () => {
 });
 
 describe('known routes still resolve (issue #485 regression check)', () => {
-  it('renders the home page at /', async () => {
+  it('routes the anonymous root to the public gallery at /', async () => {
     navigateTo('/');
 
     render(<App />);
@@ -99,7 +102,9 @@ describe('known routes still resolve (issue #485 regression check)', () => {
     expect(
       await screen.findByRole('heading', { name: 'AugmentrART', level: 1 }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/sign in to see your projects/i)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Public gallery', level: 2 }),
+    ).toBeInTheDocument();
   });
 });
 

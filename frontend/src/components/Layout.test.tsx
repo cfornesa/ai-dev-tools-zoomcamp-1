@@ -89,16 +89,16 @@ describe('Layout: authentication control and attribution', () => {
 });
 
 describe('Layout: active nav indicator (issue #136)', () => {
-  it('marks the current page link with aria-current="page" and leaves the others unmarked', () => {
-    renderWithAuth({ status: 'signed-out', user: null });
+  it('marks Public gallery as current for an anonymous visitor on the gallery route', () => {
+    renderWithAuth({ status: 'signed-out', user: null }, ['/gallery']);
 
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Public gallery' })).not.toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Public gallery' })).toHaveAttribute(
       'aria-current',
+      'page',
     );
   });
 
-  it('marks Public gallery active instead of Home when on the gallery route', () => {
+  it('marks Public gallery active on the gallery route', () => {
     render(
       <MemoryRouter initialEntries={['/gallery']}>
         <Routes>
@@ -113,7 +113,6 @@ describe('Layout: active nav indicator (issue #136)', () => {
       'aria-current',
       'page',
     );
-    expect(screen.getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
   });
 
   it('marks the editor route with the compact studio shell class', () => {
@@ -175,7 +174,7 @@ describe('Layout: mobile hamburger menu', () => {
 
     expect(screen.queryByRole('button', { name: /menu/i })).not.toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Home' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Public gallery' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Login' })).toBeVisible();
   });
 
@@ -200,7 +199,6 @@ describe('Layout: mobile hamburger menu', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     const menu = screen.getByRole('navigation', { name: 'Primary navigation' });
     expect(menu).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Home' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Public gallery' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Login' })).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Account settings' })).not.toBeInTheDocument();
@@ -221,6 +219,7 @@ describe('Layout: mobile hamburger menu', () => {
 
     await user.click(screen.getByRole('button', { name: 'Open menu' }));
 
+    expect(screen.getByRole('link', { name: 'Studio' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Public gallery' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Account settings' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Logout' })).toBeVisible();

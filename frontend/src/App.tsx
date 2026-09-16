@@ -5,12 +5,12 @@ import { AuthProvider } from './auth/AuthContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+import Studio from './pages/Studio';
 
 /** Task 130 (issue #162): these routes pull in the app's heaviest
  * dependencies (p5.js, React Flow, JSZip/export, the AI proposal stack) --
  * lazy-loading them keeps that weight out of the initial bundle so a
- * first-time visitor to `/` only pays for `Home` + routing. `Home` stays a
- * static import since it's the landing page most visits hit first. */
+ * first-time visitor to `/` only pays for routing + the public gallery. */
 const AiEditorWorkspace = lazy(() => import('./pages/AiEditorWorkspace'));
 const AiProject3DWorkspace = lazy(() => import('./pages/AiProject3DWorkspace'));
 const ArtPieceStudio = lazy(() => import('./pages/ArtPieceStudio'));
@@ -60,6 +60,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
+              <Route path="home" element={<Home />} />
+              <Route path="studio" element={<Studio />} />
               {/* Task 50: reachable without authentication -- this route
                   never checks `useAuth()`'s status, unlike the index route's
                   Home/Gallery split. */}

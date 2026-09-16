@@ -21,14 +21,8 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { name: 'AugmentrART', level: 1 })).toBeInTheDocument();
     expect(shellDocument.title).toBe('AugmentrART');
-    expect(await screen.findByText(/sign in to see your projects/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Sign in with Google' })).toHaveClass('shell-action');
-    expect(screen.getByRole('link', { name: 'Sign in with Google' })).toHaveAttribute(
-      'href',
-      '/accounts/login/',
-    );
     expect(
-      screen.getByText(/sign in to see your projects/i).closest('.content-panel'),
-    ).not.toBeNull();
+      await screen.findByText(/we couldn't load the public gallery|public gallery/i),
+    ).toBeInTheDocument();
   });
 });

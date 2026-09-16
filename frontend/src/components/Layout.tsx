@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import ReducedMotionControl from './ReducedMotionControl';
 import { useIsMobileHeader } from './useIsMobileHeader';
@@ -29,6 +29,7 @@ import { fetchSiteTheme } from '../api/siteTheme';
 function Layout() {
   const auth = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobileHeader = useIsMobileHeader();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -72,6 +73,15 @@ function Layout() {
     }
   }
 
+  async function handleLogout() {
+    try {
+      await auth.logout?.();
+      navigate('/gallery', { replace: true });
+    } catch {
+      // AuthContext exposes the actionable error message in the shell.
+    }
+  }
+
   const signInOrOutAction =
     auth.status === 'signed-in' ? (
       <>
@@ -83,7 +93,7 @@ function Layout() {
             Admin
           </NavLink>
         )}
-        <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>
+        <button className="shell-action" type="button" onClick={() => void handleLogout()}>
           Logout
         </button>
       </>
@@ -133,12 +143,18 @@ function Layout() {
               aria-label="Primary navigation"
               hidden={!menuOpen}
             >
-              <NavLink className="shell-action" to="/" end>
-                Home
+              <NavLink
+                className="shell-action"
+                to={auth.status === 'signed-in' ? '/studio' : '/gallery'}
+                end
+              >
+                {auth.status === 'signed-in' ? 'Studio' : 'Public gallery'}
               </NavLink>
-              <NavLink className="shell-action" to="/gallery">
-                Public gallery
-              </NavLink>
+              {auth.status === 'signed-in' && (
+                <NavLink className="shell-action" to="/gallery">
+                  Public gallery
+                </NavLink>
+              )}
               {signInOrOutAction}
               {auth.logoutError && (
                 <p className="auth-error" role="alert">
@@ -149,12 +165,18 @@ function Layout() {
           </>
         ) : (
           <nav className="app-shell-nav" aria-label="Primary navigation">
-            <NavLink className="shell-action" to="/" end>
-              Home
+            <NavLink
+              className="shell-action"
+              to={auth.status === 'signed-in' ? '/studio' : '/gallery'}
+              end
+            >
+              {auth.status === 'signed-in' ? 'Studio' : 'Public gallery'}
             </NavLink>
-            <NavLink className="shell-action" to="/gallery">
-              Public gallery
-            </NavLink>
+            {auth.status === 'signed-in' && (
+              <NavLink className="shell-action" to="/gallery">
+                Public gallery
+              </NavLink>
+            )}
             {signInOrOutAction}
             {auth.logoutError && (
               <p className="auth-error" role="alert">

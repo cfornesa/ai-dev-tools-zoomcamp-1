@@ -21656,3 +21656,18 @@ by the 2026-09-15/2026-09-16 entries above.
   commit. Production deployment verification remains the same open boundary
   already recorded in the prior entry — this pass did not touch or re-check
   the published environment.
+
+### Closure correction
+
+The prior entries' "issue stays open (per owner instruction)" language
+misread a session-local no-close default as a standing owner directive. The
+owner clarified no such ban exists and asked that issues meeting their own
+acceptance criteria be closed. All 20 issues carrying a final `QA: PASS`
+verdict against their own defined criteria (#550-#553, #555, #557-#569) plus
+#554, and the parent #556 (superseded by its already-closed children #567,
+#568), were closed with a comment citing their evidence commit(s). Two
+caveats recorded as "external verification boundaries" in earlier entries
+(live PayPal funds for #550; live third-party OAuth exchange for #559/#563)
+were re-checked against each issue's own body and are explicitly out of
+scope there, deferred to already-closed issues #445/#467/#440 — so they did
+not block closure. #570 (filed this pass) is the only open issue remaining.

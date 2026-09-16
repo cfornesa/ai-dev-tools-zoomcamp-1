@@ -140,91 +140,105 @@ function AdminPages() {
       {message && <p role="status">{message}</p>}
       {error && <p role="alert">{error}</p>}
       {pages === null && !error && <p role="status">Loading pages…</p>}
-      {pages?.length === 0 && <p role="status">No CMS pages yet.</p>}
-      {pages && pages.length > 0 && (
-        <div className="admin-page-list" role="list" aria-label="CMS pages">
-          {pages.map((page) => (
-            <article key={page.id} className="admin-page-row" role="listitem">
-              <div>
-                <h3>{page.title}</h3>
-                <p>
-                  <code>/{page.slug}</code> · {page.status} · updated{' '}
-                  {new Date(page.updated_at).toLocaleString()}
-                </p>
-                <p>Author: {page.author ?? 'System'}</p>
-              </div>
-              <div className="admin-page-actions">
-                <button type="button" onClick={() => beginEdit(page)} disabled={busy}>
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void remove(page)}
-                  disabled={busy || Boolean(page.system_key)}
-                >
-                  Move to trash
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+      {pages && (
+        <section className="admin-console-section" aria-labelledby="admin-pages-list-heading">
+          <h3 id="admin-pages-list-heading">CMS page operations</h3>
+          {pages.length === 0 ? (
+            <p role="status">No CMS pages yet.</p>
+          ) : (
+            <div className="admin-page-list" role="list" aria-label="CMS pages">
+              {pages.map((page) => (
+                <article key={page.id} className="admin-page-row" role="listitem">
+                  <div>
+                    <h3>{page.title}</h3>
+                    <p>
+                      <code>/{page.slug}</code> · {page.status} · updated{' '}
+                      {new Date(page.updated_at).toLocaleString()}
+                    </p>
+                    <p>Author: {page.author ?? 'System'}</p>
+                  </div>
+                  <div className="admin-page-actions">
+                    <button
+                      className="admin-action-secondary"
+                      type="button"
+                      onClick={() => beginEdit(page)}
+                      disabled={busy}
+                    >
+                      <span aria-hidden="true">✎</span> Edit
+                    </button>
+                    <button
+                      className="admin-action-danger"
+                      type="button"
+                      onClick={() => void remove(page)}
+                      disabled={busy || Boolean(page.system_key)}
+                    >
+                      <span aria-hidden="true">⌫</span> Move to trash
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       )}
-      <form className="admin-page-form" aria-label="CMS page editor" onSubmit={save}>
-        <h3>{editingId === null ? 'Create page' : 'Edit page'}</h3>
-        <label htmlFor="cms-page-title">Title</label>
-        <input
-          id="cms-page-title"
-          value={draft.title}
-          onChange={(event) => setDraft({ ...draft, title: event.target.value })}
-          required
-          maxLength={200}
-        />
-        <label htmlFor="cms-page-slug">Slug</label>
-        <input
-          id="cms-page-slug"
-          value={draft.slug}
-          onChange={(event) => setDraft({ ...draft, slug: event.target.value })}
-          required
-          maxLength={120}
-        />
-        <label htmlFor="cms-page-description">Description</label>
-        <textarea
-          id="cms-page-description"
-          value={draft.description}
-          onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-          maxLength={5000}
-          rows={5}
-        />
-        <label htmlFor="cms-page-status">Status</label>
-        <select
-          id="cms-page-status"
-          value={draft.status}
-          onChange={(event) =>
-            setDraft({ ...draft, status: event.target.value as CmsPageFields['status'] })
-          }
-        >
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-        </select>
-        <label htmlFor="cms-page-nav-label">Navigation label</label>
-        <input
-          id="cms-page-nav-label"
-          value={draft.nav_label}
-          onChange={(event) => setDraft({ ...draft, nav_label: event.target.value })}
-          maxLength={100}
-        />
-        <label>
+      <section className="admin-console-section" aria-labelledby="admin-page-editor-heading">
+        <form className="admin-page-form" aria-label="CMS page editor" onSubmit={save}>
+          <h3 id="admin-page-editor-heading">{editingId === null ? 'Create page' : 'Edit page'}</h3>
+          <label htmlFor="cms-page-title">Title</label>
           <input
-            type="checkbox"
-            checked={draft.show_in_nav}
-            onChange={(event) => setDraft({ ...draft, show_in_nav: event.target.checked })}
+            id="cms-page-title"
+            value={draft.title}
+            onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+            required
+            maxLength={200}
           />
-          Show in navigation
-        </label>
-        <button type="submit" disabled={busy}>
-          {busy ? 'Saving…' : 'Save page'}
-        </button>
-      </form>
+          <label htmlFor="cms-page-slug">Slug</label>
+          <input
+            id="cms-page-slug"
+            value={draft.slug}
+            onChange={(event) => setDraft({ ...draft, slug: event.target.value })}
+            required
+            maxLength={120}
+          />
+          <label htmlFor="cms-page-description">Description</label>
+          <textarea
+            id="cms-page-description"
+            value={draft.description}
+            onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+            maxLength={5000}
+            rows={5}
+          />
+          <label htmlFor="cms-page-status">Status</label>
+          <select
+            id="cms-page-status"
+            value={draft.status}
+            onChange={(event) =>
+              setDraft({ ...draft, status: event.target.value as CmsPageFields['status'] })
+            }
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+          </select>
+          <label htmlFor="cms-page-nav-label">Navigation label</label>
+          <input
+            id="cms-page-nav-label"
+            value={draft.nav_label}
+            onChange={(event) => setDraft({ ...draft, nav_label: event.target.value })}
+            maxLength={100}
+          />
+          <label>
+            <input
+              type="checkbox"
+              checked={draft.show_in_nav}
+              onChange={(event) => setDraft({ ...draft, show_in_nav: event.target.checked })}
+            />
+            Show in navigation
+          </label>
+          <button className="admin-action-primary" type="submit" disabled={busy}>
+            {busy ? 'Saving…' : 'Save page'}
+          </button>
+        </form>
+      </section>
     </section>
   );
 }

@@ -509,6 +509,44 @@ button:disabled {
   text-align: left;
 }
 
+.admin-console-section {
+  width: min(100%, 1100px);
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--code-bg) 72%, transparent);
+}
+
+.admin-console-section > h3 {
+  margin: 0 0 16px;
+  color: var(--text-h);
+}
+
+.admin-action-primary,
+.admin-action-secondary,
+.admin-action-danger {
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.admin-action-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.admin-action-secondary {
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.admin-action-danger {
+  border-color: #c2414b;
+  background: color-mix(in srgb, #c2414b 18%, var(--bg));
+  color: var(--text-h);
+}
+
 .admin-settings > h2,
 .admin-entitlement-policy > h3 {
   text-align: center;
@@ -646,6 +684,10 @@ button:disabled {
 @media (max-width: 767px) {
   .admin-settings {
     padding: 24px 16px;
+  }
+
+  .admin-console-section {
+    padding: 16px;
   }
 
   .admin-settings-form,

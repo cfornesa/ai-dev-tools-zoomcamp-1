@@ -127,13 +127,19 @@ function SiteTitleForm({
         ))}
       </fieldset>
       <div className="admin-settings-actions">
-        <button type="submit" disabled={busy || !dirty}>
+        <button className="admin-action-primary" type="submit" disabled={busy || !dirty}>
           Save
         </button>
-        <button type="button" onClick={cancel} disabled={busy || !dirty}>
+        <button
+          className="admin-action-secondary"
+          type="button"
+          onClick={cancel}
+          disabled={busy || !dirty}
+        >
           Cancel
         </button>
         <button
+          className="admin-action-secondary"
           type="button"
           onClick={() => {
             setTheme({ ...DEFAULT_THEME });
@@ -334,10 +340,15 @@ function CloudRetentionSettings({
         </label>
       ))}
       <div className="admin-settings-actions">
-        <button type="submit" disabled={busy}>
+        <button className="admin-action-primary" type="submit" disabled={busy}>
           Save retention policy
         </button>
-        <button type="button" onClick={() => void purge()} disabled={busy}>
+        <button
+          className="admin-action-danger"
+          type="button"
+          onClick={() => void purge()}
+          disabled={busy}
+        >
           Purge expired remote copies
         </button>
       </div>
@@ -516,7 +527,7 @@ function PlanForm({
         ))}
       </select>
       <div className="admin-settings-actions">
-        <button type="submit" disabled={busy}>
+        <button className="admin-action-primary" type="submit" disabled={busy}>
           Save
         </button>
       </div>
@@ -661,10 +672,15 @@ function AIModelCatalogRow({
         Active (offered to the AI editor model controls)
       </label>
       <div className="admin-settings-actions">
-        <button type="submit" disabled={busy}>
+        <button className="admin-action-primary" type="submit" disabled={busy}>
           Save
         </button>
-        <button type="button" onClick={() => void remove()} disabled={busy}>
+        <button
+          className="admin-action-danger"
+          type="button"
+          onClick={() => void remove()}
+          disabled={busy}
+        >
           Delete
         </button>
       </div>
@@ -776,7 +792,11 @@ function AIModelCatalogCreateForm({ onCreated }: { onCreated: (model: AIProvider
         Agentic supported
       </label>
       <div className="admin-settings-actions">
-        <button type="submit" disabled={busy || taskKinds.length === 0}>
+        <button
+          className="admin-action-primary"
+          type="submit"
+          disabled={busy || taskKinds.length === 0}
+        >
           Add model
         </button>
       </div>
@@ -879,7 +899,11 @@ function ProfileStyleCatalogSettings({
             onBlur={(event) => void rename(style, event.target.value)}
           />
           <span>{style.key}</span>
-          <button type="button" onClick={() => void toggle(style)}>
+          <button
+            className="admin-action-secondary"
+            type="button"
+            onClick={() => void toggle(style)}
+          >
             {style.enabled ? 'Disable' : 'Enable'}
           </button>
           <div
@@ -902,7 +926,7 @@ function ProfileStyleCatalogSettings({
           value={newKey}
           onChange={(event) => setNewKey(event.target.value)}
         />
-        <button type="button" onClick={() => void create()}>
+        <button className="admin-action-primary" type="button" onClick={() => void create()}>
           Create style
         </button>
       </div>
@@ -959,48 +983,66 @@ function AdminSettings() {
         </p>
       )}
       {siteSettings ? (
-        <SiteTitleForm settings={siteSettings} onSaved={setSiteSettings} />
+        <section className="admin-console-section" aria-labelledby="admin-site-section-heading">
+          <h3 id="admin-site-section-heading">Site identity and global theme</h3>
+          <SiteTitleForm settings={siteSettings} onSaved={setSiteSettings} />
+        </section>
       ) : (
         !loadError && <p role="status">Loading site settings…</p>
       )}
       {plans ? (
-        <div className="admin-plans">
-          {plans.map((plan) => (
-            <PlanForm
-              key={plan.plan_key}
-              plan={plan}
-              roles={roles ?? []}
-              onSaved={(next) =>
-                setPlans((current) =>
-                  (current ?? []).map((existing) =>
-                    existing.plan_key === next.plan_key ? next : existing,
-                  ),
-                )
-              }
-            />
-          ))}
-        </div>
+        <section className="admin-console-section" aria-labelledby="admin-entitlements-heading">
+          <h3 id="admin-entitlements-heading">Plans and capabilities</h3>
+          <div className="admin-plans">
+            {plans.map((plan) => (
+              <PlanForm
+                key={plan.plan_key}
+                plan={plan}
+                roles={roles ?? []}
+                onSaved={(next) =>
+                  setPlans((current) =>
+                    (current ?? []).map((existing) =>
+                      existing.plan_key === next.plan_key ? next : existing,
+                    ),
+                  )
+                }
+              />
+            ))}
+          </div>
+        </section>
       ) : (
         !loadError && <p role="status">Loading plans…</p>
       )}
       {roles && globals && (
-        <EntitlementPolicy
-          roles={roles}
-          globals={globals}
-          onRoles={setRoles}
-          onGlobals={setGlobals}
-        />
+        <section className="admin-console-section" aria-labelledby="admin-policy-section-heading">
+          <h3 id="admin-policy-section-heading">Role and global access policy</h3>
+          <EntitlementPolicy
+            roles={roles}
+            globals={globals}
+            onRoles={setRoles}
+            onGlobals={setGlobals}
+          />
+        </section>
       )}
       {retentionPolicy && (
-        <CloudRetentionSettings policy={retentionPolicy} onSaved={setRetentionPolicy} />
+        <section className="admin-console-section" aria-labelledby="admin-retention-heading">
+          <h3 id="admin-retention-heading">Cloud retention</h3>
+          <CloudRetentionSettings policy={retentionPolicy} onSaved={setRetentionPolicy} />
+        </section>
       )}
       {aiModels ? (
-        <AIModelCatalogSettings models={aiModels} onModels={setAiModels} />
+        <section className="admin-console-section" aria-labelledby="admin-models-heading">
+          <h3 id="admin-models-heading">AI provider models</h3>
+          <AIModelCatalogSettings models={aiModels} onModels={setAiModels} />
+        </section>
       ) : (
         !loadError && <p role="status">Loading AI model catalog…</p>
       )}
       {profileStyles ? (
-        <ProfileStyleCatalogSettings styles={profileStyles} onStyles={setProfileStyles} />
+        <section className="admin-console-section" aria-labelledby="admin-styles-heading">
+          <h3 id="admin-styles-heading">Profile style catalog</h3>
+          <ProfileStyleCatalogSettings styles={profileStyles} onStyles={setProfileStyles} />
+        </section>
       ) : (
         !loadError && <p role="status">Loading profile style catalog…</p>
       )}

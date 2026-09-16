@@ -122,87 +122,101 @@ function AdminContent() {
       {message && <p role="status">{message}</p>}
       {error && <p role="alert">{error}</p>}
       {rows === null && !error && <p role="status">Loading content…</p>}
-      {rows && visibleRows.length === 0 && <p role="status">No matching content.</p>}
-      {visibleRows.length > 0 && (
-        <div className="admin-page-list" role="list" aria-label="Admin content">
-          {visibleRows.map((row) => {
-            const canAct = ['project', 'project3d', 'art_piece'].includes(row.resource_type);
-            const key = `${row.resource_type}:${row.resource_id}`;
-            return (
-              <article key={key} className="admin-page-row" role="listitem">
-                <div>
-                  <h3>{row.title}</h3>
-                  <p>
-                    {row.resource_type} · {row.status} · owner {row.owner} · updated{' '}
-                    {new Date(row.updated_at).toLocaleString()}
-                  </p>
-                  {row.version_count !== null && <p>{row.version_count} saved versions</p>}
-                </div>
-                {canAct && (
-                  <div className="admin-page-actions">
-                    {!row.deleted && row.status !== 'public' && row.status !== 'published' && (
-                      <button
-                        type="button"
-                        disabled={busyId !== null}
-                        onClick={() => void runAction(row, 'publish')}
-                      >
-                        Publish
-                      </button>
+      {rows && (
+        <section className="admin-console-section" aria-labelledby="admin-content-list-heading">
+          <h3 id="admin-content-list-heading">Content operations</h3>
+          {visibleRows.length === 0 ? (
+            <p role="status">No matching content.</p>
+          ) : (
+            <div className="admin-page-list" role="list" aria-label="Admin content">
+              {visibleRows.map((row) => {
+                const canAct = ['project', 'project3d', 'art_piece'].includes(row.resource_type);
+                const key = `${row.resource_type}:${row.resource_id}`;
+                return (
+                  <article key={key} className="admin-page-row" role="listitem">
+                    <div>
+                      <h3>{row.title}</h3>
+                      <p>
+                        {row.resource_type} · {row.status} · owner {row.owner} · updated{' '}
+                        {new Date(row.updated_at).toLocaleString()}
+                      </p>
+                      {row.version_count !== null && <p>{row.version_count} saved versions</p>}
+                    </div>
+                    {canAct && (
+                      <div className="admin-page-actions">
+                        {!row.deleted && row.status !== 'public' && row.status !== 'published' && (
+                          <button
+                            type="button"
+                            disabled={busyId !== null}
+                            onClick={() => void runAction(row, 'publish')}
+                            className="admin-action-primary"
+                          >
+                            <span aria-hidden="true">↑</span> Publish
+                          </button>
+                        )}
+                        {!row.deleted &&
+                          (row.status === 'public' || row.status === 'published') && (
+                            <button
+                              type="button"
+                              disabled={busyId !== null}
+                              onClick={() => void runAction(row, 'unpublish')}
+                              className="admin-action-secondary"
+                            >
+                              <span aria-hidden="true">↓</span> Unpublish
+                            </button>
+                          )}
+                        {row.deleted ? (
+                          <button
+                            type="button"
+                            disabled={busyId !== null}
+                            onClick={() => void runAction(row, 'restore')}
+                            className="admin-action-secondary"
+                          >
+                            <span aria-hidden="true">↩</span> Restore
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={busyId !== null}
+                            onClick={() => void runAction(row, 'delete')}
+                            className="admin-action-danger"
+                          >
+                            <span aria-hidden="true">⌫</span> Move to trash
+                          </button>
+                        )}
+                      </div>
                     )}
-                    {!row.deleted && (row.status === 'public' || row.status === 'published') && (
-                      <button
-                        type="button"
-                        disabled={busyId !== null}
-                        onClick={() => void runAction(row, 'unpublish')}
-                      >
-                        Unpublish
-                      </button>
-                    )}
-                    {row.deleted ? (
-                      <button
-                        type="button"
-                        disabled={busyId !== null}
-                        onClick={() => void runAction(row, 'restore')}
-                      >
-                        Restore
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={busyId !== null}
-                        onClick={() => void runAction(row, 'delete')}
-                      >
-                        Move to trash
-                      </button>
-                    )}
-                  </div>
-                )}
-              </article>
-            );
-          })}
-        </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
       )}
-      <form
-        className="admin-page-form"
-        aria-label="Application-admin access"
-        onSubmit={changeAccess}
-      >
-        <h3>Application-admin access</h3>
-        <label htmlFor="admin-content-username">Username</label>
-        <input
-          id="admin-content-username"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
-        />
-        <button type="submit" disabled={busyId !== null}>
-          Grant access
-        </button>
-        <p>
-          Use an exact username or verified email address. Provider handles alone are not accepted.
-        </p>
-      </form>
+      <section className="admin-console-section" aria-labelledby="admin-access-heading">
+        <form
+          className="admin-page-form"
+          aria-label="Application-admin access"
+          onSubmit={changeAccess}
+        >
+          <h3 id="admin-access-heading">Application-admin access</h3>
+          <label htmlFor="admin-content-username">Username</label>
+          <input
+            id="admin-content-username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          />
+          <button className="admin-action-primary" type="submit" disabled={busyId !== null}>
+            <span aria-hidden="true">＋</span> Grant access
+          </button>
+          <p>
+            Use an exact username or verified email address. Provider handles alone are not
+            accepted.
+          </p>
+        </form>
+      </section>
       {admins && (
-        <section aria-labelledby="admin-roster-heading">
+        <section className="admin-console-section" aria-labelledby="admin-roster-heading">
           <h3 id="admin-roster-heading">Current application administrators</h3>
           {admins.length === 0 ? (
             <p>No managed administrators.</p>
@@ -216,6 +230,7 @@ function AdminContent() {
                     {entry.providers.join(', ') || 'no linked providers'}
                   </span>
                   <button
+                    className="admin-action-danger"
                     type="button"
                     disabled={busyId !== null}
                     onClick={() => {
@@ -233,7 +248,7 @@ function AdminContent() {
                         .finally(() => setBusyId(null));
                     }}
                   >
-                    Revoke
+                    <span aria-hidden="true">−</span> Revoke
                   </button>
                 </li>
               ))}

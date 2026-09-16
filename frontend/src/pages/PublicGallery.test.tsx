@@ -9,6 +9,7 @@ import PublicGallery from './PublicGallery';
 vi.mock('../api/projects');
 
 const mockedFetchPublicGallery = vi.mocked(projectsApi.fetchPublicGallery);
+const mockedSearchPublicGallery = vi.mocked(projectsApi.searchPublicGallery);
 
 function baseItem(
   overrides: Partial<projectsApi.PublicGalleryItem> & {
@@ -438,5 +439,75 @@ describe('PublicGallery pagination', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not load more/i);
     expect(screen.getByRole('heading', { name: 'First' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /load more/i })).toBeEnabled();
+  });
+});
+
+describe('PublicGallery search (#581)', () => {
+  beforeEach(() => {
+    mockedFetchPublicGallery.mockResolvedValue({
+      results: [],
+      next_cursor: null,
+      has_more: false,
+    });
+  });
+
+  it('defaults the search scope to Content and submits a content-scope search', async () => {
+    mockedSearchPublicGallery.mockResolvedValue({
+      scope: 'content',
+      results: [baseItem({ id: 'found-1', title: 'Sunset Study' })],
+    });
+    const user = userEvent.setup();
+
+    renderPublicGallery();
+    await screen.findByRole('heading', { name: 'Public gallery' });
+
+    expect(screen.getByLabelText(/search scope/i)).toHaveValue('content');
+    await user.type(screen.getByLabelText(/search public gallery/i), 'sunset');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+
+    expect(mockedSearchPublicGallery).toHaveBeenCalledWith('sunset', 'content');
+    expect(await screen.findByRole('heading', { name: 'Sunset Study' })).toBeInTheDocument();
+  });
+
+  it('switches to the Accounts scope and renders account results', async () => {
+    mockedSearchPublicGallery.mockResolvedValue({
+      scope: 'accounts',
+      results: [
+        {
+          id: 'u1',
+          kind: 'account',
+          title: 'The Artist',
+          owner: 'artist',
+          handle: 'artist',
+          thumbnail_url: null,
+          viewer_url: '/users/@artist',
+        },
+      ],
+    });
+    const user = userEvent.setup();
+
+    renderPublicGallery();
+    await screen.findByRole('heading', { name: 'Public gallery' });
+
+    await user.selectOptions(screen.getByLabelText(/search scope/i), 'accounts');
+    await user.type(screen.getByLabelText(/search public gallery/i), 'artist');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+
+    expect(mockedSearchPublicGallery).toHaveBeenCalledWith('artist', 'accounts');
+    expect(await screen.findByRole('heading', { name: 'The Artist' })).toBeInTheDocument();
+  });
+
+  it('restores scope/query from the URL on direct load and shares it back/forward', async () => {
+    mockedSearchPublicGallery.mockResolvedValue({
+      scope: 'accounts',
+      results: [],
+    });
+
+    renderPublicGallery(['/gallery?type=all&scope=accounts&q=artist']);
+    await screen.findByRole('heading', { name: 'Public gallery' });
+
+    expect(mockedSearchPublicGallery).toHaveBeenCalledWith('artist', 'accounts');
+    expect(screen.getByLabelText(/search scope/i)).toHaveValue('accounts');
+    expect(screen.getByLabelText(/search public gallery/i)).toHaveValue('artist');
   });
 });

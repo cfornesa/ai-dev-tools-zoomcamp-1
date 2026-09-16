@@ -21844,7 +21844,7 @@ by the vendor-aware saved-model contract. The publish was canceled before any
 production mutation. Follow-up issue [#587](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/587)
 tracks the safe migration boundary.
 
-- #587 is implemented in commit `PENDING-COMMIT` by retaining the application
+- #587 is implemented in commit `db8c179` by retaining the application
   default and adding a PostgreSQL database default of `"mistral"`; this lets
   the production schema add the non-null column without truncating existing
   rows.

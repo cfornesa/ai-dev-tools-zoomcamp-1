@@ -9,6 +9,7 @@ from scenes.models import AIPersona, MistralModelPreference
 
 MODELS_URL = "/api/account/mistral-model-preferences/"
 PERSONAS_URL = "/api/account/ai-personas/"
+SAVED_MODELS_URL = "/api/account/ai-model-preferences/"
 
 
 @pytest.fixture
@@ -93,6 +94,36 @@ def test_model_preference_isolated_between_users(owner_client, other_client, own
     assert other_client.get(MODELS_URL).json() == []
     assert other_client.delete(f"{MODELS_URL}{pk}/").status_code == 404
     assert MistralModelPreference.objects.filter(owner=owner, pk=pk).exists()
+
+
+@pytest.mark.django_db
+def test_vendor_aware_saved_models_validate_filter_and_delete(owner_client, other_client):
+    created = owner_client.post(
+        SAVED_MODELS_URL,
+        {"vendor": "gemini", "slug": "gemini-2.5-flash", "label": "Fast"},
+        format="json",
+    )
+    assert created.status_code == 201
+    assert created.json()["vendor"] == "gemini"
+    assert owner_client.get(SAVED_MODELS_URL).json()[0]["vendor"] == "gemini"
+    assert other_client.get(SAVED_MODELS_URL).json() == []
+    assert (
+        owner_client.post(
+            SAVED_MODELS_URL,
+            {"vendor": "gemini", "slug": "not-a-gemini-model"},
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        owner_client.post(
+            SAVED_MODELS_URL,
+            {"vendor": "gemini", "slug": "gemini-2.5-flash"},
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert owner_client.delete(f"{SAVED_MODELS_URL}{created.json()['id']}/").status_code == 204
 
 
 # --- AIPersona: create, list, delete, isolation --------------------------

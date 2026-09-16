@@ -1,11 +1,14 @@
 import { apiFetch } from './client';
 
-export type MistralModelPreference = {
+export type SavedAIModelPreference = {
   id: number;
+  vendor?: string;
   slug: string;
   label: string;
   created_at: string;
 };
+
+export type MistralModelPreference = SavedAIModelPreference;
 
 export type AIPersona = {
   id: number;
@@ -16,6 +19,25 @@ export type AIPersona = {
 
 export function fetchMistralModelPreferences(): Promise<MistralModelPreference[]> {
   return apiFetch<MistralModelPreference[]>('/api/account/mistral-model-preferences/');
+}
+
+export function fetchSavedAIModelPreferences(): Promise<SavedAIModelPreference[]> {
+  return apiFetch<SavedAIModelPreference[]>('/api/account/ai-model-preferences/');
+}
+
+export function createSavedAIModelPreference(
+  vendor: string,
+  slug: string,
+  label: string,
+): Promise<SavedAIModelPreference> {
+  return apiFetch<SavedAIModelPreference>('/api/account/ai-model-preferences/', {
+    method: 'POST',
+    body: JSON.stringify({ vendor, slug, label }),
+  });
+}
+
+export function deleteSavedAIModelPreference(id: number): Promise<void> {
+  return apiFetch<void>(`/api/account/ai-model-preferences/${id}/`, { method: 'DELETE' });
 }
 
 export function createMistralModelPreference(

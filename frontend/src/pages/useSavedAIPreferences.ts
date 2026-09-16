@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 
 import {
   fetchAIPersonas,
-  fetchMistralModelPreferences,
+  fetchSavedAIModelPreferences,
   type AIPersona,
-  type MistralModelPreference,
+  type SavedAIModelPreference,
 } from '../api/aiPreferences';
 
 /**
@@ -18,11 +18,11 @@ import {
  * than a separate error state).
  */
 export function useSavedAIPreferences() {
-  const [models, setModels] = useState<MistralModelPreference[] | null>(null);
+  const [models, setModels] = useState<SavedAIModelPreference[] | null>(null);
   const [personas, setPersonas] = useState<AIPersona[] | null>(null);
 
   useEffect(() => {
-    fetchMistralModelPreferences()
+    fetchSavedAIModelPreferences()
       .then(setModels)
       .catch(() => setModels([]));
     fetchAIPersonas()

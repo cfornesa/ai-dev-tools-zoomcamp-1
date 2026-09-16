@@ -32,6 +32,8 @@ from scenes.ai_preferences_api import (
     AIPersonaListCreateView,
     MistralModelPreferenceDetailView,
     MistralModelPreferenceListCreateView,
+    SavedAIModelPreferenceDetailView,
+    SavedAIModelPreferenceListCreateView,
 )
 from scenes.ai_retry_preference_api import AIRetryPreferenceView
 from scenes.ai_runs_api import (
@@ -175,6 +177,16 @@ urlpatterns = [
     ),
     path("account/profile/", AccountProfileView.as_view(), name="account-profile"),
     path("users/@<str:handle>/", PublicProfileView.as_view(), name="public-profile"),
+    path(
+        "account/ai-model-preferences/",
+        SavedAIModelPreferenceListCreateView.as_view(),
+        name="ai-model-preference-list-create",
+    ),
+    path(
+        "account/ai-model-preferences/<int:pk>/",
+        SavedAIModelPreferenceDetailView.as_view(),
+        name="ai-model-preference-detail",
+    ),
     path(
         "account/mistral-model-preferences/",
         MistralModelPreferenceListCreateView.as_view(),

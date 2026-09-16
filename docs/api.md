@@ -26,6 +26,21 @@ remains readable after an administrator disables it. `theme_config` remains a
 validated token-only compatibility override and cannot contain CSS, HTML, or
 JavaScript.
 
+## Vendor-aware saved AI models (#553)
+
+`GET|POST /api/account/mistral-model-preferences/` remains supported as a
+Mistral-only compatibility route. The canonical saved-model payload now also
+contains `vendor`; `POST /api/account/ai-model-preferences/` accepts a
+registered provider vendor, a provider-specific model slug, and an optional
+label. Entries are owner-scoped, duplicate `(owner, vendor, slug)` entries
+are rejected, and invalid or unknown providers return validation errors.
+`GET /api/account/ai-model-preferences/` returns only the authenticated
+owner's entries; no provider credential or secret is returned.
+
+The assistant's vendor selector filters saved models to the selected vendor
+and clears an incompatible model before submission. Existing Mistral records
+and the legacy Mistral endpoint remain backward-compatible.
+
 Application administrators can use `GET|POST /api/admin/profile-styles/` and
 `PATCH /api/admin/profile-styles/<id>/` to manage the finite catalog. Anonymous
 callers receive `401`, non-admins `403`, and updates require the current

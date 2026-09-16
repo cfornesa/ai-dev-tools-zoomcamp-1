@@ -617,12 +617,18 @@ class MistralModelPreference(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mistral_model_preferences"
     )
+    vendor = models.CharField(max_length=32, default="mistral")
     slug = models.CharField(max_length=200)
     label = models.CharField(max_length=200, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "vendor", "slug"], name="unique_saved_ai_model_preference"
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.slug} (owner {self.owner_id})"

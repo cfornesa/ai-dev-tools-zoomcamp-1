@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 
 import {
   type AIPersona,
-  type MistralModelPreference,
+  type SavedAIModelPreference,
   createAIPersona,
-  createMistralModelPreference,
+  createSavedAIModelPreference,
   deleteAIPersona,
-  deleteMistralModelPreference,
+  deleteSavedAIModelPreference,
   fetchAIPersonas,
-  fetchMistralModelPreferences,
+  fetchSavedAIModelPreferences,
 } from '../api/aiPreferences';
 import { fetchAIRetryPreference, updateAIRetryPreference } from '../api/aiRetryPreference';
 import {
@@ -611,8 +611,15 @@ function AIRetrySettings() {
   );
 }
 
+const AI_VENDORS = [
+  { key: 'mistral', label: 'Mistral' },
+  { key: 'gemini', label: 'Google Gemini' },
+  { key: 'deepseek', label: 'DeepSeek' },
+];
+
 function SavedMistralModels() {
-  const [models, setModels] = useState<MistralModelPreference[] | null>(null);
+  const [models, setModels] = useState<SavedAIModelPreference[] | null>(null);
+  const [vendor, setVendor] = useState('mistral');
   const [slug, setSlug] = useState('');
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
@@ -620,9 +627,9 @@ function SavedMistralModels() {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    fetchMistralModelPreferences()
+    fetchSavedAIModelPreferences()
       .then(setModels)
-      .catch(() => setError('Could not load your saved Mistral models.'));
+      .catch(() => setError('Could not load your saved AI models.'));
   }, []);
 
   async function submit(event: React.FormEvent) {
@@ -630,7 +637,7 @@ function SavedMistralModels() {
     setBusy(true);
     setError(null);
     try {
-      const created = await createMistralModelPreference(slug, label);
+      const created = await createSavedAIModelPreference(vendor, slug, label);
       setModels((current) => [...(current ?? []), created]);
       setSlug('');
       setLabel('');
@@ -645,7 +652,7 @@ function SavedMistralModels() {
     setBusy(true);
     setError(null);
     try {
-      await deleteMistralModelPreference(id);
+      await deleteSavedAIModelPreference(id);
       setModels((current) => (current ?? []).filter((m) => m.id !== id));
     } catch {
       setError('Could not remove that model.');
@@ -656,12 +663,12 @@ function SavedMistralModels() {
 
   return (
     <section className="account-settings-card" aria-labelledby="saved-models-heading">
-      <h3 id="saved-models-heading">Saved Mistral models</h3>
+      <h3 id="saved-models-heading">Saved AI models</h3>
       <details>
         <summary>See more details about saved models</summary>
         <p>
-          Save your own Mistral model slugs to pick from a dropdown in the AI assistant, instead of
-          retyping one each time. Look up valid slugs in{' '}
+          Save provider-specific model slugs to pick from a vendor-filtered dropdown in the AI
+          assistant, instead of retyping one each time. Look up valid slugs in{' '}
           <a href={MISTRAL_MODELS_DOCS_URL} target="_blank" rel="noopener noreferrer">
             Mistral&apos;s model documentation
           </a>
@@ -674,11 +681,20 @@ function SavedMistralModels() {
         </button>
       )}
       {showForm && (
-        <form
-          onSubmit={submit}
-          aria-label="Add a saved Mistral model"
-          className="account-settings-form"
-        >
+        <form onSubmit={submit} aria-label="Add a saved AI model" className="account-settings-form">
+          <label htmlFor="mistral-model-vendor">AI provider</label>
+          <select
+            id="mistral-model-vendor"
+            value={vendor}
+            onChange={(e) => setVendor(e.target.value)}
+            disabled={busy}
+          >
+            {AI_VENDORS.map((item) => (
+              <option key={item.key} value={item.key}>
+                {item.label}
+              </option>
+            ))}
+          </select>
           <label htmlFor="mistral-model-slug">Model slug</label>
           <input
             id="mistral-model-slug"
@@ -708,10 +724,13 @@ function SavedMistralModels() {
       {models === null && !error && <p>Loading your saved models…</p>}
       {models !== null && models.length === 0 && <p>No saved models yet.</p>}
       {models !== null && models.length > 0 && (
-        <ul className="account-settings-list" aria-label="Saved Mistral models">
+        <ul className="account-settings-list" aria-label="Saved AI models">
           {models.map((model) => (
             <li key={model.id}>
-              <span>{model.label ? `${model.label} (${model.slug})` : model.slug}</span>
+              <span>
+                {model.vendor ?? 'mistral'}:{' '}
+                {model.label ? `${model.label} (${model.slug})` : model.slug}
+              </span>
               <button
                 className="shell-action"
                 type="button"

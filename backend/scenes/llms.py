@@ -93,10 +93,10 @@ def _published_records() -> list[str]:
                     project.description,
                 )
             )
-    for project in eligible_projects3d()[:MAX_ITEMS]:
-        handle = handles.get(project.owner_id)
+    for project3d in eligible_projects3d()[:MAX_ITEMS]:
+        handle = handles.get(project3d.owner_id)
         if handle:
-            lines.append(_line(project.title, f"/users/@{handle}/pieces/{project.public_slug}"))
+            lines.append(_line(project3d.title, f"/users/@{handle}/pieces/{project3d.public_slug}"))
     for piece in eligible_art_pieces().select_related("owner", "owner__public_profile")[:MAX_ITEMS]:
         handle = handles.get(piece.owner_id)
         if handle:

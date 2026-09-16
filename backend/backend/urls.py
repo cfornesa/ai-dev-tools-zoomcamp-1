@@ -20,8 +20,11 @@ from django.urls import include, path
 
 from backend.oauth_gates import github_callback, github_login, linkedin_callback, linkedin_login
 from backend.views import health, whoami
+from scenes.llms import LLMSFullTextView, LLMSTextView
 
 urlpatterns = [
+    path('llms.txt', LLMSTextView.as_view(), name='llms'),
+    path('llms-full.txt', LLMSFullTextView.as_view(), name='llms-full'),
     path('admin/', admin.site.urls),
     path('health/', health, name='health'),
     path('api/whoami/', whoami, name='whoami'),

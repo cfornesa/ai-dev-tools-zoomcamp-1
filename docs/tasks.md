@@ -21850,6 +21850,12 @@ tracks the safe migration boundary.
   `0075` alteration nullable during synchronization, retains the
   application/database defaults, and serializes legacy NULL values as
   `"mistral"`.
+- The broader schema diff also exposed the same synchronization hazard for
+  the public-slug, content-SEO, and global-metadata additions. Commit
+  `3950382` keeps the vendor history safe; the follow-up migration
+  `0077_non_destructive_schema_bridge` uses database-only nullable alterations
+  for the other populated tables while preserving the non-null Django model
+  state and application defaults.
 - The focused saved-model preference suite passes (10 tests), migration
   consistency is clean, and Ruff check/format checks pass. Production
   publish validation and QA remain deferred until the generated Replit SQL is
@@ -21871,3 +21877,10 @@ defaults for existing rows. The validator reports the database migrations as
 validated successfully, but the proposal was canceled before production
 approval. #587 is ready for QA/source review, while this broader production
 schema reconciliation remains an owner-controlled deployment blocker.
+
+The next safe source step is commit `0077_non_destructive_schema_bridge` and a
+fresh Replit Git-tab pull/migration pass. Its purpose is to make the physical
+development schema nullable for the remaining additions so the next generated
+diff can be reviewed without table-wide truncation. Existing production rows
+still require a separate, owner-controlled backfill/release verification;
+source checks do not constitute production schema evidence.

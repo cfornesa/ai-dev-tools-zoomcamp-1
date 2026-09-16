@@ -21854,3 +21854,20 @@ tracks the safe migration boundary.
   consistency is clean, and Ruff check/format checks pass. Production
   publish validation and QA remain deferred until the generated Replit SQL is
   confirmed non-destructive.
+
+### Follow-up validation after the nullable bridge (2026-09-16)
+
+Commit `3950382` was pulled through Replit's Git tab and the publish validator
+was rerun. The validator no longer proposed truncating
+`scenes_mistralmodelpreference`; it proposed the vendor column with a database
+default and then validated the related unique constraint using the safe
+"Add the constraint as-is" option. The vendor-specific destructive proposal is
+therefore resolved in source and Replit's generated SQL.
+
+The complete pending schema diff is still not safe to publish. It contains
+`truncate table ... cascade` for `scenes_project3d`, `scenes_artpiece`,
+`scenes_sitesettings`, and `scenes_project`, plus non-null additions without
+defaults for existing rows. The validator reports the database migrations as
+validated successfully, but the proposal was canceled before production
+approval. #587 is ready for QA/source review, while this broader production
+schema reconciliation remains an owner-controlled deployment blocker.

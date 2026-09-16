@@ -78,6 +78,11 @@ function Layout() {
         <NavLink className="shell-action" to="/account/settings">
           Account settings
         </NavLink>
+        {auth.user?.is_application_admin && (
+          <NavLink className="shell-action" to="/admin/content">
+            Admin
+          </NavLink>
+        )}
         <button className="shell-action" type="button" onClick={() => void auth.logout?.()}>
           Logout
         </button>

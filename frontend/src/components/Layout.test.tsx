@@ -25,12 +25,15 @@ function renderLayout() {
   );
 }
 
-function renderWithAuth(auth: ComponentProps<typeof AuthContext.Provider>['value']) {
+function renderWithAuth(
+  auth: ComponentProps<typeof AuthContext.Provider>['value'],
+  initialEntries = ['/'],
+) {
   return render(
     <AuthContext.Provider value={auth}>
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={initialEntries}>
         <Routes>
-          <Route path="/" element={<Layout />}>
+          <Route path="*" element={<Layout />}>
             <Route index element={<button type="button">Main action</button>} />
           </Route>
         </Routes>
@@ -125,6 +128,32 @@ describe('Layout: active nav indicator (issue #136)', () => {
     );
 
     expect(document.querySelector('.app-shell')).toHaveClass('app-shell-editor');
+  });
+});
+
+describe('Layout: admin navigation discoverability (#558)', () => {
+  it('shows the Admin link only for application administrators', () => {
+    renderWithAuth(
+      {
+        status: 'signed-in',
+        user: { username: 'admin', email: 'admin@example.com', is_application_admin: true },
+        logout: vi.fn(),
+        logoutError: null,
+        signOutLocally: vi.fn(),
+      },
+      ['/admin/content'],
+    );
+    expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin/content');
+    expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('does not expose the Admin link to ordinary users', () => {
+    renderWithAuth({
+      status: 'signed-in',
+      user: { username: 'user', email: 'user@example.com', is_application_admin: false },
+      logout: vi.fn(),
+    });
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 });
 

@@ -147,3 +147,53 @@ def test_invalid_and_reserved_slugs_are_rejected(client, admin_a):
             content_type="application/json",
         )
         assert response.status_code == 400
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "bad_seo_config",
+    [
+        {"title": "x" * 201},
+        {"unknown_field": "nope"},
+        {"canonical_policy": "everywhere"},
+        {"indexing": "maybe"},
+        {"twitter_card": "huge"},
+        {"og_image_url": "javascript:alert(1)"},
+        {"structured_data": "not-an-object"},
+    ],
+)
+def test_page_seo_config_rejects_invalid_values(client, admin_a, bad_seo_config):
+    client.force_login(admin_a)
+    response = client.post(
+        reverse("admin-page-list-create"),
+        page_payload(seo_config=bad_seo_config),
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_published_page_exposes_configured_seo_metadata_publicly(client, admin_a):
+    client.force_login(admin_a)
+    seo_config = {
+        "title": "About — AugmentrART",
+        "description": "Learn about the studio.",
+        "canonical_policy": "self",
+        "indexing": "index",
+        "og_title": "About",
+        "og_description": "Learn about the studio.",
+        "og_image_url": "https://example.com/og.png",
+        "twitter_card": "summary_large_image",
+        "answer_summary": "AugmentrART is a creative coding studio.",
+        "structured_data": {"@type": "WebPage"},
+    }
+    created = client.post(
+        reverse("admin-page-list-create"),
+        page_payload(status="published", seo_config=seo_config),
+        content_type="application/json",
+    )
+    assert created.status_code == 201
+
+    public = client.get(reverse("public-page-detail", args=["about-studio"]))
+    assert public.status_code == 200
+    assert public.json()["seo_config"] == seo_config

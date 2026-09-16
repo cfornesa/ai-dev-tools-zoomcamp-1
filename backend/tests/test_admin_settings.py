@@ -77,6 +77,8 @@ def test_settings_get_allowed_for_admin(client, admin_a):
     assert response.status_code == 200
     assert response.json() == {
         "site_title": "AugmentrART",
+        "site_description": "",
+        "metadata_tags": [],
         "cloud_sync_enabled": False,
         "revision": 1,
         "theme_config": {},
@@ -181,6 +183,8 @@ def test_admin_can_update_site_title(client, admin_a):
     assert response.status_code == 200
     assert response.json() == {
         "site_title": "New Studio Name",
+        "site_description": "",
+        "metadata_tags": [],
         "cloud_sync_enabled": False,
         "revision": 2,
         "theme_config": {},
@@ -230,6 +234,64 @@ def test_stale_site_title_revision_returns_conflict_without_partial_update(clien
     assert response.status_code == 409
     assert SiteSettings.get_solo().site_title == "AugmentrART"
     assert SiteSettings.get_solo().revision == 1
+
+
+@pytest.mark.django_db
+def test_admin_can_update_global_description_and_metadata_tags(client, admin_a):
+    client.force_login(admin_a)
+    response = client.patch(
+        reverse("admin-settings"),
+        {
+            "site_title": "AugmentrART",
+            "site_description": "A public creative coding studio.",
+            "metadata_tags": ["creative coding", "art", "art"],
+            "revision": 1,
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.json()["site_description"] == "A public creative coding studio."
+    assert response.json()["metadata_tags"] == ["creative coding", "art"]
+    row = SiteSettings.get_solo()
+    assert row.site_description == "A public creative coding studio."
+    assert row.metadata_tags == ["creative coding", "art"]
+
+
+@pytest.mark.django_db
+def test_site_theme_exposes_only_safe_global_metadata(client):
+    SiteSettings.objects.update_or_create(
+        pk=1,
+        defaults={
+            "site_title": "Public Studio",
+            "site_description": "A public creative coding studio.",
+            "metadata_tags": ["art", "coding"],
+        },
+    )
+    payload = client.get(reverse("site-theme")).json()
+    assert payload["site_title"] == "Public Studio"
+    assert payload["site_description"] == "A public creative coding studio."
+    assert payload["metadata_tags"] == ["art", "coding"]
+    assert "updated_by" not in payload
+
+
+@pytest.mark.django_db
+def test_global_metadata_validation_is_atomic(client, admin_a):
+    client.force_login(admin_a)
+    response = client.patch(
+        reverse("admin-settings"),
+        {
+            "site_title": "Changed",
+            "site_description": "Valid",
+            "metadata_tags": [""],
+            "revision": 1,
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    row = SiteSettings.get_solo()
+    assert row.site_title == "AugmentrART"
+    assert row.site_description == ""
+    assert row.metadata_tags == []
 
 
 @pytest.mark.django_db
@@ -378,6 +440,8 @@ def test_get_site_settings_and_list_plans_expose_only_named_fields():
     site_settings = get_site_settings()
     assert set(vars(site_settings).keys()) == {
         "site_title",
+        "site_description",
+        "metadata_tags",
         "cloud_sync_enabled",
         "revision",
         "theme_config",

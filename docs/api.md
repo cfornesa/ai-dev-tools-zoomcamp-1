@@ -1,5 +1,31 @@
 # Public gallery API contract
 
+## Published AI-agent guidance files (#585)
+
+`GET /llms.txt` and `GET /llms-full.txt` are anonymous, public
+`text/plain` resources generated from the current published site structure
+and bounded public SEO/AEO metadata. They are generated at request time so a
+published CMS/site-structure or site-level metadata change is reflected on
+the next request without a manual artifact edit or deployment.
+
+`/llms.txt` is the concise orientation document; `/llms-full.txt` is the
+expanded bounded inventory of published CMS pages and canonical public
+profile, collection, and piece routes. Both use deterministic ordering and
+safe text serialization. Draft, deleted, private, unpublished, credential,
+provider-identity, billing, admin, account-management, and other internal
+data or routes are excluded. Existing routes and API contracts remain
+backward-compatible.
+
+## Global site metadata settings (#586)
+
+The application-admin-only `GET|PATCH /api/admin/settings/` contract includes
+`site_description` (a bounded plain-text description) and `metadata_tags` (a
+bounded list of unique plain-text tags). Existing settings keep deterministic
+empty defaults. Updates use the existing optimistic-concurrency `revision`
+field; malformed or oversized values are rejected atomically. The anonymous
+`GET /api/site-theme/` projection may include these safe public fields for
+metadata consumers, but never exposes admin-only settings or sensitive data.
+
 ## Public profile handles (#551)
 
 `GET /api/account/profile/` assigns a deterministic handle on first access when

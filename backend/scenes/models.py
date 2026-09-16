@@ -123,6 +123,8 @@ class SiteSettings(models.Model):
     """
 
     site_title = models.CharField(max_length=200, default="AugmentrART")
+    site_description = models.TextField(max_length=500, blank=True, default="")
+    metadata_tags = models.JSONField(default=list, blank=True)
     # Issue #509: cloud backup is disabled until an administrator enables it.
     cloud_sync_enabled = models.BooleanField(default=False)
     theme_config = models.JSONField(default=dict, blank=True)

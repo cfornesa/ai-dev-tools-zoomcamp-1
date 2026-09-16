@@ -21789,3 +21789,29 @@ these new capabilities. The attached images remain evidence only.
 - No new memory topic was added: the expanded request is fully represented by
   the linked issue contracts, while #571’s existing verification boundary is
   already recorded in the durable account-settings production audit.
+
+## 2026-09-16 — dynamic AI-agent guidance files
+
+The owner approved request-time generation of public `/llms.txt` and
+`/llms-full.txt` resources from published CMS/site structure and metadata.
+Distillation found that `SiteSettings` currently has no global site
+description or metadata-tag fields, so the work was split into two
+criterion-ready issues rather than leaving that prerequisite implicit.
+
+| Issue | Scope | Routing | Order/dependency |
+| --- | --- | --- | --- |
+| [#586](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/586) | Global site description and safe metadata-tag settings | stage 2b complex | first; supplies the global metadata consumed by #585 |
+| [#585](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/585) | Dynamic published-only `/llms.txt` and `/llms-full.txt` resources | stage 2b complex | after #586; consumes #578–#580 public metadata contracts |
+
+### Distillation reconciliation
+
+- No duplicate issue covered the two public guidance resources or the missing
+  global site metadata settings; #578–#580 cover canonical/content metadata,
+  but not these artifacts or global settings.
+- #586 is the next groomed transaction because #585 depends on it. Both issue
+  bodies contain fixed routes, privacy exclusions, deterministic/bounded
+  output requirements, exact implementation routing, and a no-QA/no-close
+  boundary.
+- The approved architecture is request-time generation: published admin
+  changes are visible on the next request without a manual artifact edit or
+  deployment. No new dependency or durable memory topic is required.

@@ -50,6 +50,8 @@ function SiteTitleForm({
   onSaved: (next: SiteSettings) => void;
 }) {
   const [title, setTitle] = useState(settings.site_title);
+  const [description, setDescription] = useState(settings.site_description ?? '');
+  const [metadataTags, setMetadataTags] = useState((settings.metadata_tags ?? []).join(', '));
   const [theme, setTheme] = useState<Record<string, string>>({
     ...DEFAULT_THEME,
     ...(settings.theme_config ?? {}),
@@ -62,6 +64,8 @@ function SiteTitleForm({
 
   useEffect(() => {
     setTitle(settings.site_title);
+    setDescription(settings.site_description ?? '');
+    setMetadataTags((settings.metadata_tags ?? []).join(', '));
     setTheme({ ...DEFAULT_THEME, ...(settings.theme_config ?? {}) });
     setThemeCleared(false);
     setStyleKey(settings.style_key ?? 'default');
@@ -69,6 +73,8 @@ function SiteTitleForm({
 
   const dirty =
     title !== settings.site_title ||
+    description !== (settings.site_description ?? '') ||
+    metadataTags !== (settings.metadata_tags ?? []).join(', ') ||
     styleKey !== (settings.style_key ?? 'default') ||
     themeCleared ||
     JSON.stringify(theme) !==
@@ -85,9 +91,14 @@ function SiteTitleForm({
         settings.revision,
         themeCleared ? {} : theme,
         styleKey,
+        description,
+        metadataTags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
       );
       onSaved(next);
-      setMessage('Site title saved.');
+      setMessage('Global site metadata saved.');
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError('Someone else changed this since you loaded it. Reload the page and try again.');
@@ -103,6 +114,8 @@ function SiteTitleForm({
 
   function cancel() {
     setTitle(settings.site_title);
+    setDescription(settings.site_description ?? '');
+    setMetadataTags((settings.metadata_tags ?? []).join(', '));
     setTheme({ ...DEFAULT_THEME, ...(settings.theme_config ?? {}) });
     setThemeCleared(false);
     setStyleKey(settings.style_key ?? 'default');
@@ -121,6 +134,24 @@ function SiteTitleForm({
         maxLength={200}
         required
       />
+      <label htmlFor="site-description-input">Site description</label>
+      <textarea
+        id="site-description-input"
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+        maxLength={500}
+        rows={3}
+      />
+      <label htmlFor="site-metadata-tags-input">Metadata tags</label>
+      <input
+        id="site-metadata-tags-input"
+        type="text"
+        value={metadataTags}
+        onChange={(event) => setMetadataTags(event.target.value)}
+        placeholder="creative coding, generative art"
+        aria-describedby="site-metadata-tags-help"
+      />
+      <p id="site-metadata-tags-help">Separate tags with commas.</p>
       <fieldset>
         <legend>Site theme tokens</legend>
         {['background', 'surface', 'text', 'muted', 'accent'].map((token) => (

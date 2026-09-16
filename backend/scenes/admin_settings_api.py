@@ -39,6 +39,10 @@ def _admin_required_response(request) -> Response | None:
 
 class SiteSettingsUpdateSerializer(serializers.Serializer):
     site_title = serializers.CharField(max_length=200, allow_blank=False, trim_whitespace=True)
+    site_description = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    metadata_tags = serializers.ListField(
+        child=serializers.CharField(max_length=48, allow_blank=False), required=False
+    )
     revision = serializers.IntegerField(min_value=0)
     cloud_sync_enabled = serializers.BooleanField(required=False)
     theme_config = serializers.DictField(required=False)
@@ -54,6 +58,8 @@ class AdminSiteSettingsView(APIView):
         return Response(
             {
                 "site_title": site_settings.site_title,
+                "site_description": site_settings.site_description,
+                "metadata_tags": site_settings.metadata_tags,
                 "cloud_sync_enabled": site_settings.cloud_sync_enabled,
                 "revision": site_settings.revision,
                 "theme_config": site_settings.theme_config,
@@ -69,6 +75,8 @@ class AdminSiteSettingsView(APIView):
 
         unknown_fields = set(request.data.keys()) - {
             "site_title",
+            "site_description",
+            "metadata_tags",
             "revision",
             "cloud_sync_enabled",
             "theme_config",
@@ -91,6 +99,8 @@ class AdminSiteSettingsView(APIView):
                 actor=request.user,
                 expected_revision=serializer.validated_data["revision"],
                 site_title=serializer.validated_data["site_title"],
+                site_description=serializer.validated_data.get("site_description"),
+                metadata_tags=serializer.validated_data.get("metadata_tags"),
                 cloud_sync_enabled=serializer.validated_data.get("cloud_sync_enabled"),
                 theme_config=serializer.validated_data.get("theme_config"),
                 style_key=serializer.validated_data.get("style_key"),
@@ -107,6 +117,8 @@ class AdminSiteSettingsView(APIView):
         return Response(
             {
                 "site_title": updated.site_title,
+                "site_description": updated.site_description,
+                "metadata_tags": updated.metadata_tags,
                 "cloud_sync_enabled": updated.cloud_sync_enabled,
                 "revision": updated.revision,
                 "theme_config": updated.theme_config,
@@ -127,6 +139,9 @@ class SiteThemeView(APIView):
                 **effective_profile_theme(style.tokens if style else {}, row.theme_config),
                 "style_key": style.key if style else None,
                 "presentation": effective_presentation(style.presentation if style else {}),
+                "site_title": row.site_title,
+                "site_description": row.site_description,
+                "metadata_tags": row.metadata_tags,
             }
         )
 

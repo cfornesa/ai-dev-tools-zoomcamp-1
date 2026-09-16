@@ -31,9 +31,34 @@ class ValidationFailed(Exception):
     is rejected; nothing is partially applied."""
 
 
+MAX_METADATA_TAGS = 20
+MAX_METADATA_TAG_LENGTH = 48
+
+
+def sanitize_metadata_tags(value: object) -> list[str]:
+    if not isinstance(value, list):
+        raise ValidationFailed("metadata_tags must be a list of strings.")
+    if len(value) > MAX_METADATA_TAGS:
+        raise ValidationFailed(f"metadata_tags must contain at most {MAX_METADATA_TAGS} tags.")
+    cleaned: list[str] = []
+    for tag in value:
+        if not isinstance(tag, str) or not tag.strip():
+            raise ValidationFailed("metadata_tags must contain non-empty strings.")
+        normalized = tag.strip()
+        if len(normalized) > MAX_METADATA_TAG_LENGTH:
+            raise ValidationFailed(
+                f"metadata_tags entries must be at most {MAX_METADATA_TAG_LENGTH} characters."
+            )
+        if normalized not in cleaned:
+            cleaned.append(normalized)
+    return cleaned
+
+
 @dataclass(frozen=True)
 class SiteSettingsView:
     site_title: str
+    site_description: str
+    metadata_tags: list[str]
     cloud_sync_enabled: bool
     revision: int
     theme_config: dict[str, str]
@@ -61,15 +86,16 @@ class PlanView:
 
 def get_site_settings() -> SiteSettingsView:
     settings_row = SiteSettings.get_solo()
+    style = settings_row.style if settings_row.style_id else None
     return SiteSettingsView(
         site_title=settings_row.site_title,
+        site_description=settings_row.site_description,
+        metadata_tags=sanitize_metadata_tags(settings_row.metadata_tags),
         cloud_sync_enabled=settings_row.cloud_sync_enabled,
         revision=settings_row.revision,
         theme_config=settings_row.theme_config,
-        style_key=settings_row.style.key if settings_row.style_id else None,
-        presentation=effective_presentation(
-            settings_row.style.presentation if settings_row.style_id else {}
-        ),
+        style_key=style.key if style else None,
+        presentation=effective_presentation(style.presentation if style else {}),
     )
 
 
@@ -79,6 +105,8 @@ def update_site_settings(
     actor,
     expected_revision: int,
     site_title: str,
+    site_description: str | None = None,
+    metadata_tags: list[str] | None = None,
     cloud_sync_enabled: bool | None = None,
     theme_config: dict[str, str] | None = None,
     style_key: str | None = None,
@@ -87,6 +115,13 @@ def update_site_settings(
         raise ValidationFailed("site_title must be a non-empty string.")
     if len(site_title) > 200:
         raise ValidationFailed("site_title must be at most 200 characters.")
+    if site_description is not None and (
+        not isinstance(site_description, str) or len(site_description) > 500
+    ):
+        raise ValidationFailed("site_description must be at most 500 characters.")
+    cleaned_metadata_tags = (
+        sanitize_metadata_tags(metadata_tags) if metadata_tags is not None else None
+    )
     if theme_config is not None:
         try:
             theme_config = sanitize_theme(theme_config)
@@ -104,6 +139,10 @@ def update_site_settings(
             f"Expected revision {expected_revision}, but the current revision is {row.revision}."
         )
     row.site_title = site_title.strip()
+    if site_description is not None:
+        row.site_description = site_description.strip()
+    if cleaned_metadata_tags is not None:
+        row.metadata_tags = cleaned_metadata_tags
     if cloud_sync_enabled is not None:
         if not isinstance(cloud_sync_enabled, bool):
             raise ValidationFailed("cloud_sync_enabled must be a boolean.")
@@ -115,13 +154,16 @@ def update_site_settings(
     row.revision += 1
     row.updated_by = actor
     row.save()
+    style = row.style if row.style_id else None
     return SiteSettingsView(
         site_title=row.site_title,
+        site_description=row.site_description,
+        metadata_tags=sanitize_metadata_tags(row.metadata_tags),
         cloud_sync_enabled=row.cloud_sync_enabled,
         revision=row.revision,
         theme_config=row.theme_config,
-        style_key=row.style.key if row.style_id else None,
-        presentation=effective_presentation(row.style.presentation if row.style_id else {}),
+        style_key=style.key if style else None,
+        presentation=effective_presentation(style.presentation if style else {}),
     )
 
 

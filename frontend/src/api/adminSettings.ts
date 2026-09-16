@@ -2,6 +2,8 @@ import { apiFetch } from './client';
 
 export type SiteSettings = {
   site_title: string;
+  site_description: string;
+  metadata_tags: string[];
   revision: number;
   cloud_sync_enabled: boolean;
   theme_config?: Record<string, string>;
@@ -89,12 +91,16 @@ export async function updateSiteSettings(
   revision: number,
   themeConfig?: Record<string, string>,
   styleKey?: string,
+  siteDescription?: string,
+  metadataTags?: string[],
 ): Promise<SiteSettings> {
   return apiFetch<SiteSettings>('/api/admin/settings/', {
     method: 'PATCH',
     body: JSON.stringify({
       site_title: siteTitle,
       revision,
+      ...(siteDescription !== undefined ? { site_description: siteDescription } : {}),
+      ...(metadataTags !== undefined ? { metadata_tags: metadataTags } : {}),
       ...(themeConfig ? { theme_config: themeConfig } : {}),
       ...(styleKey ? { style_key: styleKey } : {}),
     }),

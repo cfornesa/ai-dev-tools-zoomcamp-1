@@ -56,11 +56,34 @@ landed.
 (#588, 2D/3D piece SEO metadata) created and linked, not yet engineered.
 No new migrations were added this session — every fix is code/test-only, so
 a Replit republish for these changes is a lower-risk code-only deploy (no
-schema diff to approve). See `.agents/memory/` for durable lessons recorded
-from this session (`responsiveshell-spec-drift-after-#572` topic references
-the pre-existing `e2e-spec-drift-outside-smoke-suite` pattern; a new
-`qa-batch-hidden-attribute-css-override` topic records the #584 CSS
-specificity bug as a durable class of defect to watch for).
+schema diff to approve). See `.agents/memory/` for two new durable-lesson
+topics recorded from this session:
+`css-hidden-attribute-silently-overridden.md` (the #584 CSS-specificity bug
+class) and `qa-batch-untested-handoffs.md` (the "N tests passed" pattern
+that doesn't actually cover the issue's own criteria, found repeatedly
+across this batch).
+
+### 2026-09-16 addendum — #588 implemented and closed
+
+#588 (2D/3D piece SEO metadata, filed above) was implemented by Codex as a
+direct substitution (commits `735e52a`, `cfc2a05`) — additive `seo_config`
+`JSONField`s on `Project`/`Project3D` (migration `0078`, non-destructive,
+`default=dict, blank=True`), owner-endpoint validation reusing the shared
+`sanitize_content_seo` validator, public-serializer exposure, and both
+`PublicProjectViewer`/`PublicProject3DViewer` wired to the existing shared
+`applyContentMetadata` renderer. Codex's own comment self-reported a
+`## QA: PASS`, but per this batch's own `qa-batch-untested-handoffs.md`
+lesson that claim was independently re-verified rather than accepted: every
+cited test count was re-run and matched (1,409 backend / 2,717 frontend
+tests passed), the new test file was audited for weakened assertions (none
+found), and a real published `Project` with a configured `seo_config` was
+created in the local dev database and inspected in a live Chromium session —
+`document.title`, meta description, OG/Twitter tags, canonical link, and
+JSON-LD all rendered the configured values verbatim on `/p/<id>`, and
+setting the project back to private confirmed the public API 404s with no
+leak. QA verdict posted and #588 closed as `completed`; this closes the
+2026-09-16 batch's last open item. All 18 issues touched this session
+(#571-#588) are now closed.
 
 ## 2026-09-16 — #549 login/session E2E flake resolved
 

@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 
 import {
   createBillingCheckout,
+  cancelBillingSubscription,
   fetchBillingStatus,
   type BillingStatus,
 } from '../api/accountBilling';
@@ -97,6 +98,27 @@ function AccountBilling() {
     }
   }
 
+  async function cancelSubscription() {
+    if (
+      !window.confirm(
+        'Cancel this PayPal subscription? Access remains available through the paid-through date.',
+      )
+    )
+      return;
+    setBusy(true);
+    setError(null);
+    try {
+      await cancelBillingSubscription();
+      setError(
+        'Cancellation requested. PayPal confirmation may take a few minutes; access remains active until the paid-through date.',
+      );
+    } catch {
+      setError('Could not request PayPal cancellation. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="content-panel account-billing">
       <h2>Billing</h2>
@@ -123,6 +145,23 @@ function AccountBilling() {
             </p>
           )}
           <p>Subscription status: {billing.subscription.status ?? 'not started'}</p>
+          {billing.subscription.can_manage && billing.subscription.manage_url && (
+            <p>
+              <a href={billing.subscription.manage_url} target="_blank" rel="noreferrer">
+                Manage subscription in PayPal
+              </a>
+            </p>
+          )}
+          {billing.subscription.can_cancel && (
+            <button
+              type="button"
+              className="shell-action"
+              onClick={() => void cancelSubscription()}
+              disabled={busy}
+            >
+              Cancel subscription
+            </button>
+          )}
           {billing.available_plan?.paypal_configured && (
             <button
               type="button"

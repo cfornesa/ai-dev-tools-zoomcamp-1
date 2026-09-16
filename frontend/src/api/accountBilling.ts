@@ -3,7 +3,13 @@ import { apiFetch } from './client';
 export type BillingStatus = {
   plan_key: string;
   plan: { price: string | null; currency: string; interval: string };
-  subscription: { status: string | null; paid_through: string | null };
+  subscription: {
+    status: string | null;
+    paid_through: string | null;
+    can_manage?: boolean;
+    can_cancel?: boolean;
+    manage_url?: string | null;
+  };
   available_plan: {
     plan_key: string;
     paypal_configured: boolean;
@@ -23,5 +29,12 @@ export function createBillingCheckout(planKey: string, idempotencyKey: string) {
   return apiFetch<BillingCheckout>('/api/account/billing/', {
     method: 'POST',
     body: JSON.stringify({ plan_key: planKey, idempotency_key: idempotencyKey }),
+  });
+}
+
+export function cancelBillingSubscription(reason = 'Cancelled by subscriber') {
+  return apiFetch<{ outcome: 'pending_webhook' }>('/api/account/billing/', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'cancel', reason }),
   });
 }

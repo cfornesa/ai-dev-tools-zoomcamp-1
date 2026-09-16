@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from scenes import entitlements
-from scenes.models import BillingCheckout, Plan
+from scenes.models import BillingCheckout, Plan, Subscription
 
 
 @pytest.fixture
@@ -93,3 +93,36 @@ def test_billing_status_exposes_configured_plan_pricing(client, user):
         "currency": "USD",
         "interval": "month",
     }
+
+
+@pytest.mark.django_db
+def test_cancel_requests_paypal_and_waits_for_webhook(client, user, monkeypatch):
+    client.force_login(user)
+    subscription = Subscription.objects.create(
+        user=user,
+        plan_key="paid",
+        status=Subscription.Status.ACTIVE,
+        paypal_subscription_id="I-FIXTURE-SUB",
+    )
+    calls = []
+    monkeypatch.setattr(
+        "scenes.billing_api.cancel_subscription",
+        lambda **kwargs: calls.append(kwargs),
+    )
+
+    response = client.post(
+        reverse("account-billing"), {"action": "cancel", "reason": "No longer needed"}
+    )
+
+    assert response.status_code == 202
+    assert response.json() == {"outcome": "pending_webhook"}
+    assert calls == [{"subscription_id": "I-FIXTURE-SUB", "reason": "No longer needed"}]
+    subscription.refresh_from_db()
+    assert subscription.status == Subscription.Status.ACTIVE
+
+
+@pytest.mark.django_db
+def test_cancel_rejects_missing_or_terminal_subscription(client, user):
+    client.force_login(user)
+    response = client.post(reverse("account-billing"), {"action": "cancel", "reason": "x"})
+    assert response.status_code == 400

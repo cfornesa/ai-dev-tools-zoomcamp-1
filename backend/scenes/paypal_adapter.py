@@ -46,6 +46,19 @@ def create_subscription(
     return response.json()
 
 
+def cancel_subscription(*, subscription_id: str, reason: str) -> None:
+    """Ask PayPal to cancel a subscription; local state follows its webhook."""
+    base = _API_BASES[settings.PAYPAL_MODE]
+    token = _get_access_token()
+    response = requests.post(
+        f"{base}/v1/billing/subscriptions/{subscription_id}/cancel",
+        json={"reason": reason},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+
+
 def _get_access_token() -> str:
     base = _API_BASES[settings.PAYPAL_MODE]
     response = requests.post(

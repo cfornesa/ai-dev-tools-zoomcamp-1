@@ -1,6 +1,6 @@
 # Public gallery API contract
 
-## Account billing contract (#440)
+## Account billing contract (#440, #550)
 
 Authenticated account billing is exposed through `/api/account/billing/` and
 the frontend route `/account/billing`. `GET` returns the effective plan and
@@ -21,6 +21,19 @@ inactive plans, `409` for an idempotency-key conflict, `502` for an upstream
 PayPal failure, and `200` for a status or successful idempotent retry. The
 response contains no client secret, access token, raw provider payload, or
 unverified entitlement claim.
+
+Issue #550 adds subscriber self-service without changing webhook authority.
+`GET` may return `subscription.can_manage`, `subscription.can_cancel`, and
+`subscription.manage_url` for an active provider-backed subscription. The
+manage URL is PayPal's hosted subscriptions page and is informational only;
+the app never embeds or collects PayPal credentials. `POST` accepts
+`{"action":"cancel","reason":"..."}` for the authenticated owner. The
+server requests cancellation from PayPal, returns `202` with
+`{"outcome":"pending_webhook"}`, and does not mutate the local subscription
+until a verified webhook arrives. Missing subscription, already-terminal
+state, provider failure, and malformed reasons return finite `400`/`502`
+responses. Cancellation preserves the existing `paid_through` entitlement
+policy.
 
 ### PayPal sandbox operator verification
 

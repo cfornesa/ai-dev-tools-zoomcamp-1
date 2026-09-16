@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 
 from scenes.billing import WebhookRejected, process_webhook_event
 from scenes.models import BillingCheckout, Plan, Subscription
-from scenes.paypal_adapter import create_subscription
+from scenes.paypal_adapter import cancel_subscription, create_subscription
 
 
 def _format_price(value) -> str:
@@ -112,6 +112,25 @@ class AccountBillingView(APIView):
                 "subscription": {
                     "status": subscription.status if subscription else None,
                     "paid_through": subscription.paid_through if subscription else None,
+                    "can_manage": bool(
+                        subscription
+                        and subscription.status == Subscription.Status.ACTIVE
+                        and subscription.paypal_subscription_id
+                    ),
+                    "can_cancel": bool(
+                        subscription
+                        and subscription.status == Subscription.Status.ACTIVE
+                        and subscription.paypal_subscription_id
+                    ),
+                    "manage_url": (
+                        "https://www.sandbox.paypal.com/myaccount/autopay/"
+                        if settings.PAYPAL_MODE == "sandbox"
+                        else "https://www.paypal.com/us/digital-wallet/manage-money/manage-subscriptions"
+                    )
+                    if subscription
+                    and subscription.status == Subscription.Status.ACTIVE
+                    and subscription.paypal_subscription_id
+                    else None,
                 },
                 "available_plan": {
                     "plan_key": available_plan.plan_key,
@@ -128,6 +147,27 @@ class AccountBillingView(APIView):
     def post(self, request):
         if not settings.PAYPAL_ENABLED:
             raise Http404("PayPal billing is not configured.")
+        action = request.data.get("action")
+        if action == "cancel":
+            reason = str(request.data.get("reason", "")).strip()
+            if not 1 <= len(reason) <= 128:
+                return Response({"error": "invalid_cancellation_request"}, status=400)
+            subscription = (
+                Subscription.objects.filter(user=request.user).order_by("-updated_at").first()
+            )
+            if not subscription or subscription.status != Subscription.Status.ACTIVE:
+                return Response({"error": "subscription_unavailable"}, status=400)
+            if not subscription.paypal_subscription_id:
+                return Response({"error": "subscription_unavailable"}, status=400)
+            try:
+                cancel_subscription(
+                    subscription_id=subscription.paypal_subscription_id,
+                    reason=reason,
+                )
+            except Exception:
+                return Response({"error": "paypal_unavailable"}, status=502)
+            return Response({"outcome": "pending_webhook"}, status=202)
+
         plan_key = request.data.get("plan_key")
         idempotency_key = str(request.data.get("idempotency_key", "")).strip()
         if not isinstance(plan_key, str) or not idempotency_key or len(idempotency_key) > 128:

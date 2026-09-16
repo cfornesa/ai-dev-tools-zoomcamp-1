@@ -21345,3 +21345,55 @@ across the affected tables, including `scenes_cloudbackupblobtransfer`,
 This closes the prior #467 deployment/schema blocker. The evidence establishes
 schema parity and anonymous published routing; it does not substitute for any
 separate authenticated deployed-browser matrix required by another issue.
+
+## 2026-09-16 — production-readiness re-run: full batch verified, one new gap filed
+
+Owner asked for `production-readiness` + `session-completion` after Codex
+completed the offline-sync/local-workspace batch (#534, #536, #542-#548, all
+now closed). Independently re-verified rather than trusting the closure
+record:
+
+- `cd backend && uv run pytest -q` → **1,319 passed, 39 skipped**
+  (consistent with the batch's own last-recorded numbers).
+- `cd frontend && npx vitest run` → **229 files / 2,682 tests passed**
+  (matches #545/#546's recorded numbers exactly).
+- `git status` clean; no uncommitted work left behind by the batch.
+- Production: `https://augmentrart.com/health/` → 200, `/` → 200, anonymous
+  `/api/whoami/` → 401 (correct anonymous boundary). Confirms #547's
+  production-schema repair (`scenes_plan.cloud_snapshot_cadence_days` etc.)
+  is live and the deployment is healthy.
+- **CI on current `main` (commit `3b33e46`) is RED**: run
+  [35039206301](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/35039206301),
+  "Browser acceptance E2E" job, `e2e/projectLifecycle.spec.ts:131` failed at
+  `loginViaUI` (`support/auth.ts:36`) — `Test timeout of 15000ms exceeded`
+  waiting for the post-login "Your projects" heading. The immediately prior
+  commit (`6bc7120`, docs-only diff between the two) was green, ruling out a
+  code regression; this is a flake. Notably, this is the **same exact
+  failure mode** already independently observed locally in this session's
+  own earlier `qa-self-review` pass against `offlineSync.spec.ts`'s mobile
+  viewport — and it is the same symptom [#492](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/492)
+  was closed for after widening the same assertion's timeout to 15000ms
+  with 10/10 and 40/40 repeat-run verification. That fix is still present in
+  the code but the flake still recurs. Per this repo's immutable-closed-issue
+  convention, filed as new issue
+  [#549](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/549)
+  rather than reopening #492, citing both independent reproductions.
+
+### Readiness verdict
+
+Local web-app deployment: **PASS**. Full local automated suite: **PASS**.
+Replit production deployment: **PASS** (healthy, #547's schema fix
+confirmed live). CI: **FAIL** (one flaky E2E test, not a code regression,
+tracked as new #549 — this is a test-infrastructure defect, not a product
+defect, and does not block the already-closed feature issues). No other
+gaps found against the project's stated goals (privacy-first workflows,
+pieces/augment-humankind parity, admin customization) beyond what was
+already tracked and closed in this batch.
+
+### Routing audit
+
+This pass ran as Sonnet 5 (owner-authorized permanent equivalent to Opus 5
+per the 2026-09-10 `DECISIONS.md` entry) at the skill's budgeted effort.
+Stage ownership for the underlying #534-#548 batch is recorded in each
+issue's own QA/closure comments and this file's preceding entries; no
+additional substitution to flag in this readiness pass itself.

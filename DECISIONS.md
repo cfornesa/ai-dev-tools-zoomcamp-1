@@ -902,3 +902,31 @@ The supported Republish flow completed as `f65b4223`, the published smoke check
 passed, and read-only Production Database inspection confirmed both missing
 tables plus `applied_scene_version_id`. Production startup migrations remained
 disabled and no manual production SQL was used.
+
+## 2026-09-16 (production-readiness + session-completion: full batch verified, one new gap)
+
+Re-ran `production-readiness` after Codex closed the entire #534/#536/#542-#548
+batch, independently re-verifying rather than trusting the closure record:
+backend `1,319 passed/39 skipped`, frontend `229 files/2,682 tests passed`
+(both match the batch's own last-recorded numbers), clean working tree,
+production `https://augmentrart.com` healthy (`/health/` 200, anonymous
+`/api/whoami/` 401, confirming #547's schema repair is live).
+
+Found CI red on current `main` (`3b33e46`, run `35039206301`): `loginViaUI`
+timed out in `e2e/projectLifecycle.spec.ts` even though the prior commit
+(docs-only diff) was green, ruling out a code regression — a flake. This is
+the identical symptom `qa-self-review` had already independently reproduced
+locally earlier this session (`offlineSync.spec.ts` mobile viewport), and the
+same symptom [#492](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/492)
+was closed for after widening the same timeout to 15s with 10/10 and 40/40
+repeat-run verification — that fix is still present but the flake still
+recurs on different specs/viewports #492 never exercised. Filed as new
+[#549](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/549) per
+this repo's immutable-closed-issue rule rather than reopening #492. Durable
+memory topic added:
+`.agents/memory/login-flake-outlives-timeout-fix.md`.
+
+No other gaps found. Readiness verdict: local **PASS**, full suite **PASS**,
+Replit production **PASS**, CI **FAIL** (test-infrastructure flake, tracked
+as #549, not a product defect and not blocking on the already-closed feature
+work).

@@ -397,6 +397,7 @@ function SavedMistralModels() {
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     fetchMistralModelPreferences()
@@ -436,41 +437,54 @@ function SavedMistralModels() {
   return (
     <section className="account-settings-card" aria-labelledby="saved-models-heading">
       <h3 id="saved-models-heading">Saved Mistral models</h3>
-      <p>
-        Save your own Mistral model slugs to pick from a dropdown in the AI assistant, instead of
-        retyping one each time. Look up valid slugs in{' '}
-        <a href={MISTRAL_MODELS_DOCS_URL} target="_blank" rel="noopener noreferrer">
-          Mistral&apos;s model documentation
-        </a>
-        .
-      </p>
-      <form
-        onSubmit={submit}
-        aria-label="Add a saved Mistral model"
-        className="account-settings-form"
-      >
-        <label htmlFor="mistral-model-slug">Model slug</label>
-        <input
-          id="mistral-model-slug"
-          className="account-settings-input"
-          type="text"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          disabled={busy}
-        />
-        <label htmlFor="mistral-model-label">Label (optional)</label>
-        <input
-          id="mistral-model-label"
-          className="account-settings-input"
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          disabled={busy}
-        />
-        <button className="shell-action" type="submit" disabled={busy || slug.trim() === ''}>
-          Add model
+      <details>
+        <summary>See more details about saved models</summary>
+        <p>
+          Save your own Mistral model slugs to pick from a dropdown in the AI assistant, instead of
+          retyping one each time. Look up valid slugs in{' '}
+          <a href={MISTRAL_MODELS_DOCS_URL} target="_blank" rel="noopener noreferrer">
+            Mistral&apos;s model documentation
+          </a>
+          .
+        </p>
+      </details>
+      {!showForm && (
+        <button className="shell-action" type="button" onClick={() => setShowForm(true)}>
+          New model
         </button>
-      </form>
+      )}
+      {showForm && (
+        <form
+          onSubmit={submit}
+          aria-label="Add a saved Mistral model"
+          className="account-settings-form"
+        >
+          <label htmlFor="mistral-model-slug">Model slug</label>
+          <input
+            id="mistral-model-slug"
+            className="account-settings-input"
+            type="text"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            disabled={busy}
+          />
+          <label htmlFor="mistral-model-label">Label (optional)</label>
+          <input
+            id="mistral-model-label"
+            className="account-settings-input"
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            disabled={busy}
+          />
+          <button className="shell-action" type="submit" disabled={busy || slug.trim() === ''}>
+            Add model
+          </button>
+          <button className="shell-action" type="button" onClick={() => setShowForm(false)}>
+            Close
+          </button>
+        </form>
+      )}
       {models === null && !error && <p>Loading your saved models…</p>}
       {models !== null && models.length === 0 && <p>No saved models yet.</p>}
       {models !== null && models.length > 0 && (
@@ -502,6 +516,7 @@ function AIPersonas() {
   const [promptText, setPromptText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     fetchAIPersonas()
@@ -541,36 +556,49 @@ function AIPersonas() {
   return (
     <section className="account-settings-card" aria-labelledby="personas-heading">
       <h3 id="personas-heading">Personas</h3>
-      <p>
-        A Persona adds your own style/tone guidance on top of the AI assistant&apos;s required
-        technical instructions — it can never replace or remove them.
-      </p>
-      <form onSubmit={submit} aria-label="Add a Persona" className="account-settings-form">
-        <label htmlFor="ai-persona-name">Persona name</label>
-        <input
-          id="ai-persona-name"
-          className="account-settings-input"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={busy}
-        />
-        <label htmlFor="ai-persona-prompt">Additive prompt text</label>
-        <textarea
-          id="ai-persona-prompt"
-          className="account-settings-input account-settings-textarea"
-          value={promptText}
-          onChange={(e) => setPromptText(e.target.value)}
-          disabled={busy}
-        />
-        <button
-          className="shell-action"
-          type="submit"
-          disabled={busy || name.trim() === '' || promptText.trim() === ''}
-        >
-          Add Persona
+      <details>
+        <summary>See more details about Personas</summary>
+        <p>
+          A Persona adds your own style/tone guidance on top of the AI assistant&apos;s required
+          technical instructions — it can never replace or remove them.
+        </p>
+      </details>
+      {!showForm && (
+        <button className="shell-action" type="button" onClick={() => setShowForm(true)}>
+          New persona
         </button>
-      </form>
+      )}
+      {showForm && (
+        <form onSubmit={submit} aria-label="Add a Persona" className="account-settings-form">
+          <label htmlFor="ai-persona-name">Persona name</label>
+          <input
+            id="ai-persona-name"
+            className="account-settings-input"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={busy}
+          />
+          <label htmlFor="ai-persona-prompt">Additive prompt text</label>
+          <textarea
+            id="ai-persona-prompt"
+            className="account-settings-input account-settings-textarea"
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            disabled={busy}
+          />
+          <button
+            className="shell-action"
+            type="submit"
+            disabled={busy || name.trim() === '' || promptText.trim() === ''}
+          >
+            Add Persona
+          </button>
+          <button className="shell-action" type="button" onClick={() => setShowForm(false)}>
+            Close
+          </button>
+        </form>
+      )}
       {personas === null && !error && <p>Loading your Personas…</p>}
       {personas !== null && personas.length === 0 && <p>No Personas yet.</p>}
       {personas !== null && personas.length > 0 && (

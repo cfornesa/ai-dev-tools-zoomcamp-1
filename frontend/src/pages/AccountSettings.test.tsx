@@ -212,6 +212,11 @@ describe('AccountSettings', () => {
 
     expect(await screen.findByText('No saved models yet.')).toBeInTheDocument();
 
+    expect(
+      screen.queryByRole('form', { name: 'Add a saved Mistral model' }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'New model' }));
+
     await user.type(screen.getByLabelText(/model slug/i), 'mistral-small-latest');
     await user.type(screen.getByLabelText(/label \(optional\)/i), 'Small');
     await user.click(screen.getByRole('button', { name: /add model/i }));
@@ -242,6 +247,9 @@ describe('AccountSettings', () => {
     );
 
     expect(await screen.findByText('No Personas yet.')).toBeInTheDocument();
+
+    expect(screen.queryByRole('form', { name: 'Add a Persona' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'New persona' }));
 
     await user.type(screen.getByLabelText(/persona name/i), 'Playful');
     await user.type(screen.getByLabelText(/additive prompt text/i), 'Prefer bright colors.');

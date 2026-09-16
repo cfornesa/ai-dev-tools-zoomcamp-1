@@ -41,6 +41,7 @@ const AdminContent = lazy(() => import('./pages/AdminContent'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const CollectionManagement = lazy(() => import('./pages/CollectionManagement'));
 const PublicCollection = lazy(() => import('./pages/PublicCollection'));
+const CollectionImmersiveViewer = lazy(() => import('./pages/CollectionImmersiveViewer'));
 
 /** Task 94 (issue #94): `/projects/:id/settings` no longer exists as a
  * standalone page (project-metadata editing is now the editor's own
@@ -65,6 +66,10 @@ function App() {
               <Route path="gallery" element={<PublicGallery />} />
               <Route path="users/:handle" element={<PublicProfile />} />
               <Route path="users/:handle/:collectionSlug" element={<PublicCollection />} />
+              <Route
+                path="users/:handle/:collectionSlug/immersive"
+                element={<CollectionImmersiveViewer />}
+              />
               {/* Task 51 (issue #53): the public project viewer -- also
                   reachable without authentication, and identical for
                   anonymous and signed-in visitors (see PublicProjectViewer.tsx
@@ -173,6 +178,10 @@ function App() {
                 toolbar fully functional, since that belongs to the embed
                 too. */}
             <Route path="embed/art-pieces/immersive/:id" element={<ImmersiveArtPieceViewer />} />
+            <Route
+              path="embed/collections/:handle/:collectionSlug"
+              element={<CollectionImmersiveViewer />}
+            />
             {/* Issue #311: the immersive first-person free-fly view --
                 chrome-less like the embed routes above (this is a focused,
                 full-page viewing experience, opened in a new tab from

@@ -77,6 +77,11 @@ export default function PublicCollection() {
         </p>
         <h2 id="public-collection-heading">{collection.title}</h2>
         {collection.description && <p>{collection.description}</p>}
+        <p>
+          <Link to={`/users/@${collection.handle ?? handle}/${collection.slug}/immersive`}>
+            Open immersive collection
+          </Link>
+        </p>
       </header>
       {collection.items.length === 0 ? (
         <p role="status">This collection has no public items yet.</p>

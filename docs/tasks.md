@@ -21884,3 +21884,24 @@ development schema nullable for the remaining additions so the next generated
 diff can be reviewed without table-wide truncation. Existing production rows
 still require a separate, owner-controlled backfill/release verification;
 source checks do not constitute production schema evidence.
+
+### Owner-authorized production publish verification (2026-09-16)
+
+The owner authorized the migration-bearing Replit Publish after the generated
+SQL was reviewed and all unique-constraint prompts were approved with the
+non-destructive "Add the constraint as-is" choice. No table truncation option
+was selected. Replit completed the publish as deployment `916a02a2`.
+
+- `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`
+  passed: `/health/` 200 with database/cache healthy, `/` 200, anonymous
+  `/api/whoami/` 401, and `/accounts/login/` 200.
+- Replit Production read-only SQL confirmed `scenes_profilestyle` and
+  `scenes_publicprofilehandleredirect` exist, `scenes_publicprofile.style_id`
+  exists, and `scenes_mistralmodelpreference.vendor` exists as a nullable
+  column. Existing rows were not deleted by the selected publish path.
+- In the existing logged-in Chrome session, `/api/account/profile/` now
+  returns HTTP 200 with the account profile payload instead of the prior 500.
+
+The migration-bearing production boundary is therefore resolved. Browser QA,
+production-readiness, session-completion, and issue closure remain deferred;
+the affected issues remain open for QA.

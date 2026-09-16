@@ -8,6 +8,7 @@ import {
   buildArtPieceSandboxDocument,
 } from '../generative/artPieceSandbox';
 import PieceStageControls from './PieceStageControls';
+import { applyContentMetadata } from '../metadata';
 
 /** Issue #435: `PublicProjectViewer.tsx`'s own `embed/p/:id` convention,
  * adapted for art pieces -- one component serves both the full-chrome
@@ -36,6 +37,10 @@ function PublicArtPieceViewer() {
         .then(setPiece)
         .catch(() => setError(true));
   }, [id]);
+  useEffect(() => {
+    if (piece)
+      applyContentMetadata(piece.seo_config, piece.title, piece.description, window.location.href);
+  }, [piece]);
 
   async function handleCopyEmbedSnippet() {
     if (!id) return;

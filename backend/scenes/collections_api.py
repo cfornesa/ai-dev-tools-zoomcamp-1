@@ -18,6 +18,7 @@ from scenes.collections import (
     soft_delete_collection,
     update_collection,
 )
+from scenes.content_metadata import sanitize_content_seo
 from scenes.models import Collection
 
 
@@ -81,12 +82,17 @@ class CollectionDetailView(APIView):
         if collection is None:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         try:
+            collection._seo_config_update = sanitize_content_seo(
+                request.data.get("seo_config", collection.seo_config)
+            )
             collection = update_collection(
                 collection=collection,
                 title=request.data.get("title"),
                 description=request.data.get("description"),
             )
         except CollectionValidationError as exc:
+            return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
+        except ValueError as exc:
             return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
         return Response(collection_payload(collection, public=False))
 

@@ -11,6 +11,7 @@
  * to render.
  */
 import { apiFetch } from './client';
+import type { SeoConfig } from './adminPages';
 
 /** The libraries this endpoint supports -- mirrors
  * `ai_provider/art_piece_provider.py`'s `SUPPORTED_LIBRARIES`. Kept as a
@@ -74,6 +75,7 @@ export type ArtPiece = {
   updated_at: string;
   published_at?: string | null;
   collections?: PublicCollectionContext[];
+  seo_config?: SeoConfig;
 };
 
 export type PublicCollectionContext = {

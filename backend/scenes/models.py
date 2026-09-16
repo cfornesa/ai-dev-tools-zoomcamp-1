@@ -224,6 +224,7 @@ class Collection(models.Model):
     )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, default="")
+    seo_config = models.JSONField(default=dict, blank=True)
     slug = models.SlugField(max_length=120)
     visibility = models.CharField(
         max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
@@ -1874,6 +1875,7 @@ class ArtPiece(models.Model):
     title = models.CharField(max_length=200, default="Untitled art piece")
     public_slug = models.SlugField(max_length=220, default="", blank=True)
     description = models.TextField(default="", blank=True)
+    seo_config = models.JSONField(default=dict, blank=True)
     prompt = models.TextField(max_length=4000)
     engine = models.CharField(max_length=20, choices=Engine.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)

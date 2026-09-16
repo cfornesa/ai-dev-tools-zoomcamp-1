@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { fetchPublicCollection, type Collection, type CollectionItem } from '../api/collections';
 import { fetchPublicProfile, type PublicProfile } from '../api/profile';
+import { applyContentMetadata } from '../metadata';
 
 function CollectionCard({ item }: { item: CollectionItem }) {
   const [failed, setFailed] = useState(false);
@@ -51,6 +52,15 @@ export default function PublicCollection() {
       .then((page) => setProfile(page.profile))
       .catch(() => undefined);
   }, [collectionSlug, handle]);
+  useEffect(() => {
+    if (collection)
+      applyContentMetadata(
+        collection.seo_config,
+        collection.title,
+        collection.description,
+        window.location.href,
+      );
+  }, [collection]);
 
   if (state === 'loading') return <p role="status">Loading collection…</p>;
   if (state === 'missing') {

@@ -31,6 +31,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from scenes.content_metadata import sanitize_content_seo
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
 from scenes.permissions import Action, can
 from scenes.thumbnails import FALLBACK_PNG_BYTES
@@ -162,6 +163,7 @@ def _piece_data(piece: ArtPiece, *, public: bool):
         "public_id": str(piece.public_id),
         "title": piece.title,
         "description": piece.description,
+        "seo_config": piece.seo_config,
         "engine": piece.engine,
         "status": piece.status,
         "current_version": _version_data(piece.current_version, public=public)
@@ -191,6 +193,13 @@ class ArtPieceCreateSerializer(serializers.Serializer):
     source = serializers.CharField(max_length=1_000_000)
     capabilities = serializers.DictField(required=False, default=dict)
     generation_metadata = serializers.DictField(required=False, default=dict)
+    seo_config = serializers.DictField(required=False, default=dict)
+
+    def validate_seo_config(self, value):
+        try:
+            return sanitize_content_seo(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
     def validate_capabilities(self, value):
         return _capabilities(value)
@@ -200,6 +209,13 @@ class ArtPieceMetadataSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=200, required=False)
     description = serializers.CharField(max_length=4000, required=False, allow_blank=True)
     status = serializers.ChoiceField(choices=ArtPiece.Status.choices, required=False)
+    seo_config = serializers.DictField(required=False)
+
+    def validate_seo_config(self, value):
+        try:
+            return sanitize_content_seo(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
 
 class ArtPieceVersionSerializer(serializers.Serializer):
@@ -235,6 +251,7 @@ class ArtPieceListCreateView(APIView):
                 description=values["description"],
                 prompt=values["prompt"],
                 engine=values["engine"],
+                seo_config=values["seo_config"],
             )
             version = ArtPieceVersion.objects.create(
                 piece=piece,

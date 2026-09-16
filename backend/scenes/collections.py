@@ -111,6 +111,7 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         "created_at": collection.created_at.isoformat(),
         "updated_at": collection.updated_at.isoformat(),
         "items": items,
+        "seo_config": collection.seo_config,
     }
 
 
@@ -208,7 +209,9 @@ def update_collection(*, collection: Collection, title=None, description=None) -
         if not isinstance(description, str):
             raise CollectionValidationError("description must be text.")
         locked.description = description
-    locked.save(update_fields=["title", "description", "updated_at"])
+    if hasattr(collection, "_seo_config_update"):
+        locked.seo_config = collection._seo_config_update
+    locked.save(update_fields=["title", "description", "seo_config", "updated_at"])
     return locked
 
 

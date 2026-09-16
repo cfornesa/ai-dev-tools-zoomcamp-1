@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { SeoConfig } from './adminPages';
 
 export type CollectionItem = {
   kind: 'project' | 'project3d' | 'art_piece';
@@ -22,6 +23,7 @@ export type Collection = {
   created_at: string;
   updated_at: string;
   items: CollectionItem[];
+  seo_config?: SeoConfig;
 };
 
 export function fetchCollections() {
